@@ -17,6 +17,8 @@ fi
 "${SCRIPT_DIR}/apply-rsReticulum-link-client-nomad.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-rnode-tcp-activity-keepalive.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-discovery-announce-egress.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-discovery-announce-egress.sh"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   echo "rsLXMF not found at ${LXMF_DIR}; skipping lxmf overlay apply"

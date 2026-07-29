@@ -209,6 +209,7 @@ Apply after the other rsReticulum overlays when rebuilding a pinned checkout:
 ./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
+./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
 
 ### Regenerate
@@ -222,6 +223,56 @@ git diff -- crates/rns-interface/src/ble_rnode.rs \
 ### Sunset
 
 When upstream ships an equivalent debounce (or a passkey-window pause), remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
+## rsReticulum-discovery-announce-egress.patch
+
+Register `rnstransport.discovery.interface` as a local destination before announcing, and defer `Announcer::register` until the discoverable interface online latch is true. Without this, Boundary hubs such as **rmap.world** silently drop discovery announces (non-local + no path), and BLE RNode can consume a multi-hour `announce_interval` on a no-op TX while still connecting.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` (after prior overlays) |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/19 |
+
+**Modifies (3 files):**
+
+- `crates/rns-runtime/src/reticulum.rs` — online latch on `LocalDiscoveryInterface`, `take_online_discovery_interfaces`, `discovery_local_destination_registration`, deferred announcer
+- `crates/rns-transport/src/actor/mod.rs` — outbound discovery announce egress regression tests
+- `crates/rns-transport/src/discovery/announcer.rs` — RateLimit-after-discard regression test
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsReticulum` required):
+
+```bash
+./scripts/apply-rsReticulum-discovery-announce-egress.sh
+```
+
+Apply **after** the other rsReticulum overlays (packet-tap also touches `reticulum.rs`):
+
+```bash
+./scripts/apply-rsReticulum-packet-tap.sh
+./scripts/apply-rsReticulum-auto-beacon-utun.sh
+./scripts/apply-rsReticulum-link-client-nomad.sh
+./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
+./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
+./scripts/apply-rsReticulum-discovery-announce-egress.sh
+```
+
+### Regenerate
+
+```bash
+# After applying prior overlays on the pin, implement the discovery fix, then:
+cd ../rsReticulum
+git diff -- \
+  crates/rns-runtime/src/reticulum.rs \
+  crates/rns-transport/src/actor/mod.rs \
+  crates/rns-transport/src/discovery/announcer.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-discovery-announce-egress.patch
+```
+
+### Sunset
+
+When [ratspeak/rsReticulum#19](https://github.com/ratspeak/rsReticulum/pull/19) merges and the clone pin includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
 ## rsLXMF-propagation-sync-peering.patch
 
