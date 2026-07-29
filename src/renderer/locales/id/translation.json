@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikon avatar",
     "iconNameAria": "Ikon avatar sejawat",
-    "iconCircle": "Lingkaran",
     "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
-    "iconUser": "Pengguna"
+    "iconUser": "Pengguna",
+    "iconNone": "Tidak ada",
+    "iconSaveFailed": "Tidak dapat menyimpan ikon avatar."
   },
   "reticulumPropagation": {
     "preferred": "Disukai",

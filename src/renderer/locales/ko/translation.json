@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "아바타 아이콘",
     "iconNameAria": "피어 아바타 아이콘",
-    "iconCircle": "원형",
     "iconStar": "스타",
     "iconHeart": "심장",
     "iconShield": "실드",
-    "iconUser": "사용자"
+    "iconUser": "사용자",
+    "iconNone": "없음",
+    "iconSaveFailed": "아바타 아이콘을 저장할 수 없습니다."
   },
   "reticulumPropagation": {
     "preferred": "선호",

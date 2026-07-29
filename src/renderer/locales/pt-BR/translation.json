@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ícone de avatar",
     "iconNameAria": "Ícone de avatar de pares",
-    "iconCircle": "Círculo",
     "iconStar": "Estrela",
     "iconHeart": "Coração",
     "iconShield": "Blindagem",
-    "iconUser": "Usuário"
+    "iconUser": "Usuário",
+    "iconNone": "Nenhum",
+    "iconSaveFailed": "Não foi possível salvar o ícone do avatar."
   },
   "reticulumPropagation": {
     "preferred": "Preferencialmente",

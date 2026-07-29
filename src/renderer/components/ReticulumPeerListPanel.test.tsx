@@ -161,6 +161,29 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.getByText('peerListPanel.contactYes')).toBeInTheDocument();
   });
 
+  it('shows empty outline avatar when peer has no custom icon', () => {
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    const label = screen.getByText('Alpha Peer');
+    const rowLabel = label.closest('span.inline-flex');
+    expect(rowLabel?.querySelector('.border-dashed')).toBeTruthy();
+    expect(rowLabel?.querySelector('svg')).toBeNull();
+  });
+
+  it('shows people icon when peer has user appearance', () => {
+    useReticulumPeerStore.setState({
+      peerAppearanceByHash: new Map([['abc', { icon_name: 'user', icon_color: 'green' }]]),
+    });
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    const label = screen.getByText('Alpha Peer');
+    const rowLabel = label.closest('span.inline-flex');
+    expect(rowLabel?.querySelector('.border-dashed')).toBeNull();
+    expect(rowLabel?.querySelector('svg')).toBeTruthy();
+  });
+
   it('renders contacts tab with last heard column', async () => {
     const user = userEvent.setup();
     render(

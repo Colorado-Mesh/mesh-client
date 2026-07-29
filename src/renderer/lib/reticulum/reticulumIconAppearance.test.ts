@@ -9,11 +9,13 @@ import {
 } from './reticulumIconAppearance';
 
 describe('reticulumIconAppearance', () => {
-  it('detects default profile icon', () => {
+  it('detects default / unset profile icon', () => {
     expect(isDefaultReticulumProfileIcon(null, null)).toBe(true);
     expect(isDefaultReticulumProfileIcon('circle', 'green')).toBe(true);
+    expect(isDefaultReticulumProfileIcon('circle', 'amber')).toBe(true);
     expect(hasCustomReticulumProfileIcon('star', 'green')).toBe(true);
-    expect(hasCustomReticulumProfileIcon('circle', 'amber')).toBe(true);
+    expect(hasCustomReticulumProfileIcon('user', null)).toBe(true);
+    expect(hasCustomReticulumProfileIcon('circle', 'amber')).toBe(false);
   });
 
   it('maps foreground rgb to palette color', () => {
@@ -33,6 +35,8 @@ describe('reticulumIconAppearance', () => {
   it('maps material symbols to lucide names', () => {
     expect(resolveReticulumProfileIconName('favorite')).toBe('heart');
     expect(resolveReticulumProfileIconName('hiking')).toBe('user');
+    expect(resolveReticulumProfileIconName('people')).toBe('user');
+    expect(resolveReticulumProfileIconName('person')).toBe('user');
     expect(resolveReticulumProfileIconName('star')).toBe('star');
   });
 });

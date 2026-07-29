@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "阿凡达图标",
     "iconNameAria": "阿凡达图标",
-    "iconCircle": "圈型",
     "iconStar": "星",
     "iconHeart": "倾心点",
     "iconShield": "防护罩",
-    "iconUser": "用户"
+    "iconUser": "用户",
+    "iconNone": "没有任何",
+    "iconSaveFailed": "无法保存头像图标。"
   },
   "reticulumPropagation": {
     "preferred": "首选",

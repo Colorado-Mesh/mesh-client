@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",
     "iconNameAria": "ピアアバターアイコン",
-    "iconCircle": "円",
     "iconStar": "スター",
     "iconHeart": "ハートマーク",
     "iconShield": "シールド",
-    "iconUser": "ユーザー"
+    "iconUser": "ユーザー",
+    "iconNone": "なし",
+    "iconSaveFailed": "アバターアイコンを保存できませんでした。"
   },
   "reticulumPropagation": {
     "preferred": "推奨",

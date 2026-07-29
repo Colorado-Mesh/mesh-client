@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar-pictogram",
     "iconNameAria": "Peer-avatarpictogram",
-    "iconCircle": "Cirkel",
     "iconStar": "Ster",
     "iconHeart": "Hart",
     "iconShield": "Afscherming",
-    "iconUser": "Gebruiker"
+    "iconUser": "Gebruiker",
+    "iconNone": "Geen",
+    "iconSaveFailed": "Kon het avatarpictogram niet opslaan."
   },
   "reticulumPropagation": {
     "preferred": "Voorkeur",

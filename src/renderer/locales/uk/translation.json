@@ -3908,11 +3908,12 @@
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",
     "iconNameAria": "Піктограма однорангового аватара",
-    "iconCircle": "Коло",
     "iconStar": "Зірка",
     "iconHeart": "Серце",
     "iconShield": "Щит",
-    "iconUser": "Користувач"
+    "iconUser": "Користувач",
+    "iconNone": "Жодного",
+    "iconSaveFailed": "Не вдалося зберегти значок аватара."
   },
   "reticulumPropagation": {
     "preferred": "Улюблене",

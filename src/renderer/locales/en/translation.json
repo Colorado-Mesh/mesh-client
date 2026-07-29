@@ -4076,11 +4076,12 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar icon",
     "iconNameAria": "Peer avatar icon",
-    "iconCircle": "Circle",
+    "iconNone": "None",
     "iconStar": "Star",
     "iconHeart": "Heart",
     "iconShield": "Shield",
-    "iconUser": "User"
+    "iconUser": "People",
+    "iconSaveFailed": "Could not save avatar icon."
   },
   "reticulumPropagation": {
     "notice": {

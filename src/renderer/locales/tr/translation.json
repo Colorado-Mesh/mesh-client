@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",
     "iconNameAria": "Avatar Görünümü",
-    "iconCircle": "Yuvarlak",
     "iconStar": "Yıldız",
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
-    "iconUser": "Kullanıcı"
+    "iconUser": "Kullanıcı",
+    "iconNone": "Hiçbiri",
+    "iconSaveFailed": "Avatar simgesi kaydedilemedi."
   },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",

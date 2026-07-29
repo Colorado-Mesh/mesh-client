@@ -3906,11 +3906,12 @@
   "reticulumProfileIcon": {
     "iconName": "\"Avatar-Symbol\",",
     "iconNameAria": "Peer-Avatar-Symbol",
-    "iconCircle": "Kreis",
     "iconStar": "Stern",
     "iconHeart": "Herz",
     "iconShield": "Schild",
-    "iconUser": "Nutzer"
+    "iconUser": "Nutzer",
+    "iconNone": "Keiner",
+    "iconSaveFailed": "Avatar-Symbol konnte nicht gespeichert werden."
   },
   "reticulumPropagation": {
     "preferred": "Vorzugsweise",

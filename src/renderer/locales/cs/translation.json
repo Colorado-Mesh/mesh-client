@@ -3908,11 +3908,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikona avatara",
     "iconNameAria": "Ikona avatara protějšku",
-    "iconCircle": "Kruh",
     "iconStar": "Hvězdička",
     "iconHeart": "Srdce",
     "iconShield": "Štít",
-    "iconUser": "Uživatel"
+    "iconUser": "Uživatel",
+    "iconNone": "Žádný",
+    "iconSaveFailed": "Ikonu avatara nelze uložit."
   },
   "reticulumPropagation": {
     "preferred": "Preference",

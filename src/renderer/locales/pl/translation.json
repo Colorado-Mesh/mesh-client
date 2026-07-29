@@ -3908,11 +3908,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikona awatara",
     "iconNameAria": "Ikona awatara partnera",
-    "iconCircle": "Koło",
     "iconStar": "Ocena",
     "iconHeart": "Serce",
     "iconShield": "Tarcza",
-    "iconUser": "Użytkownik"
+    "iconUser": "Użytkownik",
+    "iconNone": "Nic",
+    "iconSaveFailed": "Nie można zapisać ikony awatara."
   },
   "reticulumPropagation": {
     "preferred": "Preferowane",
