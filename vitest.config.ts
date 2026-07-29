@@ -291,6 +291,7 @@ export default defineConfig({
       exclude: [
         '**/*.test.{ts,tsx,mjs}',
         '**/*.d.ts',
+        'src/main/fixtures/**',
         'src/renderer/locales/**',
         'src/renderer/index.html',
         'src/renderer/vitest.setup.ts',

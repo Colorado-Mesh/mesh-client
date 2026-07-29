@@ -30,12 +30,12 @@ function asciiSlice(buf: Uint8Array | Buffer, start: number, end: number): strin
   return Buffer.from(buf.subarray(start, end)).toString('ascii');
 }
 
-/** Detect raster image MIME from magic bytes; returns null when unknown. */
-export function detectRasterImageMimeFromBytes(buf: Uint8Array | Buffer): string | null {
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
-    return 'image/jpeg';
-  }
-  if (
+function isJpegMagic(buf: Uint8Array | Buffer): boolean {
+  return buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+}
+
+function isPngMagic(buf: Uint8Array | Buffer): boolean {
+  return (
     buf.length >= 8 &&
     buf[0] === 0x89 &&
     buf[1] === 0x50 &&
@@ -45,27 +45,52 @@ export function detectRasterImageMimeFromBytes(buf: Uint8Array | Buffer): string
     buf[5] === 0x0a &&
     buf[6] === 0x1a &&
     buf[7] === 0x0a
-  ) {
-    return 'image/png';
-  }
-  if (buf.length >= 6) {
-    const head = asciiSlice(buf, 0, 6);
-    if (head === 'GIF87a' || head === 'GIF89a') return 'image/gif';
-  }
-  if (buf.length >= 12 && asciiSlice(buf, 0, 4) === 'RIFF' && asciiSlice(buf, 8, 12) === 'WEBP') {
-    return 'image/webp';
-  }
-  if (buf.length >= 2 && buf[0] === 0x42 && buf[1] === 0x4d) {
-    return 'image/bmp';
-  }
-  if (buf.length >= 12 && asciiSlice(buf, 4, 8) === 'ftyp') {
-    const brand = asciiSlice(buf, 8, 12);
-    if (brand === 'avif' || brand === 'avis') return 'image/avif';
-  }
+  );
+}
+
+function detectGifMime(buf: Uint8Array | Buffer): string | null {
+  if (buf.length < 6) return null;
+  const head = asciiSlice(buf, 0, 6);
+  if (head === 'GIF87a' || head === 'GIF89a') return 'image/gif';
+  return null;
+}
+
+function detectWebpMime(buf: Uint8Array | Buffer): string | null {
+  if (buf.length < 12) return null;
+  if (asciiSlice(buf, 0, 4) === 'RIFF' && asciiSlice(buf, 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+function isBmpMagic(buf: Uint8Array | Buffer): boolean {
+  return buf.length >= 2 && buf[0] === 0x42 && buf[1] === 0x4d;
+}
+
+function detectAvifMime(buf: Uint8Array | Buffer): string | null {
+  if (buf.length < 12 || asciiSlice(buf, 4, 8) !== 'ftyp') return null;
+  const brand = asciiSlice(buf, 8, 12);
+  if (brand === 'avif' || brand === 'avis') return 'image/avif';
+  return null;
+}
+
+function isIcoMagic(buf: Uint8Array | Buffer): boolean {
   // ICO: reserved (0) + type image (1)
-  if (buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && buf[3] === 0x00) {
-    return 'image/x-icon';
-  }
+  return (
+    buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && buf[3] === 0x00
+  );
+}
+
+/** Detect raster image MIME from magic bytes; returns null when unknown. */
+export function detectRasterImageMimeFromBytes(buf: Uint8Array | Buffer): string | null {
+  if (isJpegMagic(buf)) return 'image/jpeg';
+  if (isPngMagic(buf)) return 'image/png';
+  const gif = detectGifMime(buf);
+  if (gif) return gif;
+  const webp = detectWebpMime(buf);
+  if (webp) return webp;
+  if (isBmpMagic(buf)) return 'image/bmp';
+  const avif = detectAvifMime(buf);
+  if (avif) return avif;
+  if (isIcoMagic(buf)) return 'image/x-icon';
   return null;
 }
 

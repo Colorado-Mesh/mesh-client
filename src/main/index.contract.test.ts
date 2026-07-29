@@ -421,7 +421,8 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain('readReticulumAttachmentAsDataUrl');
     expect(INDEX_SOURCE).toContain('takeReticulumAttachmentImageRateToken');
     expect(INDEX_SOURCE).toContain('o.filePath.length > 512');
-    expect(INDEX_SOURCE).toContain('mimeType.slice(0, 128)');
+    // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
+    expect(INDEX_SOURCE).toContain('magic bytes alone decide embed MIME');
     expect(INDEX_SOURCE).toContain('return { dataUrl }');
   });
 

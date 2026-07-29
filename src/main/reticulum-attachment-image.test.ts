@@ -23,7 +23,8 @@ vi.mock('electron', () => ({
 const attachmentsDir = path.join(userData, 'reticulum', 'attachments');
 
 afterEach(() => {
-  fs.rmSync(attachmentsDir, { recursive: true, force: true });
+  fs.rmSync(userData, { recursive: true, force: true });
+  fs.mkdirSync(userData, { recursive: true });
 });
 
 describe('reticulum-attachment-image', () => {

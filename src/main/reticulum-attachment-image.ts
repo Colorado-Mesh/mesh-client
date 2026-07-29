@@ -59,11 +59,11 @@ export function resolveReticulumAttachmentImageMime(buf: Buffer): string | null 
  */
 export async function readReticulumAttachmentAsDataUrl(filePath: string): Promise<string | null> {
   const jailed = assertReticulumAttachmentPathJailed(filePath);
-  // Follow symlinks and re-check the jail so a link inside attachments cannot escape.
-  if (!isUnderCanonicalRoot(jailed, getReticulumAttachmentsDir())) {
+  // Resolve symlinks, then re-check the jail against the canonical path we will read.
+  const realPath = await fs.realpath(path.resolve(jailed));
+  if (!isUnderCanonicalRoot(realPath, getReticulumAttachmentsDir())) {
     throw new Error('attachment path outside reticulum attachments directory');
   }
-  const realPath = await fs.realpath(path.resolve(jailed));
   // Ensure the path still exists and is a regular file before streaming.
   const stat = await fs.stat(realPath);
   if (!stat.isFile()) {
