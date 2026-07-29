@@ -8,7 +8,8 @@ export function parseReticulumAttachmentPayload(
 }
 
 export function isReticulumImageAttachment(mimeType: string): boolean {
-  return mimeType.startsWith('image/');
+  const mime = mimeType.toLowerCase().split(';')[0]?.trim() ?? '';
+  return mime.startsWith('image/') && !mime.startsWith('image/svg');
 }
 
 export function isReticulumAudioAttachment(mimeType: string): boolean {

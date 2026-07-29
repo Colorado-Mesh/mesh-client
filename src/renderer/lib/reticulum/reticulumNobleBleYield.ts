@@ -17,6 +17,8 @@ export interface SyncReticulumNobleBleYieldInput {
   interfaces: readonly ReticulumInterfaceRow[];
   nowMs: number;
   bleConnectGraceExpiresAt: number;
+  /** When aborted (e.g. watcher flipped active again), skip releasing after awaits. */
+  signal?: AbortSignal;
 }
 
 /** Avoid hammering suspendNoble while Meshtastic/MeshCore own the scan mutex. */
@@ -36,16 +38,23 @@ export async function syncReticulumNobleBleYield(
   input: SyncReticulumNobleBleYieldInput,
   state: ReticulumNobleBleYieldMutableState,
 ): Promise<void> {
-  const { sidecarActive, interfaces, nowMs, bleConnectGraceExpiresAt } = input;
+  const { sidecarActive, interfaces, nowMs, bleConnectGraceExpiresAt, signal } = input;
 
   if (!sidecarActive) {
     if (state.yieldActive) {
+      if (signal?.aborted) {
+        return;
+      }
       state.yieldActive = false;
       state.lastPrepareFailedAtMs = undefined;
       await releaseReticulumBleRnodeConnect();
       return;
     }
     const coexist = await window.electronAPI.bleCoexistence.getState();
+    // Stale inactive sync (mount/connecting) must not release a yield main just acquired.
+    if (signal?.aborted) {
+      return;
+    }
     if (coexist.scanOwner === 'reticulum') {
       await releaseReticulumBleRnodeConnect();
     }

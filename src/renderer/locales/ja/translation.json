@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "共有ロケーションマップタイル",
       "openMaps": "マップで開く"
-    }
+    },
+    "directImage": "画像： {{name}}",
+    "directImageOpen": "画像を開く",
+    "reticulumAttachmentImage": "添付画像： {{name}}"
   },
   "common": {
     "close": "近い",
@@ -1113,9 +1116,9 @@
       "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。",
       "tcpUnreachable": "{{name}} ： TCPハブに到達できません（ {{host}} ： {{port}} ）",
       "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。",
-      "offlineHintBleBondStale": "macOS では引き続きこの RNode がペアリング済みとして表示されますが、Bluetooth キーは一致しなくなりました (ピアはペアリング情報を削除しました)。 [システム設定] → [Bluetooth] でデバイスを忘れ、RNode をペアリング モードにして ([管理者] → [Bluetooth] → [ペアリングの開始] またはボタンを約 7 秒押し続けます)、スタックを再起動し、プロンプトが表示されたら新しい 6 桁の PIN を入力します。",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "BLE RNode リンクは、スタックの開始後 (OS パスキー ウィンドウ) に最大 60 秒かかる場合があります。プロンプトが表示されたら、現在の RNode PIN を入力します。決して 123456 を入力しないでください。これは正常であり、エラーではありません。接続が成功するまで、デバイスはシステム設定に表示されない場合があります。"
+      "connectingHintBle": "BLE RNode リンクは、スタックの開始後 (OS パスキー ウィンドウ) に最大 60 秒かかる場合があります。プロンプトが表示されたら、現在の RNode PIN を入力します。決して 123456 を入力しないでください。これは正常であり、エラーではありません。接続が成功するまで、デバイスはシステム設定に表示されない場合があります。",
+      "offlineHintBle": "このエラーを解消するには、このインターフェースを削除して再度追加（デバイスを選択）し、保存済みの Bluetooth ID を更新してからスタックを再起動する必要がある場合があります。OS から 6 桁の Bluetooth PIN の入力を求められることがあります（macOS、Windows、または Linux）。RNode はペアリングのたびに新しいコードを生成します。123456 は使用しないでください（Meshtastic のデフォルトであり、RNode ではありません）。このアプリが接続する前に、RNode がシステム設定 → Bluetooth に表示されている必要はありません。スタックがペアリングすると OS のダイアログが表示されます。ディスプレイのない無線機：USB を接続 → Reticulum Admin → Bluetooth → ペアリング開始 → 管理パネルに表示された PIN（無線機の画面ではありません）を OS ダイアログに入力します。ディスプレイ付き無線機：Heltec デバイスでボタンを約 7 秒押し続け（タイミングは機種により異なります。多くのボードでは約 10 秒で Wi‑Fi AP が有効になります）、画面の PIN を読み取り、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンディングをクリアしてください。",
+      "offlineHintBleBondStale": "macOSは引き続きこのRNodeをペアリング済みとして表示しますが、Bluetoothキーは一致しなくなりました（ピアが削除されたペアリング情報）。システム設定→Bluetoothでデバイスを忘れ、RNodeをペアリングモードにします（管理→Bluetooth→開始ペアリング、またはボタンを7秒間押したままにします）。次に、このインターフェース（デバイスを選択）を削除して再追加し、スタックを再起動し、プロンプトが表示されたら新しい6桁のPINを入力します。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",

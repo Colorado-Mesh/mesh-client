@@ -46,6 +46,13 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     );
     expect(SOURCE).not.toMatch(/const wasActive = stateRef\.current\.status !== 'disconnected'/);
   });
+
+  it('holds Noble BLE yield while sidecar status is connecting', () => {
+    expect(SOURCE).toMatch(
+      /const sidecarActiveForBleYield =[\s\S]*?state\.status === 'connecting'[\s\S]*?state\.status === 'configured'[\s\S]*?state\.status === 'connected'[\s\S]*?state\.status === 'stale'/,
+    );
+    expect(SOURCE).toMatch(/useReticulumNobleBleYieldWatcher\(sidecarActiveForBleYield\)/);
+  });
 });
 
 describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => {

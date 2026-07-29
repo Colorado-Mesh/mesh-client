@@ -2659,12 +2659,17 @@ function ChatPanel({
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
                               {showLxmfAttachmentLine &&
                               parseReticulumAttachmentPayload(msg.payload) ? (
-                                <ReticulumAttachmentLine payload={msg.payload} />
+                                <ReticulumAttachmentLine
+                                  payload={msg.payload}
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                />
                               ) : (
                                 <ChatPayloadText
                                   text={msg.payload}
                                   query={searchQuery}
-                                  loadLinkPreviews={!showScrollButton}
+                                  // Always fetch: gating on !showScrollButton hid image embeds
+                                  // while reading history (the usual place users look for them).
+                                  loadLinkPreviews
                                   onContentResize={() => {
                                     scheduleMessageRowRemeasure(i);
                                   }}

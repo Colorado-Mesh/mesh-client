@@ -619,6 +619,9 @@
     "mention": "Mention {{label}}",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Open on Giphy",
+    "directImage": "Image: {{name}}",
+    "directImageOpen": "Open image",
+    "reticulumAttachmentImage": "Attached image: {{name}}",
     "locationCard": {
       "alt": "Shared location map tile",
       "openMaps": "Open in Maps"
@@ -789,8 +792,8 @@
       "stalePortHint": "USB replug may have changed the path. Update the serial port in Interfaces below, then restart the stack.",
       "offline": "{{name}}: local interface is enabled but offline",
       "offlineHint": "Check cable, release port from Meshtastic/MeshCore, then restart the stack.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before this app connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "offlineHintBleBondStale": "macOS still shows this RNode as Paired, but Bluetooth keys no longer match (Peer removed pairing information). Forget the device in System Settings → Bluetooth, put the RNode in pairing mode (Admin → Bluetooth → Start pairing, or hold the button ~7 s), then restart the stack and enter the new 6-digit PIN when prompted.",
+      "offlineHintBle": "To clear this error you may need to remove this interface and add it back (Pick device) so the saved Bluetooth id is refreshed, then restart the stack. Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before this app connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
+      "offlineHintBleBondStale": "macOS still shows this RNode as Paired, but Bluetooth keys no longer match (Peer removed pairing information). Forget the device in System Settings → Bluetooth, put the RNode in pairing mode (Admin → Bluetooth → Start pairing, or hold the button ~7 s), then remove and re-add this interface (Pick device), restart the stack, and enter the new 6-digit PIN when prompted.",
       "offlineHintWifi": "Check that the RNode is on your LAN, powered on, and reachable at the configured IP (default TCP port 7633, not 4242). Update the host below if DHCP assigned a new address, or re-provision Wi-Fi in Reticulum → Admin.",
       "connectingHeading": "Connecting local interface(s)…",
       "connectingRow": "{{name}}: connecting over Bluetooth",

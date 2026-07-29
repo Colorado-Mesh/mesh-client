@@ -1098,12 +1098,30 @@ function ReticulumIfacFields({
   );
 }
 
+interface ReticulumInterfaceModeDescriptionProps {
+  readonly mode: string;
+}
+
+function ReticulumInterfaceModeDescription({
+  mode,
+}: Readonly<ReticulumInterfaceModeDescriptionProps>) {
+  const { t } = useTranslation();
+  const normalized = normalizeReticulumInterfaceMode(mode);
+  if (!normalized) return null;
+  return (
+    <p className="mt-1 text-[10px] leading-snug text-gray-500">
+      {t(`connectionPanel.reticulumInterfaces.modeDescriptions.${normalized}`)}
+    </p>
+  );
+}
+
 function ReticulumInterfaceModeSelect({
   value,
   onChange,
   disabled,
   id,
   emptyOptionKey,
+  showDescription = true,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -1113,6 +1131,11 @@ function ReticulumInterfaceModeSelect({
   emptyOptionKey:
     | 'connectionPanel.reticulumInterfaces.modeDefaultAdd'
     | 'connectionPanel.reticulumInterfaces.modeDefaultEdit';
+  /**
+   * Inline description under the select. Disable in flex-wrap toolbars — the taller
+   * cell pulls later controls (e.g. Add) up into the description band.
+   */
+  showDescription?: boolean;
 }) {
   const { t } = useTranslation();
   const selectedMode = normalizeReticulumInterfaceMode(value);
@@ -1122,31 +1145,33 @@ function ReticulumInterfaceModeSelect({
     : null;
   const selectTitle = selectedDescription ?? t('connectionPanel.reticulumInterfaces.modeHint');
   return (
-    <div>
-      <label className="text-xs text-gray-400" htmlFor={id}>
+    <div className="min-w-0">
+      <label className="block text-xs text-gray-400" htmlFor={id}>
         {t('connectionPanel.reticulumInterfaces.mode')}
-        <select
-          id={id}
-          value={value}
-          disabled={disabled}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-          className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-          aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
-          title={selectTitle}
-        >
-          <option value="">{t(emptyOptionKey)}</option>
-          {RETICULUM_INTERFACE_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {/* Template `t()` keeps modeOption.* registered for unused-key scan. */}
-              {t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`)}
-            </option>
-          ))}
-        </select>
       </label>
-      {selectedDescription ? (
-        <p className="mt-1 text-[10px] text-gray-500">{selectedDescription}</p>
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+        className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+        aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
+        title={selectTitle}
+      >
+        <option value="">{t(emptyOptionKey)}</option>
+        {RETICULUM_INTERFACE_MODES.map((mode) => (
+          <option key={mode} value={mode}>
+            {/* Template `t()` keeps modeOption.* registered for unused-key scan. */}
+            {t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`)}
+          </option>
+        ))}
+      </select>
+      {showDescription && selectedDescription ? (
+        <p className="mt-1 max-w-[16rem] text-[10px] leading-snug text-gray-500">
+          {selectedDescription}
+        </p>
       ) : null}
     </div>
   );
@@ -1301,6 +1326,7 @@ function InterfaceEditPanel({
           value={mode}
           onChange={setMode}
           emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultEdit"
+          showDescription={false}
         />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
@@ -1504,6 +1530,7 @@ function InterfaceEditPanel({
           }}
         />
       </div>
+      <ReticulumInterfaceModeDescription mode={mode} />
       <details className="group mt-3 rounded border border-gray-700 bg-slate-950/40 p-2">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-amber-200/90">
           <DetailsChevron className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
@@ -1819,6 +1846,7 @@ function InterfacesSection({
             onChange={onIfaceModeChange}
             disabled={actionsDisabled}
             emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultAdd"
+            showDescription={false}
           />
           {ifaceType === 'rnode' ? (
             <label className="text-xs text-gray-400">
@@ -2051,6 +2079,9 @@ function InterfacesSection({
             onPassphraseChange={onIfacePassphraseChange}
             onToggleShowPassphrase={onToggleShowAddPassphrase}
           />
+        </div>
+        <ReticulumInterfaceModeDescription mode={ifaceMode} />
+        <div className="mt-2">
           <button
             type="button"
             disabled={actionsDisabled}

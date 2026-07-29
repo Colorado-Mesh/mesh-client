@@ -446,6 +446,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'chat:outbox:add',
     'chat:outbox:remove',
     'chat:fetchLinkPreview',
+    'chat:readReticulumAttachmentAsDataUrl',
     'appSettings:get',
     'appSettings:set',
     'app:rendererHeartbeat',

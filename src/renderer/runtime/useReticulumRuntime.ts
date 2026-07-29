@@ -215,8 +215,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
+  // Include `connecting`: main suspends Noble at sidecar start before status reaches
+  // configured. Treating only configured/connected/stale as active let the watcher
+  // (and interface snapshot) release the start yield mid-BLE-RNode pair → Event receiver died.
   const sidecarActiveForBleYield =
-    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
+    state.status === 'connecting' ||
+    state.status === 'configured' ||
+    state.status === 'connected' ||
+    state.status === 'stale';
   useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {

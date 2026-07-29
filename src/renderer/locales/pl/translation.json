@@ -624,7 +624,10 @@
     "locationCard": {
       "alt": "Udostępniony kafelek mapy lokalizacji",
       "openMaps": "Otwórz w Mapach"
-    }
+    },
+    "directImage": "Zdjęcie: {{name}}",
+    "directImageOpen": "Otwórz obraz",
+    "reticulumAttachmentImage": "Załączone zdjęcie: {{name}}"
   },
   "common": {
     "close": "Zamknij",
@@ -1113,9 +1116,9 @@
       "offlineHintWifi": "Sprawdź, czy RNode znajduje się w sieci LAN, jest włączony i osiągalny w skonfigurowanym IP (domyślny port TCP 7633, a nie 4242). Zaktualizuj poniższy host, jeśli DHCP przypisał nowy adres lub ponownie udostępnij Wi-Fi w → administratora Reticulum.",
       "tcpUnreachable": "{{name}}: nieosiągalny koncentrator TCP ({{host}}:{{port}})",
       "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port.",
-      "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth nie są już zgodne (informacje o parowaniu usunięte z urządzenia równorzędnego). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie uruchom ponownie stos i po wyświetleniu monitu wprowadź nowy 6-cyfrowy PIN.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Łączenie węzła BLE RNode może zająć do 60 sekund po uruchomieniu stosu (okno hasła systemu operacyjnego). Wprowadź bieżący kod PIN RNode, jeśli zostaniesz o to poproszony — nigdy 123456. Jest to normalne, a nie błąd. Urządzenie może pojawić się w Ustawieniach systemu dopiero po pomyślnym nawiązaniu połączenia."
+      "connectingHintBle": "Łączenie węzła BLE RNode może zająć do 60 sekund po uruchomieniu stosu (okno hasła systemu operacyjnego). Wprowadź bieżący kod PIN RNode, jeśli zostaniesz o to poproszony — nigdy 123456. Jest to normalne, a nie błąd. Urządzenie może pojawić się w Ustawieniach systemu dopiero po pomyślnym nawiązaniu połączenia.",
+      "offlineHintBle": "Aby usunąć ten błąd, konieczne może być usunięcie tego interfejsu i dodanie go z powrotem (wybierz urządzenie), aby odświeżyć zapisany identyfikator Bluetooth, a następnie ponownie uruchomić stos. Twój system operacyjny może poprosić o 6-cyfrowy kod PIN Bluetooth (macOS, Windows lub Linux). RNode generuje nowy kod dla każdej pary — nigdy nie używaj 123456 (jest to domyślne ustawienie Meshtastic, a nie RNode). Kod RNode nie musi pojawić się w ustawieniach systemowych → Bluetooth przed połączeniem z tą aplikacją; okno dialogowe systemu operacyjnego pojawia się, gdy stos zostanie sparowany. Radia bezgłowe: podłączanie USB → Reticulum Admin → Bluetooth → Rozpocznij parowanie → wprowadź KOD PIN pokazany w panelu administracyjnym (nie na wyświetlaczu radia) w oknie dialogowym systemu operacyjnego. Radia z wyświetlaczem: przytrzymaj przycisk ~7 s na urządzeniach Heltec (czas jest różny; ~10 s na wielu płytach zamiast tego włącza punkt dostępu Wi-Fi), odczytaj KOD PIN na ekranie, a następnie wprowadź go w oknie dialogowym systemu operacyjnego. Wyczyść nieudane powiązania w ustawieniach Bluetooth systemu operacyjnego przed ponowną próbą.",
+      "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth już nie pasują (informacje o parowaniu zostały usunięte przez peer). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie usuń i ponownie dodaj ten interfejs (Wybierz urządzenie), uruchom ponownie stos i wprowadź nowy 6‑cyfrowy PIN, gdy pojawi się monit."
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",

@@ -2,6 +2,7 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetReticulumBleConnectGraceForTests } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import { RETICULUM_LOCAL_HEALTH_FAST_POLL_MS } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 
@@ -21,12 +22,21 @@ vi.mock('@/renderer/lib/reticulum/reticulumNobleBleYield', () => ({
 describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    resetReticulumBleConnectGraceForTests();
     fetchReticulumInterfacesMock.mockReset().mockResolvedValue([]);
     syncReticulumNobleBleYieldMock.mockReset().mockResolvedValue(undefined);
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: {
+          getState: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+        },
+      },
+    });
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    resetReticulumBleConnectGraceForTests();
   });
 
   it('does not poll interfaces while the sidecar is inactive', async () => {
@@ -127,6 +137,72 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     expect(fetchReticulumInterfacesMock).not.toHaveBeenCalled();
   });
 
+  it('renews grace when reticulum re-holds scan after yield already released', async () => {
+    const getState = vi.fn().mockResolvedValue({ connections: [], scanOwner: null });
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: { getState },
+      },
+    });
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useReticulumNobleBleYieldWatcher(active);
+      },
+      { initialProps: { active: false } },
+    );
+    rerender({ active: true });
+    await vi.advanceTimersByTimeAsync(0);
+    const firstGrace = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    expect(firstGrace).toBeGreaterThan(0);
+
+    // Simulate: grace expired, yield released (inactive), main re-suspended for stack restart.
+    const stateArg = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[1] as {
+      yieldActive: boolean;
+    };
+    stateArg.yieldActive = false;
+    getState.mockResolvedValue({ connections: [], scanOwner: 'reticulum' });
+    vi.setSystemTime(firstGrace + 1_000);
+    syncReticulumNobleBleYieldMock.mockClear();
+    await vi.advanceTimersByTimeAsync(RETICULUM_LOCAL_HEALTH_FAST_POLL_MS);
+
+    const renewed = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    expect(renewed).toBeGreaterThan(firstGrace);
+  });
+
+  it('does not renew grace while yield is still active after grace expires', async () => {
+    const getState = vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' });
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: { getState },
+      },
+    });
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useReticulumNobleBleYieldWatcher(active);
+      },
+      { initialProps: { active: false } },
+    );
+    rerender({ active: true });
+    await vi.advanceTimersByTimeAsync(0);
+    const firstGrace = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    const stateArg = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[1] as {
+      yieldActive: boolean;
+    };
+    stateArg.yieldActive = true;
+
+    vi.setSystemTime(firstGrace + 1_000);
+    syncReticulumNobleBleYieldMock.mockClear();
+    await vi.advanceTimersByTimeAsync(RETICULUM_LOCAL_HEALTH_FAST_POLL_MS);
+
+    const nextGrace = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    // Still the stale/expired grace — sync owns release; watcher must not extend.
+    expect(nextGrace).toBe(firstGrace);
+  });
+
   it('shares one persistent yield-state ref across re-ticks (not reset per tick)', async () => {
     const { rerender } = renderHook(
       ({ active }: { active: boolean }) => {
@@ -142,5 +218,44 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     const secondState = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[1];
 
     expect(secondState).toBe(firstState);
+  });
+
+  it('aborts stale inactive sync when sidecar reactivates quickly', async () => {
+    let resolveInactive: (() => void) | undefined;
+    syncReticulumNobleBleYieldMock.mockImplementation(
+      (input: { sidecarActive?: boolean; signal?: AbortSignal }) => {
+        if (input.sidecarActive === false) {
+          return new Promise<void>((resolve) => {
+            resolveInactive = resolve;
+            input.signal?.addEventListener('abort', () => {
+              resolve();
+            });
+          });
+        }
+        return Promise.resolve();
+      },
+    );
+
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useReticulumNobleBleYieldWatcher(active);
+      },
+      { initialProps: { active: true } },
+    );
+    await vi.advanceTimersByTimeAsync(0);
+
+    rerender({ active: false });
+    await vi.advanceTimersByTimeAsync(0);
+    const inactiveCall = syncReticulumNobleBleYieldMock.mock.calls.find(
+      (c) => (c[0] as { sidecarActive?: boolean })?.sidecarActive === false,
+    );
+    const inactiveInput = inactiveCall?.[0] as { signal?: AbortSignal } | undefined;
+    expect(inactiveInput?.signal).toBeInstanceOf(AbortSignal);
+    expect(inactiveInput?.signal?.aborted).toBe(false);
+
+    rerender({ active: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(inactiveInput?.signal?.aborted).toBe(true);
+    resolveInactive?.();
   });
 });

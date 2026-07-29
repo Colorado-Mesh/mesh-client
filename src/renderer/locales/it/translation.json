@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Riquadro della mappa della posizione condivisa",
       "openMaps": "Apri in Mappe"
-    }
+    },
+    "directImage": "Immagine: {{name}}",
+    "directImageOpen": "Apri immagine",
+    "reticulumAttachmentImage": "Immagine allegata: {{name}}"
   },
   "common": {
     "close": "Chiudi",
@@ -1111,9 +1114,9 @@
       "offlineHintWifi": "Verificare che l'RNode sia sulla LAN, acceso e raggiungibile all'IP configurato (porta TCP predefinita 7633, non 4242). Aggiorna l'host di seguito se il DHCP ha assegnato un nuovo indirizzo o effettua nuovamente il provisioning del Wi-Fi in Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: hub TCP non raggiungibile ({{host}}:{{port}})",
       "tcpUnreachableHint": "L'istanza Reticulum remota potrebbe essere offline o bloccare le connessioni. Disabilita questa interfaccia o verifica l'host e la porta.",
-      "offlineHintBleBondStale": "macOS mostra ancora questo RNode come accoppiato, ma le chiavi Bluetooth non corrispondono più (informazioni di abbinamento rimosse dal peer). Dimentica il dispositivo in Impostazioni di sistema → Bluetooth, metti l'RNode in modalità di accoppiamento (Amministrazione → Bluetooth → Avvia accoppiamento, o tieni premuto il pulsante per ~7 s), quindi riavvia lo stack e inserisci il nuovo PIN di 6 cifre quando richiesto.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "I collegamenti BLE RNode possono richiedere fino a 60 secondi dopo l'avvio dello stack (finestra della passkey del sistema operativo). Se richiesto, immettere il PIN RNode corrente, mai 123456. Si tratta di un comportamento normale, non di un errore. Il dispositivo potrebbe non essere visualizzato nelle Impostazioni di sistema finché non viene eseguito correttamente il collegamento."
+      "connectingHintBle": "I collegamenti BLE RNode possono richiedere fino a 60 secondi dopo l'avvio dello stack (finestra della passkey del sistema operativo). Se richiesto, immettere il PIN RNode corrente, mai 123456. Si tratta di un comportamento normale, non di un errore. Il dispositivo potrebbe non essere visualizzato nelle Impostazioni di sistema finché non viene eseguito correttamente il collegamento.",
+      "offlineHintBle": "Per eliminare questo errore potrebbe essere necessario rimuovere questa interfaccia e aggiungerla di nuovo (Scegli dispositivo) così da aggiornare l'ID Bluetooth salvato, quindi riavviare lo stack. Il sistema operativo potrebbe richiedere un PIN Bluetooth a 6 cifre (macOS, Windows o Linux). RNode genera un nuovo codice a ogni accoppiamento — non usare mai 123456 (è il valore predefinito di Meshtastic, non di RNode). L'RNode non deve comparire in Impostazioni di sistema → Bluetooth prima che questa app si colleghi; la finestra di dialogo del SO appare quando lo stack effettua l'accoppiamento. Radio senza display: collega USB → Reticulum Admin → Bluetooth → Avvia accoppiamento → inserisci il PIN mostrato nel pannello Admin (non sul display della radio) nella finestra del SO. Radio con display: tieni premuto il pulsante ~7 s sui dispositivi Heltec (i tempi variano; ~10 s su molte schede attiva invece l'AP Wi‑Fi), leggi il PIN sullo schermo e inseriscilo nella finestra del SO. Cancella gli accoppiamenti non riusciti nelle impostazioni Bluetooth del SO prima di riprovare.",
+      "offlineHintBleBondStale": "macOS mostra ancora questo RNode come Accoppiato, ma le chiavi Bluetooth non corrispondono più (Peer ha rimosso le informazioni di accoppiamento). Dimentica il dispositivo in Impostazioni di sistema → Bluetooth, metti l'RNode in modalità accoppiamento (Admin → Bluetooth → Avvia accoppiamento, oppure tieni premuto il pulsante ~7 s), poi rimuovi e riaggiungi questa interfaccia (Scegli dispositivo), riavvia lo stack e inserisci il nuovo PIN a 6 cifre quando richiesto."
     },
     "autoConnectingTo": "Connessione automatica a {{deviceName}}…",
     "autoReconnectInProgress": "Riconnessione automatica in corso…",

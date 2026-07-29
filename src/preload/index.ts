@@ -14,6 +14,8 @@ import type {
   OutboxEntry,
   OutboxEntryInput,
   OutboxStatus,
+  ReadReticulumAttachmentAsDataUrlOpts,
+  ReadReticulumAttachmentAsDataUrlResult,
   ReticulumIdentityImportDialogResult,
   SerialPort,
   SpellcheckReplacePayload,
@@ -1190,12 +1192,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }>,
     showItemInFolder: (filePath: string) =>
       ipcRenderer.invoke('chat:showItemInFolder', filePath) as Promise<{ ok: boolean }>,
+    readReticulumAttachmentAsDataUrl: (opts: ReadReticulumAttachmentAsDataUrlOpts) =>
+      ipcRenderer.invoke(
+        'chat:readReticulumAttachmentAsDataUrl',
+        opts,
+      ) as Promise<ReadReticulumAttachmentAsDataUrlResult>,
     linkPreview: {
       fetch: (url: string) =>
         ipcRenderer.invoke('chat:fetchLinkPreview', url) as Promise<{
           title: string;
           description?: string;
           image?: string;
+          kind?: 'image';
         } | null>,
     },
     outbox: {

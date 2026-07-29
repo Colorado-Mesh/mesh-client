@@ -44,6 +44,12 @@ describe('preload bridge contract', () => {
     expect(PRELOAD_SOURCE).toContain("'chat:export'");
   });
 
+  it('preload exposes readReticulumAttachmentAsDataUrl and linkPreview kind', () => {
+    expect(PRELOAD_SOURCE).toContain("'chat:readReticulumAttachmentAsDataUrl'");
+    expect(TYPES_SOURCE).toContain('readReticulumAttachmentAsDataUrl');
+    expect(TYPES_SOURCE).toContain("kind?: 'image'");
+  });
+
   it('preload invokes renderer heartbeat and support export IPC', () => {
     expect(PRELOAD_SOURCE).toContain("'app:rendererHeartbeat'");
     expect(PRELOAD_SOURCE).toContain("'support:exportBundle'");

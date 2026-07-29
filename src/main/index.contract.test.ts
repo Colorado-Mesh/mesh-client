@@ -413,6 +413,19 @@ describe('Native Electron call guards (source contract)', () => {
     );
   });
 
+  it('registers chat:readReticulumAttachmentAsDataUrl with sender validation and path jail', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:readReticulumAttachmentAsDataUrl'");
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('chat:readReticulumAttachmentAsDataUrl'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toContain('readReticulumAttachmentAsDataUrl');
+    expect(INDEX_SOURCE).toContain('takeReticulumAttachmentImageRateToken');
+    expect(INDEX_SOURCE).toContain('o.filePath.length > 512');
+    // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
+    expect(INDEX_SOURCE).toContain('magic bytes alone decide embed MIME');
+    expect(INDEX_SOURCE).toContain('return { dataUrl }');
+  });
+
   it('registers chat:outbox handlers with protocol, status, and payload validation', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:list'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:add'");

@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Bloco de mapa de localização compartilhado",
       "openMaps": "Abrir no Mapas"
-    }
+    },
+    "directImage": "Imagem: {{name}}",
+    "directImageOpen": "Abrir Imagem",
+    "reticulumAttachmentImage": "Imagem anexada: {{name}}"
   },
   "common": {
     "close": "Fechar",
@@ -1113,9 +1116,9 @@
       "offlineHintWifi": "Verifique se o RNode está na sua LAN, ligado e acessível no IP configurado (porta TCP padrão 7633, não 4242). Atualize o host abaixo se o DHCP tiver atribuído um novo endereço ou reprovisione o Wi-Fi no Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP Hub inacessível ({{host}}:{{port}})",
       "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta.",
-      "offlineHintBleBondStale": "O macOS ainda mostra este RNode como emparelhado, mas as chaves Bluetooth não correspondem mais (informações de emparelhamento removidas pelo peer). Esqueça o dispositivo em Configurações do sistema → Bluetooth, coloque o RNode no modo de emparelhamento (Admin → Bluetooth → Iniciar emparelhamento ou segure o botão ~7 s), reinicie a pilha e insira o novo PIN de 6 dígitos quando solicitado.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Os links BLE RNode podem levar até 60 segundos após o início da pilha (janela de chave de acesso do SO). Insira o PIN RNode atual, se solicitado – nunca 123456. Isso é normal, não é um erro. O dispositivo pode não aparecer nas configurações do sistema até que uma ligação seja bem-sucedida."
+      "connectingHintBle": "Os links BLE RNode podem levar até 60 segundos após o início da pilha (janela de chave de acesso do SO). Insira o PIN RNode atual, se solicitado – nunca 123456. Isso é normal, não é um erro. O dispositivo pode não aparecer nas configurações do sistema até que uma ligação seja bem-sucedida.",
+      "offlineHintBle": "Para limpar esse erro, talvez seja necessário remover essa interface e adicioná-la novamente (Escolha o dispositivo) para que o ID do Bluetooth salvo seja atualizado e, em seguida, reinicie a pilha. Seu sistema operacional pode solicitar um PIN Bluetooth de 6 dígitos (macOS, Windows ou Linux). RNode gera um novo código a cada emparelhamento — nunca use 123456 (que é o padrão da Meshtastic, não RNode). O RNode não precisa aparecer nas Configurações do Sistema → Bluetooth antes que este aplicativo se conecte; a caixa de diálogo do sistema operacional aparece quando a pilha é emparelhada. Rádios sem cabeça: conectar USB → Reticulum Admin → Bluetooth → Iniciar o emparelhamento → digite o PIN mostrado no painel de administração (não no visor do rádio) na caixa de diálogo do sistema operacional. Rádios com um visor: segure o botão ~7 s nos dispositivos Heltec (o tempo varia; ~10 s em muitas placas habilita o Wi-Fi AP), leia o PIN na tela e, em seguida, insira-o na caixa de diálogo do sistema operacional. Limpe as ligações com falha nas configurações Bluetooth do sistema operacional antes de tentar novamente.",
+      "offlineHintBleBondStale": "O macOS ainda mostra este RNode como Emparelhado, mas as chaves Bluetooth não correspondem mais (informações de emparelhamento removidas pelo par). Esqueça o dispositivo em Ajustes do Sistema → Bluetooth, coloque o RNode no modo de emparelhamento (Admin → Bluetooth → Iniciar emparelhamento, ou segure o botão ~7 s), depois remova e adicione novamente esta interface (Escolher dispositivo), reinicie a pilha e digite o novo PIN de 6 dígitos quando solicitado."
     },
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",

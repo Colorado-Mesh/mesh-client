@@ -624,7 +624,10 @@
     "locationCard": {
       "alt": "Общий фрагмент карты местоположений",
       "openMaps": "Открыть в Картах"
-    }
+    },
+    "directImage": "Изображение: {{name}}",
+    "directImageOpen": "Открыть изображение",
+    "reticulumAttachmentImage": "Вложенное изображение: {{name}}"
   },
   "common": {
     "close": "Закрывать",
@@ -1115,9 +1118,9 @@
       "offlineHintWifi": "Убедитесь, что RNode находится в вашей локальной сети, включен и доступен по настроенному IP-адресу (порт TCP по умолчанию 7633, а не 4242). Обновите узел ниже, если DHCP назначил новый адрес, или повторно предоставьте Wi-Fi в Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: концентратор TCP недоступен ({{host}}:{{port}})",
       "tcpUnreachableHint": "Удалённый экземпляр Reticulum может быть offline или блокировать подключения. Отключите этот интерфейс или проверьте хост и порт.",
-      "offlineHintBleBondStale": "macOS по-прежнему отображает этот RNode как сопряженный, но ключи Bluetooth больше не совпадают (Peer удалил информацию о сопряжении). Забудьте устройство в «Системные настройки» → «Bluetooth», переведите RNode в режим сопряжения («Администратор» → «Bluetooth» → «Начать сопряжение» или удерживайте кнопку ~7 с), затем перезапустите стек и введите новый 6-значный PIN-код при появлении запроса.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Ссылки BLE RNode могут занять до 60 секунд после запуска стека (окно пароля ОС). Введите текущий PIN-код RNode, если будет предложено, — никогда не 123456. Это нормально, а не ошибка. Устройство может не появиться в настройках системы до тех пор, пока не будет выполнено успешное соединение."
+      "connectingHintBle": "Ссылки BLE RNode могут занять до 60 секунд после запуска стека (окно пароля ОС). Введите текущий PIN-код RNode, если будет предложено, — никогда не 123456. Это нормально, а не ошибка. Устройство может не появиться в настройках системы до тех пор, пока не будет выполнено успешное соединение.",
+      "offlineHintBle": "Чтобы устранить эту ошибку, удалите этот интерфейс и добавьте его снова (Выбрать устройство), чтобы обновить сохранённый Bluetooth‑идентификатор, затем перезапустите стек. ОС может запросить 6‑значный Bluetooth PIN (macOS, Windows или Linux). RNode генерирует новый код при каждом сопряжении — никогда не используйте 123456 (это значение по умолчанию Meshtastic, не RNode). RNode не обязательно должен отображаться в Системных настройках → Bluetooth до подключения этого приложения; диалог ОС появляется, когда стек выполняет сопряжение. Радио без дисплея: подключите USB → Reticulum Admin → Bluetooth → Начать сопряжение → введите PIN, показанный в панели Admin (не на дисплее радио), в диалоге ОС. Радио с дисплеем: удерживайте кнопку ~7 с на устройствах Heltec (время различается; ~10 с на многих платах включает Wi‑Fi AP), прочитайте PIN на экране и введите его в диалоге ОС. Очистите неудачные связи в настройках Bluetooth ОС перед повторной попыткой.",
+      "offlineHintBleBondStale": "В macOS этот RNode по‑прежнему отображается как Сопряжённый, но ключи Bluetooth больше не совпадают (одноранговый узел удалил информацию о сопряжении). Забудьте устройство в Системных настройках → Bluetooth, переведите RNode в режим сопряжения (Admin → Bluetooth → Начать сопряжение или удерживайте кнопку ~7 с), затем удалите и снова добавьте этот интерфейс (Выбрать устройство), перезапустите стек и введите новый 6‑значный PIN по запросу."
     },
     "autoConnectingTo": "Автоматическое подключение к {{deviceName}}…",
     "autoReconnectInProgress": "Выполняется автоматическое повторное подключение…",

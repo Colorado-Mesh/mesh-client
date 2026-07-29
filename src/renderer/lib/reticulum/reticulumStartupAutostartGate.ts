@@ -3,6 +3,9 @@
  * Sidecar start suspends Noble; parallel RF connect kills CoreBluetooth ("Event receiver died").
  */
 
+import { RETICULUM_BLE_CONNECT_GRACE_MS } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+import { MS_PER_SECOND } from '@/shared/timeConstants';
+
 let settled = false;
 let settlePromise: Promise<void> | null = null;
 let resolveSettle: (() => void) | null = null;
@@ -54,10 +57,20 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Must cover {@link RETICULUM_BLE_CONNECT_GRACE_MS} plus a small settle buffer.
+ * A shorter default (35s) let Meshtastic/MeshCore busy-retry while scanOwner was
+ * still reticulum and starve CoreBluetooth during the OS passkey window.
+ */
+export const RETICULUM_BLE_COEXISTENCE_CLEAR_MAX_MS =
+  RETICULUM_BLE_CONNECT_GRACE_MS + 5 * MS_PER_SECOND;
+
+/**
  * After stack autostart, wait until Reticulum releases the Noble scan yield (RNode online or
  * grace expired) so RF GATT connect does not fight CoreBluetooth.
  */
-export async function awaitReticulumBleCoexistenceClear(maxWaitMs = 35_000): Promise<void> {
+export async function awaitReticulumBleCoexistenceClear(
+  maxWaitMs = RETICULUM_BLE_COEXISTENCE_CLEAR_MAX_MS,
+): Promise<void> {
   await awaitReticulumStartupAutostartSettled(maxWaitMs);
   if (typeof window === 'undefined') {
     return;

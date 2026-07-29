@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Ubin peta lokasi bersama",
       "openMaps": "Buka di Peta"
-    }
+    },
+    "directImage": "Gambar: {{name}}",
+    "directImageOpen": "Buka Gambar",
+    "reticulumAttachmentImage": "Gambar terlampir: {{name}}"
   },
   "common": {
     "close": "Menutup",
@@ -1113,9 +1116,9 @@
       "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum.",
       "tcpUnreachable": "{{name}}: Hub TCP tidak dapat dijangkau ({{host}}:{{port}})",
       "tcpUnreachableHint": "Instansi Reticulum jarak jauh mungkin offline atau memblokir koneksi. Nonaktifkan antarmuka ini atau verifikasi host dan port.",
-      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (Rekan menghapus informasi pemasangan). Lupakan perangkat di Pengaturan Sistem → Bluetooth, letakkan RNode dalam mode berpasangan (Admin → Bluetooth → Mulai memasangkan, atau tahan tombol ~7 detik), lalu mulai ulang tumpukan dan masukkan PIN 6 digit baru saat diminta.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 60 detik setelah tumpukan dimulai (jendela kunci sandi OS). Masukkan PIN RNode saat ini jika diminta — jangan pernah 123456. Ini normal, bukan kesalahan. Perangkat mungkin tidak muncul di Pengaturan Sistem sampai ikatan berhasil."
+      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 60 detik setelah tumpukan dimulai (jendela kunci sandi OS). Masukkan PIN RNode saat ini jika diminta — jangan pernah 123456. Ini normal, bukan kesalahan. Perangkat mungkin tidak muncul di Pengaturan Sistem sampai ikatan berhasil.",
+      "offlineHintBle": "Untuk menghapus kesalahan ini, Anda mungkin perlu menghapus antarmuka ini dan menambahkannya kembali (Pilih perangkat) agar ID Bluetooth tersimpan diperbarui, lalu mulai ulang stack. OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — jangan pernah menggunakan 123456 (itu default Meshtastic, bukan RNode). RNode tidak perlu muncul di Pengaturan Sistem → Bluetooth sebelum aplikasi ini terhubung; dialog OS muncul saat stack memasangkan. Radio tanpa layar: sambungkan USB → Reticulum Admin → Bluetooth → Mulai pemasangan → masukkan PIN yang ditampilkan di panel Admin (bukan di layar radio) ke dialog OS. Radio dengan layar: tahan tombol ~7 dtk pada perangkat Heltec (waktu bervariasi; ~10 dtk pada banyak papan mengaktifkan Wi‑Fi AP), baca PIN di layar, lalu masukkan ke dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS sebelum mencoba lagi.",
+      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (informasi pemasangan dihapus oleh peer). Lupakan perangkat di Pengaturan Sistem → Bluetooth, masukkan RNode ke mode pemasangan (Admin → Bluetooth → Mulai pemasangan, atau tahan tombol ~7 dtk), lalu hapus dan tambahkan kembali antarmuka ini (Pilih perangkat), mulai ulang stack, dan masukkan PIN 6 digit baru saat diminta."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",

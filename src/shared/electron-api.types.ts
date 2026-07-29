@@ -172,6 +172,17 @@ export interface ChatExportMessage {
   to?: number;
 }
 
+/** IPC request for `chat:readReticulumAttachmentAsDataUrl`. */
+export interface ReadReticulumAttachmentAsDataUrlOpts {
+  filePath: string;
+  mimeType?: string;
+}
+
+/** IPC response for `chat:readReticulumAttachmentAsDataUrl`. */
+export interface ReadReticulumAttachmentAsDataUrlResult {
+  dataUrl: string | null;
+}
+
 export type OutboxStatus = 'queued' | 'sending' | 'blocked' | 'failed';
 
 export interface OutboxEntry {
@@ -963,10 +974,16 @@ export interface ElectronAPI {
       promptSave?: boolean;
     }) => Promise<{ success: boolean; path?: string }>;
     showItemInFolder: (filePath: string) => Promise<{ ok: boolean }>;
+    readReticulumAttachmentAsDataUrl: (
+      opts: ReadReticulumAttachmentAsDataUrlOpts,
+    ) => Promise<ReadReticulumAttachmentAsDataUrlResult>;
     linkPreview: {
-      fetch: (
-        url: string,
-      ) => Promise<{ title: string; description?: string; image?: string } | null>;
+      fetch: (url: string) => Promise<{
+        title: string;
+        description?: string;
+        image?: string;
+        kind?: 'image';
+      } | null>;
     };
     outbox: {
       list: (protocol: string) => Promise<OutboxEntry[]>;

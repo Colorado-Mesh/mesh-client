@@ -20,6 +20,7 @@ describe('parseReticulumAttachmentPayload', () => {
 
   it('detects image mime types', () => {
     expect(isReticulumImageAttachment('image/jpeg')).toBe(true);
+    expect(isReticulumImageAttachment('image/svg+xml')).toBe(false);
     expect(isReticulumImageAttachment('application/pdf')).toBe(false);
   });
 
