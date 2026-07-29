@@ -1470,7 +1470,7 @@
       },
       "highCompanionTxQueue": {
         "title": "Snižte odchozí provoz nebo zkontrolujte RF odkaz",
-        "description": "Doprovodná fronta TX je téměř plná — pauza odesílá, snižuje povodně nebo kontroluje rušení a slabé články."
+        "description": "Doprovodná fronta TX je téměř plná — pozastavte odesílání, omezte floodování nebo zkontrolujte rušení a slabé RF spoje."
       }
     },
     "cuHistoryHeading": "Využití kanálu (posledních 24 hodin)",
