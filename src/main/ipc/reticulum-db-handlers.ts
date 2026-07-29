@@ -33,6 +33,8 @@ const ALLOWED_DELIVERY_STATUS = new Set([
   'queued',
 ]);
 
+const ALLOWED_DELIVERY_METHOD = new Set(['direct', 'propagated', 'opportunistic', 'paper']);
+
 const RETICULUM_VIA_ATOMS = new Set(['rf', 'ble', 'tcp', 'network', 'mqtt', 'both']);
 const RETICULUM_MULTI_VIA_ATOMS = new Set(['ble', 'rf', 'tcp', 'network']);
 
@@ -102,6 +104,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         typeof m.delivery_status === 'string' && ALLOWED_DELIVERY_STATUS.has(m.delivery_status)
           ? m.delivery_status.slice(0, 32)
           : null;
+      const deliveryMethod =
+        typeof m.delivery_method === 'string' && ALLOWED_DELIVERY_METHOD.has(m.delivery_method)
+          ? m.delivery_method.slice(0, 32)
+          : null;
       const truncatedTimestamp = Math.trunc(timestamp);
       const senderName = typeof m.sender_name === 'string' ? m.sender_name.slice(0, 128) : null;
       const toHash = typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null;
@@ -144,16 +150,17 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
             `UPDATE reticulum_messages
              SET delivery_status = COALESCE(?, delivery_status),
                  received_via = COALESCE(?, received_via),
-                 sender_name = COALESCE(?, sender_name)
+                 sender_name = COALESCE(?, sender_name),
+                 delivery_method = COALESCE(?, delivery_method)
              WHERE id = ?`,
-          ).run(deliveryStatus, receivedVia, senderName, existing.id);
+          ).run(deliveryStatus, receivedVia, senderName, deliveryMethod, existing.id);
           return { changes: 1 };
         }
       }
 
       db.prepareOnce(
-        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         identityId,
         senderId,
@@ -168,6 +175,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         deliveryAttempts,
         nextDeliveryAttemptAt,
         attachmentPath,
+        deliveryMethod,
       );
       return { changes: 1 };
     } catch (err) {

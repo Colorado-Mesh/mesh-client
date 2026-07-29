@@ -125,7 +125,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 **Network Diagnostics**
 
-- **Protocol-scoped rows**: The shared Diagnostics tab filters findings to the **active protocol** — Meshtastic/MeshCore show LoRa routing + RF rows only; Reticulum shows `reticulum/*` interface/path/LXMF rows only (Reticulum interface-down alerts no longer bleed onto LoRa tabs). Map halos, node-list badges, and node detail routing sections use the same filter.
+- **Protocol-scoped rows**: The shared Diagnostics tab filters findings to the **active protocol** — Meshtastic/MeshCore show LoRa routing + RF rows only (including MeshCore **High Companion TX Queue**); Reticulum shows `reticulum/*` interface/path/LXMF rows only (sidecar health, propagation sync stuck/failing, interface-down alerts no longer bleed onto LoRa tabs). Map halos, node-list badges, and node detail routing sections use the same filter.
 - **Network health**: status band **Healthy / Attention / Degraded** plus error and warning counts. **Degraded** applies only when routing error count ≥ 3; fewer errors use **Attention** so small issues don't paint the whole panel red
 - **Single table** from `diagnosticRows` (routing trace rows + RF rows), searchable; rows persist across sessions with an optional restore banner; **max age** (1–168 hours) trims stale routing (24 h default) and RF (1 h default) rows
 - **Foreign LoRa overhear** (Meshtastic tab): MeshCore-heard, Reticulum RNS, other-Meshtastic, and unknown LoRa classes from decode-fail logs and dual-radio RX; 90-minute window; MeshCore repeater conflict escalation above 5 pkt/min
@@ -322,7 +322,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 - **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render read-only)
 - **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs)
 - **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch) over Reticulum, with saved addresses and inbound-policy controls; also available from Chat DMs as send-file (distinct from Meshtastic remote admin)
-- **Direct** delivery when the destination is in the path table; **propagated (PN)** handoff when offline and a propagation node is configured
+- **Direct** delivery when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered
 
 **Peers, topology, Nomad Network**
 
@@ -365,7 +365,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 - **Map tiles; OpenStreetMap Referer requirement**: Packaged desktop builds load the UI from the local filesystem. The main process now loads the renderer with an explicit HTTP referrer so OpenStreetMap tile requests include a valid `Referer` header and comply with the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). If you point the app at a different tile server, ensure its usage policy permits this client.
 - **Reticulum — no LoRa companion parity**: Reticulum does not use Meshtastic/MeshCore `ConnectionDriver`, MQTT hybrid, channel pills, Rooms BBS, or Hop Goblins diagnostics. The **Chat** tab is **DM-only**; hub room chat lives on the **RRC** tab. Interface add/edit/delete updates config on disk — **restart the stack** after changes under `rns-stack`.
 - **Reticulum — sidecar license**: The spawned `mesh-client-reticulum` binary is **AGPL-3.0** (separate process from the MIT Electron shell). See [docs/reticulum.md](docs/reticulum.md) and [docs/credits.md](docs/credits.md#bundled-binaries).
-- **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no preferred propagation node is set.
+- **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no preferred **remote** propagation node is set. Local inbox ≠ remote store-and-forward. When a path exists, Direct is tried first; Direct fail with a remote preferred PN triggers one-shot PN deposit.
 
 ---
 

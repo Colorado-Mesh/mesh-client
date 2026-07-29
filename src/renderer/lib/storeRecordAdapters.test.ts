@@ -296,6 +296,20 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.status).toBe('failed');
   });
 
+  it('rehydrates reticulumDeliveryMethod from DB delivery_method', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      payload: 'hello',
+      timestamp: 1_700_000_000_000,
+      message_hash: 'cc'.repeat(16),
+      delivery_status: 'delivered',
+      delivery_method: 'propagated',
+    });
+    expect(record.status).toBe('acked');
+    expect(record.reticulumDeliveryMethod).toBe('propagated');
+    expect(messageRecordToChatMessage(record).reticulumDeliveryMethod).toBe('propagated');
+  });
+
   it('round-trips Reticulum LXMF hash and reply fields from DB rows', () => {
     const record = reticulumDbRowToMessageRecord({
       sender_id: 'aa'.repeat(16),

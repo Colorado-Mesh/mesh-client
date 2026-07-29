@@ -6,11 +6,38 @@ export const RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS = 500;
 /** Cancel sync when stuck establishing connection to an unreachable node. */
 export const RETICULUM_PROPAGATION_SYNC_STALL_MS = 45_000;
 
+/** How long a failed sync keeps the Diagnostics failing row visible. */
+export const RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS = 60 * 60 * 1000;
+
 /** Hard ceiling for any in-flight propagation sync (includes transfer). */
 export const RETICULUM_PROPAGATION_SYNC_CEILING_MS = 180_000;
 
 /** Match sidecar Establishing (~10) — do not cancel once negotiation/transfer starts. */
 export const RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS = 15;
+
+export interface PropagationSyncStuckInput {
+  syncActive: boolean;
+  syncProgress: number;
+  lastAttemptAt: number | null;
+}
+
+/** True while progress is still in the Establishing band. */
+export function isPropagationSyncStillEstablishing(progress: number): boolean {
+  return progress < RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS;
+}
+
+/** True when sync is stuck in Establishing past the stall window. */
+export function isPropagationSyncEstablishingStuck(
+  input: PropagationSyncStuckInput,
+  now = Date.now(),
+): boolean {
+  return (
+    input.syncActive &&
+    input.lastAttemptAt != null &&
+    now - input.lastAttemptAt >= RETICULUM_PROPAGATION_SYNC_STALL_MS &&
+    isPropagationSyncStillEstablishing(input.syncProgress)
+  );
+}
 
 const SYNC_FAILED_KEY = 'reticulumPropagation.syncFailed';
 const SYNC_TIMED_OUT_KEY = 'reticulumPropagation.syncTimedOut';
@@ -111,7 +138,7 @@ export function schedulePropagationSyncStallWatchdog(): void {
     if (!sync.active) return;
     // Progress past Establishing means link+offer are in flight; lxmf-core owns the
     // remaining timeout (120s). Canceling here aborts healthy multi-hop syncs.
-    if (sync.progress >= RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS) {
+    if (!isPropagationSyncStillEstablishing(sync.progress)) {
       return;
     }
     void useReticulumPropagationStore.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });

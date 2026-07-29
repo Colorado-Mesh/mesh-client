@@ -275,7 +275,8 @@ export default function ReticulumPropagationSection({
                   </label>
                 ) : (
                   <>
-                    {node.name} ({formatPropagationNodeStatus(node.status, t)})
+                    {isLocal ? t('reticulumPropagation.localInboxName') : node.name} (
+                    {formatPropagationNodeStatus(node.status, t)})
                     {isLocal && node.message_count != null ? (
                       <span className="text-muted ml-1 text-xs">
                         {t('reticulumPropagation.localInboxStats', {
@@ -297,7 +298,17 @@ export default function ReticulumPropagationSection({
                   type="button"
                   className="text-xs text-amber-400 hover:underline"
                   onClick={() => {
-                    void setPreferredOnSidecar(node.id);
+                    void setPreferredOnSidecar(node.id)
+                      .then((ok) => {
+                        if (ok && isLocal) {
+                          addToast(t('reticulumPropagation.preferredLocalWarning'), 'warning');
+                        } else if (!ok) {
+                          addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
+                        }
+                      })
+                      .catch(() => {
+                        addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
+                      });
                   }}
                   aria-label={t('reticulumPropagation.setPreferred')}
                 >
@@ -407,6 +418,7 @@ export default function ReticulumPropagationSection({
           {t('reticulumPropagation.syncNow')}
         </button>
       </div>
+      <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.localInboxHint')}</p>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.syncPathHint')}</p>
       {lastSyncError === 'reticulumPropagation.syncEstablishNoLinkProof' ? (
         <output className="mt-1 block text-xs text-amber-300/90">

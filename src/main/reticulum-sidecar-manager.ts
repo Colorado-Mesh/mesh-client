@@ -633,6 +633,10 @@ export class ReticulumSidecarManager extends EventEmitter {
         close: () => {
           try {
             socket.removeAllListeners();
+            // ws abortHandshake emits 'error' on nextTick when closed while CONNECTING
+            socket.on('error', () => {
+              // catch-no-log-ok: intentional teardown; CONNECTING abort is expected
+            });
             socket.close();
           } catch {
             // catch-no-log-ok: socket may already be closed

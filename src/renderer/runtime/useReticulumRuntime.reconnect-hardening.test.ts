@@ -210,12 +210,20 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
 describe('useReticulumRuntime outbound delivery persistence', () => {
   it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
     expect(SOURCE).toMatch(
-      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*\}\)/,
+      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*deliveryMethod: p\.delivery_method,\s*\}\)/,
     );
   });
 
   it('flushes buffered early delivery status after LXMF hash rename', () => {
     expect(SOURCE).toMatch(/flushPendingReticulumOutboundDeliveryStatus\(identityId, hash\)/);
+  });
+
+  it('wires propagation store + sidecar health into Reticulum diagnostics', () => {
+    expect(SOURCE).toMatch(/sidecarUnhealthySince:\s*sidecarStatus\.unhealthySince/);
+    expect(SOURCE).toMatch(/useReticulumPropagationStore\.subscribe/);
+    expect(SOURCE).toMatch(/RETICULUM_PROPAGATION_SYNC_STALL_MS \+ 1_000/);
+    expect(SOURCE).toMatch(/status\.healthy === false/);
+    expect(SOURCE).toMatch(/activePropagationSyncAttemptAt/);
   });
 
   it('marks stale outbound with RETICULUM_STALE_OUTBOUND_MS (not a 5-minute override)', () => {

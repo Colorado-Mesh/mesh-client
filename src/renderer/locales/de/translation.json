@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "{{count}} Nachrichten löschen",
     "reticulumSection": "Reticulum-Stack",
     "reticulumAnnounceHelp": "Wie oft Ihre Identität im Netzwerk bekannt gegeben wird, und Tools zum Löschen gespeicherter Ankündigungen.",
-    "reticulumPropagationHelp": "Wählen Sie aus, wie Ausbreitungsknoten synchronisiert werden, und ziehen Sie bei Bedarf die neuesten Ausbreitungsdaten ab.",
     "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Auf der Registerkarte „Reticulum“ umfassen die Gerätezeilen die Sidecar-Ausgabe und den Zustand der lokalen Schnittstelle. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich.",
     "autoPruneUnheardContactsDaysAria": "Ungehörte Kontakte, die älter als {{days}} Tage sind, werden beim Start automatisch bereinigt",
     "capTotalContactsCountAria": "Begrenzen Sie die Gesamtzahl der Kontakte und behalten Sie die zuletzt gesehenen {{count}}-Kontakte bei",
@@ -364,7 +363,8 @@
     "shareLocationSendWaypointHint": "Wenn aktiviert, senden Meshtastic-Standortfreigaben sowohl eine Textnachricht als auch ein Wegpunktpaket, sodass offizielle Apps eine Kartennadel anzeigen. Bei ausgelasteten Meshes deaktivieren, um nur Text zu senden.",
     "capStoredRrcMessages": "Gespeicherte RRC-Raumhistorie begrenzen, die neuesten behalten",
     "capStoredRrcMessagesLabel": "Gespeicherte RRC-Raumhistorie begrenzen, die neuesten behalten",
-    "capStoredRrcMessagesCountAria": "Begrenzen Sie den gespeicherten RRC-Raumverlauf und behalten Sie die neuesten {{count}}-Nachrichten bei"
+    "capStoredRrcMessagesCountAria": "Begrenzen Sie den gespeicherten RRC-Raumverlauf und behalten Sie die neuesten {{count}}-Nachrichten bei",
+    "reticulumPropagationHelp": "Konfigurieren Sie Remote-LXMF-Verbreitungsknoten für Offline-DMS. Die lokale Ausbreitung ist nur der Posteingang dieses Geräts — sie ersetzt keinen Remote-Knoten."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -611,7 +611,9 @@
     "dmNodeHops_other": "{{count}} Hops",
     "notificationDmTitle": "DM von {{sender}}",
     "notificationMessageTitle": "Nachricht von {{sender}}",
-    "emojiButton": "Emojis"
+    "emojiButton": "Emojis",
+    "reticulumSendStoredAtPn": "Am Ausbreitungsknoten gespeichert",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -1372,7 +1374,8 @@
       "potentialMeshcoreRepeaterConflict": "Potenzieller MeshCore-Repeater-Konflikt",
       "elevatedNoiseFloor": "Boden mit erhöhtem Geräuschpegel",
       "excessiveFlooding": "Übermäßige Überschwemmungen",
-      "reticulumTrafficDetected": "Reticulum-Verkehr erkannt"
+      "reticulumTrafficDetected": "Reticulum-Verkehr erkannt",
+      "highCompanionTxQueue": "High Companion TX-Warteschlange"
     },
     "rfCause": {
       "channelUtilizationSpike": "Der aktuelle Wert von {{current}}% liegt über dem Zweifachen des aktuellen Durchschnitts ({{average}}%) — mögliche Stau- oder Störungsüberlastung.",
@@ -1386,7 +1389,8 @@
       "widebandNoiseFloor": "Breitbandige Störungen (fehlerhafte Elektronik, Stromleitungsgeräusche usw.), die den Geräuschpegel erhöhen.",
       "fringeWeakCoverage": "Der Knoten ist zu weit entfernt oder schlecht mit dem Rest des Netzes verbunden.",
       "elevatedNoiseFloor": "Der Funkgeräuschpegel beträgt {{noiseFloor}} dBm — erhöhte Interferenz reduziert die effektive Reichweite.",
-      "excessiveFlooding": "{{percent}}% der Übertragungen werden überflutet - ein direktes Routing mit Knoten in der Nähe ist möglicherweise nicht möglich."
+      "excessiveFlooding": "{{percent}}% der Übertragungen werden überflutet - ein direktes Routing mit Knoten in der Nähe ist möglicherweise nicht möglich.",
+      "highCompanionTxQueue": "Die Tiefe der ausgehenden Warteschlange des Begleiters beträgt {{queueLen}}/256 — der Datenverkehr kann sich verzögern oder fallen gelassen werden."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic Knoten, der auf dieser Frequenz sendet. Absender: {{sender}}. {{proximity}}Dieser Knoten kann sich in deinem MeshCore-Repeater-Bereich befinden.",
@@ -1461,6 +1465,10 @@
       "excessiveFlooding": {
         "title": "Ermöglichen Sie die Einrichtung direkter Routen",
         "description": "Das Überschwemmungsverhältnis ist sehr hoch — warten Sie, bis der Knoten Direktpfadkontakte akkumuliert hat, oder überprüfen Sie die Nähe des Repeaters."
+      },
+      "highCompanionTxQueue": {
+        "title": "Reduzieren Sie den ausgehenden Datenverkehr oder überprüfen Sie die HF-Verbindung",
+        "description": "Die Companion TX-Warteschlange ist fast voll — pausieren Sie das Senden, reduzieren Sie Überschwemmungen oder prüfen Sie auf Störungen und schwache Links."
       }
     },
     "cuHistoryHeading": "Kanalauslastung (letzte 24h)",
@@ -1539,7 +1547,10 @@
         "transportSaturatedShareInstance": "RNS-Transport gesättigt ({{count}} Path-Request-Drops). Share-Instanz ist aktiviert — beenden Sie andere Reticulum-Apps (MeshChatX, Ratspeak, rnsd) und starten Sie den Stack neu.",
         "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)",
         "bleBondRemoved": "Die BLE-RNode-Verbindung „{{name}}“ ist veraltet – vergessen Sie sie in den Bluetooth-Einstellungen des Betriebssystems und führen Sie erneut eine Kopplung durch",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" Passkey-Austausch abgelaufen — geben Sie die aktuelle PIN (nicht 123456) ein und koppeln Sie erneut"
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" Passkey-Austausch abgelaufen — geben Sie die aktuelle PIN (nicht 123456) ein und koppeln Sie erneut",
+        "sidecarUnhealthy": "Reticulum Sidecar läuft, reagiert aber nicht auf Gesundheitschecks",
+        "propagationSyncStuck": "Die Synchronisierung des Ausbreitungsknotens bleibt hängen, um eine Verbindung herzustellen",
+        "propagationSyncFailing": "Synchronisierung des Ausbreitungsknotens fehlgeschlagen"
       }
     },
     "routingPort": {
@@ -3953,7 +3964,11 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Propagation Sync hat keinen Link-Beweis vom Knoten erhalten — Ihre Identität benötigt möglicherweise eine neue Ankündigung, oder der Pfad zurück fehlt. Versuchen Sie es jetzt mit Network → Announce und dann erneut mit Sync.",
     "syncOfferUnknown": "Der Ausbreitungsknoten hat einen unbekannten Sync-Angebotsfehler zurückgegeben — versuchen Sie es gleich noch einmal.",
-    "syncPathHint": "Die Fernsynchronisierung erfordert einen Pfad in beide Richtungen. Sync sendet zuerst eine kurze LXMF-Ankündigung, damit der Knoten antworten kann."
+    "syncPathHint": "Die Fernsynchronisierung erfordert einen Pfad in beide Richtungen. Sync sendet zuerst eine kurze LXMF-Ankündigung, damit der Knoten antworten kann.",
+    "setPreferredFailed": "Bevorzugter Ausbreitungsknoten konnte nicht festgelegt werden.",
+    "localInboxName": "Lokale Verbreitung (Offline-Posteingang)",
+    "localInboxHint": "Die lokale Verbreitung ist der Offline-Posteingang dieses Geräts. Es speichert keine ausgehenden DMs für nicht erreichbare Peers — legen Sie einen entfernten lxmf.propagation-Knoten als bevorzugt für Store-and-Forward fest.",
+    "preferredLocalWarning": "Bevorzugter Knoten ist nur lokal — Offline-Peers benötigen weiterhin einen Remote-Propagation-Knoten für die Store-and-Forward-Bereitstellung."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

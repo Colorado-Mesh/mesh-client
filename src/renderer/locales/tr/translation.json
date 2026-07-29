@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle",
     "reticulumSection": "Reticulum — Reticulum yığını",
     "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
-    "reticulumPropagationHelp": "Yayılma düğümlerinin nasıl senkronize edileceğini seçin ve gerektiğinde en son yayılma verilerini çekin.",
     "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "autoPruneUnheardContactsDaysAria": "Başlangıçta {{days}} günden eski, duyulmamış kişileri otomatik olarak buda",
     "capTotalContactsCountAria": "Toplam kişileri sınırlandırın, en son görülen {{count}} kişileri koruyun",
@@ -364,7 +363,8 @@
     "shareLocationSendWaypointHint": "Etkinleştirildiğinde, Meshtastic konum paylaşımları hem kısa mesaj hem de Yol Noktası paketi göndererek resmi uygulamaların bir harita işaretçisi göstermesini sağlar. Yalnızca metin göndermek için meşgul ağlarda devre dışı bırakın.",
     "capStoredRrcMessages": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
     "capStoredRrcMessagesLabel": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
-    "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın"
+    "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın",
+    "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -611,7 +611,9 @@
     "dmNodeHops_one": "{{count}} atlama",
     "dmNodeHops_other": "{{count}} atlama",
     "notificationDmTitle": "{{sender}} 'dan DM",
-    "notificationMessageTitle": "{{sender}} adlı kişiden mesaj"
+    "notificationMessageTitle": "{{sender}} adlı kişiden mesaj",
+    "reticulumSendStoredAtPn": "Yayılma düğümünde depolanır",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1372,7 +1374,8 @@
       "potentialMeshcoreRepeaterConflict": "Potansiyel MeshCore Tekrarlayıcı Çatışması",
       "elevatedNoiseFloor": "Yükseltilmiş Gürültü Zemini",
       "excessiveFlooding": "Aşırı Su Baskını",
-      "reticulumTrafficDetected": "Reticulum Trafiği Algılandı"
+      "reticulumTrafficDetected": "Reticulum Trafiği Algılandı",
+      "highCompanionTxQueue": "Yüksek Refakatçi TX Kuyruğu"
     },
     "rfCause": {
       "channelUtilizationSpike": "Mevcut {{current}}%, yakın zamandaki ortalamanın ({{average}}%) 2 katının üzerinde; olası tıkanıklık veya parazit dalgalanması.",
@@ -1386,7 +1389,8 @@
       "widebandNoiseFloor": "Gürültü tabanını yükselten geniş bant paraziti (arızalı elektronikler, elektrik hattı gürültüsü vb.).",
       "fringeWeakCoverage": "Düğüm çok uzakta veya ağın geri kalanına zayıf bir şekilde bağlı.",
       "elevatedNoiseFloor": "Radyo gürültüsü zemini {{noiseFloor}} dBm'dir — etkili menzili azaltan yüksek parazit.",
-      "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir."
+      "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir.",
+      "highCompanionTxQueue": "Refakatçi giden kuyruk derinliği {{queueLen}}/256 'dır — trafik gecikebilir veya düşebilir."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic düğüm bu frekansta iletim yapıyor. Gönderen: {{sender}}. {{proximity}}Bu düğüm MeshCore tekrarlayıcı alanınızda olabilir.",
@@ -1461,6 +1465,10 @@
       "excessiveFlooding": {
         "title": "Doğrudan rotaların oluşturulmasına izin ver",
         "description": "Taşkın oranı çok yüksektir — düğümün doğrudan yol temasları biriktirmesini bekleyin veya tekrarlayıcı yakınlığını kontrol edin."
+      },
+      "highCompanionTxQueue": {
+        "title": "Giden trafiği azaltın veya RF bağlantısını kontrol edin",
+        "description": "Refakatçi TX kuyruğu neredeyse dolu — gönderimleri duraklatın, taşkınları azaltın veya parazit ve zayıf bağlantı olup olmadığını kontrol edin."
       }
     },
     "cuHistoryHeading": "Kanal Kullanımı (son 24 saat)",
@@ -1539,7 +1547,10 @@
         "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
         "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\" bağı eski — İşletim Sistemi Bluetooth ayarlarını unutun ve yeniden eşleştirin",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" şifre değişimi zaman aşımına uğradı — mevcut PIN'i girin (123456 değil) ve yeniden eşleştirin"
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" şifre değişimi zaman aşımına uğradı — mevcut PIN'i girin (123456 değil) ve yeniden eşleştirin",
+        "sidecarUnhealthy": "Reticulum sepeti çalışıyor ancak sağlık kontrollerine yanıt vermiyor",
+        "propagationSyncStuck": "Yayılım düğümü senkronizasyonu bir bağlantı kurarken takıldı",
+        "propagationSyncFailing": "Yayılma düğümü senkronizasyonu başarısız oldu"
       }
     },
     "routingPort": {
@@ -3953,7 +3964,11 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Yayılma senkronizasyonunun düğümden bağlantı kanıtı yok. Kimliğinizin yeni bir duyuruya ihtiyacı olabilir veya geri dönüş yolu eksik olabilir. Şimdi Network → Announce'ı deneyin, ardından tekrar Senkronize edin.",
     "syncOfferUnknown": "Yayılma düğümü bilinmeyen bir senkronizasyon teklifi hatası verdi — birazdan tekrar deneyin.",
-    "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir."
+    "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir.",
+    "setPreferredFailed": "Tercih edilen yayılma düğümü ayarlanamadı.",
+    "localInboxName": "Yerel yayılım (çevrimdışı gelen kutusu)",
+    "localInboxHint": "Yerel yayılım, bu cihazın çevrimdışı gelen kutusudur. Ulaşılamayan eşler için giden DM'leri saklamaz — depolama ve iletme için tercih edilen bir uzak lxmf.propagation düğümü ayarlayın.",
+    "preferredLocalWarning": "Tercih edilen düğüm yalnızca Yereldir — çevrimdışı eşler, depolama ve iletme teslimatı için hala uzak bir yayılma düğümüne ihtiyaç duyarlar."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

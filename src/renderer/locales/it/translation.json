@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "Cancella messaggi {{count}}",
     "reticulumSection": "Reticulum — Stack Reticulum",
     "reticulumAnnounceHelp": "Con quale frequenza la tua identità viene annunciata sulla rete e gli strumenti per cancellare gli annunci memorizzati.",
-    "reticulumPropagationHelp": "Scegli come sincronizzare i nodi di propagazione e tira i dati di propagazione più recenti quando necessario.",
     "logPanelHelp": "Se abilitato, sulla destra viene visualizzato un flusso di registro in tempo reale. Nella scheda Reticulum, le righe del dispositivo includono l'output collaterale e l'integrità dell'interfaccia locale. Le righe di debug richiedono la casella di controllo all'interno del pannello di registro.",
     "autoPruneUnheardContactsDaysAria": "Elimina automaticamente i contatti non ascoltati all'avvio, più vecchi di {{days}} giorni",
     "capTotalContactsCountAria": "Limita i contatti totali, conserva i contatti {{count}} visti più di recente",
@@ -364,7 +363,8 @@
     "shareLocationSendWaypointHint": "Se abilitate, le condivisioni di posizione Meshtastic inviano sia un messaggio di testo che un pacchetto Waypoint in modo che le app ufficiali mostrino un segnaposto sulla mappa. Disabilita su mesh occupate per inviare solo testo.",
     "capStoredRrcMessages": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
     "capStoredRrcMessagesLabel": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
-    "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti"
+    "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti",
+    "reticulumPropagationHelp": "Configurare nodi di propagazione LXMF remoti per DM offline. La propagazione locale è solo la casella di posta in arrivo di questo dispositivo — non sostituisce un nodo remoto."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -611,7 +611,9 @@
     "dmNodeHops_other": "{{count}} salti",
     "notificationDmTitle": "DM da {{sender}}",
     "notificationMessageTitle": "Messaggio da {{sender}}",
-    "emojiButton": "Emoji"
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Memorizzato al nodo di propagazione",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -1372,7 +1374,8 @@
       "potentialMeshcoreRepeaterConflict": "Potenziale conflitto del ripetitore MeshCore",
       "elevatedNoiseFloor": "Pavimento Rumoroso Elevato",
       "excessiveFlooding": "Inondazioni eccessive",
-      "reticulumTrafficDetected": "Traffico Reticulum rilevato"
+      "reticulumTrafficDetected": "Traffico Reticulum rilevato",
+      "highCompanionTxQueue": "Coda TX High Companion"
     },
     "rfCause": {
       "channelUtilizationSpike": "L'attuale {{current}}% è superiore a 2 volte la media recente ({{average}}%): possibile congestione o aumento di interferenze.",
@@ -1386,7 +1389,8 @@
       "widebandNoiseFloor": "Interferenze a banda larga (elettronica difettosa, rumore della linea elettrica, ecc.) che aumentano il rumore di fondo.",
       "fringeWeakCoverage": "Il nodo è troppo lontano o scarsamente connesso al resto della mesh.",
       "elevatedNoiseFloor": "Il rumore di fondo della radio è {{noiseFloor}} dBm — interferenza elevata che riduce la portata effettiva.",
-      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in modo alluvionale — l'instradamento diretto potrebbe non essere stabilito con nodi vicini."
+      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in modo alluvionale — l'instradamento diretto potrebbe non essere stabilito con nodi vicini.",
+      "highCompanionTxQueue": "La profondità della coda in uscita dell'accompagnatore è {{queueLen}}/256 — il traffico potrebbe subire ritardi o interruzioni."
     },
     "foreignLoraCause": {
       "meshtastic": "Nodo Meshtastic che trasmette su questa frequenza. Mittente: {{sender}}. {{proximity}}Questo nodo potrebbe trovarsi nell'area del ripetitore MeshCore.",
@@ -1461,6 +1465,10 @@
       "excessiveFlooding": {
         "title": "Consenti l'istituzione di percorsi diretti",
         "description": "Il rapporto di inondazione è molto alto: attendere che il nodo accumuli contatti a percorso diretto o controllare la prossimità del ripetitore."
+      },
+      "highCompanionTxQueue": {
+        "title": "Riduci il traffico in uscita o controlla il link RF",
+        "description": "La coda TX di Companion è quasi piena: metti in pausa gli invii, riduci le inondazioni o verifica la presenza di interferenze e collegamenti deboli."
       }
     },
     "cuHistoryHeading": "Utilizzo del canale (ultime 24 ore)",
@@ -1539,7 +1547,10 @@
         "transportSaturatedShareInstance": "Trasporto RNS saturo ({{count}} gocce path-request). L'istanza di condivisione è attiva: esci da altre app Reticulum (MeshChatX, Ratspeak, rnsd) e riavvia lo stack.",
         "slowTransportQuery": "Query di trasporto RNS lente o non riuscite ({{count}}×)",
         "bleBondRemoved": "Il collegamento BLE RNode \"{{name}}\" è obsoleto: dimenticalo nelle impostazioni Bluetooth del sistema operativo e riassocialo",
-        "blePairingTimedOut": "Scambio passkey BLE RNode \"{{name}}\" scaduto: inserire il PIN corrente (non 123456) e associare nuovamente"
+        "blePairingTimedOut": "Scambio passkey BLE RNode \"{{name}}\" scaduto: inserire il PIN corrente (non 123456) e associare nuovamente",
+        "sidecarUnhealthy": "Il sidecar Reticulum è in esecuzione ma non risponde ai controlli di integrità",
+        "propagationSyncStuck": "La sincronizzazione del nodo di propagazione è bloccata stabilendo un collegamento",
+        "propagationSyncFailing": "Sincronizzazione del nodo di propagazione non riuscita"
       }
     },
     "routingPort": {
@@ -3953,7 +3964,11 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "La sincronizzazione della propagazione non ha ricevuto alcuna prova di collegamento dal nodo: la tua identità potrebbe aver bisogno di un nuovo annuncio o manca il percorso di ritorno. Prova Network → Announce ora, quindi sincronizza di nuovo.",
     "syncOfferUnknown": "Il nodo di propagazione ha restituito un errore di offerta di sincronizzazione sconosciuto — riprova tra un momento.",
-    "syncPathHint": "La sincronizzazione remota richiede un percorso in entrambe le direzioni. Sync invia prima un breve annuncio LXMF in modo che il nodo possa rispondere."
+    "syncPathHint": "La sincronizzazione remota richiede un percorso in entrambe le direzioni. Sync invia prima un breve annuncio LXMF in modo che il nodo possa rispondere.",
+    "setPreferredFailed": "Impossibile impostare il nodo di propagazione preferito.",
+    "localInboxName": "Propagazione locale (casella di posta offline)",
+    "localInboxHint": "La propagazione locale è la casella di posta offline di questo dispositivo. Non memorizza i DM in uscita per i peer non raggiungibili: imposta un nodo lxmf.propagation remoto come preferito per lo store-and-forward.",
+    "preferredLocalWarning": "Il nodo preferito è solo locale: i peer offline hanno ancora bisogno di un nodo di propagazione remoto per la consegna store-and-forward."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",

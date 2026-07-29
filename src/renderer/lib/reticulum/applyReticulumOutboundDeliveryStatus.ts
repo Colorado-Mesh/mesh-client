@@ -7,6 +7,10 @@ import {
   reticulumViaToMessageTransport,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import { resolveReticulumDestinationHash } from '@/renderer/lib/reticulum/destHash';
+import {
+  isValidReticulumOutboundMessageHash,
+  normalizeReticulumMessageHash,
+} from '@/renderer/lib/reticulum/reticulumMessageHash';
 import type { IdentityId } from '@/renderer/lib/types';
 import {
   type MessageRecord,
@@ -17,12 +21,14 @@ import {
   useMessageStore,
 } from '@/renderer/stores/messageStore';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
+import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
-/** Map sidecar `lxmf_outbound_status` wire status to UI store status. */
-export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus {
+/** Map sidecar `lxmf_outbound_status` wire status to UI store status. Unknown → null. */
+export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | null {
   if (wireStatus === 'delivered') return 'acked';
   if (wireStatus === 'failed') return 'failed';
-  return 'sending';
+  if (wireStatus === 'sending') return 'sending';
+  return null;
 }
 
 function resolveOutboundPeerHash(record: MessageRecord): string | null {
@@ -53,7 +59,7 @@ const PENDING_DELIVERY_STATUS_TTL_MS = 60_000;
 const PENDING_DELIVERY_STATUS_MAX = 64;
 const pendingDeliveryByKey = new Map<
   string,
-  { wireStatus: string; sentVia?: string; receivedAt: number }
+  { wireStatus: string; sentVia?: string; deliveryMethod?: string; receivedAt: number }
 >();
 
 function pendingDeliveryKey(identityId: IdentityId, messageHash: string): string {
@@ -78,11 +84,13 @@ function bufferPendingDeliveryStatus(
   messageHash: string,
   wireStatus: string,
   sentVia?: string,
+  deliveryMethod?: string,
 ): void {
   prunePendingDeliveryStatuses();
   pendingDeliveryByKey.set(pendingDeliveryKey(identityId, messageHash), {
     wireStatus,
     sentVia,
+    deliveryMethod,
     receivedAt: Date.now(),
   });
 }
@@ -98,12 +106,18 @@ export function flushPendingReticulumOutboundDeliveryStatus(
   const key = pendingDeliveryKey(identityId, messageHash);
   const pending = pendingDeliveryByKey.get(key);
   if (!pending) return false;
+  const mapped = mapLxmfOutboundWireStatus(pending.wireStatus);
+  if (mapped == null) {
+    pendingDeliveryByKey.delete(key);
+    return false;
+  }
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
     messageHash,
-    mapLxmfOutboundWireStatus(pending.wireStatus),
+    mapped,
     undefined,
     parseWireSentVia(pending.sentVia),
+    parseReticulumDeliveryMethod(pending.deliveryMethod),
   );
   if (applied) pendingDeliveryByKey.delete(key);
   return applied;
@@ -118,6 +132,7 @@ export function clearPendingReticulumOutboundDeliveryStatusesForTests(): void {
  * Update Zustand and persist terminal delivery status to SQLite so restart
  * hydration / stale marking do not flip Completes to failed.
  * When `sentVia` is set (egress evidence upgrade), also patch store + SQLite `received_via`.
+ * When `deliveryMethod` is set (Direct→PN fallback), patch `reticulumDeliveryMethod`.
  */
 export function persistReticulumOutboundMessageStatus(
   identityId: IdentityId,
@@ -125,13 +140,21 @@ export function persistReticulumOutboundMessageStatus(
   status: MessageStatus,
   errorMessage?: string,
   sentVia?: MessageTransport,
+  deliveryMethod?: MessageRecord['reticulumDeliveryMethod'],
 ): boolean {
   const before = useMessageStore.getState().messages[identityId]?.[messageId];
   if (!before) return false;
-  // Do not regress a terminal Completes/Fails back to sending — still allow via patches.
+  // Do not regress a terminal Completes/Fails back to sending — still allow via/method patches.
   if (isTerminalStatus(before.status ?? 'sending') && status === 'sending') {
-    if (sentVia != null && sentVia !== before.receivedVia) {
-      const patched: MessageRecord = { ...before, receivedVia: sentVia };
+    const viaChanged = sentVia != null && sentVia !== before.receivedVia;
+    const methodChanged =
+      deliveryMethod != null && deliveryMethod !== before.reticulumDeliveryMethod;
+    if (viaChanged || methodChanged) {
+      const patched: MessageRecord = {
+        ...before,
+        ...(viaChanged ? { receivedVia: sentVia } : {}),
+        ...(methodChanged ? { reticulumDeliveryMethod: deliveryMethod } : {}),
+      };
       upsertMessage(identityId, patched);
       const senderHash = resolveOutboundSenderHash(patched);
       if (senderHash) {
@@ -153,13 +176,21 @@ export function persistReticulumOutboundMessageStatus(
     status,
     ...(errorMessage !== undefined ? { error: errorMessage } : {}),
   };
+  let patched = false;
   if (sentVia != null && sentVia !== record.receivedVia) {
     record = { ...record, receivedVia: sentVia };
+    patched = true;
+  }
+  if (deliveryMethod != null && deliveryMethod !== record.reticulumDeliveryMethod) {
+    record = { ...record, reticulumDeliveryMethod: deliveryMethod };
+    patched = true;
+  }
+  if (patched) {
     upsertMessage(identityId, record);
   }
-  // Intermediate sending without via change is already written on optimistic send.
-  if (status === 'sending' && sentVia == null) return true;
-  if (status === 'sending' && sentVia != null) {
+  // Intermediate sending without via/method change is already written on optimistic send.
+  if (status === 'sending' && sentVia == null && deliveryMethod == null) return true;
+  if (status === 'sending') {
     const senderHash = resolveOutboundSenderHash(record);
     if (senderHash) {
       persistReticulumOutboundRecord(
@@ -188,6 +219,7 @@ export function persistReticulumOutboundMessageStatus(
 
 export interface ApplyReticulumOutboundDeliveryStatusOpts {
   sentVia?: string | null;
+  deliveryMethod?: string | null;
 }
 
 /** Apply sidecar Completes/Fails (and optional egress `sent_via`): store + SQLite. */
@@ -197,21 +229,42 @@ export function applyReticulumOutboundDeliveryStatus(
   wireStatus: string,
   opts?: ApplyReticulumOutboundDeliveryStatusOpts,
 ): void {
+  const normalizedHash = normalizeReticulumMessageHash(messageHash);
+  if (!isValidReticulumOutboundMessageHash(normalizedHash)) {
+    console.debug(
+      `[applyReticulumOutboundDeliveryStatus] drop invalid message_hash len=${normalizedHash.length}`,
+    );
+    return;
+  }
   const status = mapLxmfOutboundWireStatus(wireStatus);
+  if (status == null) {
+    console.debug(
+      `[applyReticulumOutboundDeliveryStatus] drop unknown wire status=${wireStatus.slice(0, 32)}`,
+    );
+    return;
+  }
   const sentVia = parseWireSentVia(opts?.sentVia);
+  const deliveryMethod = parseReticulumDeliveryMethod(opts?.deliveryMethod);
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
-    messageHash,
+    normalizedHash,
     status,
     undefined,
     sentVia,
+    deliveryMethod,
   );
   if (applied) {
-    pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, messageHash));
+    pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, normalizedHash));
     return;
   }
-  // Terminal status, or egress upgrade before rekey (sent_via with sending for later flush).
-  if (isTerminalStatus(status) || sentVia != null) {
-    bufferPendingDeliveryStatus(identityId, messageHash, wireStatus, opts?.sentVia ?? undefined);
+  // Terminal status, or egress/method upgrade before rekey for later flush.
+  if (isTerminalStatus(status) || sentVia != null || deliveryMethod != null) {
+    bufferPendingDeliveryStatus(
+      identityId,
+      normalizedHash,
+      wireStatus,
+      opts?.sentVia ?? undefined,
+      opts?.deliveryMethod ?? undefined,
+    );
   }
 }

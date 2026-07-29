@@ -241,4 +241,77 @@ describe('diagnoseConnectedNode — MeshCore stats', () => {
     const findings = diagnoseConnectedNode(node);
     expect(findings.some((f) => f.condition === 'Excessive Flooding')).toBe(false);
   });
+
+  it('flags High Companion TX Queue as warning when queueLen > 200', () => {
+    const node = baseNode({
+      meshcore_local_stats: {
+        batteryMilliVolts: 0,
+        uptimeSecs: 0,
+        queueLen: 201,
+        noiseFloor: -110,
+        lastRssi: 0,
+        lastSnr: 0,
+        txAirSecs: 0,
+        rxAirSecs: 0,
+        recv: 0,
+        sent: 0,
+        nSentFlood: 0,
+        nSentDirect: 0,
+        nRecvFlood: 0,
+        nRecvDirect: 0,
+      },
+    });
+    const findings = diagnoseConnectedNode(node);
+    const row = findings.find((f) => f.condition === 'High Companion TX Queue');
+    expect(row).toBeDefined();
+    expect(row?.severity).toBe('warning');
+  });
+
+  it('flags High Companion TX Queue as error when queueLen > 250', () => {
+    const node = baseNode({
+      meshcore_local_stats: {
+        batteryMilliVolts: 0,
+        uptimeSecs: 0,
+        queueLen: 251,
+        noiseFloor: -110,
+        lastRssi: 0,
+        lastSnr: 0,
+        txAirSecs: 0,
+        rxAirSecs: 0,
+        recv: 0,
+        sent: 0,
+        nSentFlood: 0,
+        nSentDirect: 0,
+        nRecvFlood: 0,
+        nRecvDirect: 0,
+      },
+    });
+    const findings = diagnoseConnectedNode(node);
+    const row = findings.find((f) => f.condition === 'High Companion TX Queue');
+    expect(row).toBeDefined();
+    expect(row?.severity).toBe('error');
+  });
+
+  it('does not flag High Companion TX Queue when queueLen <= 200', () => {
+    const node = baseNode({
+      meshcore_local_stats: {
+        batteryMilliVolts: 0,
+        uptimeSecs: 0,
+        queueLen: 200,
+        noiseFloor: -110,
+        lastRssi: 0,
+        lastSnr: 0,
+        txAirSecs: 0,
+        rxAirSecs: 0,
+        recv: 0,
+        sent: 0,
+        nSentFlood: 0,
+        nSentDirect: 0,
+        nRecvFlood: 0,
+        nRecvDirect: 0,
+      },
+    });
+    const findings = diagnoseConnectedNode(node);
+    expect(findings.some((f) => f.condition === 'High Companion TX Queue')).toBe(false);
+  });
 });
