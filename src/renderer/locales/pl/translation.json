@@ -613,7 +613,8 @@
     "dmNodeHops_other": "{{count}} przeskoku",
     "notificationDmTitle": "Wiadomość prywatna od {{sender}}",
     "notificationMessageTitle": "Wiadomość od {{sender}}",
-    "emojiButton": "Emoji"
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Przechowywane w węźle propagacji"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -3955,7 +3956,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Synchronizacja propagacji nie uzyskała żadnego dowodu linku z węzła — Twoja tożsamość może wymagać nowego ogłoszenia lub brakuje ścieżki powrotnej. Wypróbuj Network → Announce teraz, a następnie ponownie Sync.",
     "syncOfferUnknown": "Węzeł propagacji zwrócił nieznany błąd oferty synchronizacji — spróbuj ponownie za chwilę.",
-    "syncPathHint": "Zdalna synchronizacja wymaga ścieżki w obie strony. SYNC najpierw wysyła krótkie ogłoszenie LXMF, aby węzeł mógł odpowiedzieć."
+    "syncPathHint": "Zdalna synchronizacja wymaga ścieżki w obie strony. SYNC najpierw wysyła krótkie ogłoszenie LXMF, aby węzeł mógł odpowiedzieć.",
+    "localInboxName": "Lokalna propagacja (skrzynka odbiorcza offline)",
+    "localInboxHint": "Lokalna propagacja to skrzynka odbiorcza offline tego urządzenia. Nie przechowuje wychodzących wiadomości DM dla nieosiągalnych rówieśników — ustaw zdalny węzeł lxmf.propagation jako preferowany dla store-and-forward.",
+    "preferredLocalWarning": "Preferowane jest tylko lokalne — partnerzy offline nadal potrzebują zdalnego węzła propagacji do dostarczania do magazynu i do przodu."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

@@ -611,7 +611,8 @@
     "dmNodeHops_other": "{{count}} salti",
     "notificationDmTitle": "DM da {{sender}}",
     "notificationMessageTitle": "Messaggio da {{sender}}",
-    "emojiButton": "Emoji"
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Memorizzato al nodo di propagazione"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "La sincronizzazione della propagazione non ha ricevuto alcuna prova di collegamento dal nodo: la tua identità potrebbe aver bisogno di un nuovo annuncio o manca il percorso di ritorno. Prova Network → Announce ora, quindi sincronizza di nuovo.",
     "syncOfferUnknown": "Il nodo di propagazione ha restituito un errore di offerta di sincronizzazione sconosciuto — riprova tra un momento.",
-    "syncPathHint": "La sincronizzazione remota richiede un percorso in entrambe le direzioni. Sync invia prima un breve annuncio LXMF in modo che il nodo possa rispondere."
+    "syncPathHint": "La sincronizzazione remota richiede un percorso in entrambe le direzioni. Sync invia prima un breve annuncio LXMF in modo che il nodo possa rispondere.",
+    "localInboxName": "Propagazione locale (casella di posta offline)",
+    "localInboxHint": "La propagazione locale è la casella di posta offline di questo dispositivo. Non memorizza i DM in uscita per i peer non raggiungibili: imposta un nodo lxmf.propagation remoto come preferito per lo store-and-forward.",
+    "preferredLocalWarning": "Preferito è solo locale: i peer offline hanno ancora bisogno di un nodo di propagazione remoto per la consegna store-and-forward."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",

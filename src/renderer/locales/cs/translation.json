@@ -613,7 +613,8 @@
     "notificationDmTitle": "DM od {{sender}}",
     "notificationMessageTitle": "Zpráva od {{sender}}",
     "floodScopeOverrideUnscoped": "Unscoped",
-    "emojiButton": "Emoji"
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Uloženo v propagačním uzlu"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -3955,7 +3956,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Synchronizace propagace nezískala žádný důkaz odkazu z uzlu — vaše identita může potřebovat nové oznámení nebo chybí cesta zpět. Zkuste Network → Announce nyní a poté Sync znovu.",
     "syncOfferUnknown": "Propagační uzel vrátil neznámou chybu nabídky synchronizace — zkuste to znovu za chvíli.",
-    "syncPathHint": "Vzdálená synchronizace vyžaduje cestu oběma směry. Synchronizace nejprve odešle krátké oznámení LXMF, aby mohl uzel odpovědět."
+    "syncPathHint": "Vzdálená synchronizace vyžaduje cestu oběma směry. Synchronizace nejprve odešle krátké oznámení LXMF, aby mohl uzel odpovědět.",
+    "localInboxName": "Místní propagace (offline doručená pošta)",
+    "localInboxHint": "Místní propagace je offline doručená pošta tohoto zařízení. Neukládá odchozí DM pro nedosažitelné kolegy — nastavte vzdálený uzel lxmf.propagation jako preferovaný pro store-and-forward.",
+    "preferredLocalWarning": "Upřednostňuje se pouze místní — offline kolegové stále potřebují vzdálený propagační uzel pro doručování v obchodě."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

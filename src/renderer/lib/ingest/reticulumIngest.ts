@@ -331,6 +331,9 @@ export function persistReticulumOutboundRecord(
       message_hash: record.reticulumMessageHash ?? record.id,
       received_via: record.receivedVia ?? null,
       delivery_status: deliveryStatus,
+      ...(record.reticulumDeliveryMethod
+        ? { delivery_method: record.reticulumDeliveryMethod }
+        : {}),
     })
     .catch((e: unknown) => {
       console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));

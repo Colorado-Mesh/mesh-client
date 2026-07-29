@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 46;
+export const CURRENT_SCHEMA_VERSION = 47;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -212,7 +212,8 @@ export const CANONICAL_TABLES_DDL = `
         to_hash      TEXT,
         reply_to_hash TEXT,
         message_hash TEXT,
-        received_via TEXT
+        received_via TEXT,
+        delivery_method TEXT
       );
 
       CREATE TABLE IF NOT EXISTS rrc_messages (
@@ -439,6 +440,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     message_hash: 'TEXT',
     received_via: 'TEXT',
     delivery_status: 'TEXT',
+    delivery_method: 'TEXT',
     delivery_attempts: 'INTEGER DEFAULT 0',
     next_delivery_attempt_at: 'INTEGER',
     attachment_path: 'TEXT',

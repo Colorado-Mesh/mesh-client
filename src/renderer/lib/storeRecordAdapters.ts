@@ -417,6 +417,7 @@ export function reticulumDbRowToMessageRecord(row: {
   message_hash?: string | null;
   received_via?: string | null;
   delivery_status?: string | null;
+  delivery_method?: string | null;
   attachment_path?: string | null;
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
@@ -431,6 +432,12 @@ export function reticulumDbRowToMessageRecord(row: {
     row.received_via === 'mqtt' ||
     row.received_via === 'both'
       ? row.received_via
+      : undefined;
+  const deliveryMethod =
+    row.delivery_method === 'direct' ||
+    row.delivery_method === 'propagated' ||
+    row.delivery_method === 'opportunistic'
+      ? row.delivery_method
       : undefined;
   const status: MessageRecord['status'] =
     row.delivery_status === 'failed'
@@ -457,6 +464,7 @@ export function reticulumDbRowToMessageRecord(row: {
         ? { reticulumReplyToHash: row.reply_to_hash }
         : {}),
     ...(receivedVia ? { receivedVia } : {}),
+    ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
     ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
   };
 }

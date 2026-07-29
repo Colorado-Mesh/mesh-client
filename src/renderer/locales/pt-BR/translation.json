@@ -611,7 +611,8 @@
     "dmNodeHops_one": "{{count}} hop",
     "dmNodeHops_other": "{{count}} saltos",
     "notificationDmTitle": "DM de {{sender}}",
-    "notificationMessageTitle": "Mensagem de {{sender}}"
+    "notificationMessageTitle": "Mensagem de {{sender}}",
+    "reticulumSendStoredAtPn": "Armazenado no nó de propagação"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "A sincronização de propagação não obteve nenhuma prova de link do nó — sua identidade pode precisar de um novo anúncio ou o caminho de volta está faltando. Experimente Network → Announce agora e, em seguida, sincronize novamente.",
     "syncOfferUnknown": "O nó de propagação retornou um erro de oferta de sincronização desconhecido — tente novamente em um momento.",
-    "syncPathHint": "A sincronização remota precisa de um caminho nos dois sentidos. A sincronização envia um breve anúncio LXMF primeiro para que o nó possa responder."
+    "syncPathHint": "A sincronização remota precisa de um caminho nos dois sentidos. A sincronização envia um breve anúncio LXMF primeiro para que o nó possa responder.",
+    "localInboxName": "Propagação local (caixa de entrada offline)",
+    "localInboxHint": "A propagação local é a caixa de entrada offline deste dispositivo. Ele não armazena DMs de saída para pares inacessíveis — defina um nó lxmf.propagation remoto como preferido para armazenamento e encaminhamento.",
+    "preferredLocalWarning": "Preferencial é apenas Local — os pares offline ainda precisam de um nó de propagação remota para entrega de armazenamento e encaminhamento."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

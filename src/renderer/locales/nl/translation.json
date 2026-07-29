@@ -611,7 +611,8 @@
     "notificationDmTitle": "DM vanaf {{sender}}",
     "notificationMessageTitle": "Bericht van {{sender}}",
     "emojiButton": "Emoji",
-    "openDmByAddress": "Open"
+    "openDmByAddress": "Open",
+    "reticulumSendStoredAtPn": "Opgeslagen op propagatieknooppunt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Voortplantingssynchronisatie heeft geen linkbewijs van het knooppunt gekregen — uw identiteit heeft mogelijk een nieuwe aankondiging nodig of het pad terug ontbreekt. Probeer Network → Announce nu en vervolgens Sync opnieuw.",
     "syncOfferUnknown": "Het propagatieknooppunt heeft een onbekende synchronisatiefout geretourneerd — probeer het zo meteen opnieuw.",
-    "syncPathHint": "Synchronisatie op afstand vereist een pad in beide richtingen. Sync stuurt eerst een korte LXMF-aankondiging zodat het knooppunt kan antwoorden."
+    "syncPathHint": "Synchronisatie op afstand vereist een pad in beide richtingen. Sync stuurt eerst een korte LXMF-aankondiging zodat het knooppunt kan antwoorden.",
+    "localInboxName": "Lokale verspreiding (offline inbox)",
+    "localInboxHint": "Lokale verspreiding is de offline inbox van dit apparaat. Het slaat geen uitgaande DM's op voor onbereikbare collega's — stel een extern lxmf.propagation-knooppunt in als voorkeur voor opslaan en doorsturen.",
+    "preferredLocalWarning": "Voorkeur is alleen lokaal — offline collega's hebben nog steeds een extern propagatieknooppunt nodig voor store-and-forward-levering."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

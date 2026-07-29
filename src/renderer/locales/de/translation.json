@@ -611,7 +611,8 @@
     "dmNodeHops_other": "{{count}} Hops",
     "notificationDmTitle": "DM von {{sender}}",
     "notificationMessageTitle": "Nachricht von {{sender}}",
-    "emojiButton": "Emojis"
+    "emojiButton": "Emojis",
+    "reticulumSendStoredAtPn": "Am Ausbreitungsknoten gespeichert"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Propagation Sync hat keinen Link-Beweis vom Knoten erhalten — Ihre Identität benötigt möglicherweise eine neue Ankündigung, oder der Pfad zurück fehlt. Versuchen Sie es jetzt mit Network → Announce und dann erneut mit Sync.",
     "syncOfferUnknown": "Der Ausbreitungsknoten hat einen unbekannten Sync-Angebotsfehler zurückgegeben — versuchen Sie es gleich noch einmal.",
-    "syncPathHint": "Die Fernsynchronisierung erfordert einen Pfad in beide Richtungen. Sync sendet zuerst eine kurze LXMF-Ankündigung, damit der Knoten antworten kann."
+    "syncPathHint": "Die Fernsynchronisierung erfordert einen Pfad in beide Richtungen. Sync sendet zuerst eine kurze LXMF-Ankündigung, damit der Knoten antworten kann.",
+    "localInboxName": "Lokale Verbreitung (Offline-Posteingang)",
+    "localInboxHint": "Die lokale Verbreitung ist der Offline-Posteingang dieses Geräts. Es speichert keine ausgehenden DMs für nicht erreichbare Peers — legen Sie einen entfernten lxmf.propagation-Knoten als bevorzugt für Store-and-Forward fest.",
+    "preferredLocalWarning": "Bevorzugt ist nur lokal — Offline-Peers benötigen immer noch einen Remote-Propagation-Knoten für die Store-and-Forward-Bereitstellung."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

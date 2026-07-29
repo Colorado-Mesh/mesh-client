@@ -611,7 +611,8 @@
     "dmNodeHops_one": "{{count}} hop",
     "dmNodeHops_other": "{{count}} hop",
     "notificationDmTitle": "DM dari {{sender}}",
-    "notificationMessageTitle": "Pesan dari {{sender}}"
+    "notificationMessageTitle": "Pesan dari {{sender}}",
+    "reticulumSendStoredAtPn": "Disimpan di simpul propagasi"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Sinkronisasi propagasi tidak mendapatkan bukti tautan dari simpul — identitas Anda mungkin memerlukan pengumuman baru, atau jalur kembali hilang. Coba Network → Announce sekarang, lalu Sinkronkan lagi.",
     "syncOfferUnknown": "Simpul propagasi mengembalikan kesalahan penawaran sinkronisasi yang tidak diketahui — coba lagi sebentar lagi.",
-    "syncPathHint": "Sinkronisasi jarak jauh membutuhkan jalur dua arah. Sinkronisasi mengirimkan pengumuman LXMF singkat terlebih dahulu sehingga node dapat membalas."
+    "syncPathHint": "Sinkronisasi jarak jauh membutuhkan jalur dua arah. Sinkronisasi mengirimkan pengumuman LXMF singkat terlebih dahulu sehingga node dapat membalas.",
+    "localInboxName": "Propagasi lokal (kotak masuk offline)",
+    "localInboxHint": "Propagasi lokal adalah kotak masuk offline perangkat ini. Ini tidak menyimpan DM keluar untuk rekan — rekan yang tidak dapat dijangkau — atur simpul lxmf.propagasi jarak jauh seperti yang disukai untuk store - and - forward.",
+    "preferredLocalWarning": "Pilihannya adalah lokal saja — rekan offline masih membutuhkan simpul propagasi jarak jauh untuk pengiriman store - and - forward."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

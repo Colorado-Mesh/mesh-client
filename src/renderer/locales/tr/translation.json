@@ -611,7 +611,8 @@
     "dmNodeHops_one": "{{count}} atlama",
     "dmNodeHops_other": "{{count}} atlama",
     "notificationDmTitle": "{{sender}} 'dan DM",
-    "notificationMessageTitle": "{{sender}} adlı kişiden mesaj"
+    "notificationMessageTitle": "{{sender}} adlı kişiden mesaj",
+    "reticulumSendStoredAtPn": "Yayılma düğümünde depolanır"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "Yayılma senkronizasyonunun düğümden bağlantı kanıtı yok. Kimliğinizin yeni bir duyuruya ihtiyacı olabilir veya geri dönüş yolu eksik olabilir. Şimdi Network → Announce'ı deneyin, ardından tekrar Senkronize edin.",
     "syncOfferUnknown": "Yayılma düğümü bilinmeyen bir senkronizasyon teklifi hatası verdi — birazdan tekrar deneyin.",
-    "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir."
+    "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir.",
+    "localInboxName": "Yerel yayılım (çevrimdışı gelen kutusu)",
+    "localInboxHint": "Yerel yayılım, bu cihazın çevrimdışı gelen kutusudur. Ulaşılamayan eşler için giden DM'leri saklamaz — depolama ve iletme için tercih edilen bir uzak lxmf.propagation düğümü ayarlayın.",
+    "preferredLocalWarning": "Tercih edilen yalnızca Yereldir — çevrimdışı eşler, mağaza ve iletme teslimatı için hala uzak bir yayılma düğümüne ihtiyaç duyarlar."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

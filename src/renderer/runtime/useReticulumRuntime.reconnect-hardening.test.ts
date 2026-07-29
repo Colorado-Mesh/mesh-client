@@ -210,7 +210,7 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
 describe('useReticulumRuntime outbound delivery persistence', () => {
   it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
     expect(SOURCE).toMatch(
-      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*\}\)/,
+      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*deliveryMethod: p\.delivery_method,\s*\}\)/,
     );
   });
 

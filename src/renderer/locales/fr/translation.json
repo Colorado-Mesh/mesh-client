@@ -611,7 +611,8 @@
     "dmNodeHops_other": "{{count}} sauts",
     "notificationDmTitle": "DM de {{sender}}",
     "notificationMessageTitle": "Message de {{sender}}",
-    "emojiButton": "Emoji"
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Stocké au nœud de propagation"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "La synchronisation de la propagation n'a reçu aucune preuve de lien du nœud — votre identité peut avoir besoin d'une nouvelle annonce ou le chemin de retour est manquant. Essayez Network → Announce maintenant, puis Sync à nouveau.",
     "syncOfferUnknown": "Le nœud de propagation a renvoyé une erreur d'offre de synchronisation inconnue — réessayez dans un instant.",
-    "syncPathHint": "La synchronisation à distance a besoin d'un chemin dans les deux sens. Sync envoie d'abord une courte annonce LXMF afin que le nœud puisse répondre."
+    "syncPathHint": "La synchronisation à distance a besoin d'un chemin dans les deux sens. Sync envoie d'abord une courte annonce LXMF afin que le nœud puisse répondre.",
+    "localInboxName": "Propagation locale (boîte de réception hors ligne)",
+    "localInboxHint": "La propagation locale est la boîte de réception hors ligne de cet appareil. Il ne stocke pas les DM sortants pour les pairs inaccessibles — définissez un nœud lxmf.propagation distant comme préféré pour le stockage et le transfert.",
+    "preferredLocalWarning": "Préféré est Local uniquement — les pairs hors ligne ont toujours besoin d'un nœud de propagation distant pour la livraison en magasin et en avant."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

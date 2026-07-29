@@ -611,7 +611,8 @@
     "dmNodeHops_one": "{{count}}跳",
     "dmNodeHops_other": "{{count}}跳",
     "notificationDmTitle": "来自{{sender}}的DM",
-    "notificationMessageTitle": "来自{{sender}}的消息"
+    "notificationMessageTitle": "来自{{sender}}的消息",
+    "reticulumSendStoredAtPn": "存储在传播节点"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "传播同步没有从节点获得链接证明—您的身份可能需要新的公告，或者缺少返回路径。立即尝试网络→公告，然后再次同步。",
     "syncOfferUnknown": "传播节点返回了一个未知的同步报价错误—请稍后重试。",
-    "syncPathHint": "远程同步需要双向路径。Sync首先发送一个简短的LXMF通告，以便节点可以回复。"
+    "syncPathHint": "远程同步需要双向路径。Sync首先发送一个简短的LXMF通告，以便节点可以回复。",
+    "localInboxName": "本地传播（离线收件箱）",
+    "localInboxHint": "本地传播是此设备的离线收件箱。它不存储无法访问的对等项的出站DM —将远程lxmf.propagation节点设置为存储和转发的首选节点。",
+    "preferredLocalWarning": "首选仅限本地—离线同行仍然需要一个远程传播节点来进行存储和转发交付。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

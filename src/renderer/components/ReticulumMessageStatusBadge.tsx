@@ -49,7 +49,9 @@ export function ReticulumMessageStatusBadge({
         ? t('chatPanel.reticulumSendPropagated')
         : t('chatPanel.reticulumSendSending')
       : status === 'acked'
-        ? t('chatPanel.reticulumSendDelivered')
+        ? deliveryMethod === 'propagated'
+          ? t('chatPanel.reticulumSendStoredAtPn')
+          : t('chatPanel.reticulumSendDelivered')
         : (error ?? t('chatPanel.reticulumSendFailed'));
   const viaPrefix =
     deliveryMethod === 'propagated'

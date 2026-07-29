@@ -550,10 +550,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
           message_hash?: string;
           status?: string;
           sent_via?: string;
+          delivery_method?: string;
         };
         if (identityId && p.message_hash && p.status) {
           applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
             sentVia: p.sent_via,
+            deliveryMethod: p.delivery_method,
           });
         }
       }

@@ -215,4 +215,52 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
       }),
     );
   });
+
+  it('upgrades reticulumDeliveryMethod on Direct→PN fallback and persists', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: selfNodeId,
+            to: toNodeId,
+            senderName: 'Me',
+            payload: 'fallback',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+    expect(
+      useMessageStore.getState().messages[identityId]?.[messageHash]?.reticulumDeliveryMethod,
+    ).toBe('propagated');
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'delivered', {
+      deliveryMethod: 'propagated',
+    });
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('acked');
+    expect(
+      useMessageStore.getState().messages[identityId]?.[messageHash]?.reticulumDeliveryMethod,
+    ).toBe('propagated');
+    expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message_hash: messageHash,
+        delivery_status: 'delivered',
+        delivery_method: 'propagated',
+      }),
+    );
+  });
 });

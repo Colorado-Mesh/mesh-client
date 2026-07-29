@@ -91,6 +91,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumMessageHash',
   'reticulumSenderHash',
   'reticulumReplyToHash',
+  'reticulumDeliveryMethod',
   'reticulumAttachmentPath',
   'viaStoreForward',
 ];

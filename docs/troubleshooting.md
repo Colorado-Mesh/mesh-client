@@ -1160,7 +1160,9 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 1. Open **Network → Propagation** (Chat notice **Set up propagation** jumps there).
 2. Add a **32-character LXMF destination hash** from whoever runs the propagation node you trust.
 3. Set **Preferred** (manual mode) or leave **Auto** when multiple nodes are listed.
-4. **Local propagation only** queues messages on this device — it does **not** replace a remote propagation node for peers you cannot reach directly.
+4. **Local propagation only** is this device’s offline inbox — it does **not** replace a remote propagation node for peers you cannot reach directly. Preferring Local shows a warning toast; Chat still treats local-only as “no remote PN.”
+
+**Stale path + Failed via TCP:** When a path exists, mesh-client tries **Direct** first. If Direct fails and a preferred **remote** PN is configured, the sidecar retries once via that PN (Ratspeak-style store-and-forward). Without a remote preferred PN, the row stays **Failed** even if Ratspeak on the same machine deposits successfully.
 
 **Not the same as transport:** Ratspeak TCP hubs (e.g. `rns.ratspeak.org:4242`) and [rathole](https://github.com/ratspeak/rathole) are **connectivity / transport** tools, not LXMF propagation. mesh-client does not ship a default community propagation hash.
 

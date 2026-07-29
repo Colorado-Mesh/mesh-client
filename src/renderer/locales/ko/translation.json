@@ -611,7 +611,8 @@
     "dmNodeHops_one": "{{count}} 홉",
     "dmNodeHops_other": "{{count}} 홉",
     "notificationDmTitle": "{{sender}} 님의 DM",
-    "notificationMessageTitle": "{{sender}} 님의 메시지"
+    "notificationMessageTitle": "{{sender}} 님의 메시지",
+    "reticulumSendStoredAtPn": "전파 노드에 저장됨"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "전파 동기화는 노드에서 링크 증거를 얻지 못했습니다. 귀하의 신원은 새로운 공지가 필요하거나 경로가 누락되었을 수 있습니다. 지금 Network → Announce를 시도한 다음 다시 동기화하십시오.",
     "syncOfferUnknown": "전파 노드가 알 수 없는 동기화 제안 오류를 반환했습니다. 잠시 후 다시 시도하십시오.",
-    "syncPathHint": "원격 동기화는 양방향 경로가 필요합니다. Sync는 노드가 응답할 수 있도록 짧은 LXMF 알림을 먼저 보냅니다."
+    "syncPathHint": "원격 동기화는 양방향 경로가 필요합니다. Sync는 노드가 응답할 수 있도록 짧은 LXMF 알림을 먼저 보냅니다.",
+    "localInboxName": "로컬 전파 (오프라인 받은 편지함)",
+    "localInboxHint": "로컬 전파는 이 장치의 오프라인 받은 편지함입니다. 도달할 수 없는 피어를 위해 아웃바운드 DM을 저장하지 않습니다. 원격 lxmf.propagation 노드를 store-and-forward에 대해 선호하는 것으로 설정합니다.",
+    "preferredLocalWarning": "기본 설정은 로컬 전용입니다. 오프라인 피어에게는 스토어 앤 포워드 배달을 위한 원격 전파 노드가 필요합니다."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

@@ -611,7 +611,8 @@
     "dmNodeHops_one": "{{count}} ホップ",
     "dmNodeHops_other": "{{count}} ホップ",
     "notificationDmTitle": "{{sender}}からのDM",
-    "notificationMessageTitle": "{{sender}}からのメッセージ"
+    "notificationMessageTitle": "{{sender}}からのメッセージ",
+    "reticulumSendStoredAtPn": "伝播ノードに格納されています"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -3953,7 +3954,10 @@
     "discoveredHash": "{{hash}}",
     "syncEstablishNoLinkProof": "伝播同期では、ノードからリンクの証明が得られませんでした。IDには新しいアナウンスが必要な場合や、戻るパスが見つからない場合があります。今すぐネットワーク→アナウンスを試してから、再度同期してください。",
     "syncOfferUnknown": "伝搬ノードが不明な同期オファーエラーを返しました。しばらくしてからもう一度お試しください。",
-    "syncPathHint": "リモート同期には、両方向のパスが必要です。同期は、ノードが応答できるように、短いLXMFアナウンスを最初に送信します。"
+    "syncPathHint": "リモート同期には、両方向のパスが必要です。同期は、ノードが応答できるように、短いLXMFアナウンスを最初に送信します。",
+    "localInboxName": "ローカル伝播（オフライン受信トレイ）",
+    "localInboxHint": "ローカル伝播は、このデバイスのオフライン受信トレイです。到達不能なピアのアウトバウンドDMは保存されません。リモートlxmf.propagationノードをストアアンドフォワードに推奨するように設定します。",
+    "preferredLocalWarning": "優先はローカルのみです—オフラインのピアは、ストアアンドフォワード配信のためにリモート伝播ノードを必要とします。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",
