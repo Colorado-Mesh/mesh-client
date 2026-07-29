@@ -10,6 +10,10 @@ import {
   isReticulumRemoteInterfaceType,
   type ReticulumLocalInterfaceInput,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import {
+  RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS,
+  RETICULUM_PROPAGATION_SYNC_STALL_MS,
+} from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
 import type {
   ReticulumAutoBeaconAlert,
@@ -26,6 +30,15 @@ export interface ReticulumDiagnosticsSnapshot {
   interfaces?: ReticulumLocalInterfaceInput[];
 }
 
+/** Propagation sync snapshot for diagnostics (derived from reticulumPropagationStore). */
+export interface ReticulumPropagationDiagnosticsInput {
+  syncActive: boolean;
+  syncProgress: number;
+  lastSyncError: string | null;
+  /** Epoch ms when the current/last sync attempt started. */
+  lastAttemptAt: number | null;
+}
+
 export interface ReticulumDiagnosticsBuildOptions {
   selfNodeId?: number;
   interfaces?: ReticulumLocalInterfaceInput[];
@@ -35,6 +48,11 @@ export interface ReticulumDiagnosticsBuildOptions {
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
   /** When true, append shared-instance conflict hint on transport saturation rows. */
   shareInstanceEnabled?: boolean;
+  /** Sidecar hung watchdog — only emit when running && healthy === false. */
+  sidecarRunning?: boolean;
+  sidecarHealthy?: boolean;
+  sidecarUnhealthySince?: number;
+  propagation?: ReticulumPropagationDiagnosticsInput;
 }
 
 function runtimeCauseI18n(
@@ -63,7 +81,13 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.transportSaturated',
   'diagnosticsPanel.reticulum.runtime.transportSaturatedShareInstance',
   'diagnosticsPanel.reticulum.runtime.slowTransportQuery',
+  'diagnosticsPanel.reticulum.runtime.sidecarUnhealthy',
+  'diagnosticsPanel.reticulum.runtime.propagationSyncStuck',
+  'diagnosticsPanel.reticulum.runtime.propagationSyncFailing',
 ] as const;
+
+/** User-initiated cancel is not a health finding. */
+const PROPAGATION_SYNC_USER_CANCEL_KEY = 'reticulumPropagation.syncCancelled';
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
 export function buildReticulumDiagnosticRows(
@@ -357,6 +381,57 @@ export function buildReticulumDiagnosticRows(
       severity: 'info',
       detectedAt: now,
     });
+  }
+
+  if (options?.sidecarRunning === true && options.sidecarHealthy === false) {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/sidecar-unhealthy'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/sidecar-unhealthy',
+      cause: 'Reticulum sidecar is running but not responding to health checks',
+      causeI18n: runtimeCauseI18n('sidecarUnhealthy'),
+      severity: 'error',
+      detectedAt: now,
+      reticulumRepairKind: 'restart_stack',
+    });
+  }
+
+  const propagation = options?.propagation;
+  if (propagation) {
+    const attemptAt = propagation.lastAttemptAt;
+    const stuck =
+      propagation.syncActive &&
+      attemptAt != null &&
+      now - attemptAt >= RETICULUM_PROPAGATION_SYNC_STALL_MS &&
+      propagation.syncProgress < RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS;
+    if (stuck) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/propagation-sync-stuck'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/propagation-sync-stuck',
+        cause: 'Propagation node sync is stuck establishing a link',
+        causeI18n: runtimeCauseI18n('propagationSyncStuck'),
+        severity: 'warning',
+        detectedAt: now,
+      });
+    } else if (
+      !propagation.syncActive &&
+      propagation.lastSyncError != null &&
+      propagation.lastSyncError !== PROPAGATION_SYNC_USER_CANCEL_KEY
+    ) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/propagation-sync-failing'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/propagation-sync-failing',
+        cause: 'Propagation node sync failed',
+        causeI18n: runtimeCauseI18n('propagationSyncFailing'),
+        severity: 'warning',
+        detectedAt: now,
+      });
+    }
   }
 
   return rows;

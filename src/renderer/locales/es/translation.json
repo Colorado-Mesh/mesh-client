@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "Conflicto potencial del repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de ruido elevado",
       "excessiveFlooding": "Inundaciones excesivas",
-      "reticulumTrafficDetected": "Tráfico Reticulum detectado"
+      "reticulumTrafficDetected": "Tráfico Reticulum detectado",
+      "highCompanionTxQueue": "Cola de TX de acompañamiento alto"
     },
     "rfCause": {
       "channelUtilizationSpike": "El {{current}}% actual supera en más de 2veces la media reciente ({{average}}%) — posible congestión o aumento de interferencias.",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "Interferencia de banda ancha (electrónica defectuosa, ruido de la línea eléctrica, etc.) que eleva el nivel de ruido.",
       "fringeWeakCoverage": "El nodo está demasiado lejos o mal conectado con el resto de la malla.",
       "elevatedNoiseFloor": "El nivel mínimo de ruido de radio es {{noiseFloor}} dBm — interferencia elevada que reduce el alcance efectivo.",
-      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos."
+      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos.",
+      "highCompanionTxQueue": "La profundidad de la cola de salida del acompañante es {{queueLen}}/256; es posible que el tráfico se retrase o se caiga."
     },
     "foreignLoraCause": {
       "meshtastic": "Nodo Meshtastic que transmite en esta frecuencia. Remitente: {{sender}}. {{proximity}}Este nodo puede estar en tu zona de repetidores MeshCore.",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "Permita que se establezcan rutas directas",
         "description": "La relación de inundación es muy alta: espere a que el nodo acumule contactos de trayectoria directa o compruebe la proximidad del repetidor."
+      },
+      "highCompanionTxQueue": {
+        "title": "Reduce el tráfico saliente o comprueba el enlace de RF",
+        "description": "La cola de TX complementaria está casi llena: pausa los envíos, reduce las inundaciones o comprueba si hay interferencias y enlaces débiles."
       }
     },
     "cuHistoryHeading": "Utilización del canal (últimas 24h)",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "Transporte RNS saturado (caídas de solicitud de ruta {{count}}). La instancia de Share está activada: salga de otras aplicaciones de Reticulum (MeshChatX, Ratspeak, rnsd) y reinicie la pila.",
         "slowTransportQuery": "Consultas de transporte RNS lentas o fallidas ({{count}}×)",
         "bleBondRemoved": "El enlace BLE RNode \"{{name}}\" está obsoleto: olvídelo en la configuración de Bluetooth del sistema operativo y vuelva a emparejarlo",
-        "blePairingTimedOut": "Se agotó el tiempo de espera para el intercambio de clave de acceso de BLE RNode \"{{name}}\": ingrese el PIN actual (no 123456) y vuelva a emparejar"
+        "blePairingTimedOut": "Se agotó el tiempo de espera para el intercambio de clave de acceso de BLE RNode \"{{name}}\": ingrese el PIN actual (no 123456) y vuelva a emparejar",
+        "sidecarUnhealthy": "El sidecar de Reticulum está funcionando pero no responde a los controles de salud",
+        "propagationSyncStuck": "La sincronización del nodo de propagación está atascada estableciendo un enlace",
+        "propagationSyncFailing": "Error en la sincronización del nodo de propagación"
       }
     },
     "routingPort": {

@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "Potensi Konflik Pengulang MeshCore",
       "elevatedNoiseFloor": "Lantai Kebisingan Tinggi",
       "excessiveFlooding": "Banjir Berlebihan",
-      "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi"
+      "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi",
+      "highCompanionTxQueue": "Antrean TX Pendamping Tinggi"
     },
     "rfCause": {
       "channelUtilizationSpike": "{{current}}% saat ini lebih dari 2× rata-rata terkini ({{average}}%) — kemungkinan kemacetan atau lonjakan gangguan.",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "Interferensi broadband (kerusakan elektronik, gangguan saluran listrik, dll.) meningkatkan tingkat kebisingan.",
       "fringeWeakCoverage": "Node terlalu jauh atau tidak terhubung dengan baik ke seluruh mesh.",
       "elevatedNoiseFloor": "Lantai kebisingan radio adalah {{noiseFloor}} dBm — gangguan tinggi yang mengurangi rentang efektif.",
-      "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat."
+      "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat.",
+      "highCompanionTxQueue": "Kedalaman antrean keluar pendamping adalah {{queueLen}}/256 — lalu lintas mungkin tertunda atau terputus."
     },
     "foreignLoraCause": {
       "meshtastic": "Node Meshtastic mentransmisikan pada frekuensi ini. Pengirim: {{sender}}. {{proximity}}Node ini mungkin berada di area repeater MeshCore Anda.",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "Izinkan rute langsung untuk ditetapkan",
         "description": "Rasio banjir sangat tinggi — tunggu hingga simpul menumpuk kontak jalur langsung, atau periksa kedekatan repeater."
+      },
+      "highCompanionTxQueue": {
+        "title": "Kurangi lalu lintas keluar atau periksa tautan RF",
+        "description": "Antrean TX pendamping hampir penuh — jeda pengiriman, kurangi banjir, atau periksa gangguan dan tautan yang lemah."
       }
     },
     "cuHistoryHeading": "Pemanfaatan Saluran (24 jam terakhir)",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "Transportasi RNS jenuh ({{count}} permintaan jalur turun). Bagikan instance aktif — keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd) dan mulai ulang tumpukan.",
         "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
         "bleBondRemoved": "Ikatan BLE RNode \"{{name}}\" sudah basi — Lupakan pengaturan OS Bluetooth dan pasangkan kembali",
-        "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali"
+        "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali",
+        "sidecarUnhealthy": "Reticulum sidecar sedang berjalan tetapi tidak menanggapi pemeriksaan kesehatan",
+        "propagationSyncStuck": "Sinkronisasi simpul propagasi macet membuat tautan",
+        "propagationSyncFailing": "Sinkronisasi simpul propagasi gagal"
       }
     },
     "routingPort": {

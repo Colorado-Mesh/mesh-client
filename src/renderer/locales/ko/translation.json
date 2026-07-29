@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "잠재적인 MeshCore 리피터 충돌",
       "elevatedNoiseFloor": "높은 소음층",
       "excessiveFlooding": "과도한 홍수",
-      "reticulumTrafficDetected": "Reticulum 트래픽 감지됨"
+      "reticulumTrafficDetected": "Reticulum 트래픽 감지됨",
+      "highCompanionTxQueue": "하이 컴패니언 TX 대기열"
     },
     "rfCause": {
       "channelUtilizationSpike": "현재 {{current}}%는 최근 평균({{average}}%)의 2배를 초과합니다. 혼잡 또는 간섭 급증이 발생할 수 있습니다.",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "광대역 간섭(전자 장치 결함, 전력선 소음 등)으로 인해 노이즈 플로어가 높아집니다.",
       "fringeWeakCoverage": "노드가 너무 멀리 떨어져 있거나 메시의 나머지 부분과 제대로 연결되어 있지 않습니다.",
       "elevatedNoiseFloor": "무선 노이즈 플로어는 {{noiseFloor}} dBm — 유효 범위를 줄이는 높은 간섭.",
-      "excessiveFlooding": "{{percent}}%의 전송이 플러드 라우팅됩니다 — 근처 노드에서 직접 라우팅이 설정되지 않을 수 있습니다."
+      "excessiveFlooding": "{{percent}}%의 전송이 플러드 라우팅됩니다 — 근처 노드에서 직접 라우팅이 설정되지 않을 수 있습니다.",
+      "highCompanionTxQueue": "동반자 아웃바운드 대기열 깊이는 {{queueLen}}/256입니다. 트래픽이 지연되거나 드롭될 수 있습니다."
     },
     "foreignLoraCause": {
       "meshtastic": "이 주파수로 전송되는 Meshtastic 노드입니다. 발신자: {{sender}}. {{proximity}}이 노드는 MeshCore 리피터 영역에 있을 수 있습니다.",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "직행 경로를 설정하도록 허용",
         "description": "홍수 비율이 매우 높습니다. 노드가 직접 경로 접촉을 축적하거나 리피터 근접성을 확인할 때까지 기다리십시오."
+      },
+      "highCompanionTxQueue": {
+        "title": "아웃바운드 트래픽을 줄이거나 RF 링크를 확인하세요.",
+        "description": "Companion TX 대기열이 거의 가득 찼습니다. 전송을 일시 중지하거나, 홍수를 줄이거나, 간섭 및 약한 링크를 확인합니다."
       }
     },
     "cuHistoryHeading": "채널 활용도 (마지막 24시간)",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "RNS 전송 포화 ({{count}} 경로 요청 드롭). 인스턴스 공유 켜짐 — 다른 Reticulum 앱 (MeshChatX, Ratspeak, rnsd) 을 종료하고 스택을 다시 시작합니다.",
         "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\" 본드가 오래되었습니다 — OS Bluetooth 설정에서 기기를 삭제하고 다시 페어링하세요",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" 암호 키 교환 시간이 초과되었습니다. 현재 PIN(123456 아님)을 입력하고 다시 페어링하세요."
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" 암호 키 교환 시간이 초과되었습니다. 현재 PIN(123456 아님)을 입력하고 다시 페어링하세요.",
+        "sidecarUnhealthy": "Reticulum 사이드카가 작동 중이지만 상태 점검에 응답하지 않습니다",
+        "propagationSyncStuck": "전파 노드 동기화가 링크 설정 중 중단됨",
+        "propagationSyncFailing": "전파 노드 동기화 실패"
       }
     },
     "routingPort": {

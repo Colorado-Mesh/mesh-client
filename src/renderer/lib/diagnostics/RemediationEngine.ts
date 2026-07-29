@@ -229,6 +229,15 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
     titleKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.title',
     descriptionKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.description',
   },
+  'High Companion TX Queue': {
+    title: 'Reduce outbound traffic or check the RF link',
+    description:
+      'Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links.',
+    category: 'Physical',
+    severity: 'warning',
+    titleKey: 'diagnosticsPanel.remedyRf.highCompanionTxQueue.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.highCompanionTxQueue.description',
+  },
 };
 
 export function getRecommendedActionForRfCondition(condition: string): DiagnosticRemedy | null {

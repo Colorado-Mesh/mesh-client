@@ -52,7 +52,10 @@ import {
   setReticulumManualStackStopSuppress,
 } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
-import { applyPropagationSyncEvent } from '@/renderer/lib/reticulum/reticulumPropagationSync';
+import {
+  applyPropagationSyncEvent,
+  RETICULUM_PROPAGATION_SYNC_STALL_MS,
+} from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   resolveReticulumSelfFullLabel,
@@ -386,6 +389,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
       const shareInstanceEnabled =
         stackRaw != null ? parseReticulumStackSettingsPayload(stackRaw).share_instance : false;
+      const propState = useReticulumPropagationStore.getState();
       const rows = buildReticulumDiagnosticRows(snapshot, {
         selfNodeId,
         interfaces,
@@ -394,6 +398,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
         autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
         interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
         shareInstanceEnabled,
+        sidecarRunning: sidecarStatus.running,
+        sidecarHealthy: sidecarStatus.healthy,
+        sidecarUnhealthySince: sidecarStatus.unhealthySince,
+        propagation: {
+          syncActive: propState.sync.active,
+          syncProgress: propState.sync.progress,
+          lastSyncError: propState.lastSyncError,
+          lastAttemptAt:
+            propState.activePropagationSyncAttemptAt ?? propState.lastPropagationSyncAttemptAt,
+        },
       });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
@@ -439,6 +453,43 @@ export function useReticulumRuntime(): ProtocolRuntime {
       void syncDiagnosticsFromSidecar();
     }, 2_000);
   }, [syncDiagnosticsFromSidecar]);
+
+  // Refresh diagnostics when propagation sync starts/ends outside WS (startSync fail, stall cancel).
+  useEffect(() => {
+    let prevActive = useReticulumPropagationStore.getState().sync.active;
+    let prevError = useReticulumPropagationStore.getState().lastSyncError;
+    let stallRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const clearStallRefresh = () => {
+      if (stallRefreshTimer) {
+        clearTimeout(stallRefreshTimer);
+        stallRefreshTimer = null;
+      }
+    };
+    const unsub = useReticulumPropagationStore.subscribe((state) => {
+      const activeChanged = state.sync.active !== prevActive;
+      const errorChanged = state.lastSyncError !== prevError;
+      if (state.sync.active && !prevActive) {
+        clearStallRefresh();
+        // Catch stuck/failing shortly after the establishing stall window.
+        stallRefreshTimer = setTimeout(() => {
+          stallRefreshTimer = null;
+          scheduleDebouncedDiagnosticsRefresh();
+        }, RETICULUM_PROPAGATION_SYNC_STALL_MS + 1_000);
+      }
+      if (!state.sync.active) {
+        clearStallRefresh();
+      }
+      prevActive = state.sync.active;
+      prevError = state.lastSyncError;
+      if (activeChanged || errorChanged) {
+        scheduleDebouncedDiagnosticsRefresh();
+      }
+    });
+    return () => {
+      clearStallRefresh();
+      unsub();
+    };
+  }, [scheduleDebouncedDiagnosticsRefresh]);
 
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
     rawPacketAppenderRef.current?.append(entry);
@@ -566,6 +617,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       ) {
         const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
         applyPropagationSyncEvent(p);
+        scheduleDebouncedDiagnosticsRefresh();
       }
       if (evt.type === 'propagation.discovered' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as {
@@ -1023,7 +1075,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
-      if (status.interfaceIssueAlert || status.autoBeaconAlert) {
+      if (status.interfaceIssueAlert || status.autoBeaconAlert || status.healthy === false) {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {

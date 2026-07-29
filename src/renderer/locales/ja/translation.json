@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "MeshCore リピーターの潜在的な競合",
       "elevatedNoiseFloor": "高所ノイズフロア",
       "excessiveFlooding": "過度の洪水",
-      "reticulumTrafficDetected": "Reticulumトラフィックを検出"
+      "reticulumTrafficDetected": "Reticulumトラフィックを検出",
+      "highCompanionTxQueue": "ハイコンパニオンTXキュー"
     },
     "rfCause": {
       "channelUtilizationSpike": "現在の {{current}}% は最近の平均 ({{average}}%) の 2 倍を超えています。輻輳または干渉サージの可能性があります。",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "広帯域干渉 (電子機器の故障、電力線ノイズなど) によりノイズ フロアが上昇します。",
       "fringeWeakCoverage": "ノードが遠すぎるか、メッシュの残りの部分との接続が不十分です。",
       "elevatedNoiseFloor": "ラジオノイズフロアは{{noiseFloor}} dBm — 有効範囲を低下させる高レベルの干渉。",
-      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。"
+      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。",
+      "highCompanionTxQueue": "コンパニオンのアウトバウンドキューの深さは{{queueLen}}/256です。トラフィックが遅延またはドロップされる可能性があります。"
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic ノードはこの周波数で送信します。送信者: {{sender}}。 {{proximity}}このノードは MeshCore リピーター エリア内にある可能性があります。",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "直接ルートを確立できるようにする",
         "description": "フラッド比率は非常に高く、ノードが直接経路の接触を蓄積するのを待つか、リピーターの近接性を確認します。"
+      },
+      "highCompanionTxQueue": {
+        "title": "アウトバウンドトラフィックを減らすか、RFリンクを確認してください",
+        "description": "コンパニオンTXキューはほぼいっぱいです。送信を一時停止したり、洪水を減らしたり、干渉や弱いリンクがないか確認したりできます。"
       }
     },
     "cuHistoryHeading": "チャネル使用率（過去24時間）",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "RNSトランスポートが飽和しました（ {{count}}パス要求ドロップ）。共有インスタンスがオンになっています—他のReticulumアプリ（ MeshChatX、Ratspeak、rnsd ）を終了し、スタックを再起動します。",
         "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
         "bleBondRemoved": "BLE RNode「{{name}}」のボンディングが古くなっています — OS の Bluetooth 設定でデバイスを削除して再ペアリングしてください",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" パスキー交換がタイムアウトしました — 現在の PIN (123456 ではない) を入力して、再ペアリングしてください"
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" パスキー交換がタイムアウトしました — 現在の PIN (123456 ではない) を入力して、再ペアリングしてください",
+        "sidecarUnhealthy": "Reticulumサイドカーは実行中ですが、ヘルスチェックに応答していません",
+        "propagationSyncStuck": "伝播ノードの同期がリンクの確立に固執しています",
+        "propagationSyncFailing": "伝播ノードの同期に失敗しました"
       }
     },
     "routingPort": {

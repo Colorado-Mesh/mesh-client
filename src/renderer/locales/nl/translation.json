@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "Potentieel MeshCore Repeater-conflict",
       "elevatedNoiseFloor": "Verhoogde geluidsvloer",
       "excessiveFlooding": "Overmatige overstromingen",
-      "reticulumTrafficDetected": "Reticulum-verkeer gedetecteerd"
+      "reticulumTrafficDetected": "Reticulum-verkeer gedetecteerd",
+      "highCompanionTxQueue": "High Companion TX-wachtrij"
     },
     "rfCause": {
       "channelUtilizationSpike": "De huidige {{current}}% is meer dan 2x het recente gemiddelde ({{average}}%) – mogelijke congestie of interferentiepiek.",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "Breedbandinterferentie (defecte elektronica, ruis op het elektriciteitsnet, enz.) waardoor de ruisvloer hoger wordt.",
       "fringeWeakCoverage": "Het knooppunt is te ver weg of slecht verbonden met de rest van de mesh.",
       "elevatedNoiseFloor": "Radiogeluidsvloer is {{noiseFloor}} dBm — verhoogde interferentie die het effectieve bereik vermindert.",
-      "excessiveFlooding": "{{percent}}% van de transmissies wordt via een overstromingsrouter geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt."
+      "excessiveFlooding": "{{percent}}% van de transmissies wordt via een overstromingsrouter geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt.",
+      "highCompanionTxQueue": "De uitgaande wachtrijdiepte van de begeleider is {{queueLen}}/256. Het verkeer kan vertraagd of vertraagd zijn."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic knooppunt dat op deze frequentie zendt. Afzender: {{sender}}. {{proximity}}Dit knooppunt bevindt zich mogelijk in uw MeshCore-repeatergebied.",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "Laat directe routes tot stand komen",
         "description": "Overstromingsverhouding is zeer hoog — wacht tot het knooppunt directe padcontacten verzamelt of controleer de nabijheid van de repeater."
+      },
+      "highCompanionTxQueue": {
+        "title": "Verminder uitgaand verkeer of controleer de RF-link",
+        "description": "De wachtrij van Companion TX is bijna vol — pauzeer verzendingen, verminder overstromingen of controleer op interferentie en zwakke schakels."
       }
     },
     "cuHistoryHeading": "Kanaalgebruik (laatste 24 uur)",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels). Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, rnsd) en start de stapel opnieuw.",
         "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\"-verbinding is verouderd: vergeet de Bluetooth-instellingen van het besturingssysteem en koppel opnieuw",
-        "blePairingTimedOut": "Er is een time-out opgetreden bij het uitwisselen van de BLE RNode \"{{name}}\"-wachtwoord: voer de huidige pincode in (niet 123456) en koppel opnieuw"
+        "blePairingTimedOut": "Er is een time-out opgetreden bij het uitwisselen van de BLE RNode \"{{name}}\"-wachtwoord: voer de huidige pincode in (niet 123456) en koppel opnieuw",
+        "sidecarUnhealthy": "Reticulum-zijspan loopt, maar reageert niet op gezondheidscontroles",
+        "propagationSyncStuck": "Synchronisatie van propagatieknooppunt zit vast bij het tot stand brengen van een link",
+        "propagationSyncFailing": "Synchronisatie van propagatieknooppunt mislukt"
       }
     },
     "routingPort": {

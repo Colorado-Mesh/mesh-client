@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "潜在的MeshCore中继器冲突",
       "elevatedNoiseFloor": "高架噪音地板",
       "excessiveFlooding": "洪水泛滥",
-      "reticulumTrafficDetected": "检测到 Reticulum 流量"
+      "reticulumTrafficDetected": "检测到 Reticulum 流量",
+      "highCompanionTxQueue": "高精灵TX队列"
     },
     "rfCause": {
       "channelUtilizationSpike": "当前的{{current}} %是近期平均值（ {{average}} % ）的2倍以上—可能是拥堵或干扰浪涌。",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "宽带干扰（电子设备故障、电源线噪声等）导致噪声底板升高。",
       "fringeWeakCoverage": "节点距离太远或与网格其余部分的连接不佳。",
       "elevatedNoiseFloor": "无线电噪声底板为{{noiseFloor}} dBm — 干扰升高，有效范围缩短。",
-      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。"
+      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。",
+      "highCompanionTxQueue": "伴侣出站队列深度为{{queueLen}}/256 —流量可能会延迟或丢弃。"
     },
     "foreignLoraCause": {
       "meshtastic": "在此频率上传输的Meshtastic节点。发件人： {{sender}}. {{proximity}}此节点可能位于您的MeshCore中继器区域。",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "允许建立直接路由",
         "description": "洪水比非常高—等待节点积累直接路径触点，或检查中继器接近度。"
+      },
+      "highCompanionTxQueue": {
+        "title": "减少出站流量或检查射频链路",
+        "description": "伴侣TX队列几乎已满—暂停发送、减少洪水或检查干扰和薄弱环节。"
       }
     },
     "cuHistoryHeading": "渠道利用率（过去24小时）",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
         "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
         "bleBondRemoved": "BLE RNode「{{name}}」绑定已过时 — 在操作系统蓝牙设置中忽略该设备并重新配对",
-        "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对"
+        "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对",
+        "sidecarUnhealthy": "Reticulum sidecar正在运行，但未响应健康检查",
+        "propagationSyncStuck": "传播节点同步卡住，无法建立链接",
+        "propagationSyncFailing": "传播节点同步失败"
       }
     },
     "routingPort": {

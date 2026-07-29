@@ -7,7 +7,7 @@ import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnosti
 export interface RFDiagnosis {
   condition: string;
   cause: string;
-  severity: 'warning' | 'info';
+  severity: 'error' | 'warning' | 'info';
   /** When true, SNR-based interpretation is last-hop only (remote nodes). */
   isLastHop?: boolean;
   /** Extra lines under cause (template-only; render muted in UI). */
@@ -210,6 +210,19 @@ export function diagnoseConnectedNode(
         causeI18n: {
           key: 'diagnosticsPanel.rfCause.excessiveFlooding',
           params: { percent: floodPct },
+        },
+      });
+    }
+
+    const queueLen = meshcoreStats.queueLen;
+    if (typeof queueLen === 'number' && queueLen > 200) {
+      findings.push({
+        condition: 'High Companion TX Queue',
+        cause: `Companion outbound queue depth is ${queueLen}/256 — traffic may be delayed or dropped.`,
+        severity: queueLen > 250 ? 'error' : 'warning',
+        causeI18n: {
+          key: 'diagnosticsPanel.rfCause.highCompanionTxQueue',
+          params: { queueLen },
         },
       });
     }

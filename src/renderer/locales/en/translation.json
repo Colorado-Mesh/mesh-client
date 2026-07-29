@@ -1403,7 +1403,8 @@
       "unknownLoraTraffic": "Unknown LoRa Traffic",
       "potentialMeshcoreRepeaterConflict": "Potential MeshCore Repeater Conflict",
       "elevatedNoiseFloor": "Elevated Noise Floor",
-      "excessiveFlooding": "Excessive Flooding"
+      "excessiveFlooding": "Excessive Flooding",
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "Current {{current}}% is over 2× the recent average ({{average}}%) — possible congestion or interference surge.",
@@ -1417,7 +1418,8 @@
       "widebandNoiseFloor": "Broadband interference (faulty electronics, power-line noise, etc.) elevating the noise floor.",
       "fringeWeakCoverage": "Node is too far away or poorly connected to the rest of the mesh.",
       "elevatedNoiseFloor": "Radio noise floor is {{noiseFloor}} dBm — elevated interference reducing effective range.",
-      "excessiveFlooding": "{{percent}}% of transmissions are flood-routed — direct routing may not be established with nearby nodes."
+      "excessiveFlooding": "{{percent}}% of transmissions are flood-routed — direct routing may not be established with nearby nodes.",
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic node transmitting on this frequency. Sender: {{sender}}. {{proximity}}This node may be in your MeshCore repeater area.",
@@ -1492,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "Allow direct routes to establish",
         "description": "Flood ratio is very high — wait for the node to accumulate direct-path contacts, or check repeater proximity."
+      },
+      "highCompanionTxQueue": {
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "noDiagnosticsHealthy": "No diagnostics detected. The mesh looks healthy!",
@@ -1541,7 +1547,10 @@
         "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
         "noPeers": "No known peers in path table yet",
         "autoBeaconTunnelOnly": "AutoInterface beacon TX is failing on VPN tunnel interface(s) {{ifaces}}. Rebuild the Reticulum sidecar or temporarily disable AutoInterface if logs are flooded.",
-        "autoBeaconPhysicalFailures": "AutoInterface beacon TX is failing on {{ifaces}} — local LAN discovery may not work until this is fixed."
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX is failing on {{ifaces}} — local LAN discovery may not work until this is fixed.",
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       },
       "audit": {
         "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",

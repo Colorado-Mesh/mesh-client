@@ -1373,7 +1373,8 @@
       "potentialMeshcoreRepeaterConflict": "Potenziale conflitto del ripetitore MeshCore",
       "elevatedNoiseFloor": "Pavimento Rumoroso Elevato",
       "excessiveFlooding": "Inondazioni eccessive",
-      "reticulumTrafficDetected": "Traffico Reticulum rilevato"
+      "reticulumTrafficDetected": "Traffico Reticulum rilevato",
+      "highCompanionTxQueue": "Coda TX High Companion"
     },
     "rfCause": {
       "channelUtilizationSpike": "L'attuale {{current}}% è superiore a 2 volte la media recente ({{average}}%): possibile congestione o aumento di interferenze.",
@@ -1387,7 +1388,8 @@
       "widebandNoiseFloor": "Interferenze a banda larga (elettronica difettosa, rumore della linea elettrica, ecc.) che aumentano il rumore di fondo.",
       "fringeWeakCoverage": "Il nodo è troppo lontano o scarsamente connesso al resto della mesh.",
       "elevatedNoiseFloor": "Il rumore di fondo della radio è {{noiseFloor}} dBm — interferenza elevata che riduce la portata effettiva.",
-      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in modo alluvionale — l'instradamento diretto potrebbe non essere stabilito con nodi vicini."
+      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in modo alluvionale — l'instradamento diretto potrebbe non essere stabilito con nodi vicini.",
+      "highCompanionTxQueue": "La profondità della coda in uscita dell'accompagnatore è {{queueLen}}/256 — il traffico potrebbe subire ritardi o interruzioni."
     },
     "foreignLoraCause": {
       "meshtastic": "Nodo Meshtastic che trasmette su questa frequenza. Mittente: {{sender}}. {{proximity}}Questo nodo potrebbe trovarsi nell'area del ripetitore MeshCore.",
@@ -1462,6 +1464,10 @@
       "excessiveFlooding": {
         "title": "Consenti l'istituzione di percorsi diretti",
         "description": "Il rapporto di inondazione è molto alto: attendere che il nodo accumuli contatti a percorso diretto o controllare la prossimità del ripetitore."
+      },
+      "highCompanionTxQueue": {
+        "title": "Riduci il traffico in uscita o controlla il link RF",
+        "description": "La coda TX di Companion è quasi piena: metti in pausa gli invii, riduci le inondazioni o verifica la presenza di interferenze e collegamenti deboli."
       }
     },
     "cuHistoryHeading": "Utilizzo del canale (ultime 24 ore)",
@@ -1540,7 +1546,10 @@
         "transportSaturatedShareInstance": "Trasporto RNS saturo ({{count}} gocce path-request). L'istanza di condivisione è attiva: esci da altre app Reticulum (MeshChatX, Ratspeak, rnsd) e riavvia lo stack.",
         "slowTransportQuery": "Query di trasporto RNS lente o non riuscite ({{count}}×)",
         "bleBondRemoved": "Il collegamento BLE RNode \"{{name}}\" è obsoleto: dimenticalo nelle impostazioni Bluetooth del sistema operativo e riassocialo",
-        "blePairingTimedOut": "Scambio passkey BLE RNode \"{{name}}\" scaduto: inserire il PIN corrente (non 123456) e associare nuovamente"
+        "blePairingTimedOut": "Scambio passkey BLE RNode \"{{name}}\" scaduto: inserire il PIN corrente (non 123456) e associare nuovamente",
+        "sidecarUnhealthy": "Il sidecar Reticulum è in funzione ma non risponde ai controlli sanitari",
+        "propagationSyncStuck": "La sincronizzazione del nodo di propagazione è bloccata stabilendo un collegamento",
+        "propagationSyncFailing": "Sincronizzazione del nodo di propagazione non riuscita"
       }
     },
     "routingPort": {

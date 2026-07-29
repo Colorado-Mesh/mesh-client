@@ -331,6 +331,110 @@ describe('ReticulumDiagnosticEngine', () => {
     ).toBe(true);
   });
 
+  it('flags sidecar-unhealthy when running and healthy is false', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      { sidecarRunning: true, sidecarHealthy: false, sidecarUnhealthySince: Date.now() - 5_000 },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/sidecar-unhealthy',
+    );
+    expect(row).toBeDefined();
+    expect(row?.severity).toBe('error');
+    expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.sidecarUnhealthy');
+    expect(row?.reticulumRepairKind).toBe('restart_stack');
+  });
+
+  it('does not flag sidecar-unhealthy when healthy or not running', () => {
+    expect(
+      buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        { sidecarRunning: true, sidecarHealthy: true },
+      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/sidecar-unhealthy'),
+    ).toBe(false);
+    expect(
+      buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        { sidecarRunning: false, sidecarHealthy: false },
+      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/sidecar-unhealthy'),
+    ).toBe(false);
+  });
+
+  it('flags propagation-sync-stuck when establishing past stall window', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        propagation: {
+          syncActive: true,
+          syncProgress: 5,
+          lastSyncError: null,
+          lastAttemptAt: Date.now() - 50_000,
+        },
+      },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck',
+    );
+    expect(row).toBeDefined();
+    expect(row?.severity).toBe('warning');
+    expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.propagationSyncStuck');
+  });
+
+  it('does not flag stuck when progress is past establishing', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        propagation: {
+          syncActive: true,
+          syncProgress: 40,
+          lastSyncError: null,
+          lastAttemptAt: Date.now() - 50_000,
+        },
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
+    ).toBe(false);
+  });
+
+  it('flags propagation-sync-failing when idle with lastSyncError', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        propagation: {
+          syncActive: false,
+          syncProgress: 0,
+          lastSyncError: 'reticulumPropagation.syncTimedOut',
+          lastAttemptAt: Date.now() - 60_000,
+        },
+      },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-failing',
+    );
+    expect(row).toBeDefined();
+    expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.propagationSyncFailing');
+  });
+
+  it('ignores user-cancelled propagation sync as failing', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        propagation: {
+          syncActive: false,
+          syncProgress: 0,
+          lastSyncError: 'reticulumPropagation.syncCancelled',
+          lastAttemptAt: Date.now() - 1_000,
+        },
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-failing'),
+    ).toBe(false);
+  });
+
   it('mergeReticulumDiagnosticRows replaces prior reticulum rows', () => {
     const merged = mergeReticulumDiagnosticRows(
       [

@@ -181,11 +181,13 @@ export interface NodeInfoBodyProps {
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
+  error: 'text-red-400',
   warning: 'text-orange-400',
   info: 'text-blue-400',
 };
 
 const SEVERITY_ICON: Record<RFDiagnosis['severity'], string> = {
+  error: '✕',
   warning: '⚠',
   info: 'ℹ',
 };
