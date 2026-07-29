@@ -407,6 +407,24 @@ describe('ReticulumInterfacesPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps Add interface outside the Mode select so description cannot overlap the button', () => {
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    const mode = screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria');
+    const add = screen.getByRole('button', {
+      name: 'connectionPanel.reticulumInterfaces.add',
+    });
+    const description = screen.getByText(
+      'connectionPanel.reticulumInterfaces.modeDescriptions.boundary',
+    );
+
+    expect(mode.closest('div')).not.toContainElement(add);
+    expect(mode.closest('div')).not.toContainElement(description);
+    expect(
+      add.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
   it('clears mode on edit save when empty option selected', async () => {
     const user = userEvent.setup();
     const proxyPut = vi.fn().mockResolvedValue({ ok: true });

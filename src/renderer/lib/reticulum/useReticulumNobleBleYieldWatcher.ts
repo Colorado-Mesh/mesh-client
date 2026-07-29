@@ -13,24 +13,34 @@ import { fetchReticulumInterfaces } from '@/renderer/lib/reticulum/reticulumSide
 /** Always-mounted Noble BLE yield lifecycle while the Reticulum sidecar is active. */
 export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
   const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
+  /** Synchronous mirror — React state lags a frame and can release a fresh suspend. */
+  const graceExpiresAtRef = useRef(0);
   const yieldStateRef = useRef({ yieldActive: false });
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
 
   useEffect(() => {
     if (sidecarActive) {
-      setBleConnectGraceExpiresAt(Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS);
+      const expires = Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS;
+      graceExpiresAtRef.current = expires;
+      setBleConnectGraceExpiresAt(expires);
       return;
     }
+    graceExpiresAtRef.current = 0;
     setBleConnectGraceExpiresAt(0);
+    const abort = new AbortController();
     void syncReticulumNobleBleYield(
       {
         sidecarActive: false,
         interfaces: [],
         nowMs: Date.now(),
         bleConnectGraceExpiresAt: 0,
+        signal: abort.signal,
       },
       yieldStateRef.current,
     );
+    return () => {
+      abort.abort();
+    };
   }, [sidecarActive]);
 
   useEffect(() => {
@@ -42,6 +52,22 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
 
     const tick = async () => {
       try {
+        let graceExpiresAt = graceExpiresAtRef.current;
+        const coexist =
+          (await window.electronAPI?.bleCoexistence?.getState?.().catch(() => null)) ?? null;
+        // Stack restart: main re-acquires scan after we already released (yield inactive,
+        // grace stale). Do NOT renew while yield is still active — that infinitely extends
+        // the hold when an offline BLE RNode never comes up and starves Meshtastic.
+        if (
+          coexist?.scanOwner === 'reticulum' &&
+          !yieldStateRef.current.yieldActive &&
+          (graceExpiresAt <= 0 || Date.now() >= graceExpiresAt)
+        ) {
+          graceExpiresAt = Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS;
+          graceExpiresAtRef.current = graceExpiresAt;
+          setBleConnectGraceExpiresAt(graceExpiresAt);
+        }
+
         const interfaces = await fetchReticulumInterfaces();
         if (cancelled) return;
         await syncReticulumNobleBleYield(
@@ -49,7 +75,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
             sidecarActive: true,
             interfaces,
             nowMs: Date.now(),
-            bleConnectGraceExpiresAt,
+            bleConnectGraceExpiresAt: graceExpiresAtRef.current,
           },
           yieldStateRef.current,
         );

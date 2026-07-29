@@ -23,6 +23,13 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     vi.useFakeTimers();
     fetchReticulumInterfacesMock.mockReset().mockResolvedValue([]);
     syncReticulumNobleBleYieldMock.mockReset().mockResolvedValue(undefined);
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: {
+          getState: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+        },
+      },
+    });
   });
 
   afterEach(() => {
@@ -125,6 +132,72 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     unmount();
     await vi.advanceTimersByTimeAsync(RETICULUM_LOCAL_HEALTH_FAST_POLL_MS * 3);
     expect(fetchReticulumInterfacesMock).not.toHaveBeenCalled();
+  });
+
+  it('renews grace when reticulum re-holds scan after yield already released', async () => {
+    const getState = vi.fn().mockResolvedValue({ connections: [], scanOwner: null });
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: { getState },
+      },
+    });
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useReticulumNobleBleYieldWatcher(active);
+      },
+      { initialProps: { active: false } },
+    );
+    rerender({ active: true });
+    await vi.advanceTimersByTimeAsync(0);
+    const firstGrace = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    expect(firstGrace).toBeGreaterThan(0);
+
+    // Simulate: grace expired, yield released (inactive), main re-suspended for stack restart.
+    const stateArg = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[1] as {
+      yieldActive: boolean;
+    };
+    stateArg.yieldActive = false;
+    getState.mockResolvedValue({ connections: [], scanOwner: 'reticulum' });
+    vi.setSystemTime(firstGrace + 1_000);
+    syncReticulumNobleBleYieldMock.mockClear();
+    await vi.advanceTimersByTimeAsync(RETICULUM_LOCAL_HEALTH_FAST_POLL_MS);
+
+    const renewed = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    expect(renewed).toBeGreaterThan(firstGrace);
+  });
+
+  it('does not renew grace while yield is still active after grace expires', async () => {
+    const getState = vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' });
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: { getState },
+      },
+    });
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useReticulumNobleBleYieldWatcher(active);
+      },
+      { initialProps: { active: false } },
+    );
+    rerender({ active: true });
+    await vi.advanceTimersByTimeAsync(0);
+    const firstGrace = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    const stateArg = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[1] as {
+      yieldActive: boolean;
+    };
+    stateArg.yieldActive = true;
+
+    vi.setSystemTime(firstGrace + 1_000);
+    syncReticulumNobleBleYieldMock.mockClear();
+    await vi.advanceTimersByTimeAsync(RETICULUM_LOCAL_HEALTH_FAST_POLL_MS);
+
+    const nextGrace = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[0]
+      ?.bleConnectGraceExpiresAt as number;
+    // Still the stale/expired grace — sync owns release; watcher must not extend.
+    expect(nextGrace).toBe(firstGrace);
   });
 
   it('shares one persistent yield-state ref across re-ticks (not reset per tick)', async () => {

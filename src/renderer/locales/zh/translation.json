@@ -1113,9 +1113,9 @@
       "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
       "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
       "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。",
-      "offlineHintBleBondStale": "macOS 仍显示此 RNode 为已配对，但蓝牙密钥不再匹配（对等点删除了配对信息）。在系统设置 → 蓝牙中忘记设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后重新启动堆栈并在出现提示时输入新的 6 位 PIN。",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。"
+      "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。",
+      "offlineHintBle": "要清除此错误，您可能需要删除此接口并将其添加回（拾取设备） ，以便刷新保存的蓝牙ID ，然后重新启动堆栈。操作系统可能会提示输入6位数的蓝牙PIN码（ macOS、Windows或Linux ）。RNode每次配对都会生成一个新代码—切勿使用123456 （这是Meshtastic的默认值，而不是RNode ）。在此应用程序连接之前， RNode无需出现在系统设置→蓝牙中；当堆栈配对时，将显示操作系统对话框。无头无线电：连接USB → Reticulum Admin→蓝牙→开始配对在操作系统对话框→中输入管理面板（而不是在无线电显示屏上）中显示的PIN码。带显示屏的收音机：在Heltec设备上按住按钮~ 7秒（时间不同；许多电路板上的~ 10秒启用Wi-Fi AP ） ，读取屏幕上的PIN ，然后在操作系统对话框中输入。在重试之前，请清除操作系统蓝牙设置中的失败绑定。",
+      "offlineHintBleBondStale": "macOS仍将此RNode显示为已配对，但蓝牙密钥不再匹配（对等删除的配对信息）。在系统设置→蓝牙中忘记设备，将RNode置于配对模式（管理→蓝牙→开始配对，或按住按钮~ 7秒） ，然后删除并重新添加此接口（选择设备） ，重新启动堆栈，并在提示时输入新的6位数PIN。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",

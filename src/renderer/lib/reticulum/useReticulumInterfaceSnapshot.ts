@@ -11,7 +11,6 @@ import {
   RETICULUM_BLE_CONNECT_GRACE_MS,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
-import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
@@ -76,7 +75,6 @@ export function useReticulumInterfaceSnapshot({
   >(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstCancelRef = useRef<(() => void) | null>(null);
-  const nobleBleYieldStateRef = useRef({ yieldActive: false });
 
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
   const healthOptions = useMemo((): ReticulumLocalInterfaceHealthOptions | undefined => {
@@ -151,15 +149,9 @@ export function useReticulumInterfaceSnapshot({
       setInterfacesHydrated(false);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
-      void syncReticulumNobleBleYield(
-        {
-          sidecarActive: false,
-          interfaces: [],
-          nowMs: Date.now(),
-          bleConnectGraceExpiresAt: 0,
-        },
-        nobleBleYieldStateRef.current,
-      );
+      // Noble BLE yield lifecycle is owned by useReticulumNobleBleYieldWatcher.
+      // Do not release here: sidecarApiReady is false while connecting, and releasing
+      // the main-process start yield mid-pair kills CoreBluetooth (Event receiver died).
       return;
     }
     beginBleConnectGrace();
@@ -210,21 +202,6 @@ export function useReticulumInterfaceSnapshot({
       }
     };
   }, [sidecarApiReady, pollActive, healthOptions]);
-
-  useEffect(() => {
-    if (!sidecarApiReady || bleConnectGraceExpiresAt <= 0 || nowMs <= 0) {
-      return;
-    }
-    void syncReticulumNobleBleYield(
-      {
-        sidecarActive: true,
-        interfaces,
-        nowMs,
-        bleConnectGraceExpiresAt,
-      },
-      nobleBleYieldStateRef.current,
-    );
-  }, [sidecarApiReady, interfaces, bleConnectGraceExpiresAt, nowMs]);
 
   return {
     interfaces,

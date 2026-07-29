@@ -142,15 +142,16 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
     });
   });
 
-  it('syncs Noble yield when offline BLE RNode is present', async () => {
+  it('does not own Noble yield sync (watcher owns lifecycle)', async () => {
     renderHook(() => useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }));
 
     await waitFor(() => {
-      expect(syncReticulumNobleBleYield).toHaveBeenCalled();
+      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
     });
+    expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
   });
 
-  it('releases Noble yield on sidecar stop', async () => {
+  it('does not release Noble yield when sidecarApiReady flips false (connecting gap)', async () => {
     const { rerender } = renderHook(
       ({ ready }: { ready: boolean }) =>
         useReticulumInterfaceSnapshot({ sidecarApiReady: ready, pollActive: false }),
@@ -158,41 +159,15 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
     );
 
     await waitFor(() => {
-      expect(syncReticulumNobleBleYield).toHaveBeenCalled();
+      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
     });
 
     vi.mocked(syncReticulumNobleBleYield).mockClear();
     rerender({ ready: false });
 
     await waitFor(() => {
-      expect(syncReticulumNobleBleYield).toHaveBeenCalledWith(
-        expect.objectContaining({ sidecarActive: false }),
-        expect.any(Object),
-      );
+      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalled();
     });
-  });
-
-  it('syncs yield when BLE RNode is already online on first poll', async () => {
-    vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
-      if (path === '/api/v1/interfaces') {
-        return Promise.resolve({ interfaces: [{ ...BLE_RNODE_ROW, status: 'up' }] });
-      }
-      if (path === '/api/v1/serial/ports') {
-        return Promise.resolve({ ports: [] });
-      }
-      return Promise.resolve({});
-    });
-
-    renderHook(() => useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }));
-
-    await waitFor(() => {
-      expect(syncReticulumNobleBleYield).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sidecarActive: true,
-          interfaces: [expect.objectContaining({ status: 'up' })],
-        }),
-        expect.any(Object),
-      );
-    });
+    expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
   });
 });
