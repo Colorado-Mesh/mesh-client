@@ -186,6 +186,16 @@ impl LxmfOutboundDriver {
         }
     }
 
+    /// Remove a single destination from the local path cache (e.g. after transport DropPath).
+    pub fn clear_path_to(&mut self, destination_hex: &str) {
+        let key = destination_hex.to_lowercase();
+        self.path_table_hashes.remove(&key);
+        if let Ok(dest) = parse_hash16(&key) {
+            self.route_hops.remove(&dest);
+            self.path_request_gate.clear_destination(dest);
+        }
+    }
+
     pub fn has_path_to(&self, destination_hex: &str) -> bool {
         self.path_table_hashes
             .contains(&destination_hex.to_lowercase())
@@ -874,6 +884,27 @@ mod tests {
         gate.record_queue_failure(dest(3), 100.0);
         gate.clear_destination(dest(3));
         assert_eq!(gate.decide(dest(3), 101.0), PathRequestDecision::Send);
+    }
+
+    #[test]
+    fn clear_path_to_removes_stale_route_so_refresh_can_reinstall() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xab);
+        let dest_hex = hex::encode(dest_hash);
+        // Stale cached route (5 hops).
+        driver.update_path_table(&[(dest_hash, 5, dest_hex.clone())]);
+        assert!(driver.has_path_to(&dest_hex));
+
+        // Force refresh: drop local cache (transport DropPath happens in live.rs).
+        driver.clear_path_to(&dest_hex);
+        assert!(!driver.has_path_to(&dest_hex));
+
+        // Fresh route response reinstalls with updated hops.
+        driver.update_path_table(&[(dest_hash, 2, dest_hex.clone())]);
+        assert!(driver.has_path_to(&dest_hex));
+        assert_eq!(driver.route_hops.get(&dest_hash).copied(), Some(2));
     }
 
     #[test]

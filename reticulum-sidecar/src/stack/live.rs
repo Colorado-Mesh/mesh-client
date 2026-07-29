@@ -1712,7 +1712,8 @@ impl LiveBridge {
     }
 
     /// Discover a path to the destination before falling back to the propagation node.
-    /// When `force` is true, always RequestPath even if a path already exists (stale hop refresh).
+    /// When `force` is true, drop any cached path and RequestPath so we wait for a
+    /// fresh route response instead of returning on the stale `has_path_to` entry.
     async fn ensure_path_for_direct(&self, destination_hex: &str, force: bool) -> bool {
         let already = self
             .outbound
@@ -1726,6 +1727,31 @@ impl LiveBridge {
         let Ok(dest) = parse_hash16(destination_hex) else {
             return false;
         };
+
+        // Drop the installed route first so the wait loop cannot succeed on the
+        // same stale path-table entry (mirrors LXMF `drop_existing` path requests).
+        let mut saw_path_absent = !(force && already);
+        if force && already {
+            let _ = self
+                .query_control_timed(TransportQuery::DropPath { dest })
+                .await;
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_path_to(destination_hex);
+            }
+            if let Ok(mut cache) = self.peer_via_cache.lock() {
+                cache.remove(&destination_hex.to_lowercase());
+            }
+            let _ = self.refresh_outbound_path_table().await;
+            let still_present = self
+                .outbound
+                .lock()
+                .map(|d| d.has_path_to(destination_hex))
+                .unwrap_or(false);
+            if !still_present {
+                saw_path_absent = true;
+            }
+        }
+
         let _ = self
             .handle
             .transport_tx
@@ -1736,35 +1762,48 @@ impl LiveBridge {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
         while tokio::time::Instant::now() < deadline {
             let _ = self.refresh_outbound_path_table().await;
-            if self
+            let has_path = self
                 .outbound
                 .lock()
                 .map(|d| d.has_path_to(destination_hex))
-                .unwrap_or(false)
-            {
-                let hops_after = self.hops_to_destination(destination_hex).await;
-                if force && hops_before != hops_after {
-                    tracing::info!(
-                        target: "propagation-sync",
-                        dest = %destination_hex,
-                        hops_before = ?hops_before,
-                        hops_after = ?hops_after,
-                        "refreshed path hops before propagation sync"
-                    );
-                }
-                return true;
+                .unwrap_or(false);
+            if !has_path {
+                saw_path_absent = true;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                continue;
             }
-            tokio::time::sleep(Duration::from_millis(200)).await;
+            if !force_path_refresh_accepts_current_path(force, already, saw_path_absent) {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                continue;
+            }
+            let hops_after = self.hops_to_destination(destination_hex).await;
+            if force && hops_before != hops_after {
+                tracing::info!(
+                    target: "propagation-sync",
+                    dest = %destination_hex,
+                    hops_before = ?hops_before,
+                    hops_after = ?hops_after,
+                    "refreshed path hops before propagation sync"
+                );
+            }
+            return true;
         }
-        // Forced refresh may leave the prior path intact if RequestPath timed out.
+        // Forced refresh: path may never come back after DropPath.
+        let _ = self.refresh_outbound_path_table().await;
+        let has_path = self
+            .outbound
+            .lock()
+            .map(|d| d.has_path_to(destination_hex))
+            .unwrap_or(false);
         if force && already {
             tracing::info!(
                 target: "propagation-sync",
                 dest = %destination_hex,
                 hops = ?hops_before,
-                "path refresh timed out; keeping existing path for propagation sync"
+                has_path,
+                "path refresh timed out after dropping cached route"
             );
-            return true;
+            return has_path;
         }
         false
     }
@@ -2938,6 +2977,19 @@ fn resolve_inbound_sender_name_map(names: &HashMap<String, String>, sender_hash:
         .unwrap_or_else(|| prefix.to_string())
 }
 
+/// After a forced DropPath, accept a path only once it has been observed absent
+/// and then reinstalled — otherwise the first refresh succeeds on the stale route.
+fn force_path_refresh_accepts_current_path(
+    force: bool,
+    had_path_at_start: bool,
+    saw_path_absent: bool,
+) -> bool {
+    if !force || !had_path_at_start {
+        return true;
+    }
+    saw_path_absent
+}
+
 /// Hashes present in `next` but not in `prev` (path-table membership growth).
 fn path_table_added_hashes(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
     next.difference(prev).cloned().collect()
@@ -3101,6 +3153,55 @@ mod announce_display_name_tests {
         let mut added = path_table_added_hashes(&prev, &next);
         added.sort();
         assert_eq!(added, vec!["cc".to_string()]);
+    }
+
+    #[test]
+    fn force_path_refresh_rejects_stale_route_until_absent_then_accepts_refresh() {
+        // Existing stale route still installed — must not accept yet.
+        assert!(!force_path_refresh_accepts_current_path(true, true, false));
+        // After DropPath absence was observed, a reinstalled path is acceptable.
+        assert!(force_path_refresh_accepts_current_path(true, true, true));
+        // Non-force / first discovery: any installed path is fine.
+        assert!(force_path_refresh_accepts_current_path(false, true, false));
+        assert!(force_path_refresh_accepts_current_path(true, false, false));
+    }
+
+    #[test]
+    fn force_path_refresh_simulates_stale_then_refreshed_route() {
+        // Simulate ensure_path_for_direct force wait: start with stale path present.
+        let had_path_at_start = true;
+        let force = true;
+        let mut saw_path_absent = false;
+
+        // Tick 1: stale path still present → do not accept.
+        let has_path = true;
+        assert!(
+            has_path
+                && !force_path_refresh_accepts_current_path(
+                    force,
+                    had_path_at_start,
+                    saw_path_absent
+                ),
+            "must not accept stale route before DropPath absence"
+        );
+
+        // Tick 2: DropPath cleared the route.
+        let has_path = false;
+        if !has_path {
+            saw_path_absent = true;
+        }
+        assert!(saw_path_absent);
+
+        // Tick 3: RequestPath installed a refreshed route (fewer hops).
+        let has_path = true;
+        let hops_after = Some(2u8);
+        assert!(force_path_refresh_accepts_current_path(
+            force,
+            had_path_at_start,
+            saw_path_absent
+        ));
+        assert!(has_path);
+        assert_eq!(hops_after, Some(2));
     }
 
     #[test]
