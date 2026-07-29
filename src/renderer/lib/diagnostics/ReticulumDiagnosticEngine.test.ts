@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { RfDiagnosticRow } from '@/renderer/lib/types';
 
@@ -476,32 +476,39 @@ describe('ReticulumDiagnosticEngine', () => {
   });
 
   it('does not flag stuck at exact sub-stall boundary or without attemptAt', () => {
-    expect(
-      buildReticulumDiagnosticRows(
-        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
-        {
-          propagation: {
-            syncActive: true,
-            syncProgress: 5,
-            lastSyncError: null,
-            lastAttemptAt: Date.now() - 44_999,
+    vi.useFakeTimers();
+    try {
+      const now = 1_700_000_000_000;
+      vi.setSystemTime(now);
+      expect(
+        buildReticulumDiagnosticRows(
+          { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+          {
+            propagation: {
+              syncActive: true,
+              syncProgress: 5,
+              lastSyncError: null,
+              lastAttemptAt: now - 44_999,
+            },
           },
-        },
-      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
-    ).toBe(false);
-    expect(
-      buildReticulumDiagnosticRows(
-        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
-        {
-          propagation: {
-            syncActive: true,
-            syncProgress: 5,
-            lastSyncError: null,
-            lastAttemptAt: null,
+        ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
+      ).toBe(false);
+      expect(
+        buildReticulumDiagnosticRows(
+          { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+          {
+            propagation: {
+              syncActive: true,
+              syncProgress: 5,
+              lastSyncError: null,
+              lastAttemptAt: null,
+            },
           },
-        },
-      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
-    ).toBe(false);
+        ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
+      ).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('mergeReticulumDiagnosticRows replaces prior reticulum rows', () => {

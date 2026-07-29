@@ -230,4 +230,21 @@ describe('ReticulumPropagationSection', () => {
     });
     expect(screen.getByLabelText('reticulumPropagation.renameLabel')).toBeInTheDocument();
   });
+
+  it('toasts when set preferred fails', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      setPreferredOnSidecar: vi.fn().mockResolvedValue(false),
+    });
+
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.click(
+      screen.getAllByRole('button', { name: 'reticulumPropagation.setPreferred' })[0],
+    );
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.setPreferredFailed', 'error');
+    });
+  });
 });

@@ -13,6 +13,9 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumPropagationAutoSync';
 
+/** i18n key written when the user cancels an in-flight propagation sync. */
+export const PROPAGATION_SYNC_USER_CANCEL_KEY = 'reticulumPropagation.syncCancelled';
+
 export interface PropagationNodeRow {
   id: string;
   name: string;
@@ -281,11 +284,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       // Prefer a sidecar WS failure already applied while cancel awaited; do not let
       // a generic cancel overwrite establish/offer keys (dual 60s watchdog race).
       set((state) => {
-        const fallback = opts?.reasonKey ?? 'reticulumPropagation.syncCancelled';
+        const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
         const existing = state.lastSyncError;
         const keepSidecar =
           existing != null &&
-          existing !== 'reticulumPropagation.syncCancelled' &&
+          existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
           existing !== 'reticulumPropagation.syncTimedOut';
         return {
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
@@ -298,11 +301,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
       // Proxy failure must not leave sync.active stuck true.
       set((state) => {
-        const fallback = opts?.reasonKey ?? 'reticulumPropagation.syncCancelled';
+        const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
         const existing = state.lastSyncError;
         const keepSidecar =
           existing != null &&
-          existing !== 'reticulumPropagation.syncCancelled' &&
+          existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
           existing !== 'reticulumPropagation.syncTimedOut';
         return {
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },

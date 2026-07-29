@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기",
     "reticulumSection": "Reticulum — 레티큘럼 스택",
     "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
-    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "autoPruneUnheardContactsDaysAria": "시작 시 {{days}}일 이상 경과한 확인되지 않은 연락처 자동 정리",
     "capTotalContactsCountAria": "총 연락처 수를 제한하고 가장 최근에 본 연락처를 {{count}}개로 유지합니다.",
@@ -364,7 +363,8 @@
     "shareLocationSendWaypointHint": "활성화되면 Meshtastic 위치 공유는 문자 메시지와 Waypoint 패킷을 모두 보내 공식 앱에 지도 핀이 표시됩니다. 바쁜 메시를 비활성화하면 텍스트만 보낼 수 있습니다.",
     "capStoredRrcMessages": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
     "capStoredRrcMessagesLabel": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
-    "capStoredRrcMessagesCountAria": "저장된 RRC 방 기록을 제한하고 최신 {{count}} 메시지를 유지합니다."
+    "capStoredRrcMessagesCountAria": "저장된 RRC 방 기록을 제한하고 최신 {{count}} 메시지를 유지합니다.",
+    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -612,7 +612,7 @@
     "dmNodeHops_other": "{{count}} 홉",
     "notificationDmTitle": "{{sender}} 님의 DM",
     "notificationMessageTitle": "{{sender}} 님의 메시지",
-    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumSendStoredAtPn": "전파 노드에 저장됨",
     "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
@@ -1375,7 +1375,7 @@
       "elevatedNoiseFloor": "높은 소음층",
       "excessiveFlooding": "과도한 홍수",
       "reticulumTrafficDetected": "Reticulum 트래픽 감지됨",
-      "highCompanionTxQueue": "High Companion TX Queue"
+      "highCompanionTxQueue": "하이 컴패니언 TX 대기열"
     },
     "rfCause": {
       "channelUtilizationSpike": "현재 {{current}}%는 최근 평균({{average}}%)의 2배를 초과합니다. 혼잡 또는 간섭 급증이 발생할 수 있습니다.",
@@ -1390,7 +1390,7 @@
       "fringeWeakCoverage": "노드가 너무 멀리 떨어져 있거나 메시의 나머지 부분과 제대로 연결되어 있지 않습니다.",
       "elevatedNoiseFloor": "무선 노이즈 플로어는 {{noiseFloor}} dBm — 유효 범위를 줄이는 높은 간섭.",
       "excessiveFlooding": "{{percent}}%의 전송이 플러드 라우팅됩니다 — 근처 노드에서 직접 라우팅이 설정되지 않을 수 있습니다.",
-      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
+      "highCompanionTxQueue": "동반자 아웃바운드 대기열 깊이는 {{queueLen}}/256입니다. 트래픽이 지연되거나 드롭될 수 있습니다."
     },
     "foreignLoraCause": {
       "meshtastic": "이 주파수로 전송되는 Meshtastic 노드입니다. 발신자: {{sender}}. {{proximity}}이 노드는 MeshCore 리피터 영역에 있을 수 있습니다.",
@@ -1467,8 +1467,8 @@
         "description": "홍수 비율이 매우 높습니다. 노드가 직접 경로 접촉을 축적하거나 리피터 근접성을 확인할 때까지 기다리십시오."
       },
       "highCompanionTxQueue": {
-        "title": "Reduce outbound traffic or check the RF link",
-        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
+        "title": "아웃바운드 트래픽을 줄이거나 RF 링크를 확인하세요.",
+        "description": "Companion TX 대기열이 거의 가득 찼습니다. 전송을 일시 중지하거나, 홍수를 줄이거나, 간섭 및 약한 링크를 확인합니다."
       }
     },
     "cuHistoryHeading": "채널 활용도 (마지막 24시간)",
@@ -1548,9 +1548,9 @@
         "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\" 본드가 오래되었습니다 — OS Bluetooth 설정에서 기기를 삭제하고 다시 페어링하세요",
         "blePairingTimedOut": "BLE RNode \"{{name}}\" 암호 키 교환 시간이 초과되었습니다. 현재 PIN(123456 아님)을 입력하고 다시 페어링하세요.",
-        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
-        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
-        "propagationSyncFailing": "Propagation node sync failed"
+        "sidecarUnhealthy": "Reticulum 사이드카가 작동 중이지만 상태 점검에 응답하지 않습니다",
+        "propagationSyncStuck": "전파 노드 동기화가 링크 설정 중 중단됨",
+        "propagationSyncFailing": "전파 노드 동기화 실패"
       }
     },
     "routingPort": {
@@ -3965,9 +3965,10 @@
     "syncEstablishNoLinkProof": "전파 동기화는 노드에서 링크 증거를 얻지 못했습니다. 귀하의 신원은 새로운 공지가 필요하거나 경로가 누락되었을 수 있습니다. 지금 Network → Announce를 시도한 다음 다시 동기화하십시오.",
     "syncOfferUnknown": "전파 노드가 알 수 없는 동기화 제안 오류를 반환했습니다. 잠시 후 다시 시도하십시오.",
     "syncPathHint": "원격 동기화는 양방향 경로가 필요합니다. Sync는 노드가 응답할 수 있도록 짧은 LXMF 알림을 먼저 보냅니다.",
-    "localInboxName": "Local propagation (offline inbox)",
-    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
-    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
+    "setPreferredFailed": "기본 전파 노드를 설정할 수 없습니다.",
+    "localInboxName": "로컬 전파 (오프라인 받은 편지함)",
+    "localInboxHint": "로컬 전파는 이 장치의 오프라인 받은 편지함입니다. 도달할 수 없는 피어를 위해 아웃바운드 DM을 저장하지 않습니다. 원격 lxmf.propagation 노드를 store-and-forward에 대해 선호하는 것으로 설정합니다.",
+    "preferredLocalWarning": "기본 설정 노드는 로컬 전용입니다. 오프라인 피어는 스토어 및 전달 전달을 위해 여전히 원격 전파 노드가 필요합니다."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

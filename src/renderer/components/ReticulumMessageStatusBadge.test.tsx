@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 import { ReticulumMessageStatusBadge } from '@/renderer/components/ReticulumMessageStatusBadge';
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -9,16 +12,27 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+async function renderAndAssertAxe(ui: ReactElement): Promise<ReturnType<typeof render>> {
+  const view = render(ui);
+  hydrateAxeThemeColors(view.container);
+  expect(await axe(view.container)).toHaveNoViolations();
+  return view;
+}
+
 describe('ReticulumMessageStatusBadge', () => {
-  it('shows Delivered for direct Completes', () => {
-    render(<ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="direct" />);
+  it('shows Delivered for direct Completes', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="direct" />,
+    );
     expect(
       screen.getByLabelText('chatPanel.sentViaTcp: chatPanel.reticulumSendDelivered'),
     ).toBeTruthy();
   });
 
-  it('shows Stored at PN for propagated Completes', () => {
-    render(<ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="propagated" />);
+  it('shows Stored at PN for propagated Completes', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="propagated" />,
+    );
     expect(
       screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.reticulumSendStoredAtPn'),
     ).toBeTruthy();

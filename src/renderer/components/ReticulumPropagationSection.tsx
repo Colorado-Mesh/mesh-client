@@ -298,11 +298,17 @@ export default function ReticulumPropagationSection({
                   type="button"
                   className="text-xs text-amber-400 hover:underline"
                   onClick={() => {
-                    void setPreferredOnSidecar(node.id).then((ok) => {
-                      if (ok && isLocal) {
-                        addToast(t('reticulumPropagation.preferredLocalWarning'), 'warning');
-                      }
-                    });
+                    void setPreferredOnSidecar(node.id)
+                      .then((ok) => {
+                        if (ok && isLocal) {
+                          addToast(t('reticulumPropagation.preferredLocalWarning'), 'warning');
+                        } else if (!ok) {
+                          addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
+                        }
+                      })
+                      .catch(() => {
+                        addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
+                      });
                   }}
                   aria-label={t('reticulumPropagation.setPreferred')}
                 >

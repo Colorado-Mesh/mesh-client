@@ -61,6 +61,33 @@ describe('NodeInfoBody', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('has no axe violations when RF diagnostics include an error finding', async () => {
+    const self = makeNode({
+      node_id: 7,
+      long_name: 'Alpha',
+      channel_utilization: 0.1,
+      meshcore_local_stats: {
+        batteryMilliVolts: 0,
+        uptimeSecs: 0,
+        queueLen: 251,
+        noiseFloor: -110,
+        lastRssi: 0,
+        lastSnr: 0,
+        txAirSecs: 0,
+        rxAirSecs: 0,
+        recv: 0,
+        sent: 0,
+        nSentFlood: 0,
+        nSentDirect: 0,
+        nRecvFlood: 0,
+        nRecvDirect: 0,
+      },
+    });
+    const { container } = render(<NodeInfoBody node={self} homeNode={self} protocol="meshcore" />);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('shows last tracked position when live position is missing', () => {
     positionHistoryStoreState.history = new Map([
       [

@@ -23,8 +23,6 @@ import {
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
 import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
-const ALLOWED_WIRE_STATUSES = new Set(['delivered', 'failed', 'sending']);
-
 /** Map sidecar `lxmf_outbound_status` wire status to UI store status. Unknown → null. */
 export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | null {
   if (wireStatus === 'delivered') return 'acked';
@@ -238,14 +236,13 @@ export function applyReticulumOutboundDeliveryStatus(
     );
     return;
   }
-  if (!ALLOWED_WIRE_STATUSES.has(wireStatus)) {
+  const status = mapLxmfOutboundWireStatus(wireStatus);
+  if (status == null) {
     console.debug(
       `[applyReticulumOutboundDeliveryStatus] drop unknown wire status=${wireStatus.slice(0, 32)}`,
     );
     return;
   }
-  const status = mapLxmfOutboundWireStatus(wireStatus);
-  if (status == null) return;
   const sentVia = parseWireSentVia(opts?.sentVia);
   const deliveryMethod = parseReticulumDeliveryMethod(opts?.deliveryMethod);
   const applied = persistReticulumOutboundMessageStatus(

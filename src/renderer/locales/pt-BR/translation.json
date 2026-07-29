@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "Limpar mensagens {{count}}",
     "reticulumSection": "Reticulum — Pilha de Reticulum",
     "reticulumAnnounceHelp": "Com que frequência sua identidade é anunciada na rede e ferramentas para limpar anúncios armazenados.",
-    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Quando ativado, um fluxo de log ao vivo aparece à direita. Na guia Reticulum, as linhas do dispositivo incluem saída secundária e integridade da interface local. As linhas de depuração exigem a caixa de seleção dentro do painel de log.",
     "autoPruneUnheardContactsDaysAria": "Remover automaticamente contatos não ouvidos na inicialização, com mais de {{days}} dias",
     "capTotalContactsCountAria": "Limite o total de contatos, mantenha os contatos {{count}} vistos mais recentemente",
@@ -364,7 +363,8 @@
     "shareLocationSendWaypointHint": "Quando ativado, os compartilhamentos de localização do Meshtastic enviam uma mensagem de texto e um pacote de waypoint para que os aplicativos oficiais mostrem um alfinete no mapa. Desative em malhas ocupadas para enviar apenas texto.",
     "capStoredRrcMessages": "Limite o histórico da sala RRC armazenado, mantenha o mais recente",
     "capStoredRrcMessagesLabel": "Limite o histórico da sala RRC armazenado, mantenha o mais recente",
-    "capStoredRrcMessagesCountAria": "Limite o histórico da sala RRC armazenado, mantenha as mensagens {{count}} mais recentes"
+    "capStoredRrcMessagesCountAria": "Limite o histórico da sala RRC armazenado, mantenha as mensagens {{count}} mais recentes",
+    "reticulumPropagationHelp": "Configurar nós de propagação LXMF remotos para DMs offline. A propagação local é apenas a caixa de entrada deste dispositivo — ela não substitui um nó remoto."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -612,7 +612,7 @@
     "dmNodeHops_other": "{{count}} saltos",
     "notificationDmTitle": "DM de {{sender}}",
     "notificationMessageTitle": "Mensagem de {{sender}}",
-    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumSendStoredAtPn": "Armazenado no nó de propagação",
     "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
@@ -1375,7 +1375,7 @@
       "elevatedNoiseFloor": "Piso de Ruído Elevado",
       "excessiveFlooding": "Inundação excessiva",
       "reticulumTrafficDetected": "Tráfego Reticulum detectado",
-      "highCompanionTxQueue": "High Companion TX Queue"
+      "highCompanionTxQueue": "Fila High Companion TX"
     },
     "rfCause": {
       "channelUtilizationSpike": "O {{current}}% atual está acima de 2vezes a média recente ({{average}}%) — possível aumento de congestionamento ou interferência.",
@@ -1390,7 +1390,7 @@
       "fringeWeakCoverage": "O nó está muito longe ou mal conectado ao resto da malha.",
       "elevatedNoiseFloor": "O nível de ruído de rádio é {{noiseFloor}} dBm — interferência elevada reduzindo o alcance efetivo.",
       "excessiveFlooding": "{{percent}}% das transmissões são roteadas por inundação — o roteamento direto pode não ser estabelecido com nós próximos.",
-      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
+      "highCompanionTxQueue": "A profundidade da fila de saída do acompanhante é {{queueLen}}/256 — o tráfego pode estar atrasado ou cair."
     },
     "foreignLoraCause": {
       "meshtastic": "Nó Meshtastic transmitindo nesta frequência. Remetente: {{sender}}. {{proximity}}Este nó pode estar na sua área de repetidor MeshCore.",
@@ -1467,8 +1467,8 @@
         "description": "A taxa de inundação é muito alta — aguarde o nó acumular contatos de caminho direto ou verifique a proximidade do repetidor."
       },
       "highCompanionTxQueue": {
-        "title": "Reduce outbound traffic or check the RF link",
-        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
+        "title": "Reduza o tráfego de saída ou verifique o link de RF",
+        "description": "A fila do Companion TX está quase cheia — pause os envios, reduza as inundações ou verifique se há interferência e links fracos."
       }
     },
     "cuHistoryHeading": "Utilização do Canal (últimas 24h)",
@@ -1548,9 +1548,9 @@
         "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
         "bleBondRemoved": "A ligação BLE RNode \"{{name}}\" está obsoleta — esqueça o dispositivo nas configurações de Bluetooth do sistema operacional e emparelhe novamente",
         "blePairingTimedOut": "BLE RNode \"{{name}}\" a troca de senha expirou - insira o PIN atual (não 123456) e emparelhe novamente",
-        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
-        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
-        "propagationSyncFailing": "Propagation node sync failed"
+        "sidecarUnhealthy": "O sidecar Reticulum está em execução, mas não responde às verificações de integridade",
+        "propagationSyncStuck": "A sincronização do nó de propagação está travada, estabelecendo um link",
+        "propagationSyncFailing": "Falha na sincronização do nó de propagação"
       }
     },
     "routingPort": {
@@ -3965,9 +3965,10 @@
     "syncEstablishNoLinkProof": "A sincronização de propagação não obteve nenhuma prova de link do nó — sua identidade pode precisar de um novo anúncio ou o caminho de volta está faltando. Experimente Network → Announce agora e, em seguida, sincronize novamente.",
     "syncOfferUnknown": "O nó de propagação retornou um erro de oferta de sincronização desconhecido — tente novamente em um momento.",
     "syncPathHint": "A sincronização remota precisa de um caminho nos dois sentidos. A sincronização envia um breve anúncio LXMF primeiro para que o nó possa responder.",
-    "localInboxName": "Local propagation (offline inbox)",
-    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
-    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
+    "setPreferredFailed": "Não foi possível definir o nó de propagação preferido.",
+    "localInboxName": "Propagação local (caixa de entrada offline)",
+    "localInboxHint": "A propagação local é a caixa de entrada offline deste dispositivo. Ele não armazena DMs de saída para pares inacessíveis — defina um nó lxmf.propagation remoto como preferido para armazenamento e encaminhamento.",
+    "preferredLocalWarning": "O nó preferido é apenas Local — os pares offline ainda precisam de um nó de propagação remota para entrega de armazenamento e encaminhamento."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

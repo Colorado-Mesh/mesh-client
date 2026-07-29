@@ -15,6 +15,7 @@ import {
   RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
+import { PROPAGATION_SYNC_USER_CANCEL_KEY } from '@/renderer/stores/reticulumPropagationStore';
 import type {
   ReticulumAutoBeaconAlert,
   ReticulumInterfaceIssueAlert,
@@ -85,9 +86,6 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.propagationSyncStuck',
   'diagnosticsPanel.reticulum.runtime.propagationSyncFailing',
 ] as const;
-
-/** User-initiated cancel is not a health finding. */
-const PROPAGATION_SYNC_USER_CANCEL_KEY = 'reticulumPropagation.syncCancelled';
 
 /** Sidecar must stay unhealthy this long before emitting an error diagnostic. */
 export const RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS = 60_000;

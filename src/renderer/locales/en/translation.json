@@ -4057,6 +4057,7 @@
     },
     "preferred": "Preferred",
     "setPreferred": "Set preferred",
+    "setPreferredFailed": "Could not set preferred propagation node.",
     "syncNow": "Sync messages",
     "syncNowFor": "Sync messages from {{name}}",
     "cancelSync": "Cancel sync",
