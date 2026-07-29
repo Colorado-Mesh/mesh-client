@@ -593,7 +593,8 @@
       "sendFailed": "Nie udało się wysłać: {{error}}",
       "newOfferToast": "{{peer}} chce wysłać Ci plik: {{file}}",
       "requestEnable": "Włącz żądanie",
-      "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików"
+      "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików",
+      "destinationHelp": "To nie ich hash Chat/LXMF. Użyj Request enable — partnerzy mesh-client udostępniają go automatycznie po zaakceptowaniu. Lub wklej z Remote → My rncp receive destination."
     },
     "shareLocation": "Udostępnij lokalizację",
     "shareLocationLabel": "📍 Udostępniona lokalizacja",
@@ -4779,7 +4780,8 @@
       "offerToast": "Oferta plików przychodzących: {{file}}",
       "copyInstructionsAria": "Kopiuj instrukcje dotyczące włączania odbierania plików",
       "copyInstructions": "Kopiuj instrukcje",
-      "instructionsCopied": "Skopiowano instrukcje."
+      "instructionsCopied": "Skopiowano instrukcje.",
+      "receiveDestSharedToast": "Zapisano miejsce docelowe odbioru rncp użytkownika {{peer}} — możesz teraz wysłać plik."
     },
     "enableRequest": {
       "title": "Włączyć odbiór plików?",
@@ -4796,7 +4798,8 @@
       "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
       "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
       "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
-      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania."
+      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania.",
+      "lxmfShareBody": "Odbieranie plików jest włączone. Oto moje miejsce docelowe odbioru rncp (mesh-client zapisze je dla Ciebie)."
     },
     "saved": {
       "labelPlaceholder": "Oznaczenie",

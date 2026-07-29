@@ -317,7 +317,13 @@ export function RemoteTransferSection({
       addToast(t('reticulumRemote.errors.invalidAddress'), 'error');
       return;
     }
-    const res = await sendRncpRequestEnable(parsedHash);
+    // Request enable must target the peer's LXMF delivery hash. Prefer the saved
+    // lxmf_peer_hash when the destination field holds an rncp.receive hash.
+    const savedForDest = useReticulumRemoteAddressStore
+      .getState()
+      .findByDestination(parsedHash, 'rncp');
+    const peerLxmfHash = savedForDest?.lxmf_peer_hash?.trim() || parsedHash;
+    const res = await sendRncpRequestEnable(peerLxmfHash);
     if (res.ok) {
       addToast(t('reticulumRemote.transfer.requestEnableSent'), 'success');
       return;

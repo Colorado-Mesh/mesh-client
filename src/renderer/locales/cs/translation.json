@@ -592,7 +592,8 @@
       "sendFailed": "Odeslání se nezdařilo: {{error}}",
       "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
       "requestEnable": "Požádat o povolení",
-      "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru"
+      "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru",
+      "destinationHelp": "Ne jejich Chat/LXMF hash. Použijte Request enable — mesh-client kolegové jej po přijetí automaticky sdílejí. Nebo vložte z jejich Remote → My rncp receive destination."
     },
     "shareLocation": "Sdílejte polohu",
     "shareLocationLabel": "📍 Sdílená poloha",
@@ -4779,7 +4780,8 @@
       "offerToast": "Příchozí nabídka souboru: {{file}}",
       "copyInstructionsAria": "Kopírovat pokyny pro povolení příjmu souboru",
       "copyInstructions": "Kopírovat pokyny",
-      "instructionsCopied": "Pokyny zkopírovány."
+      "instructionsCopied": "Pokyny zkopírovány.",
+      "receiveDestSharedToast": "Uložen rncp receive destination uživatele {{peer}} — nyní můžete odeslat soubor."
     },
     "enableRequest": {
       "title": "Povolit příjem souborů?",
@@ -4796,7 +4798,8 @@
       "enableFailed": "Nelze povolit příjem souboru: {{error}}",
       "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
       "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
-      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu."
+      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu.",
+      "lxmfShareBody": "Příjem souborů je povolen. Zde je můj rncp receive destination (mesh-client jej pro vás uloží)."
     },
     "saved": {
       "labelPlaceholder": "Označení",

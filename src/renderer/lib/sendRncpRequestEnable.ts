@@ -21,11 +21,12 @@ export async function sendRncpRequestEnable(
     return { ok: false, error: 'rate_limited' };
   }
   const instructions = i18n.t('reticulumRemote.enableRequest.lxmfBody');
-  const content = buildRncpRequestEnableMessageBody(instructions);
+  const text = buildRncpRequestEnableMessageBody(instructions);
   try {
+    // Sidecar LxmfSendRequest requires `text` (not `content`) — wrong key → HTTP 422.
     const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', {
       destination_hash: hash,
-      content,
+      text,
     })) as { ok?: boolean; error?: string };
     if (res?.ok === false) {
       return { ok: false, error: 'send_failed', detail: res.error };

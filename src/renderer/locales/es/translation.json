@@ -593,7 +593,8 @@
       "sendFailed": "Error al enviar: {{error}}",
       "newOfferToast": "{{peer}} quiere enviarte un archivo: {{file}}",
       "requestEnable": "Solicitud habilitada",
-      "requestEnableAria": "Pedir a este compañero que habilite la recepción de archivos"
+      "requestEnableAria": "Pedir a este compañero que habilite la recepción de archivos",
+      "destinationHelp": "No es su hash de Chat/LXMF. Use Request enable: los pares de mesh-client lo comparten automáticamente después de aceptarlo. O pegue desde Remote → My rncp receive destination."
     },
     "shareLocation": "Compartir ubicación",
     "shareLocationLabel": "📍 Ubicación compartida",
@@ -4777,7 +4778,8 @@
       "offerToast": "Oferta de archivo entrante: {{file}}",
       "copyInstructionsAria": "Copiar instrucciones para habilitar la recepción de archivos",
       "copyInstructions": "Copiar instrucciones",
-      "instructionsCopied": "Instrucciones copiadas."
+      "instructionsCopied": "Instrucciones copiadas.",
+      "receiveDestSharedToast": "Se guardó el destino de recepción rncp de {{peer}}: ya puede enviar un archivo."
     },
     "enableRequest": {
       "title": "¿Habilitar la recepción de archivos?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "No se ha podido habilitar la recepción de archivos: {{error}}",
       "saveDirRequired": "Elija una carpeta de guardado para habilitar la recepción.",
       "identityUnknown": "Aún no se pudo resolver el hash de identidad de este par — el modo Preguntar está activado, pero no se añadió a la lista de permitidos. Inténtalo de nuevo cuando llegue una ruta o un anuncio.",
-      "lxmfBody": "Habilite la recepción de archivos (rncp) si utiliza mesh-client: → Configuración remota Ofertas de archivos → entrantes. O ejecute rncp/rncp-rs en modo de escucha."
+      "lxmfBody": "Habilite la recepción de archivos (rncp) si utiliza mesh-client: → Configuración remota Ofertas de archivos → entrantes. O ejecute rncp/rncp-rs en modo de escucha.",
+      "lxmfShareBody": "La recepción de archivos está habilitada. Aquí está mi destino de recepción rncp (mesh-client lo guardará para usted)."
     },
     "saved": {
       "labelPlaceholder": "Designación",

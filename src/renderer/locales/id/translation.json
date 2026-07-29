@@ -594,7 +594,8 @@
       "sendFailed": "Gagal mengirim: {{error}}",
       "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
       "requestEnable": "Minta pengaktifan",
-      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file"
+      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file",
+      "destinationHelp": "Bukan hash Chat/LXMF mereka. Gunakan Request enable — peer mesh-client membagikan ini secara otomatis setelah mereka menerima. Atau tempel dari Remote → My rncp receive destination."
     },
     "shareLocation": "Bagikan lokasi",
     "shareLocationLabel": "📍 Lokasi bersama",
@@ -4777,7 +4778,8 @@
       "offerToast": "Penawaran file masuk: {{file}}",
       "copyInstructionsAria": "Salin instruksi untuk mengaktifkan penerimaan file",
       "copyInstructions": "Salin instruksi",
-      "instructionsCopied": "Instruksi disalin."
+      "instructionsCopied": "Instruksi disalin.",
+      "receiveDestSharedToast": "Destinasi penerimaan rncp {{peer}} disimpan — Anda dapat mengirim file sekarang."
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
       "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
-      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan."
+      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan.",
+      "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda)."
     },
     "saved": {
       "labelPlaceholder": "Label",

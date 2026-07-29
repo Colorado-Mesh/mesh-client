@@ -594,7 +594,8 @@
       "sendFailed": "Не вдалося надіслати: {{error}}",
       "newOfferToast": "{{peer}} хоче надіслати вам файл: {{file}}",
       "requestEnable": "Увімкнути запит",
-      "requestEnableAria": "Попросіть цього вузла увімкнути отримання файлів"
+      "requestEnableAria": "Попросіть цього вузла увімкнути отримання файлів",
+      "destinationHelp": "Не їхній хеш Chat/LXMF. Використовуйте Request enable — вузли mesh-client діляться цим автоматично після прийняття. Або вставте з Remote → My rncp receive destination."
     },
     "shareLocation": "Поділіться місцем розташування",
     "shareLocationLabel": "📍 Спільне розташування",
@@ -4779,7 +4780,8 @@
       "offerToast": "Пропозиція щодо вхідного файлу: {{file}}",
       "copyInstructionsAria": "Скопіювати інструкції для ввімкнення отримання файлів",
       "copyInstructions": "Копіювати інструкції",
-      "instructionsCopied": "Інструкції скопійовано."
+      "instructionsCopied": "Інструкції скопійовано.",
+      "receiveDestSharedToast": "Збережено rncp destination прийому {{peer}} — тепер можна надіслати файл."
     },
     "enableRequest": {
       "title": "Увімкнути прийом файлів?",
@@ -4796,7 +4798,8 @@
       "enableFailed": "Не вдалося увімкнути отримання файлу: {{error}}",
       "saveDirRequired": "Виберіть папку збереження, щоб увімкнути отримання.",
       "identityUnknown": "Поки не вдалося визначити хеш особи цього піра — режим «Запитувати» увімкнено, але піра не додано до списку дозволених. Спробуйте ще раз після надходження шляху або анонсу.",
-      "lxmfBody": "Увімкніть отримання файлів (rncp), якщо ви використовуєте mesh-client: Remote → Settings → Inbound file offers. Або запустіть rncp/rncp-rs у режимі прослуховування."
+      "lxmfBody": "Увімкніть отримання файлів (rncp), якщо ви використовуєте mesh-client: Remote → Settings → Inbound file offers. Або запустіть rncp/rncp-rs у режимі прослуховування.",
+      "lxmfShareBody": "Прийом файлів увімкнено. Ось мій rncp destination прийому (mesh-client збереже його для вас)."
     },
     "saved": {
       "labelPlaceholder": "Мітка",

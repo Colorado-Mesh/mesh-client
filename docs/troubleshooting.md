@@ -1257,6 +1257,8 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 2. For `path_constrained`, prefer a faster interface or wait for a better path; large files over slow links may not be attempted.
 3. Check sidecar logs for `rnsh`/`rncp` link errors; the `reticulum:rncpSend` / `rncpFetch` IPC returns the reason key surfaced in the toast.
 
+**Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
+
 ### Reticulum Remote inbound rncp blocked (Ask mode / policy)
 
 **Symptoms**: Incoming file offers never arrive, or an offer is auto-declined; a peer reports their send was rejected.

@@ -390,14 +390,14 @@ Implementation: sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`no
 
 Wire protocols are stock Reticulum utilities — mesh-client is a client (and rncp receive listener), not a private dialect.
 
-| Scenario       | Peer side                                                         | mesh-client side                                                                          |
-| -------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Shell          | `rnsh` / `rnsh-rs` listen; allow our identity (`-a` / allow-list) | Remote → Shell → paste `rnsh` destination hash → connect                                  |
-| Send file      | `rncp -l -a <our_identity>` (or mesh-client inbound Ask)          | Remote → Transfer → Send to peer `rncp.receive` hash                                      |
-| Receive file   | `rncp file <our_receive_hash>`                                    | Remote → Settings → inbound Ask/allow-list; copy **My rncp receive destination**          |
-| Fetch          | Peer `rncp -l -F -j <jail> -a <our_id>`                           | Remote → Transfer → Fetch remote path                                                     |
-| Auth fail      | Peer allow-list omits us                                          | Error shows **not allowed** + copy our identity hash                                      |
-| Request enable | Second mesh-client                                                | Chat/Transfer **Request enable** LXMF DM (sentinel `mesh-client:request-rncp-receive:v1`) |
+| Scenario       | Peer side                                                         | mesh-client side                                                                                                                                              |
+| -------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell          | `rnsh` / `rnsh-rs` listen; allow our identity (`-a` / allow-list) | Remote → Shell → paste `rnsh` destination hash → connect                                                                                                      |
+| Send file      | `rncp -l -a <our_identity>` (or mesh-client inbound Ask)          | Remote → Transfer / Chat DM → peer `rncp.receive` hash (not LXMF)                                                                                             |
+| Receive file   | `rncp file <our_receive_hash>`                                    | Remote → Settings → inbound Ask/allow-list; copy **My rncp receive destination**                                                                              |
+| Fetch          | Peer `rncp -l -F -j <jail> -a <our_id>`                           | Remote → Transfer → Fetch remote path                                                                                                                         |
+| Auth fail      | Peer allow-list omits us                                          | Error shows **not allowed** + copy our identity hash                                                                                                          |
+| Request enable | Second mesh-client                                                | Chat/Transfer **Request enable** (`mesh-client:request-rncp-receive:v1`); peer replies with `mesh-client:rncp-receive-dest:v1:<hash>` so the sender autofills |
 
 Transfers require a **high-speed** path (TCP/network); LoRa/BLE-only destinations are refused locally before a link opens. There is no byte-level resume — Retry restarts the full file.
 

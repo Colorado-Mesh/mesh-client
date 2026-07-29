@@ -593,7 +593,8 @@
       "sendFailed": "Senden fehlgeschlagen: {{error}}",
       "newOfferToast": "{{peer}} möchte dir eine Datei senden: {{file}}",
       "requestEnable": "Aktivieren anfordern",
-      "requestEnableAria": "Bitten Sie diesen Kollegen, den Dateiempfang zu aktivieren"
+      "requestEnableAria": "Bitten Sie diesen Kollegen, den Dateiempfang zu aktivieren",
+      "destinationHelp": "Nicht ihr Chat/LXMF-Hash. Request enable verwenden — mesh-client-Peers teilen dies automatisch nach der Annahme. Oder aus Remote → My rncp receive destination einfügen."
     },
     "shareLocation": "Standort teilen",
     "shareLocationLabel": "📍 Geteilter Standort",
@@ -4777,7 +4778,8 @@
       "offerToast": "Eingehende Datei Angebot: {{file}}",
       "copyInstructionsAria": "Anweisungen zum Aktivieren des Dateiempfangs kopieren",
       "copyInstructions": "Anweisungen kopieren",
-      "instructionsCopied": "Anweisungen kopiert."
+      "instructionsCopied": "Anweisungen kopiert.",
+      "receiveDestSharedToast": "rncp-Empfangsziel von {{peer}} gespeichert — Sie können jetzt eine Datei senden."
     },
     "enableRequest": {
       "title": "Dateiempfang aktivieren?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
       "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
-      "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus."
+      "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus.",
+      "lxmfShareBody": "Dateiempfang ist aktiviert. Hier ist mein rncp-Empfangsziel (mesh-client speichert es für Sie)."
     },
     "saved": {
       "labelPlaceholder": "Etikett",

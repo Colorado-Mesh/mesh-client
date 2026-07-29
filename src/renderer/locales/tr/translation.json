@@ -594,7 +594,8 @@
       "sendFailed": "Gönderilemedi: {{error}}",
       "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
       "requestEnable": "Etkinleştirme isteği",
-      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin"
+      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin",
+      "destinationHelp": "Onların Chat/LXMF hash'i değil. Request enable kullanın — mesh-client eşleri kabul ettikten sonra otomatik paylaşır. Veya Remote → My rncp receive destination adresinden yapıştırın."
     },
     "shareLocation": "Konumu paylaş",
     "shareLocationLabel": "📍 Paylaşılan konum",
@@ -4777,7 +4778,8 @@
       "offerToast": "Gelen dosya teklifi: {{file}}",
       "copyInstructionsAria": "Dosya almayı etkinleştirmek için talimatları kopyalama",
       "copyInstructions": "Talimatları kopyala",
-      "instructionsCopied": "Talimatlar kopyalandı."
+      "instructionsCopied": "Talimatlar kopyalandı.",
+      "receiveDestSharedToast": "{{peer}} için rncp alma hedefi kaydedildi — şimdi dosya gönderebilirsiniz."
     },
     "enableRequest": {
       "title": "Dosya alımı etkinleştirilsin mi?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
       "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
-      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın."
+      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın.",
+      "lxmfShareBody": "Dosya alma etkinleştirildi. İşte rncp alma hedefim (mesh-client sizin için kaydedecek)."
     },
     "saved": {
       "labelPlaceholder": "Etiket",

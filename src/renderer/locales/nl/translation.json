@@ -592,7 +592,8 @@
       "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
       "requestEnable": "Aanvraag inschakelen",
       "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen",
-      "destinationLabel": "RNCP-bestemmingshash"
+      "destinationLabel": "RNCP-bestemmingshash",
+      "destinationHelp": "Niet hun Chat/LXMF-hash. Gebruik Request enable — mesh-client-peers delen dit automatisch na acceptatie. Of plak vanaf Remote → My rncp receive destination."
     },
     "shareLocation": "Deel locatie",
     "shareLocationLabel": "📍 Gedeelde locatie",
@@ -4777,7 +4778,8 @@
       "offerToast": "Inkomende bestandsaanbieding: {{file}}",
       "copyInstructionsAria": "Kopieer instructies voor het inschakelen van bestandsontvangst",
       "copyInstructions": "Kopieer instructies",
-      "instructionsCopied": "Instructies gekopieerd."
+      "instructionsCopied": "Instructies gekopieerd.",
+      "receiveDestSharedToast": "rncp-ontvangstbestemming van {{peer}} opgeslagen — u kunt nu een bestand verzenden."
     },
     "enableRequest": {
       "title": "Bestandsontvangst inschakelen?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "Kon het ontvangen van bestanden niet inschakelen: {{error}}",
       "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
       "identityUnknown": "De identiteitshash van deze peer kon nog niet worden bepaald — inkomend vragen is ingeschakeld, maar de peer is niet aan de toestaanlijst toegevoegd. Probeer het opnieuw nadat een pad of aankondiging is ontvangen.",
-      "lxmfBody": "Schakel bestandsontvangst (rncp) in als u mesh-client gebruikt: Extern → Instellingen → Inkomende bestandsaanbiedingen. Of voer rncp/rncp-rs uit in de luistermodus."
+      "lxmfBody": "Schakel bestandsontvangst (rncp) in als u mesh-client gebruikt: Extern → Instellingen → Inkomende bestandsaanbiedingen. Of voer rncp/rncp-rs uit in de luistermodus.",
+      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Dit is mijn rncp-ontvangstbestemming (mesh-client bewaart dit voor u)."
     },
     "saved": {
       "labelPlaceholder": "Label",

@@ -2,17 +2,34 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 
 import { ChatDmRncpControl } from './ChatDmRncpControl';
 
 const PEER_HASH = 'a'.repeat(32);
+const PEER_IDENTITY = 'd'.repeat(32);
 
 describe('ChatDmRncpControl', () => {
   beforeEach(() => {
     useRncpTransferStore.getState().clearAll();
     useReticulumRemoteAddressStore.setState({ addresses: new Map(), hydrated: false });
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          PEER_HASH,
+          [
+            {
+              destination_hash: PEER_HASH,
+              aspect: 'lxmf.delivery',
+              identity_hash: PEER_IDENTITY,
+              last_seen: Date.now(),
+            },
+          ],
+        ],
+      ]),
+    });
   });
 
   it('renders a Send file button gated to the open DM peer', () => {
@@ -25,7 +42,7 @@ describe('ChatDmRncpControl', () => {
       transfer_id: 't1',
       file_name: 'a.txt',
       bytes: 10,
-      identity_hash: PEER_HASH,
+      identity_hash: PEER_IDENTITY,
     });
     useRncpTransferStore.getState().applyOffer({
       transfer_id: 't2',
@@ -71,13 +88,13 @@ describe('ChatDmRncpControl', () => {
       transfer_id: 't1',
       file_name: 'a.txt',
       bytes: 10,
-      identity_hash: PEER_HASH,
+      identity_hash: PEER_IDENTITY,
     });
     const user = userEvent.setup();
     render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
     await user.click(screen.getByRole('button', { name: 'Send file to Alice via rncp' }));
     await user.click(screen.getByRole('button', { name: 'Accept a.txt' }));
     expect(window.electronAPI.reticulum.rncp.accept).toHaveBeenCalledWith({ transfer_id: 't1' });
-    expect(useRncpTransferStore.getState().pendingOffers.has('t1')).toBe(false);
+    expect(useRncpTransferStore.getState().pendingOffers.size).toBe(0);
   });
 });

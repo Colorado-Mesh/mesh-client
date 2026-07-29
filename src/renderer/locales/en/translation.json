@@ -482,7 +482,8 @@
       "sendFileAria": "Send file to {{name}} via rncp",
       "pendingOffersBadgeAria_one": "{{count}} pending inbound file offer from this peer",
       "pendingOffersBadgeAria_other": "{{count}} pending inbound file offers from this peer",
-      "destinationLabel": "rncp destination hash",
+      "destinationLabel": "Peer's rncp receive destination",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination.",
       "rememberAddress": "Remember this address",
       "rememberAddressAria": "Remember this rncp destination for this peer",
       "chooseAndSend": "Choose file & send…",
@@ -4636,7 +4637,8 @@
       "offerToast": "Incoming file offer: {{file}}",
       "copyInstructionsAria": "Copy instructions for enabling file receive",
       "copyInstructions": "Copy instructions",
-      "instructionsCopied": "Instructions copied."
+      "instructionsCopied": "Instructions copied.",
+      "receiveDestSharedToast": "Saved {{peer}}'s rncp receive destination — you can send a file now."
     },
     "enableRequest": {
       "title": "Enable file receiving?",
@@ -4653,7 +4655,8 @@
       "enableFailed": "Could not enable file receiving: {{error}}",
       "saveDirRequired": "Choose a save folder to enable receiving.",
       "identityUnknown": "Could not resolve this peer's identity hash yet — inbound Ask is enabled, but they were not added to the allow list. Try again after a path or announce arrives.",
-      "lxmfBody": "Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers. Or run rncp/rncp-rs in listen mode."
+      "lxmfBody": "Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers. Or run rncp/rncp-rs in listen mode.",
+      "lxmfShareBody": "File receiving is enabled. Here is my rncp receive destination (mesh-client will save it for you)."
     },
     "saved": {
       "labelPlaceholder": "Label",

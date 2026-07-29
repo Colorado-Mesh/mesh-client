@@ -594,7 +594,8 @@
       "sendFailed": "次の送信に失敗しました： {{error}}",
       "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
       "requestEnable": "リクエストの有効化",
-      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します"
+      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します",
+      "destinationHelp": "Chat/LXMFハッシュではありません。Request enable を使うと、mesh-client ピアが承認後に自動共有します。または Remote → My rncp receive destination から貼り付けてください。"
     },
     "shareLocation": "位置情報を共有する",
     "shareLocationLabel": "📍 共有場所",
@@ -4777,7 +4778,8 @@
       "offerToast": "受信ファイルオファー： {{file}}",
       "copyInstructionsAria": "ファイル受信を有効にするための手順をコピーする",
       "copyInstructions": "手順をコピー",
-      "instructionsCopied": "手順をコピーしました。"
+      "instructionsCopied": "手順をコピーしました。",
+      "receiveDestSharedToast": "{{peer}} の rncp 受信先を保存しました — ファイルを送信できます。"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",
@@ -4794,7 +4796,8 @@
       "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
       "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
       "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
-      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。"
+      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。",
+      "lxmfShareBody": "ファイル受信が有効です。これが私の rncp 受信先です（mesh-client が保存します）。"
     },
     "saved": {
       "labelPlaceholder": "ラベル",

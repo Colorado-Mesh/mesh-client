@@ -7,6 +7,7 @@ import { useToast } from '@/renderer/components/Toast';
 import { useRemotePathCapability } from '@/renderer/hooks/useRemotePathCapability';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { rncpOfferMatchesLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
 import { sendRncpRequestEnable } from '@/renderer/lib/sendRncpRequestEnable';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
@@ -56,8 +57,8 @@ export function ChatDmRncpControl({
 
   const relevantOffers = useMemo(
     () =>
-      [...pendingOffers.values()].filter(
-        (o) => o.identity_hash?.toLowerCase() === lxmfPeerHash.toLowerCase(),
+      [...pendingOffers.values()].filter((o) =>
+        rncpOfferMatchesLxmfPeer(o.identity_hash, lxmfPeerHash),
       ),
     [pendingOffers, lxmfPeerHash],
   );
@@ -244,6 +245,9 @@ export function ChatDmRncpControl({
           <label className="block text-[11px] text-gray-400" htmlFor="chat-dm-rncp-dest">
             {t('chatPanel.rncp.destinationLabel')}
           </label>
+          <p className="text-[10px] leading-snug text-gray-500">
+            {t('chatPanel.rncp.destinationHelp')}
+          </p>
           <div className="flex items-center gap-1">
             <input
               id="chat-dm-rncp-dest"

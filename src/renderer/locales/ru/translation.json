@@ -594,7 +594,8 @@
       "sendFailed": "Не удалось отправить: {{error}}",
       "newOfferToast": "{{peer}} хочет отправить вам файл: {{file}}",
       "requestEnable": "Включить запрос",
-      "requestEnableAria": "Попросите этого однорангового узла включить получение файлов"
+      "requestEnableAria": "Попросите этого однорангового узла включить получение файлов",
+      "destinationHelp": "Не их хэш Chat/LXMF. Используйте Request enable — узлы mesh-client делятся этим автоматически после принятия. Или вставьте из Remote → My rncp receive destination."
     },
     "shareLocation": "Поделиться местоположением",
     "shareLocationLabel": "📍 Общая локация",
@@ -4779,7 +4780,8 @@
       "offerToast": "Предложение по входящим файлам: {{file}}",
       "copyInstructionsAria": "Копировать инструкции для включения получения файла",
       "copyInstructions": "Копировать инструкции",
-      "instructionsCopied": "Инструкции скопированы."
+      "instructionsCopied": "Инструкции скопированы.",
+      "receiveDestSharedToast": "Сохранено rncp-назначение приёма {{peer}} — можно отправить файл."
     },
     "enableRequest": {
       "title": "Включить получение файлов?",
@@ -4796,7 +4798,8 @@
       "enableFailed": "Не удалось включить получение файлов: {{error}}",
       "saveDirRequired": "Выберите папку сохранения, чтобы включить получение.",
       "identityUnknown": "Пока не удалось определить хеш личности этого пира — режим «Спрашивать» включён, но пир не добавлен в список разрешённых. Повторите попытку после получения пути или анонса.",
-      "lxmfBody": "Включите получение файлов (rncp), если вы используете mesh-client: Remote → Settings → Inbound file offers. Или запустите rncp/rncp-rs в режиме прослушивания."
+      "lxmfBody": "Включите получение файлов (rncp), если вы используете mesh-client: Remote → Settings → Inbound file offers. Или запустите rncp/rncp-rs в режиме прослушивания.",
+      "lxmfShareBody": "Приём файлов включён. Вот моё rncp-назначение приёма (mesh-client сохранит его для вас)."
     },
     "saved": {
       "labelPlaceholder": "Ярлык",

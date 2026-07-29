@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { pushAppToast } from '@/renderer/components/Toast';
+import {
+  applyRncpReceiveDestShareFromLxmf,
+  rncpReceiveDestShareSavedToastMessage,
+} from '@/renderer/lib/applyRncpReceiveDestShare';
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
@@ -92,7 +97,10 @@ import {
 } from '@/renderer/stores/reticulumIdentityStore';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
-import { lxmfBodyContainsRncpRequestEnable } from '@/shared/rncpRequestEnable';
+import {
+  lxmfBodyContainsRncpRequestEnable,
+  parseRncpReceiveDestShare,
+} from '@/shared/rncpRequestEnable';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -540,6 +548,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
             peerLabel: p.sender_name ?? null,
             receivedAt: Date.now(),
           });
+        }
+        if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
+          const share = await applyRncpReceiveDestShareFromLxmf({
+            senderHash: p.sender_hash,
+            senderName: p.sender_name,
+            text: p.text,
+          });
+          if (share.ok) {
+            const peer = p.sender_name?.trim() || share.lxmfPeerHash.slice(0, 12);
+            pushAppToast(rncpReceiveDestShareSavedToastMessage(peer), 'success');
+          }
         }
       })();
     },

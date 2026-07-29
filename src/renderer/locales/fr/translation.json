@@ -593,7 +593,8 @@
       "sendFailed": "Échec de l'envoi : {{error}}",
       "newOfferToast": "{{peer}} souhaite vous envoyer un fichier : {{file}}",
       "requestEnable": "Demander l'activation",
-      "requestEnableAria": "Demandez à cet homologue d'activer la réception de fichiers"
+      "requestEnableAria": "Demandez à cet homologue d'activer la réception de fichiers",
+      "destinationHelp": "Pas leur hachage Chat/LXMF. Utilisez Request enable — les pairs mesh-client le partagent automatiquement après acceptation. Ou collez depuis Remote → My rncp receive destination."
     },
     "shareLocation": "Partager l'emplacement",
     "shareLocationLabel": "📍 Emplacement partagé",
@@ -4777,7 +4778,8 @@
       "offerToast": "Offre de fichier entrant : {{file}}",
       "copyInstructionsAria": "Copier les instructions pour activer la réception de fichiers",
       "copyInstructions": "Copier les instructions",
-      "instructionsCopied": "Instructions copiées."
+      "instructionsCopied": "Instructions copiées.",
+      "receiveDestSharedToast": "Destination de réception rncp de {{peer}} enregistrée — vous pouvez envoyer un fichier."
     },
     "enableRequest": {
       "title": "Activer la réception de fichiers ?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "Impossible d'activer la réception du fichier : {{error}}",
       "saveDirRequired": "Choisissez un dossier de sauvegarde pour activer la réception.",
       "identityUnknown": "Impossible de résoudre le hachage d'identité de ce pair pour le moment — le mode Demander est activé, mais il n'a pas été ajouté à la liste d'autorisation. Réessayez après l'arrivée d'un chemin ou d'une annonce.",
-      "lxmfBody": "Veuillez activer la réception de fichiers (rncp) si vous utilisez mesh-client : Remote → Settings → Inbound file offers. Ou exécutez rncp/rncp-rs en mode écoute."
+      "lxmfBody": "Veuillez activer la réception de fichiers (rncp) si vous utilisez mesh-client : Remote → Settings → Inbound file offers. Ou exécutez rncp/rncp-rs en mode écoute.",
+      "lxmfShareBody": "La réception de fichiers est activée. Voici ma destination de réception rncp (mesh-client l'enregistrera pour vous)."
     },
     "saved": {
       "labelPlaceholder": "Dénomination",

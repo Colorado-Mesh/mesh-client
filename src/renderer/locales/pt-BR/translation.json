@@ -594,7 +594,8 @@
       "sendFailed": "Falha ao enviar: {{error}}",
       "newOfferToast": "{{peer}} deseja enviar-lhe um arquivo: {{file}}",
       "requestEnable": "Solicitar ativação",
-      "requestEnableAria": "Peça a este colega para habilitar o recebimento de arquivos"
+      "requestEnableAria": "Peça a este colega para habilitar o recebimento de arquivos",
+      "destinationHelp": "Não é o hash Chat/LXMF deles. Use Request enable — pares mesh-client compartilham automaticamente após aceitar. Ou cole de Remote → My rncp receive destination."
     },
     "shareLocation": "Compartilhar localização",
     "shareLocationLabel": "📍 Localização compartilhada",
@@ -4777,7 +4778,8 @@
       "offerToast": "Oferta de arquivo recebida: {{file}}",
       "copyInstructionsAria": "Copie as instruções para ativar o recebimento de arquivos",
       "copyInstructions": "Copiar instruções",
-      "instructionsCopied": "Instruções copiadas."
+      "instructionsCopied": "Instruções copiadas.",
+      "receiveDestSharedToast": "Destino de recebimento rncp de {{peer}} salvo — você já pode enviar um arquivo."
     },
     "enableRequest": {
       "title": "Habilitar recebimento de arquivos?",
@@ -4794,7 +4796,8 @@
       "enableFailed": "Não foi possível ativar o recebimento de arquivos: {{error}}",
       "saveDirRequired": "Escolha uma pasta de salvamento para ativar o recebimento.",
       "identityUnknown": "Ainda não foi possível resolver o hash de identidade deste par — o modo Perguntar foi ativado, mas ele não foi adicionado à lista de permitidos. Tente novamente quando um caminho ou anúncio chegar.",
-      "lxmfBody": "Ative o recebimento de arquivos (rncp) se você usar mesh-client: Remote → Settings → Inbound file offers. Ou execute rncp/rncp-rs no modo de escuta."
+      "lxmfBody": "Ative o recebimento de arquivos (rncp) se você usar mesh-client: Remote → Settings → Inbound file offers. Ou execute rncp/rncp-rs no modo de escuta.",
+      "lxmfShareBody": "O recebimento de arquivos está ativado. Aqui está meu destino de recebimento rncp (mesh-client salvará para você)."
     },
     "saved": {
       "labelPlaceholder": "Etiqueta",
