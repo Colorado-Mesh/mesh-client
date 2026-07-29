@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { NOMAD_PAGE_FETCH_RETRY_SETTLE_MS } from '@/renderer/lib/timeConstants';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 vi.mock('react-i18next', () => ({
@@ -797,7 +798,7 @@ describe('NomadNetworkPanel', () => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(1);
       });
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(800);
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
       });
       await waitFor(() => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(2);
@@ -842,7 +843,7 @@ describe('NomadNetworkPanel', () => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(1);
       });
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(800);
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
       });
       await waitFor(() => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(2);
@@ -891,7 +892,7 @@ describe('NomadNetworkPanel', () => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(1);
       });
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(800);
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
       });
       await waitFor(() => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(2);

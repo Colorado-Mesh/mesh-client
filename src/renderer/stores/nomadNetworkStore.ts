@@ -68,6 +68,68 @@ function logNomadFetchFailure(
   );
 }
 
+function hopsForNomadHash(nodes: Map<string, NomadNodeRow>, hash: string): number {
+  return nodes.get(hash.toLowerCase())?.hops ?? 8;
+}
+
+async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
+  kind: 'page' | 'file',
+  opts: {
+    hash: string;
+    path: string;
+    nodes: Map<string, NomadNodeRow>;
+    requestData?: NomadPageRequestData;
+  },
+): Promise<T> {
+  const hops = hopsForNomadHash(opts.nodes, opts.hash);
+  if (!(await isReticulumSidecarRunning())) {
+    logNomadFetchFailure(kind, {
+      hash: opts.hash,
+      path: opts.path,
+      hops,
+      egress: 'unknown',
+      error: 'sidecar_not_running',
+    });
+    return { ok: false, error: 'sidecar_not_running' } as T;
+  }
+  try {
+    const egress = await resolveNomadEgress();
+    const qs = new URLSearchParams({
+      path: opts.path,
+      hops: String(hops),
+      egress,
+    });
+    if (opts.requestData && Object.keys(opts.requestData).length > 0) {
+      qs.set('data', btoa(JSON.stringify(opts.requestData)));
+    }
+    const cleanHash = opts.hash.replace(/[^a-fA-F0-9]/g, '');
+    const res = (await window.electronAPI.reticulum.proxyGet(
+      `/api/v1/nomadnetwork/${kind}/${cleanHash}?${qs.toString()}`,
+    )) as T;
+    if (!res.ok) {
+      logNomadFetchFailure(kind, {
+        hash: cleanHash,
+        path: opts.path,
+        hops,
+        egress,
+        error: res.error?.trim() || 'unknown',
+      });
+    }
+    return res;
+  } catch (e) {
+    // catch-no-log-ok logged via logNomadFetchFailure below
+    const error = errLikeToLogString(e);
+    logNomadFetchFailure(kind, {
+      hash: opts.hash,
+      path: opts.path,
+      hops: hopsForNomadHash(opts.nodes, opts.hash),
+      egress: cachedNomadEgress,
+      error,
+    });
+    return { ok: false, error } as T;
+  }
+}
+
 interface NomadNetworkStoreState {
   nodes: Map<string, NomadNodeRow>;
   lastRefreshAt: number | null;
@@ -110,104 +172,20 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
     }
   },
 
-  fetchNomadPage: async (hash, path, requestData) => {
-    if (!(await isReticulumSidecarRunning())) {
-      logNomadFetchFailure('page', {
-        hash,
-        path,
-        hops: 8,
-        egress: 'unknown',
-        error: 'sidecar_not_running',
-      });
-      return { ok: false, error: 'sidecar_not_running' };
-    }
-    try {
-      const egress = await resolveNomadEgress();
-      const node = get().nodes.get(hash.toLowerCase());
-      const hops = node?.hops ?? 8;
-      const qs = new URLSearchParams({
-        path,
-        hops: String(hops),
-        egress,
-      });
-      if (requestData && Object.keys(requestData).length > 0) {
-        qs.set('data', btoa(JSON.stringify(requestData)));
-      }
-      const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
-      const res = (await window.electronAPI.reticulum.proxyGet(
-        `/api/v1/nomadnetwork/page/${cleanHash}?${qs.toString()}`,
-      )) as NomadPageResponse;
-      if (!res.ok) {
-        logNomadFetchFailure('page', {
-          hash: cleanHash,
-          path,
-          hops,
-          egress,
-          error: res.error?.trim() || 'unknown',
-        });
-      }
-      return res;
-    } catch (e) {
-      // catch-no-log-ok logged via logNomadFetchFailure below
-      const error = errLikeToLogString(e);
-      logNomadFetchFailure('page', {
-        hash,
-        path,
-        hops: get().nodes.get(hash.toLowerCase())?.hops ?? 8,
-        egress: cachedNomadEgress,
-        error,
-      });
-      return { ok: false, error };
-    }
-  },
+  fetchNomadPage: async (hash, path, requestData) =>
+    fetchNomadResource<NomadPageResponse>('page', {
+      hash,
+      path,
+      nodes: get().nodes,
+      requestData,
+    }),
 
-  fetchNomadFile: async (hash, path) => {
-    if (!(await isReticulumSidecarRunning())) {
-      logNomadFetchFailure('file', {
-        hash,
-        path,
-        hops: 8,
-        egress: 'unknown',
-        error: 'sidecar_not_running',
-      });
-      return { ok: false, error: 'sidecar_not_running' };
-    }
-    try {
-      const egress = await resolveNomadEgress();
-      const node = get().nodes.get(hash.toLowerCase());
-      const hops = node?.hops ?? 8;
-      const qs = new URLSearchParams({
-        path,
-        hops: String(hops),
-        egress,
-      });
-      const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
-      const res = (await window.electronAPI.reticulum.proxyGet(
-        `/api/v1/nomadnetwork/file/${cleanHash}?${qs.toString()}`,
-      )) as NomadFileResponse;
-      if (!res.ok) {
-        logNomadFetchFailure('file', {
-          hash: cleanHash,
-          path,
-          hops,
-          egress,
-          error: res.error?.trim() || 'unknown',
-        });
-      }
-      return res;
-    } catch (e) {
-      // catch-no-log-ok logged via logNomadFetchFailure below
-      const error = errLikeToLogString(e);
-      logNomadFetchFailure('file', {
-        hash,
-        path,
-        hops: get().nodes.get(hash.toLowerCase())?.hops ?? 8,
-        egress: cachedNomadEgress,
-        error,
-      });
-      return { ok: false, error };
-    }
-  },
+  fetchNomadFile: async (hash, path) =>
+    fetchNomadResource<NomadFileResponse>('file', {
+      hash,
+      path,
+      nodes: get().nodes,
+    }),
 
   toggleFavorite: async (hash, favorited) => {
     if (!(await isReticulumSidecarRunning())) return;

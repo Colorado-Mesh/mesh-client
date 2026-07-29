@@ -45,7 +45,7 @@ import {
 } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { NOMAD_PAGE_FETCH_RETRY_SETTLE_MS } from '@/renderer/lib/timeConstants';
-import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
+import type { NomadNodeRow, NomadPageRequestData, NomadPageResponse } from '@/shared/nomad-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import NomadMicronPageView from './NomadMicronPageView';
@@ -456,18 +456,29 @@ export default function NomadNetworkPanel({
 
       setPageContent(null);
       setPageContentType(undefined);
-      let res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
-      if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
-
-      if ((!res.ok || !res.content) && isRetryableNomadPageError(res.error)) {
-        const retryCode = res.error?.trim() || 'unknown';
-        console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
-        });
-        if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+      let res: NomadPageResponse;
+      try {
         res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
         if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+
+        if ((!res.ok || !res.content) && isRetryableNomadPageError(res.error)) {
+          const retryCode = res.error?.trim() || 'unknown';
+          console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+          });
+          if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+          res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
+          if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+        }
+      } catch (e) {
+        // Failure point: unexpected fetchNomadPage reject. Fallback: clear loading + generic error.
+        console.warn('[NomadNetwork] page fetch ' + errLikeToLogString(e));
+        if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+        setPageLoading(false);
+        setPageErrorCode(null);
+        setPageError(humanizeNomadPageError(undefined, t));
+        return;
       }
 
       setPageLoading(false);
