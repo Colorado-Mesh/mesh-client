@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { pushAppToast } from '@/renderer/components/Toast';
 import {
   applyRncpReceiveDestShareFromLxmf,
@@ -107,6 +108,7 @@ import {
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { resolveRrcInvoluntaryPartBannerKey } from '../lib/rrcInvoluntaryPartBanner';
 import {
   isRrcJoinInfoNotice,
   isRrcModerationLanguage,
@@ -172,10 +174,16 @@ function resolveRrcHubView(hubHash: string | undefined): {
   hub: string | null;
   activeRoom: string | null;
   partIntentRooms: Set<string>;
+  status: string | null;
 } {
   const s = useRrcSessionStore.getState();
   if (!hubHash) {
-    return { hub: s.focusedHubHash, activeRoom: s.activeRoom, partIntentRooms: s.partIntentRooms };
+    return {
+      hub: s.focusedHubHash,
+      activeRoom: s.activeRoom,
+      partIntentRooms: s.partIntentRooms,
+      status: s.status,
+    };
   }
   const hub = hubHash.toLowerCase();
   const session = s.sessionsByHub.get(hub);
@@ -183,6 +191,7 @@ function resolveRrcHubView(hubHash: string | undefined): {
     hub,
     activeRoom: session?.activeRoom ?? null,
     partIntentRooms: session?.partIntentRooms ?? new Set<string>(),
+    status: session?.status ?? null,
   };
 }
 
@@ -773,6 +782,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
           const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
           const willReconnect = p.will_reconnect === true;
+          console.debug(
+            '[useReticulumRuntime] rrc.disconnected hub=' +
+              sanitizeLogMessage(hubDestHash) +
+              ' reason=' +
+              sanitizeLogMessage(p.reason ?? '') +
+              ' will_reconnect=' +
+              String(p.will_reconnect) +
+              ' disconnectIntent=' +
+              String(disconnectIntentForHub),
+          );
           if (
             p.reason === 'local_disconnect' ||
             disconnectIntentForHub ||
@@ -807,8 +826,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const view = resolveRrcHubView(hubDestHash);
           const session = useRrcSessionStore.getState();
           const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
+          const bannerKey = resolveRrcInvoluntaryPartBannerKey({
+            voluntary,
+            sessionStatus: view.status,
+          });
+          console.debug(
+            '[useReticulumRuntime] rrc.room.parted hub=' +
+              sanitizeLogMessage(hubDestHash ?? '') +
+              ' room=' +
+              sanitizeLogMessage(p.room) +
+              ' voluntary=' +
+              String(voluntary) +
+              ' status=' +
+              sanitizeLogMessage(view.status ?? '') +
+              ' banner=' +
+              sanitizeLogMessage(bannerKey ?? 'none'),
+          );
           if (!voluntary) {
-            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            if (bannerKey) session.setModerationBanner(bannerKey, hubDestHash);
             session.addMessage(
               {
                 id: `part-${Date.now()}`,
@@ -864,7 +899,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
               session.roomJoined(topic.room, undefined, hubDestHash);
             }
             if (isRrcModerationLanguage(p.body)) {
-              session.setModerationBanner(p.body, hubDestHash);
+              // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
+              session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
             }
           }
 
@@ -918,7 +954,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
           session.setError(p.message, hubDestHash);
           if (isRrcModerationLanguage(p.message)) {
-            session.setModerationBanner(p.message, hubDestHash);
+            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
           }
           if (view.hub) {
             session.addMessage(

@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "Este concentrador no admite NOTIFICACIÓN directa (/msg).",
     "capDirectNotice": "msg directo",
     "moderation": {
-      "removedFromRoom": "Eliminado de la sala por el centro (patada, prohibición o parte remota)."
+      "removedFromRoom": "Eliminado de la sala por el centro (patada, prohibición o parte remota).",
+      "hubParted": "Saliste de la sala (el hub te separó)."
     },
     "errors": {
       "linkProofTimeout": "Se agotó el tiempo de espera para el enlace del hub (prueba del enlace). Inténtalo de nuevo o comprueba la ruta/saltos al centro.",

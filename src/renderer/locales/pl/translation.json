@@ -4575,7 +4575,8 @@
     "directNoticeUnsupported": "Ten koncentrator nie obsługuje POWIADOMIEŃ bezpośrednich (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Usunięty z pokoju przez piastę (kopnięcie, zakaz lub część zdalna)."
+      "removedFromRoom": "Usunięty z pokoju przez piastę (kopnięcie, zakaz lub część zdalna).",
+      "hubParted": "Opuścił pokój (hub was rozdzielił)."
     },
     "errors": {
       "linkProofTimeout": "Przekroczono limit czasu oczekiwania na połączenie z hubem (link proof). Spróbuj ponownie lub sprawdź ścieżkę/przeskoki do centrum.",

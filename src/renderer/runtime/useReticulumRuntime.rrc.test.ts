@@ -40,4 +40,32 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/hub_dest_hash\?: string \| null/);
     expect(SOURCE).toMatch(/addMessage\([\s\S]*?\{ hubDestHash \}/);
   });
+
+  it('uses neutral hubParted banner for involuntary parts (not kick/ban wording)', () => {
+    expect(SOURCE).toMatch(/resolveRrcInvoluntaryPartBannerKey/);
+    expect(SOURCE).toMatch(/sessionStatus: view\.status/);
+    expect(SOURCE).toMatch(
+      /if \(bannerKey\) session\.setModerationBanner\(bannerKey, hubDestHash\)/,
+    );
+    // Parted path must not hard-code the kick/ban key (moderation NOTICE/ERROR still may).
+    expect(SOURCE).toMatch(
+      /evt\.type === 'rrc\.room\.parted'[\s\S]*?resolveRrcInvoluntaryPartBannerKey\([\s\S]*?if \(bannerKey\) session\.setModerationBanner\(bannerKey/,
+    );
+  });
+
+  it('reserves removedFromRoom banner for moderation NOTICE/ERROR language', () => {
+    expect(SOURCE).toMatch(
+      /isRrcModerationLanguage\(p\.body\)[\s\S]*?setModerationBanner\('rrc\.moderation\.removedFromRoom'/,
+    );
+    expect(SOURCE).toMatch(
+      /isRrcModerationLanguage\(p\.message\)[\s\S]*?setModerationBanner\('rrc\.moderation\.removedFromRoom'/,
+    );
+  });
+
+  it('debug-logs rrc.disconnected and rrc.room.parted with hub/room/voluntary', () => {
+    expect(SOURCE).toMatch(/console\.debug\(\s*'\[useReticulumRuntime\] rrc\.disconnected hub='/);
+    expect(SOURCE).toMatch(/console\.debug\(\s*'\[useReticulumRuntime\] rrc\.room\.parted hub='/);
+    expect(SOURCE).toMatch(/voluntary='/);
+    expect(SOURCE).toMatch(/will_reconnect='/);
+  });
 });

@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "このハブは直接通知（/msg ）をサポートしていません。",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。"
+      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。",
+      "hubParted": "ルームを出ました（ハブによって退出させられました）。"
     },
     "errors": {
       "linkProofTimeout": "ハブリンク（リンクプルーフ）の待機中にタイムアウトしました。もう一度試すか、ハブへのパス/ホップを確認してください。",

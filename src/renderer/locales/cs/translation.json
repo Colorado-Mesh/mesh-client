@@ -4575,7 +4575,8 @@
     "directNoticeUnsupported": "Tento rozbočovač nepodporuje přímé OZNÁMENÍ (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Odstraněno z místnosti nábojem (kop, zákaz nebo vzdálená část)."
+      "removedFromRoom": "Odstraněno z místnosti nábojem (kop, zákaz nebo vzdálená část).",
+      "hubParted": "Opustila místnost (hub vás rozdělil)."
     },
     "errors": {
       "linkProofTimeout": "Vypršel časový limit čekání na odkaz na centrum (důkaz odkazu). Zkuste to znovu nebo zkontrolujte cestu/přechody k rozbočovači.",

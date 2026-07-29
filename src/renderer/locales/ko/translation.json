@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "이 허브는 직접 고지 (/msg) 를 지원하지 않습니다.",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품)."
+      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품).",
+      "hubParted": "방을 나갔습니다 (허브가 당신을 헤어뜨렸습니다)."
     },
     "errors": {
       "linkProofTimeout": "허브 링크 (링크 증명) 대기 시간이 초과되었습니다. 다시 시도하거나 허브 경로/홉을 확인하세요.",

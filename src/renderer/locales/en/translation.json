@@ -2929,6 +2929,7 @@
       "welcomeTimeout": "Connected but the hub did not send WELCOME in time. Try again."
     },
     "moderation": {
+      "hubParted": "Left the room (hub parted you).",
       "removedFromRoom": "Removed from room by the hub (kick, ban, or remote part)."
     },
     "slash": {

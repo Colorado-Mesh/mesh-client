@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "此集线器不支持直接通知(/msg)。",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "由轮毂从房间移除（踢出、禁止或远程部分）。"
+      "removedFromRoom": "由轮毂从房间移除（踢出、禁止或远程部分）。",
+      "hubParted": "离开房间（ HUB将您分开）。"
     },
     "errors": {
       "linkProofTimeout": "等待集线器链接（链接证明）超时。重试，或检查到集线器的路径/跳数。",

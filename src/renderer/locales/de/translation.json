@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "Dieser Hub unterstützt keine direkte BENACHRICHTIGUNG (/msg).",
     "capDirectNotice": "direkte Nachricht",
     "moderation": {
-      "removedFromRoom": "Vom Hub aus dem Raum entfernt (Kick, Ban oder Remote Part)."
+      "removedFromRoom": "Vom Hub aus dem Raum entfernt (Kick, Ban oder Remote Part).",
+      "hubParted": "Verließ den Raum (Hub hat dich getrennt)."
     },
     "errors": {
       "linkProofTimeout": "Zeitüberschreitung beim Warten auf den Hub-Link (Link-Proof). Versuchen Sie es erneut oder überprüfen Sie Pfad/Sprünge zum Hub.",

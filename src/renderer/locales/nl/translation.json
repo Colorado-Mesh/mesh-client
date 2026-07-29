@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "Deze hub ondersteunt geen directe KENNISGEVING (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Verwijderd uit de kamer door de hub (kick, ban of extern deel)."
+      "removedFromRoom": "Verwijderd uit de kamer door de hub (kick, ban of extern deel).",
+      "hubParted": "Verliet de kamer (hub scheidde je)."
     },
     "errors": {
       "linkProofTimeout": "Time-out bij het wachten op de hublink (linkbewijs). Probeer het opnieuw of controleer het pad/de hops naar de hub.",

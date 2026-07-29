@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "Hub ini tidak mendukung PEMBERITAHUAN langsung (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part)."
+      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part).",
+      "hubParted": "Meninggalkan ruangan (hub memisahkan Anda)."
     },
     "errors": {
       "linkProofTimeout": "Waktu habis menunggu tautan hub (bukti tautan). Coba lagi, atau periksa jalur/hop ke hub.",

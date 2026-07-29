@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "Questo hub non supporta l'AVVISO diretto (/msg).",
     "capDirectNotice": "msg diretto",
     "moderation": {
-      "removedFromRoom": "Rimosso dalla stanza dall'hub (kick, ban o parte remota)."
+      "removedFromRoom": "Rimosso dalla stanza dall'hub (kick, ban o parte remota).",
+      "hubParted": "Ha lasciato la stanza (il mozzo ti ha separato)."
     },
     "errors": {
       "linkProofTimeout": "Tempo scaduto in attesa del collegamento hub (prova del collegamento). Riprova o controlla il percorso/salti verso l'hub.",

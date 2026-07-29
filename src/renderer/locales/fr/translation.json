@@ -4573,7 +4573,8 @@
     "directNoticeUnsupported": "Ce hub ne prend pas en charge la NOTIFICATION directe (/msg).",
     "capDirectNotice": "msg direct",
     "moderation": {
-      "removedFromRoom": "Retiré de la salle par le moyeu (coup de pied, bannissement ou salle distante)."
+      "removedFromRoom": "Retiré de la salle par le moyeu (coup de pied, bannissement ou salle distante).",
+      "hubParted": "A quitté la salle (le hub vous a séparé)."
     },
     "errors": {
       "linkProofTimeout": "Délai expiré en attendant le lien du hub (preuve de lien). Réessayez ou vérifiez le chemin/les sauts vers le hub.",
