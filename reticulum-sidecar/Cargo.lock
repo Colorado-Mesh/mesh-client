@@ -1423,6 +1423,7 @@ dependencies = [
  "rns-wire",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",

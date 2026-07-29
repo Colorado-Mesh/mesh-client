@@ -142,6 +142,20 @@ describe('nomadNetworkStore', () => {
     expect(res).toEqual({ ok: true, content: 'page body', content_type: 'micron' });
   });
 
+  it('fetchNomadPage includes force_path_refresh when requested', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    proxyGet.mockResolvedValue({ ok: true, content: 'page body', content_type: 'micron' });
+
+    await useNomadNetworkStore
+      .getState()
+      .fetchNomadPage('abc', '/page/index.mu', undefined, { forcePathRefresh: true });
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=8&egress=tcp&force_path_refresh=true',
+    );
+  });
+
   it('fetchNomadFile requests file path with hops and egress', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);

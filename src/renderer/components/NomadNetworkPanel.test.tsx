@@ -419,9 +419,14 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
       'abc1234567890:/page/forum/thread.mu`thread_id=aaa',
     );
-    expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/forum/thread.mu', {
-      var_thread_id: 'aaa',
-    });
+    expect(fetchNomadPage).toHaveBeenCalledWith(
+      'abc1234567890',
+      '/page/forum/thread.mu',
+      {
+        var_thread_id: 'aaa',
+      },
+      undefined,
+    );
 
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.homePage' }));
     await waitFor(() => {
@@ -435,9 +440,14 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
       'abc1234567890:/page/forum/thread.mu`thread_id=bbb',
     );
-    expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/forum/thread.mu', {
-      var_thread_id: 'bbb',
-    });
+    expect(fetchNomadPage).toHaveBeenCalledWith(
+      'abc1234567890',
+      '/page/forum/thread.mu',
+      {
+        var_thread_id: 'bbb',
+      },
+      undefined,
+    );
 
     const threadFetches = fetchNomadPage.mock.calls.filter(
       (call) => call[1] === '/page/forum/thread.mu',
@@ -804,6 +814,20 @@ describe('NomadNetworkPanel', () => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(2);
         expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
       });
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        1,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        undefined,
+      );
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        2,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
       expect(screen.queryByText(/nomadNetwork.pageFailed/)).not.toBeInTheDocument();
     } finally {
       restore();
@@ -920,6 +944,20 @@ describe('NomadNetworkPanel', () => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(3);
         expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
       });
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        2,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        3,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
 
       act(() => {
         useNomadNetworkStore.setState({
