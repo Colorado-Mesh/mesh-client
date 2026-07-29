@@ -51,6 +51,23 @@ export function resetNomadEgressCacheForTests(): void {
   invalidateNomadEgressCache();
 }
 
+function nomadHashPrefixForLog(hash: string): string {
+  const clean = hash.replace(/[^a-fA-F0-9]/g, '');
+  return clean.slice(0, 8) || 'unknown';
+}
+
+function logNomadFetchFailure(
+  kind: 'page' | 'file',
+  opts: { hash: string; path: string; hops: number; egress: string; error: string },
+): void {
+  const pathSafe = opts.path.replace(/[\r\n]+/g, ' ').slice(0, 200);
+  const errorSafe = opts.error.replace(/[\r\n]+/g, ' ').slice(0, 200);
+  console.warn(
+    `[nomadNetworkStore] ${kind} fetch failed hash=${nomadHashPrefixForLog(opts.hash)}… ` +
+      `path=${pathSafe} hops=${opts.hops} egress=${opts.egress} error=${errorSafe}`,
+  );
+}
+
 interface NomadNetworkStoreState {
   nodes: Map<string, NomadNodeRow>;
   lastRefreshAt: number | null;
@@ -95,6 +112,13 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
 
   fetchNomadPage: async (hash, path, requestData) => {
     if (!(await isReticulumSidecarRunning())) {
+      logNomadFetchFailure('page', {
+        hash,
+        path,
+        hops: 8,
+        egress: 'unknown',
+        error: 'sidecar_not_running',
+      });
       return { ok: false, error: 'sidecar_not_running' };
     }
     try {
@@ -110,17 +134,42 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
         qs.set('data', btoa(JSON.stringify(requestData)));
       }
       const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
-      return (await window.electronAPI.reticulum.proxyGet(
+      const res = (await window.electronAPI.reticulum.proxyGet(
         `/api/v1/nomadnetwork/page/${cleanHash}?${qs.toString()}`,
       )) as NomadPageResponse;
+      if (!res.ok) {
+        logNomadFetchFailure('page', {
+          hash: cleanHash,
+          path,
+          hops,
+          egress,
+          error: res.error?.trim() || 'unknown',
+        });
+      }
+      return res;
     } catch (e) {
-      // catch-no-log-ok error returned to caller for page UI
-      return { ok: false, error: errLikeToLogString(e) };
+      // catch-no-log-ok logged via logNomadFetchFailure below
+      const error = errLikeToLogString(e);
+      logNomadFetchFailure('page', {
+        hash,
+        path,
+        hops: get().nodes.get(hash.toLowerCase())?.hops ?? 8,
+        egress: cachedNomadEgress,
+        error,
+      });
+      return { ok: false, error };
     }
   },
 
   fetchNomadFile: async (hash, path) => {
     if (!(await isReticulumSidecarRunning())) {
+      logNomadFetchFailure('file', {
+        hash,
+        path,
+        hops: 8,
+        egress: 'unknown',
+        error: 'sidecar_not_running',
+      });
       return { ok: false, error: 'sidecar_not_running' };
     }
     try {
@@ -133,12 +182,30 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
         egress,
       });
       const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
-      return (await window.electronAPI.reticulum.proxyGet(
+      const res = (await window.electronAPI.reticulum.proxyGet(
         `/api/v1/nomadnetwork/file/${cleanHash}?${qs.toString()}`,
       )) as NomadFileResponse;
+      if (!res.ok) {
+        logNomadFetchFailure('file', {
+          hash: cleanHash,
+          path,
+          hops,
+          egress,
+          error: res.error?.trim() || 'unknown',
+        });
+      }
+      return res;
     } catch (e) {
-      // catch-no-log-ok error returned to caller for file download UI
-      return { ok: false, error: errLikeToLogString(e) };
+      // catch-no-log-ok logged via logNomadFetchFailure below
+      const error = errLikeToLogString(e);
+      logNomadFetchFailure('file', {
+        hash,
+        path,
+        hops: get().nodes.get(hash.toLowerCase())?.hops ?? 8,
+        egress: cachedNomadEgress,
+        error,
+      });
+      return { ok: false, error };
     }
   },
 

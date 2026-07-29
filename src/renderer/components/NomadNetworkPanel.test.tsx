@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -758,5 +759,191 @@ describe('NomadNetworkPanel', () => {
       'nomad-micron-page--fit-width',
     );
     expect(screen.getByLabelText('nomadNetwork.fitWidth')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('auto-retries once after link_timeout and renders on success', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: '>>>hello after retry',
+          content_type: 'micron',
+        });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Retry Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 3,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(800);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+      });
+      expect(screen.queryByText(/nomadNetwork.pageFailed/)).not.toBeInTheDocument();
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows page error once when both fetch attempts fail', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' })
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Fail Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 3,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(800);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(screen.getByText(/nomadNetwork.pageFailed/)).toBeInTheDocument();
+      });
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('reloads once after announce refresh while a retryable error is showing', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' })
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: '>>>hello after announce',
+          content_type: 'micron',
+        });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Stale Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 4,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(800);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(screen.getByText(/nomadNetwork.pageFailed/)).toBeInTheDocument();
+      });
+
+      act(() => {
+        useNomadNetworkStore.setState({
+          nodes: new Map([
+            [
+              'abc1234567890',
+              {
+                destination_hash: 'abc1234567890',
+                display_name: 'Stale Node',
+                favorited: false,
+                last_seen: 200,
+                hops: 3,
+              },
+            ],
+          ]),
+        });
+      });
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(3);
+        expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+      });
+
+      act(() => {
+        useNomadNetworkStore.setState({
+          nodes: new Map([
+            [
+              'abc1234567890',
+              {
+                destination_hash: 'abc1234567890',
+                display_name: 'Stale Node',
+                favorited: false,
+                last_seen: 300,
+                hops: 2,
+              },
+            ],
+          ]),
+        });
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(fetchNomadPage).toHaveBeenCalledTimes(3);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
   });
 });
