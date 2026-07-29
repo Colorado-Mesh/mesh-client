@@ -784,7 +784,19 @@ impl LiveBridge {
         path: &str,
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
+        force_path_refresh: bool,
     ) -> Result<Vec<u8>, String> {
+        // Stale cached hops often survive LinkClient pubkey recall; force a
+        // RequestPath on retry so the second attempt is not a no-op.
+        if force_path_refresh {
+            let path_ok = self.ensure_path_for_direct(hash_hex, true).await;
+            tracing::info!(
+                target: "nomad",
+                dest = %hash_hex,
+                path_ok,
+                "forced path refresh before Nomad query"
+            );
+        }
         let remote_hash = parse_hash16(identity_hash_hex)?;
         let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
@@ -813,6 +825,7 @@ impl LiveBridge {
         identity_hash_hex: Option<&str>,
         path: &str,
         interfaces: &[InterfaceRow],
+        force_path_refresh: bool,
     ) -> serde_json::Value {
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
             return match local {
@@ -836,7 +849,14 @@ impl LiveBridge {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
         match self
-            .query_nomad_node(hash_hex, identity_hash_hex, path, Vec::new(), interfaces)
+            .query_nomad_node(
+                hash_hex,
+                identity_hash_hex,
+                path,
+                Vec::new(),
+                interfaces,
+                force_path_refresh,
+            )
             .await
         {
             Ok(bytes) => {
@@ -867,6 +887,7 @@ impl LiveBridge {
         path: &str,
         data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
+        force_path_refresh: bool,
     ) -> serde_json::Value {
         // Self-preview: read hosted content without a Link query to ourselves.
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
@@ -896,7 +917,14 @@ impl LiveBridge {
         };
         let payload = nomad_page_request_payload(data_b64);
         match self
-            .query_nomad_node(hash_hex, identity_hash_hex, path, payload, interfaces)
+            .query_nomad_node(
+                hash_hex,
+                identity_hash_hex,
+                path,
+                payload,
+                interfaces,
+                force_path_refresh,
+            )
             .await
         {
             Ok(bytes) => {

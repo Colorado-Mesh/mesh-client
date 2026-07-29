@@ -79,6 +79,7 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     path: string;
     nodes: Map<string, NomadNodeRow>;
     requestData?: NomadPageRequestData;
+    forcePathRefresh?: boolean;
   },
 ): Promise<T> {
   const hops = hopsForNomadHash(opts.nodes, opts.hash);
@@ -101,6 +102,9 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     });
     if (opts.requestData && Object.keys(opts.requestData).length > 0) {
       qs.set('data', btoa(JSON.stringify(opts.requestData)));
+    }
+    if (opts.forcePathRefresh) {
+      qs.set('force_path_refresh', 'true');
     }
     const cleanHash = opts.hash.replace(/[^a-fA-F0-9]/g, '');
     const res = (await window.electronAPI.reticulum.proxyGet(
@@ -130,6 +134,10 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
   }
 }
 
+export interface FetchNomadPageOpts {
+  forcePathRefresh?: boolean;
+}
+
 interface NomadNetworkStoreState {
   nodes: Map<string, NomadNodeRow>;
   lastRefreshAt: number | null;
@@ -139,8 +147,13 @@ interface NomadNetworkStoreState {
     hash: string,
     path: string,
     requestData?: NomadPageRequestData,
+    opts?: FetchNomadPageOpts,
   ) => Promise<NomadPageResponse>;
-  fetchNomadFile: (hash: string, path: string) => Promise<NomadFileResponse>;
+  fetchNomadFile: (
+    hash: string,
+    path: string,
+    opts?: FetchNomadPageOpts,
+  ) => Promise<NomadFileResponse>;
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   getNode: (hash: string) => NomadNodeRow | undefined;
 }
@@ -172,19 +185,21 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
     }
   },
 
-  fetchNomadPage: async (hash, path, requestData) =>
+  fetchNomadPage: async (hash, path, requestData, opts) =>
     fetchNomadResource<NomadPageResponse>('page', {
       hash,
       path,
       nodes: get().nodes,
       requestData,
+      forcePathRefresh: opts?.forcePathRefresh,
     }),
 
-  fetchNomadFile: async (hash, path) =>
+  fetchNomadFile: async (hash, path, opts) =>
     fetchNomadResource<NomadFileResponse>('file', {
       hash,
       path,
       nodes: get().nodes,
+      forcePathRefresh: opts?.forcePathRefresh,
     }),
 
   toggleFavorite: async (hash, favorited) => {

@@ -104,22 +104,22 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 
 ### Nomad Network
 
-| Method | Path                                          | Body / notes                 | Response                                                                                                           |
-| ------ | --------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/v1/nomadnetwork/nodes`                  |                              | `{ nodes: [] }`                                                                                                    |
-| POST   | `/api/v1/nomadnetwork/nodes/favorite`         | `{ hash, favorited }`        | `{ ok }`                                                                                                           |
-| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…`     |                              | page payload                                                                                                       |
-| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`     |                              | `{ ok, file_name?, content_base64? }`                                                                              |
-| GET    | `/api/v1/nomadnetwork/serving`                |                              | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`) |
-| PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }` | `{ ok, serving }`                                                                                                  |
-| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`           | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running   |
-| GET    | `/api/v1/nomadnetwork/serving/pages`          |                              | `{ ok, pages: [] }` — My Pages lists these read-only; edit pages on disk in the watched folder                     |
-| PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`          | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
-| DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
-| GET    | `/api/v1/nomadnetwork/serving/page?path=…`    |                              | `{ ok, path, content }`                                                                                            |
-| GET    | `/api/v1/nomadnetwork/serving/files`          |                              | `{ ok, files: [] }` — My Pages lists these read-only                                                               |
-| PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`   | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
-| DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| Method | Path                                          | Body / notes                                                  | Response                                                                                                           |
+| ------ | --------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/v1/nomadnetwork/nodes`                  |                                                               | `{ nodes: [] }`                                                                                                    |
+| POST   | `/api/v1/nomadnetwork/nodes/favorite`         | `{ hash, favorited }`                                         | `{ ok }`                                                                                                           |
+| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…`     | optional `data`, `force_path_refresh=true` (stale-path retry) | page payload                                                                                                       |
+| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`     | optional `force_path_refresh=true`                            | `{ ok, file_name?, content_base64? }`                                                                              |
+| GET    | `/api/v1/nomadnetwork/serving`                |                                                               | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`) |
+| PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }`                                  | `{ ok, serving }`                                                                                                  |
+| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`                                            | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running   |
+| GET    | `/api/v1/nomadnetwork/serving/pages`          |                                                               | `{ ok, pages: [] }` — My Pages lists these read-only; edit pages on disk in the watched folder                     |
+| PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`                                           | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                                                               | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| GET    | `/api/v1/nomadnetwork/serving/page?path=…`    |                                                               | `{ ok, path, content }`                                                                                            |
+| GET    | `/api/v1/nomadnetwork/serving/files`          |                                                               | `{ ok, files: [] }` — My Pages lists these read-only                                                               |
+| PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`                                    | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                                                               | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
 
 Auto-restore order when the live stack comes up: load `nomad_serving_content_source` → if `nomad_serving_enabled` and a content source is set, start hosting → start FS watcher on `pages/` (and `files/` when that directory exists). If enabled without a content source, set `last_error=content_source_required` and do not start. Other failures keep `enabled=true` with `running=false` and `last_error` set; logs use the `[nomad-serving]` tag.
 

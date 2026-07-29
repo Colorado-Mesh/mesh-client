@@ -1963,32 +1963,51 @@ impl StackHandle {
         hash: &str,
         path: &str,
         data_b64: Option<&str>,
+        force_path_refresh: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
             let identity_hash = self.nomad_identity_hash_for(hash).await;
             return live
-                .fetch_nomad_page(hash, identity_hash.as_deref(), path, data_b64, &interfaces)
+                .fetch_nomad_page(
+                    hash,
+                    identity_hash.as_deref(),
+                    path,
+                    data_b64,
+                    &interfaces,
+                    force_path_refresh,
+                )
                 .await;
         }
-        let _ = (hash, path, data_b64);
+        let _ = (hash, path, data_b64, force_path_refresh);
         serde_json::json!({
             "ok": false,
             "error": "nomad page fetch requires live rns-stack sidecar"
         })
     }
 
-    pub async fn nomad_file(&self, hash: &str, path: &str) -> serde_json::Value {
+    pub async fn nomad_file(
+        &self,
+        hash: &str,
+        path: &str,
+        force_path_refresh: bool,
+    ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
             let identity_hash = self.nomad_identity_hash_for(hash).await;
             return live
-                .fetch_nomad_file(hash, identity_hash.as_deref(), path, &interfaces)
+                .fetch_nomad_file(
+                    hash,
+                    identity_hash.as_deref(),
+                    path,
+                    &interfaces,
+                    force_path_refresh,
+                )
                 .await;
         }
-        let _ = (hash, path);
+        let _ = (hash, path, force_path_refresh);
         serde_json::json!({
             "ok": false,
             "error": "nomad file fetch requires live rns-stack sidecar"

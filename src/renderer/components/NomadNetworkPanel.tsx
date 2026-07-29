@@ -60,6 +60,8 @@ interface NomadHistoryEntry {
 interface LoadNodePageOptions {
   fromHistory?: boolean;
   forceReload?: boolean;
+  /** Force sidecar path rediscovery (stale-route retry / post-error reload). */
+  forcePathRefresh?: boolean;
   requestData?: NomadPageRequestData;
 }
 
@@ -458,7 +460,12 @@ export default function NomadNetworkPanel({
       setPageContentType(undefined);
       let res: NomadPageResponse;
       try {
-        res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
+        res = await fetchNomadPage(
+          hash,
+          normalizedPath,
+          normalizedRequest,
+          options.forcePathRefresh ? { forcePathRefresh: true } : undefined,
+        );
         if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
 
         if ((!res.ok || !res.content) && isRetryableNomadPageError(res.error)) {
@@ -468,7 +475,9 @@ export default function NomadNetworkPanel({
             window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
           });
           if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
-          res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
+          res = await fetchNomadPage(hash, normalizedPath, normalizedRequest, {
+            forcePathRefresh: true,
+          });
           if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
         }
       } catch (e) {
@@ -531,6 +540,7 @@ export default function NomadNetworkPanel({
     console.warn('[NomadNetwork] page reload after announce refresh');
     void loadNodePage(selectedHash, pagePath, {
       forceReload: true,
+      forcePathRefresh: true,
       requestData: pageRequestData,
     });
   }, [
@@ -1049,6 +1059,7 @@ export default function NomadNetworkPanel({
                     onClick={() => {
                       void loadNodePage(selectedNode.destination_hash, pagePath, {
                         forceReload: true,
+                        forcePathRefresh: isRetryableNomadPageError(pageErrorCode),
                         requestData: pageRequestData,
                       });
                     }}
