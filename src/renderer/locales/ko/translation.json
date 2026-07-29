@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
     "capStoredRrcMessagesLabel": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
     "capStoredRrcMessagesCountAria": "저장된 RRC 방 기록을 제한하고 최신 {{count}} 메시지를 유지합니다.",
-    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다."
+    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다.",
+    "use24HourTime": "24시간 사용",
+    "use24HourTimeDesc": "채팅 타임스탬프와 같은 시계를 24시간 형식으로 강제 설정합니다. 꺼지면 시스템 로케일을 따릅니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
@@ -115,6 +116,7 @@ import type {
   SerialPortInfo,
 } from '../lib/types';
 import { useDeviceStore } from '../stores/deviceStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
@@ -365,6 +367,7 @@ export default function ConnectionPanel({
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
   const parentIconTrigger = useParentIconTrigger();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reticulumStackError, setReticulumStackError] = useState<string | null>(null);
 
@@ -2993,7 +2996,7 @@ export default function ConnectionPanel({
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('connectionPanel.lastData')}</span>
                 <span className="text-xs text-gray-300">
-                  {new Date(state.lastDataReceived).toLocaleTimeString()}
+                  {formatDisplayTime(state.lastDataReceived, { use24Hour: use24HourTime })}
                 </span>
               </div>
             )}

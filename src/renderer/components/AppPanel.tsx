@@ -49,6 +49,7 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
@@ -164,6 +165,7 @@ interface AppSettings {
   storeForwardHistoryProfile: 'conservative' | 'aggressive';
   shareLocationSendWaypoint: boolean;
   reduceMotion: boolean;
+  use24HourTime: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
 }
@@ -1885,6 +1887,23 @@ export default function AppPanel({
             {t('appPanel.reduceMotion')}
           </label>
           <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
+        </div>
+        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+          <input
+            type="checkbox"
+            id="use24HourTime"
+            checked={settings.use24HourTime}
+            onChange={(e) => {
+              updateSetting('use24HourTime', e.target.checked);
+              useTimeFormatStore.getState().setUse24HourTime(e.target.checked);
+            }}
+            aria-label={t('appPanel.use24HourTime')}
+            className="accent-brand-green"
+          />
+          <label htmlFor="use24HourTime" className="cursor-pointer text-sm text-gray-300">
+            {t('appPanel.use24HourTime')}
+          </label>
+          <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
         </div>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">

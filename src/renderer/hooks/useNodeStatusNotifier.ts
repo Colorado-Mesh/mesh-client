@@ -2,9 +2,11 @@ import { useEffect, useRef } from 'react';
 
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
+import { formatDisplayTime } from '../lib/formatDisplayTime';
 import { getNodeStatus } from '../lib/nodeStatus';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 
 function computeIsOnline(node: MeshNode, capabilities: ProtocolCapabilities | null): boolean {
@@ -36,6 +38,7 @@ export function useNodeStatusNotifier(
   capabilities: ProtocolCapabilities | null,
 ): void {
   const watchedNodeIds = useWatchedNodesStore((s) => s.watchedNodeIds);
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const prevOnlineRef = useRef<Map<number, boolean>>(new Map());
 
   useEffect(() => {
@@ -64,13 +67,18 @@ export function useNodeStatusNotifier(
       if (!wasOnline && isOnline) {
         fireNotification(`${name} is online`, `${protocolLabel} node came online`);
       } else if (wasOnline && !isOnline) {
+        const lastHeardMs = node.last_heard
+          ? node.last_heard < 1e12
+            ? node.last_heard * 1000
+            : node.last_heard
+          : null;
         fireNotification(
           `${name} went offline`,
-          `Last heard: ${node.last_heard ? new Date(node.last_heard < 1e12 ? node.last_heard * 1000 : node.last_heard).toLocaleTimeString() : 'unknown'}`,
+          `Last heard: ${lastHeardMs != null ? formatDisplayTime(lastHeardMs, { use24Hour: use24HourTime }) : 'unknown'}`,
         );
       }
     }
 
     prevOnlineRef.current = next;
-  }, [nodes, watchedNodeIds, capabilities]);
+  }, [nodes, watchedNodeIds, capabilities, use24HourTime]);
 }

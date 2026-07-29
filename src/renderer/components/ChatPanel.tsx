@@ -38,6 +38,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
@@ -144,6 +145,7 @@ import {
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { reticulumHashForNodeId, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
@@ -547,6 +549,7 @@ function ChatPanel({
   onSendLocationWaypoint,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
   const ownNodeIdSet = useMemo(() => {
@@ -1601,10 +1604,7 @@ function ChatPanel({
   );
 
   function formatTime(ts: number): string {
-    return new Date(ts).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDisplayTime(ts, { use24Hour: use24HourTime });
   }
 
   function formatFullTimestamp(ts: number): string {

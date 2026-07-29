@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
@@ -22,6 +23,7 @@ import {
   isRfForeignLoraHeard,
   useDiagnosticsStore,
 } from '@/renderer/stores/diagnosticsStore';
+import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/shared/nodeNameUtils';
 
@@ -181,6 +183,7 @@ export default function DiagnosticsPanel({
   onRefreshReticulumDiagnostics,
 }: Props) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const formatRowTime = useCallback(
     (ts: number) => {
       if (!ts) return t('common.emDash');
@@ -939,10 +942,7 @@ export default function DiagnosticsPanel({
               const chartData = samples
                 .filter((s) => s.t >= cutoff)
                 .map((s) => ({
-                  time: new Date(s.t).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }),
+                  time: formatDisplayTime(s.t, { use24Hour: use24HourTime }),
                   cu: Math.round(s.cu * 10) / 10,
                 }));
               if (chartData.length < 2) return null;

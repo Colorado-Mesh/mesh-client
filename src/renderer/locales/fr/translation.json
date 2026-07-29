@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
     "capStoredRrcMessagesLabel": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
     "capStoredRrcMessagesCountAria": "Limiter l'historique des salles RRC stockées, conserver les messages {{count}} les plus récents",
-    "reticulumPropagationHelp": "Configurez les nœuds de propagation LXMF distants pour les DM hors ligne. La propagation locale est la boîte de réception de cet appareil uniquement — elle ne remplace pas un nœud distant."
+    "reticulumPropagationHelp": "Configurez les nœuds de propagation LXMF distants pour les DM hors ligne. La propagation locale est la boîte de réception de cet appareil uniquement — elle ne remplace pas un nœud distant.",
+    "use24HourTime": "Heure (format 24 heures)",
+    "use24HourTimeDesc": "Forcer les horloges comme les horodatages de chat au format 24 heures. Lorsqu'il est désactivé, suit les paramètres régionaux de votre système."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

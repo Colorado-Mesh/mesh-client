@@ -12,11 +12,13 @@ import {
   YAxis,
 } from 'recharts';
 
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { downloadBlob } from '../lib/downloadBlob';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import RefreshButton from './RefreshButton';
 import SignalMeter from './SignalMeter';
 
@@ -70,36 +72,29 @@ export default function TelemetryPanel({
 }: Props) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const showEnvironment = capabilities?.hasEnvironmentTelemetry !== false;
   const showPacketStats = capabilities?.hasRfStats === true && meshcorePacketStats != null;
   const chartData = useMemo(
     () =>
       telemetry.map((t, i) => ({
         index: i,
-        time: new Date(t.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        time: formatDisplayTime(t.timestamp, { withSeconds: true, use24Hour: use24HourTime }),
         battery: t.batteryLevel,
         voltage: t.voltage,
       })),
-    [telemetry],
+    [telemetry, use24HourTime],
   );
 
   const signalChartData = useMemo(
     () =>
       signalTelemetry.map((t, i) => ({
         index: i,
-        time: new Date(t.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        time: formatDisplayTime(t.timestamp, { withSeconds: true, use24Hour: use24HourTime }),
         snr: t.snr,
         rssi: t.rssi,
       })),
-    [signalTelemetry],
+    [signalTelemetry, use24HourTime],
   );
 
   const hasBatteryData = chartData.some((d) => d.battery !== undefined || d.voltage !== undefined);
@@ -109,11 +104,7 @@ export default function TelemetryPanel({
     () =>
       environmentTelemetry.map((t, i) => ({
         index: i,
-        time: new Date(t.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        time: formatDisplayTime(t.timestamp, { withSeconds: true, use24Hour: use24HourTime }),
         temperature:
           t.temperature !== undefined
             ? useFahrenheit
@@ -130,7 +121,7 @@ export default function TelemetryPanel({
         pressure: t.barometricPressure,
         iaq: t.iaq,
       })),
-    [environmentTelemetry, useFahrenheit],
+    [environmentTelemetry, useFahrenheit, use24HourTime],
   );
 
   const hasTemp = envChartData.some((d) => d.temperature !== undefined);

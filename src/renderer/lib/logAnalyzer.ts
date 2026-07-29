@@ -1,4 +1,5 @@
 import { formatIsoDate } from '../../shared/formatIsoDate';
+import { formatDisplayTime } from './formatDisplayTime';
 import type { MeshProtocol } from './types';
 
 export interface LogEntry {
@@ -393,15 +394,8 @@ export function analyzeLogs(entries: LogEntry[], protocol: MeshProtocol): Analys
   };
 }
 
-export function formatTimeRange(oldestTs: number, newestTs: number): string {
-  const format = (ts: number) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  };
+export function formatTimeRange(oldestTs: number, newestTs: number, use24Hour = false): string {
+  const format = (ts: number) => formatDisplayTime(ts, { withSeconds: true, use24Hour });
 
   const oldestDate = new Date(oldestTs).toDateString();
   const newestDate = new Date(newestTs).toDateString();

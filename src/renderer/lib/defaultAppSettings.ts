@@ -38,6 +38,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   chatCompactMode: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */
   reduceMotion: false,
+  /** When true, force wall-clock timestamps (chat, charts, etc.) to 24-hour format. */
+  use24HourTime: false,
   /** Auto-request Store & Forward chat history on RF connect (with cap/cooldown). */
   storeForwardAutoFetchHistory: true,
   /**

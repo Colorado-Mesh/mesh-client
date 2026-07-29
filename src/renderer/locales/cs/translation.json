@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Omezit uloženou historii místností RRC, uchovat nejnovější",
     "capStoredRrcMessagesLabel": "Omezit uloženou historii místností RRC, uchovat nejnovější",
     "capStoredRrcMessagesCountAria": "Omezit uloženou historii místností RRC, ponechat nejnovější zprávy {{count}}",
-    "reticulumPropagationHelp": "Nakonfigurujte vzdálené uzly šíření LXMF pro offline DM. Místní propagace je pouze schránka tohoto zařízení — nenahrazuje vzdálený uzel."
+    "reticulumPropagationHelp": "Nakonfigurujte vzdálené uzly šíření LXMF pro offline DM. Místní propagace je pouze schránka tohoto zařízení — nenahrazuje vzdálený uzel.",
+    "use24HourTime": "24hodinový čas",
+    "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

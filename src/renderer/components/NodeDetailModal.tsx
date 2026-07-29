@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import {
@@ -64,6 +65,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
@@ -254,6 +256,7 @@ export default function NodeDetailModal({
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
   const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
@@ -935,7 +938,9 @@ export default function NodeDetailModal({
                     </h4>
                     <div className="flex items-center gap-2">
                       <span className="text-muted text-xs">
-                        {new Date(meshcoreNodeTelemetry.fetchedAt).toLocaleTimeString()}
+                        {formatDisplayTime(meshcoreNodeTelemetry.fetchedAt, {
+                          use24Hour: use24HourTime,
+                        })}
                       </span>
                       <button
                         type="button"

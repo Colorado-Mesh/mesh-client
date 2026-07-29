@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
     "capStoredRrcMessagesLabel": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
     "capStoredRrcMessagesCountAria": "Beperk de opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste {{count}}-berichten",
-    "reticulumPropagationHelp": "Configureer externe LXMF-voortplantingsknooppunten voor offline DM's. Lokale verspreiding is alleen de inbox van dit apparaat — het vervangt geen extern knooppunt."
+    "reticulumPropagationHelp": "Configureer externe LXMF-voortplantingsknooppunten voor offline DM's. Lokale verspreiding is alleen de inbox van dit apparaat — het vervangt geen extern knooppunt.",
+    "use24HourTime": "24-uursaanduiding",
+    "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

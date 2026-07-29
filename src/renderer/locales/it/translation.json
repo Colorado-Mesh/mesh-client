@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
     "capStoredRrcMessagesLabel": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
     "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti",
-    "reticulumPropagationHelp": "Configurare nodi di propagazione LXMF remoti per DM offline. La propagazione locale è solo la casella di posta in arrivo di questo dispositivo — non sostituisce un nodo remoto."
+    "reticulumPropagationHelp": "Configurare nodi di propagazione LXMF remoti per DM offline. La propagazione locale è solo la casella di posta in arrivo di questo dispositivo — non sostituisce un nodo remoto.",
+    "use24HourTime": "Formato 24 ore",
+    "use24HourTimeDesc": "Forza gli orologi come i timestamp della chat al formato di 24 ore. Quando è spento, seguire le impostazioni locali del sistema."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

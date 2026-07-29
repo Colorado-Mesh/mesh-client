@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
     "capStoredRrcMessagesLabel": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
     "capStoredRrcMessagesCountAria": "保存されている RRC ルーム履歴を制限し、最新の {{count}} メッセージを保持します",
-    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。"
+    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
+    "use24HourTime": "24時間制を使用する",
+    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
