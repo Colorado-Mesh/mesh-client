@@ -331,10 +331,14 @@ describe('ReticulumDiagnosticEngine', () => {
     ).toBe(true);
   });
 
-  it('flags sidecar-unhealthy when running and healthy is false', () => {
+  it('flags sidecar-unhealthy when running and unhealthy past grace', () => {
     const rows = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
-      { sidecarRunning: true, sidecarHealthy: false, sidecarUnhealthySince: Date.now() - 5_000 },
+      {
+        sidecarRunning: true,
+        sidecarHealthy: false,
+        sidecarUnhealthySince: Date.now() - 65_000,
+      },
     );
     const row = rows.find(
       (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/sidecar-unhealthy',
@@ -343,6 +347,25 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(row?.severity).toBe('error');
     expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.sidecarUnhealthy');
     expect(row?.reticulumRepairKind).toBe('restart_stack');
+  });
+
+  it('does not flag sidecar-unhealthy within grace or when since is missing', () => {
+    expect(
+      buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        {
+          sidecarRunning: true,
+          sidecarHealthy: false,
+          sidecarUnhealthySince: Date.now() - 5_000,
+        },
+      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/sidecar-unhealthy'),
+    ).toBe(false);
+    expect(
+      buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        { sidecarRunning: true, sidecarHealthy: false },
+      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/sidecar-unhealthy'),
+    ).toBe(false);
   });
 
   it('does not flag sidecar-unhealthy when healthy or not running', () => {
@@ -432,6 +455,52 @@ describe('ReticulumDiagnosticEngine', () => {
     );
     expect(
       rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-failing'),
+    ).toBe(false);
+  });
+
+  it('does not flag failing when last attempt is older than TTL', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        propagation: {
+          syncActive: false,
+          syncProgress: 0,
+          lastSyncError: 'reticulumPropagation.syncTimedOut',
+          lastAttemptAt: Date.now() - 2 * 60 * 60 * 1000,
+        },
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-failing'),
+    ).toBe(false);
+  });
+
+  it('does not flag stuck at exact sub-stall boundary or without attemptAt', () => {
+    expect(
+      buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        {
+          propagation: {
+            syncActive: true,
+            syncProgress: 5,
+            lastSyncError: null,
+            lastAttemptAt: Date.now() - 44_999,
+          },
+        },
+      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
+    ).toBe(false);
+    expect(
+      buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        {
+          propagation: {
+            syncActive: true,
+            syncProgress: 5,
+            lastSyncError: null,
+            lastAttemptAt: null,
+          },
+        },
+      ).some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-stuck'),
     ).toBe(false);
   });
 

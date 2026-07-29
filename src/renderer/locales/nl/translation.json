@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen",
     "reticulumSection": "Reticulum stack",
     "reticulumAnnounceHelp": "Hoe vaak uw identiteit wordt aangekondigd op het netwerk en tools om opgeslagen aankondigingen te wissen.",
-    "reticulumPropagationHelp": "Kies hoe propagatieknooppunten worden gesynchroniseerd en haal de nieuwste propagatiegegevens op wanneer dat nodig is.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Op het tabblad Reticulum omvatten apparaatregels zijspanuitvoer en lokale interfacestatus. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "autoPruneUnheardContactsDaysAria": "Ongehoorde contacten automatisch opschonen bij het opstarten, ouder dan {{days}} dagen",
     "capTotalContactsCountAria": "Beperk het totale aantal contacten, bewaar de meest recent geziene {{count}} contacten",
@@ -612,7 +612,8 @@
     "notificationMessageTitle": "Bericht van {{sender}}",
     "emojiButton": "Emoji",
     "openDmByAddress": "Open",
-    "reticulumSendStoredAtPn": "Opgeslagen op propagatieknooppunt"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1374,7 +1375,7 @@
       "elevatedNoiseFloor": "Verhoogde geluidsvloer",
       "excessiveFlooding": "Overmatige overstromingen",
       "reticulumTrafficDetected": "Reticulum-verkeer gedetecteerd",
-      "highCompanionTxQueue": "High Companion TX-wachtrij"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "De huidige {{current}}% is meer dan 2x het recente gemiddelde ({{average}}%) – mogelijke congestie of interferentiepiek.",
@@ -1389,7 +1390,7 @@
       "fringeWeakCoverage": "Het knooppunt is te ver weg of slecht verbonden met de rest van de mesh.",
       "elevatedNoiseFloor": "Radiogeluidsvloer is {{noiseFloor}} dBm — verhoogde interferentie die het effectieve bereik vermindert.",
       "excessiveFlooding": "{{percent}}% van de transmissies wordt via een overstromingsrouter geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt.",
-      "highCompanionTxQueue": "De uitgaande wachtrijdiepte van de begeleider is {{queueLen}}/256. Het verkeer kan vertraagd of vertraagd zijn."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic knooppunt dat op deze frequentie zendt. Afzender: {{sender}}. {{proximity}}Dit knooppunt bevindt zich mogelijk in uw MeshCore-repeatergebied.",
@@ -1466,8 +1467,8 @@
         "description": "Overstromingsverhouding is zeer hoog — wacht tot het knooppunt directe padcontacten verzamelt of controleer de nabijheid van de repeater."
       },
       "highCompanionTxQueue": {
-        "title": "Verminder uitgaand verkeer of controleer de RF-link",
-        "description": "De wachtrij van Companion TX is bijna vol — pauzeer verzendingen, verminder overstromingen of controleer op interferentie en zwakke schakels."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Kanaalgebruik (laatste 24 uur)",
@@ -1547,9 +1548,9 @@
         "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\"-verbinding is verouderd: vergeet de Bluetooth-instellingen van het besturingssysteem en koppel opnieuw",
         "blePairingTimedOut": "Er is een time-out opgetreden bij het uitwisselen van de BLE RNode \"{{name}}\"-wachtwoord: voer de huidige pincode in (niet 123456) en koppel opnieuw",
-        "sidecarUnhealthy": "Reticulum-zijspan loopt, maar reageert niet op gezondheidscontroles",
-        "propagationSyncStuck": "Synchronisatie van propagatieknooppunt zit vast bij het tot stand brengen van een link",
-        "propagationSyncFailing": "Synchronisatie van propagatieknooppunt mislukt"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3964,9 +3965,9 @@
     "syncEstablishNoLinkProof": "Voortplantingssynchronisatie heeft geen linkbewijs van het knooppunt gekregen — uw identiteit heeft mogelijk een nieuwe aankondiging nodig of het pad terug ontbreekt. Probeer Network → Announce nu en vervolgens Sync opnieuw.",
     "syncOfferUnknown": "Het propagatieknooppunt heeft een onbekende synchronisatiefout geretourneerd — probeer het zo meteen opnieuw.",
     "syncPathHint": "Synchronisatie op afstand vereist een pad in beide richtingen. Sync stuurt eerst een korte LXMF-aankondiging zodat het knooppunt kan antwoorden.",
-    "localInboxName": "Lokale verspreiding (offline inbox)",
-    "localInboxHint": "Lokale verspreiding is de offline inbox van dit apparaat. Het slaat geen uitgaande DM's op voor onbereikbare collega's — stel een extern lxmf.propagation-knooppunt in als voorkeur voor opslaan en doorsturen.",
-    "preferredLocalWarning": "Voorkeur is alleen lokaal — offline collega's hebben nog steeds een extern propagatieknooppunt nodig voor store-and-forward-levering."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

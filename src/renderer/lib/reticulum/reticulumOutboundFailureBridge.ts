@@ -35,6 +35,8 @@ export function failReticulumSendingOutboundToDestHash(
   let count = 0;
   for (const msg of Object.values(bucket)) {
     if (msg.status !== 'sending' || msg.to == null) continue;
+    // Direct→PN fallback re-queues as Propagated and emits sending — do not fail those rows.
+    if (msg.reticulumDeliveryMethod === 'propagated') continue;
     const destHash = resolveOutboundDestHash(msg.to);
     if (!destHash || !destHashMatchesPeer(destHash, targetNorm)) continue;
     if (persistReticulumOutboundMessageStatus(identityId, msg.id, 'failed', errorMessage)) {

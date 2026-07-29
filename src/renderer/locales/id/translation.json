@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}",
     "reticulumSection": "Reticulum — Tumpukan Reticulum",
     "reticulumAnnounceHelp": "Seberapa sering identitas Anda diumumkan di jaringan, dan alat untuk menghapus pengumuman yang tersimpan.",
-    "reticulumPropagationHelp": "Pilih bagaimana node propagasi disinkronkan dan tarik data propagasi terbaru bila diperlukan.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Pada tab Reticulum, jalur perangkat menyertakan keluaran sespan dan kesehatan antarmuka lokal. Baris debug memerlukan kotak centang di dalam panel log.",
     "autoPruneUnheardContactsDaysAria": "Pangkas otomatis kontak yang belum pernah terdengar saat startup, lebih lama dari {{days}} hari",
     "capTotalContactsCountAria": "Batasi total kontak, pertahankan kontak {{count}} yang terakhir dilihat",
@@ -612,7 +612,8 @@
     "dmNodeHops_other": "{{count}} hop",
     "notificationDmTitle": "DM dari {{sender}}",
     "notificationMessageTitle": "Pesan dari {{sender}}",
-    "reticulumSendStoredAtPn": "Disimpan di simpul propagasi"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1374,7 +1375,7 @@
       "elevatedNoiseFloor": "Lantai Kebisingan Tinggi",
       "excessiveFlooding": "Banjir Berlebihan",
       "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi",
-      "highCompanionTxQueue": "Antrean TX Pendamping Tinggi"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "{{current}}% saat ini lebih dari 2× rata-rata terkini ({{average}}%) — kemungkinan kemacetan atau lonjakan gangguan.",
@@ -1389,7 +1390,7 @@
       "fringeWeakCoverage": "Node terlalu jauh atau tidak terhubung dengan baik ke seluruh mesh.",
       "elevatedNoiseFloor": "Lantai kebisingan radio adalah {{noiseFloor}} dBm — gangguan tinggi yang mengurangi rentang efektif.",
       "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat.",
-      "highCompanionTxQueue": "Kedalaman antrean keluar pendamping adalah {{queueLen}}/256 — lalu lintas mungkin tertunda atau terputus."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Node Meshtastic mentransmisikan pada frekuensi ini. Pengirim: {{sender}}. {{proximity}}Node ini mungkin berada di area repeater MeshCore Anda.",
@@ -1466,8 +1467,8 @@
         "description": "Rasio banjir sangat tinggi — tunggu hingga simpul menumpuk kontak jalur langsung, atau periksa kedekatan repeater."
       },
       "highCompanionTxQueue": {
-        "title": "Kurangi lalu lintas keluar atau periksa tautan RF",
-        "description": "Antrean TX pendamping hampir penuh — jeda pengiriman, kurangi banjir, atau periksa gangguan dan tautan yang lemah."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Pemanfaatan Saluran (24 jam terakhir)",
@@ -1547,9 +1548,9 @@
         "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
         "bleBondRemoved": "Ikatan BLE RNode \"{{name}}\" sudah basi — Lupakan pengaturan OS Bluetooth dan pasangkan kembali",
         "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali",
-        "sidecarUnhealthy": "Reticulum sidecar sedang berjalan tetapi tidak menanggapi pemeriksaan kesehatan",
-        "propagationSyncStuck": "Sinkronisasi simpul propagasi macet membuat tautan",
-        "propagationSyncFailing": "Sinkronisasi simpul propagasi gagal"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3964,9 +3965,9 @@
     "syncEstablishNoLinkProof": "Sinkronisasi propagasi tidak mendapatkan bukti tautan dari simpul — identitas Anda mungkin memerlukan pengumuman baru, atau jalur kembali hilang. Coba Network → Announce sekarang, lalu Sinkronkan lagi.",
     "syncOfferUnknown": "Simpul propagasi mengembalikan kesalahan penawaran sinkronisasi yang tidak diketahui — coba lagi sebentar lagi.",
     "syncPathHint": "Sinkronisasi jarak jauh membutuhkan jalur dua arah. Sinkronisasi mengirimkan pengumuman LXMF singkat terlebih dahulu sehingga node dapat membalas.",
-    "localInboxName": "Propagasi lokal (kotak masuk offline)",
-    "localInboxHint": "Propagasi lokal adalah kotak masuk offline perangkat ini. Ini tidak menyimpan DM keluar untuk rekan — rekan yang tidak dapat dijangkau — atur simpul lxmf.propagasi jarak jauh seperti yang disukai untuk store - and - forward.",
-    "preferredLocalWarning": "Pilihannya adalah lokal saja — rekan offline masih membutuhkan simpul propagasi jarak jauh untuk pengiriman store - and - forward."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

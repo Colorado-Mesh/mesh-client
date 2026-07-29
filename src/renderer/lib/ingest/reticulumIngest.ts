@@ -26,6 +26,7 @@ import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import {
   isReticulumHashPrefixAlias,
   reticulumRealDisplayName,
@@ -61,13 +62,6 @@ export function reticulumContactDisplayNameFromPayload(
 ): string | undefined {
   if (!p.sender_hash) return undefined;
   return reticulumRealDisplayName(p.sender_hash, p.sender_name) ?? undefined;
-}
-
-function parseReticulumDeliveryMethod(
-  value: string | undefined,
-): MessageRecord['reticulumDeliveryMethod'] {
-  if (value === 'direct' || value === 'propagated' || value === 'opportunistic') return value;
-  return undefined;
 }
 
 function mapDeliveryStatusToMessageStatus(

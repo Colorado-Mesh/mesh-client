@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}",
     "reticulumSection": "Reticulum — Empilement de réticulum",
     "reticulumAnnounceHelp": "La fréquence à laquelle votre identité est annoncée sur le réseau et les outils pour effacer les annonces stockées.",
-    "reticulumPropagationHelp": "Choisissez comment les nœuds de propagation sont synchronisés et extrayez les dernières données de propagation si nécessaire.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Dans l’onglet Reticulum, les lignes de périphériques incluent la sortie side-car et l’état de l’interface locale. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal.",
     "autoPruneUnheardContactsDaysAria": "Élague automatiquement les contacts non entendus au démarrage, datant de plus de {{days}} jours",
     "capTotalContactsCountAria": "Limiter le nombre total de contacts, conserver les contacts {{count}} les plus récemment vus",
@@ -612,7 +612,8 @@
     "notificationDmTitle": "DM de {{sender}}",
     "notificationMessageTitle": "Message de {{sender}}",
     "emojiButton": "Emoji",
-    "reticulumSendStoredAtPn": "Stocké au nœud de propagation"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -1389,7 +1390,7 @@
       "fringeWeakCoverage": "Le nœud est trop éloigné ou mal connecté au reste du maillage.",
       "elevatedNoiseFloor": "Le plancher de bruit radio est de {{noiseFloor}} dBm — interférence élevée réduisant la portée effective.",
       "excessiveFlooding": "{{percent}}% des transmissions sont acheminées par inondation - le routage direct peut ne pas être établi avec les nœuds à proximité.",
-      "highCompanionTxQueue": "La profondeur de la file d'attente sortante compagnon est de {{queueLen}}/256 — le trafic peut être retardé ou abandonné."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Nœud Meshtastic transmettant sur cette fréquence. Expéditeur : {{sender}}. {{proximity}}Ce nœud peut se trouver dans votre zone de répéteur MeshCore.",
@@ -1466,8 +1467,8 @@
         "description": "Le taux d'inondation est très élevé — attendez que le nœud accumule des contacts directs ou vérifiez la proximité du répéteur."
       },
       "highCompanionTxQueue": {
-        "title": "Réduisez le trafic sortant ou vérifiez la liaison RF",
-        "description": "La file d'attente Companion TX est presque pleine — interrompez les envois, réduisez les inondations ou vérifiez les interférences et les liens faibles."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Utilisation des canaux (dernières 24 heures)",
@@ -1547,9 +1548,9 @@
         "slowTransportQuery": "Requêtes de transport RNS lentes ou en échec ({{count}}×)",
         "bleBondRemoved": "La liaison BLE RNode \"{{name}}\" est obsolète - Oubliez les paramètres Bluetooth du système d'exploitation et ré-appairez",
         "blePairingTimedOut": "L'échange de clé ble RNode \"{{name}}\" a expiré — saisissez le code PIN actuel (pas 123456) et réappareillez",
-        "sidecarUnhealthy": "Le sidecar Reticulum fonctionne mais ne répond pas aux contrôles de santé",
-        "propagationSyncStuck": "La synchronisation du nœud de propagation est bloquée pour établir un lien",
-        "propagationSyncFailing": "Échec de la synchronisation du nœud de propagation"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3964,9 +3965,9 @@
     "syncEstablishNoLinkProof": "La synchronisation de la propagation n'a reçu aucune preuve de lien du nœud — votre identité peut avoir besoin d'une nouvelle annonce ou le chemin de retour est manquant. Essayez Network → Announce maintenant, puis Sync à nouveau.",
     "syncOfferUnknown": "Le nœud de propagation a renvoyé une erreur d'offre de synchronisation inconnue — réessayez dans un instant.",
     "syncPathHint": "La synchronisation à distance a besoin d'un chemin dans les deux sens. Sync envoie d'abord une courte annonce LXMF afin que le nœud puisse répondre.",
-    "localInboxName": "Propagation locale (boîte de réception hors ligne)",
-    "localInboxHint": "La propagation locale est la boîte de réception hors ligne de cet appareil. Il ne stocke pas les DM sortants pour les pairs inaccessibles — définissez un nœud lxmf.propagation distant comme préféré pour le stockage et le transfert.",
-    "preferredLocalWarning": "Préféré est Local uniquement — les pairs hors ligne ont toujours besoin d'un nœud de propagation distant pour la livraison en magasin et en avant."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

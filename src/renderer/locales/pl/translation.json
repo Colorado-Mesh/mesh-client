@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}",
     "reticulumSection": "Reticulum — Stos siateczkowy",
     "reticulumAnnounceHelp": "Jak często Twoja tożsamość jest ogłaszana w sieci i narzędzia do czyszczenia przechowywanych ogłoszeń.",
-    "reticulumPropagationHelp": "Wybierz sposób synchronizacji węzłów propagacji i w razie potrzeby pobierz najnowsze dane propagacji.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Na karcie Reticulum linie urządzeń obejmują wyjście wózka bocznego i stan interfejsu lokalnego. Linie debugowania wymagają pola wyboru w panelu dziennika.",
     "autoPruneUnheardContactsDaysAria": "Automatycznie usuwaj niesłyszane kontakty przy uruchomieniu, starsze niż {{days}} dni",
     "capTotalContactsCountAria": "Ogranicz wszystkie kontakty, zachowaj ostatnio widziane kontakty {{count}}",
@@ -614,7 +614,8 @@
     "notificationDmTitle": "Wiadomość prywatna od {{sender}}",
     "notificationMessageTitle": "Wiadomość od {{sender}}",
     "emojiButton": "Emoji",
-    "reticulumSendStoredAtPn": "Przechowywane w węźle propagacji"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1376,7 +1377,7 @@
       "elevatedNoiseFloor": "Podwyższona podłoga hałasu",
       "excessiveFlooding": "Nadmierne powodzie",
       "reticulumTrafficDetected": "Wykryto ruch Reticulum",
-      "highCompanionTxQueue": "Kolejka Teksasu High Companion"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "Prąd {{current}}% jest ponad 2 razy większy od ostatniej średniej ({{average}}%) — możliwe przeciążenie lub wzrost zakłóceń.",
@@ -1391,7 +1392,7 @@
       "fringeWeakCoverage": "Węzeł jest zbyt daleko lub słabo połączony z resztą siatki.",
       "elevatedNoiseFloor": "Poziom szumów radiowych wynosi {{noiseFloor}} dBm — podwyższone zakłócenia zmniejszające skuteczny zasięg.",
       "excessiveFlooding": "{{percent}}% transmisji jest kierowanych przez powódź — trasowanie bezpośrednie może nie zostać ustanowione z pobliskimi węzłami.",
-      "highCompanionTxQueue": "Głębokość kolejki wychodzącej towarzyszącej wynosi {{queueLen}}/256 — ruch może być opóźniony lub porzucony."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Węzeł Meshtastic nadający na tej częstotliwości. Nadawca: {{sender}}. {{proximity}}Ten węzeł może znajdować się w obszarze wzmacniacza MeshCore.",
@@ -1468,8 +1469,8 @@
         "description": "Wskaźnik powodzi jest bardzo wysoki — poczekaj, aż węzeł zgromadzi styki ścieżki bezpośredniej lub sprawdź bliskość przemiennika."
       },
       "highCompanionTxQueue": {
-        "title": "Zmniejsz ruch wychodzący lub sprawdź łącze RF",
-        "description": "Kolejka nadajnika towarzyszącego jest prawie pełna — pauza wysyła, zmniejsza powodzie lub sprawdza zakłócenia i słabe ogniwa."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Wykorzystanie kanału (ostatnie 24 godziny)",
@@ -1549,9 +1550,9 @@
         "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
         "bleBondRemoved": "Wiązanie BLE RNode „{{name}}” jest nieaktualne — usuń urządzenie w ustawieniach Bluetooth systemu i sparuj ponownie",
         "blePairingTimedOut": "Upłynął limit czasu wymiany hasła BLE RNode „{{name}}” — wprowadź bieżący kod PIN (nie 123456) i sparuj ponownie",
-        "sidecarUnhealthy": "Sidecar Reticulum działa, ale nie reaguje na kontrole stanu zdrowia",
-        "propagationSyncStuck": "Synchronizacja węzła propagacji utknęła, tworząc łącze",
-        "propagationSyncFailing": "Synchronizacja węzła propagacji nie powiodła się"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3966,9 +3967,9 @@
     "syncEstablishNoLinkProof": "Synchronizacja propagacji nie uzyskała żadnego dowodu linku z węzła — Twoja tożsamość może wymagać nowego ogłoszenia lub brakuje ścieżki powrotnej. Wypróbuj Network → Announce teraz, a następnie ponownie Sync.",
     "syncOfferUnknown": "Węzeł propagacji zwrócił nieznany błąd oferty synchronizacji — spróbuj ponownie za chwilę.",
     "syncPathHint": "Zdalna synchronizacja wymaga ścieżki w obie strony. SYNC najpierw wysyła krótkie ogłoszenie LXMF, aby węzeł mógł odpowiedzieć.",
-    "localInboxName": "Lokalna propagacja (skrzynka odbiorcza offline)",
-    "localInboxHint": "Lokalna propagacja to skrzynka odbiorcza offline tego urządzenia. Nie przechowuje wychodzących wiadomości DM dla nieosiągalnych rówieśników — ustaw zdalny węzeł lxmf.propagation jako preferowany dla store-and-forward.",
-    "preferredLocalWarning": "Preferowane jest tylko lokalne — partnerzy offline nadal potrzebują zdalnego węzła propagacji do dostarczania do magazynu i do przodu."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

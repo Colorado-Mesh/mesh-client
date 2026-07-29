@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
     "reticulumSection": "Reticulum — Zásobník retikula",
     "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
-    "reticulumPropagationHelp": "Zvolte způsob synchronizace propagačních uzlů a v případě potřeby vytáhněte nejnovější propagační data.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Na kartě Reticulum řádky zařízení zahrnují výstup postranního vozíku a stav místního rozhraní. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "autoPruneUnheardContactsDaysAria": "Automaticky oříznout neslyšené kontakty při spuštění, starší než {{days}} dnů",
     "capTotalContactsCountAria": "Omezit celkový počet kontaktů, ponechat naposledy zobrazené {{count}} kontakty",
@@ -614,7 +614,8 @@
     "notificationMessageTitle": "Zpráva od {{sender}}",
     "floodScopeOverrideUnscoped": "Unscoped",
     "emojiButton": "Emoji",
-    "reticulumSendStoredAtPn": "Uloženo v propagačním uzlu"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1376,7 +1377,7 @@
       "elevatedNoiseFloor": "Zvýšená hluková podlaha",
       "excessiveFlooding": "Nadměrné záplavy",
       "reticulumTrafficDetected": "Zjištěn provoz Reticulum",
-      "highCompanionTxQueue": "Fronta High Companion TX"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "Aktuální {{current}}% je více než 2× nedávný průměr ({{average}}%) – možné přetížení nebo nárůst rušení.",
@@ -1391,7 +1392,7 @@
       "fringeWeakCoverage": "Uzel je příliš daleko nebo je špatně připojen ke zbytku sítě.",
       "elevatedNoiseFloor": "Podlaha rádiového šumu je {{noiseFloor}} dBm — zvýšený efektivní rozsah snížení rušení.",
       "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly.",
-      "highCompanionTxQueue": "Hloubka doprovodné odchozí fronty je {{queueLen}}/256 — provoz může být zpožděn nebo vynechán."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic uzel vysílající na této frekvenci. Odesílatel: {{sender}}. {{proximity}}Tento uzel se může nacházet v oblasti opakovače MeshCore.",
@@ -1468,8 +1469,8 @@
         "description": "Poměr zaplavení je velmi vysoký — počkejte, až se v uzlu nahromadí kontakty s přímou cestou, nebo zkontrolujte blízkost opakovače."
       },
       "highCompanionTxQueue": {
-        "title": "Snižte odchozí provoz nebo zkontrolujte RF odkaz",
-        "description": "Doprovodná fronta TX je téměř plná — pauza odesílá, snižuje povodně nebo kontroluje rušení a slabé články."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Využití kanálu (posledních 24 hodin)",
@@ -1549,9 +1550,9 @@
         "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
         "bleBondRemoved": "Vazba BLE RNode „{{name}}“ je zastaralá – zapomeňte v nastavení Bluetooth v operačním systému a znovu spárujte",
         "blePairingTimedOut": "Vypršel časový limit výměny klíčů ble RNode „{{name}}“ — zadejte aktuální PIN (ne 123456) a znovu spárujte",
-        "sidecarUnhealthy": "Postranní vozík Reticulum běží, ale nereaguje na zdravotní prohlídky",
-        "propagationSyncStuck": "Synchronizace propagačního uzlu se zasekla při vytváření odkazu",
-        "propagationSyncFailing": "Synchronizace propagačního uzlu se nezdařila"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3966,9 +3967,9 @@
     "syncEstablishNoLinkProof": "Synchronizace propagace nezískala žádný důkaz odkazu z uzlu — vaše identita může potřebovat nové oznámení nebo chybí cesta zpět. Zkuste Network → Announce nyní a poté Sync znovu.",
     "syncOfferUnknown": "Propagační uzel vrátil neznámou chybu nabídky synchronizace — zkuste to znovu za chvíli.",
     "syncPathHint": "Vzdálená synchronizace vyžaduje cestu oběma směry. Synchronizace nejprve odešle krátké oznámení LXMF, aby mohl uzel odpovědět.",
-    "localInboxName": "Místní propagace (offline doručená pošta)",
-    "localInboxHint": "Místní propagace je offline doručená pošta tohoto zařízení. Neukládá odchozí DM pro nedosažitelné kolegy — nastavte vzdálený uzel lxmf.propagation jako preferovaný pro store-and-forward.",
-    "preferredLocalWarning": "Upřednostňuje se pouze místní — offline kolegové stále potřebují vzdálený propagační uzel pro doručování v obchodě."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

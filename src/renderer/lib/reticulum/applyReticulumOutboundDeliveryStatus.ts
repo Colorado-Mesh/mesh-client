@@ -7,6 +7,10 @@ import {
   reticulumViaToMessageTransport,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import { resolveReticulumDestinationHash } from '@/renderer/lib/reticulum/destHash';
+import {
+  isValidReticulumOutboundMessageHash,
+  normalizeReticulumMessageHash,
+} from '@/renderer/lib/reticulum/reticulumMessageHash';
 import type { IdentityId } from '@/renderer/lib/types';
 import {
   type MessageRecord,
@@ -17,12 +21,16 @@ import {
   useMessageStore,
 } from '@/renderer/stores/messageStore';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
+import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
-/** Map sidecar `lxmf_outbound_status` wire status to UI store status. */
-export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus {
+const ALLOWED_WIRE_STATUSES = new Set(['delivered', 'failed', 'sending']);
+
+/** Map sidecar `lxmf_outbound_status` wire status to UI store status. Unknown → null. */
+export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | null {
   if (wireStatus === 'delivered') return 'acked';
   if (wireStatus === 'failed') return 'failed';
-  return 'sending';
+  if (wireStatus === 'sending') return 'sending';
+  return null;
 }
 
 function resolveOutboundPeerHash(record: MessageRecord): string | null {
@@ -46,13 +54,6 @@ function parseWireSentVia(sentVia: string | undefined | null): MessageTransport 
   if (sentVia == null || sentVia === '') return undefined;
   if (!isReticulumViaLabel(sentVia)) return undefined;
   return reticulumViaToMessageTransport(sentVia);
-}
-
-function parseWireDeliveryMethod(
-  value: string | undefined | null,
-): MessageRecord['reticulumDeliveryMethod'] {
-  if (value === 'direct' || value === 'propagated' || value === 'opportunistic') return value;
-  return undefined;
 }
 
 /** Buffer for terminal WS statuses that arrive before optimistic rows are rekeyed. */
@@ -107,13 +108,18 @@ export function flushPendingReticulumOutboundDeliveryStatus(
   const key = pendingDeliveryKey(identityId, messageHash);
   const pending = pendingDeliveryByKey.get(key);
   if (!pending) return false;
+  const mapped = mapLxmfOutboundWireStatus(pending.wireStatus);
+  if (mapped == null) {
+    pendingDeliveryByKey.delete(key);
+    return false;
+  }
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
     messageHash,
-    mapLxmfOutboundWireStatus(pending.wireStatus),
+    mapped,
     undefined,
     parseWireSentVia(pending.sentVia),
-    parseWireDeliveryMethod(pending.deliveryMethod),
+    parseReticulumDeliveryMethod(pending.deliveryMethod),
   );
   if (applied) pendingDeliveryByKey.delete(key);
   return applied;
@@ -225,26 +231,40 @@ export function applyReticulumOutboundDeliveryStatus(
   wireStatus: string,
   opts?: ApplyReticulumOutboundDeliveryStatusOpts,
 ): void {
+  const normalizedHash = normalizeReticulumMessageHash(messageHash);
+  if (!isValidReticulumOutboundMessageHash(normalizedHash)) {
+    console.debug(
+      `[applyReticulumOutboundDeliveryStatus] drop invalid message_hash len=${normalizedHash.length}`,
+    );
+    return;
+  }
+  if (!ALLOWED_WIRE_STATUSES.has(wireStatus)) {
+    console.debug(
+      `[applyReticulumOutboundDeliveryStatus] drop unknown wire status=${wireStatus.slice(0, 32)}`,
+    );
+    return;
+  }
   const status = mapLxmfOutboundWireStatus(wireStatus);
+  if (status == null) return;
   const sentVia = parseWireSentVia(opts?.sentVia);
-  const deliveryMethod = parseWireDeliveryMethod(opts?.deliveryMethod);
+  const deliveryMethod = parseReticulumDeliveryMethod(opts?.deliveryMethod);
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
-    messageHash,
+    normalizedHash,
     status,
     undefined,
     sentVia,
     deliveryMethod,
   );
   if (applied) {
-    pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, messageHash));
+    pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, normalizedHash));
     return;
   }
   // Terminal status, or egress/method upgrade before rekey for later flush.
   if (isTerminalStatus(status) || sentVia != null || deliveryMethod != null) {
     bufferPendingDeliveryStatus(
       identityId,
-      messageHash,
+      normalizedHash,
       wireStatus,
       opts?.sentVia ?? undefined,
       opts?.deliveryMethod ?? undefined,

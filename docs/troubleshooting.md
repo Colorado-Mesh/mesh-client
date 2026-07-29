@@ -1135,7 +1135,7 @@ Unrecognized codes pass through unchanged.
 
 1. **Shared instance conflict** — `share_instance = Yes` with another Reticulum app still running (MeshChatX, Ratspeak, standalone `rnsd`) fighting the same IPC socket. mesh-client may attach as `SharedInstanceClient` and **not spawn** local TCP hubs (Connection then shows misleading “TCP hub unreachable”).
 2. **Dead TCP hub still enabled** — outbound queue fills; path requests fail with _no available capacity_.
-3. **No propagation node** — when direct link fails, there is no store-and-forward fallback (see next section).
+3. **No remote propagation node** — when Direct fails and no preferred **remote** PN is configured, there is no store-and-forward retry (local inbox does not count). With a remote preferred PN, the sidecar retries once via that PN (see **Stale path + Failed via TCP** below).
 
 **Fix**:
 

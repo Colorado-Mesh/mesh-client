@@ -234,7 +234,7 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
     description:
       'Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links.',
     category: 'Physical',
-    severity: 'warning',
+    severity: 'critical',
     titleKey: 'diagnosticsPanel.remedyRf.highCompanionTxQueue.title',
     descriptionKey: 'diagnosticsPanel.remedyRf.highCompanionTxQueue.description',
   },

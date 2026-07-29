@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "Очистити повідомлення {{count}}",
     "reticulumSection": "Reticulum — Стек ретикулуму",
     "reticulumAnnounceHelp": "Як часто ваша особа оголошується в мережі, а також інструменти для очищення збережених оголошень.",
-    "reticulumPropagationHelp": "Виберіть спосіб синхронізації вузлів розповсюдження та витягуйте найновіші дані розповсюдження, коли це необхідно.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Якщо ввімкнено, праворуч з’являється пряма трансляція журналу. На вкладці Reticulum рядки пристроїв включають вихідні дані та стан локального інтерфейсу. Рядки налагодження потребують прапорця на панелі журналу.",
     "autoPruneUnheardContactsDaysAria": "Автоматично видаляти непрослухані контакти під час запуску, старші {{days}} днів",
     "capTotalContactsCountAria": "Обмежте загальну кількість контактів, зберігайте останні {{count}} контактів",
@@ -614,7 +614,8 @@
     "dmNodeHops_other": "{{count}} переходу",
     "notificationDmTitle": "ДМ від {{sender}}",
     "notificationMessageTitle": "Повідомлення від {{sender}}",
-    "reticulumSendStoredAtPn": "Зберігається на вузлі розповсюдження"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1376,7 +1377,7 @@
       "elevatedNoiseFloor": "Підвищена шумова підлога",
       "excessiveFlooding": "Надмірна повінь",
       "reticulumTrafficDetected": "Виявлено трафік Reticulum",
-      "highCompanionTxQueue": "Висока черга супутника TX"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "Поточний {{current}}% перевищує 2рази останній середній показник ({{average}}%) — можливі затори або перешкоди.",
@@ -1391,7 +1392,7 @@
       "fringeWeakCoverage": "Вузол знаходиться занадто далеко або погано з'єднаний з рештою сіті.",
       "elevatedNoiseFloor": "Рівень радіошуму становить {{noiseFloor}} дБм — підвищені перешкоди, що зменшують ефективну дальність.",
       "excessiveFlooding": "{{percent}}% передач передаються по затопленому маршруту — пряма маршрутизація може бути не встановлена з сусідніми вузлами.",
-      "highCompanionTxQueue": "Супутня вихідна черга має глибину {{queueLen}}/256 — трафік може затримуватися або пропускатися."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic вузол, що передає на цій частоті. Відправник: {{sender}}. {{proximity}}Цей вузол може знаходитися в області повторювача MeshCore.",
@@ -1468,8 +1469,8 @@
         "description": "Коефіцієнт затоплення дуже високий — зачекайте, поки вузол накопичить контакти прямого шляху, або перевірте близькість повторювача."
       },
       "highCompanionTxQueue": {
-        "title": "Зменште вихідний трафік або перевірте радіочастотне посилання",
-        "description": "Супутня черга TX майже заповнена — призупиніть надсилання, зменште повені або перевірте наявність перешкод і слабких зв'язків."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Використання каналу (останні 24 години)",
@@ -1549,9 +1550,9 @@
         "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)",
         "bleBondRemoved": "Зв’язок BLE RNode \"{{name}}\" застарілий — видаліть пристрій у налаштуваннях Bluetooth ОС і повторіть сполучення",
         "blePairingTimedOut": "Час очікування обміну ключем доступу BLE RNode \"{{name}}\" минув — введіть поточний PIN-код (не 123456) і повторіть сполучення",
-        "sidecarUnhealthy": "Sidecar Reticulum працює, але не реагує на перевірки здоров'я",
-        "propagationSyncStuck": "Синхронізація вузла поширення застрягла, встановлюючи зв'язок",
-        "propagationSyncFailing": "Помилка синхронізації вузла поширення"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3966,9 +3967,9 @@
     "syncEstablishNoLinkProof": "Синхронізація поширення не отримала підтвердження посилання від вузла — вашій ідентичності може знадобитися нове оголошення, або зворотний шлях відсутній. Спробуйте Network → Announce зараз, а потім синхронізуйте знову.",
     "syncOfferUnknown": "Вузол поширення повернув невідому помилку пропозиції синхронізації — повторіть спробу через мить.",
     "syncPathHint": "Для віддаленої синхронізації потрібен шлях в обидві сторони. Синхронізація надсилає спочатку коротке оголошення LXMF, щоб вузол міг відповісти.",
-    "localInboxName": "Локальне поширення (офлайн-вхідні)",
-    "localInboxHint": "Локальне поширення - це офлайн-папка вхідних цього пристрою. Він не зберігає вихідні DM для недоступних вузлів — встановіть віддалений вузол lxmf.propagation як бажаний для зберігання та пересилання.",
-    "preferredLocalWarning": "Кращий варіант - лише локальний — автономним вузлам все ще потрібен віддалений вузол розповсюдження для зберігання та переадресації."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим поширення",

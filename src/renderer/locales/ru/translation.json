@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "Очистить {{count}} сообщения",
     "reticulumSection": "Reticulum — Стек ретикулума",
     "reticulumAnnounceHelp": "Как часто ваша личность объявляется в сети, и инструменты для очистки сохраненных объявлений.",
-    "reticulumPropagationHelp": "Выберите способ синхронизации узлов распространения и при необходимости извлеките последние данные распространения.",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "Если этот параметр включен, справа отображается поток журнала в реальном времени. На вкладке Reticulum строки устройства включают вывод дополнительных данных и состояние локального интерфейса. Строки отладки требуют наличия флажка внутри панели журнала.",
     "autoPruneUnheardContactsDaysAria": "Автоматическое удаление непрослушанных контактов при запуске, старше {{days}} дн.",
     "capTotalContactsCountAria": "Ограничить общее количество контактов, сохранить последние просмотренные контакты {{count}}",
@@ -614,7 +614,8 @@
     "dmNodeHops_other": "{{count}} перехода",
     "notificationDmTitle": "ДМ от {{sender}}",
     "notificationMessageTitle": "Сообщение от {{sender}}",
-    "reticulumSendStoredAtPn": "Сохранено в узле распространения"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -1376,7 +1377,7 @@
       "elevatedNoiseFloor": "Пол с повышенным уровнем шума",
       "excessiveFlooding": "Чрезмерное затопление",
       "reticulumTrafficDetected": "Обнаружен трафик Reticulum",
-      "highCompanionTxQueue": "Очередь High Companion TX"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "Текущее значение {{current}}% более чем в 2 раза превышает недавнее среднее значение ({{average}}%) — возможна перегрузка или всплеск помех.",
@@ -1391,7 +1392,7 @@
       "fringeWeakCoverage": "Узел находится слишком далеко или плохо связан с остальной частью сетки.",
       "elevatedNoiseFloor": "Минимальный уровень радиошума составляет {{noiseFloor}} дБм — повышенные помехи, снижающие эффективную дальность.",
       "excessiveFlooding": "{{percent}}% передач перенаправлены - прямая маршрутизация может быть не установлена с близлежащими узлами.",
-      "highCompanionTxQueue": "Глубина исходящей очереди спутника составляет {{queueLen}}/256 — трафик может быть задержан или пропущен."
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic узел передает на этой частоте. Отправитель: {{sender}}. {{proximity}}Этот узел может находиться в зоне повторителя MeshCore.",
@@ -1468,8 +1469,8 @@
         "description": "Коэффициент затопления очень высок — подождите, пока узел накапливает прямые контакты, или проверьте близость ретранслятора."
       },
       "highCompanionTxQueue": {
-        "title": "Уменьшите исходящий трафик или проверьте радиочастотную ссылку",
-        "description": "Очередь Companion TX почти заполнена — пауза отправляет, уменьшает наводнения или проверяет наличие помех и слабых связей."
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "Использование канала (последние 24 часа)",
@@ -1549,9 +1550,9 @@
         "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)",
         "bleBondRemoved": "Связь BLE RNode «{{name}}» устарела — забудьте в настройках Bluetooth ОС и выполните повторное сопряжение.",
         "blePairingTimedOut": "Тайм-аут обмена ключами BLE RNode «{{name}}» — введите текущий PIN-код (не 123456) и повторите сопряжение.",
-        "sidecarUnhealthy": "Sidecar Reticulum работает, но не реагирует на проверки состояния",
-        "propagationSyncStuck": "Синхронизация узла распространения застряла при установлении канала",
-        "propagationSyncFailing": "Ошибка синхронизации узла распространения"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3966,9 +3967,9 @@
     "syncEstablishNoLinkProof": "Синхронизация распространения не получила подтверждения связи с узлом — вашей личности может потребоваться новое объявление или отсутствует обратный путь. Попробуйте Network → Announce сейчас, а затем синхронизировать снова.",
     "syncOfferUnknown": "Узел распространения вернул неизвестную ошибку предложения синхронизации — повторите попытку через мгновение.",
     "syncPathHint": "Удаленной синхронизации нужен путь в обе стороны. Синхронизация сначала отправляет короткое объявление LXMF, чтобы узел мог ответить.",
-    "localInboxName": "Локальное распространение (автономный почтовый ящик)",
-    "localInboxHint": "Локальное распространение - это автономный почтовый ящик этого устройства. Он не хранит исходящие DM для недоступных одноранговых узлов — установите удаленный узел lxmf.propagation в качестве предпочтительного для хранения и пересылки.",
-    "preferredLocalWarning": "Предпочтительно только локальное - автономные одноранговые узлы все еще нуждаются в удаленном узле распространения для доставки хранилища и пересылки."
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим распространения",

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
+
 import type { IdentityId } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
 
@@ -48,8 +50,8 @@ export interface MessageRecord {
   reticulumSenderHash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulumReplyToHash?: string;
-  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic). */
-  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
+  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic / paper). */
+  reticulumDeliveryMethod?: ReticulumDeliveryMethod;
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */

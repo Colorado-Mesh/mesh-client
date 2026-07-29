@@ -11,8 +11,8 @@ import {
   type ReticulumLocalInterfaceInput,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import {
-  RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS,
-  RETICULUM_PROPAGATION_SYNC_STALL_MS,
+  isPropagationSyncEstablishingStuck,
+  RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
 import type {
@@ -88,6 +88,9 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
 
 /** User-initiated cancel is not a health finding. */
 const PROPAGATION_SYNC_USER_CANCEL_KEY = 'reticulumPropagation.syncCancelled';
+
+/** Sidecar must stay unhealthy this long before emitting an error diagnostic. */
+export const RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS = 60_000;
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
 export function buildReticulumDiagnosticRows(
@@ -384,27 +387,36 @@ export function buildReticulumDiagnosticRows(
   }
 
   if (options?.sidecarRunning === true && options.sidecarHealthy === false) {
-    rows.push({
-      kind: 'rf',
-      id: rfRowId(homeNodeId, 'reticulum/sidecar-unhealthy'),
-      nodeId: homeNodeId,
-      condition: 'reticulum/sidecar-unhealthy',
-      cause: 'Reticulum sidecar is running but not responding to health checks',
-      causeI18n: runtimeCauseI18n('sidecarUnhealthy'),
-      severity: 'error',
-      detectedAt: now,
-      reticulumRepairKind: 'restart_stack',
-    });
+    const unhealthySince = options.sidecarUnhealthySince;
+    const pastGrace =
+      unhealthySince != null &&
+      now - unhealthySince >= RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS;
+    if (pastGrace) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/sidecar-unhealthy'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/sidecar-unhealthy',
+        cause: 'Reticulum sidecar is running but not responding to health checks',
+        causeI18n: runtimeCauseI18n('sidecarUnhealthy'),
+        severity: 'error',
+        detectedAt: now,
+        reticulumRepairKind: 'restart_stack',
+      });
+    }
   }
 
   const propagation = options?.propagation;
   if (propagation) {
     const attemptAt = propagation.lastAttemptAt;
-    const stuck =
-      propagation.syncActive &&
-      attemptAt != null &&
-      now - attemptAt >= RETICULUM_PROPAGATION_SYNC_STALL_MS &&
-      propagation.syncProgress < RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS;
+    const stuck = isPropagationSyncEstablishingStuck(
+      {
+        syncActive: propagation.syncActive,
+        syncProgress: propagation.syncProgress,
+        lastAttemptAt: attemptAt,
+      },
+      now,
+    );
     if (stuck) {
       rows.push({
         kind: 'rf',
@@ -419,7 +431,9 @@ export function buildReticulumDiagnosticRows(
     } else if (
       !propagation.syncActive &&
       propagation.lastSyncError != null &&
-      propagation.lastSyncError !== PROPAGATION_SYNC_USER_CANCEL_KEY
+      propagation.lastSyncError !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
+      attemptAt != null &&
+      now - attemptAt <= RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS
     ) {
       rows.push({
         kind: 'rf',

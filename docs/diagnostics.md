@@ -167,10 +167,11 @@ These findings use telemetry observed from other nodes' radio stats.
 
 These findings use packet-stats data from a MeshCore device's Repeater Status response (`meshcore_local_stats`).
 
-| Finding              | Trigger                                                                        | Severity | Meaning                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------------------- |
-| Elevated Noise Floor | Radio noise floor > −95 dBm                                                    | Warning  | Elevated interference from nearby RF sources reducing effective range                         |
-| Excessive Flooding   | ≥ 20 total transmissions and > 90% are flood-routed (`nSentFlood / totalSent`) | Warning  | Direct routing has not been established with nearby nodes; all traffic falls back to flooding |
+| Finding                 | Trigger                                                                        | Severity        | Meaning                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ | --------------- | --------------------------------------------------------------------------------------------- |
+| Elevated Noise Floor    | Radio noise floor > −95 dBm                                                    | Warning         | Elevated interference from nearby RF sources reducing effective range                         |
+| Excessive Flooding      | ≥ 20 total transmissions and > 90% are flood-routed (`nSentFlood / totalSent`) | Warning         | Direct routing has not been established with nearby nodes; all traffic falls back to flooding |
+| High Companion TX Queue | `meshcore_local_stats.queueLen > 200` (error if `> 250`)                       | Warning / Error | Companion outbound queue near the 256 cap; traffic may be delayed or dropped                  |
 
 ---
 
@@ -429,6 +430,14 @@ SVG force-directed graph of nodes within direct reach (hops 0–1 from the conne
 On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticulum interface config** section (below continuous ping). It audits the sidecar rnsd config against the live RNS interface list and surfaces actionable repairs.
 
 Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are also folded into Diagnostics via `ReticulumDiagnosticEngine` — including TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation, **`bleBondRemoved`** (stale OS Bluetooth bond for an RNode; Forget/re-pair), and **`blePairingTimedOut`** (OS passkey not entered within the TX-read window).
+
+Additional runtime rows (refreshed from sidecar status + `reticulumPropagationStore`, not only the config audit poll):
+
+| Condition                            | Trigger                                                                                             | Severity | Action                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
+| `reticulum/sidecar-unhealthy`        | Sidecar `running && healthy === false` for ≥ 60 s (`sidecarUnhealthySince`)                         | error    | **Restart stack**                           |
+| `reticulum/propagation-sync-stuck`   | Sync active ≥ ~45 s (`RETICULUM_PROPAGATION_SYNC_STALL_MS`) with progress still Establishing (< 15) | warning  | Retry sync; check PN path / announce        |
+| `reticulum/propagation-sync-failing` | Sync idle with `lastSyncError` (excludes user cancel) and attempt within 1 h                        | warning  | See Network → Propagation / troubleshooting |
 
 | Issue kind                                  | Typical cause                                                                                               | In-app action                                                       |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |

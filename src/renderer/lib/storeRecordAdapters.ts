@@ -4,6 +4,7 @@ import {
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
+import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
@@ -433,12 +434,7 @@ export function reticulumDbRowToMessageRecord(row: {
     row.received_via === 'both'
       ? row.received_via
       : undefined;
-  const deliveryMethod =
-    row.delivery_method === 'direct' ||
-    row.delivery_method === 'propagated' ||
-    row.delivery_method === 'opportunistic'
-      ? row.delivery_method
-      : undefined;
+  const deliveryMethod = parseReticulumDeliveryMethod(row.delivery_method);
   const status: MessageRecord['status'] =
     row.delivery_status === 'failed'
       ? 'failed'

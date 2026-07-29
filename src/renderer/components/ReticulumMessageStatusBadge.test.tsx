@@ -22,7 +22,7 @@ describe('ReticulumMessageStatusBadge', () => {
     expect(
       screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.reticulumSendStoredAtPn'),
     ).toBeTruthy();
-    expect(screen.getByText(/PN/)).toBeTruthy();
+    expect(screen.getByText(/reticulumPnAbbrev/)).toBeTruthy();
   });
 
   it('shows Queued at PN while propagated Sending', () => {

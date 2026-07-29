@@ -42,7 +42,7 @@ export function ReticulumMessageStatusBadge({
     status === 'sending' ? 'text-muted' : status === 'acked' ? 'text-bright-green' : 'text-red-400';
   const atoms = parseReticulumViaAtoms(via);
   const viasLabel = formatReticulumViaBadgeLabel(via ?? 'network');
-  const label = deliveryMethod === 'propagated' ? 'PN' : viasLabel;
+  const label = deliveryMethod === 'propagated' ? t('chatPanel.reticulumPnAbbrev') : viasLabel;
   const statusLabel =
     status === 'sending'
       ? deliveryMethod === 'propagated'

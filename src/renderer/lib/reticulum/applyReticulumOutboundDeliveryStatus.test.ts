@@ -18,7 +18,7 @@ import { createElectronAPIMock } from '@/renderer/vitest.electronApiMock';
 const DEST = '5526a65d0b4d23448206fd3485b76f5b';
 const SELF = '8fd7a9361aca12360c7985bc934bdd20';
 const identityId = 'reticulum-persist-test';
-const messageHash = 'abc123deliveredhash';
+const messageHash = 'abc123def4567890abc123def4567890abc123def4567890abc123def4567890';
 
 describe('applyReticulumOutboundDeliveryStatus', () => {
   beforeEach(() => {
@@ -27,10 +27,12 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     window.electronAPI = createElectronAPIMock();
   });
 
-  it('maps delivered/failed/other wire statuses', () => {
+  it('maps delivered/failed/sending; drops unknown wire statuses', () => {
     expect(mapLxmfOutboundWireStatus('delivered')).toBe('acked');
     expect(mapLxmfOutboundWireStatus('failed')).toBe('failed');
     expect(mapLxmfOutboundWireStatus('sending')).toBe('sending');
+    expect(mapLxmfOutboundWireStatus('queued')).toBeNull();
+    expect(mapLxmfOutboundWireStatus('garbage')).toBeNull();
   });
 
   it('marks Completes as acked and persists delivery_status delivered', () => {
@@ -262,5 +264,86 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
         delivery_method: 'propagated',
       }),
     );
+  });
+
+  it('buffers early deliveryMethod upgrade until flush after rekey', () => {
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]).toBeUndefined();
+
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'early',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    expect(flushPendingReticulumOutboundDeliveryStatus(identityId, messageHash)).toBe(true);
+    expect(
+      useMessageStore.getState().messages[identityId]?.[messageHash]?.reticulumDeliveryMethod,
+    ).toBe('propagated');
+  });
+
+  it('patches deliveryMethod on terminal row without regressing status', () => {
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'done',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'acked',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('acked');
+    expect(
+      useMessageStore.getState().messages[identityId]?.[messageHash]?.reticulumDeliveryMethod,
+    ).toBe('propagated');
+  });
+
+  it('drops invalid message_hash and unknown wire status', () => {
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'x',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+          },
+        },
+      },
+    });
+    applyReticulumOutboundDeliveryStatus(identityId, 'not-a-hash!!!', 'delivered');
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'queued');
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('sending');
   });
 });

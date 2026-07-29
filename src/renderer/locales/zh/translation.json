@@ -218,7 +218,7 @@
     "clearReticulumMessagesConfirmButton": "清除{{count}}消息",
     "reticulumSection": "Reticulum — 网状堆栈",
     "reticulumAnnounceHelp": "您的身份在网络上公布的频率，以及清除存储的公告的工具。",
-    "reticulumPropagationHelp": "选择传播节点的同步方式，并在需要时提取最新传播数据。",
+    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
     "logPanelHelp": "启用后，实时日志流将显示在右侧。在 Reticulum 选项卡上，设备行包括 sidecar 输出和本地接口运行状况。调试行需要日志面板内的复选框。",
     "autoPruneUnheardContactsDaysAria": "启动时自动删除未听过的、超过 {{days}} 天的联系人",
     "capTotalContactsCountAria": "联系人总数上限，保留最近查看的 {{count}} 联系人",
@@ -612,7 +612,8 @@
     "dmNodeHops_other": "{{count}}跳",
     "notificationDmTitle": "来自{{sender}}的DM",
     "notificationMessageTitle": "来自{{sender}}的消息",
-    "reticulumSendStoredAtPn": "存储在传播节点"
+    "reticulumSendStoredAtPn": "Stored at propagation node",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1374,7 +1375,7 @@
       "elevatedNoiseFloor": "高架噪音地板",
       "excessiveFlooding": "洪水泛滥",
       "reticulumTrafficDetected": "检测到 Reticulum 流量",
-      "highCompanionTxQueue": "高精灵TX队列"
+      "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
       "channelUtilizationSpike": "当前的{{current}} %是近期平均值（ {{average}} % ）的2倍以上—可能是拥堵或干扰浪涌。",
@@ -1389,7 +1390,7 @@
       "fringeWeakCoverage": "节点距离太远或与网格其余部分的连接不佳。",
       "elevatedNoiseFloor": "无线电噪声底板为{{noiseFloor}} dBm — 干扰升高，有效范围缩短。",
       "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。",
-      "highCompanionTxQueue": "伴侣出站队列深度为{{queueLen}}/256 —流量可能会延迟或丢弃。"
+      "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
       "meshtastic": "在此频率上传输的Meshtastic节点。发件人： {{sender}}. {{proximity}}此节点可能位于您的MeshCore中继器区域。",
@@ -1466,8 +1467,8 @@
         "description": "洪水比非常高—等待节点积累直接路径触点，或检查中继器接近度。"
       },
       "highCompanionTxQueue": {
-        "title": "减少出站流量或检查射频链路",
-        "description": "伴侣TX队列几乎已满—暂停发送、减少洪水或检查干扰和薄弱环节。"
+        "title": "Reduce outbound traffic or check the RF link",
+        "description": "Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links."
       }
     },
     "cuHistoryHeading": "渠道利用率（过去24小时）",
@@ -1547,9 +1548,9 @@
         "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
         "bleBondRemoved": "BLE RNode「{{name}}」绑定已过时 — 在操作系统蓝牙设置中忽略该设备并重新配对",
         "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对",
-        "sidecarUnhealthy": "Reticulum sidecar正在运行，但未响应健康检查",
-        "propagationSyncStuck": "传播节点同步卡住，无法建立链接",
-        "propagationSyncFailing": "传播节点同步失败"
+        "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
+        "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
+        "propagationSyncFailing": "Propagation node sync failed"
       }
     },
     "routingPort": {
@@ -3964,9 +3965,9 @@
     "syncEstablishNoLinkProof": "传播同步没有从节点获得链接证明—您的身份可能需要新的公告，或者缺少返回路径。立即尝试网络→公告，然后再次同步。",
     "syncOfferUnknown": "传播节点返回了一个未知的同步报价错误—请稍后重试。",
     "syncPathHint": "远程同步需要双向路径。Sync首先发送一个简短的LXMF通告，以便节点可以回复。",
-    "localInboxName": "本地传播（离线收件箱）",
-    "localInboxHint": "本地传播是此设备的离线收件箱。它不存储无法访问的对等项的出站DM —将远程lxmf.propagation节点设置为存储和转发的首选节点。",
-    "preferredLocalWarning": "首选仅限本地—离线同行仍然需要一个远程传播节点来进行存储和转发交付。"
+    "localInboxName": "Local propagation (offline inbox)",
+    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",
