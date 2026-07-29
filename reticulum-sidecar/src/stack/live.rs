@@ -1797,8 +1797,8 @@ impl LiveBridge {
             .map(|d| d.has_path_to(destination_hex))
             .unwrap_or(false);
         if force && already {
-            let accept =
-                force_path_refresh_accepts_after_timeout(force, already, saw_path_absent, has_path);
+            let accept = has_path
+                && force_path_refresh_accepts_current_path(force, already, saw_path_absent);
             tracing::info!(
                 target: "propagation-sync",
                 dest = %destination_hex,
@@ -2995,18 +2995,6 @@ fn force_path_refresh_accepts_current_path(
     saw_path_absent
 }
 
-/// Timeout fallback for forced refresh: require both a live path and the same
-/// absence/reinstall gate used in the wait loop.
-fn force_path_refresh_accepts_after_timeout(
-    force: bool,
-    had_path_at_start: bool,
-    saw_path_absent: bool,
-    has_path_now: bool,
-) -> bool {
-    has_path_now
-        && force_path_refresh_accepts_current_path(force, had_path_at_start, saw_path_absent)
-}
-
 /// Hashes present in `next` but not in `prev` (path-table membership growth).
 fn path_table_added_hashes(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
     next.difference(prev).cloned().collect()
@@ -3224,21 +3212,19 @@ mod announce_display_name_tests {
     #[test]
     fn force_path_refresh_timeout_rejects_never_absent_stale_route() {
         // DropPath failed / path never cleared — timeout must not accept stale route.
-        assert!(!force_path_refresh_accepts_after_timeout(
-            true, true, false, true
-        ));
+        let has_path = true;
+        let saw_path_absent = false;
+        assert!(
+            !(has_path && force_path_refresh_accepts_current_path(true, true, saw_path_absent))
+        );
         // Absence observed then path reinstalled — timeout may accept.
-        assert!(force_path_refresh_accepts_after_timeout(
-            true, true, true, true
-        ));
+        assert!(has_path && force_path_refresh_accepts_current_path(true, true, true));
         // Absence observed but no path came back — reject.
-        assert!(!force_path_refresh_accepts_after_timeout(
-            true, true, true, false
-        ));
-        // Non-force discovery timeout with a path present — accept.
-        assert!(force_path_refresh_accepts_after_timeout(
-            false, false, false, true
-        ));
+        let has_path = false;
+        assert!(!(has_path && force_path_refresh_accepts_current_path(true, true, true)));
+        // Non-force discovery with a path present — accept.
+        let has_path = true;
+        assert!(has_path && force_path_refresh_accepts_current_path(false, false, false));
     }
 
     #[test]
