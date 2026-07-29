@@ -67,7 +67,7 @@ describe('ReticulumPropagationSection', () => {
       nodes: [
         {
           id: 'local-prop',
-          name: 'Local propagation (offline inbox)',
+          name: 'Host propagation node',
           enabled: true,
           status: 'known',
           hops: 0,
@@ -101,8 +101,8 @@ describe('ReticulumPropagationSection', () => {
   it('shows rename and delete for remote nodes only', () => {
     render(<ReticulumPropagationSection embedded />);
 
-    expect(screen.getByText(/reticulumPropagation\.localInboxName/)).toBeInTheDocument();
-    expect(screen.getByText('reticulumPropagation.localInboxHint')).toBeInTheDocument();
+    expect(screen.getByText(/reticulumPropagation\.localHostName/)).toBeInTheDocument();
+    expect(screen.getByText('reticulumPropagation.localHostHint')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'reticulumPropagation.renameAria:Remote hub' }),
     ).toBeInTheDocument();
@@ -245,6 +245,39 @@ describe('ReticulumPropagationSection', () => {
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('reticulumPropagation.setPreferredFailed', 'error');
+    });
+  });
+
+  it('shows probing progress while add runs and surfaces offer-unsupported toast', async () => {
+    const user = userEvent.setup();
+    let resolveAdd!: (ok: boolean) => void;
+    const addPropagationNode = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveAdd = resolve;
+        }),
+    );
+    useReticulumPropagationStore.setState({
+      addPropagationNode,
+      lastAddError: null,
+    });
+
+    render(<ReticulumPropagationSection embedded />);
+
+    const hashInput = screen.getByLabelText('reticulumPropagation.addNodeLabel');
+    await user.type(hashInput, 'aabb1111222233334444555566667777');
+    await user.click(screen.getByRole('button', { name: 'reticulumPropagation.addNode' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('reticulumPropagation.addProbing');
+    expect(addPropagationNode).toHaveBeenCalledWith('aabb1111222233334444555566667777');
+
+    useReticulumPropagationStore.setState({
+      lastAddError: 'reticulumPropagation.offerUnsupported',
+    });
+    resolveAdd(false);
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.offerUnsupported', 'error');
     });
   });
 });

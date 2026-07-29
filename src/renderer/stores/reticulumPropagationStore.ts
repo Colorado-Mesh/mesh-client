@@ -11,6 +11,11 @@ import {
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  DEFAULT_PN_HOSTING_POLICY,
+  parsePnHostingPolicy,
+  type PnHostingPolicy,
+} from '@/shared/pnHostingPolicy';
 import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumPropagationAutoSync';
 
 /** i18n key written when the user cancels an in-flight propagation sync. */
@@ -51,8 +56,10 @@ interface ReticulumPropagationStoreState {
   discovered: DiscoveredPropagationRow[];
   preferredId: string | null;
   autoSyncIntervalSec: number;
+  hostingPolicy: PnHostingPolicy;
   sync: PropagationSyncState;
   lastSyncError: string | null;
+  lastAddError: string | null;
   lastRefreshedAt: number | null;
   lastPropagationSyncAt: number | null;
   /**
@@ -78,6 +85,7 @@ interface ReticulumPropagationStoreState {
   refreshDiscoveredFromSidecar: () => Promise<void>;
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   setAutoSyncIntervalOnSidecar: (sec: number) => Promise<boolean>;
+  setHostingPolicyOnSidecar: (policy: PnHostingPolicy) => Promise<boolean>;
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: (opts?: { reasonKey?: string }) => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
@@ -91,8 +99,10 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   discovered: [],
   preferredId: null,
   autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
+  hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
   sync: { active: false, progress: 0, message: null },
   lastSyncError: null,
+  lastAddError: null,
   lastRefreshedAt: null,
   lastPropagationSyncAt: null,
   lastPropagationSyncAttemptAt: null,
@@ -153,6 +163,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         propagation?: PropagationNodeRow[];
         preferred_id?: string | null;
         auto_sync_interval_sec?: number;
+        pn_hosting_policy?: unknown;
         last_propagation_sync_at?: number | null;
       };
       const nodes = body.propagation ?? [];
@@ -161,6 +172,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         preferredId: body.preferred_id ?? null,
         autoSyncIntervalSec:
           body.auto_sync_interval_sec ?? RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
+        hostingPolicy: parsePnHostingPolicy(body.pn_hosting_policy),
         lastRefreshedAt: Date.now(),
         lastPropagationSyncAt:
           typeof body.last_propagation_sync_at === 'number' && body.last_propagation_sync_at > 0
@@ -220,6 +232,25 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
     } catch (e) {
       console.warn('[reticulumPropagationStore] auto-sync interval ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  setHostingPolicyOnSidecar: async (policy) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/hosting-policy',
+        policy,
+      )) as { ok?: boolean; error?: string };
+      if (res.ok) {
+        set({ hostingPolicy: policy });
+        return true;
+      }
+      if (res.error) {
+        set({ lastAddError: mapPropagationSyncError(res.error) });
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] hosting policy ' + errLikeToLogString(e));
     }
     return false;
   },
@@ -318,17 +349,22 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   },
 
   addPropagationNode: async (destinationHash, name) => {
+    set({ lastAddError: null });
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/add', {
         destination_hash: destinationHash,
         name: name ?? undefined,
-      })) as { ok?: boolean };
+      })) as { ok?: boolean; error?: string };
       if (res.ok) {
         await get().refreshFromSidecar();
         return true;
       }
+      if (res.error) {
+        set({ lastAddError: mapPropagationSyncError(res.error) });
+      }
     } catch (e) {
       console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
+      set({ lastAddError: 'reticulumPropagation.addFailed' });
     }
     return false;
   },

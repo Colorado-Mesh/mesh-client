@@ -54,6 +54,10 @@ const SYNC_OFFER_INVALID_KEY_KEY = 'reticulumPropagation.syncOfferInvalidKey';
 const SYNC_OFFER_THROTTLED_KEY = 'reticulumPropagation.syncOfferThrottled';
 const SYNC_OFFER_INVALID_DATA_KEY = 'reticulumPropagation.syncOfferInvalidData';
 const SYNC_OFFER_INVALID_STAMP_KEY = 'reticulumPropagation.syncOfferInvalidStamp';
+const SYNC_PEER_COST_EXCEEDS_MAX_KEY = 'reticulumPropagation.syncPeerCostExceedsMax';
+const SYNC_OFFER_UNSUPPORTED_KEY = 'reticulumPropagation.offerUnsupported';
+const SYNC_OFFER_PROBE_TIMEOUT_KEY = 'reticulumPropagation.offerProbeTimeout';
+const SYNC_OFFER_PROBE_FAILED_KEY = 'reticulumPropagation.offerProbeFailed';
 const SYNC_OFFER_UNKNOWN_KEY = 'reticulumPropagation.syncOfferUnknown';
 
 /** Idle sync blob shared by cancel / complete / failure paths. */
@@ -97,6 +101,10 @@ export function mapPropagationSyncError(error: string | null | undefined): strin
   ) {
     return SYNC_PEERAGE_STAMP_FAILED_KEY;
   }
+  if (error === 'PROPAGATION_PEER_COST_EXCEEDS_MAX') return SYNC_PEER_COST_EXCEEDS_MAX_KEY;
+  if (error === 'PROPAGATION_OFFER_UNSUPPORTED') return SYNC_OFFER_UNSUPPORTED_KEY;
+  if (error === 'PROPAGATION_OFFER_PROBE_TIMEOUT') return SYNC_OFFER_PROBE_TIMEOUT_KEY;
+  if (error === 'PROPAGATION_OFFER_PROBE_FAILED') return SYNC_OFFER_PROBE_FAILED_KEY;
 
   const offerMatch = /^propagation offer rejected:\s*(\S+)/i.exec(error);
   if (offerMatch?.[1] && OFFER_ERROR_KEYS[offerMatch[1]]) {

@@ -16,6 +16,9 @@ mod nomad_timeouts;
 mod packet_log;
 mod path_speed;
 mod persistence;
+#[cfg(feature = "rns-stack")]
+mod pn_hosting_apply;
+mod pn_hosting_policy;
 pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;
@@ -33,7 +36,11 @@ mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod nomad_server;
 #[cfg(feature = "rns-stack")]
+mod propagation_announce;
+#[cfg(feature = "rns-stack")]
 mod propagation_bridge;
+#[cfg(feature = "rns-stack")]
+mod propagation_serve;
 #[cfg(feature = "rns-stack")]
 mod rncp_transfer;
 #[cfg(feature = "rns-stack")]
@@ -50,6 +57,7 @@ use std::sync::Arc;
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
 use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
+pub use pn_hosting_policy::PnHostingPolicy;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow, LxmfReactionRequest,
@@ -848,6 +856,7 @@ impl StackHandle {
         let inner = self.inner.read().await;
         let preferred_id = inner.preferred_propagation_id.clone();
         let auto_sync_interval_sec = inner.auto_sync_interval_sec;
+        let pn_hosting_policy = inner.pn_hosting_policy.clone();
         #[cfg(feature = "rns-stack")]
         let local_stats = if let Some(live) = &self.live {
             let (count, bytes) = live.propagation_local_stats();
@@ -905,6 +914,7 @@ impl StackHandle {
             "propagation": propagation,
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
+            "pn_hosting_policy": pn_hosting_policy,
         })
     }
 
@@ -940,6 +950,21 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         inner.set_auto_sync_interval_sec(sec);
         inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
+    pub async fn set_pn_hosting_policy(&self, policy: PnHostingPolicy) -> Result<(), String> {
+        let policy = {
+            let mut inner = self.inner.write().await;
+            inner.set_pn_hosting_policy(policy)?;
+            let policy = inner.pn_hosting_policy.clone();
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            policy
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.apply_pn_hosting_policy(&policy).await;
+        }
         Ok(())
     }
 
@@ -1032,6 +1057,7 @@ impl StackHandle {
         &self,
         destination_hash: &str,
         name: Option<String>,
+        skip_probe: bool,
     ) -> Result<serde_json::Value, String> {
         let hash = destination_hash.trim().to_lowercase();
         // Prefer live known key / discovered announce metadata before persist.
@@ -1057,9 +1083,16 @@ impl StackHandle {
             }
             #[cfg(not(feature = "rns-stack"))]
             {
+                let _ = skip_probe;
                 (None, None)
             }
         };
+        #[cfg(feature = "rns-stack")]
+        if !skip_probe {
+            if let Some(live) = &self.live {
+                live.probe_propagation_offer(&hash).await?;
+            }
+        }
         let mut inner = self.inner.write().await;
         let mut row = inner.add_propagation_node(destination_hash, name)?;
         if pub_hex.is_some() || id_hex.is_some() {

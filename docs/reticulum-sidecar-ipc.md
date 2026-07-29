@@ -91,13 +91,14 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 **WS `rmap.discovery`:** sidecar polls DiscoveryStore every **10s**; emits full `{ discovered: [...] }` snapshot when JSON fingerprint changes. Stub builds return `{ discovered: [] }`.
 | GET | `/api/v1/packets` | `?limit=500` (1–2500) | `{ packets: [] }` — recent wire tap ring buffer |
 | DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
-| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec, pn_hosting_policy }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
 | GET | `/api/v1/propagation/discovered` | | `{ discovered: DiscoveredPropagationRow[] }` — heard `lxmf.propagation` announces (not auto-configured) |
-| POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
+| POST | `/api/v1/propagation/add` | `{ destination_hash, name?, skip_probe? }` | `{ ok, node }` or `{ ok: false, error }` — probes `/offer` unless `skip_probe`; may return `PROPAGATION_OFFER_UNSUPPORTED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, identity/path errors |
+| POST | `/api/v1/propagation/hosting-policy` | `PnHostingPolicy` | `{ ok }` — persist + apply local PN hosting / peering policy |
 | PUT | `/api/v1/propagation/{id}` | `{ name }` | `{ ok }` — rename a remote node (`local-prop` rejected) |
 | DELETE | `/api/v1/propagation/{id}` | | `{ ok }` — remove a remote node (`local-prop` rejected; clears preferred if that id) |
-| POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` |
-| POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` |
+| POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` — for `local-prop`, starts PN serve + announce |
+| POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` — for `local-prop`, stops PN serve + announce |
 | POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
 | POST | `/api/v1/propagation/sync` | | `{ ok }` |
 | POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` |
@@ -226,7 +227,7 @@ Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sand
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds, **`blePairingTimedOut`** OS passkey / TX-read timeouts). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 
-**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`.
+**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`. Add may return `PROPAGATION_OFFER_UNSUPPORTED` / probe timeout failures.
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP. Remote saved addresses / inbound policy and RRC room history also use dedicated `db:*` handlers (not sidecar HTTP).
 

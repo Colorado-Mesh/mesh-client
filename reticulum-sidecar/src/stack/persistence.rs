@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use serde::Deserialize;
 
+use super::pn_hosting_policy::PnHostingPolicy;
 use super::types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
     NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
@@ -28,6 +29,8 @@ pub struct PersistedState {
     pub primary_local_serial_interface_id: Option<String>,
     pub propagation_sync: serde_json::Value,
     pub auto_sync_interval_sec: u32,
+    /// LXMF local PN hosting / peering policy (defaults match rsLXMF / lxmd).
+    pub pn_hosting_policy: PnHostingPolicy,
     pub nomad_nodes: Vec<NomadNodeRow>,
     pub rrc_hubs: Vec<RrcHubRow>,
     /// User preference: start Nomad page hosting when the live stack is up.
@@ -77,6 +80,7 @@ impl PersistedState {
             primary_local_serial_interface_id: None,
             propagation_sync: serde_json::Value::Null,
             auto_sync_interval_sec: 3600,
+            pn_hosting_policy: PnHostingPolicy::default(),
             nomad_nodes: Vec::new(),
             rrc_hubs: Vec::new(),
             nomad_serving_enabled: false,
@@ -96,7 +100,7 @@ impl PersistedState {
         if self.propagation.is_empty() {
             self.propagation.push(PropagationRow {
                 id: "local-prop".into(),
-                name: "Local propagation (offline inbox)".to_string(),
+                name: "Local propagation node".to_string(),
                 hops: Some(0),
                 enabled: false,
                 status: "unknown".into(),
@@ -389,6 +393,12 @@ impl PersistedState {
 
     pub fn set_auto_sync_interval_sec(&mut self, sec: u32) {
         self.auto_sync_interval_sec = sec;
+    }
+
+    pub fn set_pn_hosting_policy(&mut self, policy: PnHostingPolicy) -> Result<(), String> {
+        let policy = policy.sanitized()?;
+        self.pn_hosting_policy = policy;
+        Ok(())
     }
 
     pub fn upsert_nomad_node(
@@ -770,7 +780,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 24)?;
+        let mut s = serializer.serialize_struct("PersistedState", 25)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -786,6 +796,7 @@ impl serde::Serialize for PersistedState {
         )?;
         s.serialize_field("propagation_sync", &self.propagation_sync)?;
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
+        s.serialize_field("pn_hosting_policy", &self.pn_hosting_policy)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
         s.serialize_field("nomad_serving_enabled", &self.nomad_serving_enabled)?;
@@ -833,6 +844,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             #[serde(default)]
             auto_sync_interval_sec: u32,
             #[serde(default)]
+            pn_hosting_policy: PnHostingPolicy,
+            #[serde(default)]
             nomad_nodes: Vec<NomadNodeRow>,
             #[serde(default)]
             rrc_hubs: Vec<RrcHubRow>,
@@ -875,6 +888,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
                 raw.propagation_sync
             },
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
+            pn_hosting_policy: raw.pn_hosting_policy,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,
             nomad_serving_enabled: raw.nomad_serving_enabled,

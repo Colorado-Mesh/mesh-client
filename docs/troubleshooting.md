@@ -1120,7 +1120,15 @@ Unrecognized codes pass through unchanged.
 - Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.
 - Auto-sync interval counts from the last _successful_ sync; failed attempts only apply a short cooldown (~2 min) so they do not postpone the next scheduled sync forever.
 
-**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors.
+**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors. If Add fails with **offer unsupported**, the destination does not speak LXMF `/offer`. If Sync/Add fails with **peering cost exceeds max**, raise **Network → Advanced PN hosting → Max peering cost**.
+
+### Reticulum local PN hosting not discoverable
+
+**Symptoms**: Local Host propagation node is enabled but peers never hear your PN announce / cannot `/offer` or `/get`.
+
+**Cause**: Hosting requires a live stack with identity signing key; enable starts `lxmf.propagation` LinkManager + announce loop.
+
+**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]`. Tune announce interval under **Advanced PN hosting**.
 
 ### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
 
@@ -1171,7 +1179,7 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 1. Open **Network → Propagation** (Chat notice **Set up propagation** jumps there).
 2. Add a **32-character LXMF destination hash** from whoever runs the propagation node you trust.
 3. Set **Preferred** (manual mode) or leave **Auto** when multiple nodes are listed.
-4. **Local propagation only** is this device’s offline inbox — it does **not** replace a remote propagation node for peers you cannot reach directly. Preferring Local shows a warning toast; Chat still treats local-only as “no remote PN.”
+4. **Local propagation hosting** stores messages for peers that sync with you — it does **not** replace a remote propagation node for peers you cannot reach directly. Preferring Local shows a warning toast; Chat still treats local-only as “no remote PN.”
 
 **Stale path + Failed via TCP:** When a path exists, mesh-client tries **Direct** first. If Direct fails and a preferred **remote** PN is configured, the sidecar retries once via that PN (Ratspeak-style store-and-forward). Without a remote preferred PN, the row stays **Failed** even if Ratspeak on the same machine deposits successfully.
 
