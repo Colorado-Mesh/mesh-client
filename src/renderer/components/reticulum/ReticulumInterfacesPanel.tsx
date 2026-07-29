@@ -1098,7 +1098,13 @@ function ReticulumIfacFields({
   );
 }
 
-function ReticulumInterfaceModeDescription({ mode }: { mode: string }) {
+interface ReticulumInterfaceModeDescriptionProps {
+  readonly mode: string;
+}
+
+function ReticulumInterfaceModeDescription({
+  mode,
+}: Readonly<ReticulumInterfaceModeDescriptionProps>) {
   const { t } = useTranslation();
   const normalized = normalizeReticulumInterfaceMode(mode);
   if (!normalized) return null;

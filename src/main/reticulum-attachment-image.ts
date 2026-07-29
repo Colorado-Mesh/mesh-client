@@ -1,14 +1,20 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import {
   bufferToRasterImageDataUrl,
   CHAT_INLINE_IMAGE_MAX_BYTES,
-  detectRasterImageMimeFromBytes,
   resolveSafeRasterImageMime,
   SAFE_RASTER_IMAGE_MIMES,
 } from '../shared/safeRasterImageMime';
+import { isUnderCanonicalRoot } from './pathCanonical';
 import { readFileUpTo } from './readFileUpTo';
-import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
+import {
+  assertReticulumAttachmentPathJailed,
+  getReticulumAttachmentsDir,
+} from './reticulum-attachment-path';
+
+export { detectRasterImageMimeFromBytes } from '../shared/safeRasterImageMime';
 
 /** Cap for in-chat attachment image data URLs (local disk). */
 export const RETICULUM_ATTACHMENT_IMAGE_MAX_BYTES = CHAT_INLINE_IMAGE_MAX_BYTES;
@@ -39,8 +45,6 @@ export function resetReticulumAttachmentImageRateLimitForTests(): void {
   attachmentImageRateTimestamps.length = 0;
 }
 
-export { detectRasterImageMimeFromBytes };
-
 /**
  * Resolve MIME for an attachment embed. Requires magic-byte match — peer-supplied
  * mime hints are not trusted for data-URL construction.
@@ -53,19 +57,19 @@ export function resolveReticulumAttachmentImageMime(buf: Buffer): string | null 
  * Read a jailed Reticulum attachment and return a data URL when it is a safe raster image.
  * Rejects SVG and paths outside the attachments directory. Requires magic-byte MIME match.
  */
-export async function readReticulumAttachmentAsDataUrl(
-  filePath: string,
-  mimeHint?: string,
-): Promise<string | null> {
-  // mimeHint retained for IPC/API compatibility; magic bytes alone decide embed MIME.
-  void mimeHint;
+export async function readReticulumAttachmentAsDataUrl(filePath: string): Promise<string | null> {
   const jailed = assertReticulumAttachmentPathJailed(filePath);
+  // Follow symlinks and re-check the jail so a link inside attachments cannot escape.
+  if (!isUnderCanonicalRoot(jailed, getReticulumAttachmentsDir())) {
+    throw new Error('attachment path outside reticulum attachments directory');
+  }
+  const realPath = await fs.realpath(path.resolve(jailed));
   // Ensure the path still exists and is a regular file before streaming.
-  const stat = await fs.stat(jailed);
+  const stat = await fs.stat(realPath);
   if (!stat.isFile()) {
     throw new Error('attachment path is not a file');
   }
-  const buf = await readFileUpTo(jailed, RETICULUM_ATTACHMENT_IMAGE_MAX_BYTES);
+  const buf = await readFileUpTo(realPath, RETICULUM_ATTACHMENT_IMAGE_MAX_BYTES);
   if (buf.length === 0) return null;
   const mime = resolveReticulumAttachmentImageMime(buf);
   if (!mime) return null;

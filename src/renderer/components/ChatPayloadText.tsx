@@ -75,12 +75,12 @@ function DirectImageEmbed({
   imageSrc,
   title,
   onContentResize,
-}: {
+}: Readonly<{
   url: string;
   imageSrc: string;
   title: string;
   onContentResize?: () => void;
-}) {
+}>) {
   const { t } = useTranslation();
 
   return (
@@ -94,7 +94,10 @@ function DirectImageEmbed({
   );
 }
 
-function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: () => void }) {
+function LinkPreview({
+  url,
+  onContentResize,
+}: Readonly<{ url: string; onContentResize?: () => void }>) {
   const [preview, setPreview] = useState<LinkPreviewData | null>(null);
 
   useEffect(() => {

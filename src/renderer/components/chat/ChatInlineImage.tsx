@@ -27,8 +27,9 @@ export function ChatInlineImage({
   onContentResize,
   onError,
   fallback,
-}: ChatInlineImageProps) {
-  const [failed, setFailed] = useState(false);
+}: Readonly<ChatInlineImageProps>) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
 
   if (failed) {
     return fallback ? <>{fallback}</> : null;
@@ -43,7 +44,7 @@ export function ChatInlineImage({
         onContentResize?.();
       }}
       onError={() => {
-        setFailed(true);
+        setFailedSrc(src);
         onError?.();
       }}
     />

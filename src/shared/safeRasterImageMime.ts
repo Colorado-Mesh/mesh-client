@@ -62,6 +62,10 @@ export function detectRasterImageMimeFromBytes(buf: Uint8Array | Buffer): string
     const brand = asciiSlice(buf, 8, 12);
     if (brand === 'avif' || brand === 'avis') return 'image/avif';
   }
+  // ICO: reserved (0) + type image (1)
+  if (buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && buf[3] === 0x00) {
+    return 'image/x-icon';
+  }
   return null;
 }
 

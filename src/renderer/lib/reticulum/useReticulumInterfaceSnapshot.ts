@@ -6,7 +6,6 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   beginReticulumBleConnectGrace,
-  clearReticulumBleConnectGrace,
   getReticulumBleConnectGraceExpiresAt,
   subscribeReticulumBleConnectGrace,
 } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
@@ -158,14 +157,12 @@ export function useReticulumInterfaceSnapshot({
       setInterfaces([]);
       setSerialPorts([]);
       setEffectivePrimaryLocalSerialInterfaceId(null);
-      clearReticulumBleConnectGrace();
-      setBleConnectGraceExpiresAt(0);
       setInterfacesHydrated(false);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
-      // Noble BLE yield lifecycle is owned by useReticulumNobleBleYieldWatcher.
-      // Do not release here: sidecarApiReady is false while connecting, and releasing
-      // the main-process start yield mid-pair kills CoreBluetooth (Event receiver died).
+      // Noble BLE yield + shared grace clock are owned by useReticulumNobleBleYieldWatcher.
+      // Do not clear grace or release yield here: sidecarApiReady is false while connecting,
+      // and a mid-pair clear leaves release/renew stuck (CoreBluetooth Event receiver died).
       return;
     }
     beginBleConnectGrace();

@@ -51,7 +51,7 @@ describe('reticulum-attachment-image', () => {
     const filePath = path.join(attachmentsDir, 'shot.png');
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
     fs.writeFileSync(filePath, png);
-    const dataUrl = await readReticulumAttachmentAsDataUrl(filePath, 'image/png');
+    const dataUrl = await readReticulumAttachmentAsDataUrl(filePath);
     expect(dataUrl).toMatch(/^data:image\/png;base64,/);
   });
 
@@ -59,21 +59,19 @@ describe('reticulum-attachment-image', () => {
     fs.mkdirSync(attachmentsDir, { recursive: true });
     const filePath = path.join(attachmentsDir, 'empty.png');
     fs.writeFileSync(filePath, Buffer.alloc(0));
-    expect(await readReticulumAttachmentAsDataUrl(filePath, 'image/png')).toBeNull();
+    expect(await readReticulumAttachmentAsDataUrl(filePath)).toBeNull();
   });
 
   it('returns null when bytes are not raster despite png hint', async () => {
     fs.mkdirSync(attachmentsDir, { recursive: true });
     const filePath = path.join(attachmentsDir, 'fake.png');
     fs.writeFileSync(filePath, Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'));
-    expect(await readReticulumAttachmentAsDataUrl(filePath, 'image/png')).toBeNull();
+    expect(await readReticulumAttachmentAsDataUrl(filePath)).toBeNull();
   });
 
   it('throws when path is a directory', async () => {
     fs.mkdirSync(attachmentsDir, { recursive: true });
-    await expect(readReticulumAttachmentAsDataUrl(attachmentsDir, 'image/png')).rejects.toThrow(
-      /not a file/,
-    );
+    await expect(readReticulumAttachmentAsDataUrl(attachmentsDir)).rejects.toThrow(/not a file/);
   });
 
   it('detects BMP and AVIF magic', () => {
@@ -86,9 +84,17 @@ describe('reticulum-attachment-image', () => {
   });
 
   it('rejects paths outside the attachments jail', async () => {
-    await expect(readReticulumAttachmentAsDataUrl('/etc/passwd', 'image/png')).rejects.toThrow(
-      /outside/,
-    );
+    await expect(readReticulumAttachmentAsDataUrl('/etc/passwd')).rejects.toThrow(/outside/);
+  });
+
+  it('rejects symlink escapes outside the attachments jail', async () => {
+    fs.mkdirSync(attachmentsDir, { recursive: true });
+    const outside = path.join(userData, 'secret.png');
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    fs.writeFileSync(outside, png);
+    const linkPath = path.join(attachmentsDir, 'escape.png');
+    fs.symlinkSync(outside, linkPath);
+    await expect(readReticulumAttachmentAsDataUrl(linkPath)).rejects.toThrow(/outside/);
   });
 
   it('rejects oversized files', async () => {
@@ -99,8 +105,6 @@ describe('reticulum-attachment-image', () => {
     huge[1] = 0xd8;
     huge[2] = 0xff;
     fs.writeFileSync(filePath, huge);
-    await expect(readReticulumAttachmentAsDataUrl(filePath, 'image/jpeg')).rejects.toThrow(
-      /too large/i,
-    );
+    await expect(readReticulumAttachmentAsDataUrl(filePath)).rejects.toThrow(/too large/i);
   });
 });

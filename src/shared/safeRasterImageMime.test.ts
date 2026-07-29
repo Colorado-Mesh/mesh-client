@@ -41,6 +41,16 @@ describe('detectRasterImageMimeFromBytes', () => {
     expect(detectRasterImageMimeFromBytes(avif)).toBe('image/avif');
   });
 
+  it('detects ICO magic bytes', () => {
+    expect(detectRasterImageMimeFromBytes(Buffer.from([0x00, 0x00, 0x01, 0x00]))).toBe(
+      'image/x-icon',
+    );
+    expect(
+      resolveSafeRasterImageMime(Buffer.from([0x00, 0x00, 0x01, 0x00]), LINK_PREVIEW_IMAGE_MIMES),
+    ).toBe('image/x-icon');
+    expect(resolveSafeRasterImageMime(Buffer.from([0x00, 0x00, 0x01, 0x00]))).toBeNull();
+  });
+
   it('returns null for unknown / SVG-like bytes', () => {
     expect(detectRasterImageMimeFromBytes(Buffer.from('<svg xmlns'))).toBeNull();
     expect(detectRasterImageMimeFromBytes(Buffer.alloc(0))).toBeNull();

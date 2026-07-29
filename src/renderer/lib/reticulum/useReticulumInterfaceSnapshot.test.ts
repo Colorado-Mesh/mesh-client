@@ -1,7 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resetReticulumBleConnectGraceForTests } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
+import {
+  getReticulumBleConnectGraceExpiresAt,
+  resetReticulumBleConnectGraceForTests,
+} from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 
 import { useReticulumInterfaceSnapshot } from './useReticulumInterfaceSnapshot';
@@ -165,6 +168,9 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
       expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
     });
 
+    const graceBefore = getReticulumBleConnectGraceExpiresAt();
+    expect(graceBefore).toBeGreaterThan(Date.now());
+
     vi.mocked(syncReticulumNobleBleYield).mockClear();
     rerender({ ready: false });
 
@@ -172,5 +178,6 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
       expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalled();
     });
     expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
+    expect(getReticulumBleConnectGraceExpiresAt()).toBe(graceBefore);
   });
 });

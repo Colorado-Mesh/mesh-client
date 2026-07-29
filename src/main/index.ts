@@ -4729,13 +4729,13 @@ ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unkn
   if (typeof o.filePath !== 'string' || !o.filePath.trim() || o.filePath.length > 512) {
     throw new Error('filePath must be a non-empty string');
   }
-  const mimeType = typeof o.mimeType === 'string' ? o.mimeType.slice(0, 128) : undefined;
+  // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
   if (!takeReticulumAttachmentImageRateToken()) {
     console.debug('[IPC] chat:readReticulumAttachmentAsDataUrl rate limited');
     return { dataUrl: null };
   }
   try {
-    const dataUrl = await readReticulumAttachmentAsDataUrl(o.filePath, mimeType);
+    const dataUrl = await readReticulumAttachmentAsDataUrl(o.filePath);
     return { dataUrl };
   } catch (err) {
     console.error(

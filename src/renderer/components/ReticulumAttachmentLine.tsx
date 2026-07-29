@@ -14,8 +14,25 @@ export interface ReticulumAttachmentLineProps {
   attachmentPath?: string;
 }
 
+function reticulumAttachmentLabel(
+  t: (key: string, opts: { name: string }) => string,
+  fileName: string,
+  mimeType: string,
+): string {
+  if (isReticulumImageAttachment(mimeType)) {
+    return t('chatPanel.reticulumImageAttachment', { name: fileName });
+  }
+  if (isReticulumAudioAttachment(mimeType)) {
+    return t('chatPanel.reticulumAudioAttachment', { name: fileName });
+  }
+  return t('chatPanel.reticulumFileAttachment', { name: fileName });
+}
+
 /** Read-only label (and inline image when cached) for historic LXMF `[file:name:mime]` payloads. */
-export function ReticulumAttachmentLine({ payload, attachmentPath }: ReticulumAttachmentLineProps) {
+export function ReticulumAttachmentLine({
+  payload,
+  attachmentPath,
+}: Readonly<ReticulumAttachmentLineProps>) {
   const { t } = useTranslation();
   const parsed = parseReticulumAttachmentPayload(payload);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -53,11 +70,7 @@ export function ReticulumAttachmentLine({ payload, attachmentPath }: ReticulumAt
 
   if (!parsed) return null;
 
-  const label = isReticulumImageAttachment(parsed.mimeType)
-    ? t('chatPanel.reticulumImageAttachment', { name: parsed.fileName })
-    : isReticulumAudioAttachment(parsed.mimeType)
-      ? t('chatPanel.reticulumAudioAttachment', { name: parsed.fileName })
-      : t('chatPanel.reticulumFileAttachment', { name: parsed.fileName });
+  const label = reticulumAttachmentLabel(t, parsed.fileName, parsed.mimeType);
 
   const showImage =
     fetchKey != null && fetchedFor === fetchKey && Boolean(imageDataUrl) && !imageFailed;

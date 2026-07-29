@@ -107,7 +107,7 @@ export function canonicalizeYouTubeWatchUrl(url: URL): string | null {
 }
 
 function titleFromImageUrl(url: URL): string {
-  const seg = url.pathname.split('/').filter(Boolean).pop() ?? '';
+  const seg = url.pathname.split('/').findLast((s) => s.length > 0) ?? '';
   try {
     return decodeURIComponent(seg) || url.hostname;
   } catch {
@@ -584,6 +584,45 @@ async function fetchDirectImagePreviewFromResponse(
   };
 }
 
+/** Extension-hinted HTTPS images via the dedicated image fetcher (follows redirects). */
+async function tryDirectImageUrlPreview(url: URL): Promise<LinkPreviewMetadata | null> {
+  if (url.protocol !== 'https:' || !isLikelyDirectImageUrl(url.href)) return null;
+  const dataUrl = await fetchPreviewImageAsDataUrl(url.href);
+  if (!dataUrl) return null;
+  return {
+    title: titleFromImageUrl(url),
+    image: dataUrl,
+    kind: 'image',
+  };
+}
+
+async function fetchLinkPreviewFromHttpResponse(
+  url: URL,
+  urlString: string,
+  response: Response,
+): Promise<LinkPreviewMetadata | null> {
+  if (!response.ok) {
+    await discardResponseBody(response);
+    return null;
+  }
+  const contentType = response.headers.get('content-type') ?? '';
+
+  // HTTPS-only for Content-Type image embeds (cleartext MITM risk).
+  if (isLinkPreviewImageMime(contentType)) {
+    if (url.protocol !== 'https:') {
+      await discardResponseBody(response);
+      return null;
+    }
+    return await fetchDirectImagePreviewFromResponse(url, response);
+  }
+
+  if (!contentType.includes('text/html')) {
+    await discardResponseBody(response);
+    return null;
+  }
+  return await fetchHtmlLinkPreview(urlString, response);
+}
+
 async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewMetadata | null> {
   let url: URL;
   try {
@@ -601,17 +640,8 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
       if (yt) return yt;
     }
 
-    // Extension-hinted HTTPS images: follow redirects via the dedicated image fetcher.
-    if (url.protocol === 'https:' && isLikelyDirectImageUrl(urlString)) {
-      const dataUrl = await fetchPreviewImageAsDataUrl(urlString);
-      if (dataUrl) {
-        return {
-          title: titleFromImageUrl(url),
-          image: dataUrl,
-          kind: 'image',
-        };
-      }
-    }
+    const direct = await tryDirectImageUrlPreview(url);
+    if (direct) return direct;
 
     const response = await fetchWithResolvedHost(urlString, {
       method: 'GET',
@@ -619,26 +649,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
       headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
       signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
     });
-    if (!response.ok) {
-      await discardResponseBody(response);
-      return null;
-    }
-    const contentType = response.headers.get('content-type') ?? '';
-
-    // HTTPS-only for Content-Type image embeds (cleartext MITM risk).
-    if (isLinkPreviewImageMime(contentType)) {
-      if (url.protocol !== 'https:') {
-        await discardResponseBody(response);
-        return null;
-      }
-      return await fetchDirectImagePreviewFromResponse(url, response);
-    }
-
-    if (!contentType.includes('text/html')) {
-      await discardResponseBody(response);
-      return null;
-    }
-    return await fetchHtmlLinkPreview(urlString, response);
+    return await fetchLinkPreviewFromHttpResponse(url, urlString, response);
   } catch (err) {
     console.debug(
       '[chat] fetchLinkPreview error:',
