@@ -10,7 +10,7 @@ import {
   resetRrcHubDisconnectSuppressForTests,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
-import { resetRrcMessagePersistForTests } from '@/renderer/lib/rrcMessagePersist';
+import { resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
@@ -28,7 +28,7 @@ describe('RrcPanel', () => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
     resetRrcHubDisconnectSuppressForTests();
-    resetRrcMessagePersistForTests();
+    resetRrcRoomHistoryForTests();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
