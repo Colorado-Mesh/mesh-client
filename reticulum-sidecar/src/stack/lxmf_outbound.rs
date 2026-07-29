@@ -457,7 +457,7 @@ impl LxmfOutboundDriver {
     ) {
         match self.try_requeue_via_propagation(router, event_tx, message) {
             Ok(()) => {}
-            Err(message) => self.emit_outbound_failed(router, event_tx, message),
+            Err(message) => self.emit_outbound_failed(router, event_tx, *message),
         }
     }
 
@@ -498,7 +498,7 @@ impl LxmfOutboundDriver {
         router: &mut LxmRouter,
         event_tx: &broadcast::Sender<String>,
         mut message: LxMessage,
-    ) -> Result<(), LxMessage> {
+    ) -> Result<(), Box<LxMessage>> {
         if !should_fallback_direct_to_pn(
             message.method,
             router.outbound_propagation_node,
@@ -508,10 +508,10 @@ impl LxmfOutboundDriver {
                 .or(message.message_id)
                 .is_some_and(|h| self.pn_fallback_attempted.contains(&h)),
         ) {
-            return Err(message);
+            return Err(Box::new(message));
         }
         let Some(msg_hash) = message.hash.or(message.message_id) else {
-            return Err(message);
+            return Err(Box::new(message));
         };
         // Quietly drop any leftover Direct queue entry (already removed for most Fail paths).
         router
@@ -600,7 +600,7 @@ impl LxmfOutboundDriver {
             DeliveryResult::Rejected { message, .. } | DeliveryResult::Failed { message, .. } => {
                 match self.try_requeue_via_propagation(router, event_tx, message) {
                     Ok(()) => {}
-                    Err(message) => self.emit_outbound_failed(router, event_tx, message),
+                    Err(message) => self.emit_outbound_failed(router, event_tx, *message),
                 }
             }
         }

@@ -480,25 +480,27 @@ describe('ReticulumSidecarManager', () => {
     process.on('uncaughtException', uncaught);
 
     const manager = new ReticulumSidecarManager();
-    await manager.start();
-    expect(mockWsInstances.length).toBeGreaterThan(0);
-    // Do not fire 'open' — leave the socket in CONNECTING so close() abortHandshake-emits.
+    try {
+      await manager.start();
+      expect(mockWsInstances.length).toBeGreaterThan(0);
+      // Do not fire 'open' — leave the socket in CONNECTING so close() abortHandshake-emits.
 
-    await manager.stop();
-    await new Promise<void>((resolve) => {
-      process.nextTick(resolve);
-    });
+      await manager.stop();
+      await new Promise<void>((resolve) => {
+        process.nextTick(resolve);
+      });
 
-    expect(uncaught).not.toHaveBeenCalled();
-    const wsInstance = mockWsInstances[mockWsInstances.length - 1];
-    expect(wsInstance.removeAllListeners).toHaveBeenCalled();
-    expect(wsInstance.close).toHaveBeenCalled();
-    // Teardown re-attaches an error listener after removeAllListeners (before close).
-    expect(wsInstance.handlers.has('error')).toBe(true);
-
-    process.off('uncaughtException', uncaught);
-    existsSpy.mockRestore();
-    mkdirSpy.mockRestore();
+      expect(uncaught).not.toHaveBeenCalled();
+      const wsInstance = mockWsInstances[mockWsInstances.length - 1];
+      expect(wsInstance.removeAllListeners).toHaveBeenCalled();
+      expect(wsInstance.close).toHaveBeenCalled();
+      // Teardown re-attaches an error listener after removeAllListeners (before close).
+      expect(wsInstance.handlers.has('error')).toBe(true);
+    } finally {
+      process.off('uncaughtException', uncaught);
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    }
   });
 
   it('yields Noble BLE when config has enabled ble RNode before spawn', async () => {
