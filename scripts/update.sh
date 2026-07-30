@@ -210,7 +210,6 @@ check_ratspeak_patches() {
     'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
-    'rsReticulum-rnode-tcp-activity-keepalive.patch|ratspeak/rsReticulum|15|rsReticulum RNode TCP activity keepalive|https://github.com/ratspeak/rsReticulum/pull/15'
     'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum|20|rsReticulum BLE RNode pairing-transition debounce|https://github.com/ratspeak/rsReticulum/pull/20'
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
@@ -297,7 +296,7 @@ check_ratspeak_patches() {
         ;;
       closed)
         # Still warn when the .patch is already gone so closed-without-merge stays visible
-        # (e.g. #15 superseded by upstream RNodeIdleProbe — confirm sunset, then drop entry).
+        # until sunset is confirmed and the entry is dropped from RATSPEAK_PATCH_ENTRIES.
         warn_box "${label} (Ratspeak overlay)" "local patch" "PR closed (not merged?)" "${url}"
         if [ "${patch_present}" -eq 1 ]; then
           echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
