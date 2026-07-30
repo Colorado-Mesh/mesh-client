@@ -19,6 +19,7 @@ const REQUIRED_PNPM_CHECKS = [
   'check:db-migrations',
   'check:ipc-contract',
   'check:reticulum-interface-modes',
+  'check:pn-hosting-policy',
   'check:reticulum-decommissioned-hubs',
   'check:console-log',
   'check:silent-catches',

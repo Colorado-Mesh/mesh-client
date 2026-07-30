@@ -51,6 +51,10 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(
       /evt\.type === 'rrc\.room\.parted'[\s\S]*?resolveRrcInvoluntaryPartBannerKey\([\s\S]*?if \(bannerKey\) session\.setModerationBanner\(bannerKey/,
     );
+    expect(SOURCE).toMatch(
+      /i18n\.t\('rrc\.moderation\.removedFromRoomSystem',\s*\{\s*room:\s*p\.room\s*\}\)/,
+    );
+    expect(SOURCE).not.toMatch(/Removed from \$\{p\.room\}/);
   });
 
   it('reserves removedFromRoom banner for moderation NOTICE/ERROR language', () => {

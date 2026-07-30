@@ -6,6 +6,7 @@ const proxyPost = vi.fn();
 const proxyPut = vi.fn();
 const proxyDelete = vi.fn();
 
+import { DEFAULT_PN_HOSTING_POLICY } from '@/shared/pnHostingPolicy';
 import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumPropagationAutoSync';
 
 vi.stubGlobal('window', {
@@ -34,8 +35,11 @@ describe('reticulumPropagationStore', () => {
       discovered: [],
       preferredId: null,
       autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
+      hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
       sync: { active: false, progress: 0, message: null },
       lastSyncError: null,
+      lastAddError: null,
+      lastHostingPolicyError: null,
       lastRefreshedAt: null,
       lastPropagationSyncAt: null,
       lastPropagationSyncAttemptAt: null,
@@ -353,5 +357,94 @@ describe('reticulumPropagationStore', () => {
       useReticulumPropagationStore.getState().renamePropagationNode('pn-aabb', 'Nope'),
     ).resolves.toBe(false);
     expect(proxyGet).not.toHaveBeenCalled();
+  });
+
+  it('setHostingPolicyOnSidecar posts valid policy and updates state', async () => {
+    const policy = {
+      ...DEFAULT_PN_HOSTING_POLICY,
+      peering_cost: 12,
+      max_peering_cost: 26,
+    };
+    proxyPost.mockResolvedValueOnce({ ok: true });
+
+    await expect(
+      useReticulumPropagationStore.getState().setHostingPolicyOnSidecar(policy),
+    ).resolves.toBe(true);
+
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/hosting-policy', policy);
+    expect(useReticulumPropagationStore.getState().hostingPolicy.peering_cost).toBe(12);
+    expect(useReticulumPropagationStore.getState().lastHostingPolicyError).toBeNull();
+    expect(useReticulumPropagationStore.getState().lastAddError).toBeNull();
+  });
+
+  it('setHostingPolicyOnSidecar rejects peering_cost > max without proxyPost', async () => {
+    const policy = {
+      ...DEFAULT_PN_HOSTING_POLICY,
+      peering_cost: 30,
+      max_peering_cost: 26,
+    };
+
+    await expect(
+      useReticulumPropagationStore.getState().setHostingPolicyOnSidecar(policy),
+    ).resolves.toBe(false);
+
+    expect(proxyPost).not.toHaveBeenCalled();
+    expect(useReticulumPropagationStore.getState().lastHostingPolicyError).toBe(
+      'networkPanel.reticulumPnHosting.error.peeringCostExceedsMax',
+    );
+    expect(useReticulumPropagationStore.getState().lastAddError).toBeNull();
+  });
+
+  it('setHostingPolicyOnSidecar maps API ok:false to lastHostingPolicyError', async () => {
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'static_peers_too_many' });
+
+    await expect(
+      useReticulumPropagationStore
+        .getState()
+        .setHostingPolicyOnSidecar({ ...DEFAULT_PN_HOSTING_POLICY }),
+    ).resolves.toBe(false);
+
+    expect(useReticulumPropagationStore.getState().lastHostingPolicyError).toBe(
+      'networkPanel.reticulumPnHosting.error.staticPeersTooMany',
+    );
+    expect(useReticulumPropagationStore.getState().lastAddError).toBeNull();
+  });
+
+  it('refreshFromSidecar applies pn_hosting_policy from body', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [],
+        preferred_id: null,
+        pn_hosting_policy: {
+          ...DEFAULT_PN_HOSTING_POLICY,
+          peering_cost: 14,
+        },
+      })
+      .mockResolvedValueOnce({ discovered: [] });
+
+    await useReticulumPropagationStore.getState().refreshFromSidecar();
+
+    expect(useReticulumPropagationStore.getState().hostingPolicy.peering_cost).toBe(14);
+  });
+
+  it('refreshFromSidecar preserves activePropagationSyncAttemptAt mid-sync', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    const attemptAt = 99_001;
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 25, message: null },
+      activePropagationSyncAttemptAt: attemptAt,
+      lastPropagationSyncAttemptAt: attemptAt,
+    });
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [],
+        preferred_id: null,
+      })
+      .mockResolvedValueOnce({ discovered: [] });
+
+    await useReticulumPropagationStore.getState().refreshFromSidecar();
+
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(attemptAt);
   });
 });

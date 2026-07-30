@@ -19,6 +19,8 @@ pub const DEFAULT_ANNOUNCE_AT_START: bool = true;
 
 const MAX_AUTOPEER_MAXDEPTH: usize = 64;
 const MAX_MAX_PEERS: usize = 256;
+/// Cap static peer list size (mirrors TS `MAX_STATIC_PEERS`).
+pub const MAX_STATIC_PEERS: usize = 256;
 const MAX_STORAGE_MB: u32 = 10_240;
 const MAX_LIMIT_KB: usize = 102_400;
 
@@ -101,6 +103,9 @@ impl PnHostingPolicy {
         }
         if self.pn_announce_interval_sec > 86_400 {
             return Err("pn_announce_interval_out_of_range".into());
+        }
+        if self.static_peers.len() > MAX_STATIC_PEERS {
+            return Err("static_peers_too_many".into());
         }
         for peer in &self.static_peers {
             validate_static_peer_hash(peer)?;
@@ -186,6 +191,16 @@ mod tests {
                 .unwrap_err()
                 .starts_with("static_peer_invalid:")
         );
+    }
+
+    #[test]
+    fn rejects_too_many_static_peers() {
+        let peer = "aabbccddeeff00112233445566778899".to_string();
+        let policy = PnHostingPolicy {
+            static_peers: vec![peer; MAX_STATIC_PEERS + 1],
+            ..Default::default()
+        };
+        assert_eq!(policy.validate().unwrap_err(), "static_peers_too_many");
     }
 
     #[test]

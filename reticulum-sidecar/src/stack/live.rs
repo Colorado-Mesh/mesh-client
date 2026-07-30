@@ -1208,7 +1208,7 @@ impl LiveBridge {
                         // AutopeerCandidate uses f64; announce wire fields are i64/u64.
                         // Precision loss is fine for timebase/limits (KB-scale / unix seconds).
                         #[allow(clippy::cast_precision_loss)]
-                        let _ = router.autopeer(lxmf_core::router::AutopeerCandidate {
+                        let peered = router.autopeer(lxmf_core::router::AutopeerCandidate {
                             destination_hash: evt.destination_hash,
                             timebase: parsed.timebase as f64,
                             transfer_limit: Some(parsed.transfer_limit as f64),
@@ -1218,6 +1218,15 @@ impl LiveBridge {
                             peering_cost: Some(parsed.peering_cost),
                             hops: Some(evt.hops),
                         });
+                        if !peered {
+                            tracing::debug!(
+                                target: "propagation-discovered",
+                                dest = %hash_hex,
+                                hops = evt.hops,
+                                peering_cost = parsed.peering_cost,
+                                "autopeer declined candidate"
+                            );
+                        }
                     }
                 }
             }
@@ -2061,8 +2070,12 @@ impl LiveBridge {
         }
     }
 
-    pub async fn apply_pn_hosting_policy(&self, policy: &PnHostingPolicy) {
-        if let Ok(mut slot) = self.pn_hosting_policy.lock() {
+    pub async fn apply_pn_hosting_policy(&self, policy: &PnHostingPolicy) -> Result<(), String> {
+        {
+            let mut slot = self
+                .pn_hosting_policy
+                .lock()
+                .map_err(|_| "pn_hosting_policy_mutex_poisoned".to_string())?;
             *slot = policy.clone();
         }
         {
@@ -2082,6 +2095,7 @@ impl LiveBridge {
                 false,
             );
         }
+        Ok(())
     }
 
     /// Lightweight `/offer` capability probe before persisting a remote PN.
@@ -2096,7 +2110,9 @@ impl LiveBridge {
         self.cancel_propagation_sync().await;
         self.rehydrate_propagation_identities_from_persisted();
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        let _path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
+        if !self.ensure_path_for_direct(&dest_hex, true).await {
+            return Err("PROPAGATION_PATH_UNKNOWN".into());
+        }
         let identity_known_after = self
             .outbound
             .lock()

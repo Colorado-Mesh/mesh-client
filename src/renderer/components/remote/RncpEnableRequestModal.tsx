@@ -165,6 +165,9 @@ export function RncpEnableRequestModal() {
         <p className="mt-2 text-sm text-gray-300">
           {t('reticulumRemote.enableRequest.body', { peer })}
         </p>
+        <p className="mt-2 text-xs text-amber-200/90">
+          {t('reticulumRemote.enableRequest.shareDestWarning')}
+        </p>
         <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"

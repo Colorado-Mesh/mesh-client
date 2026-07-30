@@ -963,7 +963,7 @@ impl StackHandle {
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            live.apply_pn_hosting_policy(&policy).await;
+            live.apply_pn_hosting_policy(&policy).await?;
         }
         Ok(())
     }

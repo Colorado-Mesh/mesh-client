@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { formatDisplayTime } from '../lib/formatDisplayTime';
+import i18n from '../lib/i18n';
 import { getNodeStatus } from '../lib/nodeStatus';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
@@ -65,16 +66,23 @@ export function useNodeStatusNotifier(
           ? `Node-${nodeId.toString(16).toUpperCase()}`
           : formatMeshtasticNodeId(nodeId));
       if (!wasOnline && isOnline) {
-        fireNotification(`${name} is online`, `${protocolLabel} node came online`);
+        fireNotification(
+          i18n.t('nodeStatusNotifier.onlineTitle', { name }),
+          i18n.t('nodeStatusNotifier.onlineBody', { protocol: protocolLabel }),
+        );
       } else if (wasOnline && !isOnline) {
         const lastHeardMs = node.last_heard
           ? node.last_heard < 1e12
             ? node.last_heard * 1000
             : node.last_heard
           : null;
+        const time =
+          lastHeardMs != null
+            ? formatDisplayTime(lastHeardMs, { use24Hour: use24HourTime })
+            : i18n.t('nodeStatusNotifier.unknown');
         fireNotification(
-          `${name} went offline`,
-          `Last heard: ${lastHeardMs != null ? formatDisplayTime(lastHeardMs, { use24Hour: use24HourTime }) : 'unknown'}`,
+          i18n.t('nodeStatusNotifier.offlineTitle', { name }),
+          i18n.t('nodeStatusNotifier.offlineBody', { time }),
         );
       }
     }

@@ -888,6 +888,22 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
 3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
 
+### RRC false self-PART / hubParted banner
+
+**Symptoms**: Busy rooms show repeated “Left the room (hub parted you)” / self leave when other members part; or an involuntary hub PART looks like a kick/ban.
+
+**Cause**: Older logic treated member-fanout `PARTED` as self-leave. Sidecar now classifies actor-facing self PARTED vs other-member fanout (`parted_concerns_self`); involuntary self-PART while the room is still desired queues silent rejoin and the UI uses neutral `rrc.moderation.hubParted` (not kick/ban copy).
+
+**What to do**: Upgrade / restart the sidecar. If the banner appears after a true hub PART, re-join the room (or wait for auto-rejoin when still desired). Kick/ban wording is reserved for moderation notice paths only.
+
+### RRC history shows fewer messages than Retention
+
+**Symptoms**: App → Retention keeps **10,000** RRC messages, but opening a room only shows ~**500**.
+
+**Cause**: Per-room UI hydrate caps at `RRC_ROOM_HISTORY_LOAD_COUNT` (**500**) via `rrcRoomHistory.ts`. SQLite may still hold up to the retention count; older rows are not all loaded into the session store.
+
+**What to do**: This is expected. Retention prune (`db:pruneRrcMessagesByCount` / age) controls disk; the 500 cap is a session/UI hydrate limit, not a wipe.
+
 ### Reticulum sidecar won't start or health poll times out
 
 **Symptoms**: Connection tab **Start stack** fails; logs show `[ReticulumSidecar]` health poll timeout; `reticulum:getStatus` reports `lastError`. Identity **Generate** / **Import** errors with `Reticulum sidecar is not running`.
@@ -1286,6 +1302,8 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 3. Check sidecar logs for `rnsh`/`rncp` link errors; the `reticulum:rncpSend` / `rncpFetch` IPC returns the reason key surfaced in the toast.
 
 **Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
+
+**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied only if a pending mark exists (`rncpReceiveDestSharePending`, TTL); shares without a prior request-enable from this session are ignored.
 
 ### Reticulum Remote inbound rncp blocked (Ask mode / policy)
 

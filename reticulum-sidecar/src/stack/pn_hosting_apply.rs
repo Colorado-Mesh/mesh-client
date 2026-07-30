@@ -36,6 +36,12 @@ pub fn apply_pn_hosting_policy_to_router(router: &mut LxmRouter, policy: &PnHost
                 .peers
                 .entry(hash)
                 .or_insert_with(|| LxmPeer::new(hash));
+        } else {
+            tracing::debug!(
+                target: "pn-hosting-apply",
+                peer = %peer,
+                "skipping invalid static peer hash"
+            );
         }
     }
 }

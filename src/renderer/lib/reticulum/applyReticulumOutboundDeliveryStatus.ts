@@ -31,9 +31,16 @@ export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | n
   return null;
 }
 
+/** Resolve LXMF peer dest hash from a chat node id (peer store, then dest registry). */
+export function resolveReticulumOutboundDestHash(
+  toNodeId: number | undefined | null,
+): string | null {
+  if (toNodeId == null) return null;
+  return reticulumHashForNodeId(toNodeId) ?? resolveReticulumDestinationHash(toNodeId);
+}
+
 function resolveOutboundPeerHash(record: MessageRecord): string | null {
-  if (record.to == null) return null;
-  return reticulumHashForNodeId(record.to) ?? resolveReticulumDestinationHash(record.to);
+  return resolveReticulumOutboundDestHash(record.to);
 }
 
 function resolveOutboundSenderHash(record: MessageRecord): string | null {

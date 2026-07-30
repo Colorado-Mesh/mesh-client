@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { RNCP_RECEIVE_DEST_SHARE_PREFIX } from '@/shared/rncpRequestEnable';
 
-import { applyRncpReceiveDestShareFromLxmf } from './applyRncpReceiveDestShare';
+import {
+  applyRncpReceiveDestShareFromLxmf,
+  rncpReceiveDestShareSavedToastMessage,
+} from './applyRncpReceiveDestShare';
 
 vi.mock('@/renderer/lib/i18n', () => ({
   default: {
@@ -59,6 +62,38 @@ describe('applyRncpReceiveDestShareFromLxmf', () => {
         destination_hash: receive,
         lxmf_peer_hash: sender,
       }),
+    );
+  });
+
+  it('returns invalid_sender when sender hash is not 32-hex', async () => {
+    const receive = 'cd'.repeat(16);
+    await expect(
+      applyRncpReceiveDestShareFromLxmf({
+        senderHash: 'short',
+        text: `${RNCP_RECEIVE_DEST_SHARE_PREFIX}${receive}`,
+      }),
+    ).resolves.toEqual({ ok: false, reason: 'invalid_sender' });
+    expect(window.electronAPI.db.upsertReticulumRemoteAddress).not.toHaveBeenCalled();
+  });
+
+  it('returns upsert_failed when remote-address persist fails', async () => {
+    const sender = 'ab'.repeat(16);
+    const receive = 'cd'.repeat(16);
+    vi.mocked(window.electronAPI.db.upsertReticulumRemoteAddress).mockRejectedValueOnce(
+      new Error('sqlite busy'),
+    );
+    await expect(
+      applyRncpReceiveDestShareFromLxmf({
+        senderHash: sender,
+        senderName: 'Alice',
+        text: `${RNCP_RECEIVE_DEST_SHARE_PREFIX}${receive}`,
+      }),
+    ).resolves.toEqual({ ok: false, reason: 'upsert_failed' });
+  });
+
+  it('rncpReceiveDestShareSavedToastMessage interpolates peer label', () => {
+    expect(rncpReceiveDestShareSavedToastMessage('Alice')).toBe(
+      'reticulumRemote.transfer.receiveDestSharedToast:Alice',
     );
   });
 });

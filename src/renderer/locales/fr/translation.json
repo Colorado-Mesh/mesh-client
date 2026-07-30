@@ -586,7 +586,6 @@
       "sendFileAria": "Envoyer le fichier à {{name}} via rncp",
       "pendingOffersBadgeAria_one": "{{count}} offre de fichier entrant en attente de ce pair",
       "pendingOffersBadgeAria_other": "{{count}} en attente des offres de fichiers entrants de ce pair",
-      "destinationLabel": "Hash de destination rncp",
       "rememberAddress": "Mémoriser cette adresse",
       "rememberAddressAria": "Mémoriser cette destination rncp pour cet homologue",
       "chooseAndSend": "Choisissez le fichier et envoyez…",
@@ -596,7 +595,8 @@
       "newOfferToast": "{{peer}} souhaite vous envoyer un fichier : {{file}}",
       "requestEnable": "Demander l'activation",
       "requestEnableAria": "Demandez à cet homologue d'activer la réception de fichiers",
-      "destinationHelp": "Pas leur hachage Chat/LXMF. Utilisez Request enable — les pairs mesh-client le partagent automatiquement après acceptation. Ou collez depuis Remote → My rncp receive destination."
+      "destinationLabel": "Destination de réception RNCP du homologue",
+      "destinationHelp": "Pas leur hachage Chat/LXMF. Utilisez l'activation de la demande : les homologues du mesh-client la partagent automatiquement après avoir accepté. Ou collez depuis leur télécommande → Ma destination de réception RNCP."
     },
     "shareLocation": "Partager l'emplacement",
     "shareLocationLabel": "📍 Emplacement partagé",
@@ -2488,7 +2488,6 @@
     },
     "reticulumPnHosting": {
       "title": "Hébergement PN avancé (zone de danger)",
-      "warning": "Ces paramètres contrôlent l'hébergement local du nœud de propagation, l'autopeer, les coûts de PoW et le refus de la synchronisation pour les télécommandes à coût élevé. Une mauvaise configuration peut brûler le processeur, remplir le disque ou être largement partagée.",
       "peeringCost": "Coût d'appairage",
       "maxPeeringCost": "Coût maximal du peering",
       "autopeer": "Autopeer avec PN découverts",
@@ -2513,7 +2512,27 @@
       "saving": "Enregistrement…",
       "saveAria": "Enregistrer la politique d'hébergement PN",
       "saveOk": "Politique d'hébergement PN enregistrée.",
-      "saveFailed": "Impossible d'enregistrer la politique d'hébergement PN."
+      "saveFailed": "Impossible d'enregistrer la politique d'hébergement PN.",
+      "saveConfirmTitle": "Enregistrer la politique d'hébergement PN ?",
+      "saveConfirmBody": "Appliquer les paramètres d'appairage, de stockage, de tampon et d'annonce au nœud de propagation en direct ? Une mauvaise configuration peut brûler le processeur, remplir le disque ou accepter de nombreux pairs.",
+      "saveConfirm": "Enregistrer la politique",
+      "error": {
+        "peeringCostExceedsMax": "Le coût de peering ne peut pas dépasser le coût de peering maximum.",
+        "stampFlexExceedsCost": "La flexibilité du timbre ne peut pas dépasser le coût du timbre.",
+        "autopeerMaxdepth": "Le nombre maximum de sauts Autopeer est hors de portée.",
+        "maxPeers": "Le nombre maximum de pairs est hors de portée.",
+        "storageMb": "La limite de stockage des messages est hors plage.",
+        "propagationLimit": "La limite des messages de propagation est hors plage.",
+        "syncLimit": "La limite de transfert de synchronisation est hors plage.",
+        "deliveryLimit": "La limite de transfert de livraison est hors plage.",
+        "announceInterval": "L’intervalle d’annonce PN est hors plage.",
+        "staticPeersTooMany": "Trop de hachages d'homologues statiques (max 256).",
+        "staticPeerInvalid": "Un ou plusieurs hachages d'homologues statiques ne sont pas valides (nécessitent 32 caractères hexadécimaux).",
+        "nodeNameInvalid": "Le nom de l'annonce PN contient des caractères non valides.",
+        "nodeNameTooLong": "Le nom de l'annonce PN est trop long.",
+        "nonFiniteNumber": "Un ou plusieurs champs numériques ne sont pas valides."
+      },
+      "warning": "Ces paramètres contrôlent l'hébergement du nœud de propagation local, l'autopeer, les coûts PoW et le refus de synchronisation pour les télécommandes coûteuses. Une mauvaise configuration peut brûler le processeur, remplir le disque ou accepter de nombreux pairs."
     }
   },
   "nodeDetailModal": {
@@ -3909,9 +3928,9 @@
     "iconStar": "Étoile",
     "iconHeart": "Cœur",
     "iconShield": "Bouclier",
-    "iconUser": "Utilisateur",
     "iconNone": "Aucun",
-    "iconSaveFailed": "Impossible d'enregistrer l'icône de l'avatar."
+    "iconSaveFailed": "Impossible d'enregistrer l'icône de l'avatar.",
+    "iconUser": "Personnes"
   },
   "reticulumPropagation": {
     "preferred": "Préféré",
@@ -3970,7 +3989,6 @@
       "unknown": "inconnu",
       "online": "en ligne"
     },
-    "syncLocalNotSupported": "La propagation locale est votre boîte de réception hors ligne : elle ne peut pas être synchronisée sur le réseau comme un nœud de propagation LXMF distant.",
     "syncIdentityUnknown": "L'identité du nœud de propagation est inconnue : attendez une annonce ou une réponse de chemin, puis réessayez.",
     "syncTargetNotPropagationNode": "Cette destination est accessible sur Reticulum mais n'est pas un nœud de propagation LXMF (les hubs TCP sont uniquement des chemins de transport). Ajoutez une destination qui s'annonce comme lxmf.propagation pour synchroniser les messages hors ligne.",
     "syncPeeringStampFailed": "Impossible de créer un tampon de peering pour ce nœud de propagation. Réessayez dans quelques instants.",
@@ -4005,11 +4023,15 @@
     "localHostStats": "{{count}} en file d'attente · {{bytes}} octets",
     "localHostName": "Nœud de propagation hôte",
     "localHostHint": "Lorsqu'il est activé, cet appareil s'annonce comme un nœud de propagation LXMF et sert /offre et /obtient. Préférez un nœud distant pour le stockage et le transfert sortants vers des pairs inaccessibles.",
-    "addProbing": "Vérification /offre d'assistance…",
     "syncPeerCostExceedsMax": "Le coût d'appairage de ce nœud de propagation est supérieur à votre coût d'appairage maximal — augmentez le maximum dans l'hébergement Network → Advanced PN ou choisissez un autre nœud.",
     "offerUnsupported": "Cette destination ne prend pas en charge la synchronisation LXMF /offer — mesh-client ne peut pas l’utiliser comme nœud de propagation.",
     "offerProbeTimeout": "Délai dépassé lors de la vérification /de l'offre de support — le nœud peut être inaccessible. Réessayez lorsqu'un chemin est disponible.",
-    "offerProbeFailed": "Impossible de vérifier /d'offrir un support pour ce nœud de propagation — réessayez dans un instant."
+    "offerProbeFailed": "Impossible de vérifier /d'offrir un support pour ce nœud de propagation — réessayez dans un instant.",
+    "enableLocalHostConfirmTitle": "Activer l'hébergement du nœud de propagation local ?",
+    "enableLocalHostConfirmBody": "Cet appareil s'annoncera comme un nœud de propagation LXMF et servira /offer et /get. Cela utilise du stockage, du processeur et peut se connecter à d'autres nœuds du réseau. Préférez un nœud distant pour le stockage et le transfert sortant, sauf si vous avez l'intention d'héberger.",
+    "enableLocalHostConfirm": "Activer l'hébergement",
+    "addProbing": "Vérification de la prise en charge de /offer…",
+    "syncLocalNotSupported": "Le nœud de propagation de l'hôte local ne peut pas être synchronisé sur le réseau comme un nœud de propagation LXMF distant."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",
@@ -4609,7 +4631,8 @@
     "capDirectNotice": "msg direct",
     "moderation": {
       "removedFromRoom": "Retiré de la salle par le moyeu (coup de pied, bannissement ou salle distante).",
-      "hubParted": "A quitté la salle (le hub vous a séparé)."
+      "removedFromRoomSystem": "Le hub vous a séparé de {{room}}.",
+      "hubParted": "Le hub vous a séparé de la salle."
     },
     "errors": {
       "linkProofTimeout": "Délai expiré en attendant le lien du hub (preuve de lien). Réessayez ou vérifiez le chemin/les sauts vers le hub.",
@@ -4817,7 +4840,8 @@
       "copyInstructionsAria": "Copier les instructions pour activer la réception de fichiers",
       "copyInstructions": "Copier les instructions",
       "instructionsCopied": "Instructions copiées.",
-      "receiveDestSharedToast": "Destination de réception rncp de {{peer}} enregistrée — vous pouvez envoyer un fichier."
+      "receiveDestSharedToast": "Destination de réception rncp de {{peer}} enregistrée — vous pouvez envoyer un fichier.",
+      "receiveDestShareFailed": "Impossible d'enregistrer la destination de réception RNCP du homologue."
     },
     "enableRequest": {
       "title": "Activer la réception de fichiers ?",
@@ -4835,7 +4859,8 @@
       "saveDirRequired": "Choisissez un dossier de sauvegarde pour activer la réception.",
       "identityUnknown": "Impossible de résoudre le hachage d'identité de ce pair pour le moment — le mode Demander est activé, mais il n'a pas été ajouté à la liste d'autorisation. Réessayez après l'arrivée d'un chemin ou d'une annonce.",
       "lxmfBody": "Veuillez activer la réception de fichiers (rncp) si vous utilisez mesh-client : Remote → Settings → Inbound file offers. Ou exécutez rncp/rncp-rs en mode écoute.",
-      "lxmfShareBody": "La réception de fichiers est activée. Voici ma destination de réception rncp (mesh-client l'enregistrera pour vous)."
+      "lxmfShareBody": "La réception de fichiers est activée. Voici ma destination de réception rncp (mesh-client l'enregistrera pour vous).",
+      "shareDestWarning": "Si vous l'activez, mesh-client enverra votre destination de réception rncp à cet homologue afin qu'il puisse remplir automatiquement l'envoi de fichiers."
     },
     "saved": {
       "labelPlaceholder": "Dénomination",
@@ -4890,5 +4915,12 @@
     "direct": "Direct",
     "segmentTooltip": "Hachage du chemin {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} est en ligne",
+    "onlineBody": "Le nœud {{protocol}} est entré en ligne",
+    "offlineTitle": "{{name}} s'est déconnecté",
+    "offlineBody": "Dernière écoute : {{time}}",
+    "unknown": "inconnu"
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
   DEFAULT_PN_HOSTING_POLICY,
+  mapPnHostingPolicyError,
   parsePnHostingPolicy,
   type PnHostingPolicy,
   sanitizePnHostingPolicy,
@@ -61,6 +62,8 @@ interface ReticulumPropagationStoreState {
   sync: PropagationSyncState;
   lastSyncError: string | null;
   lastAddError: string | null;
+  /** i18n key or mapped hosting-policy error for Advanced PN hosting save. */
+  lastHostingPolicyError: string | null;
   lastRefreshedAt: number | null;
   lastPropagationSyncAt: number | null;
   /**
@@ -104,6 +107,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   sync: { active: false, progress: 0, message: null },
   lastSyncError: null,
   lastAddError: null,
+  lastHostingPolicyError: null,
   lastRefreshedAt: null,
   lastPropagationSyncAt: null,
   lastPropagationSyncAttemptAt: null,
@@ -181,6 +185,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
           lastPropagationSyncAt = fromSidecarMs;
         }
       }
+      const syncActive = get().sync.active;
       set({
         nodes,
         preferredId: body.preferred_id ?? null,
@@ -189,8 +194,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         hostingPolicy: parsePnHostingPolicy(body.pn_hosting_policy),
         lastRefreshedAt: nowMs,
         lastPropagationSyncAt,
-        // Sidecar refresh is authoritative for node metadata; clear phantom in-flight stamp.
-        activePropagationSyncAttemptAt: null,
+        // Clear phantom in-flight stamps only when sync is idle — mid-sync refresh
+        // must keep the attempt stamp for WS completion correlation.
+        ...(syncActive ? {} : { activePropagationSyncAttemptAt: null }),
       });
       await get().refreshDiscoveredFromSidecar();
     } catch (e) {
@@ -252,7 +258,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   setHostingPolicyOnSidecar: async (policy) => {
     const sanitized = sanitizePnHostingPolicy(policy);
     if (!sanitized.ok) {
-      set({ lastAddError: sanitized.error });
+      set({ lastHostingPolicyError: mapPnHostingPolicyError(sanitized.error) });
       return false;
     }
     try {
@@ -261,14 +267,17 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         sanitized.policy,
       )) as { ok?: boolean; error?: string };
       if (res.ok) {
-        set({ hostingPolicy: sanitized.policy });
+        set({ hostingPolicy: sanitized.policy, lastHostingPolicyError: null });
         return true;
       }
-      if (res.error) {
-        set({ lastAddError: mapPropagationSyncError(res.error) });
-      }
+      set({
+        lastHostingPolicyError: res.error
+          ? mapPnHostingPolicyError(res.error) || mapPropagationSyncError(res.error)
+          : 'networkPanel.reticulumPnHosting.saveFailed',
+      });
     } catch (e) {
       console.warn('[reticulumPropagationStore] hosting policy ' + errLikeToLogString(e));
+      set({ lastHostingPolicyError: 'networkPanel.reticulumPnHosting.saveFailed' });
     }
     return false;
   },

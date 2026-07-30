@@ -102,6 +102,9 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_OFFER_PROBE_TIMEOUT')).toBe(
       'reticulumPropagation.offerProbeTimeout',
     );
+    expect(mapPropagationSyncError('PROPAGATION_OFFER_PROBE_FAILED')).toBe(
+      'reticulumPropagation.offerProbeFailed',
+    );
     expect(mapPropagationSyncError('propagation offer rejected: ErrorInvalidKey')).toBe(
       'reticulumPropagation.syncOfferInvalidKey',
     );

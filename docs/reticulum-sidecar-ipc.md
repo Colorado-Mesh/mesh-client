@@ -102,6 +102,31 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
 | POST | `/api/v1/propagation/sync` | | `{ ok }` |
 | POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` |
+| POST | `/api/v1/propagation/auto-sync-interval` | `{ interval_sec }` | `{ ok }` — `0` disables periodic sync; persists with stack |
+
+**`PnHostingPolicy`** (mirrored in `src/shared/pnHostingPolicy.ts` / sidecar `pn_hosting_policy.rs`):
+
+| Field                      | Default | Notes                                           |
+| -------------------------- | ------- | ----------------------------------------------- |
+| `peering_cost`             | `18`    | Must be ≤ `max_peering_cost`                    |
+| `max_peering_cost`         | `26`    |                                                 |
+| `autopeer`                 | `true`  |                                                 |
+| `autopeer_maxdepth`        | `4`     | Cap 64                                          |
+| `max_peers`                | `20`    | 1–256                                           |
+| `propagation_stamp_cost`   | `16`    |                                                 |
+| `propagation_stamp_flex`   | `3`     | Must be ≤ stamp cost                            |
+| `message_storage_limit_mb` | `256`   | 1–10240                                         |
+| `propagation_limit_kb`     | `256`   | 1–102400                                        |
+| `sync_limit_kb`            | `10240` | 1–102400                                        |
+| `delivery_limit_kb`        | `1000`  | 1–102400                                        |
+| `from_static_only`         | `false` |                                                 |
+| `auth_required`            | `false` |                                                 |
+| `enforce_stamps`           | `false` |                                                 |
+| `enforce_ratchets`         | `false` |                                                 |
+| `static_peers`             | `[]`    | Lowercase 32-hex hashes (max 256)               |
+| `node_name`                | `null`  | Trimmed; max 128 scalar chars; no control chars |
+| `pn_announce_interval_sec` | `360`   | Cap 86400                                       |
+| `announce_at_start`        | `true`  |                                                 |
 
 ### Nomad Network
 

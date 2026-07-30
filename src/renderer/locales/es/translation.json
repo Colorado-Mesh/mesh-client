@@ -586,7 +586,6 @@
       "sendFileAria": "Enviar archivo a {{name}} a través de rncp",
       "pendingOffersBadgeAria_one": "{{count}} oferta de archivo entrante pendiente de este compañero",
       "pendingOffersBadgeAria_other": "{{count}} ofertas de archivos entrantes pendientes de este compañero",
-      "destinationLabel": "hash de destino rncp",
       "rememberAddress": "Recordar esta dirección",
       "rememberAddressAria": "Recordar este destino rncp para este compañero",
       "chooseAndSend": "Elegir archivo y enviar...",
@@ -596,7 +595,8 @@
       "newOfferToast": "{{peer}} quiere enviarte un archivo: {{file}}",
       "requestEnable": "Solicitud habilitada",
       "requestEnableAria": "Pedir a este compañero que habilite la recepción de archivos",
-      "destinationHelp": "No es su hash de Chat/LXMF. Use Request enable: los pares de mesh-client lo comparten automáticamente después de aceptarlo. O pegue desde Remote → My rncp receive destination."
+      "destinationLabel": "Destino de recepción rncp del par",
+      "destinationHelp": "No su hash Chat/LXMF. Utilice la habilitación de solicitudes: los pares del mesh-client comparten esto automáticamente después de aceptar. O pegar desde su control remoto → Mi destino de recepción rncp."
     },
     "shareLocation": "Compartir ubicación",
     "shareLocationLabel": "📍 Ubicación compartida",
@@ -2488,7 +2488,6 @@
     },
     "reticulumPnHosting": {
       "title": "Alojamiento PN avanzado (zona de peligro)",
-      "warning": "Estas configuraciones controlan el alojamiento del nodo de propagación local, el autopeer, los costes de PoW y el rechazo de sincronización para los controles remotos de alto coste. La configuración incorrecta puede quemar la CPU, el disco de relleno o los pares ampliamente.",
       "peeringCost": "Coste de peering",
       "maxPeeringCost": "Coste máximo de peering",
       "autopeer": "Autopeer con PN descubiertos",
@@ -2513,7 +2512,27 @@
       "saving": "Guardando…",
       "saveAria": "Guardar la política de hospedaje de PN",
       "saveOk": "Política de hospedaje de PN guardada.",
-      "saveFailed": "No se ha podido guardar la política de alojamiento de PN."
+      "saveFailed": "No se ha podido guardar la política de alojamiento de PN.",
+      "saveConfirmTitle": "¿Guardar la política de alojamiento de PN?",
+      "saveConfirmBody": "¿Aplicar configuraciones de emparejamiento, almacenamiento, sello y anuncio al nodo de propagación en vivo? Una configuración incorrecta puede quemar la CPU, llenar el disco o aceptar muchos pares.",
+      "saveConfirm": "Guardar política",
+      "error": {
+        "peeringCostExceedsMax": "El costo de emparejamiento no puede exceder el costo máximo de emparejamiento.",
+        "stampFlexExceedsCost": "La flexibilidad del sello no puede exceder el costo del sello.",
+        "autopeerMaxdepth": "Los saltos máximos de Autopeer están fuera de rango.",
+        "maxPeers": "Max peers está fuera de alcance.",
+        "storageMb": "El límite de almacenamiento de mensajes está fuera de rango.",
+        "propagationLimit": "El límite de mensajes de propagación está fuera de rango.",
+        "syncLimit": "El límite de transferencia de sincronización está fuera de rango.",
+        "deliveryLimit": "El límite de transferencia de entrega está fuera de rango.",
+        "announceInterval": "El intervalo de anuncio de PN está fuera de rango.",
+        "staticPeersTooMany": "Demasiados hashes de pares estáticos (máximo 256).",
+        "staticPeerInvalid": "Uno o más hashes de pares estáticos no son válidos (necesitan 32 caracteres hexadecimales).",
+        "nodeNameInvalid": "El nombre del anuncio de PN contiene caracteres no válidos.",
+        "nodeNameTooLong": "El nombre del anuncio de PN es demasiado largo.",
+        "nonFiniteNumber": "Uno o más campos numéricos no son válidos."
+      },
+      "warning": "Estas configuraciones controlan el alojamiento del nodo de propagación local, el autopeer, los costos de PoW y el rechazo de sincronización para dispositivos remotos de alto costo. Una configuración incorrecta puede quemar la CPU, llenar el disco o aceptar muchos pares."
     }
   },
   "nodeDetailModal": {
@@ -3909,9 +3928,9 @@
     "iconStar": "Estrella",
     "iconHeart": "Corazón",
     "iconShield": "Escudo",
-    "iconUser": "Usuario",
     "iconNone": "Ninguno",
-    "iconSaveFailed": "No se pudo guardar el ícono de avatar."
+    "iconSaveFailed": "No se pudo guardar el ícono de avatar.",
+    "iconUser": "Gente"
   },
   "reticulumPropagation": {
     "preferred": "Preferido",
@@ -3970,7 +3989,6 @@
       "unknown": "desconocido",
       "online": "en línea"
     },
-    "syncLocalNotSupported": "La propagación local es su bandeja de entrada fuera de línea; no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
     "syncIdentityUnknown": "Se desconoce la identidad del nodo de propagación: espere un anuncio o una respuesta de ruta y vuelva a intentarlo.",
     "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión.",
     "syncPeeringStampFailed": "No se pudo crear un sello de emparejamiento para este nodo de propagación. Vuelva a intentarlo en un momento.",
@@ -4005,11 +4023,15 @@
     "localHostStats": "{{count}} en cola · {{bytes}} bytes",
     "localHostName": "Nodo de propagación del host",
     "localHostHint": "Cuando está habilitado, este dispositivo se anuncia como un nodo de propagación LXMF y sirve /ofrece y /obtiene. Prefiera un nodo remoto para almacenar y reenviar salientes a compañeros inalcanzables.",
-    "addProbing": "Comprobando /ofreciendo soporte...",
     "syncPeerCostExceedsMax": "El coste de peering de este nodo de propagación está por encima de su coste máximo de peering: aumente el máximo en Network → Advanced PN hosting o elija otro nodo.",
     "offerUnsupported": "Este destino no es compatible con la sincronización LXMF /offer: mesh-client no puede usarlo como nodo de propagación.",
     "offerProbeTimeout": "Tiempo de espera agotado al verificar /ofrecer soporte: el nodo puede ser inalcanzable. Inténtalo de nuevo cuando haya una ruta disponible.",
-    "offerProbeFailed": "No se ha podido verificar /ofrecer soporte para este nodo de propagación; inténtelo de nuevo en un momento."
+    "offerProbeFailed": "No se ha podido verificar /ofrecer soporte para este nodo de propagación; inténtelo de nuevo en un momento.",
+    "enableLocalHostConfirmTitle": "¿Habilitar el alojamiento del nodo de propagación local?",
+    "enableLocalHostConfirmBody": "Este dispositivo se anunciará como un nodo de propagación LXMF y servirá /oferta y /obtener. Utiliza almacenamiento, CPU y puede conectarse con otros nodos de la red. Prefiera un nodo remoto para el almacenamiento y reenvío saliente, a menos que tenga intención de alojarlo.",
+    "enableLocalHostConfirm": "Habilitar alojamiento",
+    "addProbing": "Comprobando compatibilidad con /offer…",
+    "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",
@@ -4609,7 +4631,8 @@
     "capDirectNotice": "msg directo",
     "moderation": {
       "removedFromRoom": "Eliminado de la sala por el centro (patada, prohibición o parte remota).",
-      "hubParted": "Saliste de la sala (el hub te separó)."
+      "removedFromRoomSystem": "El centro te separó de {{room}}.",
+      "hubParted": "El hub te separó de la sala."
     },
     "errors": {
       "linkProofTimeout": "Se agotó el tiempo de espera para el enlace del hub (prueba del enlace). Inténtalo de nuevo o comprueba la ruta/saltos al centro.",
@@ -4817,7 +4840,8 @@
       "copyInstructionsAria": "Copiar instrucciones para habilitar la recepción de archivos",
       "copyInstructions": "Copiar instrucciones",
       "instructionsCopied": "Instrucciones copiadas.",
-      "receiveDestSharedToast": "Se guardó el destino de recepción rncp de {{peer}}: ya puede enviar un archivo."
+      "receiveDestSharedToast": "Se guardó el destino de recepción rncp de {{peer}}: ya puede enviar un archivo.",
+      "receiveDestShareFailed": "No se pudo guardar el destino de recepción rncp del par."
     },
     "enableRequest": {
       "title": "¿Habilitar la recepción de archivos?",
@@ -4835,7 +4859,8 @@
       "saveDirRequired": "Elija una carpeta de guardado para habilitar la recepción.",
       "identityUnknown": "Aún no se pudo resolver el hash de identidad de este par — el modo Preguntar está activado, pero no se añadió a la lista de permitidos. Inténtalo de nuevo cuando llegue una ruta o un anuncio.",
       "lxmfBody": "Habilite la recepción de archivos (rncp) si utiliza mesh-client: → Configuración remota Ofertas de archivos → entrantes. O ejecute rncp/rncp-rs en modo de escucha.",
-      "lxmfShareBody": "La recepción de archivos está habilitada. Aquí está mi destino de recepción rncp (mesh-client lo guardará para usted)."
+      "lxmfShareBody": "La recepción de archivos está habilitada. Aquí está mi destino de recepción rncp (mesh-client lo guardará para usted).",
+      "shareDestWarning": "Si lo habilita, mesh-client enviará su destino de recepción rncp a este par para que pueda completar automáticamente el envío del archivo."
     },
     "saved": {
       "labelPlaceholder": "Designación",
@@ -4890,5 +4915,12 @@
     "direct": "Directo",
     "segmentTooltip": "Hash de ruta {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} está en línea",
+    "onlineBody": "El nodo {{protocol}} se conectó",
+    "offlineTitle": "{{name}} se desconectó",
+    "offlineBody": "Última escucha: {{time}}",
+    "unknown": "desconocido"
   }
 }

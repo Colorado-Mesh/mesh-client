@@ -111,6 +111,18 @@ impl RrcSessionInner {
             }
         }
     }
+
+    /// Queue a silent re-JOIN; dedupe by normalized room name.
+    fn queue_pending_rejoin(&mut self, room: String, join_key: Option<String>) {
+        let key = normalize_room(&room);
+        let already_pending = self
+            .pending_rejoins
+            .iter()
+            .any(|(pending_room, _)| normalize_room(pending_room) == key);
+        if !already_pending {
+            self.pending_rejoins.push((room, join_key));
+        }
+    }
 }
 
 /// Handle to one hub's session task: a command channel for actions that must
@@ -1193,7 +1205,7 @@ async fn handle_inbound(
                     g.rooms.remove(&key);
                     let auto_rejoin = match g.desired_rooms.get(&key).cloned() {
                         Some(join_key) => {
-                            g.pending_rejoins.push((room.clone(), join_key));
+                            g.queue_pending_rejoin(room.clone(), join_key);
                             true
                         }
                         None => false,
@@ -1413,14 +1425,15 @@ mod tests {
         inner.rooms.remove(&key);
         match inner.desired_rooms.get(&key) {
             Some(join_key) => {
-                inner
-                    .pending_rejoins
-                    .push(("general".into(), join_key.clone()));
+                inner.queue_pending_rejoin("general".into(), join_key.clone());
             }
             None => panic!("expected desired room"),
         }
         assert_eq!(inner.pending_rejoins.len(), 1);
         assert!(inner.desired_rooms.contains_key("general"));
+        // Duplicate involuntary PART (case / whitespace variants) must not queue twice.
+        inner.queue_pending_rejoin("  General ".into(), None);
+        assert_eq!(inner.pending_rejoins.len(), 1);
         // Voluntary PART removes desired first — no rejoin queue.
         inner.desired_rooms.remove("general");
         inner.pending_rejoins.clear();

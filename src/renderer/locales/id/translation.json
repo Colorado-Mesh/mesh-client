@@ -587,7 +587,6 @@
       "sendFileAria": "Kirim file ke {{name}} melalui rncp",
       "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk dari rekan ini",
       "pendingOffersBadgeAria_other": "{{count}} menunggu penawaran file masuk dari rekan ini",
-      "destinationLabel": "hash tujuan rncp",
       "rememberAddress": "Ingat alamat ini",
       "rememberAddressAria": "Ingat tujuan rncp untuk rekan ini",
       "chooseAndSend": "Pilih file & kirim…",
@@ -597,7 +596,8 @@
       "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
       "requestEnable": "Minta pengaktifan",
       "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file",
-      "destinationHelp": "Bukan hash Chat/LXMF mereka. Gunakan Request enable — peer mesh-client membagikan ini secara otomatis setelah mereka menerima. Atau tempel dari Remote → My rncp receive destination."
+      "destinationLabel": "Rncp rekan menerima tujuan",
+      "destinationHelp": "Bukan hash Obrolan/LXMF mereka. Gunakan Pengaktifan Permintaan — rekan mesh-client membagikan ini secara otomatis setelah mereka menerimanya. Atau tempel dari Remote mereka → Tujuan penerimaan rncp saya."
     },
     "shareLocation": "Bagikan lokasi",
     "shareLocationLabel": "📍 Lokasi bersama",
@@ -2488,7 +2488,6 @@
     },
     "reticulumPnHosting": {
       "title": "Hosting PN tingkat lanjut (zona bahaya)",
-      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau melakukan peer secara luas.",
       "peeringCost": "Biaya mengintip",
       "maxPeeringCost": "Biaya peering maksimal",
       "autopeer": "Autopeer dengan PN yang ditemukan",
@@ -2513,7 +2512,27 @@
       "saving": "Penghematan…",
       "saveAria": "Simpan kebijakan hosting PN",
       "saveOk": "Kebijakan hosting PN disimpan.",
-      "saveFailed": "Tidak dapat menyimpan kebijakan hosting PN."
+      "saveFailed": "Tidak dapat menyimpan kebijakan hosting PN.",
+      "saveConfirmTitle": "Simpan kebijakan hosting PN?",
+      "saveConfirmBody": "Terapkan pengaturan peering, penyimpanan, cap, dan umumkan ke node propagasi langsung? Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan.",
+      "saveConfirm": "Simpan kebijakan",
+      "error": {
+        "peeringCostExceedsMax": "Biaya peering tidak boleh melebihi biaya peering maksimal.",
+        "stampFlexExceedsCost": "Fleksibilitas prangko tidak boleh melebihi biaya prangko.",
+        "autopeerMaxdepth": "Hop maks autopeer berada di luar jangkauan.",
+        "maxPeers": "Max rekan berada di luar jangkauan.",
+        "storageMb": "Batas penyimpanan pesan di luar jangkauan.",
+        "propagationLimit": "Batas pesan propagasi berada di luar jangkauan.",
+        "syncLimit": "Batas transfer sinkronisasi berada di luar jangkauan.",
+        "deliveryLimit": "Batas transfer pengiriman di luar jangkauan.",
+        "announceInterval": "Interval pengumuman PN di luar jangkauan.",
+        "staticPeersTooMany": "Terlalu banyak hash rekan statis (maks 256).",
+        "staticPeerInvalid": "Satu atau lebih hash rekan statis tidak valid (membutuhkan 32 karakter hex).",
+        "nodeNameInvalid": "Nama pengumuman PN mengandung karakter yang tidak valid.",
+        "nodeNameTooLong": "Nama pengumuman PN terlalu panjang.",
+        "nonFiniteNumber": "Satu atau beberapa kolom numerik tidak valid."
+      },
+      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan."
     }
   },
   "nodeDetailModal": {
@@ -3909,9 +3928,9 @@
     "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
-    "iconUser": "Pengguna",
     "iconNone": "Tidak ada",
-    "iconSaveFailed": "Tidak dapat menyimpan ikon avatar."
+    "iconSaveFailed": "Tidak dapat menyimpan ikon avatar.",
+    "iconUser": "Rakyat"
   },
   "reticulumPropagation": {
     "preferred": "Disukai",
@@ -3970,7 +3989,6 @@
       "unknown": "tidak dikenal",
       "online": "online"
     },
-    "syncLocalNotSupported": "Propagasi lokal adalah kotak masuk offline Anda — tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
     "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline.",
     "syncPeeringStampFailed": "Tidak dapat membuat stempel peering untuk node propagasi ini — coba lagi sebentar lagi.",
@@ -4005,11 +4023,15 @@
     "localHostStats": "{{count}} antri · {{bytes}} byte",
     "localHostName": "Node propagasi host",
     "localHostHint": "Saat diaktifkan, perangkat ini mengumumkan sebagai node propagasi LXMF dan melayani /menawarkan dan /mendapatkan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar dibandingkan node yang tidak dapat dijangkau.",
-    "addProbing": "Memeriksa / menawarkan dukungan…",
     "syncPeerCostExceedsMax": "Biaya peering node propagasi ini berada di atas biaya peering maksimal Anda — naikkan biaya maksimal di Jaringan → Hosting PN tingkat lanjut, atau pilih node lain.",
     "offerUnsupported": "Tujuan ini tidak mendukung sinkronisasi LXMF /offer — mesh-client tidak dapat menggunakannya sebagai node propagasi.",
     "offerProbeTimeout": "Waktu habis saat memeriksa / menawarkan dukungan — node mungkin tidak dapat dijangkau. Coba lagi ketika jalur tersedia.",
-    "offerProbeFailed": "Tidak dapat memverifikasi/menawarkan dukungan untuk node propagasi ini — coba lagi sebentar lagi."
+    "offerProbeFailed": "Tidak dapat memverifikasi/menawarkan dukungan untuk node propagasi ini — coba lagi sebentar lagi.",
+    "enableLocalHostConfirmTitle": "Aktifkan hosting node propagasi lokal?",
+    "enableLocalHostConfirmBody": "Perangkat ini akan diumumkan sebagai node propagasi LXMF dan melayani /offer dan /get. Itu menggunakan penyimpanan, CPU, dan mungkin melakukan peer dengan node lain di jaringan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar kecuali Anda bermaksud untuk menghostingnya.",
+    "enableLocalHostConfirm": "Aktifkan hosting",
+    "addProbing": "Memeriksa dukungan /offer…",
+    "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",
@@ -4609,7 +4631,8 @@
     "capDirectNotice": "direct msg",
     "moderation": {
       "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part).",
-      "hubParted": "Meninggalkan ruangan (hub memisahkan Anda)."
+      "removedFromRoomSystem": "Hub memisahkan Anda dari {{room}}.",
+      "hubParted": "Hub memisahkan Anda dari ruangan."
     },
     "errors": {
       "linkProofTimeout": "Waktu habis menunggu tautan hub (bukti tautan). Coba lagi, atau periksa jalur/hop ke hub.",
@@ -4817,7 +4840,8 @@
       "copyInstructionsAria": "Salin instruksi untuk mengaktifkan penerimaan file",
       "copyInstructions": "Salin instruksi",
       "instructionsCopied": "Instruksi disalin.",
-      "receiveDestSharedToast": "Destinasi penerimaan rncp {{peer}} disimpan — Anda dapat mengirim file sekarang."
+      "receiveDestSharedToast": "Destinasi penerimaan rncp {{peer}} disimpan — Anda dapat mengirim file sekarang.",
+      "receiveDestShareFailed": "Tidak dapat menyimpan tujuan penerimaan rncp rekan."
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",
@@ -4835,7 +4859,8 @@
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
       "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
       "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan.",
-      "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda)."
+      "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda).",
+      "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file."
     },
     "saved": {
       "labelPlaceholder": "Label",
@@ -4890,5 +4915,12 @@
     "direct": "Langsung",
     "segmentTooltip": "Hash jalur {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} sedang online",
+    "onlineBody": "Node {{protocol}} online",
+    "offlineTitle": "{{name}} offline",
+    "offlineBody": "Terakhir didengar: {{time}}",
+    "unknown": "tidak dikenal"
   }
 }

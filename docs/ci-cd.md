@@ -20,19 +20,24 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## CI Build (`ci.yaml`)
 
-Runs on every push and pull request to `main`:
+Runs on every push and pull request to `main` (and `workflow_dispatch`):
 
 1. Checkout code
 2. Setup pnpm
 3. Setup Node 22
 4. Install dependencies (`pnpm install --frozen-lockfile`)
-5. Run lint (`pnpm run lint`)
-6. Run typecheck (`pnpm run typecheck`)
-7. Run build (`pnpm run build`)
-8. Run `yamllint` on workflow/config YAML
-9. Run `check:flatpak`, `check:flatpak-offline-pnpm` (needs `flatpak-node-generator`), `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
+5. Format check (`pnpm run format:check`)
+6. Markdown lint (`pnpm run lint:md`)
+7. Run lint (`pnpm run lint`)
+8. License check (`pnpm run check:licenses`)
+9. actionlint (via `pnpm run setup:actionlint`)
+10. `pnpm audit --audit-level=high` (non-blocking warning)
+11. Run `yamllint` on workflow/config YAML
+12. Run typecheck (`pnpm run typecheck`)
+13. Run build (`pnpm run build`)
+14. Run `check:flatpak`, `check:flatpak-offline-pnpm` (needs `flatpak-node-generator`), `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
 
-All steps must pass before a PR can be merged.
+All blocking steps must pass before a PR can be merged.
 
 ---
 

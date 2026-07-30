@@ -22,11 +22,11 @@ import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import {
   DEFAULT_MESSAGE_RETENTION,
-  fetchMessageRetention,
   MESSAGE_RETENTION_KEYS,
   MESSAGE_RETENTION_MAX_COUNT,
   MESSAGE_RETENTION_MIN_COUNT,
   type MessageRetentionSettings,
+  parseMessageRetention,
 } from '../lib/messageRetention';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -383,13 +383,18 @@ export default function AppPanel({
           console.warn('[AppPanel] reduceMotion persist failed ' + errLikeToLogString(err));
         });
     }
+    if (key === 'use24HourTime') {
+      void window.electronAPI.appSettings
+        .set('use24HourTime', value ? 'true' : 'false')
+        .catch((err: unknown) => {
+          console.warn('[AppPanel] use24HourTime persist failed ' + errLikeToLogString(err));
+        });
+    }
   };
 
-  // ─── DB-backed message retention (issue #387) ─────────────────
-  // Source of truth lives in SQLite (`app_settings` KV table). Hydrate on
-  // mount; debounce writes through IPC. Two independent caps gated by the
-  // currently selected protocol — pruning still runs for both tables on
-  // startup (see App.tsx) since both stacks may be active simultaneously.
+  // ─── DB-backed settings hydrate (message retention + 24h clock) ─
+  // Source of truth lives in SQLite (`app_settings` KV table). One getAll()
+  // on mount so tests that mockResolvedValueOnce still see retention keys.
   const [retention, setRetention] = useState<MessageRetentionSettings>({
     ...DEFAULT_MESSAGE_RETENTION,
   });
@@ -398,14 +403,24 @@ export default function AppPanel({
 
   useEffect(() => {
     let cancelled = false;
-    fetchMessageRetention()
-      .then((loaded) => {
+    void window.electronAPI.appSettings
+      .getAll()
+      .then((raw) => {
         if (cancelled) return;
+        const use24 = raw?.use24HourTime;
+        if (use24 === 'true' || use24 === 'false') {
+          const enabled = use24 === 'true';
+          useTimeFormatStore.getState().hydrateFromSqlite(enabled);
+          setSettings((prev) =>
+            prev.use24HourTime === enabled ? prev : { ...prev, use24HourTime: enabled },
+          );
+        }
+        const loaded = parseMessageRetention(raw);
         setRetention(loaded);
         lastSavedRetentionRef.current = loaded;
       })
-      .catch((e: unknown) => {
-        console.warn('[AppPanel] fetchMessageRetention failed ' + errLikeToLogString(e));
+      .catch((err: unknown) => {
+        console.warn('[AppPanel] app settings hydrate failed ' + errLikeToLogString(err));
       });
     return () => {
       cancelled = true;

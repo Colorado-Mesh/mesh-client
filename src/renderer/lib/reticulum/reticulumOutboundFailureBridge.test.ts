@@ -119,6 +119,53 @@ describe('failReticulumSendingOutboundToDestHash', () => {
     expect(useMessageStore.getState().messages[identityId]?.['msg-hash']?.status).toBe('sending');
   });
 
+  it('requires full 32-hex equality (prefix must not fail unrelated peers)', () => {
+    const peerA = DEST;
+    const peerB = `${DEST.slice(0, 8)}${'ff'.repeat(12)}`;
+    const toA = reticulumHashToNodeId(peerA);
+    const toB = reticulumHashToNodeId(peerB);
+    registerReticulumDestinationHash(toA, peerA);
+    registerReticulumDestinationHash(toB, peerB);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          'msg-a': {
+            id: 'msg-a',
+            from: 1,
+            senderName: 'self',
+            payload: 'a',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            to: toA,
+            reticulumSenderHash: SELF,
+          },
+          'msg-b': {
+            id: 'msg-b',
+            from: 1,
+            senderName: 'self',
+            payload: 'b',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            to: toB,
+            reticulumSenderHash: SELF,
+          },
+        },
+      },
+    });
+
+    expect(failReticulumSendingOutboundToDestHash(identityId, peerA.slice(0, 16), 'timeout')).toBe(
+      0,
+    );
+    expect(useMessageStore.getState().messages[identityId]?.['msg-a']?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId]?.['msg-b']?.status).toBe('sending');
+
+    expect(failReticulumSendingOutboundToDestHash(identityId, peerA, 'timeout')).toBe(1);
+    expect(useMessageStore.getState().messages[identityId]?.['msg-a']?.status).toBe('failed');
+    expect(useMessageStore.getState().messages[identityId]?.['msg-b']?.status).toBe('sending');
+  });
+
   it('race: bridge Failed then WS sending+propagated revives via apply', () => {
     const toNodeId = reticulumHashToNodeId(DEST);
     registerReticulumDestinationHash(toNodeId, DEST);
@@ -158,6 +205,12 @@ describe('failReticulumSendingOutboundToDestHash', () => {
 describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
   it('returns false when preferred remote PN is set (sidecar owns Direct→PN fallback)', () => {
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'off')).toBe(
+      false,
+    );
+  });
+
+  it('returns false for mode manual when preferred remote PN is set', () => {
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'manual')).toBe(
       false,
     );
   });

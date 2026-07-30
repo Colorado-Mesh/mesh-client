@@ -55,6 +55,9 @@ describe('ReticulumPnHostingDangerZone', () => {
     await user.click(
       screen.getByRole('button', { name: 'networkPanel.reticulumPnHosting.saveAria' }),
     );
+    await user.click(
+      screen.getByRole('button', { name: 'networkPanel.reticulumPnHosting.saveConfirm' }),
+    );
 
     await waitFor(() => {
       expect(setHostingPolicyOnSidecar).toHaveBeenCalled();
@@ -70,11 +73,15 @@ describe('ReticulumPnHostingDangerZone', () => {
     const user = userEvent.setup();
     useReticulumPropagationStore.setState({
       setHostingPolicyOnSidecar: vi.fn().mockResolvedValue(false),
+      lastHostingPolicyError: 'networkPanel.reticulumPnHosting.saveFailed',
     });
 
     render(<ReticulumPnHostingDangerZone />);
     await user.click(
       screen.getByRole('button', { name: 'networkPanel.reticulumPnHosting.saveAria' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'networkPanel.reticulumPnHosting.saveConfirm' }),
     );
 
     await waitFor(() => {

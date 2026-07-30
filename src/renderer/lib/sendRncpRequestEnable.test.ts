@@ -57,4 +57,16 @@ describe('sendRncpRequestEnable', () => {
       detail: 'offline',
     });
   });
+
+  it('maps proxyPost throw to send_failed', async () => {
+    const hash = 'ef'.repeat(16);
+    vi.mocked(window.electronAPI.reticulum.proxyPost).mockRejectedValueOnce(
+      new Error('network down'),
+    );
+    await expect(sendRncpRequestEnable(hash)).resolves.toEqual({
+      ok: false,
+      error: 'send_failed',
+      detail: 'network down',
+    });
+  });
 });

@@ -88,6 +88,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -562,6 +563,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
         }
         if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
+          if (!consumeRncpReceiveDestSharePending(p.sender_hash)) {
+            console.debug(
+              '[useReticulumRuntime] ignore rncp receive-dest share without pending request-enable',
+            );
+            return;
+          }
           const share = await applyRncpReceiveDestShareFromLxmf({
             senderHash: p.sender_hash,
             senderName: p.sender_name,
@@ -570,6 +577,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
           if (share.ok) {
             const peer = p.sender_name?.trim() || share.lxmfPeerHash.slice(0, 12);
             pushAppToast(rncpReceiveDestShareSavedToastMessage(peer), 'success');
+          } else if (share.reason !== 'no_share') {
+            console.warn(
+              '[useReticulumRuntime] rncp receive-dest share failed reason=' + share.reason,
+            );
+            pushAppToast(i18n.t('reticulumRemote.transfer.receiveDestShareFailed'), 'error');
           }
         }
       })();
@@ -849,7 +861,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 id: `part-${Date.now()}`,
                 room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
                 kind: 'system',
-                body: `Removed from ${p.room}`,
+                body: i18n.t('rrc.moderation.removedFromRoomSystem', { room: p.room }),
                 timestamp: Date.now(),
               },
               { hubDestHash },

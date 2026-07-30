@@ -1102,6 +1102,55 @@ mod tests {
     }
 
     #[test]
+    fn pn_hosting_policy_round_trip_and_default_when_absent() {
+        let mut state = PersistedState::default_empty();
+        let policy = PnHostingPolicy {
+            peering_cost: 20,
+            max_peering_cost: 26,
+            node_name: Some("Test PN".into()),
+            static_peers: vec!["aabbccddeeff00112233445566778899".into()],
+            ..PnHostingPolicy::default()
+        };
+        state
+            .set_pn_hosting_policy(policy.clone())
+            .expect("set valid policy");
+        let json = serde_json::to_string(&state).expect("serialize");
+        let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(loaded.pn_hosting_policy.peering_cost, 20);
+        assert_eq!(
+            loaded.pn_hosting_policy.node_name.as_deref(),
+            Some("Test PN")
+        );
+        assert_eq!(
+            loaded.pn_hosting_policy.static_peers,
+            vec!["aabbccddeeff00112233445566778899"]
+        );
+
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        obj.remove("pn_hosting_policy");
+        let legacy_state: PersistedState =
+            serde_json::from_value(value).expect("legacy without pn_hosting_policy");
+        assert_eq!(legacy_state.pn_hosting_policy, PnHostingPolicy::default());
+    }
+
+    #[test]
+    fn set_pn_hosting_policy_rejects_invalid() {
+        let mut state = PersistedState::default_empty();
+        let before = state.pn_hosting_policy.clone();
+        let bad = PnHostingPolicy {
+            peering_cost: 30,
+            max_peering_cost: 26,
+            ..PnHostingPolicy::default()
+        };
+        assert_eq!(
+            state.set_pn_hosting_policy(bad).unwrap_err(),
+            "peering_cost_exceeds_max"
+        );
+        assert_eq!(state.pn_hosting_policy, before);
+    }
+
+    #[test]
     fn rncp_listener_fields_round_trip_and_default_when_absent() {
         let mut state = PersistedState::default_empty();
         state.rncp_listener_enabled = true;

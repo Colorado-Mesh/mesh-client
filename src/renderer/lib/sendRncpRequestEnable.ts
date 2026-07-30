@@ -1,4 +1,5 @@
 import i18n from '@/renderer/lib/i18n';
+import { markRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { tryConsumeRncpRequestEnableSlot } from '@/renderer/lib/rncpRequestEnableRateLimit';
 import { buildRncpRequestEnableMessageBody } from '@/shared/rncpRequestEnable';
 
@@ -31,6 +32,8 @@ export async function sendRncpRequestEnable(
     if (res?.ok === false) {
       return { ok: false, error: 'send_failed', detail: res.error };
     }
+    // Authorizes inbound receive-dest share ingest from this peer for a TTL window.
+    markRncpReceiveDestSharePending(hash);
     return { ok: true };
   } catch (e) {
     // Failure is returned to the caller for a user-facing toast.

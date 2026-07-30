@@ -1,24 +1,18 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
+import {
+  isRrcKind,
+  normalizeRrcHubHash,
+  storageRoomKey,
+} from '@/renderer/lib/rrcMessageStorageCommon';
 import { RRC_ROOM_HISTORY_LOAD_COUNT } from '@/renderer/lib/sessionMemoryCaps';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
-import type { RrcChatMessage, RrcChatMessageKind } from '@/shared/rrc-types';
-
-const ALLOWED_KINDS = new Set<RrcChatMessageKind>(['msg', 'notice', 'action', 'error', 'system']);
+import type { RrcChatMessage } from '@/shared/rrc-types';
 
 /** Keys already loaded from SQLite this session (`${hub}::${room}`). */
 const hydratedRoomKeys = new Set<string>();
 
 export function resetRrcRoomHistoryForTests(): void {
   hydratedRoomKeys.clear();
-}
-
-function isRrcKind(value: string): value is RrcChatMessageKind {
-  return ALLOWED_KINDS.has(value as RrcChatMessageKind);
-}
-
-function storageRoomKey(room: string): string {
-  return rrcRoomMatchKey(room) || room.trim().toLowerCase();
 }
 
 /**
@@ -30,7 +24,7 @@ export async function hydrateRrcRoomMessages(
   room: string,
   opts?: { force?: boolean },
 ): Promise<void> {
-  const hub = hubHash.trim().toLowerCase();
+  const hub = normalizeRrcHubHash(hubHash);
   const roomKey = storageRoomKey(room);
   if (!hub || !roomKey) return;
   const key = `${hub}::${roomKey}`;
@@ -69,7 +63,7 @@ export async function hydrateRrcRoomMessages(
  * Failure point: IPC delete fails — still clears memory so UI matches user intent.
  */
 export async function clearRrcRoomHistory(hubHash: string, room: string): Promise<void> {
-  const hub = hubHash.trim().toLowerCase();
+  const hub = normalizeRrcHubHash(hubHash);
   const roomKey = storageRoomKey(room);
   if (!hub || !roomKey) return;
   const key = `${hub}::${roomKey}`;

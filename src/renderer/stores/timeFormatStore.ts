@@ -19,12 +19,18 @@ function loadUse24HourTime(): boolean {
 interface TimeFormatState {
   use24HourTime: boolean;
   setUse24HourTime(value: boolean): void;
+  /** Reconcile from SQLite `app_settings` when available (canonical after cold start). */
+  hydrateFromSqlite(value: boolean): void;
 }
 
 export const useTimeFormatStore = create<TimeFormatState>((set) => ({
   use24HourTime: loadUse24HourTime(),
   setUse24HourTime(value) {
     mergeAppSetting('use24HourTime', value, 'timeFormatStore setUse24HourTime');
+    set({ use24HourTime: value });
+  },
+  hydrateFromSqlite(value) {
+    mergeAppSetting('use24HourTime', value, 'timeFormatStore hydrateFromSqlite');
     set({ use24HourTime: value });
   },
 }));

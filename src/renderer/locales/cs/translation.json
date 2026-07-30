@@ -585,7 +585,6 @@
       "sendFileAria": "Odeslat soubor na {{name}} pomocí rncp",
       "pendingOffersBadgeAria_one": "{{count}} čeká na nabídku příchozího souboru od tohoto kolegy",
       "pendingOffersBadgeAria_other": "{{count}} čekající nabídky příchozích souborů od tohoto kolegy",
-      "destinationLabel": "rncp cílový hash",
       "rememberAddress": "Zapamatovat si tuto adresu",
       "rememberAddressAria": "Zapamatovat si tento cíl RNCP pro tohoto kolegu",
       "chooseAndSend": "Vyberte soubor a odešlete...",
@@ -595,7 +594,8 @@
       "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
       "requestEnable": "Požádat o povolení",
       "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru",
-      "destinationHelp": "Ne jejich Chat/LXMF hash. Použijte Request enable — mesh-client kolegové jej po přijetí automaticky sdílejí. Nebo vložte z jejich Remote → My rncp receive destination."
+      "destinationLabel": "Cíl příjmu rncp partnera",
+      "destinationHelp": "Ne jejich hash Chat/LXMF. Použít povolení požadavku – mesh-client to po přijetí automaticky sdílejí. Nebo vložte z jejich Remote → My rncp cílového příjmu."
     },
     "shareLocation": "Sdílejte polohu",
     "shareLocationLabel": "📍 Sdílená poloha",
@@ -2490,7 +2490,6 @@
     },
     "reticulumPnHosting": {
       "title": "Pokročilý hosting PN (nebezpečná zóna)",
-      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo široce komunikovat.",
       "peeringCost": "Peeringové náklady",
       "maxPeeringCost": "Maximální náklady na peering",
       "autopeer": "Autopeer s objevenými PN",
@@ -2515,7 +2514,27 @@
       "saving": "Ukládání…",
       "saveAria": "Uložit zásady hostování PN",
       "saveOk": "Zásady hostování PN uloženy.",
-      "saveFailed": "Zásady hostování PN nelze uložit."
+      "saveFailed": "Zásady hostování PN nelze uložit.",
+      "saveConfirmTitle": "Uložit zásady hostování PN?",
+      "saveConfirmBody": "Použít nastavení partnerského vztahu, úložiště, razítka a oznámení na uzel živého šíření? Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů.",
+      "saveConfirm": "Uložit zásady",
+      "error": {
+        "peeringCostExceedsMax": "Cena partnerského vztahu nesmí překročit maximální cenu partnerského vztahu.",
+        "stampFlexExceedsCost": "Flexibilita razítka nemůže překročit cenu razítka.",
+        "autopeerMaxdepth": "Maximální skoky Autopeeru jsou mimo rozsah.",
+        "maxPeers": "Maximální počet vrstevníků je mimo dosah.",
+        "storageMb": "Limit úložiště zpráv je mimo rozsah.",
+        "propagationLimit": "Limit šířených zpráv je mimo rozsah.",
+        "syncLimit": "Limit synchronizovaného přenosu je mimo rozsah.",
+        "deliveryLimit": "Limit převodu dodávky je mimo rozsah.",
+        "announceInterval": "Interval oznámení PN je mimo rozsah.",
+        "staticPeersTooMany": "Příliš mnoho statických hodnot hash (max. 256).",
+        "staticPeerInvalid": "Jeden nebo více statických hodnot hash je neplatných (potřebuje 32 hexadecimálních znaků).",
+        "nodeNameInvalid": "Název oznámení PN obsahuje neplatné znaky.",
+        "nodeNameTooLong": "Název oznámení PN je příliš dlouhý.",
+        "nonFiniteNumber": "Jedno nebo více číselných polí je neplatných."
+      },
+      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů."
     }
   },
   "nodeDetailModal": {
@@ -3911,9 +3930,9 @@
     "iconStar": "Hvězdička",
     "iconHeart": "Srdce",
     "iconShield": "Štít",
-    "iconUser": "Uživatel",
     "iconNone": "Žádný",
-    "iconSaveFailed": "Ikonu avatara nelze uložit."
+    "iconSaveFailed": "Ikonu avatara nelze uložit.",
+    "iconUser": "Lidé"
   },
   "reticulumPropagation": {
     "preferred": "Preference",
@@ -3972,7 +3991,6 @@
       "unknown": "neznámý",
       "online": "online"
     },
-    "syncLocalNotSupported": "Místní šíření je vaše offline doručená pošta – nelze jej synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
     "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
     "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation.",
     "syncPeeringStampFailed": "Nepodařilo se vytvořit peeringové razítko pro tento uzel šíření – zkuste to znovu za chvíli.",
@@ -4007,11 +4025,15 @@
     "localHostStats": "{{count}} ve frontě · {{bytes}} bajtů",
     "localHostName": "Uzel šíření hostitele",
     "localHostHint": "Je-li povoleno, toto zařízení se oznámí jako uzel šíření LXMF a obsluhuje /offer a /get. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání před nedostupnými partnery.",
-    "addProbing": "Kontrola/nabízení podpory…",
     "syncPeerCostExceedsMax": "Náklady na peering tohoto uzlu propagace jsou vyšší než vaše maximální náklady na peering – zvyšte maximum v části Síť → Pokročilé hostování PN nebo vyberte jiný uzel.",
     "offerUnsupported": "Tento cíl nepodporuje synchronizaci LXMF /offer — mesh-client jej nemůže použít jako uzel propagace.",
     "offerProbeTimeout": "Při kontrole / nabídněte podporu vypršel časový limit — uzel může být nedostupný. Zkuste to znovu, až bude k dispozici cesta.",
-    "offerProbeFailed": "Nepodařilo se ověřit / nabídnout podporu pro tento uzel šíření – zkuste to znovu za chvíli."
+    "offerProbeFailed": "Nepodařilo se ověřit / nabídnout podporu pro tento uzel šíření – zkuste to znovu za chvíli.",
+    "enableLocalHostConfirmTitle": "Povolit místní hosting uzlu propagace?",
+    "enableLocalHostConfirmBody": "Toto zařízení se oznámí jako uzel šíření LXMF a bude sloužit /offer a /get. To využívá úložiště, CPU a může být rovnocenné s jinými uzly v síti. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání, pokud nemáte v úmyslu hostovat.",
+    "enableLocalHostConfirm": "Povolit hosting",
+    "addProbing": "Kontrola podpory /offer…",
+    "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",
@@ -4611,7 +4633,8 @@
     "capDirectNotice": "direct msg",
     "moderation": {
       "removedFromRoom": "Odstraněno z místnosti nábojem (kop, zákaz nebo vzdálená část).",
-      "hubParted": "Opustila místnost (hub vás rozdělil)."
+      "removedFromRoomSystem": "Centrum vás oddělilo od {{room}}.",
+      "hubParted": "Rozbočovač vás oddělil od místnosti."
     },
     "errors": {
       "linkProofTimeout": "Vypršel časový limit čekání na odkaz na centrum (důkaz odkazu). Zkuste to znovu nebo zkontrolujte cestu/přechody k rozbočovači.",
@@ -4819,7 +4842,8 @@
       "copyInstructionsAria": "Kopírovat pokyny pro povolení příjmu souboru",
       "copyInstructions": "Kopírovat pokyny",
       "instructionsCopied": "Pokyny zkopírovány.",
-      "receiveDestSharedToast": "Uložen rncp receive destination uživatele {{peer}} — nyní můžete odeslat soubor."
+      "receiveDestSharedToast": "Uložen rncp receive destination uživatele {{peer}} — nyní můžete odeslat soubor.",
+      "receiveDestShareFailed": "Nelze uložit cíl příjmu rncp partnera."
     },
     "enableRequest": {
       "title": "Povolit příjem souborů?",
@@ -4837,7 +4861,8 @@
       "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
       "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
       "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu.",
-      "lxmfShareBody": "Příjem souborů je povolen. Zde je můj rncp receive destination (mesh-client jej pro vás uloží)."
+      "lxmfShareBody": "Příjem souborů je povolen. Zde je můj rncp receive destination (mesh-client jej pro vás uloží).",
+      "shareDestWarning": "Pokud povolíte, mesh-client odešle váš cíl příjmu rncp tomuto partnerovi, aby mohl automaticky vyplnit soubor."
     },
     "saved": {
       "labelPlaceholder": "Označení",
@@ -4892,5 +4917,12 @@
     "direct": "Řídit",
     "segmentTooltip": "Hash cesty {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} je online",
+    "onlineBody": "{{protocol}} uzel byl online",
+    "offlineTitle": "{{name}} přešel do režimu offline",
+    "offlineBody": "Naposledy slyšet: {{time}}",
+    "unknown": "neznámý"
   }
 }

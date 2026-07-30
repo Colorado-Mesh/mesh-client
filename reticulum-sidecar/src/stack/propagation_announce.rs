@@ -163,14 +163,20 @@ impl PropagationAnnounceLoop {
                     }
                     _ = &mut stop_rx => {
                         let snap = policy.lock().ok().map(|p| p.clone()).unwrap_or_default();
-                        let _ = send_propagation_announce(
+                        if let Err(e) = send_propagation_announce(
                             &transport_tx,
                             &identity,
                             propagation_dest_hash,
                             &snap,
                             false,
                         )
-                        .await;
+                        .await
+                        {
+                            tracing::warn!(
+                                target: "propagation-announce",
+                                "shutdown announce failed: {e}"
+                            );
+                        }
                         break;
                     }
                 }

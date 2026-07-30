@@ -750,7 +750,12 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       }
       const identityHash = r.identity_hash != null ? canonicalizeHash32(r.identity_hash) : null;
       const lxmfPeerHash =
-        typeof r.lxmf_peer_hash === 'string' ? r.lxmf_peer_hash.slice(0, 128) : null;
+        r.lxmf_peer_hash != null && r.lxmf_peer_hash !== ''
+          ? canonicalizeHash32(r.lxmf_peer_hash)
+          : null;
+      if (r.lxmf_peer_hash != null && r.lxmf_peer_hash !== '' && !lxmfPeerHash) {
+        throw new Error('db:upsertReticulumRemoteAddress: lxmf_peer_hash invalid');
+      }
       const lastUsedAt =
         r.last_used_at != null && Number.isFinite(Number(r.last_used_at))
           ? Math.trunc(Number(r.last_used_at))

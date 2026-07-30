@@ -587,7 +587,6 @@
       "sendFileAria": "Dosyayı rncp aracılığıyla {{name}} adresine gönder",
       "pendingOffersBadgeAria_one": "{{count}} bu eşten gelen dosya teklifi bekleniyor",
       "pendingOffersBadgeAria_other": "{{count}} bu eşten gelen dosya teklifleri bekleniyor",
-      "destinationLabel": "rncp hedef karması",
       "rememberAddress": "Bu adresi hatırla",
       "rememberAddressAria": "Bu eş için bu rncp hedefini hatırla",
       "chooseAndSend": "Dosya seç ve gönder…",
@@ -597,7 +596,8 @@
       "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
       "requestEnable": "Etkinleştirme isteği",
       "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin",
-      "destinationHelp": "Onların Chat/LXMF hash'i değil. Request enable kullanın — mesh-client eşleri kabul ettikten sonra otomatik paylaşır. Veya Remote → My rncp receive destination adresinden yapıştırın."
+      "destinationLabel": "Eşin rncp alma hedefi",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination."
     },
     "shareLocation": "Konumu paylaş",
     "shareLocationLabel": "📍 Paylaşılan konum",
@@ -2488,7 +2488,6 @@
     },
     "reticulumPnHosting": {
       "title": "Gelişmiş PN barındırma (tehlikeli bölge)",
-      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya geniş çapta eşleşebilir.",
       "peeringCost": "Eşleme maliyeti",
       "maxPeeringCost": "Maksimum eşleme maliyeti",
       "autopeer": "Keşfedilen PN'lerle otomatik eşleme",
@@ -2513,7 +2512,27 @@
       "saving": "Kaydediliyor…",
       "saveAria": "PN barındırma politikasını kaydet",
       "saveOk": "PN barındırma politikası kaydedildi.",
-      "saveFailed": "PN barındırma politikası kaydedilemedi."
+      "saveFailed": "PN barındırma politikası kaydedilemedi.",
+      "saveConfirmTitle": "PN barındırma politikası kaydedilsin mi?",
+      "saveConfirmBody": "Canlı yayılım düğümüne eşleme, depolama, damga ve duyuru ayarları uygulansın mı? Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir.",
+      "saveConfirm": "Politikayı kaydet",
+      "error": {
+        "peeringCostExceedsMax": "Eşleme maliyeti maksimum eşleme maliyetini aşamaz.",
+        "stampFlexExceedsCost": "Damga esnekliği damga maliyetini aşamaz.",
+        "autopeerMaxdepth": "Autopeer maksimum atlama sayısı aralık dışında.",
+        "maxPeers": "Maksimum eşler aralık dışında.",
+        "storageMb": "Mesaj depolama sınırı aralık dışında.",
+        "propagationLimit": "Yayılma mesajı limiti aralık dışında.",
+        "syncLimit": "Senkronizasyon aktarım sınırı aralık dışında.",
+        "deliveryLimit": "Teslimat aktarım limiti aralık dışında.",
+        "announceInterval": "PN duyuru aralığı aralık dışında.",
+        "staticPeersTooMany": "Çok fazla statik eş karması (maks. 256).",
+        "staticPeerInvalid": "Bir veya daha fazla statik eş karma değeri geçersiz (32 onaltılık karakter gerekir).",
+        "nodeNameInvalid": "PN duyuru adı geçersiz karakterler içeriyor.",
+        "nodeNameTooLong": "PN duyuru adı çok uzun.",
+        "nonFiniteNumber": "Bir veya daha fazla sayısal alan geçersiz."
+      },
+      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir."
     }
   },
   "nodeDetailModal": {
@@ -3909,9 +3928,9 @@
     "iconStar": "Yıldız",
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
-    "iconUser": "Kullanıcı",
     "iconNone": "Hiçbiri",
-    "iconSaveFailed": "Avatar simgesi kaydedilemedi."
+    "iconSaveFailed": "Avatar simgesi kaydedilemedi.",
+    "iconUser": "İnsanlar"
   },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",
@@ -3970,7 +3989,6 @@
       "unknown": "bilinmiyor",
       "online": "çevrimiçi"
     },
-    "syncLocalNotSupported": "Yerel yayılım, çevrimdışı gelen kutunuzdur; uzak bir LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
     "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
     "syncPeeringStampFailed": "Bu yayılım düğümü için eşleme damgası oluşturulamadı; birazdan tekrar deneyin.",
@@ -4005,11 +4023,15 @@
     "localHostStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
     "localHostName": "Ana bilgisayar yayılma düğümü",
     "localHostHint": "Etkinleştirildiğinde, bu cihaz bir LXMF yayılma düğümü olarak duyuru yapar ve /offer ve /get işlevlerini yerine getirir. Ulaşılamayan eşlere giden depolama ve iletme işlemleri için uzak bir düğümü tercih edin.",
-    "addProbing": "Kontrol ediliyor/destek sunuluyor…",
     "syncPeerCostExceedsMax": "Bu yayılım düğümünün eşleme maliyeti, maksimum eşleme maliyetinizin üzerinde; Ağ → Gelişmiş PN barındırma bölümünde maksimumu yükseltin veya başka bir düğüm seçin.",
     "offerUnsupported": "Bu hedef LXMF /offer senkronizasyonunu desteklemiyor — mesh-client bunu bir yayılım düğümü olarak kullanamaz.",
     "offerProbeTimeout": "Desteği kontrol ederken/teklif ederken zaman aşımına uğradı; düğüme ulaşılamıyor olabilir. Bir yol mevcut olduğunda tekrar deneyin.",
-    "offerProbeFailed": "Bu yayılma düğümü için destek doğrulanamadı/sunulamadı; birazdan tekrar deneyin."
+    "offerProbeFailed": "Bu yayılma düğümü için destek doğrulanamadı/sunulamadı; birazdan tekrar deneyin.",
+    "enableLocalHostConfirmTitle": "Yerel yayılma düğümü barındırma etkinleştirilsin mi?",
+    "enableLocalHostConfirmBody": "Bu cihaz bir LXMF yayılım düğümü olarak duyuru yapacak ve hizmet /teklif ve /alacaktır. Bu, depolamayı ve CPU'yu kullanır ve ağdaki diğer düğümlerle eşleşebilir. Barındırma niyetinde olmadığınız sürece giden depolama ve iletme için uzak bir düğümü tercih edin.",
+    "enableLocalHostConfirm": "Barındırmayı etkinleştir",
+    "addProbing": "/offer desteği kontrol ediliyor…",
+    "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",
@@ -4609,7 +4631,8 @@
     "capDirectNotice": "doğrudan msg",
     "moderation": {
       "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım).",
-      "hubParted": "Odadan ayrıldı (merkez sizi ayırdı)."
+      "removedFromRoomSystem": "Merkez sizi {{room}}'dan ayırdı.",
+      "hubParted": "Merkez seni odadan ayırdı."
     },
     "errors": {
       "linkProofTimeout": "Göbek bağlantısını beklerken zaman aşımına uğradı (bağlantı kanıtı). Tekrar deneyin veya merkeze giden yolu/durakları kontrol edin.",
@@ -4817,7 +4840,8 @@
       "copyInstructionsAria": "Dosya almayı etkinleştirmek için talimatları kopyalama",
       "copyInstructions": "Talimatları kopyala",
       "instructionsCopied": "Talimatlar kopyalandı.",
-      "receiveDestSharedToast": "{{peer}} için rncp alma hedefi kaydedildi — şimdi dosya gönderebilirsiniz."
+      "receiveDestSharedToast": "{{peer}} için rncp alma hedefi kaydedildi — şimdi dosya gönderebilirsiniz.",
+      "receiveDestShareFailed": "Eşin rncp alma hedefi kaydedilemedi."
     },
     "enableRequest": {
       "title": "Dosya alımı etkinleştirilsin mi?",
@@ -4835,7 +4859,8 @@
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
       "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
       "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın.",
-      "lxmfShareBody": "Dosya alma etkinleştirildi. İşte rncp alma hedefim (mesh-client sizin için kaydedecek)."
+      "lxmfShareBody": "Dosya alma etkinleştirildi. İşte rncp alma hedefim (mesh-client sizin için kaydedecek).",
+      "shareDestWarning": "Etkinleştirirseniz mesh-client, dosya gönderimini otomatik olarak doldurabilmeleri için rncp alma hedefinizi bu eşe gönderecektir."
     },
     "saved": {
       "labelPlaceholder": "Etiket",
@@ -4890,5 +4915,12 @@
     "direct": "Doğrudan",
     "segmentTooltip": "Yol karması {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} çevrimiçi",
+    "onlineBody": "{{protocol}} düğümü çevrimiçi oldu",
+    "offlineTitle": "{{name}} çevrimdışı oldu",
+    "offlineBody": "Son duyulma tarihi: {{time}}",
+    "unknown": "bilinmiyor"
   }
 }

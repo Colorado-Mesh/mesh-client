@@ -159,6 +159,7 @@ export default function ReticulumPropagationSection({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -340,14 +341,18 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline"
-                  onClick={() =>
+                  onClick={() => {
+                    if (isLocal && !node.enabled) {
+                      setPendingEnableLocal(true);
+                      return;
+                    }
                     void window.electronAPI.reticulum
                       .proxyPost(
                         `/api/v1/propagation/${node.id}/${node.enabled ? 'disable' : 'enable'}`,
                         {},
                       )
-                      .then(handleRefresh)
-                  }
+                      .then(handleRefresh);
+                  }}
                   aria-label={
                     node.enabled
                       ? t('reticulumPropagation.disableAria', { name: node.name })
@@ -505,6 +510,23 @@ export default function ReticulumPropagationSection({
           }}
           onCancel={() => {
             setPendingDelete(null);
+          }}
+        />
+      ) : null}
+      {pendingEnableLocal ? (
+        <ConfirmModal
+          title={t('reticulumPropagation.enableLocalHostConfirmTitle')}
+          message={t('reticulumPropagation.enableLocalHostConfirmBody')}
+          confirmLabel={t('reticulumPropagation.enableLocalHostConfirm')}
+          danger
+          onConfirm={() => {
+            setPendingEnableLocal(false);
+            void window.electronAPI.reticulum
+              .proxyPost('/api/v1/propagation/local-prop/enable', {})
+              .then(handleRefresh);
+          }}
+          onCancel={() => {
+            setPendingEnableLocal(false);
           }}
         />
       ) : null}

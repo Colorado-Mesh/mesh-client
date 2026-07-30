@@ -51,6 +51,21 @@ const MAX_STORAGE_MB = 10_240;
 const MAX_LIMIT_KB = 102_400;
 const MAX_PN_ANNOUNCE_INTERVAL_SEC = 86_400;
 const MAX_NODE_NAME_CHARS = 128;
+const MAX_STATIC_PEERS = 256;
+
+const NUMERIC_POLICY_KEYS = [
+  'peering_cost',
+  'max_peering_cost',
+  'autopeer_maxdepth',
+  'max_peers',
+  'propagation_stamp_cost',
+  'propagation_stamp_flex',
+  'message_storage_limit_mb',
+  'propagation_limit_kb',
+  'sync_limit_kb',
+  'delivery_limit_kb',
+  'pn_announce_interval_sec',
+] as const;
 
 export type SanitizePnHostingPolicyResult =
   { ok: true; policy: PnHostingPolicy } | { ok: false; error: string };
@@ -63,8 +78,37 @@ function validateStaticPeerHash(hash: string): string | null {
   return null;
 }
 
+/** Map validation / sidecar codes to i18n keys under `networkPanel.reticulumPnHosting.error.*`. */
+export function mapPnHostingPolicyError(code: string | null | undefined): string {
+  if (!code) return 'networkPanel.reticulumPnHosting.saveFailed';
+  if (code.startsWith('static_peer_invalid')) {
+    return 'networkPanel.reticulumPnHosting.error.staticPeerInvalid';
+  }
+  const known: Record<string, string> = {
+    peering_cost_exceeds_max: 'networkPanel.reticulumPnHosting.error.peeringCostExceedsMax',
+    stamp_flex_exceeds_cost: 'networkPanel.reticulumPnHosting.error.stampFlexExceedsCost',
+    autopeer_maxdepth_out_of_range: 'networkPanel.reticulumPnHosting.error.autopeerMaxdepth',
+    max_peers_out_of_range: 'networkPanel.reticulumPnHosting.error.maxPeers',
+    message_storage_limit_out_of_range: 'networkPanel.reticulumPnHosting.error.storageMb',
+    propagation_limit_out_of_range: 'networkPanel.reticulumPnHosting.error.propagationLimit',
+    sync_limit_out_of_range: 'networkPanel.reticulumPnHosting.error.syncLimit',
+    delivery_limit_out_of_range: 'networkPanel.reticulumPnHosting.error.deliveryLimit',
+    pn_announce_interval_out_of_range: 'networkPanel.reticulumPnHosting.error.announceInterval',
+    static_peers_too_many: 'networkPanel.reticulumPnHosting.error.staticPeersTooMany',
+    node_name_invalid: 'networkPanel.reticulumPnHosting.error.nodeNameInvalid',
+    node_name_too_long: 'networkPanel.reticulumPnHosting.error.nodeNameTooLong',
+    non_finite_number: 'networkPanel.reticulumPnHosting.error.nonFiniteNumber',
+  };
+  return known[code] ?? 'networkPanel.reticulumPnHosting.saveFailed';
+}
+
 /** Semantic checks matching sidecar `PnHostingPolicy::validate`. */
 export function validatePnHostingPolicy(policy: PnHostingPolicy): string | null {
+  for (const key of NUMERIC_POLICY_KEYS) {
+    if (!Number.isFinite(policy[key])) {
+      return 'non_finite_number';
+    }
+  }
   if (policy.peering_cost > policy.max_peering_cost) {
     return 'peering_cost_exceeds_max';
   }
@@ -91,6 +135,9 @@ export function validatePnHostingPolicy(policy: PnHostingPolicy): string | null 
   }
   if (policy.pn_announce_interval_sec > MAX_PN_ANNOUNCE_INTERVAL_SEC) {
     return 'pn_announce_interval_out_of_range';
+  }
+  if (policy.static_peers.length > MAX_STATIC_PEERS) {
+    return 'static_peers_too_many';
   }
   for (const peer of policy.static_peers) {
     const peerErr = validateStaticPeerHash(peer);

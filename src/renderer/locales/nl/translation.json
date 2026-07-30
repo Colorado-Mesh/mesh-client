@@ -594,8 +594,8 @@
       "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
       "requestEnable": "Aanvraag inschakelen",
       "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen",
-      "destinationLabel": "RNCP-bestemmingshash",
-      "destinationHelp": "Niet hun Chat/LXMF-hash. Gebruik Request enable — mesh-client-peers delen dit automatisch na acceptatie. Of plak vanaf Remote → My rncp receive destination."
+      "destinationLabel": "Peer's rncp ontvangt bestemming",
+      "destinationHelp": "Niet hun Chat/LXMF-hash. Gebruik Request enable - mesh-client-peers delen dit automatisch nadat ze dit hebben geaccepteerd. Of plak vanaf hun afstandsbediening → Mijn rncp ontvangstbestemming."
     },
     "shareLocation": "Deel locatie",
     "shareLocationLabel": "📍 Gedeelde locatie",
@@ -2488,7 +2488,6 @@
     },
     "reticulumPnHosting": {
       "title": "Geavanceerde PN-hosting (gevarenzone)",
-      "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of wijdverspreid peeren.",
       "peeringCost": "Peering-kosten",
       "maxPeeringCost": "Maximale peeringkosten",
       "autopeer": "Autopeer met ontdekte PN's",
@@ -2513,7 +2512,27 @@
       "saving": "Besparing…",
       "saveAria": "Bewaar PN-hostingbeleid",
       "saveOk": "PN-hostingbeleid opgeslagen.",
-      "saveFailed": "Kan PN-hostingbeleid niet opslaan."
+      "saveFailed": "Kan PN-hostingbeleid niet opslaan.",
+      "saveConfirmTitle": "PN-hostingbeleid opslaan?",
+      "saveConfirmBody": "Instellingen voor peering, opslag, stempel en aankondiging toepassen op het live-propagatieknooppunt? Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren.",
+      "saveConfirm": "Beleid opslaan",
+      "error": {
+        "peeringCostExceedsMax": "De peeringkosten mogen niet hoger zijn dan de maximale peeringkosten.",
+        "stampFlexExceedsCost": "De postzegelflexibiliteit kan niet hoger zijn dan de postzegelkosten.",
+        "autopeerMaxdepth": "Max-hops van Autopeer zijn buiten bereik.",
+        "maxPeers": "Max. peers is buiten bereik.",
+        "storageMb": "De opslaglimiet voor berichten is buiten bereik.",
+        "propagationLimit": "De limiet voor het doorgeven van berichten ligt buiten bereik.",
+        "syncLimit": "De overdrachtslimiet voor synchronisatie ligt buiten bereik.",
+        "deliveryLimit": "De overdrachtslimiet voor bezorging ligt buiten bereik.",
+        "announceInterval": "PN-aankondigingsinterval ligt buiten bereik.",
+        "staticPeersTooMany": "Te veel statische peer-hashes (max. 256).",
+        "staticPeerInvalid": "Een of meer statische peer-hashes zijn ongeldig (er zijn 32 hexadecimale tekens nodig).",
+        "nodeNameInvalid": "PN-aankondigingsnaam bevat ongeldige tekens.",
+        "nodeNameTooLong": "Naam van PN-aankondiging is te lang.",
+        "nonFiniteNumber": "Een of meer numerieke velden zijn ongeldig."
+      },
+      "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren."
     }
   },
   "nodeDetailModal": {
@@ -3909,9 +3928,9 @@
     "iconStar": "Ster",
     "iconHeart": "Hart",
     "iconShield": "Afscherming",
-    "iconUser": "Gebruiker",
     "iconNone": "Geen",
-    "iconSaveFailed": "Kon het avatarpictogram niet opslaan."
+    "iconSaveFailed": "Kon het avatarpictogram niet opslaan.",
+    "iconUser": "Mensen"
   },
   "reticulumPropagation": {
     "preferred": "Voorkeur",
@@ -3970,7 +3989,6 @@
       "unknown": "onbekend",
       "online": "online"
     },
-    "syncLocalNotSupported": "Lokale propagatie is uw offline inbox; deze kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-propagatieknooppunt.",
     "syncIdentityUnknown": "De identiteit van het voortplantingsknooppunt is onbekend: wacht op een aankondiging of padreactie en probeer het vervolgens opnieuw.",
     "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren.",
     "syncPeeringStampFailed": "Kan geen peering-stempel maken voor dit propagatieknooppunt. Probeer het over enkele ogenblikken opnieuw.",
@@ -4005,11 +4023,15 @@
     "localHostStats": "{{count}} in wachtrij · {{bytes}} bytes",
     "localHostName": "Hostpropagatieknooppunt",
     "localHostHint": "Indien ingeschakeld, kondigt dit apparaat aan als een LXMF-propagatieknooppunt en dient het /offer en /get. Geef de voorkeur aan een extern knooppunt voor uitgaande opslag en doorsturen naar onbereikbare peers.",
-    "addProbing": "Ondersteuning controleren/bieden...",
     "syncPeerCostExceedsMax": "De peeringkosten van dit propagatieknooppunt liggen boven uw maximale peeringkosten. Verhoog het maximum in Netwerk → Geavanceerde PN-hosting, of kies een ander knooppunt.",
     "offerUnsupported": "Deze bestemming ondersteunt geen LXMF /offer-synchronisatie — mesh-client kan deze niet als propagatieknooppunt gebruiken.",
     "offerProbeTimeout": "Er is een time-out opgetreden tijdens het controleren/aanbieden van ondersteuning: het knooppunt is mogelijk onbereikbaar. Probeer het opnieuw als er een pad beschikbaar is.",
-    "offerProbeFailed": "Kan dit propagatieknooppunt niet verifiëren/bieden. Probeer het over enkele ogenblikken opnieuw."
+    "offerProbeFailed": "Kan dit propagatieknooppunt niet verifiëren/bieden. Probeer het over enkele ogenblikken opnieuw.",
+    "enableLocalHostConfirmTitle": "Hosting van lokale propagatieknooppunten inschakelen?",
+    "enableLocalHostConfirmBody": "Dit apparaat wordt aangekondigd als een LXMF-propagatieknooppunt en dient /offer en /get. Dat gebruikt opslag en CPU en kan peeren met andere knooppunten in het netwerk. Geef de voorkeur aan een extern knooppunt voor uitgaande store-and-forward, tenzij u van plan bent te hosten.",
+    "enableLocalHostConfirm": "Hosting inschakelen",
+    "addProbing": "/offer-ondersteuning controleren…",
+    "syncLocalNotSupported": "Het lokale hostvoortplantingsknooppunt kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-voortplantingsknooppunt."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",
@@ -4609,7 +4631,8 @@
     "capDirectNotice": "direct msg",
     "moderation": {
       "removedFromRoom": "Verwijderd uit de kamer door de hub (kick, ban of extern deel).",
-      "hubParted": "Verliet de kamer (hub scheidde je)."
+      "removedFromRoomSystem": "De hub heeft u gescheiden van {{room}}.",
+      "hubParted": "De hub scheidde je van de kamer."
     },
     "errors": {
       "linkProofTimeout": "Time-out bij het wachten op de hublink (linkbewijs). Probeer het opnieuw of controleer het pad/de hops naar de hub.",
@@ -4817,7 +4840,8 @@
       "copyInstructionsAria": "Kopieer instructies voor het inschakelen van bestandsontvangst",
       "copyInstructions": "Kopieer instructies",
       "instructionsCopied": "Instructies gekopieerd.",
-      "receiveDestSharedToast": "rncp-ontvangstbestemming van {{peer}} opgeslagen — u kunt nu een bestand verzenden."
+      "receiveDestSharedToast": "rncp-ontvangstbestemming van {{peer}} opgeslagen — u kunt nu een bestand verzenden.",
+      "receiveDestShareFailed": "Kan de rncp-ontvangstbestemming van de peer niet opslaan."
     },
     "enableRequest": {
       "title": "Bestandsontvangst inschakelen?",
@@ -4835,7 +4859,8 @@
       "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
       "identityUnknown": "De identiteitshash van deze peer kon nog niet worden bepaald — inkomend vragen is ingeschakeld, maar de peer is niet aan de toestaanlijst toegevoegd. Probeer het opnieuw nadat een pad of aankondiging is ontvangen.",
       "lxmfBody": "Schakel bestandsontvangst (rncp) in als u mesh-client gebruikt: Extern → Instellingen → Inkomende bestandsaanbiedingen. Of voer rncp/rncp-rs uit in de luistermodus.",
-      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Dit is mijn rncp-ontvangstbestemming (mesh-client bewaart dit voor u)."
+      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Dit is mijn rncp-ontvangstbestemming (mesh-client bewaart dit voor u).",
+      "shareDestWarning": "Als u dit inschakelt, zal mesh-client uw rncp-ontvangstbestemming naar deze peer sturen, zodat zij het verzenden van bestanden automatisch kunnen aanvullen."
     },
     "saved": {
       "labelPlaceholder": "Label",
@@ -4890,5 +4915,12 @@
     "direct": "Direct",
     "segmentTooltip": "Pad-hash {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} is nu online",
+    "onlineBody": "{{protocol}} knooppunt is online gekomen",
+    "offlineTitle": "{{name}} is offline gegaan",
+    "offlineBody": "Laatst gehoord: {{time}}",
+    "unknown": "onbekend"
   }
 }

@@ -1,5 +1,7 @@
-import { persistReticulumOutboundMessageStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
-import { resolveReticulumDestinationHash } from '@/renderer/lib/reticulum/destHash';
+import {
+  persistReticulumOutboundMessageStatus,
+  resolveReticulumOutboundDestHash,
+} from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
 import {
   readReticulumPropagationMode,
@@ -7,7 +9,6 @@ import {
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
-import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
 import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
 
 function normalizeDestHash(hash: string): string {
@@ -29,16 +30,8 @@ export function shouldApplyLinkDeliveryTimeoutFailureBridge(
 function destHashMatchesPeer(storedHash: string, targetNorm: string): boolean {
   const storedNorm = normalizeDestHash(storedHash);
   if (!storedNorm || !targetNorm) return false;
-  if (storedNorm === targetNorm) return true;
-  if (storedNorm.length >= 32 && targetNorm.length >= 16) {
-    return storedNorm.startsWith(targetNorm) || targetNorm.startsWith(storedNorm);
-  }
-  return false;
-}
-
-function resolveOutboundDestHash(toNodeId: number | undefined): string | null {
-  if (toNodeId == null) return null;
-  return reticulumHashForNodeId(toNodeId) ?? resolveReticulumDestinationHash(toNodeId);
+  // Require full 32-hex equality to avoid theoretical wrong-peer matches.
+  return storedNorm.length === 32 && targetNorm.length === 32 && storedNorm === targetNorm;
 }
 
 /** Mark outbound LXMF rows failed (store + SQLite) when direct link delivery times out. */
@@ -55,7 +48,7 @@ export function failReticulumSendingOutboundToDestHash(
     if (msg.status !== 'sending' || msg.to == null) continue;
     // Direct→PN fallback re-queues as Propagated and emits sending — do not fail those rows.
     if (msg.reticulumDeliveryMethod === 'propagated') continue;
-    const destHash = resolveOutboundDestHash(msg.to);
+    const destHash = resolveReticulumOutboundDestHash(msg.to);
     if (!destHash || !destHashMatchesPeer(destHash, targetNorm)) continue;
     if (persistReticulumOutboundMessageStatus(identityId, msg.id, 'failed', errorMessage)) {
       count += 1;
