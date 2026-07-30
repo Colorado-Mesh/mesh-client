@@ -146,14 +146,27 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           )
           .get(identityId, messageHash) as { id?: number } | undefined;
         if (existing?.id != null) {
+          // Never demote a delivered Completes back to in-flight (retry/echo saves).
           db.prepareOnce(
             `UPDATE reticulum_messages
-             SET delivery_status = COALESCE(?, delivery_status),
+             SET delivery_status = CASE
+                   WHEN delivery_status = 'delivered'
+                        AND ? IN ('sending', 'pending', 'queued')
+                   THEN delivery_status
+                   ELSE COALESCE(?, delivery_status)
+                 END,
                  received_via = COALESCE(?, received_via),
                  sender_name = COALESCE(?, sender_name),
                  delivery_method = COALESCE(?, delivery_method)
              WHERE id = ?`,
-          ).run(deliveryStatus, receivedVia, senderName, deliveryMethod, existing.id);
+          ).run(
+            deliveryStatus,
+            deliveryStatus,
+            receivedVia,
+            senderName,
+            deliveryMethod,
+            existing.id,
+          );
           return { changes: 1 };
         }
       }

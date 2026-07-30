@@ -235,13 +235,26 @@ export function pruneMessageRecordsForIdentityByChannel(
 /**
  * Re-key a message (used when the optimistic provisional id is replaced by the
  * SDK-assigned packetId on send completion).
+ *
+ * When `toId` already holds a Completes (`acked`) row, keep that row and drop
+ * `fromId` instead of overwriting — Reticulum retries must not turn an unrelated
+ * delivered bubble into ⏳ via hash collision / rename races.
  */
 export function renameMessageId(identityId: IdentityId, fromId: string, toId: string): void {
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[fromId];
     if (!existing) return s;
+    if (fromId === toId) {
+      const updated = { ...existing, id: toId };
+      if (messageRecordFieldsEqual(existing, updated)) return s;
+      return mergeIdentityMessages(s, identityId, { ...byIdentity, [toId]: updated });
+    }
     const rest = omitRecordKey(byIdentity, fromId);
+    const target = byIdentity[toId];
+    if (target?.status === 'acked') {
+      return mergeIdentityMessages(s, identityId, rest);
+    }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });
 }
@@ -256,6 +269,8 @@ export function updateMessageStatus(
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[messageId];
     if (!existing) return s;
+    // Completes must not regress to in-flight (retry / echo races).
+    if (existing.status === 'acked' && status === 'sending') return s;
     const updated: MessageRecord = { ...existing, status };
     if (error !== undefined) {
       updated.error = error;

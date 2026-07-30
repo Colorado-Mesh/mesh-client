@@ -1546,6 +1546,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (lxmfPayload) {
           const hash = lxmfPayload.message_hash;
           const outboundStatus = 'sending' as const;
+          // Sync ingest on the send path so Completes cannot race behind a demoting echo.
+          const ingestOutboundSend = () => {
+            ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload, {
+              selfLxmfHash: selfLxmfHash ?? undefined,
+            });
+          };
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
             if (shouldDeletePriorReticulumOutboundHash(pendingId, hash)) {
@@ -1557,7 +1563,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
                   );
                 });
             }
-            ingestLxmfPayload(lxmfPayload);
+            ingestOutboundSend();
             // Terminal WS may have arrived before rename; apply buffered Completes/Fails.
             flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             const afterFlush = useMessageStore.getState().messages[identityId]?.[hash]?.status;
@@ -1565,7 +1571,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               updateMessageStatus(identityId, hash, outboundStatus);
             }
           } else {
-            ingestLxmfPayload(lxmfPayload);
+            ingestOutboundSend();
             if (hash) {
               flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             }
@@ -1592,7 +1598,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         throw e;
       }
     },
-    [identityId, ingestLxmfPayload],
+    [identityId, selfLxmfHash],
   );
 
   const sendReaction = useCallback(

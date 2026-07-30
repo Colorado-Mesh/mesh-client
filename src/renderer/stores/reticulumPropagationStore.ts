@@ -307,6 +307,15 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       })) as { ok?: boolean; error?: string };
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
+        // Soft defer: outbound LXMF deposit owns the PN Link — retry on next auto-sync tick.
+        if (res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') {
+          set({
+            sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+            lastSyncError: null,
+            activePropagationSyncAttemptAt: null,
+          });
+          return false;
+        }
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: mapPropagationSyncError(res.error),

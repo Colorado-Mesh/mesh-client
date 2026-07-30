@@ -64,6 +64,13 @@ export function mergeReticulumIngestRecord(
     merged.receivedVia = record.receivedVia ?? existing.receivedVia;
   }
 
+  // HTTP/WS send echoes carry delivery_status=sending. Never demote a Completes row
+  // (e.g. retry of another message must not flip a just-delivered bubble back to ⏳).
+  if (existing.status === 'acked' && record.status === 'sending') {
+    merged.status = 'acked';
+    merged.error = undefined;
+  }
+
   if (ctx.attachmentPath) {
     merged.reticulumAttachmentPath = ctx.attachmentPath;
   } else if (existing?.reticulumAttachmentPath) {

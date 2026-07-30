@@ -105,6 +105,8 @@ export function mapPropagationSyncError(error: string | null | undefined): strin
   if (error === 'PROPAGATION_OFFER_UNSUPPORTED') return SYNC_OFFER_UNSUPPORTED_KEY;
   if (error === 'PROPAGATION_OFFER_PROBE_TIMEOUT') return SYNC_OFFER_PROBE_TIMEOUT_KEY;
   if (error === 'PROPAGATION_OFFER_PROBE_FAILED') return SYNC_OFFER_PROBE_FAILED_KEY;
+  // Soft conflict with outbound deposit — callers should treat as non-fatal (no UI error).
+  if (error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') return SYNC_FAILED_KEY;
 
   const offerMatch = /^propagation offer rejected:\s*(\S+)/i.exec(error);
   if (offerMatch?.[1] && OFFER_ERROR_KEYS[offerMatch[1]]) {
