@@ -1,4 +1,8 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -18,6 +22,18 @@ import {
   serializeNomadPageRequestDataKey,
   splitNomadLinkDestination,
 } from './micronParser';
+
+const stylesCss = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../../styles.css'),
+  'utf8',
+);
+
+describe('nomad-micron-page whitespace CSS contract', () => {
+  it('preserves spaces in open-width and wraps with pre-wrap in fit-width', () => {
+    expect(stylesCss).toMatch(/\.nomad-micron-page\s*\{[^}]*white-space:\s*pre;/s);
+    expect(stylesCss).toMatch(/\.nomad-micron-page--fit-width\s*\{[^}]*white-space:\s*pre-wrap;/s);
+  });
+});
 
 describe('renderNomadMicronPage', () => {
   it('renders headings, colors, separators, and links from Micron markup', () => {
@@ -75,6 +91,23 @@ describe('renderNomadMicronPage', () => {
     expect(partial).not.toBeNull();
     expect(partial?.getAttribute('data-partial-destination')).toBe(`${hash}:/page/partial.mu`);
     expect(partial?.textContent).toContain('⧖');
+  });
+
+  it('preserves RMAP-style box padding spaces before Unicode borders', () => {
+    // Padding spaces before trailing │ must survive parse/mount (CSS white-space: pre* keeps them visible).
+    const markup = [
+      '    │  This is the NomadNet page of the RMAP Project, a web interface      │',
+      '    │  `F8f0•`f Visualize LoRa RNode Connection Info,                        │ │',
+    ].join('\n');
+    const html = renderNomadMicronPage(markup);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const plainText = container.textContent ?? '';
+
+    expect(plainText).toMatch(/web interface {2,}│/);
+    expect(plainText).toMatch(/Connection Info, {2,}│ │/);
+    expect(plainText).not.toMatch(/web interface│/);
+    expect(plainText).not.toMatch(/Connection Info,││/);
   });
 });
 

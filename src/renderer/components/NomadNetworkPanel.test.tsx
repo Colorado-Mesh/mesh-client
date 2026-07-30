@@ -729,6 +729,15 @@ describe('NomadNetworkPanel', () => {
 
     const toggle = screen.getByLabelText('nomadNetwork.openWidth');
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(toggle).toHaveAttribute('title', 'nomadNetwork.openWidth');
+    expect(screen.getByRole('button', { name: 'nomadNetwork.back' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.back',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.reloadPage' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.reloadPage',
+    );
     await user.click(toggle);
 
     expect(localStorage.getItem('mesh-client:nomadPageFitWidth')).toBe('false');

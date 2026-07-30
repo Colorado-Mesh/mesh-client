@@ -968,6 +968,10 @@ export default function NomadNetworkPanel({
                         name:
                           selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
                       })}
+                      title={t('nomadNetwork.sendMessageAria', {
+                        name:
+                          selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
+                      })}
                       onClick={() => {
                         onOpenDm(selectedNode.destination_hash);
                       }}
@@ -980,6 +984,7 @@ export default function NomadNetworkPanel({
                     disabled={!canGoBack}
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('nomadNetwork.back')}
+                    title={t('nomadNetwork.back')}
                     onClick={() => {
                       navigateHistory(-1);
                     }}
@@ -991,6 +996,7 @@ export default function NomadNetworkPanel({
                     disabled={!canGoForward}
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('nomadNetwork.forward')}
+                    title={t('nomadNetwork.forward')}
                     onClick={() => {
                       navigateHistory(1);
                     }}
@@ -1001,6 +1007,7 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.homePage')}
+                    title={t('nomadNetwork.homePage')}
                     onClick={() => {
                       void loadNodePage(
                         selectedNode.destination_hash,
@@ -1019,6 +1026,9 @@ export default function NomadNetworkPanel({
                           : 'border-gray-600 text-gray-200 hover:bg-slate-800'
                       }`}
                       aria-label={
+                        showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
+                      }
+                      title={
                         showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
                       }
                       aria-pressed={showPageSource}
@@ -1040,6 +1050,9 @@ export default function NomadNetworkPanel({
                       aria-label={
                         pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
                       }
+                      title={
+                        pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
+                      }
                       aria-pressed={pageFitWidth}
                       onClick={() => {
                         setPageFitWidth((prev) => {
@@ -1056,6 +1069,7 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.reloadPage')}
+                    title={t('nomadNetwork.reloadPage')}
                     onClick={() => {
                       void loadNodePage(selectedNode.destination_hash, pagePath, {
                         forceReload: true,
@@ -1070,6 +1084,7 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.closeViewer')}
+                    title={t('nomadNetwork.closeViewer')}
                     onClick={closeViewer}
                   >
                     ✕
