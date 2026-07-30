@@ -290,6 +290,7 @@ Post-build smoke tests:
   - CI uploads **DMG/ZIP only** — never raw `Mesh-client.app` (see comment in `release.yaml` **Upload macOS Artifact**)
   - Optional signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_IDENTITY_AUTO_DISCOVERY`) is passed through from workflow secrets on `macos-latest`; verify script does not require them
 - `scripts/test-linux-appimage-reticulum-sidecar.mjs` — x64 uses `--appimage-extract`; arm64 on x64 runners uses `unsquashfs` for cross-arch extract
+- `scripts/test-electron-headless-launch.mjs` — **headless Electron launch test** (Linux only). Extracts the x64 AppImage, launches the app under `xvfb-run` with `--no-sandbox`, and asserts the main process emits `[Startup]` log markers within 30 s. Proves the packaged binary actually boots (Electron init, native modules, sidecar spawn). Requires `xvfb` installed on the runner.
 - `scripts/test-win-nsis-install.mjs` — NSIS + 7z sidecar probe on WoA
 
 Local packaging parity: see [development-environment.md](development-environment.md#reticulum-sidecar-optional).
