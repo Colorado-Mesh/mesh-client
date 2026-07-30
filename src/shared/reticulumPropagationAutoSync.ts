@@ -24,20 +24,23 @@ export function isReticulumPropagationAutoSyncIntervalSec(
   return (RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC as readonly number[]).includes(value);
 }
 
-const AUTO_SYNC_OPTION_KEYS: Record<ReticulumPropagationAutoSyncIntervalSec, string> = {
-  0: 'reticulumPropagation.autoSyncOptionDisabled',
-  900: 'reticulumPropagation.autoSyncOption15m',
-  1800: 'reticulumPropagation.autoSyncOption30m',
-  3600: 'reticulumPropagation.autoSyncOption1h',
-  10800: 'reticulumPropagation.autoSyncOption3h',
-  21600: 'reticulumPropagation.autoSyncOption6h',
-  43200: 'reticulumPropagation.autoSyncOption12h',
-  86400: 'reticulumPropagation.autoSyncOption24h',
-};
-
 export function reticulumPropagationAutoSyncOptionKey(sec: number): string {
-  if (isReticulumPropagationAutoSyncIntervalSec(sec)) {
-    return AUTO_SYNC_OPTION_KEYS[sec];
+  switch (sec) {
+    case 0:
+      return 'reticulumPropagation.autoSyncOptionDisabled';
+    case 900:
+      return 'reticulumPropagation.autoSyncOption15m';
+    case 1800:
+      return 'reticulumPropagation.autoSyncOption30m';
+    case 10800:
+      return 'reticulumPropagation.autoSyncOption3h';
+    case 21600:
+      return 'reticulumPropagation.autoSyncOption6h';
+    case 43200:
+      return 'reticulumPropagation.autoSyncOption12h';
+    case 86400:
+      return 'reticulumPropagation.autoSyncOption24h';
+    default:
+      return 'reticulumPropagation.autoSyncOption1h';
   }
-  return AUTO_SYNC_OPTION_KEYS[RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC];
 }

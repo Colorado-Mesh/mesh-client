@@ -33,7 +33,7 @@ Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSock
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` |
+| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/10 |
 
 **Adds (4 files):**
@@ -56,13 +56,13 @@ From mesh-client repo root (sibling `../rsReticulum` required):
 ```bash
 cd ../rsReticulum
 git fetch origin
-git diff 6d2b28475321bc15c8f60796513d8878b47ed3ab -- \
+git diff 9928abed269a83ec5a7ef165ff1142d938cad706 -- \
   crates/rns-runtime/src/reticulum.rs \
   crates/rns-transport/src/messages.rs \
   crates/rns-transport/src/actor/mod.rs \
   crates/rns-transport/src/actor/inbound.rs \
   > ../mesh-client/reticulum-sidecar/patches/rsReticulum-packet-tap.patch
-git -C /tmp/rsReticulum-patch-test checkout 6d2b28475321bc15c8f60796513d8878b47ed3ab
+git -C /tmp/rsReticulum-patch-test checkout 9928abed269a83ec5a7ef165ff1142d938cad706
 git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sidecar/patches/rsReticulum-packet-tap.patch
 ```
 
@@ -76,7 +76,7 @@ Skip macOS/iOS VPN tunnel interfaces (`utun*`, `ipsec*`, `ppp*`) for AutoInterfa
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` |
+| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/11 |
 
 **Modifies (1 file):**
@@ -103,9 +103,9 @@ Apply after the packet-tap patch when both overlays are needed:
 ```bash
 cd ../rsReticulum
 # after implementing on top of RS_RETICULUM_REF
-git diff 6d2b28475321bc15c8f60796513d8878b47ed3ab -- crates/rns-interface/src/auto.rs \
+git diff 9928abed269a83ec5a7ef165ff1142d938cad706 -- crates/rns-interface/src/auto.rs \
   > ../mesh-client/reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
-git -C /tmp/rsReticulum-patch-test checkout 6d2b28475321bc15c8f60796513d8878b47ed3ab
+git -C /tmp/rsReticulum-patch-test checkout 9928abed269a83ec5a7ef165ff1142d938cad706
 git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
 ```
 
@@ -119,7 +119,7 @@ Recall cached destination public keys in `LinkClient` before waiting on path-res
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` |
+| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/14 |
 
 **Modifies (4 files):**
@@ -149,7 +149,7 @@ Apply after packet-tap + auto-beacon when rebuilding a pinned checkout:
 
 ```bash
 # From a clean pin with the other overlays applied, then the upstream commit:
-git -C /tmp/rsReticulum-patch-test checkout 6d2b28475321bc15c8f60796513d8878b47ed3ab
+git -C /tmp/rsReticulum-patch-test checkout 9928abed269a83ec5a7ef165ff1142d938cad706
 git -C /tmp/rsReticulum-patch-test apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
 git -C /tmp/rsReticulum-patch-test apply reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
 git -C /tmp/rsReticulum-linkclient-nomad format-patch -1 --stdout \
@@ -162,48 +162,9 @@ git -C /tmp/rsReticulum-patch-test diff \
 
 When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
-## rsReticulum-rnode-tcp-activity-keepalive.patch
+## Removed: rsReticulum-rnode-tcp-activity-keepalive.patch
 
-Port Python `RNodeInterface` / `TCPConnection.ACTIVITY_KEEPALIVE` (3.5s idle → `detect()`): Wi‑Fi/TCP RNodes otherwise close the socket at ~`ACTIVITY_TIMEOUT` (6s), causing mesh-client / rnsd-rs up/down flaps.
-
-| Field | Value |
-| ----- | ----- |
-| **Base commit** | `4095022` (`ratspeak/rsReticulum` `main` tip when generated; also applies on pin `6d2b28475321bc15c8f60796513d8878b47ed3ab`) |
-| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/15 |
-
-**Modifies (1 file):**
-
-- `crates/rns-interface/src/rnode.rs` — TCP activity keepalive constants + write-loop `detect()` on idle
-
-### Apply locally
-
-From mesh-client repo root (sibling `../rsReticulum` required):
-
-```bash
-./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
-```
-
-Apply after the other rsReticulum overlays when rebuilding a pinned checkout:
-
-```bash
-./scripts/apply-rsReticulum-packet-tap.sh
-./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
-./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
-```
-
-### Regenerate
-
-```bash
-cd ../rsReticulum
-git fetch origin
-git diff origin/main...HEAD -- crates/rns-interface/src/rnode.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-rnode-tcp-activity-keepalive.patch
-```
-
-### Sunset
-
-When [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+Sunset when upstream landed `RNodeIdleProbe` (`88d3d38` — *rnode: restore TCP application idle probes*). [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) was closed as superseded; mesh-client no longer carries that overlay (pin `9928abed269a83ec5a7ef165ff1142d938cad706` or later already includes idle probes). `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` still tracks `#15` so `pnpm run update` warns on closed-without-merge until the entry is dropped after sunset is confirmed.
 
 ## rsReticulum-ble-rnode-pairing-transition-debounce.patch
 
@@ -211,8 +172,8 @@ Debounce BLE RNode reconnect after mid-SMP disconnect (`BLE pairing in progress`
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | applies on current `rsReticulum` tip used for mesh-client overlays (also intended for pin `6d2b28475321bc15c8f60796513d8878b47ed3ab`) |
-| **Upstream PR** | none yet (mesh-client overlay) |
+| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` (after prior overlays) |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/20 |
 
 **Modifies (1 file):**
 
@@ -232,7 +193,6 @@ Apply after the other rsReticulum overlays when rebuilding a pinned checkout:
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
 ./scripts/apply-rsReticulum-link-client-nomad.sh
-./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
@@ -247,7 +207,7 @@ git diff -- crates/rns-interface/src/ble_rnode.rs \
 
 ### Sunset
 
-When upstream ships an equivalent debounce (or a passkey-window pause), remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+When [ratspeak/rsReticulum#20](https://github.com/ratspeak/rsReticulum/pull/20) merges and the clone pin includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
 ## rsReticulum-discovery-announce-egress.patch
 
@@ -255,7 +215,7 @@ Register `rnstransport.discovery.interface` as a local destination before announ
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` (after prior overlays) |
+| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` (after prior overlays) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/19 |
 
 **Modifies (3 files):**
@@ -278,7 +238,6 @@ Apply **after** the other rsReticulum overlays (packet-tap also touches `reticul
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
 ./scripts/apply-rsReticulum-link-client-nomad.sh
-./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```

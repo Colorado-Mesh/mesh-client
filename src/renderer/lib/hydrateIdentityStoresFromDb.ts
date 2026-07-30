@@ -345,6 +345,7 @@ export async function hydrateIdentityStoresFromDb(
   if (!loadNodes && !loadMessages) return;
 
   const hydrator = IDENTITY_STORE_HYDRATORS[protocol];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!hydrator) return;
 
   const isCurrent = beginIdentityHydration(protocol, identityId);

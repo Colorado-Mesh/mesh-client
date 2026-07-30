@@ -113,7 +113,8 @@ export function parseMeshCoreAdvertInner(inner: Uint8Array): MeshCoreAdvertParse
   const publicKey = inner.subarray(0, 32);
   const timestampSec = readU32LE(inner, 32);
   const signature = inner.subarray(36, 100);
-  const flags = inner[100];
+  const flags = inner.at(100);
+  if (flags === undefined) return null;
   const deviceRole = flags & 0x0f;
   const hasLocation = ((flags >> 4) & 1) === 1;
   const hasName = ((flags >> 7) & 1) === 1;
@@ -153,7 +154,10 @@ function buildStructure(
   pathEndOffset: number,
   transportCodes: readonly [number, number] | null,
 ): MeshCoreStructureAnalysis {
-  const byte0 = raw[0];
+  const byte0 = raw.at(0);
+  if (byte0 === undefined) {
+    throw new Error('Packet too short for structure analysis');
+  }
   const routeTypeString = meshCoreRouteTypeStringFromByte0(byte0);
   const payloadTypeString = meshCorePayloadTypeStringFromByte0(byte0);
   const segments: MeshCorePacketSegment[] = [
@@ -177,11 +181,15 @@ function buildStructure(
     });
     o = 5;
   }
+  const pathLengthByte = raw.at(o);
+  if (pathLengthByte === undefined) {
+    throw new Error('Packet too short for path length');
+  }
   segments.push({
     name: 'Path length + hash size',
     startByte: o,
     endByte: o,
-    valueHex: raw[o].toString(16).padStart(2, '0'),
+    valueHex: pathLengthByte.toString(16).padStart(2, '0'),
   });
   segments.push({
     name: 'Path hashes',
@@ -240,7 +248,10 @@ export function parseMeshCoreRfPacket(raw: Uint8Array): MeshCoreRfParseResult {
     };
   }
 
-  const byte0 = raw[0];
+  const byte0 = raw.at(0);
+  if (byte0 === undefined) {
+    return { ok: false, reason: 'buffer too short' };
+  }
   const routeTypeString = meshCoreRouteTypeStringFromByte0(byte0);
   const payloadTypeString = meshCorePayloadTypeStringFromByte0(byte0);
   const payloadTypeNibble = meshCorePayloadTypeNibble(byte0);
@@ -301,7 +312,9 @@ export async function meshCoreTransportCodeForRegion(
   );
   const sigBuf = await crypto.subtle.sign('HMAC', cryptoKey, msgBuf);
   const sig = new Uint8Array(sigBuf);
-  return sig[0] | (sig[1] << 8);
+  const low = sig.at(0) ?? 0;
+  const high = sig.at(1) ?? 0;
+  return low | (high << 8);
 }
 
 export async function meshCoreTransportCodeMatchesRegion(

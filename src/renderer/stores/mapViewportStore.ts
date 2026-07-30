@@ -28,7 +28,8 @@ function isValidViewport(value: unknown): value is MapViewport {
   const maybe = value as { center?: unknown; zoom?: unknown };
   if (!Array.isArray(maybe.center) || maybe.center.length !== 2) return false;
   if (typeof maybe.zoom !== 'number' || !Number.isFinite(maybe.zoom)) return false;
-  const [lat, lon] = maybe.center;
+  const lat: unknown = maybe.center[0];
+  const lon: unknown = maybe.center[1];
   return (
     typeof lat === 'number' &&
     Number.isFinite(lat) &&

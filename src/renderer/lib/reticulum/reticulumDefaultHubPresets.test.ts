@@ -223,6 +223,7 @@ describe('reticulumDefaultHubPresets', () => {
     expect(plan.add).toHaveLength(4);
     const repairEntry = plan.repair[0];
     expect(repairEntry).toBeDefined();
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (repairEntry) {
       expect(listMissingDefaultHubPresets([repairEntry.iface])).toHaveLength(4);
     }
@@ -265,6 +266,7 @@ describe('reticulumDefaultHubPresets', () => {
       'decommissioned-betweentheborders',
       'decommissioned-dublin',
     ]);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     expect(plan.disableDecommissioned.every((d) => !d.patch.enabled)).toBe(true);
   });
 

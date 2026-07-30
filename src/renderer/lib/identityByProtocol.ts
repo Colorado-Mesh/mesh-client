@@ -20,7 +20,7 @@ function hasConnectedTransport(
   identityId: IdentityId,
 ): boolean {
   const rec = identities[identityId];
-  return rec?.transports.some((t) => t.status === 'connected') ?? false;
+  return rec.transports.some((t) => t.status === 'connected');
 }
 
 /**
@@ -63,7 +63,7 @@ export function resolvePrimaryIdentityIdForProtocol(
 ): IdentityId | null {
   if (activeIdentityId) {
     const active = identities[activeIdentityId];
-    if (active?.protocol.type === protocol) return activeIdentityId;
+    if (active.protocol.type === protocol) return activeIdentityId;
   }
   const matches = Object.values(identities)
     .filter((i) => i.protocol.type === protocol)

@@ -17,6 +17,7 @@ export function pushMeshtasticTransportSideEffectUnsubs(
 ): void {
   // Noble BLE disconnect is handled at runtime mount (useMeshtasticRuntime) with storage rehydrate.
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (type === 'serial' || type === 'ble' || type === 'http' || type === 'tcp') {
     push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
   }

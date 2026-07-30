@@ -136,6 +136,25 @@ describe('NomadMicronPageView', () => {
     );
   });
 
+  it('keeps box padding spaces in the mounted DOM for fit-width and open-width', () => {
+    const markup = [
+      '    │  This is the NomadNet page of the RMAP Project, a web interface      │',
+      '    │  `F8f0•`f Visualize LoRa RNode Connection Info,                        │ │',
+    ].join('\n');
+
+    const { rerender } = render(<NomadMicronPageView {...defaultProps} content={markup} />);
+    const fitRoot = document.querySelector('.nomad-micron-page');
+    expect(fitRoot).toHaveClass('nomad-micron-page--fit-width');
+    expect(fitRoot?.textContent).toMatch(/web interface {2,}│/);
+    expect(fitRoot?.textContent).toMatch(/Connection Info, {2,}│ │/);
+
+    rerender(<NomadMicronPageView {...defaultProps} fitWidth={false} content={markup} />);
+    const openRoot = document.querySelector('.nomad-micron-page');
+    expect(openRoot).not.toHaveClass('nomad-micron-page--fit-width');
+    expect(openRoot?.textContent).toMatch(/web interface {2,}│/);
+    expect(openRoot?.textContent).toMatch(/Connection Info, {2,}│ │/);
+  });
+
   it('fetches and mounts Micron partial content via onFetchPartial', async () => {
     const onFetchPartial = vi.fn().mockResolvedValue({
       ok: true,

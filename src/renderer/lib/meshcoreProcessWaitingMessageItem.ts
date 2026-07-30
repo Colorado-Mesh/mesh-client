@@ -62,7 +62,7 @@ export function processMeshcoreWaitingMessageItem(
       if (sender) {
         deps.workingNodes.set(senderId, {
           ...sender,
-          last_heard: Math.max(sender.last_heard ?? 0, d.senderTimestamp),
+          last_heard: Math.max(sender.last_heard, d.senderTimestamp),
         });
         nodesDirty = true;
         updatedNodeIds.push(senderId);
@@ -144,7 +144,7 @@ export function processMeshcoreWaitingMessageItem(
             ? meshcoreMergeChannelDisplayNameOntoNode(
                 {
                   ...existing,
-                  last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+                  last_heard: Math.max(existing.last_heard, d.senderTimestamp),
                 },
                 resolved.displayName,
               )

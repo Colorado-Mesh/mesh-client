@@ -211,7 +211,7 @@ check_ratspeak_patches() {
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
     'rsReticulum-rnode-tcp-activity-keepalive.patch|ratspeak/rsReticulum|15|rsReticulum RNode TCP activity keepalive|https://github.com/ratspeak/rsReticulum/pull/15'
-    'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum||rsReticulum BLE RNode pairing-transition debounce|'
+    'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum|20|rsReticulum BLE RNode pairing-transition debounce|https://github.com/ratspeak/rsReticulum/pull/20'
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
     'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
@@ -258,12 +258,16 @@ check_ratspeak_patches() {
   for entry in "${RATSPEAK_PATCH_ENTRIES[@]}"; do
     IFS='|' read -r patch_base repo pr label url <<< "${entry}"
     local file="${patches_dir}/${patch_base}"
-    if [ ! -f "${file}" ]; then
+    local patch_present=0
+    if [ -f "${file}" ]; then
+      patch_present=1
+    fi
+    if [ "${patch_present}" -eq 0 ] && [ -z "${pr}" ]; then
       echo "  ${label}: patch file absent (${patch_base}) — already removed?"
       continue
     fi
-    if [ -z "${pr}" ]; then
-      echo "  ${label}: local overlay present; no tracked PR — review ${url}"
+    if [ "${patch_present}" -eq 1 ] && [ -z "${pr}" ]; then
+      echo "  ${label}: local overlay present; no tracked PR — review sunset"
       echo "    See reticulum-sidecar/patches/README.md (sunset when upstream lands)."
       continue
     fi
@@ -271,18 +275,36 @@ check_ratspeak_patches() {
     state="$(github_pr_state "${repo}" "${pr}")"
     case "${state}" in
       merged)
-        warn_box "${label} (Ratspeak overlay)" "local patch" "upstream MERGED" "${url}"
-        echo "  Reason tracked: ${repo}#${pr} merged — remove ${file} and drop apply steps"
-        echo "    (clone-ratspeak-stack.sh / ensure-rsReticulum-patches.sh / apply-*.sh)."
-        has_ratspeak_warning=1
-        HAS_WARNING=1
+        if [ "${patch_present}" -eq 1 ]; then
+          warn_box "${label} (Ratspeak overlay)" "local patch" "upstream MERGED" "${url}"
+          echo "  Reason tracked: ${repo}#${pr} merged — remove ${file} and drop apply steps"
+          echo "    (clone-ratspeak-stack.sh / ensure-rsReticulum-patches.sh / apply-*.sh)."
+          has_ratspeak_warning=1
+          HAS_WARNING=1
+        else
+          echo "  ${label}: patch absent and ${repo}#${pr} merged — drop entry from RATSPEAK_PATCH_ENTRIES."
+        fi
         ;;
       open)
-        echo "  ${label}: upstream PR still open — ${url}"
+        if [ "${patch_present}" -eq 1 ]; then
+          echo "  ${label}: upstream PR still open — ${url}"
+        else
+          warn_box "${label} (Ratspeak overlay)" "patch absent" "PR still open" "${url}"
+          echo "  Reason tracked: ${repo}#${pr} open but ${patch_base} missing — restore overlay or drop entry."
+          has_ratspeak_warning=1
+          HAS_WARNING=1
+        fi
         ;;
       closed)
+        # Still warn when the .patch is already gone so closed-without-merge stays visible
+        # (e.g. #15 superseded by upstream RNodeIdleProbe — confirm sunset, then drop entry).
         warn_box "${label} (Ratspeak overlay)" "local patch" "PR closed (not merged?)" "${url}"
-        echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
+        if [ "${patch_present}" -eq 1 ]; then
+          echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
+        else
+          echo "  Reason tracked: ${repo}#${pr} closed without merge; ${patch_base} already absent —"
+          echo "    confirm sunset (or restore overlay), then drop entry from RATSPEAK_PATCH_ENTRIES."
+        fi
         has_ratspeak_warning=1
         HAS_WARNING=1
         ;;

@@ -31,6 +31,6 @@ describe('repairMeshcoreChannelSenderIdsInStore', () => {
 
     repairMeshcoreChannelSenderIdsInStore(ID);
 
-    expect(useMessageStore.getState().messages[ID]?.['ch:0:100']?.from).toBe(stubId);
+    expect(useMessageStore.getState().messages[ID]['ch:0:100'].from).toBe(stubId);
   });
 });

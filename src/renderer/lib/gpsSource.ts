@@ -88,12 +88,11 @@ export async function resolveOurPosition(
   }
 
   // 3. Native OS geolocation via main process (bypasses Chromium permission issues)
-  if (typeof window !== 'undefined' && (window as any).electronAPI?.getGpsFix) {
+  if (typeof window !== 'undefined') {
     try {
-      const result = await (window as any).electronAPI.getGpsFix();
+      const result = await window.electronAPI.getGpsFix();
       if (
-        result.status !== 'error' &&
-        !('error' in result) &&
+        !('status' in result) &&
         typeof result.lat === 'number' &&
         typeof result.lon === 'number' &&
         Number.isFinite(result.lat) &&
@@ -116,8 +115,15 @@ export async function resolveOurPosition(
     const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
     clearTimeout(timer);
     if (res.ok) {
-      const data = await res.json();
-      if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+      const data: unknown = await res.json();
+      if (
+        typeof data === 'object' &&
+        data != null &&
+        'latitude' in data &&
+        'longitude' in data &&
+        typeof data.latitude === 'number' &&
+        typeof data.longitude === 'number'
+      ) {
         return { lat: data.latitude, lon: data.longitude, source: 'ip' };
       }
     }

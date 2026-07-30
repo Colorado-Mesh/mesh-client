@@ -95,9 +95,9 @@ describe('handleMeshcoreRfRx', () => {
 
     handleMeshcoreRfRx({ lastSnr: 5.5, lastRssi: -55, raw }, deps);
 
-    const record = useNodeStore.getState().nodes[ID]?.[2];
+    const record = useNodeStore.getState().nodes[ID][2];
     expect(record).toMatchObject({ snr: 5.5, rssi: -55 });
-    expect(record?.lastHeardAt).toBeGreaterThanOrEqual(100);
+    expect(record.lastHeardAt).toBeGreaterThanOrEqual(100);
   });
 
   it('does not update the sending node itself (senderId === myNodeNum)', () => {
@@ -112,6 +112,7 @@ describe('handleMeshcoreRfRx', () => {
 
     handleMeshcoreRfRx({ lastSnr: 5.5, lastRssi: -55, raw }, deps);
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- store bucket optional at runtime
     expect(useNodeStore.getState().nodes[ID]?.[2]).toBeUndefined();
   });
 
@@ -201,7 +202,7 @@ describe('handleMeshcoreRfRx', () => {
 
     applyMeshcoreRfHopsAwayUpdate(7, 1, nowMs, 4, -70, deps);
 
-    expect(useNodeStore.getState().nodes[ID]?.[7]).toMatchObject({
+    expect(useNodeStore.getState().nodes[ID][7]).toMatchObject({
       source: 'rf',
       heardViaMqttOnly: false,
       viaMqtt: false,

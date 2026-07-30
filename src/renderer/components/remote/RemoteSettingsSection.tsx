@@ -36,10 +36,10 @@ export function RemoteSettingsSection({
   const hydratePolicies = useReticulumInboundPolicyStore((s) => s.hydrate);
   const removePolicy = useReticulumInboundPolicyStore((s) => s.remove);
 
-  const [allowFetch, setAllowFetch] = useState(false);
-  const [fetchJail, setFetchJail] = useState<string | null>(null);
-  const [saveDir, setSaveDir] = useState<string | null>(null);
-  const [overwrite, setOverwrite] = useState(false);
+  const [allowFetch, setAllowFetch] = useState(settings.allowFetch);
+  const [fetchJail, setFetchJail] = useState<string | null>(settings.lastFetchJail);
+  const [saveDir, setSaveDir] = useState<string | null>(settings.lastSaveDir);
+  const [overwrite, setOverwrite] = useState(settings.overwriteOnReceive);
   const [identity, setIdentity] = useState<{
     identity_hash: string | null;
     rncp_receive_hash: string | null;
@@ -92,7 +92,7 @@ export function RemoteSettingsSection({
           setSaveDir(dir);
         }
         setInboundModeOptimistic(mode);
-        onSettingsChange({ inboundMode: mode });
+        onSettingsChange({ inboundMode: mode, lastSaveDir: dir });
         const { allowed, blocked } = policiesToRncpLists(policies);
         try {
           const res = await window.electronAPI.reticulum.rncp.setListener({
@@ -193,13 +193,40 @@ export function RemoteSettingsSection({
 
   const handlePickFetchJail = useCallback(async () => {
     const res = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
-    if (!res.canceled && res.path) setFetchJail(res.path);
-  }, []);
+    if (!res.canceled && res.path) {
+      setFetchJail(res.path);
+      onSettingsChange({ lastFetchJail: res.path });
+    }
+  }, [onSettingsChange]);
 
   const handlePickSaveDir = useCallback(async () => {
     const res = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
-    if (!res.canceled && res.path) setSaveDir(res.path);
-  }, []);
+    if (!res.canceled && res.path) {
+      setSaveDir(res.path);
+      onSettingsChange({ lastSaveDir: res.path });
+    }
+  }, [onSettingsChange]);
+
+  // Keep local fields in sync when parent reloads settings from storage.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
+    setSaveDir(settings.lastSaveDir);
+  }, [settings.lastSaveDir]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
+    setFetchJail(settings.lastFetchJail);
+  }, [settings.lastFetchJail]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
+    setAllowFetch(settings.allowFetch);
+  }, [settings.allowFetch]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
+    setOverwrite(settings.overwriteOnReceive);
+  }, [settings.overwriteOnReceive]);
 
   const copy = useCallback(
     (value: string | null | undefined) => {

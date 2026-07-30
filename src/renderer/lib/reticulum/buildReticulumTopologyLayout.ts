@@ -470,7 +470,7 @@ export function buildReticulumMeshTopologyGraph(
       depth: 1,
       online: isReticulumInterfaceOnline(iface),
       interfaceType: iface.type ?? null,
-      interfaceStatus: iface.status ?? null,
+      interfaceStatus: iface.status,
       isHub: true,
       hubOutDegree: peerCount,
       seedX: pos.x,

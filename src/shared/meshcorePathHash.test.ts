@@ -38,8 +38,8 @@ describe('meshcorePathHash', () => {
   it('splits multibyte path segments', () => {
     const segs = meshcoreSplitPathHashSegments([0x01, 0x02, 0x03, 0x04], 2);
     expect(segs).toHaveLength(2);
-    expect(Array.from(segs[0])).toEqual([0x01, 0x02]);
-    expect(Array.from(segs[1])).toEqual([0x03, 0x04]);
+    expect(Array.from(segs.at(0)!)).toEqual([0x01, 0x02]);
+    expect(Array.from(segs.at(1)!)).toEqual([0x03, 0x04]);
   });
 
   it('derives trace layout from pathLen byte and flags', () => {

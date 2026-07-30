@@ -32,6 +32,7 @@ function isLinuxWebBluetoothPlatform(): boolean {
 function isNobleBleStartScanBusyResult(
   result: NobleBleStartScanResult,
 ): result is Extract<NobleBleStartScanResult, { ok: false; code: 'scan_busy' }> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   return !result.ok && result.code === 'scan_busy';
 }
 

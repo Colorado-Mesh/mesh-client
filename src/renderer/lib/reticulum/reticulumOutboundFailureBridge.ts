@@ -45,6 +45,7 @@ export function failReticulumSendingOutboundToDestHash(
   const bucket = useMessageStore.getState().messages[identityId] ?? {};
   let count = 0;
   for (const msg of Object.values(bucket)) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (msg.status !== 'sending' || msg.to == null) continue;
     // Direct→PN fallback re-queues as Propagated and emits sending — do not fail those rows.
     if (msg.reticulumDeliveryMethod === 'propagated') continue;

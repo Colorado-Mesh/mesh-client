@@ -1,3 +1,5 @@
+import { errLikeToLogString } from '../errLikeToLogString';
+import { isMeshtasticConfigureRetryableError } from './meshtasticConfigureRetry';
 import {
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
@@ -53,14 +55,24 @@ export function installMeshtasticSdkRoutingErrorConsoleHook(
 /**
  * Swallow unhandled `@meshtastic/core` queue rejections (`{ id, error }`) after applying
  * outbound chat failure state when a matching row exists.
+ * Also swallows disconnect mid-send `Packet does not exist` so teardown races are not logged
+ * as unhandled rejections.
  */
 export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
   onQueueRejection: (reason: unknown) => boolean,
 ): () => void {
   const handler = (event: PromiseRejectionEvent) => {
-    if (!parseMeshtasticSdkQueueRejection(event.reason)) return;
-    const applied = onQueueRejection(event.reason);
-    if (applied) event.preventDefault();
+    if (parseMeshtasticSdkQueueRejection(event.reason)) {
+      const applied = onQueueRejection(event.reason);
+      if (applied) event.preventDefault();
+      return;
+    }
+    if (isMeshtasticConfigureRetryableError(event.reason)) {
+      console.debug(
+        '[Meshtastic] Ignoring disconnect mid-send rejection: ' + errLikeToLogString(event.reason),
+      );
+      event.preventDefault();
+    }
   };
   window.addEventListener('unhandledrejection', handler);
   return () => {

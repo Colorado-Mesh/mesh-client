@@ -200,9 +200,9 @@ export function diagnoseConnectedNode(
       });
     }
 
-    const totalSent = (meshcoreStats.nSentFlood ?? 0) + (meshcoreStats.nSentDirect ?? 0);
-    if (totalSent >= 20 && (meshcoreStats.nSentFlood ?? 0) / totalSent > 0.9) {
-      const floodPct = Math.round(((meshcoreStats.nSentFlood ?? 0) / totalSent) * 100);
+    const totalSent = meshcoreStats.nSentFlood + meshcoreStats.nSentDirect;
+    if (totalSent >= 20 && meshcoreStats.nSentFlood / totalSent > 0.9) {
+      const floodPct = Math.round((meshcoreStats.nSentFlood / totalSent) * 100);
       findings.push({
         condition: 'Excessive Flooding',
         cause: `${floodPct}% of transmissions are flood-routed — direct routing may not be established with nearby nodes.`,
@@ -256,7 +256,7 @@ export function diagnoseOtherNode(
     const cu = node.channel_utilization ?? 0;
     const tx = node.air_util_tx ?? 0;
     const snrMeaningful = snrMeaningfulForNodeDiagnostics(node, context?.capabilities);
-    const snr = node.snr ?? 0;
+    const snr = node.snr;
 
     if (cu > HIGH_CU && tx < LOW_TX) {
       findings.push({

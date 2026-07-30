@@ -123,7 +123,7 @@ import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
-import { MQTTManager, parsePsk } from './mqtt-manager';
+import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
@@ -2796,36 +2796,24 @@ ipcMain.handle('noble-ble-to-radio', async (event, sessionId: unknown, bytes: un
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────
-mqttManager.on('status', (s) => {
+mqttManager.on('status', (s: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshtastic' });
-  else
-    console.debug(
-      '[main] mqtt:status dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(s)),
-    );
+  else console.debug('[main] mqtt:status dropped (mainWindow not ready)', sanitizeLogMessage(s));
 });
-mqttManager.on('error', (msg) => {
+mqttManager.on('error', (msg: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol: 'meshtastic' });
-  else
-    console.debug(
-      '[main] mqtt:error dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(msg)),
-    );
+  else console.debug('[main] mqtt:error dropped (mainWindow not ready)', sanitizeLogMessage(msg));
 });
-mqttManager.on('clientId', (id) => {
+mqttManager.on('clientId', (id: string) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol: 'meshtastic' });
-  else
-    console.debug(
-      '[main] mqtt:clientId dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(id)),
-    );
+  else console.debug('[main] mqtt:clientId dropped (mainWindow not ready)', sanitizeLogMessage(id));
 });
-mqttManager.on('nodeUpdate', (n) => {
+mqttManager.on('nodeUpdate', (n: CachedNode) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:node-update', { ...n, protocol: 'meshtastic' as const });
   else console.debug('[main] mqtt:node-update dropped (mainWindow not ready)');
-  takServerManager?.onNodeUpdate(n);
+  takServerManager?.onNodeUpdate({ ...n, altitude: n.altitude ?? undefined });
 });
 mqttManager.on(
   'traceRouteReply',
@@ -2854,38 +2842,38 @@ mqttManager.on('brokerRaw', (payload: { topic: string; payload: Buffer; retained
   }
 });
 
-meshcoreMqttAdapter.on('status', (s) => {
+meshcoreMqttAdapter.on('status', (s: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:status (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(s)),
+      sanitizeLogMessage(s),
     );
 });
-meshcoreMqttAdapter.on('error', (msg) => {
+meshcoreMqttAdapter.on('error', (msg: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:error (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(msg)),
+      sanitizeLogMessage(msg),
     );
 });
-meshcoreMqttAdapter.on('clientId', (id) => {
+meshcoreMqttAdapter.on('clientId', (id: string) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:clientId (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(id)),
+      sanitizeLogMessage(id),
     );
 });
-meshcoreMqttAdapter.on('subscribeWarning', (msg) => {
+meshcoreMqttAdapter.on('subscribeWarning', (msg: string) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:warning', { warning: msg, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:warning (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(msg)),
+      sanitizeLogMessage(msg),
     );
 });
 meshcoreMqttAdapter.on('chatMessage', (m) => {
@@ -3747,22 +3735,22 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
          mqtt_status AS mqttStatus, received_via AS receivedVia,
          reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
          rx_hops AS rxHops, via_store_forward AS viaStoreForward`;
-    let rows: any[];
+    let rows: Record<string, unknown>[];
     if (channel != null) {
       const ch = safeNonNegativeInt(channel);
       rows = db
         .prepareOnce(
           `SELECT ${columns} FROM messages WHERE channel = ? ORDER BY timestamp DESC LIMIT ?`,
         )
-        .all(ch, safeLimit);
+        .all(ch, safeLimit) as Record<string, unknown>[];
     } else {
       rows = db
         .prepareOnce(`SELECT ${columns} FROM messages ORDER BY timestamp DESC LIMIT ?`)
-        .all(safeLimit);
+        .all(safeLimit) as Record<string, unknown>[];
     }
 
     // Map to_node back to `to` for the renderer; drop invalid reaction scalars from legacy rows
-    return rows.map((r: any) => {
+    return rows.map((r) => {
       const { to_node, emoji: emojiRaw, viaStoreForward: viaSfRaw, ...rest } = r;
       const emoji =
         emojiRaw != null ? (sanitizeUnicodeReactionScalar(emojiRaw) ?? undefined) : undefined;
@@ -6447,16 +6435,16 @@ void app.whenReady().then(() => {
     const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
     try {
       if (fs.existsSync(takSettingsPath)) {
-        const raw = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
+        const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
         // Backfill autoStart for settings files saved before the field was added.
         if (
-          raw &&
+          raw != null &&
           typeof raw === 'object' &&
           typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
         ) {
           (raw as Record<string, unknown>).autoStart = false;
         }
-        const saved = raw as unknown;
+        const saved = raw;
         validateTakSettings(saved);
         if (saved.autoStart) {
           void ensureTakServerManager()

@@ -18,6 +18,7 @@ export function mergeMeshtasticTraceRouteIntoResultsMap(
   /** From `meshtastic.Data.source` — often set on multihop routing replies */
   dataLayerSource?: number,
 ): Map<number, MeshtasticTraceRouteEntry> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   const route = rd.route != null ? [...rd.route] : [];
   const entry: MeshtasticTraceRouteEntry = {
     route,

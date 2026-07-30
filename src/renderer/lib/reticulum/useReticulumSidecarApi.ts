@@ -197,6 +197,7 @@ export function useReticulumSidecarApi({
     let cancelled = false;
     void (async () => {
       const ready = await waitForReticulumSession();
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (cancelled) {
         // Effect re-ran (unstable callback) before start — allow a fresh attempt unless Stop latched.
         if (!isReticulumManualStackStopSuppress()) {

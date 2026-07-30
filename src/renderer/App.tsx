@@ -143,6 +143,10 @@ import {
   TakServerPanel,
   TelemetryPanel,
 } from './lazyTabPanels';
+import {
+  resolvePanelPositionSendHandler,
+  resolvePanelRebootHandler,
+} from './lib/appPanelHandlerSelection';
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import {
@@ -3398,11 +3402,11 @@ function AppContent() {
                                   isConnected={isOperational}
                                   deviceFixedPosition={effectiveDeviceFixedPosition}
                                   ourPosition={activeRuntime.ourPosition}
-                                  onSendPositionToDevice={
-                                    capabilities.hasFullPositionConfig
-                                      ? meshtasticPanelActions.sendPositionToDevice
-                                      : undefined
-                                  }
+                                  onSendPositionToDevice={resolvePanelPositionSendHandler(
+                                    capabilities,
+                                    meshtasticPanelActions.sendPositionToDevice,
+                                    meshcorePanelActions.sendPositionToDevice,
+                                  )}
                                   deviceOwner={effectiveDeviceOwner}
                                   onSetOwner={
                                     capabilities.hasChannelConfig
@@ -3680,11 +3684,12 @@ function AppContent() {
                                 configTarget={configTarget}
                                 capabilities={capabilities}
                                 isConnected={isOperational}
-                                onReboot={
-                                  capabilities.hasShutdown
-                                    ? meshtasticPanelActions.reboot
-                                    : async () => {}
-                                }
+                                onReboot={resolvePanelRebootHandler(
+                                  capabilities,
+                                  meshtasticPanelActions.reboot,
+                                  meshcorePanelActions.reboot,
+                                  async () => {},
+                                )}
                                 onShutdown={
                                   capabilities.hasShutdown
                                     ? meshtasticPanelActions.shutdown

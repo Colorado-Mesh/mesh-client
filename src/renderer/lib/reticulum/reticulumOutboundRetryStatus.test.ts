@@ -78,8 +78,8 @@ describe('Reticulum outbound retry vs Completes status', () => {
     });
 
     const bucket = useMessageStore.getState().messages[identityId] ?? {};
-    expect(bucket[successHash]?.status).toBe('acked');
-    expect(bucket[failedHash]?.status).toBe('sending');
+    expect(bucket[successHash].status).toBe('acked');
+    expect(bucket[failedHash].status).toBe('sending');
   });
 
   it('rekeys retry onto a new hash without demoting Completes', () => {
@@ -99,9 +99,9 @@ describe('Reticulum outbound retry vs Completes status', () => {
     updateMessageStatus(identityId, retryHash, 'sending');
 
     const bucket = useMessageStore.getState().messages[identityId] ?? {};
-    expect(bucket[successHash]?.status).toBe('acked');
+    expect(bucket[successHash].status).toBe('acked');
     expect(bucket[failedHash]).toBeUndefined();
-    expect(bucket[retryHash]?.status).toBe('sending');
+    expect(bucket[retryHash].status).toBe('sending');
   });
 
   it('rename onto Completes hash drops retry row and leaves Completes acked', () => {
@@ -110,7 +110,7 @@ describe('Reticulum outbound retry vs Completes status', () => {
 
     const bucket = useMessageStore.getState().messages[identityId] ?? {};
     expect(bucket[failedHash]).toBeUndefined();
-    expect(bucket[successHash]?.status).toBe('acked');
-    expect(bucket[successHash]?.payload).toBe('just sent ok');
+    expect(bucket[successHash].status).toBe('acked');
+    expect(bucket[successHash].payload).toBe('just sent ok');
   });
 });

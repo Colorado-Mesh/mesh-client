@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const TEST_DIR = import.meta.dirname ?? __dirname;
+const TEST_DIR = import.meta.dirname;
 const rendererRoot = join(TEST_DIR, '..');
 const MESHTASTIC_WIRE_SOURCE = readFileSync(
   join(rendererRoot, 'lib/meshtastic/meshtasticRuntimeWireEffects.ts'),

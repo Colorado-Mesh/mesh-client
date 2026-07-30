@@ -148,7 +148,7 @@ export function computeMeshcoreTracePrimeStrategy(opts: {
   if (opts.skipPrime || !opts.needsRoutePrime || !opts.pathTooShort) return 'none';
   if (opts.hasUsableStoredPath) return 'none';
   if (opts.hopsAway == null) return 'passive';
-  const hops = opts.hopsAway ?? 0;
+  const hops = opts.hopsAway;
   if (hops >= 1) return 'passive';
   return 'none';
 }
@@ -178,8 +178,8 @@ export function meshcoreSynthesizeOneHopTracePath(
   for (const relayKey of directRelayPubKeys) {
     if (relayKey.length === 0 || destPubKey.length === 0) continue;
     if (meshcoreStoredPathLooksLikeFullPubKey(relayKey, destPubKey)) continue;
-    const relayByte = (relayKey[0] ?? 0) & 0xff;
-    const destByte = (destPubKey[0] ?? 0) & 0xff;
+    const relayByte = relayKey[0] & 0xff;
+    const destByte = destPubKey[0] & 0xff;
     if (relayByte === destByte && relayKey.length === destPubKey.length) {
       let sameKey = true;
       for (let i = 0; i < relayKey.length; i++) {
@@ -258,7 +258,7 @@ export function meshcoreSynthesizeMultiHopTracePath(opts: {
   if (!oneHopPath) return undefined;
 
   for (const relayKey of relayKeys) {
-    const relayByte = (relayKey[0] ?? 0) & 0xff;
+    const relayByte = relayKey[0] & 0xff;
     const composed = new Uint8Array([relayByte, oneHopPath[0], oneHopPath[1]]);
     if (meshcoreIsUsableTraceStoredPath(composed, 2, opts.destPubKey)) {
       return composed;

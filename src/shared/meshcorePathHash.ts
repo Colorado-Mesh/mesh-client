@@ -93,7 +93,10 @@ export function meshcoreSplitPathHashSegments(
 function prefixMatches(pubKey: Uint8Array, segment: Uint8Array): boolean {
   if (segment.length === 0 || pubKey.length < segment.length) return false;
   for (let i = 0; i < segment.length; i++) {
-    if ((pubKey[i] & 0xff) !== (segment[i] & 0xff)) return false;
+    const pubKeyByte = pubKey.at(i);
+    const segmentByte = segment.at(i);
+    if (pubKeyByte === undefined || segmentByte === undefined) return false;
+    if ((pubKeyByte & 0xff) !== (segmentByte & 0xff)) return false;
   }
   return true;
 }
@@ -110,7 +113,9 @@ export function meshcoreResolveNodeFromPathPrefix(
   if (prefixBytes.length === 0 || candidates.length === 0) return null;
 
   if (prefixBytes.length === 1) {
-    return resolveNodeId(prefixBytes[0] & 0xff, candidates);
+    const prefix = prefixBytes.at(0);
+    if (prefix === undefined) return null;
+    return resolveNodeId(prefix & 0xff, candidates);
   }
 
   let best: NodeHashCandidate | null = null;

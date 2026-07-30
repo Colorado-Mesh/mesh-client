@@ -82,7 +82,7 @@ describe('ConnectionDriver', () => {
 
     await connectionDriver.disconnect(identityId);
     expect(connectionDriver.getHandle(identityId)).toBeNull();
-    expect(useConnectionStore.getState().connections[identityId]?.status).toBe('disconnected');
+    expect(useConnectionStore.getState().connections[identityId].status).toBe('disconnected');
   });
 
   it('connect maps a tcp transport to a tcp connectionType, not null', async () => {
@@ -95,7 +95,7 @@ describe('ConnectionDriver', () => {
     vi.spyOn(meshtasticProtocol, 'destroyDevice').mockResolvedValue(undefined);
 
     const identityId = await connectionDriver.connect('meshtastic', params);
-    expect(useConnectionStore.getState().connections[identityId]?.connectionType).toBe('tcp');
+    expect(useConnectionStore.getState().connections[identityId].connectionType).toBe('tcp');
 
     await connectionDriver.disconnect(identityId);
   });

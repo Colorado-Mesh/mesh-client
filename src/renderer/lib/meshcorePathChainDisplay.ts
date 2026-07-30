@@ -203,9 +203,10 @@ export function meshcoreTraceHopDisplayRows(opts: {
     if (lastSegIsDest && i === segments.length - 1) continue;
     const seg = segments[i];
     rows.push({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- External SDK value is validated by surrounding boundary logic.
       snr: snrs[i] ?? 0,
-      label: seg?.resolvedLabel ?? seg?.hex ?? '',
-      hex: seg?.hex ?? '',
+      label: seg.resolvedLabel ?? '',
+      hex: seg.hex,
     });
   }
   return rows;

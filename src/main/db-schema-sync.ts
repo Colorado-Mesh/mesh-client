@@ -829,8 +829,7 @@ function repairMeshtasticInboundNullStatus(db: NodeSqliteDB): void {
   if (!tableExists(db, 'messages')) return;
   db.prepare(
     `UPDATE messages SET status = 'acked'
-     WHERE status IS NULL
-       AND (received_via IS NOT NULL OR packet_id IS NOT NULL)`,
+     WHERE status IS NULL`,
   ).run();
 }
 

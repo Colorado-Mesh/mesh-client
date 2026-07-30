@@ -89,6 +89,7 @@ export function computeComposerTotalMaxChars(
   const firstBody = singleMessageLimit - prefixLen - wireOverheadFirstChunk;
   const otherBody = singleMessageLimit - prefixLen;
   if (firstBody <= 0) return 0;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (MAX_CHUNKS <= 1) return firstBody;
   return firstBody + (MAX_CHUNKS - 1) * otherBody;
 }

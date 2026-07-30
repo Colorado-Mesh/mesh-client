@@ -139,7 +139,7 @@ export function meshcoreTraceResultPackedPathLen(pathLenByte: number, traceFlags
 
 /** MeshCore companion lines that are transport metadata, not user channel chat (splitting on `:` would mispick `SNR:`). */
 export function isMeshcoreTransportStatusChatLine(text: string): boolean {
-  const t = (text ?? '').trim();
+  const t = text.trim();
   if (!t) return false;
   if (/^\s*ack\s+@/iu.test(t)) return true;
   if (/^\s*nack\s+@/iu.test(t)) return true;
@@ -368,7 +368,7 @@ export const MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS: ReadonlySet<string
 ]);
 
 export function isMeshcoreContactEligibleForUserGroup(node: Pick<MeshNode, 'hw_model'>): boolean {
-  const hw = node.hw_model ?? '';
+  const hw = node.hw_model;
   return !MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hw);
 }
 
@@ -404,6 +404,26 @@ export function meshcoreScaledAdvLatLonToDeg(
     return { lat: null, lon: null };
   }
   return { lat: latDeg, lon: lonDeg };
+}
+
+/**
+ * Formats MeshCore advert lat/lon for Radio Panel display.
+ * Returns null when both axes are missing / invalid (nothing to show).
+ */
+export function formatMeshcoreAdvertisedPositionDegrees(
+  advLat: number | undefined | null,
+  advLon: number | undefined | null,
+  fractionDigits = 5,
+): { lat: string; lon: string } | null {
+  const { lat, lon } = meshcoreScaledAdvLatLonToDeg(
+    typeof advLat === 'number' ? advLat : 0,
+    typeof advLon === 'number' ? advLon : 0,
+  );
+  if (lat == null && lon == null) return null;
+  return {
+    lat: lat != null ? lat.toFixed(fractionDigits) : '—',
+    lon: lon != null ? lon.toFixed(fractionDigits) : '—',
+  };
 }
 
 /**

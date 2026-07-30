@@ -57,9 +57,9 @@ describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
 
 describe('MQTT forwarder dropped-event logs (source contract)', () => {
   it('sanitizes dynamic MQTT fields when mainWindow is not ready', () => {
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(s\)\)/g) ?? []).length).toBe(2);
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(msg\)\)/g) ?? []).length).toBe(3);
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(id\)\)/g) ?? []).length).toBe(2);
+    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(s\)/g) ?? []).length).toBe(2);
+    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(msg\)/g) ?? []).length).toBe(3);
+    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(id\)/g) ?? []).length).toBe(2);
   });
 });
 

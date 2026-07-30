@@ -38,6 +38,7 @@ function rgbTriplet(value: unknown): [number, number, number] | null {
   if (!Array.isArray(value) || value.length < 3) return null;
   const rgb: number[] = [];
   for (let i = 0; i < 3; i += 1) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- External SDK value is validated by surrounding boundary logic.
     const part = value[i];
     if (typeof part !== 'number' || !Number.isFinite(part)) return null;
     rgb.push(Math.min(255, Math.max(0, Math.trunc(part))));

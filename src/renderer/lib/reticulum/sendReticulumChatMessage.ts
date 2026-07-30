@@ -89,7 +89,8 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): bo
   const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
   const existing =
     retryOfStoreId != null && retryOfStoreId !== ''
-      ? useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
+      ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+        useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
       : undefined;
   const replyFields = buildReticulumReplyFields(identityId, replyTo);
 

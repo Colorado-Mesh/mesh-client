@@ -191,6 +191,20 @@ function ChatToolbarTooltipButton({
   );
 }
 
+function emojiUnicodeFromEvent(event: Event): string | null {
+  if (
+    !(event instanceof CustomEvent) ||
+    typeof event.detail !== 'object' ||
+    event.detail === null
+  ) {
+    return null;
+  }
+  const detail = event.detail as Record<string, unknown>;
+  if (typeof detail.emoji !== 'object' || detail.emoji === null) return null;
+  const emoji = detail.emoji as Record<string, unknown>;
+  return typeof emoji.unicode === 'string' ? emoji.unicode : null;
+}
+
 declare module 'react' {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
@@ -1656,7 +1670,8 @@ function ChatPanel({
       if (!reactionCapturePendingRef.current) return;
       const target = reactionPickerTarget.current;
       if (!target) return;
-      const unicode = (e as CustomEvent).detail.emoji.unicode as string;
+      const unicode = emojiUnicodeFromEvent(e);
+      if (!unicode) return;
       const parsed = reactionGlyphFromPicker(unicode);
       if (parsed) {
         void handleReactRef.current?.(parsed.glyph, target.id, target.channel);
@@ -2227,6 +2242,17 @@ function ChatPanel({
                 onProbeSettled={reticulumDmPathProbe.applyProbeResult}
               />
             ) : null;
+          const rncpShareCandidates =
+            protocol === 'reticulum' && isDmMode
+              ? viewMessages
+                  .filter((m) => !isOwnNode(m.sender_id))
+                  .map((m) => ({
+                    payload: m.payload,
+                    senderHash: m.reticulum_sender_hash ?? null,
+                    senderName: m.sender_name ?? null,
+                    timestamp: m.timestamp,
+                  }))
+              : [];
           const rncpControl =
             protocol === 'reticulum' && hasRncpTransfer && reticulumDmDestinationHash != null ? (
               <ChatDmRncpControl
@@ -2234,6 +2260,7 @@ function ChatPanel({
                 lxmfPeerHash={reticulumDmDestinationHash}
                 peerLabel={dmNodeName}
                 sidecarRunning={reticulumStackLive}
+                dmShareCandidates={rncpShareCandidates}
               />
             ) : null;
           if (!pathBadge && !dmNode && !rncpControl) return null;

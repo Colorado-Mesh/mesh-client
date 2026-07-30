@@ -29,7 +29,7 @@ export async function sendRncpRequestEnable(
       destination_hash: hash,
       text,
     })) as { ok?: boolean; error?: string };
-    if (res?.ok === false) {
+    if (res.ok === false) {
       return { ok: false, error: 'send_failed', detail: res.error };
     }
     // Authorizes inbound receive-dest share ingest from this peer for a TTL window.

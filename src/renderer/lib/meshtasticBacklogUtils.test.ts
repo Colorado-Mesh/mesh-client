@@ -370,7 +370,7 @@ describe('meshtasticBacklogUtils', () => {
     let locked = false;
     const order: number[] = [];
     const write = vi.fn().mockImplementation(async (chunk: Uint8Array) => {
-      order.push(chunk[0] ?? 0);
+      order.push(chunk[0]);
       await new Promise((r) => setTimeout(r, 5));
     });
     const releaseLock = vi.fn().mockImplementation(() => {

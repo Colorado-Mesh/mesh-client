@@ -1,7 +1,10 @@
 import type { BrowserWindow } from 'electron';
 import { ipcMain, shell } from 'electron';
 
-import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
+import type {
+  ReticulumSidecarStartOptions,
+  ReticulumSidecarStatus,
+} from '../../shared/reticulum-types';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import { sanitizeLogMessage } from '../log-service';
 import {
@@ -42,6 +45,18 @@ function isExpectedReticulumProxyError(message: string): boolean {
     lower.includes('aborted') ||
     lower.includes('timeout')
   );
+}
+
+function parseReticulumStartOptions(opts: unknown): ReticulumSidecarStartOptions {
+  if (opts == null) return {};
+  if (typeof opts !== 'object' || Array.isArray(opts)) {
+    throw new Error('reticulum:start options must be an object');
+  }
+  const reuseIfRunning = (opts as Record<string, unknown>).reuseIfRunning;
+  if (reuseIfRunning != null && typeof reuseIfRunning !== 'boolean') {
+    throw new Error('reticulum:start reuseIfRunning must be boolean');
+  }
+  return reuseIfRunning == null ? {} : { reuseIfRunning };
 }
 
 function logReticulumProxyFailure(method: string, err: unknown, apiPath?: string): void {
@@ -100,12 +115,12 @@ function validateRncpListenerDirs(opts: {
 export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   const { idleStatus, ensureManager, getManager } = deps;
 
-  ipcMain.handle('reticulum:start', async (event, opts) => {
+  ipcMain.handle('reticulum:start', async (event, opts: unknown) => {
     assertIpcSender(event, 'reticulum:start');
     try {
       console.debug('[ReticulumIPC] start');
       const m = ensureManager();
-      return await m.start(opts ?? {});
+      return await m.start(parseReticulumStartOptions(opts));
     } catch (err) {
       console.error(
         '[ReticulumIPC] start failed:',

@@ -35,7 +35,7 @@ export function resolveInactiveRrcNotificationType(
   for (const msg of args.newMessages) {
     if (isSelfRrcMessage(msg, args.localIdentityHash, args.nickname)) continue;
     if (args.hubDestHash) {
-      const room = msg.room?.trim() || '[hub]';
+      const room = msg.room.trim() || '[hub]';
       if (isRrcRoomMuted(args.hubDestHash, room, args.mutedViews)) continue;
     }
     const type = classifyRrcNotificationType(msg, args.nickname);

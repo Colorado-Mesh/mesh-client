@@ -90,7 +90,9 @@ export function isValidConnectHost(host: string): boolean {
 export function isPrivateNetworkHost(host: string): boolean {
   const octets = parseIpv4Octets(stripConnectHostBrackets(host));
   if (!octets) return false;
-  const [a, b] = octets;
+  const a = octets.at(0);
+  const b = octets.at(1);
+  if (a === undefined || b === undefined) return false;
   if (a === 10) return true;
   if (a === 172 && b >= 16 && b <= 31) return true;
   if (a === 192 && b === 168) return true;
@@ -101,7 +103,9 @@ export function isPrivateNetworkHost(host: string): boolean {
 export function isUniqueLocalIpv6(host: string): boolean {
   const hextets = parseIpv6Hextets(host);
   if (!hextets) return false;
-  const firstByte = hextets[0] >> 8;
+  const firstHextet = hextets.at(0);
+  if (firstHextet === undefined) return false;
+  const firstByte = firstHextet >> 8;
   return firstByte === 0xfc || firstByte === 0xfd;
 }
 
@@ -109,7 +113,8 @@ export function isUniqueLocalIpv6(host: string): boolean {
 export function isLinkLocalIpv6(host: string): boolean {
   const hextets = parseIpv6Hextets(host);
   if (!hextets) return false;
-  return (hextets[0] & 0xffc0) === 0xfe80;
+  const firstHextet = hextets.at(0);
+  return firstHextet !== undefined && (firstHextet & 0xffc0) === 0xfe80;
 }
 
 /** IPv4 loopback (127.0.0.0/8) or IPv6 loopback (::1). */
@@ -153,6 +158,7 @@ function hostContainsIpv6(host: string): boolean {
 export function formatHostForUrl(host: string, port?: number): string {
   const bare = stripConnectHostBrackets(host.trim());
   const hostPart = hostContainsIpv6(bare) ? `[${bare}]` : bare;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (port === undefined || port === null) return hostPart;
   return `${hostPart}:${port}`;
 }

@@ -198,7 +198,7 @@ describe('dispatchMeshcoreWaitingContactMessage', () => {
     detach();
 
     const storeId = meshcoreRoomMessageId(roomId, 1_700_000_200, authorId);
-    expect(useMessageStore.getState().messages[ID]?.[storeId]?.payload).toBe('Sync replay post');
+    expect(useMessageStore.getState().messages[ID][storeId].payload).toBe('Sync replay post');
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         room_server_id: roomId,
@@ -262,6 +262,6 @@ describe('dispatchMeshcoreWaitingContactMessage', () => {
     detach();
 
     const storeId = meshcoreRoomMessageId(roomId, 1_700_000_300, authorId);
-    expect(useMessageStore.getState().messages[ID]?.[storeId]?.payload).toBe('From og app backlog');
+    expect(useMessageStore.getState().messages[ID][storeId].payload).toBe('From og app backlog');
   });
 });

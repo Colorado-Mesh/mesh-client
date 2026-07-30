@@ -128,9 +128,10 @@ export function createStableChatMeasureElement(
     const key = instance.options.getItemKey(index);
     const estimated = estimateSize(index);
     const cached = instance.measurementsCache[index]?.size ?? instance.itemSizeCache.get(key);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     const hasMeasuredSize = cached != null && cached !== estimated;
 
-    const box = entry?.borderBoxSize?.[0];
+    const box = entry?.borderBoxSize[0];
     const domSize = box
       ? Math.round(box[instance.options.horizontal ? 'inlineSize' : 'blockSize'])
       : htmlEl[sizeProp];
@@ -140,7 +141,7 @@ export function createStableChatMeasureElement(
     // caching that would corrupt the size cache while hidden and make scrollToEnd()
     // land at a wrong, variable position on return. Fall back to what we already know.
     if (domSize === 0) {
-      return cached ?? estimated;
+      return cached;
     }
 
     if (instance.scrollDirection === 'backward' && hasMeasuredSize) {

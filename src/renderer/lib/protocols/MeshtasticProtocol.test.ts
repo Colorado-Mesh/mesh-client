@@ -268,6 +268,7 @@ describe('MeshtasticProtocol.subscribe', () => {
 
     const traces = events.filter((event) => event.type === 'trace_route');
     expect(traces).toHaveLength(1);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     expect(traces[0]?.type === 'trace_route' && traces[0].payload.dataLayerDest).toBe(555);
     teardown();
   });

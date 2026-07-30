@@ -111,6 +111,7 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     const ids = events
       .filter((e) => e.type === 'text_message')
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       .map((e) => (e.type === 'text_message' ? e.payload.id : undefined));
     expect(ids).toHaveLength(2);
     expect(new Set(ids).size).toBe(2);

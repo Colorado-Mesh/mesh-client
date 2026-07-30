@@ -132,7 +132,10 @@ import {
 } from '../stores/messageStore';
 import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
-import { useReticulumDiscoveryMapStore } from '../stores/reticulumDiscoveryMapStore';
+import {
+  normalizeRmapDiscoveryRows,
+  useReticulumDiscoveryMapStore,
+} from '../stores/reticulumDiscoveryMapStore';
 import {
   parseAnnounceActivityRows,
   useReticulumIdentityActivityStore,
@@ -564,11 +567,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
         }
         if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
-          if (!consumeRncpReceiveDestSharePending(p.sender_hash)) {
+          // Prefer request-enable pending (consumes the slot). Older peers may paste the
+          // share sentinel into chat without that round-trip — still apply so Chat can autofill.
+          const hadPending = consumeRncpReceiveDestSharePending(p.sender_hash);
+          if (!hadPending) {
             console.debug(
-              '[useReticulumRuntime] ignore rncp receive-dest share without pending request-enable',
+              '[useReticulumRuntime] applying rncp receive-dest share without pending request-enable',
             );
-            return;
           }
           const share = await applyRncpReceiveDestShareFromLxmf({
             senderHash: p.sender_hash,
@@ -696,7 +701,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { discovered?: unknown };
         if (Array.isArray(p.discovered)) {
-          useReticulumDiscoveryMapStore.getState().setDiscovered(p.discovered);
+          useReticulumDiscoveryMapStore
+            .getState()
+            .setDiscovered(normalizeRmapDiscoveryRows(p.discovered));
         }
       }
       if (evt.type === 'nomadnetwork.node') {

@@ -83,7 +83,7 @@ describe('hydrateIdentityStoresFromDb', () => {
     await hydrateMeshtasticNodesFromDb(ID_MT);
     await hydrateMeshtasticMessagesFromDb(ID_MT);
 
-    expect(useNodeStore.getState().nodes[ID_MT]?.[1]?.longName).toBe('Alpha');
+    expect(useNodeStore.getState().nodes[ID_MT][1].longName).toBe('Alpha');
     expect(Object.keys(useMessageStore.getState().messages[ID_MT] ?? {})).toHaveLength(1);
   });
 
@@ -127,7 +127,7 @@ describe('hydrateIdentityStoresFromDb', () => {
     await hydrateMeshcoreNodesFromDb(ID_MC);
     await hydrateMeshcoreMessagesFromDb(ID_MC);
 
-    expect(useNodeStore.getState().nodes[ID_MC]?.[0xabc]?.longName).toBe('Repeater');
+    expect(useNodeStore.getState().nodes[ID_MC][0xabc].longName).toBe('Repeater');
     expect(Object.keys(useMessageStore.getState().messages[ID_MC] ?? {})).toHaveLength(1);
   });
 
@@ -240,7 +240,7 @@ describe('hydrateIdentityStoresFromDb', () => {
     await hydrateMeshcoreMessagesFromDb(ID_MC);
 
     const canonicalId = meshcoreMessageStoreId(roomMsg);
-    expect(useMessageStore.getState().messages[ID_MC]?.[canonicalId]?.payload).toBe(
+    expect(useMessageStore.getState().messages[ID_MC][canonicalId].payload).toBe(
       'persisted room post',
     );
   });
@@ -298,10 +298,10 @@ describe('hydrateIdentityStoresFromDb', () => {
     syncNodesMapToIdentityStore(ID_MC, nodes);
 
     const byId = useNodeStore.getState().nodes[ID_MC];
-    expect(Object.keys(byId ?? {})).toHaveLength(2);
-    expect(byId?.[0xabc]?.hwModel).toBe('Repeater');
-    expect(byId?.[0xabc]?.favorited).toBe(true);
-    expect(byId?.[0xdef]?.longName).toBe('Chat-B');
+    expect(Object.keys(byId)).toHaveLength(2);
+    expect(byId[0xabc].hwModel).toBe('Repeater');
+    expect(byId[0xabc].favorited).toBe(true);
+    expect(byId[0xdef].longName).toBe('Chat-B');
   });
 
   it('syncNodesMapToIdentityStore upserts Meshtastic runtime node map into Zustand', () => {
@@ -323,7 +323,7 @@ describe('hydrateIdentityStoresFromDb', () => {
       ],
     ]);
     syncNodesMapToIdentityStore(ID_MT, nodes);
-    expect(useNodeStore.getState().nodes[ID_MT]?.[0x11]?.longName).toBe('Node-A');
+    expect(useNodeStore.getState().nodes[ID_MT][0x11].longName).toBe('Node-A');
   });
 
   it('upsertMessageRecordsForIdentity merges large batches in one store update', () => {
@@ -380,8 +380,8 @@ describe('hydrateIdentityStoresFromDb', () => {
     upsertNodeRecordsForIdentity(ID_MC, records);
 
     const byId = useNodeStore.getState().nodes[ID_MC];
-    expect(Object.keys(byId ?? {})).toHaveLength(350);
-    expect(byId?.[1]?.hwModel).toBe('Repeater');
-    expect(byId?.[2]?.hwModel).toBe('Chat');
+    expect(Object.keys(byId)).toHaveLength(350);
+    expect(byId[1].hwModel).toBe('Repeater');
+    expect(byId[2].hwModel).toBe('Chat');
   });
 });

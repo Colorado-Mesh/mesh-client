@@ -23,11 +23,12 @@ function peerLastSeenMs(peer: ReticulumPeer): number {
 }
 
 function contactLastHeardMs(contact: ReticulumContact): number {
-  return normalizeLastHeardMs(contact.last_heard ?? 0);
+  return normalizeLastHeardMs(contact.last_heard);
 }
 
 export function reticulumPeerLastActivityMs(peer: ReticulumPeer): number {
   const contact = peer as ReticulumContact;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (contact.last_heard != null && contact.last_heard > 0) {
     return contactLastHeardMs(contact);
   }

@@ -8,7 +8,7 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 - **Credits ↔ package.json:** When adding or renaming a person under **Authors** or **Contributors** in [`docs/credits.md`](docs/credits.md), also add/update the matching entry in root `package.json` `contributors` (same order as credits). Format: `"DisplayName https://github.com/handle"` when a GitHub URL exists, otherwise the credits display name/callsign only (e.g. `"megabear - KD5IHC"`). Do **not** put Colorado Mesh org thanks, Acknowledgements projects, or dependency/binary attribution tables into `contributors`.
 - **Testing:** Ship a passing test for behavioral changes; do not call the task done without it.
 - **Stateful/I/O code:** Preserve integrity on failure; document failure point, fallback, and logging where it matters.
-- **Pre-commit patience:** Pre-commit runs staged-related Vitest (`pnpm run test:staged`), staged ESLint, full typecheck, and path-gated `check:*` scripts. Typical small commits are much faster than a full suite; vitest infra / lockfile changes still force a full Vitest run. Be patient — do not interrupt or force-skip. **PR CI** ([`tests.yaml`](.github/workflows/tests.yaml)) always runs the **full** Vitest suite (`pnpm run test:run`) — never `test:staged` / `test:changed` / `vitest related`. i18n is gated via `locale-quality.test.ts` (subprocess of `check:i18n`). **`pnpm run release`** (`scripts/release.sh`) runs full Vitest **plus ungated `check:*` scanners** (including a direct `check:i18n`). Green pre-commit ≠ green CI or release.
+- **Pre-commit patience:** Pre-commit runs staged-related Vitest (`pnpm run test:staged`), staged ESLint, full typecheck, path-gated `typecheck:strict-shared` when `src/shared/` is staged, and path-gated `check:*` scripts. Typical small commits are much faster than a full suite; vitest infra / lockfile changes still force a full Vitest run. Be patient — do not interrupt or force-skip. **Pre-push** runs `vitest run --changed` against the merge-base with `origin/main` (branch-scoped; skip with `--no-verify`). **PR CI** ([`tests.yaml`](.github/workflows/tests.yaml)) always runs the **full** Vitest suite (`pnpm run test:run`) — never `test:staged` / `test:changed` / `vitest related`. i18n is gated via `locale-quality.test.ts` (subprocess of `check:i18n`). **`pnpm run check:pr`** (hand, before opening/updating a PR) runs full lint + typecheck + `typecheck:strict-shared` + `test:run` (+ full-feature sidecar check when the branch touches sidecar). **`pnpm run release`** (`scripts/release.sh`) runs full Vitest **plus ungated `check:*` scanners** (including a direct `check:i18n`). Green pre-commit ≠ green CI or release.
 - **Fresh clone:** Before other setup, run `node scripts/check-environment.mjs` (works before pnpm is installed). After `pnpm install`, re-run `pnpm run check:environment`. Fix required failures using printed hints and `setup:*` scripts; optional warnings can wait. Wrong/outdated pnpm is blocked by `scripts/check-package-manager.mjs` on `preinstall` and `pnpm run dev` (prints Corepack/`npm install -g pnpm@…` steps; Node 25+ needs Corepack installed separately).
 
 ### Platform parity
@@ -89,7 +89,7 @@ Adding a cross-boundary feature:
 ## 5. Testing
 
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
-- **Reticulum sidecar (Rust):** Clippy + rustfmt via `pnpm run check:reticulum-sidecar` (stub build in pre-commit when `cargo` is on `PATH` **and** sidecar-related paths are staged) and full-feature lint in `reticulum-sidecar.yaml`. Coverage threshold (`cargo llvm-cov --fail-under-lines`) is enforced only in `tests.yaml` when sidecar paths change — not in pre-commit.
+- **Reticulum sidecar (Rust):** Clippy + rustfmt via `pnpm run check:reticulum-sidecar` (full-feature fmt + Clippy + test when `cargo` is on `PATH` **and** sidecar-related paths are staged) and the same feature set in `reticulum-sidecar.yaml`. Coverage threshold (`cargo llvm-cov --fail-under-lines`) is enforced only in `tests.yaml` when sidecar paths change — not in pre-commit.
 - **Temp dirs in tests:** Use `mkdtempSync(path.join(os.tmpdir(), 'prefix-'))` — never write to a fixed name under `os.tmpdir()` (CodeQL + `check:insecure-temp-files`).
 - Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
 - Prefer `mockConsoleWarn` / `withMockedConsoleWarn` from `src/renderer/lib/vitestConsoleMock.ts` over ad-hoc `vi.spyOn(console, 'warn')` in renderer tests.
@@ -110,7 +110,9 @@ Adding a cross-boundary feature:
 
 ## 6. Commands & CI Checks
 
-**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`. Reticulum sidecar: `pnpm run check:reticulum-sidecar` (pre-commit stub), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
+**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run check:pr`, `pnpm run update`. Reticulum sidecar: `pnpm run check:reticulum-sidecar` (full features), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
+
+**ESLint type-aware scopes:** production `src/**` enables `no-unsafe-*`; `*.test.ts` / `*.test.tsx` keep those off. `@typescript-eslint/no-unnecessary-condition` is error only for `src/shared/**` and `src/renderer/lib/**` (not UI components/runtimes).
 
 **Local Linux CI (optional):** Container mode — `act:ci`, `act:tests`, `act:pr`, … (needs a Docker-compatible engine + act; Podman preferred). Host mode — `act:ci:native`, `act:tests:native`, … (no container engine). See [docs/ci-cd.md](docs/ci-cd.md). macOS/Windows packaging uses native `dist:mac` / `dist:win`. **`dist:mac`** / **`dist:mac:publish`** always run **`scripts/verify-mac-packaging.mjs`** (ZIP + DMG symlink asserts, no raw `.app` CI uploads). macOS signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_IDENTITY_AUTO_DISCOVERY`) is scoped to **`macos-latest`** jobs in `release.yaml` / `build.yaml`; partial-secret validation fails the release job when `CSC_LINK` is set but notarization secrets are missing.
 
@@ -123,12 +125,14 @@ Adding a cross-boundary feature:
 3. markdownlint on **staged** `.md` files only
 4. When dependency manifests staged: `pnpm dedupe`, re-stage lockfile and originally staged paths
 5. When `en/translation.json` is staged: `pnpm run i18n:auto-translate` and re-stage `src/renderer/locales/`
-6. ESLint on **staged** JS/TS with `--cache` (CI still runs full `pnpm run lint`); full `typecheck`
+6. ESLint on **staged** JS/TS with `--cache` (CI still runs full `pnpm run lint`); full `typecheck`; path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
 7. Always-on cheap `check:*` scanners; path-gated checks for flatpak / DB migrations / IPC / reticulum interface modes / decommissioned hubs / `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged); `check:i18n` when English locale staged else `check:i18n:branch`; `check:licenses`
 8. `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` when workflows / YAML staged
 9. `pnpm run test:staged` → `scripts/precommit-tests.mjs` (staged-only `vitest related`; full suite for vitest config/setup/deps; skip when no source/test staged)
 
-Before PR: `pnpm run lint`, `typecheck`, `test:run` (full suite), plus any relevant `check:*`. Release pre-flight (`pnpm run release`) always uses `test:run` + full `check:*` (no path-gating / soft-skips).
+**Pre-push:** `.githooks/pre-push` runs `vitest run --changed <merge-base-with-origin/main>` when `origin/main` exists.
+
+Before PR: `pnpm run check:pr` (lint + typecheck + `typecheck:strict-shared` + full `test:run` + path-aware sidecar). Release pre-flight (`pnpm run release`) always uses `test:run` + full `check:*` (no path-gating / soft-skips).
 
 ## 7. Git & PR Workflow
 
@@ -170,7 +174,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 - **Engines:** `src/renderer/lib/diagnostics/`; `RoutingDiagnosticEngine.ts`, `RFDiagnosticEngine.ts` (includes MeshCore **High Companion TX Queue** when `queueLen > 200`), `RemediationEngine.ts`, `ReticulumDiagnosticEngine.ts`.
 - **Store:** `src/renderer/stores/diagnosticsStore.ts`; routing/RF rows, foreign LoRa, MQTT ignore, redundancy.
-- **Tab scoping:** `filterDiagnosticRowsForProtocol()` — Meshtastic/MeshCore tabs show LoRa rows only; Reticulum tab shows `reticulum/*` only. Foreign-LoRa tables UI is Meshtastic-tab-only.
+- **Tab scoping:** `filterDiagnosticRowsForProtocol()` — Meshtastic/MeshCore tabs show LoRa rows only; Reticulum tab shows `reticulum/*` only. Foreign-LoRa tables UI is on Meshtastic and MeshCore tabs (keyed by that protocol’s self node id).
 - **Extend:** adjust `DiagnosticRow` in `src/renderer/lib/types.ts`, add detector, wire `replaceRoutingRowsFromMap` / `replaceRfRowsForNode`; TTL defaults in `diagnosticRows.ts` (routing 24h, RF 1h).
 - **Full reference:** [docs/diagnostics.md](docs/diagnostics.md).
 

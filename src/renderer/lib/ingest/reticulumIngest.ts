@@ -96,8 +96,10 @@ export function findReticulumParentRecordByHash(
   const target = normalizeReticulumMessageHash(replyToHash);
   if (!target) return undefined;
   const byId = useMessageStore.getState().messages[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!byId) return undefined;
   const direct = byId[replyToHash] ?? byId[target];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (direct) return direct;
   for (const row of Object.values(byId)) {
     if (
@@ -182,6 +184,7 @@ export function ingestReticulumLxmfPayload(
   }
   const record = payloadToMessageRecord(p, identityId);
   if (!record) return false;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const existing = useMessageStore.getState().messages[identityId]?.[record.id];
   const merged = mergeReticulumIngestRecord(existing, record, p, ctx);
   upsertMessage(identityId, merged);

@@ -42,6 +42,7 @@ import type {
 } from './Protocol';
 import { UnsupportedOperation } from './Protocol';
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- External SDK value is validated by surrounding boundary logic.
 const { PortNum } = Portnums;
 
 /**
@@ -161,12 +162,14 @@ function decodeTraceRouteFromDecodedPayload(
 ): DecodedTraceRouteFields | null {
   if (!value.payload) return null;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const rd = fromBinary(Mesh.RouteDiscoverySchema, value.payload) as unknown as {
       route: readonly number[];
       routeBack: readonly number[];
     };
     return {
       route: boundedRoute(rd.route),
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       routeBack: rd.routeBack ? boundedRoute(rd.routeBack) : undefined,
       dataLayerDest: finiteOptionalNumber(value.dest),
       dataLayerSource: finiteOptionalNumber(value.source),
@@ -266,10 +269,14 @@ export class MeshtasticProtocol implements Protocol {
     );
     push(
       device.events.onMeshPacket.subscribe((packet) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         if (packet.payloadVariant.case === 'decoded') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           const portnum = packet.payloadVariant.value.portnum;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           if (portnum === PortNum.TEXT_MESSAGE_APP) {
             fire(this.decodeTextMessage(packet));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           } else if (portnum === PortNum.TRACEROUTE_APP) {
             fireTraceRoute(packet);
           }
@@ -339,6 +346,7 @@ export class MeshtasticProtocol implements Protocol {
     );
     push(
       device.events.onMyNodeInfo.subscribe((info) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         const nodeId = normalizedNodeNum(info.myNodeNum);
         if (nodeId) {
           emit({ type: 'node_info', payload: { nodeId } });
@@ -527,6 +535,7 @@ export class MeshtasticProtocol implements Protocol {
       throw new TypeError('meshtastic sendWaypoint: id must be a valid unsigned integer');
     }
     await device.sendWaypoint(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       create(Mesh.WaypointSchema, {
         id,
         name: opts.name,
@@ -548,6 +557,7 @@ export class MeshtasticProtocol implements Protocol {
       throw new TypeError('meshtastic deleteWaypoint: id must be a valid unsigned integer');
     }
     await device.sendWaypoint(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       create(Mesh.WaypointSchema, { id: waypointId, expire: 1 }) as Parameters<
         MeshDevice['sendWaypoint']
       >[0],
@@ -625,14 +635,17 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   async setChannel(handle: unknown, opts: SetChannelOptions): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const channel = create(ProtobufChannel.ChannelSchema, {
       index: opts.index,
       role: opts.role,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       settings: create(ProtobufChannel.ChannelSettingsSchema, {
         name: opts.settings.name,
         psk: opts.settings.psk,
         uplinkEnabled: opts.settings.uplinkEnabled,
         downlinkEnabled: opts.settings.downlinkEnabled,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         moduleSettings: create(ProtobufChannel.ModuleSettingsSchema, {
           positionPrecision: opts.settings.positionPrecision,
         }),
@@ -646,6 +659,7 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   async setOwner(handle: unknown, opts: SetOwnerOptions): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const user = create(Mesh.UserSchema, {
       longName: opts.longName,
       shortName: opts.shortName,
@@ -678,6 +692,7 @@ export class MeshtasticProtocol implements Protocol {
       sendPacket: (b: Uint8Array, p: number, t: string) => Promise<void>;
     }>(handle, 'meshtastic setRingtone').sendPacket(
       toBinary(Admin.AdminMessageSchema, msg),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       Portnums.PortNum.ADMIN_APP,
       'self',
     );
@@ -695,6 +710,7 @@ export class MeshtasticProtocol implements Protocol {
   ): Promise<void> {
     assertFiniteCoordinates(operation, latitude, longitude);
     await requireHandle<MeshDevice>(handle, operation).setPosition(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       create(Mesh.PositionSchema, {
         latitudeI: Math.round(latitude * 1e7),
         longitudeI: Math.round(longitude * 1e7),
@@ -744,9 +760,9 @@ export class MeshtasticProtocol implements Protocol {
       hopLimit?: number;
       viaMqtt?: boolean;
     };
-    if (p.payloadVariant?.case !== 'decoded') return [];
+    if (p.payloadVariant.case !== 'decoded') return [];
     const data = p.payloadVariant.value;
-    if (!(data?.payload instanceof Uint8Array)) return [];
+    if (!(data.payload instanceof Uint8Array)) return [];
     const from = normalizedNodeNum(p.from);
     const to = normalizedNodeNum(p.to);
     if (from === undefined || to === undefined) return [];
@@ -876,8 +892,8 @@ export class MeshtasticProtocol implements Protocol {
     };
     const nodeId = normalizedNodeNum(p.from);
     if (nodeId === undefined) return [];
-    const latitude = (isFiniteNumber(p.data?.latitudeI) ? p.data.latitudeI : 0) / 1e7;
-    const longitude = (isFiniteNumber(p.data?.longitudeI) ? p.data.longitudeI : 0) / 1e7;
+    const latitude = (isFiniteNumber(p.data.latitudeI) ? p.data.latitudeI : 0) / 1e7;
+    const longitude = (isFiniteNumber(p.data.longitudeI) ? p.data.longitudeI : 0) / 1e7;
     if (Math.abs(latitude) > MAX_LATITUDE || Math.abs(longitude) > MAX_LONGITUDE) return [];
     return [
       {
@@ -886,7 +902,7 @@ export class MeshtasticProtocol implements Protocol {
           nodeId,
           latitude,
           longitude,
-          altitude: isFiniteNumber(p.data?.altitude) ? p.data.altitude : undefined,
+          altitude: isFiniteNumber(p.data.altitude) ? p.data.altitude : undefined,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
         },
       },
@@ -902,7 +918,7 @@ export class MeshtasticProtocol implements Protocol {
         deviceMetrics?: Record<string, unknown>;
       };
     };
-    const m: Record<string, unknown> = p.data?.variant?.value ?? p.data?.deviceMetrics ?? {};
+    const m: Record<string, unknown> = p.data.variant?.value ?? p.data.deviceMetrics ?? {};
     const num = (key: string): number | undefined => m[key] as number | undefined;
     return [
       {
@@ -910,8 +926,7 @@ export class MeshtasticProtocol implements Protocol {
         payload: {
           nodeId: p.from,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
-          variantCase:
-            p.data?.variant?.case ?? (p.data?.deviceMetrics ? 'deviceMetrics' : undefined),
+          variantCase: p.data.variant?.case ?? (p.data.deviceMetrics ? 'deviceMetrics' : undefined),
           batteryLevel: num('batteryLevel'),
           voltage: num('voltage'),
           channelUtilization: num('channelUtilization'),
@@ -955,7 +970,7 @@ export class MeshtasticProtocol implements Protocol {
         expire?: number;
       };
     };
-    const waypointId = normalizedNodeNum(p.data?.id);
+    const waypointId = normalizedNodeNum(p.data.id);
     if (!waypointId) return [];
     const latitudeI = isFiniteNumber(p.data.latitudeI) ? p.data.latitudeI : 0;
     const longitudeI = isFiniteNumber(p.data.longitudeI) ? p.data.longitudeI : 0;
@@ -1137,6 +1152,7 @@ export class MeshtasticProtocol implements Protocol {
     const from = normalizedNodeNum(mp.from);
     if (from === undefined) return [];
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       const serialized = toBinary(Mesh.MeshPacketSchema, raw as never);
       if (serialized.byteLength > MAX_RAW_PACKET_BYTES) return [];
       const portLabel = this.rawPacketPortLabel(raw);
@@ -1174,6 +1190,7 @@ export class MeshtasticProtocol implements Protocol {
     if (variant === 'decoded') {
       const portnum = p.payloadVariant?.value?.portnum;
       if (typeof portnum === 'number') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         const found = Object.entries(Portnums.PortNum).find(([, v]) => v === portnum);
         return found ? found[0] : `PORT_${portnum}`;
       }

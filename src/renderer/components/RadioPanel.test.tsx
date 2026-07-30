@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import type { MeshCoreSelfInfo } from '@/renderer/lib/meshcore/meshcoreHookTypes';
+import { MESHCORE_CAPABILITIES } from '@/renderer/lib/radio/BaseRadioProvider';
 import { generateConfigUrl, MESHTASTIC_CHANNEL_ROLE } from '@/shared/meshtasticUrlEncoder';
 
 import RadioPanel, { ConfigNumber } from './RadioPanel';
@@ -41,6 +43,24 @@ const defaultProps = {
   onFactoryReset: vi.fn().mockResolvedValue(undefined),
   onResetNodeDb: vi.fn().mockResolvedValue(undefined),
 };
+
+function meshcoreSelfInfo(advLat: number, advLon: number): MeshCoreSelfInfo {
+  return {
+    name: 'Self',
+    publicKey: new Uint8Array(32),
+    type: 1,
+    txPower: 20,
+    advLat,
+    advLon,
+    manualAddContacts: false,
+    radioFreq: 915_000_000,
+    multiAcks: 0,
+    advertLocPolicy: 0,
+    telemetryModeBase: 0,
+    telemetryModeLoc: 0,
+    telemetryModeEnv: 0,
+  };
+}
 
 describe('RadioPanel accessibility', () => {
   it('has no axe violations with empty channel configs', async () => {
@@ -177,6 +197,55 @@ describe('RadioPanel remote target safeguards', () => {
       screen.getByText('Waiting for WiFi / Network settings from the device…'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Apply WiFi / Network' })).toBeDisabled();
+  });
+});
+
+describe('RadioPanel MeshCore advert position synchronization', () => {
+  it('hydrates, preserves dirty edits, and resumes syncing after a successful send', async () => {
+    const user = userEvent.setup();
+    const onSendPositionToDevice = vi.fn().mockResolvedValue(undefined);
+    const renderPanel = (selfInfo: MeshCoreSelfInfo) => (
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          meshcoreSelfInfo={selfInfo}
+          onSendPositionToDevice={onSendPositionToDevice}
+        />
+      </ToastProvider>
+    );
+    const { rerender } = render(renderPanel(meshcoreSelfInfo(39_000_000, -105_000_000)));
+    const positionDetails = [...document.querySelectorAll('details')].find((details) =>
+      details.textContent?.includes('Position / GPS'),
+    );
+    expect(positionDetails).toBeDefined();
+    await user.click(positionDetails!.querySelector('summary')!);
+
+    const latitude = screen.getByLabelText('Latitude');
+    const longitude = screen.getByLabelText('Longitude');
+    await waitFor(() => {
+      expect(latitude).toHaveValue('39');
+      expect(longitude).toHaveValue('-105');
+    });
+
+    await user.clear(latitude);
+    await user.type(latitude, '40');
+    await user.clear(longitude);
+    await user.type(longitude, '-104');
+    rerender(renderPanel(meshcoreSelfInfo(41_000_000, -103_000_000)));
+    expect(latitude).toHaveValue('40');
+    expect(longitude).toHaveValue('-104');
+
+    await user.click(screen.getByRole('button', { name: 'Send Position to Device' }));
+    await waitFor(() => {
+      expect(onSendPositionToDevice).toHaveBeenCalledWith(40, -104, 0);
+    });
+    rerender(renderPanel(meshcoreSelfInfo(42_000_000, -102_000_000)));
+    await waitFor(() => {
+      expect(latitude).toHaveValue('42');
+      expect(longitude).toHaveValue('-102');
+    });
   });
 });
 

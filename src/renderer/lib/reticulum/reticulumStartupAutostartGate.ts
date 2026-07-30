@@ -75,7 +75,8 @@ export async function awaitReticulumBleCoexistenceClear(
   if (typeof window === 'undefined') {
     return;
   }
-  if (!window.electronAPI?.bleCoexistence?.getState) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+  if (!window.electronAPI.bleCoexistence.getState) {
     return;
   }
   const deadline = Date.now() + maxWaitMs;

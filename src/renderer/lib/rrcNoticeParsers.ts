@@ -19,6 +19,7 @@ const JOIN_INFO_TOPIC = /^room\s+(\S+)\s*:.*\btopic=([^\n;]+)/i;
 
 /** Parse one rrcd `/list` indented line: `  room` or `  room - topic`. */
 function parseListRoomLine(line: string): RrcListedRoom | null {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!line.startsWith('  ') || line[2] === ' ' || line[2] === undefined) return null;
   const trimmed = line.trim();
   const sep = trimmed.indexOf(' - ');
@@ -71,7 +72,7 @@ export function parseRrcWhoNotice(
   const m = WHO_LINE.exec(text);
   if (!m?.[1]) return null;
   const room = normalizeListedRoomName(m[1]);
-  const roster = (m[2] ?? '').trim();
+  const roster = m[2].trim();
   if (!roster || roster === '(none)') {
     return { room, members: [] };
   }
@@ -108,7 +109,7 @@ export function parseRrcTopicNotice(body: string): { room: string; topic: string
   const text = body.trim();
   const topicCmd = TOPIC_LINE.exec(text);
   if (topicCmd?.[1]) {
-    const topic = (topicCmd[2] ?? '').trim();
+    const topic = topicCmd[2].trim();
     return {
       room: normalizeListedRoomName(topicCmd[1]),
       topic: topic === '(none)' || topic === '(cleared)' ? '' : topic,
@@ -116,7 +117,7 @@ export function parseRrcTopicNotice(body: string): { room: string; topic: string
   }
   const joinInfo = JOIN_INFO_TOPIC.exec(text);
   if (joinInfo?.[1]) {
-    const topic = (joinInfo[2] ?? '').trim();
+    const topic = joinInfo[2].trim();
     return {
       room: normalizeListedRoomName(joinInfo[1]),
       topic: topic === '(none)' ? '' : topic,

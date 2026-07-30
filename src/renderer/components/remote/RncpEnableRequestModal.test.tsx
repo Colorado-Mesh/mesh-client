@@ -29,8 +29,8 @@ describe('RncpEnableRequestModal', () => {
     });
     vi.mocked(window.electronAPI.reticulum.rncp.setListener).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
-      enabled: true,
-      inbound_mode: 'ask',
+      enabled: false,
+      inbound_mode: 'off',
       allowed: [],
       blocked: [],
     });
@@ -66,6 +66,19 @@ describe('RncpEnableRequestModal', () => {
   });
 
   it('shares rncp receive dest via LXMF after enable', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener)
+      .mockResolvedValueOnce({
+        enabled: false,
+        inbound_mode: 'off',
+        allowed: [],
+        blocked: [],
+      })
+      .mockResolvedValue({
+        enabled: true,
+        inbound_mode: 'ask',
+        allowed: [],
+        blocked: [],
+      });
     const user = userEvent.setup();
     render(<RncpEnableRequestModal />);
     await user.click(
@@ -77,5 +90,22 @@ describe('RncpEnableRequestModal', () => {
         text: expect.stringContaining(`${RNCP_RECEIVE_DEST_SHARE_PREFIX}${'c'.repeat(32)}`),
       });
     });
+  });
+
+  it('auto-shares receive dest when listener is already enabled', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: true,
+      inbound_mode: 'ask',
+      allowed: [],
+      blocked: [],
+    });
+    render(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/send', {
+        destination_hash: 'a'.repeat(32),
+        text: expect.stringContaining(`${RNCP_RECEIVE_DEST_SHARE_PREFIX}${'c'.repeat(32)}`),
+      });
+    });
+    expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
   });
 });

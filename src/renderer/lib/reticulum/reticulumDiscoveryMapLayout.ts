@@ -47,7 +47,7 @@ export function matchesRmapInterfaceFilter(
 function peerTransportIds(peers: ReticulumPeerWireRow[]): Set<string> {
   const out = new Set<string>();
   for (const peer of peers) {
-    const hash = peer.destination_hash?.trim().toLowerCase();
+    const hash = peer.destination_hash.trim().toLowerCase();
     if (hash) {
       out.add(hash);
     }
@@ -67,7 +67,7 @@ export function resolveRmapPeerDetailHash(
   const tid = transportId.trim().toLowerCase();
   if (!tid) return null;
   for (const peer of peers) {
-    const dest = peer.destination_hash?.trim().toLowerCase();
+    const dest = peer.destination_hash.trim().toLowerCase();
     if (dest && dest === tid) {
       return dest;
     }

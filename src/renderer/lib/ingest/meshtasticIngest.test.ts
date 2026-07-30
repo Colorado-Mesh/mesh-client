@@ -200,7 +200,7 @@ describe('attachMeshtasticIngest', () => {
       ID,
     );
     const record = useMessageStore.getState().messages[ID]['77'];
-    expect(record?.hopCount).toBe(4);
+    expect(record.hopCount).toBe(4);
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(4);
     session.detach();

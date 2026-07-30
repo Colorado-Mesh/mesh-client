@@ -16,7 +16,7 @@ import path from 'path';
 import { describe, expect, it } from 'vitest';
 
 describe('database migration source checks (CodeQL)', () => {
-  const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
+  const projectRoot = path.resolve(import.meta.dirname, '..', '..', '..');
   const script = path.join(projectRoot, 'scripts', 'check-db-migrations.mjs');
 
   it('SQL string segments have spaces after commas (js/missing-space-in-string-concatenation)', () => {

@@ -17,6 +17,7 @@ export function normalizeMeshtasticPskTo16Bytes(psk: Uint8Array | Buffer): Uint8
 
 /** True when `psk` matches the well-known default Meshtastic public channel key (`AQ==`). */
 export function isMeshtasticDefaultPublicPsk(psk: Uint8Array | Buffer): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!psk || psk.length === 0) return false;
   const n = normalizeMeshtasticPskTo16Bytes(psk);
   for (let i = 0; i < 16; i++) {

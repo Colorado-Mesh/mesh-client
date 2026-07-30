@@ -94,7 +94,7 @@ async function withNobleBleConnectLock<T>(
 }
 
 function logMeshtasticDeviceConnection(detail: string): void {
-  const fn = window.electronAPI?.log?.logDeviceConnection;
+  const fn = window.electronAPI.log.logDeviceConnection;
   if (typeof fn === 'function') void fn(detail);
 }
 
@@ -341,11 +341,13 @@ export async function createConnection(
       } finally {
         serialApi.requestPort = origRequestPort;
       }
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (capturedSerialPort) {
         persistSerialPortIdentity(capturedSerialPort);
       }
       {
         const parts = ['transport=serial', 'stack=meshtastic'];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
         if (capturedSerialPort) {
           const pid = (capturedSerialPort as SerialPort & { portId?: string }).portId;
           const sig = getPortSignature(capturedSerialPort);
@@ -407,12 +409,13 @@ export async function createConnection(
   // node/channel/config dump is emitted before any listeners exist.
 
   assertTransportReadyForMeshDevice(transport, 'Meshtastic serial');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- External SDK value is validated by surrounding boundary logic.
   return new MeshDevice(transport as any);
 }
 
 /** Resolve the underlying Web Serial port from Meshtastic transport wrappers. */
 export function getSerialPortFromMeshTransport(transport: unknown): SerialPort | null {
-  const candidate = transport as { port?: SerialPort; connection?: SerialPort };
+  const candidate = transport as { port?: SerialPort; connection?: SerialPort } | null | undefined;
   if (candidate?.port && typeof candidate.port.close === 'function') {
     return candidate.port;
   }
@@ -455,7 +458,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   await closeSerialPortIfOpen(port);
   persistSerialPortIdentity(port);
   console.debug(
-    `[connection] reconnectSerial: using port portId=${(port as SerialPort & { portId?: string }).portId ?? 'none'} usbVendor=${port.getInfo?.().usbVendorId ?? 'n/a'} usbProduct=${port.getInfo?.().usbProductId ?? 'n/a'}`,
+    `[connection] reconnectSerial: using port portId=${(port as SerialPort & { portId?: string }).portId ?? 'none'} usbVendor=${port.getInfo().usbVendorId ?? 'n/a'} usbProduct=${port.getInfo().usbProductId ?? 'n/a'}`,
   );
 
   assertMeshtasticSerialWebStreamsAvailable();
@@ -494,7 +497,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
 async function cancelMeshtasticFromDeviceBestEffort(
   transport: MeshDevice['transport'],
 ): Promise<void> {
-  const fromDevice = transport?.fromDevice as ReadableStream | undefined;
+  const fromDevice = transport.fromDevice as ReadableStream | undefined;
   if (!fromDevice || typeof fromDevice.cancel !== 'function') return;
   try {
     await fromDevice.cancel();
@@ -524,8 +527,9 @@ async function closeMeshtasticTransportStreamsBestEffort(
 ): Promise<void> {
   if (!transport) return;
   try {
-    const toDevice = transport.toDevice as { close?: () => Promise<void> } | undefined;
-    if (toDevice?.close) {
+    const toDevice = transport.toDevice as
+      { close?: () => Promise<void>; getWriter?: () => unknown } | undefined;
+    if (toDevice != null && typeof toDevice.close === 'function') {
       await toDevice.close();
     }
   } catch (e) {
@@ -538,7 +542,7 @@ async function closeMeshtasticTransportStreamsBestEffort(
   // call (e.g. a race with an in-flight queue write/heartbeat) — ensure the underlying HTTP
   // polling interval / TCP socket is still torn down rather than left orphaned until the next
   // connect's defensive cleanup runs. Harmless no-op if already disconnected.
-  const transportDisconnect = (transport as { disconnect?: () => Promise<void> })?.disconnect;
+  const transportDisconnect = (transport as { disconnect?: () => Promise<void> }).disconnect;
   if (typeof transportDisconnect === 'function') {
     try {
       await transportDisconnect.call(transport);

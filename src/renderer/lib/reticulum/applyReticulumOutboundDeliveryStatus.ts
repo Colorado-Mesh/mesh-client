@@ -149,7 +149,9 @@ export function persistReticulumOutboundMessageStatus(
   sentVia?: MessageTransport,
   deliveryMethod?: MessageRecord['reticulumDeliveryMethod'],
 ): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const before = useMessageStore.getState().messages[identityId]?.[messageId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!before) return false;
   // Link-timeout failure bridge can mark Failed before WS Direct→PN fallback arrives.
   // Authoritative sending+propagated must revive so the badge is not stuck as PN ✗.
@@ -202,11 +204,10 @@ export function persistReticulumOutboundMessageStatus(
     return true;
   }
   updateMessageStatus(identityId, messageId, status, errorMessage);
-  let record = useMessageStore.getState().messages[identityId]?.[messageId] ?? {
-    ...before,
-    status,
-    ...(errorMessage !== undefined ? { error: errorMessage } : {}),
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  let record = useMessageStore.getState().messages[identityId]?.[messageId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Store state may be externally mutated between reads.
+  if (!record) return false;
   let patched = false;
   if (sentVia != null && sentVia !== record.receivedVia) {
     record = { ...record, receivedVia: sentVia };

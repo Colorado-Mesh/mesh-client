@@ -328,10 +328,10 @@ export async function switchReticulumIdentity(identityId: string): Promise<boole
   const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identities/switch', {
     identity_id: identityId,
   })) as { ok?: boolean; error?: string };
-  if (res?.ok === false) {
+  if (res.ok === false) {
     throw new Error(res.error ?? 'identity switch failed');
   }
-  return Boolean(res?.ok);
+  return Boolean(res.ok);
 }
 
 export async function createReticulumIdentitySlot(
@@ -343,8 +343,8 @@ export async function createReticulumIdentitySlot(
   const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identities', {
     display_name: displayName?.trim() || undefined,
   })) as { ok?: boolean; id?: string; error?: string };
-  if (res?.ok === false || !res?.id) {
-    throw new Error(res?.error ?? 'identity create failed');
+  if (res.ok === false || !res.id) {
+    throw new Error(res.error ?? 'identity create failed');
   }
   return { id: res.id };
 }
@@ -356,7 +356,7 @@ export async function deleteReticulumIdentitySlot(identityId: string): Promise<v
   const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identities/delete', {
     identity_id: identityId,
   })) as { ok?: boolean; error?: string };
-  if (res?.ok === false) {
+  if (res.ok === false) {
     throw new Error(res.error ?? 'identity delete failed');
   }
 }

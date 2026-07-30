@@ -116,6 +116,13 @@ else
 fi
 
 pnpm run typecheck || fail 'pnpm run typecheck'
+
+if staged_match '^(src/shared/|tsconfig\.strict\.json)'; then
+  pnpm run typecheck:strict-shared || fail 'pnpm run typecheck:strict-shared'
+else
+  printf 'pre-commit: skip typecheck:strict-shared (no src/shared or tsconfig.strict.json staged)\n' >&2
+fi
+
 pnpm run check:electron-security || fail 'pnpm run check:electron-security'
 
 if staged_match '^(flatpak/|org\.coloradomesh\.MeshClient\.yml|package\.json|scripts/check-flatpak\.mjs|scripts/sync-flatpak-electron)'; then

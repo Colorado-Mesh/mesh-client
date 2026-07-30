@@ -109,6 +109,55 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('defers Noble disconnect during reconnect open/configure (single-flight)', () => {
+    expect(SOURCE).toContain('reconnectConnectInFlightRef');
+    expect(SOURCE).toMatch(
+      /onNobleBleDisconnected[\s\S]*?reconnectConnectInFlightRef\.current[\s\S]*?defer reconnect until connect settles/,
+    );
+  });
+
+  it('wraps BLE reconnect open in withNobleBleConnectMutex (MeshCore parity)', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain("withNobleBleConnectMutex('meshtastic'");
+    expect(reconnectBody).toContain('reconnectConnectInFlightRef.current = true');
+    expect(reconnectBody).toContain('skip overlapping open');
+  });
+
+  it('defers starting reconnect while open+configure is already in flight', () => {
+    const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
+    expect(lostBody).toContain('reconnectConnectInFlightRef.current');
+    expect(lostBody).toContain('defer reconnect until in-flight open settles');
+  });
+
+  it('flushes deferred reconnects after non-BLE reconnect attempts settle', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
+    expect(finallyBody).toContain('if (isBleReconnect) bleConnectInProgressRef.current = false;');
+    expect(finallyBody).toContain('if (meshtasticDeferredReconnectRef.current)');
+    expect(finallyBody).toContain('queueMicrotask(() => handleConnectionLostRef.current())');
+    expect(finallyBody.indexOf('if (meshtasticDeferredReconnectRef.current)')).toBeGreaterThan(
+      finallyBody.indexOf('if (isBleReconnect)'),
+    );
+  });
+
+  it('checks reconnect generation before open, wire, and configure', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('Reconnect superseded before open');
+    expect(reconnectBody).toContain('Reconnect superseded after open');
+    expect(reconnectBody).toContain('Reconnect superseded before configure');
+    expect(reconnectBody).toContain('Reconnect superseded during configure');
+  });
+
+  it('BLE configure timeout routes through handleConnectionLost (reconnect)', () => {
+    const wireSource = readFileSync(
+      join(TEST_DIR, '../lib/meshtastic/meshtasticRuntimeWireEffects.ts'),
+      'utf-8',
+    );
+    expect(wireSource).toMatch(
+      /configure timeout \(BLE 30s\)[\s\S]*?handleConnectionLostRef\.current\(\)/,
+    );
+  });
+
   it('guards attachRfSession configure against reconnect generation supersession', () => {
     expect(SOURCE).toMatch(
       /attachRfSession[\s\S]{0,3500}reconnectGenerationRef\.current !== generation[\s\S]{0,200}Attach superseded during configure/,

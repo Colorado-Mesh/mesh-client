@@ -232,10 +232,10 @@ export class MeshCoreProtocol implements Protocol {
         );
       }
       const result = await conn.sendTextMessage(opts.destinationPubKey, opts.text);
-      const ackCrc = result?.expectedAckCrc;
+      const ackCrc = result.expectedAckCrc;
       if (ackCrc == null) return {};
       const estTimeout =
-        typeof result?.estTimeout === 'number' && Number.isFinite(result.estTimeout)
+        typeof result.estTimeout === 'number' && Number.isFinite(result.estTimeout)
           ? result.estTimeout
           : undefined;
       return {
@@ -446,7 +446,7 @@ export class MeshCoreProtocol implements Protocol {
       lastAdvert?: number;
       advName?: string;
     };
-    if (d.publicKey?.length !== 32) return [];
+    if (d.publicKey.length !== 32) return [];
     const nodeId = pubkeyToNodeId(d.publicKey);
     if (nodeId === 0) return [];
 

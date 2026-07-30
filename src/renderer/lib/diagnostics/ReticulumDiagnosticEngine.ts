@@ -255,7 +255,7 @@ export function buildReticulumDiagnosticRows(
         reticulumRepairKind: 'disable',
       });
     }
-    for (const name of interfaceIssueAlert.bleBondRemoved ?? []) {
+    for (const name of interfaceIssueAlert.bleBondRemoved) {
       const iface = ifaceByName.get(name);
       rows.push({
         kind: 'rf',
@@ -270,7 +270,7 @@ export function buildReticulumDiagnosticRows(
         reticulumRepairKind: 'edit',
       });
     }
-    for (const name of interfaceIssueAlert.blePairingTimedOut ?? []) {
+    for (const name of interfaceIssueAlert.blePairingTimedOut) {
       const iface = ifaceByName.get(name);
       rows.push({
         kind: 'rf',
@@ -310,7 +310,7 @@ export function buildReticulumDiagnosticRows(
         condition: 'reticulum/transport-saturated',
         cause: `RNS transport saturated (${interfaceIssueAlert.transportSaturatedCount} path-request drops)`,
         causeI18n: runtimeCauseI18n(
-          options?.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
+          options.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
           {
             count: String(interfaceIssueAlert.transportSaturatedCount),
           },

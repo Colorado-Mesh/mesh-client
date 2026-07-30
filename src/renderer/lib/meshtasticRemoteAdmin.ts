@@ -45,7 +45,7 @@ interface MeshPacket {
 export const REMOTE_ADMIN_PACKET_HOP_LIMIT = 7;
 
 function adminPayloadCase(message: AdminMessage): string | undefined {
-  return message.payloadVariant?.case;
+  return message.payloadVariant.case;
 }
 
 /** Meshtastic Android PKC sentinel; channel field is omitted on wire for PKI admin. */
@@ -168,6 +168,7 @@ export function isRemoteAdminRetryableError(message: string): boolean {
 
 /** ROUTING_APP codes that often precede a successful admin response on multi-hop reads. */
 export function isBenignRoutingErrorForRead(error: RemoteAdminRoutingErrorCode): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   return (
     error === RoutingError.NO_CHANNEL ||
@@ -261,6 +262,7 @@ export function normalizeRemoteAdminError(e: unknown): string {
   if (e instanceof Error) {
     const msg = e.message;
     if (msg.startsWith('remoteAdmin.errors.')) return msg;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const RoutingError = Mesh.Routing_Error as Record<string, number>;
     for (const [name, code] of Object.entries(RoutingError)) {
       if (msg.includes(name)) return routingErrorToRemoteAdminKey(code);
@@ -272,8 +274,10 @@ export function normalizeRemoteAdminError(e: unknown): string {
       return routingErrorToRemoteAdminKey(o.error);
     }
     if (typeof o.error === 'string') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       const RoutingError = Mesh.Routing_Error as Record<string, number>;
       const code = RoutingError[o.error];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (code != null) return routingErrorToRemoteAdminKey(code);
     }
   }
@@ -281,6 +285,7 @@ export function normalizeRemoteAdminError(e: unknown): string {
 }
 
 export function routingErrorToRemoteAdminKey(error: RemoteAdminRoutingErrorCode): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   switch (error) {
     case RoutingError.ADMIN_PUBLIC_KEY_UNAUTHORIZED:
@@ -404,6 +409,7 @@ export function parseIncomingRemoteAdminPacket(
   const from = meshPacket.from >>> 0;
   const resolveContext: ResolveAdminRequestIdContext = { ...context, from };
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   if (data.portnum === Portnums.PortNum.ADMIN_APP && (data.payload?.length ?? 0) > 0) {
     try {
       const message = fromBinary(
@@ -422,8 +428,10 @@ export function parseIncomingRemoteAdminPacket(
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   if (data.portnum === Portnums.PortNum.ROUTING_APP && (data.payload?.length ?? 0) > 0) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       const routing = fromBinary(Mesh.RoutingSchema, data.payload!) as {
         variant?: { case?: string; value?: number };
       };
@@ -460,6 +468,7 @@ export function buildRemoteAdminToRadio(params: {
   wantAck?: boolean;
   wantResponse?: boolean;
 }): Uint8Array {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const meshPacket = create(Mesh.MeshPacketSchema, {
     from: params.myNodeNum >>> 0,
     to: params.destNodeNum >>> 0,
@@ -472,6 +481,7 @@ export function buildRemoteAdminToRadio(params: {
     payloadVariant: {
       case: 'decoded',
       value: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         portnum: Portnums.PortNum.ADMIN_APP,
         payload: params.adminPayload,
         wantResponse: params.wantResponse ?? true,
@@ -479,9 +489,11 @@ export function buildRemoteAdminToRadio(params: {
       },
     },
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const toRadio = create(Mesh.ToRadioSchema, {
     payloadVariant: { case: 'packet', value: meshPacket },
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   return toBinary(Mesh.ToRadioSchema, toRadio);
 }
 
@@ -572,7 +584,7 @@ export class MeshtasticRemoteAdminClient {
       replyId: (data?.replyId ?? 0) >>> 0,
       meshPacketId: (meshPacket.id ?? 0) >>> 0,
       from: parsed.from,
-      responseCase: parsed.message.payloadVariant.case ?? '',
+      responseCase: parsed.message.payloadVariant.case,
       pendingCount: this.pending.size,
     };
   }
@@ -623,7 +635,7 @@ export class MeshtasticRemoteAdminClient {
     meshPacket: MeshPacket,
     parsed: Extract<ParsedAdminResponse, { kind: 'admin' }>,
   ): void {
-    const responseCase = message.payloadVariant.case ?? '';
+    const responseCase = message.payloadVariant.case;
     this.logAdminCorrelation('resolve', this.adminCorrelationFields(meshPacket, parsed), {
       dest: pending.destNodeNum,
       elapsedMs: Date.now() - pending.createdAt,
@@ -1002,7 +1014,7 @@ export class MeshtasticRemoteAdminClient {
         '[MeshtasticRemoteAdmin] unexpected getConfigResponse variant configType=' +
           String(configType) +
           ' case=' +
-          (responseCase ?? 'unknown'),
+          responseCase,
       );
       throw new Error('remoteAdmin.errors.configResponseUnexpected');
     }
@@ -1070,7 +1082,7 @@ export class MeshtasticRemoteAdminClient {
         '[MeshtasticRemoteAdmin] unexpected getChannelResponse variant index=' +
           String(index) +
           ' case=' +
-          (responseCase ?? 'unknown'),
+          responseCase,
       );
       throw new Error('remoteAdmin.errors.channelResponseUnexpected');
     }

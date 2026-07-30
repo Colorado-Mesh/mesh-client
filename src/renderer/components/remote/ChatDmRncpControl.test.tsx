@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -14,7 +14,14 @@ const PEER_IDENTITY = 'd'.repeat(32);
 describe('ChatDmRncpControl', () => {
   beforeEach(() => {
     useRncpTransferStore.getState().clearAll();
-    useReticulumRemoteAddressStore.setState({ addresses: new Map(), hydrated: false });
+    useReticulumRemoteAddressStore.setState({
+      addresses: new Map(),
+      hydrated: false,
+      hydrate: () => {
+        useReticulumRemoteAddressStore.setState({ hydrated: true });
+        return Promise.resolve();
+      },
+    });
     useReticulumIdentityActivityStore.setState({
       byDestination: new Map([
         [
@@ -54,6 +61,40 @@ describe('ChatDmRncpControl', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
   });
 
+  it('counts active peer transfers outside the newest five displayed rows', () => {
+    const destinationHash = 'c'.repeat(32);
+    useReticulumRemoteAddressStore.setState({
+      addresses: new Map([
+        [
+          'addr1',
+          {
+            id: 'addr1',
+            label: 'Alice',
+            service: 'rncp',
+            destination_hash: destinationHash,
+            lxmf_peer_hash: PEER_HASH,
+            created_at: 1,
+            updated_at: 1,
+          },
+        ],
+      ]),
+      hydrated: true,
+      hydrate: () => Promise.resolve(),
+    });
+    for (let i = 0; i < 6; i += 1) {
+      useRncpTransferStore.getState().startTransfer({
+        transfer_id: `transfer-${i}`,
+        kind: 'send',
+        destination_hash: destinationHash,
+        file_name: `${i}.txt`,
+      });
+    }
+
+    render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+
+    expect(screen.getByLabelText('6 active file transfers with this peer')).toBeInTheDocument();
+  });
+
   it('opens the send panel and pre-fills the destination hash from a saved address', async () => {
     useReticulumRemoteAddressStore.setState({
       addresses: new Map([
@@ -71,9 +112,46 @@ describe('ChatDmRncpControl', () => {
         ],
       ]),
       hydrated: true,
+      hydrate: () => Promise.resolve(),
     });
     const user = userEvent.setup();
     render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+    await user.click(screen.getByRole('button', { name: 'Send file to Alice via rncp' }));
+    expect(screen.getByLabelText('rncp destination hash')).toHaveValue('c'.repeat(32));
+  });
+
+  it('hydrates remote addresses on mount so Chat can see saved peer dests', async () => {
+    let hydrated = false;
+    useReticulumRemoteAddressStore.setState({
+      addresses: new Map(),
+      hydrated: false,
+      hydrate: () => {
+        hydrated = true;
+        useReticulumRemoteAddressStore.setState({
+          addresses: new Map([
+            [
+              'addr1',
+              {
+                id: 'addr1',
+                label: 'Alice',
+                service: 'rncp',
+                destination_hash: 'c'.repeat(32),
+                lxmf_peer_hash: PEER_HASH,
+                created_at: 1,
+                updated_at: 1,
+              },
+            ],
+          ]),
+          hydrated: true,
+        });
+        return Promise.resolve();
+      },
+    });
+    const user = userEvent.setup();
+    render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+    await waitFor(() => {
+      expect(hydrated).toBe(true);
+    });
     await user.click(screen.getByRole('button', { name: 'Send file to Alice via rncp' }));
     expect(screen.getByLabelText('rncp destination hash')).toHaveValue('c'.repeat(32));
   });

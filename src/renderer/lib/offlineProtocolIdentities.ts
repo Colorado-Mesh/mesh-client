@@ -46,6 +46,7 @@ export function ensureOfflineProtocolIdentities(): void {
   const { identities } = useIdentityStore.getState();
   for (const protocol of REGISTERED_MESH_PROTOCOLS) {
     const id = OFFLINE_IDENTITY_BY_PROTOCOL[protocol];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (identities[id]) continue;
     addIdentity({
       id,

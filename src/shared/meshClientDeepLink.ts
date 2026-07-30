@@ -55,7 +55,11 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
         const hash = canonicalizeReticulumDestinationHash(path);
         if (!hash) return { kind: 'lxmPaperUnsupported', uri: trimmed };
         const name = url.searchParams.get('name') ?? undefined;
-        return { kind: 'lxmContact', destinationHash: hash, name: name || undefined };
+        return {
+          kind: 'lxmContact',
+          destinationHash: hash,
+          ...(name ? { name } : {}),
+        };
       }
 
       if (host === 'identity') {
@@ -63,11 +67,13 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
         if (!/^[0-9a-f]{16,64}$/.test(identityHash)) {
           return { kind: 'lxmPaperUnsupported', uri: trimmed };
         }
+        const lxmfHash = url.searchParams.get('lxmf')?.toLowerCase() || undefined;
+        const name = url.searchParams.get('name') || undefined;
         return {
           kind: 'lxmIdentity',
           identityHash,
-          lxmfHash: url.searchParams.get('lxmf')?.toLowerCase() || undefined,
-          name: url.searchParams.get('name') || undefined,
+          ...(lxmfHash ? { lxmfHash } : {}),
+          ...(name ? { name } : {}),
         };
       }
 

@@ -58,7 +58,7 @@ describe('repairMeshcoreHydrationStaleRoomSends', () => {
       roomServerId: 0xabc,
     };
     const [fixed] = repairMeshcoreHydrationStaleRoomSends([stale]);
-    expect(fixed?.status).toBe('acked');
+    expect(fixed.status).toBe('acked');
   });
 
   it('keeps fresh sending room posts unchanged', () => {
@@ -72,6 +72,6 @@ describe('repairMeshcoreHydrationStaleRoomSends', () => {
       roomServerId: 0xabc,
     };
     const [out] = repairMeshcoreHydrationStaleRoomSends([fresh]);
-    expect(out?.status).toBe('sending');
+    expect(out.status).toBe('sending');
   });
 });

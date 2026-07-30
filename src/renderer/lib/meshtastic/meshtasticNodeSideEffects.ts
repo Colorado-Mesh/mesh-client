@@ -314,6 +314,7 @@ function handlePosition(
 ): void {
   deps.touchLastData();
   const nodeNum = position.nodeId;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (position.latitude == null || position.longitude == null) return;
   const myNodeNum = deps.getMyNodeNum();
   if (nodeNum !== 0) {

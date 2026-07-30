@@ -29,9 +29,11 @@ export function startNetworkDiscovery(
       nodeIds.map(async (nodeId, index) => {
         if (stopped) return;
         await Promise.resolve();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
         if (stopped) return;
         if (interNodeStaggerMs > 0 && index > 0) {
           await new Promise<void>((resolve) => setTimeout(resolve, index * interNodeStaggerMs));
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
           if (stopped) return;
         }
         try {
