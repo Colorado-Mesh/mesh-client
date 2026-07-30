@@ -106,5 +106,6 @@ describe('RncpEnableRequestModal', () => {
         text: expect.stringContaining(`${RNCP_RECEIVE_DEST_SHARE_PREFIX}${'c'.repeat(32)}`),
       });
     });
+    expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
   });
 });

@@ -597,7 +597,7 @@
       "requestEnable": "Включить запрос",
       "requestEnableAria": "Попросите этого однорангового узла включить получение файлов",
       "destinationLabel": "Пункт назначения получения rncp узла",
-      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination.",
+      "destinationHelp": "Это не хеш Chat/LXMF. Используйте «Запросить включение» или «Взять из чата», если собеседник вставил строку общего доступа, либо вставьте 32-символьный хеш получателя.",
       "activeTransfersBadgeAria_one": "{{count}} активная передача файлов с этим одноранговым узлом",
       "activeTransfersBadgeAria_other": "{{count}} активная передача файлов с этим одноранговым узлом",
       "transfersTitle": "Трансферы",

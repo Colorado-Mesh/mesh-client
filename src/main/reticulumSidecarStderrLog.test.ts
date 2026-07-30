@@ -25,6 +25,9 @@ describe('shouldForwardReticulumSidecarStdout', () => {
       ),
     ).toBe(false);
     expect(shouldForwardReticulumSidecarStdout('DEBUG resource part received')).toBe(false);
+    expect(
+      shouldForwardReticulumSidecarStdout('INFO parser received WARN and ERROR payload tokens'),
+    ).toBe(false);
   });
 });
 

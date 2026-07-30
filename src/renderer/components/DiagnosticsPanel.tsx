@@ -193,6 +193,7 @@ export default function DiagnosticsPanel({
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
   const showLoRaMeshDiagnostics = capabilities?.hasHopCount !== false;
+  const showForeignLoraDiagnostics = capabilities?.hasDiagnosticsPanel !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
@@ -257,14 +258,12 @@ export default function DiagnosticsPanel({
     s.diagnosticRows.some(
       (r) =>
         r.kind === 'rf' &&
-        r.nodeId === meshtasticListenerNodeId &&
+        r.nodeId === foreignLoraListenerNodeId &&
         r.condition === 'Potential MeshCore Repeater Conflict',
     ),
   );
   const showForeignLoraTables =
-    (protocol === 'meshtastic' || protocol === 'meshcore') &&
-    foreignLoraListenerNodeId > 0 &&
-    isConnected;
+    showForeignLoraDiagnostics && foreignLoraListenerNodeId > 0 && isConnected;
 
   const [search, setSearch] = useState('');
   const [tracePendingNodes, setTracePendingNodes] = useState<Set<number>>(() => new Set());

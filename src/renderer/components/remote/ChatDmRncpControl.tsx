@@ -126,7 +126,7 @@ export function ChatDmRncpControl({
     [pendingOffers, lxmfPeerHash],
   );
 
-  const peerTransfers = useMemo(() => {
+  const allPeerTransfers = useMemo(() => {
     const dest = (savedAddress?.destination_hash ?? parsedHash ?? '').toLowerCase();
     const localIds = new Set(localTransferIds);
     return [...transfers.values()]
@@ -135,13 +135,14 @@ export function ChatDmRncpControl({
         if (dest && tr.destination_hash === dest) return true;
         return false;
       })
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, 5);
+      .sort((a, b) => b.updatedAt - a.updatedAt);
   }, [localTransferIds, parsedHash, savedAddress?.destination_hash, transfers]);
 
+  const peerTransfers = useMemo(() => allPeerTransfers.slice(0, 5), [allPeerTransfers]);
+
   const activeTransferCount = useMemo(
-    () => peerTransfers.filter((tr) => tr.status === 'active').length,
-    [peerTransfers],
+    () => allPeerTransfers.filter((tr) => tr.status === 'active').length,
+    [allPeerTransfers],
   );
 
   // Toast terminal outcomes for transfers started from this control.

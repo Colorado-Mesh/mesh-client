@@ -1339,7 +1339,7 @@
     "cuHistoryHeading": "Channel Utilization (last 24h)",
     "cuHistoryTooltipLabel": "Channel Util",
     "foreignLoraHeading": "Other foreign LoRa overheard ({{count}})",
-    "foreignLoraDescription": "Other LoRa signals overheard on local RF in the last 90 minutes (excluding MeshCore). Transmitters heard by Meshtastic appear in the section above when present.",
+    "foreignLoraDescription": "Other LoRa signals overheard on local RF in the last 90 minutes (excluding MeshCore). Nearby transmitters appear in the section above when present.",
     "foreignClassColumn": "Class",
     "foreignProximityColumn": "Proximity",
     "foreignLastSeenColumn": "Last Seen",

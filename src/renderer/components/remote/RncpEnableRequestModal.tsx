@@ -97,10 +97,13 @@ export function RncpEnableRequestModal() {
         setListener(status);
         if (!status?.enabled) return;
         autoSharedPeerRef.current = peerHash;
-        await shareRncpReceiveDestWithPeer(
+        const shareResult = await shareRncpReceiveDestWithPeer(
           peerHash,
           t('reticulumRemote.enableRequest.lxmfShareBody'),
         );
+        if (!cancelled && shareResult === 'shared') {
+          dismiss(peerHash, false);
+        }
       } catch (e) {
         console.debug(
           '[RncpEnableRequestModal] already-enabled auto-share ' + errLikeToLogString(e),
@@ -110,7 +113,7 @@ export function RncpEnableRequestModal() {
     return () => {
       cancelled = true;
     };
-  }, [current, setListener, t]);
+  }, [current, dismiss, setListener, t]);
 
   const enableListener = useCallback(
     async (allowIdentity: boolean) => {

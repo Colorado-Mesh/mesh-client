@@ -597,7 +597,7 @@
       "requestEnable": "Solicitar ativação",
       "requestEnableAria": "Peça a este colega para habilitar o recebimento de arquivos",
       "destinationLabel": "Destino de recebimento do rncp do peer",
-      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination.",
+      "destinationHelp": "Não é o hash de Chat/LXMF. Use Solicitar ativação ou Usar do chat se a outra pessoa colou uma linha de compartilhamento, ou cole o hash de recebimento de 32 caracteres.",
       "activeTransfersBadgeAria_one": "{{count}} transferência de arquivo ativa com este colega",
       "activeTransfersBadgeAria_other": "{{count}} transferências de arquivos ativos com este colega",
       "transfersTitle": "Transferências",

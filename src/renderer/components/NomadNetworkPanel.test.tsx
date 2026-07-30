@@ -718,7 +718,7 @@ describe('NomadNetworkPanel', () => {
       ]),
     });
 
-    render(<NomadNetworkPanel />);
+    render(<NomadNetworkPanel onOpenDm={vi.fn()} />);
     await openAnnouncesNode(user);
 
     await waitFor(() => {
@@ -737,6 +737,26 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByRole('button', { name: 'nomadNetwork.reloadPage' })).toHaveAttribute(
       'title',
       'nomadNetwork.reloadPage',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.sendMessageAria' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.sendMessageAria',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.forward' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.forward',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.homePage' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.homePage',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.showSource' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.showSource',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.closeViewer' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.closeViewer',
     );
     await user.click(toggle);
 

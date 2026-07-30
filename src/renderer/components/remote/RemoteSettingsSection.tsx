@@ -211,15 +211,22 @@ export function RemoteSettingsSection({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
     setSaveDir(settings.lastSaveDir);
+  }, [settings.lastSaveDir]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
     setFetchJail(settings.lastFetchJail);
+  }, [settings.lastFetchJail]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
     setAllowFetch(settings.allowFetch);
+  }, [settings.allowFetch]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror persisted Remote settings into local form state
     setOverwrite(settings.overwriteOnReceive);
-  }, [
-    settings.allowFetch,
-    settings.lastFetchJail,
-    settings.lastSaveDir,
-    settings.overwriteOnReceive,
-  ]);
+  }, [settings.overwriteOnReceive]);
 
   const copy = useCallback(
     (value: string | null | undefined) => {

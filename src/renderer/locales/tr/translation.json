@@ -597,7 +597,7 @@
       "requestEnable": "Etkinleştirme isteği",
       "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin",
       "destinationLabel": "Eşin rncp alma hedefi",
-      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination.",
+      "destinationHelp": "Bu, Chat/LXMF karması değildir. Karşı taraf bir paylaşım satırı yapıştırdıysa Etkinleştirme iste veya Sohbetten kullan seçeneğini kullanın ya da 32 karakterlik alma karmasını yapıştırın.",
       "activeTransfersBadgeAria_one": "{{count}} bu eş ile aktif dosya aktarımı",
       "activeTransfersBadgeAria_other": "{{count}} bu eş ile aktif dosya aktarımları",
       "transfersTitle": "Transferler",
@@ -608,7 +608,7 @@
       "transferProgressAria": "{{file}} için transfer ilerlemesi: {{progress}} yüzde",
       "transferCompletedToast": "Dosya gönderildi: {{file}}",
       "transferFailedToast": "Dosya aktarımı başarısız oldu ({{file}}): {{error}}",
-      "forgetAddress": "Kaydedilen varış noktasını",
+      "forgetAddress": "Kaydedilen hedefi unut",
       "forgetAddressAria": "Bu eş için kaydedilen rncp alma hedefini kaldır",
       "forgotAddressToast": "Bu eş için kaydedilen rncp hedefini unuttum.",
       "filledFromChatToast": "Sohbetten dolu hedef (kaydedilmedi — saklamayı unutmayın seçeneğini işaretleyin)."

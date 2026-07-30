@@ -14,7 +14,24 @@ export const SIDECAR_DEFAULT_RUST_LOG = 'warn';
  * Tracing INFO/DEBUG packet routing floods the rotating log; keep WARN/ERROR only.
  */
 export function shouldForwardReticulumSidecarStdout(text: string): boolean {
-  return /\b(?:WARN|ERROR)\b/.test(text);
+  const fields = text.trimStart().split(/\s+/);
+  let index = fields[0] && Number.isFinite(Date.parse(fields[0])) ? 1 : 0;
+  let severity = fields[index] ?? '';
+  while (severity.startsWith('\u001b[')) {
+    const end = severity.indexOf('m', 2);
+    if (end < 0) return false;
+    severity = severity.slice(end + 1);
+    if (!severity) {
+      index += 1;
+      severity = fields[index] ?? '';
+    }
+  }
+  return (
+    severity === 'WARN' ||
+    severity.startsWith('WARN\u001b[') ||
+    severity === 'ERROR' ||
+    severity.startsWith('ERROR\u001b[')
+  );
 }
 
 /**

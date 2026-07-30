@@ -337,11 +337,23 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
     this.proc = proc;
 
-    proc.stdout?.on('data', (chunk: Buffer) => {
-      const text = sanitizeLogMessage(chunk.toString('utf8').trim());
+    let stdoutBuffer = '';
+    const processStdoutLine = (line: string): void => {
+      const text = sanitizeLogMessage(line.trim());
+      if (!text) return;
       this.recordSidecarOutputLine(text);
       if (!shouldForwardReticulumSidecarStdout(text)) return;
       console.debug('[ReticulumSidecar]', text);
+    };
+    proc.stdout?.on('data', (chunk: Buffer) => {
+      stdoutBuffer += chunk.toString('utf8');
+      const lines = stdoutBuffer.split(/\r?\n/);
+      stdoutBuffer = lines.pop() ?? '';
+      for (const line of lines) processStdoutLine(line);
+    });
+    proc.stdout?.on('end', () => {
+      if (stdoutBuffer) processStdoutLine(stdoutBuffer);
+      stdoutBuffer = '';
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
       const text = sanitizeLogMessage(chunk.toString('utf8').trim());

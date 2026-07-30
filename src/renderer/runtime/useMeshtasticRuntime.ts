@@ -2217,16 +2217,14 @@ export function useMeshtasticRuntime() {
       }
     } finally {
       reconnectConnectInFlightRef.current = false;
-      if (isBleReconnect) {
-        bleConnectInProgressRef.current = false;
-        if (meshtasticDeferredReconnectRef.current) {
-          meshtasticDeferredReconnectRef.current = false;
-          if (isReconnectingRef.current) {
-            console.debug(
-              '[useMeshtasticRuntime] reconnect settled — running deferred reconnect after Noble drop',
-            );
-            queueMicrotask(() => handleConnectionLostRef.current());
-          }
+      if (isBleReconnect) bleConnectInProgressRef.current = false;
+      if (meshtasticDeferredReconnectRef.current) {
+        meshtasticDeferredReconnectRef.current = false;
+        if (isReconnectingRef.current) {
+          console.debug(
+            '[useMeshtasticRuntime] reconnect settled — running deferred reconnect after transport drop',
+          );
+          queueMicrotask(() => handleConnectionLostRef.current());
         }
       }
     }

@@ -129,6 +129,17 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(lostBody).toContain('defer reconnect until in-flight open settles');
   });
 
+  it('flushes deferred reconnects after non-BLE reconnect attempts settle', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
+    expect(finallyBody).toContain('if (isBleReconnect) bleConnectInProgressRef.current = false;');
+    expect(finallyBody).toContain('if (meshtasticDeferredReconnectRef.current)');
+    expect(finallyBody).toContain('queueMicrotask(() => handleConnectionLostRef.current())');
+    expect(finallyBody.indexOf('if (meshtasticDeferredReconnectRef.current)')).toBeGreaterThan(
+      finallyBody.indexOf('if (isBleReconnect)'),
+    );
+  });
+
   it('checks reconnect generation before open, wire, and configure', () => {
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
     expect(reconnectBody).toContain('Reconnect superseded before open');

@@ -105,17 +105,17 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
   // Retention runs for all protocols every startup/session — not only the last-active tab.
   ops.push(
     window.electronAPI.db.migrateRfStubNodes().catch((e: unknown) => {
-      console.warn('[App] startup migrateRfStubNodes failed ' + errLikeToLogString(e));
+      console.warn(`[App] ${label} migrateRfStubNodes failed ` + errLikeToLogString(e));
     }),
     window.electronAPI.db.deleteNodesNeverHeard().catch((e: unknown) => {
-      console.warn('[App] startup deleteNodesNeverHeard failed ' + errLikeToLogString(e));
+      console.warn(`[App] ${label} deleteNodesNeverHeard failed ` + errLikeToLogString(e));
     }),
   );
   if (s.autoPruneEnabled) {
     const days = typeof s.autoPruneDays === 'number' && s.autoPruneDays > 0 ? s.autoPruneDays : 30;
     ops.push(
       window.electronAPI.db.deleteNodesByAge(days).catch((e: unknown) => {
-        console.warn('[App] startup deleteNodesByAge failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} deleteNodesByAge failed ` + errLikeToLogString(e));
       }),
     );
   }
@@ -126,14 +126,14 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
         : MAX_MESH_ENTITY_CAP;
     ops.push(
       window.electronAPI.db.pruneNodesByCount(cap).catch((e: unknown) => {
-        console.warn('[App] startup pruneNodesByCount failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} pruneNodesByCount failed ` + errLikeToLogString(e));
       }),
     );
   }
   if (s.pruneEmptyNamesEnabled) {
     ops.push(
       window.electronAPI.db.deleteNodesWithoutLongname().catch((e: unknown) => {
-        console.warn('[App] startup deleteNodesWithoutLongname failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} deleteNodesWithoutLongname failed ` + errLikeToLogString(e));
       }),
     );
   }
@@ -144,10 +144,10 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
         : 30;
     ops.push(
       window.electronAPI.db.prunePositionHistory(days).catch((e: unknown) => {
-        console.warn('[App] startup prunePositionHistory failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} prunePositionHistory failed ` + errLikeToLogString(e));
       }),
       window.electronAPI.db.prunePositionHistoryPerNode(2000).catch((e: unknown) => {
-        console.warn('[App] startup prunePositionHistoryPerNode failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} prunePositionHistoryPerNode failed ` + errLikeToLogString(e));
       }),
     );
   }
@@ -156,7 +156,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
     ops.push(
       window.electronAPI.db.deleteMeshcoreContactsNeverAdvertised().catch((e: unknown) => {
         console.warn(
-          '[App] startup deleteMeshcoreContactsNeverAdvertised failed ' + errLikeToLogString(e),
+          `[App] ${label} deleteMeshcoreContactsNeverAdvertised failed ` + errLikeToLogString(e),
         );
       }),
     );
@@ -168,7 +168,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
         : 30;
     ops.push(
       window.electronAPI.db.deleteMeshcoreContactsByAge(days).catch((e: unknown) => {
-        console.warn('[App] startup deleteMeshcoreContactsByAge failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} deleteMeshcoreContactsByAge failed ` + errLikeToLogString(e));
       }),
     );
   }
@@ -179,7 +179,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
         : MAX_MESH_ENTITY_CAP;
     ops.push(
       window.electronAPI.db.pruneMeshcoreContactsByCount(cap).catch((e: unknown) => {
-        console.warn('[App] startup pruneMeshcoreContactsByCount failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} pruneMeshcoreContactsByCount failed ` + errLikeToLogString(e));
       }),
     );
   }
@@ -223,7 +223,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
         if (r.meshtasticEnabled) {
           innerOps.push(
             window.electronAPI.db.pruneMessagesByCount(r.meshtasticCount).catch((e: unknown) => {
-              console.warn('[App] startup pruneMessagesByCount failed ' + errLikeToLogString(e));
+              console.warn(`[App] ${label} pruneMessagesByCount failed ` + errLikeToLogString(e));
             }),
           );
         }
@@ -268,7 +268,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
         return Promise.all(innerOps);
       })
       .catch((e: unknown) => {
-        console.warn('[App] startup message retention prune failed ' + errLikeToLogString(e));
+        console.warn(`[App] ${label} message retention prune failed ` + errLikeToLogString(e));
       }),
   );
 

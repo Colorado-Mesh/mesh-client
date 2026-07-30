@@ -599,7 +599,7 @@
       "destinationHelp": "Non il loro hash Chat/LXMF. Utilizza Richiedi abilitazione: i peer mesh-client lo condividono automaticamente dopo aver accettato. Oppure incolla dal telecomando → Destinazione di ricezione del mio rncp.",
       "activeTransfersBadgeAria_one": "{{count}} trasferimento file attivo con questo collega",
       "activeTransfersBadgeAria_other": "{{count}} trasferimenti di file attivi con questo collega",
-      "transfersTitle": "Bonifici",
+      "transfersTitle": "Trasferimenti di file",
       "useFromChat": "Usa la destinazione dalla chat",
       "useFromChatAria": "Trova e utilizza una destinazione di ricezione rncp condivisa in questa chat",
       "noShareInChat": "Ancora nessuna riga di condivisione rncp in questa chat. Chiedi loro di incollare la loro destinazione di ricezione (Remote → My rncp receive destination) o incolla l'hash di 32 caratteri qui sotto.",

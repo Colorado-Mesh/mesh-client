@@ -963,8 +963,9 @@ export class NobleBleManager extends EventEmitter {
   }
 
   async connect(sessionId: NobleSessionId, peripheralId: string): Promise<void> {
-    const nobleApi = noble;
-    if (!nobleApi) throw new Error('Noble BLE is unavailable on this platform');
+    // Do not reject solely because `noble` is null: Linux production skips the native
+    // binding, and Linux CI behavior tests seed knownPeripherals + sessions without it.
+    // Scan paths still require noble (checked where startScanning/scanStop is used).
     // Serialize across all sessions — noble's native CBCentralManager crashes (SIGSEGV/SIGBUS)
     // if a second peripheral's discoverServices/subscribe races with the first.
     const prevQueue = this.connectQueue;
@@ -1156,6 +1157,10 @@ export class NobleBleManager extends EventEmitter {
 
       // Stop scanning before connecting — many Linux/BlueZ drivers abort connections while scanning.
       if (this.scanningActive) {
+        const nobleApi = noble;
+        if (!nobleApi) {
+          throw new Error('Noble BLE is unavailable on this platform');
+        }
         console.debug(`[BLE:${sessionId}] stopping scan before connect`);
         await new Promise<void>((resolve) => {
           const onScanStop = () => {

@@ -596,7 +596,7 @@
       "requestEnable": "Aktivieren anfordern",
       "requestEnableAria": "Bitten Sie diesen Kollegen, den Dateiempfang zu aktivieren",
       "destinationLabel": "RNCP-Empfangsziel des Peers",
-      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination.",
+      "destinationHelp": "Nicht der Chat-/LXMF-Hash. Verwende „Aktivierung anfordern“, „Aus Chat übernehmen“, falls eine Freigabezeile eingefügt wurde, oder füge den 32-stelligen Empfangs-Hash ein.",
       "activeTransfersBadgeAria_one": "{{count}} aktive Dateiübertragung mit diesem Peer",
       "activeTransfersBadgeAria_other": "{{count}} aktive Dateiübertragungen mit diesem Peer",
       "transfersTitle": "Umbuchungen",
