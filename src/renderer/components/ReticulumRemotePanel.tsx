@@ -12,6 +12,7 @@ import {
   updateRemoteSettings,
 } from '@/renderer/lib/remoteSettingsStorage';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
@@ -59,6 +60,24 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
       unsub();
     };
   }, []);
+
+  // Align localStorage inboundMode with the live sidecar listener after stack start /
+  // restore so Ask cannot stick when setListener never succeeded this session.
+  useEffect(() => {
+    if (!sidecarRunning) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { settings: next } = await reconcileRncpListenerFromSidecar();
+        if (!cancelled) setSettings(next);
+      } catch (e) {
+        console.debug('[ReticulumRemotePanel] rncp reconcile ' + errLikeToLogString(e));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sidecarRunning]);
 
   const handleSettingsChange = (patch: Partial<RemoteSettings>) => {
     setSettings(updateRemoteSettings(patch));

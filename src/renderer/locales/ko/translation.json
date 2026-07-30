@@ -4923,7 +4923,13 @@
       "autoReconnectShell": "예기치 않은 연결 끊김 후 원격 셸을 자동으로 다시 연결",
       "autoRetryTransfer": "실패한 전송을 자동으로 재시도",
       "identityTitle": "나의 정체성",
-      "myIdentity": "내 신원:"
+      "myIdentity": "내 신원:",
+      "rechooseSaveDir": "저장 폴더를 다시 선택합니다 (보안을 위해 앱 실행당 한 번 필요).",
+      "announceReceiveDest": "수신 목적지 발표",
+      "announceReceiveDestAria": "동료가 찾을 수 있도록 rncp 수신 대상 발표",
+      "announceReceiveDestDone": "RNCP 수신 대상이 발표되었습니다.",
+      "announceReceiveDestFailed": "수신 목적지 발표 실패: {{error}}",
+      "announceReceiveDestListenerOff": "공지하기 전에 인바운드 파일 수신 (요청 또는 나열 허용) 을 활성화합니다."
     }
   },
   "meshcoreRoute": {

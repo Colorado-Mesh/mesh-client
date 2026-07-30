@@ -1856,6 +1856,15 @@ impl StackHandle {
         serde_json::json!({ "transfers": [], "pending_offers": [] })
     }
 
+    /// Force one `rncp.receive` announce while the inbound listener is enabled.
+    pub async fn rncp_announce_now(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_announce_now().await;
+        }
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
     /// `enabled: false` tears down the listener and sets policy to `off`.
     /// `enabled: true` with a non-empty `allowed` list uses `allow_all_listed`
     /// policy (only those identities can complete a transfer); an empty

@@ -414,6 +414,7 @@ export function createElectronAPIMock(): ElectronAPI {
           .fn()
           .mockResolvedValue({ enabled: false, inbound_mode: 'off', allowed: [], blocked: [] }),
         setListener: vi.fn().mockResolvedValue({ ok: true }),
+        announce: vi.fn().mockResolvedValue({ ok: true }),
         showOpenFileDialog: vi.fn().mockResolvedValue({ canceled: true, path: null }),
         showSaveDirectoryDialog: vi.fn().mockResolvedValue({ canceled: true, path: null }),
         revealInFolder: vi.fn().mockResolvedValue({ ok: true }),

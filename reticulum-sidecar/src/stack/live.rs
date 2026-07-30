@@ -443,6 +443,7 @@ impl LiveBridge {
                 identity.clone(),
                 event_tx.clone(),
                 storage_dir.clone(),
+                config_dir.clone(),
             )),
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
@@ -1487,6 +1488,13 @@ impl LiveBridge {
 
     pub async fn rncp_receive_destination_hash(&self) -> Option<String> {
         self.rncp_transfer.receive_destination_hash().await
+    }
+
+    pub async fn rncp_announce_now(&self) -> serde_json::Value {
+        match self.rncp_transfer.announce_now().await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
     }
 
     pub fn identity_hash_hex(&self) -> String {

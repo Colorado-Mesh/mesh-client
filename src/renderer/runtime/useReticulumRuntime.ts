@@ -89,6 +89,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
@@ -1064,6 +1065,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
           destination_hash?: string;
           identity_hash?: string | null;
         };
+        const errPart =
+          typeof p.error === 'string' && p.error.trim() ? sanitizeLogMessage(p.error.trim()) : '';
+        const reasonPart =
+          typeof p.reason === 'string' && p.reason.trim()
+            ? ' reason=' + sanitizeLogMessage(p.reason.trim())
+            : '';
+        const destPart =
+          typeof p.destination_hash === 'string' && p.destination_hash.trim()
+            ? ' dest=' + sanitizeLogMessage(p.destination_hash.trim().slice(0, 32))
+            : '';
+        console.warn(
+          `[useReticulumRuntime] rncp.failed${errPart ? ' ' + errPart : ''}${reasonPart}${destPart}`,
+        );
         useRncpTransferStore.getState().applyFailed(p);
       }
       if (evt.type === 'rncp.cancelled' && evt.payload && typeof evt.payload === 'object') {
@@ -1282,6 +1296,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         myNodeNum: connectedNodeId,
       });
       scheduleLocalInterfaceStatusBurst();
+      void reconcileRncpListenerFromSidecar().catch((e: unknown) => {
+        console.debug('[useReticulumRuntime] rncp reconcile ' + errLikeToLogString(e));
+      });
     })();
     connectInFlightDoneRef.current = flight;
     try {
@@ -1373,6 +1390,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         myNodeNum: connectedNodeId,
       });
       scheduleLocalInterfaceStatusBurst();
+      void reconcileRncpListenerFromSidecar().catch((e: unknown) => {
+        console.debug('[useReticulumRuntime] rncp reconcile ' + errLikeToLogString(e));
+      });
     })();
     connectInFlightDoneRef.current = flight;
     try {

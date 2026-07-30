@@ -4923,7 +4923,13 @@
       "autoReconnectShell": "予期しない切断後にリモートシェルを自動的に再接続する",
       "autoRetryTransfer": "失敗した転送を自動的に再試行する",
       "identityTitle": "私のアイデンティティ",
-      "myIdentity": "私のアイデンティティ："
+      "myIdentity": "私のアイデンティティ：",
+      "rechooseSaveDir": "保存フォルダーを再選択します（セキュリティのためにアプリの起動ごとに1回必要です）。",
+      "announceReceiveDest": "受信先をアナウンスする",
+      "announceReceiveDestAria": "ピアがそれを発見できるようにrncp受信先をアナウンスする",
+      "announceReceiveDestDone": "RNCPの受信先が発表されました。",
+      "announceReceiveDestFailed": "受信先のアナウンスに失敗しました： {{error}}",
+      "announceReceiveDestListenerOff": "アナウンスする前に受信ファイルの受信（ AskまたはAllowリスト）を有効にします。"
     }
   },
   "meshcoreRoute": {

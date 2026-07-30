@@ -1080,6 +1080,8 @@ export interface ElectronAPI {
       getStatus: () => Promise<RncpStatusResponse>;
       getListener: () => Promise<RncpListenerStatus>;
       setListener: (opts: RncpListenerRequest) => Promise<RemoteOkResponse>;
+      /** Force one `rncp.receive` announce while the inbound listener is enabled. */
+      announce: () => Promise<RemoteOkResponse>;
       /** Pick a local file to send. */
       showOpenFileDialog: () => Promise<RemoteFileDialogResult>;
       /** Pick a local directory for listener save_dir / fetch_jail or fetch save_path. */

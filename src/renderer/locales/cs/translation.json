@@ -4925,7 +4925,13 @@
       "autoReconnectShell": "Automaticky znovu připojte vzdálený shell po neočekávaném odpojení",
       "autoRetryTransfer": "Automaticky opakovat neúspěšné přenosy",
       "identityTitle": "Moje totožnost",
-      "myIdentity": "Moje totožnost:"
+      "myIdentity": "Moje totožnost:",
+      "rechooseSaveDir": "Znovu vyberte složku pro uložení (z bezpečnostních důvodů je vyžadováno jednou při každém spuštění aplikace).",
+      "announceReceiveDest": "Ohlásit obdržení cíle",
+      "announceReceiveDestAria": "Oznamte příjem cíle rncp, aby ho kolegové mohli objevit",
+      "announceReceiveDestDone": "RNCP obdržel cíl oznámen.",
+      "announceReceiveDestFailed": "Nepodařilo se oznámit cíl přijetí: {{error}}",
+      "announceReceiveDestListenerOff": "Povolit příjem příchozího souboru (Dotázat se nebo Povolit uvedené) před oznámením."
     }
   },
   "meshcoreRoute": {

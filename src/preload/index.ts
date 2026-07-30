@@ -1145,6 +1145,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         allowed?: string[];
         blocked?: string[];
       }) => ipcRenderer.invoke('reticulum:setRncpListener', opts),
+      announce: (): Promise<{ ok: boolean; error?: string }> =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/announce', {}),
       showOpenFileDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
         ipcRenderer.invoke('reticulum:showRncpOpenFileDialog'),
       showSaveDirectoryDialog: (): Promise<{ canceled: boolean; path: string | null }> =>

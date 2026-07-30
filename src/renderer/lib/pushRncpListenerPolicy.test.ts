@@ -83,6 +83,12 @@ describe('pushRncpListenerPolicy', () => {
       ok: false,
       error: 'path_constrained',
     });
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: false,
+      inbound_mode: 'off',
+      allowed: [],
+      blocked: [],
+    });
     const settings: RemoteSettings = {
       ...DEFAULT_REMOTE_SETTINGS,
       inboundMode: 'ask',
@@ -92,7 +98,31 @@ describe('pushRncpListenerPolicy', () => {
       ok: false,
       error: 'path_constrained',
     });
-    expect(window.electronAPI.reticulum.rncp.getListener).not.toHaveBeenCalled();
+    expect(window.electronAPI.reticulum.rncp.getListener).toHaveBeenCalled();
+    expect(useRncpTransferStore.getState().listener?.enabled).toBe(false);
+  });
+
+  it('surfaces save_dir_not_from_picker and refreshes listener status', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.setListener).mockResolvedValue({
+      ok: false,
+      error: 'save_dir_not_from_picker',
+    });
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: false,
+      inbound_mode: 'off',
+      allowed: [],
+      blocked: [],
+    });
+    const settings: RemoteSettings = {
+      ...DEFAULT_REMOTE_SETTINGS,
+      inboundMode: 'ask',
+      lastSaveDir: '/Users/joey/Downloads',
+    };
+    await expect(pushRncpListenerPolicy(settings)).resolves.toEqual({
+      ok: false,
+      error: 'save_dir_not_from_picker',
+    });
+    expect(useRncpTransferStore.getState().listener?.inbound_mode).toBe('off');
   });
 
   it('returns the catch-path error when setListener throws', async () => {

@@ -4923,7 +4923,13 @@
       "autoReconnectShell": "Automatische Wiederverbindung der Remote-Shell nach einer unerwarteten Trennung",
       "autoRetryTransfer": "Fehlgeschlagenen Übertragungen automatisch wiederholen",
       "identityTitle": "Meine Identität",
-      "myIdentity": "Meine Identität:"
+      "myIdentity": "Meine Identität:",
+      "rechooseSaveDir": "Wählen Sie den Speicherordner erneut aus (aus Sicherheitsgründen einmal pro App-Start erforderlich).",
+      "announceReceiveDest": "Empfangsziel ankündigen",
+      "announceReceiveDestAria": "Geben Sie das rncp-Empfangsziel bekannt, damit Kollegen es entdecken können",
+      "announceReceiveDestDone": "RNCP-Empfangsziel bekannt gegeben.",
+      "announceReceiveDestFailed": "Empfangsziel konnte nicht bekannt gegeben werden: {{error}}",
+      "announceReceiveDestListenerOff": "Aktivieren Sie den Empfang eingehender Dateien (Ask oder Allow aufgelistet) vor der Ankündigung."
     }
   },
   "meshcoreRoute": {
