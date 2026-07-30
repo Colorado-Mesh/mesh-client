@@ -105,6 +105,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const rxHops = record.rxHops ?? record.hopCount;
   return {
     ...(packetId != null ? { id: packetId } : {}),
+    ...(packetId == null ? { storeId: record.id } : {}),
     sender_id: record.from,
     sender_name:
       record.senderName?.trim() || (record.from > 0 ? formatMeshtasticNodeId(record.from) : ''),
@@ -374,6 +375,7 @@ export function traceRouteEventsToResultsMap(
 
 export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
   const id =
+    msg.storeId ??
     msg.reticulum_message_hash ??
     (msg.packetId != null
       ? String(msg.packetId)

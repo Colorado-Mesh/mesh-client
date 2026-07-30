@@ -61,6 +61,7 @@ import {
   failReticulumSendingOutboundToDestHash,
   shouldApplyLinkDeliveryTimeoutFailureBridge,
 } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
+import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
 import {
   applyPropagationSyncEvent,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
@@ -1547,6 +1548,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const outboundStatus = 'sending' as const;
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
+            if (shouldDeletePriorReticulumOutboundHash(pendingId, hash)) {
+              void window.electronAPI.db
+                .deleteReticulumMessage(identityId, pendingId)
+                .catch((e: unknown) => {
+                  console.warn(
+                    '[useReticulumRuntime] deleteReticulumMessage failed ' + errLikeToLogString(e),
+                  );
+                });
+            }
             ingestLxmfPayload(lxmfPayload);
             // Terminal WS may have arrived before rename; apply buffered Completes/Fails.
             flushPendingReticulumOutboundDeliveryStatus(identityId, hash);

@@ -31,6 +31,8 @@ import {
   type MessageRecord,
   renameMessageId,
   updateMessageStatus,
+  upsertMessage,
+  useMessageStore,
 } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { reticulumHashForNodeId } from '../stores/reticulumPeerStore';
@@ -54,11 +56,23 @@ function persistMeshcoreOutboundRow(
 
 export function useSendMessage(
   identityId: IdentityId | null,
-): (text: string, channelIndex: number, destination?: number, replyTo?: string) => void {
+): (
+  text: string,
+  channelIndex: number,
+  destination?: number,
+  replyTo?: string,
+  retryOfStoreId?: string,
+) => void {
   const { addToast } = useToast();
   const { t } = useTranslation();
   return useCallback(
-    (text: string, channelIndex: number, destination?: number, replyTo?: string) => {
+    (
+      text: string,
+      channelIndex: number,
+      destination?: number,
+      replyTo?: string,
+      retryOfStoreId?: string,
+    ) => {
       if (!identityId) return;
       const identity = useIdentityStore.getState().identities[identityId];
       if (!identity) {
@@ -87,33 +101,60 @@ export function useSendMessage(
           console.warn('[useSendMessage] Reticulum self node id not ready');
           return;
         }
-        const pendingId = `reticulum-pending-${Date.now()}`;
         const receivedVia = resolveReticulumOutboundVia(destHash);
         const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
         const senderName = session.getFullNodeLabel(selfNodeId);
         const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
+        const existing =
+          retryOfStoreId != null && retryOfStoreId !== ''
+            ? useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
+            : undefined;
         const parent = replyTo ? findReticulumParentRecordByHash(identityId, replyTo) : undefined;
         const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
         const replyPreviewSender = parent?.senderName?.trim() || undefined;
-        const record: MessageRecord = {
-          id: pendingId,
-          from: selfNodeId >>> 0,
-          senderName,
-          to: toNodeId,
-          payload: text,
-          channelIndex: channelIndex,
-          timestamp: Date.now(),
-          status: 'sending',
-          receivedVia,
-          ...(replyTo
-            ? {
-                reticulumReplyToHash: replyTo,
-                ...(replyPreviewText ? { replyPreviewText } : {}),
-                ...(replyPreviewSender ? { replyPreviewSender } : {}),
-              }
-            : {}),
-        };
-        addMessage(identityId, record);
+        const replyFields = replyTo
+          ? {
+              reticulumReplyToHash: replyTo,
+              ...(replyPreviewText ? { replyPreviewText } : {}),
+              ...(replyPreviewSender ? { replyPreviewSender } : {}),
+            }
+          : {};
+
+        let pendingId: string;
+        let record: MessageRecord;
+        if (existing) {
+          pendingId = existing.id;
+          record = {
+            ...existing,
+            from: selfNodeId >>> 0,
+            senderName,
+            to: toNodeId,
+            payload: text,
+            channelIndex,
+            status: 'sending',
+            receivedVia,
+            error: undefined,
+            reticulumDeliveryMethod: undefined,
+            reticulumMessageHash: undefined,
+            ...replyFields,
+          };
+          upsertMessage(identityId, record);
+        } else {
+          pendingId = `reticulum-pending-${Date.now()}`;
+          record = {
+            id: pendingId,
+            from: selfNodeId >>> 0,
+            senderName,
+            to: toNodeId,
+            payload: text,
+            channelIndex,
+            timestamp: Date.now(),
+            status: 'sending',
+            receivedVia,
+            ...replyFields,
+          };
+          addMessage(identityId, record);
+        }
         if (senderHash) {
           persistReticulumOutboundRecord(
             identityId,

@@ -1819,7 +1819,8 @@ function AppContent() {
     (msg: ChatMessage) => {
       const replyTo =
         msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined);
-      sendMessage(msg.payload, msg.channel, msg.to ?? undefined, replyTo);
+      const retryOfStoreId = msg.reticulum_message_hash ?? msg.storeId;
+      sendMessage(msg.payload, msg.channel, msg.to ?? undefined, replyTo, retryOfStoreId);
     },
     [sendMessage],
   );
