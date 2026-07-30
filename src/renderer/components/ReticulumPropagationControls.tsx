@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
@@ -33,6 +34,7 @@ export function ReticulumPropagationControls({
 
   useEffect(() => {
     if (!sidecarReady) return;
+    // floating-ok: refreshFromSidecar catches and logs sidecar/IPC failures
     void refreshFromSidecar();
   }, [sidecarReady, refreshFromSidecar]);
 
@@ -46,6 +48,7 @@ export function ReticulumPropagationControls({
 
   useEffect(() => {
     if (!sidecarReady || mode !== 'auto' || nodes.length === 0) return;
+    // floating-ok: setPreferredOnSidecar never rejects (returns false on failure)
     void applyAutoPreferred();
   }, [applyAutoPreferred, mode, nodes.length, sidecarReady]);
 
@@ -57,10 +60,16 @@ export function ReticulumPropagationControls({
   const handleSync = () => {
     if (!syncTargetId) return;
     if (mode === 'auto' && syncTargetId !== preferredId) {
-      void setPreferredOnSidecar(syncTargetId).then(() => startSync(syncTargetId));
+      void setPreferredOnSidecar(syncTargetId)
+        .then(() => startSync(syncTargetId))
+        .catch((e: unknown) => {
+          console.warn('[ReticulumPropagationControls] sync ' + errLikeToLogString(e));
+        });
       return;
     }
-    void startSync(syncTargetId);
+    void startSync(syncTargetId).catch((e: unknown) => {
+      console.warn('[ReticulumPropagationControls] sync ' + errLikeToLogString(e));
+    });
   };
 
   const syncDisabled = disabled || !sidecarReady || mode === 'off' || !syncTargetId || sync.active;

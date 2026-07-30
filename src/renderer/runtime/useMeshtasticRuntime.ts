@@ -665,9 +665,15 @@ export function useMeshtasticRuntime() {
   }, []);
 
   useEffect(() => {
-    void hydrateLastRfSelfNodeIdFromAppSettings().then((nodeNum) => {
-      if (nodeNum > 0) lastRfSelfNodeIdRef.current = nodeNum;
-    });
+    void hydrateLastRfSelfNodeIdFromAppSettings()
+      .then((nodeNum) => {
+        if (nodeNum > 0) lastRfSelfNodeIdRef.current = nodeNum;
+      })
+      .catch((e: unknown) => {
+        console.debug(
+          '[useMeshtasticRuntime] hydrateLastRfSelfNodeId failed ' + errLikeToLogString(e),
+        );
+      });
   }, []);
 
   useEffect(() => {
@@ -1443,7 +1449,13 @@ export function useMeshtasticRuntime() {
           }
         }
         meshtasticIngestSessionRef.current?.markPacketSeen(msg.sender_id, packetId);
-        if (packetId !== 0) void window.electronAPI.db.updateMessageReceivedVia(packetId);
+        if (packetId !== 0) {
+          void window.electronAPI.db.updateMessageReceivedVia(packetId).catch((e: unknown) => {
+            console.debug(
+              '[useMeshtasticRuntime] updateMessageReceivedVia failed ' + errLikeToLogString(e),
+            );
+          });
+        }
         return;
       }
 
@@ -1492,7 +1504,11 @@ export function useMeshtasticRuntime() {
         if (pid !== undefined && pid !== 0) {
           isDuplicate(mqttWithPreviews.sender_id, pid); // registers as seen to suppress future duplicates
           meshtasticIngestSessionRef.current?.markPacketSeen(mqttWithPreviews.sender_id, pid);
-          void window.electronAPI.db.updateMessageReceivedVia(pid);
+          void window.electronAPI.db.updateMessageReceivedVia(pid).catch((e: unknown) => {
+            console.debug(
+              '[useMeshtasticRuntime] updateMessageReceivedVia failed ' + errLikeToLogString(e),
+            );
+          });
         }
         return;
       }
@@ -2760,7 +2776,13 @@ export function useMeshtasticRuntime() {
             clearMeshtasticOutboundTempId(tempId);
           }
           outboundSendByTempIdRef.current.delete(tempId);
-          void window.electronAPI.db.updateMessageStatus(tempId, 'failed', error);
+          void window.electronAPI.db
+            .updateMessageStatus(tempId, 'failed', error)
+            .catch((e: unknown) => {
+              console.warn(
+                '[useMeshtasticRuntime] updateMessageStatus failed ' + errLikeToLogString(e),
+              );
+            });
         }
       } else {
         // mqtt — read current device status from state so the DB update is consistent
@@ -2771,12 +2793,14 @@ export function useMeshtasticRuntime() {
           const existing = prev.find((m) => m.packetId === rowPacketId);
           if (status !== 'sending' && existing) {
             const deviceStatus = existing.status ?? 'acked';
-            void window.electronAPI.db.updateMessageStatus(
-              rowPacketId,
-              deviceStatus,
-              existing.error,
-              status,
-            );
+            void window.electronAPI.db
+              .updateMessageStatus(rowPacketId, deviceStatus, existing.error, status)
+              .catch((e: unknown) => {
+                console.warn(
+                  '[useMeshtasticRuntime] updateMessageStatus (mqtt) failed ' +
+                    errLikeToLogString(e),
+                );
+              });
           }
           return prev.map((m) => (m.packetId === rowPacketId ? { ...m, mqttStatus: status } : m));
         });

@@ -41,10 +41,14 @@ function RepeaterAuthProbe({
       <button
         type="button"
         onClick={() => {
-          void ensureRepeaterAuth(nodeId, repeaterName).then((auth) => {
-            setResult(auth);
-            if (auth.ok) onAuthed?.();
-          });
+          void ensureRepeaterAuth(nodeId, repeaterName)
+            .then((auth) => {
+              setResult(auth);
+              if (auth.ok) onAuthed?.();
+            })
+            .catch(() => {
+              // catch-no-log-ok: test probe — rejection asserted via UI state absence
+            });
         }}
       >
         request-auth

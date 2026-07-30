@@ -164,7 +164,7 @@ When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) 
 
 ## Removed: rsReticulum-rnode-tcp-activity-keepalive.patch
 
-Sunset when upstream landed `RNodeIdleProbe` (`88d3d38` — *rnode: restore TCP application idle probes*). [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) was closed as superseded; mesh-client no longer carries that overlay (pin `9928abed269a83ec5a7ef165ff1142d938cad706` or later already includes idle probes). `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` still tracks `#15` so `pnpm run update` warns on closed-without-merge until the entry is dropped after sunset is confirmed.
+Sunset when upstream landed `RNodeIdleProbe` (`88d3d38` — *rnode: restore TCP application idle probes*). [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) was closed as superseded; mesh-client no longer carries that overlay (pin `9928abed269a83ec5a7ef165ff1142d938cad706` or later already includes idle probes). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.
 
 ## rsReticulum-ble-rnode-pairing-transition-debounce.patch
 

@@ -24,9 +24,13 @@ describe('repeater admin RPC sequencing', () => {
 
     const settlePromise = awaitMeshcoreRepeaterPingSettleForNode(42, 500);
     let settled = false;
-    void settlePromise.then(() => {
-      settled = true;
-    });
+    void settlePromise
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        // catch-no-log-ok: settle may reject on timeout; test awaits settlePromise below
+      });
     await new Promise((r) => setTimeout(r, 80));
     expect(settled).toBe(false);
 

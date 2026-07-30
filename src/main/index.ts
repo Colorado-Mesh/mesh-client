@@ -2393,11 +2393,21 @@ ipcMain.handle('bluetooth-pair', async (event, macAddress: unknown, pin: unknown
         stderr.includes('AuthenticationCanceled');
       const pairingSucceededByOutput = stdout.includes('Pairing successful');
       if (!pairingFailedByOutput && (pairingSucceededByOutput || code === 0)) {
-        void trustDeviceBestEffort().then(() => {
-          if (settled) return;
-          console.debug('[IPC] bluetooth-pair success');
-          finishResolve();
-        });
+        void trustDeviceBestEffort()
+          .then(() => {
+            if (settled) return;
+            console.debug('[IPC] bluetooth-pair success');
+            finishResolve();
+          })
+          .catch((e: unknown) => {
+            // trustDeviceBestEffort is best-effort and should not reject; finish pairing anyway.
+            console.debug(
+              '[IPC] bluetooth-pair trust settle:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
+            if (settled) return;
+            finishResolve();
+          });
       } else {
         console.warn(
           '[IPC] bluetooth-pair failed:',
@@ -6405,134 +6415,147 @@ app.on('child-process-gone', (_event, details) => {
   );
 });
 
-void app.whenReady().then(() => {
-  try {
-    initLogFile();
-    console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
+void app
+  .whenReady()
+  .then(() => {
     try {
-      console.debug('[main] crashDumps path:', sanitizeLogMessage(app.getPath('crashDumps')));
-    } catch (e: unknown) {
-      console.warn(
-        '[main] crashDumps path unavailable:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
-
-    // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
-    if (process.defaultApp) {
-      if (process.argv.length >= 2) {
-        app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
-      }
-    } else {
-      app.setAsDefaultProtocolClient('lxm');
-    }
-    const coldStartUrl = findLxmUrlInArgv(process.argv);
-    if (coldStartUrl) pendingOpenUrl = coldStartUrl;
-
-    initDatabase();
-
-    // Auto-restore TAK server if auto-start is enabled
-    const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
-    try {
-      if (fs.existsSync(takSettingsPath)) {
-        const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
-        // Backfill autoStart for settings files saved before the field was added.
-        if (
-          raw != null &&
-          typeof raw === 'object' &&
-          typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
-        ) {
-          (raw as Record<string, unknown>).autoStart = false;
-        }
-        const saved = raw;
-        validateTakSettings(saved);
-        if (saved.autoStart) {
-          void ensureTakServerManager()
-            .then((m) => m.start(saved))
-            .catch((e: unknown) => {
-              console.error(
-                '[TAK] Auto-start failed:',
-                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-              );
-            });
-        }
-      }
-    } catch (e: unknown) {
-      console.warn(
-        '[TAK] Settings restore failed:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
-
-    // Force the dock icon in development on macOS
-    if (!app.isPackaged && process.platform === 'darwin') {
-      const iconPath = path.join(
-        __dirname,
-        '../../resources/icons/mac/iconset/icon_256x256@1x.png',
-      );
-      app.dock?.setIcon(iconPath);
-    }
-    createWindow();
-
-    const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
-    const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
-    setInterval(() => {
-      if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
-      const uptimeSec = Math.floor(process.uptime());
-      const mem = process.memoryUsage();
-      const ble = nobleBleManager.getLongSessionHealthSnapshot();
-      console.debug(
-        `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
-      );
-    }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
-
-    setupAppMenu();
-
-    // ─── Power monitor: notify renderer on suspend/resume ──────────
-    powerMonitor.on('suspend', () => {
-      console.debug('[main] System suspending');
-      rendererHeartbeatWatchdog.clearResumeWatchdog();
-      mqttManager.handlePowerSuspend();
-      meshcoreMqttAdapter.handlePowerSuspend();
-      mainWindow?.webContents.send('power:suspend');
-    });
-    powerMonitor.on('resume', () => {
-      console.debug('[main] System resumed');
-      rendererHeartbeatWatchdog.startResumeWatchdog();
-      mainWindow?.webContents.send('power:resume');
-    });
-  } catch (error) {
-    console.error(
-      '[main] Fatal startup error:',
-      sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
-    );
-    const isNativeModuleError =
-      error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
-    const message = isDatabaseSchemaTooNewError(error)
-      ? formatDatabaseSchemaTooNewMessage(error)
-      : isNativeModuleError
-        ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
-        : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
-    showFatalStartupError('Mesh-Client — Startup Error', message);
-    app.quit();
-    return;
-  }
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+      initLogFile();
+      console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
       try {
-        createWindow();
-      } catch (error) {
-        console.error(
-          '[main] Window creation error:',
-          sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+        console.debug('[main] crashDumps path:', sanitizeLogMessage(app.getPath('crashDumps')));
+      } catch (e: unknown) {
+        console.warn(
+          '[main] crashDumps path unavailable:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
-    } else {
-      mainWindow?.show(); // Restore hidden window on dock click
+
+      // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
+      if (process.defaultApp) {
+        if (process.argv.length >= 2) {
+          app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
+        }
+      } else {
+        app.setAsDefaultProtocolClient('lxm');
+      }
+      const coldStartUrl = findLxmUrlInArgv(process.argv);
+      if (coldStartUrl) pendingOpenUrl = coldStartUrl;
+
+      initDatabase();
+
+      // Auto-restore TAK server if auto-start is enabled
+      const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
+      try {
+        if (fs.existsSync(takSettingsPath)) {
+          const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
+          // Backfill autoStart for settings files saved before the field was added.
+          if (
+            raw != null &&
+            typeof raw === 'object' &&
+            typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
+          ) {
+            (raw as Record<string, unknown>).autoStart = false;
+          }
+          const saved = raw;
+          validateTakSettings(saved);
+          if (saved.autoStart) {
+            void ensureTakServerManager()
+              .then((m) => m.start(saved))
+              .catch((e: unknown) => {
+                console.error(
+                  '[TAK] Auto-start failed:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
+              });
+          }
+        }
+      } catch (e: unknown) {
+        console.warn(
+          '[TAK] Settings restore failed:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+
+      // Force the dock icon in development on macOS
+      if (!app.isPackaged && process.platform === 'darwin') {
+        const iconPath = path.join(
+          __dirname,
+          '../../resources/icons/mac/iconset/icon_256x256@1x.png',
+        );
+        app.dock?.setIcon(iconPath);
+      }
+      createWindow();
+
+      const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
+      const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
+      setInterval(() => {
+        if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
+        const uptimeSec = Math.floor(process.uptime());
+        const mem = process.memoryUsage();
+        const ble = nobleBleManager.getLongSessionHealthSnapshot();
+        console.debug(
+          `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
+        );
+      }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
+
+      setupAppMenu();
+
+      // ─── Power monitor: notify renderer on suspend/resume ──────────
+      powerMonitor.on('suspend', () => {
+        console.debug('[main] System suspending');
+        rendererHeartbeatWatchdog.clearResumeWatchdog();
+        mqttManager.handlePowerSuspend();
+        meshcoreMqttAdapter.handlePowerSuspend();
+        mainWindow?.webContents.send('power:suspend');
+      });
+      powerMonitor.on('resume', () => {
+        console.debug('[main] System resumed');
+        rendererHeartbeatWatchdog.startResumeWatchdog();
+        mainWindow?.webContents.send('power:resume');
+      });
+    } catch (error) {
+      console.error(
+        '[main] Fatal startup error:',
+        sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
+      );
+      const isNativeModuleError =
+        error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
+      const message = isDatabaseSchemaTooNewError(error)
+        ? formatDatabaseSchemaTooNewMessage(error)
+        : isNativeModuleError
+          ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
+          : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
+      showFatalStartupError('Mesh-Client — Startup Error', message);
+      app.quit();
+      return;
     }
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        try {
+          createWindow();
+        } catch (error) {
+          console.error(
+            '[main] Window creation error:',
+            sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+          );
+        }
+      } else {
+        mainWindow?.show(); // Restore hidden window on dock click
+      }
+    });
+  })
+  .catch((error: unknown) => {
+    console.error(
+      '[main] app.whenReady failed:',
+      sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
+    );
+    showFatalStartupError(
+      'Mesh-Client — Startup Error',
+      `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`,
+    );
+    app.quit();
   });
-});
 
 app.on('before-quit', (event) => {
   // Clean up any pending Bluetooth device selection to prevent callback leak
