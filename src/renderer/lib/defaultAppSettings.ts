@@ -36,6 +36,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreFloodScopePresets: [] as string[],
   locale: 'en' as string,
   chatCompactMode: false,
+  /** When true, chat/room message action bars (copy/reply/react/etc.) stay visible instead of hover-only. */
+  alwaysShowMessageActions: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */
   reduceMotion: false,
   /** When true, force wall-clock timestamps (chat, charts, etc.) to 24-hour format. */

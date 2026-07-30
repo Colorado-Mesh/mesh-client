@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
     "capStoredRrcMessagesLabel": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
     "capStoredRrcMessagesCountAria": "Beperk de opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste {{count}}-berichten",
+    "alwaysShowMessageActions": "Altijd berichtacties weergeven",
+    "alwaysShowMessageActionsDesc": "Houd de actiebalk voor kopiëren/beantwoorden/reageren zichtbaar op elk bericht in plaats van deze alleen bij aanwijzen weer te geven.",
+    "themeSaved": "Huidige kleuren opgeslagen.",
+    "themeRestored": "Opgeslagen kleuren hersteld.",
+    "saveTheme": "Huidige kleuren opslaan als controlepunt",
+    "restoreTheme": "Opgeslagen kleurcontrolepunt herstellen",
+    "noSavedThemeTooltip": "Nog geen opgeslagen kleuren — gebruik Opslaan om een controlepunt te maken",
+    "saveThemeButton": "Opslaan",
+    "restoreThemeButton": "Herstellen",
     "reticulumPropagationHelp": "Configureer externe LXMF-voortplantingsknooppunten voor offline DM's. Lokale verspreiding is alleen de inbox van dit apparaat — het vervangt geen extern knooppunt.",
     "use24HourTime": "24-uursaanduiding",
-    "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem."
+    "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem.",
+    "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
+    "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
+    "themeResetFailed": "Kan kleuren niet resetten."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

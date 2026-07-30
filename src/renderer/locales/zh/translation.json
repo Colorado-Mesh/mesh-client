@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "存储RRC房间历史上限，保持最新",
     "capStoredRrcMessagesLabel": "存储RRC房间历史上限，保持最新",
     "capStoredRrcMessagesCountAria": "限制存储的 RRC 房间历史记录，保留最新的 {{count}} 消息",
+    "alwaysShowMessageActions": "始终显示消息操作",
+    "alwaysShowMessageActionsDesc": "保持复制/回复/反应操作栏在每条消息上可见，而不是仅在悬停时显示。",
+    "themeSaved": "当前颜色已保存。",
+    "themeRestored": "已还原保存的颜色。",
+    "saveTheme": "将当前颜色保存为检查点",
+    "restoreTheme": "还原保存的颜色检查点",
+    "noSavedThemeTooltip": "尚未保存颜色—使用“保存”创建检查点",
+    "saveThemeButton": "保存",
+    "restoreThemeButton": "恢复",
     "reticulumPropagationHelp": "为离线DM配置远程LXMF传播节点。本地传播仅是此设备的收件箱—它不会替换远程节点。",
     "use24HourTime": "24小时时间",
-    "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。"
+    "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。",
+    "themeSaveFailed": "无法保存颜色检查点。",
+    "themeRestoreFailed": "无法还原颜色检查点。",
+    "themeResetFailed": "无法重置颜色。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
     "capStoredRrcMessagesLabel": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
     "capStoredRrcMessagesCountAria": "Ogranicz zapisaną historię pokoju RRC, zachowaj najnowsze wiadomości {{count}}",
+    "alwaysShowMessageActions": "Zawsze pokazuj działania dotyczące wiadomości",
+    "alwaysShowMessageActionsDesc": "Zachowaj pasek akcji Kopiuj/Odpowiedz/Reaguj widoczny przy każdej wiadomości, zamiast pokazywać go tylko po najechaniu kursorem.",
+    "themeSaved": "Zapisano bieżące kolory.",
+    "themeRestored": "Przywrócono zapisane kolory.",
+    "saveTheme": "Zapisz bieżące kolory jako punkt kontrolny",
+    "restoreTheme": "Przywróć zapisany punkt kontrolny koloru",
+    "noSavedThemeTooltip": "Brak zapisanych kolorów — użyj przycisku Zapisz, aby utworzyć punkt kontrolny",
+    "saveThemeButton": "Zapisz",
+    "restoreThemeButton": "Przywróć",
     "reticulumPropagationHelp": "Skonfiguruj zdalne węzły propagacji LXMF dla wiadomości DM offline. Lokalna propagacja to tylko skrzynka odbiorcza tego urządzenia — nie zastępuje zdalnego węzła.",
     "use24HourTime": "Format 24-godzinny",
-    "use24HourTimeDesc": "Wymuś wyświetlanie zegarów, takich jak znaczniki czasu czatu, w formacie 24-godzinnym. Gdy jest wyłączony, postępuje zgodnie z ustawieniami regionalnymi systemu."
+    "use24HourTimeDesc": "Wymuś wyświetlanie zegarów, takich jak znaczniki czasu czatu, w formacie 24-godzinnym. Gdy jest wyłączony, postępuje zgodnie z ustawieniami regionalnymi systemu.",
+    "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
+    "themeRestoreFailed": "Nie udało się przywrócić punktu kontrolnego koloru.",
+    "themeResetFailed": "Nie udało się zresetować kolorów."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

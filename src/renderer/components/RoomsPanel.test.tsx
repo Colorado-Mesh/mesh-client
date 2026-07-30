@@ -641,6 +641,65 @@ describe('RoomsPanel', () => {
     expect(raw).toContain('Bookmark me');
   });
 
+  it('keeps room post actions visible when alwaysShowMessageActions is set', () => {
+    meshcoreClearAllRoomSessions();
+    const roomId = 0x2003;
+    const room = makeRoom(roomId, 'Always Actions Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(roomId, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const msg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Always visible',
+      roomServerId: roomId,
+      authorId: 0x11,
+      authorName: 'Author',
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf',
+    });
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomId,
+      messages: [msg],
+      alwaysShowMessageActions: true,
+    });
+
+    const star = screen.getByLabelText('chatPanel.starMessage');
+    const row = star.parentElement;
+    expect(row?.className).toContain('opacity-100');
+    expect(row?.className).not.toMatch(/(?:^|\s)opacity-0(?:\s|$)/);
+  });
+
+  it('uses hover/focus-within visibility for room post actions by default', () => {
+    meshcoreClearAllRoomSessions();
+    const roomId = 0x2004;
+    const room = makeRoom(roomId, 'Hover Actions Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(roomId, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const msg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Hover me',
+      roomServerId: roomId,
+      authorId: 0x11,
+      authorName: 'Author',
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf',
+    });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: roomId, messages: [msg] });
+
+    const star = screen.getByLabelText('chatPanel.starMessage');
+    const row = star.parentElement;
+    expect(row?.className).toMatch(/(?:^|\s)opacity-0(?:\s|$)/);
+    expect(row?.className).toContain('group-focus-within/msg:opacity-100');
+    expect(row?.className).toContain('group-hover/msg:opacity-100');
+  });
+
   it('shows saved passwords section collapsed by default when credentials exist', async () => {
     const room = makeRoom(0x1020, 'Saved List Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);

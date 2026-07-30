@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { enrichMeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
 import { ToastProvider } from './Toast';
@@ -69,6 +70,7 @@ describe('MeshcoreTelemetryPrivacySection consistency', () => {
         onApply={vi.fn()}
       />,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

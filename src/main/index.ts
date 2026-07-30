@@ -3453,6 +3453,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
   'reduceMotion',
+  'alwaysShowMessageActions',
   'reticulumAutostart',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',

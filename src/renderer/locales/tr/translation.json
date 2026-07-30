@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
     "capStoredRrcMessagesLabel": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
     "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın",
+    "alwaysShowMessageActions": "Mesaj eylemlerini her zaman göster",
+    "alwaysShowMessageActionsDesc": "Kopyala/yanıtla/tepki ver eylem çubuğunu yalnızca fareyle üzerine gelindiğinde göstermek yerine her mesajda görünür tutun.",
+    "themeSaved": "Mevcut renkler kaydedildi.",
+    "themeRestored": "Kaydedilen renkler geri yüklendi.",
+    "saveTheme": "Mevcut renkleri kontrol noktası olarak kaydet",
+    "restoreTheme": "Kaydedilen renk kontrol noktasını geri yükle",
+    "noSavedThemeTooltip": "Henüz kaydedilmiş renk yok — bir kontrol noktası oluşturmak için Kaydet'i kullanın",
+    "saveThemeButton": "Kaydet",
+    "restoreThemeButton": "Geri Yükle",
     "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz.",
     "use24HourTime": "24-Saat Zaman",
-    "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin."
+    "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin.",
+    "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
+    "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
+    "themeResetFailed": "Renkler sıfırlanamadı."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

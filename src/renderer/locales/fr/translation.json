@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
     "capStoredRrcMessagesLabel": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
     "capStoredRrcMessagesCountAria": "Limiter l'historique des salles RRC stockées, conserver les messages {{count}} les plus récents",
+    "alwaysShowMessageActions": "Toujours afficher les actions de message",
+    "alwaysShowMessageActionsDesc": "Gardez la barre d'action copier/répondre/réagir visible sur chaque message au lieu de ne l'afficher qu'au survol.",
+    "themeSaved": "Couleurs actuelles enregistrées.",
+    "themeRestored": "Couleurs sauvegardées restaurées.",
+    "saveTheme": "Enregistrer les couleurs actuelles comme point de contrôle",
+    "restoreTheme": "Restaurer le point de contrôle de couleur enregistré",
+    "noSavedThemeTooltip": "Pas encore de couleurs enregistrées — utilisez Enregistrer pour créer un point de contrôle",
+    "saveThemeButton": "Sauvegarder",
+    "restoreThemeButton": "Restaurer",
     "reticulumPropagationHelp": "Configurez les nœuds de propagation LXMF distants pour les DM hors ligne. La propagation locale est la boîte de réception de cet appareil uniquement — elle ne remplace pas un nœud distant.",
     "use24HourTime": "Heure (format 24 heures)",
-    "use24HourTimeDesc": "Forcer les horloges comme les horodatages de chat au format 24 heures. Lorsqu'il est désactivé, suit les paramètres régionaux de votre système."
+    "use24HourTimeDesc": "Forcer les horloges comme les horodatages de chat au format 24 heures. Lorsqu'il est désactivé, suit les paramètres régionaux de votre système.",
+    "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
+    "themeRestoreFailed": "Échec de la restauration du point de contrôle des couleurs.",
+    "themeResetFailed": "Impossible de réinitialiser les couleurs."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Limite o histórico da sala RRC armazenado, mantenha o mais recente",
     "capStoredRrcMessagesLabel": "Limite o histórico da sala RRC armazenado, mantenha o mais recente",
     "capStoredRrcMessagesCountAria": "Limite o histórico da sala RRC armazenado, mantenha as mensagens {{count}} mais recentes",
+    "alwaysShowMessageActions": "Mostrar sempre as ações da mensagem",
+    "alwaysShowMessageActionsDesc": "Mantenha a barra de ação copiar/responder/reagir visível em todas as mensagens, em vez de apenas mostrá-la ao passar o mouse.",
+    "themeSaved": "Cores atuais salvas.",
+    "themeRestored": "Cores salvas restauradas.",
+    "saveTheme": "Salvar as cores atuais como um ponto de verificação",
+    "restoreTheme": "Restaurar ponto de verificação de cor salvo",
+    "noSavedThemeTooltip": "Ainda não há cores salvas — use Salvar para criar um ponto de verificação",
+    "saveThemeButton": "Salvar",
+    "restoreThemeButton": "Restaurar",
     "reticulumPropagationHelp": "Configurar nós de propagação LXMF remotos para DMs offline. A propagação local é apenas a caixa de entrada deste dispositivo — ela não substitui um nó remoto.",
     "use24HourTime": "Use o tempo de 24 horas",
-    "use24HourTimeDesc": "Forçar relógios como carimbos de data e hora de bate-papo para o formato de 24 horas. Quando desligado, segue a localidade do seu sistema."
+    "use24HourTimeDesc": "Forçar relógios como carimbos de data e hora de bate-papo para o formato de 24 horas. Quando desligado, segue a localidade do seu sistema.",
+    "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
+    "themeRestoreFailed": "Falha ao restaurar o ponto de verificação de cores.",
+    "themeResetFailed": "Falha ao redefinir as cores."
   },
   "aria": {
     "closeDialog": "Fechar janela",

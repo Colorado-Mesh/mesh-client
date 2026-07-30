@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Limitar el historial de sala RRC almacenado, mantener el más reciente",
     "capStoredRrcMessagesLabel": "Limitar el historial de sala RRC almacenado, mantener el más reciente",
     "capStoredRrcMessagesCountAria": "Limitar el historial de sala RRC almacenado, conservar los mensajes {{count}} más recientes",
+    "alwaysShowMessageActions": "Mostrar siempre las acciones del mensaje",
+    "alwaysShowMessageActionsDesc": "Mantenga la barra de acción de copiar/responder/reaccionar visible en cada mensaje en lugar de solo mostrarla al pasar el cursor.",
+    "themeSaved": "Colores actuales guardados.",
+    "themeRestored": "Colores guardados restaurados.",
+    "saveTheme": "Guardar los colores actuales como punto de control",
+    "restoreTheme": "Restaurar punto de verificación de color guardado",
+    "noSavedThemeTooltip": "Aún no hay colores guardados: use Guardar para crear un punto de control",
+    "saveThemeButton": "Guardar",
+    "restoreThemeButton": "Restaurar",
     "reticulumPropagationHelp": "Configurar nodos de propagación LXMF remotos para DM sin conexión. La propagación local es solo la bandeja de entrada de este dispositivo: no reemplaza a un nodo remoto.",
     "use24HourTime": "Modo 24 horas",
-    "use24HourTimeDesc": "Forza los relojes, como las marcas de tiempo del chat, al formato de 24 horas. Cuando esté apagado, siga la configuración regional de su sistema."
+    "use24HourTimeDesc": "Forza los relojes, como las marcas de tiempo del chat, al formato de 24 horas. Cuando esté apagado, siga la configuración regional de su sistema.",
+    "themeSaveFailed": "Error al guardar el punto de verificación de color.",
+    "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
+    "themeResetFailed": "Error al restablecer los colores."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

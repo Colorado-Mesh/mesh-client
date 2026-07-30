@@ -1143,13 +1143,6 @@ export default function NodeListPanel({
                   const health = nodeHealthScore(node);
                   const healthTier = nodeHealthTier(health.total);
                   const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
-                  const rowOpacity = isMqttOnlyDimmed
-                    ? 'opacity-50'
-                    : status === 'offline'
-                      ? 'opacity-20'
-                      : status === 'stale'
-                        ? 'opacity-35'
-                        : '';
 
                   return (
                     <tr
@@ -1159,7 +1152,7 @@ export default function NodeListPanel({
                       onClick={() => {
                         onNodeClick(node);
                       }}
-                      className={`hover:bg-secondary-dark/50 cursor-pointer transition-colors ${rowOpacity} ${
+                      className={`hover:bg-secondary-dark/50 cursor-pointer transition-colors ${
                         isSelf ? 'bg-brand-green/5 border-l-brand-green border-l-2' : ''
                       }`}
                     >

@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
     "capStoredRrcMessagesLabel": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
     "capStoredRrcMessagesCountAria": "Batasi riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru",
+    "alwaysShowMessageActions": "Selalu tampilkan tindakan pesan",
+    "alwaysShowMessageActionsDesc": "Jaga agar bilah tindakan salin/balas/reaksi terlihat di setiap pesan, bukan hanya menampilkannya di hover.",
+    "themeSaved": "Warna saat ini disimpan.",
+    "themeRestored": "Warna tersimpan dipulihkan.",
+    "saveTheme": "Simpan warna saat ini sebagai pos pemeriksaan",
+    "restoreTheme": "Pulihkan pos pemeriksaan warna yang disimpan",
+    "noSavedThemeTooltip": "Belum ada warna yang disimpan — gunakan Simpan untuk membuat pos pemeriksaan",
+    "saveThemeButton": "Simpan",
+    "restoreThemeButton": "Pulihkan",
     "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh.",
     "use24HourTime": "Gunakan waktu 24 jam",
-    "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda."
+    "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda.",
+    "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
+    "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
+    "themeResetFailed": "Gagal mengatur ulang warna."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -36,9 +36,12 @@ import { nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
+  hasThemeSnapshot,
   loadThemeColors,
   persistThemeColors,
   resetThemeColors,
+  restoreThemeSnapshot,
+  saveThemeSnapshot,
   THEME_COLOR_PRESETS,
   THEME_TOKEN_META,
   type ThemeColorKey,
@@ -161,6 +164,7 @@ interface AppSettings {
   meshcoreFloodScopeHashtag: string;
   meshcoreFloodScopePresets: string[];
   chatCompactMode: boolean;
+  alwaysShowMessageActions: boolean;
   storeForwardAutoFetchHistory: boolean;
   storeForwardHistoryProfile: 'conservative' | 'aggressive';
   shareLocationSendWaypoint: boolean;
@@ -207,6 +211,7 @@ interface Props {
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
   onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
   onChatCompactModeChange?: (compact: boolean) => void;
+  onAlwaysShowMessageActionsChange?: (alwaysShow: boolean) => void;
   deviceReportedPathHashMode?: 0 | 1 | 2 | null;
   isMeshcoreRadioConnected?: boolean;
   onApplyMeshcorePathHashMode?: (mode: 0 | 1 | 2) => Promise<void>;
@@ -246,6 +251,7 @@ export default function AppPanel({
   onAutoFloodAdvertIntervalChange,
   onAutoFloodAdvertTypeChange,
   onChatCompactModeChange,
+  onAlwaysShowMessageActionsChange,
   deviceReportedPathHashMode,
   isMeshcoreRadioConnected = false,
   onApplyMeshcorePathHashMode,
@@ -302,17 +308,54 @@ export default function AppPanel({
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
+  const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
   const [deleteAgeDays, setDeleteAgeDays] = useState(90);
 
   const commitThemeColor = useCallback((key: ThemeColorKey, hex: string) => {
     setThemeColors((prev) => {
       if (prev[key] === hex) return prev;
       const next = { ...prev, [key]: hex };
-      applyThemeColors(next);
-      persistThemeColors(next);
-      return next;
+      // Prefer the clamped map applyThemeColors returns so readableGreen stays
+      // contrast-safe in React state and localStorage (not only on :root).
+      const applied = applyThemeColors(next);
+      if (!applied) return prev;
+      persistThemeColors(applied);
+      return applied;
     });
   }, []);
+
+  const handleSaveThemeSnapshot = useCallback(() => {
+    try {
+      saveThemeSnapshot();
+      setHasSavedThemeSnapshot(true);
+      addToast(t('appPanel.themeSaved'), 'success');
+    } catch (err) {
+      console.warn('[AppPanel] saveThemeSnapshot failed ' + errLikeToLogString(err));
+      addToast(t('appPanel.themeSaveFailed'), 'error');
+    }
+  }, [addToast, t]);
+
+  const handleRestoreThemeSnapshot = useCallback(() => {
+    try {
+      const restored = restoreThemeSnapshot();
+      setThemeColors(restored);
+      addToast(t('appPanel.themeRestored'), 'success');
+    } catch (err) {
+      console.warn('[AppPanel] restoreThemeSnapshot failed ' + errLikeToLogString(err));
+      addToast(t('appPanel.themeRestoreFailed'), 'error');
+    }
+  }, [addToast, t]);
+
+  const handleResetThemeColors = useCallback(() => {
+    try {
+      resetThemeColors();
+      setThemeColors({ ...DEFAULT_THEME_COLORS });
+      addToast(t('appPanel.colorsReset'), 'success');
+    } catch (err) {
+      console.warn('[AppPanel] resetThemeColors failed ' + errLikeToLogString(err));
+      addToast(t('appPanel.themeResetFailed'), 'error');
+    }
+  }, [addToast, t]);
 
   const handleExportSupportBundle = useCallback(
     async (mode: SupportBundleMode) => {
@@ -371,6 +414,10 @@ export default function AppPanel({
   useEffect(() => {
     onChatCompactModeChange?.(settings.chatCompactMode);
   }, [settings.chatCompactMode, onChatCompactModeChange]);
+
+  useEffect(() => {
+    onAlwaysShowMessageActionsChange?.(settings.alwaysShowMessageActions);
+  }, [settings.alwaysShowMessageActions, onAlwaysShowMessageActionsChange]);
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -1670,6 +1717,25 @@ export default function AppPanel({
               {t('appPanel.compactMessages')}
             </label>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="alwaysShowMessageActions"
+              checked={settings.alwaysShowMessageActions}
+              onChange={(e) => {
+                updateSetting('alwaysShowMessageActions', e.target.checked);
+              }}
+              aria-label={t('appPanel.alwaysShowMessageActions')}
+              className="accent-brand-green"
+            />
+            <label
+              htmlFor="alwaysShowMessageActions"
+              className="cursor-pointer text-sm text-gray-300"
+            >
+              {t('appPanel.alwaysShowMessageActions')}
+            </label>
+            <HelpTooltip text={t('appPanel.alwaysShowMessageActionsDesc')} />
+          </div>
           {protocol === 'meshtastic' && (
             <>
               <div className="flex items-center gap-2 pt-2">
@@ -1980,18 +2046,34 @@ export default function AppPanel({
                 </div>
               );
             })}
-            <button
-              type="button"
-              onClick={() => {
-                resetThemeColors();
-                setThemeColors({ ...DEFAULT_THEME_COLORS });
-                addToast(t('appPanel.colorsReset'), 'success');
-              }}
-              aria-label={t('appPanel.resetAllColors')}
-              className="bg-deep-black w-full rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
-            >
-              {t('appPanel.resetAllColorsButton')}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveThemeSnapshot}
+                aria-label={t('appPanel.saveTheme')}
+                className="bg-deep-black flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+              >
+                {t('appPanel.saveThemeButton')}
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreThemeSnapshot}
+                disabled={!hasSavedThemeSnapshot}
+                aria-label={t('appPanel.restoreTheme')}
+                title={hasSavedThemeSnapshot ? undefined : t('appPanel.noSavedThemeTooltip')}
+                className="bg-deep-black disabled:hover:bg-deep-black flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {t('appPanel.restoreThemeButton')}
+              </button>
+              <button
+                type="button"
+                onClick={handleResetThemeColors}
+                aria-label={t('appPanel.resetAllColors')}
+                className="bg-deep-black flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+              >
+                {t('appPanel.resetAllColorsButton')}
+              </button>
+            </div>
           </div>
         </details>
       </div>

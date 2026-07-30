@@ -74,9 +74,11 @@ function persistCollapsed(key: string, next: boolean) {
 
 export interface RrcPanelProps {
   isActive: boolean;
+  /** Keep RRC per-message copy visible (same App Appearance setting as Chat). */
+  alwaysShowMessageActions?: boolean;
 }
 
-export default function RrcPanel({ isActive }: RrcPanelProps) {
+export default function RrcPanel({ isActive, alwaysShowMessageActions = false }: RrcPanelProps) {
   const { t } = useTranslation();
   const hubs = useRrcHubStore((s) => s.hubs);
   const refreshFromSidecar = useRrcHubStore((s) => s.refreshFromSidecar);
@@ -985,6 +987,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
             canSend={status === 'active'}
             isMuted={isMuted}
             nickname={nickname}
+            alwaysShowMessageActions={alwaysShowMessageActions}
           />
           {showNicklist && (
             <RrcNickList

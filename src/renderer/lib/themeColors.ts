@@ -197,8 +197,11 @@ function resolveThemeHex(raw: string | undefined, key: ThemeColorKey): string | 
  * Apply theme colors to :root. Pass full map (merged with defaults) so every var is set.
  * If any value is not strictly # + 6 hex after normalize, skips all setProperty calls
  * and logs once — never applies partial/unsane strings.
+ * Returns the clamped/resolved map that was applied, or null when skipped.
  */
-export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
+export function applyThemeColors(
+  colors: Record<ThemeColorKey, string>,
+): Record<ThemeColorKey, string> | null {
   const merged = { ...colors };
   if (ensureReadableGreenContrast(merged)) {
     persistThemeColors(merged);
@@ -210,7 +213,7 @@ export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
       console.warn(
         `[themeColors] applyThemeColors skipped — invalid or non-strict hex key=${sanitizeLogMessage(key)} raw=${sanitizeLogMessage(merged[key])}`,
       );
-      return;
+      return null;
     }
     resolved[key] = hex;
   }
@@ -226,6 +229,7 @@ export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
       root.style.setProperty(THEME_CSS_VARS[key], hex);
     }
   }
+  return resolved;
 }
 
 const READABLE_GREEN_ON_WHITE_MIN_RATIO = 4.5;
@@ -280,4 +284,36 @@ export function persistThemeColors(colors: Record<ThemeColorKey, string>): void 
 export function resetThemeColors(): void {
   localStorage.removeItem(THEME_COLORS_STORAGE_KEY);
   applyThemeColors(DEFAULT_THEME_COLORS);
+}
+
+export const THEME_COLORS_SNAPSHOT_STORAGE_KEY = 'mesh-client:themeColorsSnapshot';
+
+/** True if the user has an explicitly saved color checkpoint to restore. */
+export function hasThemeSnapshot(): boolean {
+  return localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY) !== null;
+}
+
+/** Save the current live colors as a checkpoint, distinct from factory defaults. */
+export function saveThemeSnapshot(): void {
+  const current = loadThemeColors();
+  localStorage.setItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY, JSON.stringify(current));
+}
+
+/** Restore the last saved checkpoint (if any), applying and persisting it as the current colors. */
+export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
+  const parsed = parseStoredJson<StoredThemeColors>(
+    localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY),
+    'themeColors restoreThemeSnapshot',
+  );
+  const merged = { ...DEFAULT_THEME_COLORS };
+  if (parsed) {
+    for (const key of Object.keys(DEFAULT_THEME_COLORS) as ThemeColorKey[]) {
+      const v = parsed[key];
+      if (typeof v === 'string' && normalizeHex(v)) merged[key] = normalizeHex(v)!;
+    }
+  }
+  ensureReadableGreenContrast(merged);
+  persistThemeColors(merged);
+  applyThemeColors(merged);
+  return merged;
 }

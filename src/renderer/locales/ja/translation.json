@@ -364,9 +364,21 @@
     "capStoredRrcMessages": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
     "capStoredRrcMessagesLabel": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
     "capStoredRrcMessagesCountAria": "保存されている RRC ルーム履歴を制限し、最新の {{count}} メッセージを保持します",
+    "alwaysShowMessageActions": "常にメッセージのアクションを表示する",
+    "alwaysShowMessageActionsDesc": "ホバー時にのみ表示するのではなく、すべてのメッセージにコピー/返信/反応アクションバーを表示します。",
+    "themeSaved": "現在の色を保存しました。",
+    "themeRestored": "保存した色が復元されました。",
+    "saveTheme": "現在の色をチェックポイントとして保存する",
+    "restoreTheme": "保存されたカラーチェックポイントを復元",
+    "noSavedThemeTooltip": "保存された色はまだありません—保存を使用してチェックポイントを作成します",
+    "saveThemeButton": "保存",
+    "restoreThemeButton": "リストア",
     "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
     "use24HourTime": "24時間制を使用する",
-    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。"
+    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。",
+    "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
+    "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
+    "themeResetFailed": "色をリセットできませんでした。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
