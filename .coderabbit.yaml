@@ -1,0 +1,44 @@
+# CodeRabbit Free-tier tuning for mesh-client.
+# Docs: https://docs.coderabbit.ai/getting-started/yaml-configuration
+# Autofix requires Pro — use “Prompt for AI Agents” on Free.
+
+language: en-US
+reviews:
+  profile: quiet
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  enable_prompt_for_ai_agents: true
+  path_filters:
+    - '!src/renderer/locales/**'
+    - '!**/pnpm-lock.yaml'
+    - '!flatpak/generated-sources.json'
+    - '!patches/**'
+    - '!reticulum-sidecar/patches/**'
+    - '!**/coverage/**'
+    - '!**/dist/**'
+    - '!**/dist-electron/**'
+    - '!**/target/**'
+  path_instructions:
+    - path: '**/*'
+      instructions: |
+        Focus on correctness, security, races, resource leaks, and IPC/contract bugs.
+        Skip style/formatting (Prettier/ESLint/Clippy own that).
+        Do not request cognitive-complexity or Sonar-style refactors.
+        Prefer minimal diffs; do not suggest drive-by cleanups outside the PR scope.
+        This repo follows AGENTS.md multi-protocol and i18n rules.
+    - path: 'src/renderer/locales/**'
+      instructions: Skip — generated/translated locale JSON.
+    - path: '**/*.test.ts'
+      instructions: Prefer behavioral assertions; skip style-only test nits.
+    - path: '**/*.test.tsx'
+      instructions: Prefer behavioral/axe assertions; skip style-only test nits.
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_pause_after_reviewed_commits: 2
+    ignore_title_keywords:
+      - 'chore: bump'
+      - 'chore(deps)'
+      - 'dependabot'

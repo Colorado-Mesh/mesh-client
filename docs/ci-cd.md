@@ -52,7 +52,7 @@ Runs on every push and pull request to `main`:
 5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
 6. Upload merged test results artifact (retained 7 days)
 
-SonarQube Cloud uses **Automatic Analysis (Autoscan)** — not GitHub Actions — because the Free plan Sonar Way quality gate includes cognitive-complexity thresholds we cannot customize, and CI scanning would fail PRs on that gate. Keep **Automatic Analysis enabled**. Scope and issue suppressions are configured in `sonar-project.properties` / `.sonarcloud.properties` and (for multicriteria under Autoscan) the SonarCloud project Analysis Scope UI.
+Static analysis on PRs is **CodeQL** (security) plus ESLint, Clippy, and pre-commit `check:*` scanners. AI PR review is **CodeRabbit** (see [CodeRabbit](#coderabbit) below). SonarQube Cloud is not used.
 
 Test results are available as a downloadable artifact from the workflow run.
 
@@ -64,6 +64,17 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
+
+---
+
+## CodeRabbit
+
+PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.coderabbit.yaml`](../.coderabbit.yaml) (quiet profile, path filters, auto-pause after two reviewed commits).
+
+- Prefer opening as a **draft** until the feature diff is ready, then mark ready for review.
+- Free plan: about **1 PR review per developer per hour**; each auto-incremental push counts. After auto-pause, request another pass with `@coderabbitai review`.
+- Batch actionable findings via the **Prompt for AI Agents** block into one local commit (Autofix requires Pro).
+- Check remaining allowance with `@coderabbitai rate limit`.
 
 ---
 
