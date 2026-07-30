@@ -888,6 +888,22 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
 3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
 
+### RRC false self-PART / hubParted banner
+
+**Symptoms**: Busy rooms show repeated “Left the room (hub parted you)” / self leave when other members part; or an involuntary hub PART looks like a kick/ban.
+
+**Cause**: Older logic treated member-fanout `PARTED` as self-leave. Sidecar now classifies actor-facing self PARTED vs other-member fanout (`parted_concerns_self`); involuntary self-PART while the room is still desired queues silent rejoin and the UI uses neutral `rrc.moderation.hubParted` (not kick/ban copy).
+
+**What to do**: Upgrade / restart the sidecar. If the banner appears after a true hub PART, re-join the room (or wait for auto-rejoin when still desired). Kick/ban wording is reserved for moderation notice paths only.
+
+### RRC history shows fewer messages than Retention
+
+**Symptoms**: App → Retention keeps **10,000** RRC messages, but opening a room only shows ~**500**.
+
+**Cause**: Per-room UI hydrate caps at `RRC_ROOM_HISTORY_LOAD_COUNT` (**500**) via `rrcRoomHistory.ts`. SQLite may still hold up to the retention count; older rows are not all loaded into the session store.
+
+**What to do**: This is expected. Retention prune (`db:pruneRrcMessagesByCount` / age) controls disk; the 500 cap is a session/UI hydrate limit, not a wipe.
+
 ### Reticulum sidecar won't start or health poll times out
 
 **Symptoms**: Connection tab **Start stack** fails; logs show `[ReticulumSidecar]` health poll timeout; `reticulum:getStatus` reports `lastError`. Identity **Generate** / **Import** errors with `Reticulum sidecar is not running`.
@@ -1120,7 +1136,35 @@ Unrecognized codes pass through unchanged.
 - Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.
 - Auto-sync interval counts from the last _successful_ sync; failed attempts only apply a short cooldown (~2 min) so they do not postpone the next scheduled sync forever.
 
-**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors.
+**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors. If Add fails with **offer unsupported**, the destination does not speak LXMF `/offer`. If Sync/Add fails with **peering cost exceeds max**, raise **Network → Advanced PN hosting → Max peering cost**.
+
+### Reticulum local PN hosting not discoverable
+
+**Symptoms**: Local Host propagation node is enabled but peers never hear your PN announce / cannot `/offer` or `/get`.
+
+**Cause**: Hosting requires a live stack with identity signing key; enable starts `lxmf.propagation` LinkManager + announce loop.
+
+**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]`. Tune announce interval under **Advanced PN hosting**.
+
+### Reticulum PN hosting policy apply fails
+
+**Symptoms**: Saving **Network → Advanced PN hosting** (peering cost, storage limits, static peers, announce interval) fails or reverts; Device log shows hosting-policy errors.
+
+**Cause / checks**:
+
+- Sidecar rejected the policy (`peering_cost_exceeds_max`, `stamp_flex_exceeds_cost`, range limits, or invalid 32-hex static peer). The renderer now validates the same rules before PUT; failure surfaces via the panel error path.
+- Stack/identity not ready (hosting apply needs a live sidecar). BLE/USB hubs themselves are unrelated — policy is local lxmf-core config, but the stack must be running to persist it.
+- Invalid `node_name` (control characters or longer than 128 characters).
+
+**Fix**: Fix the invalid field (keep peering cost ≤ max; stamp flex ≤ stamp cost; static peers as lowercase 32-hex). Confirm Reticulum stack is **running**, then re-apply. Check logs for `[reticulumPropagationStore] hosting policy` / sidecar `hosting-policy` responses.
+
+### Reticulum last synced time looks wrong after update
+
+**Symptoms**: Propagation UI shows a far-future or absurdly old “last synced” time after a sidecar upgrade or clock skew.
+
+**Cause**: `last_propagation_sync_at` comes from the sidecar as Unix seconds. A future clock (or bad stamp) was previously accepted wholesale; refresh now clamps future values to local `Date.now()`.
+
+**Fix**: Run **Refresh** / reopen Propagation after fixing the system clock. Trigger a successful **Sync** to rewrite a sane stamp.
 
 ### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
 
@@ -1171,7 +1215,7 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 1. Open **Network → Propagation** (Chat notice **Set up propagation** jumps there).
 2. Add a **32-character LXMF destination hash** from whoever runs the propagation node you trust.
 3. Set **Preferred** (manual mode) or leave **Auto** when multiple nodes are listed.
-4. **Local propagation only** is this device’s offline inbox — it does **not** replace a remote propagation node for peers you cannot reach directly. Preferring Local shows a warning toast; Chat still treats local-only as “no remote PN.”
+4. **Local propagation hosting** stores messages for peers that sync with you — it does **not** replace a remote propagation node for peers you cannot reach directly. Preferring Local shows a warning toast; Chat still treats local-only as “no remote PN.”
 
 **Stale path + Failed via TCP:** When a path exists, mesh-client tries **Direct** first. If Direct fails and a preferred **remote** PN is configured, the sidecar retries once via that PN (Ratspeak-style store-and-forward). Without a remote preferred PN, the row stays **Failed** even if Ratspeak on the same machine deposits successfully.
 
@@ -1256,6 +1300,10 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 1. Confirm the destination is announced and has a path (Peers / Topology); **Probe** it if the chip is stale.
 2. For `path_constrained`, prefer a faster interface or wait for a better path; large files over slow links may not be attempted.
 3. Check sidecar logs for `rnsh`/`rncp` link errors; the `reticulum:rncpSend` / `rncpFetch` IPC returns the reason key surfaced in the toast.
+
+**Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
+
+**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied only if a pending mark exists (`rncpReceiveDestSharePending`, TTL); shares without a prior request-enable from this session are ignored.
 
 ### Reticulum Remote inbound rncp blocked (Ask mode / policy)
 

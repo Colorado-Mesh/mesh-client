@@ -169,4 +169,70 @@ describe('mergeReticulumIngestRecord', () => {
     expect(merged.replyPreviewText).toBe('New quote');
     expect(merged.replyPreviewSender).toBe('Bob');
   });
+
+  it('does not demote an acked Completes to sending on outbound ingest echo', () => {
+    const existing: MessageRecord = {
+      id: 'msg-acked',
+      from: selfId,
+      senderName: 'Me',
+      to: peerId,
+      payload: 'just sent',
+      channelIndex: 0,
+      timestamp: 2000,
+      status: 'acked',
+      receivedVia: 'tcp',
+      reticulumDeliveryMethod: 'propagated',
+    };
+    const incoming: MessageRecord = {
+      id: 'msg-acked',
+      from: selfId,
+      senderName: 'Me',
+      to: peerId,
+      payload: 'just sent',
+      channelIndex: 0,
+      timestamp: 2000,
+      status: 'sending',
+      receivedVia: 'tcp',
+      reticulumDeliveryMethod: 'propagated',
+    };
+    const merged = mergeReticulumIngestRecord(
+      existing,
+      incoming,
+      { direction: 'outbound' },
+      { selfLxmfHash: selfHash },
+    );
+    expect(merged.status).toBe('acked');
+    expect(merged.reticulumDeliveryMethod).toBe('propagated');
+  });
+
+  it('still allows failed → sending on outbound ingest (manual retry / PN fallback)', () => {
+    const existing: MessageRecord = {
+      id: 'msg-failed',
+      from: selfId,
+      senderName: 'Me',
+      to: peerId,
+      payload: 'retry me',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'failed',
+      error: 'delivery failed',
+    };
+    const incoming: MessageRecord = {
+      id: 'msg-failed',
+      from: selfId,
+      senderName: 'Me',
+      to: peerId,
+      payload: 'retry me',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'sending',
+    };
+    const merged = mergeReticulumIngestRecord(
+      existing,
+      incoming,
+      { direction: 'outbound' },
+      { selfLxmfHash: selfHash },
+    );
+    expect(merged.status).toBe('sending');
+  });
 });

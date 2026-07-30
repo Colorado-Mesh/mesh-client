@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
     "capStoredRrcMessagesLabel": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
     "capStoredRrcMessagesCountAria": "保存されている RRC ルーム履歴を制限し、最新の {{count}} メッセージを保持します",
-    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。"
+    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
+    "use24HourTime": "24時間制を使用する",
+    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -585,7 +587,6 @@
       "sendFileAria": "ファイルをrncp経由で{{name}}に送信する",
       "pendingOffersBadgeAria_one": "このピアからの{{count}}保留中のインバウンドファイルオファー",
       "pendingOffersBadgeAria_other": "このピアからの{{count}}保留中のインバウンドファイルのオファー",
-      "destinationLabel": "rncp宛先ハッシュ",
       "rememberAddress": "この住所を記憶する",
       "rememberAddressAria": "このピアのこのrncp宛先を覚えておいてください",
       "chooseAndSend": "ファイルを選択して送信…",
@@ -594,7 +595,9 @@
       "sendFailed": "次の送信に失敗しました： {{error}}",
       "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
       "requestEnable": "リクエストの有効化",
-      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します"
+      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します",
+      "destinationLabel": "ピアのrncp受信先",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination."
     },
     "shareLocation": "位置情報を共有する",
     "shareLocationLabel": "📍 共有場所",
@@ -2482,6 +2485,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "高度な PN ホスティング (危険ゾーン)",
+      "peeringCost": "ピアリングコスト",
+      "maxPeeringCost": "ピアリングの最大コスト",
+      "autopeer": "検出された PN による自動ピア",
+      "autopeerMaxdepth": "オートピア最大ホップ",
+      "maxPeers": "オートピアピアの最大数",
+      "stampCost": "伝播スタンプのコスト",
+      "stampFlex": "スタンプコストの柔軟性",
+      "storageMb": "メッセージストレージ制限 (MB)",
+      "propagationLimitKb": "伝播メッセージの制限 (KB)",
+      "syncLimitKb": "同期転送制限 (KB)",
+      "deliveryLimitKb": "配信転送制限 (KB)",
+      "announceIntervalSec": "PN アナウンス間隔 (秒)",
+      "announceAtStart": "ホスティング開始時にアナウンスする",
+      "fromStaticOnly": "静的ピアからのみ",
+      "authRequired": "認証が必要です",
+      "enforceStamps": "メッセージスタンプを強制する",
+      "enforceRatchets": "ラチェットを強制する",
+      "nodeName": "PN アナウンス名",
+      "staticPeers": "静的ピア ハッシュ (1 行あたり 1 つの 32 16 進数)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "ホスティング ポリシーを保存する",
+      "saving": "保存中…",
+      "saveAria": "PN ホスティング ポリシーを保存する",
+      "saveOk": "PN ホスティング ポリシーが保存されました。",
+      "saveFailed": "PN ホスティング ポリシーを保存できませんでした。",
+      "saveConfirmTitle": "PN ホスティング ポリシーを保存しますか?",
+      "saveConfirmBody": "ライブ伝播ノードにピアリング、ストレージ、スタンプ、アナウンス設定を適用しますか?構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。",
+      "saveConfirm": "ポリシーの保存",
+      "error": {
+        "peeringCostExceedsMax": "ピアリング コストは最大ピアリング コストを超えることはできません。",
+        "stampFlexExceedsCost": "スタンプの柔軟性はスタンプのコストを超えることはできません。",
+        "autopeerMaxdepth": "オートピアの最大ホップが範囲外です。",
+        "maxPeers": "最大ピア数が範囲外です。",
+        "storageMb": "メッセージストレージ制限が範囲外です。",
+        "propagationLimit": "伝播メッセージの制限が範囲外です。",
+        "syncLimit": "同期転送制限が範囲外です。",
+        "deliveryLimit": "配信転送制限の範囲外です。",
+        "announceInterval": "PN アナウンス間隔が範囲外です。",
+        "staticPeersTooMany": "静的ピア ハッシュが多すぎます (最大 256)。",
+        "staticPeerInvalid": "1 つ以上の静的ピア ハッシュが無効です (32 個の 16 進文字が必要です)。",
+        "nodeNameInvalid": "PN アナウンス名に無効な文字が含まれています。",
+        "nodeNameTooLong": "PN アナウンス名が長すぎます。",
+        "nonFiniteNumber": "1 つ以上の数値フィールドが無効です。"
+      },
+      "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。"
     }
   },
   "nodeDetailModal": {
@@ -3874,11 +3925,12 @@
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",
     "iconNameAria": "ピアアバターアイコン",
-    "iconCircle": "円",
     "iconStar": "スター",
     "iconHeart": "ハートマーク",
     "iconShield": "シールド",
-    "iconUser": "ユーザー"
+    "iconNone": "なし",
+    "iconSaveFailed": "アバターアイコンを保存できませんでした。",
+    "iconUser": "人々"
   },
   "reticulumPropagation": {
     "preferred": "推奨",
@@ -3888,7 +3940,6 @@
     "syncNowFor": "{{name}} からのメッセージを同期する",
     "addNode": "ノードの追加",
     "addNodeLabel": "ハッシュによる伝播ノードの追加",
-    "localInboxStats": "{{count}} キューに入れられました · {{bytes}} バイト",
     "refreshing": "爽やか…",
     "refreshAria": "伝播ノードをリフレッシュする",
     "syncStatusEstablishing": "伝播ノードへの接続を確立しています…",
@@ -3938,7 +3989,6 @@
       "unknown": "未知",
       "online": "オンライン"
     },
-    "syncLocalNotSupported": "ローカル伝播はオフラインの受信箱です。リモート LXMF 伝播ノードのようにネットワーク経由で同期することはできません。",
     "syncIdentityUnknown": "伝播ノードの ID が不明です。アナウンスまたはパス応答を待ってから、再試行してください。",
     "syncTargetNotPropagationNode": "その宛先は Reticulum 上で到達可能ですが、LXMF 伝播ノードではありません (TCP ハブはトランスポート パスのみです)。オフライン メッセージを同期するには、lxmf.propagation として通知する宛先を追加します。",
     "syncPeeringStampFailed": "この伝播ノードのピアリング スタンプを作成できませんでした。しばらくしてからもう一度お試しください。",
@@ -3969,9 +4019,21 @@
     "syncOfferUnknown": "伝搬ノードが不明な同期オファーエラーを返しました。しばらくしてからもう一度お試しください。",
     "syncPathHint": "リモート同期には、両方向のパスが必要です。同期は、ノードが応答できるように、短いLXMFアナウンスを最初に送信します。",
     "setPreferredFailed": "優先伝播ノードを設定できませんでした。",
-    "localInboxName": "ローカル伝播（オフライン受信トレイ）",
-    "localInboxHint": "ローカル伝播は、このデバイスのオフライン受信トレイです。到達不能なピアのアウトバウンドDMは保存されません。リモートlxmf.propagationノードをストアアンドフォワードに推奨するように設定します。",
-    "preferredLocalWarning": "優先ノードはローカルのみです。オフラインのピアは、ストアアンドフォワード配信のためにリモート伝播ノードを必要とします。"
+    "preferredLocalWarning": "優先ノードはローカルのみです。オフラインのピアは、ストアアンドフォワード配信のためにリモート伝播ノードを必要とします。",
+    "localHostStats": "{{count}} キューに登録 · {{bytes}} バイト",
+    "localHostName": "ホスト伝播ノード",
+    "localHostHint": "有効にすると、このデバイスは LXMF 伝播ノードとしてアナウンスされ、/offer および /get を提供します。到達不能なピアに対する送信ストア アンド フォワードにはリモート ノードを優先します。",
+    "syncPeerCostExceedsMax": "この伝播ノードのピアリング コストが最大ピアリング コストを超えています。[ネットワーク] → [高度な PN ホスティング] で最大値を上げるか、別のノードを選択してください。",
+    "offerUnsupported": "この宛先は LXMF /offer 同期をサポートしていません。mesh-client はそれを伝播ノードとして使用できません。",
+    "offerProbeTimeout": "/offer サポートのチェック中にタイムアウトしました — ノードに到達できない可能性があります。パスが使用可能なときに再試行してください。",
+    "offerProbeFailed": "この伝播ノードの /offer サポートを確認できませんでした。しばらくしてからもう一度お試しください。",
+    "enableLocalHostConfirmTitle": "ローカル伝播ノードのホスティングを有効にしますか?",
+    "enableLocalHostConfirmBody": "このデバイスは、LXMF 伝播ノードとしてアナウンスし、/offer および /get を提供します。これはストレージと CPU を使用し、ネットワーク上の他のノードとピアリングする場合があります。ホストするつもりがない限り、送信ストア アンド フォワードにはリモート ノードを優先します。",
+    "enableLocalHostConfirm": "ホスティングを有効にする",
+    "addProbing": "/offer サポートを確認中…",
+    "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
+    "enableFailed": "伝播ノードを有効にできませんでした。",
+    "disableFailed": "伝播ノードを無効にできませんでした。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",
@@ -4570,7 +4632,9 @@
     "directNoticeUnsupported": "このハブは直接通知（/msg ）をサポートしていません。",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。"
+      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。",
+      "removedFromRoomSystem": "ハブがあなたを{{room}}から引き離しました。",
+      "hubParted": "ハブがあなたをルームから引き離しました。"
     },
     "errors": {
       "linkProofTimeout": "ハブリンク（リンクプルーフ）の待機中にタイムアウトしました。もう一度試すか、ハブへのパス/ホップを確認してください。",
@@ -4777,7 +4841,9 @@
       "offerToast": "受信ファイルオファー： {{file}}",
       "copyInstructionsAria": "ファイル受信を有効にするための手順をコピーする",
       "copyInstructions": "手順をコピー",
-      "instructionsCopied": "手順をコピーしました。"
+      "instructionsCopied": "手順をコピーしました。",
+      "receiveDestSharedToast": "{{peer}} の rncp 受信先を保存しました — ファイルを送信できます。",
+      "receiveDestShareFailed": "ピアの rncp 受信先を保存できませんでした。"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",
@@ -4794,7 +4860,9 @@
       "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
       "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
       "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
-      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。"
+      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。",
+      "lxmfShareBody": "ファイル受信が有効です。これが私の rncp 受信先です（mesh-client が保存します）。",
+      "shareDestWarning": "有効にすると、mesh-client は rncp 受信宛先をこのピアに送信し、ファイル送信を自動入力できるようになります。"
     },
     "saved": {
       "labelPlaceholder": "ラベル",
@@ -4849,5 +4917,12 @@
     "direct": "直接",
     "segmentTooltip": "パスハッシュ {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} はオンラインです",
+    "onlineBody": "{{protocol}} ノードがオンラインになりました",
+    "offlineTitle": "{{name}} がオフラインになりました",
+    "offlineBody": "最後に聞いた音: {{time}}",
+    "unknown": "未知"
   }
 }

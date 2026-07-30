@@ -140,6 +140,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(propagation::set_propagation_auto_sync_interval),
         )
         .route(
+            "/api/v1/propagation/hosting-policy",
+            post(propagation::set_pn_hosting_policy),
+        )
+        .route(
             "/api/v1/propagation/{id}/enable",
             post(propagation::enable_propagation),
         )

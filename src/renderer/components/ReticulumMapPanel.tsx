@@ -17,6 +17,7 @@ import {
 } from '@/renderer/components/map/leafletMapControls';
 import { CHAT_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import {
   DEFAULT_MAP_BASEMAP_ID,
@@ -38,6 +39,7 @@ import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 
 const REFRESH_MS = 30_000;
 const DEFAULT_CENTER: [number, number] = [20, 0];
@@ -116,6 +118,7 @@ export default function ReticulumMapPanel({
   onOpenAppGpsSettings,
 }: ReticulumMapPanelProps) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
   const overlayColors = getMapOverlayColors(basemap.isDark);
@@ -428,7 +431,9 @@ export default function ReticulumMapPanel({
                     )}
                     <div className="mt-1 text-xs text-slate-600">
                       {t('reticulumMap.lastHeard', {
-                        time: new Date(row.last_heard * 1000).toLocaleString(),
+                        time: formatDisplayDateTime(row.last_heard * 1000, {
+                          use24Hour: use24HourTime,
+                        }),
                       })}
                     </div>
                   </div>

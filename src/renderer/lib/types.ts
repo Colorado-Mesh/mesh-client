@@ -367,6 +367,11 @@ export interface CachedNode {
 
 export interface ChatMessage {
   id?: number;
+  /**
+   * Zustand `messageStore` key when `id` is not a numeric Meshtastic/MeshCore packet id
+   * (e.g. Reticulum `reticulum-pending-*` or LXMF message hash).
+   */
+  storeId?: string;
   sender_id: number;
   /** Reticulum LXMF destination hash when `sender_id` is a synthetic node id mapping. */
   reticulum_sender_hash?: string;

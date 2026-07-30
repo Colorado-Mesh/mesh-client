@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
     "capStoredRrcMessagesLabel": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
     "capStoredRrcMessagesCountAria": "저장된 RRC 방 기록을 제한하고 최신 {{count}} 메시지를 유지합니다.",
-    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다."
+    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다.",
+    "use24HourTime": "24시간 사용",
+    "use24HourTimeDesc": "채팅 타임스탬프와 같은 시계를 24시간 형식으로 강제 설정합니다. 꺼지면 시스템 로케일을 따릅니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -585,7 +587,6 @@
       "sendFileAria": "rncp를 통해 {{name}}에 파일 보내기",
       "pendingOffersBadgeAria_one": "{{count}} 이 피어로부터 인바운드 파일 제공을 보류 중입니다.",
       "pendingOffersBadgeAria_other": "{{count}} 이 피어로부터 보류 중인 인바운드 파일 제안",
-      "destinationLabel": "rncp 대상 해시",
       "rememberAddress": "이 주소를 기억하세요",
       "rememberAddressAria": "이 피어에 대한 이 rncp 대상을 기억하십시오.",
       "chooseAndSend": "파일을 선택하고 보내세요...",
@@ -594,7 +595,9 @@
       "sendFailed": "전송 실패: {{error}}",
       "newOfferToast": "{{peer}}이(가) 당신에게 파일을 보내려고 합니다: {{file}}",
       "requestEnable": "활성화 요청",
-      "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청"
+      "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청",
+      "destinationLabel": "피어의 rncp 수신 대상",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination."
     },
     "shareLocation": "위치 공유",
     "shareLocationLabel": "📍 공유 위치",
@@ -2482,6 +2485,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "고급 PN 호스팅(위험 지대)",
+      "peeringCost": "피어링 비용",
+      "maxPeeringCost": "최대 피어링 비용",
+      "autopeer": "검색된 PN으로 자동 피어링",
+      "autopeerMaxdepth": "오토피어 최대 홉",
+      "maxPeers": "최대 자동 피어 피어",
+      "stampCost": "전파 스탬프 비용",
+      "stampFlex": "스탬프 비용 유연성",
+      "storageMb": "메시지 저장 한도(MB)",
+      "propagationLimitKb": "전파 메시지 제한(KB)",
+      "syncLimitKb": "동기화 전송 한도(KB)",
+      "deliveryLimitKb": "배달 전송 한도(KB)",
+      "announceIntervalSec": "PN 발표 간격(초)",
+      "announceAtStart": "호스팅 시작 시 알림",
+      "fromStaticOnly": "정적 피어에서만",
+      "authRequired": "인증이 필요합니다",
+      "enforceStamps": "메시지 스탬프 시행",
+      "enforceRatchets": "래칫 시행",
+      "nodeName": "PN 발표 이름",
+      "staticPeers": "정적 피어 해시(한 줄에 32헥스 1개)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "호스팅 정책 저장",
+      "saving": "절약…",
+      "saveAria": "PN 호스팅 정책 저장",
+      "saveOk": "PN 호스팅 정책이 저장되었습니다.",
+      "saveFailed": "PN 호스팅 정책을 저장할 수 없습니다.",
+      "saveConfirmTitle": "PN 호스팅 정책을 저장하시겠습니까?",
+      "saveConfirmBody": "라이브 전파 노드에 피어링, 저장, 스탬프 및 알림 설정을 적용하시겠습니까? 잘못된 구성으로 인해 CPU가 소모되거나, 디스크가 채워지거나, 많은 피어가 허용될 수 있습니다.",
+      "saveConfirm": "정책 저장",
+      "error": {
+        "peeringCostExceedsMax": "피어링 비용은 최대 피어링 비용을 초과할 수 없습니다.",
+        "stampFlexExceedsCost": "우표 유연성은 우표 비용을 초과할 수 없습니다.",
+        "autopeerMaxdepth": "자동 피어 최대 홉이 범위를 벗어났습니다.",
+        "maxPeers": "최대 피어가 범위를 벗어났습니다.",
+        "storageMb": "메시지 저장 한도가 범위를 벗어났습니다.",
+        "propagationLimit": "전파 메시지 제한이 범위를 벗어났습니다.",
+        "syncLimit": "동기화 전송 한도가 범위를 벗어났습니다.",
+        "deliveryLimit": "배송 이체 한도가 범위를 벗어났습니다.",
+        "announceInterval": "PN 알림 간격이 범위를 벗어났습니다.",
+        "staticPeersTooMany": "정적 피어 해시가 너무 많습니다(최대 256개).",
+        "staticPeerInvalid": "하나 이상의 정적 피어 해시가 잘못되었습니다(32자리 16진수 문자 필요).",
+        "nodeNameInvalid": "PN 공지 이름에 잘못된 문자가 포함되어 있습니다.",
+        "nodeNameTooLong": "PN 공지 이름이 너무 깁니다.",
+        "nonFiniteNumber": "하나 이상의 숫자 필드가 잘못되었습니다."
+      },
+      "warning": "이러한 설정은 로컬 전파 노드 호스팅, 자동 피어, PoW 비용 및 고비용 원격에 대한 동기화 거부를 제어합니다. 잘못된 구성으로 인해 CPU가 소모되거나, 디스크가 채워지거나, 많은 피어가 허용될 수 있습니다."
     }
   },
   "nodeDetailModal": {
@@ -3874,11 +3925,12 @@
   "reticulumProfileIcon": {
     "iconName": "아바타 아이콘",
     "iconNameAria": "피어 아바타 아이콘",
-    "iconCircle": "원형",
     "iconStar": "스타",
     "iconHeart": "심장",
     "iconShield": "실드",
-    "iconUser": "사용자"
+    "iconNone": "없음",
+    "iconSaveFailed": "아바타 아이콘을 저장할 수 없습니다.",
+    "iconUser": "사람들"
   },
   "reticulumPropagation": {
     "preferred": "선호",
@@ -3888,7 +3940,6 @@
     "syncNowFor": "{{name}}의 메시지 동기화",
     "addNode": "노드 추가",
     "addNodeLabel": "해시별로 전파 노드 추가",
-    "localInboxStats": "{{count}} 대기 중 · {{bytes}} 바이트",
     "refreshing": "상쾌하다…",
     "refreshAria": "전파 노드 새로 고침",
     "syncStatusEstablishing": "전파 노드에 연결 설정 중…",
@@ -3938,7 +3989,6 @@
       "unknown": "알려지지 않은",
       "online": "온라인"
     },
-    "syncLocalNotSupported": "로컬 전파는 오프라인 받은 편지함이므로 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화할 수 없습니다.",
     "syncIdentityUnknown": "전파 노드 ID를 알 수 없습니다. 알림 또는 경로 응답을 기다린 후 다시 시도하십시오.",
     "syncTargetNotPropagationNode": "해당 대상은 Reticulum에서 도달할 수 있지만 LXMF 전파 노드는 아닙니다(TCP 허브는 전송 경로일 뿐입니다). 오프라인 메시지를 동기화하려면 lxmf.propagation으로 알리는 대상을 추가하세요.",
     "syncPeeringStampFailed": "이 전파 노드에 대한 피어링 스탬프를 생성할 수 없습니다. 잠시 후에 다시 시도하십시오.",
@@ -3969,9 +4019,21 @@
     "syncOfferUnknown": "전파 노드가 알 수 없는 동기화 제안 오류를 반환했습니다. 잠시 후 다시 시도하십시오.",
     "syncPathHint": "원격 동기화는 양방향 경로가 필요합니다. Sync는 노드가 응답할 수 있도록 짧은 LXMF 알림을 먼저 보냅니다.",
     "setPreferredFailed": "기본 전파 노드를 설정할 수 없습니다.",
-    "localInboxName": "로컬 전파 (오프라인 받은 편지함)",
-    "localInboxHint": "로컬 전파는 이 장치의 오프라인 받은 편지함입니다. 도달할 수 없는 피어를 위해 아웃바운드 DM을 저장하지 않습니다. 원격 lxmf.propagation 노드를 store-and-forward에 대해 선호하는 것으로 설정합니다.",
-    "preferredLocalWarning": "기본 설정 노드는 로컬 전용입니다. 오프라인 피어는 스토어 및 전달 전달을 위해 여전히 원격 전파 노드가 필요합니다."
+    "preferredLocalWarning": "기본 설정 노드는 로컬 전용입니다. 오프라인 피어는 스토어 및 전달 전달을 위해 여전히 원격 전파 노드가 필요합니다.",
+    "localHostStats": "{{count}} 대기 중 · {{bytes}} 바이트",
+    "localHostName": "호스트 전파 노드",
+    "localHostHint": "활성화되면 이 장치는 LXMF 전파 노드로 알리고 /offer 및 /get을 제공합니다. 연결할 수 없는 피어보다 아웃바운드 저장 및 전달을 위해 원격 노드를 선호합니다.",
+    "syncPeerCostExceedsMax": "이 전파 노드의 피어링 비용은 최대 피어링 비용보다 높습니다. 네트워크 → 고급 PN 호스팅에서 최대값을 높이거나 다른 노드를 선택하세요.",
+    "offerUnsupported": "이 대상은 LXMF /offer 동기화를 지원하지 않습니다 — mesh-client에서 전파 노드로 사용할 수 없습니다.",
+    "offerProbeTimeout": "/offer 지원을 확인하는 동안 시간이 초과되었습니다. 노드에 연결할 수 없을 수 있습니다. 경로를 사용할 수 있게 되면 다시 시도하세요.",
+    "offerProbeFailed": "이 전파 노드에 대한 지원을 확인/제공할 수 없습니다. 잠시 후 다시 시도하십시오.",
+    "enableLocalHostConfirmTitle": "로컬 전파 노드 호스팅을 활성화하시겠습니까?",
+    "enableLocalHostConfirmBody": "이 장치는 LXMF 전파 노드로 알리고 /offer 및 /get을 제공합니다. 이는 스토리지, CPU를 사용하고 네트워크의 다른 노드와 피어링할 수 있습니다. 호스팅할 의도가 없다면 아웃바운드 저장 및 전달을 위해 원격 노드를 선호합니다.",
+    "enableLocalHostConfirm": "호스팅 활성화",
+    "addProbing": "/offer 지원 확인 중…",
+    "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다.",
+    "enableFailed": "전파 노드를 활성화할 수 없습니다.",
+    "disableFailed": "전파 노드를 비활성화할 수 없습니다."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",
@@ -4570,7 +4632,9 @@
     "directNoticeUnsupported": "이 허브는 직접 고지 (/msg) 를 지원하지 않습니다.",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품)."
+      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품).",
+      "removedFromRoomSystem": "허브가 {{room}}에서 귀하를 분리했습니다.",
+      "hubParted": "허브가 당신을 방에서 분리시켰습니다."
     },
     "errors": {
       "linkProofTimeout": "허브 링크 (링크 증명) 대기 시간이 초과되었습니다. 다시 시도하거나 허브 경로/홉을 확인하세요.",
@@ -4777,7 +4841,9 @@
       "offerToast": "수신 파일 제공: {{file}}",
       "copyInstructionsAria": "파일 수신 활성화를 위한 지침 복사",
       "copyInstructions": "지침 복사",
-      "instructionsCopied": "지침이 복사되었습니다."
+      "instructionsCopied": "지침이 복사되었습니다.",
+      "receiveDestSharedToast": "{{peer}}의 rncp 수신 대상을 저장했습니다 — 이제 파일을 보낼 수 있습니다.",
+      "receiveDestShareFailed": "피어의 rncp 수신 대상을 저장할 수 없습니다."
     },
     "enableRequest": {
       "title": "파일 수신을 활성화하시겠습니까?",
@@ -4794,7 +4860,9 @@
       "enableFailed": "파일 수신을 활성화할 수 없습니다: {{error}}",
       "saveDirRequired": "수신을 활성화하려면 저장 폴더를 선택하세요.",
       "identityUnknown": "이 피어의 신원 해시를 아직 확인할 수 없습니다 — 수신 확인은 활성화되었지만 허용 목록에는 추가되지 않았습니다. 경로나 알림이 도착한 후 다시 시도하세요.",
-      "lxmfBody": "mesh-client를 사용하는 경우 파일 수신(rncp)을 활성화하십시오: 원격 → 설정 → 인바운드 파일 제공. 또는 청취 모드에서 rncp/rncp-rs를 실행하십시오."
+      "lxmfBody": "mesh-client를 사용하는 경우 파일 수신(rncp)을 활성화하십시오: 원격 → 설정 → 인바운드 파일 제공. 또는 청취 모드에서 rncp/rncp-rs를 실행하십시오.",
+      "lxmfShareBody": "파일 수신이 활성화되었습니다. 제 rncp 수신 대상입니다(mesh-client가 저장합니다).",
+      "shareDestWarning": "활성화하면 mesh-client는 rncp 수신 대상을 이 피어에 보내 파일 보내기를 자동 채울 수 있습니다."
     },
     "saved": {
       "labelPlaceholder": "상표",
@@ -4849,5 +4917,12 @@
     "direct": "직접",
     "segmentTooltip": "경로 해시 {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}}은(는) 온라인 상태입니다.",
+    "onlineBody": "{{protocol}} 노드가 온라인 상태가 되었습니다.",
+    "offlineTitle": "{{name}}이 오프라인 상태가 되었습니다.",
+    "offlineBody": "마지막으로 청취한 날짜: {{time}}",
+    "unknown": "알려지지 않은"
   }
 }

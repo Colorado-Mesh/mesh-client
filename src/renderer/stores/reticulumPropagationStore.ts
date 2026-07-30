@@ -11,6 +11,13 @@ import {
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  DEFAULT_PN_HOSTING_POLICY,
+  mapPnHostingPolicyError,
+  parsePnHostingPolicy,
+  type PnHostingPolicy,
+  sanitizePnHostingPolicy,
+} from '@/shared/pnHostingPolicy';
 import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumPropagationAutoSync';
 
 /** i18n key written when the user cancels an in-flight propagation sync. */
@@ -51,8 +58,12 @@ interface ReticulumPropagationStoreState {
   discovered: DiscoveredPropagationRow[];
   preferredId: string | null;
   autoSyncIntervalSec: number;
+  hostingPolicy: PnHostingPolicy;
   sync: PropagationSyncState;
   lastSyncError: string | null;
+  lastAddError: string | null;
+  /** i18n key or mapped hosting-policy error for Advanced PN hosting save. */
+  lastHostingPolicyError: string | null;
   lastRefreshedAt: number | null;
   lastPropagationSyncAt: number | null;
   /**
@@ -78,6 +89,7 @@ interface ReticulumPropagationStoreState {
   refreshDiscoveredFromSidecar: () => Promise<void>;
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   setAutoSyncIntervalOnSidecar: (sec: number) => Promise<boolean>;
+  setHostingPolicyOnSidecar: (policy: PnHostingPolicy) => Promise<boolean>;
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: (opts?: { reasonKey?: string }) => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
@@ -91,8 +103,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   discovered: [],
   preferredId: null,
   autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
+  hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
   sync: { active: false, progress: 0, message: null },
   lastSyncError: null,
+  lastAddError: null,
+  lastHostingPolicyError: null,
   lastRefreshedAt: null,
   lastPropagationSyncAt: null,
   lastPropagationSyncAttemptAt: null,
@@ -153,19 +168,35 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         propagation?: PropagationNodeRow[];
         preferred_id?: string | null;
         auto_sync_interval_sec?: number;
+        pn_hosting_policy?: unknown;
         last_propagation_sync_at?: number | null;
       };
       const nodes = body.propagation ?? [];
+      const nowMs = Date.now();
+      let lastPropagationSyncAt = get().lastPropagationSyncAt;
+      if (typeof body.last_propagation_sync_at === 'number' && body.last_propagation_sync_at > 0) {
+        const fromSidecarMs = body.last_propagation_sync_at * 1000;
+        if (fromSidecarMs > nowMs) {
+          console.debug(
+            '[reticulumPropagationStore] clamping future last_propagation_sync_at from sidecar',
+          );
+          lastPropagationSyncAt = nowMs;
+        } else {
+          lastPropagationSyncAt = fromSidecarMs;
+        }
+      }
+      const syncActive = get().sync.active;
       set({
         nodes,
         preferredId: body.preferred_id ?? null,
         autoSyncIntervalSec:
           body.auto_sync_interval_sec ?? RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
-        lastRefreshedAt: Date.now(),
-        lastPropagationSyncAt:
-          typeof body.last_propagation_sync_at === 'number' && body.last_propagation_sync_at > 0
-            ? body.last_propagation_sync_at * 1000
-            : get().lastPropagationSyncAt,
+        hostingPolicy: parsePnHostingPolicy(body.pn_hosting_policy),
+        lastRefreshedAt: nowMs,
+        lastPropagationSyncAt,
+        // Clear phantom in-flight stamps only when sync is idle — mid-sync refresh
+        // must keep the attempt stamp for WS completion correlation.
+        ...(syncActive ? {} : { activePropagationSyncAttemptAt: null }),
       });
       await get().refreshDiscoveredFromSidecar();
     } catch (e) {
@@ -224,6 +255,33 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     return false;
   },
 
+  setHostingPolicyOnSidecar: async (policy) => {
+    const sanitized = sanitizePnHostingPolicy(policy);
+    if (!sanitized.ok) {
+      set({ lastHostingPolicyError: mapPnHostingPolicyError(sanitized.error) });
+      return false;
+    }
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/hosting-policy',
+        sanitized.policy,
+      )) as { ok?: boolean; error?: string };
+      if (res.ok) {
+        set({ hostingPolicy: sanitized.policy, lastHostingPolicyError: null });
+        return true;
+      }
+      set({
+        lastHostingPolicyError: res.error
+          ? mapPnHostingPolicyError(res.error) || mapPropagationSyncError(res.error)
+          : 'networkPanel.reticulumPnHosting.saveFailed',
+      });
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] hosting policy ' + errLikeToLogString(e));
+      set({ lastHostingPolicyError: 'networkPanel.reticulumPnHosting.saveFailed' });
+    }
+    return false;
+  },
+
   startSync: async (id) => {
     const propId = id ?? get().preferredId;
     if (!propId) return false;
@@ -249,6 +307,15 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       })) as { ok?: boolean; error?: string };
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
+        // Soft defer: outbound LXMF deposit owns the PN Link — retry on next auto-sync tick.
+        if (res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') {
+          set({
+            sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+            lastSyncError: null,
+            activePropagationSyncAttemptAt: null,
+          });
+          return false;
+        }
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: mapPropagationSyncError(res.error),
@@ -278,57 +345,62 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   },
 
   cancelSync: async (opts) => {
-    try {
-      clearPropagationSyncStallWatchdog();
-      await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync/cancel', {});
+    const applyCancelIdle = (lastSyncError: string) => {
+      set({
+        sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+        lastSyncError,
+        activePropagationSyncAttemptAt: null,
+      });
+    };
+    const resolveCancelError = (existing: string | null, fallback: string): string => {
       // Prefer a sidecar WS failure already applied while cancel awaited; do not let
       // a generic cancel overwrite establish/offer keys (dual 60s watchdog race).
-      set((state) => {
-        const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
-        const existing = state.lastSyncError;
-        const keepSidecar =
-          existing != null &&
-          existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
-          existing !== 'reticulumPropagation.syncTimedOut';
-        return {
-          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-          lastSyncError: keepSidecar ? existing : fallback,
-          activePropagationSyncAttemptAt: null,
-        };
-      });
+      const keepSidecar =
+        existing != null &&
+        existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
+        existing !== 'reticulumPropagation.syncTimedOut';
+      return keepSidecar && existing != null ? existing : fallback;
+    };
+    try {
+      clearPropagationSyncStallWatchdog();
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/sync/cancel',
+        {},
+      )) as { ok?: boolean; error?: string };
+      const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
+      if (res.ok === false || res.error) {
+        const mapped = mapPropagationSyncError(res.error);
+        applyCancelIdle(resolveCancelError(get().lastSyncError, mapped));
+        return false;
+      }
+      applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
       return true;
     } catch (e) {
       console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
       // Proxy failure must not leave sync.active stuck true.
-      set((state) => {
-        const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
-        const existing = state.lastSyncError;
-        const keepSidecar =
-          existing != null &&
-          existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
-          existing !== 'reticulumPropagation.syncTimedOut';
-        return {
-          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-          lastSyncError: keepSidecar ? existing : fallback,
-          activePropagationSyncAttemptAt: null,
-        };
-      });
+      const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
+      applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
       return false;
     }
   },
 
   addPropagationNode: async (destinationHash, name) => {
+    set({ lastAddError: null });
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/add', {
         destination_hash: destinationHash,
         name: name ?? undefined,
-      })) as { ok?: boolean };
+      })) as { ok?: boolean; error?: string };
       if (res.ok) {
         await get().refreshFromSidecar();
         return true;
       }
+      if (res.error) {
+        set({ lastAddError: mapPropagationSyncError(res.error) });
+      }
     } catch (e) {
       console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
+      set({ lastAddError: 'reticulumPropagation.addFailed' });
     }
     return false;
   },

@@ -324,6 +324,23 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.reticulumReplyToHash).toBe('cc'.repeat(16));
     const chat = messageRecordToChatMessage(record);
     expect(chat.reticulum_reply_to_hash).toBe('cc'.repeat(16));
+    expect(chat.storeId).toBe('dd'.repeat(16));
+  });
+
+  it('exposes storeId for non-numeric Reticulum pending keys', () => {
+    const chat = messageRecordToChatMessage({
+      id: 'reticulum-pending-42',
+      from: 1,
+      senderName: 'Me',
+      to: 2,
+      payload: 'hi',
+      channelIndex: 0,
+      timestamp: 1,
+      status: 'failed',
+    });
+    expect(chat.id).toBeUndefined();
+    expect(chat.storeId).toBe('reticulum-pending-42');
+    expect(chatMessageToMessageRecord(chat).id).toBe('reticulum-pending-42');
   });
 
   it('rehydrates Reticulum tapbacks from DB rows using reply_to_hash parent linkage', () => {

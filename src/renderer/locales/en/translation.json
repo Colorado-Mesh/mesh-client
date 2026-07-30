@@ -252,6 +252,8 @@
     "compactMessages": "Compact message view",
     "reduceMotion": "Reduce motion",
     "reduceMotionDesc": "Disables animated icons and decorative effects. Loading spinners and connection status indicators still animate.",
+    "use24HourTime": "Use 24-hour time",
+    "use24HourTimeDesc": "Force clocks like chat timestamps to 24-hour format. When off, follows your system locale.",
     "storeForwardAutoFetchHistory": "Automatically fetch Store & Forward chat history on connect",
     "storeForwardAutoFetchHistoryHint": "On RF connect, request chat history with the selected catch-up profile. Turn off if your gateway MQTT bridge is overloaded.",
     "storeForwardHistoryProfileLabel": "Store & Forward catch-up profile",
@@ -482,7 +484,8 @@
       "sendFileAria": "Send file to {{name}} via rncp",
       "pendingOffersBadgeAria_one": "{{count}} pending inbound file offer from this peer",
       "pendingOffersBadgeAria_other": "{{count}} pending inbound file offers from this peer",
-      "destinationLabel": "rncp destination hash",
+      "destinationLabel": "Peer's rncp receive destination",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination.",
       "rememberAddress": "Remember this address",
       "rememberAddressAria": "Remember this rncp destination for this peer",
       "chooseAndSend": "Choose file & send…",
@@ -2462,6 +2465,54 @@
       "save": "Save stack settings",
       "saveFailed": "Failed to save stack settings."
     },
+    "reticulumPnHosting": {
+      "title": "Advanced PN hosting (danger zone)",
+      "warning": "These settings control local propagation-node hosting, autopeer, PoW costs, and Sync refusal for high-cost remotes. Misconfiguration can burn CPU, fill disk, or accept many peers.",
+      "peeringCost": "Peering cost",
+      "maxPeeringCost": "Max peering cost",
+      "autopeer": "Autopeer with discovered PNs",
+      "autopeerMaxdepth": "Autopeer max hops",
+      "maxPeers": "Max autopeer peers",
+      "stampCost": "Propagation stamp cost",
+      "stampFlex": "Stamp cost flexibility",
+      "storageMb": "Message storage limit (MB)",
+      "propagationLimitKb": "Propagation message limit (KB)",
+      "syncLimitKb": "Sync transfer limit (KB)",
+      "deliveryLimitKb": "Delivery transfer limit (KB)",
+      "announceIntervalSec": "PN announce interval (seconds)",
+      "announceAtStart": "Announce when hosting starts",
+      "fromStaticOnly": "From static peers only",
+      "authRequired": "Auth required",
+      "enforceStamps": "Enforce message stamps",
+      "enforceRatchets": "Enforce ratchets",
+      "nodeName": "PN announce name",
+      "staticPeers": "Static peer hashes (one 32-hex per line)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Save hosting policy",
+      "saving": "Saving…",
+      "saveAria": "Save PN hosting policy",
+      "saveOk": "PN hosting policy saved.",
+      "saveFailed": "Could not save PN hosting policy.",
+      "saveConfirmTitle": "Save PN hosting policy?",
+      "saveConfirmBody": "Apply peering, storage, stamp, and announce settings to the live propagation node? Misconfiguration can burn CPU, fill disk, or accept many peers.",
+      "saveConfirm": "Save policy",
+      "error": {
+        "peeringCostExceedsMax": "Peering cost cannot exceed max peering cost.",
+        "stampFlexExceedsCost": "Stamp flexibility cannot exceed stamp cost.",
+        "autopeerMaxdepth": "Autopeer max hops is out of range.",
+        "maxPeers": "Max peers is out of range.",
+        "storageMb": "Message storage limit is out of range.",
+        "propagationLimit": "Propagation message limit is out of range.",
+        "syncLimit": "Sync transfer limit is out of range.",
+        "deliveryLimit": "Delivery transfer limit is out of range.",
+        "announceInterval": "PN announce interval is out of range.",
+        "staticPeersTooMany": "Too many static peer hashes (max 256).",
+        "staticPeerInvalid": "One or more static peer hashes are invalid (need 32 hex characters).",
+        "nodeNameInvalid": "PN announce name contains invalid characters.",
+        "nodeNameTooLong": "PN announce name is too long.",
+        "nonFiniteNumber": "One or more numeric fields are invalid."
+      }
+    },
     "reticulumConfigImport": {
       "title": "Import Reticulum config",
       "hint": "Paste an rnsd-style config file or import from disk. Merge adds/updates interface blocks by name; replace overwrites all interfaces.",
@@ -2830,6 +2881,13 @@
     "healthAriaLabel": "Node health score {{total}} out of 100",
     "echoesConnectionHealthTooltip": "{{score}}% connection health"
   },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} is online",
+    "onlineBody": "{{protocol}} node came online",
+    "offlineTitle": "{{name}} went offline",
+    "offlineBody": "Last heard: {{time}}",
+    "unknown": "unknown"
+  },
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
@@ -2926,7 +2984,9 @@
       "welcomeTimeout": "Connected but the hub did not send WELCOME in time. Try again."
     },
     "moderation": {
-      "removedFromRoom": "Removed from room by the hub (kick, ban, or remote part)."
+      "hubParted": "The hub parted you from the room.",
+      "removedFromRoom": "Removed from room by the hub (kick, ban, or remote part).",
+      "removedFromRoomSystem": "The hub parted you from {{room}}."
     },
     "slash": {
       "helpIntro": "=== RRC help ===",
@@ -4043,11 +4103,12 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar icon",
     "iconNameAria": "Peer avatar icon",
-    "iconCircle": "Circle",
+    "iconNone": "None",
     "iconStar": "Star",
     "iconHeart": "Heart",
     "iconShield": "Shield",
-    "iconUser": "User"
+    "iconUser": "People",
+    "iconSaveFailed": "Could not save avatar icon."
   },
   "reticulumPropagation": {
     "notice": {
@@ -4100,10 +4161,18 @@
       "unknown": "unknown",
       "online": "online"
     },
-    "localInboxStats": "{{count}} queued · {{bytes}} bytes",
-    "localInboxName": "Local propagation (offline inbox)",
-    "localInboxHint": "Local propagation is this device’s offline inbox. It does not store outbound DMs for unreachable peers — set a remote lxmf.propagation node as preferred for store-and-forward.",
+    "localHostStats": "{{count}} queued · {{bytes}} bytes",
+    "localHostName": "Host propagation node",
+    "localHostHint": "When enabled, this device announces as an LXMF propagation node and serves /offer and /get. Prefer a remote node for outbound store-and-forward to unreachable peers.",
     "preferredLocalWarning": "Preferred node is Local only — offline peers still need a remote propagation node for store-and-forward delivery.",
+    "enableLocalHostConfirmTitle": "Enable local propagation-node hosting?",
+    "enableLocalHostConfirmBody": "This device will announce as an LXMF propagation node and serve /offer and /get. That uses storage, CPU, and may peer with other nodes on the network. Prefer a remote node for outbound store-and-forward unless you intend to host.",
+    "enableLocalHostConfirm": "Enable hosting",
+    "addProbing": "Checking /offer support…",
+    "syncPeerCostExceedsMax": "This propagation node’s peering cost is above your max peering cost — raise the max in Network → Advanced PN hosting, or pick another node.",
+    "offerUnsupported": "This destination does not support LXMF /offer sync — mesh-client cannot use it as a propagation node.",
+    "offerProbeTimeout": "Timed out while checking /offer support — the node may be unreachable. Try again when a path is available.",
+    "offerProbeFailed": "Could not verify /offer support for this propagation node — try again in a moment.",
     "refreshing": "Refreshing…",
     "refreshAria": "Refresh propagation nodes",
     "lastRefreshed": "Last updated {{time}}",
@@ -4112,7 +4181,7 @@
     "syncStatusTransferring": "Transferring messages from propagation node…",
     "syncFailed": "Propagation sync failed — the node may be unreachable.",
     "syncTimedOut": "Propagation sync timed out — the node may be unreachable.",
-    "syncLocalNotSupported": "Local propagation is your offline inbox — it cannot be synced over the network like a remote LXMF propagation node.",
+    "syncLocalNotSupported": "The local host propagation node cannot be synced over the network like a remote LXMF propagation node.",
     "syncIdentityUnknown": "Propagation node identity is unknown — wait for an announce or path response, then try again.",
     "syncTargetNotPropagationNode": "That destination is reachable on Reticulum but is not an LXMF propagation node (TCP hubs are transport paths only). Add a destination that announces as lxmf.propagation to sync offline messages.",
     "syncPeeringStampFailed": "Could not create a peering stamp for this propagation node — try again in a moment.",
@@ -4131,6 +4200,8 @@
     "renameFailed": "Could not rename the propagation node.",
     "deleteFailed": "Could not delete the propagation node.",
     "addFailed": "Could not add the propagation node.",
+    "enableFailed": "Could not enable the propagation node.",
+    "disableFailed": "Could not disable the propagation node.",
     "discoveredTitle": "Discovered on network",
     "discoveredEmpty": "No lxmf.propagation announces heard yet. Keep the stack connected or add a node by hash.",
     "discoveredInactive": "inactive",
@@ -4636,11 +4707,14 @@
       "offerToast": "Incoming file offer: {{file}}",
       "copyInstructionsAria": "Copy instructions for enabling file receive",
       "copyInstructions": "Copy instructions",
-      "instructionsCopied": "Instructions copied."
+      "instructionsCopied": "Instructions copied.",
+      "receiveDestSharedToast": "Saved rncp receive destination for {{peer}} — you can send a file now.",
+      "receiveDestShareFailed": "Could not save the peer's rncp receive destination."
     },
     "enableRequest": {
       "title": "Enable file receiving?",
       "body": "{{peer}} asked you to turn on rncp file receiving so they can send you a file.",
+      "shareDestWarning": "If you enable, mesh-client will send your rncp receive destination to this peer so they can autofill file send.",
       "enableAsk": "Enable (Ask each time)",
       "enableAskAria": "Enable inbound file offers and ask before accepting",
       "enableAllow": "Enable and allow this identity",
@@ -4653,7 +4727,8 @@
       "enableFailed": "Could not enable file receiving: {{error}}",
       "saveDirRequired": "Choose a save folder to enable receiving.",
       "identityUnknown": "Could not resolve this peer's identity hash yet — inbound Ask is enabled, but they were not added to the allow list. Try again after a path or announce arrives.",
-      "lxmfBody": "Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers. Or run rncp/rncp-rs in listen mode."
+      "lxmfBody": "Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers. Or run rncp/rncp-rs in listen mode.",
+      "lxmfShareBody": "File receiving is enabled. Here is my rncp receive destination (mesh-client will save it for you)."
     },
     "saved": {
       "labelPlaceholder": "Label",

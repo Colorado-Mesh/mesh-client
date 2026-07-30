@@ -7,6 +7,12 @@ import { useToast } from '@/renderer/components/Toast';
 import { useRemotePathCapability } from '@/renderer/hooks/useRemotePathCapability';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { rncpOfferMatchesLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
+import {
+  acceptRncpOffer,
+  rejectRncpOffer,
+  toastRncpRequestEnableResult,
+} from '@/renderer/lib/rncpTransferUiHelpers';
 import { sendRncpRequestEnable } from '@/renderer/lib/sendRncpRequestEnable';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
@@ -56,8 +62,8 @@ export function ChatDmRncpControl({
 
   const relevantOffers = useMemo(
     () =>
-      [...pendingOffers.values()].filter(
-        (o) => o.identity_hash?.toLowerCase() === lxmfPeerHash.toLowerCase(),
+      [...pendingOffers.values()].filter((o) =>
+        rncpOfferMatchesLxmfPeer(o.identity_hash, lxmfPeerHash),
       ),
     [pendingOffers, lxmfPeerHash],
   );
@@ -132,49 +138,29 @@ export function ChatDmRncpControl({
 
   const handleAcceptOffer = useCallback(
     async (transferId: string) => {
-      try {
-        await window.electronAPI.reticulum.rncp.accept({ transfer_id: transferId });
-        removeOffer(transferId);
-      } catch (e) {
-        console.debug('[ChatDmRncpControl] accept ' + errLikeToLogString(e));
-        addToast(
-          t('reticulumRemote.transfer.acceptFailed', { error: errLikeToLogString(e) }),
-          'error',
-        );
-      }
+      await acceptRncpOffer(transferId, {
+        removeOffer,
+        addToast,
+        t,
+        logTag: 'ChatDmRncpControl',
+      });
     },
     [addToast, removeOffer, t],
   );
 
   const handleRejectOffer = useCallback(
     async (transferId: string) => {
-      try {
-        await window.electronAPI.reticulum.rncp.reject({ transfer_id: transferId });
-      } catch (e) {
-        console.warn('[ChatDmRncpControl] reject ' + errLikeToLogString(e));
-      } finally {
-        removeOffer(transferId);
-      }
+      await rejectRncpOffer(transferId, {
+        removeOffer,
+        logTag: 'ChatDmRncpControl',
+      });
     },
     [removeOffer],
   );
 
   const handleRequestEnable = useCallback(async () => {
     const res = await sendRncpRequestEnable(lxmfPeerHash);
-    if (res.ok) {
-      addToast(t('reticulumRemote.transfer.requestEnableSent'), 'success');
-      return;
-    }
-    if (res.error === 'rate_limited') {
-      addToast(t('reticulumRemote.transfer.requestEnableRateLimited'), 'info');
-      return;
-    }
-    addToast(
-      t('reticulumRemote.transfer.requestEnableFailed', {
-        error: res.detail ?? t('common.error'),
-      }),
-      'error',
-    );
+    toastRncpRequestEnableResult(res, addToast, t);
   }, [addToast, lxmfPeerHash, t]);
 
   return (
@@ -244,6 +230,9 @@ export function ChatDmRncpControl({
           <label className="block text-[11px] text-gray-400" htmlFor="chat-dm-rncp-dest">
             {t('chatPanel.rncp.destinationLabel')}
           </label>
+          <p className="text-[10px] leading-snug text-gray-500">
+            {t('chatPanel.rncp.destinationHelp')}
+          </p>
           <div className="flex items-center gap-1">
             <input
               id="chat-dm-rncp-dest"

@@ -212,6 +212,28 @@ describe('reticulumRmapDiscovery', () => {
     });
   });
 
+  // Driver online lag (e.g. BLE RNode still coming up) surfaces as status: 'down'
+  // while discoverable remains true — UI Publishing must stay on so users do not
+  // toggle RMAP off mid-bring-up. Announce timing is fixed in rsReticulum.
+  it("summarizeRmapPublishStatus stays publishing when discoverable iface is 'down'", () => {
+    const interfaces = [
+      row({
+        id: 'r1',
+        type: 'rnode',
+        serial_port: '/dev/ttyUSB0',
+        discoverable: true,
+        status: 'down',
+      }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    expect(summarizeRmapPublishStatus(interfaces)).toEqual({
+      publishing: true,
+      discoverableCount: 1,
+      publishTargetCount: 1,
+      needsSyncCount: 0,
+    });
+  });
+
   it('isReticulumRmapNeedsSyncRow when publishing globally but row missing discoverable', () => {
     const interfaces = [
       row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),

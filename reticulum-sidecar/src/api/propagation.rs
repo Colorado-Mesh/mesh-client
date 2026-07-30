@@ -20,6 +20,8 @@ pub struct PropagationSyncBody {
 pub struct AddPropagationBody {
     pub destination_hash: String,
     pub name: Option<String>,
+    #[serde(default)]
+    pub skip_probe: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -27,12 +29,22 @@ pub struct RenamePropagationBody {
     pub name: String,
 }
 
+pub async fn set_pn_hosting_policy(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<crate::stack::PnHostingPolicy>,
+) -> Json<serde_json::Value> {
+    match stack.set_pn_hosting_policy(body).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn add_propagation_node(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<AddPropagationBody>,
 ) -> Json<serde_json::Value> {
     match stack
-        .add_propagation_node(&body.destination_hash, body.name)
+        .add_propagation_node(&body.destination_hash, body.name, body.skip_probe)
         .await
     {
         Ok(res) => Json(res),

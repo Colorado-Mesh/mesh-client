@@ -54,6 +54,10 @@ const SYNC_OFFER_INVALID_KEY_KEY = 'reticulumPropagation.syncOfferInvalidKey';
 const SYNC_OFFER_THROTTLED_KEY = 'reticulumPropagation.syncOfferThrottled';
 const SYNC_OFFER_INVALID_DATA_KEY = 'reticulumPropagation.syncOfferInvalidData';
 const SYNC_OFFER_INVALID_STAMP_KEY = 'reticulumPropagation.syncOfferInvalidStamp';
+const SYNC_PEER_COST_EXCEEDS_MAX_KEY = 'reticulumPropagation.syncPeerCostExceedsMax';
+const SYNC_OFFER_UNSUPPORTED_KEY = 'reticulumPropagation.offerUnsupported';
+const SYNC_OFFER_PROBE_TIMEOUT_KEY = 'reticulumPropagation.offerProbeTimeout';
+const SYNC_OFFER_PROBE_FAILED_KEY = 'reticulumPropagation.offerProbeFailed';
 const SYNC_OFFER_UNKNOWN_KEY = 'reticulumPropagation.syncOfferUnknown';
 
 /** Idle sync blob shared by cancel / complete / failure paths. */
@@ -80,40 +84,52 @@ const ESTABLISH_ERROR_KEYS: Record<string, string> = {
   NoLinkProof: SYNC_ESTABLISH_NO_PROOF_KEY,
 };
 
-/** Map sidecar/API sync error codes or WS failure messages to i18n keys. */
-export function mapPropagationSyncError(error: string | null | undefined): string {
-  if (!error) return SYNC_FAILED_KEY;
-  if (error === 'LOCAL_PROPAGATION_SYNC_UNSUPPORTED') return SYNC_LOCAL_UNSUPPORTED_KEY;
+function mapPropagationSyncErrorByPrefix(error: string): string | null {
   if (
     error === 'PROPAGATION_IDENTITY_UNKNOWN' ||
     error.startsWith('PROPAGATION_IDENTITY_UNKNOWN:')
   ) {
     return SYNC_IDENTITY_UNKNOWN_KEY;
   }
-  if (error === 'PROPAGATION_TARGET_NOT_PN') return SYNC_TARGET_NOT_PN_KEY;
   if (
     error === 'PROPAGATION_PEERING_STAMP_FAILED' ||
     error.startsWith('PROPAGATION_PEERING_STAMP_FAILED:')
   ) {
     return SYNC_PEERAGE_STAMP_FAILED_KEY;
   }
-
   const offerMatch = /^propagation offer rejected:\s*(\S+)/i.exec(error);
   if (offerMatch?.[1] && OFFER_ERROR_KEYS[offerMatch[1]]) {
     return OFFER_ERROR_KEYS[offerMatch[1]];
   }
-
   const establishMatch = /^propagation establish failed:\s*(\S+)/i.exec(error);
   if (establishMatch?.[1] && ESTABLISH_ERROR_KEYS[establishMatch[1]]) {
     return ESTABLISH_ERROR_KEYS[establishMatch[1]];
   }
+  return null;
+}
+
+function mapPropagationSyncErrorBySubstring(error: string): string | null {
   if (error.includes('LrproofIdentityMissing')) return SYNC_ESTABLISH_IDENTITY_KEY;
   if (error.includes('LrproofInvalid')) return SYNC_ESTABLISH_INVALID_KEY;
   if (error.includes('NoLinkProof')) return SYNC_ESTABLISH_NO_PROOF_KEY;
-
   if (/propagation node unreachable/i.test(error)) return SYNC_FAILED_KEY;
+  return null;
+}
 
-  return SYNC_FAILED_KEY;
+/** Map sidecar/API sync error codes or WS failure messages to i18n keys. */
+export function mapPropagationSyncError(error: string | null | undefined): string {
+  if (!error) return SYNC_FAILED_KEY;
+  if (error === 'LOCAL_PROPAGATION_SYNC_UNSUPPORTED') return SYNC_LOCAL_UNSUPPORTED_KEY;
+  const byPrefix = mapPropagationSyncErrorByPrefix(error);
+  if (byPrefix) return byPrefix;
+  if (error === 'PROPAGATION_TARGET_NOT_PN') return SYNC_TARGET_NOT_PN_KEY;
+  if (error === 'PROPAGATION_PEER_COST_EXCEEDS_MAX') return SYNC_PEER_COST_EXCEEDS_MAX_KEY;
+  if (error === 'PROPAGATION_OFFER_UNSUPPORTED') return SYNC_OFFER_UNSUPPORTED_KEY;
+  if (error === 'PROPAGATION_OFFER_PROBE_TIMEOUT') return SYNC_OFFER_PROBE_TIMEOUT_KEY;
+  if (error === 'PROPAGATION_OFFER_PROBE_FAILED') return SYNC_OFFER_PROBE_FAILED_KEY;
+  // Soft conflict with outbound deposit — callers should treat as non-fatal (no UI error).
+  if (error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') return SYNC_FAILED_KEY;
+  return mapPropagationSyncErrorBySubstring(error) ?? SYNC_FAILED_KEY;
 }
 
 let syncStallTimer: ReturnType<typeof setTimeout> | null = null;

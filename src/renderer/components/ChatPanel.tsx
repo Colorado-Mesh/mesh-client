@@ -38,6 +38,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
@@ -144,6 +145,7 @@ import {
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { reticulumHashForNodeId, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
@@ -547,6 +549,7 @@ function ChatPanel({
   onSendLocationWaypoint,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
   const ownNodeIdSet = useMemo(() => {
@@ -1601,10 +1604,7 @@ function ChatPanel({
   );
 
   function formatTime(ts: number): string {
-    return new Date(ts).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDisplayTime(ts, { use24Hour: use24HourTime });
   }
 
   function formatFullTimestamp(ts: number): string {
@@ -2703,27 +2703,25 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {isOwn &&
-                                  (msg.status === 'failed' ||
-                                    (protocol === 'reticulum' && msg.status === 'sending')) && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onResend(msg);
-                                      }}
-                                      {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="text-gray-500 transition-colors hover:text-gray-300"
-                                      title={t('chatPanel.resendMessage')}
-                                    >
-                                      <RotateCcw
-                                        aria-hidden
-                                        className="h-3.5 w-3.5"
-                                        trigger={parentIconTrigger}
-                                        size={14}
-                                      />
-                                    </button>
-                                  )}
+                                {isOwn && msg.status === 'failed' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onResend(msg);
+                                    }}
+                                    {...{ [PARENT_HOVER_ATTR]: '' }}
+                                    className="text-gray-500 transition-colors hover:text-gray-300"
+                                    title={t('chatPanel.resendMessage')}
+                                  >
+                                    <RotateCcw
+                                      aria-hidden
+                                      className="h-3.5 w-3.5"
+                                      trigger={parentIconTrigger}
+                                      size={14}
+                                    />
+                                  </button>
+                                )}
                                 {showLxmfDeliveryStatus && msg.status ? (
                                   <ReticulumMessageStatusBadge
                                     status={

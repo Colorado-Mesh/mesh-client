@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Gespeicherte RRC-Raumhistorie begrenzen, die neuesten behalten",
     "capStoredRrcMessagesLabel": "Gespeicherte RRC-Raumhistorie begrenzen, die neuesten behalten",
     "capStoredRrcMessagesCountAria": "Begrenzen Sie den gespeicherten RRC-Raumverlauf und behalten Sie die neuesten {{count}}-Nachrichten bei",
-    "reticulumPropagationHelp": "Konfigurieren Sie Remote-LXMF-Verbreitungsknoten für Offline-DMS. Die lokale Ausbreitung ist nur der Posteingang dieses Geräts — sie ersetzt keinen Remote-Knoten."
+    "reticulumPropagationHelp": "Konfigurieren Sie Remote-LXMF-Verbreitungsknoten für Offline-DMS. Die lokale Ausbreitung ist nur der Posteingang dieses Geräts — sie ersetzt keinen Remote-Knoten.",
+    "use24HourTime": "24-Stunden-Zeitformat",
+    "use24HourTimeDesc": "Erzwinge Uhren wie Chat-Zeitstempel im 24-Stunden-Format. Wenn diese Option deaktiviert ist, folgt sie Ihrem Systemgebietsschema."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -584,7 +586,6 @@
       "sendFileAria": "Datei per rncp an {{name}} senden",
       "pendingOffersBadgeAria_one": "{{count}} ausstehendes Angebot für eingehende Dateien von diesem Peer",
       "pendingOffersBadgeAria_other": "{{count}} ausstehende eingehende Dateiangebote von diesem Peer",
-      "destinationLabel": "rncp-Ziel-Hash",
       "rememberAddress": "Diese Adresse merken",
       "rememberAddressAria": "Merken Sie sich dieses rncp-Ziel für diesen Peer",
       "chooseAndSend": "Datei auswählen & senden...",
@@ -593,7 +594,9 @@
       "sendFailed": "Senden fehlgeschlagen: {{error}}",
       "newOfferToast": "{{peer}} möchte dir eine Datei senden: {{file}}",
       "requestEnable": "Aktivieren anfordern",
-      "requestEnableAria": "Bitten Sie diesen Kollegen, den Dateiempfang zu aktivieren"
+      "requestEnableAria": "Bitten Sie diesen Kollegen, den Dateiempfang zu aktivieren",
+      "destinationLabel": "RNCP-Empfangsziel des Peers",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination."
     },
     "shareLocation": "Standort teilen",
     "shareLocationLabel": "📍 Geteilter Standort",
@@ -2482,6 +2485,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Erweitertes PN-Hosting (Gefahrenbereich)",
+      "peeringCost": "Peering-Kosten",
+      "maxPeeringCost": "Maximale Peering-Kosten",
+      "autopeer": "Autopeer mit entdeckten PNs",
+      "autopeerMaxdepth": "Autopeer max Hops",
+      "maxPeers": "Max. Auto-Peer-Peers",
+      "stampCost": "Vermehrungsstempelkosten",
+      "stampFlex": "Stempelkostenflexibilität",
+      "storageMb": "Botschaftsspeichergrenze (MB)",
+      "propagationLimitKb": "Ausbreitungsnachrichtenlimit (KB)",
+      "syncLimitKb": "Übertragungslimit synchronisieren (KB)",
+      "deliveryLimitKb": "Liefergrenze (KB)",
+      "announceIntervalSec": "PN-Ankündigungsintervall (Sekunden)",
+      "announceAtStart": "Ankündigen, wenn das Gastgeben beginnt",
+      "fromStaticOnly": "Nur von statischen Peers",
+      "authRequired": "Authentifizierung erforderlich",
+      "enforceStamps": "Nachrichtenstempel erzwingen",
+      "enforceRatchets": "Ratschen erzwingen",
+      "nodeName": "PN-Ankündigungsname",
+      "staticPeers": "Statische Peer-Hashes (ein 32-Hex pro Zeile)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Gastgeber-Richtlinie speichern",
+      "saving": "Sichern …",
+      "saveAria": "PN-Hosting-Richtlinie speichern",
+      "saveOk": "PN-Hosting-Richtlinie gespeichert.",
+      "saveFailed": "PN-Hosting-Richtlinie konnte nicht gespeichert werden.",
+      "saveConfirmTitle": "PN-Hosting-Richtlinie speichern?",
+      "saveConfirmBody": "Peering-, Speicher-, Stempel- und Ankündigungseinstellungen auf den Live-Propagationsknoten anwenden? Eine Fehlkonfiguration kann die CPU belasten, die Festplatte füllen oder viele Peers akzeptieren.",
+      "saveConfirm": "Richtlinie speichern",
+      "error": {
+        "peeringCostExceedsMax": "Die Peering-Kosten dürfen die maximalen Peering-Kosten nicht überschreiten.",
+        "stampFlexExceedsCost": "Die Stempelflexibilität darf die Stempelkosten nicht überschreiten.",
+        "autopeerMaxdepth": "Die maximale Anzahl an Autopeer-Hops liegt außerhalb des zulässigen Bereichs.",
+        "maxPeers": "Max. Peers liegt außerhalb des Bereichs.",
+        "storageMb": "Das Nachrichtenspeicherlimit liegt außerhalb des zulässigen Bereichs.",
+        "propagationLimit": "Der Grenzwert für die Weitergabe von Nachrichten liegt außerhalb des zulässigen Bereichs.",
+        "syncLimit": "Das Limit für die Synchronisierungsübertragung liegt außerhalb des zulässigen Bereichs.",
+        "deliveryLimit": "Das Lieferübertragungslimit liegt außerhalb des zulässigen Bereichs.",
+        "announceInterval": "Das PN-Ankündigungsintervall liegt außerhalb des zulässigen Bereichs.",
+        "staticPeersTooMany": "Zu viele statische Peer-Hashes (maximal 256).",
+        "staticPeerInvalid": "Ein oder mehrere statische Peer-Hashes sind ungültig (32 Hexadezimalzeichen erforderlich).",
+        "nodeNameInvalid": "Der PN-Ankündigungsname enthält ungültige Zeichen.",
+        "nodeNameTooLong": "PN-Ankündigungsname ist zu lang.",
+        "nonFiniteNumber": "Ein oder mehrere numerische Felder sind ungültig."
+      },
+      "warning": "Diese Einstellungen steuern das Hosting lokaler Ausbreitungsknoten, Autopeer, PoW-Kosten und die Synchronisierungsverweigerung für kostenintensive Remote-Remotes. Eine Fehlkonfiguration kann die CPU belasten, die Festplatte füllen oder viele Peers akzeptieren."
     }
   },
   "nodeDetailModal": {
@@ -3874,11 +3925,12 @@
   "reticulumProfileIcon": {
     "iconName": "\"Avatar-Symbol\",",
     "iconNameAria": "Peer-Avatar-Symbol",
-    "iconCircle": "Kreis",
     "iconStar": "Stern",
     "iconHeart": "Herz",
     "iconShield": "Schild",
-    "iconUser": "Nutzer"
+    "iconNone": "Keiner",
+    "iconSaveFailed": "Avatar-Symbol konnte nicht gespeichert werden.",
+    "iconUser": "Menschen"
   },
   "reticulumPropagation": {
     "preferred": "Vorzugsweise",
@@ -3888,7 +3940,6 @@
     "syncNowFor": "Nachrichten von {{name}} synchronisieren",
     "addNode": "Knoten hinzufügen",
     "addNodeLabel": "Ausbreitungsknoten per Hash hinzufügen",
-    "localInboxStats": "{{count}} in der Warteschlange · {{bytes}} Bytes",
     "refreshing": "Erfrischend…",
     "refreshAria": "Ausbreitungsknoten aktualisieren",
     "syncStatusEstablishing": "Verbindung zum Ausbreitungsknoten wird hergestellt…",
@@ -3938,7 +3989,6 @@
       "unknown": "unbekannt",
       "online": "online"
     },
-    "syncLocalNotSupported": "Die lokale Weitergabe ist Ihr Offline-Posteingang – sie kann nicht wie ein Remote-LXMF-Weitergabeknoten über das Netzwerk synchronisiert werden.",
     "syncIdentityUnknown": "Die Identität des Ausbreitungsknotens ist unbekannt – warten Sie auf eine Ankündigung oder eine Pfadantwort und versuchen Sie es dann erneut.",
     "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren.",
     "syncPeeringStampFailed": "Für diesen Ausbreitungsknoten konnte kein Peering-Stempel erstellt werden. Versuchen Sie es gleich noch einmal.",
@@ -3969,9 +4019,21 @@
     "syncOfferUnknown": "Der Ausbreitungsknoten hat einen unbekannten Sync-Angebotsfehler zurückgegeben — versuchen Sie es gleich noch einmal.",
     "syncPathHint": "Die Fernsynchronisierung erfordert einen Pfad in beide Richtungen. Sync sendet zuerst eine kurze LXMF-Ankündigung, damit der Knoten antworten kann.",
     "setPreferredFailed": "Bevorzugter Ausbreitungsknoten konnte nicht festgelegt werden.",
-    "localInboxName": "Lokale Verbreitung (Offline-Posteingang)",
-    "localInboxHint": "Die lokale Verbreitung ist der Offline-Posteingang dieses Geräts. Es speichert keine ausgehenden DMs für nicht erreichbare Peers — legen Sie einen entfernten lxmf.propagation-Knoten als bevorzugt für Store-and-Forward fest.",
-    "preferredLocalWarning": "Bevorzugter Knoten ist nur lokal — Offline-Peers benötigen weiterhin einen Remote-Propagation-Knoten für die Store-and-Forward-Bereitstellung."
+    "preferredLocalWarning": "Bevorzugter Knoten ist nur lokal — Offline-Peers benötigen weiterhin einen Remote-Propagation-Knoten für die Store-and-Forward-Bereitstellung.",
+    "localHostStats": "{{count}} Queued · {{bytes}} Bytes",
+    "localHostName": "Host-Ausbreitungsknoten",
+    "localHostHint": "Wenn aktiviert, kündigt dieses Gerät als LXMF-Ausbreitungsknoten an und dient /offer und /get. Bevorzugen Sie einen Remote-Knoten für ausgehende Store-and-Forward- zu nicht erreichbaren Peers.",
+    "syncPeerCostExceedsMax": "Die Peering-Kosten dieses Ausbreitungsknotens liegen über Ihren maximalen Peering-Kosten — erhöhen Sie den Höchstbetrag im Network → Advanced PN-Hosting oder wählen Sie einen anderen Knoten.",
+    "offerUnsupported": "Dieses Ziel unterstützt LXMF-/offer-Sync nicht — mesh-client kann es nicht als Propagationsknoten verwenden.",
+    "offerProbeTimeout": "Zeitüberschreitung beim Überprüfen /Anbieten des Supports — der Knoten ist möglicherweise nicht erreichbar. Versuchen Sie es erneut, wenn ein Pfad verfügbar ist.",
+    "offerProbeFailed": "Konnte Unterstützung für diesen Ausbreitungsknoten nicht verifizieren /anbieten — versuchen Sie es gleich noch einmal.",
+    "enableLocalHostConfirmTitle": "Lokales Hosting für Ausbreitungsknoten aktivieren?",
+    "enableLocalHostConfirmBody": "Dieses Gerät meldet sich als LXMF-Verbreitungsknoten und stellt /offer und /get bereit. Dies verbraucht Speicher und CPU und kann mit anderen Knoten im Netzwerk zusammenarbeiten. Bevorzugen Sie einen Remote-Knoten für das ausgehende Store-and-Forward, es sei denn, Sie möchten hosten.",
+    "enableLocalHostConfirm": "Hosting aktivieren",
+    "addProbing": "Prüfe /offer-Unterstützung…",
+    "syncLocalNotSupported": "Der lokale Host-Verbreitungsknoten kann nicht wie ein entfernter LXMF-Verbreitungsknoten über das Netzwerk synchronisiert werden.",
+    "enableFailed": "Der Ausbreitungsknoten konnte nicht aktiviert werden.",
+    "disableFailed": "Der Ausbreitungsknoten konnte nicht deaktiviert werden."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",
@@ -4570,7 +4632,9 @@
     "directNoticeUnsupported": "Dieser Hub unterstützt keine direkte BENACHRICHTIGUNG (/msg).",
     "capDirectNotice": "direkte Nachricht",
     "moderation": {
-      "removedFromRoom": "Vom Hub aus dem Raum entfernt (Kick, Ban oder Remote Part)."
+      "removedFromRoom": "Vom Hub aus dem Raum entfernt (Kick, Ban oder Remote Part).",
+      "removedFromRoomSystem": "Der Hub hat Sie von {{room}} getrennt.",
+      "hubParted": "Der Hub trennte Sie vom Raum."
     },
     "errors": {
       "linkProofTimeout": "Zeitüberschreitung beim Warten auf den Hub-Link (Link-Proof). Versuchen Sie es erneut oder überprüfen Sie Pfad/Sprünge zum Hub.",
@@ -4777,7 +4841,9 @@
       "offerToast": "Eingehende Datei Angebot: {{file}}",
       "copyInstructionsAria": "Anweisungen zum Aktivieren des Dateiempfangs kopieren",
       "copyInstructions": "Anweisungen kopieren",
-      "instructionsCopied": "Anweisungen kopiert."
+      "instructionsCopied": "Anweisungen kopiert.",
+      "receiveDestSharedToast": "rncp-Empfangsziel von {{peer}} gespeichert — Sie können jetzt eine Datei senden.",
+      "receiveDestShareFailed": "Das RNCP-Empfangsziel des Peers konnte nicht gespeichert werden."
     },
     "enableRequest": {
       "title": "Dateiempfang aktivieren?",
@@ -4794,7 +4860,9 @@
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
       "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
-      "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus."
+      "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus.",
+      "lxmfShareBody": "Dateiempfang ist aktiviert. Hier ist mein rncp-Empfangsziel (mesh-client speichert es für Sie).",
+      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann."
     },
     "saved": {
       "labelPlaceholder": "Etikett",
@@ -4849,5 +4917,12 @@
     "direct": "Direkt",
     "segmentTooltip": "Pfad-Hash {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} ist online",
+    "onlineBody": "{{protocol}}-Knoten ist online",
+    "offlineTitle": "{{name}} ist offline gegangen",
+    "offlineBody": "Zuletzt gehört: {{time}}",
+    "unknown": "unbekannt"
   }
 }

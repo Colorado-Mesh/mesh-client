@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+import { pushAppToast } from '@/renderer/components/Toast';
+import {
+  applyRncpReceiveDestShareFromLxmf,
+  rncpReceiveDestShareSavedToastMessage,
+} from '@/renderer/lib/applyRncpReceiveDestShare';
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
@@ -51,7 +57,11 @@ import {
   isReticulumManualStackStopSuppress,
   setReticulumManualStackStopSuppress,
 } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
-import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
+import {
+  failReticulumSendingOutboundToDestHash,
+  shouldApplyLinkDeliveryTimeoutFailureBridge,
+} from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
+import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
 import {
   applyPropagationSyncEvent,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
@@ -79,6 +89,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -92,10 +103,14 @@ import {
 } from '@/renderer/stores/reticulumIdentityStore';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
-import { lxmfBodyContainsRncpRequestEnable } from '@/shared/rncpRequestEnable';
+import {
+  lxmfBodyContainsRncpRequestEnable,
+  parseRncpReceiveDestShare,
+} from '@/shared/rncpRequestEnable';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { resolveRrcInvoluntaryPartBannerKey } from '../lib/rrcInvoluntaryPartBanner';
 import {
   isRrcJoinInfoNotice,
   isRrcModerationLanguage,
@@ -161,10 +176,16 @@ function resolveRrcHubView(hubHash: string | undefined): {
   hub: string | null;
   activeRoom: string | null;
   partIntentRooms: Set<string>;
+  status: string | null;
 } {
   const s = useRrcSessionStore.getState();
   if (!hubHash) {
-    return { hub: s.focusedHubHash, activeRoom: s.activeRoom, partIntentRooms: s.partIntentRooms };
+    return {
+      hub: s.focusedHubHash,
+      activeRoom: s.activeRoom,
+      partIntentRooms: s.partIntentRooms,
+      status: s.status,
+    };
   }
   const hub = hubHash.toLowerCase();
   const session = s.sessionsByHub.get(hub);
@@ -172,6 +193,7 @@ function resolveRrcHubView(hubHash: string | undefined): {
     hub,
     activeRoom: session?.activeRoom ?? null,
     partIntentRooms: session?.partIntentRooms ?? new Set<string>(),
+    status: session?.status ?? null,
   };
 }
 
@@ -541,6 +563,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
             receivedAt: Date.now(),
           });
         }
+        if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
+          if (!consumeRncpReceiveDestSharePending(p.sender_hash)) {
+            console.debug(
+              '[useReticulumRuntime] ignore rncp receive-dest share without pending request-enable',
+            );
+            return;
+          }
+          const share = await applyRncpReceiveDestShareFromLxmf({
+            senderHash: p.sender_hash,
+            senderName: p.sender_name,
+            text: p.text,
+          });
+          if (share.ok) {
+            const peer = p.sender_name?.trim() || share.lxmfPeerHash.slice(0, 12);
+            pushAppToast(rncpReceiveDestShareSavedToastMessage(peer), 'success');
+          } else if (share.reason !== 'no_share') {
+            console.warn(
+              '[useReticulumRuntime] rncp receive-dest share failed reason=' + share.reason,
+            );
+            pushAppToast(i18n.t('reticulumRemote.transfer.receiveDestShareFailed'), 'error');
+          }
+        }
       })();
     },
     [identityId, selfLxmfHash],
@@ -751,6 +795,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
           const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
           const willReconnect = p.will_reconnect === true;
+          console.debug(
+            '[useReticulumRuntime] rrc.disconnected hub=' +
+              sanitizeLogMessage(hubDestHash) +
+              ' reason=' +
+              sanitizeLogMessage(p.reason ?? '') +
+              ' will_reconnect=' +
+              String(p.will_reconnect) +
+              ' disconnectIntent=' +
+              String(disconnectIntentForHub),
+          );
           if (
             p.reason === 'local_disconnect' ||
             disconnectIntentForHub ||
@@ -785,14 +839,30 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const view = resolveRrcHubView(hubDestHash);
           const session = useRrcSessionStore.getState();
           const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
+          const bannerKey = resolveRrcInvoluntaryPartBannerKey({
+            voluntary,
+            sessionStatus: view.status,
+          });
+          console.debug(
+            '[useReticulumRuntime] rrc.room.parted hub=' +
+              sanitizeLogMessage(hubDestHash ?? '') +
+              ' room=' +
+              sanitizeLogMessage(p.room) +
+              ' voluntary=' +
+              String(voluntary) +
+              ' status=' +
+              sanitizeLogMessage(view.status ?? '') +
+              ' banner=' +
+              sanitizeLogMessage(bannerKey ?? 'none'),
+          );
           if (!voluntary) {
-            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            if (bannerKey) session.setModerationBanner(bannerKey, hubDestHash);
             session.addMessage(
               {
                 id: `part-${Date.now()}`,
                 room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
                 kind: 'system',
-                body: `Removed from ${p.room}`,
+                body: i18n.t('rrc.moderation.removedFromRoomSystem', { room: p.room }),
                 timestamp: Date.now(),
               },
               { hubDestHash },
@@ -842,7 +912,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
               session.roomJoined(topic.room, undefined, hubDestHash);
             }
             if (isRrcModerationLanguage(p.body)) {
-              session.setModerationBanner(p.body, hubDestHash);
+              // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
+              session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
             }
           }
 
@@ -896,7 +967,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
           session.setError(p.message, hubDestHash);
           if (isRrcModerationLanguage(p.message)) {
-            session.setModerationBanner(p.message, hubDestHash);
+            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
           }
           if (view.hub) {
             session.addMessage(
@@ -1085,10 +1156,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {
+          const propState = useReticulumPropagationStore.getState();
+          const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
+            propState.nodes,
+            propState.preferredId,
+          );
           for (const { destinationHash } of timeouts) {
             const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
             if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
             processedLinkTimeoutDestsRef.current.add(norm);
+            // Remote preferred PN: sidecar Direct→PN fallback owns the outcome via WS.
+            if (!applyBridge) continue;
             failReticulumSendingOutboundToDestHash(
               identityId,
               norm,
@@ -1468,9 +1546,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (lxmfPayload) {
           const hash = lxmfPayload.message_hash;
           const outboundStatus = 'sending' as const;
+          // Sync ingest on the send path so Completes cannot race behind a demoting echo.
+          const ingestOutboundSend = () => {
+            ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload, {
+              selfLxmfHash: selfLxmfHash ?? undefined,
+            });
+          };
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
-            ingestLxmfPayload(lxmfPayload);
+            if (shouldDeletePriorReticulumOutboundHash(pendingId, hash)) {
+              void window.electronAPI.db
+                .deleteReticulumMessage(identityId, pendingId)
+                .catch((e: unknown) => {
+                  console.warn(
+                    '[useReticulumRuntime] deleteReticulumMessage failed ' + errLikeToLogString(e),
+                  );
+                });
+            }
+            ingestOutboundSend();
             // Terminal WS may have arrived before rename; apply buffered Completes/Fails.
             flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             const afterFlush = useMessageStore.getState().messages[identityId]?.[hash]?.status;
@@ -1478,7 +1571,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               updateMessageStatus(identityId, hash, outboundStatus);
             }
           } else {
-            ingestLxmfPayload(lxmfPayload);
+            ingestOutboundSend();
             if (hash) {
               flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             }
@@ -1505,7 +1598,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         throw e;
       }
     },
-    [identityId, ingestLxmfPayload],
+    [identityId, selfLxmfHash],
   );
 
   const sendReaction = useCallback(

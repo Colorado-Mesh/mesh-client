@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
     "capStoredRrcMessagesLabel": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
     "capStoredRrcMessagesCountAria": "Ogranicz zapisaną historię pokoju RRC, zachowaj najnowsze wiadomości {{count}}",
-    "reticulumPropagationHelp": "Skonfiguruj zdalne węzły propagacji LXMF dla wiadomości DM offline. Lokalna propagacja to tylko skrzynka odbiorcza tego urządzenia — nie zastępuje zdalnego węzła."
+    "reticulumPropagationHelp": "Skonfiguruj zdalne węzły propagacji LXMF dla wiadomości DM offline. Lokalna propagacja to tylko skrzynka odbiorcza tego urządzenia — nie zastępuje zdalnego węzła.",
+    "use24HourTime": "Format 24-godzinny",
+    "use24HourTimeDesc": "Wymuś wyświetlanie zegarów, takich jak znaczniki czasu czatu, w formacie 24-godzinnym. Gdy jest wyłączony, postępuje zgodnie z ustawieniami regionalnymi systemu."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -584,7 +586,6 @@
       "sendFileAria": "Wyślij plik do {{name}} przez rncp",
       "pendingOffersBadgeAria_one": "{{count}} oczekuje na ofertę pliku przychodzącego od tego partnera",
       "pendingOffersBadgeAria_other": "{{count}} oczekujące oferty plików przychodzących od tego partnera",
-      "destinationLabel": "hasz docelowy rncp",
       "rememberAddress": "Zapamiętaj ten adres",
       "rememberAddressAria": "Zapamiętaj to miejsce docelowe rncp dla tego partnera",
       "chooseAndSend": "Wybierz plik i wyślij...",
@@ -593,7 +594,9 @@
       "sendFailed": "Nie udało się wysłać: {{error}}",
       "newOfferToast": "{{peer}} chce wysłać Ci plik: {{file}}",
       "requestEnable": "Włącz żądanie",
-      "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików"
+      "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików",
+      "destinationLabel": "Miejsce docelowe odbioru rncp partnera",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination."
     },
     "shareLocation": "Udostępnij lokalizację",
     "shareLocationLabel": "📍 Udostępniona lokalizacja",
@@ -2484,6 +2487,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Zaawansowany hosting PN (strefa niebezpieczna)",
+      "peeringCost": "Koszt peeringu",
+      "maxPeeringCost": "Maksymalny koszt peeringu",
+      "autopeer": "Autopeer z odkrytymi numerami PN",
+      "autopeerMaxdepth": "Maksymalne przeskoki w trybie Autopeer",
+      "maxPeers": "Maksymalna liczba równorzędnych autopeerów",
+      "stampCost": "Koszt znaczka propagacyjnego",
+      "stampFlex": "Elastyczność kosztów pieczęci",
+      "storageMb": "Limit przechowywania wiadomości (MB)",
+      "propagationLimitKb": "Limit komunikatów propagacyjnych (KB)",
+      "syncLimitKb": "Limit transferu synchronizacji (KB)",
+      "deliveryLimitKb": "Limit transferu dostawy (KB)",
+      "announceIntervalSec": "Interwał ogłaszania PN (sekundy)",
+      "announceAtStart": "Ogłoś rozpoczęcie hostingu",
+      "fromStaticOnly": "Tylko od statycznych peerów",
+      "authRequired": "Wymagane uwierzytelnienie",
+      "enforceStamps": "Wymuszaj stemple wiadomości",
+      "enforceRatchets": "Wymuś zapadki",
+      "nodeName": "PN ogłasza nazwę",
+      "staticPeers": "Statyczne skróty równorzędne (jeden 32-szesnastkowy na linię)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Zapisz politykę hostingową",
+      "saving": "Oszczędność…",
+      "saveAria": "Zapisz zasady hostingu PN",
+      "saveOk": "Polityka hostingu PN została zapisana.",
+      "saveFailed": "Nie można zapisać zasad hostingu PN.",
+      "saveConfirmTitle": "Zapisać politykę hostingową PN?",
+      "saveConfirmBody": "Zastosować ustawienia komunikacji równorzędnej, przechowywania, stemplowania i ogłaszania w węźle propagacji na żywo? Błędna konfiguracja może spalić procesor, zapełnić dysk lub zaakceptować wiele urządzeń równorzędnych.",
+      "saveConfirm": "Zapisz politykę",
+      "error": {
+        "peeringCostExceedsMax": "Koszt połączenia równorzędnego nie może przekroczyć maksymalnego kosztu połączenia równorzędnego.",
+        "stampFlexExceedsCost": "Elastyczność znaczka nie może przekraczać kosztu znaczka.",
+        "autopeerMaxdepth": "Maksymalne przeskoki funkcji Autopeer są poza zakresem.",
+        "maxPeers": "Maksymalna liczba równorzędnych jest poza zasięgiem.",
+        "storageMb": "Limit przechowywania wiadomości jest poza zakresem.",
+        "propagationLimit": "Limit komunikatów propagacji jest poza zakresem.",
+        "syncLimit": "Limit transferu synchronizacji jest poza zakresem.",
+        "deliveryLimit": "Limit transferu dostawy jest poza zakresem.",
+        "announceInterval": "Interwał ogłaszania PN jest poza zakresem.",
+        "staticPeersTooMany": "Zbyt wiele statycznych skrótów równorzędnych (maks. 256).",
+        "staticPeerInvalid": "Jeden lub więcej statycznych skrótów równorzędnych jest nieprawidłowych (potrzebne są 32 znaki szesnastkowe).",
+        "nodeNameInvalid": "Nazwa ogłoszenia PN zawiera nieprawidłowe znaki.",
+        "nodeNameTooLong": "Nazwa ogłoszenia PN jest za długa.",
+        "nonFiniteNumber": "Co najmniej jedno pole numeryczne jest nieprawidłowe."
+      },
+      "warning": "Te ustawienia kontrolują hosting lokalnego węzła propagacyjnego, autopeer, koszty PoW i odmowę synchronizacji w przypadku drogich pilotów. Błędna konfiguracja może spalić procesor, zapełnić dysk lub zaakceptować wiele urządzeń równorzędnych."
     }
   },
   "nodeDetailModal": {
@@ -3876,11 +3927,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikona awatara",
     "iconNameAria": "Ikona awatara partnera",
-    "iconCircle": "Koło",
     "iconStar": "Ocena",
     "iconHeart": "Serce",
     "iconShield": "Tarcza",
-    "iconUser": "Użytkownik"
+    "iconNone": "Nic",
+    "iconSaveFailed": "Nie można zapisać ikony awatara.",
+    "iconUser": "Ludzie"
   },
   "reticulumPropagation": {
     "preferred": "Preferowane",
@@ -3890,7 +3942,6 @@
     "syncNowFor": "Synchronizuj wiadomości od {{name}}",
     "addNode": "Dodaj węzeł",
     "addNodeLabel": "Dodaj węzeł propagacji według skrótu",
-    "localInboxStats": "{{count}} w kolejce · {{bytes}} bajtów",
     "refreshing": "Orzeźwiający…",
     "refreshAria": "Odśwież węzły propagacji",
     "syncStatusEstablishing": "Nawiązuję połączenie z węzłem propagacji…",
@@ -3940,7 +3991,6 @@
       "unknown": "nieznany",
       "online": "online"
     },
-    "syncLocalNotSupported": "Lokalna propagacja to Twoja skrzynka odbiorcza offline — nie można jej synchronizować przez sieć jak zdalny węzeł propagacji LXMF.",
     "syncIdentityUnknown": "Tożsamość węzła propagacji jest nieznana — poczekaj na ogłoszenie lub odpowiedź dotyczącą ścieżki, a następnie spróbuj ponownie.",
     "syncTargetNotPropagationNode": "Miejsce docelowe jest osiągalne na Reticulum, ale nie jest węzłem propagacji LXMF (węzły TCP są jedynie ścieżkami transportowymi). Dodaj miejsce docelowe ogłaszające się jako lxmf.propagation, aby synchronizować wiadomości offline.",
     "syncPeeringStampFailed": "Nie można utworzyć znacznika komunikacji równorzędnej dla tego węzła propagacji — spróbuj ponownie za chwilę.",
@@ -3971,9 +4021,21 @@
     "syncOfferUnknown": "Węzeł propagacji zwrócił nieznany błąd oferty synchronizacji — spróbuj ponownie za chwilę.",
     "syncPathHint": "Zdalna synchronizacja wymaga ścieżki w obie strony. SYNC najpierw wysyła krótkie ogłoszenie LXMF, aby węzeł mógł odpowiedzieć.",
     "setPreferredFailed": "Nie można ustawić preferowanego węzła propagacji.",
-    "localInboxName": "Lokalna propagacja (skrzynka odbiorcza offline)",
-    "localInboxHint": "Lokalna propagacja to skrzynka odbiorcza offline tego urządzenia. Nie przechowuje wychodzących wiadomości DM dla nieosiągalnych rówieśników — ustaw zdalny węzeł lxmf.propagation jako preferowany dla store-and-forward.",
-    "preferredLocalWarning": "Preferowany węzeł jest tylko lokalny — rówieśnicy offline nadal potrzebują zdalnego węzła propagacji do dostarczania do magazynu i do przodu."
+    "preferredLocalWarning": "Preferowany węzeł jest tylko lokalny — rówieśnicy offline nadal potrzebują zdalnego węzła propagacji do dostarczania do magazynu i do przodu.",
+    "localHostStats": "{{count}} w kolejce · {{bytes}} bajtów",
+    "localHostName": "Węzeł propagacji hosta",
+    "localHostHint": "Po włączeniu to urządzenie ogłasza się jako węzeł propagacji LXMF i obsługuje /offer i /get. Preferuj zdalny węzeł dla wychodzącego przechowywania i przekazywania do nieosiągalnych urządzeń równorzędnych.",
+    "syncPeerCostExceedsMax": "Koszt połączenia równorzędnego tego węzła propagacji przekracza maksymalny koszt połączenia równorzędnego — zwiększ maksymalny koszt w opcji Sieć → Zaawansowany hosting PN lub wybierz inny węzeł.",
+    "offerUnsupported": "Ten cel nie obsługuje synchronizacji LXMF /offer — mesh-client nie może użyć go jako węzła propagacji.",
+    "offerProbeTimeout": "Upłynął limit czasu podczas sprawdzania obsługi /offer — węzeł może być nieosiągalny. Spróbuj ponownie, gdy ścieżka będzie dostępna.",
+    "offerProbeFailed": "Nie można zweryfikować/oferować obsługi tego węzła propagacji — spróbuj ponownie za chwilę.",
+    "enableLocalHostConfirmTitle": "Włączyć hosting lokalnego węzła propagacji?",
+    "enableLocalHostConfirmBody": "To urządzenie ogłosi się jako węzeł propagacji LXMF i będzie obsługiwać /offer i /get. Wykorzystuje pamięć masową, procesor i może łączyć się z innymi węzłami w sieci. Preferuj zdalny węzeł do wychodzącego przechowywania i przekazywania, chyba że zamierzasz hostować.",
+    "enableLocalHostConfirm": "Włącz hosting",
+    "addProbing": "Sprawdzanie obsługi /offer…",
+    "syncLocalNotSupported": "Lokalny węzeł propagacji hosta nie może być synchronizowany przez sieć jak zdalny węzeł propagacji LXMF.",
+    "enableFailed": "Nie można włączyć węzła propagacji.",
+    "disableFailed": "Nie można wyłączyć węzła propagacji."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",
@@ -4572,7 +4634,9 @@
     "directNoticeUnsupported": "Ten koncentrator nie obsługuje POWIADOMIEŃ bezpośrednich (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Usunięty z pokoju przez piastę (kopnięcie, zakaz lub część zdalna)."
+      "removedFromRoom": "Usunięty z pokoju przez piastę (kopnięcie, zakaz lub część zdalna).",
+      "removedFromRoomSystem": "Hub rozłączył Cię z {{room}}.",
+      "hubParted": "Hub oddzielił Cię od pokoju."
     },
     "errors": {
       "linkProofTimeout": "Przekroczono limit czasu oczekiwania na połączenie z hubem (link proof). Spróbuj ponownie lub sprawdź ścieżkę/przeskoki do centrum.",
@@ -4779,7 +4843,9 @@
       "offerToast": "Oferta plików przychodzących: {{file}}",
       "copyInstructionsAria": "Kopiuj instrukcje dotyczące włączania odbierania plików",
       "copyInstructions": "Kopiuj instrukcje",
-      "instructionsCopied": "Skopiowano instrukcje."
+      "instructionsCopied": "Skopiowano instrukcje.",
+      "receiveDestSharedToast": "Zapisano miejsce docelowe odbioru rncp użytkownika {{peer}} — możesz teraz wysłać plik.",
+      "receiveDestShareFailed": "Nie można zapisać miejsca docelowego odbioru rncp urządzenia równorzędnego."
     },
     "enableRequest": {
       "title": "Włączyć odbiór plików?",
@@ -4796,7 +4862,9 @@
       "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
       "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
       "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
-      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania."
+      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania.",
+      "lxmfShareBody": "Odbieranie plików jest włączone. Oto moje miejsce docelowe odbioru rncp (mesh-client zapisze je dla Ciebie).",
+      "shareDestWarning": "Jeśli włączysz, mesh-client wyśle miejsce docelowe odbioru rncp do tego partnera, aby mógł automatycznie wypełnić wysyłanie pliku."
     },
     "saved": {
       "labelPlaceholder": "Oznaczenie",
@@ -4851,5 +4919,12 @@
     "direct": "Bezpośredni",
     "segmentTooltip": "Hash ścieżki {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} jest online",
+    "onlineBody": "Węzeł {{protocol}} został podłączony do sieci",
+    "offlineTitle": "{{name}} przeszedł w tryb offline",
+    "offlineBody": "Ostatnio słyszano: {{time}}",
+    "unknown": "nieznany"
   }
 }

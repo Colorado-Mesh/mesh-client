@@ -31,9 +31,16 @@ export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | n
   return null;
 }
 
+/** Resolve LXMF peer dest hash from a chat node id (peer store, then dest registry). */
+export function resolveReticulumOutboundDestHash(
+  toNodeId: number | undefined | null,
+): string | null {
+  if (toNodeId == null) return null;
+  return reticulumHashForNodeId(toNodeId) ?? resolveReticulumDestinationHash(toNodeId);
+}
+
 function resolveOutboundPeerHash(record: MessageRecord): string | null {
-  if (record.to == null) return null;
-  return reticulumHashForNodeId(record.to) ?? resolveReticulumDestinationHash(record.to);
+  return resolveReticulumOutboundDestHash(record.to);
 }
 
 function resolveOutboundSenderHash(record: MessageRecord): string | null {
@@ -144,6 +151,30 @@ export function persistReticulumOutboundMessageStatus(
 ): boolean {
   const before = useMessageStore.getState().messages[identityId]?.[messageId];
   if (!before) return false;
+  // Link-timeout failure bridge can mark Failed before WS Direct→PN fallback arrives.
+  // Authoritative sending+propagated must revive so the badge is not stuck as PN ✗.
+  if (before.status === 'failed' && status === 'sending' && deliveryMethod === 'propagated') {
+    const revived: MessageRecord = {
+      ...before,
+      status: 'sending',
+      error: undefined,
+      reticulumDeliveryMethod: 'propagated',
+      ...(sentVia != null ? { receivedVia: sentVia } : {}),
+    };
+    upsertMessage(identityId, revived);
+    const senderHash = resolveOutboundSenderHash(revived);
+    if (senderHash) {
+      persistReticulumOutboundRecord(
+        identityId,
+        revived,
+        senderHash,
+        revived.senderName ?? '',
+        resolveOutboundPeerHash(revived),
+        'sending',
+      );
+    }
+    return true;
+  }
   // Do not regress a terminal Completes/Fails back to sending — still allow via/method patches.
   if (isTerminalStatus(before.status ?? 'sending') && status === 'sending') {
     const viaChanged = sentVia != null && sentVia !== before.receivedVia;

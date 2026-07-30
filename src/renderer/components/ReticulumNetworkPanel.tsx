@@ -33,6 +33,7 @@ import { IdentityVaultPanel } from './IdentityVaultPanel';
 import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
+import ReticulumPnHostingDangerZone from './ReticulumPnHostingDangerZone';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
 import { useToast } from './Toast';
@@ -799,6 +800,8 @@ export function ReticulumNetworkPanel({
           >
             <ReticulumPropagationSection embedded />
           </ReticulumCollapsibleSection>
+
+          <ReticulumPnHostingDangerZone disabled={!sidecarApiReady} />
         </>
       ) : null}
 

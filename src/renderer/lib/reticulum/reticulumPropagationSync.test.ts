@@ -93,6 +93,18 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_PEERING_STAMP_FAILED')).toBe(
       'reticulumPropagation.syncPeeringStampFailed',
     );
+    expect(mapPropagationSyncError('PROPAGATION_PEER_COST_EXCEEDS_MAX')).toBe(
+      'reticulumPropagation.syncPeerCostExceedsMax',
+    );
+    expect(mapPropagationSyncError('PROPAGATION_OFFER_UNSUPPORTED')).toBe(
+      'reticulumPropagation.offerUnsupported',
+    );
+    expect(mapPropagationSyncError('PROPAGATION_OFFER_PROBE_TIMEOUT')).toBe(
+      'reticulumPropagation.offerProbeTimeout',
+    );
+    expect(mapPropagationSyncError('PROPAGATION_OFFER_PROBE_FAILED')).toBe(
+      'reticulumPropagation.offerProbeFailed',
+    );
     expect(mapPropagationSyncError('propagation offer rejected: ErrorInvalidKey')).toBe(
       'reticulumPropagation.syncOfferInvalidKey',
     );

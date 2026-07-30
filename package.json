@@ -22,7 +22,10 @@
   "contributors": [
     "Joey Stanford https://github.com/rinchen",
     "dude.eth https://github.com/defidude",
-    "megabear - KD5IHC"
+    "megabear - KD5IHC",
+    "Soord https://github.com/soord",
+    "WB3IHY https://github.com/WB3IHY",
+    "Letark https://github.com/Letark"
   ],
   "main": "dist-electron/main/index.js",
   "scripts": {
@@ -62,6 +65,7 @@
     "check:log-injection": "node scripts/check-log-injection.mjs",
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",
+    "check:pn-hosting-policy": "node scripts/check-pn-hosting-policy.mjs",
     "check:protocol-string-gates": "node scripts/check-protocol-string-gates.mjs",
     "check:reticulum-decommissioned-hubs": "node scripts/check-reticulum-decommissioned-hubs.mjs",
     "check:reticulum-interface-modes": "node scripts/check-reticulum-interface-modes.mjs",

@@ -212,6 +212,66 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(result.changes).toBe(0);
   });
 
+  it('saveReticulumMessage does not demote delivered to sending', () => {
+    const identityId = 'id-rt-status';
+    const messageHash = 'ab'.repeat(32);
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: 'hello',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'delivered',
+    });
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: 'hello',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+    });
+    const row = db!
+      .prepareOnce(
+        'SELECT delivery_status FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+      )
+      .get(identityId, messageHash) as { delivery_status: string };
+    expect(row.delivery_status).toBe('delivered');
+  });
+
+  it('saveReticulumMessage still allows failed → sending on retry', () => {
+    const identityId = 'id-rt-retry';
+    const messageHash = 'cd'.repeat(32);
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: 'retry',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'failed',
+    });
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: 'retry',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+    });
+    const row = db!
+      .prepareOnce(
+        'SELECT delivery_status FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+      )
+      .get(identityId, messageHash) as { delivery_status: string };
+    expect(row.delivery_status).toBe('sending');
+  });
+
   it('pruneReticulumIdentityActivityByAge deletes stale millisecond last_seen rows', () => {
     const nowMs = Date.now();
     db!

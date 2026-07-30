@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
     "capStoredRrcMessagesLabel": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
     "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın",
-    "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz."
+    "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz.",
+    "use24HourTime": "24-Saat Zaman",
+    "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -585,7 +587,6 @@
       "sendFileAria": "Dosyayı rncp aracılığıyla {{name}} adresine gönder",
       "pendingOffersBadgeAria_one": "{{count}} bu eşten gelen dosya teklifi bekleniyor",
       "pendingOffersBadgeAria_other": "{{count}} bu eşten gelen dosya teklifleri bekleniyor",
-      "destinationLabel": "rncp hedef karması",
       "rememberAddress": "Bu adresi hatırla",
       "rememberAddressAria": "Bu eş için bu rncp hedefini hatırla",
       "chooseAndSend": "Dosya seç ve gönder…",
@@ -594,7 +595,9 @@
       "sendFailed": "Gönderilemedi: {{error}}",
       "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
       "requestEnable": "Etkinleştirme isteği",
-      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin"
+      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin",
+      "destinationLabel": "Eşin rncp alma hedefi",
+      "destinationHelp": "Not their Chat/LXMF hash. Use Request enable — mesh-client peers share this automatically after they accept. Or paste from their Remote → My rncp receive destination."
     },
     "shareLocation": "Konumu paylaş",
     "shareLocationLabel": "📍 Paylaşılan konum",
@@ -2482,6 +2485,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Gelişmiş PN barındırma (tehlikeli bölge)",
+      "peeringCost": "Eşleme maliyeti",
+      "maxPeeringCost": "Maksimum eşleme maliyeti",
+      "autopeer": "Keşfedilen PN'lerle otomatik eşleme",
+      "autopeerMaxdepth": "Autopeer maksimum atlama sayısı",
+      "maxPeers": "Maksimum otomatik eşleme akranları",
+      "stampCost": "Yayılma damgası maliyeti",
+      "stampFlex": "Damga maliyeti esnekliği",
+      "storageMb": "Mesaj depolama sınırı (MB)",
+      "propagationLimitKb": "Yayılma mesajı sınırı (KB)",
+      "syncLimitKb": "Senkronizasyon aktarım sınırı (KB)",
+      "deliveryLimitKb": "Teslimat aktarım limiti (KB)",
+      "announceIntervalSec": "PN duyuru aralığı (saniye)",
+      "announceAtStart": "Barındırma başladığında duyurun",
+      "fromStaticOnly": "Yalnızca statik eşlerden",
+      "authRequired": "Yetkilendirme gerekli",
+      "enforceStamps": "Mesaj damgalarını zorunlu kıl",
+      "enforceRatchets": "Cırcırları uygulayın",
+      "nodeName": "PN duyuru adı",
+      "staticPeers": "Statik eş karmaları (satır başına bir adet 32-hex)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Barındırma politikasını kaydet",
+      "saving": "Kaydediliyor…",
+      "saveAria": "PN barındırma politikasını kaydet",
+      "saveOk": "PN barındırma politikası kaydedildi.",
+      "saveFailed": "PN barındırma politikası kaydedilemedi.",
+      "saveConfirmTitle": "PN barındırma politikası kaydedilsin mi?",
+      "saveConfirmBody": "Canlı yayılım düğümüne eşleme, depolama, damga ve duyuru ayarları uygulansın mı? Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir.",
+      "saveConfirm": "Politikayı kaydet",
+      "error": {
+        "peeringCostExceedsMax": "Eşleme maliyeti maksimum eşleme maliyetini aşamaz.",
+        "stampFlexExceedsCost": "Damga esnekliği damga maliyetini aşamaz.",
+        "autopeerMaxdepth": "Autopeer maksimum atlama sayısı aralık dışında.",
+        "maxPeers": "Maksimum eşler aralık dışında.",
+        "storageMb": "Mesaj depolama sınırı aralık dışında.",
+        "propagationLimit": "Yayılma mesajı limiti aralık dışında.",
+        "syncLimit": "Senkronizasyon aktarım sınırı aralık dışında.",
+        "deliveryLimit": "Teslimat aktarım limiti aralık dışında.",
+        "announceInterval": "PN duyuru aralığı aralık dışında.",
+        "staticPeersTooMany": "Çok fazla statik eş karması (maks. 256).",
+        "staticPeerInvalid": "Bir veya daha fazla statik eş karma değeri geçersiz (32 onaltılık karakter gerekir).",
+        "nodeNameInvalid": "PN duyuru adı geçersiz karakterler içeriyor.",
+        "nodeNameTooLong": "PN duyuru adı çok uzun.",
+        "nonFiniteNumber": "Bir veya daha fazla sayısal alan geçersiz."
+      },
+      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir."
     }
   },
   "nodeDetailModal": {
@@ -3874,11 +3925,12 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",
     "iconNameAria": "Avatar Görünümü",
-    "iconCircle": "Yuvarlak",
     "iconStar": "Yıldız",
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
-    "iconUser": "Kullanıcı"
+    "iconNone": "Hiçbiri",
+    "iconSaveFailed": "Avatar simgesi kaydedilemedi.",
+    "iconUser": "İnsanlar"
   },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",
@@ -3888,7 +3940,6 @@
     "syncNowFor": "{{name}} adlı kişiden gelen mesajları senkronize et",
     "addNode": "Düğüm ekle",
     "addNodeLabel": "Karmaya göre yayılım düğümü ekle",
-    "localInboxStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
     "refreshing": "Yenileniyor…",
     "refreshAria": "Yayılma düğümlerini yenile",
     "syncStatusEstablishing": "Yayılım düğümüne bağlantı kuruluyor…",
@@ -3938,7 +3989,6 @@
       "unknown": "bilinmiyor",
       "online": "çevrimiçi"
     },
-    "syncLocalNotSupported": "Yerel yayılım, çevrimdışı gelen kutunuzdur; uzak bir LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
     "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
     "syncPeeringStampFailed": "Bu yayılım düğümü için eşleme damgası oluşturulamadı; birazdan tekrar deneyin.",
@@ -3969,9 +4019,21 @@
     "syncOfferUnknown": "Yayılma düğümü bilinmeyen bir senkronizasyon teklifi hatası verdi — birazdan tekrar deneyin.",
     "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir.",
     "setPreferredFailed": "Tercih edilen yayılma düğümü ayarlanamadı.",
-    "localInboxName": "Yerel yayılım (çevrimdışı gelen kutusu)",
-    "localInboxHint": "Yerel yayılım, bu cihazın çevrimdışı gelen kutusudur. Ulaşılamayan eşler için giden DM'leri saklamaz — depolama ve iletme için tercih edilen bir uzak lxmf.propagation düğümü ayarlayın.",
-    "preferredLocalWarning": "Tercih edilen düğüm yalnızca Yereldir — çevrimdışı eşler, depolama ve iletme teslimatı için hala uzak bir yayılma düğümüne ihtiyaç duyarlar."
+    "preferredLocalWarning": "Tercih edilen düğüm yalnızca Yereldir — çevrimdışı eşler, depolama ve iletme teslimatı için hala uzak bir yayılma düğümüne ihtiyaç duyarlar.",
+    "localHostStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
+    "localHostName": "Ana bilgisayar yayılma düğümü",
+    "localHostHint": "Etkinleştirildiğinde, bu cihaz bir LXMF yayılma düğümü olarak duyuru yapar ve /offer ve /get işlevlerini yerine getirir. Ulaşılamayan eşlere giden depolama ve iletme işlemleri için uzak bir düğümü tercih edin.",
+    "syncPeerCostExceedsMax": "Bu yayılım düğümünün eşleme maliyeti, maksimum eşleme maliyetinizin üzerinde; Ağ → Gelişmiş PN barındırma bölümünde maksimumu yükseltin veya başka bir düğüm seçin.",
+    "offerUnsupported": "Bu hedef LXMF /offer senkronizasyonunu desteklemiyor — mesh-client bunu bir yayılım düğümü olarak kullanamaz.",
+    "offerProbeTimeout": "Desteği kontrol ederken/teklif ederken zaman aşımına uğradı; düğüme ulaşılamıyor olabilir. Bir yol mevcut olduğunda tekrar deneyin.",
+    "offerProbeFailed": "Bu yayılma düğümü için destek doğrulanamadı/sunulamadı; birazdan tekrar deneyin.",
+    "enableLocalHostConfirmTitle": "Yerel yayılma düğümü barındırma etkinleştirilsin mi?",
+    "enableLocalHostConfirmBody": "Bu cihaz bir LXMF yayılım düğümü olarak duyuru yapacak ve hizmet /teklif ve /alacaktır. Bu, depolamayı ve CPU'yu kullanır ve ağdaki diğer düğümlerle eşleşebilir. Barındırma niyetinde olmadığınız sürece giden depolama ve iletme için uzak bir düğümü tercih edin.",
+    "enableLocalHostConfirm": "Barındırmayı etkinleştir",
+    "addProbing": "/offer desteği kontrol ediliyor…",
+    "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
+    "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
+    "disableFailed": "Yayılma düğümü devre dışı bırakılamadı."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",
@@ -4570,7 +4632,9 @@
     "directNoticeUnsupported": "Bu merkez doğrudan BİLDİRİMİ (/msg) desteklemiyor.",
     "capDirectNotice": "doğrudan msg",
     "moderation": {
-      "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım)."
+      "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım).",
+      "removedFromRoomSystem": "Merkez sizi {{room}}'dan ayırdı.",
+      "hubParted": "Merkez seni odadan ayırdı."
     },
     "errors": {
       "linkProofTimeout": "Göbek bağlantısını beklerken zaman aşımına uğradı (bağlantı kanıtı). Tekrar deneyin veya merkeze giden yolu/durakları kontrol edin.",
@@ -4777,7 +4841,9 @@
       "offerToast": "Gelen dosya teklifi: {{file}}",
       "copyInstructionsAria": "Dosya almayı etkinleştirmek için talimatları kopyalama",
       "copyInstructions": "Talimatları kopyala",
-      "instructionsCopied": "Talimatlar kopyalandı."
+      "instructionsCopied": "Talimatlar kopyalandı.",
+      "receiveDestSharedToast": "{{peer}} için rncp alma hedefi kaydedildi — şimdi dosya gönderebilirsiniz.",
+      "receiveDestShareFailed": "Eşin rncp alma hedefi kaydedilemedi."
     },
     "enableRequest": {
       "title": "Dosya alımı etkinleştirilsin mi?",
@@ -4794,7 +4860,9 @@
       "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
       "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
-      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın."
+      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın.",
+      "lxmfShareBody": "Dosya alma etkinleştirildi. İşte rncp alma hedefim (mesh-client sizin için kaydedecek).",
+      "shareDestWarning": "Etkinleştirirseniz mesh-client, dosya gönderimini otomatik olarak doldurabilmeleri için rncp alma hedefinizi bu eşe gönderecektir."
     },
     "saved": {
       "labelPlaceholder": "Etiket",
@@ -4849,5 +4917,12 @@
     "direct": "Doğrudan",
     "segmentTooltip": "Yol karması {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} çevrimiçi",
+    "onlineBody": "{{protocol}} düğümü çevrimiçi oldu",
+    "offlineTitle": "{{name}} çevrimdışı oldu",
+    "offlineBody": "Son duyulma tarihi: {{time}}",
+    "unknown": "bilinmiyor"
   }
 }

@@ -335,6 +335,11 @@ if ! pnpm run check:reticulum-interface-modes; then
   exit 1
 fi
 
+if ! pnpm run check:pn-hosting-policy; then
+  print_error "PN hosting policy catalog check failed."
+  exit 1
+fi
+
 if ! pnpm run check:reticulum-decommissioned-hubs; then
   print_error "Reticulum decommissioned hub catalog check failed."
   exit 1

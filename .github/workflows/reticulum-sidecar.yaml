@@ -14,7 +14,7 @@ on:
       - 'scripts/build-reticulum-sidecar-release.mjs'
       - 'scripts/clone-ratspeak-stack.sh'
       - 'scripts/ensure-rsReticulum-patches.sh'
-      - 'scripts/apply-rsLXMF-propagation-sync-peering.sh'
+      - 'scripts/apply-rsLXMF-*.sh'
   pull_request:
     paths:
       - 'reticulum-sidecar/**'
@@ -22,7 +22,7 @@ on:
       - 'scripts/build-reticulum-sidecar-release.mjs'
       - 'scripts/clone-ratspeak-stack.sh'
       - 'scripts/ensure-rsReticulum-patches.sh'
-      - 'scripts/apply-rsLXMF-propagation-sync-peering.sh'
+      - 'scripts/apply-rsLXMF-*.sh'
 
 jobs:
   lint:

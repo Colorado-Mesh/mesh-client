@@ -49,7 +49,7 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
-import { hasCustomReticulumProfileIcon, ReticulumProfileIcon } from './ReticulumProfileIcon';
+import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
 
 type PeerListTab = 'peers' | 'contacts' | 'favorites';
@@ -87,7 +87,6 @@ interface PeerTableRowProps {
   busy: boolean;
   contacted: boolean;
   verified: boolean;
-  showIcon: boolean;
   iconName?: string | null;
   iconColor?: string | null;
   displayLabel: string;
@@ -104,7 +103,6 @@ const PeerTableRow = memo(function PeerTableRow({
   busy,
   contacted,
   verified,
-  showIcon,
   iconName,
   iconColor,
   displayLabel,
@@ -124,9 +122,7 @@ const PeerTableRow = memo(function PeerTableRow({
     >
       <td className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono" title={peer.destination_hash}>
         <span className="inline-flex items-center gap-1.5">
-          {showIcon ? (
-            <ReticulumProfileIcon iconName={iconName} iconColor={iconColor} size={14} />
-          ) : null}
+          <ReticulumProfileIconSlot iconName={iconName} iconColor={iconColor} size={14} />
           <span className="truncate">{displayLabel}</span>
           {verified ? (
             <Check
@@ -859,10 +855,6 @@ export default function ReticulumPeerListPanel({
                 const peer = prepared.peer;
                 const busy = actionBusyHash === peer.destination_hash;
                 const iconMeta = peerAppearanceByHash.get(peer.destination_hash.toLowerCase());
-                const showIcon = hasCustomReticulumProfileIcon(
-                  iconMeta?.icon_name,
-                  iconMeta?.icon_color,
-                );
                 const contacted = isContact(peer.destination_hash);
                 const verified = verifiedHashes.has(peer.destination_hash.toLowerCase());
                 const displayLabel =
@@ -875,7 +867,6 @@ export default function ReticulumPeerListPanel({
                     busy={busy}
                     contacted={contacted}
                     verified={verified}
-                    showIcon={showIcon}
                     iconName={iconMeta?.icon_name}
                     iconColor={iconMeta?.icon_color}
                     displayLabel={displayLabel}

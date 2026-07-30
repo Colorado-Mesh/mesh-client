@@ -22,9 +22,18 @@ interface ToastContextValue {
   addToast: (message: string, type?: ToastType, duration?: number) => void;
 }
 
+type ToastFn = (message: string, type?: ToastType, duration?: number) => void;
+
 const ToastContext = createContext<ToastContextValue>({
   addToast: () => {},
 });
+
+/** Module bridge so non-React code (runtimes, lib) can surface toasts when the provider is mounted. */
+let externalAddToast: ToastFn | null = null;
+
+export function pushAppToast(message: string, type: ToastType = 'info', duration = 4000): void {
+  externalAddToast?.(message, type, duration);
+}
 
 export function useToast() {
   return useContext(ToastContext);
@@ -38,6 +47,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = nextIdRef.current++;
     setToasts((prev) => [...prev, { id, message, type, duration }]);
   }, []);
+
+  useEffect(() => {
+    externalAddToast = addToast;
+    return () => {
+      if (externalAddToast === addToast) externalAddToast = null;
+    };
+  }, [addToast]);
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

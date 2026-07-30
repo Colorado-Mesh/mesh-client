@@ -147,6 +147,12 @@ else
   printf 'pre-commit: skip check:reticulum-interface-modes (no interface-mode paths staged)\n' >&2
 fi
 
+if staged_match '^(reticulum-sidecar/src/stack/pn_hosting_policy\.rs|src/shared/pnHostingPolicy\.ts|scripts/check-pn-hosting-policy\.mjs)'; then
+  pnpm run check:pn-hosting-policy || fail 'pnpm run check:pn-hosting-policy'
+else
+  printf 'pre-commit: skip check:pn-hosting-policy (no pn-hosting-policy paths staged)\n' >&2
+fi
+
 if staged_match '^(reticulum-sidecar/src/stack/config\.rs|src/shared/reticulumDecommissionedHubs\.ts|scripts/check-reticulum-decommissioned-hubs\.mjs)'; then
   pnpm run check:reticulum-decommissioned-hubs || fail 'pnpm run check:reticulum-decommissioned-hubs'
 else

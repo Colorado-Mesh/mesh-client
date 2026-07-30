@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
     "capStoredRrcMessagesLabel": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
     "capStoredRrcMessagesCountAria": "Batasi riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru",
-    "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh."
+    "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh.",
+    "use24HourTime": "Gunakan waktu 24 jam",
+    "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -585,7 +587,6 @@
       "sendFileAria": "Kirim file ke {{name}} melalui rncp",
       "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk dari rekan ini",
       "pendingOffersBadgeAria_other": "{{count}} menunggu penawaran file masuk dari rekan ini",
-      "destinationLabel": "hash tujuan rncp",
       "rememberAddress": "Ingat alamat ini",
       "rememberAddressAria": "Ingat tujuan rncp untuk rekan ini",
       "chooseAndSend": "Pilih file & kirim…",
@@ -594,7 +595,9 @@
       "sendFailed": "Gagal mengirim: {{error}}",
       "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
       "requestEnable": "Minta pengaktifan",
-      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file"
+      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file",
+      "destinationLabel": "Rncp rekan menerima tujuan",
+      "destinationHelp": "Bukan hash Obrolan/LXMF mereka. Gunakan Pengaktifan Permintaan — rekan mesh-client membagikan ini secara otomatis setelah mereka menerimanya. Atau tempel dari Remote mereka → Tujuan penerimaan rncp saya."
     },
     "shareLocation": "Bagikan lokasi",
     "shareLocationLabel": "📍 Lokasi bersama",
@@ -2482,6 +2485,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Hosting PN tingkat lanjut (zona bahaya)",
+      "peeringCost": "Biaya mengintip",
+      "maxPeeringCost": "Biaya peering maksimal",
+      "autopeer": "Autopeer dengan PN yang ditemukan",
+      "autopeerMaxdepth": "Hop maks autopeer",
+      "maxPeers": "Rekan autopeer maks",
+      "stampCost": "Biaya stempel propagasi",
+      "stampFlex": "Fleksibilitas biaya perangko",
+      "storageMb": "Batas penyimpanan pesan (MB)",
+      "propagationLimitKb": "Batas pesan propagasi (KB)",
+      "syncLimitKb": "Batas transfer sinkronisasi (KB)",
+      "deliveryLimitKb": "Batas Transfer Pengiriman (KB)",
+      "announceIntervalSec": "Interval pengumuman PN (detik)",
+      "announceAtStart": "Umumkan kapan hosting dimulai",
+      "fromStaticOnly": "Hanya dari rekan statis",
+      "authRequired": "Diperlukan autentikasi",
+      "enforceStamps": "Menerapkan stempel pesan",
+      "enforceRatchets": "Terapkan ratchet",
+      "nodeName": "PN umumkan nama",
+      "staticPeers": "Hash rekan statis (satu 32-hex per baris)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Simpan kebijakan hosting",
+      "saving": "Penghematan…",
+      "saveAria": "Simpan kebijakan hosting PN",
+      "saveOk": "Kebijakan hosting PN disimpan.",
+      "saveFailed": "Tidak dapat menyimpan kebijakan hosting PN.",
+      "saveConfirmTitle": "Simpan kebijakan hosting PN?",
+      "saveConfirmBody": "Terapkan pengaturan peering, penyimpanan, cap, dan umumkan ke node propagasi langsung? Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan.",
+      "saveConfirm": "Simpan kebijakan",
+      "error": {
+        "peeringCostExceedsMax": "Biaya peering tidak boleh melebihi biaya peering maksimal.",
+        "stampFlexExceedsCost": "Fleksibilitas prangko tidak boleh melebihi biaya prangko.",
+        "autopeerMaxdepth": "Hop maks autopeer berada di luar jangkauan.",
+        "maxPeers": "Max rekan berada di luar jangkauan.",
+        "storageMb": "Batas penyimpanan pesan di luar jangkauan.",
+        "propagationLimit": "Batas pesan propagasi berada di luar jangkauan.",
+        "syncLimit": "Batas transfer sinkronisasi berada di luar jangkauan.",
+        "deliveryLimit": "Batas transfer pengiriman di luar jangkauan.",
+        "announceInterval": "Interval pengumuman PN di luar jangkauan.",
+        "staticPeersTooMany": "Terlalu banyak hash rekan statis (maks 256).",
+        "staticPeerInvalid": "Satu atau lebih hash rekan statis tidak valid (membutuhkan 32 karakter hex).",
+        "nodeNameInvalid": "Nama pengumuman PN mengandung karakter yang tidak valid.",
+        "nodeNameTooLong": "Nama pengumuman PN terlalu panjang.",
+        "nonFiniteNumber": "Satu atau beberapa kolom numerik tidak valid."
+      },
+      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan."
     }
   },
   "nodeDetailModal": {
@@ -3874,11 +3925,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikon avatar",
     "iconNameAria": "Ikon avatar sejawat",
-    "iconCircle": "Lingkaran",
     "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
-    "iconUser": "Pengguna"
+    "iconNone": "Tidak ada",
+    "iconSaveFailed": "Tidak dapat menyimpan ikon avatar.",
+    "iconUser": "Rakyat"
   },
   "reticulumPropagation": {
     "preferred": "Disukai",
@@ -3888,7 +3940,6 @@
     "syncNowFor": "Sinkronkan pesan dari {{name}}",
     "addNode": "Tambahkan simpul",
     "addNodeLabel": "Tambahkan node propagasi dengan hash",
-    "localInboxStats": "{{count}} antri · {{bytes}} byte",
     "refreshing": "Menyegarkan…",
     "refreshAria": "Segarkan node propagasi",
     "syncStatusEstablishing": "Membangun koneksi ke node propagasi…",
@@ -3938,7 +3989,6 @@
       "unknown": "tidak dikenal",
       "online": "online"
     },
-    "syncLocalNotSupported": "Propagasi lokal adalah kotak masuk offline Anda — tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
     "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline.",
     "syncPeeringStampFailed": "Tidak dapat membuat stempel peering untuk node propagasi ini — coba lagi sebentar lagi.",
@@ -3969,9 +4019,21 @@
     "syncOfferUnknown": "Simpul propagasi mengembalikan kesalahan penawaran sinkronisasi yang tidak diketahui — coba lagi sebentar lagi.",
     "syncPathHint": "Sinkronisasi jarak jauh membutuhkan jalur dua arah. Sinkronisasi mengirimkan pengumuman LXMF singkat terlebih dahulu sehingga node dapat membalas.",
     "setPreferredFailed": "Tidak dapat mengatur simpul propagasi yang diinginkan.",
-    "localInboxName": "Propagasi lokal (kotak masuk offline)",
-    "localInboxHint": "Propagasi lokal adalah kotak masuk offline perangkat ini. Ini tidak menyimpan DM keluar untuk rekan — rekan yang tidak dapat dijangkau — atur simpul lxmf.propagasi jarak jauh seperti yang disukai untuk store - and - forward.",
-    "preferredLocalWarning": "Simpul yang disukai hanya lokal — rekan offline masih membutuhkan simpul propagasi jarak jauh untuk pengiriman store - and - forward."
+    "preferredLocalWarning": "Simpul yang disukai hanya lokal — rekan offline masih membutuhkan simpul propagasi jarak jauh untuk pengiriman store - and - forward.",
+    "localHostStats": "{{count}} antri · {{bytes}} byte",
+    "localHostName": "Node propagasi host",
+    "localHostHint": "Saat diaktifkan, perangkat ini mengumumkan sebagai node propagasi LXMF dan melayani /menawarkan dan /mendapatkan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar dibandingkan node yang tidak dapat dijangkau.",
+    "syncPeerCostExceedsMax": "Biaya peering node propagasi ini berada di atas biaya peering maksimal Anda — naikkan biaya maksimal di Jaringan → Hosting PN tingkat lanjut, atau pilih node lain.",
+    "offerUnsupported": "Tujuan ini tidak mendukung sinkronisasi LXMF /offer — mesh-client tidak dapat menggunakannya sebagai node propagasi.",
+    "offerProbeTimeout": "Waktu habis saat memeriksa / menawarkan dukungan — node mungkin tidak dapat dijangkau. Coba lagi ketika jalur tersedia.",
+    "offerProbeFailed": "Tidak dapat memverifikasi/menawarkan dukungan untuk node propagasi ini — coba lagi sebentar lagi.",
+    "enableLocalHostConfirmTitle": "Aktifkan hosting node propagasi lokal?",
+    "enableLocalHostConfirmBody": "Perangkat ini akan diumumkan sebagai node propagasi LXMF dan melayani /offer dan /get. Itu menggunakan penyimpanan, CPU, dan mungkin melakukan peer dengan node lain di jaringan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar kecuali Anda bermaksud untuk menghostingnya.",
+    "enableLocalHostConfirm": "Aktifkan hosting",
+    "addProbing": "Memeriksa dukungan /offer…",
+    "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
+    "enableFailed": "Tidak dapat mengaktifkan node propagasi.",
+    "disableFailed": "Tidak dapat menonaktifkan node propagasi."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",
@@ -4570,7 +4632,9 @@
     "directNoticeUnsupported": "Hub ini tidak mendukung PEMBERITAHUAN langsung (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part)."
+      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part).",
+      "removedFromRoomSystem": "Hub memisahkan Anda dari {{room}}.",
+      "hubParted": "Hub memisahkan Anda dari ruangan."
     },
     "errors": {
       "linkProofTimeout": "Waktu habis menunggu tautan hub (bukti tautan). Coba lagi, atau periksa jalur/hop ke hub.",
@@ -4777,7 +4841,9 @@
       "offerToast": "Penawaran file masuk: {{file}}",
       "copyInstructionsAria": "Salin instruksi untuk mengaktifkan penerimaan file",
       "copyInstructions": "Salin instruksi",
-      "instructionsCopied": "Instruksi disalin."
+      "instructionsCopied": "Instruksi disalin.",
+      "receiveDestSharedToast": "Destinasi penerimaan rncp {{peer}} disimpan — Anda dapat mengirim file sekarang.",
+      "receiveDestShareFailed": "Tidak dapat menyimpan tujuan penerimaan rncp rekan."
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",
@@ -4794,7 +4860,9 @@
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
       "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
-      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan."
+      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan.",
+      "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda).",
+      "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file."
     },
     "saved": {
       "labelPlaceholder": "Label",
@@ -4849,5 +4917,12 @@
     "direct": "Langsung",
     "segmentTooltip": "Hash jalur {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} sedang online",
+    "onlineBody": "Node {{protocol}} online",
+    "offlineTitle": "{{name}} offline",
+    "offlineBody": "Terakhir didengar: {{time}}",
+    "unknown": "tidak dikenal"
   }
 }

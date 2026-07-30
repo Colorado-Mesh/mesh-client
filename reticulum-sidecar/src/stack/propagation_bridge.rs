@@ -28,15 +28,19 @@ impl PropagationBridge {
         local_dest_hash: [u8; 16],
         storage_dir: PathBuf,
         identity: &Identity,
+        policy: &super::pn_hosting_policy::PnHostingPolicy,
     ) -> Result<Self, String> {
         std::fs::create_dir_all(&storage_dir).map_err(|e| e.to_string())?;
+        let node_config = PropagationNodeConfig {
+            max_storage: policy.message_storage_limit_bytes(),
+            max_message_age: lxmf_core::constants::MESSAGE_EXPIRY,
+            min_stamp_cost: policy.min_stamp_cost(),
+            peering_cost: policy.peering_cost,
+            max_message_size: policy.propagation_limit_kb.saturating_mul(1024),
+        };
         let local_node = Arc::new(Mutex::new(
-            PropagationNode::with_storage(
-                PropagationNodeConfig::default(),
-                local_dest_hash,
-                storage_dir,
-            )
-            .map_err(|e| format!("propagation storage init: {e}"))?,
+            PropagationNode::with_storage(node_config, local_dest_hash, storage_dir)
+                .map_err(|e| format!("propagation storage init: {e}"))?,
         ));
         let mut sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
         let signing_key = identity
@@ -52,8 +56,16 @@ impl PropagationBridge {
         })
     }
 
+    pub fn local_node(&self) -> Arc<Mutex<PropagationNode>> {
+        self.local_node.clone()
+    }
+
     pub fn local_dest_hash_hex(&self) -> String {
         hex::encode(self.local_dest_hash)
+    }
+
+    pub fn local_dest_hash_bytes(&self) -> [u8; 16] {
+        self.local_dest_hash
     }
 
     pub fn set_local_serving(&self, enabled: bool, router: &mut LxmRouter) {
@@ -351,8 +363,14 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let identity = rns_identity::identity::Identity::new();
-        let bridge =
-            PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity).expect("bridge");
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
         let active = AtomicU64::new(1);
         let mut ran = false;
         assert!(bridge.run_if_current(&active, 1, || {
@@ -376,8 +394,14 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let identity = rns_identity::identity::Identity::new();
-        let bridge =
-            PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity).expect("bridge");
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
         bridge.cancel_sync();
         assert_eq!(bridge.last_finished_ok(), Some(false));
         assert!(!bridge.sync_active());

@@ -9,6 +9,11 @@ import i18n from '@/renderer/lib/i18n';
 import { pushRncpListenerPolicy } from '@/renderer/lib/pushRncpListenerPolicy';
 import type { RemoteSettings } from '@/renderer/lib/remoteSettingsStorage';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import {
+  acceptRncpOffer,
+  rejectRncpOffer,
+  toastRncpRequestEnableResult,
+} from '@/renderer/lib/rncpTransferUiHelpers';
 import { sendRncpRequestEnable } from '@/renderer/lib/sendRncpRequestEnable';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
@@ -256,29 +261,22 @@ export function RemoteTransferSection({
 
   const handleAcceptOffer = useCallback(
     async (transferId: string) => {
-      try {
-        await window.electronAPI.reticulum.rncp.accept({ transfer_id: transferId });
-        removeOffer(transferId);
-      } catch (e) {
-        console.debug('[RemoteTransferSection] accept ' + errLikeToLogString(e));
-        addToast(
-          t('reticulumRemote.transfer.acceptFailed', { error: errLikeToLogString(e) }),
-          'error',
-        );
-      }
+      await acceptRncpOffer(transferId, {
+        removeOffer,
+        addToast,
+        t,
+        logTag: 'RemoteTransferSection',
+      });
     },
     [addToast, removeOffer, t],
   );
 
   const handleRejectOffer = useCallback(
     async (transferId: string) => {
-      try {
-        await window.electronAPI.reticulum.rncp.reject({ transfer_id: transferId });
-      } catch (e) {
-        console.warn('[RemoteTransferSection] reject ' + errLikeToLogString(e));
-      } finally {
-        removeOffer(transferId);
-      }
+      await rejectRncpOffer(transferId, {
+        removeOffer,
+        logTag: 'RemoteTransferSection',
+      });
     },
     [removeOffer],
   );
@@ -317,21 +315,14 @@ export function RemoteTransferSection({
       addToast(t('reticulumRemote.errors.invalidAddress'), 'error');
       return;
     }
-    const res = await sendRncpRequestEnable(parsedHash);
-    if (res.ok) {
-      addToast(t('reticulumRemote.transfer.requestEnableSent'), 'success');
-      return;
-    }
-    if (res.error === 'rate_limited') {
-      addToast(t('reticulumRemote.transfer.requestEnableRateLimited'), 'info');
-      return;
-    }
-    addToast(
-      t('reticulumRemote.transfer.requestEnableFailed', {
-        error: res.detail ?? t('common.error'),
-      }),
-      'error',
-    );
+    // Request enable must target the peer's LXMF delivery hash. Prefer the saved
+    // lxmf_peer_hash when the destination field holds an rncp.receive hash.
+    const savedForDest = useReticulumRemoteAddressStore
+      .getState()
+      .findByDestination(parsedHash, 'rncp');
+    const peerLxmfHash = savedForDest?.lxmf_peer_hash?.trim() || parsedHash;
+    const res = await sendRncpRequestEnable(peerLxmfHash);
+    toastRncpRequestEnableResult(res, addToast, t);
   }, [addToast, parsedHash, t]);
 
   const handleCopyInstructions = useCallback(() => {

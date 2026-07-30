@@ -40,12 +40,14 @@ interface DiscoveredPropagationListProps {
   discovered: DiscoveredPropagationRow[];
   configuredHashes: ReadonlySet<string>;
   onAdd: (destinationHash: string, prefer?: boolean) => void;
+  adding?: boolean;
 }
 
 function DiscoveredPropagationList({
   discovered,
   configuredHashes,
   onAdd,
+  adding = false,
 }: Readonly<DiscoveredPropagationListProps>) {
   const { t } = useTranslation();
   const visibleDiscovered = discovered.filter(
@@ -92,7 +94,8 @@ function DiscoveredPropagationList({
                 <div className="flex flex-wrap gap-1">
                   <button
                     type="button"
-                    className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-300"
+                    disabled={adding}
+                    className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-300 disabled:opacity-40"
                     aria-label={t('reticulumPropagation.discoveredAddAria', { name: label })}
                     onClick={() => {
                       onAdd(row.destination_hash);
@@ -102,7 +105,8 @@ function DiscoveredPropagationList({
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200"
+                    disabled={adding}
+                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
                     aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
                       name: label,
                     })}
@@ -155,6 +159,8 @@ export default function ReticulumPropagationSection({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     void refreshFromSidecar();
@@ -180,9 +186,23 @@ export default function ReticulumPropagationSection({
   };
 
   const handleAddFromDiscovered = (destinationHash: string, prefer = false) => {
-    void addFromDiscovered(destinationHash, prefer ? { prefer: true } : undefined).then((ok) => {
-      if (!ok) addToast(t('reticulumPropagation.addFailed'), 'error');
-    });
+    if (adding) return;
+    setAdding(true);
+    void addFromDiscovered(destinationHash, prefer ? { prefer: true } : undefined)
+      .then((ok) => {
+        setAdding(false);
+        if (!ok) {
+          const errKey =
+            useReticulumPropagationStore.getState().lastAddError ??
+            'reticulumPropagation.addFailed';
+          addToast(t(errKey), 'error');
+        }
+      })
+      .catch((err: unknown) => {
+        setAdding(false);
+        console.warn('[ReticulumPropagationSection] addFromDiscovered rejected', err);
+        addToast(t('reticulumPropagation.addFailed'), 'error');
+      });
   };
 
   const configuredHashes = new Set(
@@ -275,11 +295,11 @@ export default function ReticulumPropagationSection({
                   </label>
                 ) : (
                   <>
-                    {isLocal ? t('reticulumPropagation.localInboxName') : node.name} (
+                    {isLocal ? t('reticulumPropagation.localHostName') : node.name} (
                     {formatPropagationNodeStatus(node.status, t)})
                     {isLocal && node.message_count != null ? (
                       <span className="text-muted ml-1 text-xs">
-                        {t('reticulumPropagation.localInboxStats', {
+                        {t('reticulumPropagation.localHostStats', {
                           count: node.message_count,
                           bytes: node.storage_bytes ?? 0,
                         })}
@@ -328,14 +348,32 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline"
-                  onClick={() =>
+                  onClick={() => {
+                    if (isLocal && !node.enabled) {
+                      setPendingEnableLocal(true);
+                      return;
+                    }
                     void window.electronAPI.reticulum
                       .proxyPost(
                         `/api/v1/propagation/${node.id}/${node.enabled ? 'disable' : 'enable'}`,
                         {},
                       )
                       .then(handleRefresh)
-                  }
+                      .catch((err: unknown) => {
+                        console.warn(
+                          '[ReticulumPropagationSection] enable/disable proxyPost rejected',
+                          err,
+                        );
+                        addToast(
+                          t(
+                            node.enabled
+                              ? 'reticulumPropagation.disableFailed'
+                              : 'reticulumPropagation.enableFailed',
+                          ),
+                          'error',
+                        );
+                      });
+                  }}
                   aria-label={
                     node.enabled
                       ? t('reticulumPropagation.disableAria', { name: node.name })
@@ -418,17 +456,23 @@ export default function ReticulumPropagationSection({
           {t('reticulumPropagation.syncNow')}
         </button>
       </div>
-      <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.localInboxHint')}</p>
+      <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.localHostHint')}</p>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.syncPathHint')}</p>
       {lastSyncError === 'reticulumPropagation.syncEstablishNoLinkProof' ? (
         <output className="mt-1 block text-xs text-amber-300/90">
           {t('reticulumPropagation.syncEstablishNoLinkProof')}
         </output>
       ) : null}
+      {adding ? (
+        <output className="text-muted mt-1 block text-xs">
+          {t('reticulumPropagation.addProbing')}
+        </output>
+      ) : null}
       <DiscoveredPropagationList
         discovered={discovered}
         configuredHashes={configuredHashes}
         onAdd={handleAddFromDiscovered}
+        adding={adding}
       />
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">
@@ -442,24 +486,37 @@ export default function ReticulumPropagationSection({
             placeholder={t('reticulumPropagation.addNodePlaceholder')}
             className="rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
             aria-label={t('reticulumPropagation.addNodeLabel')}
+            disabled={adding}
           />
         </label>
         <button
           type="button"
-          disabled={!addHash.trim()}
+          disabled={!addHash.trim() || adding}
           className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
           onClick={() => {
-            void addPropagationNode(addHash.trim()).then((ok) => {
-              if (ok) {
-                setAddHash('');
-                void handleRefresh();
-              } else {
+            if (adding) return;
+            setAdding(true);
+            void addPropagationNode(addHash.trim())
+              .then((ok) => {
+                setAdding(false);
+                if (ok) {
+                  setAddHash('');
+                  void handleRefresh();
+                } else {
+                  const errKey =
+                    useReticulumPropagationStore.getState().lastAddError ??
+                    'reticulumPropagation.addFailed';
+                  addToast(t(errKey), 'error');
+                }
+              })
+              .catch((err: unknown) => {
+                setAdding(false);
+                console.warn('[ReticulumPropagationSection] addPropagationNode rejected', err);
                 addToast(t('reticulumPropagation.addFailed'), 'error');
-              }
-            });
+              });
           }}
         >
-          {t('reticulumPropagation.addNode')}
+          {adding ? t('reticulumPropagation.addProbing') : t('reticulumPropagation.addNode')}
         </button>
       </div>
       {pendingDelete ? (
@@ -480,6 +537,30 @@ export default function ReticulumPropagationSection({
           }}
           onCancel={() => {
             setPendingDelete(null);
+          }}
+        />
+      ) : null}
+      {pendingEnableLocal ? (
+        <ConfirmModal
+          title={t('reticulumPropagation.enableLocalHostConfirmTitle')}
+          message={t('reticulumPropagation.enableLocalHostConfirmBody')}
+          confirmLabel={t('reticulumPropagation.enableLocalHostConfirm')}
+          danger
+          onConfirm={() => {
+            setPendingEnableLocal(false);
+            void window.electronAPI.reticulum
+              .proxyPost('/api/v1/propagation/local-prop/enable', {})
+              .then(handleRefresh)
+              .catch((err: unknown) => {
+                console.warn(
+                  '[ReticulumPropagationSection] local-prop enable proxyPost rejected',
+                  err,
+                );
+                addToast(t('reticulumPropagation.enableFailed'), 'error');
+              });
+          }}
+          onCancel={() => {
+            setPendingEnableLocal(false);
           }}
         />
       ) : null}

@@ -48,7 +48,11 @@ use super::packet_log::{
 };
 use super::path_speed;
 use super::persistence::PersistedState;
+use super::pn_hosting_apply::{apply_pn_hosting_policy_to_node, apply_pn_hosting_policy_to_router};
+use super::pn_hosting_policy::PnHostingPolicy;
+use super::propagation_announce::PropagationAnnounceLoop;
 use super::propagation_bridge::PropagationBridge;
+use super::propagation_serve::PropagationServeHandle;
 use super::rncp_transfer::RncpTransferManager;
 use super::rnsh_session::RnshSessionManager;
 use super::rrc_defaults::RRC_HUB_ASPECT;
@@ -93,6 +97,9 @@ pub struct LiveBridge {
     display_name_cache: Arc<Mutex<HashMap<String, String>>>,
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
+    prop_serve: Arc<PropagationServeHandle>,
+    prop_announce: Arc<PropagationAnnounceLoop>,
+    pn_hosting_policy: Arc<Mutex<PnHostingPolicy>>,
     /// Per-run cancel token; replaced on each new sync so stale emitters cannot reset it.
     sync_cancel: Mutex<Arc<AtomicBool>>,
     /// Generation for the active sync emitter; stale emitters must not cancel/clear pins.
@@ -274,7 +281,12 @@ impl LiveBridge {
             contacts_to_name_map(&state.contacts)
         }));
 
+        let pn_hosting_policy = {
+            let state = inner.read().await;
+            state.pn_hosting_policy.clone()
+        };
         let mut router = LxmRouter::new(lxmf_core::router::RouterConfig::default());
+        apply_pn_hosting_policy_to_router(&mut router, &pn_hosting_policy);
         router.set_transport(handle.transport_tx.clone());
 
         let cache_for_cb = peer_via_cache.clone();
@@ -404,7 +416,11 @@ impl LiveBridge {
                 lxmf_propagation_dest_hash,
                 storage_dir.join("propagation"),
                 &identity,
+                &pn_hosting_policy,
             )?),
+            prop_serve: Arc::new(PropagationServeHandle::new()),
+            prop_announce: Arc::new(PropagationAnnounceLoop::new()),
+            pn_hosting_policy: Arc::new(Mutex::new(pn_hosting_policy)),
             sync_cancel: Mutex::new(Arc::new(AtomicBool::new(false))),
             sync_run_id: Arc::new(AtomicU64::new(0)),
             discovered_propagation: Arc::new(Mutex::new(HashMap::new())),
@@ -1089,6 +1105,7 @@ impl LiveBridge {
     /// Register handler for LXMF propagation-node announces (`lxmf.propagation`).
     ///
     /// Upserts an in-memory discovered list (not auto-added to configured PNs).
+    /// When local hosting + autopeer are on, also feeds `LxmRouter::autopeer`.
     pub fn register_propagation_announce_handler(&self) {
         const LXMF_PROPAGATION_ASPECT: &str = "lxmf.propagation";
         const MAX_DISCOVERED_PROPAGATION: usize = 200;
@@ -1096,6 +1113,9 @@ impl LiveBridge {
         let event_tx = self.event_tx.clone();
         let discovered = Arc::clone(&self.discovered_propagation);
         let outbound = Arc::clone(&self.outbound);
+        let router = Arc::clone(&self.router);
+        let propagation = Arc::clone(&self.propagation);
+        let pn_hosting_policy = Arc::clone(&self.pn_hosting_policy);
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
@@ -1121,6 +1141,17 @@ impl LiveBridge {
                 let Some(parsed) = lxmf_core::handlers::parse_pn_announce_data(app_data) else {
                     continue;
                 };
+                // lxmd parity: cache PN stamp cost for outbound Propagated packing.
+                {
+                    let mut router = router.lock().await;
+                    router.set_stamp_cost(evt.destination_hash, parsed.stamp_cost);
+                    tracing::debug!(
+                        target: "propagation-discovered",
+                        dest = %hex::encode(evt.destination_hash),
+                        stamp_cost = parsed.stamp_cost,
+                        "learned propagation-node stamp cost from announce"
+                    );
+                }
                 let hash_hex = hex::encode(evt.destination_hash);
                 let identity_hash_hex = evt.identity_hash.map(hex::encode);
                 let display_name = lxmf_core::handlers::pn_name_from_app_data(app_data);
@@ -1175,6 +1206,40 @@ impl LiveBridge {
                 let frame =
                     serde_json::json!({ "type": "propagation.discovered", "payload": payload });
                 let _ = event_tx.send(frame.to_string());
+
+                // Autopeer only while hosting a local PN (lxmd parity).
+                if propagation.is_local_serving() {
+                    let autopeer_on = pn_hosting_policy
+                        .lock()
+                        .ok()
+                        .map(|p| p.autopeer)
+                        .unwrap_or(true);
+                    if autopeer_on && parsed.node_state {
+                        let mut router = router.lock().await;
+                        // AutopeerCandidate uses f64; announce wire fields are i64/u64.
+                        // Precision loss is fine for timebase/limits (KB-scale / unix seconds).
+                        #[allow(clippy::cast_precision_loss)]
+                        let peered = router.autopeer(lxmf_core::router::AutopeerCandidate {
+                            destination_hash: evt.destination_hash,
+                            timebase: parsed.timebase as f64,
+                            transfer_limit: Some(parsed.transfer_limit as f64),
+                            sync_limit: Some(parsed.sync_limit as f64),
+                            stamp_cost: Some(parsed.stamp_cost),
+                            stamp_flexibility: Some(parsed.stamp_flex),
+                            peering_cost: Some(parsed.peering_cost),
+                            hops: Some(evt.hops),
+                        });
+                        if !peered {
+                            tracing::debug!(
+                                target: "propagation-discovered",
+                                dest = %hash_hex,
+                                hops = evt.hops,
+                                peering_cost = parsed.peering_cost,
+                                "autopeer declined candidate"
+                            );
+                        }
+                    }
+                }
             }
         });
     }
@@ -1983,6 +2048,147 @@ impl LiveBridge {
     pub async fn set_local_propagation_serving(&self, enabled: bool) {
         let mut router = self.router.lock().await;
         self.propagation.set_local_serving(enabled, &mut router);
+        drop(router);
+
+        if enabled {
+            let policy = self
+                .pn_hosting_policy
+                .lock()
+                .ok()
+                .map(|p| p.clone())
+                .unwrap_or_default();
+            if let Err(e) = self.prop_serve.start(
+                &self.handle.transport_tx,
+                &self.identity,
+                self.propagation.local_dest_hash_bytes(),
+                self.propagation.local_node(),
+            ) {
+                tracing::error!(target: "propagation-serve", "failed to start serve: {e}");
+                let mut router = self.router.lock().await;
+                self.propagation.set_local_serving(false, &mut router);
+                return;
+            }
+            self.prop_announce.start(
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                self.propagation.local_dest_hash_bytes(),
+                Arc::clone(&self.pn_hosting_policy),
+                policy.announce_at_start,
+            );
+        } else {
+            self.prop_announce.stop();
+            self.prop_serve.stop();
+        }
+    }
+
+    pub async fn apply_pn_hosting_policy(&self, policy: &PnHostingPolicy) -> Result<(), String> {
+        {
+            let mut slot = self
+                .pn_hosting_policy
+                .lock()
+                .map_err(|_| "pn_hosting_policy_mutex_poisoned".to_string())?;
+            *slot = policy.clone();
+        }
+        {
+            let mut router = self.router.lock().await;
+            apply_pn_hosting_policy_to_router(&mut router, policy);
+        }
+        if let Ok(mut node) = self.propagation.local_node().lock() {
+            apply_pn_hosting_policy_to_node(&mut node, policy);
+        }
+        // Restart announce loop with updated interval / name when serving.
+        if self.propagation.is_local_serving() {
+            self.prop_announce.start(
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                self.propagation.local_dest_hash_bytes(),
+                Arc::clone(&self.pn_hosting_policy),
+                false,
+            );
+        }
+        Ok(())
+    }
+
+    /// Lightweight `/offer` capability probe before persisting a remote PN.
+    ///
+    /// Returns `Ok(())` when the remote answers `/offer` (including LXMF offer
+    /// errors that prove the handler ran). Hard-fails with
+    /// `PROPAGATION_OFFER_UNSUPPORTED` only when the offer response is
+    /// unrecognized (`Unknown`).
+    pub async fn probe_propagation_offer(&self, destination_hash: &str) -> Result<(), String> {
+        let dest_hex = destination_hash.trim().to_lowercase();
+        let hash = parse_hash16(&dest_hex)?;
+        self.cancel_propagation_sync().await;
+        self.rehydrate_propagation_identities_from_persisted();
+        let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
+        if !self.ensure_path_for_direct(&dest_hex, true).await {
+            return Err("PROPAGATION_PATH_UNKNOWN".into());
+        }
+        let identity_known_after = self
+            .outbound
+            .lock()
+            .map(|d| d.identity_known_for(&dest_hex))
+            .unwrap_or(false);
+        if !identity_ok || !identity_known_after {
+            return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
+        }
+        let target_class = self.classify_propagation_sync_target(&dest_hex).await;
+        if target_class == "delivery" || target_class == "other" {
+            return Err("PROPAGATION_TARGET_NOT_PN".into());
+        }
+        let peering = self.resolve_propagation_peering(&dest_hex).await?;
+        // Claim outbound sync target so PN deposits defer during the offer probe
+        // (same latch as start_propagation_sync). cancel_propagation_sync clears it
+        // on every polling exit; release immediately if start_sync never begins.
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.set_propagation_sync_target(Some(hash));
+        }
+        if !self.propagation.start_sync(hash, Some(peering)) {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
+            return Err("PROPAGATION_OFFER_PROBE_FAILED".into());
+        }
+
+        let deadline = Instant::now() + Duration::from_secs(45);
+        loop {
+            if Instant::now() >= deadline {
+                self.cancel_propagation_sync().await;
+                return Err("PROPAGATION_OFFER_PROBE_TIMEOUT".into());
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            if let Some(err) = self.propagation.last_offer_error() {
+                self.cancel_propagation_sync().await;
+                return if err == "Unknown" {
+                    Err("PROPAGATION_OFFER_UNSUPPORTED".into())
+                } else {
+                    // Handler ran (NoIdentity / InvalidKey / …) — path exists.
+                    Ok(())
+                };
+            }
+            if let Some(err) = self.propagation.last_establish_error() {
+                self.cancel_propagation_sync().await;
+                return Err(format!("propagation establish failed: {err}"));
+            }
+            let progress = self.propagation.sync_progress();
+            // Offering / later stages prove /offer was accepted enough to proceed.
+            if progress >= 25.0 {
+                self.cancel_propagation_sync().await;
+                return Ok(());
+            }
+            if !self.propagation.sync_active() && progress <= 0.0 {
+                if let Some(ok) = self.propagation.last_finished_ok() {
+                    self.cancel_propagation_sync().await;
+                    return if ok {
+                        Ok(())
+                    } else if self.propagation.last_offer_error() == Some("Unknown") {
+                        Err("PROPAGATION_OFFER_UNSUPPORTED".into())
+                    } else {
+                        Err("PROPAGATION_OFFER_PROBE_FAILED".into())
+                    };
+                }
+            }
+        }
     }
 
     pub fn propagation_local_stats(&self) -> (usize, usize) {
@@ -2024,6 +2230,18 @@ impl LiveBridge {
         let dest_hex = destination_hash.to_lowercase();
         // Cancel any in-flight sync/emitter before starting a new one.
         self.cancel_propagation_sync().await;
+        // Claim the PN Link early so outbound packed deposits defer instead of racing.
+        if let Ok(mut driver) = self.outbound.lock() {
+            if driver.has_inflight_delivery_to(&hash) {
+                tracing::info!(
+                    target: "propagation-sync",
+                    dest = %dest_hex,
+                    "deferring propagation sync — outbound PN deposit already in flight"
+                );
+                return Err("PROPAGATION_SYNC_OUTBOUND_BUSY".into());
+            }
+            driver.set_propagation_sync_target(Some(hash));
+        }
         // Re-apply persisted PN pubkey before identity wait (announce flood may have evicted it).
         self.rehydrate_propagation_identities_from_persisted();
         // Link proofs are ignored unless the destination pubkey is in known_identities.
@@ -2037,13 +2255,27 @@ impl LiveBridge {
             .unwrap_or(false);
         let target_class = self.classify_propagation_sync_target(&dest_hex).await;
         if !identity_ok || !identity_known_after {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
             return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
         }
         // Only hard-reject destinations positively classified as non-PN.
         if target_class == "delivery" || target_class == "other" {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
-        let peering = self.resolve_propagation_peering(&dest_hex).await?;
+        let peering = match self.resolve_propagation_peering(&dest_hex).await {
+            Ok(p) => p,
+            Err(e) => {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
+                return Err(e);
+            }
+        };
         // Fresh LXMF delivery announce so the PN can return LRPROOF (reverse path).
         let announced = self
             .ensure_lxmf_announce_for_propagation_sync(&dest_hex)
@@ -2056,6 +2288,23 @@ impl LiveBridge {
                 "settling after LXMF announce before propagation sync"
             );
             tokio::time::sleep(PROPAGATION_SYNC_ANNOUNCE_SETTLE).await;
+        }
+        // After settle: bail if an outbound deposit claimed the PN Link.
+        let outbound_busy = self
+            .outbound
+            .lock()
+            .map(|d| d.has_inflight_delivery_to(&hash))
+            .unwrap_or(false);
+        if outbound_busy {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                "deferring propagation sync — outbound PN deposit in flight"
+            );
+            return Err("PROPAGATION_SYNC_OUTBOUND_BUSY".into());
         }
         let hops = self.hops_to_destination(&dest_hex).await;
         // Pin PN pubkey for the duration of Establishing so announce-flood eviction
@@ -2080,9 +2329,15 @@ impl LiveBridge {
         // Fresh cancel token + generation so a prior emitter cannot cancel/clear this run.
         let (cancel, run_id) = {
             let Ok(_lifecycle) = self.propagation.lock_sync_lifecycle() else {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
                 return Err("propagation sync unavailable".into());
             };
             let Ok(mut slot) = self.sync_cancel.lock() else {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
                 return Err("propagation sync unavailable".into());
             };
             let cancel = Arc::new(AtomicBool::new(false));
@@ -2093,6 +2348,7 @@ impl LiveBridge {
         if !self.propagation.start_sync(hash, Some(peering)) {
             if let Ok(mut driver) = self.outbound.lock() {
                 driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
             }
             return Err("propagation sync unavailable".into());
         }
@@ -2100,6 +2356,7 @@ impl LiveBridge {
         let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
             if let Ok(mut driver) = outbound.lock() {
                 driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
             }
         });
         self.propagation.spawn_sync_progress_emitter(
@@ -2131,9 +2388,19 @@ impl LiveBridge {
         let peer_id = peer_identity.hash;
         let local_id = self.identity.hash;
         let peering_cost = self
-            .pn_announce_peering_cost(destination_hex)
+            .refresh_pn_announce_costs(destination_hex)
             .await
+            .map(|(_, peering)| peering)
             .unwrap_or(lxmf_core::constants::PEERING_COST);
+        let max_cost = self
+            .pn_hosting_policy
+            .lock()
+            .ok()
+            .map(|p| p.max_peering_cost)
+            .unwrap_or(lxmf_core::constants::MAX_PEERING_COST);
+        if peering_cost > max_cost {
+            return Err("PROPAGATION_PEER_COST_EXCEEDS_MAX".into());
+        }
         let precomputed = if peering_cost == 0 {
             Some(Vec::new())
         } else {
@@ -2156,7 +2423,9 @@ impl LiveBridge {
         Ok((local_id, peer_id, peering_cost, precomputed))
     }
 
-    async fn pn_announce_peering_cost(&self, destination_hex: &str) -> Option<u8> {
+    /// Learn PN stamp/peering costs from a recent `lxmf.propagation` announce (lxmd parity).
+    /// Returns `(stamp_cost, peering_cost)` when found.
+    async fn refresh_pn_announce_costs(&self, destination_hex: &str) -> Option<(u8, u8)> {
         let resp = self
             .query_control_timed(TransportQuery::GetRecentAnnounces)
             .await;
@@ -2168,11 +2437,20 @@ impl LiveBridge {
             if hex::encode(entry.dest_hash).to_lowercase() != key {
                 continue;
             }
-            return entry
+            let parsed = entry
                 .app_data
                 .as_deref()
-                .and_then(lxmf_core::handlers::parse_pn_announce_data)
-                .map(|d| d.peering_cost);
+                .and_then(lxmf_core::handlers::parse_pn_announce_data)?;
+            let mut router = self.router.lock().await;
+            router.set_stamp_cost(entry.dest_hash, parsed.stamp_cost);
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %key,
+                stamp_cost = parsed.stamp_cost,
+                peering_cost = parsed.peering_cost,
+                "cached PN announce stamp/peering costs"
+            );
+            return Some((parsed.stamp_cost, parsed.peering_cost));
         }
         None
     }
@@ -2193,6 +2471,7 @@ impl LiveBridge {
         self.propagation.cancel_sync();
         if let Ok(mut driver) = self.outbound.lock() {
             driver.clear_propagation_identity_pins();
+            driver.set_propagation_sync_target(None);
         }
     }
 
@@ -2201,6 +2480,10 @@ impl LiveBridge {
         let mut router = self.router.lock().await;
         if let Ok(mut driver) = self.outbound.lock() {
             driver.set_propagation_node(&mut router, hash);
+        }
+        drop(router);
+        if let Some(hex) = destination_hash {
+            let _ = self.refresh_pn_announce_costs(hex).await;
         }
     }
 
@@ -2359,6 +2642,10 @@ impl LiveBridge {
             router.outbound_propagation_node.map(hex::encode)
         };
         let preferred_pn_set = preferred_pn_hash.is_some();
+        // Ensure preferred PN stamp cost is cached before any Direct→Propagated fallback pack.
+        if let Some(ref pn_hex) = preferred_pn_hash {
+            let _ = self.refresh_pn_announce_costs(pn_hex).await;
+        }
 
         // Prefer Direct when a path can be discovered — do not immediately park on
         // the preferred PN just because the local path table was empty at click time.

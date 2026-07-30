@@ -64,14 +64,18 @@ export function mapRgbToReticulumIconColor(
   return best;
 }
 
-/** True when stored appearance matches the implicit default (circle + green). */
+/**
+ * True when stored appearance is unset (missing or legacy `circle`).
+ * Color is ignored — Circle is no longer a real avatar choice.
+ */
 export function isDefaultReticulumProfileIcon(
   iconName?: string | null,
+  // Color ignored; retained so existing call sites stay type-compatible.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- API compatibility
   iconColor?: string | null,
 ): boolean {
   const name = iconName?.trim().toLowerCase() || 'circle';
-  const color = iconColor?.trim().toLowerCase() || 'green';
-  return name === 'circle' && color === 'green';
+  return name === 'circle';
 }
 
 export function hasCustomReticulumProfileIcon(
@@ -91,7 +95,16 @@ export function resolveReticulumProfileIconName(
   if (wire.includes('star') || wire.includes('grade')) return 'star';
   if (wire.includes('heart') || wire.includes('favorite')) return 'heart';
   if (wire.includes('shield') || wire.includes('security')) return 'shield';
-  if (wire.includes('person') || wire.includes('account') || wire === 'user') return 'user';
+  if (
+    wire === 'people' ||
+    wire === 'person' ||
+    wire.includes('person') ||
+    wire.includes('people') ||
+    wire.includes('account') ||
+    wire === 'user'
+  ) {
+    return 'user';
+  }
   return 'user';
 }
 

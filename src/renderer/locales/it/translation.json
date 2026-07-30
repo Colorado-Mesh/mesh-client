@@ -364,7 +364,9 @@
     "capStoredRrcMessages": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
     "capStoredRrcMessagesLabel": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
     "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti",
-    "reticulumPropagationHelp": "Configurare nodi di propagazione LXMF remoti per DM offline. La propagazione locale è solo la casella di posta in arrivo di questo dispositivo — non sostituisce un nodo remoto."
+    "reticulumPropagationHelp": "Configurare nodi di propagazione LXMF remoti per DM offline. La propagazione locale è solo la casella di posta in arrivo di questo dispositivo — non sostituisce un nodo remoto.",
+    "use24HourTime": "Formato 24 ore",
+    "use24HourTimeDesc": "Forza gli orologi come i timestamp della chat al formato di 24 ore. Quando è spento, seguire le impostazioni locali del sistema."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -584,7 +586,6 @@
       "sendFileAria": "Invia file a {{name}} tramite rncp",
       "pendingOffersBadgeAria_one": "{{count}} in attesa di offerta di file in entrata da questo collega",
       "pendingOffersBadgeAria_other": "{{count}} in attesa di offerte di file in entrata da questo collega",
-      "destinationLabel": "hash di destinazione rncp",
       "rememberAddress": "Ricorda questo indirizzo",
       "rememberAddressAria": "Ricorda questa destinazione rncp per questo peer",
       "chooseAndSend": "Scegli file e invia...",
@@ -593,7 +594,9 @@
       "sendFailed": "Invio non riuscito: {{error}}",
       "newOfferToast": "{{peer}} vuole inviarle un file: {{file}}",
       "requestEnable": "Richiesta abilitazione",
-      "requestEnableAria": "Chiedi a questo peer di abilitare la ricezione dei file"
+      "requestEnableAria": "Chiedi a questo peer di abilitare la ricezione dei file",
+      "destinationLabel": "Destinazione di ricezione rncp del peer",
+      "destinationHelp": "Non il loro hash Chat/LXMF. Utilizza Richiedi abilitazione: i peer mesh-client lo condividono automaticamente dopo aver accettato. Oppure incolla dal telecomando → Destinazione di ricezione del mio rncp."
     },
     "shareLocation": "Condividi posizione",
     "shareLocationLabel": "📍Posizione condivisa",
@@ -2482,6 +2485,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Hosting PN avanzato (zona pericolosa)",
+      "peeringCost": "Costo peering",
+      "maxPeeringCost": "Costo max peering",
+      "autopeer": "Autopilota con PN scoperti",
+      "autopeerMaxdepth": "Salti max Autopeer",
+      "maxPeers": "Max coetanei autopeer",
+      "stampCost": "Costo bollo propagazione",
+      "stampFlex": "Flessibilità dei costi di stampa",
+      "storageMb": "Limite di archiviazione dei messaggi (MB)",
+      "propagationLimitKb": "Limite messaggi di propagazione (KB)",
+      "syncLimitKb": "Limite di trasferimento sincronizzato (KB)",
+      "deliveryLimitKb": "Limite di trasferimento della consegna (KB)",
+      "announceIntervalSec": "Intervallo annuncio PN (secondi)",
+      "announceAtStart": "Annuncia quando inizia l'attività di host",
+      "fromStaticOnly": "Solo da peer statici",
+      "authRequired": "Autenticazione richiesta",
+      "enforceStamps": "Applicare i timbri dei messaggi",
+      "enforceRatchets": "Imponi cricchetti",
+      "nodeName": "Nome annuncio PN",
+      "staticPeers": "Hash peer statici (uno da 32 hex per riga)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Salva i termini dell'attività di host",
+      "saving": "Salvataggio…",
+      "saveAria": "Salva i termini di hosting PN",
+      "saveOk": "Termini di hosting PN salvati.",
+      "saveFailed": "Impossibile salvare i termini di hosting PN.",
+      "saveConfirmTitle": "Vuoi salvare la politica di hosting PN?",
+      "saveConfirmBody": "Applicare le impostazioni di peering, archiviazione, timbro e annuncio al nodo di propagazione live? Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer.",
+      "saveConfirm": "Salva politica",
+      "error": {
+        "peeringCostExceedsMax": "Il costo del peering non può superare il costo massimo del peering.",
+        "stampFlexExceedsCost": "La flessibilità del timbro non può superare il costo del timbro.",
+        "autopeerMaxdepth": "Il numero massimo di hop Autopeer è fuori portata.",
+        "maxPeers": "Il numero massimo di peer è fuori portata.",
+        "storageMb": "Il limite di archiviazione dei messaggi è fuori intervallo.",
+        "propagationLimit": "Il limite dei messaggi di propagazione è fuori intervallo.",
+        "syncLimit": "Il limite di trasferimento della sincronizzazione è fuori portata.",
+        "deliveryLimit": "Il limite di trasferimento della consegna è fuori intervallo.",
+        "announceInterval": "L'intervallo di annuncio PN è fuori range.",
+        "staticPeersTooMany": "Troppi hash peer statici (max 256).",
+        "staticPeerInvalid": "Uno o più hash del peer statico non sono validi (sono necessari 32 caratteri esadecimali).",
+        "nodeNameInvalid": "Il nome dell'annuncio PN contiene caratteri non validi.",
+        "nodeNameTooLong": "Il nome dell'annuncio PN è troppo lungo.",
+        "nonFiniteNumber": "Uno o più campi numerici non sono validi."
+      },
+      "warning": "Queste impostazioni controllano l'hosting del nodo di propagazione locale, l'autopeer, i costi PoW e il rifiuto della sincronizzazione per i dispositivi remoti ad alto costo. Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer."
     }
   },
   "nodeDetailModal": {
@@ -3874,11 +3925,12 @@
   "reticulumProfileIcon": {
     "iconName": "icona avatar",
     "iconNameAria": "icona avatar",
-    "iconCircle": "Circonferenza",
     "iconStar": "Stella",
     "iconHeart": "Cuore",
     "iconShield": "Shield",
-    "iconUser": "Utente"
+    "iconNone": "Nessuno",
+    "iconSaveFailed": "Impossibile salvare l'icona dell'avatar.",
+    "iconUser": "Persone"
   },
   "reticulumPropagation": {
     "preferred": "Preferito",
@@ -3888,7 +3940,6 @@
     "syncNowFor": "Sincronizza i messaggi da {{name}}",
     "addNode": "Aggiungi nodo",
     "addNodeLabel": "Aggiungi nodo di propagazione tramite hash",
-    "localInboxStats": "{{count}} in coda · {{bytes}} byte",
     "refreshing": "Rinfrescante…",
     "refreshAria": "Aggiorna i nodi di propagazione",
     "syncStatusEstablishing": "Creazione della connessione al nodo di propagazione…",
@@ -3938,7 +3989,6 @@
       "unknown": "sconosciuto",
       "online": "in linea"
     },
-    "syncLocalNotSupported": "La propagazione locale è la tua casella di posta offline: non può essere sincronizzata sulla rete come un nodo di propagazione LXMF remoto.",
     "syncIdentityUnknown": "L'identità del nodo di propagazione è sconosciuta: attendi un annuncio o una risposta sul percorso, quindi riprova.",
     "syncTargetNotPropagationNode": "Quella destinazione è raggiungibile su Reticulum ma non è un nodo di propagazione LXMF (gli hub TCP sono solo percorsi di trasporto). Aggiungi una destinazione annunciata come lxmf.propagation per sincronizzare i messaggi offline.",
     "syncPeeringStampFailed": "Impossibile creare un timbro di peering per questo nodo di propagazione: riprova tra poco.",
@@ -3969,9 +4019,21 @@
     "syncOfferUnknown": "Il nodo di propagazione ha restituito un errore di offerta di sincronizzazione sconosciuto — riprova tra un momento.",
     "syncPathHint": "La sincronizzazione remota richiede un percorso in entrambe le direzioni. Sync invia prima un breve annuncio LXMF in modo che il nodo possa rispondere.",
     "setPreferredFailed": "Impossibile impostare il nodo di propagazione preferito.",
-    "localInboxName": "Propagazione locale (casella di posta offline)",
-    "localInboxHint": "La propagazione locale è la casella di posta offline di questo dispositivo. Non memorizza i DM in uscita per i peer non raggiungibili: imposta un nodo lxmf.propagation remoto come preferito per lo store-and-forward.",
-    "preferredLocalWarning": "Il nodo preferito è solo locale: i peer offline hanno ancora bisogno di un nodo di propagazione remoto per la consegna store-and-forward."
+    "preferredLocalWarning": "Il nodo preferito è solo locale: i peer offline hanno ancora bisogno di un nodo di propagazione remoto per la consegna store-and-forward.",
+    "localHostStats": "{{count}} in coda · {{bytes}} byte",
+    "localHostName": "Nodo di propagazione host",
+    "localHostHint": "Quando abilitato, questo dispositivo si annuncia come nodo di propagazione LXMF e serve /offre e /ottiene. Preferire un nodo remoto per lo store-and-forward in uscita a peer non raggiungibili.",
+    "syncPeerCostExceedsMax": "Il costo di peering di questo nodo di propagazione è superiore al costo massimo di peering: aumenta il massimo nell'hosting PN → avanzato di rete o scegli un altro nodo.",
+    "offerUnsupported": "Questa destinazione non supporta la sincronizzazione LXMF /offer: mesh-client non può utilizzarlo come nodo di propagazione.",
+    "offerProbeTimeout": "Timeout durante il controllo/offerta di supporto: il nodo potrebbe essere irraggiungibile. Riprovare quando è disponibile un percorso.",
+    "offerProbeFailed": "Impossibile verificare/offrire supporto per questo nodo di propagazione: riprova tra poco.",
+    "enableLocalHostConfirmTitle": "Abilitare l'hosting del nodo di propagazione locale?",
+    "enableLocalHostConfirmBody": "Questo dispositivo annuncerà come nodo di propagazione LXMF e servirà /offer e /get. Utilizza spazio di archiviazione, CPU e può eseguire il peering con altri nodi della rete. Preferisci un nodo remoto per lo store-and-forward in uscita a meno che non intendi eseguire l'hosting.",
+    "enableLocalHostConfirm": "Abilita l'hosting",
+    "addProbing": "Verifica del supporto /offer…",
+    "syncLocalNotSupported": "Il nodo di propagazione dell'host locale non può essere sincronizzato sulla rete come un nodo di propagazione LXMF remoto.",
+    "enableFailed": "Impossibile abilitare il nodo di propagazione.",
+    "disableFailed": "Impossibile disabilitare il nodo di propagazione."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",
@@ -4570,7 +4632,9 @@
     "directNoticeUnsupported": "Questo hub non supporta l'AVVISO diretto (/msg).",
     "capDirectNotice": "msg diretto",
     "moderation": {
-      "removedFromRoom": "Rimosso dalla stanza dall'hub (kick, ban o parte remota)."
+      "removedFromRoom": "Rimosso dalla stanza dall'hub (kick, ban o parte remota).",
+      "removedFromRoomSystem": "L'hub ti ha separato da {{room}}.",
+      "hubParted": "L'hub ti ha separato dalla stanza."
     },
     "errors": {
       "linkProofTimeout": "Tempo scaduto in attesa del collegamento hub (prova del collegamento). Riprova o controlla il percorso/salti verso l'hub.",
@@ -4777,7 +4841,9 @@
       "offerToast": "Offerta file in arrivo: {{file}}",
       "copyInstructionsAria": "Copia le istruzioni per abilitare la ricezione del file",
       "copyInstructions": "Copia istruzioni",
-      "instructionsCopied": "Istruzioni copiate."
+      "instructionsCopied": "Istruzioni copiate.",
+      "receiveDestSharedToast": "Destinazione di ricezione rncp di {{peer}} salvata: ora puoi inviare un file.",
+      "receiveDestShareFailed": "Impossibile salvare la destinazione di ricezione rncp del peer."
     },
     "enableRequest": {
       "title": "Abilitare la ricezione dei file?",
@@ -4794,7 +4860,9 @@
       "enableFailed": "Impossibile abilitare la ricezione dei file: {{error}}",
       "saveDirRequired": "Scegli una cartella di salvataggio per abilitare la ricezione.",
       "identityUnknown": "Non è stato ancora possibile risolvere l'hash di identità di questo peer — la modalità Chiedi è attiva, ma il peer non è stato aggiunto alla lista dei consentiti. Riprova dopo l'arrivo di un percorso o di un annuncio.",
-      "lxmfBody": "Abilitare la ricezione dei file (rncp) se si utilizzano le offerte di file mesh-client: Remote → Settings → Inbound. Oppure esegui rncp/rncp-rs in modalità di ascolto."
+      "lxmfBody": "Abilitare la ricezione dei file (rncp) se si utilizzano le offerte di file mesh-client: Remote → Settings → Inbound. Oppure esegui rncp/rncp-rs in modalità di ascolto.",
+      "lxmfShareBody": "La ricezione file è abilitata. Ecco la mia destinazione di ricezione rncp (mesh-client la salverà per te).",
+      "shareDestWarning": "Se abiliti, mesh-client invierà la destinazione di ricezione rncp a questo peer in modo che possa compilare automaticamente l'invio del file."
     },
     "saved": {
       "labelPlaceholder": "Label",
@@ -4849,5 +4917,12 @@
     "direct": "Diretto",
     "segmentTooltip": "Hash del percorso {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} è in linea",
+    "onlineBody": "Il nodo {{protocol}} è arrivato online",
+    "offlineTitle": "{{name}} è andato offline",
+    "offlineBody": "Ultimo ascolto: {{time}}",
+    "unknown": "sconosciuto"
   }
 }

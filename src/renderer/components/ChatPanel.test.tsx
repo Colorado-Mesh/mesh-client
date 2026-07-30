@@ -1674,6 +1674,32 @@ describe('ChatPanel StatusBadge', () => {
     });
   });
 
+  it('does not show Resend for Reticulum messages that are still sending', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          messages={[{ ...failedMsg, status: 'sending' }]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.queryByTitle('Resend message')).not.toBeInTheDocument();
+  });
+
+  it('shows Resend for failed Reticulum messages', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          messages={[{ ...failedMsg, status: 'failed', storeId: 'reticulum-pending-1' }]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByTitle('Resend message')).toBeInTheDocument();
+  });
+
   it('renders "BT ✓" with a space for BLE acked messages', () => {
     render(
       <ToastProvider>

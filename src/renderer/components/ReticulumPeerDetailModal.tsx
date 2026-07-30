@@ -13,6 +13,10 @@ import {
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
 import {
+  isDefaultReticulumProfileIcon,
+  resolveReticulumProfileIconName,
+} from '@/renderer/lib/reticulum/reticulumIconAppearance';
+import {
   formatReticulumPeerPathToast,
   formatReticulumPeerProbeToast,
   probeReticulumPeer,
@@ -31,11 +35,7 @@ import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFi
 
 import { ConfirmModal } from './ConfirmModal';
 import QrCodeImage from './QrCodeImage';
-import {
-  RETICULUM_PROFILE_ICON_NAMES,
-  ReticulumProfileIcon,
-  type ReticulumProfileIconName,
-} from './ReticulumProfileIcon';
+import { type ReticulumProfileIconName, ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
 
 export interface ReticulumPeerDetailModalProps {
@@ -157,12 +157,15 @@ export default function ReticulumPeerDetailModal({
             typeof r.destination_hash === 'string' &&
             canonicalizeReticulumDestinationHash(r.destination_hash) === key,
         );
-        if (row?.icon_color) setIconColor(row.icon_color);
-        if (
-          row?.icon_name &&
-          RETICULUM_PROFILE_ICON_NAMES.includes(row.icon_name as ReticulumProfileIconName)
-        ) {
-          setIconName(row.icon_name as ReticulumProfileIconName);
+        if (!row) return;
+        const resolvedName = resolveReticulumProfileIconName(row.icon_name);
+        const color = row.icon_color?.trim() || 'green';
+        if (isDefaultReticulumProfileIcon(resolvedName, color)) {
+          setIconName('circle');
+          setIconColor('green');
+        } else {
+          setIconName(resolvedName);
+          setIconColor(color);
         }
       } catch (err) {
         console.warn(
@@ -176,18 +179,57 @@ export default function ReticulumPeerDetailModal({
   }, [peerHash]);
 
   const saveIconAppearance = async (patch: { icon_color?: string; icon_name?: string }) => {
-    if (patch.icon_color != null) setIconColor(patch.icon_color);
-    if (patch.icon_name != null) setIconName(patch.icon_name as ReticulumProfileIconName);
+    const nextName = (patch.icon_name as ReticulumProfileIconName | undefined) ?? iconName;
+    const nextColor = patch.icon_color ?? iconColor;
+    const cleared = isDefaultReticulumProfileIcon(nextName, nextColor);
+    const persistPatch = cleared
+      ? { icon_name: 'circle', icon_color: 'green' }
+      : {
+          icon_name: nextName,
+          icon_color: nextColor,
+        };
+
+    const previousName = iconName;
+    const previousColor = iconColor;
+    const previousAppearance = useReticulumPeerStore
+      .getState()
+      .peerAppearanceByHash.get(
+        canonicalizeReticulumDestinationHash(peerHash) ??
+          peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase(),
+      );
+
+    setIconName(persistPatch.icon_name as ReticulumProfileIconName);
+    setIconColor(persistPatch.icon_color);
+
     const key = canonicalizeReticulumDestinationHash(peerHash);
-    if (!key) return;
+    if (!key) {
+      setIconName(previousName);
+      setIconColor(previousColor);
+      console.warn('[ReticulumPeerDetailModal] icon appearance: invalid destination hash');
+      addToast(t('reticulumProfileIcon.iconSaveFailed'), 'error');
+      return;
+    }
+
+    useReticulumPeerStore.getState().patchPeerAppearance(key, persistPatch);
+
     try {
       await window.electronAPI.db.upsertReticulumDestination({
         destination_hash: key,
-        ...patch,
+        ...persistPatch,
       });
-      useReticulumPeerStore.getState().patchPeerAppearance(key, patch);
     } catch (e) {
+      setIconName(previousName);
+      setIconColor(previousColor);
+      if (previousAppearance) {
+        useReticulumPeerStore.getState().patchPeerAppearance(key, previousAppearance);
+      } else {
+        useReticulumPeerStore.getState().patchPeerAppearance(key, {
+          icon_name: 'circle',
+          icon_color: 'green',
+        });
+      }
       console.warn('[ReticulumPeerDetailModal] icon appearance ' + errLikeToLogString(e));
+      addToast(t('reticulumProfileIcon.iconSaveFailed'), 'error');
     }
   };
 
@@ -358,7 +400,7 @@ export default function ReticulumPeerDetailModal({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <ReticulumProfileIcon iconName={iconName} iconColor={iconColor} size={20} />
+                <ReticulumProfileIconSlot iconName={iconName} iconColor={iconColor} size={20} />
                 <h2
                   id="reticulum-peer-detail-title"
                   className="text-bright-green truncate text-lg font-semibold"
@@ -513,10 +555,15 @@ export default function ReticulumPeerDetailModal({
                   className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
                   aria-label={t('reticulumProfileIcon.iconNameAria')}
                   onChange={(e) => {
-                    void saveIconAppearance({ icon_name: e.target.value });
+                    const name = e.target.value as ReticulumProfileIconName;
+                    if (name === 'circle') {
+                      void saveIconAppearance({ icon_name: 'circle', icon_color: 'green' });
+                    } else {
+                      void saveIconAppearance({ icon_name: name });
+                    }
                   }}
                 >
-                  <option value="circle">{t('reticulumProfileIcon.iconCircle')}</option>
+                  <option value="circle">{t('reticulumProfileIcon.iconNone')}</option>
                   <option value="star">{t('reticulumProfileIcon.iconStar')}</option>
                   <option value="heart">{t('reticulumProfileIcon.iconHeart')}</option>
                   <option value="shield">{t('reticulumProfileIcon.iconShield')}</option>

@@ -1,5 +1,9 @@
 version: 2
 updates:
+  # Dependabot PRs intentionally disabled (limit 0) — the project manages npm
+  # and Actions updates via `pnpm run update` (scripts/update.sh) which runs
+  # dedupe, patch checks, and Ratspeak/rsReticulum verification in one pass.
+  # See AGENTS.md §6 and docs/ci-cd.md.
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
