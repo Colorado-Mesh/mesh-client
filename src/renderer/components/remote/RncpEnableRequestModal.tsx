@@ -173,9 +173,9 @@ export function RncpEnableRequestModal() {
           lastSaveDir: dir.path,
           allowFetch: false,
         });
+        setInboundModeOptimistic('ask');
         const listener = await window.electronAPI.reticulum.rncp.getListener();
         useRncpTransferStore.getState().setListener(listener);
-        setInboundModeOptimistic('ask');
         addToast(t('reticulumRemote.enableRequest.enabled'), 'success');
         const peerHash = current.peerHash;
         dismiss(peerHash, false);

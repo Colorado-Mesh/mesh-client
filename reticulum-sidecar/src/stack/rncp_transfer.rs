@@ -266,7 +266,7 @@ impl RncpTransferManager {
                         tracing::info!(
                             kind = "send",
                             transfer_id = %tid,
-                            file_name = %outcome.file_name,
+                            file_name = ?outcome.file_name,
                             bytes = outcome.bytes,
                             destination_hash = %dest_hex_task,
                             "[rncp] transfer completed"
@@ -373,7 +373,7 @@ impl RncpTransferManager {
                         tracing::info!(
                             kind = "fetch",
                             transfer_id = %tid,
-                            file_name = %outcome.file_name,
+                            file_name = ?outcome.file_name,
                             bytes = outcome.bytes,
                             destination_hash = %dest_hex_task,
                             path = %outcome.saved_path.display(),
@@ -463,7 +463,7 @@ impl RncpTransferManager {
         tracing::info!(
             kind = "accept",
             transfer_id = %transfer_id,
-            file_name = %final_name,
+            file_name = ?final_name,
             bytes = offer.bytes,
             identity_hash = offer.identity_hash.as_deref().unwrap_or(""),
             path = %final_path.display(),
@@ -900,7 +900,7 @@ async fn handle_rncp_event(
             if policy.mode != InboundMode::Ask || is_allowed {
                 tracing::info!(
                     kind = "receive",
-                    file_name = %file_name,
+                    file_name = ?file_name,
                     bytes,
                     identity_hash = identity_hex.as_deref().unwrap_or(""),
                     path = %saved_path.display(),
@@ -992,7 +992,7 @@ async fn handle_rncp_event(
         RncpEvent::FetchServing {
             file_name, bytes, ..
         } => {
-            tracing::debug!(file_name = %file_name, bytes, "rncp fetch serving local file");
+            tracing::debug!(file_name = ?file_name, bytes, "rncp fetch serving local file");
         }
         RncpEvent::FetchDenied { reason, .. } => {
             tracing::debug!(reason = %reason, "rncp fetch denied");
@@ -1690,6 +1690,125 @@ mod tests {
             got_outbound,
             "expected Outbound announce after RegisterDestination"
         );
+
+        manager.stop_listener().await;
+    }
+
+    fn write_announce_interval_config(config_dir: &Path, interval_sec: u32) {
+        config::write_config(
+            config_dir,
+            &format!(
+                r#"[reticulum]
+enable_transport = No
+share_instance = No
+announce_interval_sec = {interval_sec}
+
+[logging]
+loglevel = 4
+"#
+            ),
+        )
+        .expect("write announce interval config");
+    }
+
+    fn count_outbound(rx: &mut mpsc::Receiver<TransportMessage>) -> usize {
+        let mut n = 0;
+        while let Ok(msg) = rx.try_recv() {
+            if matches!(msg, TransportMessage::Outbound(_)) {
+                n += 1;
+            }
+        }
+        n
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn listen_announcer_one_shot_when_interval_zero() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_announce_interval_config(dir.path(), 0);
+        let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(32);
+        let (event_tx, _event_rx) = broadcast::channel::<String>(8);
+        let manager = RncpTransferManager::spawn(
+            transport_tx,
+            Identity::new(),
+            event_tx,
+            dir.path().to_path_buf(),
+            dir.path().to_path_buf(),
+        );
+        manager
+            .configure_policy("ask", vec![], vec![])
+            .await
+            .expect("policy");
+        manager
+            .start_listener(dir.path().join("inbox"), false, None, false)
+            .await
+            .expect("listener start");
+
+        // Let the announcer task park on settle sleep before advancing virtual time.
+        for _ in 0..8 {
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(RNCP_LISTEN_ANNOUNCE_SETTLE + Duration::from_millis(1)).await;
+        for _ in 0..16 {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            count_outbound(&mut transport_rx),
+            1,
+            "startup announce only"
+        );
+
+        tokio::time::advance(Duration::from_secs(3_600)).await;
+        for _ in 0..16 {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            count_outbound(&mut transport_rx),
+            0,
+            "interval 0 must not re-announce"
+        );
+
+        manager.stop_listener().await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn listen_announcer_periodic_when_interval_positive() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_announce_interval_config(dir.path(), 5);
+        let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(32);
+        let (event_tx, _event_rx) = broadcast::channel::<String>(8);
+        let manager = RncpTransferManager::spawn(
+            transport_tx,
+            Identity::new(),
+            event_tx,
+            dir.path().to_path_buf(),
+            dir.path().to_path_buf(),
+        );
+        manager
+            .configure_policy("ask", vec![], vec![])
+            .await
+            .expect("policy");
+        manager
+            .start_listener(dir.path().join("inbox"), false, None, false)
+            .await
+            .expect("listener start");
+
+        for _ in 0..8 {
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(RNCP_LISTEN_ANNOUNCE_SETTLE + Duration::from_millis(1)).await;
+        for _ in 0..16 {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(count_outbound(&mut transport_rx), 1, "settle announce");
+
+        for _ in 0..8 {
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(Duration::from_secs(5) + Duration::from_millis(1)).await;
+        for _ in 0..16 {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(count_outbound(&mut transport_rx), 1, "periodic announce");
 
         manager.stop_listener().await;
     }

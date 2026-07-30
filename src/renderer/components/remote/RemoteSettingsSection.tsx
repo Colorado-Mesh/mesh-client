@@ -96,9 +96,8 @@ export function RemoteSettingsSection({
     const picked = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
     if (picked.canceled || !picked.path) return null;
     setFetchJail(picked.path);
-    onSettingsChange({ lastFetchJail: picked.path });
     return picked.path;
-  }, [onSettingsChange]);
+  }, []);
 
   const applyListener = useCallback(
     async (mode: RncpInboundMode) => {
@@ -248,7 +247,6 @@ export function RemoteSettingsSection({
           return;
         }
         dir = rePicked;
-        onSettingsChange({ lastSaveDir: dir });
         if (allowFetch) {
           const reJail = await pickFetchJail();
           if (!reJail) {
@@ -276,6 +274,10 @@ export function RemoteSettingsSection({
         await syncInboundModeFromListener();
         return;
       }
+      onSettingsChange({
+        lastSaveDir: dir,
+        ...(jail != null ? { lastFetchJail: jail } : {}),
+      });
       await refreshListener();
     } catch (e) {
       console.warn('[RemoteSettingsSection] pushPolicy ' + errLikeToLogString(e));
@@ -305,8 +307,13 @@ export function RemoteSettingsSection({
   );
 
   const handlePickFetchJail = useCallback(() => {
-    void pickFetchJail();
-  }, [pickFetchJail]);
+    void (async () => {
+      const path = await pickFetchJail();
+      if (path) {
+        onSettingsChange({ lastFetchJail: path });
+      }
+    })();
+  }, [onSettingsChange, pickFetchJail]);
 
   const handlePickSaveDir = useCallback(async () => {
     const path = await pickSaveDir();

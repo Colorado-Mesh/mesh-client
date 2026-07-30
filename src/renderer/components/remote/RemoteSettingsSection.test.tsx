@@ -124,6 +124,42 @@ describe('RemoteSettingsSection inbound apply', () => {
     ).toBe(false);
   });
 
+  it('does not persist re-picked save dir when setListener retry still fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.reticulum.rncp.setListener)
+      .mockResolvedValueOnce({ ok: false, error: 'save_dir_not_from_picker' })
+      .mockResolvedValueOnce({ ok: false, error: 'save_dir_not_from_picker' });
+    vi.mocked(window.electronAPI.reticulum.rncp.showSaveDirectoryDialog).mockResolvedValue({
+      canceled: false,
+      path: '/tmp/rncp-inbox-unconfirmed',
+    });
+
+    render(
+      <RemoteSettingsSection
+        sidecarRunning
+        settings={{
+          ...DEFAULT_REMOTE_SETTINGS,
+          inboundMode: 'off',
+          lastSaveDir: '/Users/joey/Downloads',
+        }}
+        onSettingsChange={onSettingsChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rncp.setListener).toHaveBeenCalledTimes(2);
+    });
+    expect(
+      onSettingsChange.mock.calls.some(
+        (c) =>
+          (c[0] as { lastSaveDir?: string }).lastSaveDir === '/tmp/rncp-inbox-unconfirmed' ||
+          (c[0] as { inboundMode?: string }).inboundMode === 'ask',
+      ),
+    ).toBe(false);
+  });
+
   it('announces receive destination when listener is enabled', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
