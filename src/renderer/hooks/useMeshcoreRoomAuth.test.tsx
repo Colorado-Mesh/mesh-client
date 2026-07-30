@@ -36,7 +36,11 @@ function RoomAuthProbe({
       <button
         type="button"
         onClick={() => {
-          void ensureRoomAuth(nodeId, mode, roomName).then(setResult);
+          void ensureRoomAuth(nodeId, mode, roomName)
+            .then(setResult)
+            .catch(() => {
+              // catch-no-log-ok: test probe — rejection asserted via UI state absence
+            });
         }}
       >
         request-auth

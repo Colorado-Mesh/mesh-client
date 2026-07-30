@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
@@ -269,14 +270,21 @@ export default function ReticulumPropagationSection({
                       disabled={!renameDraft.trim()}
                       aria-label={t('reticulumPropagation.renameSaveAria')}
                       onClick={() => {
-                        void renamePropagationNode(node.id, renameDraft.trim()).then((ok) => {
-                          if (ok) {
-                            setRenamingId(null);
-                            setRenameDraft('');
-                          } else {
+                        void renamePropagationNode(node.id, renameDraft.trim())
+                          .then((ok) => {
+                            if (ok) {
+                              setRenamingId(null);
+                              setRenameDraft('');
+                            } else {
+                              addToast(t('reticulumPropagation.renameFailed'), 'error');
+                            }
+                          })
+                          .catch((e: unknown) => {
+                            console.warn(
+                              '[ReticulumPropagationSection] rename ' + errLikeToLogString(e),
+                            );
                             addToast(t('reticulumPropagation.renameFailed'), 'error');
-                          }
-                        });
+                          });
                       }}
                     >
                       {t('reticulumPropagation.renameSave')}
@@ -527,13 +535,18 @@ export default function ReticulumPropagationSection({
           danger
           onConfirm={() => {
             const id = pendingDelete.id;
-            void removePropagationNode(id).then((ok) => {
-              if (ok) {
-                setPendingDelete(null);
-              } else {
+            void removePropagationNode(id)
+              .then((ok) => {
+                if (ok) {
+                  setPendingDelete(null);
+                } else {
+                  addToast(t('reticulumPropagation.deleteFailed'), 'error');
+                }
+              })
+              .catch((e: unknown) => {
+                console.warn('[ReticulumPropagationSection] remove ' + errLikeToLogString(e));
                 addToast(t('reticulumPropagation.deleteFailed'), 'error');
-              }
-            });
+              });
           }}
           onCancel={() => {
             setPendingDelete(null);

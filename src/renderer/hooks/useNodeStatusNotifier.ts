@@ -25,9 +25,13 @@ function fireNotification(title: string, body: string): void {
     if (Notification.permission === 'granted') {
       new Notification(title, { body, silent: false });
     } else if (Notification.permission !== 'denied') {
-      void Notification.requestPermission().then((perm) => {
-        if (perm === 'granted') new Notification(title, { body, silent: false });
-      });
+      void Notification.requestPermission()
+        .then((perm) => {
+          if (perm === 'granted') new Notification(title, { body, silent: false });
+        })
+        .catch(() => {
+          // catch-no-log-ok: best-effort notification permission
+        });
     }
   } catch {
     // catch-no-log-ok: best-effort desktop notification

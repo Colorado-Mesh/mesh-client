@@ -367,9 +367,14 @@ export default function NomadNetworkPanel({
   useEffect(() => {
     const applyRunning = (running: boolean) => {
       setSidecarRunning(running);
+      // floating-ok: refreshFromSidecar (store) catches/logs; Nomad refreshFromSidecar same pattern
       if (running) void refreshFromSidecar();
     };
-    void isReticulumSidecarRunning().then(applyRunning);
+    void isReticulumSidecarRunning()
+      .then(applyRunning)
+      .catch((e: unknown) => {
+        console.warn('[NomadNetworkPanel] sidecar status ' + errLikeToLogString(e));
+      });
     const unsub = window.electronAPI.reticulum.onStatus((status) => {
       applyRunning(status.running && status.port > 0);
     });

@@ -7,6 +7,7 @@ import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { mergeAppSetting } from '../lib/appSettingsStorage';
+import { errLikeToLogString } from '../lib/errLikeToLogString';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
 import { SUPPORTED_LANGUAGES } from '../locales/languages';
@@ -40,13 +41,18 @@ export default function LanguageSelector() {
 
   // Reconcile DB locale with current i18n locale on mount
   useEffect(() => {
-    void window.electronAPI.appSettings.getAll().then(async (settings) => {
-      const dbLocale = settings.locale;
-      if (dbLocale && dbLocale !== i18n.language) {
-        const ok = await ensureLocaleLoaded(i18n, dbLocale);
-        if (ok) await i18n.changeLanguage(dbLocale);
+    void (async () => {
+      try {
+        const settings = await window.electronAPI.appSettings.getAll();
+        const dbLocale = settings.locale;
+        if (dbLocale && dbLocale !== i18n.language) {
+          const ok = await ensureLocaleLoaded(i18n, dbLocale);
+          if (ok) await i18n.changeLanguage(dbLocale);
+        }
+      } catch (e: unknown) {
+        console.warn('[LanguageSelector] locale reconcile failed ' + errLikeToLogString(e));
       }
-    });
+    })();
   }, []);
 
   // Close dropdown on outside click (button + portaled menu)
@@ -88,7 +94,9 @@ export default function LanguageSelector() {
       }
       await i18n.changeLanguage(code);
       mergeAppSetting('locale', code, 'LanguageSelector');
-      void window.electronAPI.appSettings.set('locale', code);
+      void window.electronAPI.appSettings.set('locale', code).catch((e: unknown) => {
+        console.warn('[LanguageSelector] persist locale failed ' + errLikeToLogString(e));
+      });
       closeMenu();
     })();
   };

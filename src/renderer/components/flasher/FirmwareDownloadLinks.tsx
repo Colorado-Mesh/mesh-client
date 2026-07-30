@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   buildOfficialFirmwareDownloadUrl,
   resolveLatestOfficialFirmwareDownloadUrl,
@@ -25,11 +26,15 @@ export function FirmwareDownloadLinks({ recommendedFilename }: FirmwareDownloadL
       return undefined;
     }
     let cancelled = false;
-    void resolveLatestOfficialFirmwareDownloadUrl(recommendedFilename).then((url) => {
-      if (!cancelled) {
-        setResolvedUrl(url);
-      }
-    });
+    void resolveLatestOfficialFirmwareDownloadUrl(recommendedFilename)
+      .then((url) => {
+        if (!cancelled) {
+          setResolvedUrl(url);
+        }
+      })
+      .catch((e: unknown) => {
+        console.debug('[FirmwareDownloadLinks] resolve latest url ' + errLikeToLogString(e));
+      });
     return () => {
       cancelled = true;
     };

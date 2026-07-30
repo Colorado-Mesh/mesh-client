@@ -1050,7 +1050,9 @@ export function ChatComposer({
               if (isLinux) {
                 setShowComposePicker((prev) => !prev);
               } else {
-                void window.electronAPI.showEmojiPanel();
+                void window.electronAPI.showEmojiPanel().catch((e: unknown) => {
+                  console.debug('[ChatComposer] showEmojiPanel failed ' + errLikeToLogString(e));
+                });
               }
             }}
             disabled={disabled || !isConnected}

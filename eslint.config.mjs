@@ -95,6 +95,12 @@ export default tseslint.config(
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+      // Explicit: already error via strictTypeChecked. ignoreVoid keeps intentional fire-and-forget
+      // (call sites must still attach .catch when the promise can reject).
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        { ignoreVoid: true, checkThenables: true },
+      ],
       // Off globally: defensive UI ?. / ?? churn. Re-enabled for shared + renderer/lib below.
       '@typescript-eslint/no-unnecessary-condition': 'off',
       // Autofix removes generics that TypeScript still needs for inference (tsc errors after

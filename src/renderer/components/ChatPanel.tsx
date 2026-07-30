@@ -2852,7 +2852,14 @@ function ChatPanel({
                                     } else {
                                       reactionPickerTarget.current = { id, channel: msg.channel };
                                       reactionCapturePendingRef.current = true;
-                                      void window.electronAPI.showEmojiPanel();
+                                      void window.electronAPI
+                                        .showEmojiPanel()
+                                        .catch((e: unknown) => {
+                                          console.debug(
+                                            '[ChatPanel] showEmojiPanel failed ' +
+                                              errLikeToLogString(e),
+                                          );
+                                        });
                                     }
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
