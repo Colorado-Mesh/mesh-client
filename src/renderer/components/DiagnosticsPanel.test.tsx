@@ -418,7 +418,7 @@ describe('DiagnosticsPanel cross-protocol RF', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: /other foreign lora on your meshtastic frequency \(2\)/i,
+        name: /other foreign lora overheard \(2\)/i,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText('Meshtastic Traffic')).toBeInTheDocument();
@@ -446,11 +446,11 @@ describe('DiagnosticsPanel cross-protocol RF', () => {
       screen.queryByRole('heading', { name: /meshcore nodes heard by your meshtastic radio/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: /other foreign lora on your meshtastic frequency/i }),
+      screen.queryByRole('heading', { name: /other foreign lora overheard/i }),
     ).not.toBeInTheDocument();
   });
 
-  it('hides MeshCore heard-by-Meshtastic section on MeshCore diagnostics protocol', () => {
+  it('does not show Meshtastic-keyed MeshCore-heard rows on the MeshCore tab', () => {
     const myId = 0xface;
     const foreignId = 0xabc12345;
     diagnosticsStoreState.foreignLoraDetections = new Map([
@@ -489,6 +489,46 @@ describe('DiagnosticsPanel cross-protocol RF', () => {
     expect(
       screen.queryByRole('heading', { name: /meshcore nodes heard by your meshtastic radio/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows other foreign LoRa on the MeshCore tab keyed by MeshCore self id', () => {
+    const myMcId = 0xbeef;
+    diagnosticsStoreState.foreignLoraDetections = new Map([
+      [
+        myMcId,
+        new Map([
+          [
+            'meshtastic:0x111',
+            {
+              detectedAt: Date.now(),
+              packetClass: 'meshtastic',
+              proximity: 'nearby',
+              count: 3,
+              lastSenderId: 0x111,
+              source: 'meshcore-radio-rf',
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={myMcId}
+        meshtasticListenerNodeId={0xface}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={true}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshcore"
+      />,
+    );
+
+    expect(
+      screen.getByRole('heading', { name: /other foreign lora overheard \(1\)/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Meshtastic Traffic')).toBeInTheDocument();
   });
 });
 

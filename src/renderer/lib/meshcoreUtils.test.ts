@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   coerceMeshcoreExportPrivateKeyResult,
+  formatMeshcoreAdvertisedPositionDegrees,
   isMeshcoreContactEligibleForUserGroup,
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
@@ -83,6 +84,21 @@ describe('meshcoreScaledAdvLatLonToDeg', () => {
     expect(meshcoreScaledAdvLatLonToDeg(2147483647, 45_000000)).toEqual({
       lat: null,
       lon: null,
+    });
+  });
+});
+
+describe('formatMeshcoreAdvertisedPositionDegrees', () => {
+  it('returns null when both axes are missing', () => {
+    expect(formatMeshcoreAdvertisedPositionDegrees(0, 0)).toBeNull();
+    expect(formatMeshcoreAdvertisedPositionDegrees(undefined, undefined)).toBeNull();
+    expect(formatMeshcoreAdvertisedPositionDegrees(null, null)).toBeNull();
+  });
+
+  it('formats valid scaled advert coords to fixed degrees', () => {
+    expect(formatMeshcoreAdvertisedPositionDegrees(40_194440, -105_067220)).toEqual({
+      lat: '40.19444',
+      lon: '-105.06722',
     });
   });
 });

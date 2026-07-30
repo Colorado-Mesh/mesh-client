@@ -27,7 +27,7 @@ All three protocols share one **Diagnostics** sidebar tab; sections differ by `P
 
 **LoRa routing/RF per protocol:** Switching tabs calls `clearDiagnostics({ preserveForeignLora: true })` and `runReanalysis` with that tab's `nodesForUi` and capabilities — Meshtastic anomalies are computed from Meshtastic nodes only; MeshCore from MeshCore contacts only.
 
-**Foreign LoRa overhear UI:** The MeshCore-heard and other-foreign-LoRa tables render on the **Meshtastic** tab only (`protocol === 'meshtastic'`). MeshCore may record foreign traffic internally when raw RX bytes are available, but the Diagnostics panel does not show those tables on the MeshCore tab. Reticulum RNode foreign overhear is not wired yet (sidecar packet tap exposes RNS-parsed frames only).
+**Foreign LoRa overhear UI:** The MeshCore-heard and other-foreign-LoRa tables render on the **Meshtastic** and **MeshCore** LoRa tabs when connected with a known self node id (Meshtastic detections keyed by Meshtastic self id; MeshCore foreign overhear keyed by MeshCore self id). Reticulum RNode foreign overhear is not wired yet (sidecar packet tap exposes RNS-parsed frames only).
 
 **Other surfaces:** `NodeListPanel`, `MapPanel`, and `NodeInfoBody` also call `filterDiagnosticRowsForProtocol` so inline badges and halos match the active tab.
 
@@ -177,9 +177,9 @@ These findings use packet-stats data from a MeshCore device's Repeater Status re
 
 ## 4. Foreign LoRa Detection
 
-Foreign LoRa detection identifies **non-Meshtastic** LoRa traffic observed by your connected device's radio (or, in dual-radio setups, by a MeshCore companion overheard on the Meshtastic frequency). The detection window is the **last 90 minutes**.
+Foreign LoRa detection identifies **cross-protocol / unrecognized** LoRa traffic observed by your connected device's radio (Meshtastic hearing MeshCore or unknown LoRa; MeshCore hearing Meshtastic / unknown LoRa; dual-radio setups can also bridge MeshCore RX into the Meshtastic listener map). The detection window is the **last 90 minutes**.
 
-**Diagnostics UI:** Foreign-LoRa tables appear on the **Meshtastic** protocol tab only (see **Multi-protocol tab scoping**).
+**Diagnostics UI:** Foreign-LoRa tables appear on the **Meshtastic** and **MeshCore** protocol tabs (see **Multi-protocol tab scoping**).
 
 **Signal classes:**
 

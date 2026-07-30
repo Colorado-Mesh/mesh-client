@@ -407,6 +407,26 @@ export function meshcoreScaledAdvLatLonToDeg(
 }
 
 /**
+ * Formats MeshCore advert lat/lon for Radio Panel display.
+ * Returns null when both axes are missing / invalid (nothing to show).
+ */
+export function formatMeshcoreAdvertisedPositionDegrees(
+  advLat: number | undefined | null,
+  advLon: number | undefined | null,
+  fractionDigits = 5,
+): { lat: string; lon: string } | null {
+  const { lat, lon } = meshcoreScaledAdvLatLonToDeg(
+    typeof advLat === 'number' ? advLat : 0,
+    typeof advLon === 'number' ? advLon : 0,
+  );
+  if (lat == null && lon == null) return null;
+  return {
+    lat: lat != null ? lat.toFixed(fractionDigits) : '—',
+    lon: lon != null ? lon.toFixed(fractionDigits) : '—',
+  };
+}
+
+/**
  * Cayenne LPP GPS payloads may include `altitude` in meters for {@link MeshNode.altitude}.
  * Returns `undefined` when missing or non-finite so callers do not overwrite a prior good value.
  */

@@ -3401,7 +3401,9 @@ function AppContent() {
                                   onSendPositionToDevice={
                                     capabilities.hasFullPositionConfig
                                       ? meshtasticPanelActions.sendPositionToDevice
-                                      : undefined
+                                      : capabilities.hasCompanionContactManagementConfig
+                                        ? meshcorePanelActions.sendPositionToDevice
+                                        : undefined
                                   }
                                   deviceOwner={effectiveDeviceOwner}
                                   onSetOwner={
@@ -3683,7 +3685,9 @@ function AppContent() {
                                 onReboot={
                                   capabilities.hasShutdown
                                     ? meshtasticPanelActions.reboot
-                                    : async () => {}
+                                    : capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.reboot
+                                      : async () => {}
                                 }
                                 onShutdown={
                                   capabilities.hasShutdown

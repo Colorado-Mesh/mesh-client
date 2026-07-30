@@ -1499,7 +1499,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 **Symptoms**: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.
 
-**Fix**: By design — foreign-LoRa overhear tables render on the **Meshtastic** Diagnostics tab only. MeshCore may still record overhear internally when raw RX bytes are available. Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
+**Fix**: Foreign-LoRa overhear tables render on the **Meshtastic** and **MeshCore** Diagnostics tabs (keyed by that protocol’s self node id). Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
 
 ### No signal bars on some nodes
 

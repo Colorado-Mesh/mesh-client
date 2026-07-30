@@ -45,6 +45,7 @@ import {
   meshcoreOffloadAbortRemovedCount,
 } from '../lib/meshcoreOffload';
 import {
+  formatMeshcoreAdvertisedPositionDegrees,
   MESHCORE_CHANNEL_INDEX_MAX,
   MESHCORE_CHANNEL_NAME_MAX_LEN,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
@@ -760,6 +761,10 @@ export default function RadioPanel({
     const a = ourPosition?.altitudeMeters;
     return a != null && Number.isFinite(a) ? String(a) : '0';
   });
+  /** True after the user edits lat/lon (or Use current GPS) until a successful send. */
+  const meshcorePositionFormDirtyRef = useRef(false);
+  /** Last MeshCore advert lat/lon strings applied to the form (skip overwrite while dirty). */
+  const syncedMeshcoreAdvertRef = useRef<{ lat: string; lon: string } | null>(null);
   const [gpsMode, setGpsMode] = useState(0);
   const [positionPrecision, setPositionPrecision] = useState(10);
   const [smartPositionEnabled, setSmartPositionEnabled] = useState(false);
@@ -910,6 +915,32 @@ export default function RadioPanel({
     if (a == null || !Number.isFinite(a)) return;
     setAltStr(String(a));
   }, [ourPosition?.altitudeMeters]);
+
+  // MeshCore: sync lat/lon from companion advert when the form has not been user-edited.
+  useEffect(() => {
+    if (capabilities?.hasFullPositionConfig !== false) return;
+    if (!meshcoreSelfInfo) return;
+    const { lat, lon } = meshcoreScaledAdvLatLonToDeg(
+      meshcoreSelfInfo.advLat,
+      meshcoreSelfInfo.advLon,
+    );
+    if (lat == null || lon == null) return;
+    const nextLat = String(lat);
+    const nextLon = String(lon);
+    const synced = syncedMeshcoreAdvertRef.current;
+    if (synced?.lat === nextLat && synced?.lon === nextLon) {
+      return;
+    }
+    if (meshcorePositionFormDirtyRef.current) return;
+    syncedMeshcoreAdvertRef.current = { lat: nextLat, lon: nextLon };
+    setLatStr(nextLat);
+    setLonStr(nextLon);
+  }, [
+    capabilities?.hasFullPositionConfig,
+    meshcoreSelfInfo,
+    meshcoreSelfInfo?.advLat,
+    meshcoreSelfInfo?.advLon,
+  ]);
 
   // ─── Shared state ─────────────────────────────────────────────
   const [status, setStatus] = useState<string | null>(null);
@@ -2094,12 +2125,29 @@ export default function RadioPanel({
         {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
         {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
           <div className="space-y-3 border-t border-gray-700 pt-2">
+            {capabilities?.hasFullPositionConfig === false &&
+              (() => {
+                const advertised = formatMeshcoreAdvertisedPositionDegrees(
+                  meshcoreSelfInfo?.advLat,
+                  meshcoreSelfInfo?.advLon,
+                );
+                if (!advertised) return null;
+                return (
+                  <p className="text-muted text-xs">
+                    {t('radioPanel.advertisedPositionLabel', {
+                      lat: advertised.lat,
+                      lon: advertised.lon,
+                    })}
+                  </p>
+                );
+              })()}
             <p className="text-muted text-xs">
               {t('radioPanel.setCoordinatesHint')}
               {ourPosition && (
                 <button
                   type="button"
                   onClick={() => {
+                    meshcorePositionFormDirtyRef.current = true;
                     setLatStr(String(ourPosition.lat));
                     setLonStr(String(ourPosition.lon));
                     const a = ourPosition.altitudeMeters;
@@ -2123,6 +2171,7 @@ export default function RadioPanel({
                 inputMode="decimal"
                 value={latStr}
                 onChange={(e) => {
+                  meshcorePositionFormDirtyRef.current = true;
                   setLatStr(e.target.value);
                 }}
                 disabled={disabled || applyingSection !== null}
@@ -2140,6 +2189,7 @@ export default function RadioPanel({
                 inputMode="decimal"
                 value={lonStr}
                 onChange={(e) => {
+                  meshcorePositionFormDirtyRef.current = true;
                   setLonStr(e.target.value);
                 }}
                 disabled={disabled || applyingSection !== null}
@@ -2147,23 +2197,25 @@ export default function RadioPanel({
                 className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
             </div>
-            <div className="space-y-1">
-              <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
-                {t('radioPanel.altitudeMetersLabel')}
-              </label>
-              <input
-                id="radio-fixed-alt"
-                type="text"
-                inputMode="decimal"
-                value={altStr}
-                onChange={(e) => {
-                  setAltStr(e.target.value);
-                }}
-                disabled={disabled || applyingSection !== null}
-                placeholder="0"
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
-              />
-            </div>
+            {capabilities?.hasFullPositionConfig !== false && (
+              <div className="space-y-1">
+                <label htmlFor="radio-fixed-alt" className="text-muted text-sm">
+                  {t('radioPanel.altitudeMetersLabel')}
+                </label>
+                <input
+                  id="radio-fixed-alt"
+                  type="text"
+                  inputMode="decimal"
+                  value={altStr}
+                  onChange={(e) => {
+                    setAltStr(e.target.value);
+                  }}
+                  disabled={disabled || applyingSection !== null}
+                  placeholder="0"
+                  className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            )}
             <button
               type="button"
               onClick={async () => {
@@ -2177,6 +2229,11 @@ export default function RadioPanel({
                 }
                 try {
                   await onSendPositionToDevice(lat, lon, isFinite(alt) ? alt : 0);
+                  syncedMeshcoreAdvertRef.current = {
+                    lat: String(lat),
+                    lon: String(lon),
+                  };
+                  meshcorePositionFormDirtyRef.current = false;
                   addToast(t('radioPanel.positionSent'), 'success');
                 } catch (err) {
                   console.warn(
@@ -2563,26 +2620,9 @@ export default function RadioPanel({
       {(onSendAdvert ||
         onSendZeroHopAdvert ||
         onSyncClock ||
-        capabilities?.hasCompanionContactManagementConfig ||
-        meshcoreSelfInfo) && (
+        capabilities?.hasCompanionContactManagementConfig) && (
         <div className="space-y-3">
           <h3 className="text-muted text-sm font-medium">{t('radioPanel.deviceActions')}</h3>
-          {meshcoreSelfInfo &&
-            (() => {
-              const { lat, lon } = meshcoreScaledAdvLatLonToDeg(
-                meshcoreSelfInfo.advLat,
-                meshcoreSelfInfo.advLon,
-              );
-              if (lat == null && lon == null) return null;
-              return (
-                <p className="text-muted text-xs">
-                  {t('radioPanel.advertisedPositionLabel', {
-                    lat: lat?.toFixed(5) ?? '—',
-                    lon: lon?.toFixed(5) ?? '—',
-                  })}
-                </p>
-              );
-            })()}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
             {onSendAdvert && (
               <button
