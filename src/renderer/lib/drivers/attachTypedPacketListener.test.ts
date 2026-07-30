@@ -38,7 +38,7 @@ describe('attachTypedPacketListener', () => {
   it('runs after the store mutation for the same event', () => {
     let payloadInStore: string | undefined;
     const detach = attachTypedPacketListener(ID, 'text_message', (payload) => {
-      payloadInStore = useMessageStore.getState().messages[ID]?.[payload.id]?.payload;
+      payloadInStore = useMessageStore.getState().messages[ID][payload.id].payload;
     });
 
     packetRouter.dispatch(textMessage('42'), ID);

@@ -188,7 +188,7 @@ export function applyMeshcorePathUpdated129(
   const next = new Map(prev);
   next.set(nodeId, {
     ...existing,
-    last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+    last_heard: Math.max(existing.last_heard, nowSec),
   });
   return {
     next,

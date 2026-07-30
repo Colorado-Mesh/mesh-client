@@ -16,6 +16,6 @@ export function isTransientNetworkErrorCode(code: unknown): boolean {
 
 export function isTransientNetworkError(err: Error & { code?: unknown }): boolean {
   if (isTransientNetworkErrorCode(err.code)) return true;
-  const msg = err.message ?? '';
+  const msg = err.message;
   return msg === 'Keepalive timeout' || msg === 'connack timeout';
 }

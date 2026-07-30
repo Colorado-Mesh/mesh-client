@@ -25,6 +25,7 @@ export type MeshcoreUserMessage = string | DiagnosticTextI18n | MeshcorePrefixed
 const I18N_JSON_PREFIX = '\x1eMC_I18N:';
 
 function isMeshcorePrefixedHint(msg: MeshcoreUserMessage): msg is MeshcorePrefixedHint {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   return typeof msg === 'object' && 'type' in msg && msg.type === 'prefixed';
 }
 

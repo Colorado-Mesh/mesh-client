@@ -118,7 +118,7 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
   let updater: AppUpdater;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    updater = require('electron-updater').autoUpdater as AppUpdater;
+    updater = (require('electron-updater') as { autoUpdater: AppUpdater }).autoUpdater;
   } catch (e) {
     console.error(
       '[updater] electron-updater not available:',

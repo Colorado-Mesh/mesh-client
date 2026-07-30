@@ -139,7 +139,7 @@ export function meshcoreTraceResultPackedPathLen(pathLenByte: number, traceFlags
 
 /** MeshCore companion lines that are transport metadata, not user channel chat (splitting on `:` would mispick `SNR:`). */
 export function isMeshcoreTransportStatusChatLine(text: string): boolean {
-  const t = (text ?? '').trim();
+  const t = text.trim();
   if (!t) return false;
   if (/^\s*ack\s+@/iu.test(t)) return true;
   if (/^\s*nack\s+@/iu.test(t)) return true;
@@ -368,7 +368,7 @@ export const MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS: ReadonlySet<string
 ]);
 
 export function isMeshcoreContactEligibleForUserGroup(node: Pick<MeshNode, 'hw_model'>): boolean {
-  const hw = node.hw_model ?? '';
+  const hw = node.hw_model;
   return !MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hw);
 }
 

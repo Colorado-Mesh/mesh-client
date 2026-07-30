@@ -1340,7 +1340,7 @@ export class MQTTManager extends EventEmitter {
 
     if (bytes[0] === 0x7b) {
       try {
-        const parsed = JSON.parse(new TextDecoder().decode(bytes));
+        const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
         this.handleJsonMessage(parsed, topic);
       } catch {
         // catch-no-log-ok non-JSON on topic; failure sampled via logSampledDebug (not parse error object)

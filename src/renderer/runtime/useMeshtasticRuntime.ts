@@ -1,7 +1,14 @@
 /* eslint-disable react-hooks/refs, react-hooks/set-state-in-effect, react-hooks/purity, @typescript-eslint/no-confusing-void-expression */
-import { create, toBinary } from '@bufbuild/protobuf';
+import { create, type DescMessage, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
-import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
+import {
+  Admin,
+  CannedMessages,
+  Channel as ProtobufChannel,
+  Config,
+  Mesh,
+  Portnums,
+} from '@meshtastic/protobufs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getStoreForwardHistoryProfile } from '@/renderer/lib/appSettingsStorage';
@@ -249,11 +256,33 @@ import {
 } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
-type ChannelType = Parameters<MeshDevice['setChannel']>[0];
+type CannedMessageConfigType = Parameters<MeshDevice['setCannedMessages']>[0];
 type PositionType = Parameters<MeshDevice['setPosition']>[0];
-type UserType = Parameters<MeshDevice['setOwner']>[0];
-type WaypointType = Parameters<MeshDevice['sendWaypoint']>[0];
 type RemoteConfigRoute = 'radio' | 'channelsTail' | 'owner' | 'security' | 'modules';
+
+const meshtasticChannelProtobuf = ProtobufChannel as unknown as {
+  readonly ChannelSchema: DescMessage;
+  readonly ChannelSettingsSchema: DescMessage;
+  readonly ModuleSettingsSchema: DescMessage;
+  readonly Channel_Role: { readonly DISABLED: number };
+};
+const meshtasticMeshProtobuf = Mesh as unknown as {
+  readonly UserSchema: DescMessage;
+  readonly WaypointSchema: DescMessage;
+  readonly PositionSchema: DescMessage;
+};
+const meshtasticCannedMessagesProtobuf = CannedMessages as unknown as {
+  readonly CannedMessageModuleConfigSchema: DescMessage;
+};
+const meshtasticPortnums = Portnums as unknown as {
+  readonly PortNum: { readonly ADMIN_APP: number };
+};
+
+function createMeshtasticMessage(schema: DescMessage, value: Record<string, unknown>): unknown {
+  // @meshtastic/protobufs schema namespaces lose their generated type parameters through
+  // the JSR package export; this is the single boundary where the SDK parameter type is restored.
+  return create(schema, value);
+}
 
 const BROADCAST_ADDR = 0xffffffff;
 
@@ -3242,9 +3271,7 @@ export function useMeshtasticRuntime() {
         return;
       }
       if (!deviceRef.current) return;
-      // `config` is typed as `unknown` at the call site; cast required to satisfy the SDK's
-      // setConfig overload. `as any` keeps the React Compiler memoization analysis intact.
-      await deviceRef.current.setConfig(config as any);
+      await deviceRef.current.setConfig(config as Parameters<MeshDevice['setConfig']>[0]);
     },
     [runRemoteAdminOp],
   );
@@ -3275,21 +3302,21 @@ export function useMeshtasticRuntime() {
     }) => {
       const dest = configureTargetNodeNumRef.current;
       const client = remoteAdminClientRef.current;
-      const channel = create(ProtobufChannel.ChannelSchema, {
+      const channel: unknown = createMeshtasticMessage(meshtasticChannelProtobuf.ChannelSchema, {
         index: args.index,
         role: args.role,
-        settings: create(ProtobufChannel.ChannelSettingsSchema, {
+        settings: createMeshtasticMessage(meshtasticChannelProtobuf.ChannelSettingsSchema, {
           name: args.settings.name,
           psk: args.settings.psk,
           uplinkEnabled: args.settings.uplinkEnabled,
           downlinkEnabled: args.settings.downlinkEnabled,
-          moduleSettings: create(ProtobufChannel.ModuleSettingsSchema, {
+          moduleSettings: createMeshtasticMessage(meshtasticChannelProtobuf.ModuleSettingsSchema, {
             positionPrecision: args.settings.positionPrecision,
           }),
         }),
-      }) as ChannelType;
+      });
       if (dest != null && client) {
-        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel));
+        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel as never));
         return;
       }
       if (!deviceRef.current) return;
@@ -3303,11 +3330,11 @@ export function useMeshtasticRuntime() {
       const dest = configureTargetNodeNumRef.current;
       const client = remoteAdminClientRef.current;
       if (dest != null && client) {
-        const channel = create(ProtobufChannel.ChannelSchema, {
+        const channel: unknown = createMeshtasticMessage(meshtasticChannelProtobuf.ChannelSchema, {
           index,
-          role: ProtobufChannel.Channel_Role.DISABLED,
+          role: meshtasticChannelProtobuf.Channel_Role.DISABLED,
         });
-        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel));
+        await runRemoteAdminOp(() => client.setRemoteChannel(dest, channel as never));
         return;
       }
       if (!deviceRef.current) return;
@@ -3403,13 +3430,13 @@ export function useMeshtasticRuntime() {
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {
       const dest = configureTargetNodeNumRef.current;
       const client = remoteAdminClientRef.current;
-      const user = create(Mesh.UserSchema, {
+      const user: unknown = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {
         longName: owner.longName,
         shortName: owner.shortName,
         isLicensed: owner.isLicensed,
-      }) as UserType;
+      });
       if (dest != null && client) {
-        await runRemoteAdminOp(() => client.setRemoteOwner(dest, user));
+        await runRemoteAdminOp(() => client.setRemoteOwner(dest, user as never));
         return;
       }
       if (!deviceRef.current) return;
@@ -3510,7 +3537,7 @@ export function useMeshtasticRuntime() {
   const sendWaypoint = useCallback(
     async (wp: Omit<MeshWaypoint, 'from' | 'timestamp'>, dest = 0xffffffff, channel = 0) => {
       if (!deviceRef.current) return;
-      const waypoint = create(Mesh.WaypointSchema, {
+      const waypoint: unknown = createMeshtasticMessage(meshtasticMeshProtobuf.WaypointSchema, {
         id: wp.id,
         latitudeI: Math.round(wp.latitude * 1e7),
         longitudeI: Math.round(wp.longitude * 1e7),
@@ -3519,7 +3546,7 @@ export function useMeshtasticRuntime() {
         icon: wp.icon ?? 0,
         lockedTo: wp.lockedTo ?? 0,
         expire: wp.expire ?? 0,
-      }) as WaypointType;
+      });
       beginMeshtasticNonChatOutbound();
       try {
         const wpWireId = await deviceRef.current.sendWaypoint(waypoint, dest, channel);
@@ -3583,7 +3610,10 @@ export function useMeshtasticRuntime() {
 
   const deleteWaypoint = useCallback(async (id: number) => {
     if (!deviceRef.current) return;
-    const waypoint = create(Mesh.WaypointSchema, { id, expire: 1 }) as WaypointType;
+    const waypoint: unknown = createMeshtasticMessage(meshtasticMeshProtobuf.WaypointSchema, {
+      id,
+      expire: 1,
+    });
     await deviceRef.current.sendWaypoint(waypoint, 0xffffffff, 0);
 
     const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
@@ -3639,10 +3669,9 @@ export function useMeshtasticRuntime() {
         return;
       }
       if (!deviceRef.current) return;
-      // setModuleConfig/setCannedMessages/sendPacket exist at runtime but are not in @meshtastic/js
-      // SDK types; `as any` is required because `as unknown as T` breaks the React Compiler's
-      // memoization analysis inside useCallback.
-      await (deviceRef.current as any).setModuleConfig(config);
+      await deviceRef.current.setModuleConfig(
+        config as Parameters<MeshDevice['setModuleConfig']>[0],
+      );
     },
     [runRemoteAdminOp],
   );
@@ -3656,7 +3685,11 @@ export function useMeshtasticRuntime() {
         return;
       }
       if (!deviceRef.current) return;
-      await (deviceRef.current as any).setCannedMessages({ messages: messages.join('\n') });
+      await deviceRef.current.setCannedMessages(
+        createMeshtasticMessage(meshtasticCannedMessagesProtobuf.CannedMessageModuleConfigSchema, {
+          messages: messages.join('\n'),
+        }) as CannedMessageConfigType,
+      );
     },
     [runRemoteAdminOp],
   );
@@ -3676,9 +3709,9 @@ export function useMeshtasticRuntime() {
       const msg = create(Admin.AdminMessageSchema, {
         payloadVariant: { case: 'setRingtoneMessage', value: ringtoneStr },
       });
-      await (deviceRef.current as any).sendPacket(
+      await deviceRef.current.sendPacket(
         toBinary(Admin.AdminMessageSchema, msg),
-        Portnums.PortNum.ADMIN_APP,
+        meshtasticPortnums.PortNum.ADMIN_APP,
         'self',
       );
       setRingtoneState(ringtoneStr);
@@ -3857,11 +3890,11 @@ export function useMeshtasticRuntime() {
         if (shouldSendToDevice && deviceRef.current) {
           deviceRef.current
             .setPosition(
-              create(Mesh.PositionSchema, {
+              create(meshtasticMeshProtobuf.PositionSchema, {
                 latitudeI: Math.round(pos.lat * 1e7),
                 longitudeI: Math.round(pos.lon * 1e7),
                 time: Math.floor(Date.now() / 1000),
-              }) as PositionType,
+              }) as unknown as PositionType,
             )
             .catch((e: unknown) => {
               console.debug(
@@ -3896,7 +3929,7 @@ export function useMeshtasticRuntime() {
     )
       return;
     await deviceRef.current.setPosition(
-      create(Mesh.PositionSchema, {
+      createMeshtasticMessage(meshtasticMeshProtobuf.PositionSchema, {
         latitudeI: Math.round(lat * 1e7),
         longitudeI: Math.round(lon * 1e7),
         altitude: alt ?? 0,

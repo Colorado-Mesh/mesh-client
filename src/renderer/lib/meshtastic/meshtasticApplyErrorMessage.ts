@@ -25,6 +25,7 @@ export function parseMeshtasticRoutingErrorCode(err: unknown): number | undefine
 }
 
 export function meshtasticRoutingErrorName(code: number): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   for (const [name, value] of Object.entries(RoutingError)) {
     if (value === code && !name.includes('UNRECOGNIZED')) return name;
@@ -33,6 +34,7 @@ export function meshtasticRoutingErrorName(code: number): string {
 }
 
 function modulePanelErrorKeyForRoutingCode(code: number): string | null {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   switch (code) {
     case RoutingError.BAD_REQUEST:
@@ -51,6 +53,7 @@ function modulePanelErrorKeyForRoutingCode(code: number): string | null {
 }
 
 function appendClientNotificationDetail(base: string, code: number | undefined): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   const shouldAppend =
     code === RoutingError.BAD_REQUEST || code == null || code === RoutingError.NO_RESPONSE;

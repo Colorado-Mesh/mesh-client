@@ -13,9 +13,10 @@ describe('Meshtastic Utils.toDeviceStream (core stream contract)', () => {
   it('exposes toDeviceStream.readable.pipeTo (same module resolution as MeshDevice)', () => {
     expect(typeof Utils.toDeviceStream).not.toBe('function');
     const td = Utils.toDeviceStream as TransformStream;
-    expect(td?.readable != null).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+    expect(td.readable != null).toBe(true);
     expect(typeof td.readable.pipeTo).toBe('function');
-    expect(typeof td.writable?.getWriter).toBe('function');
+    expect(typeof td.writable.getWriter).toBe('function');
   });
 });
 
@@ -48,6 +49,7 @@ describe('connectionWebStreams', () => {
 
     afterEach(() => {
       vi.restoreAllMocks();
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (savedTransformStream !== undefined) {
         globalThis.TransformStream = savedTransformStream;
       } else {

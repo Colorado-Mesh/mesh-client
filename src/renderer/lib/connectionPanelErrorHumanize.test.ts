@@ -32,6 +32,7 @@ function mockPlatform(platform: 'linux' | 'darwin' | 'win32'): void {
     });
     return;
   }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!window.electronAPI) {
     window.electronAPI = { getPlatform: vi.fn(() => platform) } as typeof window.electronAPI;
   }

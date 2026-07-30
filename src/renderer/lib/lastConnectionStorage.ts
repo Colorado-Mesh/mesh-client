@@ -134,6 +134,7 @@ export function buildMeshtasticConnectionParamsFromLastConnection(
     if (!httpAddress) return null;
     return { type: 'http', httpAddress, serialPort: null };
   }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (last.type === 'tcp') {
     const httpAddress = last.httpAddress?.trim();
     if (!httpAddress) return null;

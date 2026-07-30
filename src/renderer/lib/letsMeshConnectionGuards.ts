@@ -21,8 +21,10 @@ const V1_USERNAME_HEX = /^v1_[0-9A-Fa-f]{64}$/;
 
 /** When connecting manually (password set), username must be the meshcore v1_ form. */
 export function validateLetsMeshManualCredentials(settings: MQTTSettings): string | null {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Persisted legacy settings may omit password at runtime.
   if (!settings.password?.trim()) return null;
-  if (!V1_USERNAME_HEX.test((settings.username ?? '').trim())) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Persisted legacy settings may omit username at runtime.
+  if (!V1_USERNAME_HEX.test(settings.username?.trim() ?? '')) {
     return 'Username must be v1_ followed by 64 hex characters (public key).';
   }
   return null;

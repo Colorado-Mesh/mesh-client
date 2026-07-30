@@ -56,7 +56,7 @@ describe('failReticulumSendingOutboundToDestHash', () => {
 
     const count = failReticulumSendingOutboundToDestHash(identityId, DEST, 'send failed');
     expect(count).toBe(1);
-    expect(useMessageStore.getState().messages[identityId]?.['msg-hash']?.status).toBe('failed');
+    expect(useMessageStore.getState().messages[identityId]['msg-hash'].status).toBe('failed');
   });
 
   it('persists failed delivery_status to SQLite', () => {
@@ -116,7 +116,7 @@ describe('failReticulumSendingOutboundToDestHash', () => {
 
     const count = failReticulumSendingOutboundToDestHash(identityId, DEST, 'link timeout');
     expect(count).toBe(0);
-    expect(useMessageStore.getState().messages[identityId]?.['msg-hash']?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId]['msg-hash'].status).toBe('sending');
   });
 
   it('requires full 32-hex equality (prefix must not fail unrelated peers)', () => {
@@ -158,12 +158,12 @@ describe('failReticulumSendingOutboundToDestHash', () => {
     expect(failReticulumSendingOutboundToDestHash(identityId, peerA.slice(0, 16), 'timeout')).toBe(
       0,
     );
-    expect(useMessageStore.getState().messages[identityId]?.['msg-a']?.status).toBe('sending');
-    expect(useMessageStore.getState().messages[identityId]?.['msg-b']?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId]['msg-a'].status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId]['msg-b'].status).toBe('sending');
 
     expect(failReticulumSendingOutboundToDestHash(identityId, peerA, 'timeout')).toBe(1);
-    expect(useMessageStore.getState().messages[identityId]?.['msg-a']?.status).toBe('failed');
-    expect(useMessageStore.getState().messages[identityId]?.['msg-b']?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId]['msg-a'].status).toBe('failed');
+    expect(useMessageStore.getState().messages[identityId]['msg-b'].status).toBe('sending');
   });
 
   it('race: bridge Failed then WS sending+propagated revives via apply', () => {
@@ -191,14 +191,14 @@ describe('failReticulumSendingOutboundToDestHash', () => {
     });
 
     expect(failReticulumSendingOutboundToDestHash(identityId, DEST, 'link timeout')).toBe(1);
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('failed');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('failed');
 
     applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
       deliveryMethod: 'propagated',
     });
-    const row = useMessageStore.getState().messages[identityId]?.[messageHash];
-    expect(row?.status).toBe('sending');
-    expect(row?.reticulumDeliveryMethod).toBe('propagated');
+    const row = useMessageStore.getState().messages[identityId][messageHash];
+    expect(row.status).toBe('sending');
+    expect(row.reticulumDeliveryMethod).toBe('propagated');
   });
 });
 

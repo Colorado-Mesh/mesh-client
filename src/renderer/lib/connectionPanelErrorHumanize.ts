@@ -36,7 +36,8 @@ export function isMeshtasticLocalAddress(address: string): boolean {
 type RuntimePlatform = 'linux' | 'darwin' | 'win32' | 'unknown';
 
 function runtimePlatform(): RuntimePlatform {
-  if (typeof window !== 'undefined' && window.electronAPI?.getPlatform) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+  if (typeof window !== 'undefined' && window.electronAPI.getPlatform) {
     const platform = window.electronAPI.getPlatform();
     if (platform === 'linux' || platform === 'darwin' || platform === 'win32') {
       return platform;

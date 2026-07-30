@@ -15,11 +15,13 @@ export function mergeOfflineStoreIntoIdentity(
   if (targetIdentityId === offlineId) return;
 
   const messages = useMessageStore.getState().messages[offlineId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (messages && Object.keys(messages).length > 0) {
     upsertMessageRecordsForIdentity(targetIdentityId, Object.values(messages));
   }
 
   const offlineNodes = useNodeStore.getState().nodes[offlineId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (offlineNodes && Object.keys(offlineNodes).length > 0) {
     upsertNodeRecordsForIdentity(targetIdentityId, Object.values(offlineNodes));
   }

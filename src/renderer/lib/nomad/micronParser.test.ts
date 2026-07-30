@@ -48,7 +48,7 @@ describe('renderNomadMicronPage', () => {
     const html = renderNomadMicronPage(markup);
     const container = document.createElement('div');
     mountNomadMicronHtml(container, html);
-    const plainText = container.textContent ?? '';
+    const plainText = container.textContent;
 
     expect(plainText).toContain('Hello Nomad');
     expect(plainText).toContain('olored text');
@@ -102,7 +102,7 @@ describe('renderNomadMicronPage', () => {
     const html = renderNomadMicronPage(markup);
     const container = document.createElement('div');
     mountNomadMicronHtml(container, html);
-    const plainText = container.textContent ?? '';
+    const plainText = container.textContent;
 
     expect(plainText).toMatch(/web interface {2,}│/);
     expect(plainText).toMatch(/Connection Info, {2,}│ │/);

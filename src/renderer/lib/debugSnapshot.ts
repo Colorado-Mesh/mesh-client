@@ -162,6 +162,7 @@ export interface DebugSnapshot {
 function newestMessageTimestamp(identityId: IdentityId | null): number | null {
   if (!identityId) return null;
   const bucket = useMessageStore.getState().messages[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!bucket) return null;
   let max = 0;
   for (const row of Object.values(bucket)) {
@@ -182,6 +183,7 @@ function loadLastReadSanitizedFlag(protocol: MeshProtocol): string | null {
 function listChatMessagesForIdentity(identityId: IdentityId | null): ChatMessage[] {
   if (!identityId) return [];
   const bucket = useMessageStore.getState().messages[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!bucket) return [];
   return messageRecordsToChatMessages(Object.values(bucket));
 }

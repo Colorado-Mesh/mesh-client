@@ -65,6 +65,7 @@ export function startSerialRediscovery(opts: StartSerialRediscoveryOptions): () 
       // Re-check after await: cleanup may have run while getPorts was in flight
       // (manual connect / disconnect). Calling onFound after cancel can force a
       // reconnect to a stale port.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (cleaned) return;
       const match = ports.find((port) => {
         const id = (port as SerialPort & { portId?: string }).portId;

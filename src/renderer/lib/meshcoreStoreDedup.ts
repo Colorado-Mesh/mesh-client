@@ -76,6 +76,7 @@ export function meshcoreMessageStoreId(msg: ChatMessage): string {
       msg.sender_id > 0 ? msg.sender_id : undefined,
     );
   }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (msg.channel != null && msg.channel >= 0) {
     return meshcoreChannelMessageStoreId(
       msg.channel,
@@ -83,7 +84,7 @@ export function meshcoreMessageStoreId(msg: ChatMessage): string {
       msg.sender_id > 0 ? msg.sender_id : undefined,
     );
   }
-  return `${msg.sender_id}-${msg.timestamp}-${msg.channel ?? -1}`;
+  return `${msg.sender_id}-${msg.timestamp}-${msg.channel}`;
 }
 
 export function listChatMessagesFromStore(identityId: IdentityId): ChatMessage[] {
@@ -152,6 +153,7 @@ function findStoreRecordIdForMessage(identityId: IdentityId, msg: ChatMessage): 
   const key = meshcoreMessageDedupeKey(msg);
   const indexed = lookupMeshcoreMessageIdByDedupeKey(identityId, key);
   const byId = useMessageStore.getState().messages[identityId] ?? {};
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (indexed && byId[indexed]) {
     return indexed;
   }
@@ -171,7 +173,9 @@ function resolveExactKeyDuplicate(
 ): ChatMessage | undefined {
   const indexedId = lookupMeshcoreMessageIdByDedupeKey(identityId, incomingKey);
   if (indexedId) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
     const record = useMessageStore.getState().messages[identityId]?.[indexedId];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (record) {
       const chat = messageRecordToChatMessage(record);
       if (meshcoreMessageDedupeKey(chat) === incomingKey) {
@@ -195,6 +199,7 @@ function meshcoreIsRoomPostMessage(msg: ChatMessage): boolean {
 }
 
 function meshcoreIsBroadcastChannelMessage(msg: ChatMessage): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   return msg.channel != null && msg.channel >= 0 && msg.roomServerId == null;
 }
 
@@ -260,7 +265,7 @@ function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     ...incoming,
     timestamp,
     status,
-    payload: incoming.payload ?? existing.payload,
+    payload: incoming.payload,
     meshcoreDedupeKey: incoming.meshcoreDedupeKey ?? existing.meshcoreDedupeKey,
     sender_name: incoming.sender_name || existing.sender_name,
     receivedVia: mergeMeshcoreReceivedVia(existing.receivedVia, incoming.receivedVia),

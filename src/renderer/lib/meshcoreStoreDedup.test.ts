@@ -138,7 +138,7 @@ describe('meshcoreStoreDedup', () => {
     const result = upsertMeshcoreMessageWithDedup(ID, mqttDup);
     expect(result.inserted).toBe(false);
     expect(result.message.receivedVia).toBe('both');
-    expect(useMessageStore.getState().messages[ID]?.[result.canonicalId]?.receivedVia).toBe('both');
+    expect(useMessageStore.getState().messages[ID][result.canonicalId].receivedVia).toBe('both');
   });
 
   it('merges duplicate RF channel hears within the channel RF window', () => {
@@ -325,7 +325,7 @@ describe('meshcoreStoreDedup', () => {
     expect(result.inserted).toBe(false);
     expect(result.message.status).toBe('acked');
     expect(result.message.packetId).toBe(0xdeadbeef);
-    expect(useMessageStore.getState().messages[ID]?.[result.canonicalId]?.status).toBe('acked');
+    expect(useMessageStore.getState().messages[ID][result.canonicalId].status).toBe('acked');
   });
 
   it('merges optimistic room post failed on exact dedupe key', () => {
@@ -451,7 +451,7 @@ describe('meshcoreStoreDedup', () => {
     vi.mocked(window.electronAPI.db.saveMeshcoreMessage).mockClear();
     syncMeshcoreDisplayReplyRepairs(ID, storeRecords, repaired);
     const row = Object.values(useMessageStore.getState().messages[ID] ?? {})[0];
-    expect(row?.replyTo).toBe('99');
+    expect(row.replyTo).toBe('99');
     expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalled();
   });
 
@@ -534,7 +534,7 @@ describe('meshcoreStoreDedup', () => {
     const result = upsertMeshcoreMessageWithDedup(ID, enriched);
     expect(result.storeUpdated).toBe(true);
     expect(result.message.rxHops).toBe(3);
-    const record = useMessageStore.getState().messages[ID]?.[result.canonicalId];
+    const record = useMessageStore.getState().messages[ID][result.canonicalId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(3);
   });
@@ -555,7 +555,7 @@ describe('meshcoreStoreDedup', () => {
     const attempt = { ...channelMsg, rxHops: 5 };
     const result = upsertMeshcoreMessageWithDedup(ID, attempt);
     expect(result.message.rxHops).toBe(2);
-    const record = useMessageStore.getState().messages[ID]?.[result.canonicalId];
+    const record = useMessageStore.getState().messages[ID][result.canonicalId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(2);
   });

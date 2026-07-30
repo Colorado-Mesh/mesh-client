@@ -33,7 +33,7 @@ describe('markStaleReticulumOutboundInStore', () => {
     });
     const count = markStaleReticulumOutboundInStore(identityId);
     expect(count).toBe(1);
-    expect(useMessageStore.getState().messages[identityId]?.msg1.status).toBe('failed');
+    expect(useMessageStore.getState().messages[identityId].msg1.status).toBe('failed');
   });
 
   it('leaves recent sending messages unchanged', () => {
@@ -54,6 +54,6 @@ describe('markStaleReticulumOutboundInStore', () => {
     });
     const count = markStaleReticulumOutboundInStore(identityId);
     expect(count).toBe(0);
-    expect(useMessageStore.getState().messages[identityId]?.msg2.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId].msg2.status).toBe('sending');
   });
 });

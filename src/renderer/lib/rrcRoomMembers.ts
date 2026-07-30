@@ -60,6 +60,7 @@ export function coalesceRrcMemberRoster(
     for (let i = 0; i < base.length; i++) {
       if (used.has(i)) continue;
       const ex = base[i];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (!ex) continue;
       const incNick = inc.nickname?.trim();
       const exNick = ex.nickname?.trim();
@@ -73,6 +74,7 @@ export function coalesceRrcMemberRoster(
     if (matchIdx >= 0) {
       used.add(matchIdx);
       const ex = base[matchIdx];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (!ex) continue;
       out.push({
         identity_hash: preferIdentityHash(inc.identity_hash, ex.identity_hash),
@@ -89,6 +91,7 @@ export function coalesceRrcMemberRoster(
     for (let i = 0; i < base.length; i++) {
       if (used.has(i)) continue;
       const ex = base[i];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (ex) out.push(ex);
     }
   }
@@ -112,6 +115,7 @@ export function dedupeRrcMembers(members: RrcRoomMember[]): RrcRoomMember[] {
       continue;
     }
     const prev = out[idx];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (!prev) {
       out.push(m);
       continue;

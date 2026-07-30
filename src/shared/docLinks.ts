@@ -60,12 +60,14 @@ export function extractDocLinkTargets(content: string): string[] {
   let match: RegExpExecArray | null;
   MESH_CLIENT_BLOB_RE.lastIndex = 0;
   while ((match = MESH_CLIENT_BLOB_RE.exec(content)) !== null) {
-    targets.push(match[1]);
+    const target = match.at(1);
+    if (target !== undefined) targets.push(target);
   }
 
   RELATIVE_DOC_LINK_RE.lastIndex = 0;
   while ((match = RELATIVE_DOC_LINK_RE.exec(content)) !== null) {
-    targets.push(match[1]);
+    const target = match.at(1);
+    if (target !== undefined) targets.push(target);
   }
 
   return targets;
@@ -83,7 +85,8 @@ export function findBrokenDocLinks(repoRoot: string): BrokenDocLink[] {
     let match: RegExpExecArray | null;
     MESH_CLIENT_BLOB_RE.lastIndex = 0;
     while ((match = MESH_CLIENT_BLOB_RE.exec(content)) !== null) {
-      const target = match[1];
+      const target = match.at(1);
+      if (target === undefined) continue;
       const resolvedPath = join(repoRoot, target);
       if (!existsSync(resolvedPath)) {
         broken.push({
@@ -97,7 +100,8 @@ export function findBrokenDocLinks(repoRoot: string): BrokenDocLink[] {
 
     RELATIVE_DOC_LINK_RE.lastIndex = 0;
     while ((match = RELATIVE_DOC_LINK_RE.exec(content)) !== null) {
-      const target = match[1];
+      const target = match.at(1);
+      if (target === undefined) continue;
       const resolvedPath = join(repoRoot, target);
       if (!existsSync(resolvedPath)) {
         broken.push({

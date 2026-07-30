@@ -27,6 +27,7 @@ const EMPTY_MESSAGES: readonly ChatMessage[] = [];
 export function getIdentityNodeMap(identityId: string | null | undefined): Map<number, MeshNode> {
   if (!identityId) return new Map(EMPTY_NODES);
   const byId = useNodeStore.getState().nodes[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!byId) return new Map(EMPTY_NODES);
   return nodeRecordsToMeshNodeMap(Object.values(byId));
 }
@@ -37,7 +38,9 @@ export function getIdentityNode(
   nodeId: number,
 ): MeshNode | undefined {
   if (!identityId || !nodeId) return undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   return record ? nodeRecordToMeshNode(record) : undefined;
 }
 
@@ -45,6 +48,7 @@ export function getIdentityNode(
 export function getIdentityChatMessages(identityId: string | null | undefined): ChatMessage[] {
   if (!identityId) return [...EMPTY_MESSAGES];
   const byId = useMessageStore.getState().messages[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!byId) return [...EMPTY_MESSAGES];
   return messageRecordsToChatMessages(Object.values(byId));
 }

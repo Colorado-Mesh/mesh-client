@@ -159,7 +159,9 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
 
 describe('useReticulumRuntime RMAP discovery map', () => {
   it('routes rmap.discovery WS events through setDiscovered', () => {
-    expect(SOURCE).toMatch(/evt\.type === 'rmap\.discovery'[\s\S]*?setDiscovered\(p\.discovered\)/);
+    expect(SOURCE).toMatch(
+      /evt\.type === 'rmap\.discovery'[\s\S]*?setDiscovered\(normalizeRmapDiscoveryRows\(p\.discovered\)\)/,
+    );
   });
 
   it('clears discovery map and peer store on disconnect and sidecar stop', () => {

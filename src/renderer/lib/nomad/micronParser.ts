@@ -340,6 +340,7 @@ export function normalizeNomadPageRequestData(
   data?: NomadPageRequestData | null,
 ): NomadPageRequestData | undefined {
   if (!data) return undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   const entries = Object.entries(data).filter(([, v]) => v != null && v !== '');
   if (entries.length === 0) return undefined;
   return Object.fromEntries(entries);

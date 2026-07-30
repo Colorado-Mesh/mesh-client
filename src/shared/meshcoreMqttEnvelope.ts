@@ -16,21 +16,22 @@ export function tryParseMeshcoreMqttChatEnvelope(raw: string): MeshcoreMqttChatE
     if (typeof o.text !== 'string' || o.text.length > 16000) return null;
     const ch = Number(o.channelIdx);
     if (!Number.isFinite(ch) || ch < 0 || ch > 255) return null;
+    const senderName = typeof o.senderName === 'string' ? o.senderName.slice(0, 200) : undefined;
+    const senderNodeId =
+      o.senderNodeId != null &&
+      Number.isFinite(Number(o.senderNodeId)) &&
+      Number(o.senderNodeId) >= 0
+        ? Number(o.senderNodeId) >>> 0
+        : undefined;
+    const timestamp =
+      o.timestamp != null && Number.isFinite(Number(o.timestamp)) ? Number(o.timestamp) : undefined;
     return {
       v: 1,
       text: o.text,
       channelIdx: ch,
-      senderName: typeof o.senderName === 'string' ? o.senderName.slice(0, 200) : undefined,
-      senderNodeId:
-        o.senderNodeId != null &&
-        Number.isFinite(Number(o.senderNodeId)) &&
-        Number(o.senderNodeId) >= 0
-          ? Number(o.senderNodeId) >>> 0
-          : undefined,
-      timestamp:
-        o.timestamp != null && Number.isFinite(Number(o.timestamp))
-          ? Number(o.timestamp)
-          : undefined,
+      ...(senderName !== undefined ? { senderName } : {}),
+      ...(senderNodeId !== undefined ? { senderNodeId } : {}),
+      ...(timestamp !== undefined ? { timestamp } : {}),
     };
   } catch {
     return null;

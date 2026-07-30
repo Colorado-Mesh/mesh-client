@@ -62,7 +62,7 @@ function rendererLikelyWin32(): boolean {
     // catch-no-log-ok process access can throw in renderer bundles
   }
   if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent ?? '';
+  const ua = navigator.userAgent;
   if (/Windows/i.test(ua)) return true;
   const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
     ?.platform;
@@ -77,7 +77,7 @@ function rendererLikelyLinux(): boolean {
     // catch-no-log-ok process access can throw in renderer bundles
   }
   if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent ?? '';
+  const ua = navigator.userAgent;
   if (/Linux/i.test(ua)) return true;
   const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
     ?.platform;

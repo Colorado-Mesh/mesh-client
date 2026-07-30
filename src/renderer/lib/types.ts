@@ -130,10 +130,10 @@ export function nodeAnomalyToRoutingRow(a: NodeAnomaly): RoutingDiagnosticRow {
     severity: a.severity,
     description: a.description,
     detectedAt: a.detectedAt,
-    snr: a.snr,
-    hopsAway: a.hopsAway,
-    confidence: a.confidence,
-    descriptionI18n: a.descriptionI18n,
+    ...(a.snr !== undefined ? { snr: a.snr } : {}),
+    ...(a.hopsAway !== undefined ? { hopsAway: a.hopsAway } : {}),
+    ...(a.confidence !== undefined ? { confidence: a.confidence } : {}),
+    ...(a.descriptionI18n !== undefined ? { descriptionI18n: a.descriptionI18n } : {}),
   };
 }
 
@@ -144,10 +144,10 @@ export function routingRowToNodeAnomaly(r: RoutingDiagnosticRow): NodeAnomaly {
     severity: r.severity,
     description: r.description,
     detectedAt: r.detectedAt,
-    snr: r.snr,
-    hopsAway: r.hopsAway,
-    confidence: r.confidence,
-    descriptionI18n: r.descriptionI18n,
+    ...(r.snr !== undefined ? { snr: r.snr } : {}),
+    ...(r.hopsAway !== undefined ? { hopsAway: r.hopsAway } : {}),
+    ...(r.confidence !== undefined ? { confidence: r.confidence } : {}),
+    ...(r.descriptionI18n !== undefined ? { descriptionI18n: r.descriptionI18n } : {}),
   };
 }
 

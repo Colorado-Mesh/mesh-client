@@ -18,12 +18,12 @@ afterEach(() => {
 
 /** Fail tests on [object Object] in console.warn (use mockConsoleWarn when expecting warnings). */
 const originalConsoleWarn = console.warn.bind(console);
-console.warn = (...args: Parameters<typeof console.warn>) => {
+console.warn = (...args: unknown[]) => {
   const text = args.map(String).join(' ');
   if (text.includes('[object Object]')) {
     throw new Error(`Unexpected console.warn containing [object Object]: ${text}`);
   }
-  originalConsoleWarn(...args);
+  Reflect.apply(originalConsoleWarn, console, args);
 };
 
 // Node.js 25+ exposes a native localStorage global that emits a warning when accessed

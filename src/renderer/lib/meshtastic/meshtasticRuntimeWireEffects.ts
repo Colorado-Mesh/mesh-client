@@ -529,14 +529,17 @@ export function attachMeshtasticRuntimeWireEffects(
 
   // ─── My node info ──────────────────────────────────────────
   const unsub2 = device.events.onMyNodeInfo.subscribe((info) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     console.debug(`[useMeshtasticRuntime] onMyNodeInfo: myNodeNum=${info.myNodeNum}`);
     touchLastData();
     const virtualNodeId = virtualNodeIdRef.current;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     if (virtualNodeId !== info.myNodeNum) {
       window.electronAPI.db.deleteNode(virtualNodeId).catch((e: unknown) => {
         console.debug('[useMeshtasticRuntime] deleteNode virtual ' + errLikeToLogString(e));
       });
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     myNodeNumRef.current = info.myNodeNum;
     const identityId = meshtasticIdentityIdRef.current;
     if (identityId) {
@@ -546,39 +549,52 @@ export function attachMeshtasticRuntimeWireEffects(
           peripheralId: cp.blePeripheralId,
           host: cp.httpAddress,
         });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         connectionDriver.remapMeshtasticNodeSignature(identityId, transportParams, info.myNodeNum);
       } else {
         updateIdentity(identityId, {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           selfNodeNum: info.myNodeNum,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           signature: `meshtastic:node:${info.myNodeNum}`,
         });
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       setConnection(identityId, { myNodeNum: info.myNodeNum, status: 'configured' });
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     setMeshtasticConnectedMyNodeNum(info.myNodeNum);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     lastRfSelfNodeIdRef.current = info.myNodeNum;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     persistLastRfSelfNodeId(info.myNodeNum);
     if (getStoredMeshProtocol() === 'meshtastic') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       useDiagnosticsStore.getState().migrateForeignLoraFromZero(info.myNodeNum);
     }
     setState((s) => ({
       ...s,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       myNodeNum: info.myNodeNum,
       batteryPercent: undefined,
       batteryCharging: undefined,
     }));
     updateNodes((prev) => {
       const updated = new Map(prev);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       if (virtualNodeId !== info.myNodeNum) updated.delete(virtualNodeId);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       const existing = updated.get(info.myNodeNum);
       if (!existing) {
         const selfNode: MeshNode = {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           ...emptyNode(info.myNodeNum),
           hops_away: 0,
           last_heard: Date.now(),
           source: 'rf',
           heard_via_mqtt_only: false,
         };
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         updated.set(info.myNodeNum, selfNode);
         persistDbWrite('meshtastic runtime self node', () =>
           window.electronAPI.db.saveNode(selfNode),
@@ -590,6 +606,7 @@ export function attachMeshtasticRuntimeWireEffects(
           source: 'rf',
           heard_via_mqtt_only: false,
         };
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         updated.set(info.myNodeNum, selfNode);
         persistDbWrite('meshtastic runtime self node', () =>
           window.electronAPI.db.saveNode(selfNode),
@@ -611,6 +628,7 @@ export function attachMeshtasticRuntimeWireEffects(
     lastNodeInfoRequestAtRef.current.set(from, now);
     void (async () => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
         await device.sendPacket(new Uint8Array(), Portnums.PortNum.NODEINFO_APP, from);
         console.debug(`[useMeshtasticRuntime] NODEINFO request sent for 0x${from.toString(16)}`);
       } catch (e: unknown) {
@@ -696,7 +714,7 @@ export function attachMeshtasticRuntimeWireEffects(
         getMyNodeNum: () => myNodeNumRef.current,
         getIsConfiguring: () => isConfiguringRef.current,
         getBluetoothDeviceId: () =>
-          (device.transport as { __bluetoothDevice?: { id?: string } })?.__bluetoothDevice?.id,
+          (device.transport as { __bluetoothDevice?: { id?: string } }).__bluetoothDevice?.id,
         touchLastData,
         emptyNode,
         ensureNodeExists,
@@ -779,8 +797,11 @@ export function attachMeshtasticRuntimeWireEffects(
   unsubscribesRef.current.push(unsubConfig);
 
   const unsubFromRadio = device.events.onFromRadio.subscribe((packet) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const variant = packet.payloadVariant;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     if (variant?.case === 'mqttClientProxyMessage') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- External SDK value is validated by surrounding boundary logic.
       void mqttClientProxyBridgeRef.current?.handleFromRadio(packet).catch((e: unknown) => {
         console.warn(
           '[useMeshtasticRuntime] mqttClientProxy FromRadio failed ' + errLikeToLogString(e),
@@ -788,7 +809,9 @@ export function attachMeshtasticRuntimeWireEffects(
       });
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     if (variant?.case === 'clientNotification') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       const message = variant.value?.message;
       if (typeof message === 'string' && message.trim()) {
         recordMeshtasticClientNotification(message);

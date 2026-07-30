@@ -23,7 +23,8 @@ const RETICULUM_VACUUM_LAST_MS_KEY = 'mesh-client:lastReticulumVacuumMs';
  */
 export function scheduleReticulumVacuumIfNeeded(): void {
   if (reticulumVacuumScheduled) return;
-  if (typeof window === 'undefined' || !window.electronAPI?.db?.vacuumReticulumTables) return;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+  if (typeof window === 'undefined' || !window.electronAPI.db.vacuumReticulumTables) return;
 
   let lastMs = 0;
   try {

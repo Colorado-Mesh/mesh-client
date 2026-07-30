@@ -23,13 +23,14 @@ function pubKeyPrefixHexFromRow(row: MeshcoreContactDbRow): string {
 export async function fetchMeshcoreContactPathDiagnostics(): Promise<
   MeshcoreContactPathDiagnosticRow[]
 > {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (typeof window === 'undefined' || !window.electronAPI?.db?.getMeshcoreContacts) {
     return [];
   }
   try {
     const [contacts, pathRows] = await Promise.all([
       window.electronAPI.db.getMeshcoreContacts() as Promise<MeshcoreContactDbRow[]>,
-      window.electronAPI.db.getAllMeshcorePathHistory?.() ?? Promise.resolve([]),
+      window.electronAPI.db.getAllMeshcorePathHistory(),
     ]);
     const bestByNode = new Map<
       number,
@@ -57,7 +58,7 @@ export async function fetchMeshcoreContactPathDiagnostics(): Promise<
       ) {
         bestByNode.set(row.node_id, {
           pathBytes,
-          hopCount: row.hop_count ?? null,
+          hopCount: row.hop_count,
           successCount: row.success_count,
         });
       }
@@ -69,7 +70,7 @@ export async function fetchMeshcoreContactPathDiagnostics(): Promise<
         advName: row.adv_name,
         hopsAway: row.hops_away,
         contactType: row.contact_type,
-        onRadio: row.on_radio ?? 0,
+        onRadio: row.on_radio,
         lastAdvert: row.last_advert,
         pubKeyPrefixHex: pubKeyPrefixHexFromRow(row),
         bestPathBytes: best?.pathBytes ?? [],

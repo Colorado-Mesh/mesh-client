@@ -162,7 +162,7 @@ function updateKnownMeshtasticSenderNode(
   const storeId = deps.meshcoreIdentityIdRef.current;
   if (!existing || !storeId) return;
   const nowSec = Math.floor(now / 1000);
-  const nextLastHeard = Math.max(existing.last_heard ?? 0, nowSec);
+  const nextLastHeard = Math.max(existing.last_heard, nowSec);
   if (existing.last_heard === nextLastHeard && existing.snr === snr && existing.rssi === rssi) {
     return;
   }
@@ -299,7 +299,7 @@ export function applyMeshcoreRfHopsAwayUpdate(
     hops_away: mergedHopsAway ?? hopCount,
     snr,
     rssi,
-    last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+    last_heard: Math.max(existing.last_heard, nowSec),
     source: 'rf',
     heard_via_mqtt_only: false,
     via_mqtt: false,
@@ -461,7 +461,7 @@ function finalizeMeshcoreRfBridgeIdentity(
     rfSenderId = myNodeNum;
     rfDisplayName =
       rfDisplayName ??
-      deps.selfInfoRef.current?.name?.trim() ??
+      deps.selfInfoRef.current?.name.trim() ??
       meshcoreNodes.get(myNodeNum)?.long_name ??
       meshcoreNodes.get(myNodeNum)?.short_name ??
       deps.nicknameMapRef.current.get(myNodeNum);

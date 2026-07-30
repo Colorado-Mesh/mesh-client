@@ -135,9 +135,9 @@ describe('attachMeshcoreIngest', () => {
         timestamp: 1_700_000_000_099,
       },
     });
-    const row = useMessageStore.getState().messages[ID]?.[msgId];
-    expect(row?.from).toBe(0);
-    expect(row?.from).not.toBe(MESHCORE_UNKNOWN_SENDER_STUB_ID);
+    const row = useMessageStore.getState().messages[ID][msgId];
+    expect(row.from).toBe(0);
+    expect(row.from).not.toBe(MESHCORE_UNKNOWN_SENDER_STUB_ID);
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({ sender_id: null, sender_name: 'Unknown' }),
     );
@@ -227,9 +227,9 @@ describe('attachMeshcoreIngest', () => {
         timestamp: 1_700_000_000_001,
       },
     });
-    const row = useMessageStore.getState().messages[ID]?.[incomingId];
-    expect(row?.from).toBe(namedId);
-    expect(row?.senderName).toBe('Alice');
+    const row = useMessageStore.getState().messages[ID][incomingId];
+    expect(row.from).toBe(namedId);
+    expect(row.senderName).toBe('Alice');
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({ sender_id: namedId, sender_name: 'Alice', payload: 'T' }),
     );
@@ -274,10 +274,10 @@ describe('attachMeshcoreIngest', () => {
         roomServerId: roomId,
       },
     });
-    const row = useMessageStore.getState().messages[ID]?.[msgId];
-    expect(row?.roomServerId).toBe(roomId);
-    expect(row?.channelIndex).toBe(-2);
-    expect(row?.payload).toBe('Hi room');
+    const row = useMessageStore.getState().messages[ID][msgId];
+    expect(row.roomServerId).toBe(roomId);
+    expect(row.channelIndex).toBe(-2);
+    expect(row.payload).toBe('Hi room');
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({ room_server_id: roomId, channel_idx: -2, payload: 'Hi room' }),
     );
@@ -321,10 +321,10 @@ describe('attachMeshcoreIngest', () => {
         roomServerId: roomId,
       },
     });
-    const row = useMessageStore.getState().messages[ID]?.[msgId];
-    expect(row?.roomServerId).toBe(roomId);
-    expect(row?.payload).toBe('Bot Stats (24h):');
-    expect(row?.channelIndex).toBe(-2);
+    const row = useMessageStore.getState().messages[ID][msgId];
+    expect(row.roomServerId).toBe(roomId);
+    expect(row.payload).toBe('Bot Stats (24h):');
+    expect(row.channelIndex).toBe(-2);
   });
 
   it('strips binary author prefix on PLAIN txtType from known room server (official app)', () => {
@@ -377,9 +377,9 @@ describe('attachMeshcoreIngest', () => {
         roomServerId: roomId,
       },
     });
-    const row = useMessageStore.getState().messages[ID]?.[msgId];
-    expect(row?.payload).toBe('Test from og app');
-    expect(row?.senderName).toBe('OfficialUser');
+    const row = useMessageStore.getState().messages[ID][msgId];
+    expect(row.payload).toBe('Test from og app');
+    expect(row.senderName).toBe('OfficialUser');
   });
 
   it('parses SignedPlain room posts when room node is not yet in nodeStore', () => {
@@ -407,9 +407,9 @@ describe('attachMeshcoreIngest', () => {
         roomServerId: roomId,
       },
     });
-    const row = useMessageStore.getState().messages[ID]?.[msgId];
-    expect(row?.payload).toBe('Posted early');
-    expect(row?.roomServerId).toBe(roomId);
+    const row = useMessageStore.getState().messages[ID][msgId];
+    expect(row.payload).toBe('Posted early');
+    expect(row.roomServerId).toBe(roomId);
   });
 
   it('parses inbound tapback wire text into messageStore with emoji + replyTo', () => {
@@ -535,7 +535,10 @@ describe('attachMeshcoreIngest', () => {
         timestamp: 1_700_000_000_300,
       },
     });
+    // Identity bucket may be absent when no nodes were upserted for this identity.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- store bucket optional at runtime
     expect(useNodeStore.getState().nodes[ID]?.[botId]).toBeUndefined();
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- store bucket optional at runtime
     expect(useNodeStore.getState().nodes[ID]?.[MESHCORE_UNKNOWN_SENDER_STUB_ID]).toBeUndefined();
   });
 });
@@ -601,7 +604,7 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     });
     dispatchChannelText();
     detach();
-    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(2);
   });
@@ -637,7 +640,7 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
       ID,
     );
     detach();
-    const record = useMessageStore.getState().messages[ID]?.[dmMsgId];
+    const record = useMessageStore.getState().messages[ID][dmMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(1);
   });
@@ -650,7 +653,7 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     });
     dispatchChannelText({ hopCount: 4 });
     detach();
-    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(4);
   });
@@ -664,7 +667,7 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     });
     dispatchChannelText();
     detach();
-    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(5);
   });
@@ -673,7 +676,7 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     const detach = attachMeshcoreIngest(ID);
     dispatchChannelText();
     detach();
-    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBeUndefined();
   });

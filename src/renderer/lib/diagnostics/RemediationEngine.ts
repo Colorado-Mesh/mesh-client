@@ -106,7 +106,7 @@ export function getRecommendedAction(
   packetStats: { total: number; duplicates: number } | undefined,
 ): DiagnosticRemedy | null {
   const distMiles =
-    homeNode?.latitude && homeNode?.longitude && node.latitude && node.longitude
+    homeNode?.latitude && homeNode.longitude && node.latitude && node.longitude
       ? haversineDistanceKm(homeNode.latitude, homeNode.longitude, node.latitude, node.longitude) *
         0.621371
       : null;

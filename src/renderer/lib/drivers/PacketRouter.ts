@@ -45,9 +45,12 @@ import type { IdentityId } from '../types';
 
 function resolveMeshtasticSenderName(identityId: IdentityId, from: number): string | undefined {
   if (from <= 0) return undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const node = useNodeStore.getState().nodes[identityId]?.[from];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
   const shortName = node?.shortName?.trim();
   if (shortName) return shortName;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
   const longName = node?.longName?.trim();
   if (longName) return longName.length > 7 ? longName.slice(0, 7) : longName;
   return formatMeshtasticNodeId(from);
@@ -100,6 +103,7 @@ function findRoomPostOptimistic(
   event: Extract<DomainEvent, { type: 'text_message' }>['payload'],
 ): (typeof records)[number] | undefined {
   const roomServerId = event.roomServerId ?? event.from;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (roomServerId == null || roomServerId === 0) return undefined;
   const isRoomWire =
     event.roomServerId != null ||
@@ -207,7 +211,9 @@ class PacketRouter {
           if (roomOptimistic) {
             renameMessageId(identityId, roomOptimistic.id, event.payload.id);
             if (roomOptimistic.status === 'sending' && event.payload.tapback) {
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
               const renamed = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
               if (renamed) {
                 upsertMessage(identityId, { ...renamed, status: 'acked' });
               }
@@ -242,9 +248,12 @@ class PacketRouter {
           });
         }
         const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
         const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
+        const existingReceivedVia = existingRecord?.receivedVia;
         const receivedVia =
-          existingRecord?.receivedVia === 'mqtt' || existingRecord?.receivedVia === 'both'
+          existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
             ? ('both' as const)
             : ('rf' as const);
         upsertMessage(identityId, {

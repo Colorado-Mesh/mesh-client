@@ -57,7 +57,7 @@ export function computeNodeInfoLastHeardMs(
     const maxMs = Date.now() + LAST_HEARD_MAX_FUTURE_SKEW_SEC * 1000;
     fromInfo = ms > maxMs ? Date.now() : ms;
   }
-  const selfFallback = isSelf && fromInfo === 0 && (existingLastHeard ?? 0) === 0 ? Date.now() : 0;
+  const selfFallback = isSelf && fromInfo === 0 && existingLastHeard === 0 ? Date.now() : 0;
   return Math.max(fromInfo, existingLastHeard || 0, selfFallback);
 }
 

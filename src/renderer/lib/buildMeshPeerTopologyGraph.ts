@@ -61,14 +61,14 @@ function effectiveHops(node: MeshNode): number | null {
 export function isMeshPeerOnline(node: MeshNode, nowMs: number = Date.now()): boolean {
   const hops = effectiveHops(node);
   if (hops != null && hops >= 0) return true;
-  const lastHeard = node.last_heard ?? 0;
+  const lastHeard = node.last_heard;
   if (lastHeard <= 0) return false;
   return nowMs - lastHeard < MS_PER_HOUR;
 }
 
 function nodeLabel(node: MeshNode): string {
   return (
-    node.short_name?.trim() || node.long_name?.trim() || `!${node.node_id.toString(16).slice(-4)}`
+    node.short_name.trim() || node.long_name.trim() || `!${node.node_id.toString(16).slice(-4)}`
   );
 }
 
@@ -112,6 +112,7 @@ export function isMeshRelayHubCandidate(node: MeshNode, distantChildCount: numbe
 function relayHubScore(node: MeshNode, distantChildCount: number, nowMs: number): number {
   const health = nodeHealthScore(node, nowMs).total;
   const recency =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     node.last_heard != null && node.last_heard > 0
       ? Math.max(0, 100 - (nowMs - node.last_heard) / MS_PER_HOUR)
       : 0;

@@ -67,7 +67,9 @@ function listChatMessages(identityId: IdentityId) {
 }
 
 function persistNode(identityId: IdentityId, nodeId: number): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!record) return;
   const meshNode = nodeRecordToMeshNode(record);
   if (meshcoreHwModelIsContactTypeLabel(meshNode.hw_model)) return;
@@ -88,7 +90,9 @@ function handleTextMessage(
   });
   persistNode(identityId, event.payload.from);
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!record) return;
 
   const incoming = messageRecordToChatMessage(record);

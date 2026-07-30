@@ -70,7 +70,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
       try {
         let graceExpiresAt = graceExpiresAtRef.current;
         const coexist =
-          (await window.electronAPI?.bleCoexistence?.getState?.().catch(() => null)) ?? null;
+          (await window.electronAPI.bleCoexistence.getState().catch(() => null)) ?? null;
         // Stack restart: main re-acquires scan after we already released (yield inactive,
         // grace stale). Do NOT renew while yield is still active — that infinitely extends
         // the hold when an offline BLE RNode never comes up and starves Meshtastic.

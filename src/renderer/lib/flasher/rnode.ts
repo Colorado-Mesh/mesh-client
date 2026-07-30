@@ -193,6 +193,7 @@ export class RNode {
   private onCommandReceived(data: number[]): void {
     try {
       const [command, ...bytes] = data;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       if (command === undefined) return;
       const callback = this.callbacks.get(command);
       if (!callback) return;
@@ -316,6 +317,7 @@ export class RNode {
     const response = await this.sendCommand(RNode.CMD_FW_VERSION, [0x00]);
     const [majorVersion, minorVersionRaw] = response;
     let minorVersion = minorVersionRaw;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (minorVersion !== undefined && String(minorVersion).length === 1) {
       minorVersion = Number(`0${minorVersion}`);
     }

@@ -311,7 +311,7 @@ export async function applyDefaultHubPresetsSync(
       ok?: boolean;
       error?: string;
     };
-    if (res?.ok === false) {
+    if (res.ok === false) {
       result.failed.push({
         presetId: endpoint.id,
         phase: 'disable',
@@ -332,7 +332,7 @@ export async function applyDefaultHubPresetsSync(
       ok?: boolean;
       error?: string;
     };
-    if (res?.ok === false) {
+    if (res.ok === false) {
       result.failed.push({
         presetId: preset.id,
         phase: 'repair',
@@ -358,7 +358,7 @@ export async function applyDefaultHubPresetsSync(
       ok?: boolean;
       error?: string;
     };
-    if (res?.ok === false) {
+    if (res.ok === false) {
       result.failed.push({
         presetId: preset.id,
         phase: 'add',

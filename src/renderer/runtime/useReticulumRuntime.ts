@@ -132,7 +132,10 @@ import {
 } from '../stores/messageStore';
 import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
-import { useReticulumDiscoveryMapStore } from '../stores/reticulumDiscoveryMapStore';
+import {
+  normalizeRmapDiscoveryRows,
+  useReticulumDiscoveryMapStore,
+} from '../stores/reticulumDiscoveryMapStore';
 import {
   parseAnnounceActivityRows,
   useReticulumIdentityActivityStore,
@@ -698,7 +701,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { discovered?: unknown };
         if (Array.isArray(p.discovered)) {
-          useReticulumDiscoveryMapStore.getState().setDiscovered(p.discovered);
+          useReticulumDiscoveryMapStore
+            .getState()
+            .setDiscovered(normalizeRmapDiscoveryRows(p.discovered));
         }
       }
       if (evt.type === 'nomadnetwork.node') {

@@ -11,7 +11,8 @@ import type { MeshProtocol } from './types';
 
 /** True when the renderer uses Noble IPC for BLE (macOS / Windows), not Web Bluetooth. */
 export function isRendererNobleBlePlatform(): boolean {
-  if (typeof window !== 'undefined' && window.electronAPI?.getPlatform) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+  if (typeof window !== 'undefined' && window.electronAPI.getPlatform) {
     return window.electronAPI.getPlatform() !== 'linux';
   }
   try {
@@ -20,7 +21,7 @@ export function isRendererNobleBlePlatform(): boolean {
     // catch-no-log-ok process may be unavailable in some renderer bundles
   }
   if (typeof navigator === 'undefined') return true;
-  const ua = navigator.userAgent ?? '';
+  const ua = navigator.userAgent;
   if (/Linux/i.test(ua)) return false;
   const plat = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
     ?.platform;

@@ -30,7 +30,7 @@ export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
   if (isLetsMeshSettings(settings.server)) {
     return meshcoreIdentityHasPrivateKey();
   }
-  return Boolean(settings.password?.trim());
+  return Boolean(settings.password.trim());
 }
 
 /** Connect MQTT for `prot` when `autoLaunch` is enabled in persisted settings. */
@@ -76,7 +76,7 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
       return;
     }
     const identity = await readMeshcoreIdentityAsync();
-    const hasFull = !!(identity?.private_key && identity?.public_key);
+    const hasFull = !!(identity?.private_key && identity.public_key);
     if (hasFull) {
       try {
         const u = letsMeshMqttUsernameFromIdentity(identity);
@@ -94,7 +94,7 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
         return;
       }
     } else {
-      if (!connectSettings.password?.trim()) {
+      if (!connectSettings.password.trim()) {
         console.warn(
           '[App] MQTT auto-launch skipped: LetsMesh needs imported identity or password',
         );

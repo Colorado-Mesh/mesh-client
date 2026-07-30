@@ -14,6 +14,7 @@ export function policiesToRncpLists(
     const hash = row.identity_hash.trim().toLowerCase();
     if (!hash) continue;
     if (row.decision === 'allow') allowed.push(hash);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     else if (row.decision === 'block') blocked.push(hash);
   }
   return { allowed, blocked };

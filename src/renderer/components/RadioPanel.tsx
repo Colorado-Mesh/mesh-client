@@ -82,6 +82,15 @@ interface ChannelConfig {
   positionPrecision: number;
 }
 
+function isStringKeyedRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function numericArray(value: unknown): number[] | null {
+  if (!Array.isArray(value) || !value.every((entry) => typeof entry === 'number')) return null;
+  return value;
+}
+
 interface Props {
   configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
@@ -1150,14 +1159,16 @@ export default function RadioPanel({
       if (!file) return;
       void (async () => {
         try {
-          const cfg = JSON.parse(await file.text());
+          const parsed: unknown = JSON.parse(await file.text());
+          if (!isStringKeyedRecord(parsed)) throw new Error('Invalid config JSON');
+          const cfg = parsed;
           console.debug('[RadioPanel] parsed config JSON:', cfg);
           console.debug(
             `[RadioPanel] current device state before import: radioFreqHz=${radioFreqHz} bandwidth=${bandwidth}`,
           );
 
           // ── Extract values ───────────────────────────────────────────
-          const importedName = cfg.name ? String(cfg.name) : null;
+          const importedName = typeof cfg.name === 'string' && cfg.name ? cfg.name : null;
           let importedFreqHz: number | null = null;
           let importedBwKhz: number | null = null;
           let importedSf: number | null = null;
@@ -1166,7 +1177,7 @@ export default function RadioPanel({
 
           if (importedName) setLongName(importedName);
 
-          if (cfg.radio_settings) {
+          if (isStringKeyedRecord(cfg.radio_settings)) {
             const rs = cfg.radio_settings;
             console.debug(
               `[RadioPanel] radio_settings from config: frequency=${rs.frequency} bandwidth=${rs.bandwidth} spreading_factor=${rs.spreading_factor} coding_rate=${rs.coding_rate} tx_power=${rs.tx_power}`,
@@ -1204,20 +1215,14 @@ export default function RadioPanel({
 
           if (cfg.public_key || cfg.private_key) {
             try {
-              const pubArr = Array.isArray(cfg.public_key)
-                ? Uint8Array.from(cfg.public_key as number[])
-                : null;
-              const privArr = Array.isArray(cfg.private_key)
-                ? Uint8Array.from(cfg.private_key as number[])
-                : null;
+              const publicKeyNumbers = numericArray(cfg.public_key);
+              const privateKeyNumbers = numericArray(cfg.private_key);
+              const pubArr = publicKeyNumbers ? Uint8Array.from(publicKeyNumbers) : null;
+              const privArr = privateKeyNumbers ? Uint8Array.from(privateKeyNumbers) : null;
               if (pubArr?.length === 32 && privArr && privArr.length >= 32) {
                 void tryPersistMeshcoreIdentityFromRadioExport(pubArr, privArr);
               } else {
-                const publicKeyJson = Array.isArray(cfg.public_key)
-                  ? cfg.public_key
-                  : pubArr
-                    ? Array.from(pubArr)
-                    : cfg.public_key;
+                const publicKeyJson = publicKeyNumbers ?? cfg.public_key;
                 const privateKeyJson = privArr ? Array.from(privArr) : cfg.private_key;
                 localStorage.setItem(
                   'mesh-client:meshcoreIdentity',

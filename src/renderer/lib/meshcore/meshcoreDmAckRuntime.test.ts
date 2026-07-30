@@ -68,7 +68,7 @@ describe('meshcoreDmAckRuntime', () => {
       status: 'sending',
     });
     expect(syncMeshcoreDmAckToMessageStore(ID, 42, 1, 'acked')).toBe(true);
-    expect(useMessageStore.getState().messages[ID]?.['42']?.status).toBe('acked');
+    expect(useMessageStore.getState().messages[ID]['42'].status).toBe('acked');
   });
 
   it('does not apply ambiguous single-inflight DM ack fallback', () => {
@@ -91,7 +91,7 @@ describe('meshcoreDmAckRuntime', () => {
       status: 'sending',
     });
     expect(syncMeshcoreDmAckToMessageStore(ID, 42, 1, 'acked')).toBe(false);
-    expect(useMessageStore.getState().messages[ID]?.['temp-pending']?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[ID]['temp-pending'].status).toBe('sending');
     expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('dropping unmatched DM ack'));
   });
 
@@ -123,7 +123,7 @@ describe('meshcoreDmAckRuntime', () => {
       status: 'sending',
     });
     expect(syncMeshcoreDmAckToMessageStore(ID, 99, 1, 'acked')).toBe(false);
-    expect(useMessageStore.getState().messages[ID]?.['10']?.status).toBe('sending');
-    expect(useMessageStore.getState().messages[ID]?.['11']?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[ID]['10'].status).toBe('sending');
+    expect(useMessageStore.getState().messages[ID]['11'].status).toBe('sending');
   });
 });

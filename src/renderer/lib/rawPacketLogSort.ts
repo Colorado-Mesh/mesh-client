@@ -52,7 +52,7 @@ export function sortMeshtasticPackets(
   out.sort((a, b) => {
     switch (sort.column) {
       case 'type':
-        return compareString(a.portLabel ?? '', b.portLabel ?? '', sort.direction);
+        return compareString(a.portLabel, b.portLabel, sort.direction);
       case 'hops': {
         const ah = a.hopsAway ?? -1;
         const bh = b.hopsAway ?? -1;

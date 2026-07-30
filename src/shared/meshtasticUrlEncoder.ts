@@ -244,7 +244,7 @@ export function parseConfigUrl(url: string): ParsedChannelSet {
     }
     return {
       settings: channelSet.settings.map(channelSettingsFromProtobuf),
-      loraConfig: channelSet.loraConfig,
+      ...(channelSet.loraConfig !== undefined ? { loraConfig: channelSet.loraConfig } : {}),
       mode,
     };
   } catch (e) {

@@ -12,8 +12,8 @@ import type { RrcChatMessage } from '@/shared/rrc-types';
  */
 export function persistRrcMessage(hubHash: string, msg: RrcChatMessage): void {
   const hub = normalizeRrcHubHash(hubHash);
-  const room = storageRoomKey(msg.room ?? '');
-  if (!hub || !room || !msg.id?.trim() || !msg.body) return;
+  const room = storageRoomKey(msg.room);
+  if (!hub || !room || !msg.id.trim() || !msg.body) return;
   if (!isRrcKind(msg.kind)) return;
   void window.electronAPI.db
     .insertRrcMessage({

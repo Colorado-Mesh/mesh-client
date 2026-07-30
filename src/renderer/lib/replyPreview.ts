@@ -134,6 +134,7 @@ export function repairMeshtasticReplyPreviews(messages: readonly ChatMessage[]):
     }
     const preview = truncateReplyPreviewText(parent.payload);
     const sender =
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
       parent.sender_name != null && parent.sender_name.trim() !== ''
         ? parent.sender_name
         : msg.replyPreviewSender;
@@ -179,6 +180,7 @@ export function enrichMeshtasticReplyPreviews(
   });
   if (!parent) return msg;
   const label =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     parent.sender_name != null && parent.sender_name.trim() !== ''
       ? parent.sender_name
       : resolveSenderLabel(parent.sender_id);

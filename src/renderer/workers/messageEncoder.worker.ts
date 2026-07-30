@@ -1,13 +1,17 @@
 /// <reference lib="webworker" />
 
-import { create, toBinary } from '@bufbuild/protobuf';
+import { create, type DescMessage, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Portnums } from '@meshtastic/protobufs';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import type { WorkerCommand, WorkerEvent } from '../lib/transport/types';
 
 /** Meshtastic app port for plaintext channel messages (`PortNum.TEXT_MESSAGE_APP`). */
-const TEXT_MESSAGE_APP = Portnums.PortNum.TEXT_MESSAGE_APP;
+const meshtasticMesh = Mesh as unknown as { readonly ToRadioSchema: DescMessage };
+const meshtasticPortnums = Portnums as unknown as {
+  readonly PortNum: { readonly TEXT_MESSAGE_APP: number };
+};
+const TEXT_MESSAGE_APP = meshtasticPortnums.PortNum.TEXT_MESSAGE_APP;
 
 // Only accept messages from our renderer (Electron: file/null in prod, localhost in Vite).
 // Prefer Array.includes over Set.has — CodeQL js/missing-origin-check recognizes
@@ -48,7 +52,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
       decodedPayload.replyId = cmd.replyId;
     }
 
-    const toRadio = create(Mesh.ToRadioSchema, {
+    const toRadio = create(meshtasticMesh.ToRadioSchema, {
       payloadVariant: {
         case: 'packet',
         value: {
@@ -63,7 +67,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
       },
     });
 
-    const buffer = toBinary(Mesh.ToRadioSchema, toRadio).buffer;
+    const buffer = toBinary(meshtasticMesh.ToRadioSchema, toRadio).buffer;
 
     const reply: WorkerEvent = { type: 'ENCODED', id: cmd.id, buffer };
     self.postMessage(reply, [buffer]);

@@ -247,7 +247,7 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     rerender({ active: false });
     await vi.advanceTimersByTimeAsync(0);
     const inactiveCall = syncReticulumNobleBleYieldMock.mock.calls.find(
-      (c) => (c[0] as { sidecarActive?: boolean })?.sidecarActive === false,
+      (c) => (c[0] as { sidecarActive?: boolean }).sidecarActive === false,
     );
     const inactiveInput = inactiveCall?.[0] as { signal?: AbortSignal } | undefined;
     expect(inactiveInput?.signal).toBeInstanceOf(AbortSignal);

@@ -107,7 +107,7 @@ If you use Homebrew only, `pnpm run update` will try `brew upgrade rust` when ru
 
 Linux and Windows: use rustup; on Windows you may also need [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the C++ workload (same as native Node modules).
 
-[`reticulum-sidecar/rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) pins **`stable`** and installs `clippy`, `rustfmt`, and `llvm-tools-preview` on the first `cargo` command run inside `reticulum-sidecar/` (rustup auto-install). When `cargo` is on your `PATH` **and** sidecar-related paths are staged, pre-commit runs `pnpm run check:reticulum-sidecar` (stub fmt + Clippy + test — no coverage).
+[`reticulum-sidecar/rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) pins **`stable`** and installs `clippy`, `rustfmt`, and `llvm-tools-preview` on the first `cargo` command run inside `reticulum-sidecar/` (rustup auto-install). When `cargo` is on your `PATH` **and** sidecar-related paths are staged, pre-commit runs `pnpm run check:reticulum-sidecar` (full-feature fmt + Clippy + test with `rns-stack,rns-ble,rns-rnode-tcp` — no coverage).
 
 #### Build the sidecar
 
@@ -162,11 +162,11 @@ Skip cleanup while iterating on sidecar Rust or Reticulum in Electron — the ne
 
 #### Lint and coverage (sidecar)
 
-| Command                                  | When                                                         |
-| ---------------------------------------- | ------------------------------------------------------------ |
-| `pnpm run check:reticulum-sidecar`       | Pre-commit stub fmt + Clippy + test (when `cargo` on `PATH`) |
-| `pnpm run reticulum:sidecar:clippy:full` | Before PR when editing `reticulum-sidecar/**`                |
-| `pnpm run reticulum:sidecar:coverage`    | Optional local HTML report (`cargo install cargo-llvm-cov`)  |
+| Command                                  | When                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `pnpm run check:reticulum-sidecar`       | Pre-commit full-feature fmt + Clippy + test (when `cargo` on `PATH`) |
+| `pnpm run reticulum:sidecar:clippy:full` | Before PR when editing `reticulum-sidecar/**`                        |
+| `pnpm run reticulum:sidecar:coverage`    | Optional local HTML report (`cargo install cargo-llvm-cov`)          |
 
 CI: full-feature lint in [`reticulum-sidecar.yaml`](../.github/workflows/reticulum-sidecar.yaml); line-coverage threshold in [`tests.yaml`](../.github/workflows/tests.yaml) when sidecar paths change (not pre-commit).
 
@@ -383,10 +383,11 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Typecheck
 
-| Script                    | Description                                        |
-| ------------------------- | -------------------------------------------------- |
-| `typecheck`               | TypeScript check: renderer + main process          |
-| `typecheck:strict-shared` | Strict TypeScript check for shared/renderer subset |
+| Script                    | Description                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `typecheck`               | TypeScript check: renderer + main process                                                                 |
+| `typecheck:strict-shared` | Strict TypeScript (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`) for `src/shared`            |
+| `check:pr`                | PR-parity local gate: lint + typecheck + strict-shared + full `test:run` (+ sidecar if branch touches it) |
 
 #### Quality checks
 
@@ -410,7 +411,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                 |
 | `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                          |
 | `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                 |
-| `check:reticulum-sidecar`             | Stub `cargo fmt` + Clippy + test (skips when `cargo` missing)          |
+| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)  |
 | `check:silent-catches`                | Detect empty or unlogged catch blocks                                  |
 | `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                               |
 | `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                    |
@@ -557,6 +558,8 @@ Other useful commands:
 - `pnpm test` (watch mode — reruns only changed test files)
 - `pnpm run test:staged` (pre-commit helper: Vitest related to **staged** files only)
 - `pnpm run test:changed` (one-shot tests for working-tree edits vs `HEAD`, including unstaged WIP)
+- `pnpm run check:pr` (before opening/updating a PR: full lint + typecheck + `typecheck:strict-shared` + full `test:run`)
+- Pre-push hook: `vitest run --changed` vs merge-base with `origin/main` (branch-scoped; not full suite)
 - `pnpm run test:ui` / `test:logic` / `test:main` (single Vitest project)
 - `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
 - `pnpm run test:coverage:merge` (merge sharded CI blob reports locally)
@@ -612,9 +615,11 @@ This generates `dist-electron/main/meta.json`. Upload this file to [esbuild's on
 
 ### 6) Git hooks and pre-commit behavior
 
-After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits run **staged-related Vitest only** (`pnpm run test:staged` → `vitest related` on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with `--cache` (CI still runs full-tree lint). Several expensive `check:*` steps and `pnpm audit` / sidecar stub builds are **path-gated**.
+After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits run **staged-related Vitest only** (`pnpm run test:staged` → `vitest related` on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with `--cache` (CI still runs full-tree lint). Path-gated `typecheck:strict-shared` runs when `src/shared/` (or `tsconfig.strict.json`) is staged. Several expensive `check:*` steps and `pnpm audit` / full-feature sidecar builds are **path-gated**.
 
-Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage.
+ESLint: production `src/**` enforces `no-unsafe-*`; test files keep those off. `no-unnecessary-condition` is enforced for `src/shared/**` and `src/renderer/lib/**` only.
+
+Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage. Use `pnpm run check:pr` before opening a PR. Pre-push runs branch `--changed` Vitest when `origin/main` is available.
 
 Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
 
@@ -624,13 +629,15 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 4. When `package.json` or `pnpm-lock.yaml` is staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
 6. ESLint on **staged** JS/TS with `--cache` (skip when none staged)
-7. `pnpm run typecheck` (full tree)
+7. `pnpm run typecheck` (full tree); path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
 8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
 9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint.
+**Pre-push:** [`.githooks/pre-push`](../.githooks/pre-push) runs `vitest run --changed <merge-base-with-origin/main>` when `origin/main` exists.
+
+**Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the same Vitest/lint/typecheck surface locally before a PR.
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 

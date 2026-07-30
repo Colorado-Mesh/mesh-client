@@ -97,6 +97,7 @@ export function groupChatReactionsByParentKey(messages: ChatMessage[]): {
 
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   const to = record.to != null && !isMeshtasticBroadcastNodeNum(record.to) ? record.to : undefined;
   const reactionScalar = record.tapback
     ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)

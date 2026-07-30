@@ -92,9 +92,9 @@ export function meshcoreRfNodeHashCandidates(
   const preferRecent = options?.rssi !== undefined && options.rssi > -80 && recentWindowSec > 0;
   const recentCutoff = preferRecent ? nowSec - recentWindowSec : 0;
   const all = [...nodes.values()].filter((n) => n.node_id !== excludeNodeId);
-  const filtered = recentCutoff > 0 ? all.filter((n) => (n.last_heard ?? 0) >= recentCutoff) : all;
+  const filtered = recentCutoff > 0 ? all.filter((n) => n.last_heard >= recentCutoff) : all;
   const pool = filtered.length > 0 ? filtered : all;
-  return pool.map((n) => ({ node_id: n.node_id, last_heard: n.last_heard ?? 0 }));
+  return pool.map((n) => ({ node_id: n.node_id, last_heard: n.last_heard }));
 }
 
 /**
