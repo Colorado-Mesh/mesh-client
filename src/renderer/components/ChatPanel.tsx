@@ -2227,6 +2227,17 @@ function ChatPanel({
                 onProbeSettled={reticulumDmPathProbe.applyProbeResult}
               />
             ) : null;
+          const rncpShareCandidates =
+            protocol === 'reticulum' && isDmMode
+              ? viewMessages
+                  .filter((m) => !isOwnNode(m.sender_id))
+                  .map((m) => ({
+                    payload: m.payload,
+                    senderHash: m.reticulum_sender_hash ?? null,
+                    senderName: m.sender_name ?? null,
+                    timestamp: m.timestamp,
+                  }))
+              : [];
           const rncpControl =
             protocol === 'reticulum' && hasRncpTransfer && reticulumDmDestinationHash != null ? (
               <ChatDmRncpControl
@@ -2234,6 +2245,7 @@ function ChatPanel({
                 lxmfPeerHash={reticulumDmDestinationHash}
                 peerLabel={dmNodeName}
                 sidecarRunning={reticulumStackLive}
+                dmShareCandidates={rncpShareCandidates}
               />
             ) : null;
           if (!pathBadge && !dmNode && !rncpControl) return null;

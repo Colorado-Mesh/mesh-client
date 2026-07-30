@@ -564,11 +564,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
         }
         if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
-          if (!consumeRncpReceiveDestSharePending(p.sender_hash)) {
+          // Prefer request-enable pending (consumes the slot). Older peers may paste the
+          // share sentinel into chat without that round-trip — still apply so Chat can autofill.
+          const hadPending = consumeRncpReceiveDestSharePending(p.sender_hash);
+          if (!hadPending) {
             console.debug(
-              '[useReticulumRuntime] ignore rncp receive-dest share without pending request-enable',
+              '[useReticulumRuntime] applying rncp receive-dest share without pending request-enable',
             );
-            return;
           }
           const share = await applyRncpReceiveDestShareFromLxmf({
             senderHash: p.sender_hash,
