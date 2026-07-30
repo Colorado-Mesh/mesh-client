@@ -6,22 +6,11 @@ import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
-import {
-  findReticulumParentRecordByHash,
-  persistReticulumOutboundRecord,
-  resolveReticulumOutboundSenderHash,
-} from '../lib/ingest/reticulumIngest';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
-import { truncateReplyPreviewText } from '../lib/replyPreview';
-import { resolveReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
+import { sendReticulumChatMessage } from '../lib/reticulum/sendReticulumChatMessage';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
-import {
-  getReticulumSendMessage,
-  resolveReticulumOutboundVia,
-  tryGetReticulumSession,
-} from '../lib/sessions/reticulumSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
@@ -31,11 +20,8 @@ import {
   type MessageRecord,
   renameMessageId,
   updateMessageStatus,
-  upsertMessage,
-  useMessageStore,
 } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
-import { reticulumHashForNodeId } from '../stores/reticulumPeerStore';
 
 function persistMeshcoreOutboundRow(
   record: MessageRecord,
@@ -52,121 +38,6 @@ function persistMeshcoreOutboundRow(
   void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(chat)).catch((e: unknown) => {
     console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
   });
-}
-
-function resolveReticulumChatDestHash(destination: number | undefined): string | null {
-  if (typeof destination === 'string') return destination;
-  return reticulumHashForNodeId(destination ?? 0) ?? resolveReticulumDestinationHash(destination);
-}
-
-function buildReticulumReplyFields(
-  identityId: IdentityId,
-  replyTo: string | undefined,
-): Partial<MessageRecord> {
-  if (!replyTo) return {};
-  const parent = findReticulumParentRecordByHash(identityId, replyTo);
-  const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
-  const replyPreviewSender = parent?.senderName?.trim() || undefined;
-  return {
-    reticulumReplyToHash: replyTo,
-    ...(replyPreviewText ? { replyPreviewText } : {}),
-    ...(replyPreviewSender ? { replyPreviewSender } : {}),
-  };
-}
-
-function sendReticulumChatMessage(opts: {
-  identityId: IdentityId;
-  text: string;
-  channelIndex: number;
-  destination?: number;
-  replyTo?: string;
-  retryOfStoreId?: string;
-  onNoPropagationNode: () => void;
-}): boolean {
-  const {
-    identityId,
-    text,
-    channelIndex,
-    destination,
-    replyTo,
-    retryOfStoreId,
-    onNoPropagationNode,
-  } = opts;
-  const session = tryGetReticulumSession();
-  const send = getReticulumSendMessage(session);
-  if (!send || !session) {
-    console.warn('[useSendMessage] Reticulum runtime not mounted');
-    return true;
-  }
-  const destHash = resolveReticulumChatDestHash(destination);
-  if (!destHash) {
-    console.warn('[useSendMessage] no Reticulum destination hash for', destination);
-    return true;
-  }
-  const selfNodeId = session.selfNodeId;
-  if (typeof selfNodeId !== 'number') {
-    console.warn('[useSendMessage] Reticulum self node id not ready');
-    return true;
-  }
-  const receivedVia = resolveReticulumOutboundVia(destHash);
-  const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
-  const senderName = session.getFullNodeLabel(selfNodeId);
-  const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
-  const existing =
-    retryOfStoreId != null && retryOfStoreId !== ''
-      ? useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
-      : undefined;
-  const replyFields = buildReticulumReplyFields(identityId, replyTo);
-
-  let pendingId: string;
-  let record: MessageRecord;
-  if (existing) {
-    pendingId = existing.id;
-    record = {
-      ...existing,
-      from: selfNodeId >>> 0,
-      senderName,
-      to: toNodeId,
-      payload: text,
-      channelIndex,
-      status: 'sending',
-      receivedVia,
-      error: undefined,
-      reticulumDeliveryMethod: undefined,
-      reticulumMessageHash: undefined,
-      ...replyFields,
-    };
-    upsertMessage(identityId, record);
-  } else {
-    pendingId = `reticulum-pending-${Date.now()}`;
-    record = {
-      id: pendingId,
-      from: selfNodeId >>> 0,
-      senderName,
-      to: toNodeId,
-      payload: text,
-      channelIndex,
-      timestamp: Date.now(),
-      status: 'sending',
-      receivedVia,
-      ...replyFields,
-    };
-    addMessage(identityId, record);
-  }
-  if (senderHash) {
-    persistReticulumOutboundRecord(identityId, record, senderHash, senderName, destHash, 'sending');
-  }
-  const replyPreviewText = replyFields.replyPreviewText;
-  void send(text, destHash, replyTo ?? undefined, pendingId, replyPreviewText).catch(
-    (e: unknown) => {
-      const err = errLikeToLogString(e);
-      if (err.includes('no_propagation_node')) {
-        onNoPropagationNode();
-      }
-      console.warn('[useSendMessage] reticulum send failed ' + err);
-    },
-  );
-  return true;
 }
 
 function trySendViaMeshtasticSession(
