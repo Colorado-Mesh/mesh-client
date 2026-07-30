@@ -6,6 +6,29 @@ const AUTO_BEACON_TX_FAILED_MARKER = 'auto: beacon TX failed';
 
 const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 
+/** Default tracing filter for sidecar child processes (overridable via env). */
+export const SIDECAR_DEFAULT_RUST_LOG = 'warn';
+
+/**
+ * Whether a sidecar stdout line should be written to the app log.
+ * Tracing INFO/DEBUG packet routing floods the rotating log; keep WARN/ERROR only.
+ */
+export function shouldForwardReticulumSidecarStdout(text: string): boolean {
+  return /\b(?:WARN|ERROR)\b/.test(text);
+}
+
+/**
+ * Resolve RUST_LOG for sidecar spawn. Honors MESH_CLIENT_RUST_LOG, then RUST_LOG,
+ * else defaults to warn so INFO packet spam does not fill mesh-client.log.
+ */
+export function resolveSidecarRustLog(env: NodeJS.ProcessEnv = process.env): string {
+  const fromMesh = env.MESH_CLIENT_RUST_LOG?.trim();
+  if (fromMesh) return fromMesh;
+  const fromRust = env.RUST_LOG?.trim();
+  if (fromRust) return fromRust;
+  return SIDECAR_DEFAULT_RUST_LOG;
+}
+
 export type ReticulumSidecarStderrSink = (message: string) => void;
 
 export interface ReticulumSidecarStderrLogDecision {

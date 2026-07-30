@@ -403,4 +403,19 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     expect(preventDefault).not.toHaveBeenCalled();
     restore();
   });
+
+  it('preventDefault for disconnect mid-send Packet does not exist', () => {
+    const onQueueRejection = vi.fn();
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
+    const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
+      reason: unknown;
+      preventDefault: () => void;
+    }) => void;
+    const reason = new Error('Packet does not exist');
+    const preventDefault = vi.fn();
+    handler({ reason, preventDefault });
+    expect(onQueueRejection).not.toHaveBeenCalled();
+    expect(preventDefault).toHaveBeenCalled();
+    restore();
+  });
 });

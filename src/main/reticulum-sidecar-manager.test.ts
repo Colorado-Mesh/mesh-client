@@ -241,6 +241,8 @@ describe('ReticulumSidecarManager', () => {
     expect(first.running).toBe(true);
     expect(first.port).toBeGreaterThan(0);
     expect(first.pid).toBe(4242);
+    const spawnEnv = spawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv | undefined;
+    expect(spawnEnv?.RUST_LOG).toBe('warn');
 
     await manager.stop();
 

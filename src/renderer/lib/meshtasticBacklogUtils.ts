@@ -409,7 +409,11 @@ function sleepMs(ms: number): Promise<void> {
 }
 
 async function writeToRadioDirectOnce(device: MeshDevice, toRadioBytes: Uint8Array): Promise<void> {
-  const writer = device.transport.toDevice.getWriter();
+  const toDevice = device.transport?.toDevice;
+  if (toDevice == null || typeof toDevice.getWriter !== 'function') {
+    throw new DOMException('Transport stream unavailable', 'InvalidStateError');
+  }
+  const writer = toDevice.getWriter();
   try {
     await writer.write(toRadioBytes);
   } finally {

@@ -85,6 +85,40 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     db.close();
   });
 
+  it('repairs NULL messages.status including rows with null received_via and packet_id', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-null-status-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const ts = Date.now();
+    db.prepareOnce(
+      `INSERT INTO messages (sender_id, payload, channel, timestamp, packet_id, status, received_via)
+       VALUES (1, 'with packet', 0, ?, 42, NULL, 'rf')`,
+    ).run(ts);
+    db.prepareOnce(
+      `INSERT INTO messages (sender_id, payload, channel, timestamp, packet_id, status, received_via)
+       VALUES (2, 'emoji only', 0, ?, NULL, NULL, NULL)`,
+    ).run(ts + 1);
+
+    runSchemaUpgrade(db);
+
+    const nullCount = (
+      db.prepareOnce('SELECT COUNT(*) as c FROM messages WHERE status IS NULL').get() as {
+        c: number;
+      }
+    ).c;
+    expect(nullCount).toBe(0);
+    const statuses = db
+      .prepareOnce('SELECT payload, status FROM messages ORDER BY timestamp')
+      .all() as { payload: string; status: string }[];
+    expect(statuses).toEqual([
+      { payload: 'with packet', status: 'acked' },
+      { payload: 'emoji only', status: 'acked' },
+    ]);
+    db.close();
+  });
+
   it('converts millisecond nodes.last_heard to Unix seconds (v36)', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-last-heard-'));
     const db = new NodeSqliteDB(join(dir, 'test.db'));

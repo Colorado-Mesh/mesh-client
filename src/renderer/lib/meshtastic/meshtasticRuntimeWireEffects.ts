@@ -12,7 +12,6 @@ import { setMeshtasticConfigSlice } from '../../stores/deviceStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateIdentity } from '../../stores/identityStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
-import { safeDisconnect } from '../connection';
 import { persistDbWrite } from '../dbPersistRetry';
 import { connectionDriver } from '../drivers/ConnectionDriver';
 import { isForeignLoraLogCandidate } from '../foreignLoraDetection';
@@ -428,26 +427,8 @@ export function attachMeshtasticRuntimeWireEffects(
       ) {
         configureTimeoutRef.current = setTimeout(() => {
           console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');
-          const activeDevice = deviceRef.current;
-          deviceRef.current = null;
-          if (activeDevice) {
-            void safeDisconnect(activeDevice).catch((e: unknown) => {
-              console.debug(
-                '[useMeshtasticRuntime] configure timeout safeDisconnect ' + errLikeToLogString(e),
-              );
-            });
-          }
-          cleanupSubscriptions();
-          stopWatchdog();
-          stopGpsInterval();
-          setState({
-            status: 'disconnected',
-            myNodeNum: 0,
-            connectionType: null,
-            batteryPercent: undefined,
-            batteryCharging: undefined,
-          });
           clearConfigureTimeout();
+          handleConnectionLostRef.current();
         }, MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
       }
     }

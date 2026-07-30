@@ -2,8 +2,50 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   logReticulumSidecarStderrLine,
+  resolveSidecarRustLog,
   ReticulumSidecarStderrDedupe,
+  shouldForwardReticulumSidecarStdout,
+  SIDECAR_DEFAULT_RUST_LOG,
 } from './reticulumSidecarStderrLog';
+
+describe('shouldForwardReticulumSidecarStdout', () => {
+  it('forwards WARN and ERROR tracing lines', () => {
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '2026-07-30T11:23:18Z \u001b[33m WARN \u001b[0m auto: failed to select multicast',
+      ),
+    ).toBe(true);
+    expect(shouldForwardReticulumSidecarStdout('ERROR panic in link_manager')).toBe(true);
+  });
+
+  it('drops INFO and DEBUG packet-routing spam', () => {
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '\u001b[32m INFO \u001b[0m rns_transport::actor::inbound : data packet routing',
+      ),
+    ).toBe(false);
+    expect(shouldForwardReticulumSidecarStdout('DEBUG resource part received')).toBe(false);
+  });
+});
+
+describe('resolveSidecarRustLog', () => {
+  it('defaults to warn', () => {
+    expect(resolveSidecarRustLog({})).toBe(SIDECAR_DEFAULT_RUST_LOG);
+  });
+
+  it('honors MESH_CLIENT_RUST_LOG over RUST_LOG', () => {
+    expect(
+      resolveSidecarRustLog({
+        MESH_CLIENT_RUST_LOG: 'info',
+        RUST_LOG: 'debug',
+      }),
+    ).toBe('info');
+  });
+
+  it('honors RUST_LOG when mesh override unset', () => {
+    expect(resolveSidecarRustLog({ RUST_LOG: 'reticulum=debug' })).toBe('reticulum=debug');
+  });
+});
 
 describe('ReticulumSidecarStderrDedupe', () => {
   let dedupe: ReticulumSidecarStderrDedupe;

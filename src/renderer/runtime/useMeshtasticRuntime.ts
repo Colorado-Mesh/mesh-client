@@ -360,6 +360,8 @@ export function useMeshtasticRuntime() {
   const bleConnectInProgressRef = useRef(false);
   /** Disconnect during connect — run handleConnectionLost after connect settles. */
   const meshtasticDeferredReconnectRef = useRef(false);
+  /** True while reconnect open+configure owns the session (single-flight; blocks overlapping opens). */
+  const reconnectConnectInFlightRef = useRef(false);
   const reconnectGenerationRef = useRef<number>(0);
   /** Cleanup for post-exhaustion serial port rediscovery poll. */
   const serialRediscoveryStopRef = useRef<(() => void) | null>(null);
@@ -1931,6 +1933,8 @@ export function useMeshtasticRuntime() {
     void (async () => {
       clearPostCommitRebootRecovery();
       deviceConfiguredRef.current = false;
+      isConfiguringRef.current = false;
+      meshtasticIngestSessionRef.current?.setConfiguring(false);
       // Clean up existing connection before reconnect (BlueZ needs GATT fully torn down).
       clearConfigureTimeout();
       const staleDevice = deviceRef.current;
@@ -1956,6 +1960,15 @@ export function useMeshtasticRuntime() {
               errLikeToLogString(e),
           );
         });
+      }
+      // Single-flight: if open+configure is still running, generation bump invalidates it;
+      // that attempt's failure path (or finally deferred flush) schedules the next cycle.
+      if (reconnectConnectInFlightRef.current) {
+        console.debug(
+          '[useMeshtasticRuntime] Connection lost — defer reconnect until in-flight open settles',
+        );
+        meshtasticDeferredReconnectRef.current = true;
+        return;
       }
       void attemptReconnectRef.current();
     })();
@@ -2073,17 +2086,47 @@ export function useMeshtasticRuntime() {
     // Check if user manually disconnected or started a new connection during the wait
     if (!isReconnectingRef.current || reconnectGenerationRef.current !== generation) return;
 
+    // Single-flight: overlapping handleConnectionLost must not open a second GATT session.
+    if (reconnectConnectInFlightRef.current) {
+      console.debug(
+        '[useMeshtasticRuntime] reconnect: skip overlapping open (connect already in flight)',
+      );
+      meshtasticDeferredReconnectRef.current = true;
+      return;
+    }
+
     let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
+    const isBleReconnect = params.type === 'ble';
+    reconnectConnectInFlightRef.current = true;
+    if (isBleReconnect) bleConnectInProgressRef.current = true;
     try {
-      opened = await openMeshtasticTransport(params.type, {
-        httpAddress: params.httpAddress,
-        blePeripheralId: params.blePeripheralId,
-        lastSerialPortId: params.lastSerialPortId,
-      });
+      if (reconnectGenerationRef.current !== generation) {
+        throw new Error('Reconnect superseded before open');
+      }
+      opened =
+        isBleReconnect && isRendererNobleBlePlatform()
+          ? await withNobleBleConnectMutex('meshtastic', () =>
+              openMeshtasticTransport(params.type, {
+                httpAddress: params.httpAddress,
+                blePeripheralId: params.blePeripheralId,
+                lastSerialPortId: params.lastSerialPortId,
+              }),
+            )
+          : await openMeshtasticTransport(params.type, {
+              httpAddress: params.httpAddress,
+              blePeripheralId: params.blePeripheralId,
+              lastSerialPortId: params.lastSerialPortId,
+            });
+      if (reconnectGenerationRef.current !== generation) {
+        throw new Error('Reconnect superseded after open');
+      }
       deviceRef.current = opened.device;
       wireSubscriptions(opened.device, params.type, {
         driverIdentityId: opened.driverIdentityId,
       });
+      if (reconnectGenerationRef.current !== generation) {
+        throw new Error('Reconnect superseded before configure');
+      }
       await configureMeshtasticDeviceWithRetry(opened.device, {
         logTag: 'useMeshtasticRuntime reconnect',
       });
@@ -2106,6 +2149,7 @@ export function useMeshtasticRuntime() {
       }
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
+      meshtasticDeferredReconnectRef.current = false;
       setState((s) => ({
         ...s,
         serialNeedsReselect: false,
@@ -2132,8 +2176,30 @@ export function useMeshtasticRuntime() {
           ' ' +
           errLikeToLogString(err),
       );
-      // Retry
-      void attemptReconnectRef.current();
+      // Retry only if this generation is still current. Deferred Noble drops are flushed in finally.
+      if (
+        !meshtasticDeferredReconnectRef.current &&
+        isReconnectingRef.current &&
+        reconnectGenerationRef.current === generation
+      ) {
+        queueMicrotask(() => {
+          void attemptReconnectRef.current();
+        });
+      }
+    } finally {
+      reconnectConnectInFlightRef.current = false;
+      if (isBleReconnect) {
+        bleConnectInProgressRef.current = false;
+        if (meshtasticDeferredReconnectRef.current) {
+          meshtasticDeferredReconnectRef.current = false;
+          if (isReconnectingRef.current) {
+            console.debug(
+              '[useMeshtasticRuntime] reconnect settled — running deferred reconnect after Noble drop',
+            );
+            queueMicrotask(() => handleConnectionLostRef.current());
+          }
+        }
+      }
     }
   }, [
     wireSubscriptions,
@@ -2175,9 +2241,10 @@ export function useMeshtasticRuntime() {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshtastic') return;
       if (
-        bleConnectInProgressRef.current &&
-        !meshtasticDriverConnectedRef.current &&
-        !deviceRef.current
+        bleConnectInProgressRef.current ||
+        (isReconnectingRef.current &&
+          reconnectConnectInFlightRef.current &&
+          !deviceConfiguredRef.current)
       ) {
         meshtasticDeferredReconnectRef.current = true;
         console.debug(

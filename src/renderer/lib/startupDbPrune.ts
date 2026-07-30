@@ -6,7 +6,6 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { fetchMessageRetention, RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS } from './messageRetention';
 import { parseStoredJson } from './parseStoredJson';
 import { MAX_MESH_ENTITY_CAP, SESSION_DB_PRUNE_INTERVAL_MS } from './sessionMemoryCaps';
-import { getStoredMeshProtocol } from './storedMeshProtocol';
 
 let startupDbPrunePromise: Promise<void> | null = null;
 let sessionDbPrunePromise: Promise<void> | null = null;
@@ -97,128 +96,123 @@ export function resetStartupDbPruneForTests(): void {
 }
 
 async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
-  const startupProtocol = getStoredMeshProtocol();
   const raw =
     parseStoredJson<Record<string, unknown>>(getAppSettingsRaw(), 'App startup node pruning') ?? {};
   const s = { ...DEFAULT_APP_SETTINGS_SHARED, ...raw };
   const ops: Promise<unknown>[] = [];
 
-  if (startupProtocol === 'meshtastic') {
+  // Retention runs for all protocols every startup/session — not only the last-active tab.
+  ops.push(
+    window.electronAPI.db.migrateRfStubNodes().catch((e: unknown) => {
+      console.warn('[App] startup migrateRfStubNodes failed ' + errLikeToLogString(e));
+    }),
+    window.electronAPI.db.deleteNodesNeverHeard().catch((e: unknown) => {
+      console.warn('[App] startup deleteNodesNeverHeard failed ' + errLikeToLogString(e));
+    }),
+  );
+  if (s.autoPruneEnabled) {
+    const days = typeof s.autoPruneDays === 'number' && s.autoPruneDays > 0 ? s.autoPruneDays : 30;
     ops.push(
-      window.electronAPI.db.migrateRfStubNodes().catch((e: unknown) => {
-        console.warn('[App] startup migrateRfStubNodes failed ' + errLikeToLogString(e));
-      }),
-      window.electronAPI.db.deleteNodesNeverHeard().catch((e: unknown) => {
-        console.warn('[App] startup deleteNodesNeverHeard failed ' + errLikeToLogString(e));
+      window.electronAPI.db.deleteNodesByAge(days).catch((e: unknown) => {
+        console.warn('[App] startup deleteNodesByAge failed ' + errLikeToLogString(e));
       }),
     );
-    if (s.autoPruneEnabled) {
-      const days =
-        typeof s.autoPruneDays === 'number' && s.autoPruneDays > 0 ? s.autoPruneDays : 30;
-      ops.push(
-        window.electronAPI.db.deleteNodesByAge(days).catch((e: unknown) => {
-          console.warn('[App] startup deleteNodesByAge failed ' + errLikeToLogString(e));
-        }),
-      );
-    }
-    if (s.nodeCapEnabled) {
-      const cap =
-        typeof s.nodeCapCount === 'number' && s.nodeCapCount > 0
-          ? s.nodeCapCount
-          : MAX_MESH_ENTITY_CAP;
-      ops.push(
-        window.electronAPI.db.pruneNodesByCount(cap).catch((e: unknown) => {
-          console.warn('[App] startup pruneNodesByCount failed ' + errLikeToLogString(e));
-        }),
-      );
-    }
-    if (s.pruneEmptyNamesEnabled) {
-      ops.push(
-        window.electronAPI.db.deleteNodesWithoutLongname().catch((e: unknown) => {
-          console.warn('[App] startup deleteNodesWithoutLongname failed ' + errLikeToLogString(e));
-        }),
-      );
-    }
-    if (s.positionHistoryPruneEnabled) {
-      const days =
-        typeof s.positionHistoryPruneDays === 'number' && s.positionHistoryPruneDays > 0
-          ? s.positionHistoryPruneDays
-          : 30;
-      ops.push(
-        window.electronAPI.db.prunePositionHistory(days).catch((e: unknown) => {
-          console.warn('[App] startup prunePositionHistory failed ' + errLikeToLogString(e));
-        }),
-        window.electronAPI.db.prunePositionHistoryPerNode(2000).catch((e: unknown) => {
-          console.warn('[App] startup prunePositionHistoryPerNode failed ' + errLikeToLogString(e));
-        }),
-      );
-    }
-  } else if (startupProtocol === 'meshcore') {
-    if (s.meshcoreDeleteNeverAdvertised) {
-      ops.push(
-        window.electronAPI.db.deleteMeshcoreContactsNeverAdvertised().catch((e: unknown) => {
-          console.warn(
-            '[App] startup deleteMeshcoreContactsNeverAdvertised failed ' + errLikeToLogString(e),
-          );
-        }),
-      );
-    }
-    if (s.meshcoreAutoPruneEnabled) {
-      const days =
-        typeof s.meshcoreAutoPruneDays === 'number' && s.meshcoreAutoPruneDays > 0
-          ? s.meshcoreAutoPruneDays
-          : 30;
-      ops.push(
-        window.electronAPI.db.deleteMeshcoreContactsByAge(days).catch((e: unknown) => {
-          console.warn('[App] startup deleteMeshcoreContactsByAge failed ' + errLikeToLogString(e));
-        }),
-      );
-    }
-    if (s.meshcoreContactCapEnabled) {
-      const cap =
-        typeof s.meshcoreContactCapCount === 'number' && s.meshcoreContactCapCount > 0
-          ? s.meshcoreContactCapCount
-          : MAX_MESH_ENTITY_CAP;
-      ops.push(
-        window.electronAPI.db.pruneMeshcoreContactsByCount(cap).catch((e: unknown) => {
-          console.warn(
-            '[App] startup pruneMeshcoreContactsByCount failed ' + errLikeToLogString(e),
-          );
-        }),
-      );
-    }
-  } else if (startupProtocol === 'reticulum') {
-    if (s.reticulumAutoPruneEnabled) {
-      const days =
-        typeof s.reticulumAutoPruneDays === 'number' && s.reticulumAutoPruneDays > 0
-          ? s.reticulumAutoPruneDays
-          : 30;
-      ops.push(
-        window.electronAPI.db.deleteReticulumDestinationsByAge(days).catch((e: unknown) => {
-          console.warn(
-            `[App] ${label} deleteReticulumDestinationsByAge failed ` + errLikeToLogString(e),
-          );
-        }),
-        window.electronAPI.db.pruneReticulumIdentityActivityByAge(days).catch((e: unknown) => {
-          console.warn(
-            `[App] ${label} pruneReticulumIdentityActivityByAge failed ` + errLikeToLogString(e),
-          );
-        }),
-      );
-    }
-    if (s.reticulumDestinationCapEnabled) {
-      const cap =
-        typeof s.reticulumDestinationCapCount === 'number' && s.reticulumDestinationCapCount > 0
-          ? Math.min(50_000, s.reticulumDestinationCapCount)
-          : DEFAULT_APP_SETTINGS_SHARED.reticulumDestinationCapCount;
-      ops.push(
-        window.electronAPI.db.pruneReticulumDestinationsByCount(cap).catch((e: unknown) => {
-          console.warn(
-            `[App] ${label} pruneReticulumDestinationsByCount failed ` + errLikeToLogString(e),
-          );
-        }),
-      );
-    }
+  }
+  if (s.nodeCapEnabled) {
+    const cap =
+      typeof s.nodeCapCount === 'number' && s.nodeCapCount > 0
+        ? s.nodeCapCount
+        : MAX_MESH_ENTITY_CAP;
+    ops.push(
+      window.electronAPI.db.pruneNodesByCount(cap).catch((e: unknown) => {
+        console.warn('[App] startup pruneNodesByCount failed ' + errLikeToLogString(e));
+      }),
+    );
+  }
+  if (s.pruneEmptyNamesEnabled) {
+    ops.push(
+      window.electronAPI.db.deleteNodesWithoutLongname().catch((e: unknown) => {
+        console.warn('[App] startup deleteNodesWithoutLongname failed ' + errLikeToLogString(e));
+      }),
+    );
+  }
+  if (s.positionHistoryPruneEnabled) {
+    const days =
+      typeof s.positionHistoryPruneDays === 'number' && s.positionHistoryPruneDays > 0
+        ? s.positionHistoryPruneDays
+        : 30;
+    ops.push(
+      window.electronAPI.db.prunePositionHistory(days).catch((e: unknown) => {
+        console.warn('[App] startup prunePositionHistory failed ' + errLikeToLogString(e));
+      }),
+      window.electronAPI.db.prunePositionHistoryPerNode(2000).catch((e: unknown) => {
+        console.warn('[App] startup prunePositionHistoryPerNode failed ' + errLikeToLogString(e));
+      }),
+    );
+  }
+
+  if (s.meshcoreDeleteNeverAdvertised) {
+    ops.push(
+      window.electronAPI.db.deleteMeshcoreContactsNeverAdvertised().catch((e: unknown) => {
+        console.warn(
+          '[App] startup deleteMeshcoreContactsNeverAdvertised failed ' + errLikeToLogString(e),
+        );
+      }),
+    );
+  }
+  if (s.meshcoreAutoPruneEnabled) {
+    const days =
+      typeof s.meshcoreAutoPruneDays === 'number' && s.meshcoreAutoPruneDays > 0
+        ? s.meshcoreAutoPruneDays
+        : 30;
+    ops.push(
+      window.electronAPI.db.deleteMeshcoreContactsByAge(days).catch((e: unknown) => {
+        console.warn('[App] startup deleteMeshcoreContactsByAge failed ' + errLikeToLogString(e));
+      }),
+    );
+  }
+  if (s.meshcoreContactCapEnabled) {
+    const cap =
+      typeof s.meshcoreContactCapCount === 'number' && s.meshcoreContactCapCount > 0
+        ? s.meshcoreContactCapCount
+        : MAX_MESH_ENTITY_CAP;
+    ops.push(
+      window.electronAPI.db.pruneMeshcoreContactsByCount(cap).catch((e: unknown) => {
+        console.warn('[App] startup pruneMeshcoreContactsByCount failed ' + errLikeToLogString(e));
+      }),
+    );
+  }
+
+  if (s.reticulumAutoPruneEnabled) {
+    const days =
+      typeof s.reticulumAutoPruneDays === 'number' && s.reticulumAutoPruneDays > 0
+        ? s.reticulumAutoPruneDays
+        : 30;
+    ops.push(
+      window.electronAPI.db.deleteReticulumDestinationsByAge(days).catch((e: unknown) => {
+        console.warn(
+          `[App] ${label} deleteReticulumDestinationsByAge failed ` + errLikeToLogString(e),
+        );
+      }),
+      window.electronAPI.db.pruneReticulumIdentityActivityByAge(days).catch((e: unknown) => {
+        console.warn(
+          `[App] ${label} pruneReticulumIdentityActivityByAge failed ` + errLikeToLogString(e),
+        );
+      }),
+    );
+  }
+  if (s.reticulumDestinationCapEnabled) {
+    const cap =
+      typeof s.reticulumDestinationCapCount === 'number' && s.reticulumDestinationCapCount > 0
+        ? Math.min(50_000, s.reticulumDestinationCapCount)
+        : DEFAULT_APP_SETTINGS_SHARED.reticulumDestinationCapCount;
+    ops.push(
+      window.electronAPI.db.pruneReticulumDestinationsByCount(cap).catch((e: unknown) => {
+        console.warn(
+          `[App] ${label} pruneReticulumDestinationsByCount failed ` + errLikeToLogString(e),
+        );
+      }),
+    );
   }
 
   ops.push(

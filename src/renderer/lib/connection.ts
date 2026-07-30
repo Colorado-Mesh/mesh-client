@@ -524,8 +524,9 @@ async function closeMeshtasticTransportStreamsBestEffort(
 ): Promise<void> {
   if (!transport) return;
   try {
-    const toDevice = transport.toDevice as { close?: () => Promise<void> } | undefined;
-    if (toDevice?.close) {
+    const toDevice = transport.toDevice as
+      { close?: () => Promise<void>; getWriter?: () => unknown } | undefined;
+    if (toDevice != null && typeof toDevice.close === 'function') {
       await toDevice.close();
     }
   } catch (e) {

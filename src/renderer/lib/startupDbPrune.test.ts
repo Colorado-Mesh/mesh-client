@@ -115,12 +115,69 @@ describe('runStartupDbPrune', () => {
     expect(pruneActivity).toHaveBeenCalledWith(14);
     expect(pruneByCount).toHaveBeenCalledWith(1234);
     expect(vacuum).not.toHaveBeenCalled();
+    // Cross-protocol: Meshtastic node maintenance still runs on Reticulum tab.
+    expect(window.electronAPI.db.migrateRfStubNodes).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.db.deleteNodesNeverHeard).toHaveBeenCalledTimes(1);
 
     deleteByAge.mockClear();
     vacuum.mockClear();
     await runSessionDbPrune();
     expect(deleteByAge).toHaveBeenCalledTimes(1);
     expect(vacuum).not.toHaveBeenCalled();
+  });
+
+  it('runs all protocol retention IPCs regardless of last-active tab', async () => {
+    localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({
+        autoPruneEnabled: true,
+        autoPruneDays: 21,
+        nodeCapEnabled: false,
+        pruneEmptyNamesEnabled: false,
+        positionHistoryPruneEnabled: true,
+        positionHistoryPruneDays: 10,
+        meshcoreAutoPruneEnabled: true,
+        meshcoreAutoPruneDays: 7,
+        meshcoreDeleteNeverAdvertised: true,
+        meshcoreContactCapEnabled: true,
+        meshcoreContactCapCount: 500,
+        reticulumAutoPruneEnabled: true,
+        reticulumAutoPruneDays: 14,
+        reticulumDestinationCapEnabled: true,
+        reticulumDestinationCapCount: 2000,
+      }),
+    );
+    const deleteNodesByAge = vi.fn().mockResolvedValue(0);
+    const prunePosition = vi.fn().mockResolvedValue({ changes: 0 });
+    const prunePositionPerNode = vi.fn().mockResolvedValue({ changes: 0 });
+    const deleteMcNever = vi.fn().mockResolvedValue(0);
+    const deleteMcByAge = vi.fn().mockResolvedValue(0);
+    const pruneMcByCount = vi.fn().mockResolvedValue({ changes: 0 });
+    const deleteRnByAge = vi.fn().mockResolvedValue({ changes: 0 });
+    const pruneRnActivity = vi.fn().mockResolvedValue({ changes: 0 });
+    const pruneRnByCount = vi.fn().mockResolvedValue({ changes: 0 });
+    vi.mocked(window.electronAPI.db).deleteNodesByAge = deleteNodesByAge;
+    vi.mocked(window.electronAPI.db).prunePositionHistory = prunePosition;
+    vi.mocked(window.electronAPI.db).prunePositionHistoryPerNode = prunePositionPerNode;
+    vi.mocked(window.electronAPI.db).deleteMeshcoreContactsNeverAdvertised = deleteMcNever;
+    vi.mocked(window.electronAPI.db).deleteMeshcoreContactsByAge = deleteMcByAge;
+    vi.mocked(window.electronAPI.db).pruneMeshcoreContactsByCount = pruneMcByCount;
+    vi.mocked(window.electronAPI.db).deleteReticulumDestinationsByAge = deleteRnByAge;
+    vi.mocked(window.electronAPI.db).pruneReticulumIdentityActivityByAge = pruneRnActivity;
+    vi.mocked(window.electronAPI.db).pruneReticulumDestinationsByCount = pruneRnByCount;
+
+    await runStartupDbPrune();
+
+    expect(deleteNodesByAge).toHaveBeenCalledWith(21);
+    expect(prunePosition).toHaveBeenCalledWith(10);
+    expect(prunePositionPerNode).toHaveBeenCalledWith(2000);
+    expect(deleteMcNever).toHaveBeenCalledTimes(1);
+    expect(deleteMcByAge).toHaveBeenCalledWith(7);
+    expect(pruneMcByCount).toHaveBeenCalledWith(500);
+    expect(deleteRnByAge).toHaveBeenCalledWith(14);
+    expect(pruneRnActivity).toHaveBeenCalledWith(14);
+    expect(pruneRnByCount).toHaveBeenCalledWith(2000);
   });
 });
 
