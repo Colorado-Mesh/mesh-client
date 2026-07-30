@@ -24,16 +24,19 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+use bytes::Bytes;
+use rns_identity::destination::{DestType, Destination, Direction};
 use rns_identity::identity::Identity;
 use rns_runtime::rncp::{
     RncpEvent, RncpFetchRequest, RncpListenerConfig, RncpListenerHandle, RncpSendRequest,
     default_rncp_app_name, rncp_fetch_file, rncp_send_file, spawn_rncp_listener,
 };
-use rns_transport::messages::TransportMessage;
+use rns_transport::messages::{OutboundRequest, TransportMessage};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 use uuid::Uuid;
 
+use super::config::{self, DEFAULT_ANNOUNCE_INTERVAL_SEC};
 use super::link_task::spawn_link_task;
 use super::live::parse_hash16;
 
@@ -58,6 +61,9 @@ const RNCP_TRANSFER_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 /// Subdirectory (under a listener's `save_dir`) used to stage files from
 /// senders that are not allow-listed until `accept()`/`reject()`.
 const STAGING_DIR_NAME: &str = ".rncp-pending";
+/// Brief settle before the first listen announce so TCP hubs can come up
+/// (matches LXMF delivery startup announce).
+const RNCP_LISTEN_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InboundMode {
@@ -153,6 +159,7 @@ struct ListenerState {
     handle: Option<RncpListenerHandle>,
     destination_hash: String,
     events_task: tokio::task::JoinHandle<()>,
+    announce_task: Option<tokio::task::JoinHandle<()>>,
 }
 
 pub struct RncpTransferManager {
@@ -161,6 +168,8 @@ pub struct RncpTransferManager {
     event_tx: broadcast::Sender<String>,
     #[allow(dead_code)] // retained for future default save/fetch dir helpers
     storage_dir: PathBuf,
+    /// rnsd config dir — used to read `announce_interval_sec` for listen announces.
+    config_dir: PathBuf,
     active: Mutex<HashMap<String, ActiveTransfer>>,
     pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
     listener: Mutex<Option<ListenerState>>,
@@ -173,12 +182,14 @@ impl RncpTransferManager {
         identity: Identity,
         event_tx: broadcast::Sender<String>,
         storage_dir: PathBuf,
+        config_dir: PathBuf,
     ) -> Self {
         Self {
             transport_tx,
             identity,
             event_tx,
             storage_dir,
+            config_dir,
             active: Mutex::new(HashMap::new()),
             pending_offers: Arc::new(Mutex::new(HashMap::new())),
             listener: Mutex::new(None),
@@ -251,16 +262,26 @@ impl RncpTransferManager {
                 })
                 .await;
                 match result {
-                    Ok(outcome) => emit(
-                        &event_tx,
-                        "rncp.completed",
-                        json!({
-                            "transfer_id": tid,
-                            "file_name": outcome.file_name,
-                            "bytes": outcome.bytes,
-                            "destination_hash": dest_hex_task,
-                        }),
-                    ),
+                    Ok(outcome) => {
+                        tracing::info!(
+                            kind = "send",
+                            transfer_id = %tid,
+                            file_name = %outcome.file_name,
+                            bytes = outcome.bytes,
+                            destination_hash = %dest_hex_task,
+                            "[rncp] transfer completed"
+                        );
+                        emit(
+                            &event_tx,
+                            "rncp.completed",
+                            json!({
+                                "transfer_id": tid,
+                                "file_name": outcome.file_name,
+                                "bytes": outcome.bytes,
+                                "destination_hash": dest_hex_task,
+                            }),
+                        );
+                    }
                     Err(e) => emit(
                         &event_tx,
                         "rncp.failed",
@@ -349,6 +370,15 @@ impl RncpTransferManager {
                             );
                             return;
                         }
+                        tracing::info!(
+                            kind = "fetch",
+                            transfer_id = %tid,
+                            file_name = %outcome.file_name,
+                            bytes = outcome.bytes,
+                            destination_hash = %dest_hex_task,
+                            path = %outcome.saved_path.display(),
+                            "[rncp] transfer completed"
+                        );
                         emit(
                             &event_tx,
                             "rncp.completed",
@@ -426,12 +456,22 @@ impl RncpTransferManager {
         tokio::fs::rename(&offer.staged_path, &final_path)
             .await
             .map_err(|e| format!("accept: move staged file failed: {e}"))?;
+        let final_name = final_path
+            .file_name()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or(safe_name);
+        tracing::info!(
+            kind = "accept",
+            transfer_id = %transfer_id,
+            file_name = %final_name,
+            bytes = offer.bytes,
+            identity_hash = offer.identity_hash.as_deref().unwrap_or(""),
+            path = %final_path.display(),
+            "[rncp] transfer completed"
+        );
         let payload = json!({
             "transfer_id": transfer_id,
-            "file_name": final_path
-                .file_name()
-                .map(|s| s.to_string_lossy().into_owned())
-                .unwrap_or(safe_name),
+            "file_name": final_name,
             "bytes": offer.bytes,
             "path": final_path.display().to_string(),
             "identity_hash": offer.identity_hash,
@@ -519,10 +559,9 @@ impl RncpTransferManager {
     /// staging layered on top (see module docs); `off` is rejected here —
     /// callers should `stop_listener()` instead.
     ///
-    /// Note: `spawn_rncp_listener` registers this destination with the
-    /// transport actor so incoming Links can reach it; reachability to peers
-    /// that already hold (or later request) a path to it does not require a
-    /// recurring manual announce call from here.
+    /// After register, starts a listen announcer (rncp-rs parity) so peers can
+    /// resolve the receive destination pubkey/path — registration alone is not
+    /// enough for `rncp_send`'s announce-cache lookup.
     pub async fn start_listener(
         &self,
         save_dir: PathBuf,
@@ -573,7 +612,8 @@ impl RncpTransferManager {
         let handle = spawn_rncp_listener(self.transport_tx.clone(), listener_cfg, events_tx)
             .await
             .map_err(|e| e.to_string())?;
-        let destination_hash = hex::encode(handle.destination_hash());
+        let dest_hash_bytes = handle.destination_hash();
+        let destination_hash = hex::encode(dest_hash_bytes);
 
         let events_task = spawn_listener_event_loop(
             self.event_tx.clone(),
@@ -583,10 +623,18 @@ impl RncpTransferManager {
             events_rx,
         );
 
+        let announce_task = spawn_listen_announcer(
+            self.transport_tx.clone(),
+            self.identity.clone(),
+            dest_hash_bytes,
+            self.config_dir.clone(),
+        );
+
         *self.listener.lock().await = Some(ListenerState {
             handle: Some(handle),
             destination_hash: destination_hash.clone(),
             events_task,
+            announce_task: Some(announce_task),
         });
 
         Ok(
@@ -597,11 +645,28 @@ impl RncpTransferManager {
     pub async fn stop_listener(&self) {
         let mut guard = self.listener.lock().await;
         if let Some(mut state) = guard.take() {
+            if let Some(announce_task) = state.announce_task.take() {
+                announce_task.abort();
+            }
             state.events_task.abort();
             if let Some(handle) = state.handle.take() {
                 handle.shutdown().await;
             }
         }
+    }
+
+    /// Queue one `rncp.receive` announce immediately (manual force / post dest-share).
+    /// Failure point: listener off or identity missing private key — returns error.
+    pub async fn announce_now(&self) -> Result<(), String> {
+        let dest_hex = {
+            let guard = self.listener.lock().await;
+            let Some(state) = guard.as_ref() else {
+                return Err("listener_not_enabled".into());
+            };
+            state.destination_hash.clone()
+        };
+        let dest_hash = parse_hash16(&dest_hex)?;
+        send_rncp_listen_announce(&self.transport_tx, &self.identity, dest_hash).await
     }
 
     pub async fn listener_status(&self) -> serde_json::Value {
@@ -638,6 +703,85 @@ impl RncpTransferManager {
         });
         tx
     }
+}
+
+/// Build an `rncp.receive` announce packet (rncp-rs `Destination::announce_packet` shape).
+pub fn build_rncp_listen_announce_packet(
+    identity: &Identity,
+    destination_hash: [u8; 16],
+) -> Result<Vec<u8>, String> {
+    let mut destination = Destination::new(
+        Some(identity),
+        Direction::In,
+        DestType::Single,
+        default_rncp_app_name(),
+    )
+    .map_err(|e| format!("rncp listen announce destination: {e}"))?;
+    if destination.hash != destination_hash {
+        return Err(format!(
+            "rncp listen announce dest hash mismatch (expected {}, got {})",
+            hex::encode(destination_hash),
+            hex::encode(destination.hash)
+        ));
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs_f64())
+        .unwrap_or(0.0);
+    destination
+        .announce_packet(identity, None, None, false, None, now)
+        .map_err(|e| format!("rncp listen announce packet: {e}"))
+}
+
+/// Queue one `rncp.receive` announce on the transport outbound channel.
+pub async fn send_rncp_listen_announce(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    identity: &Identity,
+    destination_hash: [u8; 16],
+) -> Result<(), String> {
+    let raw = build_rncp_listen_announce_packet(identity, destination_hash)?;
+    transport_tx
+        .send(TransportMessage::Outbound(OutboundRequest {
+            raw: Bytes::from(raw),
+            destination_hash,
+        }))
+        .await
+        .map_err(|e| format!("Failed to send rncp listen announce: {e}"))
+}
+
+fn read_announce_interval_sec(config_dir: &Path) -> u32 {
+    config::get_stack_settings(config_dir)
+        .map(|s| s.announce_interval_sec)
+        .unwrap_or(DEFAULT_ANNOUNCE_INTERVAL_SEC)
+}
+
+/// Startup announce (after settle) + periodic announces from stack `announce_interval_sec`.
+/// When interval is `0`, only the one-shot after settle runs (rncp-rs parity).
+fn spawn_listen_announcer(
+    transport_tx: mpsc::Sender<TransportMessage>,
+    identity: Identity,
+    destination_hash: [u8; 16],
+    config_dir: PathBuf,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        tokio::time::sleep(RNCP_LISTEN_ANNOUNCE_SETTLE).await;
+        match send_rncp_listen_announce(&transport_tx, &identity, destination_hash).await {
+            Ok(()) => tracing::info!("[rncp] listen announce sent"),
+            Err(e) => tracing::warn!("[rncp] listen announce failed: {e}"),
+        }
+
+        loop {
+            let interval_sec = read_announce_interval_sec(&config_dir);
+            if interval_sec == 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_secs(u64::from(interval_sec))).await;
+            match send_rncp_listen_announce(&transport_tx, &identity, destination_hash).await {
+                Ok(()) => tracing::debug!(interval_sec, "[rncp] listen periodic announce sent"),
+                Err(e) => tracing::warn!("[rncp] listen periodic announce failed: {e}"),
+            }
+        }
+    })
 }
 
 /// Drives one listener's `RncpEvent` stream for the lifetime of that
@@ -754,6 +898,14 @@ async fn handle_rncp_event(
             }
 
             if policy.mode != InboundMode::Ask || is_allowed {
+                tracing::info!(
+                    kind = "receive",
+                    file_name = %file_name,
+                    bytes,
+                    identity_hash = identity_hex.as_deref().unwrap_or(""),
+                    path = %saved_path.display(),
+                    "[rncp] transfer completed"
+                );
                 emit(
                     event_tx,
                     "rncp.completed",
@@ -1003,6 +1155,7 @@ mod tests {
                 transport_tx,
                 Identity::new(),
                 event_tx,
+                storage_dir.to_path_buf(),
                 storage_dir.to_path_buf(),
             ),
             event_rx,
@@ -1458,5 +1611,86 @@ mod tests {
         assert!(!active.contains_key("finished"));
         assert!(active.contains_key("running"));
         release_tx.send(()).expect("release running thread");
+    }
+
+    #[test]
+    fn build_rncp_listen_announce_packet_is_non_empty() {
+        let identity = Identity::new();
+        let dest = Destination::new(
+            Some(&identity),
+            Direction::In,
+            DestType::Single,
+            default_rncp_app_name(),
+        )
+        .expect("rncp dest");
+        let raw = build_rncp_listen_announce_packet(&identity, dest.hash).expect("announce");
+        assert!(raw.len() > 16);
+    }
+
+    #[test]
+    fn listen_announce_settle_is_two_seconds() {
+        assert_eq!(RNCP_LISTEN_ANNOUNCE_SETTLE, Duration::from_secs(2));
+    }
+
+    #[tokio::test]
+    async fn announce_now_requires_enabled_listener() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, _rx) = test_manager(dir.path());
+        let err = manager.announce_now().await.expect_err("listener off");
+        assert_eq!(err, "listener_not_enabled");
+    }
+
+    #[tokio::test]
+    async fn announce_now_queues_outbound_when_listener_enabled() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(8);
+        let (event_tx, _event_rx) = broadcast::channel::<String>(64);
+        let manager = RncpTransferManager::spawn(
+            transport_tx,
+            Identity::new(),
+            event_tx,
+            dir.path().to_path_buf(),
+            dir.path().to_path_buf(),
+        );
+        manager
+            .configure_policy("ask", vec![], vec![])
+            .await
+            .expect("policy");
+        manager
+            .start_listener(dir.path().join("inbox"), false, None, false)
+            .await
+            .expect("listener start");
+
+        manager.announce_now().await.expect("announce");
+
+        let mut got_outbound = false;
+        for _ in 0..8 {
+            let msg = tokio::time::timeout(Duration::from_secs(2), transport_rx.recv())
+                .await
+                .expect("outbound before timeout")
+                .expect("transport open");
+            match msg {
+                TransportMessage::Outbound(OutboundRequest {
+                    raw,
+                    destination_hash,
+                }) => {
+                    assert!(raw.len() > 16);
+                    assert_eq!(
+                        hex::encode(destination_hash),
+                        manager.receive_destination_hash().await.expect("dest hash")
+                    );
+                    got_outbound = true;
+                    break;
+                }
+                TransportMessage::RegisterDestination { .. } => {}
+                other => panic!("unexpected transport message: {other:?}"),
+            }
+        }
+        assert!(
+            got_outbound,
+            "expected Outbound announce after RegisterDestination"
+        );
+
+        manager.stop_listener().await;
     }
 }

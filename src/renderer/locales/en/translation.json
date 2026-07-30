@@ -4070,7 +4070,7 @@
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Announce interval (seconds)",
-    "announceIntervalHint": "Default 3600 s (1 h). Use 0 for startup-only announces. Announce now sends an LXMF delivery announce immediately.",
+    "announceIntervalHint": "Default 3600 s (1 h). Use 0 for startup-only announces. Announce now sends an LXMF delivery announce immediately. When inbound file receive is enabled, the same interval also drives RNCP receive-destination announces.",
     "announceSaved": "Announce interval saved.",
     "announceSaveFailed": "Failed to save announce interval: {{error}}",
     "announceSaveSidecarStopped": "Start the Reticulum stack before saving announce settings.",
@@ -4772,6 +4772,7 @@
       "chooseSaveDirAria": "Choose the folder for inbound file transfers",
       "chooseSaveDir": "Choose save folder…",
       "noSaveDir": "No save folder chosen",
+      "rechooseSaveDir": "Re-choose the save folder (required once per app launch for security).",
       "fetchJailRequired": "Choose a fetch folder before enabling remote fetch.",
       "chooseFetchJailAria": "Choose the folder remote peers may fetch from",
       "chooseFetchJail": "Choose fetch folder…",
@@ -4789,7 +4790,12 @@
       "autoReconnectShell": "Automatically reconnect the remote shell after an unexpected disconnect",
       "autoRetryTransfer": "Automatically retry failed transfers",
       "identityTitle": "My identity",
-      "myIdentity": "My identity:"
+      "myIdentity": "My identity:",
+      "announceReceiveDest": "Announce receive destination",
+      "announceReceiveDestAria": "Announce rncp receive destination so peers can discover it",
+      "announceReceiveDestDone": "RNCP receive destination announced.",
+      "announceReceiveDestFailed": "Failed to announce receive destination: {{error}}",
+      "announceReceiveDestListenerOff": "Enable inbound file receive (Ask or Allow listed) before announcing."
     }
   },
   "takServerPanel": {

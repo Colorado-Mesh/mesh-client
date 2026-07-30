@@ -133,6 +133,10 @@ pub async fn get_rncp_listener(State(stack): State<Arc<StackHandle>>) -> Json<se
     Json(stack.rncp_listener_status().await)
 }
 
+pub async fn rncp_announce(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    Json(stack.rncp_announce_now().await)
+}
+
 pub async fn set_rncp_listener(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RncpListenerBody>,

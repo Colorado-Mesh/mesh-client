@@ -5,6 +5,10 @@ import { useToast } from '@/renderer/components/Toast';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { RemoteSettings } from '@/renderer/lib/remoteSettingsStorage';
 import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
+import {
+  inboundModeFromListenerStatus,
+  isRncpPickerAllowlistError,
+} from '@/renderer/lib/rncpListenerApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
@@ -30,7 +34,6 @@ export function RemoteSettingsSection({
 
   const listener = useRncpTransferStore((s) => s.listener);
   const setListener = useRncpTransferStore((s) => s.setListener);
-  const setInboundModeOptimistic = useRncpTransferStore((s) => s.setInboundModeOptimistic);
 
   const policies = useReticulumInboundPolicyStore((s) => s.policies);
   const hydratePolicies = useReticulumInboundPolicyStore((s) => s.hydrate);
@@ -50,10 +53,18 @@ export function RemoteSettingsSection({
     try {
       const status = await window.electronAPI.reticulum.rncp.getListener();
       setListener(status);
+      return status;
     } catch (e) {
       console.debug('[RemoteSettingsSection] getListener ' + errLikeToLogString(e));
+      return null;
     }
   }, [setListener, sidecarRunning]);
+
+  const syncInboundModeFromListener = useCallback(async () => {
+    const status = await refreshListener();
+    if (!status) return;
+    onSettingsChange({ inboundMode: inboundModeFromListenerStatus(status) });
+  }, [onSettingsChange, refreshListener]);
 
   useEffect(() => {
     void refreshListener();
@@ -74,42 +85,37 @@ export function RemoteSettingsSection({
       });
   }, [sidecarRunning]);
 
+  const pickSaveDir = useCallback(async (): Promise<string | null> => {
+    const picked = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
+    if (picked.canceled || !picked.path) return null;
+    setSaveDir(picked.path);
+    return picked.path;
+  }, []);
+
+  const pickFetchJail = useCallback(async (): Promise<string | null> => {
+    const picked = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
+    if (picked.canceled || !picked.path) return null;
+    setFetchJail(picked.path);
+    onSettingsChange({ lastFetchJail: picked.path });
+    return picked.path;
+  }, [onSettingsChange]);
+
   const applyListener = useCallback(
     async (mode: RncpInboundMode) => {
-      if (mode !== 'off') {
-        if (allowFetch && !fetchJail) {
-          addToast(t('reticulumRemote.settings.fetchJailRequired'), 'error');
-          return;
-        }
-        let dir = saveDir;
-        if (!dir) {
-          const picked = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
-          if (picked.canceled || !picked.path) {
-            addToast(t('reticulumRemote.enableRequest.saveDirRequired'), 'info');
-            return;
-          }
-          dir = picked.path;
-          setSaveDir(dir);
-        }
-        setInboundModeOptimistic(mode);
-        onSettingsChange({ inboundMode: mode, lastSaveDir: dir });
-        const { allowed, blocked } = policiesToRncpLists(policies);
+      if (mode === 'off') {
         try {
           const res = await window.electronAPI.reticulum.rncp.setListener({
-            enabled: true,
-            save_dir: dir,
-            allow_fetch: allowFetch,
-            fetch_jail: fetchJail ?? undefined,
-            overwrite,
-            allowed,
-            blocked,
+            enabled: false,
           });
           if (!res.ok) {
             addToast(
               t('reticulumRemote.settings.applyFailed', { error: res.error ?? '' }),
               'error',
             );
+            await syncInboundModeFromListener();
+            return;
           }
+          onSettingsChange({ inboundMode: 'off' });
           await refreshListener();
         } catch (e) {
           console.debug('[RemoteSettingsSection] apply ' + errLikeToLogString(e));
@@ -117,19 +123,79 @@ export function RemoteSettingsSection({
             t('reticulumRemote.settings.applyFailed', { error: errLikeToLogString(e) }),
             'error',
           );
+          await syncInboundModeFromListener();
         }
         return;
       }
 
-      setInboundModeOptimistic(mode);
-      onSettingsChange({ inboundMode: mode });
-      try {
-        const res = await window.electronAPI.reticulum.rncp.setListener({
-          enabled: false,
-        });
-        if (!res.ok) {
-          addToast(t('reticulumRemote.settings.applyFailed', { error: res.error ?? '' }), 'error');
+      if (allowFetch && !fetchJail) {
+        addToast(t('reticulumRemote.settings.fetchJailRequired'), 'error');
+        return;
+      }
+
+      let dir = saveDir;
+      if (!dir) {
+        dir = await pickSaveDir();
+        if (!dir) {
+          addToast(t('reticulumRemote.enableRequest.saveDirRequired'), 'info');
+          return;
         }
+      }
+
+      let jail = fetchJail;
+      const { allowed, blocked } = policiesToRncpLists(policies);
+
+      const trySet = async (save_dir: string, fetch_jail: string | null) =>
+        window.electronAPI.reticulum.rncp.setListener({
+          enabled: true,
+          save_dir,
+          allow_fetch: allowFetch,
+          fetch_jail: fetch_jail ?? undefined,
+          overwrite,
+          allowed,
+          blocked,
+        });
+
+      try {
+        let res = await trySet(dir, jail);
+        if (!res.ok && isRncpPickerAllowlistError(res.error)) {
+          addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'info');
+          // Re-authorize dirs from this session's picker — persisted paths are rejected after restart.
+          const rePicked = await pickSaveDir();
+          if (!rePicked) {
+            await syncInboundModeFromListener();
+            return;
+          }
+          dir = rePicked;
+          if (allowFetch) {
+            const reJail = await pickFetchJail();
+            if (!reJail) {
+              addToast(t('reticulumRemote.settings.fetchJailRequired'), 'error');
+              await syncInboundModeFromListener();
+              return;
+            }
+            jail = reJail;
+          }
+          res = await trySet(dir, jail);
+        }
+
+        if (!res.ok) {
+          const err = res.error ?? '';
+          addToast(
+            isRncpPickerAllowlistError(err)
+              ? t('reticulumRemote.settings.rechooseSaveDir')
+              : t('reticulumRemote.settings.applyFailed', { error: err }),
+            'error',
+          );
+          await syncInboundModeFromListener();
+          return;
+        }
+
+        onSettingsChange({
+          inboundMode: mode,
+          lastSaveDir: dir,
+          ...(jail != null ? { lastFetchJail: jail } : {}),
+        });
         await refreshListener();
       } catch (e) {
         console.debug('[RemoteSettingsSection] apply ' + errLikeToLogString(e));
@@ -137,6 +203,7 @@ export function RemoteSettingsSection({
           t('reticulumRemote.settings.applyFailed', { error: errLikeToLogString(e) }),
           'error',
         );
+        await syncInboundModeFromListener();
       }
     },
     [
@@ -145,10 +212,12 @@ export function RemoteSettingsSection({
       fetchJail,
       onSettingsChange,
       overwrite,
+      pickFetchJail,
+      pickSaveDir,
       policies,
       refreshListener,
       saveDir,
-      setInboundModeOptimistic,
+      syncInboundModeFromListener,
       t,
     ],
   );
@@ -160,27 +229,71 @@ export function RemoteSettingsSection({
       useReticulumInboundPolicyStore.getState().policies,
     );
     try {
-      await window.electronAPI.reticulum.rncp.setListener({
+      let dir = saveDir;
+      let jail = fetchJail;
+      let res = await window.electronAPI.reticulum.rncp.setListener({
         enabled: true,
-        save_dir: saveDir,
+        save_dir: dir,
         allow_fetch: allowFetch,
-        fetch_jail: fetchJail ?? undefined,
+        fetch_jail: jail ?? undefined,
         overwrite,
         allowed,
         blocked,
       });
+      if (!res.ok && isRncpPickerAllowlistError(res.error)) {
+        addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'info');
+        const rePicked = await pickSaveDir();
+        if (!rePicked) {
+          await syncInboundModeFromListener();
+          return;
+        }
+        dir = rePicked;
+        onSettingsChange({ lastSaveDir: dir });
+        if (allowFetch) {
+          const reJail = await pickFetchJail();
+          if (!reJail) {
+            addToast(t('reticulumRemote.settings.fetchJailRequired'), 'error');
+            await syncInboundModeFromListener();
+            return;
+          }
+          jail = reJail;
+        }
+        res = await window.electronAPI.reticulum.rncp.setListener({
+          enabled: true,
+          save_dir: dir,
+          allow_fetch: allowFetch,
+          fetch_jail: jail ?? undefined,
+          overwrite,
+          allowed,
+          blocked,
+        });
+      }
+      if (!res.ok) {
+        console.warn('[RemoteSettingsSection] pushPolicy ' + (res.error ?? ''));
+        if (isRncpPickerAllowlistError(res.error)) {
+          addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'error');
+        }
+        await syncInboundModeFromListener();
+        return;
+      }
       await refreshListener();
     } catch (e) {
       console.warn('[RemoteSettingsSection] pushPolicy ' + errLikeToLogString(e));
     }
   }, [
+    addToast,
     allowFetch,
     fetchJail,
     listener?.enabled,
+    onSettingsChange,
     overwrite,
+    pickFetchJail,
+    pickSaveDir,
     refreshListener,
     saveDir,
     sidecarRunning,
+    syncInboundModeFromListener,
+    t,
   ]);
 
   const handleRemovePolicy = useCallback(
@@ -191,21 +304,16 @@ export function RemoteSettingsSection({
     [pushPolicyListsToSidecar, removePolicy],
   );
 
-  const handlePickFetchJail = useCallback(async () => {
-    const res = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
-    if (!res.canceled && res.path) {
-      setFetchJail(res.path);
-      onSettingsChange({ lastFetchJail: res.path });
-    }
-  }, [onSettingsChange]);
+  const handlePickFetchJail = useCallback(() => {
+    void pickFetchJail();
+  }, [pickFetchJail]);
 
   const handlePickSaveDir = useCallback(async () => {
-    const res = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
-    if (!res.canceled && res.path) {
-      setSaveDir(res.path);
-      onSettingsChange({ lastSaveDir: res.path });
+    const path = await pickSaveDir();
+    if (path) {
+      onSettingsChange({ lastSaveDir: path });
     }
-  }, [onSettingsChange]);
+  }, [onSettingsChange, pickSaveDir]);
 
   // Keep local fields in sync when parent reloads settings from storage.
   useEffect(() => {
@@ -238,6 +346,34 @@ export function RemoteSettingsSection({
     },
     [addToast, t],
   );
+
+  const announceReceiveDest = useCallback(async () => {
+    if (!sidecarRunning || !listener?.enabled) {
+      addToast(t('reticulumRemote.settings.announceReceiveDestListenerOff'), 'info');
+      return;
+    }
+    try {
+      const res = await window.electronAPI.reticulum.rncp.announce();
+      if (!res.ok) {
+        addToast(
+          t('reticulumRemote.settings.announceReceiveDestFailed', {
+            error: res.error ?? t('common.error'),
+          }),
+          'error',
+        );
+        return;
+      }
+      addToast(t('reticulumRemote.settings.announceReceiveDestDone'), 'success');
+    } catch (e) {
+      console.debug('[RemoteSettingsSection] announce ' + errLikeToLogString(e));
+      addToast(
+        t('reticulumRemote.settings.announceReceiveDestFailed', {
+          error: errLikeToLogString(e),
+        }),
+        'error',
+      );
+    }
+  }, [addToast, listener?.enabled, sidecarRunning, t]);
 
   const policyList = [...policies.values()].sort((a, b) => b.updated_at - a.updated_at);
 
@@ -298,7 +434,9 @@ export function RemoteSettingsSection({
             <button
               type="button"
               aria-label={t('reticulumRemote.settings.chooseFetchJailAria')}
-              onClick={() => void handlePickFetchJail()}
+              onClick={() => {
+                handlePickFetchJail();
+              }}
               className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
             >
               {t('reticulumRemote.settings.chooseFetchJail')}
@@ -426,6 +564,17 @@ export function RemoteSettingsSection({
             {t('common.copy')}
           </button>
         </div>
+        <button
+          type="button"
+          aria-label={t('reticulumRemote.settings.announceReceiveDestAria')}
+          disabled={!sidecarRunning || !listener?.enabled}
+          onClick={() => {
+            void announceReceiveDest();
+          }}
+          className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+        >
+          {t('reticulumRemote.settings.announceReceiveDest')}
+        </button>
       </section>
     </div>
   );

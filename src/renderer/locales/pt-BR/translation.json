@@ -4923,7 +4923,13 @@
       "autoReconnectShell": "Reconecte automaticamente o shell remoto após uma desconexão inesperada",
       "autoRetryTransfer": "Repetir automaticamente transferências com falha",
       "identityTitle": "A minha identidade",
-      "myIdentity": "Minha identidade:"
+      "myIdentity": "Minha identidade:",
+      "rechooseSaveDir": "Escolha novamente a pasta de salvamento (necessária uma vez por inicialização do aplicativo para segurança).",
+      "announceReceiveDest": "Anunciar destino de recebimento",
+      "announceReceiveDestAria": "Anuncie o destino de recebimento do rncp para que os colegas possam descobri-lo",
+      "announceReceiveDestDone": "Destino de recebimento RNCP anunciado.",
+      "announceReceiveDestFailed": "Falha ao anunciar o destino do recebimento: {{error}}",
+      "announceReceiveDestListenerOff": "Habilite o recebimento de arquivos de entrada (lista de Solicitação ou Permissão) antes de anunciar."
     }
   },
   "meshcoreRoute": {

@@ -4923,7 +4923,13 @@
       "autoReconnectShell": "意外断开连接后自动重新连接远程shell",
       "autoRetryTransfer": "自动重试失败的传输",
       "identityTitle": "我的身份",
-      "myIdentity": "我的身份："
+      "myIdentity": "我的身份：",
+      "rechooseSaveDir": "重新选择保存文件夹（出于安全考虑，每个应用程序启动需要一次）。",
+      "announceReceiveDest": "宣布接收目的地",
+      "announceReceiveDestAria": "宣布rncp接收目的地，以便同行可以发现它",
+      "announceReceiveDestDone": "已宣布RNCP接收目的地。",
+      "announceReceiveDestFailed": "未能宣布接收目的地： {{error}}",
+      "announceReceiveDestListenerOff": "在宣布之前启用入站文件接收（列出Ask或Allow ）。"
     }
   },
   "meshcoreRoute": {
