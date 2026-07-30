@@ -590,6 +590,14 @@ function AppContent() {
       parseStoredJson<Record<string, unknown>>(getAppSettingsRaw(), 'App chatCompactMode') ?? {};
     return Boolean(s.chatCompactMode);
   });
+  const [alwaysShowMessageActions, setAlwaysShowMessageActions] = useState<boolean>(() => {
+    const s =
+      parseStoredJson<Record<string, unknown>>(
+        getAppSettingsRaw(),
+        'App alwaysShowMessageActions',
+      ) ?? {};
+    return Boolean(s.alwaysShowMessageActions);
+  });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({
@@ -2495,6 +2503,10 @@ function AppContent() {
     setChatCompactMode(compact);
   }, []);
 
+  const handleAlwaysShowMessageActionsChange = useCallback((alwaysShow: boolean) => {
+    setAlwaysShowMessageActions(alwaysShow);
+  }, []);
+
   const mqttLoss = activeRuntime.mqttConnectionLoss ?? false;
   const mqttVariant = mqttHeaderVariant(
     activeConnectionView.mqttStatus ?? 'disconnected',
@@ -3003,6 +3015,7 @@ function AppContent() {
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
+                            alwaysShowMessageActions={alwaysShowMessageActions}
                             meshcoreFloodScopeHashtag={
                               capabilities.modulesTabUsesRepeatersLabel
                                 ? meshcoreFloodScopeHashtag
@@ -3758,6 +3771,7 @@ function AppContent() {
                                 scrollToTopRef={scrollToTopRoomsRef}
                                 outerScrollMetricsRootRef={mainViewportRef}
                                 compactMode={chatCompactMode}
+                                alwaysShowMessageActions={alwaysShowMessageActions}
                               />
                             </div>
                           </Suspense>
@@ -3923,6 +3937,9 @@ function AppContent() {
                                 onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
                                 onAutoFloodAdvertTypeChange={setAutoFloodAdvertType}
                                 onChatCompactModeChange={handleChatCompactModeChange}
+                                onAlwaysShowMessageActionsChange={
+                                  handleAlwaysShowMessageActionsChange
+                                }
                                 deviceReportedPathHashMode={
                                   capabilities.modulesTabUsesRepeatersLabel
                                     ? (meshcoreRuntime.state.pathHashMode ?? null)

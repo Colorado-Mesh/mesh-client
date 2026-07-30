@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Po włączeniu udostępnianie lokalizacji Meshtastic wysyła zarówno wiadomość tekstową, jak i pakiet Waypoint, dzięki czemu oficjalne aplikacje pokazują pinezkę na mapie. Wyłącz w przypadku zajętych sieci, aby wysyłać tylko tekst.",
     "capStoredRrcMessages": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
     "capStoredRrcMessagesLabel": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
-    "capStoredRrcMessagesCountAria": "Ogranicz zapisaną historię pokoju RRC, zachowaj najnowsze wiadomości {{count}}"
+    "capStoredRrcMessagesCountAria": "Ogranicz zapisaną historię pokoju RRC, zachowaj najnowsze wiadomości {{count}}",
+    "alwaysShowMessageActions": "Zawsze pokazuj działania dotyczące wiadomości",
+    "alwaysShowMessageActionsDesc": "Zachowaj pasek akcji Kopiuj/Odpowiedz/Reaguj widoczny przy każdej wiadomości, zamiast pokazywać go tylko po najechaniu kursorem.",
+    "themeSaved": "Zapisano bieżące kolory.",
+    "themeRestored": "Przywrócono zapisane kolory.",
+    "saveTheme": "Zapisz bieżące kolory jako punkt kontrolny",
+    "restoreTheme": "Przywróć zapisany punkt kontrolny koloru",
+    "noSavedThemeTooltip": "Brak zapisanych kolorów — użyj przycisku Zapisz, aby utworzyć punkt kontrolny",
+    "saveThemeButton": "Zapisz",
+    "restoreThemeButton": "Przywróć"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

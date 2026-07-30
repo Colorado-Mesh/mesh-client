@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Indien ingeschakeld, verzenden Meshtastic-locatieshares zowel een sms-bericht als een Waypoint-pakket, zodat officiële apps een kaartspeld tonen. Schakel uit bij drukke meshes om alleen tekst te verzenden.",
     "capStoredRrcMessages": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
     "capStoredRrcMessagesLabel": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
-    "capStoredRrcMessagesCountAria": "Beperk de opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste {{count}}-berichten"
+    "capStoredRrcMessagesCountAria": "Beperk de opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste {{count}}-berichten",
+    "alwaysShowMessageActions": "Altijd berichtacties weergeven",
+    "alwaysShowMessageActionsDesc": "Houd de actiebalk voor kopiëren/beantwoorden/reageren zichtbaar op elk bericht in plaats van deze alleen bij aanwijzen weer te geven.",
+    "themeSaved": "Huidige kleuren opgeslagen.",
+    "themeRestored": "Opgeslagen kleuren hersteld.",
+    "saveTheme": "Huidige kleuren opslaan als controlepunt",
+    "restoreTheme": "Opgeslagen kleurcontrolepunt herstellen",
+    "noSavedThemeTooltip": "Nog geen opgeslagen kleuren — gebruik Opslaan om een controlepunt te maken",
+    "saveThemeButton": "Opslaan",
+    "restoreThemeButton": "Herstellen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

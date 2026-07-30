@@ -281,3 +281,35 @@ export function resetThemeColors(): void {
   localStorage.removeItem(THEME_COLORS_STORAGE_KEY);
   applyThemeColors(DEFAULT_THEME_COLORS);
 }
+
+export const THEME_COLORS_SNAPSHOT_STORAGE_KEY = 'mesh-client:themeColorsSnapshot';
+
+/** True if the user has an explicitly saved color checkpoint to restore. */
+export function hasThemeSnapshot(): boolean {
+  return localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY) !== null;
+}
+
+/** Save the current live colors as a checkpoint, distinct from factory defaults. */
+export function saveThemeSnapshot(): void {
+  const current = loadThemeColors();
+  localStorage.setItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY, JSON.stringify(current));
+}
+
+/** Restore the last saved checkpoint (if any), applying and persisting it as the current colors. */
+export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
+  const parsed = parseStoredJson<StoredThemeColors>(
+    localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY),
+    'themeColors restoreThemeSnapshot',
+  );
+  const merged = { ...DEFAULT_THEME_COLORS };
+  if (parsed) {
+    for (const key of Object.keys(DEFAULT_THEME_COLORS) as ThemeColorKey[]) {
+      const v = parsed[key];
+      if (typeof v === 'string' && normalizeHex(v)) merged[key] = normalizeHex(v)!;
+    }
+  }
+  ensureReadableGreenContrast(merged);
+  persistThemeColors(merged);
+  applyThemeColors(merged);
+  return merged;
+}

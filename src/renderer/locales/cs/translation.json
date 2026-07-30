@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Pokud je povoleno, sdílení polohy Meshtastic posílá textovou zprávu i paket navigačních bodů, takže oficiální aplikace zobrazují špendlík na mapě. Chcete-li odesílat pouze text, vypněte u zaneprázdněných sítí.",
     "capStoredRrcMessages": "Omezit uloženou historii místností RRC, uchovat nejnovější",
     "capStoredRrcMessagesLabel": "Omezit uloženou historii místností RRC, uchovat nejnovější",
-    "capStoredRrcMessagesCountAria": "Omezit uloženou historii místností RRC, ponechat nejnovější zprávy {{count}}"
+    "capStoredRrcMessagesCountAria": "Omezit uloženou historii místností RRC, ponechat nejnovější zprávy {{count}}",
+    "alwaysShowMessageActions": "Vždy zobrazovat akce zpráv",
+    "alwaysShowMessageActionsDesc": "Ponechte lištu akcí kopírovat/odpovědět/reagovat viditelnou u každé zprávy, místo aby se zobrazovala pouze při najetí myší.",
+    "themeSaved": "Aktuální barvy uloženy.",
+    "themeRestored": "Uložené barvy byly obnoveny.",
+    "saveTheme": "Uložit aktuální barvy jako kontrolní bod",
+    "restoreTheme": "Obnovit uložený kontrolní bod barev",
+    "noSavedThemeTooltip": "Zatím nejsou uloženy žádné barvy — pomocí tlačítka Uložit vytvořte kontrolní bod",
+    "saveThemeButton": "Uložit",
+    "restoreThemeButton": "Obnovit"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

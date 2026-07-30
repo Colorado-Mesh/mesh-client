@@ -1,12 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
+  hasThemeSnapshot,
   isValidHex,
   loadThemeColors,
   normalizeHex,
+  persistThemeColors,
+  resetThemeColors,
+  restoreThemeSnapshot,
   sanitizeHexDraft,
+  saveThemeSnapshot,
+  THEME_COLORS_SNAPSHOT_STORAGE_KEY,
   THEME_COLORS_STORAGE_KEY,
   THEME_TOKEN_META,
 } from './themeColors';
@@ -124,6 +130,58 @@ describe('themeColors', () => {
       expect(call![1]).toBe('#15803d');
       expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
       vi.restoreAllMocks();
+    });
+  });
+
+  describe('theme snapshot save/restore', () => {
+    beforeEach(() => {
+      localStorage.removeItem(THEME_COLORS_STORAGE_KEY);
+      localStorage.removeItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY);
+    });
+
+    it('hasThemeSnapshot is false until a snapshot is saved', () => {
+      expect(hasThemeSnapshot()).toBe(false);
+      saveThemeSnapshot();
+      expect(hasThemeSnapshot()).toBe(true);
+    });
+
+    it('saveThemeSnapshot captures the current live colors', () => {
+      persistThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#123456' });
+      saveThemeSnapshot();
+      const stored = JSON.parse(
+        localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY) ?? '{}',
+      ) as Record<string, string>;
+      expect(stored.appBg).toBe('#123456');
+    });
+
+    it('restoreThemeSnapshot re-applies and persists the saved checkpoint', () => {
+      persistThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#123456' });
+      saveThemeSnapshot();
+
+      // Simulate further edits after the checkpoint was saved.
+      persistThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#abcdef' });
+      expect(loadThemeColors().appBg).toBe('#abcdef');
+
+      const restored = restoreThemeSnapshot();
+      expect(restored.appBg).toBe('#123456');
+      expect(loadThemeColors().appBg).toBe('#123456');
+    });
+
+    it('restoreThemeSnapshot with no saved snapshot falls back to factory defaults', () => {
+      expect(hasThemeSnapshot()).toBe(false);
+      const restored = restoreThemeSnapshot();
+      expect(restored).toEqual(DEFAULT_THEME_COLORS);
+    });
+
+    it('restore does not clear the snapshot, and reset does not touch it either', () => {
+      persistThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#123456' });
+      saveThemeSnapshot();
+      restoreThemeSnapshot();
+      expect(hasThemeSnapshot()).toBe(true);
+
+      resetThemeColors();
+      expect(hasThemeSnapshot()).toBe(true);
+      expect(restoreThemeSnapshot().appBg).toBe('#123456');
     });
   });
 });

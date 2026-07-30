@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Etkinleştirildiğinde, Meshtastic konum paylaşımları hem kısa mesaj hem de Yol Noktası paketi göndererek resmi uygulamaların bir harita işaretçisi göstermesini sağlar. Yalnızca metin göndermek için meşgul ağlarda devre dışı bırakın.",
     "capStoredRrcMessages": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
     "capStoredRrcMessagesLabel": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
-    "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın"
+    "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın",
+    "alwaysShowMessageActions": "Mesaj eylemlerini her zaman göster",
+    "alwaysShowMessageActionsDesc": "Kopyala/yanıtla/tepki ver eylem çubuğunu yalnızca fareyle üzerine gelindiğinde göstermek yerine her mesajda görünür tutun.",
+    "themeSaved": "Mevcut renkler kaydedildi.",
+    "themeRestored": "Kaydedilen renkler geri yüklendi.",
+    "saveTheme": "Mevcut renkleri kontrol noktası olarak kaydet",
+    "restoreTheme": "Kaydedilen renk kontrol noktasını geri yükle",
+    "noSavedThemeTooltip": "Henüz kaydedilmiş renk yok — bir kontrol noktası oluşturmak için Kaydet'i kullanın",
+    "saveThemeButton": "Kaydet",
+    "restoreThemeButton": "Geri Yükle"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

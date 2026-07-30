@@ -185,6 +185,8 @@ interface Props {
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
   /** Denser post bubbles (same App Appearance setting as Chat). */
   compactMode?: boolean;
+  /** Keep the per-post action row visible instead of hover/focus-only (same App Appearance setting as Chat). */
+  alwaysShowMessageActions?: boolean;
 }
 
 function formatTimestamp(ts: number): string {
@@ -257,6 +259,7 @@ export default function RoomsPanel({
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
+  alwaysShowMessageActions = false,
 }: Props) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1340,7 +1343,7 @@ export default function RoomsPanel({
         : '';
   const loginButtonEnabled = isConnected && !guestFieldEmpty && !selectedRoomLoginLoading;
   const loginButtonClass = loginButtonEnabled
-    ? 'border-brand-green bg-brand-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-brand-green/90'
+    ? 'border-readable-green bg-readable-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-white hover:bg-readable-green/90'
     : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
   const selectedRoomLeaveLoading =
     selectedRoomId != null && leaveLoadingRoomIds.has(selectedRoomId);
@@ -2524,7 +2527,13 @@ export default function RoomsPanel({
                                     {m.sender_name}
                                   </button>
                                   <span>{formatTimestamp(m.timestamp)}</span>
-                                  <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+                                  <div
+                                    className={`ml-auto flex items-center gap-1 transition-opacity ${
+                                      alwaysShowMessageActions
+                                        ? 'opacity-100'
+                                        : 'opacity-0 group-focus-within/msg:opacity-100 group-hover/msg:opacity-100'
+                                    }`}
+                                  >
                                     {showDm && (
                                       <button
                                         type="button"

@@ -476,6 +476,8 @@ export interface ChatPanelProps {
    */
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
   compactMode?: boolean;
+  /** Keep the per-message action bar (copy/reply/react/etc.) visible instead of hover/focus-only. */
+  alwaysShowMessageActions?: boolean;
   /** Meshtastic RF: request Store & Forward chat history from the router. */
   onFetchStoreForwardHistory?: () => Promise<RequestStoreForwardHistoryResult>;
   /** Reticulum LXMF: DM-only chat (no channel pills). */
@@ -534,6 +536,7 @@ function ChatPanel({
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
+  alwaysShowMessageActions = false,
   onFetchStoreForwardHistory,
   dmOnlyChat = false,
   showLxmfDeliveryStatus = false,
@@ -2760,8 +2763,14 @@ function ChatPanel({
                             )}
                           </div>
 
-                          {/* Inline reaction trigger — visible on hover or focus-within */}
-                          <div className="flex shrink-0 gap-0.5 opacity-0 transition-all group-focus-within/msg:opacity-100 group-hover/msg:opacity-100">
+                          {/* Inline reaction trigger — visible on hover/focus-within, or always when alwaysShowMessageActions is set */}
+                          <div
+                            className={`flex shrink-0 gap-0.5 transition-all ${
+                              alwaysShowMessageActions
+                                ? 'opacity-100'
+                                : 'opacity-0 group-focus-within/msg:opacity-100 group-hover/msg:opacity-100'
+                            }`}
+                          >
                             {/* Copy — always available */}
                             <button
                               type="button"

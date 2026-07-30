@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Wenn aktiviert, senden Meshtastic-Standortfreigaben sowohl eine Textnachricht als auch ein Wegpunktpaket, sodass offizielle Apps eine Kartennadel anzeigen. Bei ausgelasteten Meshes deaktivieren, um nur Text zu senden.",
     "capStoredRrcMessages": "Gespeicherte RRC-Raumhistorie begrenzen, die neuesten behalten",
     "capStoredRrcMessagesLabel": "Gespeicherte RRC-Raumhistorie begrenzen, die neuesten behalten",
-    "capStoredRrcMessagesCountAria": "Begrenzen Sie den gespeicherten RRC-Raumverlauf und behalten Sie die neuesten {{count}}-Nachrichten bei"
+    "capStoredRrcMessagesCountAria": "Begrenzen Sie den gespeicherten RRC-Raumverlauf und behalten Sie die neuesten {{count}}-Nachrichten bei",
+    "alwaysShowMessageActions": "Nachrichtenaktionen immer anzeigen",
+    "alwaysShowMessageActionsDesc": "Halten Sie die Aktionsleiste Kopieren/Antworten/Reagieren in jeder Nachricht sichtbar, anstatt sie nur bei Hover anzuzeigen.",
+    "themeSaved": "Aktuelle Farben gespeichert.",
+    "themeRestored": "Gespeicherte Farben wiederhergestellt.",
+    "saveTheme": "Aktuelle Farben als Kontrollpunkt speichern",
+    "restoreTheme": "Gespeicherten Farbprüfpunkt wiederherstellen",
+    "noSavedThemeTooltip": "Noch keine gespeicherten Farben — verwenden Sie Speichern, um einen Kontrollpunkt zu erstellen",
+    "saveThemeButton": "Speichern",
+    "restoreThemeButton": "Wiederherstellen"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

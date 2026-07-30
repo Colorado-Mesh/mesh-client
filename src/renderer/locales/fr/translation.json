@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Lorsqu'ils sont activés, les partages de localisation Meshtastic envoient à la fois un message texte et un paquet Waypoint afin que les applications officielles affichent une épingle de carte. Désactivez-le sur les maillages occupés pour envoyer du texte uniquement.",
     "capStoredRrcMessages": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
     "capStoredRrcMessagesLabel": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
-    "capStoredRrcMessagesCountAria": "Limiter l'historique des salles RRC stockées, conserver les messages {{count}} les plus récents"
+    "capStoredRrcMessagesCountAria": "Limiter l'historique des salles RRC stockées, conserver les messages {{count}} les plus récents",
+    "alwaysShowMessageActions": "Toujours afficher les actions de message",
+    "alwaysShowMessageActionsDesc": "Gardez la barre d'action copier/répondre/réagir visible sur chaque message au lieu de ne l'afficher qu'au survol.",
+    "themeSaved": "Couleurs actuelles enregistrées.",
+    "themeRestored": "Couleurs sauvegardées restaurées.",
+    "saveTheme": "Enregistrer les couleurs actuelles comme point de contrôle",
+    "restoreTheme": "Restaurer le point de contrôle de couleur enregistré",
+    "noSavedThemeTooltip": "Pas encore de couleurs enregistrées — utilisez Enregistrer pour créer un point de contrôle",
+    "saveThemeButton": "Sauvegarder",
+    "restoreThemeButton": "Restaurer"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

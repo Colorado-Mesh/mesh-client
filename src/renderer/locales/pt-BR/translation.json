@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Quando ativado, os compartilhamentos de localização do Meshtastic enviam uma mensagem de texto e um pacote de waypoint para que os aplicativos oficiais mostrem um alfinete no mapa. Desative em malhas ocupadas para enviar apenas texto.",
     "capStoredRrcMessages": "Limite o histórico da sala RRC armazenado, mantenha o mais recente",
     "capStoredRrcMessagesLabel": "Limite o histórico da sala RRC armazenado, mantenha o mais recente",
-    "capStoredRrcMessagesCountAria": "Limite o histórico da sala RRC armazenado, mantenha as mensagens {{count}} mais recentes"
+    "capStoredRrcMessagesCountAria": "Limite o histórico da sala RRC armazenado, mantenha as mensagens {{count}} mais recentes",
+    "alwaysShowMessageActions": "Mostrar sempre as ações da mensagem",
+    "alwaysShowMessageActionsDesc": "Mantenha a barra de ação copiar/responder/reagir visível em todas as mensagens, em vez de apenas mostrá-la ao passar o mouse.",
+    "themeSaved": "Cores atuais salvas.",
+    "themeRestored": "Cores salvas restauradas.",
+    "saveTheme": "Salvar as cores atuais como um ponto de verificação",
+    "restoreTheme": "Restaurar ponto de verificação de cor salvo",
+    "noSavedThemeTooltip": "Ainda não há cores salvas — use Salvar para criar um ponto de verificação",
+    "saveThemeButton": "Salvar",
+    "restoreThemeButton": "Restaurar"
   },
   "aria": {
     "closeDialog": "Fechar janela",

@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "启用后，Meshtastic 位置共享会发送短信和航点数据包，以便官方应用程序显示地图图钉。在繁忙的网格上禁用以仅发送文本。",
     "capStoredRrcMessages": "存储RRC房间历史上限，保持最新",
     "capStoredRrcMessagesLabel": "存储RRC房间历史上限，保持最新",
-    "capStoredRrcMessagesCountAria": "限制存储的 RRC 房间历史记录，保留最新的 {{count}} 消息"
+    "capStoredRrcMessagesCountAria": "限制存储的 RRC 房间历史记录，保留最新的 {{count}} 消息",
+    "alwaysShowMessageActions": "始终显示消息操作",
+    "alwaysShowMessageActionsDesc": "保持复制/回复/反应操作栏在每条消息上可见，而不是仅在悬停时显示。",
+    "themeSaved": "当前颜色已保存。",
+    "themeRestored": "已还原保存的颜色。",
+    "saveTheme": "将当前颜色保存为检查点",
+    "restoreTheme": "还原保存的颜色检查点",
+    "noSavedThemeTooltip": "尚未保存颜色—使用“保存”创建检查点",
+    "saveThemeButton": "保存",
+    "restoreThemeButton": "恢复"
   },
   "aria": {
     "closeDialog": "关闭对话框",

@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Se abilitate, le condivisioni di posizione Meshtastic inviano sia un messaggio di testo che un pacchetto Waypoint in modo che le app ufficiali mostrino un segnaposto sulla mappa. Disabilita su mesh occupate per inviare solo testo.",
     "capStoredRrcMessages": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
     "capStoredRrcMessagesLabel": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
-    "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti"
+    "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti",
+    "alwaysShowMessageActions": "Mostra sempre le azioni del messaggio",
+    "alwaysShowMessageActionsDesc": "Mantieni la barra delle azioni di copia/risposta/reazione visibile su ogni messaggio invece di mostrarla solo al passaggio del mouse.",
+    "themeSaved": "Colori correnti salvati.",
+    "themeRestored": "Colori salvati ripristinati.",
+    "saveTheme": "Salva i colori correnti come punto di controllo",
+    "restoreTheme": "Ripristina punto di controllo colore salvato",
+    "noSavedThemeTooltip": "Ancora nessun colore salvato — usa Salva per creare un punto di controllo",
+    "saveThemeButton": "Salva",
+    "restoreThemeButton": "Ripristina"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

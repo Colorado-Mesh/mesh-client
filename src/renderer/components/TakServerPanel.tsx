@@ -210,7 +210,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
               type="button"
               onClick={handleStart}
               disabled={isLoading || !portValid || localServerName.trim().length === 0}
-              className="bg-brand-green hover:bg-brand-green/90 rounded-lg px-4 py-2 text-sm font-medium text-black transition-colors disabled:opacity-50"
+              className="bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
             >
               {isLoading ? t('takServerPanel.starting') : t('takServerPanel.startServer')}
             </button>

@@ -364,7 +364,16 @@
     "shareLocationSendWaypointHint": "Saat diaktifkan, pembagian lokasi Meshtastic mengirimkan pesan teks dan paket Waypoint sehingga aplikasi resmi menampilkan pin peta. Nonaktifkan pada jerat sibuk untuk mengirim teks saja.",
     "capStoredRrcMessages": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
     "capStoredRrcMessagesLabel": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
-    "capStoredRrcMessagesCountAria": "Batasi riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru"
+    "capStoredRrcMessagesCountAria": "Batasi riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru",
+    "alwaysShowMessageActions": "Selalu tampilkan tindakan pesan",
+    "alwaysShowMessageActionsDesc": "Jaga agar bilah tindakan salin/balas/reaksi terlihat di setiap pesan, bukan hanya menampilkannya di hover.",
+    "themeSaved": "Warna saat ini disimpan.",
+    "themeRestored": "Warna tersimpan dipulihkan.",
+    "saveTheme": "Simpan warna saat ini sebagai pos pemeriksaan",
+    "restoreTheme": "Pulihkan pos pemeriksaan warna yang disimpan",
+    "noSavedThemeTooltip": "Belum ada warna yang disimpan — gunakan Simpan untuk membuat pos pemeriksaan",
+    "saveThemeButton": "Simpan",
+    "restoreThemeButton": "Pulihkan"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
