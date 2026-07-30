@@ -36,6 +36,7 @@ export function normalizeMeshcoreWaitingMessageItem(
 ): MeshcoreWaitingMessageItem | null {
   if (isMeshcoreWaitingQueueEmpty(value)) return null;
   if (Array.isArray(value)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- External SDK value is validated by surrounding boundary logic.
     const first = value[0];
     return isMeshcoreWaitingMessageItem(first) ? first : null;
   }

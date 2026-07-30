@@ -278,6 +278,7 @@ export function createElectronAPIMock(): ElectronAPI {
       export: vi.fn().mockResolvedValue({ success: false }),
       saveReticulumAttachment: vi.fn().mockResolvedValue({ success: false }),
       showItemInFolder: vi.fn().mockResolvedValue({ ok: true }),
+      readReticulumAttachmentAsDataUrl: vi.fn().mockResolvedValue({ dataUrl: null }),
       linkPreview: {
         fetch: vi.fn().mockResolvedValue(null),
       },

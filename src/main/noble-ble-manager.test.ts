@@ -97,9 +97,9 @@ describe('NobleBleManager.connect — macOS wake zombie peripheral (regression)'
     expect(SOURCE).toContain('knownPeripherals.delete(peripheralId)');
   });
 
-  it('evicts peripheral from cache after connectAsync timeout', () => {
+  it('evicts peripheral from cache after connectAsync failure', () => {
     expect(SOURCE).toMatch(
-      /BLE connectAsync timed out[\s\S]{0,200}knownPeripherals\.delete\(peripheralId\)/,
+      /withTimeout\(peripheral\.connectAsync\(\)[\s\S]{0,200}catch \(err\)[\s\S]{0,80}knownPeripherals\.delete\(peripheralId\)/,
     );
   });
 });

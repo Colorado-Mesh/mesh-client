@@ -1,5 +1,3 @@
-import type { Dispatch, RefObject, SetStateAction } from 'react';
-
 import i18n from '@/renderer/lib/i18n';
 import { meshtasticPacketIdsEqual } from '@/renderer/lib/meshtasticMessageDedup';
 import { resolveMeshtasticOutboundStoreKey } from '@/renderer/lib/sessions/meshtasticSession';
@@ -16,6 +14,7 @@ import {
 const SDK_ROUTING_ERROR_RE = /Error received for packet (\d+): ([A-Z0-9_]+)/;
 const SDK_PACKET_TIMEOUT_RE = /Packet (\d+) of type \w+ timed out/;
 const FALLBACK_SENDING_WINDOW_MS = 90_000;
+const routingErrorScansInFlight = new Set<string>();
 
 export interface MeshtasticSdkRoutingErrorLog {
   packetId: number;
@@ -79,6 +78,11 @@ export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | 
       return 'chatPanel.routingErrors.pkiFailed';
     case 'NO_CHANNEL':
       return 'chatPanel.routingErrors.noChannel';
+    case 'RATE_LIMIT_EXCEEDED':
+      return 'chatPanel.routingErrors.rateLimited';
+    case 'NO_INTERFACE':
+    case 'NO_INTERFACE_AVAILABLE':
+      return 'chatPanel.routingErrors.noInterface';
     case 'TIMEOUT':
     case 'NO_RESPONSE':
     case 'MAX_RETRANSMIT':
@@ -90,9 +94,8 @@ export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | 
 
 export interface ApplyMeshtasticOutboundRoutingErrorContext {
   myNodeNum: number;
+  /** Identity whose `messageStore` bucket holds the outbound row. */
   identityId: string | null;
-  messagesRef: RefObject<ChatMessage[]>;
-  setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   /** tempId → wire packet id assigned by the SDK (may differ from optimistic id). */
   tempIdToWirePacketId?: ReadonlyMap<number, number>;
 }
@@ -133,43 +136,31 @@ function findFallbackSendingOutbound(
   return candidates.length === 1 ? candidates[0] : undefined;
 }
 
+function storeOutboundMessagesAsChat(identityId: string, myNodeNum: number): ChatMessage[] {
+  const records = Object.values(useMessageStore.getState().messages[identityId] ?? {}).filter(
+    (r) => r.from === myNodeNum,
+  );
+  return messageRecordsToChatMessages(records);
+}
+
 function findOutboundTargetForWirePacketId(
   wirePacketId: number,
   ctx: ApplyMeshtasticOutboundRoutingErrorContext,
 ): ChatMessage | undefined {
-  const { myNodeNum, messagesRef, identityId, tempIdToWirePacketId } = ctx;
-  const fromLegacy = messagesRef.current.find((m) =>
+  const { myNodeNum, identityId, tempIdToWirePacketId } = ctx;
+  if (!identityId) return undefined;
+
+  const messages = storeOutboundMessagesAsChat(identityId, myNodeNum);
+  const matched = messages.find((m) =>
     outboundMatchesWirePacketId(m, myNodeNum, wirePacketId, tempIdToWirePacketId),
   );
-  if (fromLegacy) return fromLegacy;
-
-  if (identityId) {
-    const storeMsgs = messageRecordsToChatMessages(
-      Object.values(useMessageStore.getState().messages[identityId] ?? {}),
-    );
-    const fromStore = storeMsgs.find((m) =>
-      outboundMatchesWirePacketId(m, myNodeNum, wirePacketId, tempIdToWirePacketId),
-    );
-    if (fromStore) return fromStore;
-  }
+  if (matched) return matched;
 
   // An unmatched wire id may belong to a non-chat wantAck packet (e.g. the
   // share-location Waypoint) — do not misattribute its NAK to a pending chat row.
   if (hasMeshtasticNonChatOutboundInFlight()) return undefined;
 
-  return findFallbackSendingOutbound(messagesRef.current, myNodeNum);
-}
-
-function messageMatchesTarget(
-  msg: ChatMessage,
-  target: ChatMessage,
-  myNodeNum: number,
-  wirePacketId: number,
-  tempIdToWirePacketId?: ReadonlyMap<number, number>,
-): boolean {
-  if (msg === target) return true;
-  if (target.packetId == null) return false;
-  return outboundMatchesWirePacketId(msg, myNodeNum, wirePacketId, tempIdToWirePacketId);
+  return findFallbackSendingOutbound(messages, myNodeNum);
 }
 
 function resolveStoreMessageId(target: ChatMessage, wirePacketId: number): string {
@@ -187,7 +178,7 @@ export function applyMeshtasticOutboundRoutingError(
     return false;
   }
   const errorText = i18n.t(i18nKey);
-  const { myNodeNum, identityId, setMessages, tempIdToWirePacketId } = ctx;
+  const { identityId } = ctx;
   // Known non-chat packet (e.g. share-location Waypoint): its NAK must never be
   // applied to a chat row — the same log line is re-applied asynchronously via
   // the main-process log echo after the in-flight window closes.
@@ -195,23 +186,11 @@ export function applyMeshtasticOutboundRoutingError(
     return false;
   }
   const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx);
-  if (!target) {
+  if (!target || !identityId) {
     return false;
   }
   const storeMessageId = resolveStoreMessageId(target, parsed.packetId);
-  const matches = (m: ChatMessage) =>
-    messageMatchesTarget(m, target, myNodeNum, parsed.packetId, tempIdToWirePacketId);
-
-  setMessages((prev) =>
-    prev.map((m) =>
-      matches(m)
-        ? { ...m, status: 'failed' as const, error: errorText, packetId: parsed.packetId }
-        : m,
-    ),
-  );
-  if (identityId) {
-    updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
-  }
+  updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
   // The DB row may still hold the optimistic temp packet id (device never acked,
   // so updateMessagePacketId never ran) — key the update on the row's own id,
   // not the wire id from the radio NAK, or the UPDATE matches zero rows.
@@ -236,6 +215,12 @@ export function applyMeshtasticOutboundRoutingErrorFromLog(
   if (!parsed) {
     return false;
   }
+  const key = `${ctx.identityId ?? 'none'}:${parsed.packetId}:${parsed.errorName}`;
+  if (routingErrorScansInFlight.has(key)) {
+    return false;
+  }
+  routingErrorScansInFlight.add(key);
+  queueMicrotask(() => routingErrorScansInFlight.delete(key));
   return applyMeshtasticOutboundRoutingError(parsed, ctx);
 }
 

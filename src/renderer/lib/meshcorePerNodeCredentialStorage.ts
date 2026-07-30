@@ -18,6 +18,33 @@ export interface MeshcorePerNodeCredentialStorage<T> {
   set: (nodeId: number, cred: T | null) => Promise<void>;
 }
 
+/**
+ * Shared skeleton for legacy credential values stored as plain strings or JSON objects.
+ * Callers supply field mapping via `fromPlainString` / `fromObject`.
+ */
+export function parseLegacyCredentialRaw<T>(
+  raw: unknown,
+  mappers: {
+    fromPlainString: (value: string) => T | undefined;
+    fromObject: (o: Record<string, unknown>) => T | undefined;
+  },
+): T | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw === 'string') {
+    if (!raw.trim()) return undefined;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw) as unknown;
+    } catch {
+      // catch-no-log-ok legacy plain-string credential is not JSON
+      return mappers.fromPlainString(raw);
+    }
+    return parseLegacyCredentialRaw(parsed, mappers);
+  }
+  if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  return mappers.fromObject(raw as Record<string, unknown>);
+}
+
 export function createMeshcorePerNodeCredentialStorage<T>(
   config: MeshcorePerNodeCredentialStorageConfig<T>,
 ): MeshcorePerNodeCredentialStorage<T> {

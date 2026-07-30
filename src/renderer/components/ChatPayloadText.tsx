@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 import {
@@ -9,6 +10,7 @@ import {
   meshcoreGiphyPageUrl,
   parseMeshcoreGifId,
 } from '@/renderer/lib/meshcoreGifWire';
+import { isLikelyDirectImageUrl } from '@/shared/chatDirectImageUrl';
 
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
@@ -43,13 +45,21 @@ interface LinkPreviewData {
   title: string;
   description?: string;
   image?: string;
+  /** Present when the URL itself is a raster image (not an HTML page with og:image). */
+  kind?: 'image';
 }
 
+const LINK_PREVIEW_FETCH_DEDUP_MAX = 128;
 const linkPreviewFetchByUrl = new Map<string, Promise<LinkPreviewData | null>>();
 
 function fetchLinkPreviewDeduped(url: string): Promise<LinkPreviewData | null> {
   const existing = linkPreviewFetchByUrl.get(url);
   if (existing) return existing;
+  while (linkPreviewFetchByUrl.size >= LINK_PREVIEW_FETCH_DEDUP_MAX) {
+    const oldest = linkPreviewFetchByUrl.keys().next().value;
+    if (oldest === undefined) break;
+    linkPreviewFetchByUrl.delete(oldest);
+  }
   const pending = window.electronAPI.chat.linkPreview.fetch(url);
   linkPreviewFetchByUrl.set(url, pending);
   void pending.finally(() => {
@@ -60,7 +70,34 @@ function fetchLinkPreviewDeduped(url: string): Promise<LinkPreviewData | null> {
   return pending;
 }
 
-function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: () => void }) {
+function DirectImageEmbed({
+  url,
+  imageSrc,
+  title,
+  onContentResize,
+}: Readonly<{
+  url: string;
+  imageSrc: string;
+  title: string;
+  onContentResize?: () => void;
+}>) {
+  const { t } = useTranslation();
+
+  return (
+    <ChatInlineImage
+      src={imageSrc}
+      alt={t('chatPayload.directImage', { name: title })}
+      href={url}
+      title={t('chatPayload.directImageOpen')}
+      onContentResize={onContentResize}
+    />
+  );
+}
+
+function LinkPreview({
+  url,
+  onContentResize,
+}: Readonly<{ url: string; onContentResize?: () => void }>) {
   const [preview, setPreview] = useState<LinkPreviewData | null>(null);
 
   useEffect(() => {
@@ -82,6 +119,19 @@ function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: 
   }, [preview, onContentResize]);
 
   if (!preview) return null;
+
+  const showAsDirectImage =
+    Boolean(preview.image) && (preview.kind === 'image' || isLikelyDirectImageUrl(url));
+  if (showAsDirectImage && preview.image) {
+    return (
+      <DirectImageEmbed
+        url={url}
+        imageSrc={preview.image}
+        title={preview.title}
+        onContentResize={onContentResize}
+      />
+    );
+  }
 
   let hostname = '';
   try {
@@ -123,39 +173,23 @@ function MeshcoreGifEmbed({
   onContentResize?: () => void;
 }) {
   const { t } = useTranslation();
-  const [failed, setFailed] = useState(false);
   const src = meshcoreGiphyMediaUrl(gifId);
   const pageUrl = meshcoreGiphyPageUrl(gifId);
   const wireText = `g:${gifId}`;
 
-  if (failed) {
-    return (
-      <span className="whitespace-pre-wrap text-gray-300">
-        {highlightCaseInsensitive(wireText, query)}
-      </span>
-    );
-  }
-
   return (
-    <a
+    <ChatInlineImage
+      src={src}
+      alt={t('chatPayload.meshcoreGif')}
       href={pageUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-1 inline-block max-w-xs"
       title={t('chatPayload.meshcoreGifOpen')}
-    >
-      <img
-        src={src}
-        alt={t('chatPayload.meshcoreGif')}
-        className="max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain"
-        onLoad={() => {
-          onContentResize?.();
-        }}
-        onError={() => {
-          setFailed(true);
-        }}
-      />
-    </a>
+      onContentResize={onContentResize}
+      fallback={
+        <span className="whitespace-pre-wrap text-gray-300">
+          {highlightCaseInsensitive(wireText, query)}
+        </span>
+      }
+    />
   );
 }
 

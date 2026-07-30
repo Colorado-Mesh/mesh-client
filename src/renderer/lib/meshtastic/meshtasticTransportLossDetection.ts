@@ -108,6 +108,7 @@ export function createSerializedWritableStream(
           },
         });
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- External SDK value is validated by surrounding boundary logic.
       return Reflect.get(target, prop, receiver);
     },
   });
@@ -132,6 +133,7 @@ export function attachMeshtasticTransportLossWatch(
   type: ConnectionType,
   onConnectionLost: () => void,
 ): () => void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (type !== 'serial' && type !== 'ble' && type !== 'http' && type !== 'tcp') {
     return () => {};
   }

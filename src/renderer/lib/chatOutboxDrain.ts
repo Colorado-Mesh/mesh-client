@@ -16,8 +16,8 @@ export function registerChatOutboxDrainListener(
   }
   set.add(listener);
   return () => {
-    set?.delete(listener);
-    if (set?.size === 0) listeners.delete(protocol);
+    set.delete(listener);
+    if (set.size === 0) listeners.delete(protocol);
   };
 }
 

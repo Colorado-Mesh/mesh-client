@@ -4,6 +4,7 @@ import {
   REGISTERED_MESH_PROTOCOLS,
 } from '@/shared/meshProtocol';
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
+import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 export type { MeshProtocol };
@@ -12,6 +13,9 @@ export { isMeshProtocol, REGISTERED_MESH_PROTOCOLS };
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
 export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp';
+
+export type ConnectionStatus =
+  'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
 
 /** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
 export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
@@ -126,10 +130,10 @@ export function nodeAnomalyToRoutingRow(a: NodeAnomaly): RoutingDiagnosticRow {
     severity: a.severity,
     description: a.description,
     detectedAt: a.detectedAt,
-    snr: a.snr,
-    hopsAway: a.hopsAway,
-    confidence: a.confidence,
-    descriptionI18n: a.descriptionI18n,
+    ...(a.snr !== undefined ? { snr: a.snr } : {}),
+    ...(a.hopsAway !== undefined ? { hopsAway: a.hopsAway } : {}),
+    ...(a.confidence !== undefined ? { confidence: a.confidence } : {}),
+    ...(a.descriptionI18n !== undefined ? { descriptionI18n: a.descriptionI18n } : {}),
   };
 }
 
@@ -140,10 +144,10 @@ export function routingRowToNodeAnomaly(r: RoutingDiagnosticRow): NodeAnomaly {
     severity: r.severity,
     description: r.description,
     detectedAt: r.detectedAt,
-    snr: r.snr,
-    hopsAway: r.hopsAway,
-    confidence: r.confidence,
-    descriptionI18n: r.descriptionI18n,
+    ...(r.snr !== undefined ? { snr: r.snr } : {}),
+    ...(r.hopsAway !== undefined ? { hopsAway: r.hopsAway } : {}),
+    ...(r.confidence !== undefined ? { confidence: r.confidence } : {}),
+    ...(r.descriptionI18n !== undefined ? { descriptionI18n: r.descriptionI18n } : {}),
   };
 }
 
@@ -200,6 +204,7 @@ export interface MeshNode {
   env_humidity?: number;
   env_pressure?: number;
   env_iaq?: number;
+  env_gas_resistance?: number;
   env_lux?: number;
   env_wind_speed?: number;
   env_wind_direction?: number;
@@ -362,6 +367,11 @@ export interface CachedNode {
 
 export interface ChatMessage {
   id?: number;
+  /**
+   * Zustand `messageStore` key when `id` is not a numeric Meshtastic/MeshCore packet id
+   * (e.g. Reticulum `reticulum-pending-*` or LXMF message hash).
+   */
+  storeId?: string;
   sender_id: number;
   /** Reticulum LXMF destination hash when `sender_id` is a synthetic node id mapping. */
   reticulum_sender_hash?: string;
@@ -371,8 +381,8 @@ export interface ChatMessage {
   reticulum_reply_to_hash?: string;
   /** Local path when a Reticulum attachment was saved to disk. */
   reticulumAttachmentPath?: string;
-  /** Reticulum LXMF delivery method for outbound status badge (direct / propagated). */
-  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
+  /** Reticulum LXMF delivery method for outbound status badge (direct / propagated / opportunistic / paper). */
+  reticulumDeliveryMethod?: ReticulumDeliveryMethod;
   sender_name: string;
   payload: string;
   channel: number;
@@ -447,7 +457,7 @@ export interface EnvironmentTelemetryPoint {
 }
 
 export interface DeviceState {
-  status: 'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
+  status: ConnectionStatus;
   /** True when the last drop was unexpected (not manual disconnect). */
   connectionLoss?: boolean;
   /** Serial auto-reconnect exhausted; user must re-select the USB serial port. */

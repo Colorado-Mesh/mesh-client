@@ -62,7 +62,7 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `connectIdentityId` — connected radio/MQTT identity.
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
-- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy builds only** (Chat freeze removed in newer releases); still useful when analyzing snapshots from older versions.
+- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy snapshots only** (current builds always emit `chatPanelFrozen: false`; the freeze path was removed). Ignore unless analyzing an older export.
 - `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (queued backlog visible on any protocol tab; **active sync spinner and paused/deferred** state only on the MeshCore tab), not Chat/Rooms panel strips.
 - `meshcoreContactPathDiagnostics` — redacted MeshCore contact rows with `pubKeyPrefixHex` (12 hex chars), `hopsAway`, and best known `bestPathBytes` / `bestPathHopCount` from SQLite path history (useful for ping/no-route reports).
 
@@ -72,7 +72,7 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `channelConfigsSummary` — index, name, role, `uplinkEnabled`, `isDefaultPublicPsk` (no PSK material).
 - `mqttChannelKeyEntryCount` — count of synced MQTT channel keys from radio config; `null` when empty.
 
-**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
+**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy snapshots only; not emitted as a live freeze in current builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
 
 **Reticulum-only fields** (under `reticulum`):
 
@@ -888,6 +888,22 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
 3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
 
+### RRC false self-PART / hubParted banner
+
+**Symptoms**: Busy rooms show repeated “Left the room (hub parted you)” / self leave when other members part; or an involuntary hub PART looks like a kick/ban.
+
+**Cause**: Older logic treated member-fanout `PARTED` as self-leave. Sidecar now classifies actor-facing self PARTED vs other-member fanout (`parted_concerns_self`); involuntary self-PART while the room is still desired queues silent rejoin and the UI uses neutral `rrc.moderation.hubParted` (not kick/ban copy).
+
+**What to do**: Upgrade / restart the sidecar. If the banner appears after a true hub PART, re-join the room (or wait for auto-rejoin when still desired). Kick/ban wording is reserved for moderation notice paths only.
+
+### RRC history shows fewer messages than Retention
+
+**Symptoms**: App → Retention keeps **10,000** RRC messages, but opening a room only shows ~**500**.
+
+**Cause**: Per-room UI hydrate caps at `RRC_ROOM_HISTORY_LOAD_COUNT` (**500**) via `rrcRoomHistory.ts`. SQLite may still hold up to the retention count; older rows are not all loaded into the session store.
+
+**What to do**: This is expected. Retention prune (`db:pruneRrcMessagesByCount` / age) controls disk; the 500 cap is a session/UI hydrate limit, not a wipe.
+
 ### Reticulum sidecar won't start or health poll times out
 
 **Symptoms**: Connection tab **Start stack** fails; logs show `[ReticulumSidecar]` health poll timeout; `reticulum:getStatus` reports `lastError`. Identity **Generate** / **Import** errors with `Reticulum sidecar is not running`.
@@ -1061,14 +1077,15 @@ Unrecognized codes pass through unchanged.
 
 **Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
 
-**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops.
+**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops. When Reticulum **Auto-start** is on, Meshtastic/MeshCore BLE autostart also waits `awaitReticulumBleCoexistenceClear` (default max ~**65 s**).
 
 **Fix**:
 
-1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window.
+1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window (~65 s including the RF autostart buffer).
 2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
-3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`, `ble-coexistence-coordinator.assertCanConnect`).
+3. Ensure you are on a current build with watcher-only yield (`useReticulumNobleBleYieldWatcher` — not interface-snapshot release), `reticulumNobleBleYield.ts`, and `ble-coexistence-coordinator.assertCanConnect`.
 4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
+5. If CoreBluetooth logs **“Event receiver died”**, Noble connect raced mid-pair — wait for coexistence clear or stop the Reticulum stack before retrying LoRa BLE.
 
 ### Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
 
@@ -1083,6 +1100,7 @@ Unrecognized codes pass through unchanged.
 3. Get a real PIN: USB → Admin → Bluetooth → **Start pairing** (watch the **Admin panel**, not the radio screen), **or** ~7 s button hold on display boards for an on-screen PIN.
 4. Start the stack **once**, enter that PIN in the OS dialog within ~60 seconds — never `123456`.
 5. The device may only show as Paired in System Settings **after** a successful bond.
+6. For repeated offline BLE interfaces, **remove the interface and add it back** (**Pick device**) to refresh the stored Bluetooth address before retrying pairing.
 
 ### Reticulum BLE RNode bond is stale (OS still shows Paired)
 
@@ -1094,20 +1112,59 @@ Unrecognized codes pass through unchanged.
 
 1. Forget the RNode in System Settings → Bluetooth.
 2. Start pairing on the radio (Admin → Bluetooth, or ~7 s button hold).
-3. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
+3. **Remove and re-add** the BLE interface (**Pick device**) so the saved `ble://` id refreshes.
+4. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
+
+### Reticulum attachment image not showing in Chat
+
+**Symptoms**: LXMF `[file:…:image/…]` bubble shows the filename label but no inline image.
+
+**Cause / checks**: File missing from `userData/reticulum/attachments/`, SVG/unsupported MIME, path outside the jail, magic-byte mismatch, IPC rate limit, or read failure (UI falls back to label only).
+
+**Fix**: Confirm the attachment was cached inbound, that the MIME is a supported raster type (not SVG), and retry after scrolling away and back. Check Device logs for `chat:readReticulumAttachmentAsDataUrl`.
 
 ### Reticulum remote propagation sync fails or never completes
 
-**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, or marks Complete incorrectly after cancel.
+**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, “no link proof”, or marks Complete incorrectly after cancel.
 
 **Cause / behavior**:
 
 - Remote sync needs a known identity (and prefers a path). Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
 - Destinations that announce as delivery/other (including TCP hubs) → `PROPAGATION_TARGET_NOT_PN`. Add a destination that announces `lxmf.propagation`.
-- HaveAll / Complete is success (not failure). Cancel or Establishing stall (~60s) must not advance “last synced”.
+- Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits briefly before Linking; if that still stalls, use Network → **Announce now** and retry.
+- HaveAll / Complete is success (not failure). Cancel or Establishing stall (~45s) must not advance “last synced”.
 - Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.
+- Auto-sync interval counts from the last _successful_ sync; failed attempts only apply a short cooldown (~2 min) so they do not postpone the next scheduled sync forever.
 
-**Fix**: Wait for an announce/path, confirm the hash is a propagation node (not a hub), retry Sync, or Cancel and check Device logs for `propagation_sync` / offer errors.
+**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors. If Add fails with **offer unsupported**, the destination does not speak LXMF `/offer`. If Sync/Add fails with **peering cost exceeds max**, raise **Network → Advanced PN hosting → Max peering cost**.
+
+### Reticulum local PN hosting not discoverable
+
+**Symptoms**: Local Host propagation node is enabled but peers never hear your PN announce / cannot `/offer` or `/get`.
+
+**Cause**: Hosting requires a live stack with identity signing key; enable starts `lxmf.propagation` LinkManager + announce loop.
+
+**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]`. Tune announce interval under **Advanced PN hosting**.
+
+### Reticulum PN hosting policy apply fails
+
+**Symptoms**: Saving **Network → Advanced PN hosting** (peering cost, storage limits, static peers, announce interval) fails or reverts; Device log shows hosting-policy errors.
+
+**Cause / checks**:
+
+- Sidecar rejected the policy (`peering_cost_exceeds_max`, `stamp_flex_exceeds_cost`, range limits, or invalid 32-hex static peer). The renderer now validates the same rules before PUT; failure surfaces via the panel error path.
+- Stack/identity not ready (hosting apply needs a live sidecar). BLE/USB hubs themselves are unrelated — policy is local lxmf-core config, but the stack must be running to persist it.
+- Invalid `node_name` (control characters or longer than 128 characters).
+
+**Fix**: Fix the invalid field (keep peering cost ≤ max; stamp flex ≤ stamp cost; static peers as lowercase 32-hex). Confirm Reticulum stack is **running**, then re-apply. Check logs for `[reticulumPropagationStore] hosting policy` / sidecar `hosting-policy` responses.
+
+### Reticulum last synced time looks wrong after update
+
+**Symptoms**: Propagation UI shows a far-future or absurdly old “last synced” time after a sidecar upgrade or clock skew.
+
+**Cause**: `last_propagation_sync_at` comes from the sidecar as Unix seconds. A future clock (or bad stamp) was previously accepted wholesale; refresh now clamps future values to local `Date.now()`.
+
+**Fix**: Run **Refresh** / reopen Propagation after fixing the system clock. Trigger a successful **Sync** to rewrite a sane stamp.
 
 ### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
 
@@ -1133,7 +1190,7 @@ Unrecognized codes pass through unchanged.
 
 1. **Shared instance conflict** — `share_instance = Yes` with another Reticulum app still running (MeshChatX, Ratspeak, standalone `rnsd`) fighting the same IPC socket. mesh-client may attach as `SharedInstanceClient` and **not spawn** local TCP hubs (Connection then shows misleading “TCP hub unreachable”).
 2. **Dead TCP hub still enabled** — outbound queue fills; path requests fail with _no available capacity_.
-3. **No propagation node** — when direct link fails, there is no store-and-forward fallback (see next section).
+3. **No remote propagation node** — when Direct fails and no preferred **remote** PN is configured, there is no store-and-forward retry (local inbox does not count). With a remote preferred PN, the sidecar retries once via that PN (see **Stale path + Failed via TCP** below).
 
 **Fix**:
 
@@ -1158,7 +1215,9 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 1. Open **Network → Propagation** (Chat notice **Set up propagation** jumps there).
 2. Add a **32-character LXMF destination hash** from whoever runs the propagation node you trust.
 3. Set **Preferred** (manual mode) or leave **Auto** when multiple nodes are listed.
-4. **Local propagation only** queues messages on this device — it does **not** replace a remote propagation node for peers you cannot reach directly.
+4. **Local propagation hosting** stores messages for peers that sync with you — it does **not** replace a remote propagation node for peers you cannot reach directly. Preferring Local shows a warning toast; Chat still treats local-only as “no remote PN.”
+
+**Stale path + Failed via TCP:** When a path exists, mesh-client tries **Direct** first. If Direct fails and a preferred **remote** PN is configured, the sidecar retries once via that PN (Ratspeak-style store-and-forward). Without a remote preferred PN, the row stays **Failed** even if Ratspeak on the same machine deposits successfully.
 
 **Not the same as transport:** Ratspeak TCP hubs (e.g. `rns.ratspeak.org:4242`) and [rathole](https://github.com/ratspeak/rathole) are **connectivity / transport** tools, not LXMF propagation. mesh-client does not ship a default community propagation hash.
 
@@ -1241,6 +1300,10 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 1. Confirm the destination is announced and has a path (Peers / Topology); **Probe** it if the chip is stale.
 2. For `path_constrained`, prefer a faster interface or wait for a better path; large files over slow links may not be attempted.
 3. Check sidecar logs for `rnsh`/`rncp` link errors; the `reticulum:rncpSend` / `rncpFetch` IPC returns the reason key surfaced in the toast.
+
+**Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
+
+**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied only if a pending mark exists (`rncpReceiveDestSharePending`, TTL); shares without a prior request-enable from this session are ignored.
 
 ### Reticulum Remote inbound rncp blocked (Ask mode / policy)
 
@@ -1436,7 +1499,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 **Symptoms**: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.
 
-**Fix**: By design — foreign-LoRa overhear tables render on the **Meshtastic** Diagnostics tab only. MeshCore may still record overhear internally when raw RX bytes are available. Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
+**Fix**: Foreign-LoRa overhear tables render on the **Meshtastic** and **MeshCore** Diagnostics tabs (keyed by that protocol’s self node id). Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
 
 ### No signal bars on some nodes
 

@@ -1,4 +1,8 @@
-import { isPlausibleMeshcoreLastAdvertSec } from '../../shared/meshcoreLastAdvertPlausible';
+import { LAST_HEARD_MS_THRESHOLD, normalizeLastHeardToUnixSec } from '../../shared/lastHeardUnits';
+import {
+  clampMeshcoreLastAdvertSec,
+  isPlausibleMeshcoreLastAdvertSec,
+} from '../../shared/meshcoreLastAdvertPlausible';
 import {
   clampReadWatermarkMs as sharedClampReadWatermarkMs,
   effectiveMessageTimestampMs as sharedEffectiveMessageTimestampMs,
@@ -22,13 +26,12 @@ export type NodeStatus = 'online' | 'stale' | 'offline';
 export function normalizeLastHeardMs(lastHeard: number): number {
   if (!lastHeard || !Number.isFinite(lastHeard)) return 0;
   // MeshCore uses epoch seconds; Meshtastic paths usually use epoch milliseconds.
-  return lastHeard < 1_000_000_000_000 ? lastHeard * 1000 : lastHeard;
+  return lastHeard < LAST_HEARD_MS_THRESHOLD ? lastHeard * 1000 : lastHeard;
 }
 
 /** Normalize epoch seconds or milliseconds to Unix seconds (for MeshCore contact merge). */
 export function lastHeardToUnixSeconds(lastHeard: number): number {
-  if (!lastHeard || !Number.isFinite(lastHeard)) return 0;
-  return lastHeard < 1_000_000_000_000 ? Math.floor(lastHeard) : Math.floor(lastHeard / 1000);
+  return normalizeLastHeardToUnixSec(lastHeard);
 }
 
 /**
@@ -40,10 +43,7 @@ export function clampLastHeardSec(
   nowSec = Math.floor(Date.now() / 1000),
   maxFutureSkewSec = LAST_HEARD_MAX_FUTURE_SKEW_SEC,
 ): number {
-  if (!lastHeardSec || !Number.isFinite(lastHeardSec)) return 0;
-  const floored = Math.floor(lastHeardSec);
-  if (floored <= nowSec + maxFutureSkewSec) return floored;
-  return nowSec;
+  return clampMeshcoreLastAdvertSec(lastHeardSec, nowSec, maxFutureSkewSec);
 }
 
 /** Effective last-heard in ms for age calculations; never after `nowMs`. */

@@ -134,7 +134,7 @@ export function scheduleMeshcoreWaitingMessagesDrain(
         });
       }
       if (options?.isMounted && !options.isMounted()) {
-        options?.onDeferredChange?.(false);
+        options.onDeferredChange?.(false);
         return;
       }
       if (isMeshcoreCompanionDrainDeferred()) {

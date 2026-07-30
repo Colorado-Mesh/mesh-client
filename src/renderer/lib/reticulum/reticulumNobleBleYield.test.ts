@@ -223,6 +223,45 @@ describe('syncReticulumNobleBleYield', () => {
     );
     expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
   });
+
+  it('does not release orphan scan lock when inactive sync is aborted', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    const abort = new AbortController();
+    abort.abort();
+    const state = { yieldActive: false };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: false,
+        interfaces: [],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: 0,
+        signal: abort.signal,
+      },
+      state,
+    );
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+  });
+
+  it('does not release active yield when inactive sync is aborted', async () => {
+    const abort = new AbortController();
+    abort.abort();
+    const state = { yieldActive: true };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: false,
+        interfaces: [],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: 0,
+        signal: abort.signal,
+      },
+      state,
+    );
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+    expect(state.yieldActive).toBe(true);
+  });
 });
 
 describe('reticulumBleRnodeOnline helpers', () => {

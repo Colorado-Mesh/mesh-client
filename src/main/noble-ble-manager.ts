@@ -5,9 +5,74 @@ import { withTimeout } from '../shared/withTimeout';
 import { bleCoexistenceCoordinator, type BlePeripheralOwner } from './ble-coexistence-coordinator';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
+interface NobleAdvertisement {
+  localName?: string;
+  serviceUuids?: string[];
+}
+
+interface NobleCharacteristic {
+  uuid: string;
+  properties?: string[];
+  on(event: 'data', listener: (data: Buffer, isNotification: boolean) => void): this;
+  on(event: 'notify', listener: (state: boolean) => void): this;
+  off(event: 'data', listener: (data: Buffer, isNotification: boolean) => void): this;
+  removeListener(event: 'data', listener: (data: Buffer, isNotification: boolean) => void): this;
+  removeAllListeners(event?: 'data'): this;
+  readAsync(): Promise<Buffer>;
+  writeAsync(data: Buffer, withoutResponse: boolean): Promise<void>;
+  subscribeAsync(): Promise<void>;
+  unsubscribeAsync(): Promise<void>;
+}
+
+interface NobleDiscoveryResult {
+  characteristics: NobleCharacteristic[];
+}
+
+interface NoblePeripheral {
+  id: string;
+  address?: string;
+  addressType?: string;
+  advertisement?: NobleAdvertisement;
+  mtu?: number | null;
+  rssi?: number;
+  state: string;
+  on(event: 'mtu', listener: (mtu: number) => void): this;
+  once(event: 'disconnect', listener: (reason?: unknown) => void): this;
+  removeListener(event: 'mtu', listener: (mtu: number) => void): this;
+  removeListener(event: 'disconnect', listener: (reason?: unknown) => void): this;
+  removeAllListeners(event?: 'mtu'): this;
+  connectAsync(): Promise<void>;
+  disconnectAsync(): Promise<void>;
+  discoverAllServicesAndCharacteristicsAsync(): Promise<NobleDiscoveryResult>;
+  discoverSomeServicesAndCharacteristicsAsync(
+    serviceUuids: string[],
+    characteristicUuids: string[],
+  ): Promise<NobleDiscoveryResult>;
+}
+
+interface NobleApi {
+  state: string;
+  on(event: 'stateChange', listener: (state: string) => void): this;
+  on(event: 'discover', listener: (peripheral: NoblePeripheral) => void): this;
+  on(event: 'scanStop', listener: () => void): this;
+  removeListener(event: 'scanStop', listener: () => void): this;
+  removeAllListeners(event?: 'stateChange' | 'discover'): this;
+  startScanning(
+    serviceUuids: string[],
+    allowDuplicates: boolean,
+    callback: (error: Error | null) => void,
+  ): void;
+  stopScanning(): void;
+  stop(): void;
+}
+
 // Only load noble on Mac/Windows — Linux uses Web Bluetooth in renderer instead
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const noble = process.platform === 'linux' ? null : require('@stoprocent/noble');
+const noble = (
+  process.platform === 'linux'
+    ? null
+    : // eslint-disable-next-line @typescript-eslint/no-require-imports
+      (require('@stoprocent/noble') as NobleApi)
+) satisfies NobleApi | null;
 
 // Meshtastic BLE GATT UUIDs (from @meshtastic/transport-web-bluetooth)
 const SERVICE_UUID = '6ba1b21815a8461f9fa85dcae273eafd';
@@ -64,7 +129,9 @@ function normalizeUuid(uuid: string): string {
 }
 
 function normalizedGattProps(char: { properties?: unknown }): string[] {
-  return Array.isArray(char.properties) ? char.properties : [];
+  return Array.isArray(char.properties)
+    ? char.properties.filter((property): property is string => typeof property === 'string')
+    : [];
 }
 
 /** Score NUS TX candidates so we pick a real char over WinRT stubs (duplicate UUIDs, empty props). */
@@ -84,7 +151,10 @@ function meshcoreNusRxScore(char: { properties?: unknown }): number {
   return s;
 }
 
-function meshcorePickBestChar(candidates: any[], score: (c: any) => number): any {
+function meshcorePickBestChar(
+  candidates: NobleCharacteristic[],
+  score: (c: NobleCharacteristic) => number,
+): NobleCharacteristic | null {
   if (candidates.length === 0) return null;
   return candidates.reduce((best, c) => (score(c) > score(best) ? c : best), candidates[0]);
 }
@@ -112,12 +182,11 @@ import type { MeshProtocol } from '../shared/meshProtocol';
 export type NobleSessionId = MeshProtocol;
 
 interface NobleBleSession {
-  // Noble GATT objects from @stoprocent/noble — typed as any (no stable TS surface); avoid `any | null` (redundant union).
-  connectedPeripheral: any;
+  connectedPeripheral: NoblePeripheral | null;
   connectedPeripheralDisconnectHandler: (() => void) | null;
-  toRadioChar: any;
-  fromRadioChar: any;
-  fromNumChar: any;
+  toRadioChar: NobleCharacteristic | null;
+  fromRadioChar: NobleCharacteristic | null;
+  fromNumChar: NobleCharacteristic | null;
   fromRadioDataHandler: ((data: Buffer, isNotification: boolean) => void) | null;
   fromNumDataHandler: ((data: Buffer) => void) | null;
   readPumpActive: boolean;
@@ -180,7 +249,7 @@ export class NobleBleManager extends EventEmitter {
   private readonly sessions = new Map<NobleSessionId, NobleBleSession>();
   /** Serializes connect() calls across all sessions to prevent native CBCentralManager races. */
   private connectQueue: Promise<void> = Promise.resolve();
-  private readonly knownPeripherals = new Map<string, any>();
+  private readonly knownPeripherals = new Map<string, NoblePeripheral>();
   /**
    * Tracks which sessions have an active scan interest.
    * meshtastic → filtered scan (Meshtastic service UUID only)
@@ -193,12 +262,12 @@ export class NobleBleManager extends EventEmitter {
   private scanningActive = false;
   /** Deduplicates concurrent doStartScanning calls until the native start callback completes or times out. */
   private scanStartInFlight: Promise<void> | null = null;
-  private lastAdapterState = String(noble?.state ?? 'unknown');
+  private lastAdapterState = noble?.state ?? 'unknown';
   private releaseHandlesCallCount = 0;
 
   constructor() {
     super();
-    if (process.platform === 'linux') {
+    if (!noble) {
       console.debug('[NobleBleManager] skipping init on Linux (using Web Bluetooth in renderer)');
       return;
     }
@@ -218,7 +287,7 @@ export class NobleBleManager extends EventEmitter {
       }
     });
 
-    noble.on('discover', (peripheral: any) => {
+    noble.on('discover', (peripheral: NoblePeripheral) => {
       // Client-side filter: noble's server-side UUID filter is unreliable on macOS.
       // When only the meshtastic session is scanning, only pass devices that advertise
       // the meshtastic service UUID. Devices that advertise zero service UUIDs are passed
@@ -366,7 +435,7 @@ export class NobleBleManager extends EventEmitter {
   private attachNoblePeripheralMtuListener(
     sessionId: NobleSessionId,
     session: NobleBleSession,
-    peripheral: any,
+    peripheral: NoblePeripheral,
   ): void {
     if (session.peripheralMtuHandler) {
       try {
@@ -381,19 +450,19 @@ export class NobleBleManager extends EventEmitter {
     session.peripheralMtuHandler = handler;
     peripheral.on('mtu', handler);
     if (peripheral.mtu != null) {
-      this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu as number, 'poll');
+      this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu, 'poll');
     }
   }
 
   private async waitForNoblePeripheralMtuSettled(
     sessionId: NobleSessionId,
     session: NobleBleSession,
-    peripheral: any,
+    peripheral: NoblePeripheral,
   ): Promise<void> {
     const deadline = Date.now() + BLE_MTU_POST_GATT_WAIT_MS;
     while (Date.now() < deadline) {
       if (peripheral.mtu != null) {
-        this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu as number, 'poll');
+        this.updateSessionAttMtuFromRaw(sessionId, session, peripheral.mtu, 'poll');
         return;
       }
       await new Promise<void>((r) => setTimeout(r, BLE_MTU_POLL_MS));
@@ -591,7 +660,7 @@ export class NobleBleManager extends EventEmitter {
     // so the picker stays empty on second and subsequent scan attempts.
     // Preserve peripherals already connected in noble — they won't re-advertise during a
     // scan, so keep them available for connect() and re-emit for auto-connect / picker.
-    const stillConnected: [string, any][] = [];
+    const stillConnected: [string, NoblePeripheral][] = [];
     for (const [id, peripheral] of this.knownPeripherals.entries()) {
       if (peripheral.state === 'connected') stillConnected.push([id, peripheral]);
     }
@@ -658,7 +727,7 @@ export class NobleBleManager extends EventEmitter {
     sessionId: NobleSessionId,
     peripheralId: string,
     timeoutMs: number,
-  ): Promise<any> {
+  ): Promise<NoblePeripheral> {
     const cached = this.knownPeripherals.get(peripheralId);
     if (cached) return Promise.resolve(cached);
 
@@ -742,7 +811,8 @@ export class NobleBleManager extends EventEmitter {
    * avoiding a race where a late native callback could set scanningActive after we time out.
    */
   private runDoStartScanningWithTimeout(): Promise<void> {
-    if (!noble) return Promise.resolve();
+    const nobleApi = noble;
+    if (!nobleApi) return Promise.resolve();
     const filter = this.computeScanFilter();
     let abandoned = false;
 
@@ -760,7 +830,7 @@ export class NobleBleManager extends EventEmitter {
         clearTimer();
         if (!this.scanningActive) {
           try {
-            noble!.stopScanning();
+            nobleApi.stopScanning();
           } catch (stopErr) {
             console.debug('[NobleBleManager] stopScanning after start timeout (ignored):', stopErr); // log-injection-ok noble internal error
           }
@@ -768,11 +838,11 @@ export class NobleBleManager extends EventEmitter {
         reject(new Error(`noble.startScanning timed out after ${BLE_START_SCAN_TIMEOUT_MS}ms`));
       }, BLE_START_SCAN_TIMEOUT_MS);
 
-      noble!.startScanning(filter, false, (err: Error | null) => {
+      nobleApi.startScanning(filter, false, (err: Error | null) => {
         if (abandoned) {
           if (!err) {
             try {
-              noble!.stopScanning();
+              nobleApi.stopScanning();
             } catch (stopErr) {
               console.debug(
                 '[NobleBleManager] stopScanning after abandoned start callback (ignored):',
@@ -827,7 +897,7 @@ export class NobleBleManager extends EventEmitter {
   }
 
   private doStopScanning(): Promise<void> {
-    if (!this.scanningActive) return Promise.resolve();
+    if (!noble || !this.scanningActive) return Promise.resolve();
     // Mark stopped immediately — noble's stopScanning callback is unreliable on some platforms
     // (may never fire on Windows; can hang on macOS if CBCentralManager state is inconsistent).
     // CoreBluetooth receives the stop command regardless; we don't need to await confirmation.
@@ -854,7 +924,7 @@ export class NobleBleManager extends EventEmitter {
     }
     // Clear scan requesters to prevent any deferred scan restart during teardown.
     this.scanRequesters.clear();
-    if (process.platform === 'linux') {
+    if (!noble) {
       return;
     }
     // Only call noble.stopScanning() if scanning is actually active.
@@ -893,6 +963,9 @@ export class NobleBleManager extends EventEmitter {
   }
 
   async connect(sessionId: NobleSessionId, peripheralId: string): Promise<void> {
+    // Do not reject solely because `noble` is null: Linux production skips the native
+    // binding, and Linux CI behavior tests seed knownPeripherals + sessions without it.
+    // Scan paths still require noble (checked where startScanning/scanStop is used).
     // Serialize across all sessions — noble's native CBCentralManager crashes (SIGSEGV/SIGBUS)
     // if a second peripheral's discoverServices/subscribe races with the first.
     const prevQueue = this.connectQueue;
@@ -903,7 +976,7 @@ export class NobleBleManager extends EventEmitter {
     await withTimeout(prevQueue, BLE_CONNECT_QUEUE_WAIT_MS, 'BLE connect queue wait');
 
     const session = this.getSession(sessionId);
-    let peripheral: any = null;
+    let peripheral: NoblePeripheral | null = null;
     let connected = false;
     const peripheralOwner: BlePeripheralOwner =
       sessionId === 'meshcore' ? 'noble:meshcore' : 'noble:meshtastic';
@@ -968,7 +1041,7 @@ export class NobleBleManager extends EventEmitter {
       // Re-open a fresh session (disconnect sets closing=true; reset it for the new connection).
       session.closing = false;
 
-      peripheral = this.knownPeripherals.get(peripheralId);
+      peripheral = this.knownPeripherals.get(peripheralId) ?? null;
       if (!peripheral) {
         console.debug(
           `[BLE:${sessionId}] peripheral ${peripheralId} not in cache — scanning up to ${NOBLE_PERIPHERAL_SCAN_WAIT_MS}ms`,
@@ -984,7 +1057,7 @@ export class NobleBleManager extends EventEmitter {
       );
       bleCoexistenceCoordinator.assertCanConnect(
         peripheralOwner,
-        String(peripheral.address ?? peripheralId),
+        peripheral.address ?? peripheralId,
       );
       session.connectStartedAtMs = Date.now();
       session.firstPacketLogged = false;
@@ -1036,7 +1109,8 @@ export class NobleBleManager extends EventEmitter {
           }
         }
         this.knownPeripherals.delete(peripheralId);
-        if (peripheral.state !== 'disconnected') {
+        const stateAfterDisconnect: string = peripheral.state;
+        if (stateAfterDisconnect !== 'disconnected') {
           peripheral = await this.waitForPeripheralDuringScan(
             sessionId,
             peripheralId,
@@ -1083,13 +1157,17 @@ export class NobleBleManager extends EventEmitter {
 
       // Stop scanning before connecting — many Linux/BlueZ drivers abort connections while scanning.
       if (this.scanningActive) {
+        const nobleApi = noble;
+        if (!nobleApi) {
+          throw new Error('Noble BLE is unavailable on this platform');
+        }
         console.debug(`[BLE:${sessionId}] stopping scan before connect`);
         await new Promise<void>((resolve) => {
           const onScanStop = () => {
-            noble.removeListener('scanStop', onScanStop);
+            nobleApi.removeListener('scanStop', onScanStop);
             resolve();
           };
-          noble.on('scanStop', onScanStop);
+          nobleApi.on('scanStop', onScanStop);
           void this.doStopScanning();
         });
       }
@@ -1098,24 +1176,20 @@ export class NobleBleManager extends EventEmitter {
       try {
         await withTimeout(peripheral.connectAsync(), BLE_CONNECT_TIMEOUT_MS, 'BLE connectAsync');
       } catch (err) {
-        if (err instanceof Error && /BLE connectAsync timed out/i.test(err.message)) {
-          this.knownPeripherals.delete(peripheralId);
-          try {
-            await withTimeout(
-              peripheral.disconnectAsync(),
-              5000,
-              'BLE post-timeout disconnectAsync',
-            );
-          } catch (disconnectErr) {
-            console.debug(
-              `[BLE:${sessionId}] post-timeout disconnect error (ignored):`,
-              sanitizeLogMessage(
-                disconnectErr instanceof Error ? disconnectErr.message : String(disconnectErr),
-              ),
-            );
-          }
-          // UI hints are applied in renderer via connectionPanelErrorHumanize (i18n).
-          throw err;
+        this.knownPeripherals.delete(peripheralId);
+        try {
+          await withTimeout(
+            peripheral.disconnectAsync(),
+            5000,
+            'BLE post-connect-failure disconnectAsync',
+          );
+        } catch (disconnectErr) {
+          console.debug(
+            `[BLE:${sessionId}] post-connect-failure disconnect error (ignored):`,
+            sanitizeLogMessage(
+              disconnectErr instanceof Error ? disconnectErr.message : String(disconnectErr),
+            ),
+          );
         }
         throw err;
       }
@@ -1149,16 +1223,16 @@ export class NobleBleManager extends EventEmitter {
 
       const tDiscover = Date.now();
       const meshcoreWinFullDiscovery = isMeshcore && IS_WIN32;
-      let characteristics: any[];
+      let characteristics: NobleCharacteristic[];
       if (meshcoreWinFullDiscovery) {
-        const all = await withTimeout<{ characteristics: any[] }>(
+        const all = await withTimeout<NobleDiscoveryResult>(
           peripheral.discoverAllServicesAndCharacteristicsAsync(),
           BLE_DISCOVERY_TIMEOUT_MS,
           'BLE full GATT discovery (meshcore Win32)',
         );
         characteristics = all.characteristics;
       } else {
-        const discovered = await withTimeout<{ characteristics: any[] }>(
+        const discovered = await withTimeout<NobleDiscoveryResult>(
           peripheral.discoverSomeServicesAndCharacteristicsAsync(
             discoverServiceUuids,
             discoverCharUuids,
@@ -1169,8 +1243,8 @@ export class NobleBleManager extends EventEmitter {
         characteristics = discovered.characteristics;
       }
       if (isMeshcore) {
-        const rxCandidates: any[] = [];
-        const txCandidates: any[] = [];
+        const rxCandidates: NobleCharacteristic[] = [];
+        const txCandidates: NobleCharacteristic[] = [];
         for (const char of characteristics) {
           const uuid = normalizeUuid(char.uuid);
           if (uuid === MESHCORE_RX_UUID) rxCandidates.push(char);
@@ -1209,7 +1283,7 @@ export class NobleBleManager extends EventEmitter {
       if (isMeshcore) {
         console.debug(
           `[BLE:${sessionId}] ALL discovered characteristics for meshcore: ${characteristics
-            .map((c: any) => `${normalizeUuid(c.uuid)}[${(c.properties ?? []).join(',')}]`)
+            .map((c) => `${normalizeUuid(c.uuid)}[${(c.properties ?? []).join(',')}]`)
             .join(', ')}`,
         );
       }
@@ -1217,7 +1291,7 @@ export class NobleBleManager extends EventEmitter {
       // FROMNUM is optional for notification-based flow; require only TX/RX characteristics.
       if (!session.toRadioChar || !session.fromRadioChar) {
         console.warn(
-          `[BLE:${sessionId}] missing required chars — toRadio=${Boolean(session.toRadioChar)} fromRadio=${Boolean(session.fromRadioChar)} discoveredUuids=${characteristics.map((c: any) => c.uuid).join(',')}`, // log-injection-ok noble internal characteristic UUIDs
+          `[BLE:${sessionId}] missing required chars — toRadio=${Boolean(session.toRadioChar)} fromRadio=${Boolean(session.fromRadioChar)} discoveredUuids=${characteristics.map((c) => c.uuid).join(',')}`, // log-injection-ok noble internal characteristic UUIDs
         );
         throw new Error('Failed to find required BLE characteristics');
       }
@@ -1327,9 +1401,9 @@ export class NobleBleManager extends EventEmitter {
         session.meshcoreGattInflight = null;
       }
       logDeviceConnection(
-        `transport=ble stack=${sessionId} peripheralId=${sanitizeLogMessage(peripheralId)} mac=${sanitizeLogMessage(String(peripheral.address ?? 'unknown'))}`,
+        `transport=ble stack=${sessionId} peripheralId=${sanitizeLogMessage(peripheralId)} mac=${sanitizeLogMessage(peripheral.address ?? 'unknown')}`,
       );
-      const registeredMac = String(peripheral.address ?? peripheralId);
+      const registeredMac = peripheral.address ?? peripheralId;
       bleCoexistenceCoordinator.register(registeredMac, peripheralOwner);
       session.registeredMac = registeredMac;
       session.lastConnectedPeripheralId = peripheralId;
@@ -1374,7 +1448,7 @@ export class NobleBleManager extends EventEmitter {
         }
       }
       this.clearSessionState(session);
-      if (connected) {
+      if (connected && peripheral) {
         await peripheral.disconnectAsync().catch((e: unknown) => {
           console.debug(
             '[noble-ble] connect error cleanup disconnect ' +
@@ -1417,7 +1491,7 @@ export class NobleBleManager extends EventEmitter {
       const peripheral = session.connectedPeripheral;
       const rawMtu =
         peripheral != null && typeof peripheral.mtu === 'number' && Number.isFinite(peripheral.mtu)
-          ? (peripheral.mtu as number)
+          ? peripheral.mtu
           : session.attMtuSanitized;
       const limit = maxWriteRequestPayloadBytes(rawMtu);
       for (let offset = 0; offset < data.length; offset += limit) {

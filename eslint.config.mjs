@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/build/**',
       '**/out/**',
       '**/node_modules/**',
+      '.cache/**',
       'src/renderer/lib/nomad/vendor/**',
       'eslint.config.mjs',
       '**/*.d.ts',
@@ -80,11 +81,12 @@ export default tseslint.config(
       'prefer-const': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
+      // Prod src: no-unsafe-* at error (strictTypeChecked). Tests override back to off below.
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unsafe-enum-comparison': 'error',
       '@typescript-eslint/restrict-template-expressions': 'off',
       '@typescript-eslint/unbound-method': 'off',
@@ -93,8 +95,13 @@ export default tseslint.config(
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
-      // strictTypeChecked enables this, but it flags many defensive DOM/runtime patterns where
-      // types are narrower than reality; keep other strict rules without churning the whole UI.
+      // Explicit: already error via strictTypeChecked. ignoreVoid keeps intentional fire-and-forget
+      // (call sites must still attach .catch when the promise can reject).
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        { ignoreVoid: true, checkThenables: true },
+      ],
+      // Off globally: defensive UI ?. / ?? churn. Re-enabled for shared + renderer/lib below.
       '@typescript-eslint/no-unnecessary-condition': 'off',
       // Autofix removes generics that TypeScript still needs for inference (tsc errors after
       // eslint --fix). Prefer explicit types at those call sites over a blanket autofix.
@@ -110,15 +117,26 @@ export default tseslint.config(
       '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions'] }],
     },
   },
-  // Stricter typing for shared helpers (protocol parsers, IPC types, pure lib).
+  // Protocol / pure logic: flag always-truthy/falsy conditions and redundant ?. / ??.
   {
-    files: ['src/shared/**/*.ts'],
+    files: ['src/shared/**/*.{ts,tsx}', 'src/renderer/lib/**/*.{ts,tsx}'],
     rules: {
-      '@typescript-eslint/no-unsafe-argument': 'error',
-      '@typescript-eslint/no-unsafe-assignment': 'error',
-      '@typescript-eslint/no-unsafe-call': 'error',
-      '@typescript-eslint/no-unsafe-member-access': 'error',
-      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
+    },
+  },
+  // Tests: mock/any theater — keep no-unsafe-* off (prod stays error).
+  {
+    files: ['**/*.{test,spec}.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      // Shared/lib tests inherit no-unnecessary-condition; leave it on for logic tests.
     },
   },
   // Node scripts: no TS program — disable type-checked rules; keep security + Node globals

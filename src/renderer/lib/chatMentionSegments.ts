@@ -50,7 +50,7 @@ export function parseChatMentionSegments(input = ''): ChatMentionSegment[] {
     if (m.index > last) {
       out.push(...splitByUrls(input.slice(last, m.index)));
     }
-    out.push({ kind: 'mention', label: (m[1] ?? '').trim() });
+    out.push({ kind: 'mention', label: m[1].trim() });
     last = m.index + m[0].length;
   }
   if (last < input.length) {

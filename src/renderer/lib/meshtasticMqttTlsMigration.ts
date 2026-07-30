@@ -37,11 +37,11 @@ export const MESHTASTIC_LIAM_1883: MQTTSettings = {
 };
 
 export function isMeshtasticOfficialBrokerSettings(s: MQTTSettings): boolean {
-  return s.server?.trim().toLowerCase() === MESHTASTIC_OFFICIAL_BROKER_HOST.toLowerCase();
+  return s.server.trim().toLowerCase() === MESHTASTIC_OFFICIAL_BROKER_HOST.toLowerCase();
 }
 
 export function isLiamBrokerSettings(s: MQTTSettings): boolean {
-  return s.server?.trim().toLowerCase() === LIAM_BROKER_HOST.toLowerCase();
+  return s.server.trim().toLowerCase() === LIAM_BROKER_HOST.toLowerCase();
 }
 
 /** Extra context for Connection tab MQTT errors. */

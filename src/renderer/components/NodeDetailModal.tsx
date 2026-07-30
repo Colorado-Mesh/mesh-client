@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import {
@@ -64,6 +65,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
@@ -254,6 +256,7 @@ export default function NodeDetailModal({
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
   const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
@@ -364,9 +367,14 @@ export default function NodeDetailModal({
     const nodeId = node.node_id;
     noteSaveAllowedRef.current = true;
     let cancelled = false;
-    void window.electronAPI.db.getNodeNote(nodeId).then((note: string | null) => {
-      if (!cancelled) setNodeNote(note ?? '');
-    });
+    void window.electronAPI.db
+      .getNodeNote(nodeId)
+      .then((note: string | null) => {
+        if (!cancelled) setNodeNote(note ?? '');
+      })
+      .catch((e: unknown) => {
+        console.warn('[NodeDetailModal] getNodeNote failed ' + errLikeToLogString(e));
+      });
     return () => {
       cancelled = true;
       noteSaveAllowedRef.current = false;
@@ -377,7 +385,9 @@ export default function NodeDetailModal({
       const pending = pendingNoteRef.current;
       pendingNoteRef.current = null;
       if (pending !== null) {
-        void window.electronAPI.db.setNodeNote(nodeId, pending);
+        void window.electronAPI.db.setNodeNote(nodeId, pending).catch((e: unknown) => {
+          console.warn('[NodeDetailModal] setNodeNote (unmount) failed ' + errLikeToLogString(e));
+        });
       }
     };
   }, [node?.node_id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -935,7 +945,9 @@ export default function NodeDetailModal({
                     </h4>
                     <div className="flex items-center gap-2">
                       <span className="text-muted text-xs">
-                        {new Date(meshcoreNodeTelemetry.fetchedAt).toLocaleTimeString()}
+                        {formatDisplayTime(meshcoreNodeTelemetry.fetchedAt, {
+                          use24Hour: use24HourTime,
+                        })}
                       </span>
                       <button
                         type="button"
@@ -2229,7 +2241,13 @@ export default function NodeDetailModal({
                   noteSaveTimerRef.current = setTimeout(() => {
                     if (!noteSaveAllowedRef.current) return;
                     pendingNoteRef.current = null;
-                    void window.electronAPI.db.setNodeNote(node.node_id, val);
+                    void window.electronAPI.db
+                      .setNodeNote(node.node_id, val)
+                      .catch((e: unknown) => {
+                        console.warn(
+                          '[NodeDetailModal] setNodeNote failed ' + errLikeToLogString(e),
+                        );
+                      });
                   }, 600);
                 }}
               />

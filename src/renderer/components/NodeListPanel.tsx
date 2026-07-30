@@ -34,6 +34,7 @@ import {
   filterDiagnosticRowsForProtocol,
   getRoutingRowForNode,
 } from '../lib/diagnostics/diagnosticRows';
+import { translateRoutingRowDescription } from '../lib/diagnostics/diagnosticsLabels';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { downloadBlob } from '../lib/downloadBlob';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
@@ -53,7 +54,9 @@ import {
   meshtasticContactGroupMatchesBuiltinRouter,
 } from '../lib/meshtasticContactGroupUtils';
 import {
+  isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
+  meshtasticHybridPathLabels,
   MeshtasticMqttOnlyPathIcons,
   resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
@@ -1275,12 +1278,9 @@ export default function NodeListPanel({
                                   node.node_id,
                                 );
                                 if (!routingRow) return null;
+                                const routingDesc = translateRoutingRowDescription(t, routingRow);
                                 return (
-                                  <span
-                                    role="img"
-                                    title={routingRow.description}
-                                    aria-label={routingRow.description}
-                                  >
+                                  <span role="img" title={routingDesc} aria-label={routingDesc}>
                                     <TriangleAlert
                                       aria-hidden
                                       className={`h-4 w-4 shrink-0 ${
@@ -1382,19 +1382,14 @@ export default function NodeListPanel({
                                 );
                               }
                               if (pathBadge === 'hybrid') {
-                                const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+                                const labels = meshtasticHybridPathLabels(
+                                  t,
+                                  isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected),
+                                );
                                 return (
                                   <MeshtasticHybridPathIcons
-                                    title={
-                                      isSelfHybrid
-                                        ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-                                        : t('nodeListPanel.hybridMqttPathTooltip')
-                                    }
-                                    ariaLabel={
-                                      isSelfHybrid
-                                        ? t('nodeListPanel.connectedViaRfAndMqttAria')
-                                        : t('nodeListPanel.hybridMqttPathAria')
-                                    }
+                                    title={labels.title}
+                                    ariaLabel={labels.ariaLabel}
                                   />
                                 );
                               }
@@ -1533,7 +1528,13 @@ export default function NodeListPanel({
                                       ? 'text-gray-300'
                                       : 'text-muted'
                                 }`}
-                                title={red ? `${red.score}% connection health` : undefined}
+                                title={
+                                  red
+                                    ? t('nodeListPanel.echoesConnectionHealthTooltip', {
+                                        score: red.score,
+                                      })
+                                    : undefined
+                                }
                               >
                                 {echoes > 0 ? `+${echoes}` : '-'}
                               </td>

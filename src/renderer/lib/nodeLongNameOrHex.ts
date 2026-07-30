@@ -4,8 +4,10 @@ import type { MeshNode, MeshProtocol } from './types';
 export function nodeDisplayName(node: MeshNode | undefined, protocol: MeshProtocol): string {
   if (!node) return '';
   if (protocol === 'meshcore' || protocol === 'reticulum') {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime node records may omit display-name fields.
     return node.long_name?.trim() || node.short_name?.trim() || '';
   }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime node records may omit display-name fields.
   return node.short_name?.trim() || node.long_name?.trim() || '';
 }
 
@@ -24,7 +26,7 @@ export function nodeLabelForRawPacket(
 
 /** Long name only, else hex — legacy; prefer {@link nodeLabelForRawPacket} for UI parity with chat. */
 export function nodeLongNameOrHexLabel(node: MeshNode | undefined, nodeId: number): string {
-  const raw = node?.long_name?.trim();
+  const raw = node?.long_name.trim();
   if (raw) return raw;
   return nodeId.toString(16).toUpperCase();
 }

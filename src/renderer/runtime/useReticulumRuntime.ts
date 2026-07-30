@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+import { pushAppToast } from '@/renderer/components/Toast';
+import {
+  applyRncpReceiveDestShareFromLxmf,
+  rncpReceiveDestShareSavedToastMessage,
+} from '@/renderer/lib/applyRncpReceiveDestShare';
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
@@ -51,8 +57,15 @@ import {
   isReticulumManualStackStopSuppress,
   setReticulumManualStackStopSuppress,
 } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
-import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
-import { applyPropagationSyncEvent } from '@/renderer/lib/reticulum/reticulumPropagationSync';
+import {
+  failReticulumSendingOutboundToDestHash,
+  shouldApplyLinkDeliveryTimeoutFailureBridge,
+} from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
+import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
+import {
+  applyPropagationSyncEvent,
+  RETICULUM_PROPAGATION_SYNC_STALL_MS,
+} from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   resolveReticulumSelfFullLabel,
@@ -76,6 +89,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -87,11 +101,16 @@ import {
   type ReticulumIdentityStatus,
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
+import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
-import { lxmfBodyContainsRncpRequestEnable } from '@/shared/rncpRequestEnable';
+import {
+  lxmfBodyContainsRncpRequestEnable,
+  parseRncpReceiveDestShare,
+} from '@/shared/rncpRequestEnable';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { resolveRrcInvoluntaryPartBannerKey } from '../lib/rrcInvoluntaryPartBanner';
 import {
   isRrcJoinInfoNotice,
   isRrcModerationLanguage,
@@ -113,7 +132,10 @@ import {
 } from '../stores/messageStore';
 import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
-import { useReticulumDiscoveryMapStore } from '../stores/reticulumDiscoveryMapStore';
+import {
+  normalizeRmapDiscoveryRows,
+  useReticulumDiscoveryMapStore,
+} from '../stores/reticulumDiscoveryMapStore';
 import {
   parseAnnounceActivityRows,
   useReticulumIdentityActivityStore,
@@ -157,10 +179,16 @@ function resolveRrcHubView(hubHash: string | undefined): {
   hub: string | null;
   activeRoom: string | null;
   partIntentRooms: Set<string>;
+  status: string | null;
 } {
   const s = useRrcSessionStore.getState();
   if (!hubHash) {
-    return { hub: s.focusedHubHash, activeRoom: s.activeRoom, partIntentRooms: s.partIntentRooms };
+    return {
+      hub: s.focusedHubHash,
+      activeRoom: s.activeRoom,
+      partIntentRooms: s.partIntentRooms,
+      status: s.status,
+    };
   }
   const hub = hubHash.toLowerCase();
   const session = s.sessionsByHub.get(hub);
@@ -168,6 +196,7 @@ function resolveRrcHubView(hubHash: string | undefined): {
     hub,
     activeRoom: session?.activeRoom ?? null,
     partIntentRooms: session?.partIntentRooms ?? new Set<string>(),
+    status: session?.status ?? null,
   };
 }
 
@@ -211,8 +240,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
+  // Include `connecting`: main suspends Noble at sidecar start before status reaches
+  // configured. Treating only configured/connected/stale as active let the watcher
+  // (and interface snapshot) release the start yield mid-BLE-RNode pair → Event receiver died.
   const sidecarActiveForBleYield =
-    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
+    state.status === 'connecting' ||
+    state.status === 'configured' ||
+    state.status === 'connected' ||
+    state.status === 'stale';
   useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {
@@ -376,12 +411,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
           return [];
         }),
         window.electronAPI.reticulum.getStatus(),
-        window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => null),
+        window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => {
+          // catch-no-log-ok optional stack settings
+          return null;
+        }),
       ]);
       const { interfaces, osSerialPorts } = health;
       const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
       const shareInstanceEnabled =
         stackRaw != null ? parseReticulumStackSettingsPayload(stackRaw).share_instance : false;
+      const propState = useReticulumPropagationStore.getState();
       const rows = buildReticulumDiagnosticRows(snapshot, {
         selfNodeId,
         interfaces,
@@ -390,6 +429,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
         autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
         interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
         shareInstanceEnabled,
+        sidecarRunning: sidecarStatus.running,
+        sidecarHealthy: sidecarStatus.healthy,
+        sidecarUnhealthySince: sidecarStatus.unhealthySince,
+        propagation: {
+          syncActive: propState.sync.active,
+          syncProgress: propState.sync.progress,
+          lastSyncError: propState.lastSyncError,
+          lastAttemptAt:
+            propState.activePropagationSyncAttemptAt ?? propState.lastPropagationSyncAttemptAt,
+        },
       });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
@@ -436,6 +485,43 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }, 2_000);
   }, [syncDiagnosticsFromSidecar]);
 
+  // Refresh diagnostics when propagation sync starts/ends outside WS (startSync fail, stall cancel).
+  useEffect(() => {
+    let prevActive = useReticulumPropagationStore.getState().sync.active;
+    let prevError = useReticulumPropagationStore.getState().lastSyncError;
+    let stallRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const clearStallRefresh = () => {
+      if (stallRefreshTimer) {
+        clearTimeout(stallRefreshTimer);
+        stallRefreshTimer = null;
+      }
+    };
+    const unsub = useReticulumPropagationStore.subscribe((state) => {
+      const activeChanged = state.sync.active !== prevActive;
+      const errorChanged = state.lastSyncError !== prevError;
+      if (state.sync.active && !prevActive) {
+        clearStallRefresh();
+        // Catch stuck/failing shortly after the establishing stall window.
+        stallRefreshTimer = setTimeout(() => {
+          stallRefreshTimer = null;
+          scheduleDebouncedDiagnosticsRefresh();
+        }, RETICULUM_PROPAGATION_SYNC_STALL_MS + 1_000);
+      }
+      if (!state.sync.active) {
+        clearStallRefresh();
+      }
+      prevActive = state.sync.active;
+      prevError = state.lastSyncError;
+      if (activeChanged || errorChanged) {
+        scheduleDebouncedDiagnosticsRefresh();
+      }
+    });
+    return () => {
+      clearStallRefresh();
+      unsub();
+    };
+  }, [scheduleDebouncedDiagnosticsRefresh]);
+
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
     rawPacketAppenderRef.current?.append(entry);
     useReticulumPacketStore.getState().appendPacket(entry);
@@ -479,6 +565,30 @@ export function useReticulumRuntime(): ProtocolRuntime {
             peerLabel: p.sender_name ?? null,
             receivedAt: Date.now(),
           });
+        }
+        if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
+          // Prefer request-enable pending (consumes the slot). Older peers may paste the
+          // share sentinel into chat without that round-trip — still apply so Chat can autofill.
+          const hadPending = consumeRncpReceiveDestSharePending(p.sender_hash);
+          if (!hadPending) {
+            console.debug(
+              '[useReticulumRuntime] applying rncp receive-dest share without pending request-enable',
+            );
+          }
+          const share = await applyRncpReceiveDestShareFromLxmf({
+            senderHash: p.sender_hash,
+            senderName: p.sender_name,
+            text: p.text,
+          });
+          if (share.ok) {
+            const peer = p.sender_name?.trim() || share.lxmfPeerHash.slice(0, 12);
+            pushAppToast(rncpReceiveDestShareSavedToastMessage(peer), 'success');
+          } else if (share.reason !== 'no_share') {
+            console.warn(
+              '[useReticulumRuntime] rncp receive-dest share failed reason=' + share.reason,
+            );
+            pushAppToast(i18n.t('reticulumRemote.transfer.receiveDestShareFailed'), 'error');
+          }
         }
       })();
     },
@@ -546,10 +656,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
           message_hash?: string;
           status?: string;
           sent_via?: string;
+          delivery_method?: string;
         };
         if (identityId && p.message_hash && p.status) {
           applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
             sentVia: p.sent_via,
+            deliveryMethod: p.delivery_method,
           });
         }
       }
@@ -560,11 +672,38 @@ export function useReticulumRuntime(): ProtocolRuntime {
       ) {
         const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
         applyPropagationSyncEvent(p);
+        scheduleDebouncedDiagnosticsRefresh();
+      }
+      if (evt.type === 'propagation.discovered' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          destination_hash?: string;
+          identity_hash?: string | null;
+          public_key?: string | null;
+          display_name?: string | null;
+          hops?: number | null;
+          last_seen?: number | null;
+          node_state?: boolean;
+          peering_cost?: number;
+        };
+        if (typeof p.destination_hash === 'string') {
+          useReticulumPropagationStore.getState().upsertDiscovered({
+            destination_hash: p.destination_hash,
+            identity_hash: p.identity_hash,
+            public_key: p.public_key,
+            display_name: p.display_name,
+            hops: p.hops,
+            last_seen: p.last_seen,
+            node_state: p.node_state !== false,
+            peering_cost: typeof p.peering_cost === 'number' ? p.peering_cost : 0,
+          });
+        }
       }
       if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { discovered?: unknown };
         if (Array.isArray(p.discovered)) {
-          useReticulumDiscoveryMapStore.getState().setDiscovered(p.discovered);
+          useReticulumDiscoveryMapStore
+            .getState()
+            .setDiscovered(normalizeRmapDiscoveryRows(p.discovered));
         }
       }
       if (evt.type === 'nomadnetwork.node') {
@@ -663,6 +802,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
           const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
           const willReconnect = p.will_reconnect === true;
+          console.debug(
+            '[useReticulumRuntime] rrc.disconnected hub=' +
+              sanitizeLogMessage(hubDestHash) +
+              ' reason=' +
+              sanitizeLogMessage(p.reason ?? '') +
+              ' will_reconnect=' +
+              String(p.will_reconnect) +
+              ' disconnectIntent=' +
+              String(disconnectIntentForHub),
+          );
           if (
             p.reason === 'local_disconnect' ||
             disconnectIntentForHub ||
@@ -697,14 +846,30 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const view = resolveRrcHubView(hubDestHash);
           const session = useRrcSessionStore.getState();
           const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
+          const bannerKey = resolveRrcInvoluntaryPartBannerKey({
+            voluntary,
+            sessionStatus: view.status,
+          });
+          console.debug(
+            '[useReticulumRuntime] rrc.room.parted hub=' +
+              sanitizeLogMessage(hubDestHash ?? '') +
+              ' room=' +
+              sanitizeLogMessage(p.room) +
+              ' voluntary=' +
+              String(voluntary) +
+              ' status=' +
+              sanitizeLogMessage(view.status ?? '') +
+              ' banner=' +
+              sanitizeLogMessage(bannerKey ?? 'none'),
+          );
           if (!voluntary) {
-            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            if (bannerKey) session.setModerationBanner(bannerKey, hubDestHash);
             session.addMessage(
               {
                 id: `part-${Date.now()}`,
                 room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
                 kind: 'system',
-                body: `Removed from ${p.room}`,
+                body: i18n.t('rrc.moderation.removedFromRoomSystem', { room: p.room }),
                 timestamp: Date.now(),
               },
               { hubDestHash },
@@ -754,7 +919,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
               session.roomJoined(topic.room, undefined, hubDestHash);
             }
             if (isRrcModerationLanguage(p.body)) {
-              session.setModerationBanner(p.body, hubDestHash);
+              // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
+              session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
             }
           }
 
@@ -808,7 +974,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
           session.setError(p.message, hubDestHash);
           if (isRrcModerationLanguage(p.message)) {
-            session.setModerationBanner(p.message, hubDestHash);
+            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
           }
           if (view.hub) {
             session.addMessage(
@@ -993,14 +1159,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
-      if (status.interfaceIssueAlert || status.autoBeaconAlert) {
+      if (status.interfaceIssueAlert || status.autoBeaconAlert || status.healthy === false) {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {
+          const propState = useReticulumPropagationStore.getState();
+          const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
+            propState.nodes,
+            propState.preferredId,
+          );
           for (const { destinationHash } of timeouts) {
             const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
             if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
             processedLinkTimeoutDestsRef.current.add(norm);
+            // Remote preferred PN: sidecar Direct→PN fallback owns the outcome via WS.
+            if (!applyBridge) continue;
             failReticulumSendingOutboundToDestHash(
               identityId,
               norm,
@@ -1047,7 +1220,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       unsubEventRef.current = null;
       // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
       if (!import.meta.env.DEV) {
-        void window.electronAPI.reticulum.stop();
+        void window.electronAPI.reticulum.stop().catch((e: unknown) => {
+          console.warn('[useReticulumRuntime] unmount stop failed ' + errLikeToLogString(e));
+        });
       }
     };
   }, []);
@@ -1378,9 +1553,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (lxmfPayload) {
           const hash = lxmfPayload.message_hash;
           const outboundStatus = 'sending' as const;
+          // Sync ingest on the send path so Completes cannot race behind a demoting echo.
+          const ingestOutboundSend = () => {
+            ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload, {
+              selfLxmfHash: selfLxmfHash ?? undefined,
+            });
+          };
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
-            ingestLxmfPayload(lxmfPayload);
+            if (shouldDeletePriorReticulumOutboundHash(pendingId, hash)) {
+              void window.electronAPI.db
+                .deleteReticulumMessage(identityId, pendingId)
+                .catch((e: unknown) => {
+                  console.warn(
+                    '[useReticulumRuntime] deleteReticulumMessage failed ' + errLikeToLogString(e),
+                  );
+                });
+            }
+            ingestOutboundSend();
             // Terminal WS may have arrived before rename; apply buffered Completes/Fails.
             flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             const afterFlush = useMessageStore.getState().messages[identityId]?.[hash]?.status;
@@ -1388,7 +1578,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               updateMessageStatus(identityId, hash, outboundStatus);
             }
           } else {
-            ingestLxmfPayload(lxmfPayload);
+            ingestOutboundSend();
             if (hash) {
               flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             }
@@ -1415,7 +1605,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         throw e;
       }
     },
-    [identityId, ingestLxmfPayload],
+    [identityId, selfLxmfHash],
   );
 
   const sendReaction = useCallback(
@@ -1523,7 +1713,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.debug('[useReticulumRuntime] power resume — skip reconnect (user disconnect)');
       return;
     }
-    void connect();
+    void connect().catch((e: unknown) => {
+      console.warn('[useReticulumRuntime] power resume reconnect failed ' + errLikeToLogString(e));
+    });
   }, [connect]);
 
   const runtime = useMemo(

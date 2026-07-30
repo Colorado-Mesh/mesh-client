@@ -20,18 +20,18 @@ describe('ConnectionDriver', () => {
     useConnectionStore.setState({ connections: {} });
   });
 
-  it('registerLegacyTransport exposes handle to getHandle', () => {
+  it('registerExternalTransport exposes handle to getHandle', () => {
     const identityId = `test-${Date.now()}`;
     addIdentity({
       id: identityId,
       protocol: meshtasticProtocol,
-      signature: 'meshtastic:test:legacy',
+      signature: 'meshtastic:test:external',
       transports: [],
       createdAt: Date.now(),
       lastSeenAt: Date.now(),
     });
     const fakeHandle = { kind: 'test-device' };
-    const detach = connectionDriver.registerLegacyTransport(
+    const detach = connectionDriver.registerExternalTransport(
       identityId,
       meshtasticProtocol,
       fakeHandle,
@@ -82,7 +82,7 @@ describe('ConnectionDriver', () => {
 
     await connectionDriver.disconnect(identityId);
     expect(connectionDriver.getHandle(identityId)).toBeNull();
-    expect(useConnectionStore.getState().connections[identityId]?.status).toBe('disconnected');
+    expect(useConnectionStore.getState().connections[identityId].status).toBe('disconnected');
   });
 
   it('connect maps a tcp transport to a tcp connectionType, not null', async () => {
@@ -95,7 +95,7 @@ describe('ConnectionDriver', () => {
     vi.spyOn(meshtasticProtocol, 'destroyDevice').mockResolvedValue(undefined);
 
     const identityId = await connectionDriver.connect('meshtastic', params);
-    expect(useConnectionStore.getState().connections[identityId]?.connectionType).toBe('tcp');
+    expect(useConnectionStore.getState().connections[identityId].connectionType).toBe('tcp');
 
     await connectionDriver.disconnect(identityId);
   });
@@ -126,6 +126,36 @@ describe('ConnectionDriver', () => {
     expect(identityId).toBe(existingId);
     expect(connectionDriver.lookupIdentityId(`meshtastic:ble:${peripheralId}`)).toBe(existingId);
     await connectionDriver.disconnect(identityId);
+  });
+
+  it('bounds the signature alias table but keeps aliases of connected identities', async () => {
+    const peripheralId = `alias-bound-${Date.now()}`;
+    const params: TransportParams = { type: 'ble', peripheralId };
+    vi.spyOn(meshtasticProtocol, 'createDevice').mockResolvedValue({} as unknown as MeshDevice);
+    vi.spyOn(meshtasticProtocol, 'subscribe').mockReturnValue(() => {});
+    vi.spyOn(meshtasticProtocol, 'destroyDevice').mockResolvedValue(undefined);
+
+    const connectedId = await connectionDriver.connect('meshtastic', params);
+    const connectedKey = `meshtastic:ble:${peripheralId}`;
+
+    const staleId = `stale-${Date.now()}`;
+    addIdentity({
+      id: staleId,
+      protocol: meshtasticProtocol,
+      signature: 'meshtastic:node:stale-signature',
+      transports: [],
+      createdAt: Date.now(),
+      lastSeenAt: Date.now(),
+    });
+    for (let i = 0; i < 600; i++) {
+      connectionDriver.registerTransportKeys(staleId, `meshtastic:ble:stale-${i}`);
+    }
+
+    expect(connectionDriver.lookupIdentityId(connectedKey)).toBe(connectedId);
+    expect(connectionDriver.lookupIdentityId('meshtastic:ble:stale-0')).toBeNull();
+    expect(connectionDriver.lookupIdentityId('meshtastic:ble:stale-599')).toBe(staleId);
+
+    await connectionDriver.disconnect(connectedId);
   });
 
   it('removeIdentity clears transport keys and identity record', async () => {

@@ -512,4 +512,70 @@ describe('useSendMessage', () => {
     expect(outbound?.replyPreviewText).toBeUndefined();
     saveReticulum.mockRestore();
   });
+
+  it('reuses the failed Reticulum row on retry instead of adding a second bubble', () => {
+    const saveReticulum = vi
+      .spyOn(window.electronAPI.db, 'saveReticulumMessage')
+      .mockResolvedValue(undefined);
+    const sendMessage = vi.fn().mockResolvedValue(undefined);
+    registerReticulumSession({
+      connect: vi.fn(),
+      connectAutomatic: vi.fn(),
+      disconnect: vi.fn(),
+      finalizeDriverDisconnect: vi.fn(),
+      selfNodeId: 0xabcd,
+      getFullNodeLabel: () => 'Self',
+      sendMessage,
+    } satisfies ReticulumSessionApi);
+    registerReticulumDestinationHash(0xabcd, 'cc'.repeat(16));
+    registerReticulumDestinationHash(0x1234, 'dd'.repeat(16));
+    addIdentity({
+      id: ID_RT,
+      protocol: reticulumProtocol,
+      signature: 'sig-rt',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    const failedHash = 'ee'.repeat(32);
+    const failedAt = 1_700_000_000_000;
+    addMessage(ID_RT, {
+      id: failedHash,
+      from: 0xabcd,
+      senderName: 'Self',
+      to: 0x1234,
+      payload: 'retry me',
+      channelIndex: 0,
+      timestamp: failedAt,
+      status: 'failed',
+      error: 'delivery failed',
+      reticulumMessageHash: failedHash,
+      reticulumDeliveryMethod: 'propagated',
+      receivedVia: 'tcp',
+    });
+
+    const { result } = renderHook(() => useSendMessage(ID_RT));
+    result.current('retry me', 0, 0x1234, undefined, failedHash);
+
+    const byId = useMessageStore.getState().messages[ID_RT] ?? {};
+    expect(Object.keys(byId)).toHaveLength(1);
+    expect(byId[failedHash]).toMatchObject({
+      id: failedHash,
+      payload: 'retry me',
+      timestamp: failedAt,
+      status: 'sending',
+      error: undefined,
+      reticulumDeliveryMethod: undefined,
+      reticulumMessageHash: undefined,
+    });
+    expect(byId[failedHash]?.reticulumMessageHash).toBeUndefined();
+    expect(sendMessage).toHaveBeenCalledWith(
+      'retry me',
+      'dd'.repeat(16),
+      undefined,
+      failedHash,
+      undefined,
+    );
+    saveReticulum.mockRestore();
+  });
 });

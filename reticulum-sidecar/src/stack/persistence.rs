@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use serde::Deserialize;
 
+use super::pn_hosting_policy::PnHostingPolicy;
 use super::types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
     NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
@@ -28,6 +29,8 @@ pub struct PersistedState {
     pub primary_local_serial_interface_id: Option<String>,
     pub propagation_sync: serde_json::Value,
     pub auto_sync_interval_sec: u32,
+    /// LXMF local PN hosting / peering policy (defaults match rsLXMF / lxmd).
+    pub pn_hosting_policy: PnHostingPolicy,
     pub nomad_nodes: Vec<NomadNodeRow>,
     pub rrc_hubs: Vec<RrcHubRow>,
     /// User preference: start Nomad page hosting when the live stack is up.
@@ -77,6 +80,7 @@ impl PersistedState {
             primary_local_serial_interface_id: None,
             propagation_sync: serde_json::Value::Null,
             auto_sync_interval_sec: 3600,
+            pn_hosting_policy: PnHostingPolicy::default(),
             nomad_nodes: Vec::new(),
             rrc_hubs: Vec::new(),
             nomad_serving_enabled: false,
@@ -96,11 +100,13 @@ impl PersistedState {
         if self.propagation.is_empty() {
             self.propagation.push(PropagationRow {
                 id: "local-prop".into(),
-                name: "Local propagation (offline inbox)".to_string(),
+                name: "Local propagation node".to_string(),
                 hops: Some(0),
                 enabled: false,
                 status: "unknown".into(),
                 destination_hash: None,
+                public_key: None,
+                identity_hash: None,
             });
         }
         self.sync_local_propagation_hash();
@@ -147,6 +153,8 @@ impl PersistedState {
             enabled: true,
             status: "known".into(),
             destination_hash: Some(hash),
+            public_key: None,
+            identity_hash: None,
         };
         self.propagation.push(row.clone());
         Ok(row)
@@ -322,6 +330,9 @@ impl PersistedState {
             announce_interval_min: req.announce_interval_min,
             connectable: req.connectable,
             reachable_on: req.reachable_on,
+            network_name: req.network_name,
+            passphrase: req.passphrase,
+            extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());
         self.rns_ready = true;
@@ -382,6 +393,12 @@ impl PersistedState {
 
     pub fn set_auto_sync_interval_sec(&mut self, sec: u32) {
         self.auto_sync_interval_sec = sec;
+    }
+
+    pub fn set_pn_hosting_policy(&mut self, policy: PnHostingPolicy) -> Result<(), String> {
+        let policy = policy.sanitized()?;
+        self.pn_hosting_policy = policy;
+        Ok(())
     }
 
     pub fn upsert_nomad_node(
@@ -763,7 +780,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 24)?;
+        let mut s = serializer.serialize_struct("PersistedState", 25)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -779,6 +796,7 @@ impl serde::Serialize for PersistedState {
         )?;
         s.serialize_field("propagation_sync", &self.propagation_sync)?;
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
+        s.serialize_field("pn_hosting_policy", &self.pn_hosting_policy)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
         s.serialize_field("nomad_serving_enabled", &self.nomad_serving_enabled)?;
@@ -826,6 +844,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             #[serde(default)]
             auto_sync_interval_sec: u32,
             #[serde(default)]
+            pn_hosting_policy: PnHostingPolicy,
+            #[serde(default)]
             nomad_nodes: Vec<NomadNodeRow>,
             #[serde(default)]
             rrc_hubs: Vec<RrcHubRow>,
@@ -868,6 +888,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
                 raw.propagation_sync
             },
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
+            pn_hosting_policy: raw.pn_hosting_policy,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,
             nomad_serving_enabled: raw.nomad_serving_enabled,
@@ -953,6 +974,36 @@ mod tests {
         assert_eq!(state.contacts.len(), 1);
         assert_eq!(state.contacts[0].destination_hash, lower);
         assert_eq!(state.contacts[0].display_name.as_deref(), Some("Named"));
+    }
+
+    #[test]
+    fn add_propagation_node_preserves_optional_identity_fields_on_mutate() {
+        let mut state = PersistedState::default_empty();
+        state.ensure_defaults();
+        let mut row = state
+            .add_propagation_node("aabbccddeeff00112233445566778899", Some("Remote".into()))
+            .expect("add");
+        row.public_key = Some("ab".repeat(64));
+        row.identity_hash = Some("cd".repeat(16));
+        if let Some(node) = state.propagation.iter_mut().find(|p| p.id == row.id) {
+            node.public_key = row.public_key.clone();
+            node.identity_hash = row.identity_hash.clone();
+        }
+        let json = serde_json::to_value(&state).expect("serialize");
+        let restored: PersistedState = serde_json::from_value(json).expect("deserialize");
+        let node = restored
+            .propagation
+            .iter()
+            .find(|p| p.id == row.id)
+            .expect("row");
+        assert_eq!(
+            node.public_key.as_deref(),
+            Some(row.public_key.as_deref().unwrap())
+        );
+        assert_eq!(
+            node.identity_hash.as_deref(),
+            Some(row.identity_hash.as_deref().unwrap())
+        );
     }
 
     #[test]
@@ -1048,6 +1099,55 @@ mod tests {
         assert!(!legacy_state.nomad_serving_enabled);
         assert!(legacy_state.nomad_serving_display_name.is_none());
         assert!(legacy_state.nomad_serving_content_source.is_none());
+    }
+
+    #[test]
+    fn pn_hosting_policy_round_trip_and_default_when_absent() {
+        let mut state = PersistedState::default_empty();
+        let policy = PnHostingPolicy {
+            peering_cost: 20,
+            max_peering_cost: 26,
+            node_name: Some("Test PN".into()),
+            static_peers: vec!["aabbccddeeff00112233445566778899".into()],
+            ..PnHostingPolicy::default()
+        };
+        state
+            .set_pn_hosting_policy(policy.clone())
+            .expect("set valid policy");
+        let json = serde_json::to_string(&state).expect("serialize");
+        let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(loaded.pn_hosting_policy.peering_cost, 20);
+        assert_eq!(
+            loaded.pn_hosting_policy.node_name.as_deref(),
+            Some("Test PN")
+        );
+        assert_eq!(
+            loaded.pn_hosting_policy.static_peers,
+            vec!["aabbccddeeff00112233445566778899"]
+        );
+
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        obj.remove("pn_hosting_policy");
+        let legacy_state: PersistedState =
+            serde_json::from_value(value).expect("legacy without pn_hosting_policy");
+        assert_eq!(legacy_state.pn_hosting_policy, PnHostingPolicy::default());
+    }
+
+    #[test]
+    fn set_pn_hosting_policy_rejects_invalid() {
+        let mut state = PersistedState::default_empty();
+        let before = state.pn_hosting_policy.clone();
+        let bad = PnHostingPolicy {
+            peering_cost: 30,
+            max_peering_cost: 26,
+            ..PnHostingPolicy::default()
+        };
+        assert_eq!(
+            state.set_pn_hosting_policy(bad).unwrap_err(),
+            "peering_cost_exceeds_max"
+        );
+        assert_eq!(state.pn_hosting_policy, before);
     }
 
     #[test]

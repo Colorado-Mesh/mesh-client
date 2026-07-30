@@ -166,6 +166,19 @@ describe('attachMeshtasticIngest', () => {
     session.detach();
   });
 
+  it('shares duplicate checks with external MQTT/runtime ingress', () => {
+    const session = attachMeshtasticIngest(ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0,
+    });
+
+    expect(session.isDuplicatePacket(1, 5)).toBe(false);
+    expect(session.isDuplicatePacket(1, 5)).toBe(true);
+    expect(session.isDuplicatePacket(2, 5)).toBe(false);
+
+    session.detach();
+  });
+
   it('exposes hopCount as rxHops through store adapter round-trip', () => {
     const session = attachMeshtasticIngest(ID, {
       getIsConfiguring: () => false,
@@ -187,7 +200,7 @@ describe('attachMeshtasticIngest', () => {
       ID,
     );
     const record = useMessageStore.getState().messages[ID]['77'];
-    expect(record?.hopCount).toBe(4);
+    expect(record.hopCount).toBe(4);
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(4);
     session.detach();

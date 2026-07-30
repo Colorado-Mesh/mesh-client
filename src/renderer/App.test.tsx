@@ -1083,14 +1083,14 @@ describe('App accessibility', () => {
     rerender(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
     });
 
     setDocumentHidden(false);
     fireEvent(document, new Event('visibilitychange'));
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
     });
   });
 
@@ -1121,13 +1121,13 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
-      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
     });
   });
 
@@ -1193,7 +1193,7 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
     });
   });
 

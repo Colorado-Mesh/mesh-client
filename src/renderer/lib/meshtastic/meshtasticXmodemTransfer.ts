@@ -55,6 +55,7 @@ export async function meshtasticXmodemDownload(
   if (result !== 0) {
     throw new Error(`XMODEM download rejected (code ${result})`);
   }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   const chunks = internal.rxBuffer.filter((c) => c && c.length > 0);
   if (chunks.length === 0) {
     throw new Error('XMODEM download returned no data');

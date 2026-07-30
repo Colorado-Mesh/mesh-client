@@ -112,7 +112,7 @@ describe('meshtasticUrlEncoder', () => {
   });
 
   it('throws when no channels selected for export', () => {
-    const disabled = sampleChannels[2];
+    const disabled = sampleChannels.at(2)!;
     expect(() =>
       generateConfigUrl([{ ...disabled, role: MESHTASTIC_CHANNEL_ROLE.DISABLED }], undefined),
     ).toThrow(MeshtasticUrlError);

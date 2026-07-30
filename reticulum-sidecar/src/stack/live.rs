@@ -6,7 +6,7 @@ mod lxmf_outbound;
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -34,7 +34,8 @@ use super::StackHandle;
 use super::config;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
-    LXMF_APP, send_lxmf_delivery_announce, spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
+    LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
+    spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
 };
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
@@ -47,7 +48,11 @@ use super::packet_log::{
 };
 use super::path_speed;
 use super::persistence::PersistedState;
+use super::pn_hosting_apply::{apply_pn_hosting_policy_to_node, apply_pn_hosting_policy_to_router};
+use super::pn_hosting_policy::PnHostingPolicy;
+use super::propagation_announce::PropagationAnnounceLoop;
 use super::propagation_bridge::PropagationBridge;
+use super::propagation_serve::PropagationServeHandle;
 use super::rncp_transfer::RncpTransferManager;
 use super::rnsh_session::RnshSessionManager;
 use super::rrc_defaults::RRC_HUB_ASPECT;
@@ -92,7 +97,17 @@ pub struct LiveBridge {
     display_name_cache: Arc<Mutex<HashMap<String, String>>>,
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
-    sync_cancel: Arc<std::sync::atomic::AtomicBool>,
+    prop_serve: Arc<PropagationServeHandle>,
+    prop_announce: Arc<PropagationAnnounceLoop>,
+    pn_hosting_policy: Arc<Mutex<PnHostingPolicy>>,
+    /// Per-run cancel token; replaced on each new sync so stale emitters cannot reset it.
+    sync_cancel: Mutex<Arc<AtomicBool>>,
+    /// Generation for the active sync emitter; stale emitters must not cancel/clear pins.
+    sync_run_id: Arc<AtomicU64>,
+    /// In-memory heard `lxmf.propagation` announces (not auto-configured).
+    discovered_propagation: Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
+    /// Last successful LXMF delivery announce (startup / periodic / manual / sync debounce).
+    last_lxmf_announce_at: Arc<Mutex<Option<Instant>>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
     /// Serialize Nomad Link queries — transport actor is single-threaded and
@@ -266,7 +281,12 @@ impl LiveBridge {
             contacts_to_name_map(&state.contacts)
         }));
 
+        let pn_hosting_policy = {
+            let state = inner.read().await;
+            state.pn_hosting_policy.clone()
+        };
         let mut router = LxmRouter::new(lxmf_core::router::RouterConfig::default());
+        apply_pn_hosting_policy_to_router(&mut router, &pn_hosting_policy);
         router.set_transport(handle.transport_tx.clone());
 
         let cache_for_cb = peer_via_cache.clone();
@@ -346,12 +366,14 @@ impl LiveBridge {
             lxmf_dest_hash,
             router.clone(),
         );
+        let last_lxmf_announce_at = Arc::new(Mutex::new(None));
         spawn_lxmf_announce_loop(
             handle.transport_tx.clone(),
             identity.clone(),
             lxmf_dest_hash,
             config_dir.clone(),
             inner.clone(),
+            Arc::clone(&last_lxmf_announce_at),
         );
 
         #[cfg(feature = "rns-ble")]
@@ -394,8 +416,15 @@ impl LiveBridge {
                 lxmf_propagation_dest_hash,
                 storage_dir.join("propagation"),
                 &identity,
+                &pn_hosting_policy,
             )?),
-            sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            prop_serve: Arc::new(PropagationServeHandle::new()),
+            prop_announce: Arc::new(PropagationAnnounceLoop::new()),
+            pn_hosting_policy: Arc::new(Mutex::new(pn_hosting_policy)),
+            sync_cancel: Mutex::new(Arc::new(AtomicBool::new(false))),
+            sync_run_id: Arc::new(AtomicU64::new(0)),
+            discovered_propagation: Arc::new(Mutex::new(HashMap::new())),
+            last_lxmf_announce_at,
             event_tx: event_tx.clone(),
             packet_log,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -449,6 +478,7 @@ impl LiveBridge {
         if local_prop_enabled {
             bridge.set_local_propagation_serving(true).await;
         }
+        bridge.rehydrate_propagation_identities_from_persisted();
         // Keep persisted local-prop hash on lxmf.propagation (legacy rows stored delivery).
         {
             let mut state = inner.write().await;
@@ -646,7 +676,116 @@ impl LiveBridge {
             dest,
             display_name.as_deref(),
         )
-        .await
+        .await?;
+        if let Ok(mut slot) = self.last_lxmf_announce_at.lock() {
+            *slot = Some(Instant::now());
+        }
+        Ok(())
+    }
+
+    /// Always send an LXMF delivery announce so remote PNs have a reverse path for LRPROOF.
+    /// Returns true when the announce was sent successfully (caller may settle before Linking).
+    async fn ensure_lxmf_announce_for_propagation_sync(&self, dest_hex: &str) -> bool {
+        match self.announce_lxmf_now().await {
+            Ok(()) => {
+                tracing::info!(
+                    target: "propagation-sync",
+                    dest = %dest_hex,
+                    "LXMF delivery announce sent before propagation sync"
+                );
+                true
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "propagation-sync",
+                    dest = %dest_hex,
+                    error = %e,
+                    "LXMF announce before propagation sync failed"
+                );
+                false
+            }
+        }
+    }
+
+    /// Rehydrate persisted PN public keys into known_identities (survives announce-flood eviction).
+    pub fn rehydrate_propagation_identities_from_persisted(&self) {
+        let state = PersistedState::load(&self.config_dir, &self.storage_dir);
+        let Ok(mut driver) = self.outbound.lock() else {
+            return;
+        };
+        for row in &state.propagation {
+            let Some(dest) = row.destination_hash.as_deref() else {
+                continue;
+            };
+            let Some(pk_hex) = row.public_key.as_deref() else {
+                continue;
+            };
+            let Ok(bytes) = hex::decode(pk_hex) else {
+                continue;
+            };
+            if bytes.len() != 64 {
+                continue;
+            }
+            let mut key = [0u8; 64];
+            key.copy_from_slice(&bytes);
+            driver.register_identity_key(dest, key);
+            tracing::debug!(
+                target: "propagation-sync",
+                dest = %dest.to_lowercase(),
+                "rehydrated persisted PN public key"
+            );
+        }
+    }
+
+    /// Register (and optionally pin) a PN pubkey from outbound / recent announces / discovery.
+    pub fn register_propagation_node_identity(
+        &self,
+        destination_hash: &str,
+        public_key_hex: Option<&str>,
+        identity_hash: Option<&str>,
+        pin: bool,
+    ) -> Option<[u8; 64]> {
+        let dest = destination_hash.to_lowercase();
+        let mut key = public_key_hex.and_then(|hex_str| {
+            let bytes = hex::decode(hex_str).ok()?;
+            if bytes.len() != 64 {
+                return None;
+            }
+            let mut arr = [0u8; 64];
+            arr.copy_from_slice(&bytes);
+            Some(arr)
+        });
+        if key.is_none() {
+            key = self
+                .outbound
+                .lock()
+                .ok()
+                .and_then(|d| d.public_key_for(&dest));
+        }
+        if key.is_none() {
+            key = self.discovered_propagation.lock().ok().and_then(|cache| {
+                let hex_str = cache.get(&dest)?.public_key.as_deref()?;
+                let bytes = hex::decode(hex_str).ok()?;
+                if bytes.len() != 64 {
+                    return None;
+                }
+                let mut arr = [0u8; 64];
+                arr.copy_from_slice(&bytes);
+                Some(arr)
+            });
+        }
+        let Some(pub_key) = key else {
+            let _ = identity_hash;
+            return None;
+        };
+        if let Ok(mut driver) = self.outbound.lock() {
+            if pin {
+                driver.pin_identity_for_propagation(&dest, pub_key);
+            } else {
+                driver.register_identity_key(&dest, pub_key);
+            }
+        }
+        Some(pub_key)
     }
 
     /// `hash_hex` is the announced Nomad node destination hash (used for the
@@ -661,7 +800,19 @@ impl LiveBridge {
         path: &str,
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
+        force_path_refresh: bool,
     ) -> Result<Vec<u8>, String> {
+        // Stale cached hops often survive LinkClient pubkey recall; force a
+        // RequestPath on retry so the second attempt is not a no-op.
+        if force_path_refresh {
+            let path_ok = self.ensure_path_for_direct(hash_hex, true).await;
+            tracing::info!(
+                target: "nomad",
+                dest = %hash_hex,
+                path_ok,
+                "forced path refresh before Nomad query"
+            );
+        }
         let remote_hash = parse_hash16(identity_hash_hex)?;
         let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
@@ -690,6 +841,7 @@ impl LiveBridge {
         identity_hash_hex: Option<&str>,
         path: &str,
         interfaces: &[InterfaceRow],
+        force_path_refresh: bool,
     ) -> serde_json::Value {
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
             return match local {
@@ -713,7 +865,14 @@ impl LiveBridge {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
         match self
-            .query_nomad_node(hash_hex, identity_hash_hex, path, Vec::new(), interfaces)
+            .query_nomad_node(
+                hash_hex,
+                identity_hash_hex,
+                path,
+                Vec::new(),
+                interfaces,
+                force_path_refresh,
+            )
             .await
         {
             Ok(bytes) => {
@@ -744,6 +903,7 @@ impl LiveBridge {
         path: &str,
         data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
+        force_path_refresh: bool,
     ) -> serde_json::Value {
         // Self-preview: read hosted content without a Link query to ourselves.
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
@@ -773,7 +933,14 @@ impl LiveBridge {
         };
         let payload = nomad_page_request_payload(data_b64);
         match self
-            .query_nomad_node(hash_hex, identity_hash_hex, path, payload, interfaces)
+            .query_nomad_node(
+                hash_hex,
+                identity_hash_hex,
+                path,
+                payload,
+                interfaces,
+                force_path_refresh,
+            )
             .await
         {
             Ok(bytes) => {
@@ -933,6 +1100,165 @@ impl LiveBridge {
                 let _ = event_tx.send(frame.to_string());
             }
         });
+    }
+
+    /// Register handler for LXMF propagation-node announces (`lxmf.propagation`).
+    ///
+    /// Upserts an in-memory discovered list (not auto-added to configured PNs).
+    /// When local hosting + autopeer are on, also feeds `LxmRouter::autopeer`.
+    pub fn register_propagation_announce_handler(&self) {
+        const LXMF_PROPAGATION_ASPECT: &str = "lxmf.propagation";
+        const MAX_DISCOVERED_PROPAGATION: usize = 200;
+        let transport_tx = self.handle.transport_tx.clone();
+        let event_tx = self.event_tx.clone();
+        let discovered = Arc::clone(&self.discovered_propagation);
+        let outbound = Arc::clone(&self.outbound);
+        let router = Arc::clone(&self.router);
+        let propagation = Arc::clone(&self.propagation);
+        let pn_hosting_policy = Arc::clone(&self.pn_hosting_policy);
+        tokio::spawn(async move {
+            let (callback_tx, mut callback_rx) =
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+            if transport_tx
+                .send(TransportMessage::RegisterAnnounceHandler {
+                    aspect_filter: Some(LXMF_PROPAGATION_ASPECT.to_string()),
+                    receive_path_responses: false,
+                    callback_tx,
+                })
+                .await
+                .is_err()
+            {
+                tracing::warn!(
+                    "propagation announce handler registration failed: transport closed"
+                );
+                return;
+            }
+
+            while let Some(evt) = callback_rx.recv().await {
+                let Some(app_data) = evt.app_data.as_deref() else {
+                    continue;
+                };
+                let Some(parsed) = lxmf_core::handlers::parse_pn_announce_data(app_data) else {
+                    continue;
+                };
+                // lxmd parity: cache PN stamp cost for outbound Propagated packing.
+                {
+                    let mut router = router.lock().await;
+                    router.set_stamp_cost(evt.destination_hash, parsed.stamp_cost);
+                    tracing::debug!(
+                        target: "propagation-discovered",
+                        dest = %hex::encode(evt.destination_hash),
+                        stamp_cost = parsed.stamp_cost,
+                        "learned propagation-node stamp cost from announce"
+                    );
+                }
+                let hash_hex = hex::encode(evt.destination_hash);
+                let identity_hash_hex = evt.identity_hash.map(hex::encode);
+                let display_name = lxmf_core::handlers::pn_name_from_app_data(app_data);
+                let last_seen = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                let public_key_hex = evt.public_key.map(|pub_key| {
+                    if let Ok(mut driver) = outbound.lock() {
+                        driver.register_identity_key(&hash_hex, pub_key);
+                    }
+                    hex::encode(pub_key)
+                });
+                let row = super::DiscoveredPropagationRow {
+                    destination_hash: hash_hex.clone(),
+                    identity_hash: identity_hash_hex.clone(),
+                    public_key: public_key_hex.clone(),
+                    display_name: display_name.clone(),
+                    hops: Some(evt.hops),
+                    last_seen: Some(last_seen),
+                    node_state: parsed.node_state,
+                    peering_cost: parsed.peering_cost,
+                };
+                let payload = {
+                    let Ok(mut cache) = discovered.lock() else {
+                        continue;
+                    };
+                    cache.insert(hash_hex.clone(), row.clone());
+                    while cache.len() > MAX_DISCOVERED_PROPAGATION {
+                        // Evict oldest last_seen.
+                        let oldest = cache
+                            .iter()
+                            .min_by_key(|(_, r)| r.last_seen.unwrap_or(0))
+                            .map(|(k, _)| k.clone());
+                        if let Some(k) = oldest {
+                            cache.remove(&k);
+                        } else {
+                            break;
+                        }
+                    }
+                    serde_json::json!({
+                        "destination_hash": hash_hex,
+                        "identity_hash": identity_hash_hex,
+                        "public_key": public_key_hex,
+                        "display_name": display_name,
+                        "hops": evt.hops,
+                        "last_seen": last_seen,
+                        "node_state": parsed.node_state,
+                        "peering_cost": parsed.peering_cost,
+                    })
+                };
+                let frame =
+                    serde_json::json!({ "type": "propagation.discovered", "payload": payload });
+                let _ = event_tx.send(frame.to_string());
+
+                // Autopeer only while hosting a local PN (lxmd parity).
+                if propagation.is_local_serving() {
+                    let autopeer_on = pn_hosting_policy
+                        .lock()
+                        .ok()
+                        .map(|p| p.autopeer)
+                        .unwrap_or(true);
+                    if autopeer_on && parsed.node_state {
+                        let mut router = router.lock().await;
+                        // AutopeerCandidate uses f64; announce wire fields are i64/u64.
+                        // Precision loss is fine for timebase/limits (KB-scale / unix seconds).
+                        #[allow(clippy::cast_precision_loss)]
+                        let peered = router.autopeer(lxmf_core::router::AutopeerCandidate {
+                            destination_hash: evt.destination_hash,
+                            timebase: parsed.timebase as f64,
+                            transfer_limit: Some(parsed.transfer_limit as f64),
+                            sync_limit: Some(parsed.sync_limit as f64),
+                            stamp_cost: Some(parsed.stamp_cost),
+                            stamp_flexibility: Some(parsed.stamp_flex),
+                            peering_cost: Some(parsed.peering_cost),
+                            hops: Some(evt.hops),
+                        });
+                        if !peered {
+                            tracing::debug!(
+                                target: "propagation-discovered",
+                                dest = %hash_hex,
+                                hops = evt.hops,
+                                peering_cost = parsed.peering_cost,
+                                "autopeer declined candidate"
+                            );
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    pub fn list_discovered_propagation(&self) -> Vec<super::DiscoveredPropagationRow> {
+        self.discovered_propagation
+            .lock()
+            .map(|cache| {
+                let mut rows: Vec<_> = cache.values().cloned().collect();
+                rows.sort_by(|a, b| {
+                    let hops_a = a.hops.unwrap_or(u8::MAX);
+                    let hops_b = b.hops.unwrap_or(u8::MAX);
+                    hops_a
+                        .cmp(&hops_b)
+                        .then_with(|| b.last_seen.unwrap_or(0).cmp(&a.last_seen.unwrap_or(0)))
+                });
+                rows
+            })
+            .unwrap_or_default()
     }
 
     pub async fn rrc_connect(
@@ -1331,9 +1657,8 @@ impl LiveBridge {
                     driver.process_tick(&mut router, &event_tx);
                     let known_identities = driver.known_identities_for_propagation();
                     propagation.tick(&known_identities);
-                } else {
-                    propagation.tick(&HashMap::new());
                 }
+                // Skip tick when outbound is locked — never drain LRPROOF against an empty map.
             }
         });
     }
@@ -1452,18 +1777,46 @@ impl LiveBridge {
     }
 
     /// Discover a path to the destination before falling back to the propagation node.
-    async fn ensure_path_for_direct(&self, destination_hex: &str) -> bool {
+    /// When `force` is true, drop any cached path and RequestPath so we wait for a
+    /// fresh route response instead of returning on the stale `has_path_to` entry.
+    async fn ensure_path_for_direct(&self, destination_hex: &str, force: bool) -> bool {
         let already = self
             .outbound
             .lock()
             .map(|d| d.has_path_to(destination_hex))
             .unwrap_or(false);
-        if already {
+        if already && !force {
             return true;
         }
+        let hops_before = self.hops_to_destination(destination_hex).await;
         let Ok(dest) = parse_hash16(destination_hex) else {
             return false;
         };
+
+        // Drop the installed route first so the wait loop cannot succeed on the
+        // same stale path-table entry (mirrors LXMF `drop_existing` path requests).
+        let mut saw_path_absent = !(force && already);
+        if force && already {
+            let _ = self
+                .query_control_timed(TransportQuery::DropPath { dest })
+                .await;
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_path_to(destination_hex);
+            }
+            if let Ok(mut cache) = self.peer_via_cache.lock() {
+                cache.remove(&destination_hex.to_lowercase());
+            }
+            let _ = self.refresh_outbound_path_table().await;
+            let still_present = self
+                .outbound
+                .lock()
+                .map(|d| d.has_path_to(destination_hex))
+                .unwrap_or(false);
+            if !still_present {
+                saw_path_absent = true;
+            }
+        }
+
         let _ = self
             .handle
             .transport_tx
@@ -1474,15 +1827,53 @@ impl LiveBridge {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
         while tokio::time::Instant::now() < deadline {
             let _ = self.refresh_outbound_path_table().await;
-            if self
+            let has_path = self
                 .outbound
                 .lock()
                 .map(|d| d.has_path_to(destination_hex))
-                .unwrap_or(false)
-            {
-                return true;
+                .unwrap_or(false);
+            if !has_path {
+                saw_path_absent = true;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                continue;
             }
-            tokio::time::sleep(Duration::from_millis(200)).await;
+            if !force_path_refresh_accepts_current_path(force, already, saw_path_absent) {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                continue;
+            }
+            let hops_after = self.hops_to_destination(destination_hex).await;
+            if force && hops_before != hops_after {
+                tracing::info!(
+                    target: "propagation-sync",
+                    dest = %destination_hex,
+                    hops_before = ?hops_before,
+                    hops_after = ?hops_after,
+                    "refreshed path hops before propagation sync"
+                );
+            }
+            return true;
+        }
+        // Forced refresh: only accept a path that passed the same absence gate as
+        // the wait loop — never the never-invalidated stale route.
+        let _ = self.refresh_outbound_path_table().await;
+        let has_path = self
+            .outbound
+            .lock()
+            .map(|d| d.has_path_to(destination_hex))
+            .unwrap_or(false);
+        if force && already {
+            let accept = has_path
+                && force_path_refresh_accepts_current_path(force, already, saw_path_absent);
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %destination_hex,
+                hops = ?hops_before,
+                has_path,
+                saw_path_absent,
+                accept,
+                "path refresh timed out after dropping cached route"
+            );
+            return accept;
         }
         false
     }
@@ -1657,6 +2048,147 @@ impl LiveBridge {
     pub async fn set_local_propagation_serving(&self, enabled: bool) {
         let mut router = self.router.lock().await;
         self.propagation.set_local_serving(enabled, &mut router);
+        drop(router);
+
+        if enabled {
+            let policy = self
+                .pn_hosting_policy
+                .lock()
+                .ok()
+                .map(|p| p.clone())
+                .unwrap_or_default();
+            if let Err(e) = self.prop_serve.start(
+                &self.handle.transport_tx,
+                &self.identity,
+                self.propagation.local_dest_hash_bytes(),
+                self.propagation.local_node(),
+            ) {
+                tracing::error!(target: "propagation-serve", "failed to start serve: {e}");
+                let mut router = self.router.lock().await;
+                self.propagation.set_local_serving(false, &mut router);
+                return;
+            }
+            self.prop_announce.start(
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                self.propagation.local_dest_hash_bytes(),
+                Arc::clone(&self.pn_hosting_policy),
+                policy.announce_at_start,
+            );
+        } else {
+            self.prop_announce.stop();
+            self.prop_serve.stop();
+        }
+    }
+
+    pub async fn apply_pn_hosting_policy(&self, policy: &PnHostingPolicy) -> Result<(), String> {
+        {
+            let mut slot = self
+                .pn_hosting_policy
+                .lock()
+                .map_err(|_| "pn_hosting_policy_mutex_poisoned".to_string())?;
+            *slot = policy.clone();
+        }
+        {
+            let mut router = self.router.lock().await;
+            apply_pn_hosting_policy_to_router(&mut router, policy);
+        }
+        if let Ok(mut node) = self.propagation.local_node().lock() {
+            apply_pn_hosting_policy_to_node(&mut node, policy);
+        }
+        // Restart announce loop with updated interval / name when serving.
+        if self.propagation.is_local_serving() {
+            self.prop_announce.start(
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                self.propagation.local_dest_hash_bytes(),
+                Arc::clone(&self.pn_hosting_policy),
+                false,
+            );
+        }
+        Ok(())
+    }
+
+    /// Lightweight `/offer` capability probe before persisting a remote PN.
+    ///
+    /// Returns `Ok(())` when the remote answers `/offer` (including LXMF offer
+    /// errors that prove the handler ran). Hard-fails with
+    /// `PROPAGATION_OFFER_UNSUPPORTED` only when the offer response is
+    /// unrecognized (`Unknown`).
+    pub async fn probe_propagation_offer(&self, destination_hash: &str) -> Result<(), String> {
+        let dest_hex = destination_hash.trim().to_lowercase();
+        let hash = parse_hash16(&dest_hex)?;
+        self.cancel_propagation_sync().await;
+        self.rehydrate_propagation_identities_from_persisted();
+        let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
+        if !self.ensure_path_for_direct(&dest_hex, true).await {
+            return Err("PROPAGATION_PATH_UNKNOWN".into());
+        }
+        let identity_known_after = self
+            .outbound
+            .lock()
+            .map(|d| d.identity_known_for(&dest_hex))
+            .unwrap_or(false);
+        if !identity_ok || !identity_known_after {
+            return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
+        }
+        let target_class = self.classify_propagation_sync_target(&dest_hex).await;
+        if target_class == "delivery" || target_class == "other" {
+            return Err("PROPAGATION_TARGET_NOT_PN".into());
+        }
+        let peering = self.resolve_propagation_peering(&dest_hex).await?;
+        // Claim outbound sync target so PN deposits defer during the offer probe
+        // (same latch as start_propagation_sync). cancel_propagation_sync clears it
+        // on every polling exit; release immediately if start_sync never begins.
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.set_propagation_sync_target(Some(hash));
+        }
+        if !self.propagation.start_sync(hash, Some(peering)) {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
+            return Err("PROPAGATION_OFFER_PROBE_FAILED".into());
+        }
+
+        let deadline = Instant::now() + Duration::from_secs(45);
+        loop {
+            if Instant::now() >= deadline {
+                self.cancel_propagation_sync().await;
+                return Err("PROPAGATION_OFFER_PROBE_TIMEOUT".into());
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            if let Some(err) = self.propagation.last_offer_error() {
+                self.cancel_propagation_sync().await;
+                return if err == "Unknown" {
+                    Err("PROPAGATION_OFFER_UNSUPPORTED".into())
+                } else {
+                    // Handler ran (NoIdentity / InvalidKey / …) — path exists.
+                    Ok(())
+                };
+            }
+            if let Some(err) = self.propagation.last_establish_error() {
+                self.cancel_propagation_sync().await;
+                return Err(format!("propagation establish failed: {err}"));
+            }
+            let progress = self.propagation.sync_progress();
+            // Offering / later stages prove /offer was accepted enough to proceed.
+            if progress >= 25.0 {
+                self.cancel_propagation_sync().await;
+                return Ok(());
+            }
+            if !self.propagation.sync_active() && progress <= 0.0 {
+                if let Some(ok) = self.propagation.last_finished_ok() {
+                    self.cancel_propagation_sync().await;
+                    return if ok {
+                        Ok(())
+                    } else if self.propagation.last_offer_error() == Some("Unknown") {
+                        Err("PROPAGATION_OFFER_UNSUPPORTED".into())
+                    } else {
+                        Err("PROPAGATION_OFFER_PROBE_FAILED".into())
+                    };
+                }
+            }
+        }
     }
 
     pub fn propagation_local_stats(&self) -> (usize, usize) {
@@ -1698,10 +2230,24 @@ impl LiveBridge {
         let dest_hex = destination_hash.to_lowercase();
         // Cancel any in-flight sync/emitter before starting a new one.
         self.cancel_propagation_sync().await;
+        // Claim the PN Link early so outbound packed deposits defer instead of racing.
+        if let Ok(mut driver) = self.outbound.lock() {
+            if driver.has_inflight_delivery_to(&hash) {
+                tracing::info!(
+                    target: "propagation-sync",
+                    dest = %dest_hex,
+                    "deferring propagation sync — outbound PN deposit already in flight"
+                );
+                return Err("PROPAGATION_SYNC_OUTBOUND_BUSY".into());
+            }
+            driver.set_propagation_sync_target(Some(hash));
+        }
+        // Re-apply persisted PN pubkey before identity wait (announce flood may have evicted it).
+        self.rehydrate_propagation_identities_from_persisted();
         // Link proofs are ignored unless the destination pubkey is in known_identities.
         // Resolve identity (+ path when possible) before Establishing, same as LXMF delivery.
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        let _path_ok = self.ensure_path_for_direct(&dest_hex).await;
+        let _path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
         let identity_known_after = self
             .outbound
             .lock()
@@ -1709,20 +2255,117 @@ impl LiveBridge {
             .unwrap_or(false);
         let target_class = self.classify_propagation_sync_target(&dest_hex).await;
         if !identity_ok || !identity_known_after {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
             return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
         }
         // Only hard-reject destinations positively classified as non-PN.
         if target_class == "delivery" || target_class == "other" {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
-        let peering = self.resolve_propagation_peering(&dest_hex).await?;
-        self.sync_cancel
-            .store(false, std::sync::atomic::Ordering::SeqCst);
+        let peering = match self.resolve_propagation_peering(&dest_hex).await {
+            Ok(p) => p,
+            Err(e) => {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
+                return Err(e);
+            }
+        };
+        // Fresh LXMF delivery announce so the PN can return LRPROOF (reverse path).
+        let announced = self
+            .ensure_lxmf_announce_for_propagation_sync(&dest_hex)
+            .await;
+        if announced {
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                settle_ms = PROPAGATION_SYNC_ANNOUNCE_SETTLE.as_millis(),
+                "settling after LXMF announce before propagation sync"
+            );
+            tokio::time::sleep(PROPAGATION_SYNC_ANNOUNCE_SETTLE).await;
+        }
+        // After settle: bail if an outbound deposit claimed the PN Link.
+        let outbound_busy = self
+            .outbound
+            .lock()
+            .map(|d| d.has_inflight_delivery_to(&hash))
+            .unwrap_or(false);
+        if outbound_busy {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                "deferring propagation sync — outbound PN deposit in flight"
+            );
+            return Err("PROPAGATION_SYNC_OUTBOUND_BUSY".into());
+        }
+        let hops = self.hops_to_destination(&dest_hex).await;
+        // Pin PN pubkey for the duration of Establishing so announce-flood eviction
+        // cannot drop it before LRPROOF validation (see known_identities cap).
+        let pinned = if let Ok(mut driver) = self.outbound.lock() {
+            if let Some(pub_key) = driver.public_key_for(&dest_hex) {
+                driver.pin_identity_for_propagation(&dest_hex, pub_key);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        tracing::info!(
+            target: "propagation-sync",
+            dest = %dest_hex,
+            hops = ?hops,
+            pinned,
+            "starting remote propagation sync"
+        );
+        // Fresh cancel token + generation so a prior emitter cannot cancel/clear this run.
+        let (cancel, run_id) = {
+            let Ok(_lifecycle) = self.propagation.lock_sync_lifecycle() else {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
+                return Err("propagation sync unavailable".into());
+            };
+            let Ok(mut slot) = self.sync_cancel.lock() else {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
+                return Err("propagation sync unavailable".into());
+            };
+            let cancel = Arc::new(AtomicBool::new(false));
+            *slot = Arc::clone(&cancel);
+            let run_id = self.sync_run_id.fetch_add(1, Ordering::SeqCst) + 1;
+            (cancel, run_id)
+        };
         if !self.propagation.start_sync(hash, Some(peering)) {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
+            }
             return Err("propagation sync unavailable".into());
         }
-        self.propagation
-            .spawn_sync_progress_emitter(self.event_tx.clone(), Arc::clone(&self.sync_cancel));
+        let outbound = Arc::clone(&self.outbound);
+        let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+            if let Ok(mut driver) = outbound.lock() {
+                driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
+            }
+        });
+        self.propagation.spawn_sync_progress_emitter(
+            self.event_tx.clone(),
+            cancel,
+            run_id,
+            Arc::clone(&self.sync_run_id),
+            Some(on_terminal),
+        );
         Ok(())
     }
 
@@ -1745,9 +2388,19 @@ impl LiveBridge {
         let peer_id = peer_identity.hash;
         let local_id = self.identity.hash;
         let peering_cost = self
-            .pn_announce_peering_cost(destination_hex)
+            .refresh_pn_announce_costs(destination_hex)
             .await
+            .map(|(_, peering)| peering)
             .unwrap_or(lxmf_core::constants::PEERING_COST);
+        let max_cost = self
+            .pn_hosting_policy
+            .lock()
+            .ok()
+            .map(|p| p.max_peering_cost)
+            .unwrap_or(lxmf_core::constants::MAX_PEERING_COST);
+        if peering_cost > max_cost {
+            return Err("PROPAGATION_PEER_COST_EXCEEDS_MAX".into());
+        }
         let precomputed = if peering_cost == 0 {
             Some(Vec::new())
         } else {
@@ -1770,7 +2423,9 @@ impl LiveBridge {
         Ok((local_id, peer_id, peering_cost, precomputed))
     }
 
-    async fn pn_announce_peering_cost(&self, destination_hex: &str) -> Option<u8> {
+    /// Learn PN stamp/peering costs from a recent `lxmf.propagation` announce (lxmd parity).
+    /// Returns `(stamp_cost, peering_cost)` when found.
+    async fn refresh_pn_announce_costs(&self, destination_hex: &str) -> Option<(u8, u8)> {
         let resp = self
             .query_control_timed(TransportQuery::GetRecentAnnounces)
             .await;
@@ -1782,11 +2437,20 @@ impl LiveBridge {
             if hex::encode(entry.dest_hash).to_lowercase() != key {
                 continue;
             }
-            return entry
+            let parsed = entry
                 .app_data
                 .as_deref()
-                .and_then(lxmf_core::handlers::parse_pn_announce_data)
-                .map(|d| d.peering_cost);
+                .and_then(lxmf_core::handlers::parse_pn_announce_data)?;
+            let mut router = self.router.lock().await;
+            router.set_stamp_cost(entry.dest_hash, parsed.stamp_cost);
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %key,
+                stamp_cost = parsed.stamp_cost,
+                peering_cost = parsed.peering_cost,
+                "cached PN announce stamp/peering costs"
+            );
+            return Some((parsed.stamp_cost, parsed.peering_cost));
         }
         None
     }
@@ -1797,9 +2461,18 @@ impl LiveBridge {
 
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
-        self.sync_cancel
-            .store(true, std::sync::atomic::Ordering::SeqCst);
+        // Invalidate in-flight emitters before flipping cancel / clearing pins.
+        // Hold lifecycle so emitter check+effect cannot race this generation bump.
+        let _lifecycle = self.propagation.lock_sync_lifecycle().ok();
+        self.sync_run_id.fetch_add(1, Ordering::SeqCst);
+        if let Ok(slot) = self.sync_cancel.lock() {
+            slot.store(true, Ordering::SeqCst);
+        }
         self.propagation.cancel_sync();
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_propagation_identity_pins();
+            driver.set_propagation_sync_target(None);
+        }
     }
 
     pub async fn set_outbound_propagation_node(&self, destination_hash: Option<&str>) {
@@ -1807,6 +2480,10 @@ impl LiveBridge {
         let mut router = self.router.lock().await;
         if let Ok(mut driver) = self.outbound.lock() {
             driver.set_propagation_node(&mut router, hash);
+        }
+        drop(router);
+        if let Some(hex) = destination_hash {
+            let _ = self.refresh_pn_announce_costs(hex).await;
         }
     }
 
@@ -1850,6 +2527,9 @@ impl LiveBridge {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                network_name: None,
+                passphrase: None,
+                extra_config: std::collections::HashMap::new(),
             })
             .collect();
         Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
@@ -1962,11 +2642,17 @@ impl LiveBridge {
             router.outbound_propagation_node.map(hex::encode)
         };
         let preferred_pn_set = preferred_pn_hash.is_some();
+        // Ensure preferred PN stamp cost is cached before any Direct→Propagated fallback pack.
+        if let Some(ref pn_hex) = preferred_pn_hash {
+            let _ = self.refresh_pn_announce_costs(pn_hex).await;
+        }
 
         // Prefer Direct when a path can be discovered — do not immediately park on
         // the preferred PN just because the local path table was empty at click time.
         if !has_path {
-            has_path = self.ensure_path_for_direct(&req.destination_hash).await;
+            has_path = self
+                .ensure_path_for_direct(&req.destination_hash, false)
+                .await;
         }
         // Path alone is not enough for Direct (LRPROOF needs pubkey). Learn it from
         // recent announces / path responses before deciding Propagated.
@@ -2583,6 +3269,19 @@ fn resolve_inbound_sender_name_map(names: &HashMap<String, String>, sender_hash:
         .unwrap_or_else(|| prefix.to_string())
 }
 
+/// After a forced DropPath, accept a path only once it has been observed absent
+/// and then reinstalled — otherwise the first refresh succeeds on the stale route.
+fn force_path_refresh_accepts_current_path(
+    force: bool,
+    had_path_at_start: bool,
+    saw_path_absent: bool,
+) -> bool {
+    if !force || !had_path_at_start {
+        return true;
+    }
+    saw_path_absent
+}
+
 /// Hashes present in `next` but not in `prev` (path-table membership growth).
 fn path_table_added_hashes(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
     next.difference(prev).cloned().collect()
@@ -2746,6 +3445,73 @@ mod announce_display_name_tests {
         let mut added = path_table_added_hashes(&prev, &next);
         added.sort();
         assert_eq!(added, vec!["cc".to_string()]);
+    }
+
+    #[test]
+    fn force_path_refresh_rejects_stale_route_until_absent_then_accepts_refresh() {
+        // Existing stale route still installed — must not accept yet.
+        assert!(!force_path_refresh_accepts_current_path(true, true, false));
+        // After DropPath absence was observed, a reinstalled path is acceptable.
+        assert!(force_path_refresh_accepts_current_path(true, true, true));
+        // Non-force / first discovery: any installed path is fine.
+        assert!(force_path_refresh_accepts_current_path(false, true, false));
+        assert!(force_path_refresh_accepts_current_path(true, false, false));
+    }
+
+    #[test]
+    fn force_path_refresh_simulates_stale_then_refreshed_route() {
+        // Simulate ensure_path_for_direct force wait: start with stale path present.
+        let had_path_at_start = true;
+        let force = true;
+        let mut saw_path_absent = false;
+
+        // Tick 1: stale path still present → do not accept.
+        let has_path = true;
+        assert!(
+            has_path
+                && !force_path_refresh_accepts_current_path(
+                    force,
+                    had_path_at_start,
+                    saw_path_absent
+                ),
+            "must not accept stale route before DropPath absence"
+        );
+
+        // Tick 2: DropPath cleared the route.
+        let has_path = false;
+        if !has_path {
+            saw_path_absent = true;
+        }
+        assert!(saw_path_absent);
+
+        // Tick 3: RequestPath installed a refreshed route (fewer hops).
+        let has_path = true;
+        let hops_after = Some(2u8);
+        assert!(force_path_refresh_accepts_current_path(
+            force,
+            had_path_at_start,
+            saw_path_absent
+        ));
+        assert!(has_path);
+        assert_eq!(hops_after, Some(2));
+    }
+
+    #[test]
+    fn force_path_refresh_timeout_rejects_never_absent_stale_route() {
+        // DropPath failed / path never cleared — timeout must not accept stale route.
+        let has_path = true;
+        let saw_path_absent = false;
+        assert!(
+            !(has_path && force_path_refresh_accepts_current_path(true, true, saw_path_absent))
+        );
+        // Absence observed then path reinstalled — timeout may accept.
+        assert!(has_path && force_path_refresh_accepts_current_path(true, true, true));
+        // Absence observed but no path came back — reject.
+        let has_path = false;
+        assert!(!(has_path && force_path_refresh_accepts_current_path(true, true, true)));
+        // Non-force discovery with a path present — accept.
+        let has_path = true;
+        assert!(has_path && force_path_refresh_accepts_current_path(false, false, false));
     }
 
     #[test]

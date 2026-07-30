@@ -10,7 +10,12 @@ import {
   isReticulumRemoteInterfaceType,
   type ReticulumLocalInterfaceInput,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import {
+  isPropagationSyncEstablishingStuck,
+  RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS,
+} from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
+import { PROPAGATION_SYNC_USER_CANCEL_KEY } from '@/renderer/stores/reticulumPropagationStore';
 import type {
   ReticulumAutoBeaconAlert,
   ReticulumInterfaceIssueAlert,
@@ -26,6 +31,15 @@ export interface ReticulumDiagnosticsSnapshot {
   interfaces?: ReticulumLocalInterfaceInput[];
 }
 
+/** Propagation sync snapshot for diagnostics (derived from reticulumPropagationStore). */
+export interface ReticulumPropagationDiagnosticsInput {
+  syncActive: boolean;
+  syncProgress: number;
+  lastSyncError: string | null;
+  /** Epoch ms when the current/last sync attempt started. */
+  lastAttemptAt: number | null;
+}
+
 export interface ReticulumDiagnosticsBuildOptions {
   selfNodeId?: number;
   interfaces?: ReticulumLocalInterfaceInput[];
@@ -35,6 +49,11 @@ export interface ReticulumDiagnosticsBuildOptions {
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
   /** When true, append shared-instance conflict hint on transport saturation rows. */
   shareInstanceEnabled?: boolean;
+  /** Sidecar hung watchdog — only emit when running && healthy === false. */
+  sidecarRunning?: boolean;
+  sidecarHealthy?: boolean;
+  sidecarUnhealthySince?: number;
+  propagation?: ReticulumPropagationDiagnosticsInput;
 }
 
 function runtimeCauseI18n(
@@ -63,7 +82,13 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.transportSaturated',
   'diagnosticsPanel.reticulum.runtime.transportSaturatedShareInstance',
   'diagnosticsPanel.reticulum.runtime.slowTransportQuery',
+  'diagnosticsPanel.reticulum.runtime.sidecarUnhealthy',
+  'diagnosticsPanel.reticulum.runtime.propagationSyncStuck',
+  'diagnosticsPanel.reticulum.runtime.propagationSyncFailing',
 ] as const;
+
+/** Sidecar must stay unhealthy this long before emitting an error diagnostic. */
+export const RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS = 60_000;
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
 export function buildReticulumDiagnosticRows(
@@ -230,7 +255,7 @@ export function buildReticulumDiagnosticRows(
         reticulumRepairKind: 'disable',
       });
     }
-    for (const name of interfaceIssueAlert.bleBondRemoved ?? []) {
+    for (const name of interfaceIssueAlert.bleBondRemoved) {
       const iface = ifaceByName.get(name);
       rows.push({
         kind: 'rf',
@@ -245,7 +270,7 @@ export function buildReticulumDiagnosticRows(
         reticulumRepairKind: 'edit',
       });
     }
-    for (const name of interfaceIssueAlert.blePairingTimedOut ?? []) {
+    for (const name of interfaceIssueAlert.blePairingTimedOut) {
       const iface = ifaceByName.get(name);
       rows.push({
         kind: 'rf',
@@ -285,7 +310,7 @@ export function buildReticulumDiagnosticRows(
         condition: 'reticulum/transport-saturated',
         cause: `RNS transport saturated (${interfaceIssueAlert.transportSaturatedCount} path-request drops)`,
         causeI18n: runtimeCauseI18n(
-          options?.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
+          options.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
           {
             count: String(interfaceIssueAlert.transportSaturatedCount),
           },
@@ -357,6 +382,68 @@ export function buildReticulumDiagnosticRows(
       severity: 'info',
       detectedAt: now,
     });
+  }
+
+  if (options?.sidecarRunning === true && options.sidecarHealthy === false) {
+    const unhealthySince = options.sidecarUnhealthySince;
+    const pastGrace =
+      unhealthySince != null &&
+      now - unhealthySince >= RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS;
+    if (pastGrace) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/sidecar-unhealthy'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/sidecar-unhealthy',
+        cause: 'Reticulum sidecar is running but not responding to health checks',
+        causeI18n: runtimeCauseI18n('sidecarUnhealthy'),
+        severity: 'error',
+        detectedAt: now,
+        reticulumRepairKind: 'restart_stack',
+      });
+    }
+  }
+
+  const propagation = options?.propagation;
+  if (propagation) {
+    const attemptAt = propagation.lastAttemptAt;
+    const stuck = isPropagationSyncEstablishingStuck(
+      {
+        syncActive: propagation.syncActive,
+        syncProgress: propagation.syncProgress,
+        lastAttemptAt: attemptAt,
+      },
+      now,
+    );
+    if (stuck) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/propagation-sync-stuck'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/propagation-sync-stuck',
+        cause: 'Propagation node sync is stuck establishing a link',
+        causeI18n: runtimeCauseI18n('propagationSyncStuck'),
+        severity: 'warning',
+        detectedAt: now,
+      });
+    } else if (
+      !propagation.syncActive &&
+      propagation.lastSyncError != null &&
+      propagation.lastSyncError !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
+      attemptAt != null &&
+      now - attemptAt <= RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS
+    ) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/propagation-sync-failing'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/propagation-sync-failing',
+        cause: 'Propagation node sync failed',
+        causeI18n: runtimeCauseI18n('propagationSyncFailing'),
+        severity: 'warning',
+        detectedAt: now,
+      });
+    }
   }
 
   return rows;

@@ -41,6 +41,13 @@ interface TransportSlot {
   lastDataAt: number;
 }
 
+/**
+ * Ceiling on cached identity-signature aliases. Each connect registers at most
+ * two (provisional transport key + resolved node key), so this holds hundreds
+ * of distinct devices before the oldest disconnected aliases are dropped.
+ */
+const MAX_TRANSPORT_KEY_ALIASES = 512;
+
 function transportTypeToConnectionType(type: TransportType): ConnectionType | null {
   switch (type) {
     case 'ble':
@@ -88,7 +95,27 @@ export class ConnectionDriver {
   /** Register all signature aliases for one identity (provisional transport + resolved node). */
   registerTransportKeys(identityId: IdentityId, ...keys: string[]): void {
     for (const key of keys) {
-      if (key) this.transportKeyMap.set(key, identityId);
+      if (!key) continue;
+      // Re-insert so a refreshed alias moves to the young end for eviction.
+      this.transportKeyMap.delete(key);
+      this.transportKeyMap.set(key, identityId);
+    }
+    this.pruneTransportKeys();
+  }
+
+  /**
+   * Cap the signature alias table. A long-lived session that scans many serial
+   * ports or BLE peripherals would otherwise grow it without bound. Aliases of
+   * identities with a live transport slot are never evicted.
+   */
+  private pruneTransportKeys(): void {
+    if (this.transportKeyMap.size <= MAX_TRANSPORT_KEY_ALIASES) return;
+    const connectedIdentityIds = new Set<IdentityId>();
+    for (const slot of this.slots.values()) connectedIdentityIds.add(slot.identityId);
+    for (const [key, id] of this.transportKeyMap) {
+      if (this.transportKeyMap.size <= MAX_TRANSPORT_KEY_ALIASES) break;
+      if (connectedIdentityIds.has(id)) continue;
+      this.transportKeyMap.delete(key);
     }
   }
 
@@ -151,7 +178,7 @@ export class ConnectionDriver {
         info = await protocol.discoverSelf(handle);
       } catch (err) {
         await protocol.destroyDevice(handle).catch((e: unknown) => {
-          console.debug('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
+          console.warn('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
         });
         if (createdProvisional) removeIdentityFromStore(identityId);
         throw err;
@@ -228,10 +255,10 @@ export class ConnectionDriver {
       try {
         slot.teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
+        console.warn('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
       }
       await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
-        console.debug('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
+        console.warn('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
       });
       this.slots.delete(slot.transportId);
       removeTransport(identityId, slot.transportId);
@@ -253,11 +280,11 @@ export class ConnectionDriver {
   }
 
   /**
-   * Attach a transport opened by legacy hooks (`useMeshtasticRuntime` / `useMeshcoreRuntime`) so
-   * action hooks can resolve the live SDK handle. Caller supplies teardown from
-   * `protocol.subscribe` (ingress is already wired before this call).
+   * Attach a transport opened outside {@link ConnectionDriver.connect} so action hooks can
+   * resolve the live SDK handle. Caller supplies teardown from `protocol.subscribe`
+   * (ingress is already wired before this call).
    */
-  registerLegacyTransport(
+  registerExternalTransport(
     identityId: IdentityId,
     protocol: Protocol,
     handle: unknown,
@@ -289,7 +316,7 @@ export class ConnectionDriver {
       try {
         teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] legacy teardown error ' + errLikeToLogString(e));
+        console.warn('[ConnectionDriver] external teardown error ' + errLikeToLogString(e));
       }
       this.slots.delete(transportId);
       removeTransport(identityId, transportId);

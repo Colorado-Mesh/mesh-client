@@ -335,13 +335,25 @@ export function persistRmapUiPrefs(prefs: {
       );
     }
   }
-  void window.electronAPI.appSettings.set(
-    RMAP_SETTINGS_KEYS.announceIntervalMin,
-    String(clampRmapAnnounceIntervalMin(prefs.announceIntervalMin)),
-  );
-  void window.electronAPI.appSettings.set(RMAP_SETTINGS_KEYS.reachableOn, prefs.reachableOn.trim());
+  void window.electronAPI.appSettings
+    .set(
+      RMAP_SETTINGS_KEYS.announceIntervalMin,
+      String(clampRmapAnnounceIntervalMin(prefs.announceIntervalMin)),
+    )
+    .catch((e: unknown) => {
+      console.warn('[reticulumRmapDiscovery] persist announceInterval ' + errLikeToLogString(e));
+    });
+  void window.electronAPI.appSettings
+    .set(RMAP_SETTINGS_KEYS.reachableOn, prefs.reachableOn.trim())
+    .catch((e: unknown) => {
+      console.warn('[reticulumRmapDiscovery] persist reachableOn ' + errLikeToLogString(e));
+    });
   if (height) {
-    void window.electronAPI.appSettings.set(RMAP_SETTINGS_KEYS.heightMeters, height);
+    void window.electronAPI.appSettings
+      .set(RMAP_SETTINGS_KEYS.heightMeters, height)
+      .catch((e: unknown) => {
+        console.warn('[reticulumRmapDiscovery] persist heightMeters ' + errLikeToLogString(e));
+      });
   }
 }
 

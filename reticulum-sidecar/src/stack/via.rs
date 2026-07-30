@@ -227,6 +227,11 @@ pub fn merge_live_interfaces_with_config(
             live_row.announce_interval_min = cfg.announce_interval_min;
             live_row.connectable = cfg.connectable;
             live_row.reachable_on = cfg.reachable_on.clone();
+            // Config is source of truth for IFAC / extras / BLE seeds (live stats omit them).
+            live_row.network_name = cfg.network_name.clone();
+            live_row.passphrase = cfg.passphrase.clone();
+            live_row.extra_config = cfg.extra_config.clone();
+            live_row.seed_addresses = cfg.seed_addresses.clone();
             // Config INI is the source of truth for user enable/disable; live stats only
             // report carrier status (online), which must not flip `enabled` in the UI.
             live_row.enabled = cfg.enabled;
@@ -288,6 +293,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }
     }
 
@@ -410,6 +418,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
@@ -444,6 +455,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         let live = vec![InterfaceRow {
             id: "rns-0".into(),
@@ -472,6 +486,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(resolve_outbound_sent_via(&merged), "rf");
@@ -513,6 +530,9 @@ mod tests {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                network_name: None,
+                passphrase: None,
+                extra_config: std::collections::HashMap::new(),
             },
             InterfaceRow {
                 id: "rns-1".into(),
@@ -541,6 +561,9 @@ mod tests {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                network_name: None,
+                passphrase: None,
+                extra_config: std::collections::HashMap::new(),
             },
         ];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -580,10 +603,97 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(merged.len(), 1);
         assert!(merged[0].enabled);
         assert_eq!(merged[0].status, "down");
+    }
+
+    #[test]
+    fn merge_live_interfaces_preserves_ifac_and_extra_config() {
+        // Matches TTP-shaped TCP from user report: IFAC on disk, live stats sparse.
+        let mut extra = std::collections::HashMap::new();
+        extra.insert("forward_interval".into(), "300".into());
+        let config = vec![InterfaceRow {
+            id: "ttp-tcp".into(),
+            name: "TTP_TCP".into(),
+            iface_type: "tcp".into(),
+            enabled: true,
+            status: "down".into(),
+            host: Some("rns.thetechprepper.com".into()),
+            port: Some(11312),
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("boundary".into()),
+            seed_addresses: vec!["AA:BB:CC:DD:EE:FF".into()],
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: Some("ttp_internal".into()),
+            passphrase: Some("resistance202606".into()),
+            extra_config: extra.clone(),
+        }];
+        let live = vec![InterfaceRow {
+            id: "rns-0".into(),
+            name: "TTP_TCP".into(),
+            iface_type: "Full".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
+        }];
+        let merged = merge_live_interfaces_with_config(&config, live);
+        assert_eq!(merged.len(), 1);
+        let row = &merged[0];
+        assert_eq!(row.id, "ttp-tcp");
+        assert_eq!(row.status, "up");
+        assert_eq!(row.host.as_deref(), Some("rns.thetechprepper.com"));
+        assert_eq!(row.port, Some(11312));
+        assert_eq!(row.mode.as_deref(), Some("boundary"));
+        assert_eq!(row.network_name.as_deref(), Some("ttp_internal"));
+        assert_eq!(row.passphrase.as_deref(), Some("resistance202606"));
+        assert_eq!(
+            row.extra_config.get("forward_interval").map(String::as_str),
+            Some("300")
+        );
+        assert_eq!(row.seed_addresses, vec!["AA:BB:CC:DD:EE:FF".to_string()]);
     }
 }

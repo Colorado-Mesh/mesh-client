@@ -59,7 +59,6 @@ export const LOG_ANALYZER_GROUP_RECOMMENDATION_KEYS: Record<string, string> = {
 export function resolveLogAnalyzerRecommendationKey(recommendationGroup: string): string {
   return (
     LOG_ANALYZER_GROUP_RECOMMENDATION_KEYS[recommendationGroup] ??
-    LOG_ANALYZER_CATEGORY_RECOMMENDATION_KEYS[recommendationGroup] ??
     'logAnalyzer.categories.internal-error.recommendation'
   );
 }

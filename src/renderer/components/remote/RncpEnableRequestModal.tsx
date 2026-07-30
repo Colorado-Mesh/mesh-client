@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
@@ -10,6 +10,7 @@ import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInbou
 import { useRncpEnableRequestStore } from '@/renderer/stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
+import { buildRncpReceiveDestShareBody } from '@/shared/rncpRequestEnable';
 
 /**
  * Resolve a Reticulum **identity** hash for an LXMF delivery destination hash.
@@ -31,6 +32,42 @@ async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Promise<str
 }
 
 /**
+ * After enabling inbound rncp, share our rncp.receive hash with the requester
+ * so their Chat DM / Transfer field can autofill (mesh-client peers only).
+ */
+async function shareRncpReceiveDestWithPeer(
+  peerLxmfHash: string,
+  instructions: string,
+): Promise<'shared' | 'no_hash' | 'failed'> {
+  const dest = canonicalizeReticulumDestinationHash(peerLxmfHash);
+  if (!dest) return 'failed';
+  try {
+    const identity = await window.electronAPI.reticulum.remote.getIdentity();
+    const receiveHash = identity?.rncp_receive_hash
+      ? canonicalizeReticulumDestinationHash(identity.rncp_receive_hash)
+      : null;
+    if (!receiveHash) {
+      console.debug('[RncpEnableRequestModal] no rncp_receive_hash to share');
+      return 'no_hash';
+    }
+    const text = buildRncpReceiveDestShareBody(instructions, receiveHash);
+    const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', {
+      destination_hash: dest,
+      text,
+    })) as { ok?: boolean; error?: string };
+    if (res?.ok === false) {
+      console.debug('[RncpEnableRequestModal] share receive dest failed: ' + (res.error ?? ''));
+      return 'failed';
+    }
+    return 'shared';
+  } catch (e) {
+    // Non-fatal: listener is already enabled; peer can copy the hash manually.
+    console.debug('[RncpEnableRequestModal] share receive dest ' + errLikeToLogString(e));
+    return 'failed';
+  }
+}
+
+/**
  * Modal shown when a peer sends an LXMF DM containing
  * `mesh-client:request-rncp-receive:v1`. Does not auto-accept files.
  */
@@ -41,8 +78,42 @@ export function RncpEnableRequestModal() {
   const dismiss = useRncpEnableRequestStore((s) => s.dismiss);
   const upsertPolicy = useReticulumInboundPolicyStore((s) => s.upsert);
   const setInboundModeOptimistic = useRncpTransferStore((s) => s.setInboundModeOptimistic);
+  const setListener = useRncpTransferStore((s) => s.setListener);
 
   const current = prompts[0] ?? null;
+  const autoSharedPeerRef = useRef<string | null>(null);
+
+  // If inbound rncp is already enabled, re-share our receive dest immediately so the
+  // requester does not stay empty when the peer thinks they are "already enabled".
+  useEffect(() => {
+    if (!current) return;
+    const peerHash = current.peerHash;
+    if (autoSharedPeerRef.current === peerHash) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const status = await window.electronAPI.reticulum.rncp.getListener();
+        if (cancelled) return;
+        setListener(status);
+        if (!status?.enabled) return;
+        autoSharedPeerRef.current = peerHash;
+        const shareResult = await shareRncpReceiveDestWithPeer(
+          peerHash,
+          t('reticulumRemote.enableRequest.lxmfShareBody'),
+        );
+        if (!cancelled && shareResult === 'shared') {
+          dismiss(peerHash, false);
+        }
+      } catch (e) {
+        console.debug(
+          '[RncpEnableRequestModal] already-enabled auto-share ' + errLikeToLogString(e),
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [current, dismiss, setListener, t]);
 
   const enableListener = useCallback(
     async (allowIdentity: boolean) => {
@@ -95,7 +166,13 @@ export function RncpEnableRequestModal() {
         const listener = await window.electronAPI.reticulum.rncp.getListener();
         useRncpTransferStore.getState().setListener(listener);
         addToast(t('reticulumRemote.enableRequest.enabled'), 'success');
-        dismiss(current.peerHash, false);
+        const peerHash = current.peerHash;
+        dismiss(peerHash, false);
+        // Best-effort: tell the requester our rncp.receive dest so they can autofill.
+        void shareRncpReceiveDestWithPeer(
+          peerHash,
+          t('reticulumRemote.enableRequest.lxmfShareBody'),
+        );
       } catch (e) {
         console.debug('[RncpEnableRequestModal] enable ' + errLikeToLogString(e));
         addToast(
@@ -124,6 +201,9 @@ export function RncpEnableRequestModal() {
         </h2>
         <p className="mt-2 text-sm text-gray-300">
           {t('reticulumRemote.enableRequest.body', { peer })}
+        </p>
+        <p className="mt-2 text-xs text-amber-200/90">
+          {t('reticulumRemote.enableRequest.shareDestWarning')}
         </p>
         <div className="mt-4 flex flex-col gap-2">
           <button

@@ -16,6 +16,9 @@ mod nomad_timeouts;
 mod packet_log;
 mod path_speed;
 mod persistence;
+#[cfg(feature = "rns-stack")]
+mod pn_hosting_apply;
+mod pn_hosting_policy;
 pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;
@@ -33,7 +36,11 @@ mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod nomad_server;
 #[cfg(feature = "rns-stack")]
+mod propagation_announce;
+#[cfg(feature = "rns-stack")]
 mod propagation_bridge;
+#[cfg(feature = "rns-stack")]
+mod propagation_serve;
 #[cfg(feature = "rns-stack")]
 mod rncp_transfer;
 #[cfg(feature = "rns-stack")]
@@ -50,10 +57,11 @@ use std::sync::Arc;
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
 use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
+pub use pn_hosting_policy::PnHostingPolicy;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
-    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow, LxmfReactionRequest,
+    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
 #[cfg(not(feature = "rns-stack"))]
@@ -224,6 +232,7 @@ impl StackHandle {
                 handle.config_dir.clone(),
                 handle.storage_dir.clone(),
             );
+            live.register_propagation_announce_handler();
             live.register_lxmf_identity_announce_handler();
             live.register_rmap_discovery_watcher(event_tx.clone());
         }
@@ -847,6 +856,7 @@ impl StackHandle {
         let inner = self.inner.read().await;
         let preferred_id = inner.preferred_propagation_id.clone();
         let auto_sync_interval_sec = inner.auto_sync_interval_sec;
+        let pn_hosting_policy = inner.pn_hosting_policy.clone();
         #[cfg(feature = "rns-stack")]
         let local_stats = if let Some(live) = &self.live {
             let (count, bytes) = live.propagation_local_stats();
@@ -904,7 +914,16 @@ impl StackHandle {
             "propagation": propagation,
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
+            "pn_hosting_policy": pn_hosting_policy,
         })
+    }
+
+    pub fn list_discovered_propagation(&self) -> Vec<DiscoveredPropagationRow> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.list_discovered_propagation();
+        }
+        Vec::new()
     }
 
     pub async fn set_preferred_propagation(&self, id: &str) -> Result<(), String> {
@@ -931,6 +950,26 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         inner.set_auto_sync_interval_sec(sec);
         inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
+    pub async fn set_pn_hosting_policy(&self, policy: PnHostingPolicy) -> Result<(), String> {
+        let policy = {
+            let mut inner = self.inner.write().await;
+            // Snapshot for rollback if durable save fails after in-memory mutate.
+            let snapshot = inner.pn_hosting_policy.clone();
+            inner.set_pn_hosting_policy(policy)?;
+            let policy = inner.pn_hosting_policy.clone();
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                inner.pn_hosting_policy = snapshot;
+                return Err(e);
+            }
+            policy
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.apply_pn_hosting_policy(&policy).await?;
+        }
         Ok(())
     }
 
@@ -1023,9 +1062,55 @@ impl StackHandle {
         &self,
         destination_hash: &str,
         name: Option<String>,
+        skip_probe: bool,
     ) -> Result<serde_json::Value, String> {
+        let hash = destination_hash.trim().to_lowercase();
+        // Prefer live known key / discovered announce metadata before persist.
+        let (pub_hex, id_hex) = {
+            #[cfg(feature = "rns-stack")]
+            if let Some(live) = &self.live {
+                let discovered = live
+                    .list_discovered_propagation()
+                    .into_iter()
+                    .find(|d| d.destination_hash.to_lowercase() == hash);
+                let id_hex = discovered.as_ref().and_then(|d| d.identity_hash.clone());
+                let discovered_pub = discovered.as_ref().and_then(|d| d.public_key.clone());
+                let pub_key = live.register_propagation_node_identity(
+                    &hash,
+                    discovered_pub.as_deref(),
+                    id_hex.as_deref(),
+                    false,
+                );
+                let pub_hex = pub_key.map(hex::encode).or(discovered_pub);
+                (pub_hex, id_hex)
+            } else {
+                (None, None)
+            }
+            #[cfg(not(feature = "rns-stack"))]
+            {
+                let _ = skip_probe;
+                (None, None)
+            }
+        };
+        #[cfg(feature = "rns-stack")]
+        if !skip_probe {
+            if let Some(live) = &self.live {
+                live.probe_propagation_offer(&hash).await?;
+            }
+        }
         let mut inner = self.inner.write().await;
-        let row = inner.add_propagation_node(destination_hash, name)?;
+        let mut row = inner.add_propagation_node(destination_hash, name)?;
+        if pub_hex.is_some() || id_hex.is_some() {
+            if let Some(node) = inner.propagation.iter_mut().find(|p| p.id == row.id) {
+                if pub_hex.is_some() {
+                    node.public_key = pub_hex.clone();
+                }
+                if id_hex.is_some() {
+                    node.identity_hash = id_hex.clone();
+                }
+                row = node.clone();
+            }
+        }
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(serde_json::json!({ "ok": true, "node": row }))
     }
@@ -1916,32 +2001,51 @@ impl StackHandle {
         hash: &str,
         path: &str,
         data_b64: Option<&str>,
+        force_path_refresh: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
             let identity_hash = self.nomad_identity_hash_for(hash).await;
             return live
-                .fetch_nomad_page(hash, identity_hash.as_deref(), path, data_b64, &interfaces)
+                .fetch_nomad_page(
+                    hash,
+                    identity_hash.as_deref(),
+                    path,
+                    data_b64,
+                    &interfaces,
+                    force_path_refresh,
+                )
                 .await;
         }
-        let _ = (hash, path, data_b64);
+        let _ = (hash, path, data_b64, force_path_refresh);
         serde_json::json!({
             "ok": false,
             "error": "nomad page fetch requires live rns-stack sidecar"
         })
     }
 
-    pub async fn nomad_file(&self, hash: &str, path: &str) -> serde_json::Value {
+    pub async fn nomad_file(
+        &self,
+        hash: &str,
+        path: &str,
+        force_path_refresh: bool,
+    ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
             let identity_hash = self.nomad_identity_hash_for(hash).await;
             return live
-                .fetch_nomad_file(hash, identity_hash.as_deref(), path, &interfaces)
+                .fetch_nomad_file(
+                    hash,
+                    identity_hash.as_deref(),
+                    path,
+                    &interfaces,
+                    force_path_refresh,
+                )
                 .await;
         }
-        let _ = (hash, path);
+        let _ = (hash, path, force_path_refresh);
         serde_json::json!({
             "ok": false,
             "error": "nomad file fetch requires live rns-stack sidecar"
@@ -2611,7 +2715,12 @@ mod tests {
     async fn list_peers_stub_empty_after_clear_announces() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let (tx, _) = broadcast::channel(8);
-        let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
         handle.clear_announces().await.expect("clear announces");
         assert!(handle.list_peers().await.is_empty());
         let _ = std::fs::remove_dir_all(config_dir);
@@ -2688,7 +2797,12 @@ mod tests {
     async fn clear_contacts_empties_persisted_lxmf_contacts() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let (tx, _) = broadcast::channel(8);
-        let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
         {
             let mut inner = handle.inner.write().await;
             inner.upsert_contact("aabbccddeeff00112233445566778899", Some("Announced".into()));

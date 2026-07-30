@@ -41,12 +41,9 @@ describe('user backup repairs (local dumps)', () => {
       expect(mcNodes).toBe(0);
 
       const nullStatus = (
-        db
-          .prepare(
-            `SELECT COUNT(*) as c FROM messages
-             WHERE status IS NULL AND received_via IS NOT NULL`,
-          )
-          .get() as { c: number }
+        db.prepare(`SELECT COUNT(*) as c FROM messages WHERE status IS NULL`).get() as {
+          c: number;
+        }
       ).c;
       expect(nullStatus).toBe(0);
 

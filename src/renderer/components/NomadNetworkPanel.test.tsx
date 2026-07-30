@@ -1,7 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { NOMAD_PAGE_FETCH_RETRY_SETTLE_MS } from '@/renderer/lib/timeConstants';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -54,6 +59,7 @@ describe('NomadNetworkPanel', () => {
     clearNomadPageCache();
     localStorage.removeItem('mesh-client:nomadPageFitWidth');
     localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
+    localStorage.removeItem('mesh-client:nomadNodeSort');
     isReticulumSidecarRunning.mockResolvedValue(false);
     onReticulumStatus.mockReturnValue(() => {});
     window.electronAPI.reticulum.onStatus = onReticulumStatus;
@@ -107,6 +113,56 @@ describe('NomadNetworkPanel', () => {
     await user.type(search, 'topics');
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
+  });
+
+  it('sorts announces by last heard by default and by hops when selected', async () => {
+    const user = userEvent.setup();
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          'old',
+          {
+            destination_hash: 'oldhash0001',
+            display_name: 'Older Node',
+            favorited: false,
+            last_seen: 100,
+            hops: 1,
+          },
+        ],
+        [
+          'new',
+          {
+            destination_hash: 'newhash0001',
+            display_name: 'Newer Node',
+            favorited: false,
+            last_seen: 300,
+            hops: 5,
+          },
+        ],
+      ]),
+    });
+    render(<NomadNetworkPanel />);
+
+    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+
+    const openButtons = screen.getAllByRole('button', { name: 'nomadNetwork.openNode' });
+    // Default sort: last heard desc → newest first
+    expect(openButtons[0]).toHaveTextContent('Newer Node');
+    expect(openButtons[1]).toHaveTextContent('Older Node');
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.sortByHopsAsc' }));
+
+    const afterHops = screen.getAllByRole('button', { name: 'nomadNetwork.openNode' });
+    // Hops asc → closest first (Older has 1 hop)
+    expect(afterHops[0]).toHaveTextContent('Older Node');
+    expect(afterHops[1]).toHaveTextContent('Newer Node');
+    expect(localStorage.getItem('mesh-client:nomadNodeSort')).toBe(
+      JSON.stringify({ key: 'hops', dir: 'asc' }),
+    );
+
+    hydrateAxeThemeColors(document.documentElement);
+    const sortToolbar = screen.getByRole('toolbar', { name: 'nomadNetwork.sortToolbar' });
+    expect(await axe(sortToolbar)).toHaveNoViolations();
   });
 
   it('shows My Pages hosting panel and hides search when selected', async () => {
@@ -310,6 +366,102 @@ describe('NomadNetworkPanel', () => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Reloaded');
     });
     expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+  });
+
+  it('fetches distinct content for same path with different requestData', async () => {
+    const user = userEvent.setup();
+    const fetchNomadPage = vi
+      .fn()
+      .mockImplementation((_hash: string, path: string, requestData?: Record<string, string>) => {
+        if (path === '/page/index.mu') {
+          return {
+            ok: true,
+            content:
+              '`[Thread A`:/page/forum/thread.mu`thread_id=aaa]`\n`[Thread B`:/page/forum/thread.mu`thread_id=bbb]`',
+            content_type: 'micron',
+          };
+        }
+        if (path === '/page/forum/thread.mu' && requestData?.var_thread_id === 'aaa') {
+          return { ok: true, content: '`!Thread A body:`!', content_type: 'micron' };
+        }
+        if (path === '/page/forum/thread.mu' && requestData?.var_thread_id === 'bbb') {
+          return { ok: true, content: '`!Thread B body:`!', content_type: 'micron' };
+        }
+        return { ok: false, error: 'Invalid thread.' };
+      });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'Forum Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel />);
+    await openAnnouncesNode(user);
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread A');
+    });
+
+    const links = () =>
+      Array.from(document.querySelectorAll('.nomad-micron-page [data-action="openNode"]'));
+
+    await user.click(links().find((el) => el.textContent?.includes('Thread A'))!);
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread A body');
+    });
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
+      'abc1234567890:/page/forum/thread.mu`thread_id=aaa',
+    );
+    expect(fetchNomadPage).toHaveBeenCalledWith(
+      'abc1234567890',
+      '/page/forum/thread.mu',
+      {
+        var_thread_id: 'aaa',
+      },
+      undefined,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.homePage' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread B');
+    });
+
+    await user.click(links().find((el) => el.textContent?.includes('Thread B'))!);
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread B body');
+    });
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
+      'abc1234567890:/page/forum/thread.mu`thread_id=bbb',
+    );
+    expect(fetchNomadPage).toHaveBeenCalledWith(
+      'abc1234567890',
+      '/page/forum/thread.mu',
+      {
+        var_thread_id: 'bbb',
+      },
+      undefined,
+    );
+
+    const threadFetches = fetchNomadPage.mock.calls.filter(
+      (call) => call[1] === '/page/forum/thread.mu',
+    );
+    expect(threadFetches).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.reloadPage' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread B body');
+    });
+    const reloadCalls = fetchNomadPage.mock.calls.filter(
+      (call) => call[1] === '/page/forum/thread.mu' && call[2]?.var_thread_id === 'bbb',
+    );
+    expect(reloadCalls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('navigates back without refetching when page is cached', async () => {
@@ -566,7 +718,7 @@ describe('NomadNetworkPanel', () => {
       ]),
     });
 
-    render(<NomadNetworkPanel />);
+    render(<NomadNetworkPanel onOpenDm={vi.fn()} />);
     await openAnnouncesNode(user);
 
     await waitFor(() => {
@@ -577,6 +729,35 @@ describe('NomadNetworkPanel', () => {
 
     const toggle = screen.getByLabelText('nomadNetwork.openWidth');
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(toggle).toHaveAttribute('title', 'nomadNetwork.openWidth');
+    expect(screen.getByRole('button', { name: 'nomadNetwork.back' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.back',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.reloadPage' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.reloadPage',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.sendMessageAria' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.sendMessageAria',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.forward' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.forward',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.homePage' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.homePage',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.showSource' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.showSource',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.closeViewer' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.closeViewer',
+    );
     await user.click(toggle);
 
     expect(localStorage.getItem('mesh-client:nomadPageFitWidth')).toBe('false');
@@ -618,5 +799,219 @@ describe('NomadNetworkPanel', () => {
       'nomad-micron-page--fit-width',
     );
     expect(screen.getByLabelText('nomadNetwork.fitWidth')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('auto-retries once after link_timeout and renders on success', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: '>>>hello after retry',
+          content_type: 'micron',
+        });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Retry Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 3,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+      });
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        1,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        undefined,
+      );
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        2,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
+      expect(screen.queryByText(/nomadNetwork.pageFailed/)).not.toBeInTheDocument();
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows page error once when both fetch attempts fail', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' })
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Fail Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 3,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(screen.getByText(/nomadNetwork.pageFailed/)).toBeInTheDocument();
+      });
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('reloads once after announce refresh while a retryable error is showing', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' })
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: '>>>hello after announce',
+          content_type: 'micron',
+        });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Stale Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 4,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(screen.getByText(/nomadNetwork.pageFailed/)).toBeInTheDocument();
+      });
+
+      act(() => {
+        useNomadNetworkStore.setState({
+          nodes: new Map([
+            [
+              'abc1234567890',
+              {
+                destination_hash: 'abc1234567890',
+                display_name: 'Stale Node',
+                favorited: false,
+                last_seen: 200,
+                hops: 3,
+              },
+            ],
+          ]),
+        });
+      });
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(3);
+        expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+      });
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        2,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        3,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
+
+      act(() => {
+        useNomadNetworkStore.setState({
+          nodes: new Map([
+            [
+              'abc1234567890',
+              {
+                destination_hash: 'abc1234567890',
+                display_name: 'Stale Node',
+                favorited: false,
+                last_seen: 300,
+                hops: 2,
+              },
+            ],
+          ]),
+        });
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(fetchNomadPage).toHaveBeenCalledTimes(3);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
   });
 });

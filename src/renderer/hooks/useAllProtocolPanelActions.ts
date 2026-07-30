@@ -30,15 +30,3 @@ export function useAllProtocolPanelActions(runtimes: {
     [meshtasticActions, meshcoreActions, reticulumActions],
   );
 }
-
-/** @deprecated Use useAllProtocolPanelActions */
-export function useDualProtocolPanelActions(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- deprecated stub keeps legacy signature
-  _meshtastic: MeshtasticRuntime,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- deprecated stub keeps legacy signature
-  _meshcore: MeshcoreRuntime,
-): PanelActionsByProtocol {
-  throw new Error(
-    'useDualProtocolPanelActions requires reticulum runtime — use useAllProtocolPanelActions',
-  );
-}

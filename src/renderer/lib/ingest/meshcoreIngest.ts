@@ -73,7 +73,9 @@ function handlePathUpdated(
   useDiagnosticsStore.getState().recordPathUpdated(nodeId);
 
   const nowSec = Math.floor(Date.now() / 1000);
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   const isNew = existing == null;
   if (isNew) {
     persistMeshcorePathUpdatedNewContact(nodeId, publicKey, nowSec);
@@ -151,6 +153,7 @@ function resolveRoomServerIdForIngest(
   }
   if (
     event.from !== 0 &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
     isMeshcoreRoomServerHwModel(useNodeStore.getState().nodes[identityId]?.[event.from]?.hwModel)
   ) {
     return event.from;
@@ -163,7 +166,9 @@ function handleTextMessage(
   event: Extract<DomainEvent, { type: 'text_message' }>,
   options: MeshcoreIngestOptions = {},
 ): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!record) return;
 
   const priorReplyId = record.replyTo != null ? Number(record.replyTo) : undefined;
@@ -177,7 +182,9 @@ function handleTextMessage(
   const hopCount =
     event.payload.hopCount ??
     resolveMeshcoreIngestRxHops(options.rawPacketsForHopCorrelation?.() ?? [], isChannel);
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
   const isKnownRoomNode = isMeshcoreRoomServerHwModel(fromNode?.hwModel);
   const looksLikeRoom = meshcoreRoomWireLooksLikeRoom({
     txtType: event.payload.txtType,
@@ -201,7 +208,10 @@ function handleTextMessage(
       { isKnownRoomNode },
     );
     const authorNode =
-      authorId !== 0 ? useNodeStore.getState().nodes[identityId]?.[authorId] : undefined;
+      authorId !== 0
+        ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+          useNodeStore.getState().nodes[identityId]?.[authorId]
+        : undefined;
     const authorName =
       authorNode?.longName?.trim() ||
       (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
@@ -342,7 +352,9 @@ function createListener(
         handlePathUpdated(identityId, event, options);
         break;
       case 'position': {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
         const record = useNodeStore.getState().nodes[identityId]?.[event.payload.nodeId];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
         if (record?.publicKey instanceof Uint8Array) {
           persistMeshcoreNodeInfoAfterAdvert(
             identityId,

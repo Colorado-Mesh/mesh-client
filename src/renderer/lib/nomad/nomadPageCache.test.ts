@@ -25,6 +25,29 @@ describe('nomadPageCache', () => {
     expect(hit?.content_type).toBe('micron');
   });
 
+  it('treats different requestData as distinct cache entries', () => {
+    const hash = 'abc1234567890abcdef1234567890ab';
+    const path = '/page/forum/thread.mu';
+    setNomadPageCache({ hash, path, requestData: { var_thread_id: 'a' } }, { content: 'thread-a' });
+    setNomadPageCache({ hash, path, requestData: { var_thread_id: 'b' } }, { content: 'thread-b' });
+    expect(getNomadPageCache({ hash, path, requestData: { var_thread_id: 'a' } })?.content).toBe(
+      'thread-a',
+    );
+    expect(getNomadPageCache({ hash, path, requestData: { var_thread_id: 'b' } })?.content).toBe(
+      'thread-b',
+    );
+    expect(getNomadPageCache({ hash, path })?.content).toBeUndefined();
+  });
+
+  it('hits cache when requestData matches regardless of key order', () => {
+    const hash = 'abc1234567890abcdef1234567890ab';
+    const path = '/page/forum/thread.mu';
+    setNomadPageCache({ hash, path, requestData: { var_b: '2', var_a: '1' } }, { content: 'same' });
+    expect(
+      getNomadPageCache({ hash, path, requestData: { var_a: '1', var_b: '2' } })?.content,
+    ).toBe('same');
+  });
+
   it('evicts oldest entries when over capacity', () => {
     for (let i = 0; i < 33; i++) {
       const hash = `${i}`.padStart(32, 'a');

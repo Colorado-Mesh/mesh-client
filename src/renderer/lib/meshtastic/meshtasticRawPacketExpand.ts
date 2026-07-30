@@ -38,6 +38,7 @@ export function parseMeshtasticRawPacketExpand(
     return { ok: false };
   }
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const packet = fromBinary(Mesh.MeshPacketSchema, raw) as {
       id?: number;
       to?: number;

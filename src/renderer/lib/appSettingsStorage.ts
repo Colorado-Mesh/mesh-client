@@ -86,7 +86,13 @@ export function isReticulumAutostartEnabled(): boolean {
 
 export function setReticulumAutostartEnabled(enabled: boolean): void {
   mergeAppSetting('reticulumAutostart', enabled, 'setReticulumAutostartEnabled');
-  void window.electronAPI.appSettings.set('reticulumAutostart', enabled ? '1' : '0');
+  void window.electronAPI.appSettings
+    .set('reticulumAutostart', enabled ? '1' : '0')
+    .catch((e: unknown) => {
+      console.warn(
+        '[appSettingsStorage] persist reticulumAutostart failed ' + errLikeToLogString(e),
+      );
+    });
 }
 
 /** Merge keys into existing app settings without dropping unrelated persisted fields. */

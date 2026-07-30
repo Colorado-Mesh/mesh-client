@@ -1,7 +1,7 @@
-import os from 'node:os';
 import { readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import os from 'node:os';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
@@ -37,7 +37,6 @@ const RENDERER_LOGIC_INCLUDE = [
   'src/renderer/stores/nodeStore.test.ts',
   'src/renderer/hooks/meshcore/buildMeshcoreNodeMapFromDb.test.ts',
   'src/renderer/hooks/meshcore/meshcoreHookPreamble.crossTransport.test.ts',
-  'src/renderer/hooks/meshcore/meshcoreLegacyConnEvents.test.ts',
   'src/renderer/hooks/openMeshCoreTransport.test.ts',
   'src/renderer/components/LogPanel.filtering.test.ts',
   'src/renderer/components/MentionAutocomplete.test.ts',
@@ -81,6 +80,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/controlledEditableValue.test.ts',
   'src/renderer/lib/debugSnapshot.test.ts',
   'src/renderer/lib/devElectronApiStub.test.ts',
+  'src/renderer/lib/drivers/attachTypedPacketListener.test.ts',
   'src/renderer/lib/drivers/PacketRouter.test.ts',
   'src/renderer/lib/encryptedKeyBackupStorage.test.ts',
   'src/renderer/lib/gpsSource.test.ts',
@@ -90,6 +90,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/letsMeshJwt.test.ts',
   'src/renderer/lib/messageRetention.test.ts',
   'src/renderer/lib/rrcMessagePersist.test.ts',
+  'src/renderer/lib/rrcRoomHistory.test.ts',
   'src/renderer/lib/nomad/micronParser.test.ts',
   'src/renderer/lib/nomad/nomadPageCache.test.ts',
   'src/renderer/lib/meshtasticBacklogUtils.test.ts',
@@ -100,15 +101,23 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshtasticMqttSettingsStorage.test.ts',
   'src/renderer/lib/meshtasticRemoteAdminKeyStorage.test.ts',
   'src/renderer/lib/meshcore/meshcoreLiveContactPersist.test.ts',
-  'src/renderer/lib/meshtastic/meshtasticLegacyDeviceEvents.test.ts',
-  'src/renderer/lib/meshtastic/meshtasticLegacyWireSubscriptions.post-reboot.test.ts',
-  'src/renderer/lib/meshtastic/meshtasticLegacyWireSubscriptions.telemetry-nodeinfo.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticTransportSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.post-reboot.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.telemetry-nodeinfo.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticNodeSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticRawPacketSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticRouterSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticModulePortSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticStoreForwardSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticTraceSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/transportDisplayNameCache.test.ts',
   'src/renderer/lib/meshcoreDualNobleBleInit.test.ts',
   'src/renderer/lib/meshcoreKeyBackupStorage.test.ts',
   'src/renderer/lib/meshcoreMqttSettingsStorage.test.ts',
   'src/renderer/lib/meshcoreContactAutoAdd.test.ts',
   'src/renderer/lib/meshcoreDbCacheHydration.repair.test.ts',
   'src/renderer/lib/meshcoreOwnNodeIds.test.ts',
+  'src/renderer/lib/meshcore/meshcoreRfRxRuntime.test.ts',
   'src/renderer/lib/meshcoreRoomCredentialStorage.test.ts',
   'src/renderer/lib/meshcoreRepeaterCredentialStorage.test.ts',
   'src/renderer/lib/meshcorePerNodeCredentialStorage.test.ts',
@@ -125,6 +134,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/reduceMotionPreference.test.ts',
   'src/renderer/lib/remoteSettingsStorage.test.ts',
   'src/renderer/lib/sendRncpRequestEnable.test.ts',
+  'src/renderer/lib/applyRncpReceiveDestShare.test.ts',
+  'src/renderer/lib/applyRncpReceiveDestShareFromChatHistory.test.ts',
   'src/renderer/lib/pushRncpListenerPolicy.test.ts',
   'src/renderer/lib/rfReconnectHelper.test.ts',
   'src/renderer/lib/reticulum/useReticulumSidecarApi.test.ts',
@@ -283,6 +294,7 @@ export default defineConfig({
       exclude: [
         '**/*.test.{ts,tsx,mjs}',
         '**/*.d.ts',
+        'src/main/fixtures/**',
         'src/renderer/locales/**',
         'src/renderer/index.html',
         'src/renderer/vitest.setup.ts',

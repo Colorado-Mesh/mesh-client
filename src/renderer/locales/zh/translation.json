@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "清除{{count}}消息",
     "reticulumSection": "Reticulum — 网状堆栈",
     "reticulumAnnounceHelp": "您的身份在网络上公布的频率，以及清除存储的公告的工具。",
-    "reticulumPropagationHelp": "选择传播节点的同步方式，并在需要时提取最新传播数据。",
     "logPanelHelp": "启用后，实时日志流将显示在右侧。在 Reticulum 选项卡上，设备行包括 sidecar 输出和本地接口运行状况。调试行需要日志面板内的复选框。",
     "autoPruneUnheardContactsDaysAria": "启动时自动删除未听过的、超过 {{days}} 天的联系人",
     "capTotalContactsCountAria": "联系人总数上限，保留最近查看的 {{count}} 联系人",
@@ -373,7 +372,10 @@
     "restoreTheme": "还原保存的颜色检查点",
     "noSavedThemeTooltip": "尚未保存颜色—使用“保存”创建检查点",
     "saveThemeButton": "保存",
-    "restoreThemeButton": "恢复"
+    "restoreThemeButton": "恢复",
+    "reticulumPropagationHelp": "为离线DM配置远程LXMF传播节点。本地传播仅是此设备的收件箱—它不会替换远程节点。",
+    "use24HourTime": "24小时时间",
+    "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "单击以选择语言",
     "switchToMeshtasticWithUnread": "切换到 Meshtastic，{{count}} 未读",
     "switchToMeshCoreWithUnread": "切换到MeshCore，{{count}}未读",
-    "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读"
+    "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读",
+    "tabWithUnread": "{{label}}, {{count}}未读"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -465,8 +468,6 @@
     "dmNodeLastHeard": "最后一次听到{{time}}",
     "dmNodeBattery": "{{pct}}%电量",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}}跳",
-    "dmNodeHopsPlural": "{{count}}跳",
     "muteConversation": "将此对话设为静音",
     "unmuteConversation": "取消此对话的静音",
     "starMessage": "星级消息",
@@ -559,7 +560,9 @@
       "pkiMissingRecipientKey": "无法发送加密邮件— NodeDB中缺少收件人公钥。",
       "pkiFailed": "此邮件的PKI加密失败。",
       "noChannel": "没有可用于路由此消息的渠道。",
-      "timeout": "收音机消息超时。"
+      "timeout": "收音机消息超时。",
+      "rateLimited": "无线电是速率限制消息。请稍后重试。",
+      "noInterface": "没有无线电接口可用于发送此消息。"
     },
     "waitingMessagesQueued": "{{count}}在无线电上排队的消息",
     "waitingMessagesSyncProgress": "正在从收音机同步{{processed}}/{{total}} …",
@@ -593,7 +596,6 @@
       "sendFileAria": "通过rncp将文件发送到{{name}}",
       "pendingOffersBadgeAria_one": "{{count}}等待来自此同行的入站文件报价",
       "pendingOffersBadgeAria_other": "{{count}}来自此同行的待处理入站文件报价",
-      "destinationLabel": "rncp目的地哈希",
       "rememberAddress": "记住此地址",
       "rememberAddressAria": "记住此节点的此rncp目标",
       "chooseAndSend": "选择文件并发送…",
@@ -602,7 +604,23 @@
       "sendFailed": "发送失败： {{error}}",
       "newOfferToast": "{{peer}}想向您发送文件： {{file}}",
       "requestEnable": "请求启用",
-      "requestEnableAria": "要求此同行启用文件接收"
+      "requestEnableAria": "要求此同行启用文件接收",
+      "destinationLabel": "对等方的 rncp 接收目的地",
+      "destinationHelp": "这不是对方的 Chat/LXMF 哈希。如果对方粘贴了共享行，请使用“请求启用”或“从聊天中使用”，也可以粘贴 32 个字符的接收哈希。",
+      "activeTransfersBadgeAria_one": "{{count}}与此对等项的活动文件传输",
+      "activeTransfersBadgeAria_other": "与该同行进行的{{count}}活动文件传输",
+      "transfersTitle": "文件传输",
+      "useFromChat": "使用聊天中的目的地",
+      "useFromChatAria": "查找并使用此聊天中共享的rncp接收目的地",
+      "noShareInChat": "此聊天中还没有rncp共享行。要求他们粘贴他们的接收目的地（远程→我的rncp接收目的地） ，或粘贴下面32个字符的哈希。",
+      "savedForOtherPeers": "已保存的接收目的地适用于其他聊天（ {{peers}} ）。打开该同事的DM以自动填写。",
+      "transferProgressAria": "{{file}} 的传输进度：{{progress}}%",
+      "transferCompletedToast": "文件已发送： {{file}}",
+      "transferFailedToast": "文件传输失败（ {{file}} ） ： {{error}}",
+      "forgetAddress": "忘记已保存的目的地",
+      "forgetAddressAria": "删除此对等体已保存的rncp接收目的地",
+      "forgotAddressToast": "忘记了此对等方的保存的rncp目的地。",
+      "filledFromChatToast": "通过聊天填写目的地（未保存—选中请记住保留）。"
     },
     "shareLocation": "分享位置",
     "shareLocationLabel": "📍 共享位置",
@@ -615,7 +633,13 @@
     "floodScopeOverrideCustomLabel": "自定义泛洪范围标签",
     "floodScopeOverrideCustomPlaceholder": "#我的地区",
     "floodScopeOverrideCustomApply": "使用范围",
-    "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。"
+    "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。",
+    "dmNodeHops_one": "{{count}}跳",
+    "dmNodeHops_other": "{{count}}跳",
+    "notificationDmTitle": "来自{{sender}}的DM",
+    "notificationMessageTitle": "来自{{sender}}的消息",
+    "reticulumSendStoredAtPn": "存储在传播节点",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -624,7 +648,10 @@
     "locationCard": {
       "alt": "共享位置地图图块",
       "openMaps": "在地图中打开"
-    }
+    },
+    "directImage": "图片： {{name}}",
+    "directImageOpen": "打开图像",
+    "reticulumAttachmentImage": "附件图片： {{name}}"
   },
   "common": {
     "close": "关闭",
@@ -1067,7 +1094,27 @@
       "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。",
       "localOfflineRowBleBondStale": "蓝牙绑定已过时 - 在“系统设置”→“蓝牙”中忘记此 RNode，然后使用新的 PIN 重新配对（操作系统可能仍显示“已配对”）。",
       "addDefaultHubsAria": "同步默认的 Reticulum 主干集线器（US-East、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World）；禁用已停用的测试网端点",
-      "addDefaultHubsAllPresent": "默认骨干集线器已配置；未启用已停用的测试网集线器。"
+      "addDefaultHubsAllPresent": "默认骨干集线器已配置；未启用已停用的测试网集线器。",
+      "modeDescriptions": {
+        "full": "全网格参与。路由流量和自动传播公告。用于主节点和中继器。",
+        "access_point": "安静，直到被查询。短路径到期。非常适合为间歇性用户提供服务的广域无线电。",
+        "roaming": "移动接口。短路径超时和主动发现。用于手持或车辆RNode。",
+        "boundary": "网络边界。桥接不同的段，同时隔离本地流量。用于互联网/LoRa链接。",
+        "gateway": "为客户端寻找路径。代表连接的节点解决未知目标。",
+        "point_to_point": "两个节点之间的直接链接。无路由或通告传播。"
+      },
+      "networkName": "网络名称",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "网络名称",
+      "passphrase": "密码短语",
+      "passphrasePlaceholder": "IFAC认证",
+      "passphraseAria": "IFAC密码",
+      "showPassphrase": "显示密码短语",
+      "hidePassphrase": "隐藏密码",
+      "advanced": "高级",
+      "advancedHint": "附加键=此接口的值对，每行一个。已知字段（主机、模式、网络名称等）保持在上面的表单中。",
+      "advancedAria": "高级界面键值选项",
+      "advancedKeyReserved": "键“{{key}}”是已知字段，已被忽略—请使用上面的表单。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1142,9 @@
       "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
       "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
       "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。",
-      "offlineHintBleBondStale": "macOS 仍显示此 RNode 为已配对，但蓝牙密钥不再匹配（对等点删除了配对信息）。在系统设置 → 蓝牙中忘记设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后重新启动堆栈并在出现提示时输入新的 6 位 PIN。",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。"
+      "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。",
+      "offlineHintBle": "要清除此错误，您可能需要删除此接口并重新添加（选择设备），以刷新已保存的蓝牙 ID，然后重新启动堆栈。操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。RNode 每次配对都会生成新代码——切勿使用 123456（那是 Meshtastic 的默认值，不是 RNode）。在此应用连接之前，RNode 不必出现在系统设置 → 蓝牙中；堆栈配对时会出现操作系统对话框。无显示屏的电台：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 将管理面板中显示的 PIN（不是电台屏幕上的）输入到操作系统对话框。有显示屏的电台：在 Heltec 设备上按住按钮约 7 秒（时间因机型而异；许多板上约 10 秒会启用 Wi‑Fi AP），读取屏幕上的 PIN，然后输入到操作系统对话框。重试前请在操作系统蓝牙设置中清除失败的绑定。",
+      "offlineHintBleBondStale": "macOS 仍将此 RNode 显示为已配对，但蓝牙密钥不再匹配（对等方已删除配对信息）。在系统设置 → 蓝牙中忘记该设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后删除并重新添加此接口（选择设备），重新启动堆栈，并在提示时输入新的 6 位 PIN。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -1199,20 +1246,20 @@
     "coloradoRegionGateStay": "我在科罗拉多州",
     "coloradoRegionGateSwitch": "切换到LetsMesh",
     "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
       "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
     },
     "reticulumStackRunningAs": "运行中 — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动..."
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动...",
+    "reticulumSharedInstance": {
+      "title": "使用其他应用的共享实例",
+      "body": "此应用程序附加为另一个应用程序的共享Reticulum实例的客户端。来自此应用程序配置的本地TCP集线器未在此模式下启动—流量只能使用其他应用程序的堆栈。",
+      "networkHint": "或者打开Network → Share Reticulum实例手动关闭Share ，然后重新启动堆栈。您还可以完全退出MeshChat、Ratspeak或独立RNSD并重新启动。",
+      "disableShare": "关闭共享实例并重新启动",
+      "disableShareAria": "关闭共享实例并重新启动堆栈",
+      "disableFailed": "无法关闭共享实例。"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1356,7 +1403,8 @@
       "potentialMeshcoreRepeaterConflict": "潜在的MeshCore中继器冲突",
       "elevatedNoiseFloor": "高架噪音地板",
       "excessiveFlooding": "洪水泛滥",
-      "reticulumTrafficDetected": "检测到 Reticulum 流量"
+      "reticulumTrafficDetected": "检测到 Reticulum 流量",
+      "highCompanionTxQueue": "高伴侣TX队列"
     },
     "rfCause": {
       "channelUtilizationSpike": "当前的{{current}} %是近期平均值（ {{average}} % ）的2倍以上—可能是拥堵或干扰浪涌。",
@@ -1370,7 +1418,8 @@
       "widebandNoiseFloor": "宽带干扰（电子设备故障、电源线噪声等）导致噪声底板升高。",
       "fringeWeakCoverage": "节点距离太远或与网格其余部分的连接不佳。",
       "elevatedNoiseFloor": "无线电噪声底板为{{noiseFloor}} dBm — 干扰升高，有效范围缩短。",
-      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。"
+      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。",
+      "highCompanionTxQueue": "伴侣出站队列深度为{{queueLen}}/256 —流量可能会延迟或丢弃。"
     },
     "foreignLoraCause": {
       "meshtastic": "在此频率上传输的Meshtastic节点。发件人： {{sender}}. {{proximity}}此节点可能位于您的MeshCore中继器区域。",
@@ -1445,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "允许建立直接路由",
         "description": "洪水比非常高—等待节点积累直接路径触点，或检查中继器接近度。"
+      },
+      "highCompanionTxQueue": {
+        "title": "减少出站流量或检查射频链路",
+        "description": "伴侣TX队列几乎已满—暂停发送、减少洪水或检查干扰和薄弱环节。"
       }
     },
     "cuHistoryHeading": "渠道利用率（过去24小时）",
@@ -1523,7 +1576,10 @@
         "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
         "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
         "bleBondRemoved": "BLE RNode「{{name}}」绑定已过时 — 在操作系统蓝牙设置中忽略该设备并重新配对",
-        "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对"
+        "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对",
+        "sidecarUnhealthy": "Reticulum sidecar正在运行，但未响应健康检查",
+        "propagationSyncStuck": "传播节点同步卡住，无法建立链接",
+        "propagationSyncFailing": "传播节点同步失败"
       }
     },
     "routingPort": {
@@ -1545,7 +1601,9 @@
     "snrDb": "信噪比{{snr}}分贝",
     "distanceOffsetKm": "距离偏移",
     "km": "公里",
-    "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。"
+    "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。",
+    "ignoreMqttToggle": "忽略MQTT",
+    "ignoreMqttHelp": "灰显仅限MQTT的节点，并将其排除在诊断之外"
   },
   "diagnosticsPing": {
     "title": "持续ping",
@@ -2450,6 +2508,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "高级PN出租（危险区域）",
+      "peeringCost": "对等成本",
+      "maxPeeringCost": "最大对等互连成本",
+      "autopeer": "带有已发现PN的自动对纸机",
+      "autopeerMaxdepth": "Autopeer MAX HOPS",
+      "maxPeers": "最大自动对等机",
+      "stampCost": "传播印花成本",
+      "stampFlex": "印花成本灵活性",
+      "storageMb": "邮件存储限制(MB)",
+      "propagationLimitKb": "传播消息限制(KB)",
+      "syncLimitKb": "同步传输限制(KB)",
+      "deliveryLimitKb": "派送传输限制(KB)",
+      "announceIntervalSec": "PN通告间隔（秒）",
+      "announceAtStart": "在开始出租时发布公告",
+      "fromStaticOnly": "仅来自静态对等体",
+      "authRequired": "需要身份验证",
+      "enforceStamps": "强制消息戳记",
+      "enforceRatchets": "强制棘轮",
+      "nodeName": "PN公告名称",
+      "staticPeers": "静态对等哈希（每行一个32十六进制）",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "保存出租政策",
+      "saving": "正在保存…",
+      "saveAria": "保存PN出租政策",
+      "saveOk": "PN出租政策已保存。",
+      "saveFailed": "无法保存PN出租政策。",
+      "saveConfirmTitle": "保存 PN 托管政策吗？",
+      "saveConfirmBody": "将对等、存储、标记和公告设置应用于实时传播节点？配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。",
+      "saveConfirm": "保存政策",
+      "error": {
+        "peeringCostExceedsMax": "对等互连成本不能超过最大对等互连成本。",
+        "stampFlexExceedsCost": "印章灵活性不能超过印章成本。",
+        "autopeerMaxdepth": "Autopeer 最大跳数超出范围。",
+        "maxPeers": "最大对等点超出范围。",
+        "storageMb": "消息存储限制超出范围。",
+        "propagationLimit": "传播消息限制超出范围。",
+        "syncLimit": "同步传输限制超出范围。",
+        "deliveryLimit": "交货转移限制超出范围。",
+        "announceInterval": "PN 通告间隔超出范围。",
+        "staticPeersTooMany": "静态对等哈希值过多（最多 256）。",
+        "staticPeerInvalid": "一个或多个静态对等哈希值无效（需要 32 个十六进制字符）。",
+        "nodeNameInvalid": "PN 公告名称包含无效字符。",
+        "nodeNameTooLong": "PN 公告名称太长。",
+        "nonFiniteNumber": "一个或多个数字字段无效。"
+      },
+      "warning": "这些设置控制本地传播节点托管、自动对等、PoW 成本以及高成本远程的同步拒绝。配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。"
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2803,11 @@
     "stableStability": "稳定的",
     "moderateStability": "缓和",
     "unstableStability": "不稳定",
-    "unknownStability": "未知"
+    "unknownStability": "未知",
+    "hybridMqttPathTooltip": "通过射频接收；某些数据包使用MQTT中继路径",
+    "hybridMqttPathAria": "射频和MQTT路径",
+    "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
+    "connectedViaRfAndMqttAria": "通过射频和MQTT连接"
   },
   "nodeListPanel": {
     "contactsRefreshed": "联系人已刷新。",
@@ -2785,7 +2895,8 @@
     "hybridMqttPathTooltip": "通过射频接收；某些数据包使用MQTT中继路径",
     "hybridMqttPathAria": "射频和MQTT路径",
     "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
-    "connectedViaRfAndMqttAria": "通过射频和MQTT连接"
+    "connectedViaRfAndMqttAria": "通过射频和MQTT连接",
+    "echoesConnectionHealthTooltip": "{{score}} %连接健康"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2978,17 @@
       "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。",
       "contentSourceNone": "没有选择文件夹",
       "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。"
-    }
+    },
+    "sortLastHeard": "上次听到",
+    "sortHops": "跳数",
+    "sortName": "姓名",
+    "sortToolbar": "排序节点列表",
+    "sortByLastHeardAsc": "按上次听到排序，最早在前",
+    "sortByLastHeardDesc": "按上次听到排序，最新在前",
+    "sortByHopsAsc": "按跃点排序，最近的在前",
+    "sortByHopsDesc": "按跃点排序，最远的在前",
+    "sortByNameAsc": "按名称排序 - A 到 Z",
+    "sortByNameDesc": "按名称排序 - Z 到 A"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",
@@ -3652,7 +3773,18 @@
     "byteLengthTooltip": "{{bytes}}字节原始",
     "routeBarFloodTooltip": "泛洪路由数据包",
     "routeBarDirectTooltip": "直接路由的数据包",
-    "routeBarUnknownTooltip": "未知路由"
+    "routeBarUnknownTooltip": "未知路由",
+    "crc32Fingerprint": "CRC32 fp ：",
+    "innerFirstU32Debug": "内部第一个u32 （调试） ：",
+    "destHash": "目标哈希：",
+    "srcHash": "来源哈希：",
+    "channelHash": "通道哈希：",
+    "mac": "MAC：",
+    "ciphertextBytes": "密文字节：",
+    "senderKeyPrefix": "发件人密钥（前缀） ：",
+    "control": "控制：",
+    "advertTs": "ADVERT ts:",
+    "advertLatLon": "广告纬度/经度："
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3948,12 @@
   "reticulumProfileIcon": {
     "iconName": "阿凡达图标",
     "iconNameAria": "阿凡达图标",
-    "iconCircle": "圈型",
     "iconStar": "星",
     "iconHeart": "倾心点",
     "iconShield": "防护罩",
-    "iconUser": "用户"
+    "iconNone": "没有任何",
+    "iconSaveFailed": "无法保存头像图标。",
+    "iconUser": "人们"
   },
   "reticulumPropagation": {
     "preferred": "首选",
@@ -3830,7 +3963,6 @@
     "syncNowFor": "同步来自 {{name}} 的消息",
     "addNode": "添加节点",
     "addNodeLabel": "通过hash添加传播节点",
-    "localInboxStats": "{{count}} 已排队 · {{bytes}} 字节",
     "refreshing": "清爽…",
     "refreshAria": "刷新传播节点",
     "syncStatusEstablishing": "正在建立与传播节点的连接...",
@@ -3853,7 +3985,10 @@
     "notice": {
       "body": "未配置传播节点。离线或无法访问的对等节点需要一个传播节点来存储和转发LXMF交付。",
       "openSettings": "设置传播",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "未配置传播节点。在网络上发现{{count}} —在下面添加一个或打开网络设置。",
+      "addClosest": "添加最近发现的",
+      "addClosestAria": "添加最近发现的传播节点并将其设置为首选"
     },
     "rename": "重命名",
     "renameLabel": "传播节点名称",
@@ -3877,7 +4012,6 @@
       "unknown": "未知",
       "online": "在线"
     },
-    "syncLocalNotSupported": "本地传播是您的离线收件箱 - 它无法像远程 LXMF 传播节点一样通过网络同步。",
     "syncIdentityUnknown": "传播节点身份未知 - 等待公告或路径响应，然后重试。",
     "syncTargetNotPropagationNode": "该目的地在 Reticulum 上可到达，但不是 LXMF 传播节点（TCP 集线器仅是传输路径）。添加一个声明为 lxmf.propagation 的目标来同步离线消息。",
     "syncPeeringStampFailed": "无法为此传播节点创建对等标记 — 请稍后重试。",
@@ -3885,7 +4019,44 @@
     "renameFailed": "无法重命名传播节点。",
     "deleteFailed": "无法删除传播节点。",
     "addFailed": "无法添加传播节点。",
-    "addNodePlaceholder": "32 字符 lxmf.propagation 目标哈希"
+    "addNodePlaceholder": "32 字符 lxmf.propagation 目标哈希",
+    "syncEstablishIdentityMissing": "传播同步无法验证链接证明—缺少节点标识。请等待公告，然后重试。",
+    "syncEstablishInvalidProof": "传播同步从节点接收到无效的链接证明—请稍后重试。",
+    "syncOfferNoIdentity": "传播节点拒绝了同步报价—标识失败。请等待公告，然后重试。",
+    "syncOfferNoAccess": "传播节点拒绝同步访问。",
+    "syncOfferInvalidKey": "传播节点拒绝了对等密钥—请检查对等成本并重试。",
+    "syncOfferThrottled": "传播节点限制了同步请求—请稍后重试。",
+    "syncOfferInvalidData": "传播节点拒绝了同步报价数据。",
+    "syncOfferInvalidStamp": "传播节点拒绝了对等戳—请稍后重试。",
+    "discoveredTitle": "在网络上发现",
+    "discoveredEmpty": "尚未听到lxmf.propagation公告。保持堆栈连接或通过哈希添加节点。",
+    "discoveredInactive": "不活跃",
+    "discoveredHops": "{{hops}} 跳",
+    "discoveredPeeringCost": "对等互连成本{{cost}}",
+    "discoveredAdd": "新增",
+    "discoveredAddAria": "添加发现的传播节点{{name}}",
+    "discoveredAddPrefer": "添加偏好(& P)",
+    "discoveredAddPreferAria": "添加发现的传播节点{{name}}并设置为首选",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "传播同步没有从节点获得链接证明—您的身份可能需要新的公告，或者缺少返回路径。立即尝试网络→公告，然后再次同步。",
+    "syncOfferUnknown": "传播节点返回了一个未知的同步报价错误—请稍后重试。",
+    "syncPathHint": "远程同步需要双向路径。Sync首先发送一个简短的LXMF通告，以便节点可以回复。",
+    "setPreferredFailed": "无法设置首选传播节点。",
+    "preferredLocalWarning": "首选节点仅限本地—离线对等节点仍然需要远程传播节点进行存储和转发交付。",
+    "localHostStats": "{{count}}已排队· {{bytes}}字节",
+    "localHostName": "主机传播节点",
+    "localHostHint": "启用后，此设备将宣布为LXMF传播节点，并提供/offer和/get。对于出站存储和转发，偏好远程节点，而不是无法访问的对等节点。",
+    "syncPeerCostExceedsMax": "此传播节点的对等成本高于您的最大对等成本—提高网络→高级PN托管的最大值，或选择其他节点。",
+    "offerUnsupported": "此目标不支持 LXMF /offer 同步 — mesh-client 无法将其用作传播节点。",
+    "offerProbeTimeout": "检查/提供支持时超时—节点可能无法访问。请在路径可用时重试。",
+    "offerProbeFailed": "无法验证/提供对此传播节点的支持—请稍后重试。",
+    "enableLocalHostConfirmTitle": "启用本地传播节点托管？",
+    "enableLocalHostConfirmBody": "该设备将宣布为 LXMF 传播节点并提供 /offer 和 /get 服务。它使用存储、CPU，并且可以与网络上的其他节点对等。除非您打算托管，否则首选远程节点进行出站存储和转发。",
+    "enableLocalHostConfirm": "启用托管",
+    "addProbing": "正在检查 /offer 支持…",
+    "syncLocalNotSupported": "本地主机传播节点无法像远程 LXMF 传播节点一样通过网络同步。",
+    "enableFailed": "无法启用传播节点。",
+    "disableFailed": "无法禁用传播节点。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",
@@ -4109,7 +4280,8 @@
     "pathHashCliGet": "获取路径哈希模式",
     "pathHashCliSet0": "设置路径哈希模式1字节",
     "pathHashCliSet1": "设置路径哈希模式2字节",
-    "pathHashCliSet2": "设置路径哈希模式3字节"
+    "pathHashCliSet2": "设置路径哈希模式3字节",
+    "collapsedRoomWithUnread": "{{label}}, {{count}}未读"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
@@ -4201,7 +4373,10 @@
     "backupRemoved": "备份集已删除：",
     "meshcorePrivateKeyHint": "使用下面的导出私钥查看密钥材料。Backup将完整密钥对存储在此计算机上。",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "未找到备份",
+    "missingKeyMaterial": "缺少密钥材料",
+    "unknownError": "未知错误"
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"
@@ -4318,7 +4493,12 @@
     "chartAriaSignal": "信号质量图表：最新SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}}点",
     "chartAriaTempHumidity": "温湿度图：最新温度{{temperature}}、湿度{{humidity}}%、{{count}}点",
     "chartAriaPressure": "气压图：最新{{pressure}} hPa、{{count}}点",
-    "chartAriaIaq": "空气质量图表：最新IAQ {{iaq}}、{{count}}点"
+    "chartAriaIaq": "空气质量图表：最新IAQ {{iaq}}、{{count}}点",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "导出 CSV",
+    "emptyWaitingConnected": "尚无遥测数据。正在等待来自设备的数据……",
+    "emptyWaitingDisconnected": "尚无遥测数据。连接到设备以查看实时指标。"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",
@@ -4475,7 +4655,9 @@
     "directNoticeUnsupported": "此集线器不支持直接通知(/msg)。",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "由轮毂从房间移除（踢出、禁止或远程部分）。"
+      "removedFromRoom": "由轮毂从房间移除（踢出、禁止或远程部分）。",
+      "removedFromRoomSystem": "该中心将您与 {{room}} 分开。",
+      "hubParted": "中心将你与房间分开。"
     },
     "errors": {
       "linkProofTimeout": "等待集线器链接（链接证明）超时。重试，或检查到集线器的路径/跳数。",
@@ -4682,7 +4864,9 @@
       "offerToast": "传入文件报价： {{file}}",
       "copyInstructionsAria": "复制启用文件接收的说明",
       "copyInstructions": "复制说明",
-      "instructionsCopied": "说明已复制。"
+      "instructionsCopied": "说明已复制。",
+      "receiveDestSharedToast": "已保存 {{peer}} 的 rncp 接收目的地 — 现在可以发送文件。",
+      "receiveDestShareFailed": "无法保存对等方的 rncp 接收目的地。"
     },
     "enableRequest": {
       "title": "启用文件接收？",
@@ -4699,7 +4883,9 @@
       "enableFailed": "无法启用文件接收： {{error}}",
       "saveDirRequired": "选择一个保存文件夹以启用接收。",
       "identityUnknown": "暂时无法解析此对等节点的身份哈希 — 已启用来件询问，但未将其加入允许列表。等路径或公告到达后再试一次。",
-      "lxmfBody": "如果您使用mesh-client ：远程→设置→入站文件提供，请启用文件接收（ rncp ）。或者在监听模式下运行rncp/rncp-rs。"
+      "lxmfBody": "如果您使用mesh-client ：远程→设置→入站文件提供，请启用文件接收（ rncp ）。或者在监听模式下运行rncp/rncp-rs。",
+      "lxmfShareBody": "文件接收已启用。这是我的 rncp 接收目的地（mesh-client 将为您保存）。",
+      "shareDestWarning": "如果启用，mesh-client 会将您的 rncp 接收目标发送到该对等方，以便他们可以自动填充文件发送。"
     },
     "saved": {
       "labelPlaceholder": "标号",
@@ -4754,5 +4940,12 @@
     "direct": "直接的",
     "segmentTooltip": "路径哈希 {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} 在线",
+    "onlineBody": "{{protocol}}节点上线",
+    "offlineTitle": "{{name}} 离线",
+    "offlineBody": "最后一次听到：{{time}}",
+    "unknown": "未知"
   }
 }

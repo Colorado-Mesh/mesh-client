@@ -3,6 +3,29 @@ set -e
 
 LOCKFILE='pnpm-lock.yaml'
 
+# Opt-in: reclaim reticulum-sidecar/target after a successful rebuild.
+# Prefer CLEAN_SIDECAR_TARGET=1; --clean-target also works via
+# `pnpm run update -- --clean-target`.
+CLEAN_SIDECAR_TARGET="${CLEAN_SIDECAR_TARGET:-0}"
+for arg in "$@"; do
+  case "${arg}" in
+    --clean-target)
+      CLEAN_SIDECAR_TARGET=1
+      ;;
+    *)
+      echo "Error: unknown argument: ${arg}" >&2
+      echo 'Usage: scripts/update.sh [--clean-target]' >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Test hook: exercise arg parsing without running the rest of the update.
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'parse-only' ]; then
+  printf 'CLEAN_SIDECAR_TARGET=%s\n' "${CLEAN_SIDECAR_TARGET}"
+  exit 0
+fi
+
 # Terminal colors
 if [ -t 1 ]; then
   RED='\033[0;31m'
@@ -104,7 +127,17 @@ rebuild_reticulum_sidecar() {
   fi
   echo 'Checking rsReticulum, rsLXMF, and rsNomad via full-feature sidecar build...'
   (cd "${sidecar_dir}" && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
+  if [ "${CLEAN_SIDECAR_TARGET}" = '1' ]; then
+    echo 'CLEAN_SIDECAR_TARGET=1: removing reticulum-sidecar/target (next sidecar build will be cold)...'
+    (cd "${sidecar_dir}" && cargo clean)
+  fi
 }
+
+# Test hook: exercise rebuild_reticulum_sidecar with PATH stubs (no pnpm update).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'rebuild-only' ]; then
+  rebuild_reticulum_sidecar
+  exit $?
+fi
 
 # Print a highlighted warning box for an updated package
 warn_box() {
@@ -177,9 +210,11 @@ check_ratspeak_patches() {
     'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
-    'rsReticulum-rnode-tcp-activity-keepalive.patch|ratspeak/rsReticulum|15|rsReticulum RNode TCP activity keepalive|https://github.com/ratspeak/rsReticulum/pull/15'
-    'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum||rsReticulum BLE RNode pairing-transition debounce|'
+    'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum|20|rsReticulum BLE RNode pairing-transition debounce|https://github.com/ratspeak/rsReticulum/pull/20'
+    'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
+    'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
+    'rsLXMF-link-delivery-has-pending-to.patch|ratspeak/rsLXMF||rsLXMF LinkDeliveryManager has_pending_to|'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0
@@ -222,12 +257,16 @@ check_ratspeak_patches() {
   for entry in "${RATSPEAK_PATCH_ENTRIES[@]}"; do
     IFS='|' read -r patch_base repo pr label url <<< "${entry}"
     local file="${patches_dir}/${patch_base}"
-    if [ ! -f "${file}" ]; then
+    local patch_present=0
+    if [ -f "${file}" ]; then
+      patch_present=1
+    fi
+    if [ "${patch_present}" -eq 0 ] && [ -z "${pr}" ]; then
       echo "  ${label}: patch file absent (${patch_base}) — already removed?"
       continue
     fi
-    if [ -z "${pr}" ]; then
-      echo "  ${label}: local overlay present; no tracked PR — review ${url}"
+    if [ "${patch_present}" -eq 1 ] && [ -z "${pr}" ]; then
+      echo "  ${label}: local overlay present; no tracked PR — review sunset"
       echo "    See reticulum-sidecar/patches/README.md (sunset when upstream lands)."
       continue
     fi
@@ -235,18 +274,36 @@ check_ratspeak_patches() {
     state="$(github_pr_state "${repo}" "${pr}")"
     case "${state}" in
       merged)
-        warn_box "${label} (Ratspeak overlay)" "local patch" "upstream MERGED" "${url}"
-        echo "  Reason tracked: ${repo}#${pr} merged — remove ${file} and drop apply steps"
-        echo "    (clone-ratspeak-stack.sh / ensure-rsReticulum-patches.sh / apply-*.sh)."
-        has_ratspeak_warning=1
-        HAS_WARNING=1
+        if [ "${patch_present}" -eq 1 ]; then
+          warn_box "${label} (Ratspeak overlay)" "local patch" "upstream MERGED" "${url}"
+          echo "  Reason tracked: ${repo}#${pr} merged — remove ${file} and drop apply steps"
+          echo "    (clone-ratspeak-stack.sh / ensure-rsReticulum-patches.sh / apply-*.sh)."
+          has_ratspeak_warning=1
+          HAS_WARNING=1
+        else
+          echo "  ${label}: patch absent and ${repo}#${pr} merged — drop entry from RATSPEAK_PATCH_ENTRIES."
+        fi
         ;;
       open)
-        echo "  ${label}: upstream PR still open — ${url}"
+        if [ "${patch_present}" -eq 1 ]; then
+          echo "  ${label}: upstream PR still open — ${url}"
+        else
+          warn_box "${label} (Ratspeak overlay)" "patch absent" "PR still open" "${url}"
+          echo "  Reason tracked: ${repo}#${pr} open but ${patch_base} missing — restore overlay or drop entry."
+          has_ratspeak_warning=1
+          HAS_WARNING=1
+        fi
         ;;
       closed)
+        # Still warn when the .patch is already gone so closed-without-merge stays visible
+        # until sunset is confirmed and the entry is dropped from RATSPEAK_PATCH_ENTRIES.
         warn_box "${label} (Ratspeak overlay)" "local patch" "PR closed (not merged?)" "${url}"
-        echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
+        if [ "${patch_present}" -eq 1 ]; then
+          echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
+        else
+          echo "  Reason tracked: ${repo}#${pr} closed without merge; ${patch_base} already absent —"
+          echo "    confirm sunset (or restore overlay), then drop entry from RATSPEAK_PATCH_ENTRIES."
+        fi
         has_ratspeak_warning=1
         HAS_WARNING=1
         ;;

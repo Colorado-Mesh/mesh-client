@@ -129,16 +129,50 @@ describe('store record adapters (merge precedence)', () => {
     expect(messageRecordToChatMessage(record).rxHops).toBe(3);
   });
 
-  it('round-trips channel utilization and air util between NodeRecord and MeshNode', () => {
+  it('round-trips Meshtastic node metrics between NodeRecord and MeshNode', () => {
     const record: NodeRecord = {
       nodeId: 1,
       longName: 'Alpha',
       channelUtilization: 42.5,
       airUtilTx: 3.1,
+      altitude: 1600,
+      lastPositionWarning: 'bad fix',
+      numPacketsRxBad: 4,
+      numRxDupe: 5,
+      numPacketsRx: 6,
+      numPacketsTx: 7,
+      publicKeyHex: 'ab'.repeat(32),
+      temperature: 20,
+      relativeHumidity: 40,
+      barometricPressure: 850,
+      iaq: 12,
+      gasResistance: 48.5,
+      lux: 30,
+      windSpeed: 5,
+      windDirection: 180,
     };
     const node = nodeRecordToMeshNode(record);
     expect(node.channel_utilization).toBe(42.5);
     expect(node.air_util_tx).toBe(3.1);
+    expect(node).toEqual(
+      expect.objectContaining({
+        altitude: 1600,
+        lastPositionWarning: 'bad fix',
+        num_packets_rx_bad: 4,
+        num_rx_dupe: 5,
+        num_packets_rx: 6,
+        num_packets_tx: 7,
+        public_key_hex: 'ab'.repeat(32),
+        env_temperature: 20,
+        env_humidity: 40,
+        env_pressure: 850,
+        env_iaq: 12,
+        env_gas_resistance: 48.5,
+        env_lux: 30,
+        env_wind_speed: 5,
+        env_wind_direction: 180,
+      }),
+    );
     const back = meshNodeToNodeRecord({
       ...node,
       node_id: 1,
@@ -154,6 +188,25 @@ describe('store record adapters (merge precedence)', () => {
     });
     expect(back.channelUtilization).toBe(42.5);
     expect(back.airUtilTx).toBe(3.1);
+    expect(back).toEqual(
+      expect.objectContaining({
+        altitude: 1600,
+        lastPositionWarning: 'bad fix',
+        numPacketsRxBad: 4,
+        numRxDupe: 5,
+        numPacketsRx: 6,
+        numPacketsTx: 7,
+        publicKeyHex: 'ab'.repeat(32),
+        temperature: 20,
+        relativeHumidity: 40,
+        barometricPressure: 850,
+        iaq: 12,
+        gasResistance: 48.5,
+        lux: 30,
+        windSpeed: 5,
+        windDirection: 180,
+      }),
+    );
   });
 
   it('nodeRecordsToMeshNodeMap merges legacy fields when spread under hook merge pattern', () => {
@@ -243,6 +296,20 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.status).toBe('failed');
   });
 
+  it('rehydrates reticulumDeliveryMethod from DB delivery_method', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      payload: 'hello',
+      timestamp: 1_700_000_000_000,
+      message_hash: 'cc'.repeat(16),
+      delivery_status: 'delivered',
+      delivery_method: 'propagated',
+    });
+    expect(record.status).toBe('acked');
+    expect(record.reticulumDeliveryMethod).toBe('propagated');
+    expect(messageRecordToChatMessage(record).reticulumDeliveryMethod).toBe('propagated');
+  });
+
   it('round-trips Reticulum LXMF hash and reply fields from DB rows', () => {
     const record = reticulumDbRowToMessageRecord({
       sender_id: 'aa'.repeat(16),
@@ -257,6 +324,23 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.reticulumReplyToHash).toBe('cc'.repeat(16));
     const chat = messageRecordToChatMessage(record);
     expect(chat.reticulum_reply_to_hash).toBe('cc'.repeat(16));
+    expect(chat.storeId).toBe('dd'.repeat(16));
+  });
+
+  it('exposes storeId for non-numeric Reticulum pending keys', () => {
+    const chat = messageRecordToChatMessage({
+      id: 'reticulum-pending-42',
+      from: 1,
+      senderName: 'Me',
+      to: 2,
+      payload: 'hi',
+      channelIndex: 0,
+      timestamp: 1,
+      status: 'failed',
+    });
+    expect(chat.id).toBeUndefined();
+    expect(chat.storeId).toBe('reticulum-pending-42');
+    expect(chatMessageToMessageRecord(chat).id).toBe('reticulum-pending-42');
   });
 
   it('rehydrates Reticulum tapbacks from DB rows using reply_to_hash parent linkage', () => {

@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX } from '../../lib/timeConstants';
 import {
   clearMeshcoreWaitingMessagesFollowUp,
   getMeshcoreProcessWaitingMessagesInFlight,
+  getMeshcoreWaitingMessagesSilentFollowUpChainCount,
   requestMeshcoreWaitingMessagesFollowUp,
   requestMeshcoreWaitingMessagesManualFollowUp,
   resetMeshcoreProcessWaitingMessagesSync,
+  resetMeshcoreWaitingMessagesSilentFollowUpChain,
   setMeshcoreProcessWaitingMessagesInFlight,
   takeMeshcoreWaitingMessagesFollowUp,
   takeMeshcoreWaitingMessagesManualFollowUp,
@@ -15,6 +18,7 @@ describe('meshcoreWaitingMessagesSyncState follow-up chaining', () => {
   beforeEach(() => {
     setMeshcoreProcessWaitingMessagesInFlight(null);
     clearMeshcoreWaitingMessagesFollowUp();
+    resetMeshcoreWaitingMessagesSilentFollowUpChain();
   });
 
   it('requests follow-up only while a drain is in flight', () => {
@@ -56,6 +60,25 @@ describe('meshcoreWaitingMessagesSyncState follow-up chaining', () => {
     expect(takeMeshcoreWaitingMessagesManualFollowUp()).toBe(false);
   });
 
+  it('caps silent follow-up chain depth without blocking manual follow-up', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    setMeshcoreProcessWaitingMessagesInFlight(Promise.resolve());
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX; i += 1) {
+      requestMeshcoreWaitingMessagesFollowUp();
+      expect(takeMeshcoreWaitingMessagesFollowUp()).toBe(true);
+    }
+    expect(getMeshcoreWaitingMessagesSilentFollowUpChainCount()).toBe(
+      MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX,
+    );
+    requestMeshcoreWaitingMessagesFollowUp();
+    expect(takeMeshcoreWaitingMessagesFollowUp()).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('silent follow-up chain capped'));
+
+    requestMeshcoreWaitingMessagesManualFollowUp();
+    expect(takeMeshcoreWaitingMessagesManualFollowUp()).toBe(true);
+    warnSpy.mockRestore();
+  });
+
   it('clears follow-up and silent drain UI on reset', () => {
     const setWaitingMessagesCount = vi.fn();
     const setWaitingMessagesSyncActive = vi.fn();
@@ -76,6 +99,7 @@ describe('meshcoreWaitingMessagesSyncState follow-up chaining', () => {
 
     expect(getMeshcoreProcessWaitingMessagesInFlight()).toBeNull();
     expect(takeMeshcoreWaitingMessagesFollowUp()).toBe(false);
+    expect(getMeshcoreWaitingMessagesSilentFollowUpChainCount()).toBe(0);
     expect(setWaitingMessagesSilentDrainActive).toHaveBeenCalledWith(false);
     expect(setWaitingMessagesDrainDeferred).toHaveBeenCalledWith(false);
   });

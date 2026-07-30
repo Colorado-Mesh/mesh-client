@@ -10,10 +10,15 @@ function expectPrefixedIdFormat(id: string, prefix: string): { timestamp: number
   expect(segments[1]).toMatch(/^\d+$/);
   expect(segments[2]).toMatch(/^[a-f0-9]{6}$/i);
 
-  const timestamp = Number(segments[1]);
+  const timestampSegment = segments.at(1);
+  const suffix = segments.at(2);
+  if (timestampSegment === undefined || suffix === undefined) {
+    throw new Error('Expected timestamp and suffix ID segments');
+  }
+  const timestamp = Number(timestampSegment);
   expect(timestamp).toBeGreaterThan(0);
 
-  return { timestamp, suffix: segments[2] };
+  return { timestamp, suffix };
 }
 
 describe('randomPrefixedId', () => {

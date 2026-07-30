@@ -25,6 +25,10 @@ import {
   validateReticulumI2pPeers,
 } from '@/renderer/lib/reticulum/reticulumI2pPeerValidation';
 import { humanizeReticulumInterfaceApiError } from '@/renderer/lib/reticulum/reticulumInterfaceApiError';
+import {
+  formatInterfaceExtraConfig,
+  parseInterfaceExtraConfig,
+} from '@/renderer/lib/reticulum/reticulumInterfaceExtraConfig';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import {
   formatReticulumInterfaceRowSummary,
@@ -172,6 +176,9 @@ export function ReticulumInterfacesPanel({
   const [ifaceMode, setIfaceMode] = useState<string>(() => defaultModeForIfaceType('tcp') ?? '');
   const [ifaceHost, setIfaceHost] = useState('');
   const [ifacePort, setIfacePort] = useState('4242');
+  const [ifaceNetworkName, setIfaceNetworkName] = useState('');
+  const [ifacePassphrase, setIfacePassphrase] = useState('');
+  const [showAddPassphrase, setShowAddPassphrase] = useState(false);
   const [rnodeDeviceName, setRnodeDeviceName] = useState('');
   const [ifaceCallsign, setIfaceCallsign] = useState('');
   const [serialPort, setSerialPort] = useState('');
@@ -455,6 +462,14 @@ export function ReticulumInterfacesPanel({
       const mode = normalizeReticulumInterfaceMode(ifaceMode);
       if (mode) {
         body.mode = mode;
+      }
+      const networkName = ifaceNetworkName.trim();
+      if (networkName) {
+        body.network_name = networkName;
+      }
+      const passphrase = ifacePassphrase.trim();
+      if (passphrase) {
+        body.passphrase = passphrase;
       }
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body)) as {
         ok?: boolean;
@@ -777,6 +792,9 @@ export function ReticulumInterfacesPanel({
         ifaceMode={ifaceMode}
         ifaceHost={ifaceHost}
         ifacePort={ifacePort}
+        ifaceNetworkName={ifaceNetworkName}
+        ifacePassphrase={ifacePassphrase}
+        showAddPassphrase={showAddPassphrase}
         ifaceCallsign={ifaceCallsign}
         serialPort={serialPort}
         pipeCommand={pipeCommand}
@@ -792,6 +810,11 @@ export function ReticulumInterfacesPanel({
         onIfaceModeChange={setIfaceMode}
         onIfaceHostChange={setIfaceHost}
         onIfacePortChange={setIfacePort}
+        onIfaceNetworkNameChange={setIfaceNetworkName}
+        onIfacePassphraseChange={setIfacePassphrase}
+        onToggleShowAddPassphrase={() => {
+          setShowAddPassphrase((prev) => !prev);
+        }}
         onIfaceCallsignChange={setIfaceCallsign}
         onRnodeDeviceNameChange={setRnodeDeviceName}
         onSerialPortChange={setSerialPort}
@@ -946,6 +969,9 @@ function buildInterfaceEditPatch(draft: {
   pipeCommand: string;
   seedAddresses: string;
   mode: string;
+  networkName: string;
+  passphrase: string;
+  extraConfig: Record<string, string>;
   rf: RnodeRfFieldValues;
 }): Record<string, unknown> | null {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
@@ -978,6 +1004,9 @@ function buildInterfaceEditPatch(draft: {
   if (draft.type === 'pipe') {
     body.command = draft.pipeCommand.trim() || null;
   }
+  body.network_name = draft.networkName.trim() || null;
+  body.passphrase = draft.passphrase.trim() || null;
+  body.extra_config = draft.extraConfig;
   const trimmedMode = draft.mode.trim();
   if (!trimmedMode) {
     // Empty selection clears mode (sidecar accepts empty → None).
@@ -993,12 +1022,106 @@ function buildInterfaceEditPatch(draft: {
   return body;
 }
 
+function ReticulumIfacFields({
+  idPrefix,
+  networkName,
+  passphrase,
+  showPassphrase,
+  disabled,
+  onNetworkNameChange,
+  onPassphraseChange,
+  onToggleShowPassphrase,
+}: Readonly<{
+  idPrefix: string;
+  networkName: string;
+  passphrase: string;
+  showPassphrase: boolean;
+  disabled?: boolean;
+  onNetworkNameChange: (value: string) => void;
+  onPassphraseChange: (value: string) => void;
+  onToggleShowPassphrase: () => void;
+}>) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-network-name`}>
+        {t('connectionPanel.reticulumInterfaces.networkName')}
+        <input
+          id={`${idPrefix}-network-name`}
+          value={networkName}
+          disabled={disabled}
+          onChange={(e) => {
+            onNetworkNameChange(e.target.value);
+          }}
+          placeholder={t('connectionPanel.reticulumInterfaces.networkNamePlaceholder')}
+          aria-label={t('connectionPanel.reticulumInterfaces.networkNameAria')}
+          className="mt-1 block min-w-[10rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+          autoComplete="off"
+        />
+      </label>
+      <div className="text-xs text-gray-400">
+        <label className="block" htmlFor={`${idPrefix}-passphrase`}>
+          {t('connectionPanel.reticulumInterfaces.passphrase')}
+        </label>
+        <span className="mt-1 flex items-center gap-1">
+          <input
+            id={`${idPrefix}-passphrase`}
+            type={showPassphrase ? 'text' : 'password'}
+            value={passphrase}
+            disabled={disabled}
+            onChange={(e) => {
+              onPassphraseChange(e.target.value);
+            }}
+            placeholder={t('connectionPanel.reticulumInterfaces.passphrasePlaceholder')}
+            aria-label={t('connectionPanel.reticulumInterfaces.passphraseAria')}
+            className="block min-w-[10rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+            autoComplete="new-password"
+          />
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onToggleShowPassphrase}
+            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+            aria-label={
+              showPassphrase
+                ? t('connectionPanel.reticulumInterfaces.hidePassphrase')
+                : t('connectionPanel.reticulumInterfaces.showPassphrase')
+            }
+          >
+            {showPassphrase
+              ? t('connectionPanel.reticulumInterfaces.hidePassphrase')
+              : t('connectionPanel.reticulumInterfaces.showPassphrase')}
+          </button>
+        </span>
+      </div>
+    </>
+  );
+}
+
+interface ReticulumInterfaceModeDescriptionProps {
+  readonly mode: string;
+}
+
+function ReticulumInterfaceModeDescription({
+  mode,
+}: Readonly<ReticulumInterfaceModeDescriptionProps>) {
+  const { t } = useTranslation();
+  const normalized = normalizeReticulumInterfaceMode(mode);
+  if (!normalized) return null;
+  return (
+    <p className="mt-1 text-[10px] leading-snug text-gray-500">
+      {t(`connectionPanel.reticulumInterfaces.modeDescriptions.${normalized}`)}
+    </p>
+  );
+}
+
 function ReticulumInterfaceModeSelect({
   value,
   onChange,
   disabled,
   id,
   emptyOptionKey,
+  showDescription = true,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -1008,11 +1131,24 @@ function ReticulumInterfaceModeSelect({
   emptyOptionKey:
     | 'connectionPanel.reticulumInterfaces.modeDefaultAdd'
     | 'connectionPanel.reticulumInterfaces.modeDefaultEdit';
+  /**
+   * Inline description under the select. Disable in flex-wrap toolbars — the taller
+   * cell pulls later controls (e.g. Add) up into the description band.
+   */
+  showDescription?: boolean;
 }) {
   const { t } = useTranslation();
+  const selectedMode = normalizeReticulumInterfaceMode(value);
+  // Template `t()` keeps modeDescriptions.* registered for unused-key scan.
+  const selectedDescription = selectedMode
+    ? t(`connectionPanel.reticulumInterfaces.modeDescriptions.${selectedMode}`)
+    : null;
+  const selectTitle = selectedDescription ?? t('connectionPanel.reticulumInterfaces.modeHint');
   return (
-    <label className="text-xs text-gray-400" htmlFor={id}>
-      {t('connectionPanel.reticulumInterfaces.mode')}
+    <div className="min-w-0">
+      <label className="block text-xs text-gray-400" htmlFor={id}>
+        {t('connectionPanel.reticulumInterfaces.mode')}
+      </label>
       <select
         id={id}
         value={value}
@@ -1022,7 +1158,7 @@ function ReticulumInterfaceModeSelect({
         }}
         className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
         aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
-        title={t('connectionPanel.reticulumInterfaces.modeHint')}
+        title={selectTitle}
       >
         <option value="">{t(emptyOptionKey)}</option>
         {RETICULUM_INTERFACE_MODES.map((mode) => (
@@ -1032,7 +1168,12 @@ function ReticulumInterfaceModeSelect({
           </option>
         ))}
       </select>
-    </label>
+      {showDescription && selectedDescription ? (
+        <p className="mt-1 max-w-[16rem] text-[10px] leading-snug text-gray-500">
+          {selectedDescription}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -1145,6 +1286,12 @@ function InterfaceEditPanel({
   const [mode, setMode] = useState(() => normalizeReticulumInterfaceMode(iface.mode) ?? '');
   const [rfFields, setRfFields] = useState<RnodeRfFieldValues>(() => rfFieldsFromInterface(iface));
   const [seedAddresses, setSeedAddresses] = useState((iface.seed_addresses ?? []).join(', '));
+  const [networkName, setNetworkName] = useState(iface.network_name ?? '');
+  const [passphrase, setPassphrase] = useState(iface.passphrase ?? '');
+  const [showPassphrase, setShowPassphrase] = useState(false);
+  const [advancedText, setAdvancedText] = useState(() =>
+    formatInterfaceExtraConfig(iface.extra_config ?? undefined),
+  );
   const editUsesBleRnode = uiType === 'rnode' && isReticulumBleRnodeSerialPort(serialPort);
   const editUsesWifiRnode = uiType === 'rnode' && isReticulumTcpRnodeSerialPort(serialPort);
   const osSerialPaths = serialPorts.map((p) => p.path);
@@ -1179,6 +1326,7 @@ function InterfaceEditPanel({
           value={mode}
           onChange={setMode}
           emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultEdit"
+          showDescription={false}
         />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
@@ -1370,7 +1518,42 @@ function InterfaceEditPanel({
             {t('connectionPanel.reticulumInterfaces.pickDevice')}
           </button>
         ) : null}
+        <ReticulumIfacFields
+          idPrefix={`edit-ifac-${iface.id}`}
+          networkName={networkName}
+          passphrase={passphrase}
+          showPassphrase={showPassphrase}
+          onNetworkNameChange={setNetworkName}
+          onPassphraseChange={setPassphrase}
+          onToggleShowPassphrase={() => {
+            setShowPassphrase((prev) => !prev);
+          }}
+        />
       </div>
+      <ReticulumInterfaceModeDescription mode={mode} />
+      <details className="group mt-3 rounded border border-gray-700 bg-slate-950/40 p-2">
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-amber-200/90">
+          <DetailsChevron className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
+          {t('connectionPanel.reticulumInterfaces.advanced')}
+        </summary>
+        <p className="text-muted mt-2 text-xs">
+          {t('connectionPanel.reticulumInterfaces.advancedHint')}
+        </p>
+        <label className="mt-2 block text-xs text-gray-400" htmlFor={`edit-advanced-${iface.id}`}>
+          <span className="sr-only">{t('connectionPanel.reticulumInterfaces.advancedAria')}</span>
+          <textarea
+            id={`edit-advanced-${iface.id}`}
+            value={advancedText}
+            onChange={(e) => {
+              setAdvancedText(e.target.value);
+            }}
+            rows={5}
+            spellCheck={false}
+            aria-label={t('connectionPanel.reticulumInterfaces.advancedAria')}
+            className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-200"
+          />
+        </label>
+      </details>
       <div className="mt-3 flex gap-2">
         <button
           type="button"
@@ -1379,6 +1562,13 @@ function InterfaceEditPanel({
             const resolvedSerialPort = editUsesWifiRnode
               ? buildReticulumRnodeTcpPort(wifiHost, clampTcpPort(wifiPort, RNODE_DEFAULT_TCP_PORT))
               : serialPort;
+            const parsedExtra = parseInterfaceExtraConfig(advancedText);
+            for (const key of parsedExtra.reservedKeys) {
+              addToast(
+                t('connectionPanel.reticulumInterfaces.advancedKeyReserved', { key }),
+                'error',
+              );
+            }
             const patch = buildInterfaceEditPatch({
               name,
               type: uiType,
@@ -1390,6 +1580,9 @@ function InterfaceEditPanel({
               pipeCommand: '',
               seedAddresses,
               mode,
+              networkName,
+              passphrase,
+              extraConfig: parsedExtra.extraConfig,
               rf: rfFields,
             });
             if (!patch) {
@@ -1425,6 +1618,9 @@ function InterfacesSection({
   ifaceMode,
   ifaceHost,
   ifacePort,
+  ifaceNetworkName,
+  ifacePassphrase,
+  showAddPassphrase,
   ifaceCallsign,
   serialPort,
   pipeCommand,
@@ -1440,6 +1636,9 @@ function InterfacesSection({
   onIfaceModeChange,
   onIfaceHostChange,
   onIfacePortChange,
+  onIfaceNetworkNameChange,
+  onIfacePassphraseChange,
+  onToggleShowAddPassphrase,
   onIfaceCallsignChange,
   onRnodeDeviceNameChange,
   onSerialPortChange,
@@ -1478,6 +1677,9 @@ function InterfacesSection({
   ifaceMode: string;
   ifaceHost: string;
   ifacePort: string;
+  ifaceNetworkName: string;
+  ifacePassphrase: string;
+  showAddPassphrase: boolean;
   ifaceCallsign: string;
   serialPort: string;
   pipeCommand: string;
@@ -1493,6 +1695,9 @@ function InterfacesSection({
   onIfaceModeChange: (v: string) => void;
   onIfaceHostChange: (v: string) => void;
   onIfacePortChange: (v: string) => void;
+  onIfaceNetworkNameChange: (v: string) => void;
+  onIfacePassphraseChange: (v: string) => void;
+  onToggleShowAddPassphrase: () => void;
   onIfaceCallsignChange: (v: string) => void;
   onRnodeDeviceNameChange: (v: string) => void;
   onSerialPortChange: (v: string) => void;
@@ -1641,6 +1846,7 @@ function InterfacesSection({
             onChange={onIfaceModeChange}
             disabled={actionsDisabled}
             emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultAdd"
+            showDescription={false}
           />
           {ifaceType === 'rnode' ? (
             <label className="text-xs text-gray-400">
@@ -1863,6 +2069,19 @@ function InterfacesSection({
               {t('connectionPanel.reticulumInterfaces.pickDevice')}
             </button>
           ) : null}
+          <ReticulumIfacFields
+            idPrefix="add-ifac"
+            networkName={ifaceNetworkName}
+            passphrase={ifacePassphrase}
+            showPassphrase={showAddPassphrase}
+            disabled={actionsDisabled}
+            onNetworkNameChange={onIfaceNetworkNameChange}
+            onPassphraseChange={onIfacePassphraseChange}
+            onToggleShowPassphrase={onToggleShowAddPassphrase}
+          />
+        </div>
+        <ReticulumInterfaceModeDescription mode={ifaceMode} />
+        <div className="mt-2">
           <button
             type="button"
             disabled={actionsDisabled}

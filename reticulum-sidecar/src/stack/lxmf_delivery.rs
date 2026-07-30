@@ -1,8 +1,8 @@
 //! LXMF delivery destination announce + inbound link receive (Ratspeak/lxmd parity).
 
 use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use bytes::Bytes;
 use lxmf_core::handlers::get_announce_app_data;
@@ -21,6 +21,16 @@ use super::config;
 use super::persistence::PersistedState;
 
 pub const LXMF_APP: &str = "lxmf.delivery";
+
+/// Brief pause after a successful pre-sync LXMF announce so hubs can flood the reverse path
+/// before LinkRequest (matches the effective delay of “Announce now, then Sync”).
+pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
+
+fn mark_announce_sent(last_at: &Arc<Mutex<Option<Instant>>>) {
+    if let Ok(mut slot) = last_at.lock() {
+        *slot = Some(Instant::now());
+    }
+}
 
 /// Build a broadcast LXMF delivery announce packet (lxmd `create_announce_packet` shape).
 pub fn build_lxmf_delivery_announce_packet(
@@ -83,6 +93,7 @@ pub fn spawn_lxmf_announce_loop(
     lxmf_dest_hash: [u8; 16],
     config_dir: std::path::PathBuf,
     inner: Arc<RwLock<PersistedState>>,
+    last_announce_at: Arc<Mutex<Option<Instant>>>,
 ) {
     tokio::spawn(async move {
         // Brief settle so interfaces can come online (lxmd waits up to 30s; we announce after 2s).
@@ -100,7 +111,10 @@ pub fn spawn_lxmf_announce_loop(
             )
             .await
             {
-                Ok(()) => tracing::info!("LXMF delivery startup announce sent"),
+                Ok(()) => {
+                    mark_announce_sent(&last_announce_at);
+                    tracing::info!("LXMF delivery startup announce sent");
+                }
                 Err(e) => tracing::warn!("LXMF delivery startup announce failed: {e}"),
             }
         }
@@ -125,7 +139,10 @@ pub fn spawn_lxmf_announce_loop(
             )
             .await
             {
-                Ok(()) => tracing::debug!(interval_sec, "LXMF delivery periodic announce sent"),
+                Ok(()) => {
+                    mark_announce_sent(&last_announce_at);
+                    tracing::debug!(interval_sec, "LXMF delivery periodic announce sent");
+                }
                 Err(e) => tracing::warn!("LXMF delivery periodic announce failed: {e}"),
             }
         }
@@ -242,5 +259,10 @@ mod tests {
         let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
         let raw = build_lxmf_delivery_announce_packet(&identity, lxmf_hash, None).unwrap();
         assert!(raw.len() > 16);
+    }
+
+    #[test]
+    fn propagation_sync_announce_settle_is_two_seconds() {
+        assert_eq!(PROPAGATION_SYNC_ANNOUNCE_SETTLE, Duration::from_secs(2));
     }
 }

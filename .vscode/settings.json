@@ -7,7 +7,7 @@
   "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact"],
   "eslint.format.enable": true,
   "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
@@ -19,6 +19,6 @@
     "editor.defaultFormatter": "vscode.json-language-features"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

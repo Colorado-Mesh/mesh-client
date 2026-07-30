@@ -26,6 +26,7 @@ import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import {
   isReticulumHashPrefixAlias,
   reticulumRealDisplayName,
@@ -63,13 +64,6 @@ export function reticulumContactDisplayNameFromPayload(
   return reticulumRealDisplayName(p.sender_hash, p.sender_name) ?? undefined;
 }
 
-function parseReticulumDeliveryMethod(
-  value: string | undefined,
-): MessageRecord['reticulumDeliveryMethod'] {
-  if (value === 'direct' || value === 'propagated' || value === 'opportunistic') return value;
-  return undefined;
-}
-
 function mapDeliveryStatusToMessageStatus(
   deliveryStatus: string | null | undefined,
   direction?: string,
@@ -102,8 +96,10 @@ export function findReticulumParentRecordByHash(
   const target = normalizeReticulumMessageHash(replyToHash);
   if (!target) return undefined;
   const byId = useMessageStore.getState().messages[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!byId) return undefined;
   const direct = byId[replyToHash] ?? byId[target];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (direct) return direct;
   for (const row of Object.values(byId)) {
     if (
@@ -188,6 +184,7 @@ export function ingestReticulumLxmfPayload(
   }
   const record = payloadToMessageRecord(p, identityId);
   if (!record) return false;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const existing = useMessageStore.getState().messages[identityId]?.[record.id];
   const merged = mergeReticulumIngestRecord(existing, record, p, ctx);
   upsertMessage(identityId, merged);
@@ -331,6 +328,9 @@ export function persistReticulumOutboundRecord(
       message_hash: record.reticulumMessageHash ?? record.id,
       received_via: record.receivedVia ?? null,
       delivery_status: deliveryStatus,
+      ...(record.reticulumDeliveryMethod
+        ? { delivery_method: record.reticulumDeliveryMethod }
+        : {}),
     })
     .catch((e: unknown) => {
       console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));

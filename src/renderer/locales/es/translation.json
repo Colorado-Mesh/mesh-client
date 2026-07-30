@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes",
     "reticulumSection": "Reticulum — Pila de Reticulum",
     "reticulumAnnounceHelp": "Con qué frecuencia se anuncia su identidad en la red y herramientas para borrar los anuncios almacenados.",
-    "reticulumPropagationHelp": "Elija cómo se sincronizan los nodos de propagación y extraiga los últimos datos de propagación cuando sea necesario.",
     "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. En la pestaña Reticulum, las líneas de dispositivos incluyen la salida del sidecar y el estado de la interfaz local. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "autoPruneUnheardContactsDaysAria": "Eliminación automática de contactos no escuchados al inicio, con más de {{days}} días",
     "capTotalContactsCountAria": "Limitar el total de contactos, mantener los contactos {{count}} vistos más recientemente",
@@ -373,7 +372,10 @@
     "restoreTheme": "Restaurar punto de verificación de color guardado",
     "noSavedThemeTooltip": "Aún no hay colores guardados: use Guardar para crear un punto de control",
     "saveThemeButton": "Guardar",
-    "restoreThemeButton": "Restaurar"
+    "restoreThemeButton": "Restaurar",
+    "reticulumPropagationHelp": "Configurar nodos de propagación LXMF remotos para DM sin conexión. La propagación local es solo la bandeja de entrada de este dispositivo: no reemplaza a un nodo remoto.",
+    "use24HourTime": "Modo 24 horas",
+    "use24HourTimeDesc": "Forza los relojes, como las marcas de tiempo del chat, al formato de 24 horas. Cuando esté apagado, siga la configuración regional de su sistema."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "Haga clic aquí para seleccionar",
     "switchToMeshtasticWithUnread": "Cambiar a Meshtastic, {{count}} no leído",
     "switchToMeshCoreWithUnread": "Cambiar a MeshCore, {{count}} no leído",
-    "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer"
+    "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer",
+    "tabWithUnread": "{{label}}, {{count}} sin leer"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -437,7 +440,6 @@
     "jumpToQuotedMessage": "Ir al mensaje cotizado de {{sender}}",
     "replyToMessage": "Responder al mensaje",
     "addReaction": "Añadir reacción:",
-    "emojiButton": "Emoji",
     "sendButton": "Enviar",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -465,8 +467,6 @@
     "dmNodeLastHeard": "Escuchado por última vez {{time}}",
     "dmNodeBattery": "Batería {{pct}}%",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} saltos",
     "muteConversation": "Silenciar esta conversación",
     "unmuteConversation": "Activar esta conversación",
     "starMessage": "Marcar mensaje",
@@ -559,7 +559,9 @@
       "pkiMissingRecipientKey": "No se ha podido enviar el mensaje cifrado: falta la clave pública del destinatario de NodeDB.",
       "pkiFailed": "El cifrado PKI ha fallado para este mensaje.",
       "noChannel": "No hay ningún canal disponible para enrutar este mensaje.",
-      "timeout": "El mensaje ha caducado en la radio."
+      "timeout": "El mensaje ha caducado en la radio.",
+      "rateLimited": "La radio está limitando la velocidad de los mensajes. Inténtalo de nuevo en breve.",
+      "noInterface": "No hay ninguna interfaz de radio disponible para enviar este mensaje."
     },
     "waitingMessagesQueued": "{{count}} mensajes en cola en la radio",
     "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} desde la radio...",
@@ -593,7 +595,6 @@
       "sendFileAria": "Enviar archivo a {{name}} a través de rncp",
       "pendingOffersBadgeAria_one": "{{count}} oferta de archivo entrante pendiente de este compañero",
       "pendingOffersBadgeAria_other": "{{count}} ofertas de archivos entrantes pendientes de este compañero",
-      "destinationLabel": "hash de destino rncp",
       "rememberAddress": "Recordar esta dirección",
       "rememberAddressAria": "Recordar este destino rncp para este compañero",
       "chooseAndSend": "Elegir archivo y enviar...",
@@ -602,7 +603,23 @@
       "sendFailed": "Error al enviar: {{error}}",
       "newOfferToast": "{{peer}} quiere enviarte un archivo: {{file}}",
       "requestEnable": "Solicitud habilitada",
-      "requestEnableAria": "Pedir a este compañero que habilite la recepción de archivos"
+      "requestEnableAria": "Pedir a este compañero que habilite la recepción de archivos",
+      "destinationLabel": "Destino de recepción rncp del par",
+      "destinationHelp": "No su hash Chat/LXMF. Utilice la habilitación de solicitudes: los pares del mesh-client comparten esto automáticamente después de aceptar. O pegar desde su control remoto → Mi destino de recepción rncp.",
+      "activeTransfersBadgeAria_one": "{{count}} transferencia de archivos activa con este compañero",
+      "activeTransfersBadgeAria_other": "{{count}} transferencias DE archivos activas con este compañero",
+      "transfersTitle": "Traslados",
+      "useFromChat": "Usar destino del chat",
+      "useFromChatAria": "Encuentra y utiliza un destino de recepción rncp compartido en este chat",
+      "noShareInChat": "Aún no hay ninguna línea compartida de rncp en este chat. Pídales que peguen su destino de recepción (Remote → My rncp receive destination) o peguen el hash de 32 caracteres a continuación.",
+      "savedForOtherPeers": "Existen destinos de recepción guardados para otros chats ({{peers}}). Abra el DM de ese compañero para autocompletar.",
+      "transferProgressAria": "Progreso de la transferencia para {{file}}: {{progress}} por ciento",
+      "transferCompletedToast": "Archivo enviado: {{file}}",
+      "transferFailedToast": "Error en la transferencia del archivo ({{file}}): {{error}}",
+      "forgetAddress": "Olvidar destino guardado",
+      "forgetAddressAria": "Eliminar el destino de recepción rncp guardado para este par",
+      "forgotAddressToast": "Se ha olvidado el destino rncp guardado para este par.",
+      "filledFromChatToast": "Destino llenado desde el chat (no guardado — marque Recordar para conservarlo)."
     },
     "shareLocation": "Compartir ubicación",
     "shareLocationLabel": "📍 Ubicación compartida",
@@ -615,7 +632,14 @@
     "floodScopeOverrideCustomLabel": "Hashtag personalizado del alcance Flood",
     "floodScopeOverrideCustomPlaceholder": "#miregión",
     "floodScopeOverrideCustomApply": "Usar alcance",
-    "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión)."
+    "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión).",
+    "dmNodeHops_one": "{{count}} salto",
+    "dmNodeHops_other": "{{count}} saltos",
+    "notificationDmTitle": "DM desde {{sender}}",
+    "notificationMessageTitle": "Mensaje de {{sender}}",
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Almacenado en el nodo de propagación",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -624,7 +648,10 @@
     "locationCard": {
       "alt": "Mosaico de mapa de ubicación compartido",
       "openMaps": "Abrir en mapas"
-    }
+    },
+    "directImage": "Imagen: {{name}}",
+    "directImageOpen": "Abrir imagen",
+    "reticulumAttachmentImage": "Imagen adjunta: {{name}}"
   },
   "common": {
     "close": "Cerrar",
@@ -1067,7 +1094,27 @@
       "backboneDirectoryHint": "Encuentre más centros troncales comunitarios en directory.rns.recipes. Los concentradores de Yggdrasil (por ejemplo, Yggdrasil_Ashburn_VA) necesitan un túnel de Yggdrasil local en ejecución; el manual de Reticulum recomienda vincularse a la interfaz de su túnel (a menudo tun0).",
       "localOfflineRowBleBondStale": "El vínculo Bluetooth está obsoleto: olvide este RNode en Configuración del sistema → Bluetooth, luego vuelva a emparejarlo con un nuevo PIN (es posible que el sistema operativo aún muestre Emparejado).",
       "addDefaultHubsAria": "Sincronizar hubs troncales de Reticulum predeterminados (EE. UU. Este, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); deshabilitar los puntos finales de testnet fuera de servicio",
-      "addDefaultHubsAllPresent": "Los hubs troncales predeterminados ya están configurados; no se habilitan hubs de testnet desmantelados."
+      "addDefaultHubsAllPresent": "Los hubs troncales predeterminados ya están configurados; no se habilitan hubs de testnet desmantelados.",
+      "modeDescriptions": {
+        "full": "Participación total en malla. Enruta el tráfico y propaga anuncios automáticamente. Uso para nodos primarios y repetidores.",
+        "access_point": "Silencio hasta consulta. Caducidad de la ruta corta. Ideal para radios de área amplia que sirven a usuarios intermitentes.",
+        "roaming": "Interfaces móviles. Tiempos de espera cortos y descubrimiento activo. Uso para RNodes portátiles o vehiculares.",
+        "boundary": "Límite de la red. Une segmentos distintos mientras aísla el tráfico local. Uso para enlaces de Internet/LoRa.",
+        "gateway": "Búsqueda de ruta para clientes. Resuelve destinos desconocidos en nombre de nodos conectados.",
+        "point_to_point": "Enlace directo entre dos nodos. Sin enrutamiento ni anuncio de propagación."
+      },
+      "networkName": "Nombre de la red",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Nombre de la Red",
+      "passphrase": "Frase de contraseña",
+      "passphrasePlaceholder": "Autenticación IFAC",
+      "passphraseAria": "Frase de contraseña IFAC",
+      "showPassphrase": "Mostrar frase de contraseña",
+      "hidePassphrase": "Ocultar frase de contraseña",
+      "advanced": "Avanzado",
+      "advancedHint": "Pares adicionales de clave=valor para esta interfaz, uno por línea. Los campos conocidos (host, modo, nombre de red,...) permanecen en el formulario anterior.",
+      "advancedAria": "Opciones avanzadas de interfaz clave-valor",
+      "advancedKeyReserved": "La clave «{{key}}» es un campo conocido y se ignoró. Utilice el formulario anterior."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1142,9 @@
       "offlineHintWifi": "Compruebe que el RNode esté en su LAN, encendido y accesible en la IP configurada (puerto TCP predeterminado 7633, no 4242). Actualiza el host a continuación si DHCP asignó una nueva dirección o vuelve a proporcionar Wi-Fi en Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: No se puede acceder al centro TCP ({{host}}:{{port}})",
       "tcpUnreachableHint": "La instancia remota de Reticulum puede estar desconectada o bloqueando conexiones. Deshabilite esta interfaz o verifique el host y el puerto.",
-      "offlineHintBleBondStale": "macOS todavía muestra este RNode como emparejado, pero las claves de Bluetooth ya no coinciden (Peer eliminó la información de emparejamiento). Olvídese del dispositivo en Configuración del sistema → Bluetooth, coloque el RNode en modo de emparejamiento (Admin → Bluetooth → Iniciar emparejamiento, o mantenga presionado el botón ~7 s), luego reinicie la pila e ingrese el nuevo PIN de 6 dígitos cuando se le solicite.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Los enlaces BLE RNode pueden tardar hasta 60 segundos después de que se inicia la pila (ventana de clave de acceso del sistema operativo). Ingrese el PIN actual de RNode si se le solicita; nunca 123456. Esto es normal, no es un error. Es posible que el dispositivo no aparezca en Configuración del sistema hasta después de una vinculación exitosa."
+      "connectingHintBle": "Los enlaces BLE RNode pueden tardar hasta 60 segundos después de que se inicia la pila (ventana de clave de acceso del sistema operativo). Ingrese el PIN actual de RNode si se le solicita; nunca 123456. Esto es normal, no es un error. Es posible que el dispositivo no aparezca en Configuración del sistema hasta después de una vinculación exitosa.",
+      "offlineHintBle": "Para borrar este error, es posible que deba eliminar esta interfaz y volver a agregarla (Seleccionar dispositivo) para que se actualice el ID de Bluetooth guardado y, a continuación, reinicie la pila. Su sistema operativo puede solicitar un PIN Bluetooth de 6 dígitos (macOS, Windows o Linux). RNode genera un nuevo código cada emparejamiento; nunca use 123456 (ese es el valor predeterminado de Meshtastic, no RNode). No es necesario que el RNode aparezca en Configuración del sistema → Bluetooth antes de que esta aplicación se conecte; el cuadro de diálogo del sistema operativo aparece cuando la pila se empareja. Radios sin cabeza: conecte USB → Reticulum Admin → Bluetooth → Comience a emparejar → introduzca el PIN que se muestra en el panel de administración (no en la pantalla de la radio) en el cuadro de diálogo del sistema operativo. Radios con pantalla: mantenga presionado el botón ~7 s en los dispositivos Heltec (el tiempo varía; ~10 s en muchas placas habilita Wi-Fi AP en su lugar), lea el PIN en la pantalla y luego ingréselo en el cuadro de diálogo del sistema operativo. Borre los enlaces fallidos en la configuración de Bluetooth de su sistema operativo antes de volver a intentarlo.",
+      "offlineHintBleBondStale": "macOS sigue mostrando este RNode como emparejado, pero las claves Bluetooth ya no coinciden (el par eliminó la información de emparejamiento). Olvide el dispositivo en Ajustes del sistema → Bluetooth, ponga el RNode en modo de emparejamiento (Admin → Bluetooth → Iniciar emparejamiento, o mantenga pulsado el botón ~7 s), luego quite y vuelva a agregar esta interfaz (Seleccionar dispositivo), reinicie la pila e introduzca el nuevo PIN de 6 dígitos cuando se le solicite."
     },
     "autoConnectingTo": "Conectando automáticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Reconexión automática en curso…",
@@ -1199,20 +1246,20 @@
     "coloradoRegionGateStay": "Estoy en Colorado",
     "coloradoRegionGateSwitch": "Cambiar a LetsMesh",
     "topicPrefixInvalidIata": "El prefijo del tema debe ser meshcore/test o meshcore/{IATA} (3 letras), por ejemplo, meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Vuelve a conectar los intentos antes de darte por vencido (1–{{max}}). Guardado con la configuración; pulse Conectar de nuevo después de cambiar para que el proceso principal lo recoja.",
       "meshtastic": "Ambos protocolos permiten 1–{{max}}. Guardado con la configuración; desconéctese y conéctese de nuevo para que la sesión en ejecución use el nuevo valor."
     },
     "reticulumStackRunningAs": "En ejecución — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "La pila de Reticulum no responde: se reinicia…"
+    "reticulumSidecarUnhealthyRestarting": "La pila de Reticulum no responde: se reinicia…",
+    "reticulumSharedInstance": {
+      "title": "Usar la instancia compartida de otra aplicación",
+      "body": "Esta aplicación se adjuntó como cliente de la instancia de Reticulum compartida de otra aplicación. Los concentradores TCP locales de la configuración de esta aplicación no se inician en este modo; el tráfico solo puede usar la pila de la otra aplicación.",
+      "networkHint": "O abra la instancia de Network → Share Reticulum para desactivar Compartir manualmente y, a continuación, reinicie la pila. También puedes salir completamente de MeshChat, Ratspeak o RNSD independiente y reiniciar.",
+      "disableShare": "Desactivar la instancia Compartir y reiniciar",
+      "disableShareAria": "Desactivar la instancia Compartir y reiniciar la pila",
+      "disableFailed": "No se ha podido desactivar la instancia Compartir."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -1356,7 +1403,8 @@
       "potentialMeshcoreRepeaterConflict": "Conflicto potencial del repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de ruido elevado",
       "excessiveFlooding": "Inundaciones excesivas",
-      "reticulumTrafficDetected": "Tráfico Reticulum detectado"
+      "reticulumTrafficDetected": "Tráfico Reticulum detectado",
+      "highCompanionTxQueue": "Cola de TX de acompañamiento alto"
     },
     "rfCause": {
       "channelUtilizationSpike": "El {{current}}% actual supera en más de 2veces la media reciente ({{average}}%) — posible congestión o aumento de interferencias.",
@@ -1370,7 +1418,8 @@
       "widebandNoiseFloor": "Interferencia de banda ancha (electrónica defectuosa, ruido de la línea eléctrica, etc.) que eleva el nivel de ruido.",
       "fringeWeakCoverage": "El nodo está demasiado lejos o mal conectado con el resto de la malla.",
       "elevatedNoiseFloor": "El nivel mínimo de ruido de radio es {{noiseFloor}} dBm — interferencia elevada que reduce el alcance efectivo.",
-      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos."
+      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos.",
+      "highCompanionTxQueue": "La profundidad de la cola de salida del acompañante es {{queueLen}}/256; es posible que el tráfico se retrase o se caiga."
     },
     "foreignLoraCause": {
       "meshtastic": "Nodo Meshtastic que transmite en esta frecuencia. Remitente: {{sender}}. {{proximity}}Este nodo puede estar en tu zona de repetidores MeshCore.",
@@ -1445,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "Permita que se establezcan rutas directas",
         "description": "La relación de inundación es muy alta: espere a que el nodo acumule contactos de trayectoria directa o compruebe la proximidad del repetidor."
+      },
+      "highCompanionTxQueue": {
+        "title": "Reduce el tráfico saliente o comprueba el enlace de RF",
+        "description": "La cola de TX complementaria está casi llena: pausa los envíos, reduce las inundaciones o comprueba si hay interferencias y enlaces débiles."
       }
     },
     "cuHistoryHeading": "Utilización del canal (últimas 24h)",
@@ -1523,7 +1576,10 @@
         "transportSaturatedShareInstance": "Transporte RNS saturado (caídas de solicitud de ruta {{count}}). La instancia de Share está activada: salga de otras aplicaciones de Reticulum (MeshChatX, Ratspeak, rnsd) y reinicie la pila.",
         "slowTransportQuery": "Consultas de transporte RNS lentas o fallidas ({{count}}×)",
         "bleBondRemoved": "El enlace BLE RNode \"{{name}}\" está obsoleto: olvídelo en la configuración de Bluetooth del sistema operativo y vuelva a emparejarlo",
-        "blePairingTimedOut": "Se agotó el tiempo de espera para el intercambio de clave de acceso de BLE RNode \"{{name}}\": ingrese el PIN actual (no 123456) y vuelva a emparejar"
+        "blePairingTimedOut": "Se agotó el tiempo de espera para el intercambio de clave de acceso de BLE RNode \"{{name}}\": ingrese el PIN actual (no 123456) y vuelva a emparejar",
+        "sidecarUnhealthy": "El sidecar de Reticulum está en ejecución pero no responde a las comprobaciones de estado",
+        "propagationSyncStuck": "La sincronización del nodo de propagación está atascada estableciendo un enlace",
+        "propagationSyncFailing": "Error en la sincronización del nodo de propagación"
       }
     },
     "routingPort": {
@@ -1545,7 +1601,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Compensación de distancia",
     "km": "kilómetros",
-    "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50)."
+    "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50).",
+    "ignoreMqttToggle": "Ignorar MQTT",
+    "ignoreMqttHelp": "Atenuar los nodos que solo usan MQTT y excluirlos de los diagnósticos"
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -2450,6 +2508,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Alojamiento PN avanzado (zona de peligro)",
+      "peeringCost": "Coste de peering",
+      "maxPeeringCost": "Coste máximo de peering",
+      "autopeer": "Autopeer con PN descubiertos",
+      "autopeerMaxdepth": "Saltos máximos de Autopeer",
+      "maxPeers": "Máximo de pares autopeer",
+      "stampCost": "Coste del sello de propagación",
+      "stampFlex": "Flexibilidad de costes de sellos",
+      "storageMb": "Límite de almacenamiento de mensajes (MB)",
+      "propagationLimitKb": "Límite de mensajes de propagación (KB)",
+      "syncLimitKb": "Límite de transferencia de sincronización (KB)",
+      "deliveryLimitKb": "Límite de transferencia de entrega (KB)",
+      "announceIntervalSec": "Intervalo de anuncio PN (segundos)",
+      "announceAtStart": "Anuncia cuando empieces a hospedar",
+      "fromStaticOnly": "Solo de pares estáticos",
+      "authRequired": "Autenticación requerida",
+      "enforceStamps": "Hacer cumplir los sellos de mensajes",
+      "enforceRatchets": "Hacer cumplir los trinquetes",
+      "nodeName": "PN anunciar nombre",
+      "staticPeers": "Hash de pares estáticos (un 32-hex por línea)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Guarda la política para anfitriones",
+      "saving": "Guardando…",
+      "saveAria": "Guardar la política de hospedaje de PN",
+      "saveOk": "Política de hospedaje de PN guardada.",
+      "saveFailed": "No se ha podido guardar la política de alojamiento de PN.",
+      "saveConfirmTitle": "¿Guardar la política de alojamiento de PN?",
+      "saveConfirmBody": "¿Aplicar configuraciones de emparejamiento, almacenamiento, sello y anuncio al nodo de propagación en vivo? Una configuración incorrecta puede quemar la CPU, llenar el disco o aceptar muchos pares.",
+      "saveConfirm": "Guardar política",
+      "error": {
+        "peeringCostExceedsMax": "El costo de emparejamiento no puede exceder el costo máximo de emparejamiento.",
+        "stampFlexExceedsCost": "La flexibilidad del sello no puede exceder el costo del sello.",
+        "autopeerMaxdepth": "Los saltos máximos de Autopeer están fuera de rango.",
+        "maxPeers": "Max peers está fuera de alcance.",
+        "storageMb": "El límite de almacenamiento de mensajes está fuera de rango.",
+        "propagationLimit": "El límite de mensajes de propagación está fuera de rango.",
+        "syncLimit": "El límite de transferencia de sincronización está fuera de rango.",
+        "deliveryLimit": "El límite de transferencia de entrega está fuera de rango.",
+        "announceInterval": "El intervalo de anuncio de PN está fuera de rango.",
+        "staticPeersTooMany": "Demasiados hashes de pares estáticos (máximo 256).",
+        "staticPeerInvalid": "Uno o más hashes de pares estáticos no son válidos (necesitan 32 caracteres hexadecimales).",
+        "nodeNameInvalid": "El nombre del anuncio de PN contiene caracteres no válidos.",
+        "nodeNameTooLong": "El nombre del anuncio de PN es demasiado largo.",
+        "nonFiniteNumber": "Uno o más campos numéricos no son válidos."
+      },
+      "warning": "Estas configuraciones controlan el alojamiento del nodo de propagación local, el autopeer, los costos de PoW y el rechazo de sincronización para dispositivos remotos de alto costo. Una configuración incorrecta puede quemar la CPU, llenar el disco o aceptar muchos pares."
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2803,11 @@
     "stableStability": "Estable",
     "moderateStability": "Moderado",
     "unstableStability": "Inestable",
-    "unknownStability": "Desconocido"
+    "unknownStability": "Desconocido",
+    "hybridMqttPathTooltip": "Recibido a través de RF; algunos paquetes utilizan una ruta de retransmisión MQTT",
+    "hybridMqttPathAria": "Ruta RF y MQTT",
+    "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
+    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -2785,7 +2895,8 @@
     "hybridMqttPathTooltip": "Recibido a través de RF; algunos paquetes utilizan una ruta de retransmisión MQTT",
     "hybridMqttPathAria": "Ruta RF y MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
-    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
+    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2978,17 @@
       "contentSourceNotFromPicker": "Elija la carpeta con Elegir carpeta antes de aplicarla.",
       "contentSourceNone": "No se eligieron carpetas",
       "contentSourceRequired": "Elige una carpeta de páginas antes de comenzar a hospedar en Nomad."
-    }
+    },
+    "sortLastHeard": "Escuchado la Última Vez",
+    "sortHops": "Saltos",
+    "sortName": "Nombre",
+    "sortToolbar": "Ordenar lista de nodos",
+    "sortByLastHeardAsc": "Ordenar por último oído, el más antiguo primero",
+    "sortByLastHeardDesc": "Ordenar por último oído, primero el más reciente",
+    "sortByHopsAsc": "Ordenar por saltos, el más cercano primero",
+    "sortByHopsDesc": "Ordenar por saltos, el más lejano primero",
+    "sortByNameAsc": "Ordenar por nombre A->Z",
+    "sortByNameDesc": "Ordenar por nombre Z->A"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
@@ -3652,7 +3773,18 @@
     "byteLengthTooltip": "{{bytes}} bytes sin procesar",
     "routeBarFloodTooltip": "Paquete enrutado por inundación",
     "routeBarDirectTooltip": "Paquete de enrutamiento directo",
-    "routeBarUnknownTooltip": "ruta desconocida"
+    "routeBarUnknownTooltip": "ruta desconocida",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Primer u32 interno (depuración):",
+    "destHash": "Hash de destino:",
+    "srcHash": "Hash Src:",
+    "channelHash": "Hash del canal:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Bytes de texto cifrado:",
+    "senderKeyPrefix": "Clave del remitente (prefijo):",
+    "control": "Unidad de control:",
+    "advertTs": "ANUNCIO ts:",
+    "advertLatLon": "ANUNCIO lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3948,12 @@
   "reticulumProfileIcon": {
     "iconName": "Icono del Avatar",
     "iconNameAria": "Icono del Avatar",
-    "iconCircle": "Círculo",
     "iconStar": "Estrella",
     "iconHeart": "Corazón",
     "iconShield": "Escudo",
-    "iconUser": "Usuario"
+    "iconNone": "Ninguno",
+    "iconSaveFailed": "No se pudo guardar el ícono de avatar.",
+    "iconUser": "Gente"
   },
   "reticulumPropagation": {
     "preferred": "Preferido",
@@ -3830,7 +3963,6 @@
     "syncNowFor": "Sincronizar mensajes de {{name}}",
     "addNode": "Agregar nodo",
     "addNodeLabel": "Agregar nodo de propagación por hash",
-    "localInboxStats": "{{count}} en cola · {{bytes}} bytes",
     "refreshing": "Refrescante…",
     "refreshAria": "Actualizar nodos de propagación",
     "syncStatusEstablishing": "Estableciendo conexión con el nodo de propagación...",
@@ -3853,7 +3985,10 @@
     "notice": {
       "body": "No hay ningún nodo de propagación configurado. Los pares fuera de línea o inalcanzables necesitan un nodo de propagación para la entrega de LXMF de almacenamiento y reenvío.",
       "openSettings": "Configurar propagación",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "No hay ningún nodo de propagación configurado. {{count}} descubierta en la red: añade una a continuación o abre Configuración de red.",
+      "addClosest": "Añade el más cercano descubierto",
+      "addClosestAria": "Añada el nodo de propagación descubierto más cercano y configúrelo como preferido"
     },
     "rename": "Renombrar",
     "renameLabel": "Nombre del nodo de propagación",
@@ -3877,7 +4012,6 @@
       "unknown": "desconocido",
       "online": "en línea"
     },
-    "syncLocalNotSupported": "La propagación local es su bandeja de entrada fuera de línea; no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
     "syncIdentityUnknown": "Se desconoce la identidad del nodo de propagación: espere un anuncio o una respuesta de ruta y vuelva a intentarlo.",
     "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión.",
     "syncPeeringStampFailed": "No se pudo crear un sello de emparejamiento para este nodo de propagación. Vuelva a intentarlo en un momento.",
@@ -3885,7 +4019,44 @@
     "renameFailed": "No se pudo cambiar el nombre del nodo de propagación.",
     "deleteFailed": "No se pudo eliminar el nodo de propagación.",
     "addFailed": "No se pudo agregar el nodo de propagación.",
-    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres"
+    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres",
+    "syncEstablishIdentityMissing": "La sincronización de la propagación no pudo verificar la prueba del enlace: faltaba la identidad del nodo. Espere un anuncio e inténtelo de nuevo.",
+    "syncEstablishInvalidProof": "La sincronización de propagación recibió una prueba de enlace no válida del nodo; inténtelo de nuevo en un momento.",
+    "syncOfferNoIdentity": "El nodo de propagación ha rechazado la oferta de sincronización: ha fallado la identificación. Espere un anuncio e inténtelo de nuevo.",
+    "syncOfferNoAccess": "Nodo de propagación con acceso de sincronización denegado.",
+    "syncOfferInvalidKey": "El nodo de propagación rechazó la clave de peering: compruebe el coste de peering e inténtelo de nuevo.",
+    "syncOfferThrottled": "El nodo de propagación aceleró la solicitud de sincronización; inténtelo de nuevo más tarde.",
+    "syncOfferInvalidData": "El nodo de propagación rechazó los datos de la oferta de sincronización.",
+    "syncOfferInvalidStamp": "El nodo de propagación rechazó el sello de peering; inténtelo de nuevo en un momento.",
+    "discoveredTitle": "Descubierto en la red",
+    "discoveredEmpty": "Aún no se ha escuchado ningún anuncio de lxmf.propagation. Mantenga la pila conectada o añada un nodo por hash.",
+    "discoveredInactive": "inactivo",
+    "discoveredHops": "{{hops}} saltos",
+    "discoveredPeeringCost": "coste de peering {{cost}}",
+    "discoveredAdd": "Añadir",
+    "discoveredAddAria": "Añadir nodo de propagación descubierto {{name}}",
+    "discoveredAddPrefer": "Añadir y preferir",
+    "discoveredAddPreferAria": "Añade el nodo de propagación descubierto {{name}} y configúralo como prefieras",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "La sincronización de propagación no obtuvo ninguna prueba de enlace del nodo: es posible que su identidad necesite un nuevo anuncio o que falte la ruta de regreso. Prueba Network → Announce ahora y vuelve a sincronizar.",
+    "syncOfferUnknown": "El nodo de propagación devolvió un error de oferta de sincronización desconocido. Inténtalo de nuevo en un momento.",
+    "syncPathHint": "La sincronización remota necesita una ruta en ambos sentidos. Sync envía primero un breve anuncio LXMF para que el nodo pueda responder.",
+    "setPreferredFailed": "No se ha podido establecer el nodo de propagación preferido.",
+    "preferredLocalWarning": "El nodo preferido es solo local: los compañeros sin conexión aún necesitan un nodo de propagación remoto para la entrega de almacenamiento y reenvío.",
+    "localHostStats": "{{count}} en cola · {{bytes}} bytes",
+    "localHostName": "Nodo de propagación del host",
+    "localHostHint": "Cuando está habilitado, este dispositivo se anuncia como un nodo de propagación LXMF y sirve /ofrece y /obtiene. Prefiera un nodo remoto para almacenar y reenviar salientes a compañeros inalcanzables.",
+    "syncPeerCostExceedsMax": "El coste de peering de este nodo de propagación está por encima de su coste máximo de peering: aumente el máximo en Network → Advanced PN hosting o elija otro nodo.",
+    "offerUnsupported": "Este destino no es compatible con la sincronización LXMF /offer: mesh-client no puede usarlo como nodo de propagación.",
+    "offerProbeTimeout": "Tiempo de espera agotado al verificar /ofrecer soporte: el nodo puede ser inalcanzable. Inténtalo de nuevo cuando haya una ruta disponible.",
+    "offerProbeFailed": "No se ha podido verificar /ofrecer soporte para este nodo de propagación; inténtelo de nuevo en un momento.",
+    "enableLocalHostConfirmTitle": "¿Habilitar el alojamiento del nodo de propagación local?",
+    "enableLocalHostConfirmBody": "Este dispositivo se anunciará como un nodo de propagación LXMF y servirá /oferta y /obtener. Utiliza almacenamiento, CPU y puede conectarse con otros nodos de la red. Prefiera un nodo remoto para el almacenamiento y reenvío saliente, a menos que tenga intención de alojarlo.",
+    "enableLocalHostConfirm": "Habilitar alojamiento",
+    "addProbing": "Comprobando compatibilidad con /offer…",
+    "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
+    "enableFailed": "No se pudo habilitar el nodo de propagación.",
+    "disableFailed": "No se pudo deshabilitar el nodo de propagación."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",
@@ -4109,7 +4280,8 @@
     "pathHashCliGet": "Obtener modo hash de ruta",
     "pathHashCliSet0": "Establecer modo hash de ruta de 1 byte",
     "pathHashCliSet1": "Establecer modo hash de ruta de 2 bytes",
-    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes"
+    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} sin leer"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",
@@ -4201,7 +4373,10 @@
     "backupRemoved": "Copia de seguridad eliminada.",
     "meshcorePrivateKeyHint": "Utilice la clave privada de exportación a continuación para ver el material de la clave. La copia de seguridad almacena el par de claves completo en este ordenador.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "¡Ningún conjunto de copia de seguridad encontrado!",
+    "missingKeyMaterial": "Falta material clave",
+    "unknownError": "Error desconocido"
   },
   "sidebar": {
     "disabledTabTooltip": "No disponible en este modo"
@@ -4318,7 +4493,12 @@
     "chartAriaSignal": "Tabla de calidad de la señal: última SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} puntos",
     "chartAriaTempHumidity": "Tabla de temperatura y humedad: última temperatura {{temperature}}, humedad {{humidity}} por ciento, {{count}} puntos",
     "chartAriaPressure": "Tabla de presión barométrica: últimos {{pressure}} hPa, {{count}} puntos",
-    "chartAriaIaq": "Gráfico de calidad del aire: últimos puntos IAQ {{iaq}}, {{count}}"
+    "chartAriaIaq": "Gráfico de calidad del aire: últimos puntos IAQ {{iaq}}, {{count}}",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Exportar CSV",
+    "emptyWaitingConnected": "Aún no hay datos de telemetría. Esperando datos del dispositivo...",
+    "emptyWaitingDisconnected": "Aún no hay datos de telemetría. Conéctate a un dispositivo para ver las métricas en tiempo real."
   },
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",
@@ -4475,7 +4655,9 @@
     "directNoticeUnsupported": "Este concentrador no admite NOTIFICACIÓN directa (/msg).",
     "capDirectNotice": "msg directo",
     "moderation": {
-      "removedFromRoom": "Eliminado de la sala por el centro (patada, prohibición o parte remota)."
+      "removedFromRoom": "Eliminado de la sala por el centro (patada, prohibición o parte remota).",
+      "removedFromRoomSystem": "El centro te separó de {{room}}.",
+      "hubParted": "El hub te separó de la sala."
     },
     "errors": {
       "linkProofTimeout": "Se agotó el tiempo de espera para el enlace del hub (prueba del enlace). Inténtalo de nuevo o comprueba la ruta/saltos al centro.",
@@ -4682,7 +4864,9 @@
       "offerToast": "Oferta de archivo entrante: {{file}}",
       "copyInstructionsAria": "Copiar instrucciones para habilitar la recepción de archivos",
       "copyInstructions": "Copiar instrucciones",
-      "instructionsCopied": "Instrucciones copiadas."
+      "instructionsCopied": "Instrucciones copiadas.",
+      "receiveDestSharedToast": "Se guardó el destino de recepción rncp de {{peer}}: ya puede enviar un archivo.",
+      "receiveDestShareFailed": "No se pudo guardar el destino de recepción rncp del par."
     },
     "enableRequest": {
       "title": "¿Habilitar la recepción de archivos?",
@@ -4699,7 +4883,9 @@
       "enableFailed": "No se ha podido habilitar la recepción de archivos: {{error}}",
       "saveDirRequired": "Elija una carpeta de guardado para habilitar la recepción.",
       "identityUnknown": "Aún no se pudo resolver el hash de identidad de este par — el modo Preguntar está activado, pero no se añadió a la lista de permitidos. Inténtalo de nuevo cuando llegue una ruta o un anuncio.",
-      "lxmfBody": "Habilite la recepción de archivos (rncp) si utiliza mesh-client: → Configuración remota Ofertas de archivos → entrantes. O ejecute rncp/rncp-rs en modo de escucha."
+      "lxmfBody": "Habilite la recepción de archivos (rncp) si utiliza mesh-client: → Configuración remota Ofertas de archivos → entrantes. O ejecute rncp/rncp-rs en modo de escucha.",
+      "lxmfShareBody": "La recepción de archivos está habilitada. Aquí está mi destino de recepción rncp (mesh-client lo guardará para usted).",
+      "shareDestWarning": "Si lo habilita, mesh-client enviará su destino de recepción rncp a este par para que pueda completar automáticamente el envío del archivo."
     },
     "saved": {
       "labelPlaceholder": "Designación",
@@ -4754,5 +4940,12 @@
     "direct": "Directo",
     "segmentTooltip": "Hash de ruta {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} está en línea",
+    "onlineBody": "El nodo {{protocol}} se conectó",
+    "offlineTitle": "{{name}} se desconectó",
+    "offlineBody": "Última escucha: {{time}}",
+    "unknown": "desconocido"
   }
 }

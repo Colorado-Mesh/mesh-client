@@ -4,11 +4,18 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+import {
+  assertPowerResumeSkipsOnExplicitDisconnect,
+  extractUseCallbackBody,
+} from '../lib/sourceContractTestHelpers';
 
 const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
 const CONN_EVENTS_SOURCE = readFileSync(
-  join(__dirname, '../hooks/meshcore/meshcoreLegacyConnEvents.ts'),
+  join(__dirname, '../hooks/meshcore/meshcoreConnSideEffects.ts'),
+  'utf-8',
+);
+const RF_RX_RUNTIME_SOURCE = readFileSync(
+  join(__dirname, '../lib/meshcore/meshcoreRfRxRuntime.ts'),
   'utf-8',
 );
 
@@ -207,12 +214,20 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
       /shouldRunMeshcoreWaitingMessagesPeriodicPoll\(waitingMessagesCountRef\.current\)/,
     );
   });
+
+  it('onPowerResume skips reconnect after explicit user disconnect', () => {
+    assertPowerResumeSkipsOnExplicitDisconnect(
+      RUNTIME_SOURCE,
+      'meshcoreExplicitDisconnectRef.current',
+    );
+  });
 });
 
-describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
+describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
   it('triggers handleConnectionLost when an operational session drops', () => {
+    expect(CONN_EVENTS_SOURCE).toMatch(/case 'device_status':[\s\S]{0,400}handleDisconnected\(\)/);
     expect(CONN_EVENTS_SOURCE).toMatch(
-      /onMeshcoreConn\('disconnected'[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
+      /handleDisconnected[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
     );
   });
 
@@ -231,7 +246,7 @@ describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
   });
 
   it('logs rate-limited MQTT packet-log publish failures', () => {
-    expect(CONN_EVENTS_SOURCE).toMatch(
+    expect(RF_RX_RUNTIME_SOURCE).toMatch(
       /publishMeshcorePacketLog[\s\S]{0,800}MQTT packet-log publish failed/,
     );
   });
@@ -242,7 +257,7 @@ describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
   });
 
   it('syncs rawPacketsRef inside event 136 setRawPackets updater (same-tick hop correlation)', () => {
-    expect(CONN_EVENTS_SOURCE).toMatch(
+    expect(RF_RX_RUNTIME_SOURCE).toMatch(
       /setRawPackets\(\(prev\) => \{[\s\S]*?rawPacketsRef\.current = trimmed;[\s\S]*?return trimmed;/,
     );
   });

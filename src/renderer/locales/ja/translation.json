@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去",
     "reticulumSection": "Reticulum — レティキュラム・スタック",
     "reticulumAnnounceHelp": "あなたの身元がネットワーク上で発表される頻度と、保存されているアナウンスをクリアするためのツール。",
-    "reticulumPropagationHelp": "伝播ノードの同期方法を選択し、必要に応じて最新の伝播データを取得します。",
     "logPanelHelp": "有効にすると、ライブ ログ ストリームが右側に表示されます。 Reticulum タブのデバイス行には、サイドカー出力とローカル インターフェイスの状態が含まれます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
     "autoPruneUnheardContactsDaysAria": "起動時に、{{days}} 日より古い、聞いていない連絡先を自動的に削除します",
     "capTotalContactsCountAria": "連絡先の総数を制限し、最近確認された {{count}} 連絡先を保持します",
@@ -373,7 +372,10 @@
     "restoreTheme": "保存されたカラーチェックポイントを復元",
     "noSavedThemeTooltip": "保存された色はまだありません—保存を使用してチェックポイントを作成します",
     "saveThemeButton": "保存",
-    "restoreThemeButton": "リストア"
+    "restoreThemeButton": "リストア",
+    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
+    "use24HourTime": "24時間制を使用する",
+    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "クリックして言語を選択",
     "switchToMeshtasticWithUnread": "Meshtastic に切り替え、{{count}} は未読",
     "switchToMeshCoreWithUnread": "MeshCore に切り替え、{{count}} 未読",
-    "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読"
+    "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読",
+    "tabWithUnread": "{{label}}、{{count}}未読"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -465,8 +468,6 @@
     "dmNodeLastHeard": "最後に聞いたのは{{time}}",
     "dmNodeBattery": "{{pct}}%バッテリー",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}}ホップ",
-    "dmNodeHopsPlural": "{{count}}ホップ",
     "muteConversation": "この会話をミュートする",
     "unmuteConversation": "この会話のミュートを解除する",
     "starMessage": "スターメッセージ",
@@ -559,7 +560,9 @@
       "pkiMissingRecipientKey": "暗号化されたメッセージを送信できませんでした— NodeDBに受信者の公開鍵がありません。",
       "pkiFailed": "このメッセージのPKI暗号化に失敗しました。",
       "noChannel": "このメッセージをルーティングするチャンネルはありません。",
-      "timeout": "ラジオでメッセージがタイムアウトしました。"
+      "timeout": "ラジオでメッセージがタイムアウトしました。",
+      "rateLimited": "無線はレート制限メッセージです。しばらくしてから再度お試しください。",
+      "noInterface": "このメッセージを送信するための無線インターフェースはありません。"
     },
     "waitingMessagesQueued": "{{count}}は無線でメッセージをキューに入れました",
     "waitingMessagesSyncProgress": "ラジオから{{processed}}/{{total}}を同期しています…",
@@ -593,7 +596,6 @@
       "sendFileAria": "ファイルをrncp経由で{{name}}に送信する",
       "pendingOffersBadgeAria_one": "このピアからの{{count}}保留中のインバウンドファイルオファー",
       "pendingOffersBadgeAria_other": "このピアからの{{count}}保留中のインバウンドファイルのオファー",
-      "destinationLabel": "rncp宛先ハッシュ",
       "rememberAddress": "この住所を記憶する",
       "rememberAddressAria": "このピアのこのrncp宛先を覚えておいてください",
       "chooseAndSend": "ファイルを選択して送信…",
@@ -602,7 +604,23 @@
       "sendFailed": "次の送信に失敗しました： {{error}}",
       "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
       "requestEnable": "リクエストの有効化",
-      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します"
+      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します",
+      "destinationLabel": "ピアのrncp受信先",
+      "destinationHelp": "Chat/LXMF ハッシュではありません。相手が共有行を貼り付けた場合は「有効化を依頼」または「チャットから使用」を使うか、32文字の受信ハッシュを貼り付けてください。",
+      "activeTransfersBadgeAria_one": "{{count}}このピアとのアクティブなファイル転送",
+      "activeTransfersBadgeAria_other": "このピアとの{{count}}アクティブなファイル転送",
+      "transfersTitle": "ファイル転送",
+      "useFromChat": "チャットの移動先を使用する",
+      "useFromChatAria": "このチャットで共有されているrncp受信先を見つけて使用する",
+      "noShareInChat": "このチャットにはまだrncp共有ラインがありません。受信先（ Remote → My rncp receive destination ）を貼り付けるか、以下の32文字のハッシュを貼り付けてもらいます。",
+      "savedForOtherPeers": "保存された受信先は、他のチャット（ {{peers}} ）に存在します。その同僚のDMを開いて自動入力します。",
+      "transferProgressAria": "{{file}} の転送進捗: {{progress}}%",
+      "transferCompletedToast": "ファイル送信日： {{file}}",
+      "transferFailedToast": "ファイル転送に失敗しました（ {{file}} ） ： {{error}}",
+      "forgetAddress": "保存された行き先を忘れる",
+      "forgetAddressAria": "このピアの保存されたrncp受信先を削除します",
+      "forgotAddressToast": "このピアの保存されたrncp宛先を忘れました。",
+      "filledFromChatToast": "チャットから移動先を入力します（保存されていません。忘れずに保存するようにチェックしてください）。"
     },
     "shareLocation": "位置情報を共有する",
     "shareLocationLabel": "📍 共有場所",
@@ -615,7 +633,13 @@
     "floodScopeOverrideCustomLabel": "カスタムフラッドスコープハッシュタグ",
     "floodScopeOverrideCustomPlaceholder": "#私の地域",
     "floodScopeOverrideCustomApply": "使用範囲",
-    "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。"
+    "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。",
+    "dmNodeHops_one": "{{count}} ホップ",
+    "dmNodeHops_other": "{{count}} ホップ",
+    "notificationDmTitle": "{{sender}}からのDM",
+    "notificationMessageTitle": "{{sender}}からのメッセージ",
+    "reticulumSendStoredAtPn": "伝播ノードに格納されています",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -624,7 +648,10 @@
     "locationCard": {
       "alt": "共有ロケーションマップタイル",
       "openMaps": "マップで開く"
-    }
+    },
+    "directImage": "画像： {{name}}",
+    "directImageOpen": "画像を開く",
+    "reticulumAttachmentImage": "添付画像： {{name}}"
   },
   "common": {
     "close": "近い",
@@ -1067,7 +1094,27 @@
       "backboneDirectoryHint": "他のコミュニティ バックボーン ハブについては、directory.rns.recipes で見つけてください。 Yggdrasil ハブ (Yggdrasil_Ashburn_VA など) には、実行中のローカル Yggdrasil トンネルが必要です。Reticulum マニュアルでは、トンネル インターフェイス (多くの場合 tun0) にバインドすることを推奨しています。",
       "localOfflineRowBleBondStale": "Bluetooth ボンディングが古い — [システム設定] → [Bluetooth] でこの RNode を忘れてから、新しい PIN で再ペアリングします (OS にはまだペアリング済みと表示される場合があります)。",
       "addDefaultHubsAria": "デフォルトの Reticulum バックボーン ハブ (米国東部、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World) を同期します。廃止されたテストネットエンドポイントを無効にする",
-      "addDefaultHubsAllPresent": "デフォルトのバックボーン ハブはすでに構成されています。廃止されたテストネット ハブは有効になっていません。"
+      "addDefaultHubsAllPresent": "デフォルトのバックボーン ハブはすでに構成されています。廃止されたテストネット ハブは有効になっていません。",
+      "modeDescriptions": {
+        "full": "完全なメッシュ参加。トラフィックをルーティングし、アナウンスを自動伝播します。プライマリノードとリピーターに使用します。",
+        "access_point": "照会されるまで静かです。短いパス有効期限。断続的なユーザーに対応する広域無線に最適です。",
+        "roaming": "モバイルインターフェイス。短いパスタイムアウトとアクティブディスカバリ。ハンドヘルドまたは車両のRNodeに使用します。",
+        "boundary": "ネットワーク境界。ローカルトラフィックを分離しながら、異なるセグメントをブリッジします。インターネット/LoRaリンクに使用します。",
+        "gateway": "クライアントのパスシーク。接続されたノードの代わりに不明な宛先を解決します。",
+        "point_to_point": "2つのノード間の直接リンク。ルーティングやアナウンスの伝播はありません。"
+      },
+      "networkName": "ネットワーク名",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "ネットワーク名",
+      "passphrase": "パスフレーズ",
+      "passphrasePlaceholder": "IFAC認証",
+      "passphraseAria": "IFACパスフレーズ",
+      "showPassphrase": "パスフレーズを表示",
+      "hidePassphrase": "パスフレーズを非表示にする",
+      "advanced": "高度",
+      "advancedHint": "追加のキー=このインターフェイスの値ペア、1行に1つ。既知のフィールド（ホスト、モード、ネットワーク名など）は上記のフォームのままです。",
+      "advancedAria": "高度なインターフェースキーバリューオプション",
+      "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1142,9 @@
       "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。",
       "tcpUnreachable": "{{name}} ： TCPハブに到達できません（ {{host}} ： {{port}} ）",
       "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。",
-      "offlineHintBleBondStale": "macOS では引き続きこの RNode がペアリング済みとして表示されますが、Bluetooth キーは一致しなくなりました (ピアはペアリング情報を削除しました)。 [システム設定] → [Bluetooth] でデバイスを忘れ、RNode をペアリング モードにして ([管理者] → [Bluetooth] → [ペアリングの開始] またはボタンを約 7 秒押し続けます)、スタックを再起動し、プロンプトが表示されたら新しい 6 桁の PIN を入力します。",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "BLE RNode リンクは、スタックの開始後 (OS パスキー ウィンドウ) に最大 60 秒かかる場合があります。プロンプトが表示されたら、現在の RNode PIN を入力します。決して 123456 を入力しないでください。これは正常であり、エラーではありません。接続が成功するまで、デバイスはシステム設定に表示されない場合があります。"
+      "connectingHintBle": "BLE RNode リンクは、スタックの開始後 (OS パスキー ウィンドウ) に最大 60 秒かかる場合があります。プロンプトが表示されたら、現在の RNode PIN を入力します。決して 123456 を入力しないでください。これは正常であり、エラーではありません。接続が成功するまで、デバイスはシステム設定に表示されない場合があります。",
+      "offlineHintBle": "このエラーを解消するには、このインターフェースを削除して再度追加（デバイスを選択）し、保存済みの Bluetooth ID を更新してからスタックを再起動する必要がある場合があります。OS から 6 桁の Bluetooth PIN の入力を求められることがあります（macOS、Windows、または Linux）。RNode はペアリングのたびに新しいコードを生成します。123456 は使用しないでください（Meshtastic のデフォルトであり、RNode ではありません）。このアプリが接続する前に、RNode がシステム設定 → Bluetooth に表示されている必要はありません。スタックがペアリングすると OS のダイアログが表示されます。ディスプレイのない無線機：USB を接続 → Reticulum Admin → Bluetooth → ペアリング開始 → 管理パネルに表示された PIN（無線機の画面ではありません）を OS ダイアログに入力します。ディスプレイ付き無線機：Heltec デバイスでボタンを約 7 秒押し続け（タイミングは機種により異なります。多くのボードでは約 10 秒で Wi‑Fi AP が有効になります）、画面の PIN を読み取り、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンディングをクリアしてください。",
+      "offlineHintBleBondStale": "macOSは引き続きこのRNodeをペアリング済みとして表示しますが、Bluetoothキーは一致しなくなりました（ピアが削除されたペアリング情報）。システム設定→Bluetoothでデバイスを忘れ、RNodeをペアリングモードにします（管理→Bluetooth→開始ペアリング、またはボタンを7秒間押したままにします）。次に、このインターフェース（デバイスを選択）を削除して再追加し、スタックを再起動し、プロンプトが表示されたら新しい6桁のPINを入力します。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -1199,20 +1246,20 @@
     "coloradoRegionGateStay": "私はコロラド州にいます",
     "coloradoRegionGateSwitch": "LetsMeshに切り替える",
     "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
       "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
     },
     "reticulumStackRunningAs": "実行中— {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…",
+    "reticulumSharedInstance": {
+      "title": "別のアプリの共有インスタンスを使用する",
+      "body": "このアプリは、別のアプリの共有Reticulumインスタンスのクライアントとして接続されています。このアプリの設定からのローカルTCPハブは、このモードでは開始されません。トラフィックは、他のアプリのスタックのみを使用できます。",
+      "networkHint": "または、Network → Share Reticulumインスタンスを開いて手動で共有をオフにし、スタックを再起動します。MeshChat、Ratspeak、またはスタンドアロンRNSDを完全に終了して再起動することもできます。",
+      "disableShare": "インスタンスの共有をオフにして再起動する",
+      "disableShareAria": "共有インスタンスをオフにして、スタックを再起動します",
+      "disableFailed": "共有インスタンスをオフにできませんでした。"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1356,7 +1403,8 @@
       "potentialMeshcoreRepeaterConflict": "MeshCore リピーターの潜在的な競合",
       "elevatedNoiseFloor": "高所ノイズフロア",
       "excessiveFlooding": "過度の洪水",
-      "reticulumTrafficDetected": "Reticulumトラフィックを検出"
+      "reticulumTrafficDetected": "Reticulumトラフィックを検出",
+      "highCompanionTxQueue": "ハイコンパニオンTXキュー"
     },
     "rfCause": {
       "channelUtilizationSpike": "現在の {{current}}% は最近の平均 ({{average}}%) の 2 倍を超えています。輻輳または干渉サージの可能性があります。",
@@ -1370,7 +1418,8 @@
       "widebandNoiseFloor": "広帯域干渉 (電子機器の故障、電力線ノイズなど) によりノイズ フロアが上昇します。",
       "fringeWeakCoverage": "ノードが遠すぎるか、メッシュの残りの部分との接続が不十分です。",
       "elevatedNoiseFloor": "ラジオノイズフロアは{{noiseFloor}} dBm — 有効範囲を低下させる高レベルの干渉。",
-      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。"
+      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。",
+      "highCompanionTxQueue": "コンパニオンのアウトバウンドキューの深さは{{queueLen}}/256です。トラフィックが遅延またはドロップされる可能性があります。"
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic ノードはこの周波数で送信します。送信者: {{sender}}。 {{proximity}}このノードは MeshCore リピーター エリア内にある可能性があります。",
@@ -1445,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "直接ルートを確立できるようにする",
         "description": "フラッド比率は非常に高く、ノードが直接経路の接触を蓄積するのを待つか、リピーターの近接性を確認します。"
+      },
+      "highCompanionTxQueue": {
+        "title": "アウトバウンドトラフィックを減らすか、RFリンクを確認してください",
+        "description": "コンパニオンTXキューはほぼいっぱいです。送信を一時停止したり、洪水を減らしたり、干渉や弱いリンクがないか確認したりできます。"
       }
     },
     "cuHistoryHeading": "チャネル使用率（過去24時間）",
@@ -1523,7 +1576,10 @@
         "transportSaturatedShareInstance": "RNSトランスポートが飽和しました（ {{count}}パス要求ドロップ）。共有インスタンスがオンになっています—他のReticulumアプリ（ MeshChatX、Ratspeak、rnsd ）を終了し、スタックを再起動します。",
         "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
         "bleBondRemoved": "BLE RNode「{{name}}」のボンディングが古くなっています — OS の Bluetooth 設定でデバイスを削除して再ペアリングしてください",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" パスキー交換がタイムアウトしました — 現在の PIN (123456 ではない) を入力して、再ペアリングしてください"
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" パスキー交換がタイムアウトしました — 現在の PIN (123456 ではない) を入力して、再ペアリングしてください",
+        "sidecarUnhealthy": "Reticulumサイドカーは実行中ですが、ヘルスチェックに応答していません",
+        "propagationSyncStuck": "伝播ノードの同期がリンクの確立に固執しています",
+        "propagationSyncFailing": "伝播ノードの同期に失敗しました"
       }
     },
     "routingPort": {
@@ -1545,7 +1601,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "距離オフセット",
     "km": "km",
-    "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。"
+    "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。",
+    "ignoreMqttToggle": "MQTT を無視",
+    "ignoreMqttHelp": "MQTT のみのノードをグレー表示し、診断から除外します"
   },
   "diagnosticsPing": {
     "title": "連続ping",
@@ -2450,6 +2508,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "高度な PN ホスティング (危険ゾーン)",
+      "peeringCost": "ピアリングコスト",
+      "maxPeeringCost": "ピアリングの最大コスト",
+      "autopeer": "検出された PN による自動ピア",
+      "autopeerMaxdepth": "オートピア最大ホップ",
+      "maxPeers": "オートピアピアの最大数",
+      "stampCost": "伝播スタンプのコスト",
+      "stampFlex": "スタンプコストの柔軟性",
+      "storageMb": "メッセージストレージ制限 (MB)",
+      "propagationLimitKb": "伝播メッセージの制限 (KB)",
+      "syncLimitKb": "同期転送制限 (KB)",
+      "deliveryLimitKb": "配信転送制限 (KB)",
+      "announceIntervalSec": "PN アナウンス間隔 (秒)",
+      "announceAtStart": "ホスティング開始時にアナウンスする",
+      "fromStaticOnly": "静的ピアからのみ",
+      "authRequired": "認証が必要です",
+      "enforceStamps": "メッセージスタンプを強制する",
+      "enforceRatchets": "ラチェットを強制する",
+      "nodeName": "PN アナウンス名",
+      "staticPeers": "静的ピア ハッシュ (1 行あたり 1 つの 32 16 進数)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "ホスティング ポリシーを保存する",
+      "saving": "保存中…",
+      "saveAria": "PN ホスティング ポリシーを保存する",
+      "saveOk": "PN ホスティング ポリシーが保存されました。",
+      "saveFailed": "PN ホスティング ポリシーを保存できませんでした。",
+      "saveConfirmTitle": "PN ホスティング ポリシーを保存しますか?",
+      "saveConfirmBody": "ライブ伝播ノードにピアリング、ストレージ、スタンプ、アナウンス設定を適用しますか?構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。",
+      "saveConfirm": "ポリシーの保存",
+      "error": {
+        "peeringCostExceedsMax": "ピアリング コストは最大ピアリング コストを超えることはできません。",
+        "stampFlexExceedsCost": "スタンプの柔軟性はスタンプのコストを超えることはできません。",
+        "autopeerMaxdepth": "オートピアの最大ホップが範囲外です。",
+        "maxPeers": "最大ピア数が範囲外です。",
+        "storageMb": "メッセージストレージ制限が範囲外です。",
+        "propagationLimit": "伝播メッセージの制限が範囲外です。",
+        "syncLimit": "同期転送制限が範囲外です。",
+        "deliveryLimit": "配信転送制限の範囲外です。",
+        "announceInterval": "PN アナウンス間隔が範囲外です。",
+        "staticPeersTooMany": "静的ピア ハッシュが多すぎます (最大 256)。",
+        "staticPeerInvalid": "1 つ以上の静的ピア ハッシュが無効です (32 個の 16 進文字が必要です)。",
+        "nodeNameInvalid": "PN アナウンス名に無効な文字が含まれています。",
+        "nodeNameTooLong": "PN アナウンス名が長すぎます。",
+        "nonFiniteNumber": "1 つ以上の数値フィールドが無効です。"
+      },
+      "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。"
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2803,11 @@
     "stableStability": "安定した",
     "moderateStability": "適度",
     "unstableStability": "不安定",
-    "unknownStability": "未知"
+    "unknownStability": "未知",
+    "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
+    "hybridMqttPathAria": "RFおよびMQTTパス",
+    "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -2785,7 +2895,8 @@
     "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
     "hybridMqttPathAria": "RFおよびMQTTパス",
     "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
-    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続",
+    "echoesConnectionHealthTooltip": "{{score}} %接続状態"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2978,17 @@
       "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。",
       "contentSourceNone": "フォルダーが選択されていません",
       "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。"
-    }
+    },
+    "sortLastHeard": "最後に聞いた",
+    "sortHops": "ホップ",
+    "sortName": "名前",
+    "sortToolbar": "ノードリストの並べ替え",
+    "sortByLastHeardAsc": "最後のヒアリングで並べ替え、古い順",
+    "sortByLastHeardDesc": "最後のヒアリングで並べ替え、新しい順",
+    "sortByHopsAsc": "ホップで並べ替え、最も近い順",
+    "sortByHopsDesc": "ホップで並べ替え、最も遠い順",
+    "sortByNameAsc": "名前で並べ替え、AからZ",
+    "sortByNameDesc": "名前で並べ替え、ZからA"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
@@ -3652,7 +3773,18 @@
     "byteLengthTooltip": "{{bytes}}バイトRAW",
     "routeBarFloodTooltip": "フラッドルートされたパケット",
     "routeBarDirectTooltip": "ダイレクトルーティングパケット",
-    "routeBarUnknownTooltip": "不明なルートタイプ"
+    "routeBarUnknownTooltip": "不明なルートタイプ",
+    "crc32Fingerprint": "CRC32 フィンガープリント:",
+    "innerFirstU32Debug": "内部先頭 u32（デバッグ）:",
+    "destHash": "宛先ハッシュ:",
+    "srcHash": "送信元ハッシュ:",
+    "channelHash": "チャンネルハッシュ:",
+    "mac": "MAC:",
+    "ciphertextBytes": "暗号文バイト数:",
+    "senderKeyPrefix": "送信者キー（プレフィックス）:",
+    "control": "制御:",
+    "advertTs": "ADVERT タイムスタンプ:",
+    "advertLatLon": "ADVERT 緯度/経度:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3948,12 @@
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",
     "iconNameAria": "ピアアバターアイコン",
-    "iconCircle": "円",
     "iconStar": "スター",
     "iconHeart": "ハートマーク",
     "iconShield": "シールド",
-    "iconUser": "ユーザー"
+    "iconNone": "なし",
+    "iconSaveFailed": "アバターアイコンを保存できませんでした。",
+    "iconUser": "人々"
   },
   "reticulumPropagation": {
     "preferred": "推奨",
@@ -3830,7 +3963,6 @@
     "syncNowFor": "{{name}} からのメッセージを同期する",
     "addNode": "ノードの追加",
     "addNodeLabel": "ハッシュによる伝播ノードの追加",
-    "localInboxStats": "{{count}} キューに入れられました · {{bytes}} バイト",
     "refreshing": "爽やか…",
     "refreshAria": "伝播ノードをリフレッシュする",
     "syncStatusEstablishing": "伝播ノードへの接続を確立しています…",
@@ -3853,7 +3985,10 @@
     "notice": {
       "body": "伝播ノードが設定されていません。オフラインまたは到達不能なピアには、ストアアンドフォワードLXMF配信用の伝播ノードが必要です。",
       "openSettings": "伝播の設定",
-      "openSettingsAria": "Reticulumネットワーク伝播設定を開く"
+      "openSettingsAria": "Reticulumネットワーク伝播設定を開く",
+      "bodyWithDiscoveries": "伝播ノードが設定されていません。{{count}}がネットワーク上で検出されました—以下に1つ追加するか、ネットワーク設定を開きます。",
+      "addClosest": "見つかった最も近いものを追加",
+      "addClosestAria": "最も近い検出された伝播ノードを追加し、優先として設定します"
     },
     "rename": "名前の変更",
     "renameLabel": "伝播ノード名",
@@ -3877,7 +4012,6 @@
       "unknown": "未知",
       "online": "オンライン"
     },
-    "syncLocalNotSupported": "ローカル伝播はオフラインの受信箱です。リモート LXMF 伝播ノードのようにネットワーク経由で同期することはできません。",
     "syncIdentityUnknown": "伝播ノードの ID が不明です。アナウンスまたはパス応答を待ってから、再試行してください。",
     "syncTargetNotPropagationNode": "その宛先は Reticulum 上で到達可能ですが、LXMF 伝播ノードではありません (TCP ハブはトランスポート パスのみです)。オフライン メッセージを同期するには、lxmf.propagation として通知する宛先を追加します。",
     "syncPeeringStampFailed": "この伝播ノードのピアリング スタンプを作成できませんでした。しばらくしてからもう一度お試しください。",
@@ -3885,7 +4019,44 @@
     "renameFailed": "伝播ノードの名前を変更できませんでした。",
     "deleteFailed": "伝播ノードを削除できませんでした。",
     "addFailed": "伝播ノードを追加できませんでした。",
-    "addNodePlaceholder": "32 文字の lxmf.propagation 宛先ハッシュ"
+    "addNodePlaceholder": "32 文字の lxmf.propagation 宛先ハッシュ",
+    "syncEstablishIdentityMissing": "伝播同期はリンク証明を検証できませんでした—ノードIDが見つかりませんでした。お知らせを待ってから、もう一度お試しください。",
+    "syncEstablishInvalidProof": "伝播同期がノードから無効なリンク証明を受信しました。しばらくしてからもう一度お試しください。",
+    "syncOfferNoIdentity": "伝播ノードが同期オファーを拒否しました—識別に失敗しました。お知らせを待ってから、もう一度お試しください。",
+    "syncOfferNoAccess": "伝播ノードが同期アクセスを拒否しました。",
+    "syncOfferInvalidKey": "伝播ノードがピアリングキーを拒否しました—ピアリングコストを確認して再試行してください。",
+    "syncOfferThrottled": "伝播ノードが同期要求を制限しました。しばらくしてからもう一度お試しください。",
+    "syncOfferInvalidData": "伝播ノードが同期オファーデータを拒否しました。",
+    "syncOfferInvalidStamp": "伝播ノードがピアリングスタンプを拒否しました。しばらくしてからもう一度お試しください。",
+    "discoveredTitle": "ネットワーク上で発見されました",
+    "discoveredEmpty": "Lxmf.propagationはまだアナウンスされていません。スタックを接続したままにするか、ハッシュでノードを追加します。",
+    "discoveredInactive": "停止中",
+    "discoveredHops": "{{hops}} ホップ",
+    "discoveredPeeringCost": "ピアリングコスト{{cost}}",
+    "discoveredAdd": "追加",
+    "discoveredAddAria": "検出された伝播ノード{{name}}を追加",
+    "discoveredAddPrefer": "追加して優先する",
+    "discoveredAddPreferAria": "検出された伝播ノード{{name}}を追加し、優先として設定します",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "伝播同期では、ノードからリンクの証明が得られませんでした。IDには新しいアナウンスが必要な場合や、戻るパスが見つからない場合があります。今すぐネットワーク→アナウンスを試してから、再度同期してください。",
+    "syncOfferUnknown": "伝搬ノードが不明な同期オファーエラーを返しました。しばらくしてからもう一度お試しください。",
+    "syncPathHint": "リモート同期には、両方向のパスが必要です。同期は、ノードが応答できるように、短いLXMFアナウンスを最初に送信します。",
+    "setPreferredFailed": "優先伝播ノードを設定できませんでした。",
+    "preferredLocalWarning": "優先ノードはローカルのみです。オフラインのピアは、ストアアンドフォワード配信のためにリモート伝播ノードを必要とします。",
+    "localHostStats": "{{count}} キューに登録 · {{bytes}} バイト",
+    "localHostName": "ホスト伝播ノード",
+    "localHostHint": "有効にすると、このデバイスは LXMF 伝播ノードとしてアナウンスされ、/offer および /get を提供します。到達不能なピアに対する送信ストア アンド フォワードにはリモート ノードを優先します。",
+    "syncPeerCostExceedsMax": "この伝播ノードのピアリング コストが最大ピアリング コストを超えています。[ネットワーク] → [高度な PN ホスティング] で最大値を上げるか、別のノードを選択してください。",
+    "offerUnsupported": "この宛先は LXMF /offer 同期をサポートしていません。mesh-client はそれを伝播ノードとして使用できません。",
+    "offerProbeTimeout": "/offer サポートのチェック中にタイムアウトしました — ノードに到達できない可能性があります。パスが使用可能なときに再試行してください。",
+    "offerProbeFailed": "この伝播ノードの /offer サポートを確認できませんでした。しばらくしてからもう一度お試しください。",
+    "enableLocalHostConfirmTitle": "ローカル伝播ノードのホスティングを有効にしますか?",
+    "enableLocalHostConfirmBody": "このデバイスは、LXMF 伝播ノードとしてアナウンスし、/offer および /get を提供します。これはストレージと CPU を使用し、ネットワーク上の他のノードとピアリングする場合があります。ホストするつもりがない限り、送信ストア アンド フォワードにはリモート ノードを優先します。",
+    "enableLocalHostConfirm": "ホスティングを有効にする",
+    "addProbing": "/offer サポートを確認中…",
+    "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
+    "enableFailed": "伝播ノードを有効にできませんでした。",
+    "disableFailed": "伝播ノードを無効にできませんでした。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",
@@ -4109,7 +4280,8 @@
     "pathHashCliGet": "パスハッシュモードの取得",
     "pathHashCliSet0": "パスハッシュモード1バイトを設定",
     "pathHashCliSet1": "パスハッシュモード2バイトを設定",
-    "pathHashCliSet2": "パスハッシュモード3バイトを設定"
+    "pathHashCliSet2": "パスハッシュモード3バイトを設定",
+    "collapsedRoomWithUnread": "{{label}}、{{count}}未読"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
@@ -4201,7 +4373,10 @@
     "backupRemoved": "バックアップセットの削除:",
     "meshcorePrivateKeyHint": "以下のエクスポート秘密鍵を使用して、キー素材を表示します。バックアップは、このコンピューターに完全なキーペアを保存します。",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "バックアップが見つかりません",
+    "missingKeyMaterial": "キー素材がありません",
+    "unknownError": "不明なエラー"
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"
@@ -4318,7 +4493,12 @@
     "chartAriaSignal": "信号品質チャート: 最新の SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}} ポイント",
     "chartAriaTempHumidity": "温度と湿度のグラフ: 最新の温度 {{temperature}}、湿度 {{humidity}} パーセント、{{count}} ポイント",
     "chartAriaPressure": "気圧グラフ: 最新の{{pressure}} hPa、{{count}} ポイント",
-    "chartAriaIaq": "大気質チャート: 最新の IAQ {{iaq}}、{{count}} ポイント"
+    "chartAriaIaq": "大気質チャート: 最新の IAQ {{iaq}}、{{count}} ポイント",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV をエクスポート",
+    "emptyWaitingConnected": "テレメトリデータはまだありません。デバイスからのデータを待っています…",
+    "emptyWaitingDisconnected": "テレメトリデータはまだありません。リアルタイムのメトリクスを表示するにはデバイスに接続してください。"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
@@ -4475,7 +4655,9 @@
     "directNoticeUnsupported": "このハブは直接通知（/msg ）をサポートしていません。",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。"
+      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。",
+      "removedFromRoomSystem": "ハブがあなたを{{room}}から引き離しました。",
+      "hubParted": "ハブがあなたをルームから引き離しました。"
     },
     "errors": {
       "linkProofTimeout": "ハブリンク（リンクプルーフ）の待機中にタイムアウトしました。もう一度試すか、ハブへのパス/ホップを確認してください。",
@@ -4682,7 +4864,9 @@
       "offerToast": "受信ファイルオファー： {{file}}",
       "copyInstructionsAria": "ファイル受信を有効にするための手順をコピーする",
       "copyInstructions": "手順をコピー",
-      "instructionsCopied": "手順をコピーしました。"
+      "instructionsCopied": "手順をコピーしました。",
+      "receiveDestSharedToast": "{{peer}} の rncp 受信先を保存しました — ファイルを送信できます。",
+      "receiveDestShareFailed": "ピアの rncp 受信先を保存できませんでした。"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",
@@ -4699,7 +4883,9 @@
       "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
       "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
       "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
-      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。"
+      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。",
+      "lxmfShareBody": "ファイル受信が有効です。これが私の rncp 受信先です（mesh-client が保存します）。",
+      "shareDestWarning": "有効にすると、mesh-client は rncp 受信宛先をこのピアに送信し、ファイル送信を自動入力できるようになります。"
     },
     "saved": {
       "labelPlaceholder": "ラベル",
@@ -4754,5 +4940,12 @@
     "direct": "直接",
     "segmentTooltip": "パスハッシュ {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} はオンラインです",
+    "onlineBody": "{{protocol}} ノードがオンラインになりました",
+    "offlineTitle": "{{name}} がオフラインになりました",
+    "offlineBody": "最後に聞いた音: {{time}}",
+    "unknown": "未知"
   }
 }

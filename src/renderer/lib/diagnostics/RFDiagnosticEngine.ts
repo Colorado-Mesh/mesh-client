@@ -7,7 +7,7 @@ import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnosti
 export interface RFDiagnosis {
   condition: string;
   cause: string;
-  severity: 'warning' | 'info';
+  severity: 'error' | 'warning' | 'info';
   /** When true, SNR-based interpretation is last-hop only (remote nodes). */
   isLastHop?: boolean;
   /** Extra lines under cause (template-only; render muted in UI). */
@@ -200,9 +200,9 @@ export function diagnoseConnectedNode(
       });
     }
 
-    const totalSent = (meshcoreStats.nSentFlood ?? 0) + (meshcoreStats.nSentDirect ?? 0);
-    if (totalSent >= 20 && (meshcoreStats.nSentFlood ?? 0) / totalSent > 0.9) {
-      const floodPct = Math.round(((meshcoreStats.nSentFlood ?? 0) / totalSent) * 100);
+    const totalSent = meshcoreStats.nSentFlood + meshcoreStats.nSentDirect;
+    if (totalSent >= 20 && meshcoreStats.nSentFlood / totalSent > 0.9) {
+      const floodPct = Math.round((meshcoreStats.nSentFlood / totalSent) * 100);
       findings.push({
         condition: 'Excessive Flooding',
         cause: `${floodPct}% of transmissions are flood-routed — direct routing may not be established with nearby nodes.`,
@@ -210,6 +210,19 @@ export function diagnoseConnectedNode(
         causeI18n: {
           key: 'diagnosticsPanel.rfCause.excessiveFlooding',
           params: { percent: floodPct },
+        },
+      });
+    }
+
+    const queueLen = meshcoreStats.queueLen;
+    if (typeof queueLen === 'number' && queueLen > 200) {
+      findings.push({
+        condition: 'High Companion TX Queue',
+        cause: `Companion outbound queue depth is ${queueLen}/256 — traffic may be delayed or dropped.`,
+        severity: queueLen > 250 ? 'error' : 'warning',
+        causeI18n: {
+          key: 'diagnosticsPanel.rfCause.highCompanionTxQueue',
+          params: { queueLen },
         },
       });
     }
@@ -243,7 +256,7 @@ export function diagnoseOtherNode(
     const cu = node.channel_utilization ?? 0;
     const tx = node.air_util_tx ?? 0;
     const snrMeaningful = snrMeaningfulForNodeDiagnostics(node, context?.capabilities);
-    const snr = node.snr ?? 0;
+    const snr = node.snr;
 
     if (cu > HIGH_CU && tx < LOW_TX) {
       findings.push({

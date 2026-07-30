@@ -15,6 +15,7 @@ import {
   initReduceMotionDefaultIfAbsent,
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
+import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
 const App = lazy(() => import('./App'));
@@ -31,12 +32,18 @@ function AppBootSplash() {
 }
 
 if (import.meta.env.DEV) {
-  void import('react').then((React) =>
-    import('react-dom').then((ReactDOM) =>
-      import('@axe-core/react').then((axe) => axe.default(React.default, ReactDOM.default, 1000)),
-    ),
-  );
+  void import('react')
+    .then((React) =>
+      import('react-dom').then((ReactDOM) =>
+        import('@axe-core/react').then((axe) => axe.default(React.default, ReactDOM.default, 1000)),
+      ),
+    )
+    .catch((e: unknown) => {
+      console.warn('[main] axe-core load failed:', e instanceof Error ? e.message : String(e));
+    });
 }
+
+installRendererUnhandledRejectionLogger();
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
@@ -48,7 +55,9 @@ void (async () => {
   runConnectionPanelStorageMigrations();
 
   // Kick App chunk download immediately after locale (parallel with splash paint).
-  void import('./App');
+  void import('./App').catch((e: unknown) => {
+    console.error('[main] App chunk prefetch failed:', e instanceof Error ? e.message : String(e));
+  });
 
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>
@@ -61,4 +70,9 @@ void (async () => {
       </ErrorBoundary>
     </I18nextProvider>,
   );
-})();
+})().catch((e: unknown) => {
+  console.error(
+    '[main] renderer boot failed:',
+    e instanceof Error ? (e.stack ?? e.message) : String(e),
+  );
+});

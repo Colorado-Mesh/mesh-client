@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
     "reticulumSection": "Reticulum — Zásobník retikula",
     "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
-    "reticulumPropagationHelp": "Zvolte způsob synchronizace propagačních uzlů a v případě potřeby vytáhněte nejnovější propagační data.",
     "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Na kartě Reticulum řádky zařízení zahrnují výstup postranního vozíku a stav místního rozhraní. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "autoPruneUnheardContactsDaysAria": "Automaticky oříznout neslyšené kontakty při spuštění, starší než {{days}} dnů",
     "capTotalContactsCountAria": "Omezit celkový počet kontaktů, ponechat naposledy zobrazené {{count}} kontakty",
@@ -373,7 +372,10 @@
     "restoreTheme": "Obnovit uložený kontrolní bod barev",
     "noSavedThemeTooltip": "Zatím nejsou uloženy žádné barvy — pomocí tlačítka Uložit vytvořte kontrolní bod",
     "saveThemeButton": "Uložit",
-    "restoreThemeButton": "Obnovit"
+    "restoreThemeButton": "Obnovit",
+    "reticulumPropagationHelp": "Nakonfigurujte vzdálené uzly šíření LXMF pro offline DM. Místní propagace je pouze schránka tohoto zařízení — nenahrazuje vzdálený uzel.",
+    "use24HourTime": "24hodinový čas",
+    "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "Kliknutím vyberte jazyk",
     "switchToMeshtasticWithUnread": "Přepnout na Meshtastic, {{count}} nepřečteno",
     "switchToMeshCoreWithUnread": "Přepnout na MeshCore, {{count}} nepřečteno",
-    "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno"
+    "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno",
+    "tabWithUnread": "{{label}}, {{count}} nepřečteno"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -437,7 +440,6 @@
     "jumpToQuotedMessage": "Přejít na citovanou zprávu od {{sender}}",
     "replyToMessage": "Odpovědět na zprávu",
     "addReaction": "Přidejte reakci",
-    "emojiButton": "Emoji",
     "sendButton": "Poslat",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -465,8 +467,6 @@
     "dmNodeLastHeard": "Naposledy slyšeno {{time}}",
     "dmNodeBattery": "{{pct}}% baterie",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} skoků",
     "muteConversation": "Ztlumit tuto konverzaci",
     "unmuteConversation": "Zrušit ztlumení této konverzace",
     "starMessage": "Označit zprávu",
@@ -559,7 +559,9 @@
       "pkiMissingRecipientKey": "Nelze odeslat šifrovanou zprávu — v NodeDB chybí veřejný klíč příjemce.",
       "pkiFailed": "Šifrování PKI pro tuto zprávu selhalo.",
       "noChannel": "Pro směrování této zprávy není k dispozici žádný kanál.",
-      "timeout": "Časový limit zprávy v rádiu vypršel."
+      "timeout": "Časový limit zprávy v rádiu vypršel.",
+      "rateLimited": "Rádio posílá zprávy omezující frekvenci. Zkus to znovu za chvíli.",
+      "noInterface": "Pro odeslání této zprávy není k dispozici žádné rádiové rozhraní."
     },
     "waitingMessagesQueued": "{{count}} zprávy ve frontě v rádiu",
     "waitingMessagesSyncProgress": "Synchronizace {{processed}} / {{total}} z rádia…",
@@ -587,13 +589,11 @@
     "floodScopeOverrideLabel": "Rozsah Flood pro tuto zprávu",
     "floodScopeOverrideAria": "Přepsání rozsahu Flood podle zprávy",
     "floodScopeOverrideDefault": "Výchozí rozsah",
-    "floodScopeOverrideUnscoped": "Unscoped",
     "rncp": {
       "sendFile": "Odeslat soubor",
       "sendFileAria": "Odeslat soubor na {{name}} pomocí rncp",
       "pendingOffersBadgeAria_one": "{{count}} čeká na nabídku příchozího souboru od tohoto kolegy",
       "pendingOffersBadgeAria_other": "{{count}} čekající nabídky příchozích souborů od tohoto kolegy",
-      "destinationLabel": "rncp cílový hash",
       "rememberAddress": "Zapamatovat si tuto adresu",
       "rememberAddressAria": "Zapamatovat si tento cíl RNCP pro tohoto kolegu",
       "chooseAndSend": "Vyberte soubor a odešlete...",
@@ -602,7 +602,23 @@
       "sendFailed": "Odeslání se nezdařilo: {{error}}",
       "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
       "requestEnable": "Požádat o povolení",
-      "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru"
+      "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru",
+      "destinationLabel": "Cíl příjmu rncp partnera",
+      "destinationHelp": "Ne jejich hash Chat/LXMF. Použít povolení požadavku – mesh-client to po přijetí automaticky sdílejí. Nebo vložte z jejich Remote → My rncp cílového příjmu.",
+      "activeTransfersBadgeAria_one": "{{count}} aktivní přenos souborů s tímto kolegou",
+      "activeTransfersBadgeAria_other": "{{count}} aktivní přenosy souborů s tímto kolegou",
+      "transfersTitle": "Převody",
+      "useFromChat": "Použít cíl z chatu",
+      "useFromChatAria": "Najděte a použijte cíl příjmu rncp sdílený v tomto chatu",
+      "noShareInChat": "V tomto chatu zatím není žádný řádek sdílení rncp. Požádejte je, aby vložili cíl pro příjem (Remote → My rncp receive destination) nebo vložte 32místný hash níže.",
+      "savedForOtherPeers": "Uložené cíle příjmu existují i pro jiné chaty ({{peers}}). Otevřete DM tohoto kolegy pro automatické vyplňování.",
+      "transferProgressAria": "Průběh převodu pro {{file}}: {{progress}} procent",
+      "transferCompletedToast": "Soubor odeslán: {{file}}",
+      "transferFailedToast": "Přenos souboru se nezdařil ({{file}}): {{error}}",
+      "forgetAddress": "Zapomenout uložený cíl",
+      "forgetAddressAria": "Odebrat uložený cíl příjmu rncp pro tohoto kolegu",
+      "forgotAddressToast": "Zapomněli jste uložený cíl rncp pro tohoto kolegu.",
+      "filledFromChatToast": "Vyplněný cíl z chatu (neuloženo — zaškrtněte Nezapomeňte jej ponechat)."
     },
     "shareLocation": "Sdílejte polohu",
     "shareLocationLabel": "📍 Sdílená poloha",
@@ -615,7 +631,17 @@
     "floodScopeOverrideCustomLabel": "Vlastní hashtag Flood rozsahu",
     "floodScopeOverrideCustomPlaceholder": "#myregion",
     "floodScopeOverrideCustomApply": "Použijte rozsah",
-    "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion)."
+    "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion).",
+    "dmNodeHops_one": "{{count}} skok",
+    "dmNodeHops_few": "{{count}} skoky",
+    "dmNodeHops_many": "{{count}} skoků",
+    "dmNodeHops_other": "{{count}} skoků",
+    "notificationDmTitle": "DM od {{sender}}",
+    "notificationMessageTitle": "Zpráva od {{sender}}",
+    "floodScopeOverrideUnscoped": "Unscoped",
+    "emojiButton": "Emoji",
+    "reticulumSendStoredAtPn": "Uloženo v propagačním uzlu",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -624,7 +650,10 @@
     "locationCard": {
       "alt": "Dlaždice mapy sdílené polohy",
       "openMaps": "Otevřít v Mapách"
-    }
+    },
+    "directImage": "Obrázek: {{name}}",
+    "directImageOpen": "Otevřít obrázek",
+    "reticulumAttachmentImage": "Přiložený obrázek: {{name}}"
   },
   "common": {
     "close": "Blízko",
@@ -715,7 +744,6 @@
     "submit": "Předložit",
     "rePairDevice": "Odebrat a znovu spárovat zařízení",
     "mqttConnection": "Připojení MQTT",
-    "server": "Server",
     "from": "Z",
     "topic": "Téma",
     "disconnectMqtt": "Odpojit",
@@ -1067,7 +1095,27 @@
       "backboneDirectoryHint": "Další páteřní centra komunity naleznete na adrese directory.rns.recipes. Huby Yggdrasil (například Yggdrasil_Ashburn_VA) potřebují spuštěný místní tunel Yggdrasil — příručka Reticulum doporučuje vazbu na rozhraní vašeho tunelu (často tun0).",
       "localOfflineRowBleBondStale": "Vazba Bluetooth je zastaralá – zapomeňte na tento RNode v Nastavení systému → Bluetooth a poté znovu spárujte s novým kódem PIN (OS může stále zobrazovat Spárováno).",
       "addDefaultHubsAria": "Synchronizovat výchozí páteřní uzly Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); zakázat vyřazené koncové body testnetu",
-      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet."
+      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet.",
+      "modeDescriptions": {
+        "full": "Účast na plné síti. Oznamuje trasy a automatické propagace. Používá se pro primární uzly a opakovače.",
+        "access_point": "Ticho, dokud nebudete dotázáni. Krátká cesta vyprší. Ideální pro širokopásmová rádia sloužící občasným uživatelům.",
+        "roaming": "Mobilní rozhraní. Krátké časové limity cesty a aktivní zjišťování. Použijte pro ruční nebo vozidlové RNode.",
+        "boundary": "Hranice sítě. Překlenuje odlišné segmenty a zároveň izoluje místní provoz. Použijte pro internetové/LoRa odkazy.",
+        "gateway": "Hledání cesty pro klienty. Řeší neznámé cíle jménem připojených uzlů.",
+        "point_to_point": "Přímé spojení mezi dvěma uzly. Žádné směrování ani oznamování šíření."
+      },
+      "networkName": "Název sítě",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Název sítě",
+      "passphrase": "Přístupová fráze",
+      "passphrasePlaceholder": "Autentizace IFAC",
+      "passphraseAria": "Heslo IFAC",
+      "showPassphrase": "Zobrazit přístupovou frázi",
+      "hidePassphrase": "Skrýt přístupovou frázi",
+      "advanced": "Advanced",
+      "advancedHint": "Další klíč= páry hodnot pro toto rozhraní, jeden na řádek. Známá pole (hostitel, režim, název sítě, …) zůstávají ve formuláři výše.",
+      "advancedAria": "Pokročilé možnosti klíč-hodnota rozhraní",
+      "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1143,9 @@
       "offlineHintWifi": "Zkontrolujte, zda je RNode v síti LAN, zapnutý a dosažitelný na nakonfigurované IP (výchozí port TCP 7633, nikoli 4242). Aktualizuj hostitele níže, pokud mu služba DHCP přidělila novou adresu nebo znovu poskytl Wi-Fi v → administraci Reticulum.",
       "tcpUnreachable": "{{name}}: Nedosažitelné centrum TCP ({{host}}:{{port}})",
       "tcpUnreachableHint": "Vzdálená instance Reticulum může být offline nebo blokovat připojení. Zakažte toto rozhraní nebo ověřte hostitele a port.",
-      "offlineHintBleBondStale": "macOS stále zobrazuje tento RNode jako Spárovaný, ale klíče Bluetooth se již neshodují (Peer odstranil informace o párování). Zapomeňte zařízení v Nastavení systému → Bluetooth, uveďte RNode do režimu párování (Admin → Bluetooth → Zahájit párování nebo podržte tlačítko ~7 s), poté restartujte zásobník a po zobrazení výzvy zadejte nový 6místný PIN.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Odkazy ble RNode mohou trvat až 60 sekund po spuštění zásobníku (okno PASKEY OS). Pokud se zobrazí výzva, zadejte aktuální KÓD PIN RNode — nikdy 123456. To je normální, nejedná se o chybu. Přístroj se může objevit v nastavení systému až po úspěšném spojení."
+      "connectingHintBle": "Spojení BLE RNode mohou trvat až 60 sekund po spuštění zásobníku (okno passkey operačního systému). Pokud se zobrazí výzva, zadejte aktuální PIN kód RNode — nikdy 123456. To je normální, nejedná se o chybu. Přístroj se může objevit v nastavení systému až po úspěšném spojení.",
+      "offlineHintBle": "Chcete-li tuto chybu odstranit, možná budete muset toto rozhraní odebrat a přidat jej zpět (Vybrat zařízení), aby se obnovilo uložené ID Bluetooth a poté restartujte zásobník. Operační systém může vyžadovat 6místný kód PIN Bluetooth (macOS, Windows nebo Linux). RNode generuje nový kód při každém párování — nikdy nepoužívejte 123456 (to je výchozí Meshtastic, ne RNode). Před připojením této aplikace se RNode nemusí objevit v systémovém nastavení → Bluetooth; dialogové okno OS se zobrazí, když se zásobník spáruje. Bezhlavá rádia: připojte USB → Reticulum Admin → Bluetooth → Spustit párování → zadejte PIN zobrazený na panelu Admin (ne na displeji rádia) do dialogu OS. Rádia s displejem: podržte tlačítko ~7 s na zařízeních Heltec (časování se liší; ~10 s na mnoha deskách místo toho umožňuje Wi-Fi AP), přečtěte si PIN na obrazovce a poté jej zadejte do dialogu OS. Před opakováním pokusu vymažte neúspěšné vazby v nastavení Bluetooth operačního systému.",
+      "offlineHintBleBondStale": "macOS stále zobrazuje tento RNode jako spárovaný, ale klíče Bluetooth se již neshodují (peer odstranil informace o párování). Zapomeňte zařízení v Nastavení systému → Bluetooth, přepněte RNode do režimu párování (Admin → Bluetooth → Spustit párování nebo držte tlačítko ~7 s), poté odeberte a znovu přidejte toto rozhraní (Vybrat zařízení), restartujte zásobník a zadejte nový 6místný PIN, když budete vyzváni."
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
@@ -1199,20 +1247,21 @@
     "coloradoRegionGateStay": "Jsem v Coloradu",
     "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
     "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
       "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu."
     },
     "reticulumStackRunningAs": "Běží — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…"
+    "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…",
+    "server": "Server",
+    "reticulumSharedInstance": {
+      "title": "Používání sdílené instance jiné aplikace",
+      "body": "Tato aplikace je připojena jako klient sdílené instance Reticulum jiné aplikace. Místní TCP rozbočovače z konfigurace této aplikace nejsou v tomto režimu spuštěny — provoz může používat pouze zásobník druhé aplikace.",
+      "networkHint": "Nebo otevřete instanci Network → Share Reticulum a vypněte Sdílení ručně a poté restartujte zásobník. Můžete také zcela ukončit MeshChat, Ratspeak nebo samostatný rnsd a restartovat.",
+      "disableShare": "Vypnout sdílení instance a restartovat",
+      "disableShareAria": "Vypněte možnost Sdílet instanci a restartujte zásobník",
+      "disableFailed": "Sdílení instance se nezdařilo vypnout."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1356,7 +1405,8 @@
       "potentialMeshcoreRepeaterConflict": "Potenciální konflikt MeshCore Repeater",
       "elevatedNoiseFloor": "Zvýšená hluková podlaha",
       "excessiveFlooding": "Nadměrné záplavy",
-      "reticulumTrafficDetected": "Zjištěn provoz Reticulum"
+      "reticulumTrafficDetected": "Zjištěn provoz Reticulum",
+      "highCompanionTxQueue": "Fronta High Companion TX"
     },
     "rfCause": {
       "channelUtilizationSpike": "Aktuální {{current}}% je více než 2× nedávný průměr ({{average}}%) – možné přetížení nebo nárůst rušení.",
@@ -1370,7 +1420,8 @@
       "widebandNoiseFloor": "Širokopásmové rušení (vadná elektronika, šum ve vedení atd.) zvyšující hladinu hluku.",
       "fringeWeakCoverage": "Uzel je příliš daleko nebo je špatně připojen ke zbytku sítě.",
       "elevatedNoiseFloor": "Podlaha rádiového šumu je {{noiseFloor}} dBm — zvýšený efektivní rozsah snížení rušení.",
-      "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly."
+      "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly.",
+      "highCompanionTxQueue": "Hloubka doprovodné odchozí fronty je {{queueLen}}/256 — provoz může být zpožděn nebo vynechán."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic uzel vysílající na této frekvenci. Odesílatel: {{sender}}. {{proximity}}Tento uzel se může nacházet v oblasti opakovače MeshCore.",
@@ -1445,6 +1496,10 @@
       "excessiveFlooding": {
         "title": "Povolit vytvoření přímých tras",
         "description": "Poměr zaplavení je velmi vysoký — počkejte, až se v uzlu nahromadí kontakty s přímou cestou, nebo zkontrolujte blízkost opakovače."
+      },
+      "highCompanionTxQueue": {
+        "title": "Snižte odchozí provoz nebo zkontrolujte RF odkaz",
+        "description": "Doprovodná fronta TX je téměř plná — pozastavte odesílání, omezte floodování nebo zkontrolujte rušení a slabé RF spoje."
       }
     },
     "cuHistoryHeading": "Využití kanálu (posledních 24 hodin)",
@@ -1523,7 +1578,10 @@
         "transportSaturatedShareInstance": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu). Sdílená instance je zapnutá — ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, rnsd) a restartujte zásobník.",
         "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
         "bleBondRemoved": "Vazba BLE RNode „{{name}}“ je zastaralá – zapomeňte v nastavení Bluetooth v operačním systému a znovu spárujte",
-        "blePairingTimedOut": "Vypršel časový limit výměny klíčů ble RNode „{{name}}“ — zadejte aktuální PIN (ne 123456) a znovu spárujte"
+        "blePairingTimedOut": "Vypršel časový limit výměny klíčů ble RNode „{{name}}“ — zadejte aktuální PIN (ne 123456) a znovu spárujte",
+        "sidecarUnhealthy": "Postranní vozík Reticulum běží, ale nereaguje na zdravotní prohlídky",
+        "propagationSyncStuck": "Synchronizace propagačního uzlu se zasekla při vytváření odkazu",
+        "propagationSyncFailing": "Synchronizace propagačního uzlu se nezdařila"
       }
     },
     "routingPort": {
@@ -1545,7 +1603,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Posun vzdálenosti",
     "km": "km",
-    "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50)."
+    "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50).",
+    "ignoreMqttToggle": "Ignorovat MQTT",
+    "ignoreMqttHelp": "Zobrazit uzly pouze přes MQTT šedě a vyloučit je z diagnostiky"
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -2450,6 +2510,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Pokročilý hosting PN (nebezpečná zóna)",
+      "peeringCost": "Peeringové náklady",
+      "maxPeeringCost": "Maximální náklady na peering",
+      "autopeer": "Autopeer s objevenými PN",
+      "autopeerMaxdepth": "Autopeer max hops",
+      "maxPeers": "Max autopeer vrstevníci",
+      "stampCost": "Náklady na propagační známku",
+      "stampFlex": "Flexibilita nákladů na razítko",
+      "storageMb": "Limit úložiště zpráv (MB)",
+      "propagationLimitKb": "Limit šířených zpráv (kB)",
+      "syncLimitKb": "Limit synchronizovaného přenosu (kB)",
+      "deliveryLimitKb": "Limit převodu doručení (KB)",
+      "announceIntervalSec": "Interval oznámení PN (sekundy)",
+      "announceAtStart": "Oznamte, kdy začíná hosting",
+      "fromStaticOnly": "Pouze od statických vrstevníků",
+      "authRequired": "Je vyžadováno ověření",
+      "enforceStamps": "Vynutit razítka zpráv",
+      "enforceRatchets": "Prosadit ráčny",
+      "nodeName": "PN oznámit jméno",
+      "staticPeers": "Statické partnerské hash (jeden 32hex na řádek)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Uložte zásady hostování",
+      "saving": "Ukládání…",
+      "saveAria": "Uložit zásady hostování PN",
+      "saveOk": "Zásady hostování PN uloženy.",
+      "saveFailed": "Zásady hostování PN nelze uložit.",
+      "saveConfirmTitle": "Uložit zásady hostování PN?",
+      "saveConfirmBody": "Použít nastavení partnerského vztahu, úložiště, razítka a oznámení na uzel živého šíření? Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů.",
+      "saveConfirm": "Uložit zásady",
+      "error": {
+        "peeringCostExceedsMax": "Cena partnerského vztahu nesmí překročit maximální cenu partnerského vztahu.",
+        "stampFlexExceedsCost": "Flexibilita razítka nemůže překročit cenu razítka.",
+        "autopeerMaxdepth": "Maximální skoky Autopeeru jsou mimo rozsah.",
+        "maxPeers": "Maximální počet vrstevníků je mimo dosah.",
+        "storageMb": "Limit úložiště zpráv je mimo rozsah.",
+        "propagationLimit": "Limit šířených zpráv je mimo rozsah.",
+        "syncLimit": "Limit synchronizovaného přenosu je mimo rozsah.",
+        "deliveryLimit": "Limit převodu dodávky je mimo rozsah.",
+        "announceInterval": "Interval oznámení PN je mimo rozsah.",
+        "staticPeersTooMany": "Příliš mnoho statických hodnot hash (max. 256).",
+        "staticPeerInvalid": "Jeden nebo více statických hodnot hash je neplatných (potřebuje 32 hexadecimálních znaků).",
+        "nodeNameInvalid": "Název oznámení PN obsahuje neplatné znaky.",
+        "nodeNameTooLong": "Název oznámení PN je příliš dlouhý.",
+        "nonFiniteNumber": "Jedno nebo více číselných polí je neplatných."
+      },
+      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů."
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2805,11 @@
     "stableStability": "Stabilní",
     "moderateStability": "Mírný",
     "unstableStability": "Nestabilní",
-    "unknownStability": "Neznámý"
+    "unknownStability": "Neznámý",
+    "hybridMqttPathTooltip": "Přijato prostřednictvím RF; některé pakety používají reléovou cestu MQTT",
+    "hybridMqttPathAria": "Cesta RF a MQTT",
+    "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
+    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -2785,7 +2897,8 @@
     "hybridMqttPathTooltip": "Přijato prostřednictvím RF; některé pakety používají reléovou cestu MQTT",
     "hybridMqttPathAria": "Cesta RF a MQTT",
     "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
-    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
+    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% zdraví připojení"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2980,17 @@
       "contentSourceNotFromPicker": "Před použitím vyberte složku pomocí tlačítka Vybrat složku.",
       "contentSourceNone": "Nebyla vybrána žádná složka",
       "contentSourceRequired": "Před zahájením hostování Nomad vyberte složku stránek."
-    }
+    },
+    "sortLastHeard": "Poslední slyšení",
+    "sortHops": "Skoky",
+    "sortName": "Název",
+    "sortToolbar": "Seřadit seznam uzlů",
+    "sortByLastHeardAsc": "Seřadit podle posledního slyšeného, nejstarší jako první",
+    "sortByLastHeardDesc": "Seřadit podle posledního slyšeného, nejnovější jako první",
+    "sortByHopsAsc": "Třídit podle skoků, nejdříve nejblíže",
+    "sortByHopsDesc": "Třídit podle skoků, nejdále",
+    "sortByNameAsc": "Seřadit podle názvu: A až Z",
+    "sortByNameDesc": "Řadit podle názvu (Z až A)"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
@@ -3652,7 +3775,18 @@
     "byteLengthTooltip": "{{bytes}} bajtů RAW",
     "routeBarFloodTooltip": "Paket směrovaný povodněmi",
     "routeBarDirectTooltip": "Přímo směrovaný paket",
-    "routeBarUnknownTooltip": "Neznámý typ trasy"
+    "routeBarUnknownTooltip": "Neznámý typ trasy",
+    "crc32Fingerprint": "Otisk CRC32:",
+    "innerFirstU32Debug": "První interní u32 (ladění):",
+    "destHash": "Cílový hash:",
+    "srcHash": "Zdrojový hash:",
+    "channelHash": "Hash kanálu:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Bajty šifrovaného textu:",
+    "senderKeyPrefix": "Klíč odesílatele (prefix):",
+    "control": "Řízení:",
+    "advertTs": "Čas ADVERT:",
+    "advertLatLon": "Zem. šířka/délka ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3950,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikona avatara",
     "iconNameAria": "Ikona avatara protějšku",
-    "iconCircle": "Kruh",
     "iconStar": "Hvězdička",
     "iconHeart": "Srdce",
     "iconShield": "Štít",
-    "iconUser": "Uživatel"
+    "iconNone": "Žádný",
+    "iconSaveFailed": "Ikonu avatara nelze uložit.",
+    "iconUser": "Lidé"
   },
   "reticulumPropagation": {
     "preferred": "Preference",
@@ -3830,7 +3965,6 @@
     "syncNowFor": "Synchronizovat zprávy z {{name}}",
     "addNode": "Přidat uzel",
     "addNodeLabel": "Přidejte uzel šíření pomocí hash",
-    "localInboxStats": "{{count}} ve frontě · {{bytes}} bajtů",
     "refreshing": "Osvěžující…",
     "refreshAria": "Obnovit uzly šíření",
     "syncStatusEstablishing": "Navazování připojení k uzlu propagace…",
@@ -3853,7 +3987,10 @@
     "notice": {
       "body": "Není nakonfigurován žádný propagační uzel. Offline nebo nedosažitelné protějšky potřebují propagační uzel pro doručování LXMF v obchodě a dopředu.",
       "openSettings": "Nastavit propagaci",
-      "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum"
+      "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum",
+      "bodyWithDiscoveries": "Není nakonfigurován žádný propagační uzel. {{count}} objeveno v síti — přidej ho níže nebo otevři Nastavení sítě.",
+      "addClosest": "Přidat nejblíže objevené",
+      "addClosestAria": "Přidejte nejbližší objevený propagační uzel a nastavte jej jako preferovaný"
     },
     "rename": "Přejmenovat",
     "renameLabel": "Název uzlu šíření",
@@ -3877,7 +4014,6 @@
       "unknown": "neznámý",
       "online": "online"
     },
-    "syncLocalNotSupported": "Místní šíření je vaše offline doručená pošta – nelze jej synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
     "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
     "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation.",
     "syncPeeringStampFailed": "Nepodařilo se vytvořit peeringové razítko pro tento uzel šíření – zkuste to znovu za chvíli.",
@@ -3885,7 +4021,44 @@
     "renameFailed": "Nelze přejmenovat uzel šíření.",
     "deleteFailed": "Nelze odstranit uzel šíření.",
     "addFailed": "Nelze přidat uzel šíření.",
-    "addNodePlaceholder": "32znakový cílový hash lxmf.propagation"
+    "addNodePlaceholder": "32znakový cílový hash lxmf.propagation",
+    "syncEstablishIdentityMissing": "Synchronizace propagace nemohla ověřit důkaz odkazu — identita uzlu chyběla. Počkejte na oznámení a zkuste to znovu.",
+    "syncEstablishInvalidProof": "Synchronizace propagace obdržela neplatný důkaz odkazu z uzlu — zkuste to znovu za chvíli.",
+    "syncOfferNoIdentity": "Propagační uzel odmítl nabídku synchronizace — identifikace se nezdařila. Počkejte na oznámení a zkuste to znovu.",
+    "syncOfferNoAccess": "Uzel propagace byl odepřen přístup k synchronizaci.",
+    "syncOfferInvalidKey": "Propagační uzel odmítl peeringový klíč — zkontrolujte náklady peeringu a zkuste to znovu.",
+    "syncOfferThrottled": "Propagační uzel omezil požadavek na synchronizaci — zkuste to znovu později.",
+    "syncOfferInvalidData": "Propagační uzel odmítl data nabídky synchronizace.",
+    "syncOfferInvalidStamp": "Propagační uzel odmítl peeringové razítko — zkuste to znovu za chvíli.",
+    "discoveredTitle": "Nalezeno v síti",
+    "discoveredEmpty": "Dosud nebylo vyslechnuto žádné oznámení lxmf.propagation. Udržujte zásobník připojený nebo přidejte uzel pomocí hash.",
+    "discoveredInactive": "neaktivní",
+    "discoveredHops": "{{hops}} skoků",
+    "discoveredPeeringCost": "náklady na peering {{cost}}",
+    "discoveredAdd": "Přidat",
+    "discoveredAddAria": "Přidat objevený propagační uzel {{name}}",
+    "discoveredAddPrefer": "Přidat a preferovat",
+    "discoveredAddPreferAria": "Přidat objevený propagační uzel {{name}} a nastavit jako preferovaný",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Synchronizace propagace nezískala žádný důkaz odkazu z uzlu — vaše identita může potřebovat nové oznámení nebo chybí cesta zpět. Zkuste Network → Announce nyní a poté Sync znovu.",
+    "syncOfferUnknown": "Propagační uzel vrátil neznámou chybu nabídky synchronizace — zkuste to znovu za chvíli.",
+    "syncPathHint": "Vzdálená synchronizace vyžaduje cestu oběma směry. Synchronizace nejprve odešle krátké oznámení LXMF, aby mohl uzel odpovědět.",
+    "setPreferredFailed": "Nelze nastavit preferovaný uzel šíření.",
+    "preferredLocalWarning": "Upřednostňovaný uzel je pouze místní — offline kolegové stále potřebují vzdálený propagační uzel pro doručování v obchodě.",
+    "localHostStats": "{{count}} ve frontě · {{bytes}} bajtů",
+    "localHostName": "Uzel šíření hostitele",
+    "localHostHint": "Je-li povoleno, toto zařízení se oznámí jako uzel šíření LXMF a obsluhuje /offer a /get. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání před nedostupnými partnery.",
+    "syncPeerCostExceedsMax": "Náklady na peering tohoto uzlu propagace jsou vyšší než vaše maximální náklady na peering – zvyšte maximum v části Síť → Pokročilé hostování PN nebo vyberte jiný uzel.",
+    "offerUnsupported": "Tento cíl nepodporuje synchronizaci LXMF /offer — mesh-client jej nemůže použít jako uzel propagace.",
+    "offerProbeTimeout": "Při kontrole / nabídněte podporu vypršel časový limit — uzel může být nedostupný. Zkuste to znovu, až bude k dispozici cesta.",
+    "offerProbeFailed": "Nepodařilo se ověřit / nabídnout podporu pro tento uzel šíření – zkuste to znovu za chvíli.",
+    "enableLocalHostConfirmTitle": "Povolit místní hosting uzlu propagace?",
+    "enableLocalHostConfirmBody": "Toto zařízení se oznámí jako uzel šíření LXMF a bude sloužit /offer a /get. To využívá úložiště, CPU a může být rovnocenné s jinými uzly v síti. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání, pokud nemáte v úmyslu hostovat.",
+    "enableLocalHostConfirm": "Povolit hosting",
+    "addProbing": "Kontrola podpory /offer…",
+    "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
+    "enableFailed": "Uzel šíření nelze povolit.",
+    "disableFailed": "Uzel šíření nelze zakázat."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",
@@ -4109,7 +4282,8 @@
     "pathHashCliGet": "Získat režim hash cesty",
     "pathHashCliSet0": "Nastavit režim hash cesty 1 bajt",
     "pathHashCliSet1": "Nastavit režim hash cesty 2bajtový",
-    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt"
+    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} nepřečteno"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",
@@ -4201,7 +4375,10 @@
     "backupRemoved": "Záloha odstraněna.",
     "meshcorePrivateKeyHint": "Pro zobrazení klíčového materiálu použijte Exportovat soukromý klíč níže. Zálohování ukládá celý pár klíčů do tohoto počítače.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Nebyla nalezena žádná záloha",
+    "missingKeyMaterial": "Chybějící klíčový materiál",
+    "unknownError": "Neznámá chyba"
   },
   "sidebar": {
     "disabledTabTooltip": "Není k dispozici v tomto režimu"
@@ -4318,7 +4495,12 @@
     "chartAriaSignal": "Tabulka kvality signálu: nejnovější SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} bodů",
     "chartAriaTempHumidity": "Tabulka teploty a vlhkosti: nejnovější teplota {{temperature}}, vlhkost {{humidity}} procent, {{count}} bodů",
     "chartAriaPressure": "Graf barometrického tlaku: nejnovější {{pressure}} hPa, {{count}} bodů",
-    "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů"
+    "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Exportovat CSV",
+    "emptyWaitingConnected": "Zatím nejsou žádná telemetrická data. Čeká se na data ze zařízení…",
+    "emptyWaitingDisconnected": "Zatím nejsou žádná telemetrická data. Připojte zařízení pro zobrazení metrik v reálném čase."
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
@@ -4475,7 +4657,9 @@
     "directNoticeUnsupported": "Tento rozbočovač nepodporuje přímé OZNÁMENÍ (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Odstraněno z místnosti nábojem (kop, zákaz nebo vzdálená část)."
+      "removedFromRoom": "Odstraněno z místnosti nábojem (kop, zákaz nebo vzdálená část).",
+      "removedFromRoomSystem": "Centrum vás oddělilo od {{room}}.",
+      "hubParted": "Rozbočovač vás oddělil od místnosti."
     },
     "errors": {
       "linkProofTimeout": "Vypršel časový limit čekání na odkaz na centrum (důkaz odkazu). Zkuste to znovu nebo zkontrolujte cestu/přechody k rozbočovači.",
@@ -4682,7 +4866,9 @@
       "offerToast": "Příchozí nabídka souboru: {{file}}",
       "copyInstructionsAria": "Kopírovat pokyny pro povolení příjmu souboru",
       "copyInstructions": "Kopírovat pokyny",
-      "instructionsCopied": "Pokyny zkopírovány."
+      "instructionsCopied": "Pokyny zkopírovány.",
+      "receiveDestSharedToast": "Uložen rncp receive destination uživatele {{peer}} — nyní můžete odeslat soubor.",
+      "receiveDestShareFailed": "Nelze uložit cíl příjmu rncp partnera."
     },
     "enableRequest": {
       "title": "Povolit příjem souborů?",
@@ -4699,7 +4885,9 @@
       "enableFailed": "Nelze povolit příjem souboru: {{error}}",
       "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
       "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
-      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu."
+      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu.",
+      "lxmfShareBody": "Příjem souborů je povolen. Zde je můj rncp receive destination (mesh-client jej pro vás uloží).",
+      "shareDestWarning": "Pokud povolíte, mesh-client odešle váš cíl příjmu rncp tomuto partnerovi, aby mohl automaticky vyplnit soubor."
     },
     "saved": {
       "labelPlaceholder": "Označení",
@@ -4754,5 +4942,12 @@
     "direct": "Řídit",
     "segmentTooltip": "Hash cesty {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} je online",
+    "onlineBody": "{{protocol}} uzel byl online",
+    "offlineTitle": "{{name}} přešel do režimu offline",
+    "offlineBody": "Naposledy slyšet: {{time}}",
+    "unknown": "neznámý"
   }
 }

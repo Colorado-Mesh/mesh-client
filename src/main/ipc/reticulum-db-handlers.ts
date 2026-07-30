@@ -19,6 +19,60 @@ import { assertIpcSender } from '../validate-ipc-sender';
 const REMOTE_ADDRESS_SERVICES = new Set<RemoteAddressService>(['rnsh', 'rncp']);
 const REMOTE_INBOUND_DECISIONS = new Set<RemoteInboundDecision>(['allow', 'block']);
 
+interface ParsedRemoteAddressUpsert {
+  id: string;
+  label: string;
+  service: RemoteAddressService;
+  destinationHash: string;
+  identityHash: string | null;
+  lxmfPeerHash: string | null;
+  lastUsedAt: number | null;
+}
+
+function parseRemoteAddressUpsertRow(row: unknown): ParsedRemoteAddressUpsert {
+  if (!row || typeof row !== 'object') {
+    throw new Error('db:upsertReticulumRemoteAddress: row must be an object');
+  }
+  const r = row as Record<string, unknown>;
+  const destinationHash = canonicalizeHash32(r.destination_hash);
+  if (!destinationHash) {
+    throw new Error('db:upsertReticulumRemoteAddress: destination_hash invalid');
+  }
+  const service = r.service;
+  if (
+    typeof service !== 'string' ||
+    !REMOTE_ADDRESS_SERVICES.has(service as RemoteAddressService)
+  ) {
+    throw new Error('db:upsertReticulumRemoteAddress: service invalid');
+  }
+  const label = typeof r.label === 'string' ? r.label.trim().slice(0, 128) : '';
+  if (!label) {
+    throw new Error('db:upsertReticulumRemoteAddress: label required');
+  }
+  const identityHash = r.identity_hash != null ? canonicalizeHash32(r.identity_hash) : null;
+  const lxmfPeerHash =
+    r.lxmf_peer_hash != null && r.lxmf_peer_hash !== ''
+      ? canonicalizeHash32(r.lxmf_peer_hash)
+      : null;
+  if (r.lxmf_peer_hash != null && r.lxmf_peer_hash !== '' && !lxmfPeerHash) {
+    throw new Error('db:upsertReticulumRemoteAddress: lxmf_peer_hash invalid');
+  }
+  const lastUsedAt =
+    r.last_used_at != null && Number.isFinite(Number(r.last_used_at))
+      ? Math.trunc(Number(r.last_used_at))
+      : null;
+  const id = typeof r.id === 'string' && r.id.trim() ? r.id.trim().slice(0, 64) : randomUUID();
+  return {
+    id,
+    label,
+    service: service as RemoteAddressService,
+    destinationHash,
+    identityHash,
+    lxmfPeerHash,
+    lastUsedAt,
+  };
+}
+
 /** 32-hex identity/destination hash — delegates to shared helper (matches sidecar `parse_hash16()`). */
 function canonicalizeHash32(raw: unknown): string | null {
   return typeof raw === 'string' ? canonicalizeReticulumDestinationHash(raw) : null;
@@ -32,6 +86,8 @@ const ALLOWED_DELIVERY_STATUS = new Set([
   'received',
   'queued',
 ]);
+
+const ALLOWED_DELIVERY_METHOD = new Set(['direct', 'propagated', 'opportunistic', 'paper']);
 
 const RETICULUM_VIA_ATOMS = new Set(['rf', 'ble', 'tcp', 'network', 'mqtt', 'both']);
 const RETICULUM_MULTI_VIA_ATOMS = new Set(['ble', 'rf', 'tcp', 'network']);
@@ -102,6 +158,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         typeof m.delivery_status === 'string' && ALLOWED_DELIVERY_STATUS.has(m.delivery_status)
           ? m.delivery_status.slice(0, 32)
           : null;
+      const deliveryMethod =
+        typeof m.delivery_method === 'string' && ALLOWED_DELIVERY_METHOD.has(m.delivery_method)
+          ? m.delivery_method.slice(0, 32)
+          : null;
       const truncatedTimestamp = Math.trunc(timestamp);
       const senderName = typeof m.sender_name === 'string' ? m.sender_name.slice(0, 128) : null;
       const toHash = typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null;
@@ -140,20 +200,34 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           )
           .get(identityId, messageHash) as { id?: number } | undefined;
         if (existing?.id != null) {
+          // Never demote a delivered Completes back to in-flight (retry/echo saves).
           db.prepareOnce(
             `UPDATE reticulum_messages
-             SET delivery_status = COALESCE(?, delivery_status),
+             SET delivery_status = CASE
+                   WHEN delivery_status = 'delivered'
+                        AND ? IN ('sending', 'pending', 'queued')
+                   THEN delivery_status
+                   ELSE COALESCE(?, delivery_status)
+                 END,
                  received_via = COALESCE(?, received_via),
-                 sender_name = COALESCE(?, sender_name)
+                 sender_name = COALESCE(?, sender_name),
+                 delivery_method = COALESCE(?, delivery_method)
              WHERE id = ?`,
-          ).run(deliveryStatus, receivedVia, senderName, existing.id);
+          ).run(
+            deliveryStatus,
+            deliveryStatus,
+            receivedVia,
+            senderName,
+            deliveryMethod,
+            existing.id,
+          );
           return { changes: 1 };
         }
       }
 
       db.prepareOnce(
-        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         identityId,
         senderId,
@@ -168,6 +242,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         deliveryAttempts,
         nextDeliveryAttemptAt,
         attachmentPath,
+        deliveryMethod,
       );
       return { changes: 1 };
     } catch (err) {
@@ -721,33 +796,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
   ipcMain.handle('db:upsertReticulumRemoteAddress', (event, row: unknown) => {
     try {
       assertIpcSender(event, 'db:upsertReticulumRemoteAddress');
-      if (!row || typeof row !== 'object') {
-        throw new Error('db:upsertReticulumRemoteAddress: row must be an object');
-      }
-      const r = row as Record<string, unknown>;
-      const destinationHash = canonicalizeHash32(r.destination_hash);
-      if (!destinationHash) {
-        throw new Error('db:upsertReticulumRemoteAddress: destination_hash invalid');
-      }
-      const service = r.service;
-      if (
-        typeof service !== 'string' ||
-        !REMOTE_ADDRESS_SERVICES.has(service as RemoteAddressService)
-      ) {
-        throw new Error('db:upsertReticulumRemoteAddress: service invalid');
-      }
-      const label = typeof r.label === 'string' ? r.label.trim().slice(0, 128) : '';
-      if (!label) {
-        throw new Error('db:upsertReticulumRemoteAddress: label required');
-      }
-      const identityHash = r.identity_hash != null ? canonicalizeHash32(r.identity_hash) : null;
-      const lxmfPeerHash =
-        typeof r.lxmf_peer_hash === 'string' ? r.lxmf_peer_hash.slice(0, 128) : null;
-      const lastUsedAt =
-        r.last_used_at != null && Number.isFinite(Number(r.last_used_at))
-          ? Math.trunc(Number(r.last_used_at))
-          : null;
-      const id = typeof r.id === 'string' && r.id.trim() ? r.id.trim().slice(0, 64) : randomUUID();
+      const parsed = parseRemoteAddressUpsertRow(row);
       const now = Date.now();
       const db = getDbForIpc('db:upsertReticulumRemoteAddress');
       if (!db) return { changes: 0 };
@@ -761,7 +810,17 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
            lxmf_peer_hash = COALESCE(excluded.lxmf_peer_hash, reticulum_remote_addresses.lxmf_peer_hash),
            updated_at = excluded.updated_at,
            last_used_at = COALESCE(excluded.last_used_at, reticulum_remote_addresses.last_used_at)`,
-      ).run(id, label, service, destinationHash, identityHash, lxmfPeerHash, now, now, lastUsedAt);
+      ).run(
+        parsed.id,
+        parsed.label,
+        parsed.service,
+        parsed.destinationHash,
+        parsed.identityHash,
+        parsed.lxmfPeerHash,
+        now,
+        now,
+        parsed.lastUsedAt,
+      );
       return { changes: 1 };
     } catch (err) {
       finishDbIpcHandler('db:upsertReticulumRemoteAddress', err);

@@ -170,9 +170,14 @@ export function useRrcStartupAutoConnect(): void {
               console.debug('[useRrcStartupAutoConnect] auto-join ' + errLikeToLogString(e));
             });
         });
-        void Promise.all(joinTasks).then(() => {
-          if (anyJoinFailed) roomAutoJoinDoneRef.current.delete(hub);
-        });
+        void Promise.all(joinTasks)
+          .then(() => {
+            if (anyJoinFailed) roomAutoJoinDoneRef.current.delete(hub);
+          })
+          .catch((e: unknown) => {
+            roomAutoJoinDoneRef.current.delete(hub);
+            console.debug('[useRrcStartupAutoConnect] auto-join batch ' + errLikeToLogString(e));
+          });
       }
     }
     for (const hub of listSentForHubRef.current) {

@@ -20,19 +20,24 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## CI Build (`ci.yaml`)
 
-Runs on every push and pull request to `main`:
+Runs on every push and pull request to `main` (and `workflow_dispatch`):
 
 1. Checkout code
 2. Setup pnpm
 3. Setup Node 22
 4. Install dependencies (`pnpm install --frozen-lockfile`)
-5. Run lint (`pnpm run lint`)
-6. Run typecheck (`pnpm run typecheck`)
-7. Run build (`pnpm run build`)
-8. Run `yamllint` on workflow/config YAML
-9. Run `check:flatpak`, `check:flatpak-offline-pnpm` (needs `flatpak-node-generator`), `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
+5. Format check (`pnpm run format:check`)
+6. Markdown lint (`pnpm run lint:md`)
+7. Run lint (`pnpm run lint`)
+8. License check (`pnpm run check:licenses`)
+9. actionlint (via `pnpm run setup:actionlint`)
+10. `pnpm audit --audit-level=high` (non-blocking warning)
+11. Run `yamllint` on workflow/config YAML
+12. Run typecheck (`pnpm run typecheck`)
+13. Run build (`pnpm run build`)
+14. Run `check:flatpak`, `check:flatpak-offline-pnpm` (needs `flatpak-node-generator`), `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
 
-All steps must pass before a PR can be merged.
+All blocking steps must pass before a PR can be merged.
 
 ---
 
@@ -47,7 +52,7 @@ Runs on every push and pull request to `main`:
 5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
 6. Upload merged test results artifact (retained 7 days)
 
-SonarQube Cloud uses **Automatic Analysis (Autoscan)** — not GitHub Actions — because the Free plan Sonar Way quality gate includes cognitive-complexity thresholds we cannot customize, and CI scanning would fail PRs on that gate. Keep **Automatic Analysis enabled**. Scope and issue suppressions are configured in `sonar-project.properties` / `.sonarcloud.properties` and (for multicriteria under Autoscan) the SonarCloud project Analysis Scope UI.
+Static analysis on PRs is **CodeQL** (security) plus ESLint, Clippy, and pre-commit `check:*` scanners. AI PR review is **CodeRabbit** (see [CodeRabbit](#coderabbit) below). SonarQube Cloud is not used.
 
 Test results are available as a downloadable artifact from the workflow run.
 
@@ -58,7 +63,18 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
-Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit stub). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
+Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
+
+---
+
+## CodeRabbit
+
+PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.coderabbit.yaml`](../.coderabbit.yaml) (quiet profile, path filters, auto-pause after two reviewed commits).
+
+- Prefer opening as a **draft** until the feature diff is ready, then mark ready for review.
+- Free plan: about **1 PR review per developer per hour**; each auto-incremental push counts. After auto-pause, request another pass with `@coderabbitai review`.
+- Batch actionable findings via the **Prompt for AI Agents** block into one local commit (Autofix requires Pro).
+- Check remaining allowance with `@coderabbitai rate limit`.
 
 ---
 
@@ -119,7 +135,9 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
 - **Schedule:** Weekly on Saturdays
 - **npm dependencies:** Grouped PRs (Electron separate, all other deps together)
 - **GitHub Actions:** Grouped into one PR
-- **Limit:** 10 open PRs maximum
+- **Open PRs:** `open-pull-requests-limit: 0` — Dependabot scans but does **not** open PRs.
+  Dependency bumps are applied manually via `pnpm run update` (`scripts/update.sh`), which
+  also runs dedupe and Ratspeak/rsReticulum patch checks. See AGENTS.md §6.
 
 ### Testing Dependabot PRs locally
 
@@ -236,7 +254,9 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - **Staged-file** Prettier + markdownlint (not a full-tree `pnpm run format` / `lint:md`)
 - `pnpm dedupe` when dependency manifests are staged
 - `pnpm run i18n:auto-translate` when `en/translation.json` is staged (fills new English keys vs `HEAD`) + re-stages locales
-- Staged ESLint (`--cache`) + full `typecheck`; always-on cheap `check:*` scanners; path-gated flatpak / DB / IPC / reticulum catalog / sidecar stub checks (sidecar stub also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
+- Staged ESLint (`--cache`) + full `typecheck`; path-gated `typecheck:strict-shared` when shared paths staged; always-on cheap `check:*` scanners; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
+- Pre-push: `vitest run --changed` vs merge-base with `origin/main` when available
+- Before PR: `pnpm run check:pr` (full lint + typecheck + strict-shared + `test:run` + path-aware sidecar)
 - `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` only when relevant files are staged
 - `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 

@@ -29,8 +29,8 @@ describe('mergeOfflineStoreIntoIdentity', () => {
 
     mergeOfflineStoreIntoIdentity('meshcore', targetId);
 
-    expect(useNodeStore.getState().nodes[targetId]?.[42]?.longName).toBe('Contact');
-    expect(useMessageStore.getState().messages[targetId]?.['msg-offline']?.payload).toBe('hello');
+    expect(useNodeStore.getState().nodes[targetId][42].longName).toBe('Contact');
+    expect(useMessageStore.getState().messages[targetId]['msg-offline'].payload).toBe('hello');
   });
 
   it('no-ops when target is the offline slot', () => {

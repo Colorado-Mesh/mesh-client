@@ -7,6 +7,7 @@
 import { getConnection } from '../../stores/connectionStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { meshcoreHwModelIsContactTypeLabel } from '../meshcoreUtils';
@@ -39,6 +40,8 @@ export interface MeshtasticIngestSession {
   setConfiguring: (value: boolean) => void;
   /** Register a packet id as seen (e.g. after MQTT ingest) to suppress duplicate RF rows. */
   markPacketSeen: (senderId: number, packetId: number) => void;
+  /** Shared RF/MQTT duplicate check and mark for this identity. */
+  isDuplicatePacket: (senderId: number, packetId: number) => boolean;
 }
 
 function pruneSeenPackets(seen: Map<string, number>, now: number): void {
@@ -64,13 +67,13 @@ function listChatMessages(identityId: IdentityId) {
 }
 
 function persistNode(identityId: IdentityId, nodeId: number): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!record) return;
   const meshNode = nodeRecordToMeshNode(record);
   if (meshcoreHwModelIsContactTypeLabel(meshNode.hw_model)) return;
-  void window.electronAPI.db.saveNode(meshNode).catch((e: unknown) => {
-    console.debug('[meshtasticIngest] saveNode failed ' + errLikeToLogString(e));
-  });
+  persistDbWrite('meshtastic ingest node', () => window.electronAPI.db.saveNode(meshNode));
 }
 
 function handleTextMessage(
@@ -87,7 +90,9 @@ function handleTextMessage(
   });
   persistNode(identityId, event.payload.from);
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!record) return;
 
   const incoming = messageRecordToChatMessage(record);
@@ -100,9 +105,9 @@ function handleTextMessage(
     if (record.status === 'sending') {
       return;
     }
-    void window.electronAPI.db.saveMessage(incoming).catch((e: unknown) => {
-      console.debug('[meshtasticIngest] saveMessage echo failed ' + errLikeToLogString(e));
-    });
+    persistDbWrite('meshtastic ingest echo message', () =>
+      window.electronAPI.db.saveMessage(incoming),
+    );
     return;
   }
 
@@ -168,9 +173,7 @@ function handleTextMessage(
     }
   }
 
-  void window.electronAPI.db.saveMessage(incoming).catch((e: unknown) => {
-    console.debug('[meshtasticIngest] saveMessage failed ' + errLikeToLogString(e));
-  });
+  persistDbWrite('meshtastic ingest message', () => window.electronAPI.db.saveMessage(incoming));
 }
 
 function createListener(
@@ -218,5 +221,7 @@ export function attachMeshtasticIngest(
     markPacketSeen: (senderId: number, packetId: number) => {
       if (packetId !== 0) isPacketSeen(seenPacketIds, senderId, packetId);
     },
+    isDuplicatePacket: (senderId: number, packetId: number) =>
+      packetId !== 0 && isPacketSeen(seenPacketIds, senderId, packetId),
   };
 }

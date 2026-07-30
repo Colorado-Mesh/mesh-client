@@ -46,6 +46,7 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
   - [ ] **Setting on — still allowed (essential feedback)**: Loading spinners (`animate-spin`, `Loader`), connection header status pulses (`animate-pulse` on MQTT/device labels and status dots).
   - [ ] Toggle persists across restart (SQLite + localStorage reconcile on mount, same pattern as `locale` / `chatCompactMode`).
   - [x] Optional first-run: if `reduceMotion` key is absent, initializer may default from `matchMedia('(prefers-reduced-motion: reduce)')` once; thereafter only the App toggle applies (not live-synced to OS changes). Implemented by `initReduceMotionDefaultIfAbsent()` in `reduceMotionPreference.ts` (called from `main.tsx` before React mount).
+- [ ] **24-hour time (in-app setting)**: **App → Appearance → Use 24-hour time** (`use24HourTime` via `timeFormatStore` / `formatDisplayTime`; SQLite + localStorage, same bundle as Reduce motion). When on, chat and other display clocks force 24-hour format; when off, follow the system locale.
 
 ---
 

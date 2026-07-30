@@ -67,7 +67,7 @@ describe('ReticulumPropagationSection', () => {
       nodes: [
         {
           id: 'local-prop',
-          name: 'Local propagation (offline inbox)',
+          name: 'Host propagation node',
           enabled: true,
           status: 'known',
           hops: 0,
@@ -81,6 +81,7 @@ describe('ReticulumPropagationSection', () => {
         },
       ],
       preferredId: null,
+      discovered: [],
       sync: { active: false, progress: 0, message: null },
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       removePropagationNode: vi.fn().mockResolvedValue(true),
@@ -89,6 +90,7 @@ describe('ReticulumPropagationSection', () => {
       setAutoSyncIntervalOnSidecar: vi.fn().mockResolvedValue(true),
       startSync: vi.fn().mockResolvedValue(true),
       addPropagationNode: vi.fn().mockResolvedValue(true),
+      addFromDiscovered: vi.fn().mockResolvedValue(true),
     });
   });
 
@@ -99,6 +101,8 @@ describe('ReticulumPropagationSection', () => {
   it('shows rename and delete for remote nodes only', () => {
     render(<ReticulumPropagationSection embedded />);
 
+    expect(screen.getByText(/reticulumPropagation\.localHostName/)).toBeInTheDocument();
+    expect(screen.getByText('reticulumPropagation.localHostHint')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'reticulumPropagation.renameAria:Remote hub' }),
     ).toBeInTheDocument();
@@ -115,6 +119,31 @@ describe('ReticulumPropagationSection', () => {
         name: /reticulumPropagation\.deleteAria:Local propagation/,
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('warns when preferring local-only propagation', async () => {
+    const user = userEvent.setup();
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+    const preferButtons = screen.getAllByRole('button', {
+      name: 'reticulumPropagation.setPreferred',
+    });
+    const localPrefer = preferButtons.at(0);
+    if (!localPrefer) {
+      throw new Error('expected Set preferred control for local-prop');
+    }
+    await user.click(localPrefer);
+    await waitFor(() => {
+      expect(setPreferredOnSidecar).toHaveBeenCalledWith('local-prop');
+    });
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith(
+        'reticulumPropagation.preferredLocalWarning',
+        'warning',
+      );
+    });
   });
 
   it('confirms delete and calls removePropagationNode', async () => {
@@ -200,5 +229,55 @@ describe('ReticulumPropagationSection', () => {
       expect(addToast).toHaveBeenCalledWith('reticulumPropagation.renameFailed', 'error');
     });
     expect(screen.getByLabelText('reticulumPropagation.renameLabel')).toBeInTheDocument();
+  });
+
+  it('toasts when set preferred fails', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      setPreferredOnSidecar: vi.fn().mockResolvedValue(false),
+    });
+
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.click(
+      screen.getAllByRole('button', { name: 'reticulumPropagation.setPreferred' })[0],
+    );
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.setPreferredFailed', 'error');
+    });
+  });
+
+  it('shows probing progress while add runs and surfaces offer-unsupported toast', async () => {
+    const user = userEvent.setup();
+    let resolveAdd!: (ok: boolean) => void;
+    const addPropagationNode = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveAdd = resolve;
+        }),
+    );
+    useReticulumPropagationStore.setState({
+      addPropagationNode,
+      lastAddError: null,
+    });
+
+    render(<ReticulumPropagationSection embedded />);
+
+    const hashInput = screen.getByLabelText('reticulumPropagation.addNodeLabel');
+    await user.type(hashInput, 'aabb1111222233334444555566667777');
+    await user.click(screen.getByRole('button', { name: 'reticulumPropagation.addNode' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('reticulumPropagation.addProbing');
+    expect(addPropagationNode).toHaveBeenCalledWith('aabb1111222233334444555566667777');
+
+    useReticulumPropagationStore.setState({
+      lastAddError: 'reticulumPropagation.offerUnsupported',
+    });
+    resolveAdd(false);
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.offerUnsupported', 'error');
+    });
   });
 });

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
@@ -115,6 +116,7 @@ import type {
   SerialPortInfo,
 } from '../lib/types';
 import { useDeviceStore } from '../stores/deviceStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
@@ -365,6 +367,7 @@ export default function ConnectionPanel({
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
   const parentIconTrigger = useParentIconTrigger();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reticulumStackError, setReticulumStackError] = useState<string | null>(null);
 
@@ -1239,7 +1242,9 @@ export default function ConnectionPanel({
           setWebBluetoothDevice(null);
         }
       } else {
-        void window.electronAPI.stopNobleBleScanning(protocol);
+        void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
+          console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
+        });
       }
     }
     if (showSerialPicker) {
@@ -1316,7 +1321,9 @@ export default function ConnectionPanel({
         // Don't call onConnect again - the original onConnect will continue from requestDevice()
         // and proceed to connect(), which triggers the pairing handler.
       } else {
-        void window.electronAPI.stopNobleBleScanning(protocol);
+        void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
+          console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
+        });
         // Trigger the actual connection with the peripheral ID
         onConnect('ble', undefined, deviceId).catch((err: unknown) => {
           const errMsg = err instanceof Error ? err.message : String(err);
@@ -1760,19 +1767,39 @@ export default function ConnectionPanel({
 
   const handleExitApp = useCallback(
     async (variant: 'connected' | 'idle' | 'connecting') => {
-      if (variant === 'connecting') {
-        await handleCancelConnection();
-      } else if (isConnected) {
-        await Promise.race([
-          onDisconnect(),
-          new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
-        ]);
+      try {
+        if (variant === 'connecting') {
+          await handleCancelConnection();
+        } else if (isConnected) {
+          await Promise.race([
+            onDisconnect(),
+            new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
+          ]);
+        }
+        if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
+          markMqttUserDisconnect();
+          void window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
+            // catch-no-log-ok quit path — disconnect failure must not block quitApp
+            console.warn(
+              '[ConnectionPanel] mqtt.disconnect before quit failed:',
+              err instanceof Error ? err.message : String(err),
+            );
+          });
+        }
+      } catch (err) {
+        console.warn(
+          '[ConnectionPanel] handleExitApp disconnect failed:',
+          err instanceof Error ? err.message : String(err),
+        );
       }
-      if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
-        markMqttUserDisconnect();
-        void window.electronAPI.mqtt.disconnect();
+      try {
+        await window.electronAPI.quitApp();
+      } catch (err) {
+        console.error(
+          '[ConnectionPanel] quitApp failed:',
+          err instanceof Error ? err.message : String(err),
+        );
       }
-      await window.electronAPI.quitApp();
     },
     [handleCancelConnection, isConnected, mqttStatus, onDisconnect],
   );
@@ -2057,7 +2084,7 @@ export default function ConnectionPanel({
           onClick={handleCancelConnection}
           className="bg-secondary-dark rounded-lg px-6 py-2.5 font-medium text-gray-300 transition-colors hover:bg-gray-600"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     );
@@ -2973,7 +3000,7 @@ export default function ConnectionPanel({
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('connectionPanel.lastData')}</span>
                 <span className="text-xs text-gray-300">
-                  {new Date(state.lastDataReceived).toLocaleTimeString()}
+                  {formatDisplayTime(state.lastDataReceived, { use24Hour: use24HourTime })}
                 </span>
               </div>
             )}

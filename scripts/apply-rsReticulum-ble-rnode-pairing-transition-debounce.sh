@@ -4,7 +4,7 @@
 # re-fired the OS passkey dialog while the user was typing; wait 30s instead.
 set -euo pipefail
 
-RS_RETICULUM_REF="${RS_RETICULUM_REF:-6d2b28475321bc15c8f60796513d8878b47ed3ab}"
+RS_RETICULUM_REF="${RS_RETICULUM_REF:-9928abed269a83ec5a7ef165ff1142d938cad706}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsReticulum-ble-rnode-pairing-transition-debounce.patch"

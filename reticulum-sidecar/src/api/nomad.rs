@@ -34,6 +34,9 @@ pub async fn favorite_nomad_node(
 pub struct NomadPageQuery {
     pub path: String,
     pub data: Option<String>,
+    /// When true, RequestPath even if a cached path exists (stale-route retry).
+    #[serde(default)]
+    pub force_path_refresh: bool,
 }
 
 pub async fn get_nomad_page(
@@ -43,7 +46,12 @@ pub async fn get_nomad_page(
 ) -> Json<serde_json::Value> {
     Json(
         stack
-            .nomad_page(&hash, &query.path, query.data.as_deref())
+            .nomad_page(
+                &hash,
+                &query.path,
+                query.data.as_deref(),
+                query.force_path_refresh,
+            )
             .await,
     )
 }
@@ -51,6 +59,9 @@ pub async fn get_nomad_page(
 #[derive(Debug, Deserialize)]
 pub struct NomadFileQuery {
     pub path: String,
+    /// When true, RequestPath even if a cached path exists (stale-route retry).
+    #[serde(default)]
+    pub force_path_refresh: bool,
 }
 
 pub async fn get_nomad_file(
@@ -58,7 +69,11 @@ pub async fn get_nomad_file(
     Path(hash): Path<String>,
     Query(query): Query<NomadFileQuery>,
 ) -> Json<serde_json::Value> {
-    Json(stack.nomad_file(&hash, &query.path).await)
+    Json(
+        stack
+            .nomad_file(&hash, &query.path, query.force_path_refresh)
+            .await,
+    )
 }
 
 pub async fn get_nomad_serving(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
@@ -191,5 +206,35 @@ pub async fn put_nomad_serving_content_source(
     match stack.set_nomad_content_source(body.path).await {
         Ok(serving) => Json(serde_json::json!({ "ok": true, "serving": serving })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+#[cfg(test)]
+mod force_path_refresh_query_tests {
+    use super::*;
+
+    #[test]
+    fn nomad_page_query_defaults_force_path_refresh_false() {
+        let q: NomadPageQuery =
+            serde_urlencoded::from_str("path=%2Fpage%2Findex.mu").expect("query");
+        assert!(!q.force_path_refresh);
+        assert_eq!(q.path, "/page/index.mu");
+    }
+
+    #[test]
+    fn nomad_page_query_parses_force_path_refresh_true() {
+        let q: NomadPageQuery =
+            serde_urlencoded::from_str("path=%2Fpage%2Findex.mu&force_path_refresh=true")
+                .expect("query");
+        assert!(q.force_path_refresh);
+    }
+
+    #[test]
+    fn nomad_file_query_parses_force_path_refresh_true() {
+        let q: NomadFileQuery =
+            serde_urlencoded::from_str("path=%2Ffile%2Fx.bin&force_path_refresh=true")
+                .expect("query");
+        assert!(q.force_path_refresh);
+        assert_eq!(q.path, "/file/x.bin");
     }
 }

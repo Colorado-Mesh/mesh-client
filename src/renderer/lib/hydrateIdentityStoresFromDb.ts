@@ -1,3 +1,5 @@
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
+
 import {
   buildMeshcoreNodeMapFromDb,
   isMeshcoreRoomChatMessage,
@@ -72,7 +74,8 @@ export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessag
   );
 }
 
-function meshcoreHydratedMessageRecords(
+/** MeshCore chat rows → `messageStore` records (room BBS rows get their composite store id). */
+export function meshcoreHydratedMessageRecords(
   messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
 ) {
   return messages.map((msg) => {
@@ -185,22 +188,6 @@ export function syncNodesMapToIdentityStore(
   );
 }
 
-/** @deprecated Use {@link syncNodesMapToIdentityStore} */
-export function syncMeshcoreNodesMapToIdentityStore(
-  identityId: IdentityId,
-  nodes: Map<number, MeshNode>,
-): void {
-  syncNodesMapToIdentityStore(identityId, nodes);
-}
-
-/** @deprecated Use {@link syncNodesMapToIdentityStore} */
-export function syncMeshtasticNodesMapToIdentityStore(
-  identityId: IdentityId,
-  nodes: Map<number, MeshNode>,
-): void {
-  syncNodesMapToIdentityStore(identityId, nodes);
-}
-
 export async function hydrateMeshcoreMessagesFromDb(
   identityId: IdentityId,
   messagesMode: 'upsert' | 'replace' = 'upsert',
@@ -216,7 +203,11 @@ export async function hydrateMeshcoreMessagesFromDb(
     roomServerIds,
     loadPersistedMeshcoreSelfNodeId(),
   );
-  void persistMeshcoreMessageSenderRepairs(rows, mapped);
+  void Promise.resolve(persistMeshcoreMessageSenderRepairs(rows, mapped)).catch((e: unknown) => {
+    console.warn(
+      '[hydrateMeshcoreMessagesFromDb] sender repair persist failed ' + errLikeToLogString(e),
+    );
+  });
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
   const records = meshcoreHydratedMessageRecords(trimmed);
   if (messagesMode === 'replace') {
@@ -290,17 +281,25 @@ function hydrateReticulumIdentity(
         }[];
         const { reticulumHashToNodeId, registerReticulumDestinationHash } =
           await import('./reticulum/destHash');
-        const records: NodeRecord[] = rows.map((row) => {
-          const nodeId = reticulumHashToNodeId(row.destination_hash);
-          registerReticulumDestinationHash(nodeId, row.destination_hash);
-          return {
+        const records: NodeRecord[] = [];
+        for (const row of rows) {
+          // A row without a canonical hash cannot be keyed or displayed; skipping it
+          // keeps one bad SQLite row from failing the whole hydration pass.
+          const destinationHash = canonicalizeReticulumDestinationHash(row.destination_hash);
+          if (!destinationHash) {
+            console.warn('[hydrateReticulumIdentity] skipped destination row with invalid hash');
+            continue;
+          }
+          const nodeId = reticulumHashToNodeId(destinationHash);
+          registerReticulumDestinationHash(nodeId, destinationHash);
+          records.push({
             nodeId,
-            longName: row.display_name ?? row.destination_hash.slice(0, 16),
+            longName: row.display_name ?? destinationHash.slice(0, 16),
             shortName: row.display_name?.slice(0, 4) ?? 'RT',
             lastHeardAt: row.last_heard ?? undefined,
-            reticulumDestinationHash: row.destination_hash,
-          };
-        });
+            reticulumDestinationHash: destinationHash,
+          });
+        }
         upsertNodeRecordsForIdentity(identityId, records);
       } catch (e) {
         console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
@@ -346,6 +345,7 @@ export async function hydrateIdentityStoresFromDb(
   if (!loadNodes && !loadMessages) return;
 
   const hydrator = IDENTITY_STORE_HYDRATORS[protocol];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!hydrator) return;
 
   const isCurrent = beginIdentityHydration(protocol, identityId);

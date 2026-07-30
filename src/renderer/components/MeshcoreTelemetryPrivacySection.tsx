@@ -200,6 +200,12 @@ export default function MeshcoreTelemetryPrivacySection({
               telemetryModeBase: meshcoreTriStateToTelemetryMode(base),
               telemetryModeLoc: meshcoreTriStateToTelemetryMode(loc),
               telemetryModeEnv: meshcoreTriStateToTelemetryMode(env),
+            }).catch((err: unknown) => {
+              // catch-no-log-ok parent onApply usually handles errors; defensive for unhandled callers
+              console.warn(
+                '[MeshcoreTelemetryPrivacySection] onApply rejected:',
+                err instanceof Error ? err.message : String(err),
+              );
             })
           }
           className="bg-readable-green rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"

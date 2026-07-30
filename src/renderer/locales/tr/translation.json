@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle",
     "reticulumSection": "Reticulum — Reticulum yığını",
     "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
-    "reticulumPropagationHelp": "Yayılma düğümlerinin nasıl senkronize edileceğini seçin ve gerektiğinde en son yayılma verilerini çekin.",
     "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "autoPruneUnheardContactsDaysAria": "Başlangıçta {{days}} günden eski, duyulmamış kişileri otomatik olarak buda",
     "capTotalContactsCountAria": "Toplam kişileri sınırlandırın, en son görülen {{count}} kişileri koruyun",
@@ -373,7 +372,10 @@
     "restoreTheme": "Kaydedilen renk kontrol noktasını geri yükle",
     "noSavedThemeTooltip": "Henüz kaydedilmiş renk yok — bir kontrol noktası oluşturmak için Kaydet'i kullanın",
     "saveThemeButton": "Kaydet",
-    "restoreThemeButton": "Geri Yükle"
+    "restoreThemeButton": "Geri Yükle",
+    "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz.",
+    "use24HourTime": "24-Saat Zaman",
+    "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "Dili seçmek için tıklayın",
     "switchToMeshtasticWithUnread": "Meshtastic'e geç, {{count}} okunmadı",
     "switchToMeshCoreWithUnread": "MeshCore'a geç, {{count}} okunmadı",
-    "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı"
+    "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı",
+    "tabWithUnread": "{{label}}, {{count}} okunmamış"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -465,8 +468,6 @@
     "dmNodeLastHeard": "Son duyma {{time}}",
     "dmNodeBattery": "{{pct}}% pil",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} atlama",
     "muteConversation": "Bu konuşmayı sessize al",
     "unmuteConversation": "Bu konuşmanın sesini aç",
     "starMessage": "Mesajı Yıldızla",
@@ -559,7 +560,9 @@
       "pkiMissingRecipientKey": "Şifrelenmiş mesaj gönderilemedi — NodeDB'de alıcı genel anahtarı eksik.",
       "pkiFailed": "Bu mesaj için PKI şifrelemesi başarısız oldu.",
       "noChannel": "Bu mesajı yönlendirmek için kullanılabilir kanal yok.",
-      "timeout": "Mesaj radyoda zaman aşımına uğradı."
+      "timeout": "Mesaj radyoda zaman aşımına uğradı.",
+      "rateLimited": "Radyo hız sınırlayıcı mesajlardır. Kısa süre içinde yeniden deneyin.",
+      "noInterface": "Bu mesajı göndermek için radyo arayüzü mevcut değil."
     },
     "waitingMessagesQueued": "{{count}} radyoda kuyrukta bekleyen mesaj(lar)",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} radyodan senkronize ediliyor…",
@@ -593,7 +596,6 @@
       "sendFileAria": "Dosyayı rncp aracılığıyla {{name}} adresine gönder",
       "pendingOffersBadgeAria_one": "{{count}} bu eşten gelen dosya teklifi bekleniyor",
       "pendingOffersBadgeAria_other": "{{count}} bu eşten gelen dosya teklifleri bekleniyor",
-      "destinationLabel": "rncp hedef karması",
       "rememberAddress": "Bu adresi hatırla",
       "rememberAddressAria": "Bu eş için bu rncp hedefini hatırla",
       "chooseAndSend": "Dosya seç ve gönder…",
@@ -602,7 +604,23 @@
       "sendFailed": "Gönderilemedi: {{error}}",
       "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
       "requestEnable": "Etkinleştirme isteği",
-      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin"
+      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin",
+      "destinationLabel": "Eşin rncp alma hedefi",
+      "destinationHelp": "Bu, Chat/LXMF karması değildir. Karşı taraf bir paylaşım satırı yapıştırdıysa Etkinleştirme iste veya Sohbetten kullan seçeneğini kullanın ya da 32 karakterlik alma karmasını yapıştırın.",
+      "activeTransfersBadgeAria_one": "{{count}} bu eş ile aktif dosya aktarımı",
+      "activeTransfersBadgeAria_other": "{{count}} bu eş ile aktif dosya aktarımları",
+      "transfersTitle": "Transferler",
+      "useFromChat": "Sohbetten varış noktasını kullanın",
+      "useFromChatAria": "Bu sohbette paylaşılan bir rncp alma hedefi bulun ve kullanın",
+      "noShareInChat": "Bu sohbette henüz rncp paylaşım satırı yok. Alıcı hedeflerini (Remote → My rncp alıcı hedefi) yapıştırmalarını veya aşağıdaki 32 karakterlik karmayı yapıştırmalarını isteyin.",
+      "savedForOtherPeers": "Diğer sohbetler için kaydedilen alım hedefleri mevcut ({{peers}}). Otomatik doldurmak için bu eşin DM'sini açın.",
+      "transferProgressAria": "{{file}} için transfer ilerlemesi: {{progress}} yüzde",
+      "transferCompletedToast": "Dosya gönderildi: {{file}}",
+      "transferFailedToast": "Dosya aktarımı başarısız oldu ({{file}}): {{error}}",
+      "forgetAddress": "Kaydedilen hedefi unut",
+      "forgetAddressAria": "Bu eş için kaydedilen rncp alma hedefini kaldır",
+      "forgotAddressToast": "Bu eş için kaydedilen rncp hedefini unuttum.",
+      "filledFromChatToast": "Sohbetten dolu hedef (kaydedilmedi — saklamayı unutmayın seçeneğini işaretleyin)."
     },
     "shareLocation": "Konumu paylaş",
     "shareLocationLabel": "📍 Paylaşılan konum",
@@ -615,7 +633,13 @@
     "floodScopeOverrideCustomLabel": "Özel Flood kapsamı hashtag’i",
     "floodScopeOverrideCustomPlaceholder": "#bölgem",
     "floodScopeOverrideCustomApply": "Kapsamı kullan",
-    "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
+    "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion).",
+    "dmNodeHops_one": "{{count}} atlama",
+    "dmNodeHops_other": "{{count}} atlama",
+    "notificationDmTitle": "{{sender}} 'dan DM",
+    "notificationMessageTitle": "{{sender}} adlı kişiden mesaj",
+    "reticulumSendStoredAtPn": "Yayılma düğümünde depolanır",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -624,7 +648,10 @@
     "locationCard": {
       "alt": "Paylaşılan konum haritası döşemesi",
       "openMaps": "Haritalar'da aç"
-    }
+    },
+    "directImage": "Resim: {{name}}",
+    "directImageOpen": "Resim aç",
+    "reticulumAttachmentImage": "Ekli resim: {{name}}"
   },
   "common": {
     "close": "Kapalı",
@@ -1067,7 +1094,27 @@
       "backboneDirectoryHint": "directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
       "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir).",
       "addDefaultHubsAria": "Varsayılan Reticulum omurga merkezlerini senkronize edin (ABD-Doğu, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); hizmet dışı bırakılan test ağı uç noktalarını devre dışı bırak",
-      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil."
+      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil.",
+      "modeDescriptions": {
+        "full": "Tam mesh katılımı. Trafiği yönlendirir ve duyuruları otomatik olarak yayar. Birincil düğümler ve tekrarlayıcılar için kullanın.",
+        "access_point": "Sorgulanana kadar sessiz. Kısa yol süresi doldu. Aralıklı kullanıcılara hizmet veren geniş alan radyoları için idealdir.",
+        "roaming": "Mobil arayüzler. Kısa yol zaman aşımları ve aktif keşif. El veya araç RNodları için kullanın.",
+        "boundary": "Ağ sınırı. Yerel trafiği izole ederken farklı segmentleri birbirine bağlar. İnternet/LoRa bağlantıları için kullanın.",
+        "gateway": "İstemciler için yol arama. Bağlı düğümler adına bilinmeyen hedefleri çözer.",
+        "point_to_point": "İki düğüm arasında doğrudan bağlantı. Yönlendirme veya duyuru yayılımı yok."
+      },
+      "networkName": "Ağ adı",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Ağ adı",
+      "passphrase": "Parola",
+      "passphrasePlaceholder": "IFAC kimlik doğrulaması",
+      "passphraseAria": "IFAC parolası",
+      "showPassphrase": "Parolayı göster",
+      "hidePassphrase": "Parolayı gizle",
+      "advanced": "Gelişmiş",
+      "advancedHint": "Ek anahtar= bu arayüz için değer çiftleri, satır başına bir tane. Bilinen alanlar (ana bilgisayar, mod, ağ adı,...) yukarıdaki formda kalır.",
+      "advancedAria": "Gelişmiş arayüz anahtar - değer seçenekleri",
+      "advancedKeyReserved": "\"{{key}}\" anahtarı bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1142,9 @@
       "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın.",
       "tcpUnreachable": "{{name}}: TCP göbeğine ulaşılamıyor ({{host}}:{{port}})",
       "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın.",
-      "offlineHintBleBondStale": "macOS bu RNode'u hâlâ Eşlenmiş olarak gösteriyor ancak Bluetooth anahtarları artık eşleşmiyor (Eş tarafından kaldırılan eşleştirme bilgileri). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna getirin (Yönetici → Bluetooth → Eşleştirmeyi başlat veya düğmeyi ~7 saniye basılı tutun), ardından yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra (İşletim Sistemi geçiş anahtarı penceresi) 60 saniye kadar sürebilir. İstenirse mevcut RNode PIN'ini girin - asla 123456 değil. Bu normaldir, bir hata değildir. Başarılı bir bağlantı sağlanıncaya kadar cihaz Sistem Ayarlarında görünmeyebilir."
+      "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra (İşletim Sistemi geçiş anahtarı penceresi) 60 saniye kadar sürebilir. İstenirse mevcut RNode PIN'ini girin - asla 123456 değil. Bu normaldir, bir hata değildir. Başarılı bir bağlantı sağlanıncaya kadar cihaz Sistem Ayarlarında görünmeyebilir.",
+      "offlineHintBle": "Bu hatayı temizlemek için bu arayüzü kaldırmanız ve geri eklemeniz gerekebilir (Cihaz seç) böylece kaydedilen Bluetooth kimliği yenilenir, ardından yığını yeniden başlatın. İşletim sisteminiz 6 haneli bir Bluetooth PIN isteyebilir (macOS, Windows veya Linux). RNode her eşleşmede yeni bir kod üretir — asla 123456 kullanmayın (bu Meshtastic varsayılanıdır, RNode değil). Bu uygulama bağlanmadan önce RNode'un Sistem Ayarları → Bluetooth'ta görünmesi gerekmez; yığın eşleştiğinde işletim sistemi iletişim kutusu görünür. Ekransız radyolar: USB bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → Yönetici panelinde gösterilen PIN'i (radyo ekranında değil) işletim sistemi iletişim kutusuna girin. Ekranlı radyolar: Heltec cihazlarda düğmeyi ~7 sn basılı tutun (süre değişir; birçok kartta ~10 sn Wi‑Fi AP açar), ekrandaki PIN'i okuyun ve işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sistemi Bluetooth ayarlarından başarısız bağları temizleyin.",
+      "offlineHintBleBondStale": "macOS hâlâ bu RNode'u Eşleştirilmiş olarak gösteriyor, ancak Bluetooth anahtarları artık eşleşmiyor (eş eşleştirme bilgilerini kaldırdı). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna alın (Yönetici → Bluetooth → Eşleştirmeyi başlat, veya düğmeyi ~7 sn basılı tutun), ardından bu arayüzü kaldırıp yeniden ekleyin (Cihaz seç), yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -1199,20 +1246,20 @@
     "coloradoRegionGateStay": "Colorado'dayım",
     "coloradoRegionGateSwitch": "LetsMesh'e geç",
     "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
       "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
     },
     "reticulumStackRunningAs": "Çalışıyor — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…",
+    "reticulumSharedInstance": {
+      "title": "Başka bir uygulamanın paylaşılan örneğini kullanma",
+      "body": "Bu uygulama, başka bir uygulamanın paylaşılan Reticulum örneğinin istemcisi olarak eklenmiştir. Bu uygulamanın yapılandırmasındaki yerel TCP hub'ları bu modda başlatılmaz; trafik yalnızca diğer uygulamanın yığınını kullanabilir.",
+      "networkHint": "Veya → Paylaşımı manuel olarak kapatmak için Ağ Paylaşımı Reticulum örneğini açın, ardından yığını yeniden başlatın. Ayrıca MeshChat, Ratspeak veya bağımsız rnsd'den tamamen çıkıp yeniden başlatabilirsiniz.",
+      "disableShare": "Paylaşım örneğini kapatın ve yeniden başlatın",
+      "disableShareAria": "Paylaşım örneğini kapat ve yığını yeniden başlat",
+      "disableFailed": "Paylaşım örneği kapatılamadı."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1356,7 +1403,8 @@
       "potentialMeshcoreRepeaterConflict": "Potansiyel MeshCore Tekrarlayıcı Çatışması",
       "elevatedNoiseFloor": "Yükseltilmiş Gürültü Zemini",
       "excessiveFlooding": "Aşırı Su Baskını",
-      "reticulumTrafficDetected": "Reticulum Trafiği Algılandı"
+      "reticulumTrafficDetected": "Reticulum Trafiği Algılandı",
+      "highCompanionTxQueue": "Yüksek Refakatçi TX Kuyruğu"
     },
     "rfCause": {
       "channelUtilizationSpike": "Mevcut {{current}}%, yakın zamandaki ortalamanın ({{average}}%) 2 katının üzerinde; olası tıkanıklık veya parazit dalgalanması.",
@@ -1370,7 +1418,8 @@
       "widebandNoiseFloor": "Gürültü tabanını yükselten geniş bant paraziti (arızalı elektronikler, elektrik hattı gürültüsü vb.).",
       "fringeWeakCoverage": "Düğüm çok uzakta veya ağın geri kalanına zayıf bir şekilde bağlı.",
       "elevatedNoiseFloor": "Radyo gürültüsü zemini {{noiseFloor}} dBm'dir — etkili menzili azaltan yüksek parazit.",
-      "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir."
+      "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir.",
+      "highCompanionTxQueue": "Refakatçi giden kuyruk derinliği {{queueLen}}/256 'dır — trafik gecikebilir veya düşebilir."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic düğüm bu frekansta iletim yapıyor. Gönderen: {{sender}}. {{proximity}}Bu düğüm MeshCore tekrarlayıcı alanınızda olabilir.",
@@ -1445,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "Doğrudan rotaların oluşturulmasına izin ver",
         "description": "Taşkın oranı çok yüksektir — düğümün doğrudan yol temasları biriktirmesini bekleyin veya tekrarlayıcı yakınlığını kontrol edin."
+      },
+      "highCompanionTxQueue": {
+        "title": "Giden trafiği azaltın veya RF bağlantısını kontrol edin",
+        "description": "Refakatçi TX kuyruğu neredeyse dolu — gönderimleri duraklatın, taşkınları azaltın veya parazit ve zayıf bağlantı olup olmadığını kontrol edin."
       }
     },
     "cuHistoryHeading": "Kanal Kullanımı (son 24 saat)",
@@ -1523,7 +1576,10 @@
         "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
         "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\" bağı eski — İşletim Sistemi Bluetooth ayarlarını unutun ve yeniden eşleştirin",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" şifre değişimi zaman aşımına uğradı — mevcut PIN'i girin (123456 değil) ve yeniden eşleştirin"
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" şifre değişimi zaman aşımına uğradı — mevcut PIN'i girin (123456 değil) ve yeniden eşleştirin",
+        "sidecarUnhealthy": "Reticulum sepeti çalışıyor ancak sağlık kontrollerine yanıt vermiyor",
+        "propagationSyncStuck": "Yayılım düğümü senkronizasyonu bir bağlantı kurarken takıldı",
+        "propagationSyncFailing": "Yayılma düğümü senkronizasyonu başarısız oldu"
       }
     },
     "routingPort": {
@@ -1545,7 +1601,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Mesafe ofseti",
     "km": "kilometre",
-    "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler."
+    "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler.",
+    "ignoreMqttToggle": "MQTT'yi yok say",
+    "ignoreMqttHelp": "Yalnızca MQTT kullanan düğümleri soluk göster ve tanılamadan hariç tut"
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -2450,6 +2508,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Gelişmiş PN barındırma (tehlikeli bölge)",
+      "peeringCost": "Eşleme maliyeti",
+      "maxPeeringCost": "Maksimum eşleme maliyeti",
+      "autopeer": "Keşfedilen PN'lerle otomatik eşleme",
+      "autopeerMaxdepth": "Autopeer maksimum atlama sayısı",
+      "maxPeers": "Maksimum otomatik eşleme akranları",
+      "stampCost": "Yayılma damgası maliyeti",
+      "stampFlex": "Damga maliyeti esnekliği",
+      "storageMb": "Mesaj depolama sınırı (MB)",
+      "propagationLimitKb": "Yayılma mesajı sınırı (KB)",
+      "syncLimitKb": "Senkronizasyon aktarım sınırı (KB)",
+      "deliveryLimitKb": "Teslimat aktarım limiti (KB)",
+      "announceIntervalSec": "PN duyuru aralığı (saniye)",
+      "announceAtStart": "Barındırma başladığında duyurun",
+      "fromStaticOnly": "Yalnızca statik eşlerden",
+      "authRequired": "Yetkilendirme gerekli",
+      "enforceStamps": "Mesaj damgalarını zorunlu kıl",
+      "enforceRatchets": "Cırcırları uygulayın",
+      "nodeName": "PN duyuru adı",
+      "staticPeers": "Statik eş karmaları (satır başına bir adet 32-hex)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Barındırma politikasını kaydet",
+      "saving": "Kaydediliyor…",
+      "saveAria": "PN barındırma politikasını kaydet",
+      "saveOk": "PN barındırma politikası kaydedildi.",
+      "saveFailed": "PN barındırma politikası kaydedilemedi.",
+      "saveConfirmTitle": "PN barındırma politikası kaydedilsin mi?",
+      "saveConfirmBody": "Canlı yayılım düğümüne eşleme, depolama, damga ve duyuru ayarları uygulansın mı? Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir.",
+      "saveConfirm": "Politikayı kaydet",
+      "error": {
+        "peeringCostExceedsMax": "Eşleme maliyeti maksimum eşleme maliyetini aşamaz.",
+        "stampFlexExceedsCost": "Damga esnekliği damga maliyetini aşamaz.",
+        "autopeerMaxdepth": "Autopeer maksimum atlama sayısı aralık dışında.",
+        "maxPeers": "Maksimum eşler aralık dışında.",
+        "storageMb": "Mesaj depolama sınırı aralık dışında.",
+        "propagationLimit": "Yayılma mesajı limiti aralık dışında.",
+        "syncLimit": "Senkronizasyon aktarım sınırı aralık dışında.",
+        "deliveryLimit": "Teslimat aktarım limiti aralık dışında.",
+        "announceInterval": "PN duyuru aralığı aralık dışında.",
+        "staticPeersTooMany": "Çok fazla statik eş karması (maks. 256).",
+        "staticPeerInvalid": "Bir veya daha fazla statik eş karma değeri geçersiz (32 onaltılık karakter gerekir).",
+        "nodeNameInvalid": "PN duyuru adı geçersiz karakterler içeriyor.",
+        "nodeNameTooLong": "PN duyuru adı çok uzun.",
+        "nonFiniteNumber": "Bir veya daha fazla sayısal alan geçersiz."
+      },
+      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir."
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2803,11 @@
     "moderateStability": "Ilıman",
     "unstableStability": "Dengesiz",
     "unknownStability": "Bilinmiyor",
-    "flagged": "{{flagged}}/{{total}} işaretlendi"
+    "flagged": "{{flagged}}/{{total}} işaretlendi",
+    "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
+    "hybridMqttPathAria": "RF ve MQTT yolu",
+    "connectedViaRfAndMqttTooltip": "RF ve MQTT ile bağlanır",
+    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -2785,7 +2895,8 @@
     "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
     "hybridMqttPathAria": "RF ve MQTT yolu",
     "connectedViaRfAndMqttTooltip": "RF ve MQTT aracılığıyla bağlanıldı",
-    "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı"
+    "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı",
+    "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2978,17 @@
       "contentSourceNotFromPicker": "Uygulamadan önce Klasör seç ile klasörü seçin.",
       "contentSourceNone": "Klasör seçilmedi",
       "contentSourceRequired": "Nomad ev sahipliğine başlamadan önce bir sayfa klasörü seçin."
-    }
+    },
+    "sortLastHeard": "Son Duyma",
+    "sortHops": "Hop",
+    "sortName": "Ad",
+    "sortToolbar": "Düğüm listesini sırala",
+    "sortByLastHeardAsc": "Son Duyulana göre sırala, önce en eski",
+    "sortByLastHeardDesc": "Son Duyulana göre sırala, önce en yenisi",
+    "sortByHopsAsc": "Atlamaya göre sırala, önce en yakın",
+    "sortByHopsDesc": "Atlamaya göre sırala, önce en uzak",
+    "sortByNameAsc": "Alfabetik sırala (A'dan Z'ye)",
+    "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",
@@ -3652,7 +3773,18 @@
     "byteLengthTooltip": "{{bytes}} bayt RAW",
     "routeBarFloodTooltip": "Taşkın yönlendirmeli paket",
     "routeBarDirectTooltip": "Doğrudan yönlendirilmiş paket",
-    "routeBarUnknownTooltip": "bilinmeyen rota"
+    "routeBarUnknownTooltip": "bilinmeyen rota",
+    "crc32Fingerprint": "CRC32 parmak izi:",
+    "innerFirstU32Debug": "İlk dahili u32 (hata ayıklama):",
+    "destHash": "Hedef karması:",
+    "srcHash": "Kaynak karması:",
+    "channelHash": "Kanal karması:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Şifreli metin baytları:",
+    "senderKeyPrefix": "Gönderen anahtarı (ön ek):",
+    "control": "Denetim:",
+    "advertTs": "ADVERT zaman damgası:",
+    "advertLatLon": "ADVERT enlem/boylam:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3948,12 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",
     "iconNameAria": "Avatar Görünümü",
-    "iconCircle": "Yuvarlak",
     "iconStar": "Yıldız",
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
-    "iconUser": "Kullanıcı"
+    "iconNone": "Hiçbiri",
+    "iconSaveFailed": "Avatar simgesi kaydedilemedi.",
+    "iconUser": "İnsanlar"
   },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",
@@ -3830,7 +3963,6 @@
     "syncNowFor": "{{name}} adlı kişiden gelen mesajları senkronize et",
     "addNode": "Düğüm ekle",
     "addNodeLabel": "Karmaya göre yayılım düğümü ekle",
-    "localInboxStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
     "refreshing": "Yenileniyor…",
     "refreshAria": "Yayılma düğümlerini yenile",
     "syncStatusEstablishing": "Yayılım düğümüne bağlantı kuruluyor…",
@@ -3853,7 +3985,10 @@
     "notice": {
       "body": "Hiçbir yayılma düğümü yapılandırılmamış. Çevrimdışı veya erişilemeyen eşler, LXMF teslimatı için bir yayılma düğümüne ihtiyaç duyar.",
       "openSettings": "Yayılımı ayarla",
-      "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç"
+      "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç",
+      "bodyWithDiscoveries": "Hiçbir yayılma düğümü yapılandırılmamış. {{count}} ağda keşfedildi — aşağıya bir tane ekleyin veya Ağ ayarlarını açın.",
+      "addClosest": "En yakın bulunanları ekle",
+      "addClosestAria": "En yakın keşfedilen yayılma düğümünü ekleyin ve tercih edilen olarak ayarlayın"
     },
     "rename": "Yeniden adlandır",
     "renameLabel": "Yayılma düğümü adı",
@@ -3877,7 +4012,6 @@
       "unknown": "bilinmiyor",
       "online": "çevrimiçi"
     },
-    "syncLocalNotSupported": "Yerel yayılım, çevrimdışı gelen kutunuzdur; uzak bir LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
     "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
     "syncPeeringStampFailed": "Bu yayılım düğümü için eşleme damgası oluşturulamadı; birazdan tekrar deneyin.",
@@ -3885,7 +4019,44 @@
     "renameFailed": "Yayılma düğümü yeniden adlandırılamadı.",
     "deleteFailed": "Yayılma düğümü silinemedi.",
     "addFailed": "Yayılma düğümü eklenemedi.",
-    "addNodePlaceholder": "32 karakterli lxmf.propagation hedef karması"
+    "addNodePlaceholder": "32 karakterli lxmf.propagation hedef karması",
+    "syncEstablishIdentityMissing": "Yayılım senkronizasyonu bağlantı kanıtını doğrulayamadı — düğüm kimliği eksikti. Bir duyuru bekleyin ve tekrar deneyin.",
+    "syncEstablishInvalidProof": "Yayılım senkronizasyonu, düğümden geçersiz bir bağlantı kanıtı aldı. Birazdan tekrar deneyin.",
+    "syncOfferNoIdentity": "Yayılma düğümü senkronizasyon teklifini reddetti — tanımlama başarısız oldu. Bir duyuru bekleyin ve tekrar deneyin.",
+    "syncOfferNoAccess": "Yayılma düğümü senkronizasyon erişimini engelledi.",
+    "syncOfferInvalidKey": "Yayılma düğümü eşleştirme anahtarını reddetti — eşleştirme maliyetini kontrol edin ve tekrar deneyin.",
+    "syncOfferThrottled": "Yayılma düğümü senkronizasyon isteğini azalttı — daha sonra tekrar deneyin.",
+    "syncOfferInvalidData": "Yayılma düğümü senkronizasyon teklifi verilerini reddetti.",
+    "syncOfferInvalidStamp": "Yayılma düğümü eşleştirme damgasını reddetti — birazdan tekrar deneyin.",
+    "discoveredTitle": "Ağda keşfedildi",
+    "discoveredEmpty": "Henüz lxmf.propagation duyurusu duyulmadı. Yığını bağlı tutun veya karma ile bir düğüm ekleyin.",
+    "discoveredInactive": "Pasif",
+    "discoveredHops": "{{hops}} atlama",
+    "discoveredPeeringCost": "eşleştirme maliyeti {{cost}}",
+    "discoveredAdd": "Ekle",
+    "discoveredAddAria": "Bulunan yayılma düğümünü ekleyin {{name}}",
+    "discoveredAddPrefer": "Ekle ve tercih et",
+    "discoveredAddPreferAria": "Bulunan yayılma düğümünü {{name}} ekleyin ve tercih edilen olarak ayarlayın",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Yayılma senkronizasyonunun düğümden bağlantı kanıtı yok. Kimliğinizin yeni bir duyuruya ihtiyacı olabilir veya geri dönüş yolu eksik olabilir. Şimdi Network → Announce'ı deneyin, ardından tekrar Senkronize edin.",
+    "syncOfferUnknown": "Yayılma düğümü bilinmeyen bir senkronizasyon teklifi hatası verdi — birazdan tekrar deneyin.",
+    "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir.",
+    "setPreferredFailed": "Tercih edilen yayılma düğümü ayarlanamadı.",
+    "preferredLocalWarning": "Tercih edilen düğüm yalnızca Yereldir — çevrimdışı eşler, depolama ve iletme teslimatı için hala uzak bir yayılma düğümüne ihtiyaç duyarlar.",
+    "localHostStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
+    "localHostName": "Ana bilgisayar yayılma düğümü",
+    "localHostHint": "Etkinleştirildiğinde, bu cihaz bir LXMF yayılma düğümü olarak duyuru yapar ve /offer ve /get işlevlerini yerine getirir. Ulaşılamayan eşlere giden depolama ve iletme işlemleri için uzak bir düğümü tercih edin.",
+    "syncPeerCostExceedsMax": "Bu yayılım düğümünün eşleme maliyeti, maksimum eşleme maliyetinizin üzerinde; Ağ → Gelişmiş PN barındırma bölümünde maksimumu yükseltin veya başka bir düğüm seçin.",
+    "offerUnsupported": "Bu hedef LXMF /offer senkronizasyonunu desteklemiyor — mesh-client bunu bir yayılım düğümü olarak kullanamaz.",
+    "offerProbeTimeout": "Desteği kontrol ederken/teklif ederken zaman aşımına uğradı; düğüme ulaşılamıyor olabilir. Bir yol mevcut olduğunda tekrar deneyin.",
+    "offerProbeFailed": "Bu yayılma düğümü için destek doğrulanamadı/sunulamadı; birazdan tekrar deneyin.",
+    "enableLocalHostConfirmTitle": "Yerel yayılma düğümü barındırma etkinleştirilsin mi?",
+    "enableLocalHostConfirmBody": "Bu cihaz bir LXMF yayılım düğümü olarak duyuru yapacak ve hizmet /teklif ve /alacaktır. Bu, depolamayı ve CPU'yu kullanır ve ağdaki diğer düğümlerle eşleşebilir. Barındırma niyetinde olmadığınız sürece giden depolama ve iletme için uzak bir düğümü tercih edin.",
+    "enableLocalHostConfirm": "Barındırmayı etkinleştir",
+    "addProbing": "/offer desteği kontrol ediliyor…",
+    "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
+    "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
+    "disableFailed": "Yayılma düğümü devre dışı bırakılamadı."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",
@@ -4109,7 +4280,8 @@
     "pathHashCliGet": "Yol karma modunu al",
     "pathHashCliSet0": "Yol karma modunu 1 bayt olarak ayarla",
     "pathHashCliSet1": "Yol karma modunu 2 bayt olarak ayarla",
-    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt"
+    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} okunmamış"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",
@@ -4201,7 +4373,10 @@
     "backupRemoved": "Yedek kaldırıldı.",
     "meshcorePrivateKeyHint": "Önemli materyali görüntülemek için aşağıdaki Özel Anahtarı Dışa Aktar'ı kullanın. Yedekleme, tam anahtar çiftini bu bilgisayarda saklar.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Herhangi bir yedek listesi bulunamadı.",
+    "missingKeyMaterial": "Eksik anahtar materyali",
+    "unknownError": "Bilinmeyen hata"
   },
   "sidebar": {
     "disabledTabTooltip": "Bu modda kullanılamaz"
@@ -4318,7 +4493,12 @@
     "chartAriaSignal": "Sinyal kalitesi tablosu: en son SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} noktaları",
     "chartAriaTempHumidity": "Sıcaklık ve nem tablosu: en son sıcaklık {{temperature}}, nem {{humidity}} yüzde, {{count}} puan",
     "chartAriaPressure": "Barometrik basınç tablosu: en son {{pressure}} hPa, {{count}} noktaları",
-    "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları"
+    "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV'yi dışa aktar",
+    "emptyWaitingConnected": "Henüz telemetri verisi yok. Cihazdan veri bekleniyor…",
+    "emptyWaitingDisconnected": "Henüz telemetri verisi yok. Gerçek zamanlı ölçümleri görmek için bir cihaza bağlanın."
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
@@ -4475,7 +4655,9 @@
     "directNoticeUnsupported": "Bu merkez doğrudan BİLDİRİMİ (/msg) desteklemiyor.",
     "capDirectNotice": "doğrudan msg",
     "moderation": {
-      "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım)."
+      "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım).",
+      "removedFromRoomSystem": "Merkez sizi {{room}}'dan ayırdı.",
+      "hubParted": "Merkez seni odadan ayırdı."
     },
     "errors": {
       "linkProofTimeout": "Göbek bağlantısını beklerken zaman aşımına uğradı (bağlantı kanıtı). Tekrar deneyin veya merkeze giden yolu/durakları kontrol edin.",
@@ -4682,7 +4864,9 @@
       "offerToast": "Gelen dosya teklifi: {{file}}",
       "copyInstructionsAria": "Dosya almayı etkinleştirmek için talimatları kopyalama",
       "copyInstructions": "Talimatları kopyala",
-      "instructionsCopied": "Talimatlar kopyalandı."
+      "instructionsCopied": "Talimatlar kopyalandı.",
+      "receiveDestSharedToast": "{{peer}} için rncp alma hedefi kaydedildi — şimdi dosya gönderebilirsiniz.",
+      "receiveDestShareFailed": "Eşin rncp alma hedefi kaydedilemedi."
     },
     "enableRequest": {
       "title": "Dosya alımı etkinleştirilsin mi?",
@@ -4699,7 +4883,9 @@
       "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
       "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
-      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın."
+      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın.",
+      "lxmfShareBody": "Dosya alma etkinleştirildi. İşte rncp alma hedefim (mesh-client sizin için kaydedecek).",
+      "shareDestWarning": "Etkinleştirirseniz mesh-client, dosya gönderimini otomatik olarak doldurabilmeleri için rncp alma hedefinizi bu eşe gönderecektir."
     },
     "saved": {
       "labelPlaceholder": "Etiket",
@@ -4754,5 +4940,12 @@
     "direct": "Doğrudan",
     "segmentTooltip": "Yol karması {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} çevrimiçi",
+    "onlineBody": "{{protocol}} düğümü çevrimiçi oldu",
+    "offlineTitle": "{{name}} çevrimdışı oldu",
+    "offlineBody": "Son duyulma tarihi: {{time}}",
+    "unknown": "bilinmiyor"
   }
 }

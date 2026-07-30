@@ -1,7 +1,6 @@
 import { reconnectBleWithScan } from './bleReconnectHelper';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
-  loadLastConnection,
   resolveLastBlePeripheralId,
   resolveLastHttpAddress,
   resolveLastSerialPortId,
@@ -30,9 +29,7 @@ export async function reconnectRfFromLastConnection(
   connectionType: ConnectionType,
   handlers: RfReconnectHandlers,
 ): Promise<void> {
-  const last = loadLastConnection(protocol);
-  const rfType = connectionType ?? last?.type ?? 'ble';
-
+  const rfType = connectionType;
   if (rfType === 'ble') {
     const bleDeviceId = resolveLastBlePeripheralId(protocol);
     if (!bleDeviceId) {
@@ -62,6 +59,7 @@ export async function reconnectRfFromLastConnection(
     return;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (rfType === 'tcp') {
     const tcpAddress = resolveLastHttpAddress(protocol);
     if (!tcpAddress) {

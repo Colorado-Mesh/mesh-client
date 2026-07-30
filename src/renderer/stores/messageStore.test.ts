@@ -4,7 +4,9 @@ import {
   addMessage,
   type MessageRecord,
   pruneMessageRecordsForIdentityByChannel,
+  renameMessageId,
   replaceMessageRecordsForIdentity,
+  updateMessageStatus,
   useMessageStore,
 } from './messageStore';
 
@@ -75,5 +77,60 @@ describe('messageStore replace and prune', () => {
     const bucket = useMessageStore.getState().messages[ID_A];
     expect(bucket?.ch0).toBeUndefined();
     expect(bucket?.ch1).toBeDefined();
+  });
+});
+
+describe('messageStore rename / status guards for Reticulum Completes', () => {
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+  });
+
+  it('renameMessageId does not clobber an acked Completes target', () => {
+    const successHash = 'aa'.repeat(32);
+    const failedHash = 'bb'.repeat(32);
+    addMessage(ID_A, {
+      ...sampleRecord(successHash),
+      payload: 'just delivered',
+      status: 'acked',
+      timestamp: 2_000,
+    });
+    addMessage(ID_A, {
+      ...sampleRecord(failedHash),
+      payload: 'older failed',
+      status: 'sending',
+      timestamp: 1_000,
+    });
+
+    renameMessageId(ID_A, failedHash, successHash);
+
+    const bucket = useMessageStore.getState().messages[ID_A] ?? {};
+    expect(bucket[failedHash]).toBeUndefined();
+    expect(bucket[successHash]).toMatchObject({
+      payload: 'just delivered',
+      status: 'acked',
+    });
+  });
+
+  it('renameMessageId still rekeys onto a vacant or non-acked target', () => {
+    const pending = 'reticulum-pending-1';
+    const hash = 'cc'.repeat(32);
+    addMessage(ID_A, {
+      ...sampleRecord(pending),
+      payload: 'going out',
+      status: 'sending',
+    });
+
+    renameMessageId(ID_A, pending, hash);
+
+    const bucket = useMessageStore.getState().messages[ID_A] ?? {};
+    expect(bucket[pending]).toBeUndefined();
+    expect(bucket[hash]).toMatchObject({ id: hash, payload: 'going out', status: 'sending' });
+  });
+
+  it('updateMessageStatus refuses acked → sending', () => {
+    const hash = 'dd'.repeat(32);
+    addMessage(ID_A, { ...sampleRecord(hash), status: 'acked', payload: 'done' });
+    updateMessageStatus(ID_A, hash, 'sending');
+    expect(useMessageStore.getState().messages[ID_A]?.[hash]?.status).toBe('acked');
   });
 });

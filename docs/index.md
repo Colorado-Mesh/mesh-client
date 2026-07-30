@@ -68,9 +68,10 @@ Also useful:
   - [MQTT Auth](letsmesh-mqtt-auth.md)
   - Room login/posts — [Troubleshooting](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 - **Reticulum**
-  - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, propagation)
+  - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, **RRC**, **Remote** rnsh/rncp, **Nomad My Pages**, propagation)
   - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
-  - [Reticulum troubleshooting](troubleshooting.md#reticulum) (sidecar, interfaces, Nomad, RNode Wi‑Fi)
+  - [Reticulum troubleshooting](troubleshooting.md#reticulum) (sidecar, interfaces, Nomad, Remote transfer, RNode Wi‑Fi)
+  - Noble BLE coexistence when a Reticulum BLE RNode is connected — [Troubleshooting](troubleshooting.md#reticulum-ble-rnode-blocks-meshtasticmeshcore-noble-ble)
   - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 - **Support**
   - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic tab), Reticulum interface audit; protocol-scoped row filtering

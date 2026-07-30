@@ -1,5 +1,5 @@
 diff --git a/crates/lxmf-core/src/propagation_sync.rs b/crates/lxmf-core/src/propagation_sync.rs
-index 525f14c..314278c 100644
+index 525f14c..4812a13 100644
 --- a/crates/lxmf-core/src/propagation_sync.rs
 +++ b/crates/lxmf-core/src/propagation_sync.rs
 @@ -5,26 +5,28 @@
@@ -36,7 +36,7 @@ index 525f14c..314278c 100644
  use crate::sync::OfferResponse;
  use crate::types::PropagationTransientId;
  
-@@ -55,6 +57,22 @@ pub struct PropagationSyncTask {
+@@ -55,6 +57,24 @@ pub struct PropagationSyncTask {
      transfer_queue: Vec<Vec<u8>>,
      active_transfer: Option<OutboundTransfer>,
      peer: Option<LxmPeer>,
@@ -50,6 +50,8 @@ index 525f14c..314278c 100644
 +    outbound_peering_key: Option<Vec<u8>>,
 +    /// Last `/offer` response error label (cleared on successful sync start).
 +    pub last_offer_error: Option<&'static str>,
++    /// Sticky Establishing failure (LRPROOF identity miss / invalid proof).
++    pub last_establish_error: Option<&'static str>,
 +    /// Sticky outcome after Complete/Failed → Idle (for progress emitters).
 +    pub last_finished_ok: Option<bool>,
 +    /// Local identity material for LinkIdentify (required before `/offer`).
@@ -59,7 +61,7 @@ index 525f14c..314278c 100644
  }
  
  impl PropagationSyncTask {
-@@ -79,6 +97,15 @@ impl PropagationSyncTask {
+@@ -79,6 +99,16 @@ impl PropagationSyncTask {
              transfer_queue: Vec::new(),
              active_transfer: None,
              peer: None,
@@ -68,6 +70,7 @@ index 525f14c..314278c 100644
 +            peer_peering_cost: 0,
 +            outbound_peering_key: None,
 +            last_offer_error: None,
++            last_establish_error: None,
 +            last_finished_ok: None,
 +            identity_pub: None,
 +            identity_key: None,
@@ -75,7 +78,7 @@ index 525f14c..314278c 100644
          }
      }
  
-@@ -109,6 +136,15 @@ impl PropagationSyncTask {
+@@ -109,6 +139,16 @@ impl PropagationSyncTask {
              transfer_queue: Vec::new(),
              active_transfer: None,
              peer: None,
@@ -84,6 +87,7 @@ index 525f14c..314278c 100644
 +            peer_peering_cost: 0,
 +            outbound_peering_key: None,
 +            last_offer_error: None,
++            last_establish_error: None,
 +            last_finished_ok: None,
 +            identity_pub: None,
 +            identity_key: None,
@@ -91,7 +95,7 @@ index 525f14c..314278c 100644
          })
      }
  
-@@ -135,9 +171,42 @@ impl PropagationSyncTask {
+@@ -135,9 +175,39 @@ impl PropagationSyncTask {
              transfer_queue: Vec::new(),
              active_transfer: None,
              peer: None,
@@ -100,6 +104,7 @@ index 525f14c..314278c 100644
 +            peer_peering_cost: 0,
 +            outbound_peering_key: None,
 +            last_offer_error: None,
++            last_establish_error: None,
 +            last_finished_ok: None,
 +            identity_pub: None,
 +            identity_key: None,
@@ -108,11 +113,7 @@ index 525f14c..314278c 100644
      }
  
 +    /// Provide local identity for LinkIdentify before `/offer`.
-+    pub fn set_local_identity(
-+        &mut self,
-+        identity_pub: [u8; 64],
-+        identity_key: Ed25519PrivateKey,
-+    ) {
++    pub fn set_local_identity(&mut self, identity_pub: [u8; 64], identity_key: Ed25519PrivateKey) {
 +        self.identity_pub = Some(identity_pub);
 +        self.identity_key = Some(identity_key);
 +    }
@@ -134,17 +135,68 @@ index 525f14c..314278c 100644
      pub fn set_node(&mut self, dest_hash: [u8; 16]) {
          self.node_dest_hash = Some(dest_hash);
      }
-@@ -149,6 +218,9 @@ impl PropagationSyncTask {
+@@ -149,6 +219,10 @@ impl PropagationSyncTask {
      /// periodic sync interval.
      pub fn request_sync_now(&mut self, dest_hash: [u8; 16]) {
          self.node_dest_hash = Some(dest_hash);
 +        self.last_offer_error = None;
++        self.last_establish_error = None;
 +        self.last_finished_ok = None;
 +        self.identified = false;
          if self.state == SyncTaskState::Idle {
              self.start_sync(dest_hash);
              self.last_sync = Instant::now();
-@@ -367,7 +439,32 @@ impl PropagationSyncTask {
+@@ -204,13 +278,30 @@ impl PropagationSyncTask {
+                                 continue;
+                             }
+                             let node_hex = self.node_dest_hash.map(|h| hex_encode(&h));
+-                            if let Some(node_hex) = node_hex
+-                                && let Some(pub_key) = known_identities.get(&node_hex)
+-                            {
+-                                let ed25519_bytes: [u8; 32] = pub_key[32..64].try_into().unwrap();
+-                                if let Ok(verify_key) = Ed25519PublicKey::from_bytes(&ed25519_bytes)
+-                                {
+-                                    self.handle_link_proof(data, &verify_key, &ed25519_bytes);
++                            if let Some(node_hex) = node_hex {
++                                if let Some(pub_key) = known_identities.get(&node_hex) {
++                                    let ed25519_bytes: [u8; 32] =
++                                        pub_key[32..64].try_into().unwrap();
++                                    if let Ok(verify_key) =
++                                        Ed25519PublicKey::from_bytes(&ed25519_bytes)
++                                    {
++                                        self.handle_link_proof(data, &verify_key, &ed25519_bytes);
++                                    } else {
++                                        tracing::warn!(
++                                            node = %node_hex,
++                                            "propagation sync LRPROOF: invalid ed25519 key bytes"
++                                        );
++                                        self.last_establish_error = Some("LrproofInvalidKey");
++                                        self.state = SyncTaskState::Failed;
++                                    }
++                                } else {
++                                    tracing::warn!(
++                                        node = %node_hex,
++                                        "propagation sync LRPROOF ignored: destination identity unknown"
++                                    );
++                                    self.last_establish_error = Some("LrproofIdentityMissing");
++                                    // Stay Establishing so a later tick with identity can still succeed;
++                                    // sticky error surfaces if we stall out.
+                                 }
+                             }
+                         }
+@@ -326,8 +417,11 @@ impl PropagationSyncTask {
+                     }
+                 }
+                 self.state = SyncTaskState::Offering;
++                self.last_establish_error = None;
+             }
+             Err(_) => {
++                tracing::warn!("propagation sync LRPROOF validate_proof failed");
++                self.last_establish_error = Some("LrproofInvalid");
+                 self.state = SyncTaskState::Failed;
+             }
+         }
+@@ -367,7 +461,32 @@ impl PropagationSyncTask {
                      .collect();
                  self.queue_messages_for_ids(&wanted_ids);
              }
@@ -178,7 +230,7 @@ index 525f14c..314278c 100644
                  self.state = SyncTaskState::Failed;
              }
          }
-@@ -416,12 +513,23 @@ impl PropagationSyncTask {
+@@ -416,12 +535,23 @@ impl PropagationSyncTask {
              }
              SyncTaskState::Establishing | SyncTaskState::AwaitingResponse => {}
              SyncTaskState::Offering => {
@@ -202,7 +254,7 @@ index 525f14c..314278c 100644
                  self.cleanup_sync();
                  self.last_sync = Instant::now();
                  self.state = SyncTaskState::Idle;
-@@ -429,6 +537,42 @@ impl PropagationSyncTask {
+@@ -429,6 +559,42 @@ impl PropagationSyncTask {
          }
      }
  
@@ -245,7 +297,7 @@ index 525f14c..314278c 100644
      /// Python reference: LXMPeer.py:381-386.
      fn send_offer_request(&mut self) {
          let node_hash = match self.node_dest_hash {
-@@ -440,13 +584,39 @@ impl PropagationSyncTask {
+@@ -440,13 +606,39 @@ impl PropagationSyncTask {
          };
  
          // Wire: msgpack([peering_key, [transient_id_1, transient_id_2, ...]])
@@ -286,7 +338,7 @@ index 525f14c..314278c 100644
          let offer_data = {
              use rmpv::Value;
              let ids: Vec<Value> = offer
-@@ -656,6 +826,7 @@ impl PropagationSyncTask {
+@@ -656,6 +848,7 @@ impl PropagationSyncTask {
          self.active_transfer = None;
          self.transfer_queue.clear();
          self.sync_started = None;

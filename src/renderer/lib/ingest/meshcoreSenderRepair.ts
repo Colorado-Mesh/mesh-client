@@ -9,6 +9,7 @@ import type { IdentityId } from '../types';
 /** Re-resolve channel rows that arrived before contact/pubkey maps were ready. */
 export function repairMeshcoreChannelSenderIdsInStore(identityId: IdentityId): void {
   const byId = useMessageStore.getState().messages[identityId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!byId) return;
 
   const patches: Parameters<typeof upsertMessage>[1][] = [];

@@ -24,18 +24,19 @@ import fs from 'fs';
 // it does not pollute dev console output.  (The module is stable in Node.js 24+.)
 // We must load sqlite via require() here (not import) so the suppression override
 // is in place before the first require call fires the warning.
-const _warnSave = process.emitWarning;
+type EmitWarningCompat = (warning: string | Error, ...args: unknown[]) => void;
+const warnSave = process.emitWarning.bind(process) as EmitWarningCompat;
 
-(process as any).emitWarning = (warning: string | Error, ...args: unknown[]) => {
+process.emitWarning = (warning: string | Error, ...args: unknown[]) => {
   const msg = typeof warning === 'string' ? warning : (warning.message ?? '');
   if (msg.includes('SQLite is an experimental feature')) return;
 
-  return (_warnSave as any).call(process, warning, ...args);
+  warnSave(warning, ...args);
 };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { DatabaseSync } = require('node:sqlite') as { DatabaseSync: typeof DatabaseSyncType };
 
-process.emitWarning = _warnSave; // restore after sqlite is loaded
+process.emitWarning = warnSave; // restore after sqlite is loaded
 
 // ─── Parameter-filtering statement wrapper ────────────────────────────────────
 

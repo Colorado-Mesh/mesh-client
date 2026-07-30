@@ -38,6 +38,7 @@ function rgbTriplet(value: unknown): [number, number, number] | null {
   if (!Array.isArray(value) || value.length < 3) return null;
   const rgb: number[] = [];
   for (let i = 0; i < 3; i += 1) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- External SDK value is validated by surrounding boundary logic.
     const part = value[i];
     if (typeof part !== 'number' || !Number.isFinite(part)) return null;
     rgb.push(Math.min(255, Math.max(0, Math.trunc(part))));
@@ -64,14 +65,18 @@ export function mapRgbToReticulumIconColor(
   return best;
 }
 
-/** True when stored appearance matches the implicit default (circle + green). */
+/**
+ * True when stored appearance is unset (missing or legacy `circle`).
+ * Color is ignored — Circle is no longer a real avatar choice.
+ */
 export function isDefaultReticulumProfileIcon(
   iconName?: string | null,
+  // Color ignored; retained so existing call sites stay type-compatible.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- API compatibility
   iconColor?: string | null,
 ): boolean {
   const name = iconName?.trim().toLowerCase() || 'circle';
-  const color = iconColor?.trim().toLowerCase() || 'green';
-  return name === 'circle' && color === 'green';
+  return name === 'circle';
 }
 
 export function hasCustomReticulumProfileIcon(
@@ -91,7 +96,16 @@ export function resolveReticulumProfileIconName(
   if (wire.includes('star') || wire.includes('grade')) return 'star';
   if (wire.includes('heart') || wire.includes('favorite')) return 'heart';
   if (wire.includes('shield') || wire.includes('security')) return 'shield';
-  if (wire.includes('person') || wire.includes('account') || wire === 'user') return 'user';
+  if (
+    wire === 'people' ||
+    wire === 'person' ||
+    wire.includes('person') ||
+    wire.includes('people') ||
+    wire.includes('account') ||
+    wire === 'user'
+  ) {
+    return 'user';
+  }
   return 'user';
 }
 

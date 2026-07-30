@@ -13,12 +13,13 @@ import {
 } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import { meshProtocolSqlInList } from '../shared/meshProtocol';
+import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../shared/meshtasticOrphanSendingWindow';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 46;
+export const CURRENT_SCHEMA_VERSION = 47;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -211,7 +212,8 @@ export const CANONICAL_TABLES_DDL = `
         to_hash      TEXT,
         reply_to_hash TEXT,
         message_hash TEXT,
-        received_via TEXT
+        received_via TEXT,
+        delivery_method TEXT
       );
 
       CREATE TABLE IF NOT EXISTS rrc_messages (
@@ -438,6 +440,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     message_hash: 'TEXT',
     received_via: 'TEXT',
     delivery_status: 'TEXT',
+    delivery_method: 'TEXT',
     delivery_attempts: 'INTEGER DEFAULT 0',
     next_delivery_attempt_at: 'INTEGER',
     attachment_path: 'TEXT',
@@ -734,7 +737,6 @@ function rebuildMeshcoreTraceHistoryIfNeeded(db: NodeSqliteDB): void {
 }
 
 const MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC = 1_000_000_000;
-const MESHTASTIC_ORPHAN_SENDING_WINDOW_MS = 120_000;
 const MESHTASTIC_STALE_SENDING_MS = 24 * 3_600_000;
 
 /**
@@ -827,8 +829,7 @@ function repairMeshtasticInboundNullStatus(db: NodeSqliteDB): void {
   if (!tableExists(db, 'messages')) return;
   db.prepare(
     `UPDATE messages SET status = 'acked'
-     WHERE status IS NULL
-       AND (received_via IS NOT NULL OR packet_id IS NOT NULL)`,
+     WHERE status IS NULL`,
   ).run();
 }
 

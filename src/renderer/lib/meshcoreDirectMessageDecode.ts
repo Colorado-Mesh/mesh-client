@@ -2,6 +2,7 @@ import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcor
 
 import { resolveMeshcoreNodeIdFromPubKeyPrefix } from './meshcore/meshcorePubKeyRegistry';
 import {
+  MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   parseMeshcoreRoomPostPayload,
 } from './meshcoreChannelText';
@@ -51,24 +52,40 @@ function resolveRoomAuthorIdForMessageId(
   return authorId !== 0 ? authorId : undefined;
 }
 
+function resolveSenderIdFromPrefix(prefix: string, nodeIdByPrefix: Map<string, number>): number {
+  const known = nodeIdByPrefix.get(prefix) ?? 0;
+  if (known !== 0) return known;
+  const resolved = resolveMeshcoreNodeIdFromPubKeyPrefix(prefix) ?? 0;
+  if (resolved !== 0) {
+    nodeIdByPrefix.set(prefix, resolved);
+  }
+  return resolved;
+}
+
 /** Shared DM/room decode for MeshCoreProtocol.subscribe and event-131 waiting-message ingest. */
 export function decodeMeshcoreDirectMessageEvents(
   raw: DecodeMeshcoreDirectMessageInput,
   nodeIdByPrefix: Map<string, number>,
   roomNodeIds: ReadonlySet<number>,
 ): DomainEvent[] {
-  if (raw.txtType === 1) return [];
+  if (raw.txtType === MESHCORE_TXT_TYPE_CLI_DATA) {
+    const cliPrefix = pubKeyPrefixHex(raw.pubKeyPrefix);
+    return [
+      {
+        type: 'meshcore_cli_response',
+        payload: {
+          text: raw.text,
+          senderNodeId: resolveSenderIdFromPrefix(cliPrefix, nodeIdByPrefix),
+          pubKeyPrefixHex: cliPrefix,
+        },
+      },
+    ];
+  }
   if (isMeshcoreTransportStatusChatLine(raw.text)) {
     return decodeTransportStatusDeviceLog(raw.text);
   }
   const prefix = pubKeyPrefixHex(raw.pubKeyPrefix);
-  let senderId = nodeIdByPrefix.get(prefix) ?? 0;
-  if (senderId === 0) {
-    senderId = resolveMeshcoreNodeIdFromPubKeyPrefix(prefix) ?? 0;
-    if (senderId !== 0) {
-      nodeIdByPrefix.set(prefix, senderId);
-    }
-  }
+  const senderId = resolveSenderIdFromPrefix(prefix, nodeIdByPrefix);
   const isSignedPlain = raw.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN;
   if (isSignedPlain && senderId !== 0) {
     (roomNodeIds as Set<number>).add(senderId);

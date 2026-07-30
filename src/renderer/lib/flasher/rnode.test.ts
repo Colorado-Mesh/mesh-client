@@ -89,9 +89,13 @@ describe('RNode.startBluetoothPairing', () => {
 
     // PIN arrives later — promise must still be pending until then.
     let settled = false;
-    void pairingPromise.then(() => {
-      settled = true;
-    });
+    void pairingPromise
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        // catch-no-log-ok: pairing may reject on timeout; test awaits pairingPromise below
+      });
     await vi.advanceTimersByTimeAsync(50);
     expect(settled).toBe(false);
     expect(onPin).not.toHaveBeenCalled();

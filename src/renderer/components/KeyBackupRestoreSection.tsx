@@ -37,6 +37,15 @@ function entryNodeKey(entry: BackupIndexEntry, protocol: 'meshtastic' | 'meshcor
     : (entry as MeshcoreKeyBackupIndexEntry).nodeId;
 }
 
+/** Map internal error codes (and Error.message) to localized key-backup toast copy. */
+function keyBackupFailureMessage(err: unknown, t: TFunction): string {
+  const code = err instanceof Error ? err.message : '';
+  if (code === 'NO_BACKUP') return t('securityPanel.noBackupFound');
+  if (code === 'MISSING_KEYS') return t('securityPanel.missingKeyMaterial');
+  if (code) return code;
+  return t('securityPanel.unknownError');
+}
+
 function formatEntryLabel(
   entry: BackupIndexEntry,
   protocol: 'meshtastic' | 'meshcore',
@@ -142,7 +151,7 @@ export function KeyBackupRestoreSection({
           protocol === 'meshtastic'
             ? await loadMeshtasticDmKeyBackup(nodeKey)
             : await loadMeshcoreKeyBackup(nodeKey);
-        if (!loaded) throw new Error('No backup found');
+        if (!loaded) throw new Error('NO_BACKUP');
         const ok =
           protocol === 'meshtastic'
             ? await onMeshtasticRestore(loaded.publicKey, loaded.privateKey)
@@ -156,9 +165,7 @@ export function KeyBackupRestoreSection({
       } catch (err) {
         console.warn('[KeyBackupRestoreSection] restore ' + errLikeToLogString(err));
         addToast(
-          t('securityPanel.restoreFailed', {
-            message: err instanceof Error ? err.message : 'Unknown error',
-          }),
+          t('securityPanel.restoreFailed', { message: keyBackupFailureMessage(err, t) }),
           'error',
         );
       } finally {
@@ -176,7 +183,7 @@ export function KeyBackupRestoreSection({
     try {
       const keys =
         protocol === 'meshtastic' ? await onMeshtasticBackup() : await onMeshcoreBackup();
-      if (!keys) throw new Error('Missing key material');
+      if (!keys) throw new Error('MISSING_KEYS');
       if (protocol === 'meshtastic') {
         await saveMeshtasticDmKeyBackup({
           nodeNum: localNodeKey,
@@ -197,9 +204,7 @@ export function KeyBackupRestoreSection({
     } catch (err) {
       console.warn('[KeyBackupRestoreSection] backup ' + errLikeToLogString(err));
       addToast(
-        t('securityPanel.backupFailed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
-        }),
+        t('securityPanel.backupFailed', { message: keyBackupFailureMessage(err, t) }),
         'error',
       );
     } finally {

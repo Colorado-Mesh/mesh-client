@@ -271,4 +271,56 @@ describe('useChatOutbox', () => {
       );
     });
   });
+
+  it('blocks the row when remove fails after a successful send', async () => {
+    const entry = makeEntry({ id: 21 });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    vi.mocked(mockOutbox.remove).mockRejectedValueOnce(new Error('db locked'));
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() =>
+      useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }),
+    );
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        21,
+        'blocked',
+        expect.stringContaining('outbox remove failed'),
+        undefined,
+        1,
+      );
+    });
+    await waitFor(() => {
+      expect(result.current.rows.find((r) => r.id === 21)?.status).toBe('blocked');
+    });
+    expect(sendFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps UI failed when persisting failure status rejects', async () => {
+    const entry = makeEntry({ id: 22 });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    vi.mocked(mockOutbox.updateStatus).mockImplementation((_id, status) => {
+      if (status === 'sending') return Promise.resolve();
+      return Promise.reject(new Error('persist failed'));
+    });
+    const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
+    const { result } = renderHook(() =>
+      useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }),
+    );
+    await waitFor(() => {
+      expect(result.current.rows.find((r) => r.id === 22)?.status).toBe('failed');
+    });
+  });
+
+  it('resets stuck sending rows to queued at the start of drain', async () => {
+    const stuck = makeEntry({ id: 23, status: 'sending' });
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(mockOutbox.list).mockResolvedValue([stuck]);
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(23, 'queued');
+    });
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalled();
+    });
+  });
 });

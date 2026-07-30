@@ -63,10 +63,10 @@ describe('parseMeshCoreRfPacket', () => {
     expect(p.innerPayload[2]).toBe(0x37);
     expect(p.innerPayload[3]).toBe(0xa7);
     const innerBeU32 =
-      ((p.innerPayload[0] << 24) |
-        (p.innerPayload[1] << 16) |
-        (p.innerPayload[2] << 8) |
-        p.innerPayload[3]) >>>
+      ((p.innerPayload.at(0)! << 24) |
+        (p.innerPayload.at(1)! << 16) |
+        (p.innerPayload.at(2)! << 8) |
+        p.innerPayload.at(3)!) >>>
       0;
     expect(innerBeU32).toBe(0x111337a7);
   });

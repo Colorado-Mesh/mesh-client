@@ -92,7 +92,7 @@ describe('useMeshcoreRuntime importContacts', () => {
     expect(result.current.nodes.get(IMPORT_NODE_ID)?.hops_away).toBe(3);
   });
 
-  it('preserves last_heard on re-import when the node already exists (no stale nodesRef)', async () => {
+  it('preserves last_heard on re-import when the node already exists (no stale store row)', async () => {
     const importMs = new Date('2026-05-20T12:00:00Z').getTime();
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(importMs);
     try {

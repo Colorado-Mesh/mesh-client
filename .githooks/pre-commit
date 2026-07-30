@@ -105,17 +105,24 @@ if [ -s "$ESLINT_LIST" ]; then
     while IFS= read -r f || [ -n "$f" ]; do
       set -- "$@" "$f"
       if [ "$#" -eq 50 ]; then
-        pnpm exec eslint --cache --max-warnings 0 -- "$@" || exit 1
+        pnpm exec eslint --cache --max-warnings 0 --no-warn-ignored -- "$@" || exit 1
         set --
       fi
     done < "$ESLINT_LIST"
-    [ "$#" -eq 0 ] || pnpm exec eslint --cache --max-warnings 0 -- "$@"
+    [ "$#" -eq 0 ] || pnpm exec eslint --cache --max-warnings 0 --no-warn-ignored -- "$@"
   ) || fail 'eslint (staged)'
 else
   printf 'pre-commit: skip eslint (no staged JS/TS)\n' >&2
 fi
 
 pnpm run typecheck || fail 'pnpm run typecheck'
+
+if staged_match '^(src/shared/|tsconfig\.strict\.json)'; then
+  pnpm run typecheck:strict-shared || fail 'pnpm run typecheck:strict-shared'
+else
+  printf 'pre-commit: skip typecheck:strict-shared (no src/shared or tsconfig.strict.json staged)\n' >&2
+fi
+
 pnpm run check:electron-security || fail 'pnpm run check:electron-security'
 
 if staged_match '^(flatpak/|org\.coloradomesh\.MeshClient\.yml|package\.json|scripts/check-flatpak\.mjs|scripts/sync-flatpak-electron)'; then
@@ -145,6 +152,12 @@ if staged_match '^(reticulum-sidecar/src/stack/config\.rs|src/renderer/lib/retic
   pnpm run check:reticulum-interface-modes || fail 'pnpm run check:reticulum-interface-modes'
 else
   printf 'pre-commit: skip check:reticulum-interface-modes (no interface-mode paths staged)\n' >&2
+fi
+
+if staged_match '^(reticulum-sidecar/src/stack/pn_hosting_policy\.rs|src/shared/pnHostingPolicy\.ts|scripts/check-pn-hosting-policy\.mjs)'; then
+  pnpm run check:pn-hosting-policy || fail 'pnpm run check:pn-hosting-policy'
+else
+  printf 'pre-commit: skip check:pn-hosting-policy (no pn-hosting-policy paths staged)\n' >&2
 fi
 
 if staged_match '^(reticulum-sidecar/src/stack/config\.rs|src/shared/reticulumDecommissionedHubs\.ts|scripts/check-reticulum-decommissioned-hubs\.mjs)'; then

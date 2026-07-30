@@ -125,7 +125,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 **Network Diagnostics**
 
-- **Protocol-scoped rows**: The shared Diagnostics tab filters findings to the **active protocol** — Meshtastic/MeshCore show LoRa routing + RF rows only; Reticulum shows `reticulum/*` interface/path/LXMF rows only (Reticulum interface-down alerts no longer bleed onto LoRa tabs). Map halos, node-list badges, and node detail routing sections use the same filter.
+- **Protocol-scoped rows**: The shared Diagnostics tab filters findings to the **active protocol** — Meshtastic/MeshCore show LoRa routing + RF rows only (including MeshCore **High Companion TX Queue**); Reticulum shows `reticulum/*` interface/path/LXMF rows only (sidecar health, propagation sync stuck/failing, interface-down alerts no longer bleed onto LoRa tabs). Map halos, node-list badges, and node detail routing sections use the same filter.
 - **Network health**: status band **Healthy / Attention / Degraded** plus error and warning counts. **Degraded** applies only when routing error count ≥ 3; fewer errors use **Attention** so small issues don't paint the whole panel red
 - **Single table** from `diagnosticRows` (routing trace rows + RF rows), searchable; rows persist across sessions with an optional restore banner; **max age** (1–168 hours) trims stale routing (24 h default) and RF (1 h default) rows
 - **Foreign LoRa overhear** (Meshtastic tab): MeshCore-heard, Reticulum RNS, other-Meshtastic, and unknown LoRa classes from decode-fail logs and dual-radio RX; 90-minute window; MeshCore repeater conflict escalation above 5 pkt/min
@@ -192,7 +192,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **Copy message**: hover action copies message text to the clipboard
 - **Sender filter**: click any message sender to filter the view to that sender; Escape clears
 - **Jump to date**: scroll the chat to a specific calendar date
-- **Link previews**: `http`/`https` URLs in message text fetch Open Graph metadata (title, description, image) via main-process IPC; localhost and private IPs are blocked
+- **Link previews**: `http`/`https` URLs fetch metadata via main-process IPC — Open Graph for pages, **YouTube oEmbed** for watch/shorts/youtu.be links, and **inline image embeds** for direct raster URLs (`.jpg`, `.png`, etc.). Localhost and private IPs are blocked.
 - **Sound notifications**: audio ping for new messages in non-active channels/DMs; global mute in the toolbar; **per-conversation mute** (bell on channel/DM tabs) stored per protocol
 - **Message starring**: star messages from the hover row; **Starred** view lists bookmarks across conversations (newest first, cap 200)
 - **Timestamp tooltip**: hover the short time label for full date and time
@@ -225,7 +225,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **13** tabs (Connection, Nomad Network, Peers, Network, Admin, Chat, **RRC**, **Map**, Topology, Diagnostics, **Stats**, **Sniffer**, App, etc.). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **14** tabs (Connection, Chat, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -268,7 +268,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 **Repeaters**
 
 - **Repeaters panel** (MeshCore-only tab): list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**)
-- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved repeater passwords** sidebar section with per-repeater Forget
+- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved repeater passwords** sidebar section with per-repeater Forget
 - **Waiting-message drain**: header status indicator (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) during serial companion backlog drain; **Sync now** for manual catch-up
 - **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, clock, clock sync, clear stats, advert, board, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout; **auto Ping** before the first multi-hop CLI command when no trace exists this session (info toast while establishing route); **destructive-command confirm** modal for reboot/erase/factory-reset patterns
 - **Remote session authentication (optional)**: Password may be required for **CLI** and some **telemetry** paths when firmware ACL demands it. **Status** and **Neighbors** use pubkey-framed companion commands and typically work without login on direct (0-hop) repeaters; the auth modal offers “Continue without password.” Saved passwords persist when **Remember** is checked. Admin RPCs share a serialized companion queue — expect up to ~2 minutes blocked while a ping or multi-hop request runs. Status/Telemetry/Neighbors toast when the radio is disconnected.
@@ -319,10 +319,10 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 **Messaging (Chat + RRC)**
 
-- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render read-only)
+- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** on disk under `reticulum/attachments/` also display inline)
 - **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs)
 - **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch) over Reticulum, with saved addresses and inbound-policy controls; also available from Chat DMs as send-file (distinct from Meshtastic remote admin)
-- **Direct** delivery when the destination is in the path table; **propagated (PN)** handoff when offline and a propagation node is configured
+- **Direct** delivery when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered
 
 **Peers, topology, Nomad Network**
 
@@ -365,7 +365,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 - **Map tiles; OpenStreetMap Referer requirement**: Packaged desktop builds load the UI from the local filesystem. The main process now loads the renderer with an explicit HTTP referrer so OpenStreetMap tile requests include a valid `Referer` header and comply with the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). If you point the app at a different tile server, ensure its usage policy permits this client.
 - **Reticulum — no LoRa companion parity**: Reticulum does not use Meshtastic/MeshCore `ConnectionDriver`, MQTT hybrid, channel pills, Rooms BBS, or Hop Goblins diagnostics. The **Chat** tab is **DM-only**; hub room chat lives on the **RRC** tab. Interface add/edit/delete updates config on disk — **restart the stack** after changes under `rns-stack`.
 - **Reticulum — sidecar license**: The spawned `mesh-client-reticulum` binary is **AGPL-3.0** (separate process from the MIT Electron shell). See [docs/reticulum.md](docs/reticulum.md) and [docs/credits.md](docs/credits.md#bundled-binaries).
-- **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no preferred propagation node is set.
+- **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no preferred **remote** propagation node is set. Local inbox ≠ remote store-and-forward. When a path exists, Direct is tried first; Direct fail with a remote preferred PN triggers one-shot PN deposit.
 
 ---
 
@@ -453,7 +453,7 @@ All three protocols can run at the same time. Use the **Meshtastic / MeshCore / 
 2. Open the **Connection** tab and click **Start stack** (enable **Auto-start** to skip this on future launches)
 3. On **Network**, generate or import your LXMF identity (the sidecar must be running)
 4. On **Connection → Interfaces**, add transports (TCP hub, Auto, or RNode over USB/BLE/Wi‑Fi) and enable them; restart the stack after interface changes when using the full `rns-stack` build
-5. Use **Chat** for LXMF DMs; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; optional **Nomad Network** for announce favourites
+5. Use **Chat** for LXMF DMs; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
 
 Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Packaged releases include it automatically. See [docs/reticulum.md](docs/reticulum.md) and [Troubleshooting — Reticulum](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
 
@@ -467,6 +467,8 @@ After a successful connection, Mesh-Client remembers your last device per protoc
 - **WiFi / TCP**: a one-click reconnect card appears; click **Reconnect**
 - **MQTT**: auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter; select transport when connecting)
 - **Reticulum**: with **Auto-start** enabled, the sidecar starts on launch; otherwise click **Start stack** on the Connection tab after opening the app
+
+When both Meshtastic and MeshCore have different saved BLE peripherals, dual-radio Noble startup serializes auto-connect (active protocol first via `mesh-client:protocol`). Sleep/wake reconnect staggers Meshtastic (~4s) then MeshCore (~8s), with up to ~30s dual-Noble settle — see [Troubleshooting — macOS sleep / wake](docs/troubleshooting.md#macos-sleep--wake-and-auto-reconnect).
 
 ### MQTT
 

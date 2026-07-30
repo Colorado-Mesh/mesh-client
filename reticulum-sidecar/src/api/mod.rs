@@ -112,6 +112,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         )
         .route("/api/v1/propagation", get(propagation::list_propagation))
         .route(
+            "/api/v1/propagation/discovered",
+            get(propagation::list_discovered_propagation),
+        )
+        .route(
             "/api/v1/propagation/add",
             post(propagation::add_propagation_node),
         )
@@ -134,6 +138,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route(
             "/api/v1/propagation/auto-sync-interval",
             post(propagation::set_propagation_auto_sync_interval),
+        )
+        .route(
+            "/api/v1/propagation/hosting-policy",
+            post(propagation::set_pn_hosting_policy),
         )
         .route(
             "/api/v1/propagation/{id}/enable",

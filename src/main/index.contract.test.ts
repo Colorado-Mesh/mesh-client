@@ -57,9 +57,9 @@ describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
 
 describe('MQTT forwarder dropped-event logs (source contract)', () => {
   it('sanitizes dynamic MQTT fields when mainWindow is not ready', () => {
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(s\)\)/g) ?? []).length).toBe(2);
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(msg\)\)/g) ?? []).length).toBe(3);
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(String\(id\)\)/g) ?? []).length).toBe(2);
+    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(s\)/g) ?? []).length).toBe(2);
+    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(msg\)/g) ?? []).length).toBe(3);
+    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(id\)/g) ?? []).length).toBe(2);
   });
 });
 
@@ -411,6 +411,19 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('chat:fetchLinkPreview'[\s\S]*?validateIpcSender\(event\)/,
     );
+  });
+
+  it('registers chat:readReticulumAttachmentAsDataUrl with sender validation and path jail', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:readReticulumAttachmentAsDataUrl'");
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('chat:readReticulumAttachmentAsDataUrl'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toContain('readReticulumAttachmentAsDataUrl');
+    expect(INDEX_SOURCE).toContain('takeReticulumAttachmentImageRateToken');
+    expect(INDEX_SOURCE).toContain('o.filePath.length > 512');
+    // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
+    expect(INDEX_SOURCE).toContain('magic bytes alone decide embed MIME');
+    expect(INDEX_SOURCE).toContain('return { dataUrl }');
   });
 
   it('registers chat:outbox handlers with protocol, status, and payload validation', () => {

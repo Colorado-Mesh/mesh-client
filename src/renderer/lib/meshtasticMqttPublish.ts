@@ -40,7 +40,7 @@ export interface ResolveMeshtasticMqttPublishOptions {
 export function resolveMeshtasticMqttChannelName(
   chCfg: MeshtasticChannelConfigForMqtt | undefined,
 ): string {
-  const trimmed = chCfg?.name?.trim();
+  const trimmed = chCfg?.name.trim();
   if (trimmed) return trimmed;
   if (chCfg?.index === 0) return 'LongFast';
   if (chCfg && isMeshtasticDefaultPublicPsk(chCfg.psk)) return 'LongFast';

@@ -4,7 +4,6 @@ import { withTimeout } from '@/shared/withTimeout';
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import { meshcoreContactOutPathBytesForTrace } from './meshcoreRadioContactPath';
 import {
-  CONTACT_TYPE_LABELS,
   MESHCORE_COORD_SCALE,
   meshcoreContactTypeFromHwModel,
   pubkeyToNodeId,
@@ -57,13 +56,13 @@ async function pushRouteToRadioContact(
     await conn.addOrUpdateContact(
       pubKey,
       contact.type,
-      contact.flags ?? 0,
+      contact.flags,
       outPathLen ?? 0,
       packContactOutPath(path),
-      contact.advName ?? '',
-      contact.lastAdvert ?? 0,
-      contact.advLat ?? 0,
-      contact.advLon ?? 0,
+      contact.advName,
+      contact.lastAdvert,
+      contact.advLat,
+      contact.advLon,
     );
     return;
   }
@@ -93,7 +92,7 @@ function buildContactFromNode(
   pubKey: Uint8Array,
   node: Pick<MeshNode, 'long_name' | 'hw_model' | 'last_heard' | 'latitude' | 'longitude'>,
 ): MeshCoreContactRaw {
-  const type = meshcoreContactTypeFromHwModel(node.hw_model ?? CONTACT_TYPE_LABELS[3]) ?? 3;
+  const type = meshcoreContactTypeFromHwModel(node.hw_model) ?? 3;
   const lat =
     node.latitude != null && Number.isFinite(node.latitude)
       ? Math.round(node.latitude * MESHCORE_COORD_SCALE)
@@ -106,8 +105,8 @@ function buildContactFromNode(
     publicKey: pubKey,
     type,
     flags: 0,
-    advName: node.long_name ?? '',
-    lastAdvert: node.last_heard ?? 0,
+    advName: node.long_name,
+    lastAdvert: node.last_heard,
     advLat: lat,
     advLon: lon,
   };

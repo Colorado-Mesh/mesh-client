@@ -1,19 +1,39 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   bindNomadMicronPartials,
   buildNomadLinkRequest,
   collectNomadFormFieldValues,
+  formatNomadRequestDataForUrlBar,
   isNomadFilePath,
   isNomadMicronPage,
   loadNomadMicronPartial,
   mountNomadMicronHtml,
+  nomadPageRequestDataEquals,
+  normalizeNomadPageRequestData,
   parseNomadLinkFieldsSpec,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
+  serializeNomadPageRequestDataKey,
   splitNomadLinkDestination,
 } from './micronParser';
+
+const stylesCss = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../../styles.css'),
+  'utf8',
+);
+
+describe('nomad-micron-page whitespace CSS contract', () => {
+  it('preserves spaces in open-width and wraps with pre-wrap in fit-width', () => {
+    expect(stylesCss).toMatch(/\.nomad-micron-page\s*\{[^}]*white-space:\s*pre;/s);
+    expect(stylesCss).toMatch(/\.nomad-micron-page--fit-width\s*\{[^}]*white-space:\s*pre-wrap;/s);
+  });
+});
 
 describe('renderNomadMicronPage', () => {
   it('renders headings, colors, separators, and links from Micron markup', () => {
@@ -28,7 +48,7 @@ describe('renderNomadMicronPage', () => {
     const html = renderNomadMicronPage(markup);
     const container = document.createElement('div');
     mountNomadMicronHtml(container, html);
-    const plainText = container.textContent ?? '';
+    const plainText = container.textContent;
 
     expect(plainText).toContain('Hello Nomad');
     expect(plainText).toContain('olored text');
@@ -71,6 +91,23 @@ describe('renderNomadMicronPage', () => {
     expect(partial).not.toBeNull();
     expect(partial?.getAttribute('data-partial-destination')).toBe(`${hash}:/page/partial.mu`);
     expect(partial?.textContent).toContain('⧖');
+  });
+
+  it('preserves RMAP-style box padding spaces before Unicode borders', () => {
+    // Padding spaces before trailing │ must survive parse/mount (CSS white-space: pre* keeps them visible).
+    const markup = [
+      '    │  This is the NomadNet page of the RMAP Project, a web interface      │',
+      '    │  `F8f0•`f Visualize LoRa RNode Connection Info,                        │ │',
+    ].join('\n');
+    const html = renderNomadMicronPage(markup);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const plainText = container.textContent;
+
+    expect(plainText).toMatch(/web interface {2,}│/);
+    expect(plainText).toMatch(/Connection Info, {2,}│ │/);
+    expect(plainText).not.toMatch(/web interface│/);
+    expect(plainText).not.toMatch(/Connection Info,││/);
   });
 });
 
@@ -268,5 +305,45 @@ describe('buildNomadLinkRequest', () => {
       baseDestination: ':/page/foo.mu',
       embeddedFieldsSpec: 'a=1|b=2',
     });
+  });
+});
+
+describe('nomad page requestData helpers', () => {
+  it('serializes request data with sorted keys for stable cache identity', () => {
+    expect(serializeNomadPageRequestDataKey(undefined)).toBe('');
+    expect(serializeNomadPageRequestDataKey({})).toBe('');
+    expect(serializeNomadPageRequestDataKey({ var_b: '2', var_a: '1', field_q: 'x' })).toBe(
+      'field_q=x|var_a=1|var_b=2',
+    );
+    expect(serializeNomadPageRequestDataKey({ var_a: '1', var_b: '2' })).toBe(
+      serializeNomadPageRequestDataKey({ var_b: '2', var_a: '1' }),
+    );
+  });
+
+  it('escapes delimiter characters so requestData maps do not collide', () => {
+    const withPipeInValue = serializeNomadPageRequestDataKey({ var_a: '1|var_b=2' });
+    const twoEntries = serializeNomadPageRequestDataKey({ var_a: '1', var_b: '2' });
+    expect(withPipeInValue).not.toBe(twoEntries);
+    expect(withPipeInValue).toBe(`var_a=${encodeURIComponent('1|var_b=2')}`);
+    expect(twoEntries).toBe('var_a=1|var_b=2');
+  });
+
+  it('formats only var_* keys for the URL bar', () => {
+    expect(formatNomadRequestDataForUrlBar(undefined)).toBe('');
+    expect(
+      formatNomadRequestDataForUrlBar({
+        var_thread_id: 'abc',
+        field_q: 'ignored',
+        var_mode: 'live',
+      }),
+    ).toBe('mode=live|thread_id=abc');
+  });
+
+  it('normalizes empty maps and compares by serialized key', () => {
+    expect(normalizeNomadPageRequestData({})).toBeUndefined();
+    expect(normalizeNomadPageRequestData({ var_id: '1' })).toEqual({ var_id: '1' });
+    expect(nomadPageRequestDataEquals({ var_a: '1' }, { var_a: '1' })).toBe(true);
+    expect(nomadPageRequestDataEquals({ var_a: '1' }, { var_a: '2' })).toBe(false);
+    expect(nomadPageRequestDataEquals(undefined, {})).toBe(true);
   });
 });

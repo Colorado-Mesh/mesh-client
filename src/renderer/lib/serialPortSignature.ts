@@ -13,7 +13,7 @@ export interface SerialPortSignature {
 }
 
 export function getPortSignature(port: SerialPort): SerialPortSignature {
-  const info = port.getInfo?.() ?? {};
+  const info = port.getInfo();
   return {
     usbVendorId: info.usbVendorId,
     usbProductId: info.usbProductId,

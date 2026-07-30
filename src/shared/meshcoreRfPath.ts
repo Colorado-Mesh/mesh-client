@@ -48,7 +48,9 @@ export function decodeMeshCorePathPrefix(raw: Uint8Array): {
 } {
   if (raw.length < 2) throw new Error('Packet too short for PATH header');
 
-  const routeType = raw[0] & MESHCORE_ROUTE_MASK;
+  const byte0 = raw.at(0);
+  if (byte0 === undefined) throw new Error('Packet too short for PATH header');
+  const routeType = byte0 & MESHCORE_ROUTE_MASK;
   const hasTransportCodes =
     routeType === ROUTE_TYPE_TRANSPORT_FLOOD || routeType === ROUTE_TYPE_TRANSPORT_DIRECT;
   let transportCodes: readonly [number, number] | null = null;
@@ -67,9 +69,13 @@ export function decodeMeshCorePathPrefix(raw: Uint8Array): {
     );
   }
 
-  const pathLength = raw[pathLengthOffset] & 0x3f;
+  const pathLengthByte = raw.at(pathLengthOffset);
+  if (pathLengthByte === undefined) {
+    throw new Error(`Packet too short for path_length at offset ${pathLengthOffset}`);
+  }
+  const pathLength = pathLengthByte & 0x3f;
   // Upper 2 bits encode hash-size code (0..3), mapping to hash sizes 1..4 bytes.
-  const hashSizeCode = (raw[pathLengthOffset] >> 6) & 0x03;
+  const hashSizeCode = (pathLengthByte >> 6) & 0x03;
   const hashSize = hashSizeCode + 1;
   const pathByteLength = pathLength * hashSize;
   const pathStartOffset = pathLengthOffset + 1;
@@ -171,8 +177,10 @@ export function shouldClassifyRfPayloadAsMeshCoreFromPathDecode(raw: Uint8Array)
   } catch {
     return false;
   }
-  const nibble = meshCorePayloadTypeNibble(raw[0]);
-  const route = raw[0] & MESHCORE_ROUTE_MASK;
+  const byte0 = raw.at(0);
+  if (byte0 === undefined) return false;
+  const nibble = meshCorePayloadTypeNibble(byte0);
+  const route = byte0 & MESHCORE_ROUTE_MASK;
   const hasTransportCodes =
     route === ROUTE_TYPE_TRANSPORT_FLOOD || route === ROUTE_TYPE_TRANSPORT_DIRECT;
   if (hasTransportCodes) return true;

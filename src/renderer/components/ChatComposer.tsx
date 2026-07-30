@@ -40,6 +40,20 @@ import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
 import { useToast } from './Toast';
 
+function emojiUnicodeFromEvent(event: Event): string | null {
+  if (
+    !(event instanceof CustomEvent) ||
+    typeof event.detail !== 'object' ||
+    event.detail === null
+  ) {
+    return null;
+  }
+  const detail = event.detail as Record<string, unknown>;
+  if (typeof detail.emoji !== 'object' || detail.emoji === null) return null;
+  const emoji = detail.emoji as Record<string, unknown>;
+  return typeof emoji.unicode === 'string' ? emoji.unicode : null;
+}
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
@@ -103,7 +117,7 @@ export interface ChatComposerProps {
   onRememberFloodScopePreset?: (hashtag: string) => void;
   /**
    * Resolve GPS/static position for one-click location share.
-   * Sourced from runtime `refreshOurPosition` (Composer has no nodesRef access).
+   * Sourced from runtime `refreshOurPosition` (Composer reads position via runtime, not nodeStore).
    */
   resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
   /**
@@ -702,7 +716,8 @@ export function ChatComposer({
     const el = emojiPickerRef.current;
     if (!el) return;
     const handler = (e: Event) => {
-      const unicode: string = (e as CustomEvent).detail.emoji.unicode;
+      const unicode = emojiUnicodeFromEvent(e);
+      if (!unicode) return;
       const textarea = inputRef.current;
       const currentValue = textarea?.value ?? '';
       const start = textarea?.selectionStart ?? currentValue.length;
@@ -1035,7 +1050,9 @@ export function ChatComposer({
               if (isLinux) {
                 setShowComposePicker((prev) => !prev);
               } else {
-                void window.electronAPI.showEmojiPanel();
+                void window.electronAPI.showEmojiPanel().catch((e: unknown) => {
+                  console.debug('[ChatComposer] showEmojiPanel failed ' + errLikeToLogString(e));
+                });
               }
             }}
             disabled={disabled || !isConnected}

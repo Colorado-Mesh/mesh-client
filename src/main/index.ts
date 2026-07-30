@@ -30,7 +30,7 @@ import type { MQTTSettings } from '../renderer/lib/types';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
-import { findLxmUrlInArgv } from '../shared/meshClientDeepLink';
+import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
   sanitizeMeshcoreLastAdvertForDb,
@@ -123,10 +123,15 @@ import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
-import { MQTTManager, parsePsk } from './mqtt-manager';
+import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
+import {
+  readReticulumAttachmentAsDataUrl,
+  takeReticulumAttachmentImageRateToken,
+} from './reticulum-attachment-image';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import {
@@ -297,6 +302,8 @@ const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 const MESHCORE_CHAT_STUB_ID_MAX = 0xafffffff >>> 0;
 /** Max bytes per BLE write IPC (DoS guard). */
 const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
+/** Max bytes for Meshtastic Xmodem file upload (DoS guard; matches meshcore:openJsonFile). */
+const MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 
 function isAnyMqttConnected(): boolean {
   return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
@@ -328,7 +335,7 @@ async function shutdownAppResources(): Promise<void> {
     ); // log-injection-ok internal cleanup
   }
   try {
-    void reticulumSidecarManager?.stop();
+    await reticulumSidecarManager?.stop();
   } catch (err) {
     console.debug(
       '[main] Reticulum sidecar stop during shutdown (ignored):',
@@ -2129,11 +2136,11 @@ ipcMain.handle('bluetooth-unpair', async (event, macAddress: unknown) => {
       settled = true;
       clearTimeout(timer);
       if (code !== 0) {
-        console.error('[IPC] bluetooth-unpair failed:', stderr);
-        reject(new Error(stderr || 'Failed to unpair device'));
+        console.error('[IPC] bluetooth-unpair failed:', sanitizeLogMessage(stderr));
+        reject(new Error(sanitizeLogMessage(stderr) || 'Failed to unpair device'));
         return;
       }
-      console.debug('[IPC] bluetooth-unpair success:', stdout.trim());
+      console.debug('[IPC] bluetooth-unpair success:', sanitizeLogMessage(stdout.trim()));
       resolve();
     });
     proc.on('error', (err) => {
@@ -2386,18 +2393,33 @@ ipcMain.handle('bluetooth-pair', async (event, macAddress: unknown, pin: unknown
         stderr.includes('AuthenticationCanceled');
       const pairingSucceededByOutput = stdout.includes('Pairing successful');
       if (!pairingFailedByOutput && (pairingSucceededByOutput || code === 0)) {
-        void trustDeviceBestEffort().then(() => {
-          if (settled) return;
-          console.debug('[IPC] bluetooth-pair success');
-          finishResolve();
-        });
+        void trustDeviceBestEffort()
+          .then(() => {
+            if (settled) return;
+            console.debug('[IPC] bluetooth-pair success');
+            finishResolve();
+          })
+          .catch((e: unknown) => {
+            // trustDeviceBestEffort is best-effort and should not reject; finish pairing anyway.
+            console.debug(
+              '[IPC] bluetooth-pair trust settle:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
+            if (settled) return;
+            finishResolve();
+          });
       } else {
-        console.warn('[IPC] bluetooth-pair failed:', stderr.trim() || `code ${code}`);
+        console.warn(
+          '[IPC] bluetooth-pair failed:',
+          sanitizeLogMessage(stderr.trim() || `code ${code}`),
+        );
         finishReject(
           new Error(
-            stderr.trim() ||
-              (pairingFailedByOutput ? 'pair failed (bluetoothctl reported failure)' : '') ||
-              `pair failed with code ${code}`,
+            sanitizeLogMessage(
+              stderr.trim() ||
+                (pairingFailedByOutput ? 'pair failed (bluetoothctl reported failure)' : '') ||
+                `pair failed with code ${code}`,
+            ),
           ),
         );
       }
@@ -2434,8 +2456,11 @@ ipcMain.handle('bluetooth-connect', async (event, macAddress: unknown) => {
         console.debug('[IPC] bluetooth-connect success');
         resolve();
       } else {
-        console.warn('[IPC] bluetooth-connect failed:', stderr.trim() || `code ${code}`);
-        reject(new Error(stderr.trim() || `connect failed with code ${code}`));
+        console.warn(
+          '[IPC] bluetooth-connect failed:',
+          sanitizeLogMessage(stderr.trim() || `code ${code}`),
+        );
+        reject(new Error(sanitizeLogMessage(stderr.trim() || `connect failed with code ${code}`)));
       }
     });
     proc.on('error', (err) => {
@@ -2532,7 +2557,11 @@ ipcMain.handle('bluetooth-get-info', async (event, macAddress: unknown) => {
 });
 
 // ─── IPC: Provide Bluetooth PIN (Linux) ───────────────────────────────
-ipcMain.on('bluetooth-provide-pin', (_event, pin: unknown) => {
+ipcMain.on('bluetooth-provide-pin', (event, pin: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] bluetooth-provide-pin: unauthorized sender');
+    return;
+  }
   if (!pendingPairingCallback) {
     console.warn('[IPC] bluetooth-provide-pin: no pending pairing callback');
     return;
@@ -2777,36 +2806,24 @@ ipcMain.handle('noble-ble-to-radio', async (event, sessionId: unknown, bytes: un
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────
-mqttManager.on('status', (s) => {
+mqttManager.on('status', (s: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshtastic' });
-  else
-    console.debug(
-      '[main] mqtt:status dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(s)),
-    );
+  else console.debug('[main] mqtt:status dropped (mainWindow not ready)', sanitizeLogMessage(s));
 });
-mqttManager.on('error', (msg) => {
+mqttManager.on('error', (msg: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol: 'meshtastic' });
-  else
-    console.debug(
-      '[main] mqtt:error dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(msg)),
-    );
+  else console.debug('[main] mqtt:error dropped (mainWindow not ready)', sanitizeLogMessage(msg));
 });
-mqttManager.on('clientId', (id) => {
+mqttManager.on('clientId', (id: string) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol: 'meshtastic' });
-  else
-    console.debug(
-      '[main] mqtt:clientId dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(id)),
-    );
+  else console.debug('[main] mqtt:clientId dropped (mainWindow not ready)', sanitizeLogMessage(id));
 });
-mqttManager.on('nodeUpdate', (n) => {
+mqttManager.on('nodeUpdate', (n: CachedNode) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:node-update', { ...n, protocol: 'meshtastic' as const });
   else console.debug('[main] mqtt:node-update dropped (mainWindow not ready)');
-  takServerManager?.onNodeUpdate(n);
+  takServerManager?.onNodeUpdate({ ...n, altitude: n.altitude ?? undefined });
 });
 mqttManager.on(
   'traceRouteReply',
@@ -2835,38 +2852,38 @@ mqttManager.on('brokerRaw', (payload: { topic: string; payload: Buffer; retained
   }
 });
 
-meshcoreMqttAdapter.on('status', (s) => {
+meshcoreMqttAdapter.on('status', (s: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:status (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(s)),
+      sanitizeLogMessage(s),
     );
 });
-meshcoreMqttAdapter.on('error', (msg) => {
+meshcoreMqttAdapter.on('error', (msg: string) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:error', { error: msg, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:error (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(msg)),
+      sanitizeLogMessage(msg),
     );
 });
-meshcoreMqttAdapter.on('clientId', (id) => {
+meshcoreMqttAdapter.on('clientId', (id: string) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:clientId', { clientId: id, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:clientId (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(id)),
+      sanitizeLogMessage(id),
     );
 });
-meshcoreMqttAdapter.on('subscribeWarning', (msg) => {
+meshcoreMqttAdapter.on('subscribeWarning', (msg: string) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:warning', { warning: msg, protocol: 'meshcore' });
   else
     console.debug(
       '[main] mqtt:warning (meshcore) dropped (mainWindow not ready)',
-      sanitizeLogMessage(String(msg)),
+      sanitizeLogMessage(msg),
     );
 });
 meshcoreMqttAdapter.on('chatMessage', (m) => {
@@ -2960,7 +2977,8 @@ ipcMain.handle('mqtt:powerSuspend', (event) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:getClientId', (_event, protocol?: MeshProtocol) => {
+ipcMain.handle('mqtt:getClientId', (event, protocol?: MeshProtocol) => {
+  assertIpcSender(event, 'mqtt:getClientId');
   try {
     console.debug('[IPC] mqtt:getClientId', protocol);
     if (protocol === 'meshcore') return meshcoreMqttAdapter.getClientId();
@@ -3175,7 +3193,8 @@ ipcMain.handle('mqtt:publishMeshcorePacketLog', (event, args) => {
   }
 });
 
-ipcMain.handle('mqtt:getCachedNodes', () => {
+ipcMain.handle('mqtt:getCachedNodes', (event) => {
+  assertIpcSender(event, 'mqtt:getCachedNodes');
   try {
     return mqttManager.getCachedNodes();
   } catch (err) {
@@ -3337,7 +3356,8 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
 });
 
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
-ipcMain.handle('storage:isAvailable', () => {
+ipcMain.handle('storage:isAvailable', (event) => {
+  assertIpcSender(event, 'storage:isAvailable');
   try {
     return safeStorage.isEncryptionAvailable();
   } catch (e) {
@@ -3384,7 +3404,8 @@ ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
 // ─── IPC: Login item (launch at startup) ───────────────────────────
 ipcMain.handle('app:getProcessUptimeSec', () => Math.floor(process.uptime()));
 
-ipcMain.handle('app:getLoginItem', () => {
+ipcMain.handle('app:getLoginItem', (event) => {
+  assertIpcSender(event, 'app:getLoginItem');
   try {
     const settings = app.getLoginItemSettings();
     return { openAtLogin: settings.openAtLogin };
@@ -3725,22 +3746,22 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
          mqtt_status AS mqttStatus, received_via AS receivedVia,
          reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
          rx_hops AS rxHops, via_store_forward AS viaStoreForward`;
-    let rows: any[];
+    let rows: Record<string, unknown>[];
     if (channel != null) {
       const ch = safeNonNegativeInt(channel);
       rows = db
         .prepareOnce(
           `SELECT ${columns} FROM messages WHERE channel = ? ORDER BY timestamp DESC LIMIT ?`,
         )
-        .all(ch, safeLimit);
+        .all(ch, safeLimit) as Record<string, unknown>[];
     } else {
       rows = db
         .prepareOnce(`SELECT ${columns} FROM messages ORDER BY timestamp DESC LIMIT ?`)
-        .all(safeLimit);
+        .all(safeLimit) as Record<string, unknown>[];
     }
 
     // Map to_node back to `to` for the renderer; drop invalid reaction scalars from legacy rows
-    return rows.map((r: any) => {
+    return rows.map((r) => {
       const { to_node, emoji: emojiRaw, viaStoreForward: viaSfRaw, ...rest } = r;
       const emoji =
         emojiRaw != null ? (sanitizeUnicodeReactionScalar(emojiRaw) ?? undefined) : undefined;
@@ -3895,8 +3916,9 @@ ipcMain.handle('db:setNodeNote', (event, nodeId: number, note: string) => {
   }
 });
 
-ipcMain.handle('db:getNodes', () => {
+ipcMain.handle('db:getNodes', (event) => {
   try {
+    assertIpcSender(event, 'db:getNodes');
     const db = getDbForIpc('db:getNodes');
     if (!db) return [];
     return db.prepareOnce('SELECT * FROM nodes ORDER BY last_heard DESC').all();
@@ -4143,8 +4165,9 @@ ipcMain.handle('db:clearMessagesByChannel', (event, channel: number) => {
   }
 });
 
-ipcMain.handle('db:getMessageChannels', () => {
+ipcMain.handle('db:getMessageChannels', (event) => {
   try {
+    assertIpcSender(event, 'db:getMessageChannels');
     const db = getDbForIpc('db:getMessageChannels');
     if (!db) return [];
     return db.prepareOnce('SELECT DISTINCT channel FROM messages ORDER BY channel').all();
@@ -4451,7 +4474,8 @@ ipcMain.handle('session:clearData', async (event) => {
 });
 
 // ─── IPC: Log panel ─────────────────────────────────────────────────
-ipcMain.handle('log:getPath', () => {
+ipcMain.handle('log:getPath', (event) => {
+  assertIpcSender(event, 'log:getPath');
   try {
     return getLogPath();
   } catch (err) {
@@ -4463,7 +4487,8 @@ ipcMain.handle('log:getPath', () => {
   }
 });
 
-ipcMain.handle('log:getRecentLines', () => {
+ipcMain.handle('log:getRecentLines', (event) => {
+  assertIpcSender(event, 'log:getRecentLines');
   try {
     return getRecentLines();
   } catch (err) {
@@ -4696,6 +4721,30 @@ ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
   }
 });
 
+ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
+  const o = opts as Record<string, unknown>;
+  if (typeof o.filePath !== 'string' || !o.filePath.trim() || o.filePath.length > 512) {
+    throw new Error('filePath must be a non-empty string');
+  }
+  // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
+  if (!takeReticulumAttachmentImageRateToken()) {
+    console.debug('[IPC] chat:readReticulumAttachmentAsDataUrl rate limited');
+    return { dataUrl: null };
+  }
+  try {
+    const dataUrl = await readReticulumAttachmentAsDataUrl(o.filePath);
+    return { dataUrl };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:readReticulumAttachmentAsDataUrl failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   if (!mainWindow) return null;
@@ -4706,7 +4755,17 @@ ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     const filePath = result.filePaths[0];
-    const data = await fs.promises.readFile(filePath);
+    let data: Buffer;
+    try {
+      data = await readFileUpTo(filePath, MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES);
+    } catch (err) {
+      if (err instanceof Error && err.message === 'File too large') {
+        throw new Error(
+          `File too large (max ${MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES / (1024 * 1024)} MB)`,
+        );
+      }
+      throw err;
+    }
     const filename = path.basename(filePath);
     return { filename, data: new Uint8Array(data) };
   } catch (err) {
@@ -4756,56 +4815,66 @@ const OUTBOX_VALID_PROTOCOLS = MESH_PROTOCOL_SET;
 const OUTBOX_VALID_STATUSES = new Set(['queued', 'sending', 'blocked', 'failed']);
 
 ipcMain.handle('chat:outbox:list', (event, protocol: unknown) => {
-  assertIpcSender(event, 'chat:outbox:list');
-  if (typeof protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(protocol)) {
-    throw new Error('chat:outbox:list: invalid protocol');
+  try {
+    assertIpcSender(event, 'chat:outbox:list');
+    if (typeof protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(protocol)) {
+      throw new Error('chat:outbox:list: invalid protocol');
+    }
+    const db = getDbForIpc('chat:outbox:list');
+    if (!db) return [];
+    const rows = db
+      .prepareOnce('SELECT * FROM chat_outbox WHERE protocol = ? ORDER BY created_at ASC')
+      .all(protocol) as Record<string, unknown>[];
+    return rows.map(rowToOutboxEntry);
+  } catch (err) {
+    return finishDbIpcReadHandler('chat:outbox:list', err, []);
   }
-  const db = getDatabase();
-  const rows = db
-    .prepareOnce('SELECT * FROM chat_outbox WHERE protocol = ? ORDER BY created_at ASC')
-    .all(protocol) as Record<string, unknown>[];
-  return rows.map(rowToOutboxEntry);
 });
 
 ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
-  assertIpcSender(event, 'chat:outbox:add');
-  if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
-  const e = entry as Record<string, unknown>;
-  if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
-    throw new Error('chat:outbox:add: invalid protocol');
-  if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
-  if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
-  if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
-    throw new Error('chat:outbox:add: invalid payload');
-  const now = Date.now();
-  const db = getDatabase();
-  const result = db
-    .prepareOnce(
-      `INSERT INTO chat_outbox
+  try {
+    assertIpcSender(event, 'chat:outbox:add');
+    if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
+    const e = entry as Record<string, unknown>;
+    if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
+      throw new Error('chat:outbox:add: invalid protocol');
+    if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
+    if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
+    if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
+      throw new Error('chat:outbox:add: invalid payload');
+    const now = Date.now();
+    const db = getDbForIpc('chat:outbox:add');
+    if (!db) throw new Error('chat:outbox:add: database closed');
+    const result = db
+      .prepareOnce(
+        `INSERT INTO chat_outbox
         (protocol, view_key, channel, to_node, payload, reply_id, status, error,
          attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total)
        VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?)`,
-    )
-    .run(
-      e.protocol,
-      e.viewKey,
-      e.channel,
-      e.toNode ?? null,
-      e.payload,
-      e.replyId ?? null,
-      typeof e.status === 'string' && OUTBOX_VALID_STATUSES.has(e.status) ? e.status : 'queued',
-      e.error ?? null,
-      e.nextRetryAt ?? null,
-      e.createdAt ?? now,
-      now,
-      e.groupId ?? null,
-      e.groupIndex ?? null,
-      e.groupTotal ?? null,
-    );
-  const row = db
-    .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
-    .get(result.lastInsertRowid) as Record<string, unknown>;
-  return rowToOutboxEntry(row);
+      )
+      .run(
+        e.protocol,
+        e.viewKey,
+        e.channel,
+        e.toNode ?? null,
+        e.payload,
+        e.replyId ?? null,
+        typeof e.status === 'string' && OUTBOX_VALID_STATUSES.has(e.status) ? e.status : 'queued',
+        e.error ?? null,
+        e.nextRetryAt ?? null,
+        e.createdAt ?? now,
+        now,
+        e.groupId ?? null,
+        e.groupIndex ?? null,
+        e.groupTotal ?? null,
+      );
+    const row = db
+      .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
+      .get(result.lastInsertRowid) as Record<string, unknown>;
+    return rowToOutboxEntry(row);
+  } catch (err) {
+    finishDbIpcHandler('chat:outbox:add', err);
+  }
 });
 
 ipcMain.handle(
@@ -4818,42 +4887,53 @@ ipcMain.handle(
     nextRetryAt?: unknown,
     attemptCount?: unknown,
   ) => {
-    assertIpcSender(event, 'chat:outbox:updateStatus');
-    if (typeof id !== 'number' || !Number.isInteger(id))
-      throw new Error('chat:outbox:updateStatus: invalid id');
-    if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
-      throw new Error('chat:outbox:updateStatus: invalid status');
-    const db = getDatabase();
-    if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
-      db.prepareOnce(
-        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
-      ).run(
-        status,
-        typeof error === 'string' ? error : null,
-        typeof nextRetryAt === 'number' ? nextRetryAt : null,
-        attemptCount,
-        Date.now(),
-        id,
-      );
-    } else {
-      db.prepareOnce(
-        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
-      ).run(
-        status,
-        typeof error === 'string' ? error : null,
-        typeof nextRetryAt === 'number' ? nextRetryAt : null,
-        Date.now(),
-        id,
-      );
+    try {
+      assertIpcSender(event, 'chat:outbox:updateStatus');
+      if (typeof id !== 'number' || !Number.isInteger(id))
+        throw new Error('chat:outbox:updateStatus: invalid id');
+      if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
+        throw new Error('chat:outbox:updateStatus: invalid status');
+      const db = getDbForIpc('chat:outbox:updateStatus');
+      if (!db) return;
+      if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
+        db.prepareOnce(
+          'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
+        ).run(
+          status,
+          typeof error === 'string' ? error : null,
+          typeof nextRetryAt === 'number' ? nextRetryAt : null,
+          attemptCount,
+          Date.now(),
+          id,
+        );
+      } else {
+        db.prepareOnce(
+          'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+        ).run(
+          status,
+          typeof error === 'string' ? error : null,
+          typeof nextRetryAt === 'number' ? nextRetryAt : null,
+          Date.now(),
+          id,
+        );
+      }
+    } catch (err) {
+      finishDbIpcHandler('chat:outbox:updateStatus', err);
     }
   },
 );
 
 ipcMain.handle('chat:outbox:remove', (event, id: unknown) => {
-  assertIpcSender(event, 'chat:outbox:remove');
-  if (typeof id !== 'number' || !Number.isInteger(id))
-    throw new Error('chat:outbox:remove: invalid id');
-  getDatabase().prepareOnce('DELETE FROM chat_outbox WHERE id = ?').run(id);
+  try {
+    assertIpcSender(event, 'chat:outbox:remove');
+    if (typeof id !== 'number' || !Number.isInteger(id))
+      throw new Error('chat:outbox:remove: invalid id');
+    const db = getDbForIpc('chat:outbox:remove');
+    if (!db) return;
+    db.prepareOnce('DELETE FROM chat_outbox WHERE id = ?').run(id);
+  } catch (err) {
+    finishDbIpcHandler('chat:outbox:remove', err);
+  }
 });
 
 function rowToOutboxEntry(row: Record<string, unknown>) {
@@ -6290,6 +6370,10 @@ let pendingOpenUrl: string | null = null;
 function forwardOpenUrlToRenderer(url: string): void {
   const trimmed = url.trim();
   if (!trimmed) return;
+  if (!isForwardableMeshClientOpenUrl(trimmed)) {
+    console.debug('[main] ignoring non-mesh open URL:', sanitizeLogMessage(trimmed.slice(0, 120)));
+    return;
+  }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('mesh-client:openUrl', trimmed);
     return;
@@ -6332,134 +6416,147 @@ app.on('child-process-gone', (_event, details) => {
   );
 });
 
-void app.whenReady().then(() => {
-  try {
-    initLogFile();
-    console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
+void app
+  .whenReady()
+  .then(() => {
     try {
-      console.debug('[main] crashDumps path:', sanitizeLogMessage(app.getPath('crashDumps')));
-    } catch (e: unknown) {
-      console.warn(
-        '[main] crashDumps path unavailable:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
-
-    // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
-    if (process.defaultApp) {
-      if (process.argv.length >= 2) {
-        app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
-      }
-    } else {
-      app.setAsDefaultProtocolClient('lxm');
-    }
-    const coldStartUrl = findLxmUrlInArgv(process.argv);
-    if (coldStartUrl) pendingOpenUrl = coldStartUrl;
-
-    initDatabase();
-
-    // Auto-restore TAK server if auto-start is enabled
-    const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
-    try {
-      if (fs.existsSync(takSettingsPath)) {
-        const raw = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
-        // Backfill autoStart for settings files saved before the field was added.
-        if (
-          raw &&
-          typeof raw === 'object' &&
-          typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
-        ) {
-          (raw as Record<string, unknown>).autoStart = false;
-        }
-        const saved = raw as unknown;
-        validateTakSettings(saved);
-        if (saved.autoStart) {
-          void ensureTakServerManager()
-            .then((m) => m.start(saved))
-            .catch((e: unknown) => {
-              console.error(
-                '[TAK] Auto-start failed:',
-                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-              );
-            });
-        }
-      }
-    } catch (e: unknown) {
-      console.warn(
-        '[TAK] Settings restore failed:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
-
-    // Force the dock icon in development on macOS
-    if (!app.isPackaged && process.platform === 'darwin') {
-      const iconPath = path.join(
-        __dirname,
-        '../../resources/icons/mac/iconset/icon_256x256@1x.png',
-      );
-      app.dock?.setIcon(iconPath);
-    }
-    createWindow();
-
-    const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
-    const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
-    setInterval(() => {
-      if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
-      const uptimeSec = Math.floor(process.uptime());
-      const mem = process.memoryUsage();
-      const ble = nobleBleManager.getLongSessionHealthSnapshot();
-      console.debug(
-        `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
-      );
-    }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
-
-    setupAppMenu();
-
-    // ─── Power monitor: notify renderer on suspend/resume ──────────
-    powerMonitor.on('suspend', () => {
-      console.debug('[main] System suspending');
-      rendererHeartbeatWatchdog.clearResumeWatchdog();
-      mqttManager.handlePowerSuspend();
-      meshcoreMqttAdapter.handlePowerSuspend();
-      mainWindow?.webContents.send('power:suspend');
-    });
-    powerMonitor.on('resume', () => {
-      console.debug('[main] System resumed');
-      rendererHeartbeatWatchdog.startResumeWatchdog();
-      mainWindow?.webContents.send('power:resume');
-    });
-  } catch (error) {
-    console.error(
-      '[main] Fatal startup error:',
-      sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
-    );
-    const isNativeModuleError =
-      error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
-    const message = isDatabaseSchemaTooNewError(error)
-      ? formatDatabaseSchemaTooNewMessage(error)
-      : isNativeModuleError
-        ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
-        : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
-    showFatalStartupError('Mesh-Client — Startup Error', message);
-    app.quit();
-    return;
-  }
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+      initLogFile();
+      console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
       try {
-        createWindow();
-      } catch (error) {
-        console.error(
-          '[main] Window creation error:',
-          sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+        console.debug('[main] crashDumps path:', sanitizeLogMessage(app.getPath('crashDumps')));
+      } catch (e: unknown) {
+        console.warn(
+          '[main] crashDumps path unavailable:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
-    } else {
-      mainWindow?.show(); // Restore hidden window on dock click
+
+      // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
+      if (process.defaultApp) {
+        if (process.argv.length >= 2) {
+          app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
+        }
+      } else {
+        app.setAsDefaultProtocolClient('lxm');
+      }
+      const coldStartUrl = findLxmUrlInArgv(process.argv);
+      if (coldStartUrl) pendingOpenUrl = coldStartUrl;
+
+      initDatabase();
+
+      // Auto-restore TAK server if auto-start is enabled
+      const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');
+      try {
+        if (fs.existsSync(takSettingsPath)) {
+          const raw: unknown = JSON.parse(fs.readFileSync(takSettingsPath, 'utf-8'));
+          // Backfill autoStart for settings files saved before the field was added.
+          if (
+            raw != null &&
+            typeof raw === 'object' &&
+            typeof (raw as Record<string, unknown>).autoStart !== 'boolean'
+          ) {
+            (raw as Record<string, unknown>).autoStart = false;
+          }
+          const saved = raw;
+          validateTakSettings(saved);
+          if (saved.autoStart) {
+            void ensureTakServerManager()
+              .then((m) => m.start(saved))
+              .catch((e: unknown) => {
+                console.error(
+                  '[TAK] Auto-start failed:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
+              });
+          }
+        }
+      } catch (e: unknown) {
+        console.warn(
+          '[TAK] Settings restore failed:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+
+      // Force the dock icon in development on macOS
+      if (!app.isPackaged && process.platform === 'darwin') {
+        const iconPath = path.join(
+          __dirname,
+          '../../resources/icons/mac/iconset/icon_256x256@1x.png',
+        );
+        app.dock?.setIcon(iconPath);
+      }
+      createWindow();
+
+      const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
+      const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
+      setInterval(() => {
+        if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
+        const uptimeSec = Math.floor(process.uptime());
+        const mem = process.memoryUsage();
+        const ble = nobleBleManager.getLongSessionHealthSnapshot();
+        console.debug(
+          `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
+        );
+      }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
+
+      setupAppMenu();
+
+      // ─── Power monitor: notify renderer on suspend/resume ──────────
+      powerMonitor.on('suspend', () => {
+        console.debug('[main] System suspending');
+        rendererHeartbeatWatchdog.clearResumeWatchdog();
+        mqttManager.handlePowerSuspend();
+        meshcoreMqttAdapter.handlePowerSuspend();
+        mainWindow?.webContents.send('power:suspend');
+      });
+      powerMonitor.on('resume', () => {
+        console.debug('[main] System resumed');
+        rendererHeartbeatWatchdog.startResumeWatchdog();
+        mainWindow?.webContents.send('power:resume');
+      });
+    } catch (error) {
+      console.error(
+        '[main] Fatal startup error:',
+        sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
+      );
+      const isNativeModuleError =
+        error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
+      const message = isDatabaseSchemaTooNewError(error)
+        ? formatDatabaseSchemaTooNewMessage(error)
+        : isNativeModuleError
+          ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
+          : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
+      showFatalStartupError('Mesh-Client — Startup Error', message);
+      app.quit();
+      return;
     }
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        try {
+          createWindow();
+        } catch (error) {
+          console.error(
+            '[main] Window creation error:',
+            sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+          );
+        }
+      } else {
+        mainWindow?.show(); // Restore hidden window on dock click
+      }
+    });
+  })
+  .catch((error: unknown) => {
+    console.error(
+      '[main] app.whenReady failed:',
+      sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
+    );
+    showFatalStartupError(
+      'Mesh-Client — Startup Error',
+      `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`,
+    );
+    app.quit();
   });
-});
 
 app.on('before-quit', (event) => {
   // Clean up any pending Bluetooth device selection to prevent callback leak
@@ -6494,9 +6591,17 @@ app.on('before-quit', (event) => {
   }
 
   event.preventDefault();
-  void shutdownAppResources().then(() => {
-    app.quit();
-  });
+  void shutdownAppResources()
+    .then(() => {
+      app.quit();
+    })
+    .catch((err: unknown) => {
+      console.error(
+        '[main] shutdownAppResources failed before quit:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      app.quit();
+    });
 });
 
 app.on('will-quit', (event) => {
@@ -6520,7 +6625,7 @@ app.on('will-quit', (event) => {
       ); // log-injection-ok internal cleanup
     }
     try {
-      void reticulumSidecarManager?.stop();
+      await reticulumSidecarManager?.stop();
     } catch (err) {
       console.debug(
         '[main] Reticulum sidecar stop during will-quit (ignored):',

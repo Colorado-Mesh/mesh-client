@@ -26,7 +26,6 @@ function baseDeps(overrides?: Partial<Parameters<typeof processMeshcoreWaitingMe
     pubKeyPrefixMap: new Map<string, number>(),
     myNodeNum: 0x42,
     meshcoreIdentityId: 'meshcore-test-id',
-    legacyOwnsRoomPosts: () => false,
     storePriorForBatch: () => [] as ChatMessage[],
     logTransportLineAsDevice: vi.fn(),
     ...overrides,
@@ -111,9 +110,11 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(result.pendingMessages[0]?.payload).toBe('hello dm');
     expect(result.pendingMessages[0]?.isHistory).toBe(true);
     expect(result.nodesDirty).toBe(true);
+    expect(result.updatedNodeIds).toEqual([senderId]);
+    expect(deps.workingNodes.get(senderId)?.last_heard).toBe(1_700_000_100);
   });
 
-  it('warns and uses senderId 0 for unknown pubKeyPrefix', () => {
+  it('warns and skips ingest for unknown pubKeyPrefix (senderId 0)', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const pubKey = makePubKey(99);
     const prefixBytes = pubKey.slice(0, 6);
@@ -130,7 +131,31 @@ describe('processMeshcoreWaitingMessageItem', () => {
     );
 
     expect(warnSpy).toHaveBeenCalled();
-    expect(result.pendingMessages[0]?.sender_id).toBe(0);
+    expect(result.pendingMessages).toHaveLength(0);
+    expect(result.nodesDirty).toBe(false);
+    expect(result.updatedNodeIds).toEqual([]);
+    warnSpy.mockRestore();
+  });
+
+  it('still logs transport status lines when senderId is 0', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logTransportLineAsDevice = vi.fn();
+    const pubKey = makePubKey(98);
+    const prefixBytes = pubKey.slice(0, 6);
+
+    const result = processMeshcoreWaitingMessageItem(
+      {
+        contactMessage: {
+          pubKeyPrefix: prefixBytes,
+          text: 'ack @peer',
+          senderTimestamp: 1_700_000_201,
+        },
+      },
+      baseDeps({ logTransportLineAsDevice }),
+    );
+
+    expect(result.pendingMessages).toHaveLength(0);
+    expect(logTransportLineAsDevice).toHaveBeenCalledWith('ack @peer');
     warnSpy.mockRestore();
   });
 
@@ -152,7 +177,6 @@ describe('processMeshcoreWaitingMessageItem', () => {
         [prefixHexFromBytes(roomPrefixBytes), roomId],
         [prefixHexFromBytes(authorPubKey.slice(0, 6)), authorId],
       ]),
-      legacyOwnsRoomPosts: () => false,
     });
     deps.workingNodes.set(roomId, {
       node_id: roomId,
@@ -194,7 +218,6 @@ describe('processMeshcoreWaitingMessageItem', () => {
     const deps = baseDeps({
       meshcoreIdentityId: null,
       pubKeyPrefixMap: new Map([[prefixHexFromBytes(roomPrefixBytes), roomId]]),
-      legacyOwnsRoomPosts: () => false,
     });
     deps.workingNodes.set(roomId, {
       node_id: roomId,
@@ -227,13 +250,13 @@ describe('processMeshcoreWaitingMessageItem', () => {
     dispatchSpy.mockRestore();
   });
 
-  it('queues legacy room posts in pendingMessages', () => {
+  it('dispatches room posts through PacketRouter when identity is bound', () => {
+    const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
     const roomPubKey = makePubKey(32);
     const roomId = pubkeyToNodeId(roomPubKey);
     const roomPrefixBytes = roomPubKey.slice(0, 6);
     const deps = baseDeps({
       pubKeyPrefixMap: new Map([[prefixHexFromBytes(roomPrefixBytes), roomId]]),
-      legacyOwnsRoomPosts: () => true,
     });
     deps.workingNodes.set(roomId, {
       node_id: roomId,
@@ -252,15 +275,17 @@ describe('processMeshcoreWaitingMessageItem', () => {
       {
         contactMessage: {
           pubKeyPrefix: roomPrefixBytes,
-          text: 'legacy room post',
+          text: 'room post via router',
           senderTimestamp: 1_700_000_500,
         },
       },
       deps,
     );
 
-    expect(result.pendingMessages).toHaveLength(1);
-    expect(result.pendingMessages[0]?.payload).toContain('legacy room post');
+    expect(result.roomDispatched).toBe(true);
+    expect(result.pendingMessages).toHaveLength(0);
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockRestore();
   });
 
   it('queues channel messages with isHistory', () => {
@@ -304,12 +329,11 @@ describe('processMeshcoreWaitingMessageItem', () => {
       return { deps, prefixBytes };
     }
 
-    function roomDeps(roomPubKey: Uint8Array, legacyOwnsRoomPosts: boolean) {
+    function roomDeps(roomPubKey: Uint8Array) {
       const roomPrefixBytes = roomPubKey.slice(0, 6);
       const roomId = pubkeyToNodeId(roomPubKey);
       const deps = baseDeps({
         pubKeyPrefixMap: new Map([[prefixHexFromBytes(roomPrefixBytes), roomId]]),
-        legacyOwnsRoomPosts: () => legacyOwnsRoomPosts,
       });
       deps.workingNodes.set(roomId, {
         node_id: roomId,
@@ -401,25 +425,32 @@ describe('processMeshcoreWaitingMessageItem', () => {
       expect(result.pendingMessages[0]?.rxHops).toBeUndefined();
     });
 
-    it('sets legacy room rxHops from pathLen', () => {
-      const { deps, roomPrefixBytes } = roomDeps(makePubKey(52), true);
+    it('forwards pathLen into PacketRouter room dispatch as hopCount (room pathLen)', () => {
+      const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
+      const { deps, roomPrefixBytes } = roomDeps(makePubKey(52));
       const result = processMeshcoreWaitingMessageItem(
         {
           contactMessage: {
             pubKeyPrefix: roomPrefixBytes,
-            text: 'legacy room hops',
+            text: 'room hops',
             senderTimestamp: 1_700_000_730,
             pathLen: 4,
           },
         },
         deps,
       );
-      expect(result.pendingMessages[0]?.rxHops).toBe(4);
+      expect(result.roomDispatched).toBe(true);
+      expect(result.pendingMessages).toHaveLength(0);
+      const textEvent = dispatchSpy.mock.calls
+        .map(([event]) => event)
+        .find((e) => e.type === 'text_message');
+      expect(textEvent?.type === 'text_message' && textEvent.payload.hopCount).toBe(4);
+      dispatchSpy.mockRestore();
     });
 
-    it('forwards pathLen into PacketRouter room dispatch as hopCount', () => {
+    it('maps pathLen 0xff to direct 0-hop room dispatch hopCount', () => {
       const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
-      const { deps, roomPrefixBytes } = roomDeps(makePubKey(53), false);
+      const { deps, roomPrefixBytes } = roomDeps(makePubKey(53));
       const result = processMeshcoreWaitingMessageItem(
         {
           contactMessage: {

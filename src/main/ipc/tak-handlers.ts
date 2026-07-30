@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-import type { TAKServerStatus } from '../../shared/tak-types';
+import type { TAKServerStatus, TAKSettings } from '../../shared/tak-types';
 import { sanitizeLogMessage } from '../log-service';
 import type { TakServerManager } from '../tak-server-manager';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -9,14 +9,16 @@ export interface TakIpcDeps {
   idleTakStatus: TAKServerStatus;
   ensureTakServerManager: () => Promise<TakServerManager>;
   getTakServerManager: () => TakServerManager | null;
-  validateTakSettings: (settings: unknown) => void;
+  validateTakSettings: (settings: unknown) => asserts settings is TAKSettings;
 }
 
 /** Register TAK server IPC handlers (`tak:*`). */
 export function registerTakIpcHandlers(deps: TakIpcDeps): void {
-  const { idleTakStatus, ensureTakServerManager, getTakServerManager, validateTakSettings } = deps;
+  const { idleTakStatus, ensureTakServerManager, getTakServerManager } = deps;
+  const validateTakSettings: (settings: unknown) => asserts settings is TAKSettings =
+    deps.validateTakSettings;
 
-  ipcMain.handle('tak:start', async (event, settings) => {
+  ipcMain.handle('tak:start', async (event, settings: unknown) => {
     assertIpcSender(event, 'tak:start');
     try {
       console.debug('[IPC] tak:start');

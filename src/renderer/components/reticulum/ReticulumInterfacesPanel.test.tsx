@@ -392,6 +392,9 @@ describe('ReticulumInterfacesPanel', () => {
     expect(screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria')).toHaveValue(
       'boundary',
     );
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.modeDescriptions.boundary'),
+    ).toBeInTheDocument();
     await user.selectOptions(
       screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
       'rnode',
@@ -399,6 +402,30 @@ describe('ReticulumInterfacesPanel', () => {
     expect(screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria')).toHaveValue(
       'access_point',
     );
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.modeDescriptions.access_point'),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps Add interface outside the Mode select so description cannot overlap the button', async () => {
+    const { container } = render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    const mode = screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria');
+    const add = screen.getByRole('button', {
+      name: 'connectionPanel.reticulumInterfaces.add',
+    });
+    const description = screen.getByText(
+      'connectionPanel.reticulumInterfaces.modeDescriptions.boundary',
+    );
+
+    expect(mode.closest('div')).not.toContainElement(add);
+    expect(mode.closest('div')).not.toContainElement(description);
+    expect(
+      add.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('clears mode on edit save when empty option selected', async () => {
@@ -438,6 +465,129 @@ describe('ReticulumInterfacesPanel', () => {
       expect(proxyPut).toHaveBeenCalledWith(
         '/api/v1/interfaces/hub',
         expect.objectContaining({ mode: '' }),
+      );
+    });
+  });
+
+  it('posts IFAC fields when adding a TCP interface', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumInterfaces.host'),
+      'private.example',
+    );
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumInterfaces.networkNameAria'),
+      'private_ret',
+    );
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumInterfaces.passphraseAria'),
+      'secret-pass',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }),
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        expect.objectContaining({
+          type: 'tcp',
+          host: 'private.example',
+          network_name: 'private_ret',
+          passphrase: 'secret-pass',
+        }),
+      );
+    });
+  });
+
+  it('prefills IFAC and advanced fields when opening edit', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'ttp-tcp',
+            name: 'TTP_TCP',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+            host: 'rns.thetechprepper.com',
+            port: 11312,
+            mode: 'boundary',
+            network_name: 'ttp_internal',
+            passphrase: 'resistance202606',
+            extra_config: { forward_interval: '300' },
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    );
+    expect(document.getElementById('edit-ifac-ttp-tcp-network-name')).toHaveValue('ttp_internal');
+    expect(document.getElementById('edit-ifac-ttp-tcp-passphrase')).toHaveValue('resistance202606');
+    expect(document.getElementById('edit-advanced-ttp-tcp')).toHaveValue('forward_interval = 300');
+  });
+
+  it('includes IFAC and extra_config in edit save patch', async () => {
+    const user = userEvent.setup();
+    const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPut = proxyPut;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'hub',
+            name: 'Hub',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+            host: 'example.org',
+            port: 4242,
+            mode: 'boundary',
+            network_name: 'old_net',
+            passphrase: 'old_pass',
+            extra_config: { forward_interval: '100' },
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    );
+    const networkInput = document.getElementById('edit-ifac-hub-network-name');
+    expect(networkInput).toBeTruthy();
+    await user.clear(networkInput!);
+    await user.type(networkInput!, 'new_net');
+    const advanced = document.getElementById('edit-advanced-hub');
+    expect(advanced).toBeTruthy();
+    await user.clear(advanced!);
+    await user.type(
+      advanced!,
+      'forward_interval = 300{Enter}max_distance = 50{Enter}network_name = ignore',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.saveEdit' }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledWith(
+        '/api/v1/interfaces/hub',
+        expect.objectContaining({
+          network_name: 'new_net',
+          passphrase: 'old_pass',
+          extra_config: {
+            forward_interval: '300',
+            max_distance: '50',
+          },
+        }),
       );
     });
   });

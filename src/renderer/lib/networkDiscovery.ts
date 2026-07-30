@@ -29,9 +29,11 @@ export function startNetworkDiscovery(
       nodeIds.map(async (nodeId, index) => {
         if (stopped) return;
         await Promise.resolve();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
         if (stopped) return;
         if (interNodeStaggerMs > 0 && index > 0) {
           await new Promise<void>((resolve) => setTimeout(resolve, index * interNodeStaggerMs));
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
           if (stopped) return;
         }
         try {
@@ -52,16 +54,31 @@ export function startNetworkDiscovery(
     sweepTimeout = setTimeout(() => {
       void (async () => {
         if (stopped) return;
-        await runSweep();
+        try {
+          await runSweep();
+        } catch (e) {
+          console.warn(
+            '[networkDiscovery] sweep failed',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
         scheduleNext();
       })();
     }, intervalMs);
   }
 
   // Run an immediate sweep, then schedule recurring ones
-  void runSweep().then(() => {
-    if (!stopped) scheduleNext();
-  });
+  void runSweep()
+    .then(() => {
+      if (!stopped) scheduleNext();
+    })
+    .catch((e: unknown) => {
+      console.warn(
+        '[networkDiscovery] initial sweep failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      if (!stopped) scheduleNext();
+    });
 
   return function stop() {
     stopped = true;

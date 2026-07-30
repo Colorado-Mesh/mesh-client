@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
@@ -18,6 +18,8 @@ pub struct PropagationBridge {
     local_node: Arc<Mutex<PropagationNode>>,
     sync_task: Mutex<PropagationSyncTask>,
     local_serving: AtomicBool,
+    /// Serializes sync-run generation changes with emitter cancel / pin / event side effects.
+    sync_lifecycle: Mutex<()>,
 }
 
 impl PropagationBridge {
@@ -26,15 +28,19 @@ impl PropagationBridge {
         local_dest_hash: [u8; 16],
         storage_dir: PathBuf,
         identity: &Identity,
+        policy: &super::pn_hosting_policy::PnHostingPolicy,
     ) -> Result<Self, String> {
         std::fs::create_dir_all(&storage_dir).map_err(|e| e.to_string())?;
+        let node_config = PropagationNodeConfig {
+            max_storage: policy.message_storage_limit_bytes(),
+            max_message_age: lxmf_core::constants::MESSAGE_EXPIRY,
+            min_stamp_cost: policy.min_stamp_cost(),
+            peering_cost: policy.peering_cost,
+            max_message_size: policy.propagation_limit_kb.saturating_mul(1024),
+        };
         let local_node = Arc::new(Mutex::new(
-            PropagationNode::with_storage(
-                PropagationNodeConfig::default(),
-                local_dest_hash,
-                storage_dir,
-            )
-            .map_err(|e| format!("propagation storage init: {e}"))?,
+            PropagationNode::with_storage(node_config, local_dest_hash, storage_dir)
+                .map_err(|e| format!("propagation storage init: {e}"))?,
         ));
         let mut sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
         let signing_key = identity
@@ -46,11 +52,20 @@ impl PropagationBridge {
             local_node,
             sync_task: Mutex::new(sync_task),
             local_serving: AtomicBool::new(false),
+            sync_lifecycle: Mutex::new(()),
         })
+    }
+
+    pub fn local_node(&self) -> Arc<Mutex<PropagationNode>> {
+        self.local_node.clone()
     }
 
     pub fn local_dest_hash_hex(&self) -> String {
         hex::encode(self.local_dest_hash)
+    }
+
+    pub fn local_dest_hash_bytes(&self) -> [u8; 16] {
+        self.local_dest_hash
     }
 
     pub fn set_local_serving(&self, enabled: bool, router: &mut LxmRouter) {
@@ -98,6 +113,35 @@ impl PropagationBridge {
         last_finished_ok != Some(false)
     }
 
+    /// Whether this emitter still owns the active sync run (generation match).
+    pub fn is_current_sync_run(active_run_id: u64, run_id: u64) -> bool {
+        active_run_id == run_id
+    }
+
+    /// Hold while replacing the active sync generation / cancel token.
+    pub fn lock_sync_lifecycle(
+        &self,
+    ) -> Result<MutexGuard<'_, ()>, PoisonError<MutexGuard<'_, ()>>> {
+        self.sync_lifecycle.lock()
+    }
+
+    /// Run `action` only if `run_id` is still current, under the lifecycle lock.
+    pub fn run_if_current(
+        &self,
+        active_run_id: &AtomicU64,
+        run_id: u64,
+        action: impl FnOnce(),
+    ) -> bool {
+        let Ok(_guard) = self.sync_lifecycle.lock() else {
+            return false;
+        };
+        if !Self::is_current_sync_run(active_run_id.load(Ordering::SeqCst), run_id) {
+            return false;
+        }
+        action();
+        true
+    }
+
     pub fn sync_active(&self) -> bool {
         self.sync_task
             .lock()
@@ -131,6 +175,13 @@ impl PropagationBridge {
             .and_then(|task| task.last_offer_error)
     }
 
+    pub fn last_establish_error(&self) -> Option<&'static str> {
+        self.sync_task
+            .lock()
+            .ok()
+            .and_then(|task| task.last_establish_error)
+    }
+
     /// Sticky success/failure after Complete/Failed collapses to Idle.
     pub fn last_finished_ok(&self) -> Option<bool> {
         self.sync_task
@@ -150,21 +201,40 @@ impl PropagationBridge {
         self: &Arc<Self>,
         event_tx: broadcast::Sender<String>,
         cancel: Arc<AtomicBool>,
+        run_id: u64,
+        active_run_id: Arc<AtomicU64>,
+        on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
     ) {
         let bridge = Arc::clone(self);
         tokio::spawn(async move {
-            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
+            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(45);
             let mut interval = tokio::time::interval(Duration::from_millis(500));
             let started = Instant::now();
+            let clear_pins = || {
+                bridge.run_if_current(&active_run_id, run_id, || {
+                    if let Some(ref cb) = on_terminal {
+                        cb();
+                    }
+                });
+            };
             loop {
                 interval.tick().await;
                 if cancel.load(Ordering::SeqCst) {
-                    bridge.cancel_sync();
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_sync();
+                        tracing::info!(
+                            target: "propagation-sync",
+                            progress = bridge.sync_progress(),
+                            establish_error = ?bridge.last_establish_error(),
+                            "propagation sync cancelled"
+                        );
+                    });
                     break;
                 }
                 let active = bridge.sync_active();
                 let finished_ok = bridge.last_finished_ok();
                 let offer_error = bridge.last_offer_error();
+                let establish_error = bridge.last_establish_error();
                 // Complete/Failed immediately collapse to Idle (progress 0). Use sticky
                 // last_finished_ok so success (e.g. HaveAll) is not reported as failure.
                 let progress = if active {
@@ -177,21 +247,38 @@ impl PropagationBridge {
                     }
                 };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
-                    bridge.cancel_sync();
-                    let payload = serde_json::json!({
-                        "active": false,
-                        "progress": 0.0,
-                        "message": "propagation node unreachable",
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_sync();
+                        let message = establish_error
+                            .map(|e| format!("propagation establish failed: {e}"))
+                            .unwrap_or_else(|| {
+                                "propagation establish failed: NoLinkProof".to_string()
+                            });
+                        tracing::info!(
+                            target: "propagation-sync",
+                            message = %message,
+                            progress,
+                            "propagation sync stalled while establishing"
+                        );
+                        let payload = serde_json::json!({
+                            "active": false,
+                            "progress": 0.0,
+                            "message": message,
+                        });
+                        let frame = serde_json::json!({
+                            "type": "propagation_sync",
+                            "payload": payload,
+                        });
+                        let _ = event_tx.send(frame.to_string());
                     });
-                    let frame = serde_json::json!({
-                        "type": "propagation_sync",
-                        "payload": payload,
-                    });
-                    let _ = event_tx.send(frame.to_string());
                     break;
                 }
                 let fail_message = if !active && progress == 0.0 {
-                    offer_error.map(|e| format!("propagation offer rejected: {e}"))
+                    offer_error
+                        .map(|e| format!("propagation offer rejected: {e}"))
+                        .or_else(|| {
+                            establish_error.map(|e| format!("propagation establish failed: {e}"))
+                        })
                 } else {
                     None
                 };
@@ -204,13 +291,36 @@ impl PropagationBridge {
                     "type": "propagation_sync",
                     "payload": payload,
                 });
-                let _ = event_tx.send(frame.to_string());
+                // Drop stale progress frames when a newer sync run has taken ownership.
+                if !bridge.run_if_current(&active_run_id, run_id, || {
+                    let _ = event_tx.send(frame.to_string());
+                }) {
+                    break;
+                }
                 if !active && (progress >= 99.0 || finished_ok.is_some()) {
+                    if finished_ok == Some(true) {
+                        tracing::info!(
+                            target: "propagation-sync",
+                            progress,
+                            "propagation sync completed successfully"
+                        );
+                    } else if let Some(ref msg) = fail_message {
+                        tracing::info!(
+                            target: "propagation-sync",
+                            message = %msg,
+                            progress,
+                            "propagation sync terminal failure"
+                        );
+                    }
                     break;
                 }
             }
+            clear_pins();
             // Do not emit a blanket progress=100 after a real failure/cancel terminal.
-            if Self::should_emit_terminal_success(bridge.last_finished_ok()) {
+            bridge.run_if_current(&active_run_id, run_id, || {
+                if !Self::should_emit_terminal_success(bridge.last_finished_ok()) {
+                    return;
+                }
                 let payload = serde_json::json!({
                     "active": false,
                     "progress": 100.0,
@@ -221,7 +331,7 @@ impl PropagationBridge {
                     "payload": payload,
                 });
                 let _ = event_tx.send(frame.to_string());
-            }
+            });
         });
     }
 }
@@ -240,6 +350,43 @@ mod tests {
     }
 
     #[test]
+    fn current_sync_run_gate_rejects_stale_emitter() {
+        assert!(PropagationBridge::is_current_sync_run(2, 2));
+        assert!(!PropagationBridge::is_current_sync_run(2, 1));
+    }
+
+    #[test]
+    fn run_if_current_rejects_stale_side_effects() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-bridge-lifecycle-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        let active = AtomicU64::new(1);
+        let mut ran = false;
+        assert!(bridge.run_if_current(&active, 1, || {
+            ran = true;
+        }));
+        assert!(ran);
+        active.store(2, Ordering::SeqCst);
+        ran = false;
+        assert!(!bridge.run_if_current(&active, 1, || {
+            ran = true;
+        }));
+        assert!(!ran);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn cancel_sync_sets_sticky_failure() {
         let dir =
             std::env::temp_dir().join(format!("mesh-prop-bridge-cancel-{}", std::process::id()));
@@ -247,8 +394,14 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let identity = rns_identity::identity::Identity::new();
-        let bridge =
-            PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity).expect("bridge");
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
         bridge.cancel_sync();
         assert_eq!(bridge.last_finished_ok(), Some(false));
         assert!(!bridge.sync_active());

@@ -458,14 +458,14 @@ export class WebBluetoothManager {
       const isPairing = isWebBluetoothPairingError(err);
       console.debug(
         `[WebBluetooth:${this.sessionId}] gatt.connect() failed:`,
-        domErr?.name,
-        domErr?.message,
+        domErr.name,
+        domErr.message,
         isPairing ? '(pairing-related)' : '',
       );
       console.debug('[WebBluetooth] raw error: ' + errLikeToLogString(err));
       // Wrap the error with classification info for the UI layer
       const error = markPairingRelatedError(
-        `Bluetooth connection failed${isPairing ? ' (pairing issue)' : ''}: ${domErr?.message ?? String(err)}`,
+        `Bluetooth connection failed${isPairing ? ' (pairing issue)' : ''}: ${domErr.message}`,
         isPairing,
       );
       throw error;
@@ -534,14 +534,14 @@ export class WebBluetoothManager {
       const isPairing = isWebBluetoothPairingError(err);
       console.debug(
         `[WebBluetooth:${this.sessionId}] GATT service/characteristic discovery failed:`,
-        domErr?.name,
-        domErr?.message,
+        domErr.name,
+        domErr.message,
         isPairing ? '(pairing-related)' : '',
       );
       console.debug('[WebBluetooth] GATT discovery raw error: ' + errLikeToLogString(err));
       // "GATT Error: Not supported" typically means device requires pairing before GATT operations
       const error = markPairingRelatedError(
-        `GATT Error: Not supported. The device may require pairing. ${domErr?.message ?? String(err)}`,
+        `GATT Error: Not supported. The device may require pairing. ${domErr.message}`,
         true,
       );
       throw error;
@@ -576,14 +576,15 @@ export class WebBluetoothManager {
       const domErr = err as DOMException;
       const isPairing = isWebBluetoothPairingError(err);
       const isDescriptorMissingNotSupported =
-        domErr?.name === 'NotSupportedError' && this.fromRadioDescriptorUuids.length === 0;
+        domErr.name === 'NotSupportedError' && this.fromRadioDescriptorUuids.length === 0;
       if (this.sessionId === 'meshtastic' && isDescriptorMissingNotSupported) {
         // `ed9da18c-…` is **fromNum**, not fromRadio — see `noble-ble-manager.ts` (FROMNUM_UUID).
         // Do not subscribe there for the Meshtastic protobuf stream. When Linux exposes no CCCD on
         // canonical fromRadio (`2c55…`), fall back to GATT read pump like Noble does.
         const primary = this.fromRadioCharacteristic;
         const notifyHandler = this.fromRadioNotifyHandler;
-        if (primary?.properties.read) {
+        if (primary.properties.read) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
           if (notifyHandler) {
             primary.removeEventListener('characteristicvaluechanged', notifyHandler);
           }
@@ -599,13 +600,13 @@ export class WebBluetoothManager {
       }
       console.debug(
         `[WebBluetooth:${this.sessionId}] startNotifications failed:`,
-        domErr?.name,
-        domErr?.message,
+        domErr.name,
+        domErr.message,
         isPairing ? '(pairing-related)' : '',
       );
       console.debug('[WebBluetooth] startNotifications raw error: ' + errLikeToLogString(err));
       const error = markPairingRelatedError(
-        `Failed to start Bluetooth notifications${isPairing ? ' (pairing issue)' : ''}: ${domErr?.message ?? String(err)}`,
+        `Failed to start Bluetooth notifications${isPairing ? ' (pairing issue)' : ''}: ${domErr.message}`,
         isPairing,
       );
       throw error;
@@ -652,7 +653,13 @@ export class WebBluetoothManager {
 
   private cleanup(): void {
     if (this.registeredDeviceId) {
-      void unregisterWebBtDevice(this.sessionId, this.registeredDeviceId);
+      void unregisterWebBtDevice(this.sessionId, this.registeredDeviceId).catch((err: unknown) => {
+        // catch-no-log-ok cleanup path — coexistence unregister must not surface as unhandled rejection
+        console.debug(
+          '[WebBluetoothManager] unregisterWebBtDevice during cleanup failed: ' +
+            errLikeToLogString(err),
+        );
+      });
       this.registeredDeviceId = null;
     }
     this.clearPostWriteSafetyReads();

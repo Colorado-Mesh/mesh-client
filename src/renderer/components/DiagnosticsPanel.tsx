@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
@@ -22,6 +23,7 @@ import {
   isRfForeignLoraHeard,
   useDiagnosticsStore,
 } from '@/renderer/stores/diagnosticsStore';
+import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/shared/nodeNameUtils';
 
@@ -144,7 +146,7 @@ interface Props {
   capabilities?: ProtocolCapabilities;
   /** Active radio protocol — auto-traceroute preference is stored per protocol. */
   protocol: MeshProtocol;
-  /** Meshtastic node id used to look up foreign-LoRa detections (stable across panel remounts). */
+  /** Meshtastic node id used to look up foreign-LoRa detections when on the Meshtastic tab. */
   meshtasticListenerNodeId?: number;
   /** MeshCore contacts only — used for heard-by-Meshtastic links (not merged Meshtastic nodes). */
   meshcoreNodes?: Map<number, MeshNode>;
@@ -181,6 +183,7 @@ export default function DiagnosticsPanel({
   onRefreshReticulumDiagnostics,
 }: Props) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const formatRowTime = useCallback(
     (ts: number) => {
       if (!ts) return t('common.emDash');
@@ -190,6 +193,7 @@ export default function DiagnosticsPanel({
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
   const showLoRaMeshDiagnostics = capabilities?.hasHopCount !== false;
+  const showForeignLoraDiagnostics = capabilities?.hasDiagnosticsPanel !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
@@ -227,9 +231,16 @@ export default function DiagnosticsPanel({
   const distanceOffsetKm = useDiagnosticsStore((s) => s.distanceOffsetKm);
   const setDistanceOffsetKm = useDiagnosticsStore((s) => s.setDistanceOffsetKm);
   const foreignLoraDetections = useDiagnosticsStore((s) => s.foreignLoraDetections);
+  /** Map key for foreign-LoRa detections: Meshtastic self id on MT tab, MeshCore self id on MC tab. */
+  const foreignLoraListenerNodeId =
+    protocol === 'meshcore' && myNodeNum > 0
+      ? myNodeNum
+      : protocol === 'meshtastic' && meshtasticListenerNodeId > 0
+        ? meshtasticListenerNodeId
+        : 0;
   const foreignLoraBySender = useMemo(
-    () => foreignLoraDetections.get(meshtasticListenerNodeId),
-    [foreignLoraDetections, meshtasticListenerNodeId],
+    () => foreignLoraDetections.get(foreignLoraListenerNodeId),
+    [foreignLoraDetections, foreignLoraListenerNodeId],
   );
   const meshcoreHeardList = useMemo(
     () =>
@@ -247,12 +258,12 @@ export default function DiagnosticsPanel({
     s.diagnosticRows.some(
       (r) =>
         r.kind === 'rf' &&
-        r.nodeId === meshtasticListenerNodeId &&
+        r.nodeId === foreignLoraListenerNodeId &&
         r.condition === 'Potential MeshCore Repeater Conflict',
     ),
   );
-  const showMeshtasticForeignLora =
-    protocol === 'meshtastic' && meshtasticListenerNodeId > 0 && isConnected;
+  const showForeignLoraTables =
+    showForeignLoraDiagnostics && foreignLoraListenerNodeId > 0 && isConnected;
 
   const [search, setSearch] = useState('');
   const [tracePendingNodes, setTracePendingNodes] = useState<Set<number>>(() => new Set());
@@ -474,9 +485,7 @@ export default function DiagnosticsPanel({
 
   const selfRows = anomalyList.filter((r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r));
   const foreignLoraListenerId =
-    protocol === 'meshtastic' && meshtasticListenerNodeId > 0
-      ? meshtasticListenerNodeId
-      : myNodeNum;
+    foreignLoraListenerNodeId > 0 ? foreignLoraListenerNodeId : myNodeNum;
   const otherCrossProtocolRows = anomalyList.filter(
     (r) =>
       r.nodeId === foreignLoraListenerId && isForeignLoraRfRow(r) && !isMeshCoreInterferenceRow(r),
@@ -939,10 +948,7 @@ export default function DiagnosticsPanel({
               const chartData = samples
                 .filter((s) => s.t >= cutoff)
                 .map((s) => ({
-                  time: new Date(s.t).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }),
+                  time: formatDisplayTime(s.t, { use24Hour: use24HourTime }),
                   cu: Math.round(s.cu * 10) / 10,
                 }));
               if (chartData.length < 2) return null;
@@ -993,7 +999,7 @@ export default function DiagnosticsPanel({
       )}
 
       {/* MeshCore nodes heard by Meshtastic radio (per transmitter) */}
-      {showMeshtasticForeignLora && meshcoreHeardList.length > 0 && (
+      {showForeignLoraTables && meshcoreHeardList.length > 0 && (
         <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
           <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400">
             <AlertTriangleIcon className="h-4 w-4 shrink-0" />
@@ -1075,7 +1081,7 @@ export default function DiagnosticsPanel({
       )}
 
       {/* Meshtastic + unknown-lora foreign traffic on Meshtastic frequency */}
-      {showMeshtasticForeignLora && otherForeignList.length > 0 && (
+      {showForeignLoraTables && otherForeignList.length > 0 && (
         <div className="space-y-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
           <h3 className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
             <AlertTriangleIcon className="h-4 w-4 shrink-0" />
@@ -1201,11 +1207,9 @@ export default function DiagnosticsPanel({
                     className="accent-brand-green"
                   />
                   <label htmlFor="ignoreMqtt" className="cursor-pointer text-sm text-gray-300">
-                    Ignore MQTT
+                    {t('diagnosticsPanel.ignoreMqttToggle')}
                   </label>
-                  <span className="text-muted text-xs">
-                    Gray out MQTT-only nodes and exclude them from diagnostics
-                  </span>
+                  <span className="text-muted text-xs">{t('diagnosticsPanel.ignoreMqttHelp')}</span>
                 </div>
               )}
               <div className="flex items-center gap-2">

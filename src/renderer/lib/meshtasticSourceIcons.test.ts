@@ -1,6 +1,9 @@
+import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
 import {
+  isMeshtasticSelfHybridPath,
+  meshtasticHybridPathLabels,
   meshtasticNodeShowsHybridMqttPath,
   resolveMeshtasticPathBadge,
 } from './meshtasticSourceIcons';
@@ -74,5 +77,32 @@ describe('resolveMeshtasticPathBadge', () => {
       }),
     ).toBe('none');
     expect(meshtasticNodeShowsHybridMqttPath(node({ heard_via_mqtt_only: false }))).toBe(false);
+  });
+});
+
+describe('isMeshtasticSelfHybridPath', () => {
+  it('is true only when self with both MQTT and radio connected', () => {
+    expect(isMeshtasticSelfHybridPath(true, true, true)).toBe(true);
+    expect(isMeshtasticSelfHybridPath(true, true, false)).toBe(false);
+    expect(isMeshtasticSelfHybridPath(true, false, true)).toBe(false);
+    expect(isMeshtasticSelfHybridPath(false, true, true)).toBe(false);
+  });
+});
+
+describe('meshtasticHybridPathLabels', () => {
+  const t = ((key: string) => key) as TFunction;
+
+  it('returns self hybrid keys when self hybrid', () => {
+    expect(meshtasticHybridPathLabels(t, true)).toEqual({
+      title: 'nodeListPanel.connectedViaRfAndMqttTooltip',
+      ariaLabel: 'nodeListPanel.connectedViaRfAndMqttAria',
+    });
+  });
+
+  it('returns packet hybrid keys otherwise', () => {
+    expect(meshtasticHybridPathLabels(t, false)).toEqual({
+      title: 'nodeListPanel.hybridMqttPathTooltip',
+      ariaLabel: 'nodeListPanel.hybridMqttPathAria',
+    });
   });
 });

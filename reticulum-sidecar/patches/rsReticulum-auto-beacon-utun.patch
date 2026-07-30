@@ -1,5 +1,5 @@
 diff --git a/crates/rns-interface/src/auto.rs b/crates/rns-interface/src/auto.rs
-index 3d0db69..479026e 100644
+index acbf303..d40ce2a 100644
 --- a/crates/rns-interface/src/auto.rs
 +++ b/crates/rns-interface/src/auto.rs
 @@ -35,7 +35,7 @@ pub const MULTI_IF_DEQUE_TTL: f64 = 0.75;
@@ -210,7 +210,7 @@ index 3d0db69..479026e 100644
                  }
              }
          }
-@@ -2035,4 +2138,26 @@ mod tests {
+@@ -2036,4 +2139,26 @@ mod tests {
          let expected = BEACON_INTERVAL * 3.25;
          assert!((REVERSE_PEERING_INTERVAL - expected).abs() < 0.001);
      }

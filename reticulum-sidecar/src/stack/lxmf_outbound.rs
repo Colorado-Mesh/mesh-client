@@ -3,8 +3,12 @@
 use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
-use lxmf_core::constants::DeliveryMethod;
-use lxmf_core::link_delivery::{DeliveryResult, LinkDeliveryManager};
+use lxmf_core::constants::{
+    DELIVERY_RETRY_WAIT, DeliveryMethod, MAX_DELIVERY_ATTEMPTS, PATH_REQUEST_WAIT,
+};
+use lxmf_core::link_delivery::{
+    DeliveryResult, LinkDeliveryManager, is_retryable_link_delivery_failure,
+};
 use lxmf_core::message::LxMessage;
 use lxmf_core::router::{
     DirectDeliveryPlan, DirectDeliveryPlanInput, DirectReusableLinkState, DirectRouteSnapshot,
@@ -83,13 +87,23 @@ impl PathRequestGate {
     }
 }
 
+/// Bound on Direct→PN fallback hash tracking (one entry per outbound message).
+const PN_FALLBACK_ATTEMPTED_MAX: usize = 256;
+
 pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
     link_delivery: LinkDeliveryManager,
     route_hops: HashMap<[u8; 16], u8>,
     known_identities: HashMap<String, [u8; 64]>,
+    /// Dest hashes pinned for in-flight propagation sync (LRPROOF needs pubkey).
+    /// Eviction must not remove these while Establishing.
+    pinned_identities: HashMap<String, [u8; 64]>,
     path_table_hashes: HashSet<String>,
     path_request_gate: PathRequestGate,
+    /// Message hashes that already consumed the one-shot Direct→PN fallback.
+    pn_fallback_attempted: HashSet<[u8; 32]>,
+    /// When set, remote propagation sync holds a Link to this dest — do not race deposits.
+    propagation_sync_target: Option<[u8; 16]>,
     self_lxmf_hash: String,
     self_display_name: String,
 }
@@ -111,8 +125,11 @@ impl LxmfOutboundDriver {
             ),
             route_hops: HashMap::new(),
             known_identities: HashMap::new(),
+            pinned_identities: HashMap::new(),
             path_table_hashes: HashSet::new(),
             path_request_gate: PathRequestGate::new(),
+            pn_fallback_attempted: HashSet::new(),
+            propagation_sync_target: None,
             self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
         };
@@ -125,16 +142,50 @@ impl LxmfOutboundDriver {
         if !self.known_identities.contains_key(&key)
             && self.known_identities.len() >= MAX_KNOWN_IDENTITIES
         {
-            // Evict an arbitrary entry to bound memory under announce floods.
-            if let Some(oldest) = self.known_identities.keys().next().cloned() {
+            // Evict an arbitrary unpinned entry to bound memory under announce floods.
+            let evict = self
+                .known_identities
+                .keys()
+                .find(|k| !self.pinned_identities.contains_key(k.as_str()))
+                .cloned();
+            if let Some(oldest) = evict {
                 self.known_identities.remove(&oldest);
             }
         }
-        self.known_identities.insert(key, public_key);
+        self.known_identities.insert(key.clone(), public_key);
+        if self.pinned_identities.contains_key(&key) {
+            self.pinned_identities.insert(key, public_key);
+        }
+    }
+
+    /// Pin a destination pubkey for the active propagation sync so announce-flood
+    /// eviction cannot drop it before LRPROOF validation.
+    pub fn pin_identity_for_propagation(&mut self, dest_hash_hex: &str, public_key: [u8; 64]) {
+        let key = dest_hash_hex.to_lowercase();
+        self.known_identities.insert(key.clone(), public_key);
+        self.pinned_identities.insert(key, public_key);
+    }
+
+    pub fn clear_propagation_identity_pins(&mut self) {
+        self.pinned_identities.clear();
+    }
+
+    /// Mark (or clear) the remote PN currently owned by an in-flight propagation sync.
+    pub fn set_propagation_sync_target(&mut self, dest: Option<[u8; 16]>) {
+        self.propagation_sync_target = dest;
+    }
+
+    /// True when a packed deposit / Direct session already holds a Link to `dest`.
+    pub fn has_inflight_delivery_to(&self, dest: &[u8; 16]) -> bool {
+        self.link_delivery.has_pending_to(dest)
     }
 
     pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
-        self.known_identities.clone()
+        let mut out = self.known_identities.clone();
+        for (k, v) in &self.pinned_identities {
+            out.insert(k.clone(), *v);
+        }
+        out
     }
 
     #[allow(clippy::unused_self)] // method slot mirrors other LxmfOutboundDriver mutators
@@ -152,20 +203,32 @@ impl LxmfOutboundDriver {
         }
     }
 
+    /// Remove a single destination from the local path cache (e.g. after transport DropPath).
+    pub fn clear_path_to(&mut self, destination_hex: &str) {
+        let key = destination_hex.to_lowercase();
+        self.path_table_hashes.remove(&key);
+        if let Ok(dest) = parse_hash16(&key) {
+            self.route_hops.remove(&dest);
+            self.path_request_gate.clear_destination(dest);
+        }
+    }
+
     pub fn has_path_to(&self, destination_hex: &str) -> bool {
         self.path_table_hashes
             .contains(&destination_hex.to_lowercase())
     }
 
     pub fn identity_known_for(&self, destination_hex: &str) -> bool {
-        self.known_identities
-            .contains_key(&destination_hex.to_lowercase())
+        let key = destination_hex.to_lowercase();
+        self.pinned_identities.contains_key(&key) || self.known_identities.contains_key(&key)
     }
 
     pub fn public_key_for(&self, destination_hex: &str) -> Option<[u8; 64]> {
-        self.known_identities
-            .get(&destination_hex.to_lowercase())
+        let key = destination_hex.to_lowercase();
+        self.pinned_identities
+            .get(&key)
             .copied()
+            .or_else(|| self.known_identities.get(&key).copied())
     }
 
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {
@@ -267,7 +330,39 @@ impl LxmfOutboundDriver {
         prop_hash: [u8; 16],
     ) {
         let prop_hex = hex::encode(prop_hash);
+        // Avoid racing a second LinkRequest to the same PN (sync or another deposit).
+        let sync_blocks = self.propagation_sync_target == Some(prop_hash);
+        let pending_blocks = self.link_delivery.has_pending_to(&prop_hash);
+        if should_defer_propagated_for_pn_link(sync_blocks, pending_blocks) {
+            let now = now_f64();
+            message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+            tracing::debug!(
+                prop = %prop_hex,
+                dest = %hex::encode(message.destination_hash),
+                sync_blocks,
+                pending_blocks,
+                attempts = message.delivery_attempts,
+                "DeliverPropagated: deferring — PN link busy"
+            );
+            if let Some(hash) = message.hash.or(message.message_id) {
+                emit_outbound_status_with_via(
+                    event_tx,
+                    Some(serde_json::Value::String(hex::encode(hash))),
+                    None,
+                    "sending",
+                    Some("propagated"),
+                    None,
+                );
+            }
+            router.send(message);
+            return;
+        }
         if !self.known_identities.contains_key(&prop_hex.to_lowercase()) {
+            tracing::debug!(
+                prop = %prop_hex,
+                dest = %hex::encode(message.destination_hash),
+                "DeliverPropagated: PN identity unknown — requesting path"
+            );
             self.request_path_gated(
                 router,
                 event_tx,
@@ -279,21 +374,57 @@ impl LxmfOutboundDriver {
             );
             return;
         }
-        let Some(packed) = self.pack_for_propagation(&mut message, prop_hash) else {
+        let Some(packed) = self.pack_for_propagation(
+            &mut message,
+            prop_hash,
+            router.get_stamp_cost(&prop_hash).unwrap_or(0),
+        ) else {
+            tracing::warn!(
+                prop = %prop_hex,
+                dest = %hex::encode(message.destination_hash),
+                "DeliverPropagated: pack_for_propagation failed — requeue"
+            );
             router.send(message);
             return;
         };
+        // lxmd parity: count the attempt before packed link delivery so Failed can budget retries.
+        let attempts = mark_propagated_delivery_attempt(&mut message);
+        if attempts >= MAX_DELIVERY_ATTEMPTS {
+            tracing::warn!(
+                prop = %prop_hex,
+                attempts,
+                max_attempts = MAX_DELIVERY_ATTEMPTS,
+                "propagated delivery attempt budget reached; deferring terminal failure"
+            );
+            router.send(message);
+            return;
+        }
         let hops = route_hops_for(&self.route_hops, prop_hash);
+        tracing::debug!(
+            prop = %prop_hex,
+            dest = %hex::encode(message.destination_hash),
+            hops,
+            packed_len = packed.len(),
+            attempts,
+            "DeliverPropagated: starting packed delivery"
+        );
         if let Err(err) = self
             .link_delivery
             .start_packed_delivery(message, prop_hash, hops, packed, false)
         {
+            let reason = err.error.to_string();
             tracing::warn!(
                 prop = %prop_hex,
-                error = %err.error,
+                error = %reason,
                 "propagated link delivery start failed"
             );
-            router.send(*err.message);
+            self.requeue_propagated_after_link_failure(
+                router,
+                event_tx,
+                *err.message,
+                prop_hash,
+                &reason,
+            );
         }
     }
 
@@ -417,14 +548,33 @@ impl LxmfOutboundDriver {
         &mut self,
         router: &mut LxmRouter,
         event_tx: &broadcast::Sender<String>,
+        message: LxMessage,
+    ) {
+        match self.try_requeue_via_propagation(router, event_tx, message) {
+            Ok(()) => {}
+            Err(message) => self.emit_outbound_failed(router, event_tx, *message),
+        }
+    }
+
+    fn emit_outbound_failed(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
         mut message: LxMessage,
     ) {
         message.mark_failed();
-        if let Some(hash) = message.hash.or(message.message_id) {
-            let _ = router.mark_outbound_failed(&hash);
-            emit_outbound_status_by_hash(event_tx, &hash, "failed");
-        }
         let method = delivery_method_label(message.method);
+        tracing::warn!(
+            dest = %hex::encode(message.destination_hash),
+            method,
+            attempts = message.delivery_attempts,
+            "LXMF outbound delivery failed"
+        );
+        if let Some(hash) = message.hash.or(message.message_id) {
+            self.pn_fallback_attempted.remove(&hash);
+            let _ = router.mark_outbound_failed(&hash);
+            emit_outbound_status_by_hash(event_tx, &hash, "failed", Some(method));
+        }
         let payload = lxmf_payload_from_message(
             &message,
             &self.self_lxmf_hash,
@@ -437,14 +587,72 @@ impl LxmfOutboundDriver {
         emit_outbound_status(event_tx, &payload, "failed", method);
     }
 
+    /// After Direct link failure, deposit once via preferred remote PN (Ratspeak parity).
+    /// Returns `Ok(())` when re-queued as Propagated; `Err(message)` when caller should fail.
+    fn try_requeue_via_propagation(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        mut message: LxMessage,
+    ) -> Result<(), Box<LxMessage>> {
+        if !should_fallback_direct_to_pn(
+            message.method,
+            router.outbound_propagation_node,
+            &self.self_lxmf_hash,
+            message
+                .hash
+                .or(message.message_id)
+                .is_some_and(|h| self.pn_fallback_attempted.contains(&h)),
+        ) {
+            return Err(Box::new(message));
+        }
+        let Some(msg_hash) = message.hash.or(message.message_id) else {
+            return Err(Box::new(message));
+        };
+        // Quietly drop any leftover Direct queue entry (already removed for most Fail paths).
+        router
+            .pending_outbound
+            .retain(|m| m.hash != Some(msg_hash) && m.message_id != Some(msg_hash));
+        self.remember_pn_fallback(msg_hash);
+        message.method = DeliveryMethod::Propagated;
+        message.delivery_attempts = 0;
+        message.next_delivery_attempt = 0.0;
+        tracing::info!(
+            dest = %hex::encode(message.destination_hash),
+            msg = %hex::encode(msg_hash),
+            "LXMF Direct failed; falling back to preferred remote propagation node"
+        );
+        router.send(message);
+        emit_outbound_status_with_via(
+            event_tx,
+            Some(serde_json::Value::String(hex::encode(msg_hash))),
+            None,
+            "sending",
+            Some("propagated"),
+            None,
+        );
+        Ok(())
+    }
+
+    fn remember_pn_fallback(&mut self, msg_hash: [u8; 32]) {
+        if self.pn_fallback_attempted.len() >= PN_FALLBACK_ATTEMPTED_MAX {
+            // Evict an arbitrary entry so floods cannot grow unbounded.
+            if let Some(oldest) = self.pn_fallback_attempted.iter().next().copied() {
+                self.pn_fallback_attempted.remove(&oldest);
+            }
+        }
+        self.pn_fallback_attempted.insert(msg_hash);
+    }
+
     fn pack_for_propagation(
         &self,
         message: &mut LxMessage,
         prop_hash: [u8; 16],
+        target_cost: u8,
     ) -> Option<Vec<u8>> {
         let dest_hex = hex::encode(message.destination_hash);
-        let target_cost = message.stamp_cost.unwrap_or(0);
-        let (packed, _, _) = message
+        // lxmd parity: stamp against the *propagation node* cost, not the DM peer.
+        let (packed, _, stamp_value) = message
             .pack_propagated_encrypted_with_stamp(
                 |plaintext| {
                     self.encrypt_for_destination(&dest_hex, plaintext)
@@ -457,7 +665,14 @@ impl LxmfOutboundDriver {
                 target_cost,
             )
             .ok()?;
-        let _ = prop_hash;
+        tracing::debug!(
+            dest = %dest_hex,
+            prop = %hex::encode(prop_hash),
+            target_cost,
+            stamp_value,
+            packed_len = packed.len(),
+            "prepared propagation wrapper"
+        );
         Some(packed)
     }
 
@@ -476,33 +691,99 @@ impl LxmfOutboundDriver {
         match result {
             DeliveryResult::Complete { msg_hash, .. } => {
                 if let Some(hash) = msg_hash {
+                    let method = if self.pn_fallback_attempted.contains(&hash) {
+                        Some("propagated")
+                    } else {
+                        None
+                    };
+                    self.pn_fallback_attempted.remove(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
-                    emit_outbound_status_by_hash(event_tx, &hash, "delivered");
+                    emit_outbound_status_by_hash(event_tx, &hash, "delivered", method);
                 }
             }
             DeliveryResult::Rejected {
-                msg_hash, message, ..
-            }
-            | DeliveryResult::Failed {
-                msg_hash, message, ..
+                message, reason, ..
             } => {
-                if let Some(hash) = msg_hash {
-                    let _ = router.mark_outbound_failed(&hash);
-                    emit_outbound_status_by_hash(event_tx, &hash, "failed");
-                }
-                let method = delivery_method_label(message.method);
-                let payload = lxmf_payload_from_message(
-                    &message,
-                    &self.self_lxmf_hash,
-                    &self.self_display_name,
-                    None,
-                    Some(method),
-                    "outbound",
-                    None,
+                tracing::warn!(
+                    dest = %hex::encode(message.destination_hash),
+                    method = %delivery_method_label(message.method),
+                    reason = %reason,
+                    "LXMF delivery Rejected"
                 );
-                emit_outbound_status(event_tx, &payload, "failed", method);
+                // Peer/PN rejected the resource — do not retry; only Direct→PN once.
+                match self.try_requeue_via_propagation(router, event_tx, message) {
+                    Ok(()) => {}
+                    Err(message) => self.emit_outbound_failed(router, event_tx, *message),
+                }
+            }
+            DeliveryResult::Failed {
+                message,
+                reason,
+                dest_hash,
+                ..
+            } => {
+                tracing::warn!(
+                    dest = %hex::encode(message.destination_hash),
+                    link_dest = %hex::encode(dest_hash),
+                    method = %delivery_method_label(message.method),
+                    reason = %reason,
+                    attempts = message.delivery_attempts,
+                    "LXMF delivery Failed"
+                );
+                // lxmd parity: Propagated "link closed"/timeout stay eligible for rediscovery.
+                if should_retry_propagated_link_failure(
+                    message.method,
+                    &reason,
+                    message.delivery_attempts,
+                ) {
+                    self.requeue_propagated_after_link_failure(
+                        router, event_tx, message, dest_hash, &reason,
+                    );
+                    return;
+                }
+                match self.try_requeue_via_propagation(router, event_tx, message) {
+                    Ok(()) => {}
+                    Err(message) => self.emit_outbound_failed(router, event_tx, *message),
+                }
             }
         }
+    }
+
+    /// Re-queue a Propagated deposit after a retryable link failure (lxmd parity).
+    fn requeue_propagated_after_link_failure(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        mut message: LxMessage,
+        prop_hash: [u8; 16],
+        reason: &str,
+    ) {
+        let now = now_f64();
+        message.method = DeliveryMethod::Propagated;
+        message.last_delivery_attempt = now;
+        message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+        let _ = try_queue_path_request(&self.transport_tx, prop_hash, false, reason);
+        let msg_hash = message.hash.or(message.message_id);
+        tracing::warn!(
+            dest = %hex::encode(message.destination_hash),
+            prop = %hex::encode(prop_hash),
+            msg = %msg_hash.map(hex::encode).unwrap_or_else(|| "none".into()),
+            attempts = message.delivery_attempts,
+            reason,
+            "re-queuing Propagated LXMF after retryable link failure"
+        );
+        if let Some(hash) = msg_hash {
+            // Keep chat UI in sending/propagated while PN rediscovery proceeds.
+            emit_outbound_status_with_via(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(hash))),
+                None,
+                "sending",
+                Some("propagated"),
+                None,
+            );
+        }
+        router.send(message);
     }
 }
 
@@ -513,6 +794,30 @@ fn delivery_method_label(method: DeliveryMethod) -> &'static str {
         DeliveryMethod::Opportunistic => "opportunistic",
         DeliveryMethod::Paper => "paper",
     }
+}
+
+fn mark_propagated_delivery_attempt(message: &mut LxMessage) -> u32 {
+    let now = now_f64();
+    message.delivery_attempts += 1;
+    message.last_delivery_attempt = now;
+    message.next_delivery_attempt = now + f64::from(DELIVERY_RETRY_WAIT as u32);
+    message.delivery_attempts
+}
+
+/// Whether a Propagated link `Failed` should requeue instead of going terminal.
+pub(crate) fn should_retry_propagated_link_failure(
+    method: DeliveryMethod,
+    reason: &str,
+    delivery_attempts: u32,
+) -> bool {
+    method == DeliveryMethod::Propagated
+        && is_retryable_link_delivery_failure(reason)
+        && delivery_attempts <= MAX_DELIVERY_ATTEMPTS
+}
+
+/// Defer starting a packed PN deposit when sync or another delivery owns that dest Link.
+pub(crate) fn should_defer_propagated_for_pn_link(sync_blocks: bool, pending_blocks: bool) -> bool {
+    sync_blocks || pending_blocks
 }
 
 /// Decide Direct vs Propagated for an LXMF send (path/pubkey/PN).
@@ -538,6 +843,27 @@ pub(crate) fn choose_lxmf_send_route(
     } else {
         LxmfSendRoute::NoPropagationNode
     }
+}
+
+/// Whether a failed Direct attempt may be re-queued once via preferred remote PN.
+pub(crate) fn should_fallback_direct_to_pn(
+    method: DeliveryMethod,
+    preferred_pn: Option<[u8; 16]>,
+    self_lxmf_hash_hex: &str,
+    already_fallback: bool,
+) -> bool {
+    if already_fallback || method != DeliveryMethod::Direct {
+        return false;
+    }
+    let Some(pn) = preferred_pn else {
+        return false;
+    };
+    let pn_hex = hex::encode(pn);
+    // Local / self PN is an offline inbox — not a network store for unreachable peers.
+    if pn_hex.eq_ignore_ascii_case(self_lxmf_hash_hex.trim()) {
+        return false;
+    }
+    true
 }
 
 /// Cap on retained destination public keys (announce / path flood bound).
@@ -598,13 +924,14 @@ fn emit_outbound_status_by_hash(
     event_tx: &broadcast::Sender<String>,
     hash: &[u8; 32],
     status: &str,
+    delivery_method: Option<&str>,
 ) {
     emit_outbound_status_with_via(
         event_tx,
         Some(serde_json::Value::String(hex::encode(hash))),
         None,
         status,
-        None,
+        delivery_method,
         None,
     );
 }
@@ -754,11 +1081,53 @@ mod tests {
     }
 
     #[test]
+    fn clear_path_to_removes_stale_route_so_refresh_can_reinstall() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xab);
+        let dest_hex = hex::encode(dest_hash);
+        // Stale cached route (5 hops).
+        driver.update_path_table(&[(dest_hash, 5, dest_hex.clone())]);
+        assert!(driver.has_path_to(&dest_hex));
+
+        // Force refresh: drop local cache (transport DropPath happens in live.rs).
+        driver.clear_path_to(&dest_hex);
+        assert!(!driver.has_path_to(&dest_hex));
+
+        // Fresh route response reinstalls with updated hops.
+        driver.update_path_table(&[(dest_hash, 2, dest_hex.clone())]);
+        assert!(driver.has_path_to(&dest_hex));
+        assert_eq!(driver.route_hops.get(&dest_hash).copied(), Some(2));
+    }
+
+    #[test]
     fn path_gate_warn_is_rate_limited() {
         let mut gate = PathRequestGate::new();
         assert!(gate.should_warn(dest(4), 100.0));
         assert!(!gate.should_warn(dest(4), 110.0));
         assert!(gate.should_warn(dest(4), 121.0));
+    }
+
+    #[test]
+    fn pin_identity_survives_eviction_flood() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let pn_hex = "deadbeef".to_string() + &"ab".repeat(12);
+        let pn_key = [0x42u8; 64];
+        driver.pin_identity_for_propagation(&pn_hex, pn_key);
+        for i in 0..(MAX_KNOWN_IDENTITIES + 64) {
+            let hex = format!("{i:032x}");
+            driver.register_identity_key(&hex, [((i % 250) + 1) as u8; 64]);
+        }
+        assert!(driver.identity_known_for(&pn_hex));
+        assert_eq!(driver.public_key_for(&pn_hex), Some(pn_key));
+        let for_prop = driver.known_identities_for_propagation();
+        assert_eq!(for_prop.get(&pn_hex.to_lowercase()), Some(&pn_key));
+        driver.clear_propagation_identity_pins();
+        // Pin cleared — known_identities may still hold the key until capacity pressure.
+        assert!(driver.identity_known_for(&pn_hex));
     }
 
     #[test]
@@ -791,5 +1160,87 @@ mod tests {
             choose_lxmf_send_route(true, false, false),
             LxmfSendRoute::Direct
         );
+    }
+
+    #[test]
+    fn should_fallback_direct_to_pn_when_remote_preferred() {
+        let remote = [0x47u8; 16];
+        assert!(should_fallback_direct_to_pn(
+            DeliveryMethod::Direct,
+            Some(remote),
+            &"aa".repeat(16),
+            false,
+        ));
+    }
+
+    #[test]
+    fn should_fallback_direct_to_pn_rejects_local_self_pn() {
+        let self_hash = [0x09u8; 16];
+        assert!(!should_fallback_direct_to_pn(
+            DeliveryMethod::Direct,
+            Some(self_hash),
+            &hex::encode(self_hash),
+            false,
+        ));
+    }
+
+    #[test]
+    fn should_fallback_direct_to_pn_rejects_propagated_and_repeat() {
+        let remote = [0x47u8; 16];
+        assert!(!should_fallback_direct_to_pn(
+            DeliveryMethod::Propagated,
+            Some(remote),
+            &"aa".repeat(16),
+            false,
+        ));
+        assert!(!should_fallback_direct_to_pn(
+            DeliveryMethod::Direct,
+            Some(remote),
+            &"aa".repeat(16),
+            true,
+        ));
+        assert!(!should_fallback_direct_to_pn(
+            DeliveryMethod::Direct,
+            None,
+            &"aa".repeat(16),
+            false,
+        ));
+    }
+
+    #[test]
+    fn should_retry_propagated_link_closed_while_attempts_remain() {
+        assert!(should_retry_propagated_link_failure(
+            DeliveryMethod::Propagated,
+            "link closed",
+            1,
+        ));
+        assert!(should_retry_propagated_link_failure(
+            DeliveryMethod::Propagated,
+            "link establishment timeout",
+            MAX_DELIVERY_ATTEMPTS,
+        ));
+        assert!(!should_retry_propagated_link_failure(
+            DeliveryMethod::Propagated,
+            "link closed",
+            MAX_DELIVERY_ATTEMPTS + 1,
+        ));
+        assert!(!should_retry_propagated_link_failure(
+            DeliveryMethod::Direct,
+            "link closed",
+            1,
+        ));
+        assert!(!should_retry_propagated_link_failure(
+            DeliveryMethod::Propagated,
+            "resource rejected",
+            1,
+        ));
+    }
+
+    #[test]
+    fn should_defer_propagated_when_sync_or_pending_owns_pn_link() {
+        assert!(should_defer_propagated_for_pn_link(true, false));
+        assert!(should_defer_propagated_for_pn_link(false, true));
+        assert!(should_defer_propagated_for_pn_link(true, true));
+        assert!(!should_defer_propagated_for_pn_link(false, false));
     }
 }

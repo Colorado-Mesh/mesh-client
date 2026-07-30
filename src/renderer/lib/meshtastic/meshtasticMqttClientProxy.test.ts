@@ -48,6 +48,7 @@ describe('meshtasticMqttClientProxy', () => {
       };
     };
     expect(decoded.payloadVariant.case).toBe('mqttClientProxyMessage');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (decoded.payloadVariant.case !== 'mqttClientProxyMessage') return;
     expect(decoded.payloadVariant.value.topic).toBe('msh/US/2/e/LongFast/!abcd1234');
     expect(decoded.payloadVariant.value.retained).toBe(false);

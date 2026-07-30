@@ -7,7 +7,10 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+import {
+  assertPowerResumeSkipsOnExplicitDisconnect,
+  extractUseCallbackBody,
+} from '../lib/sourceContractTestHelpers';
 
 const TEST_DIR = import.meta.dirname ?? __dirname;
 const SOURCE = readFileSync(join(TEST_DIR, 'useReticulumRuntime.ts'), 'utf-8');
@@ -42,6 +45,13 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
       /const wasActive =[\s\S]*?stateRef\.current\.status === 'configured'[\s\S]*?stateRef\.current\.status === 'connected'[\s\S]*?stateRef\.current\.status === 'stale'/,
     );
     expect(SOURCE).not.toMatch(/const wasActive = stateRef\.current\.status !== 'disconnected'/);
+  });
+
+  it('holds Noble BLE yield while sidecar status is connecting', () => {
+    expect(SOURCE).toMatch(
+      /const sidecarActiveForBleYield =[\s\S]*?state\.status === 'connecting'[\s\S]*?state\.status === 'configured'[\s\S]*?state\.status === 'connected'[\s\S]*?state\.status === 'stale'/,
+    );
+    expect(SOURCE).toMatch(/useReticulumNobleBleYieldWatcher\(sidecarActiveForBleYield\)/);
   });
 });
 
@@ -91,12 +101,7 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
-    const resumeRe = /const onPowerResume = useCallback\([\s\S]*?\}, \[connect\]\);/;
-    const resumeBody = resumeRe.exec(SOURCE)?.[0];
-    expect(resumeBody).toBeDefined();
-    expect(resumeBody).toMatch(
-      /suppressReconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
-    );
+    assertPowerResumeSkipsOnExplicitDisconnect(SOURCE, 'suppressReconnectRef.current');
   });
 });
 
@@ -154,7 +159,9 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
 
 describe('useReticulumRuntime RMAP discovery map', () => {
   it('routes rmap.discovery WS events through setDiscovered', () => {
-    expect(SOURCE).toMatch(/evt\.type === 'rmap\.discovery'[\s\S]*?setDiscovered\(p\.discovered\)/);
+    expect(SOURCE).toMatch(
+      /evt\.type === 'rmap\.discovery'[\s\S]*?setDiscovered\(normalizeRmapDiscoveryRows\(p\.discovered\)\)/,
+    );
   });
 
   it('clears discovery map and peer store on disconnect and sidecar stop', () => {
@@ -212,12 +219,28 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
 describe('useReticulumRuntime outbound delivery persistence', () => {
   it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
     expect(SOURCE).toMatch(
-      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*\}\)/,
+      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*deliveryMethod: p\.delivery_method,\s*\}\)/,
     );
   });
 
   it('flushes buffered early delivery status after LXMF hash rename', () => {
     expect(SOURCE).toMatch(/flushPendingReticulumOutboundDeliveryStatus\(identityId, hash\)/);
+  });
+
+  it('skips link-timeout failure bridge when remote PN fallback is available', () => {
+    expect(SOURCE).toContain('shouldApplyLinkDeliveryTimeoutFailureBridge');
+    expect(SOURCE).toMatch(
+      /shouldApplyLinkDeliveryTimeoutFailureBridge\(\s*propState\.nodes,\s*propState\.preferredId,\s*\)/,
+    );
+    expect(SOURCE).toMatch(/if \(!applyBridge\) continue/);
+  });
+
+  it('wires propagation store + sidecar health into Reticulum diagnostics', () => {
+    expect(SOURCE).toMatch(/sidecarUnhealthySince:\s*sidecarStatus\.unhealthySince/);
+    expect(SOURCE).toMatch(/useReticulumPropagationStore\.subscribe/);
+    expect(SOURCE).toMatch(/RETICULUM_PROPAGATION_SYNC_STALL_MS \+ 1_000/);
+    expect(SOURCE).toMatch(/status\.healthy === false/);
+    expect(SOURCE).toMatch(/activePropagationSyncAttemptAt/);
   });
 
   it('marks stale outbound with RETICULUM_STALE_OUTBOUND_MS (not a 5-minute override)', () => {

@@ -27,7 +27,7 @@ All three protocols share one **Diagnostics** sidebar tab; sections differ by `P
 
 **LoRa routing/RF per protocol:** Switching tabs calls `clearDiagnostics({ preserveForeignLora: true })` and `runReanalysis` with that tab's `nodesForUi` and capabilities — Meshtastic anomalies are computed from Meshtastic nodes only; MeshCore from MeshCore contacts only.
 
-**Foreign LoRa overhear UI:** The MeshCore-heard and other-foreign-LoRa tables render on the **Meshtastic** tab only (`protocol === 'meshtastic'`). MeshCore may record foreign traffic internally when raw RX bytes are available, but the Diagnostics panel does not show those tables on the MeshCore tab. Reticulum RNode foreign overhear is not wired yet (sidecar packet tap exposes RNS-parsed frames only).
+**Foreign LoRa overhear UI:** The MeshCore-heard and other-foreign-LoRa tables render on the **Meshtastic** and **MeshCore** LoRa tabs when connected with a known self node id (Meshtastic detections keyed by Meshtastic self id; MeshCore foreign overhear keyed by MeshCore self id). Reticulum RNode foreign overhear is not wired yet (sidecar packet tap exposes RNS-parsed frames only).
 
 **Other surfaces:** `NodeListPanel`, `MapPanel`, and `NodeInfoBody` also call `filterDiagnosticRowsForProtocol` so inline badges and halos match the active tab.
 
@@ -167,18 +167,19 @@ These findings use telemetry observed from other nodes' radio stats.
 
 These findings use packet-stats data from a MeshCore device's Repeater Status response (`meshcore_local_stats`).
 
-| Finding              | Trigger                                                                        | Severity | Meaning                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------------------- |
-| Elevated Noise Floor | Radio noise floor > −95 dBm                                                    | Warning  | Elevated interference from nearby RF sources reducing effective range                         |
-| Excessive Flooding   | ≥ 20 total transmissions and > 90% are flood-routed (`nSentFlood / totalSent`) | Warning  | Direct routing has not been established with nearby nodes; all traffic falls back to flooding |
+| Finding                 | Trigger                                                                        | Severity        | Meaning                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ | --------------- | --------------------------------------------------------------------------------------------- |
+| Elevated Noise Floor    | Radio noise floor > −95 dBm                                                    | Warning         | Elevated interference from nearby RF sources reducing effective range                         |
+| Excessive Flooding      | ≥ 20 total transmissions and > 90% are flood-routed (`nSentFlood / totalSent`) | Warning         | Direct routing has not been established with nearby nodes; all traffic falls back to flooding |
+| High Companion TX Queue | `meshcore_local_stats.queueLen > 200` (error if `> 250`)                       | Warning / Error | Companion outbound queue near the 256 cap; traffic may be delayed or dropped                  |
 
 ---
 
 ## 4. Foreign LoRa Detection
 
-Foreign LoRa detection identifies **non-Meshtastic** LoRa traffic observed by your connected device's radio (or, in dual-radio setups, by a MeshCore companion overheard on the Meshtastic frequency). The detection window is the **last 90 minutes**.
+Foreign LoRa detection identifies **cross-protocol / unrecognized** LoRa traffic observed by your connected device's radio (Meshtastic hearing MeshCore or unknown LoRa; MeshCore hearing Meshtastic / unknown LoRa; dual-radio setups can also bridge MeshCore RX into the Meshtastic listener map). The detection window is the **last 90 minutes**.
 
-**Diagnostics UI:** Foreign-LoRa tables appear on the **Meshtastic** protocol tab only (see **Multi-protocol tab scoping**).
+**Diagnostics UI:** Foreign-LoRa tables appear on the **Meshtastic** and **MeshCore** protocol tabs (see **Multi-protocol tab scoping**).
 
 **Signal classes:**
 
@@ -429,6 +430,14 @@ SVG force-directed graph of nodes within direct reach (hops 0–1 from the conne
 On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticulum interface config** section (below continuous ping). It audits the sidecar rnsd config against the live RNS interface list and surfaces actionable repairs.
 
 Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are also folded into Diagnostics via `ReticulumDiagnosticEngine` — including TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation, **`bleBondRemoved`** (stale OS Bluetooth bond for an RNode; Forget/re-pair), and **`blePairingTimedOut`** (OS passkey not entered within the TX-read window).
+
+Additional runtime rows (refreshed from sidecar status + `reticulumPropagationStore`, not only the config audit poll):
+
+| Condition                            | Trigger                                                                                             | Severity | Action                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
+| `reticulum/sidecar-unhealthy`        | Sidecar `running && healthy === false` for ≥ 60 s (`sidecarUnhealthySince`)                         | error    | **Restart stack**                           |
+| `reticulum/propagation-sync-stuck`   | Sync active ≥ ~45 s (`RETICULUM_PROPAGATION_SYNC_STALL_MS`) with progress still Establishing (< 15) | warning  | Retry sync; check PN path / announce        |
+| `reticulum/propagation-sync-failing` | Sync idle with `lastSyncError` (excludes user cancel) and attempt within 1 h                        | warning  | See Network → Propagation / troubleshooting |
 
 | Issue kind                                  | Typical cause                                                                                               | In-app action                                                       |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -683,7 +692,7 @@ Meshtastic short/full header rules (unchanged):
 
 #### Connected-node telemetry ingest (Meshtastic)
 
-`meshtasticLegacyWireSubscriptions` calls `processNodeUpdate` on **LocalStats** telemetry and on RF mesh packets that update `hops_away`/SNR so `cuHistory`, hop history, and incremental RF analysis stay live (previously only device-metrics / NodeInfo paths fed the store).
+`meshtasticNodeSideEffects` feeds **LocalStats** into `diagnosticsStore.processNodeUpdate` (CU history / connected-node RF analysis). `meshtasticRawPacketSideEffects` feeds RF mesh packets that update `hops_away`/SNR so hop history and incremental RF analysis stay live. (Previously only device-metrics / NodeInfo paths — and briefly `meshtasticRuntimeWireEffects` — fed the store.) Guarded by `meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`.
 
 #### Proximity classification (`classifyProximity()`)
 

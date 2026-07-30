@@ -36,6 +36,7 @@ export async function pushRncpListenerPolicy(
   };
   try {
     const res = await window.electronAPI.reticulum.rncp.setListener(body);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (res && typeof res === 'object' && 'ok' in res && !res.ok) {
       const err =
         'error' in res && typeof res.error === 'string' ? res.error : 'setListener_failed';

@@ -334,10 +334,12 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
 
 /* Nomad Micron pages: monospace + optional locally installed Nerd Fonts for alignment.
    Open width grows with ASCII/Micron content so the page scroll parent can dual-axis scroll.
-   Fit width (--fit-width) constrains to the viewer so prose wraps without horizontal scrolling. */
+   Fit width (--fit-width) constrains to the viewer so prose wraps without horizontal scrolling.
+   Preserve padding spaces so Unicode/ASCII box borders stay aligned (HTML defaults collapse them). */
 .nomad-micron-page {
   width: max-content;
   min-width: 100%;
+  white-space: pre;
   font-family:
     'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', 'Hack Nerd Font', ui-monospace, SFMono-Regular,
     Menlo, Monaco, Consolas, monospace;
@@ -345,6 +347,7 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
 .nomad-micron-page--fit-width {
   width: 100%;
   max-width: 100%;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .nomad-micron-page--fit-width pre,

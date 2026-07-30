@@ -59,14 +59,17 @@ export function parseMqttClientProxyFromFromRadio(
 
 /** Encode ToRadio.mqtt_client_proxy_message (broker → device downlink). */
 export function buildToRadioMqttClientProxyBytes(msg: MqttClientProxyWire): Uint8Array {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const proxyMsg = create(MeshPb.MqttClientProxyMessageSchema, {
     topic: msg.topic,
     retained: msg.retained,
     payloadVariant: msg.payloadVariant,
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const toRadio = create(MeshPb.ToRadioSchema, {
     payloadVariant: { case: 'mqttClientProxyMessage', value: proxyMsg },
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   return toBinary(MeshPb.ToRadioSchema, toRadio);
 }
 

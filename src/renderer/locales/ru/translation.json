@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "Очистить {{count}} сообщения",
     "reticulumSection": "Reticulum — Стек ретикулума",
     "reticulumAnnounceHelp": "Как часто ваша личность объявляется в сети, и инструменты для очистки сохраненных объявлений.",
-    "reticulumPropagationHelp": "Выберите способ синхронизации узлов распространения и при необходимости извлеките последние данные распространения.",
     "logPanelHelp": "Если этот параметр включен, справа отображается поток журнала в реальном времени. На вкладке Reticulum строки устройства включают вывод дополнительных данных и состояние локального интерфейса. Строки отладки требуют наличия флажка внутри панели журнала.",
     "autoPruneUnheardContactsDaysAria": "Автоматическое удаление непрослушанных контактов при запуске, старше {{days}} дн.",
     "capTotalContactsCountAria": "Ограничить общее количество контактов, сохранить последние просмотренные контакты {{count}}",
@@ -373,7 +372,10 @@
     "restoreTheme": "Восстановить сохраненную цветную контрольную точку",
     "noSavedThemeTooltip": "Пока нет сохраненных цветов — используйте Сохранить для создания контрольной точки",
     "saveThemeButton": "Сохранить",
-    "restoreThemeButton": "Восстановить"
+    "restoreThemeButton": "Восстановить",
+    "reticulumPropagationHelp": "Настройте удаленные узлы распространения LXMF для автономных DM. Локальное распространение - это только почтовый ящик этого устройства — он не заменяет удаленный узел.",
+    "use24HourTime": "24-часовой формат времени",
+    "use24HourTimeDesc": "Принудительно переведите часы, такие как метки времени чата, в 24-часовой формат. При выключении следует за локалью системы."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор",
     "switchToMeshtasticWithUnread": "Переключиться на Meshtastic, {{count}} непрочитано",
     "switchToMeshCoreWithUnread": "Переключиться на MeshCore, {{count}} непрочитано",
-    "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано"
+    "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано",
+    "tabWithUnread": "{{label}}, {{count}} НЕ прочитано"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -465,8 +468,6 @@
     "dmNodeLastHeard": "Последнее прослушивание: {{time}}",
     "dmNodeBattery": "{{pct}}% батареи",
     "dmNodeSignal": "SNR {{snr}} дБ",
-    "dmNodeHops": "{{count}} Hop",
-    "dmNodeHopsPlural": "{{count}} хопов",
     "muteConversation": "Отключить этот разговор",
     "unmuteConversation": "Включить звук этой беседы",
     "starMessage": "Избранное сообщение",
@@ -559,7 +560,9 @@
       "pkiMissingRecipientKey": "Не удалось отправить зашифрованное сообщение — в NodeDB отсутствует открытый ключ получателя.",
       "pkiFailed": "Ошибка шифрования PKI для этого сообщения.",
       "noChannel": "Нет канала для маршрутизации этого сообщения.",
-      "timeout": "Время ожидания сообщения по радио истекло."
+      "timeout": "Время ожидания сообщения по радио истекло.",
+      "rateLimited": "Радиостанция предназначена для передачи сообщений с ограничением скорости. Повторите попытку позже.",
+      "noInterface": "Нет радиоинтерфейса для отправки этого сообщения."
     },
     "waitingMessagesQueued": "{{count}} сообщенийв очереди по радио",
     "waitingMessagesSyncProgress": "Синхронизация {{processed}} / {{total}} с радио…",
@@ -593,7 +596,6 @@
       "sendFileAria": "Отправить файл в {{name}} через rncp",
       "pendingOffersBadgeAria_one": "{{count}} ожидает предложения по входящим файлам от этого участника",
       "pendingOffersBadgeAria_other": "{{count}} в ожидании предложений по входящим файлам от этого участника",
-      "destinationLabel": "хэш назначения rncp",
       "rememberAddress": "Запомнить этот адрес",
       "rememberAddressAria": "Запомнить это назначение rncp для этого однорангового узла",
       "chooseAndSend": "Выберите файл и отправьте...",
@@ -602,7 +604,23 @@
       "sendFailed": "Не удалось отправить: {{error}}",
       "newOfferToast": "{{peer}} хочет отправить вам файл: {{file}}",
       "requestEnable": "Включить запрос",
-      "requestEnableAria": "Попросите этого однорангового узла включить получение файлов"
+      "requestEnableAria": "Попросите этого однорангового узла включить получение файлов",
+      "destinationLabel": "Пункт назначения получения rncp узла",
+      "destinationHelp": "Это не хеш Chat/LXMF. Используйте «Запросить включение» или «Взять из чата», если собеседник вставил строку общего доступа, либо вставьте 32-символьный хеш получателя.",
+      "activeTransfersBadgeAria_one": "{{count}} активная передача файлов с этим одноранговым узлом",
+      "activeTransfersBadgeAria_other": "{{count}} активная передача файлов с этим одноранговым узлом",
+      "transfersTitle": "Трансферы",
+      "useFromChat": "Использовать пункт назначения из чата",
+      "useFromChatAria": "Найдите и используйте пункт назначения получения rncp, доступный в этом чате",
+      "noShareInChat": "В этом чате пока нет строки общего доступа к rncp. Попросите их вставить пункт назначения получения (Remote → My rncp receive destination) или вставьте 32-символьный хэш ниже.",
+      "savedForOtherPeers": "Сохраненные адреса получения существуют для других чатов ({{peers}}). Откройте DM этого однорангового узла для автозаполнения.",
+      "transferProgressAria": "Прогресс перевода для {{file}}: {{progress}} процентов",
+      "transferCompletedToast": "Файл отправлен: {{file}}",
+      "transferFailedToast": "Ошибка передачи файла ({{file}}): {{error}}",
+      "forgetAddress": "Забыть сохраненный пункт назначения",
+      "forgetAddressAria": "Удалить сохраненный пункт назначения получения rncp для этого узла",
+      "forgotAddressToast": "Забыт сохраненный пункт назначения rncp для этого однорангового узла.",
+      "filledFromChatToast": "Заполненный пункт назначения из чата (не сохранен — отметьте Не забудьте сохранить его)."
     },
     "shareLocation": "Поделиться местоположением",
     "shareLocationLabel": "📍 Общая локация",
@@ -615,7 +633,15 @@
     "floodScopeOverrideCustomLabel": "Пользовательский хэштег области флуда",
     "floodScopeOverrideCustomPlaceholder": "#мойрегион",
     "floodScopeOverrideCustomApply": "Использовать область действия",
-    "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion)."
+    "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion).",
+    "dmNodeHops_one": "{{count}} переход",
+    "dmNodeHops_few": "{{count}} перехода",
+    "dmNodeHops_many": "{{count}} переходов",
+    "dmNodeHops_other": "{{count}} перехода",
+    "notificationDmTitle": "ДМ от {{sender}}",
+    "notificationMessageTitle": "Сообщение от {{sender}}",
+    "reticulumSendStoredAtPn": "Сохранено в узле распространения",
+    "reticulumPnAbbrev": "КН"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -624,7 +650,10 @@
     "locationCard": {
       "alt": "Общий фрагмент карты местоположений",
       "openMaps": "Открыть в Картах"
-    }
+    },
+    "directImage": "Изображение: {{name}}",
+    "directImageOpen": "Открыть изображение",
+    "reticulumAttachmentImage": "Вложенное изображение: {{name}}"
   },
   "common": {
     "close": "Закрывать",
@@ -1067,7 +1096,27 @@
       "backboneDirectoryHint": "Дополнительные центры магистральной сети сообщества можно найти на сайте directory.rns.recipes. Хабам Yggdrasil (например, Yggdrasil_Ashburn_VA) необходим работающий локальный туннель Yggdrasil — руководство Reticulum рекомендует привязку к вашему интерфейсу туннеля (часто tun0).",
       "localOfflineRowBleBondStale": "Связь Bluetooth устарела. Забудьте этот RNode в «Системные настройки» → «Bluetooth», затем выполните повторное сопряжение с новым PIN-кодом (ОС по-прежнему может отображать «Сопряжено»).",
       "addDefaultHubsAria": "Синхронизация магистральных концентраторов Reticulum по умолчанию (Восток США, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); отключить выведенные из эксплуатации конечные точки тестовой сети",
-      "addDefaultHubsAllPresent": "Магистральные концентраторы по умолчанию уже настроены; выведенные из эксплуатации концентраторы тестовой сети не включены."
+      "addDefaultHubsAllPresent": "Магистральные концентраторы по умолчанию уже настроены; выведенные из эксплуатации концентраторы тестовой сети не включены.",
+      "modeDescriptions": {
+        "full": "Полное участие в сети. Маршрутизирует трафик и автоматически распространяет объявления. Используйте для первичных узлов и повторителей.",
+        "access_point": "Тихо, пока не будет запрошено. Срок действия короткого пути. Идеально подходит для широкополосных радиостанций, обслуживающих прерывистых пользователей.",
+        "roaming": "Мобильные интерфейсы. Таймауты короткого пути и активное обнаружение. Используйте для портативных или автомобильных RNode.",
+        "boundary": "Граница сети. Мосты отдельных сегментов при изоляции локального трафика. Используйте для ссылок на Интернет/LoRa.",
+        "gateway": "Поиск путей для клиентов. Решает неизвестные назначения от имени подключенных узлов.",
+        "point_to_point": "Прямая связь между двумя узлами. Нет маршрутизации или распространения объявления."
+      },
+      "networkName": "Имя сети",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Имя сети",
+      "passphrase": "Кодовая фраза",
+      "passphrasePlaceholder": "Аутентификация IFAC",
+      "passphraseAria": "Кодовая фраза IFAC",
+      "showPassphrase": "Показать парольную фразу",
+      "hidePassphrase": "Скрыть парольную фразу",
+      "advanced": "Дополнительно",
+      "advancedHint": "Дополнительный ключ= пары значений для этого интерфейса, по одному на строку. Известные поля (хост, режим, имя сети и т. д.) остаются в форме выше.",
+      "advancedAria": "Расширенные параметры ключ-значение интерфейса",
+      "advancedKeyReserved": "Ключ \"{{key}}\" является известным полем и был проигнорирован — используйте форму выше."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1144,9 @@
       "offlineHintWifi": "Убедитесь, что RNode находится в вашей локальной сети, включен и доступен по настроенному IP-адресу (порт TCP по умолчанию 7633, а не 4242). Обновите узел ниже, если DHCP назначил новый адрес, или повторно предоставьте Wi-Fi в Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: концентратор TCP недоступен ({{host}}:{{port}})",
       "tcpUnreachableHint": "Удалённый экземпляр Reticulum может быть offline или блокировать подключения. Отключите этот интерфейс или проверьте хост и порт.",
-      "offlineHintBleBondStale": "macOS по-прежнему отображает этот RNode как сопряженный, но ключи Bluetooth больше не совпадают (Peer удалил информацию о сопряжении). Забудьте устройство в «Системные настройки» → «Bluetooth», переведите RNode в режим сопряжения («Администратор» → «Bluetooth» → «Начать сопряжение» или удерживайте кнопку ~7 с), затем перезапустите стек и введите новый 6-значный PIN-код при появлении запроса.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Ссылки BLE RNode могут занять до 60 секунд после запуска стека (окно пароля ОС). Введите текущий PIN-код RNode, если будет предложено, — никогда не 123456. Это нормально, а не ошибка. Устройство может не появиться в настройках системы до тех пор, пока не будет выполнено успешное соединение."
+      "connectingHintBle": "Ссылки BLE RNode могут занять до 60 секунд после запуска стека (окно пароля ОС). Введите текущий PIN-код RNode, если будет предложено, — никогда не 123456. Это нормально, а не ошибка. Устройство может не появиться в настройках системы до тех пор, пока не будет выполнено успешное соединение.",
+      "offlineHintBle": "Чтобы устранить эту ошибку, удалите этот интерфейс и добавьте его снова (Выбрать устройство), чтобы обновить сохранённый Bluetooth‑идентификатор, затем перезапустите стек. ОС может запросить 6‑значный Bluetooth PIN (macOS, Windows или Linux). RNode генерирует новый код при каждом сопряжении — никогда не используйте 123456 (это значение по умолчанию Meshtastic, не RNode). RNode не обязательно должен отображаться в Системных настройках → Bluetooth до подключения этого приложения; диалог ОС появляется, когда стек выполняет сопряжение. Радио без дисплея: подключите USB → Reticulum Admin → Bluetooth → Начать сопряжение → введите PIN, показанный в панели Admin (не на дисплее радио), в диалоге ОС. Радио с дисплеем: удерживайте кнопку ~7 с на устройствах Heltec (время различается; ~10 с на многих платах включает Wi‑Fi AP), прочитайте PIN на экране и введите его в диалоге ОС. Очистите неудачные связи в настройках Bluetooth ОС перед повторной попыткой.",
+      "offlineHintBleBondStale": "В macOS этот RNode по‑прежнему отображается как Сопряжённый, но ключи Bluetooth больше не совпадают (одноранговый узел удалил информацию о сопряжении). Забудьте устройство в Системных настройках → Bluetooth, переведите RNode в режим сопряжения (Admin → Bluetooth → Начать сопряжение или удерживайте кнопку ~7 с), затем удалите и снова добавьте этот интерфейс (Выбрать устройство), перезапустите стек и введите новый 6‑значный PIN по запросу."
     },
     "autoConnectingTo": "Автоматическое подключение к {{deviceName}}…",
     "autoReconnectInProgress": "Выполняется автоматическое повторное подключение…",
@@ -1199,20 +1248,20 @@
     "coloradoRegionGateStay": "Я в Колорадо",
     "coloradoRegionGateSwitch": "Переключиться на LetsMesh",
     "topicPrefixInvalidIata": "Префикс темы должен быть meshcore/test или meshcore/{IATA} (3 буквы), например meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Повторно подключитесь, прежде чем сдаваться (1–{{max}}). Сохранено с настройками; нажмите «Подключиться» еще раз после изменения, чтобы основной процесс забрал его.",
       "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение."
     },
     "reticulumStackRunningAs": "Работает — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не отвечает — перезапуск…"
+    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не отвечает — перезапуск…",
+    "reticulumSharedInstance": {
+      "title": "Использование общего экземпляра другого приложения",
+      "body": "Это приложение прикреплено в качестве клиента общего экземпляра Reticulum другого приложения. Локальные концентраторы TCP из конфигурации этого приложения не запускаются в этом режиме — трафик может использовать только стек другого приложения.",
+      "networkHint": "Или откройте экземпляр Network → Share Reticulum, чтобы отключить общий доступ вручную, а затем перезапустите стек. Вы также можете полностью выйти из MeshChat, Ratspeak или автономного rnsd и перезапустить.",
+      "disableShare": "Отключите «Поделиться экземпляром» и перезапустите",
+      "disableShareAria": "Отключите «Поделиться экземпляром» и перезапустите стек",
+      "disableFailed": "Не удалось отключить экземпляр Share."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -1356,7 +1405,8 @@
       "potentialMeshcoreRepeaterConflict": "Потенциальный конфликт повторителей MeshCore",
       "elevatedNoiseFloor": "Пол с повышенным уровнем шума",
       "excessiveFlooding": "Чрезмерное затопление",
-      "reticulumTrafficDetected": "Обнаружен трафик Reticulum"
+      "reticulumTrafficDetected": "Обнаружен трафик Reticulum",
+      "highCompanionTxQueue": "Очередь High Companion TX"
     },
     "rfCause": {
       "channelUtilizationSpike": "Текущее значение {{current}}% более чем в 2 раза превышает недавнее среднее значение ({{average}}%) — возможна перегрузка или всплеск помех.",
@@ -1370,7 +1420,8 @@
       "widebandNoiseFloor": "Широкополосные помехи (неисправная электроника, шум в линии электропередачи и т. д.), повышающие минимальный уровень шума.",
       "fringeWeakCoverage": "Узел находится слишком далеко или плохо связан с остальной частью сетки.",
       "elevatedNoiseFloor": "Минимальный уровень радиошума составляет {{noiseFloor}} дБм — повышенные помехи, снижающие эффективную дальность.",
-      "excessiveFlooding": "{{percent}}% передач перенаправлены - прямая маршрутизация может быть не установлена с близлежащими узлами."
+      "excessiveFlooding": "{{percent}}% передач перенаправлены - прямая маршрутизация может быть не установлена с близлежащими узлами.",
+      "highCompanionTxQueue": "Глубина исходящей очереди спутника составляет {{queueLen}}/256 — трафик может быть задержан или пропущен."
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic узел передает на этой частоте. Отправитель: {{sender}}. {{proximity}}Этот узел может находиться в зоне повторителя MeshCore.",
@@ -1445,6 +1496,10 @@
       "excessiveFlooding": {
         "title": "Разрешить установку прямых маршрутов",
         "description": "Коэффициент затопления очень высок — подождите, пока узел накапливает прямые контакты, или проверьте близость ретранслятора."
+      },
+      "highCompanionTxQueue": {
+        "title": "Уменьшите исходящий трафик или проверьте радиочастотную ссылку",
+        "description": "Очередь Companion TX почти заполнена — пауза отправляет, уменьшает наводнения или проверяет наличие помех и слабых связей."
       }
     },
     "cuHistoryHeading": "Использование канала (последние 24 часа)",
@@ -1523,7 +1578,10 @@
         "transportSaturatedShareInstance": "RNS транспорт насыщенный ({{count}} path-request drops). Экземпляр Share включен — закройте другие приложения Reticulum (MeshChatX, Ratspeak, rnsd) и перезапустите стек.",
         "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)",
         "bleBondRemoved": "Связь BLE RNode «{{name}}» устарела — забудьте в настройках Bluetooth ОС и выполните повторное сопряжение.",
-        "blePairingTimedOut": "Тайм-аут обмена ключами BLE RNode «{{name}}» — введите текущий PIN-код (не 123456) и повторите сопряжение."
+        "blePairingTimedOut": "Тайм-аут обмена ключами BLE RNode «{{name}}» — введите текущий PIN-код (не 123456) и повторите сопряжение.",
+        "sidecarUnhealthy": "Sidecar Reticulum работает, но не отвечает на проверки состояния",
+        "propagationSyncStuck": "Синхронизация узла распространения застряла при установлении канала",
+        "propagationSyncFailing": "Ошибка синхронизации узла распространения"
       }
     },
     "routingPort": {
@@ -1545,7 +1603,9 @@
     "snrDb": "Отношение сигнал/шум {{snr}} дБ",
     "distanceOffsetKm": "Смещение расстояния",
     "km": "км",
-    "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50)."
+    "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50).",
+    "ignoreMqttToggle": "Игнорировать MQTT",
+    "ignoreMqttHelp": "Отображать узлы только с MQTT серым цветом и исключать их из диагностики"
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -2450,6 +2510,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Расширенный хостинг PN (опасная зона)",
+      "peeringCost": "Стоимость пиринга",
+      "maxPeeringCost": "Максимальная стоимость пиринга",
+      "autopeer": "Autopeer с обнаруженными PN",
+      "autopeerMaxdepth": "Autopeer максимальное количество прыжков",
+      "maxPeers": "Максимальное количество пиров autopeer",
+      "stampCost": "Стоимость пропагандистской марки",
+      "stampFlex": "Гибкая стоимость штампа",
+      "storageMb": "Ограничение хранения сообщений (МБ)",
+      "propagationLimitKb": "Лимит сообщений для распространения (КБ)",
+      "syncLimitKb": "Лимит передачи синхронизации (КБ)",
+      "deliveryLimitKb": "Лимит передачи доставки (КБ)",
+      "announceIntervalSec": "Интервал объявления PN (секунды)",
+      "announceAtStart": "Сообщите о запуске хостинга",
+      "fromStaticOnly": "Только от статических узлов",
+      "authRequired": "Требуется авторизация",
+      "enforceStamps": "Применять штампы сообщений",
+      "enforceRatchets": "Принудительные трещотки",
+      "nodeName": "PN объявить имя",
+      "staticPeers": "Статические хэши одноранговых узлов (по одному 32-х шестнадцатеричному коду в строке)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Сохранить политику хостинга",
+      "saving": "Сохранение…",
+      "saveAria": "Сохранить политику хостинга PN",
+      "saveOk": "Политика хостинга PN сохранена.",
+      "saveFailed": "Не удалось сохранить политику хостинга PN.",
+      "saveConfirmTitle": "Сохранить политику хостинга PN?",
+      "saveConfirmBody": "Применить настройки пиринга, хранения, отметки и объявления к узлу оперативного распространения? Неправильная конфигурация может привести к сжиганию ЦП, заполнению диска или принятию множества одноранговых узлов.",
+      "saveConfirm": "Сохранить политику",
+      "error": {
+        "peeringCostExceedsMax": "Стоимость пиринга не может превышать максимальную стоимость пиринга.",
+        "stampFlexExceedsCost": "Гибкость штампа не может превышать стоимость штампа.",
+        "autopeerMaxdepth": "Максимальное количество переходов Autopeer вне диапазона.",
+        "maxPeers": "Максимальное количество сверстников находится вне диапазона.",
+        "storageMb": "Предел хранения сообщений выходит за пределы допустимого диапазона.",
+        "propagationLimit": "Предел распространения сообщений выходит за пределы допустимого диапазона.",
+        "syncLimit": "Предел синхронизации передачи выходит за пределы допустимого диапазона.",
+        "deliveryLimit": "Лимит доставки доставки выходит за пределы допустимого диапазона.",
+        "announceInterval": "Интервал объявления PN выходит за пределы допустимого диапазона.",
+        "staticPeersTooMany": "Слишком много статических хешей одноранговых узлов (максимум 256).",
+        "staticPeerInvalid": "Один или несколько статических хешей одноранговых узлов недействительны (необходимо 32 шестнадцатеричных символа).",
+        "nodeNameInvalid": "Имя объявления PN содержит недопустимые символы.",
+        "nodeNameTooLong": "Имя объявления PN слишком длинное.",
+        "nonFiniteNumber": "Одно или несколько числовых полей недействительны."
+      },
+      "warning": "Эти настройки управляют хостингом локального узла распространения, автоматическим пирингом, затратами PoW и отказом в синхронизации для дорогостоящих удаленных устройств. Неправильная конфигурация может привести к сжиганию ЦП, заполнению диска или принятию множества одноранговых узлов."
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2805,11 @@
     "stableStability": "Стабильный",
     "moderateStability": "Умеренный",
     "unstableStability": "Нестабильный",
-    "unknownStability": "Неизвестный"
+    "unknownStability": "Неизвестный",
+    "hybridMqttPathTooltip": "Получено через RF; некоторые пакеты используют путь ретрансляции MQTT",
+    "hybridMqttPathAria": "Путь RF и MQTT",
+    "connectedViaRfAndMqttTooltip": "Подключено через RF и MQTT",
+    "connectedViaRfAndMqttAria": "Подключено через RF и MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",
@@ -2785,7 +2897,8 @@
     "hybridMqttPathTooltip": "Получено через RF; некоторые пакеты используют путь ретрансляции MQTT",
     "hybridMqttPathAria": "Путь RF и MQTT",
     "connectedViaRfAndMqttTooltip": "Подключено через RF и MQTT",
-    "connectedViaRfAndMqttAria": "Подключено через RF и MQTT"
+    "connectedViaRfAndMqttAria": "Подключено через RF и MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% исправности соединения"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2980,17 @@
       "contentSourceNotFromPicker": "Выберите папку с папкой Choose (Выбрать) перед ее применением.",
       "contentSourceNone": "Папка не выбрана",
       "contentSourceRequired": "Перед началом приема гостей Nomad выберите папку со страницами."
-    }
+    },
+    "sortLastHeard": "В последний раз слышали:",
+    "sortHops": "Хопы",
+    "sortName": "Имя",
+    "sortToolbar": "Список узлов сортировки",
+    "sortByLastHeardAsc": "Сортировать по последним услышанным, сначала по самым старым",
+    "sortByLastHeardDesc": "Сортировать по последним услышанным, сначала новые",
+    "sortByHopsAsc": "Сортировать по хопам, сначала по ближайшим",
+    "sortByHopsDesc": "Сортировать по хопам, сначала самые дальние",
+    "sortByNameAsc": "Сортировать по имени А - Я",
+    "sortByNameDesc": "Сортировать по имени Я - А"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",
@@ -3652,7 +3775,18 @@
     "byteLengthTooltip": "{{bytes}} байт RAW",
     "routeBarFloodTooltip": "Пакет с флуд-маршрутизацией",
     "routeBarDirectTooltip": "Пакет с прямой маршрутизацией",
-    "routeBarUnknownTooltip": "неизвестный маршрут"
+    "routeBarUnknownTooltip": "неизвестный маршрут",
+    "crc32Fingerprint": "Отпечаток CRC32:",
+    "innerFirstU32Debug": "Первое внутреннее u32 (отладка):",
+    "destHash": "Хеш назначения:",
+    "srcHash": "Хеш источника:",
+    "channelHash": "Хеш канала:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Байты шифротекста:",
+    "senderKeyPrefix": "Ключ отправителя (префикс):",
+    "control": "Управление:",
+    "advertTs": "Время ADVERT:",
+    "advertLatLon": "Широта/долгота ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3950,12 @@
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",
     "iconNameAria": "Значок аватара",
-    "iconCircle": "Круг",
     "iconStar": "Звезда",
     "iconHeart": "Сердце",
     "iconShield": "Щит",
-    "iconUser": "Пользователь"
+    "iconNone": "Никто",
+    "iconSaveFailed": "Не удалось сохранить значок аватара.",
+    "iconUser": "Люди"
   },
   "reticulumPropagation": {
     "preferred": "Предпочтительно",
@@ -3830,7 +3965,6 @@
     "syncNowFor": "Синхронизировать сообщения от {{name}}",
     "addNode": "Добавить узел",
     "addNodeLabel": "Добавить узел распространения по хешу",
-    "localInboxStats": "{{count}} в очереди · {{bytes}} байт",
     "refreshing": "Обновление…",
     "refreshAria": "Обновить узлы распространения",
     "syncStatusEstablishing": "Установление соединения с узлом распространения…",
@@ -3853,7 +3987,10 @@
     "notice": {
       "body": "Узел распространения не настроен. Автономным или недоступным одноранговым узлам требуется узел распространения для доставки LXMF с сохранением и пересылкой.",
       "openSettings": "Настроить распространение",
-      "openSettingsAria": "Настройки распространения сети Open Reticulum"
+      "openSettingsAria": "Настройки распространения сети Open Reticulum",
+      "bodyWithDiscoveries": "Узел распространения не настроен. {{count}} обнаружено в сети — добавьте его ниже или откройте настройки сети.",
+      "addClosest": "Добавить ближайших обнаруженных",
+      "addClosestAria": "Добавьте ближайший обнаруженный узел распространения и установите его в качестве предпочтительного"
     },
     "rename": "Переименовать",
     "renameLabel": "Имя узла распространения",
@@ -3877,7 +4014,6 @@
       "unknown": "неизвестный",
       "online": "онлайн"
     },
-    "syncLocalNotSupported": "Локальное распространение — это ваш автономный почтовый ящик — его нельзя синхронизировать по сети, как удаленный узел распространения LXMF.",
     "syncIdentityUnknown": "Идентификатор узла распространения неизвестен — дождитесь объявления или ответа о пути, а затем повторите попытку.",
     "syncTargetNotPropagationNode": "Этот пункт назначения доступен в Reticulum, но не является узлом распространения LXMF (концентраторы TCP являются только транспортными путями). Добавьте пункт назначения, который объявляется как lxmf.propagation, для синхронизации автономных сообщений.",
     "syncPeeringStampFailed": "Не удалось создать штамп пиринга для этого узла распространения. Повторите попытку через минуту.",
@@ -3885,7 +4021,44 @@
     "renameFailed": "Не удалось переименовать узел распространения.",
     "deleteFailed": "Не удалось удалить узел распространения.",
     "addFailed": "Не удалось добавить узел распространения.",
-    "addNodePlaceholder": "32-символьный хеш назначения lxmf.propagation"
+    "addNodePlaceholder": "32-символьный хеш назначения lxmf.propagation",
+    "syncEstablishIdentityMissing": "Синхронизации распространения не удалось проверить доказательство связи — идентификатор узла отсутствовал. Дождитесь объявления и повторите попытку.",
+    "syncEstablishInvalidProof": "Синхронизация распространения получила от узла недопустимое доказательство связи — повторите попытку через мгновение.",
+    "syncOfferNoIdentity": "Узел распространения отклонил предложение синхронизации — идентификация не удалась. Дождитесь объявления и повторите попытку.",
+    "syncOfferNoAccess": "Узлу распространения отказано в доступе к синхронизации.",
+    "syncOfferInvalidKey": "Узел распространения отклонил пиринговый ключ — проверьте стоимость пиринга и повторите попытку.",
+    "syncOfferThrottled": "Узел распространения ограничил запрос синхронизации — повторите попытку позже.",
+    "syncOfferInvalidData": "Узел распространения отклонил данные предложения синхронизации.",
+    "syncOfferInvalidStamp": "Узел распространения отклонил пиринговый штамп — повторите попытку через мгновение.",
+    "discoveredTitle": "Обнаружено в сети",
+    "discoveredEmpty": "Объявления lxmf.propagation еще не прослушаны. Держите стек подключенным или добавьте узел по хэшу.",
+    "discoveredInactive": "Неактивен",
+    "discoveredHops": "{{hops}} прыжков",
+    "discoveredPeeringCost": "стоимость пиринга {{cost}}",
+    "discoveredAdd": "Добавить",
+    "discoveredAddAria": "Добавить обнаруженный узел распространения {{name}}",
+    "discoveredAddPrefer": "Добавить и предпочесть",
+    "discoveredAddPreferAria": "Добавьте обнаруженный узел распространения {{name}} и установите его в качестве предпочтительного",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Синхронизация распространения не получила подтверждения связи с узлом — вашей личности может потребоваться новое объявление или отсутствует обратный путь. Попробуйте Network → Announce сейчас, а затем синхронизировать снова.",
+    "syncOfferUnknown": "Узел распространения вернул неизвестную ошибку предложения синхронизации — повторите попытку через мгновение.",
+    "syncPathHint": "Удаленной синхронизации нужен путь в обе стороны. Синхронизация сначала отправляет короткое объявление LXMF, чтобы узел мог ответить.",
+    "setPreferredFailed": "Не удалось установить предпочтительный узел распространения.",
+    "preferredLocalWarning": "Предпочтительным узлом является только локальный — автономные одноранговые узлы по-прежнему нуждаются в удаленном узле распространения для доставки в хранилище.",
+    "localHostStats": "{{count}} в очереди · {{bytes}} байт",
+    "localHostName": "Узел распространения хоста",
+    "localHostHint": "При включении это устройство объявляет себя узлом распространения LXMF и обслуживает /offer и /get. Предпочитайте удаленный узел для исходящей операции хранения и пересылки недоступным узлам.",
+    "syncPeerCostExceedsMax": "Стоимость пиринга этого узла распространения превышает максимальную стоимость пиринга — увеличьте максимальную стоимость в разделе «Сеть» → «Расширенный хостинг PN» или выберите другой узел.",
+    "offerUnsupported": "Этот адрес не поддерживает синхронизацию LXMF /offer — mesh-client не может использовать его как узел распространения.",
+    "offerProbeTimeout": "Время ожидания проверки/предложения поддержки истекло — узел может быть недоступен. Попробуйте еще раз, когда путь станет доступен.",
+    "offerProbeFailed": "Не удалось проверить/предложить поддержку для этого узла распространения. Повторите попытку через минуту.",
+    "enableLocalHostConfirmTitle": "Включить локальный хостинг узла распространения?",
+    "enableLocalHostConfirmBody": "Это устройство будет объявляться узлом распространения LXMF и обслуживать /offer и /get. Это использует хранилище, ЦП и может обмениваться данными с другими узлами в сети. Предпочитайте удаленный узел для исходящего хранения и пересылки, если вы не планируете размещать его.",
+    "enableLocalHostConfirm": "Включить хостинг",
+    "addProbing": "Проверка поддержки /offer…",
+    "syncLocalNotSupported": "Локальный узел распространения хоста не может быть синхронизирован по сети, как удаленный узел распространения LXMF.",
+    "enableFailed": "Не удалось включить узел распространения.",
+    "disableFailed": "Не удалось отключить узел распространения."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим распространения",
@@ -4109,7 +4282,8 @@
     "pathHashCliGet": "Получить режим хеширования пути",
     "pathHashCliSet0": "Установить режим хеширования пути 1 байт",
     "pathHashCliSet1": "Установить хеш-режим пути 2 байта",
-    "pathHashCliSet2": "Установить режим хеширования пути 3 байта"
+    "pathHashCliSet2": "Установить режим хеширования пути 3 байта",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} НЕ прочитано"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",
@@ -4201,7 +4375,10 @@
     "backupRemoved": "Резервные наборы данных удалены:",
     "meshcorePrivateKeyHint": "Используйте Экспортировать закрытый ключ ниже, чтобы просмотреть ключевой материал. Резервное копирование сохраняет полную пару ключей на этом компьютере.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Резервные копии не найдены",
+    "missingKeyMaterial": "Отсутствует ключевой материал",
+    "unknownError": "Неизвестная ошибка"
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в этом режиме"
@@ -4318,7 +4495,12 @@
     "chartAriaSignal": "Диаграмма качества сигнала: последнее соотношение сигнал/шум {{snr}} дБ, RSSI {{rssi}} дБм, {{count}} баллов",
     "chartAriaTempHumidity": "График температуры и влажности: последняя температура {{temperature}}, влажность {{humidity}} процентов, {{count}} баллов.",
     "chartAriaPressure": "График атмосферного давления: последние {{pressure}} гПа, {{count}} пунктов.",
-    "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов."
+    "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов.",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Экспорт CSV",
+    "emptyWaitingConnected": "Данных телеметрии пока нет. Ожидание данных от устройства…",
+    "emptyWaitingDisconnected": "Данных телеметрии пока нет. Подключите устройство для просмотра показателей в реальном времени."
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
@@ -4475,7 +4657,9 @@
     "directNoticeUnsupported": "Этот концентратор не поддерживает прямое УВЕДОМЛЕНИЕ (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Удаляется из комната ступицей (удар, блокировка или удаленная часть)."
+      "removedFromRoom": "Удаляется из комната ступицей (удар, блокировка или удаленная часть).",
+      "removedFromRoomSystem": "Хаб отделил вас от {{room}}.",
+      "hubParted": "Хаб отделил тебя от комнаты."
     },
     "errors": {
       "linkProofTimeout": "Время ожидания ссылки на концентратор истекло (подтверждение ссылки). Повторите попытку или проверьте путь/переходы к концентратору.",
@@ -4682,7 +4866,9 @@
       "offerToast": "Предложение по входящим файлам: {{file}}",
       "copyInstructionsAria": "Копировать инструкции для включения получения файла",
       "copyInstructions": "Копировать инструкции",
-      "instructionsCopied": "Инструкции скопированы."
+      "instructionsCopied": "Инструкции скопированы.",
+      "receiveDestSharedToast": "Сохранено rncp-назначение приёма {{peer}} — можно отправить файл.",
+      "receiveDestShareFailed": "Не удалось сохранить пункт назначения приема rncp узла."
     },
     "enableRequest": {
       "title": "Включить получение файлов?",
@@ -4699,7 +4885,9 @@
       "enableFailed": "Не удалось включить получение файлов: {{error}}",
       "saveDirRequired": "Выберите папку сохранения, чтобы включить получение.",
       "identityUnknown": "Пока не удалось определить хеш личности этого пира — режим «Спрашивать» включён, но пир не добавлен в список разрешённых. Повторите попытку после получения пути или анонса.",
-      "lxmfBody": "Включите получение файлов (rncp), если вы используете mesh-client: Remote → Settings → Inbound file offers. Или запустите rncp/rncp-rs в режиме прослушивания."
+      "lxmfBody": "Включите получение файлов (rncp), если вы используете mesh-client: Remote → Settings → Inbound file offers. Или запустите rncp/rncp-rs в режиме прослушивания.",
+      "lxmfShareBody": "Приём файлов включён. Вот моё rncp-назначение приёма (mesh-client сохранит его для вас).",
+      "shareDestWarning": "Если вы включите этот параметр, mesh-client отправит пункт назначения получения rncp этому узлу, чтобы он мог автоматически заполнить файл для отправки."
     },
     "saved": {
       "labelPlaceholder": "Ярлык",
@@ -4754,5 +4942,12 @@
     "direct": "Прямой",
     "segmentTooltip": "Хэш пути {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} онлайн",
+    "onlineBody": "Узел {{protocol}} подключен к сети",
+    "offlineTitle": "{{name}} вышел из сети",
+    "offlineBody": "Последний раз слышал: {{time}}",
+    "unknown": "неизвестный"
   }
 }

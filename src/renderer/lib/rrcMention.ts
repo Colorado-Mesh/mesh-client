@@ -92,6 +92,7 @@ export function classifyRrcNotificationType(
   if (msg.kind === 'system' || msg.kind === 'error') return null;
   if (isRrcDirectMessage(msg)) return 'dm';
   if (bodyMentionsRrcNick(msg.body, nickname)) return 'dm';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (msg.kind === 'msg' || msg.kind === 'action' || msg.kind === 'notice') return 'channel';
   return null;
 }

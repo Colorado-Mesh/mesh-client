@@ -44,13 +44,30 @@ const mockWsInstances: MockWebSocketInstance[] = [];
 interface MockWebSocketInstance {
   handlers: Map<string, (...args: unknown[]) => void>;
   close: ReturnType<typeof vi.fn>;
+  removeAllListeners: ReturnType<typeof vi.fn>;
   options: unknown;
 }
 
 vi.mock('ws', () => ({
   default: class MockWebSocket {
     handlers = new Map<string, (...args: unknown[]) => void>();
-    close = vi.fn();
+    // Mirror ws: closing while CONNECTING abortHandshake emits 'error' on nextTick.
+    close = vi.fn(() => {
+      process.nextTick(() => {
+        const err = new Error('WebSocket was closed before the connection was established');
+        const handler = this.handlers.get('error');
+        if (handler) {
+          handler(err);
+          return;
+        }
+        // EventEmitter: 'error' with no listeners becomes uncaughtException
+        process.emit('uncaughtException', err);
+      });
+    });
+    removeAllListeners = vi.fn(() => {
+      this.handlers.clear();
+      return this;
+    });
     constructor(
       public url: string,
       public options?: unknown,
@@ -224,9 +241,43 @@ describe('ReticulumSidecarManager', () => {
     expect(first.running).toBe(true);
     expect(first.port).toBeGreaterThan(0);
     expect(first.pid).toBe(4242);
+    const spawnEnv = spawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv | undefined;
+    expect(spawnEnv?.RUST_LOG).toBe('warn');
 
     await manager.stop();
 
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('filters mixed stdout chunks line by line and flushes trailing text', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+
+    const manager = new ReticulumSidecarManager();
+    await manager.start();
+    const stdout = (proc as unknown as { stdout: EventEmitter }).stdout;
+    stdout.emit(
+      'data',
+      Buffer.from('INFO packet route mentions ERROR\nWARN actual warning\nERROR'),
+    );
+    stdout.emit('end');
+
+    expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'WARN actual warning');
+    expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'ERROR');
+    expect(debugSpy).not.toHaveBeenCalledWith(
+      '[ReticulumSidecar]',
+      'INFO packet route mentions ERROR',
+    );
+
+    await manager.stop();
+    debugSpy.mockRestore();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
   });
@@ -448,6 +499,42 @@ describe('ReticulumSidecarManager', () => {
     await manager.stop();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
+  });
+
+  it('stop while WS is CONNECTING does not raise uncaughtException', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+
+    const uncaught = vi.fn();
+    process.on('uncaughtException', uncaught);
+
+    const manager = new ReticulumSidecarManager();
+    try {
+      await manager.start();
+      expect(mockWsInstances.length).toBeGreaterThan(0);
+      // Do not fire 'open' — leave the socket in CONNECTING so close() abortHandshake-emits.
+    } finally {
+      await manager.stop();
+      process.off('uncaughtException', uncaught);
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    }
+
+    await new Promise<void>((resolve) => {
+      process.nextTick(resolve);
+    });
+
+    expect(uncaught).not.toHaveBeenCalled();
+    const wsInstance = mockWsInstances[mockWsInstances.length - 1];
+    expect(wsInstance.removeAllListeners).toHaveBeenCalled();
+    expect(wsInstance.close).toHaveBeenCalled();
+    // Teardown re-attaches an error listener after removeAllListeners (before close).
+    expect(wsInstance.handlers.has('error')).toBe(true);
   });
 
   it('yields Noble BLE when config has enabled ble RNode before spawn', async () => {

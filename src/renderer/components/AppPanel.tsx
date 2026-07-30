@@ -22,11 +22,11 @@ import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import {
   DEFAULT_MESSAGE_RETENTION,
-  fetchMessageRetention,
   MESSAGE_RETENTION_KEYS,
   MESSAGE_RETENTION_MAX_COUNT,
   MESSAGE_RETENTION_MIN_COUNT,
   type MessageRetentionSettings,
+  parseMessageRetention,
 } from '../lib/messageRetention';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -52,6 +52,8 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
 import { useToast } from './Toast';
@@ -132,60 +134,6 @@ function gpsIntervalLabel(t: (key: string) => string, secs: number): string {
   }
 }
 
-// ─── Confirmation Modal ─────────────────────────────────────────
-function ConfirmModal({
-  title,
-  message,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onCancel,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button
-        type="button"
-        aria-label={t('common.cancel')}
-        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-      {/* Modal */}
-      <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-muted text-sm leading-relaxed">{message}</p>
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label={t('common.cancel')}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            aria-label={confirmLabel}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
-              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── App settings (persisted) ────────────────────────────────────
 interface AppSettings {
   autoPruneEnabled: boolean;
@@ -221,6 +169,7 @@ interface AppSettings {
   storeForwardHistoryProfile: 'conservative' | 'aggressive';
   shareLocationSendWaypoint: boolean;
   reduceMotion: boolean;
+  use24HourTime: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
 }
@@ -463,13 +412,18 @@ export default function AppPanel({
           console.warn('[AppPanel] reduceMotion persist failed ' + errLikeToLogString(err));
         });
     }
+    if (key === 'use24HourTime') {
+      void window.electronAPI.appSettings
+        .set('use24HourTime', value ? 'true' : 'false')
+        .catch((err: unknown) => {
+          console.warn('[AppPanel] use24HourTime persist failed ' + errLikeToLogString(err));
+        });
+    }
   };
 
-  // ─── DB-backed message retention (issue #387) ─────────────────
-  // Source of truth lives in SQLite (`app_settings` KV table). Hydrate on
-  // mount; debounce writes through IPC. Two independent caps gated by the
-  // currently selected protocol — pruning still runs for both tables on
-  // startup (see App.tsx) since both stacks may be active simultaneously.
+  // ─── DB-backed settings hydrate (message retention + 24h clock) ─
+  // Source of truth lives in SQLite (`app_settings` KV table). One getAll()
+  // on mount so tests that mockResolvedValueOnce still see retention keys.
   const [retention, setRetention] = useState<MessageRetentionSettings>({
     ...DEFAULT_MESSAGE_RETENTION,
   });
@@ -478,14 +432,24 @@ export default function AppPanel({
 
   useEffect(() => {
     let cancelled = false;
-    fetchMessageRetention()
-      .then((loaded) => {
+    void window.electronAPI.appSettings
+      .getAll()
+      .then((raw) => {
         if (cancelled) return;
+        const use24 = raw?.use24HourTime;
+        if (use24 === 'true' || use24 === 'false') {
+          const enabled = use24 === 'true';
+          useTimeFormatStore.getState().hydrateFromSqlite(enabled);
+          setSettings((prev) =>
+            prev.use24HourTime === enabled ? prev : { ...prev, use24HourTime: enabled },
+          );
+        }
+        const loaded = parseMessageRetention(raw);
         setRetention(loaded);
         lastSavedRetentionRef.current = loaded;
       })
-      .catch((e: unknown) => {
-        console.warn('[AppPanel] fetchMessageRetention failed ' + errLikeToLogString(e));
+      .catch((err: unknown) => {
+        console.warn('[AppPanel] app settings hydrate failed ' + errLikeToLogString(err));
       });
     return () => {
       cancelled = true;
@@ -1986,6 +1950,23 @@ export default function AppPanel({
             {t('appPanel.reduceMotion')}
           </label>
           <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
+        </div>
+        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+          <input
+            type="checkbox"
+            id="use24HourTime"
+            checked={settings.use24HourTime}
+            onChange={(e) => {
+              updateSetting('use24HourTime', e.target.checked);
+              useTimeFormatStore.getState().setUse24HourTime(e.target.checked);
+            }}
+            aria-label={t('appPanel.use24HourTime')}
+            className="accent-brand-green"
+          />
+          <label htmlFor="use24HourTime" className="cursor-pointer text-sm text-gray-300">
+            {t('appPanel.use24HourTime')}
+          </label>
+          <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
         </div>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">

@@ -62,12 +62,12 @@ describe('reticulumConfigAudit', () => {
     );
     expect(rows).toHaveLength(1);
     const row = rows[0] as RfDiagnosticRow;
-    expect(row?.kind).toBe('rf');
-    expect(row?.nodeId).toBe(42);
-    expect(row?.condition).toBe('reticulum/audit/tcp_unreachable');
-    expect(row?.reticulumInterfaceId).toBe('hub-1');
-    expect(row?.reticulumRepairKind).toBe('disable');
-    expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.audit.tcp_unreachable');
+    expect(row.kind).toBe('rf');
+    expect(row.nodeId).toBe(42);
+    expect(row.condition).toBe('reticulum/audit/tcp_unreachable');
+    expect(row.reticulumInterfaceId).toBe('hub-1');
+    expect(row.reticulumRepairKind).toBe('disable');
+    expect(row.causeI18n?.key).toBe('diagnosticsPanel.reticulum.audit.tcp_unreachable');
   });
 
   it('auditIssuesToDiagnosticRows excludes expected runtime-only interface notes', () => {
@@ -92,7 +92,7 @@ describe('reticulumConfigAudit', () => {
     );
     expect(rows).toHaveLength(1);
     const row = rows[0] as RfDiagnosticRow;
-    expect(row?.condition).toBe('reticulum/audit/missing_shared_instance');
+    expect(row.condition).toBe('reticulum/audit/missing_shared_instance');
   });
 
   it.each([
@@ -115,6 +115,6 @@ describe('reticulumConfigAudit', () => {
       1,
     );
     const row = rows[0] as RfDiagnosticRow;
-    expect(row?.causeI18n?.key).toBe(`diagnosticsPanel.reticulum.audit.${kind}`);
+    expect(row.causeI18n?.key).toBe(`diagnosticsPanel.reticulum.audit.${kind}`);
   });
 });

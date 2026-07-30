@@ -1,3 +1,5 @@
+import type { NomadPageRequestData } from '@/shared/nomad-types';
+
 import MicronParser, {
   type MicronPartialCleanup,
   type MicronPartialFetchResult,
@@ -331,4 +333,54 @@ export function buildNomadLinkRequest(
         };
 
   return { destination: baseDestination, requestData };
+}
+
+/** Normalize empty/undefined request maps to undefined for identity comparisons. */
+export function normalizeNomadPageRequestData(
+  data?: NomadPageRequestData | null,
+): NomadPageRequestData | undefined {
+  if (!data) return undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+  const entries = Object.entries(data).filter(([, v]) => v != null && v !== '');
+  if (entries.length === 0) return undefined;
+  return Object.fromEntries(entries);
+}
+
+/**
+ * Stable cache/history key fragment for Nomad page request data.
+ * Empty or undefined data → `""`.
+ */
+export function serializeNomadPageRequestDataKey(data?: NomadPageRequestData | null): string {
+  const normalized = normalizeNomadPageRequestData(data);
+  if (!normalized) return '';
+  return Object.keys(normalized)
+    .sort((a, b) => a.localeCompare(b))
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(normalized[key] ?? '')}`)
+    .join('|');
+}
+
+/**
+ * Micron-style backtick URL suffix from `var_*` request keys (strip `var_` prefix).
+ * Form-only `field_*` keys are omitted (not URL-bar round-trippable as static link vars).
+ * Returns `""` when there are no displayable vars (caller should not append a backtick).
+ */
+export function formatNomadRequestDataForUrlBar(data?: NomadPageRequestData | null): string {
+  const normalized = normalizeNomadPageRequestData(data);
+  if (!normalized) return '';
+  const parts: string[] = [];
+  for (const key of Object.keys(normalized).sort((a, b) => a.localeCompare(b))) {
+    if (!key.startsWith('var_')) continue;
+    const name = key.slice('var_'.length);
+    if (!name) continue;
+    parts.push(`${name}=${normalized[key]}`);
+  }
+  return parts.join('|');
+}
+
+/** Compare two request-data maps by stable serialized key. */
+export function nomadPageRequestDataEquals(
+  a?: NomadPageRequestData | null,
+  b?: NomadPageRequestData | null,
+): boolean {
+  return serializeNomadPageRequestDataKey(a) === serializeNomadPageRequestDataKey(b);
 }

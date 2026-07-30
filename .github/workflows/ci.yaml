@@ -32,8 +32,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Format check
+        run: pnpm run format:check
+
+      - name: Markdown lint
+        run: pnpm run lint:md
+
       - name: Lint
         run: pnpm run lint
+
+      - name: License check
+        run: pnpm run check:licenses
+
+      - name: Install actionlint
+        run: pnpm run setup:actionlint
+
+      - name: Actionlint
+        run: |
+          export PATH="${GITHUB_WORKSPACE}/.githooks/bin:${PATH}"
+          actionlint
+
+      - name: pnpm audit (high+)
+        run: pnpm audit --audit-level=high
 
       - name: Install yamllint
         run: pip install yamllint

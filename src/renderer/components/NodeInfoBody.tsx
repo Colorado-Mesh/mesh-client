@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLatestTrackedPosition } from '@/renderer/hooks/useLatestTrackedPosition';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import {
@@ -38,6 +39,7 @@ import { formatRelativeOrIsoDateTime } from '../lib/formatRelativeOrIsoDate';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
+  isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
   MeshtasticMqttOnlyPathIcons,
   MeshtasticRfPathIcon,
@@ -50,6 +52,7 @@ import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../li
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useTimeFormatStore } from '../stores/timeFormatStore';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 
@@ -121,21 +124,17 @@ function NodeSourceBadge({
   const displayBadge = pathBadge === 'none' ? 'rfOnly' : pathBadge;
 
   if (displayBadge === 'hybrid') {
-    const isSelfHybrid = isSelf && mqttConnected && radioConnected;
-    return (
-      <MeshtasticHybridPathIcons
-        title={
-          isSelfHybrid
-            ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-            : t('nodeListPanel.hybridMqttPathTooltip')
+    const selfHybrid = isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected);
+    const labels = selfHybrid
+      ? {
+          title: t('nodeInfoBody.connectedViaRfAndMqttTooltip'),
+          ariaLabel: t('nodeInfoBody.connectedViaRfAndMqttAria'),
         }
-        ariaLabel={
-          isSelfHybrid
-            ? t('nodeListPanel.connectedViaRfAndMqttAria')
-            : t('nodeListPanel.hybridMqttPathAria')
-        }
-      />
-    );
+      : {
+          title: t('nodeInfoBody.hybridMqttPathTooltip'),
+          ariaLabel: t('nodeInfoBody.hybridMqttPathAria'),
+        };
+    return <MeshtasticHybridPathIcons title={labels.title} ariaLabel={labels.ariaLabel} />;
   }
   if (displayBadge === 'mqttOnly') {
     const title = node.heard_via_mqtt_only
@@ -184,11 +183,13 @@ export interface NodeInfoBodyProps {
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
+  error: 'text-red-400',
   warning: 'text-orange-400',
   info: 'text-blue-400',
 };
 
 const SEVERITY_ICON: Record<RFDiagnosis['severity'], string> = {
+  error: '✕',
   warning: '⚠',
   info: 'ℹ',
 };
@@ -211,6 +212,7 @@ export default function NodeInfoBody({
   const iconTrigger = useIconTrigger();
   const capabilities = useRadioProvider(protocol);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const protocolDiagnosticRows = useMemo(
     () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
@@ -765,7 +767,7 @@ export default function NodeInfoBody({
                   <span className="ml-2 text-gray-500">{meshcoreHopHistory.rssi} dBm</span>
                 )}
                 <span className="ml-2 text-[10px] text-gray-600">
-                  {new Date(meshcoreHopHistory.timestamp).toLocaleTimeString()}
+                  {formatDisplayTime(meshcoreHopHistory.timestamp, { use24Hour: use24HourTime })}
                 </span>
               </div>
             )}
@@ -784,7 +786,9 @@ export default function NodeInfoBody({
                       </>
                     )}
                     <span className="text-gray-600">
-                      {new Date(meshcoreTraceFirst.timestamp).toLocaleTimeString()}
+                      {formatDisplayTime(meshcoreTraceFirst.timestamp, {
+                        use24Hour: use24HourTime,
+                      })}
                       {meshcoreTraceHistory.length > 1 && (
                         <span className="ml-1 text-gray-500">
                           {t('nodeInfoBody.olderCount', { count: meshcoreTraceHistory.length - 1 })}

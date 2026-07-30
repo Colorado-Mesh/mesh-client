@@ -1,3 +1,4 @@
+import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import {
   buildMeshcoreOpenReactionIncomingMessage,
@@ -99,7 +100,7 @@ export function parseMeshcoreBracketPrefix(rawText: string): {
   wireReplyKey?: number;
   body: string;
 } {
-  const t = (rawText ?? '').trim();
+  const t = rawText.trim();
   if (!t) return { hadBracketPrefix: false, body: '' };
   const m = BRACKET_PREFIX.exec(t);
   if (!m) return { hadBracketPrefix: false, body: t };
@@ -108,7 +109,7 @@ export function parseMeshcoreBracketPrefix(rawText: string): {
     hadBracketPrefix: true,
     ...(targetName ? { targetName } : {}),
     ...(wireReplyKey != null ? { wireReplyKey } : {}),
-    body: (m[2] ?? '').trim(),
+    body: m[2].trim(),
   };
 }
 
@@ -157,7 +158,7 @@ export function resolveMeshcoreChannelMessageSender(opts: {
     undefined;
   if (senderId !== 0 && !displayName) {
     const node = opts.nodes?.get(senderId);
-    displayName = node?.long_name?.trim() || node?.short_name?.trim() || undefined;
+    displayName = node?.long_name.trim() || node?.short_name.trim() || undefined;
     if (!displayName) {
       displayName = `Node-${senderId.toString(16).toUpperCase()}`;
     }
@@ -173,7 +174,7 @@ export function resolveMeshcoreChannelMessageSender(opts: {
 }
 
 export function normalizeMeshcoreIncomingText(rawText: string): MeshcoreNormalizedText {
-  const text = (rawText ?? '').trim();
+  const text = rawText.trim();
   if (!text) return { payload: '' };
   const colonIdx = text.indexOf(':');
   if (colonIdx <= 0 || text[colonIdx + 1] !== ' ') return { payload: text };
@@ -347,7 +348,7 @@ function meshcoreThreadMatchesForReply(
   return true;
 }
 
-const MESHCORE_REPLY_KEY_MS_THRESHOLD = 1_000_000_000_000;
+const MESHCORE_REPLY_KEY_MS_THRESHOLD = LAST_HEARD_MS_THRESHOLD;
 
 /** Canonical parent key for replyId storage and quote jump (`packetId` preferred). */
 export function meshcoreCanonicalReplyKey(msg: ChatMessage): number {

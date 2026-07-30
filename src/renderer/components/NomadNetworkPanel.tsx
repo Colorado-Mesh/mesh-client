@@ -7,9 +7,13 @@ import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate'
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import {
+  buildNomadLinkRequest,
   DEFAULT_NOMAD_NODE_PAGE_PATH,
+  formatNomadRequestDataForUrlBar,
   isNomadMicronPage,
+  nomadPageRequestDataEquals,
   normalizeNomadPagePath,
+  normalizeNomadPageRequestData,
   parseNomadNetworkLinkUrl,
 } from '@/renderer/lib/nomad/micronParser';
 import { downloadNomadFileFromBase64 } from '@/renderer/lib/nomad/nomadFileDownload';
@@ -21,14 +25,27 @@ import {
   nomadNetworkSearchPlaceholderKey,
 } from '@/renderer/lib/nomad/nomadNetworkTabHelpers';
 import {
+  defaultNomadNodeSortDir,
+  type NomadNodeSortDir,
+  type NomadNodeSortKey,
+  prepareNomadNodeRows,
+  readNomadNodeSortPreference,
+  sortPreparedNomadNodeRows,
+  writeNomadNodeSortPreference,
+} from '@/renderer/lib/nomad/nomadNodeSort';
+import {
   clearNomadPageCache,
   getNomadPageCache,
   MAX_NOMAD_PAGE_CACHE_CHARS,
   setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
-import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
+import {
+  humanizeNomadPageError,
+  isRetryableNomadPageError,
+} from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
+import { NOMAD_PAGE_FETCH_RETRY_SETTLE_MS } from '@/renderer/lib/timeConstants';
+import type { NomadNodeRow, NomadPageRequestData, NomadPageResponse } from '@/shared/nomad-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import NomadMicronPageView from './NomadMicronPageView';
@@ -37,11 +54,14 @@ import NomadPageServerPanel from './NomadPageServerPanel';
 interface NomadHistoryEntry {
   hash: string;
   path: string;
+  requestData?: NomadPageRequestData;
 }
 
 interface LoadNodePageOptions {
   fromHistory?: boolean;
   forceReload?: boolean;
+  /** Force sidecar path rediscovery (stale-route retry / post-error reload). */
+  forcePathRefresh?: boolean;
   requestData?: NomadPageRequestData;
 }
 
@@ -50,6 +70,28 @@ const MAX_NOMAD_PAGE_DISPLAY_CHARS = MAX_NOMAD_PAGE_CACHE_CHARS;
 
 const NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:nomadNodeListCollapsed';
 const NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY = 'mesh-client:nomadPageFitWidth';
+
+const NOMAD_SORT_KEYS: readonly NomadNodeSortKey[] = ['lastSeen', 'hops', 'name'];
+
+function nomadSortLabelKey(key: NomadNodeSortKey): string {
+  if (key === 'lastSeen') return 'nomadNetwork.sortLastHeard';
+  if (key === 'hops') return 'nomadNetwork.sortHops';
+  return 'nomadNetwork.sortName';
+}
+
+function nomadSortAriaLabelKey(key: NomadNodeSortKey, dir: NomadNodeSortDir): string {
+  if (key === 'lastSeen') {
+    return dir === 'asc' ? 'nomadNetwork.sortByLastHeardAsc' : 'nomadNetwork.sortByLastHeardDesc';
+  }
+  if (key === 'hops') {
+    return dir === 'asc' ? 'nomadNetwork.sortByHopsAsc' : 'nomadNetwork.sortByHopsDesc';
+  }
+  return dir === 'asc' ? 'nomadNetwork.sortByNameAsc' : 'nomadNetwork.sortByNameDesc';
+}
+
+function nomadSortDirGlyph(dir: NomadNodeSortDir): string {
+  return dir === 'asc' ? ' ▲' : ' ▼';
+}
 
 function nomadCollapsedLabel(displayName: string | null | undefined, hash: string): string {
   const name = displayName?.trim();
@@ -61,8 +103,10 @@ function nomadCollapsedLabel(displayName: string | null | undefined, hash: strin
   return hash.slice(0, 2).toUpperCase();
 }
 
-function formatNomadUrlBar(hash: string, path: string): string {
-  return `${hash}:${path}`;
+function formatNomadUrlBar(hash: string, path: string, requestData?: NomadPageRequestData): string {
+  const base = `${hash}:${path}`;
+  const varSuffix = formatNomadRequestDataForUrlBar(requestData);
+  return varSuffix ? `${base}\`${varSuffix}` : base;
 }
 
 function truncateNomadPageContent(content: string): { text: string; truncated: boolean } {
@@ -83,6 +127,30 @@ function matchesSearch(node: NomadNodeRow, query: string): boolean {
   const name = (node.display_name ?? '').toLowerCase();
   const hash = node.destination_hash.toLowerCase();
   return name.includes(q) || hash.includes(q);
+}
+
+interface NomadPageErrorNodeSnapshot {
+  hash: string;
+  lastSeen: number | null;
+  hops: number | null;
+}
+
+function snapshotNomadNodeForPageError(
+  hash: string,
+  node: NomadNodeRow | undefined,
+): NomadPageErrorNodeSnapshot {
+  return {
+    hash: hash.toLowerCase(),
+    lastSeen: node?.last_seen ?? null,
+    hops: node?.hops ?? null,
+  };
+}
+
+function nomadNodeChangedSincePageError(
+  snap: NomadPageErrorNodeSnapshot,
+  node: NomadNodeRow,
+): boolean {
+  return (node.last_seen ?? null) !== snap.lastSeen || (node.hops ?? null) !== snap.hops;
 }
 
 function NomadCollapsedNodeItem({
@@ -220,6 +288,9 @@ export default function NomadNetworkPanel({
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
   const [pagePath, setPagePath] = useState(DEFAULT_NOMAD_NODE_PAGE_PATH);
+  const [pageRequestData, setPageRequestData] = useState<NomadPageRequestData | undefined>(
+    undefined,
+  );
   const [urlBarValue, setUrlBarValue] = useState('');
   const [historyStack, setHistoryStack] = useState<NomadHistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -228,6 +299,7 @@ export default function NomadNetworkPanel({
   const [showPageSource, setShowPageSource] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [pageErrorCode, setPageErrorCode] = useState<string | null>(null);
   const [fileDownloading, setFileDownloading] = useState(false);
   const [fileDownloadError, setFileDownloadError] = useState<string | null>(null);
   const [nodeListCollapsed, setNodeListCollapsed] = useState(
@@ -237,10 +309,15 @@ export default function NomadNetworkPanel({
   const [pageFitWidth, setPageFitWidth] = useState(
     () => localStorage.getItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY) !== 'false',
   );
+  const [sortPref, setSortPref] = useState(readNomadNodeSortPreference);
+  const sortKey = sortPref.key;
+  const sortDir = sortPref.dir;
   const pageRequestSeqRef = useRef(0);
   const fileDownloadInFlightRef = useRef(false);
   const mountedRef = useRef(true);
   const historyIndexRef = useRef(-1);
+  const pageErrorNodeSnapshotRef = useRef<NomadPageErrorNodeSnapshot | null>(null);
+  const announceReloadDoneRef = useRef(false);
   const listCollapseTrigger = useParentIconTrigger();
 
   useEffect(() => {
@@ -254,22 +331,30 @@ export default function NomadNetworkPanel({
     }
   }, [isActive, selectedHash]);
 
-  const pushHistoryEntry = useCallback((hash: string, path: string) => {
-    const normalizedPath = normalizeNomadPagePath(path);
-    setHistoryStack((prev) => {
-      const idx = historyIndexRef.current;
-      const last = prev[idx];
-      if (last?.hash.toLowerCase() === hash.toLowerCase() && last.path === normalizedPath) {
-        return prev;
-      }
-      const truncated = prev.slice(0, idx + 1);
-      const next = [...truncated, { hash, path: normalizedPath }];
-      const nextIndex = next.length - 1;
-      historyIndexRef.current = nextIndex;
-      setHistoryIndex(nextIndex);
-      return next;
-    });
-  }, []);
+  const pushHistoryEntry = useCallback(
+    (hash: string, path: string, requestData?: NomadPageRequestData) => {
+      const normalizedPath = normalizeNomadPagePath(path);
+      const normalizedRequest = normalizeNomadPageRequestData(requestData);
+      setHistoryStack((prev) => {
+        const idx = historyIndexRef.current;
+        const last = prev[idx];
+        if (
+          last?.hash.toLowerCase() === hash.toLowerCase() &&
+          last.path === normalizedPath &&
+          nomadPageRequestDataEquals(last.requestData, normalizedRequest)
+        ) {
+          return prev;
+        }
+        const truncated = prev.slice(0, idx + 1);
+        const next = [...truncated, { hash, path: normalizedPath, requestData: normalizedRequest }];
+        const nextIndex = next.length - 1;
+        historyIndexRef.current = nextIndex;
+        setHistoryIndex(nextIndex);
+        return next;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -282,9 +367,14 @@ export default function NomadNetworkPanel({
   useEffect(() => {
     const applyRunning = (running: boolean) => {
       setSidecarRunning(running);
+      // floating-ok: refreshFromSidecar (store) catches/logs; Nomad refreshFromSidecar same pattern
       if (running) void refreshFromSidecar();
     };
-    void isReticulumSidecarRunning().then(applyRunning);
+    void isReticulumSidecarRunning()
+      .then(applyRunning)
+      .catch((e: unknown) => {
+        console.warn('[NomadNetworkPanel] sidecar status ' + errLikeToLogString(e));
+      });
     const unsub = window.electronAPI.reticulum.onStatus((status) => {
       applyRunning(status.running && status.port > 0);
     });
@@ -308,6 +398,11 @@ export default function NomadNetworkPanel({
     [tabRows, searchQuery],
   );
 
+  const sortedRows = useMemo(() => {
+    const prepared = prepareNomadNodeRows(filteredRows);
+    return sortPreparedNomadNodeRows(prepared, sortKey, sortDir).map((row) => row.node);
+  }, [filteredRows, sortDir, sortKey]);
+
   const favouritesCount = useMemo(() => allRows.filter((node) => node.favorited).length, [allRows]);
 
   const selectedNode = selectedHash ? nodes.get(selectedHash.toLowerCase()) : undefined;
@@ -319,10 +414,11 @@ export default function NomadNetworkPanel({
       content: string,
       contentType: string | undefined,
       truncated: boolean,
+      requestData?: NomadPageRequestData,
     ) => {
       setPageContent(truncated ? `${content}\n\n[${t('nomadNetwork.pageTruncated')}]` : content);
       setPageContentType(contentType);
-      setUrlBarValue(formatNomadUrlBar(hash, normalizedPath));
+      setUrlBarValue(formatNomadUrlBar(hash, normalizedPath, requestData));
     },
     [t],
   );
@@ -330,21 +426,36 @@ export default function NomadNetworkPanel({
   const loadNodePage = useCallback(
     async (hash: string, path: string, options: LoadNodePageOptions = {}) => {
       const normalizedPath = normalizeNomadPagePath(path);
+      const normalizedRequest = normalizeNomadPageRequestData(options.requestData);
       const requestSeq = ++pageRequestSeqRef.current;
       setSelectedHash(hash);
       setPagePath(normalizedPath);
+      setPageRequestData(normalizedRequest);
       setPageLoading(true);
       setPageError(null);
+      setPageErrorCode(null);
+      pageErrorNodeSnapshotRef.current = null;
       setShowPageSource(false);
 
       if (!options.forceReload) {
-        const cached = getNomadPageCache({ hash, path: normalizedPath });
+        const cached = getNomadPageCache({
+          hash,
+          path: normalizedPath,
+          requestData: normalizedRequest,
+        });
         if (cached) {
           if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
           setPageLoading(false);
-          applyPageResult(hash, normalizedPath, cached.content, cached.content_type, false);
+          applyPageResult(
+            hash,
+            normalizedPath,
+            cached.content,
+            cached.content_type,
+            false,
+            normalizedRequest,
+          );
           if (!options.fromHistory) {
-            pushHistoryEntry(hash, normalizedPath);
+            pushHistoryEntry(hash, normalizedPath, normalizedRequest);
           }
           return;
         }
@@ -352,19 +463,55 @@ export default function NomadNetworkPanel({
 
       setPageContent(null);
       setPageContentType(undefined);
-      const res = await fetchNomadPage(hash, normalizedPath, options.requestData);
-      if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+      let res: NomadPageResponse;
+      try {
+        res = await fetchNomadPage(
+          hash,
+          normalizedPath,
+          normalizedRequest,
+          options.forcePathRefresh ? { forcePathRefresh: true } : undefined,
+        );
+        if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+
+        if ((!res.ok || !res.content) && isRetryableNomadPageError(res.error)) {
+          const retryCode = res.error?.trim() || 'unknown';
+          console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+          });
+          if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+          res = await fetchNomadPage(hash, normalizedPath, normalizedRequest, {
+            forcePathRefresh: true,
+          });
+          if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+        }
+      } catch (e) {
+        // Failure point: unexpected fetchNomadPage reject. Fallback: clear loading + generic error.
+        console.warn('[NomadNetwork] page fetch ' + errLikeToLogString(e));
+        if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+        setPageLoading(false);
+        setPageErrorCode(null);
+        setPageError(humanizeNomadPageError(undefined, t));
+        return;
+      }
+
       setPageLoading(false);
       if (!res.ok || !res.content) {
+        const rawCode = res.error?.trim() || null;
+        setPageErrorCode(rawCode);
         setPageError(humanizeNomadPageError(res.error, t));
+        const node = useNomadNetworkStore.getState().nodes.get(hash.toLowerCase());
+        pageErrorNodeSnapshotRef.current = snapshotNomadNodeForPageError(hash, node);
+        announceReloadDoneRef.current = false;
         return;
       }
       const { text, truncated } = truncateNomadPageContent(res.content);
-      applyPageResult(hash, normalizedPath, text, res.content_type, truncated);
+      applyPageResult(hash, normalizedPath, text, res.content_type, truncated, normalizedRequest);
       setNomadPageCache(
         {
           hash,
           path: normalizedPath,
+          requestData: normalizedRequest,
         },
         {
           content: truncated ? text : res.content,
@@ -372,11 +519,46 @@ export default function NomadNetworkPanel({
         },
       );
       if (!options.fromHistory) {
-        pushHistoryEntry(hash, normalizedPath);
+        pushHistoryEntry(hash, normalizedPath, normalizedRequest);
       }
     },
     [applyPageResult, fetchNomadPage, pushHistoryEntry, t],
   );
+
+  useEffect(() => {
+    if (
+      pageLoading ||
+      !pageErrorCode ||
+      !isRetryableNomadPageError(pageErrorCode) ||
+      !selectedHash ||
+      !selectedNode
+    ) {
+      return;
+    }
+    if (announceReloadDoneRef.current) return;
+    const snap = pageErrorNodeSnapshotRef.current;
+    if (snap == null) return;
+    if (snap.hash !== selectedHash.toLowerCase()) return;
+    if (!nomadNodeChangedSincePageError(snap, selectedNode)) return;
+
+    announceReloadDoneRef.current = true;
+    console.warn('[NomadNetwork] page reload after announce refresh');
+    void loadNodePage(selectedHash, pagePath, {
+      forceReload: true,
+      forcePathRefresh: true,
+      requestData: pageRequestData,
+    });
+  }, [
+    loadNodePage,
+    pageErrorCode,
+    pageLoading,
+    pagePath,
+    pageRequestData,
+    selectedHash,
+    selectedNode,
+    selectedNode?.hops,
+    selectedNode?.last_seen,
+  ]);
 
   const downloadNodeFile = useCallback(
     async (hash: string, path: string) => {
@@ -424,7 +606,10 @@ export default function NomadNetworkPanel({
       if (!entry) return;
       historyIndexRef.current = targetIndex;
       setHistoryIndex(targetIndex);
-      void loadNodePage(entry.hash, entry.path, { fromHistory: true });
+      void loadNodePage(entry.hash, entry.path, {
+        fromHistory: true,
+        requestData: entry.requestData,
+      });
     },
     [historyIndex, historyStack, loadNodePage],
   );
@@ -439,20 +624,25 @@ export default function NomadNetworkPanel({
       target = `${selectedNode.destination_hash}${target}`;
     }
 
-    const parsed = parseNomadNetworkLinkUrl(target, DEFAULT_NOMAD_NODE_PAGE_PATH);
+    const { destination: baseDestination, requestData } = buildNomadLinkRequest(target, null, null);
+    const parsed = parseNomadNetworkLinkUrl(baseDestination, DEFAULT_NOMAD_NODE_PAGE_PATH);
     if (!parsed) {
       setPageError(t('nomadNetwork.invalidUrl'));
       return;
     }
 
     const hash = parsed.destination_hash ?? selectedNode.destination_hash;
-    void loadNodePage(hash, parsed.path);
+    const normalizedRequest = normalizeNomadPageRequestData(requestData);
+    void loadNodePage(hash, parsed.path, {
+      requestData: normalizedRequest,
+    });
   }, [loadNodePage, selectedNode, t, urlBarValue]);
 
   const closeViewer = useCallback(() => {
     setSelectedHash(null);
     setPageContent(null);
     setPageError(null);
+    setPageRequestData(undefined);
     setUrlBarValue('');
     setHistoryStack([]);
     historyIndexRef.current = -1;
@@ -465,6 +655,16 @@ export default function NomadNetworkPanel({
     setNodeListCollapsed((prev) => {
       const next = !prev;
       localStorage.setItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const toggleSort = useCallback((key: NomadNodeSortKey) => {
+    setSortPref((prev) => {
+      const nextDir: NomadNodeSortDir = prev.dir === 'asc' ? 'desc' : 'asc';
+      const next =
+        prev.key === key ? { key, dir: nextDir } : { key, dir: defaultNomadNodeSortDir(key) };
+      writeNomadNodeSortPreference(next);
       return next;
     });
   }, []);
@@ -532,7 +732,7 @@ export default function NomadNetworkPanel({
     if (!nodeListCollapsed && filteredRows.length === 0) {
       return <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>;
     }
-    return filteredRows.map((node) => {
+    return sortedRows.map((node) => {
       const isSelected = selectedHash?.toLowerCase() === node.destination_hash.toLowerCase();
       const label = node.display_name ?? node.destination_hash.slice(0, 16);
       const openNodeLabel = t('nomadNetwork.openNode', { name: label });
@@ -675,8 +875,35 @@ export default function NomadNetworkPanel({
                     }}
                     placeholder={searchPlaceholder}
                     aria-label={searchPlaceholder}
-                    className="mb-3 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
+                    className="mb-2 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
                   />
+                  <div
+                    role="toolbar"
+                    aria-label={t('nomadNetwork.sortToolbar')}
+                    className="mb-3 flex items-center gap-1 text-xs"
+                  >
+                    {NOMAD_SORT_KEYS.map((key) => {
+                      const active = sortKey === key;
+                      const dirForAria = active ? sortDir : defaultNomadNodeSortDir(key);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          aria-pressed={active}
+                          aria-label={t(nomadSortAriaLabelKey(key, dirForAria))}
+                          className={`rounded px-2 py-1 transition-colors ${
+                            active ? 'bg-slate-700 text-gray-100' : 'text-muted hover:text-gray-200'
+                          }`}
+                          onClick={() => {
+                            toggleSort(key);
+                          }}
+                        >
+                          {t(nomadSortLabelKey(key))}
+                          {active ? nomadSortDirGlyph(sortDir) : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
             </>
@@ -746,6 +973,10 @@ export default function NomadNetworkPanel({
                         name:
                           selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
                       })}
+                      title={t('nomadNetwork.sendMessageAria', {
+                        name:
+                          selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
+                      })}
                       onClick={() => {
                         onOpenDm(selectedNode.destination_hash);
                       }}
@@ -758,6 +989,7 @@ export default function NomadNetworkPanel({
                     disabled={!canGoBack}
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('nomadNetwork.back')}
+                    title={t('nomadNetwork.back')}
                     onClick={() => {
                       navigateHistory(-1);
                     }}
@@ -769,6 +1001,7 @@ export default function NomadNetworkPanel({
                     disabled={!canGoForward}
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('nomadNetwork.forward')}
+                    title={t('nomadNetwork.forward')}
                     onClick={() => {
                       navigateHistory(1);
                     }}
@@ -779,6 +1012,7 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.homePage')}
+                    title={t('nomadNetwork.homePage')}
                     onClick={() => {
                       void loadNodePage(
                         selectedNode.destination_hash,
@@ -797,6 +1031,9 @@ export default function NomadNetworkPanel({
                           : 'border-gray-600 text-gray-200 hover:bg-slate-800'
                       }`}
                       aria-label={
+                        showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
+                      }
+                      title={
                         showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
                       }
                       aria-pressed={showPageSource}
@@ -818,6 +1055,9 @@ export default function NomadNetworkPanel({
                       aria-label={
                         pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
                       }
+                      title={
+                        pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
+                      }
                       aria-pressed={pageFitWidth}
                       onClick={() => {
                         setPageFitWidth((prev) => {
@@ -834,9 +1074,12 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.reloadPage')}
+                    title={t('nomadNetwork.reloadPage')}
                     onClick={() => {
                       void loadNodePage(selectedNode.destination_hash, pagePath, {
                         forceReload: true,
+                        forcePathRefresh: isRetryableNomadPageError(pageErrorCode),
+                        requestData: pageRequestData,
                       });
                     }}
                   >
@@ -846,6 +1089,7 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.closeViewer')}
+                    title={t('nomadNetwork.closeViewer')}
                     onClick={closeViewer}
                   >
                     ✕

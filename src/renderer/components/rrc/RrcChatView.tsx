@@ -3,7 +3,9 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ChatPayloadText } from '@/renderer/components/ChatPayloadText';
+import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { bodyMentionsRrcNick, findNextRrcNickMention } from '@/renderer/lib/rrcMention';
+import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 function formatHash(hash: string): string {
@@ -84,6 +86,7 @@ export function RrcChatView({
   nickname = '',
 }: RrcChatViewProps) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
 
   if (!connected) {
     return (
@@ -106,11 +109,7 @@ export function RrcChatView({
           messages.map((msg) => {
             const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
             const time = showTimestamps
-              ? new Date(msg.timestamp).toLocaleTimeString(undefined, {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })
+              ? formatDisplayTime(msg.timestamp, { withSeconds: true, use24Hour: use24HourTime })
               : null;
             const lineClass =
               msg.kind === 'notice' || msg.kind === 'system'

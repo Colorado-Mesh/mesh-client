@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기",
     "reticulumSection": "Reticulum — 레티큘럼 스택",
     "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
-    "reticulumPropagationHelp": "전파 노드의 동기화 방법을 선택하고 필요한 경우 최신 전파 데이터를 가져옵니다.",
     "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "autoPruneUnheardContactsDaysAria": "시작 시 {{days}}일 이상 경과한 확인되지 않은 연락처 자동 정리",
     "capTotalContactsCountAria": "총 연락처 수를 제한하고 가장 최근에 본 연락처를 {{count}}개로 유지합니다.",
@@ -373,7 +372,10 @@
     "restoreTheme": "저장된 색상 체크포인트 복원",
     "noSavedThemeTooltip": "아직 저장된 색상이 없습니다. 저장 을 사용하여 체크포인트를 만드세요.",
     "saveThemeButton": "저장",
-    "restoreThemeButton": "복원"
+    "restoreThemeButton": "복원",
+    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다.",
+    "use24HourTime": "24시간 사용",
+    "use24HourTimeDesc": "채팅 타임스탬프와 같은 시계를 24시간 형식으로 강제 설정합니다. 꺼지면 시스템 로케일을 따릅니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "언어를 선택하려면 클릭하세요.",
     "switchToMeshtasticWithUnread": "Meshtastic으로 전환하세요. {{count}} 읽지 않았습니다.",
     "switchToMeshCoreWithUnread": "MeshCore로 전환, {{count}} 읽지 않음",
-    "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음"
+    "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음",
+    "tabWithUnread": "{{label}}, {{count}} 읽지 않음"
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
@@ -465,8 +468,6 @@
     "dmNodeLastHeard": "마지막 확인: {{time}}",
     "dmNodeBattery": "{{pct}}% 배터리",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} 홉",
-    "dmNodeHopsPlural": "{{count}} 홉",
     "muteConversation": "이 대화 음소거",
     "unmuteConversation": "이 대화 음소거 해제",
     "starMessage": "메시지 별표처리",
@@ -559,7 +560,9 @@
       "pkiMissingRecipientKey": "암호화된 메시지를 보낼 수 없습니다 — 수신자 공개 키가 NodeDB에서 누락되었습니다.",
       "pkiFailed": "이 메시지에 대한 PKI 암호화에 실패했습니다.",
       "noChannel": "이 메시지를 라우팅할 수 있는 채널이 없습니다.",
-      "timeout": "라디오에서 메시지가 시간 초과되었습니다."
+      "timeout": "라디오에서 메시지가 시간 초과되었습니다.",
+      "rateLimited": "라디오는 속도 제한 메시지입니다. 잠시 후 다시 시도하세요.",
+      "noInterface": "이 메시지를 보낼 수 있는 라디오 인터페이스가 없습니다."
     },
     "waitingMessagesQueued": "{{count}} 라디오에서 대기 중인 메시지",
     "waitingMessagesSyncProgress": "라디오에서 {{processed}}/{{total}} 동기화 중…",
@@ -593,7 +596,6 @@
       "sendFileAria": "rncp를 통해 {{name}}에 파일 보내기",
       "pendingOffersBadgeAria_one": "{{count}} 이 피어로부터 인바운드 파일 제공을 보류 중입니다.",
       "pendingOffersBadgeAria_other": "{{count}} 이 피어로부터 보류 중인 인바운드 파일 제안",
-      "destinationLabel": "rncp 대상 해시",
       "rememberAddress": "이 주소를 기억하세요",
       "rememberAddressAria": "이 피어에 대한 이 rncp 대상을 기억하십시오.",
       "chooseAndSend": "파일을 선택하고 보내세요...",
@@ -602,7 +604,23 @@
       "sendFailed": "전송 실패: {{error}}",
       "newOfferToast": "{{peer}}이(가) 당신에게 파일을 보내려고 합니다: {{file}}",
       "requestEnable": "활성화 요청",
-      "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청"
+      "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청",
+      "destinationLabel": "피어의 rncp 수신 대상",
+      "destinationHelp": "Chat/LXMF 해시가 아닙니다. 상대가 공유 줄을 붙여 넣었다면 활성화 요청 또는 채팅에서 사용을 선택하거나 32자 수신 해시를 붙여 넣으세요.",
+      "activeTransfersBadgeAria_one": "{{count}} 이 피어와의 활성 파일 전송",
+      "activeTransfersBadgeAria_other": "{{count}} 이 피어와의 활성 파일 전송",
+      "transfersTitle": "파일 전송",
+      "useFromChat": "채팅에서 목적지 사용",
+      "useFromChatAria": "이 채팅에서 공유된 rncp 수신 대상을 찾아 사용하십시오",
+      "noShareInChat": "이 채팅에 아직 rncp 공유 라인이 없습니다. 수신 대상 (Remote → My rncp receive destination) 을 붙여 넣거나 아래에 32자 해시를 붙여 넣으라고 요청합니다.",
+      "savedForOtherPeers": "저장된 수신 대상은 다른 채팅 ({{peers}}) 에 존재합니다. 자동 채우기를 위해 해당 동료의 DM을 엽니다.",
+      "transferProgressAria": "{{file}}의 파일 전송 진행률: {{progress}}%",
+      "transferCompletedToast": "파일 전송: {{file}}",
+      "transferFailedToast": "파일 전송 실패 ({{file}}): {{error}}",
+      "forgetAddress": "저장된 목적지 잊음",
+      "forgetAddressAria": "이 피어에 대해 저장된 rncp 수신 대상을 제거합니다",
+      "forgotAddressToast": "이 피어의 저장된 rncp 대상을 잊어버렸습니다.",
+      "filledFromChatToast": "채팅에서 목적지를 채웠습니다 (저장되지 않음 — 잊지 말고 보관하세요)."
     },
     "shareLocation": "위치 공유",
     "shareLocationLabel": "📍 공유 위치",
@@ -615,7 +633,13 @@
     "floodScopeOverrideCustomLabel": "맞춤 Flood 범위 해시태그",
     "floodScopeOverrideCustomPlaceholder": "#나의 지역",
     "floodScopeOverrideCustomApply": "사용 범위",
-    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
+    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
+    "dmNodeHops_one": "{{count}} 홉",
+    "dmNodeHops_other": "{{count}} 홉",
+    "notificationDmTitle": "{{sender}} 님의 DM",
+    "notificationMessageTitle": "{{sender}} 님의 메시지",
+    "reticulumSendStoredAtPn": "전파 노드에 저장됨",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -624,7 +648,10 @@
     "locationCard": {
       "alt": "공유 위치 지도 타일",
       "openMaps": "지도에서 열기"
-    }
+    },
+    "directImage": "이미지: {{name}}",
+    "directImageOpen": "이미지 열기",
+    "reticulumAttachmentImage": "첨부 이미지: {{name}}"
   },
   "common": {
     "close": "닫다",
@@ -1067,7 +1094,27 @@
       "backboneDirectoryHint": "directory.rns.recipes에서 더 많은 커뮤니티 백본 허브를 찾아보세요. Yggdrasil 허브(예: Yggdrasil_Ashburn_VA)에는 실행 중인 로컬 Yggdrasil 터널이 필요합니다. Reticulum 매뉴얼에서는 터널 인터페이스(종종 tun0)에 바인딩할 것을 권장합니다.",
       "localOfflineRowBleBondStale": "Bluetooth 결합이 오래되었습니다. 시스템 설정 → Bluetooth에서 이 RNode를 삭제한 다음 새 PIN으로 다시 페어링하세요(OS에서는 여전히 페어링됨으로 표시될 수 있음).",
       "addDefaultHubsAria": "기본 Reticulum 백본 허브(US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World) 동기화 폐기된 테스트넷 엔드포인트 비활성화",
-      "addDefaultHubsAllPresent": "기본 백본 허브가 이미 구성되어 있습니다. 폐기된 테스트넷 허브가 활성화되어 있지 않습니다."
+      "addDefaultHubsAllPresent": "기본 백본 허브가 이미 구성되어 있습니다. 폐기된 테스트넷 허브가 활성화되어 있지 않습니다.",
+      "modeDescriptions": {
+        "full": "전체 메시 참여. 트래픽을 라우팅하고 아나운스를 자동으로 전파합니다. 기본 노드 및 리피터에 사용하십시오.",
+        "access_point": "쿼리될 때까지 조용히 하십시오. 짧은 경로가 만료됩니다. 간헐적인 사용자에게 서비스를 제공하는 광역 라디오에 이상적입니다.",
+        "roaming": "모바일 인터페이스. 짧은 경로 시간 초과 및 활성 검색. 핸드헬드 또는 차량 RNode에 사용합니다.",
+        "boundary": "네트워크 경계. 로컬 트래픽을 격리하면서 별개의 세그먼트를 연결합니다. 인터넷/LoRa 링크에 사용합니다.",
+        "gateway": "클라이언트의 경로 탐색. 연결된 노드를 대신하여 알 수 없는 대상을 해결합니다.",
+        "point_to_point": "두 노드 사이의 직접 링크. 라우팅과 아나운스 전파가 없습니다."
+      },
+      "networkName": "네트워크 이름",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "네트워크 이름",
+      "passphrase": "Passphrase",
+      "passphrasePlaceholder": "IFAC 인증",
+      "passphraseAria": "IFAC 암호",
+      "showPassphrase": "암호 표시",
+      "hidePassphrase": "암호 숨기기",
+      "advanced": "Advanced",
+      "advancedHint": "추가 키 = 이 인터페이스에 대한 값 쌍, 한 줄에 하나씩. 알려진 필드 (호스트, 모드, 네트워크 이름 등) 는 위의 형태로 유지됩니다.",
+      "advancedAria": "고급 인터페이스 키-값 옵션",
+      "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1142,9 @@
       "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다.",
       "tcpUnreachable": "{{name}}: TCP 허브에 연결할 수 없음 ({{host}}: {{port}})",
       "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인 또는 차단 연결일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오.",
-      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 Bluetooth 키가 더 이상 일치하지 않습니다(피어가 페어링 정보를 제거함). 시스템 설정 → Bluetooth에서 장치를 삭제하고 RNode를 페어링 모드(관리자 → Bluetooth → 페어링 시작 또는 ~7초 동안 누르기)로 설정한 다음 스택을 다시 시작하고 메시지가 표시되면 새 6자리 PIN을 입력합니다.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "BLE RNode 링크는 스택이 시작된 후 최대 60초가 걸릴 수 있습니다(OS 암호 키 창). 메시지가 나타나면 현재 RNode PIN을 입력하세요. 123456은 입력하지 마세요. 이는 오류가 아닌 정상입니다. 장치는 성공적으로 결합될 때까지 시스템 설정에 나타나지 않을 수 있습니다."
+      "connectingHintBle": "BLE RNode 링크는 스택이 시작된 후 최대 60초가 걸릴 수 있습니다(OS 암호 키 창). 메시지가 나타나면 현재 RNode PIN을 입력하세요. 123456은 입력하지 마세요. 이는 오류가 아닌 정상입니다. 장치는 성공적으로 결합될 때까지 시스템 설정에 나타나지 않을 수 있습니다.",
+      "offlineHintBle": "이 오류를 지우려면 이 인터페이스를 제거하고 다시 추가(장치 선택)하여 저장된 Bluetooth ID를 새로 고친 다음 스택을 다시 시작해야 할 수 있습니다. OS에서 6자리 Bluetooth PIN을 요청할 수 있습니다(macOS, Windows 또는 Linux). RNode는 페어링할 때마다 새 코드를 생성합니다. 123456을 사용하지 마세요(Meshtastic 기본값이며 RNode가 아닙니다). 이 앱이 연결되기 전에 RNode가 시스템 설정 → Bluetooth에 나타날 필요는 없습니다. 스택이 페어링할 때 OS 대화 상자가 나타납니다. 디스플레이가 없는 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → 관리자 패널에 표시된 PIN(라디오 디스플레이가 아님)을 OS 대화 상자에 입력하세요. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 약 7초 동안 길게 누르고(타이밍은 다를 수 있으며, 많은 보드에서는 약 10초에 Wi‑Fi AP가 활성화됨), 화면의 PIN을 읽은 다음 OS 대화 상자에 입력하세요. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 지우세요.",
+      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 블루투스 키가 더 이상 일치하지 않습니다 (피어 제거 페어링 정보). 시스템 설정 → 블루투스에서 장치를 잊어 버리고 RNode를 페어링 모드 (관리자 → 블루투스 페어링 → 시작 또는 ~ 7 초) 에 놓은 다음이 인터페이스 (장치 선택) 를 제거하고 다시 추가하고 스택을 다시 시작한 다음 메시지가 나타나면 새 6 자리 PIN을 입력하십시오."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -1199,20 +1246,20 @@
     "coloradoRegionGateStay": "콜로라도에 있습니다",
     "coloradoRegionGateSwitch": "LetsMesh로 전환",
     "topicPrefixInvalidIata": "주제 접두사는 meshcore/test 또는 meshcore/{IATA}(3글자)여야 합니다(예: meshcore/DEN).",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
       "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
     },
     "reticulumStackRunningAs": "실행 중 — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…",
+    "reticulumSharedInstance": {
+      "title": "다른 앱의 공유 인스턴스 사용",
+      "body": "이 앱은 다른 앱의 공유 Reticulum 인스턴스의 클라이언트로 연결되었습니다. 이 앱의 구성에서 로컬 TCP 허브는 이 모드에서 시작되지 않습니다. 트래픽은 다른 앱의 스택만 사용할 수 있습니다.",
+      "networkHint": "또는 Network → Share Reticulum 인스턴스를 열어 Share를 수동으로 끄고 스택을 다시 시작합니다. MeshChat, Ratspeak 또는 독립 실행형 rnsd를 완전히 종료하고 다시 시작할 수도 있습니다.",
+      "disableShare": "인스턴스 공유 끄고 다시 시작",
+      "disableShareAria": "인스턴스 공유 끄고 스택 다시 시작",
+      "disableFailed": "회차 공유 기능을 끄지 못했습니다."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1356,7 +1403,8 @@
       "potentialMeshcoreRepeaterConflict": "잠재적인 MeshCore 리피터 충돌",
       "elevatedNoiseFloor": "높은 소음층",
       "excessiveFlooding": "과도한 홍수",
-      "reticulumTrafficDetected": "Reticulum 트래픽 감지됨"
+      "reticulumTrafficDetected": "Reticulum 트래픽 감지됨",
+      "highCompanionTxQueue": "하이 컴패니언 TX 대기열"
     },
     "rfCause": {
       "channelUtilizationSpike": "현재 {{current}}%는 최근 평균({{average}}%)의 2배를 초과합니다. 혼잡 또는 간섭 급증이 발생할 수 있습니다.",
@@ -1370,7 +1418,8 @@
       "widebandNoiseFloor": "광대역 간섭(전자 장치 결함, 전력선 소음 등)으로 인해 노이즈 플로어가 높아집니다.",
       "fringeWeakCoverage": "노드가 너무 멀리 떨어져 있거나 메시의 나머지 부분과 제대로 연결되어 있지 않습니다.",
       "elevatedNoiseFloor": "무선 노이즈 플로어는 {{noiseFloor}} dBm — 유효 범위를 줄이는 높은 간섭.",
-      "excessiveFlooding": "{{percent}}%의 전송이 플러드 라우팅됩니다 — 근처 노드에서 직접 라우팅이 설정되지 않을 수 있습니다."
+      "excessiveFlooding": "{{percent}}%의 전송이 플러드 라우팅됩니다 — 근처 노드에서 직접 라우팅이 설정되지 않을 수 있습니다.",
+      "highCompanionTxQueue": "동반자 아웃바운드 대기열 깊이는 {{queueLen}}/256입니다. 트래픽이 지연되거나 드롭될 수 있습니다."
     },
     "foreignLoraCause": {
       "meshtastic": "이 주파수로 전송되는 Meshtastic 노드입니다. 발신자: {{sender}}. {{proximity}}이 노드는 MeshCore 리피터 영역에 있을 수 있습니다.",
@@ -1445,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "직행 경로를 설정하도록 허용",
         "description": "홍수 비율이 매우 높습니다. 노드가 직접 경로 접촉을 축적하거나 리피터 근접성을 확인할 때까지 기다리십시오."
+      },
+      "highCompanionTxQueue": {
+        "title": "아웃바운드 트래픽을 줄이거나 RF 링크를 확인하세요.",
+        "description": "Companion TX 대기열이 거의 가득 찼습니다. 전송을 일시 중지하거나, 홍수를 줄이거나, 간섭 및 약한 링크를 확인합니다."
       }
     },
     "cuHistoryHeading": "채널 활용도 (마지막 24시간)",
@@ -1523,7 +1576,10 @@
         "transportSaturatedShareInstance": "RNS 전송 포화 ({{count}} 경로 요청 드롭). 인스턴스 공유 켜짐 — 다른 Reticulum 앱 (MeshChatX, Ratspeak, rnsd) 을 종료하고 스택을 다시 시작합니다.",
         "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)",
         "bleBondRemoved": "BLE RNode \"{{name}}\" 본드가 오래되었습니다 — OS Bluetooth 설정에서 기기를 삭제하고 다시 페어링하세요",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" 암호 키 교환 시간이 초과되었습니다. 현재 PIN(123456 아님)을 입력하고 다시 페어링하세요."
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" 암호 키 교환 시간이 초과되었습니다. 현재 PIN(123456 아님)을 입력하고 다시 페어링하세요.",
+        "sidecarUnhealthy": "Reticulum 사이드카가 작동 중이지만 상태 점검에 응답하지 않습니다",
+        "propagationSyncStuck": "전파 노드 동기화가 링크 설정 중 중단됨",
+        "propagationSyncFailing": "전파 노드 동기화 실패"
       }
     },
     "routingPort": {
@@ -1545,7 +1601,9 @@
     "snrDb": "SNR {{snr}}dB",
     "distanceOffsetKm": "거리 오프셋",
     "km": "km",
-    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다."
+    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다.",
+    "ignoreMqttToggle": "MQTT 무시",
+    "ignoreMqttHelp": "MQTT 전용 노드를 흐리게 표시하고 진단에서 제외합니다"
   },
   "diagnosticsPing": {
     "title": "연속 핑",
@@ -2450,6 +2508,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "고급 PN 호스팅(위험 지대)",
+      "peeringCost": "피어링 비용",
+      "maxPeeringCost": "최대 피어링 비용",
+      "autopeer": "검색된 PN으로 자동 피어링",
+      "autopeerMaxdepth": "오토피어 최대 홉",
+      "maxPeers": "최대 자동 피어 피어",
+      "stampCost": "전파 스탬프 비용",
+      "stampFlex": "스탬프 비용 유연성",
+      "storageMb": "메시지 저장 한도(MB)",
+      "propagationLimitKb": "전파 메시지 제한(KB)",
+      "syncLimitKb": "동기화 전송 한도(KB)",
+      "deliveryLimitKb": "배달 전송 한도(KB)",
+      "announceIntervalSec": "PN 발표 간격(초)",
+      "announceAtStart": "호스팅 시작 시 알림",
+      "fromStaticOnly": "정적 피어에서만",
+      "authRequired": "인증이 필요합니다",
+      "enforceStamps": "메시지 스탬프 시행",
+      "enforceRatchets": "래칫 시행",
+      "nodeName": "PN 발표 이름",
+      "staticPeers": "정적 피어 해시(한 줄에 32헥스 1개)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "호스팅 정책 저장",
+      "saving": "절약…",
+      "saveAria": "PN 호스팅 정책 저장",
+      "saveOk": "PN 호스팅 정책이 저장되었습니다.",
+      "saveFailed": "PN 호스팅 정책을 저장할 수 없습니다.",
+      "saveConfirmTitle": "PN 호스팅 정책을 저장하시겠습니까?",
+      "saveConfirmBody": "라이브 전파 노드에 피어링, 저장, 스탬프 및 알림 설정을 적용하시겠습니까? 잘못된 구성으로 인해 CPU가 소모되거나, 디스크가 채워지거나, 많은 피어가 허용될 수 있습니다.",
+      "saveConfirm": "정책 저장",
+      "error": {
+        "peeringCostExceedsMax": "피어링 비용은 최대 피어링 비용을 초과할 수 없습니다.",
+        "stampFlexExceedsCost": "우표 유연성은 우표 비용을 초과할 수 없습니다.",
+        "autopeerMaxdepth": "자동 피어 최대 홉이 범위를 벗어났습니다.",
+        "maxPeers": "최대 피어가 범위를 벗어났습니다.",
+        "storageMb": "메시지 저장 한도가 범위를 벗어났습니다.",
+        "propagationLimit": "전파 메시지 제한이 범위를 벗어났습니다.",
+        "syncLimit": "동기화 전송 한도가 범위를 벗어났습니다.",
+        "deliveryLimit": "배송 이체 한도가 범위를 벗어났습니다.",
+        "announceInterval": "PN 알림 간격이 범위를 벗어났습니다.",
+        "staticPeersTooMany": "정적 피어 해시가 너무 많습니다(최대 256개).",
+        "staticPeerInvalid": "하나 이상의 정적 피어 해시가 잘못되었습니다(32자리 16진수 문자 필요).",
+        "nodeNameInvalid": "PN 공지 이름에 잘못된 문자가 포함되어 있습니다.",
+        "nodeNameTooLong": "PN 공지 이름이 너무 깁니다.",
+        "nonFiniteNumber": "하나 이상의 숫자 필드가 잘못되었습니다."
+      },
+      "warning": "이러한 설정은 로컬 전파 노드 호스팅, 자동 피어, PoW 비용 및 고비용 원격에 대한 동기화 거부를 제어합니다. 잘못된 구성으로 인해 CPU가 소모되거나, 디스크가 채워지거나, 많은 피어가 허용될 수 있습니다."
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2803,11 @@
     "stableStability": "안정적인",
     "moderateStability": "보통의",
     "unstableStability": "불안정한",
-    "unknownStability": "알려지지 않은"
+    "unknownStability": "알려지지 않은",
+    "hybridMqttPathTooltip": "RF를 통해 수신; 일부 패킷은 MQTT 릴레이 경로를 사용합니다",
+    "hybridMqttPathAria": "RF 및 MQTT 경로",
+    "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
+    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨"
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
@@ -2785,7 +2895,8 @@
     "hybridMqttPathTooltip": "RF를 통해 수신; 일부 패킷은 MQTT 릴레이 경로를 사용합니다",
     "hybridMqttPathAria": "RF 및 MQTT 경로",
     "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
-    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨"
+    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨",
+    "echoesConnectionHealthTooltip": "{{score}} % 연결 상태"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2978,17 @@
       "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오.",
       "contentSourceNone": "선택된 폴더 없음",
       "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요."
-    }
+    },
+    "sortLastHeard": "마지막으로 들은 시간",
+    "sortHops": "홉",
+    "sortName": "이름",
+    "sortToolbar": "노드 목록 정렬",
+    "sortByLastHeardAsc": "마지막으로 들은 시간 기준 정렬, 오래된 순",
+    "sortByLastHeardDesc": "마지막으로 들은 시간 기준 정렬, 최신순",
+    "sortByHopsAsc": "홉으로 정렬, 가장 가까운 우선순위",
+    "sortByHopsDesc": "홉 순으로 정렬, 가장 먼 순",
+    "sortByNameAsc": "이름 A-Z",
+    "sortByNameDesc": "이름 Z-A"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",
@@ -3652,7 +3773,18 @@
     "byteLengthTooltip": "{{bytes}} 바이트 RAW",
     "routeBarFloodTooltip": "Flood-routed packet",
     "routeBarDirectTooltip": "직접 라우팅된 패킷",
-    "routeBarUnknownTooltip": "알 수 없는 경로 유형"
+    "routeBarUnknownTooltip": "알 수 없는 경로 유형",
+    "crc32Fingerprint": "CRC32 지문:",
+    "innerFirstU32Debug": "내부 첫 u32(디버그):",
+    "destHash": "대상 해시:",
+    "srcHash": "소스 해시:",
+    "channelHash": "채널 해시:",
+    "mac": "MAC:",
+    "ciphertextBytes": "암호문 바이트:",
+    "senderKeyPrefix": "발신자 키(접두사):",
+    "control": "제어:",
+    "advertTs": "ADVERT 타임스탬프:",
+    "advertLatLon": "ADVERT 위도/경도:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3948,12 @@
   "reticulumProfileIcon": {
     "iconName": "아바타 아이콘",
     "iconNameAria": "피어 아바타 아이콘",
-    "iconCircle": "원형",
     "iconStar": "스타",
     "iconHeart": "심장",
     "iconShield": "실드",
-    "iconUser": "사용자"
+    "iconNone": "없음",
+    "iconSaveFailed": "아바타 아이콘을 저장할 수 없습니다.",
+    "iconUser": "사람들"
   },
   "reticulumPropagation": {
     "preferred": "선호",
@@ -3830,7 +3963,6 @@
     "syncNowFor": "{{name}}의 메시지 동기화",
     "addNode": "노드 추가",
     "addNodeLabel": "해시별로 전파 노드 추가",
-    "localInboxStats": "{{count}} 대기 중 · {{bytes}} 바이트",
     "refreshing": "상쾌하다…",
     "refreshAria": "전파 노드 새로 고침",
     "syncStatusEstablishing": "전파 노드에 연결 설정 중…",
@@ -3853,7 +3985,10 @@
     "notice": {
       "body": "전파 노드가 구성되지 않았습니다. 오프라인 또는 연락이 닿지 않는 동료에게는 스토어 앤 포워드 LXMF 배송을 위한 전파 노드가 필요합니다.",
       "openSettings": "전파 설정",
-      "openSettingsAria": "Reticulum Network 전파 설정 열기"
+      "openSettingsAria": "Reticulum Network 전파 설정 열기",
+      "bodyWithDiscoveries": "전파 노드가 구성되지 않았습니다. {{count}} 이 (가) 네트워크에서 발견되었습니다. 아래에 추가하거나 네트워크 설정을 엽니다.",
+      "addClosest": "발견된 것 중 가장 가까운 것 추가",
+      "addClosestAria": "발견된 가장 가까운 전파 노드를 추가하고 선호하는 것으로 설정"
     },
     "rename": "이름 바꾸기",
     "renameLabel": "전파 노드 이름",
@@ -3877,7 +4012,6 @@
       "unknown": "알려지지 않은",
       "online": "온라인"
     },
-    "syncLocalNotSupported": "로컬 전파는 오프라인 받은 편지함이므로 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화할 수 없습니다.",
     "syncIdentityUnknown": "전파 노드 ID를 알 수 없습니다. 알림 또는 경로 응답을 기다린 후 다시 시도하십시오.",
     "syncTargetNotPropagationNode": "해당 대상은 Reticulum에서 도달할 수 있지만 LXMF 전파 노드는 아닙니다(TCP 허브는 전송 경로일 뿐입니다). 오프라인 메시지를 동기화하려면 lxmf.propagation으로 알리는 대상을 추가하세요.",
     "syncPeeringStampFailed": "이 전파 노드에 대한 피어링 스탬프를 생성할 수 없습니다. 잠시 후에 다시 시도하십시오.",
@@ -3885,7 +4019,44 @@
     "renameFailed": "전파 노드의 이름을 바꿀 수 없습니다.",
     "deleteFailed": "전파 노드를 삭제할 수 없습니다.",
     "addFailed": "전파 노드를 추가할 수 없습니다.",
-    "addNodePlaceholder": "32자 lxmf.propagation 대상 해시"
+    "addNodePlaceholder": "32자 lxmf.propagation 대상 해시",
+    "syncEstablishIdentityMissing": "전파 동기화가 링크 증명을 확인할 수 없습니다 — 노드 ID가 누락되었습니다. 발표를 기다렸다가 다시 시도하세요.",
+    "syncEstablishInvalidProof": "전파 동기화가 노드에서 유효하지 않은 링크 증명을 받았습니다. 잠시 후 다시 시도하십시오.",
+    "syncOfferNoIdentity": "전파 노드가 동기화 제안을 거부했습니다 — 실패를 식별하십시오. 발표를 기다렸다가 다시 시도하세요.",
+    "syncOfferNoAccess": "전파 노드가 동기화 액세스를 거부했습니다.",
+    "syncOfferInvalidKey": "전파 노드가 피어링 키를 거부했습니다. 피어링 비용을 확인하고 다시 시도하십시오.",
+    "syncOfferThrottled": "전파 노드가 동기화 요청을 조절했습니다. 나중에 다시 시도하십시오.",
+    "syncOfferInvalidData": "전파 노드가 동기화 제안 데이터를 거부했습니다.",
+    "syncOfferInvalidStamp": "전파 노드가 피어링 스탬프를 거부했습니다. 잠시 후 다시 시도하십시오.",
+    "discoveredTitle": "네트워크에서 발견됨",
+    "discoveredEmpty": "아직 lxmf.propagation에서 소식을 듣지 못했습니다. 스택을 연결 상태로 유지하거나 해시로 노드를 추가합니다.",
+    "discoveredInactive": "비활성",
+    "discoveredHops": "{{hops}} 홉",
+    "discoveredPeeringCost": "피어링 비용 {{cost}}",
+    "discoveredAdd": "추가",
+    "discoveredAddAria": "발견된 전파 노드 추가 {{name}}",
+    "discoveredAddPrefer": "추가 및 선호",
+    "discoveredAddPreferAria": "발견된 전파 노드 {{name}} 을 추가하고 선호하는 것으로 설정",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "전파 동기화는 노드에서 링크 증거를 얻지 못했습니다. 귀하의 신원은 새로운 공지가 필요하거나 경로가 누락되었을 수 있습니다. 지금 Network → Announce를 시도한 다음 다시 동기화하십시오.",
+    "syncOfferUnknown": "전파 노드가 알 수 없는 동기화 제안 오류를 반환했습니다. 잠시 후 다시 시도하십시오.",
+    "syncPathHint": "원격 동기화는 양방향 경로가 필요합니다. Sync는 노드가 응답할 수 있도록 짧은 LXMF 알림을 먼저 보냅니다.",
+    "setPreferredFailed": "기본 전파 노드를 설정할 수 없습니다.",
+    "preferredLocalWarning": "기본 설정 노드는 로컬 전용입니다. 오프라인 피어는 스토어 및 전달 전달을 위해 여전히 원격 전파 노드가 필요합니다.",
+    "localHostStats": "{{count}} 대기 중 · {{bytes}} 바이트",
+    "localHostName": "호스트 전파 노드",
+    "localHostHint": "활성화되면 이 장치는 LXMF 전파 노드로 알리고 /offer 및 /get을 제공합니다. 연결할 수 없는 피어보다 아웃바운드 저장 및 전달을 위해 원격 노드를 선호합니다.",
+    "syncPeerCostExceedsMax": "이 전파 노드의 피어링 비용은 최대 피어링 비용보다 높습니다. 네트워크 → 고급 PN 호스팅에서 최대값을 높이거나 다른 노드를 선택하세요.",
+    "offerUnsupported": "이 대상은 LXMF /offer 동기화를 지원하지 않습니다 — mesh-client에서 전파 노드로 사용할 수 없습니다.",
+    "offerProbeTimeout": "/offer 지원을 확인하는 동안 시간이 초과되었습니다. 노드에 연결할 수 없을 수 있습니다. 경로를 사용할 수 있게 되면 다시 시도하세요.",
+    "offerProbeFailed": "이 전파 노드에 대한 지원을 확인/제공할 수 없습니다. 잠시 후 다시 시도하십시오.",
+    "enableLocalHostConfirmTitle": "로컬 전파 노드 호스팅을 활성화하시겠습니까?",
+    "enableLocalHostConfirmBody": "이 장치는 LXMF 전파 노드로 알리고 /offer 및 /get을 제공합니다. 이는 스토리지, CPU를 사용하고 네트워크의 다른 노드와 피어링할 수 있습니다. 호스팅할 의도가 없다면 아웃바운드 저장 및 전달을 위해 원격 노드를 선호합니다.",
+    "enableLocalHostConfirm": "호스팅 활성화",
+    "addProbing": "/offer 지원 확인 중…",
+    "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다.",
+    "enableFailed": "전파 노드를 활성화할 수 없습니다.",
+    "disableFailed": "전파 노드를 비활성화할 수 없습니다."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",
@@ -4109,7 +4280,8 @@
     "pathHashCliGet": "경로 해시 모드 가져오기",
     "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
     "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
-    "pathHashCliSet2": "경로 해시 모드 3바이트 설정"
+    "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
@@ -4201,7 +4373,10 @@
     "backupRemoved": "백업 세트가 제거됨:",
     "meshcorePrivateKeyHint": "주요 자료를 보려면 아래 개인 키 내보내기를 사용하십시오. 백업은 이 컴퓨터에 전체 키 쌍을 저장합니다.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "백업을 찾을 수 없습니다",
+    "missingKeyMaterial": "핵심 자료 누락",
+    "unknownError": "알 수 없는 오류"
   },
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."
@@ -4318,7 +4493,12 @@
     "chartAriaSignal": "신호 품질 차트: 최신 SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} 포인트",
     "chartAriaTempHumidity": "온도 및 습도 차트: 최신 온도 {{temperature}}, 습도 {{humidity}} 퍼센트, {{count}} 포인트",
     "chartAriaPressure": "기압 차트: 최신 {{pressure}} hPa, {{count}} 포인트",
-    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트"
+    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV 내보내기",
+    "emptyWaitingConnected": "아직 텔레메트리 데이터가 없습니다. 장치의 데이터를 기다리는 중입니다…",
+    "emptyWaitingDisconnected": "아직 텔레메트리 데이터가 없습니다. 실시간 측정값을 보려면 장치에 연결하세요."
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
@@ -4475,7 +4655,9 @@
     "directNoticeUnsupported": "이 허브는 직접 고지 (/msg) 를 지원하지 않습니다.",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품)."
+      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품).",
+      "removedFromRoomSystem": "허브가 {{room}}에서 귀하를 분리했습니다.",
+      "hubParted": "허브가 당신을 방에서 분리시켰습니다."
     },
     "errors": {
       "linkProofTimeout": "허브 링크 (링크 증명) 대기 시간이 초과되었습니다. 다시 시도하거나 허브 경로/홉을 확인하세요.",
@@ -4682,7 +4864,9 @@
       "offerToast": "수신 파일 제공: {{file}}",
       "copyInstructionsAria": "파일 수신 활성화를 위한 지침 복사",
       "copyInstructions": "지침 복사",
-      "instructionsCopied": "지침이 복사되었습니다."
+      "instructionsCopied": "지침이 복사되었습니다.",
+      "receiveDestSharedToast": "{{peer}}의 rncp 수신 대상을 저장했습니다 — 이제 파일을 보낼 수 있습니다.",
+      "receiveDestShareFailed": "피어의 rncp 수신 대상을 저장할 수 없습니다."
     },
     "enableRequest": {
       "title": "파일 수신을 활성화하시겠습니까?",
@@ -4699,7 +4883,9 @@
       "enableFailed": "파일 수신을 활성화할 수 없습니다: {{error}}",
       "saveDirRequired": "수신을 활성화하려면 저장 폴더를 선택하세요.",
       "identityUnknown": "이 피어의 신원 해시를 아직 확인할 수 없습니다 — 수신 확인은 활성화되었지만 허용 목록에는 추가되지 않았습니다. 경로나 알림이 도착한 후 다시 시도하세요.",
-      "lxmfBody": "mesh-client를 사용하는 경우 파일 수신(rncp)을 활성화하십시오: 원격 → 설정 → 인바운드 파일 제공. 또는 청취 모드에서 rncp/rncp-rs를 실행하십시오."
+      "lxmfBody": "mesh-client를 사용하는 경우 파일 수신(rncp)을 활성화하십시오: 원격 → 설정 → 인바운드 파일 제공. 또는 청취 모드에서 rncp/rncp-rs를 실행하십시오.",
+      "lxmfShareBody": "파일 수신이 활성화되었습니다. 제 rncp 수신 대상입니다(mesh-client가 저장합니다).",
+      "shareDestWarning": "활성화하면 mesh-client는 rncp 수신 대상을 이 피어에 보내 파일 보내기를 자동 채울 수 있습니다."
     },
     "saved": {
       "labelPlaceholder": "상표",
@@ -4754,5 +4940,12 @@
     "direct": "직접",
     "segmentTooltip": "경로 해시 {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}}은(는) 온라인 상태입니다.",
+    "onlineBody": "{{protocol}} 노드가 온라인 상태가 되었습니다.",
+    "offlineTitle": "{{name}}이 오프라인 상태가 되었습니다.",
+    "offlineBody": "마지막으로 청취한 날짜: {{time}}",
+    "unknown": "알려지지 않은"
   }
 }

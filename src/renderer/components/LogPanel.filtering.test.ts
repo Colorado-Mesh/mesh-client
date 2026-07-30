@@ -109,10 +109,10 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
 });
 
 describe('isDeviceEntry — MeshCore protocol', () => {
-  it('classifies [meshcoreLegacyConnEvents] message as MeshCore device entry', () => {
+  it('classifies [meshcoreConnSideEffects] message as MeshCore device entry', () => {
     expect(
       isDeviceEntry(
-        entry('main', '[meshcoreLegacyConnEvents] stale conn close timeout'),
+        entry('main', '[meshcoreConnSideEffects] stale conn close timeout'),
         'meshcore',
       ),
     ).toBe(true);

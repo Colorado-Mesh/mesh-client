@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 
 import {
   analyzeLogs,
@@ -45,10 +46,11 @@ export default function LogAnalyzeModal({
 }: LogAnalyzeModalProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const result = analyzeLogs(entries, protocol);
-  const timeRange = formatTimeRange(result.oldestTs, result.newestTs);
+  const timeRange = formatTimeRange(result.oldestTs, result.newestTs, use24HourTime);
   const dedupedRecs = dedupeRecommendations(result.categories);
 
   useEffect(() => {

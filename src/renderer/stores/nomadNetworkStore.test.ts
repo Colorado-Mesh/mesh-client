@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
+
 const getStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPost = vi.fn();
@@ -140,6 +142,20 @@ describe('nomadNetworkStore', () => {
     expect(res).toEqual({ ok: true, content: 'page body', content_type: 'micron' });
   });
 
+  it('fetchNomadPage includes force_path_refresh when requested', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    proxyGet.mockResolvedValue({ ok: true, content: 'page body', content_type: 'micron' });
+
+    await useNomadNetworkStore
+      .getState()
+      .fetchNomadPage('abc', '/page/index.mu', undefined, { forcePathRefresh: true });
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=8&egress=tcp&force_path_refresh=true',
+    );
+  });
+
   it('fetchNomadFile requests file path with hops and egress', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
@@ -168,5 +184,50 @@ describe('nomadNetworkStore', () => {
       '/api/v1/nomadnetwork/file/abc?path=%2Ffile%2Freadme.txt&hops=2&egress=tcp',
     );
     expect(res).toEqual({ ok: true, file_name: 'readme.txt', content_base64: 'aGVsbG8=' });
+  });
+
+  it('logs a warning when page fetch returns ok:false', async () => {
+    const { spy, restore } = mockConsoleWarn();
+    try {
+      getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+      fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+      proxyGet.mockResolvedValue({ ok: false, error: 'link_timeout' });
+
+      const res = await useNomadNetworkStore
+        .getState()
+        .fetchNomadPage('abcdef12', '/page/index.mu');
+
+      expect(res).toEqual({ ok: false, error: 'link_timeout' });
+      expect(spy).toHaveBeenCalled();
+      const firstArg = spy.mock.calls[0]?.[0];
+      expect(typeof firstArg).toBe('string');
+      expect(firstArg).toContain('[nomadNetworkStore] page fetch failed');
+      expect(firstArg).toContain('error=link_timeout');
+      expect(firstArg).toContain('hash=abcdef12');
+    } finally {
+      restore();
+    }
+  });
+
+  it('logs a warning when file fetch returns ok:false', async () => {
+    const { spy, restore } = mockConsoleWarn();
+    try {
+      getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+      fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+      proxyGet.mockResolvedValue({ ok: false, error: 'path_timeout' });
+
+      const res = await useNomadNetworkStore
+        .getState()
+        .fetchNomadFile('abcdef12', '/file/readme.txt');
+
+      expect(res).toEqual({ ok: false, error: 'path_timeout' });
+      expect(spy).toHaveBeenCalled();
+      const firstArg = spy.mock.calls[0]?.[0];
+      expect(typeof firstArg).toBe('string');
+      expect(firstArg).toContain('[nomadNetworkStore] file fetch failed');
+      expect(firstArg).toContain('error=path_timeout');
+    } finally {
+      restore();
+    }
   });
 });

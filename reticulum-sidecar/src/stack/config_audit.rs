@@ -656,6 +656,9 @@ target_port = 4242
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         });
         let settings = StackSettings {
             share_instance: true,

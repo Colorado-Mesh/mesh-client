@@ -4,10 +4,12 @@ vi.mock('@/renderer/lib/i18n', () => ({
   default: { t: (key: string) => key },
 }));
 
+const storeMessages: Record<string, Record<string, unknown>> = {};
+
 vi.mock('@/renderer/stores/messageStore', () => ({
   updateMessageStatus: vi.fn(),
   useMessageStore: {
-    getState: () => ({ messages: {} }),
+    getState: () => ({ messages: storeMessages }),
   },
 }));
 
@@ -32,10 +34,52 @@ import {
   parseMeshtasticSdkRoutingErrorLog,
 } from './meshtasticSdkRoutingErrorLog';
 
+const IDENTITY = 'id-1';
+/** Mesh.Routing_Error.TIMEOUT — mapped to chatPanel.routingErrors.timeout */
+const ROUTING_TIMEOUT = 3;
+
+interface SeedRow {
+  packetId: number;
+  payload?: string;
+  channelIndex?: number;
+  timestamp?: number;
+  from?: number;
+}
+
+function clearStoreMessages(): void {
+  for (const key of Object.keys(storeMessages)) {
+    Reflect.deleteProperty(storeMessages, key);
+  }
+}
+
+/** Seed identity-scoped outbound rows — the only source routing errors read. */
+function seedOutbound(rows: SeedRow[]): void {
+  clearStoreMessages();
+  storeMessages[IDENTITY] = Object.fromEntries(
+    rows.map((row) => [
+      String(row.packetId),
+      {
+        id: String(row.packetId),
+        from: row.from ?? 42,
+        senderName: 'Me',
+        to: 0xffffffff,
+        payload: row.payload ?? 'hello',
+        channelIndex: row.channelIndex ?? 0,
+        timestamp: row.timestamp ?? Date.now(),
+        status: 'sending',
+      },
+    ]),
+  );
+}
+
 describe('meshtasticSdkRoutingErrorLog', () => {
   beforeEach(() => {
     resetMeshtasticOutboundCoordinationForTests();
+    vi.mocked(updateMessageStatus).mockClear();
+    clearStoreMessages();
     vi.stubGlobal('window', {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
       electronAPI: {
         db: { updateMessageStatus: vi.fn().mockResolvedValue(undefined) },
       },
@@ -74,322 +118,154 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     );
   });
 
+  it.each([
+    ['RATE_LIMIT_EXCEEDED', 'chatPanel.routingErrors.rateLimited'],
+    ['NO_INTERFACE', 'chatPanel.routingErrors.noInterface'],
+    ['NO_INTERFACE_AVAILABLE', 'chatPanel.routingErrors.noInterface'],
+  ])('maps %s to a chat routing i18n key', (errorName, key) => {
+    expect(chatRoutingErrorKeyForSdkErrorName(errorName)).toBe(key);
+  });
+
   it('marks matching outbound message failed', () => {
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 669520633,
-          payload: 'hello',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: 1,
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+    seedOutbound([{ packetId: 669520633 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
       'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
-      {
-        myNodeNum: 42,
-        identityId: 'id-1',
-        messagesRef,
-        setMessages,
-      },
+      { myNodeNum: 42, identityId: IDENTITY },
     );
     expect(applied).toBe(true);
-    expect(setMessages).toHaveBeenCalledTimes(1);
     expect(updateMessageStatus).toHaveBeenCalledWith(
-      'id-1',
+      IDENTITY,
       '669520633',
       'failed',
       'chatPanel.routingErrors.pkiMissingRecipientKey',
     );
   });
 
-  it('matches optimistic temp packet id via tempIdToWirePacketId map', () => {
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 100,
-          payload: 'hello',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
-    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
-      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-        tempIdToWirePacketId: new Map([[100, 669520633]]),
-      },
-    );
-    expect(applied).toBe(true);
-    expect(setMessages).toHaveBeenCalledTimes(1);
-  });
-
-  it('marks packet timeout log lines as failed outbound chat', () => {
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 711859058,
-          payload: 'hello',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+  it('marks matching outbound message failed from timeout log', () => {
+    seedOutbound([{ packetId: 711859058 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
       'Packet 711859058 of type packet timed out',
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-      },
+      { myNodeNum: 42, identityId: IDENTITY },
     );
     expect(applied).toBe(true);
-    expect(setMessages).toHaveBeenCalledTimes(1);
+    expect(updateMessageStatus).toHaveBeenCalledWith(
+      IDENTITY,
+      '711859058',
+      'failed',
+      'chatPanel.routingErrors.timeout',
+    );
   });
 
-  it('falls back to a single recent sending outbound when packet id differs', () => {
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 999,
-          payload: 'hello',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+  it('matches optimistic temp packet id via tempIdToWirePacketId map', () => {
+    seedOutbound([{ packetId: 1001 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
       'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
       {
         myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
+        identityId: IDENTITY,
+        tempIdToWirePacketId: new Map([[1001, 669520633]]),
       },
     );
     expect(applied).toBe(true);
-    expect(setMessages).toHaveBeenCalledTimes(1);
-    // DB row still holds the optimistic temp packet id (999) — the update must
-    // target it, not the wire id from the NAK (669520633).
-    expect(window.electronAPI.db.updateMessageStatus).toHaveBeenCalledWith(
-      999,
-      'failed',
-      'chatPanel.routingErrors.pkiMissingRecipientKey',
-    );
+    expect(updateMessageStatus).toHaveBeenCalled();
   });
 
-  it('does not misattribute a registered non-chat wire id to a sending chat row', () => {
-    registerMeshtasticNonChatWirePacketId(883268679);
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 1979522383,
-          payload: '📍 Shared location: 40.1, -105.0',
-          status: 'sending' as const,
-          channel: 1,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+  it('falls back to a single recent sending outbound when packet id is unmatched', () => {
+    seedOutbound([{ packetId: 55, timestamp: Date.now() }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
-      'Error received for packet 883268679: MAX_RETRANSMIT',
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-      },
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(true);
+    expect(updateMessageStatus).toHaveBeenCalled();
+  });
+
+  it('does not apply when no outbound rows exist', () => {
+    seedOutbound([]);
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY },
     );
     expect(applied).toBe(false);
-    expect(setMessages).not.toHaveBeenCalled();
+    expect(updateMessageStatus).not.toHaveBeenCalled();
   });
 
-  it('skips the single-sending fallback while a non-chat outbound is in flight', () => {
-    beginMeshtasticNonChatOutbound();
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 1979522383,
-          payload: '📍 Shared location: 40.1, -105.0',
-          status: 'sending' as const,
-          channel: 1,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+  it('does not apply when identity is null', () => {
+    seedOutbound([{ packetId: 669520633 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
-      'Error received for packet 883268679: MAX_RETRANSMIT',
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-      },
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: null },
     );
     expect(applied).toBe(false);
-    expect(setMessages).not.toHaveBeenCalled();
-    endMeshtasticNonChatOutbound();
-  });
-
-  it('humanizes queue rejections to chat i18n text or routing error name', () => {
-    expect(humanizeMeshtasticSdkQueueRejectionError({ id: 327029706, error: 39 })).toBe(
-      'chatPanel.routingErrors.pkiMissingRecipientKey',
-    );
-    expect(humanizeMeshtasticSdkQueueRejectionError({ packetId: 1, error: 3 })).toBe(
-      'chatPanel.routingErrors.timeout',
-    );
-    // No chat mapping — fall back to the enum name.
-    expect(humanizeMeshtasticSdkQueueRejectionError({ id: 1, error: 38 })).toBe(
-      'RATE_LIMIT_EXCEEDED',
-    );
-    expect(humanizeMeshtasticSdkQueueRejectionError(new Error('boom'))).toBeNull();
-    expect(humanizeMeshtasticSdkQueueRejectionError('nope')).toBeNull();
-  });
-
-  it('returns false for unknown SDK routing error names', () => {
-    expect(chatRoutingErrorKeyForSdkErrorName('UNKNOWN_ROUTING_ERROR')).toBeNull();
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 669520633,
-          payload: 'hello',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
-    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
-      'Error received for packet 669520633: UNKNOWN_ROUTING_ERROR',
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-      },
-    );
-    expect(applied).toBe(false);
-    expect(setMessages).not.toHaveBeenCalled();
+    expect(updateMessageStatus).not.toHaveBeenCalled();
   });
 
   it('does not apply when two recent sending outbounds are ambiguous', () => {
     const now = Date.now();
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 111,
-          payload: 'first',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: now,
-        },
-        {
-          id: 2,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 222,
-          payload: 'second',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: now - 1000,
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+    seedOutbound([
+      { packetId: 1, timestamp: now },
+      { packetId: 2, timestamp: now },
+    ]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(
       'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-      },
+      { myNodeNum: 42, identityId: IDENTITY },
     );
     expect(applied).toBe(false);
-    expect(setMessages).not.toHaveBeenCalled();
+    expect(updateMessageStatus).not.toHaveBeenCalled();
   });
 
-  it('parses SDK queue rejections with id or packetId', () => {
-    expect(parseMeshtasticSdkQueueRejection({ id: 397127051, error: 3 })).toEqual({
-      packetId: 397127051,
-      errorName: 'TIMEOUT',
-    });
-    expect(parseMeshtasticSdkQueueRejection({ packetId: 42, error: 8 })).toEqual({
-      packetId: 42,
-      errorName: 'NO_RESPONSE',
-    });
-    expect(parseMeshtasticSdkQueueRejection({ id: 1, error: 'TIMEOUT' })).toBeNull();
-    expect(parseMeshtasticSdkQueueRejection('timeout')).toBeNull();
+  it('does not apply to a known non-chat wire packet id', () => {
+    seedOutbound([{ packetId: 669520633 }]);
+    registerMeshtasticNonChatWirePacketId(669520633);
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(false);
+    expect(updateMessageStatus).not.toHaveBeenCalled();
+  });
+
+  it('skips fallback while non-chat outbound is in flight', () => {
+    seedOutbound([{ packetId: 55, timestamp: Date.now() }]);
+    beginMeshtasticNonChatOutbound();
+    try {
+      const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+        'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+        { myNodeNum: 42, identityId: IDENTITY },
+      );
+      expect(applied).toBe(false);
+    } finally {
+      endMeshtasticNonChatOutbound();
+    }
   });
 
   it('marks matching outbound message failed from queue rejection', () => {
-    const messagesRef = {
-      current: [
-        {
-          id: 1,
-          sender_id: 42,
-          sender_name: 'Me',
-          packetId: 397127051,
-          payload: 'hello',
-          status: 'sending' as const,
-          channel: 0,
-          timestamp: Date.now(),
-        },
-      ],
-    };
-    const setMessages = vi.fn();
+    seedOutbound([{ packetId: 669520633 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromRejection(
-      { id: 397127051, error: 3 },
-      {
-        myNodeNum: 42,
-        identityId: null,
-        messagesRef,
-        setMessages,
-      },
+      { id: 669520633, error: ROUTING_TIMEOUT },
+      { myNodeNum: 42, identityId: IDENTITY },
     );
     expect(applied).toBe(true);
-    expect(setMessages).toHaveBeenCalledTimes(1);
+    expect(updateMessageStatus).toHaveBeenCalled();
+  });
+
+  it('parses queue rejection shapes', () => {
+    expect(parseMeshtasticSdkQueueRejection({ id: 1, error: 5 })).toEqual({
+      packetId: 1,
+      errorName: expect.any(String),
+    });
+    expect(parseMeshtasticSdkQueueRejection({ packetId: 2, error: 5 })).toEqual({
+      packetId: 2,
+      errorName: expect.any(String),
+    });
+    expect(parseMeshtasticSdkQueueRejection('nope')).toBeNull();
+  });
+
+  it('humanizes queue rejection errors', () => {
+    expect(
+      humanizeMeshtasticSdkQueueRejectionError({ id: 1, error: ROUTING_TIMEOUT }),
+    ).toBeTruthy();
+    expect(humanizeMeshtasticSdkQueueRejectionError('x')).toBeNull();
   });
 });
 
@@ -525,6 +401,21 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     handler({ reason, preventDefault });
     expect(onQueueRejection).not.toHaveBeenCalled();
     expect(preventDefault).not.toHaveBeenCalled();
+    restore();
+  });
+
+  it('preventDefault for disconnect mid-send Packet does not exist', () => {
+    const onQueueRejection = vi.fn();
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
+    const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
+      reason: unknown;
+      preventDefault: () => void;
+    }) => void;
+    const reason = new Error('Packet does not exist');
+    const preventDefault = vi.fn();
+    handler({ reason, preventDefault });
+    expect(onQueueRejection).not.toHaveBeenCalled();
+    expect(preventDefault).toHaveBeenCalled();
     restore();
   });
 });

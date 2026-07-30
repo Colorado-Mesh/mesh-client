@@ -4,14 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import {
+  beginReticulumBleConnectGrace,
+  getReticulumBleConnectGraceExpiresAt,
+  subscribeReticulumBleConnectGrace,
+} from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import type { ReticulumLocalInterfaceHealthOptions } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { logReticulumLocalInterfaceHealthChanges } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
 import {
   pickReticulumLocalHealthPollMs,
-  RETICULUM_BLE_CONNECT_GRACE_MS,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
-import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
@@ -42,6 +45,12 @@ export interface ReticulumInterfaceRow {
   announce_interval_min?: number | null;
   connectable?: boolean | null;
   reachable_on?: string | null;
+  /** IFAC virtual network name. */
+  network_name?: string | null;
+  /** IFAC authentication passphrase. */
+  passphrase?: string | null;
+  /** Unknown INI keys preserved by the sidecar across CRUD. */
+  extra_config?: Record<string, string> | null;
 }
 
 export interface ReticulumSerialPortOption {
@@ -63,14 +72,15 @@ export function useReticulumInterfaceSnapshot({
   const [serialPorts, setSerialPorts] = useState<ReticulumSerialPortOption[]>([]);
   const [effectivePrimaryLocalSerialInterfaceId, setEffectivePrimaryLocalSerialInterfaceId] =
     useState<string | null>(null);
-  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
+  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(() =>
+    getReticulumBleConnectGraceExpiresAt(),
+  );
   const [interfacesHydrated, setInterfacesHydrated] = useState(false);
   const refreshRef = useRef<
     (() => Promise<{ interfaces: ReticulumInterfaceRow[]; paths: string[] } | undefined>) | null
   >(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstCancelRef = useRef<(() => void) | null>(null);
-  const nobleBleYieldStateRef = useRef({ yieldActive: false });
 
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
   const healthOptions = useMemo((): ReticulumLocalInterfaceHealthOptions | undefined => {
@@ -80,8 +90,14 @@ export function useReticulumInterfaceSnapshot({
 
   const serialPortPaths = useMemo(() => serialPorts.map((p) => p.path), [serialPorts]);
 
+  useEffect(() => {
+    return subscribeReticulumBleConnectGrace(() => {
+      setBleConnectGraceExpiresAt(getReticulumBleConnectGraceExpiresAt());
+    });
+  }, []);
+
   const beginBleConnectGrace = useCallback(() => {
-    setBleConnectGraceExpiresAt(Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS);
+    setBleConnectGraceExpiresAt(beginReticulumBleConnectGrace());
   }, []);
 
   const refresh = useCallback(async () => {
@@ -141,19 +157,12 @@ export function useReticulumInterfaceSnapshot({
       setInterfaces([]);
       setSerialPorts([]);
       setEffectivePrimaryLocalSerialInterfaceId(null);
-      setBleConnectGraceExpiresAt(0);
       setInterfacesHydrated(false);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
-      void syncReticulumNobleBleYield(
-        {
-          sidecarActive: false,
-          interfaces: [],
-          nowMs: Date.now(),
-          bleConnectGraceExpiresAt: 0,
-        },
-        nobleBleYieldStateRef.current,
-      );
+      // Noble BLE yield + shared grace clock are owned by useReticulumNobleBleYieldWatcher.
+      // Do not clear grace or release yield here: sidecarApiReady is false while connecting,
+      // and a mid-pair clear leaves release/renew stuck (CoreBluetooth Event receiver died).
       return;
     }
     beginBleConnectGrace();
@@ -204,21 +213,6 @@ export function useReticulumInterfaceSnapshot({
       }
     };
   }, [sidecarApiReady, pollActive, healthOptions]);
-
-  useEffect(() => {
-    if (!sidecarApiReady || bleConnectGraceExpiresAt <= 0 || nowMs <= 0) {
-      return;
-    }
-    void syncReticulumNobleBleYield(
-      {
-        sidecarActive: true,
-        interfaces,
-        nowMs,
-        bleConnectGraceExpiresAt,
-      },
-      nobleBleYieldStateRef.current,
-    );
-  }, [sidecarApiReady, interfaces, bleConnectGraceExpiresAt, nowMs]);
 
   return {
     interfaces,

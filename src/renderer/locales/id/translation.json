@@ -218,7 +218,6 @@
     "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}",
     "reticulumSection": "Reticulum — Tumpukan Reticulum",
     "reticulumAnnounceHelp": "Seberapa sering identitas Anda diumumkan di jaringan, dan alat untuk menghapus pengumuman yang tersimpan.",
-    "reticulumPropagationHelp": "Pilih bagaimana node propagasi disinkronkan dan tarik data propagasi terbaru bila diperlukan.",
     "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Pada tab Reticulum, jalur perangkat menyertakan keluaran sespan dan kesehatan antarmuka lokal. Baris debug memerlukan kotak centang di dalam panel log.",
     "autoPruneUnheardContactsDaysAria": "Pangkas otomatis kontak yang belum pernah terdengar saat startup, lebih lama dari {{days}} hari",
     "capTotalContactsCountAria": "Batasi total kontak, pertahankan kontak {{count}} yang terakhir dilihat",
@@ -373,7 +372,10 @@
     "restoreTheme": "Pulihkan pos pemeriksaan warna yang disimpan",
     "noSavedThemeTooltip": "Belum ada warna yang disimpan — gunakan Simpan untuk membuat pos pemeriksaan",
     "saveThemeButton": "Simpan",
-    "restoreThemeButton": "Pulihkan"
+    "restoreThemeButton": "Pulihkan",
+    "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh.",
+    "use24HourTime": "Gunakan waktu 24 jam",
+    "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -391,7 +393,8 @@
     "languageSelectorHint": "Klik untuk memilih bahasa",
     "switchToMeshtasticWithUnread": "Beralih ke Meshtastic, {{count}} belum dibaca",
     "switchToMeshCoreWithUnread": "Beralih ke MeshCore, {{count}} belum dibaca",
-    "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca"
+    "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca",
+    "tabWithUnread": "{{label}}, {{count}} belum dibaca"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -465,8 +468,6 @@
     "dmNodeLastHeard": "Terakhir didengar {{time}}",
     "dmNodeBattery": "{{pct}}% baterai",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} hop",
     "muteConversation": "Bisukan percakapan ini",
     "unmuteConversation": "Batalkan percakapan ini",
     "starMessage": "Bintang untuk Pesan",
@@ -559,7 +560,9 @@
       "pkiMissingRecipientKey": "Tidak dapat mengirim pesan terenkripsi — kunci publik penerima hilang dari NodeDB.",
       "pkiFailed": "Enkripsi PKI gagal untuk pesan ini.",
       "noChannel": "Tidak ada saluran yang tersedia untuk merutekan pesan ini.",
-      "timeout": "Waktu pesan habis di radio."
+      "timeout": "Waktu pesan habis di radio.",
+      "rateLimited": "Radio sedang membatasi laju pengiriman pesan. Coba lagi sebentar lagi.",
+      "noInterface": "Tidak ada antarmuka radio yang tersedia untuk mengirim pesan ini."
     },
     "waitingMessagesQueued": "{{count}} antrean pesan di radio",
     "waitingMessagesSyncProgress": "Menyinkronkan {{processed}} / {{total}} dari radio…",
@@ -593,7 +596,6 @@
       "sendFileAria": "Kirim file ke {{name}} melalui rncp",
       "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk dari rekan ini",
       "pendingOffersBadgeAria_other": "{{count}} menunggu penawaran file masuk dari rekan ini",
-      "destinationLabel": "hash tujuan rncp",
       "rememberAddress": "Ingat alamat ini",
       "rememberAddressAria": "Ingat tujuan rncp untuk rekan ini",
       "chooseAndSend": "Pilih file & kirim…",
@@ -602,7 +604,23 @@
       "sendFailed": "Gagal mengirim: {{error}}",
       "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
       "requestEnable": "Minta pengaktifan",
-      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file"
+      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file",
+      "destinationLabel": "Rncp rekan menerima tujuan",
+      "destinationHelp": "Bukan hash Obrolan/LXMF mereka. Gunakan Pengaktifan Permintaan — rekan mesh-client membagikan ini secara otomatis setelah mereka menerimanya. Atau tempel dari Remote mereka → Tujuan penerimaan rncp saya.",
+      "activeTransfersBadgeAria_one": "{{count}} transfer file aktif dengan rekan ini",
+      "activeTransfersBadgeAria_other": "{{count}} transfer file aktif dengan rekan ini",
+      "transfersTitle": "Transfer",
+      "useFromChat": "Gunakan tujuan dari obrolan",
+      "useFromChatAria": "Temukan dan gunakan tujuan terima rncp yang dibagikan dalam obrolan ini",
+      "noShareInChat": "Belum ada baris berbagi rncp di obrolan ini. Minta mereka untuk menempelkan tujuan penerimaan mereka (Remote → My rncp receive destination), atau tempelkan hash 32 karakter di bawah ini.",
+      "savedForOtherPeers": "Destinasi penerima tersimpan tersedia untuk obrolan lain ({{peers}}). Buka DM rekan itu untuk mengisi otomatis.",
+      "transferProgressAria": "Kemajuan transfer untuk {{file}}: {{progress}} persen",
+      "transferCompletedToast": "File terkirim: {{file}}",
+      "transferFailedToast": "Transfer file gagal ({{file}}): {{error}}",
+      "forgetAddress": "Lupakan tujuan tersimpan",
+      "forgetAddressAria": "Hapus tujuan penerimaan rncp yang disimpan untuk rekan ini",
+      "forgotAddressToast": "Lupa menyimpan tujuan rncp untuk rekan ini.",
+      "filledFromChatToast": "Tujuan yang diisi dari obrolan (tidak disimpan — centang Ingat untuk menyimpannya)."
     },
     "shareLocation": "Bagikan lokasi",
     "shareLocationLabel": "📍 Lokasi bersama",
@@ -615,7 +633,13 @@
     "floodScopeOverrideCustomLabel": "Hashtag cakupan Flood khusus",
     "floodScopeOverrideCustomPlaceholder": "#wilayahku",
     "floodScopeOverrideCustomApply": "Gunakan ruang lingkup",
-    "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
+    "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya).",
+    "dmNodeHops_one": "{{count}} hop",
+    "dmNodeHops_other": "{{count}} hop",
+    "notificationDmTitle": "DM dari {{sender}}",
+    "notificationMessageTitle": "Pesan dari {{sender}}",
+    "reticulumSendStoredAtPn": "Disimpan di simpul propagasi",
+    "reticulumPnAbbrev": "PN"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -624,7 +648,10 @@
     "locationCard": {
       "alt": "Ubin peta lokasi bersama",
       "openMaps": "Buka di Peta"
-    }
+    },
+    "directImage": "Gambar: {{name}}",
+    "directImageOpen": "Buka Gambar",
+    "reticulumAttachmentImage": "Gambar terlampir: {{name}}"
   },
   "common": {
     "close": "Menutup",
@@ -1067,7 +1094,27 @@
       "backboneDirectoryHint": "Temukan lebih banyak hub tulang punggung komunitas di directory.rns.recipes. Hub Yggdrasil (misalnya Yggdrasil_Ashburn_VA) memerlukan terowongan Yggdrasil lokal yang berjalan — manual Reticulum merekomendasikan pengikatan ke antarmuka terowongan Anda (seringkali tun0).",
       "localOfflineRowBleBondStale": "Ikatan Bluetooth sudah basi — Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu pasangkan kembali dengan PIN baru (OS mungkin masih menampilkan Dipasangkan).",
       "addDefaultHubsAria": "Sinkronkan hub tulang punggung Reticulum default (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); nonaktifkan titik akhir testnet yang dinonaktifkan",
-      "addDefaultHubsAllPresent": "Hub tulang punggung default sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan."
+      "addDefaultHubsAllPresent": "Hub tulang punggung default sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan.",
+      "modeDescriptions": {
+        "full": "Partisipasi mesh penuh. Lalu lintas rute dan penyebaran otomatis diumumkan. Gunakan untuk node dan repeater utama.",
+        "access_point": "Tenang sampai ada pertanyaan. Kedaluwarsa jalur pendek. Ideal untuk radio area luas yang melayani pengguna intermiten.",
+        "roaming": "Antarmuka seluler. Batas waktu jalur pendek dan penemuan aktif. Gunakan untuk RNode genggam atau kendaraan.",
+        "boundary": "Batas jaringan. Menjembatani segmen yang berbeda sambil mengisolasi lalu lintas lokal. Gunakan untuk tautan Internet/LoRa.",
+        "gateway": "Pencarian jalur untuk klien. Menyelesaikan tujuan yang tidak diketahui atas nama node yang terhubung.",
+        "point_to_point": "Hubungan langsung antara dua node. Tidak ada perutean atau propagasi pengumuman."
+      },
+      "networkName": "Network Name",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Network Name",
+      "passphrase": "Frasa sandi",
+      "passphrasePlaceholder": "Autentikasi IFAC",
+      "passphraseAria": "Frasa sandi IFAC",
+      "showPassphrase": "Tampilkan frasa sandi",
+      "hidePassphrase": "Sembunyikan frasa sandi",
+      "advanced": "Meningkat",
+      "advancedHint": "Pasangan kunci=nilai tambahan untuk antarmuka ini, satu per baris. Bidang yang diketahui (host, mode, nama jaringan,...) tetap dalam formulir di atas.",
+      "advancedAria": "Opsi nilai kunci antarmuka tingkat lanjut",
+      "advancedKeyReserved": "Kunci \"{{key}}\" adalah bidang yang diketahui dan diabaikan — gunakan formulir di atas."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1095,9 +1142,9 @@
       "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum.",
       "tcpUnreachable": "{{name}}: Hub TCP tidak dapat dijangkau ({{host}}:{{port}})",
       "tcpUnreachableHint": "Instansi Reticulum jarak jauh mungkin offline atau memblokir koneksi. Nonaktifkan antarmuka ini atau verifikasi host dan port.",
-      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (Rekan menghapus informasi pemasangan). Lupakan perangkat di Pengaturan Sistem → Bluetooth, letakkan RNode dalam mode berpasangan (Admin → Bluetooth → Mulai memasangkan, atau tahan tombol ~7 detik), lalu mulai ulang tumpukan dan masukkan PIN 6 digit baru saat diminta.",
-      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 60 detik setelah tumpukan dimulai (jendela kunci sandi OS). Masukkan PIN RNode saat ini jika diminta — jangan pernah 123456. Ini normal, bukan kesalahan. Perangkat mungkin tidak muncul di Pengaturan Sistem sampai ikatan berhasil."
+      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 60 detik setelah tumpukan dimulai (jendela kunci sandi OS). Masukkan PIN RNode saat ini jika diminta — jangan pernah 123456. Ini normal, bukan kesalahan. Perangkat mungkin tidak muncul di Pengaturan Sistem sampai ikatan berhasil.",
+      "offlineHintBle": "Untuk menghapus kesalahan ini, Anda mungkin perlu menghapus antarmuka ini dan menambahkannya kembali (Pilih perangkat) agar ID Bluetooth tersimpan diperbarui, lalu mulai ulang stack. OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — jangan pernah menggunakan 123456 (itu default Meshtastic, bukan RNode). RNode tidak perlu muncul di Pengaturan Sistem → Bluetooth sebelum aplikasi ini terhubung; dialog OS muncul saat stack memasangkan. Radio tanpa layar: sambungkan USB → Reticulum Admin → Bluetooth → Mulai pemasangan → masukkan PIN yang ditampilkan di panel Admin (bukan di layar radio) ke dialog OS. Radio dengan layar: tahan tombol ~7 dtk pada perangkat Heltec (waktu bervariasi; ~10 dtk pada banyak papan mengaktifkan Wi‑Fi AP), baca PIN di layar, lalu masukkan ke dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS sebelum mencoba lagi.",
+      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (informasi pemasangan dihapus oleh peer). Lupakan perangkat di Pengaturan Sistem → Bluetooth, masukkan RNode ke mode pemasangan (Admin → Bluetooth → Mulai pemasangan, atau tahan tombol ~7 dtk), lalu hapus dan tambahkan kembali antarmuka ini (Pilih perangkat), mulai ulang stack, dan masukkan PIN 6 digit baru saat diminta."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
@@ -1199,20 +1246,20 @@
     "coloradoRegionGateStay": "Saya di Colorado",
     "coloradoRegionGateSwitch": "Beralih ke LetsMesh",
     "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
       "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
     },
     "reticulumStackRunningAs": "Berjalan — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…"
+    "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…",
+    "reticulumSharedInstance": {
+      "title": "Menggunakan sesi berbagi aplikasi lain",
+      "body": "Aplikasi ini dilampirkan sebagai klien dari instance Reticulum bersama aplikasi lain. Hub TCP lokal dari konfigurasi aplikasi ini tidak dimulai dalam mode ini — lalu lintas hanya dapat menggunakan tumpukan aplikasi lain.",
+      "networkHint": "Atau buka contoh Network → Share Reticulum untuk menonaktifkan Share secara manual, lalu mulai ulang tumpukan. Anda juga dapat sepenuhnya keluar dari MeshChat, Ratspeak, atau rnsd mandiri dan memulai kembali.",
+      "disableShare": "Nonaktifkan Bagikan sesi dan mulai ulang",
+      "disableShareAria": "Nonaktifkan Bagikan instance dan mulai ulang tumpukan",
+      "disableFailed": "Gagal menonaktifkan Bagikan instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1356,7 +1403,8 @@
       "potentialMeshcoreRepeaterConflict": "Potensi Konflik Pengulang MeshCore",
       "elevatedNoiseFloor": "Lantai Kebisingan Tinggi",
       "excessiveFlooding": "Banjir Berlebihan",
-      "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi"
+      "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi",
+      "highCompanionTxQueue": "Antrean TX Pendamping Tinggi"
     },
     "rfCause": {
       "channelUtilizationSpike": "{{current}}% saat ini lebih dari 2× rata-rata terkini ({{average}}%) — kemungkinan kemacetan atau lonjakan gangguan.",
@@ -1370,7 +1418,8 @@
       "widebandNoiseFloor": "Interferensi broadband (kerusakan elektronik, gangguan saluran listrik, dll.) meningkatkan tingkat kebisingan.",
       "fringeWeakCoverage": "Node terlalu jauh atau tidak terhubung dengan baik ke seluruh mesh.",
       "elevatedNoiseFloor": "Lantai kebisingan radio adalah {{noiseFloor}} dBm — gangguan tinggi yang mengurangi rentang efektif.",
-      "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat."
+      "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat.",
+      "highCompanionTxQueue": "Kedalaman antrean keluar pendamping adalah {{queueLen}}/256 — lalu lintas mungkin tertunda atau terputus."
     },
     "foreignLoraCause": {
       "meshtastic": "Node Meshtastic mentransmisikan pada frekuensi ini. Pengirim: {{sender}}. {{proximity}}Node ini mungkin berada di area repeater MeshCore Anda.",
@@ -1445,6 +1494,10 @@
       "excessiveFlooding": {
         "title": "Izinkan rute langsung untuk ditetapkan",
         "description": "Rasio banjir sangat tinggi — tunggu hingga simpul menumpuk kontak jalur langsung, atau periksa kedekatan repeater."
+      },
+      "highCompanionTxQueue": {
+        "title": "Kurangi lalu lintas keluar atau periksa tautan RF",
+        "description": "Antrean TX pendamping hampir penuh — jeda pengiriman, kurangi banjir, atau periksa gangguan dan tautan yang lemah."
       }
     },
     "cuHistoryHeading": "Pemanfaatan Saluran (24 jam terakhir)",
@@ -1523,7 +1576,10 @@
         "transportSaturatedShareInstance": "Transportasi RNS jenuh ({{count}} permintaan jalur turun). Bagikan instance aktif — keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd) dan mulai ulang tumpukan.",
         "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
         "bleBondRemoved": "Ikatan BLE RNode \"{{name}}\" sudah basi — Lupakan pengaturan OS Bluetooth dan pasangkan kembali",
-        "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali"
+        "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali",
+        "sidecarUnhealthy": "Reticulum sidecar sedang berjalan tetapi tidak menanggapi pemeriksaan kesehatan",
+        "propagationSyncStuck": "Sinkronisasi simpul propagasi macet membuat tautan",
+        "propagationSyncFailing": "Sinkronisasi simpul propagasi gagal"
       }
     },
     "routingPort": {
@@ -1545,7 +1601,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Pengimbangan jarak",
     "km": "km",
-    "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50)."
+    "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50).",
+    "ignoreMqttToggle": "Abaikan MQTT",
+    "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik"
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -2450,6 +2508,54 @@
       "severityError": "error",
       "severityWarning": "warning",
       "severityInfo": "info"
+    },
+    "reticulumPnHosting": {
+      "title": "Hosting PN tingkat lanjut (zona bahaya)",
+      "peeringCost": "Biaya mengintip",
+      "maxPeeringCost": "Biaya peering maksimal",
+      "autopeer": "Autopeer dengan PN yang ditemukan",
+      "autopeerMaxdepth": "Hop maks autopeer",
+      "maxPeers": "Rekan autopeer maks",
+      "stampCost": "Biaya stempel propagasi",
+      "stampFlex": "Fleksibilitas biaya perangko",
+      "storageMb": "Batas penyimpanan pesan (MB)",
+      "propagationLimitKb": "Batas pesan propagasi (KB)",
+      "syncLimitKb": "Batas transfer sinkronisasi (KB)",
+      "deliveryLimitKb": "Batas Transfer Pengiriman (KB)",
+      "announceIntervalSec": "Interval pengumuman PN (detik)",
+      "announceAtStart": "Umumkan kapan hosting dimulai",
+      "fromStaticOnly": "Hanya dari rekan statis",
+      "authRequired": "Diperlukan autentikasi",
+      "enforceStamps": "Menerapkan stempel pesan",
+      "enforceRatchets": "Terapkan ratchet",
+      "nodeName": "PN umumkan nama",
+      "staticPeers": "Hash rekan statis (satu 32-hex per baris)",
+      "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
+      "save": "Simpan kebijakan hosting",
+      "saving": "Penghematan…",
+      "saveAria": "Simpan kebijakan hosting PN",
+      "saveOk": "Kebijakan hosting PN disimpan.",
+      "saveFailed": "Tidak dapat menyimpan kebijakan hosting PN.",
+      "saveConfirmTitle": "Simpan kebijakan hosting PN?",
+      "saveConfirmBody": "Terapkan pengaturan peering, penyimpanan, cap, dan umumkan ke node propagasi langsung? Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan.",
+      "saveConfirm": "Simpan kebijakan",
+      "error": {
+        "peeringCostExceedsMax": "Biaya peering tidak boleh melebihi biaya peering maksimal.",
+        "stampFlexExceedsCost": "Fleksibilitas prangko tidak boleh melebihi biaya prangko.",
+        "autopeerMaxdepth": "Hop maks autopeer berada di luar jangkauan.",
+        "maxPeers": "Max rekan berada di luar jangkauan.",
+        "storageMb": "Batas penyimpanan pesan di luar jangkauan.",
+        "propagationLimit": "Batas pesan propagasi berada di luar jangkauan.",
+        "syncLimit": "Batas transfer sinkronisasi berada di luar jangkauan.",
+        "deliveryLimit": "Batas transfer pengiriman di luar jangkauan.",
+        "announceInterval": "Interval pengumuman PN di luar jangkauan.",
+        "staticPeersTooMany": "Terlalu banyak hash rekan statis (maks 256).",
+        "staticPeerInvalid": "Satu atau lebih hash rekan statis tidak valid (membutuhkan 32 karakter hex).",
+        "nodeNameInvalid": "Nama pengumuman PN mengandung karakter yang tidak valid.",
+        "nodeNameTooLong": "Nama pengumuman PN terlalu panjang.",
+        "nonFiniteNumber": "Satu atau beberapa kolom numerik tidak valid."
+      },
+      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan."
     }
   },
   "nodeDetailModal": {
@@ -2697,7 +2803,11 @@
     "stableStability": "Stabil",
     "moderateStability": "Sedang",
     "unstableStability": "Tidak stabil",
-    "unknownStability": "Tidak dikenal"
+    "unknownStability": "Tidak dikenal",
+    "hybridMqttPathTooltip": "Diterima melalui RF; beberapa paket menggunakan jalur relai MQTT",
+    "hybridMqttPathAria": "Jalur RF dan MQTT",
+    "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
+    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
@@ -2785,7 +2895,8 @@
     "hybridMqttPathTooltip": "Diterima melalui RF; beberapa paket menggunakan jalur relai MQTT",
     "hybridMqttPathAria": "Jalur RF dan MQTT",
     "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
-    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT"
+    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -2867,7 +2978,17 @@
       "contentSourceNotFromPicker": "Pilih folder dengan Pilih folder sebelum menerapkannya.",
       "contentSourceNone": "Tidak ada folder yang dipilih",
       "contentSourceRequired": "Pilih folder halaman sebelum memulai Nomad hosting."
-    }
+    },
+    "sortLastHeard": "Terakhir Didengar",
+    "sortHops": "Hop",
+    "sortName": "Nama",
+    "sortToolbar": "Urutkan daftar simpul",
+    "sortByLastHeardAsc": "Urutkan berdasarkan Last Heard, tertua lebih dulu",
+    "sortByLastHeardDesc": "Urutkan berdasarkan Last Heard, terbaru dulu",
+    "sortByHopsAsc": "Urutkan berdasarkan Hop, paling dekat dulu",
+    "sortByHopsDesc": "Urutkan berdasarkan Hop, terjauh dulu",
+    "sortByNameAsc": "Menurut Nama - A ke Z",
+    "sortByNameDesc": "Menurut Nama - Z ke A"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",
@@ -3652,7 +3773,18 @@
     "byteLengthTooltip": "{{bytes}} byte mentah",
     "routeBarFloodTooltip": "Paket yang dialiri banjir",
     "routeBarDirectTooltip": "Paket rute langsung",
-    "routeBarUnknownTooltip": "Jenis rute tidak diketahui"
+    "routeBarUnknownTooltip": "Jenis rute tidak diketahui",
+    "crc32Fingerprint": "Sidik jari CRC32:",
+    "innerFirstU32Debug": "u32 internal pertama (debug):",
+    "destHash": "Hash tujuan:",
+    "srcHash": "Hash sumber:",
+    "channelHash": "Hash kanal:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Byte teks tersandi:",
+    "senderKeyPrefix": "Kunci pengirim (awalan):",
+    "control": "Kontrol:",
+    "advertTs": "Waktu ADVERT:",
+    "advertLatLon": "Lintang/bujur ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -3816,11 +3948,12 @@
   "reticulumProfileIcon": {
     "iconName": "Ikon avatar",
     "iconNameAria": "Ikon avatar sejawat",
-    "iconCircle": "Lingkaran",
     "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
-    "iconUser": "Pengguna"
+    "iconNone": "Tidak ada",
+    "iconSaveFailed": "Tidak dapat menyimpan ikon avatar.",
+    "iconUser": "Rakyat"
   },
   "reticulumPropagation": {
     "preferred": "Disukai",
@@ -3830,7 +3963,6 @@
     "syncNowFor": "Sinkronkan pesan dari {{name}}",
     "addNode": "Tambahkan simpul",
     "addNodeLabel": "Tambahkan node propagasi dengan hash",
-    "localInboxStats": "{{count}} antri · {{bytes}} byte",
     "refreshing": "Menyegarkan…",
     "refreshAria": "Segarkan node propagasi",
     "syncStatusEstablishing": "Membangun koneksi ke node propagasi…",
@@ -3853,7 +3985,10 @@
     "notice": {
       "body": "Tidak ada simpul propagasi yang dikonfigurasi. Peer offline atau tidak terjangkau membutuhkan simpul propagasi untuk pengiriman LXMF store - and - forward.",
       "openSettings": "Atur propagasi",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Tidak ada simpul propagasi yang dikonfigurasi. {{count}} ditemukan di jaringan — tambahkan satu di bawah ini atau buka pengaturan Jaringan.",
+      "addClosest": "Tambahkan yang terdekat ditemukan",
+      "addClosestAria": "Tambahkan simpul propagasi terdekat yang ditemukan dan atur sesuai keinginan"
     },
     "rename": "Ganti nama",
     "renameLabel": "Nama node propagasi",
@@ -3877,7 +4012,6 @@
       "unknown": "tidak dikenal",
       "online": "online"
     },
-    "syncLocalNotSupported": "Propagasi lokal adalah kotak masuk offline Anda — tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
     "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline.",
     "syncPeeringStampFailed": "Tidak dapat membuat stempel peering untuk node propagasi ini — coba lagi sebentar lagi.",
@@ -3885,7 +4019,44 @@
     "renameFailed": "Tidak dapat mengganti nama node propagasi.",
     "deleteFailed": "Tidak dapat menghapus node propagasi.",
     "addFailed": "Tidak dapat menambahkan node propagasi.",
-    "addNodePlaceholder": "Hash tujuan lxmf.propagation 32 karakter"
+    "addNodePlaceholder": "Hash tujuan lxmf.propagation 32 karakter",
+    "syncEstablishIdentityMissing": "Sinkronisasi propagasi tidak dapat memverifikasi bukti tautan — identitas simpul hilang. Tunggu pengumuman dan coba lagi.",
+    "syncEstablishInvalidProof": "Sinkronisasi propagasi menerima bukti tautan yang tidak valid dari simpul — coba lagi sebentar lagi.",
+    "syncOfferNoIdentity": "Simpul propagasi menolak tawaran sinkronisasi — identifikasi gagal. Tunggu pengumuman dan coba lagi.",
+    "syncOfferNoAccess": "Simpul propagasi menolak akses sinkronisasi.",
+    "syncOfferInvalidKey": "Simpul propagasi menolak kunci mengintip — periksa biaya mengintip dan coba lagi.",
+    "syncOfferThrottled": "Simpul propagasi mencekik permintaan sinkronisasi — coba lagi nanti.",
+    "syncOfferInvalidData": "Simpul propagasi menolak data penawaran sinkronisasi.",
+    "syncOfferInvalidStamp": "Simpul propagasi menolak cap mengintip — coba lagi sebentar lagi.",
+    "discoveredTitle": "Ditemukan di jaringan",
+    "discoveredEmpty": "Belum ada pengumuman lxmf.propagation yang terdengar. Jaga agar tumpukan tetap terhubung atau tambahkan simpul dengan hash.",
+    "discoveredInactive": "tidak aktif",
+    "discoveredHops": "{{hops}} hop",
+    "discoveredPeeringCost": "biaya peering {{cost}}",
+    "discoveredAdd": "Tambahkan",
+    "discoveredAddAria": "Tambahkan simpul propagasi yang ditemukan {{name}}",
+    "discoveredAddPrefer": "Tambah & lebih suka",
+    "discoveredAddPreferAria": "Tambahkan simpul propagasi yang ditemukan {{name}} dan atur sesuai keinginan",
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Sinkronisasi propagasi tidak mendapatkan bukti tautan dari simpul — identitas Anda mungkin memerlukan pengumuman baru, atau jalur kembali hilang. Coba Network → Announce sekarang, lalu Sinkronkan lagi.",
+    "syncOfferUnknown": "Simpul propagasi mengembalikan kesalahan penawaran sinkronisasi yang tidak diketahui — coba lagi sebentar lagi.",
+    "syncPathHint": "Sinkronisasi jarak jauh membutuhkan jalur dua arah. Sinkronisasi mengirimkan pengumuman LXMF singkat terlebih dahulu sehingga node dapat membalas.",
+    "setPreferredFailed": "Tidak dapat mengatur simpul propagasi yang diinginkan.",
+    "preferredLocalWarning": "Simpul yang disukai hanya lokal — rekan offline masih membutuhkan simpul propagasi jarak jauh untuk pengiriman store - and - forward.",
+    "localHostStats": "{{count}} antri · {{bytes}} byte",
+    "localHostName": "Node propagasi host",
+    "localHostHint": "Saat diaktifkan, perangkat ini mengumumkan sebagai node propagasi LXMF dan melayani /menawarkan dan /mendapatkan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar dibandingkan node yang tidak dapat dijangkau.",
+    "syncPeerCostExceedsMax": "Biaya peering node propagasi ini berada di atas biaya peering maksimal Anda — naikkan biaya maksimal di Jaringan → Hosting PN tingkat lanjut, atau pilih node lain.",
+    "offerUnsupported": "Tujuan ini tidak mendukung sinkronisasi LXMF /offer — mesh-client tidak dapat menggunakannya sebagai node propagasi.",
+    "offerProbeTimeout": "Waktu habis saat memeriksa / menawarkan dukungan — node mungkin tidak dapat dijangkau. Coba lagi ketika jalur tersedia.",
+    "offerProbeFailed": "Tidak dapat memverifikasi/menawarkan dukungan untuk node propagasi ini — coba lagi sebentar lagi.",
+    "enableLocalHostConfirmTitle": "Aktifkan hosting node propagasi lokal?",
+    "enableLocalHostConfirmBody": "Perangkat ini akan diumumkan sebagai node propagasi LXMF dan melayani /offer dan /get. Itu menggunakan penyimpanan, CPU, dan mungkin melakukan peer dengan node lain di jaringan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar kecuali Anda bermaksud untuk menghostingnya.",
+    "enableLocalHostConfirm": "Aktifkan hosting",
+    "addProbing": "Memeriksa dukungan /offer…",
+    "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
+    "enableFailed": "Tidak dapat mengaktifkan node propagasi.",
+    "disableFailed": "Tidak dapat menonaktifkan node propagasi."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",
@@ -4109,7 +4280,8 @@
     "pathHashCliGet": "Dapatkan mode hash jalur",
     "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
     "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
-    "pathHashCliSet2": "Atur mode hash jalur 3 - byte"
+    "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} belum dibaca"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",
@@ -4201,7 +4373,10 @@
     "backupRemoved": "Cadangan dihapus.",
     "meshcorePrivateKeyHint": "Gunakan Kunci Pribadi Ekspor di bawah ini untuk melihat materi utama. Cadangan menyimpan pasangan kunci lengkap di komputer ini.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Tidak ada cadangan yang ditemukan",
+    "missingKeyMaterial": "Bahan utama tidak ada",
+    "unknownError": "Kesalahan tidak dikenal"
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"
@@ -4318,7 +4493,12 @@
     "chartAriaSignal": "Grafik kualitas sinyal: SNR terbaru {{snr}} dB, RSSI {{rssi}} dBm, {{count}} poin",
     "chartAriaTempHumidity": "Grafik suhu dan kelembapan: suhu terkini {{temperature}}, kelembapan {{humidity}} persen, {{count}} poin",
     "chartAriaPressure": "Grafik tekanan barometrik: {{pressure}} hPa terbaru, {{count}} poin",
-    "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru"
+    "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Ekspor CSV",
+    "emptyWaitingConnected": "Belum ada data telemetri. Menunggu data dari perangkat…",
+    "emptyWaitingDisconnected": "Belum ada data telemetri. Hubungkan ke perangkat untuk melihat metrik waktu nyata."
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
@@ -4475,7 +4655,9 @@
     "directNoticeUnsupported": "Hub ini tidak mendukung PEMBERITAHUAN langsung (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
-      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part)."
+      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part).",
+      "removedFromRoomSystem": "Hub memisahkan Anda dari {{room}}.",
+      "hubParted": "Hub memisahkan Anda dari ruangan."
     },
     "errors": {
       "linkProofTimeout": "Waktu habis menunggu tautan hub (bukti tautan). Coba lagi, atau periksa jalur/hop ke hub.",
@@ -4682,7 +4864,9 @@
       "offerToast": "Penawaran file masuk: {{file}}",
       "copyInstructionsAria": "Salin instruksi untuk mengaktifkan penerimaan file",
       "copyInstructions": "Salin instruksi",
-      "instructionsCopied": "Instruksi disalin."
+      "instructionsCopied": "Instruksi disalin.",
+      "receiveDestSharedToast": "Destinasi penerimaan rncp {{peer}} disimpan — Anda dapat mengirim file sekarang.",
+      "receiveDestShareFailed": "Tidak dapat menyimpan tujuan penerimaan rncp rekan."
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",
@@ -4699,7 +4883,9 @@
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
       "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
-      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan."
+      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan.",
+      "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda).",
+      "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file."
     },
     "saved": {
       "labelPlaceholder": "Label",
@@ -4754,5 +4940,12 @@
     "direct": "Langsung",
     "segmentTooltip": "Hash jalur {{hex}}",
     "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
+  "nodeStatusNotifier": {
+    "onlineTitle": "{{name}} sedang online",
+    "onlineBody": "Node {{protocol}} online",
+    "offlineTitle": "{{name}} offline",
+    "offlineBody": "Terakhir didengar: {{time}}",
+    "unknown": "tidak dikenal"
   }
 }

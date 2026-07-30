@@ -1558,6 +1558,17 @@ export default function RoomsPanel({
                       : hasSaved
                         ? t('roomsPanel.legendSavedTooltip')
                         : t('roomsPanel.legendNotSavedTooltip');
+                const roomLabel = room.long_name ?? String(room.node_id);
+                const showCollapsedUnread = unread > 0 && selectedRoomId !== room.node_id;
+                let collapsedRoomAriaLabel: string | undefined;
+                if (roomListCollapsed) {
+                  collapsedRoomAriaLabel = showCollapsedUnread
+                    ? t('roomsPanel.collapsedRoomWithUnread', {
+                        label: roomLabel,
+                        count: unread > 99 ? '99+' : unread,
+                      })
+                    : roomLabel;
+                }
                 return (
                   <div
                     key={room.node_id}
@@ -1582,16 +1593,8 @@ export default function RoomsPanel({
                           }`
                         : `px-3 py-2 ${selectedRoomId === room.node_id ? 'bg-gray-800/80' : ''}`
                     }`}
-                    title={roomListCollapsed ? (room.long_name ?? String(room.node_id)) : undefined}
-                    aria-label={
-                      roomListCollapsed
-                        ? `${room.long_name ?? String(room.node_id)}${
-                            unread > 0 && selectedRoomId !== room.node_id
-                              ? `, ${unread > 99 ? '99+' : unread} unread`
-                              : ''
-                          }`
-                        : undefined
-                    }
+                    title={roomListCollapsed ? roomLabel : undefined}
+                    aria-label={collapsedRoomAriaLabel}
                   >
                     {roomListCollapsed ? (
                       <div className="relative flex flex-col items-center gap-0.5">
@@ -2609,7 +2612,7 @@ export default function RoomsPanel({
                                   <ChatPayloadText
                                     text={m.payload}
                                     query={searchQuery}
-                                    loadLinkPreviews={!showScrollButton}
+                                    loadLinkPreviews
                                     onContentResize={() => {
                                       schedulePostRowRemeasure(index);
                                     }}

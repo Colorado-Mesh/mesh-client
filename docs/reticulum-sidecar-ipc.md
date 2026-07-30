@@ -91,34 +91,61 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 **WS `rmap.discovery`:** sidecar polls DiscoveryStore every **10s**; emits full `{ discovered: [...] }` snapshot when JSON fingerprint changes. Stub builds return `{ discovered: [] }`.
 | GET | `/api/v1/packets` | `?limit=500` (1–2500) | `{ packets: [] }` — recent wire tap ring buffer |
 | DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
-| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
-| POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
+| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec, pn_hosting_policy }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| GET | `/api/v1/propagation/discovered` | | `{ discovered: DiscoveredPropagationRow[] }` — heard `lxmf.propagation` announces (not auto-configured) |
+| POST | `/api/v1/propagation/add` | `{ destination_hash, name?, skip_probe? }` | `{ ok, node }` or `{ ok: false, error }` — probes `/offer` unless `skip_probe`; may return `PROPAGATION_OFFER_UNSUPPORTED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, identity/path errors |
+| POST | `/api/v1/propagation/hosting-policy` | `PnHostingPolicy` | `{ ok }` — persist + apply local PN hosting / peering policy |
 | PUT | `/api/v1/propagation/{id}` | `{ name }` | `{ ok }` — rename a remote node (`local-prop` rejected) |
 | DELETE | `/api/v1/propagation/{id}` | | `{ ok }` — remove a remote node (`local-prop` rejected; clears preferred if that id) |
-| POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` |
-| POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` |
+| POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` — for `local-prop`, starts PN serve + announce |
+| POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` — for `local-prop`, stops PN serve + announce |
 | POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
 | POST | `/api/v1/propagation/sync` | | `{ ok }` |
 | POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` |
+| POST | `/api/v1/propagation/auto-sync-interval` | `{ interval_sec }` | `{ ok }` — `0` disables periodic sync; persists with stack |
+
+**`PnHostingPolicy`** (mirrored in `src/shared/pnHostingPolicy.ts` / sidecar `pn_hosting_policy.rs`):
+
+| Field                      | Default | Notes                                           |
+| -------------------------- | ------- | ----------------------------------------------- |
+| `peering_cost`             | `18`    | Must be ≤ `max_peering_cost`                    |
+| `max_peering_cost`         | `26`    |                                                 |
+| `autopeer`                 | `true`  |                                                 |
+| `autopeer_maxdepth`        | `4`     | Cap 64                                          |
+| `max_peers`                | `20`    | 1–256                                           |
+| `propagation_stamp_cost`   | `16`    |                                                 |
+| `propagation_stamp_flex`   | `3`     | Must be ≤ stamp cost                            |
+| `message_storage_limit_mb` | `256`   | 1–10240                                         |
+| `propagation_limit_kb`     | `256`   | 1–102400                                        |
+| `sync_limit_kb`            | `10240` | 1–102400                                        |
+| `delivery_limit_kb`        | `1000`  | 1–102400                                        |
+| `from_static_only`         | `false` |                                                 |
+| `auth_required`            | `false` |                                                 |
+| `enforce_stamps`           | `false` |                                                 |
+| `enforce_ratchets`         | `false` |                                                 |
+| `static_peers`             | `[]`    | Lowercase 32-hex hashes (max 256)               |
+| `node_name`                | `null`  | Trimmed; max 128 scalar chars; no control chars |
+| `pn_announce_interval_sec` | `360`   | Cap 86400                                       |
+| `announce_at_start`        | `true`  |                                                 |
 
 ### Nomad Network
 
-| Method | Path                                          | Body / notes                 | Response                                                                                                           |
-| ------ | --------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/v1/nomadnetwork/nodes`                  |                              | `{ nodes: [] }`                                                                                                    |
-| POST   | `/api/v1/nomadnetwork/nodes/favorite`         | `{ hash, favorited }`        | `{ ok }`                                                                                                           |
-| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…`     |                              | page payload                                                                                                       |
-| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`     |                              | `{ ok, file_name?, content_base64? }`                                                                              |
-| GET    | `/api/v1/nomadnetwork/serving`                |                              | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`) |
-| PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }` | `{ ok, serving }`                                                                                                  |
-| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`           | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running   |
-| GET    | `/api/v1/nomadnetwork/serving/pages`          |                              | `{ ok, pages: [] }` — My Pages lists these read-only; edit pages on disk in the watched folder                     |
-| PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`          | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
-| DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
-| GET    | `/api/v1/nomadnetwork/serving/page?path=…`    |                              | `{ ok, path, content }`                                                                                            |
-| GET    | `/api/v1/nomadnetwork/serving/files`          |                              | `{ ok, files: [] }` — My Pages lists these read-only                                                               |
-| PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`   | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
-| DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| Method | Path                                          | Body / notes                                                  | Response                                                                                                           |
+| ------ | --------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/v1/nomadnetwork/nodes`                  |                                                               | `{ nodes: [] }`                                                                                                    |
+| POST   | `/api/v1/nomadnetwork/nodes/favorite`         | `{ hash, favorited }`                                         | `{ ok }`                                                                                                           |
+| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…`     | optional `data`, `force_path_refresh=true` (stale-path retry) | page payload                                                                                                       |
+| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`     | optional `force_path_refresh=true`                            | `{ ok, file_name?, content_base64? }`                                                                              |
+| GET    | `/api/v1/nomadnetwork/serving`                |                                                               | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`) |
+| PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }`                                  | `{ ok, serving }`                                                                                                  |
+| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`                                            | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running   |
+| GET    | `/api/v1/nomadnetwork/serving/pages`          |                                                               | `{ ok, pages: [] }` — My Pages lists these read-only; edit pages on disk in the watched folder                     |
+| PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`                                           | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                                                               | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| GET    | `/api/v1/nomadnetwork/serving/page?path=…`    |                                                               | `{ ok, path, content }`                                                                                            |
+| GET    | `/api/v1/nomadnetwork/serving/files`          |                                                               | `{ ok, files: [] }` — My Pages lists these read-only                                                               |
+| PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`                                    | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                                                               | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
 
 Auto-restore order when the live stack comes up: load `nomad_serving_content_source` → if `nomad_serving_enabled` and a content source is set, start hosting → start FS watcher on `pages/` (and `files/` when that directory exists). If enabled without a content source, set `last_error=content_source_required` and do not start. Other failures keep `enabled=true` with `running=false` and `last_error` set; logs use the `[nomad-serving]` tag.
 
@@ -191,11 +218,11 @@ Listener persistence: a successful `POST /api/v1/rncp/listener` stores the confi
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`, plus Remote: `rnsh.stdout` / `rnsh.stderr` / `rnsh.status` / `rnsh.closed` / `rnsh.error`, `rncp.offer` / `rncp.progress` / `rncp.completed` / `rncp.failed` / `rncp.cancelled`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `propagation.discovered` (heard `lxmf.propagation` announce), `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`, plus Remote: `rnsh.stdout` / `rnsh.stderr` / `rnsh.status` / `rnsh.closed` / `rnsh.error`, `rncp.offer` / `rncp.progress` / `rncp.completed` / `rncp.failed` / `rncp.cancelled`.
 
 - **`rrc.disconnected`:** payload `{ hub_dest_hash, reason, will_reconnect? }`. When `will_reconnect` is `false` (or `reason` is `local_disconnect`), the renderer drops that hub session. When `true` (or omitted on older sidecars), the UI shows reconnecting and keeps volatile rooms until WELCOME.
 
-- **`lxmf_outbound_status`:** authoritative outbound delivery updates. Payload: `{ message_hash, status, delivery_method?, to_hash? }` where `status` is `delivered` or `failed` (intermediate states are not emitted on WS). mesh-client maps `delivered` → UI Completes (`acked`) and persists `delivery_status` to SQLite; `failed` → Failed. Do **not** treat `/api/v1/lxmf/send` response `delivery_status` (`queued`/`sending`) as terminal.
+- **`lxmf_outbound_status`:** authoritative outbound delivery updates. Payload: `{ message_hash, status, delivery_method?, to_hash?, sent_via? }` where `status` is `delivered`, `failed`, or intermediate `sending` (egress upgrade or Direct→PN fallback). mesh-client maps `delivered` → UI Completes (`acked`) and persists `delivery_status` (+ `delivery_method` when present) to SQLite; Propagated Completes show **Stored at propagation node**; `failed` → Failed. Do **not** treat `/api/v1/lxmf/send` response `delivery_status` (`queued`/`sending`) as terminal. After Direct failure with a preferred remote PN, the sidecar re-queues once as Propagated and emits `sending` + `delivery_method: "propagated"` before a final `delivered`/`failed`.
 - **`announce.received`:** emitted for every LXMF identity announce / path response the sidecar observes (named or nameless). Payload: `{ destination_hash, display_name?, hops }`. Display names update the peer-label cache only — announces do **not** auto-create LXMF contacts. That cache is overlayed onto `GET /api/v1/peers` / topology rows **and** onto nameless/hash-prefix rows from `GET /api/v1/contacts` (`list_contacts` may persist those fills) so path-table and contact refreshes keep announce aliases.
 - **`peers_updated`:** also emitted when the live path table **gains** new destination hashes (maintenance tick). Payload may include `{ added: string[], patches: PeerRow[], count }` (added/patches capped at 1024). Renderer applies patches incrementally, including route-field changes. A full peer dump is used on connect, manual Refresh, restart, safety poll, or a `peers_updated` payload that cannot be applied incrementally: `cleared`, `demoted_from_contacts`, or a single-`hash` probe/path event. Hop/timestamp-only churn does not emit.
 
@@ -225,7 +252,7 @@ Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sand
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds, **`blePairingTimedOut`** OS passkey / TX-read timeouts). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 
-**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`.
+**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`. Add may return `PROPAGATION_OFFER_UNSUPPORTED` / probe timeout failures.
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP. Remote saved addresses / inbound policy and RRC room history also use dedicated `db:*` handlers (not sidecar HTTP).
 

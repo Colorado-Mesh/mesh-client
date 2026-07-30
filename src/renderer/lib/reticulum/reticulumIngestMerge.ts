@@ -46,8 +46,9 @@ export function mergeReticulumIngestRecord(
 
   const merged: MessageRecord = { ...existing, ...record };
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (existing.to != null && existing.to !== 0) {
-    const mergedTo = merged.to ?? 0;
+    const mergedTo = merged.to;
     if (
       mergedTo === 0 ||
       (selfNodeId != null && normalizeReticulumNodeId(mergedTo) === selfNodeId)
@@ -64,9 +65,16 @@ export function mergeReticulumIngestRecord(
     merged.receivedVia = record.receivedVia ?? existing.receivedVia;
   }
 
+  // HTTP/WS send echoes carry delivery_status=sending. Never demote a Completes row
+  // (e.g. retry of another message must not flip a just-delivered bubble back to ⏳).
+  if (existing.status === 'acked' && record.status === 'sending') {
+    merged.status = 'acked';
+    merged.error = undefined;
+  }
+
   if (ctx.attachmentPath) {
     merged.reticulumAttachmentPath = ctx.attachmentPath;
-  } else if (existing?.reticulumAttachmentPath) {
+  } else if (existing.reticulumAttachmentPath) {
     merged.reticulumAttachmentPath = existing.reticulumAttachmentPath;
   }
 

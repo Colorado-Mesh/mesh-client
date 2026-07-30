@@ -31,7 +31,9 @@ import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconT
 import { ReticulumSidecarInterfaceIssueTracker } from './reticulumSidecarIssueTracker';
 import {
   logReticulumSidecarStderrLine,
+  resolveSidecarRustLog,
   ReticulumSidecarStderrDedupe,
+  shouldForwardReticulumSidecarStdout,
 } from './reticulumSidecarStderrLog';
 import { startSidecarWatchdog } from './reticulumSidecarWatchdog';
 
@@ -50,6 +52,7 @@ export function sidecarChildEnv(): NodeJS.ProcessEnv {
     TMPDIR: process.env.TMPDIR, // NOSONAR passthrough of existing env var only; no temp file write here
     LANG: process.env.LANG,
     LC_ALL: process.env.LC_ALL,
+    RUST_LOG: resolveSidecarRustLog(),
   };
   if (process.platform === 'win32') {
     env.APPDATA = process.env.APPDATA;
@@ -159,6 +162,9 @@ async function pollSidecarHealth(port: number): Promise<ReticulumStatusResponse>
 export class ReticulumSidecarManager extends EventEmitter {
   private proc: ChildProcess | null = null;
   private ws: { close: () => void } | null = null;
+  private wsPort = 0;
+  private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private wsReconnectAttempt = 0;
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
@@ -331,10 +337,23 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
     this.proc = proc;
 
-    proc.stdout?.on('data', (chunk: Buffer) => {
-      const text = sanitizeLogMessage(chunk.toString('utf8').trim());
+    let stdoutBuffer = '';
+    const processStdoutLine = (line: string): void => {
+      const text = sanitizeLogMessage(line.trim());
+      if (!text) return;
       this.recordSidecarOutputLine(text);
+      if (!shouldForwardReticulumSidecarStdout(text)) return;
       console.debug('[ReticulumSidecar]', text);
+    };
+    proc.stdout?.on('data', (chunk: Buffer) => {
+      stdoutBuffer += chunk.toString('utf8');
+      const lines = stdoutBuffer.split(/\r?\n/);
+      stdoutBuffer = lines.pop() ?? '';
+      for (const line of lines) processStdoutLine(line);
+    });
+    proc.stdout?.on('end', () => {
+      if (stdoutBuffer) processStdoutLine(stdoutBuffer);
+      stdoutBuffer = '';
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
       const text = sanitizeLogMessage(chunk.toString('utf8').trim());
@@ -586,10 +605,17 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   private connectWs(port: number): void {
-    this.teardownWs();
+    this.clearWsReconnectTimer();
+    const prev = this.ws;
+    this.ws = null;
+    prev?.close();
+    this.wsPort = port;
     try {
       const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
         maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
+      });
+      socket.on('open', () => {
+        this.wsReconnectAttempt = 0;
       });
       socket.on('message', (data: Buffer) => {
         if (data.length > RETICULUM_WS_MAX_MESSAGE_BYTES) {
@@ -613,9 +639,20 @@ export class ReticulumSidecarManager extends EventEmitter {
       socket.on('error', (err: Error) => {
         console.warn('[ReticulumSidecar] ws error:', sanitizeLogMessage(err.message));
       });
+      socket.on('close', () => {
+        if (this.wsPort === port) {
+          this.ws = null;
+          this.scheduleWsReconnect();
+        }
+      });
       this.ws = {
         close: () => {
           try {
+            socket.removeAllListeners();
+            // ws abortHandshake emits 'error' on nextTick when closed while CONNECTING
+            socket.on('error', () => {
+              // catch-no-log-ok: intentional teardown; CONNECTING abort is expected
+            });
             socket.close();
           } catch {
             // catch-no-log-ok: socket may already be closed
@@ -627,11 +664,41 @@ export class ReticulumSidecarManager extends EventEmitter {
         '[ReticulumSidecar] ws bridge unavailable:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
+      this.scheduleWsReconnect();
     }
   }
 
+  private clearWsReconnectTimer(): void {
+    if (this.wsReconnectTimer) {
+      clearTimeout(this.wsReconnectTimer);
+      this.wsReconnectTimer = null;
+    }
+  }
+
+  /** Reconnect WS while the sidecar HTTP process is still running (event loss otherwise). */
+  private scheduleWsReconnect(): void {
+    this.clearWsReconnectTimer();
+    if (!this._status.running || this.wsPort <= 0) return;
+    const attempt = this.wsReconnectAttempt;
+    this.wsReconnectAttempt = Math.min(attempt + 1, 8);
+    const delayMs = Math.min(30_000, 500 * 2 ** attempt);
+    this.wsReconnectTimer = setTimeout(() => {
+      this.wsReconnectTimer = null;
+      if (!this._status.running || this.wsPort <= 0) return;
+      console.debug(
+        `[ReticulumSidecar] ws reconnect attempt=${this.wsReconnectAttempt} port=${this.wsPort}`,
+      );
+      this.connectWs(this.wsPort);
+    }, delayMs);
+  }
+
+  /** Tear down the WS bridge and cancel reconnect (used on sidecar stop). */
   private teardownWs(): void {
-    this.ws?.close();
+    this.clearWsReconnectTimer();
+    this.wsPort = 0;
+    this.wsReconnectAttempt = 0;
+    const prev = this.ws;
     this.ws = null;
+    prev?.close();
   }
 }

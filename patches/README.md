@@ -7,7 +7,6 @@ Local overlays applied via `pnpm-workspace.yaml` → `patchedDependencies`. When
 | `@liamcottle__meshcore.js@1.13.0.patch` | [meshcore-dev/meshcore.js](https://github.com/meshcore-dev/meshcore.js) | Split: [#29](https://github.com/meshcore-dev/meshcore.js/pull/29), [#30](https://github.com/meshcore-dev/meshcore.js/pull/30), [#31](https://github.com/meshcore-dev/meshcore.js/pull/31), [#32](https://github.com/meshcore-dev/meshcore.js/pull/32), [#33](https://github.com/meshcore-dev/meshcore.js/pull/33) |
 | `@jsr__meshtastic__core@2.6.6.patch` | [meshtastic/web](https://github.com/meshtastic/web) (`packages/sdk`) | [#1312](https://github.com/meshtastic/web/pull/1312) |
 | `@jsr__meshtastic__transport-web-serial@0.2.5.patch` | [meshtastic/web](https://github.com/meshtastic/web) (`packages/transport-web-serial`) | Fixed on upstream `main` (per-instance `toDeviceStream` + abort); keep patch until npm/`@jsr` package bump includes it |
-| `@stoprocent__noble@2.5.7.patch` | [stoprocent/noble](https://github.com/stoprocent/noble) | [#94](https://github.com/stoprocent/noble/pull/94) |
 | `usb@2.18.0.patch` | [node-usb/node-usb](https://github.com/node-usb/node-usb) | [#964](https://github.com/node-usb/node-usb/pull/964) |
 | `readable-stream@4.7.0.patch` | [nodejs/readable-stream](https://github.com/nodejs/readable-stream) | **Intentionally local** — upstream uses `require('process/')` for browser bundlers; Electron/Node needs bare `process` |
 | `debug@4.4.3.patch` | [debug-js/debug](https://github.com/debug-js/debug) | **Intentionally local** — inlines `ms`/`humanize` so electron-vite does not fail resolving the `ms` dependency |
@@ -53,18 +52,6 @@ Per-instance `toDeviceStream` (instead of shared `Utils.toDeviceStream`) and swa
 ### Sunset
 
 When the published `@jsr/meshtastic__transport-web-serial` (or successor package) includes per-instance framing + abort teardown, remove the patch and bump the dependency.
-
-## @stoprocent/noble@2.5.7
-
-Windows `binding.gyp`: drop `/await` under `/std:c++20`, add `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`.
-
-| Field | Value |
-| ----- | ----- |
-| **Upstream PR** | https://github.com/stoprocent/noble/pull/94 |
-
-### Sunset
-
-When the PR merges and a release includes it, remove the patch and bump `@stoprocent/noble`.
 
 ## usb@2.18.0
 

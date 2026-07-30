@@ -12,10 +12,12 @@ export const isWebSerialTransportLostError = isMeshtasticTransportLostError;
 /** Resolve underlying Web Serial port from a MeshCore WebSerialConnection handle. */
 export function getSerialPortFromMeshcoreConnection(conn: unknown): SerialPort | null {
   const candidate = conn as { port?: SerialPort; connection?: SerialPort };
-  if (candidate?.port && typeof candidate.port.close === 'function') {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime callers may pass null or undefined handles.
+  if (!candidate) return null;
+  if (candidate.port && typeof candidate.port.close === 'function') {
     return candidate.port;
   }
-  if (candidate?.connection && typeof candidate.connection.close === 'function') {
+  if (candidate.connection && typeof candidate.connection.close === 'function') {
     return candidate.connection;
   }
   return null;
@@ -56,6 +58,7 @@ export function attachMeshcoreSerialTransportLossWatch(
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (conn.writable) {
     const wrapped = createSerializedWritableStream(conn.writable, (err: unknown) => {
       notify('write-failure', err);

@@ -1,5 +1,6 @@
 import type { SavedMessage } from '@/shared/electron-api.types';
 
+import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../../shared/meshtasticOrphanSendingWindow';
 import { meshtasticShortNameAfterClearingDefault } from '../../shared/nodeNameUtils';
 import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
@@ -116,7 +117,7 @@ export async function loadMeshtasticNodeMapFromDb(): Promise<Map<number, MeshNod
   return buildMeshtasticNodeMapFromDbRows(savedNodes, meshcoreContacts as MeshcoreContactHopRow[]);
 }
 
-const ORPHAN_OPTIMISTIC_WINDOW_MS = 120_000;
+const ORPHAN_OPTIMISTIC_WINDOW_MS = MESHTASTIC_ORPHAN_SENDING_WINDOW_MS;
 
 /**
  * Drop stale optimistic SQLite rows left when RF echo persisted the real packet_id

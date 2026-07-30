@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -47,6 +49,15 @@ pub struct InterfaceRow {
     pub connectable: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reachable_on: Option<String>,
+    /// IFAC virtual network name (common interface option).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub network_name: Option<String>,
+    /// IFAC authentication passphrase (common interface option).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passphrase: Option<String>,
+    /// Unknown INI keys preserved across CRUD so typed writes do not drop them.
+    #[serde(default)]
+    pub extra_config: HashMap<String, String>,
 }
 
 /// Discovery-related defaults for `InterfaceRow` struct literals outside config parse.
@@ -99,6 +110,29 @@ pub struct PropagationRow {
     pub status: String,
     #[serde(default)]
     pub destination_hash: Option<String>,
+    /// 64-byte X25519+Ed25519 public key as 128 hex chars (from PN announce).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
+    /// Identity hash recovered from the PN announce (32 hex chars).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity_hash: Option<String>,
+}
+
+/// Heard `lxmf.propagation` announce (not auto-added to configured list).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscoveredPropagationRow {
+    pub destination_hash: String,
+    #[serde(default)]
+    pub identity_hash: Option<String>,
+    /// 64-byte X25519+Ed25519 public key as 128 hex chars (from PN announce).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
+    pub display_name: Option<String>,
+    pub hops: Option<u8>,
+    pub last_seen: Option<u64>,
+    /// Actively serving when true (from PN announce `node_state`).
+    pub node_state: bool,
+    pub peering_cost: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -213,6 +247,12 @@ pub struct AddInterfaceRequest {
     pub connectable: Option<bool>,
     #[serde(default)]
     pub reachable_on: Option<String>,
+    #[serde(default)]
+    pub network_name: Option<String>,
+    #[serde(default)]
+    pub passphrase: Option<String>,
+    #[serde(default)]
+    pub extra_config: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

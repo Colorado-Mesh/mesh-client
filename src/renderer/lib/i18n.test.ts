@@ -72,6 +72,25 @@ describe('i18n', () => {
     expect(i18n.t('common.close')).toBe(en);
   });
 
+  it.each([
+    ['cs', 2, '2 skoky'],
+    ['cs', 5, '5 skoků'],
+    ['pl', 2, '2 przeskoki'],
+    ['pl', 5, '5 przeskoków'],
+    ['ru', 2, '2 перехода'],
+    ['ru', 5, '5 переходов'],
+    ['uk', 2, '2 переходи'],
+    ['uk', 5, '5 переходів'],
+  ] as const)(
+    'resolves %s dmNodeHops plural form for count %i',
+    async (locale, count, expected) => {
+      await ensureLocaleLoaded(i18n, locale);
+      await i18n.changeLanguage(locale);
+
+      expect(i18n.t('chatPanel.dmNodeHops', { count })).toBe(expected);
+    },
+  );
+
   it('handles interpolation correctly', () => {
     expect(i18n.t('telemetryPanel.footerBattery', { count: 42 })).toBe('Battery: 42 pts');
     expect(i18n.t('radioPanel.actionFailed', { message: 'timeout' })).toBe('Failed: timeout');

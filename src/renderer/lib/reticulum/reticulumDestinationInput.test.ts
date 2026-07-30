@@ -39,6 +39,15 @@ describe('parseReticulumDestinationInput', () => {
     expect(parseReticulumDestinationInput('abc')).toBeNull();
     expect(parseReticulumDestinationInput('lxmf://tooshort')).toBeNull();
   });
+
+  it('parses pasted mesh-client rncp receive-dest share lines', () => {
+    expect(parseReticulumDestinationInput(`mesh-client:rncp-receive-dest:v1:${HASH}`)).toBe(HASH);
+    expect(
+      parseReticulumDestinationInput(
+        `Here is my receive dest.\n\nmesh-client:rncp-receive-dest:v1:${HASH}`,
+      ),
+    ).toBe(HASH);
+  });
 });
 
 describe('isReticulumLxmfLink', () => {

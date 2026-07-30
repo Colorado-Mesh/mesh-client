@@ -25,13 +25,17 @@ export function ensureMeshcoreChatSenderInNodeStore(
   if (nodeId <= 0 || nodeId === MESHCORE_UNKNOWN_SENDER_STUB_ID) return;
   const nowSec = Math.floor(Date.now() / 1000);
   const incomingSec = lastHeardToUnixSeconds(opts?.lastHeardAtMs ?? Date.now());
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
   const mergedSec = mergeMeshcoreLastHeardFromAdvert(incomingSec, existing?.lastHeardAt, nowSec);
   if (mergedSec <= 0) return;
 
   const source = opts?.source ?? 'rf';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
   const prevSec = lastHeardToUnixSeconds(existing?.lastHeardAt ?? 0);
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!existing) {
     let stub = minimalMeshcoreChatNode(
       nodeId,

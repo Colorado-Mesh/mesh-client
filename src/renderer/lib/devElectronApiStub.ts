@@ -252,6 +252,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       export: async () => ({ success: false }),
       saveReticulumAttachment: async () => ({ success: false }),
       showItemInFolder: async () => ({ ok: true }),
+      readReticulumAttachmentAsDataUrl: async () => ({ dataUrl: null }),
       linkPreview: {
         fetch: async () => null,
       },

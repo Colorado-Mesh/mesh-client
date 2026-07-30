@@ -18,7 +18,7 @@ import { createElectronAPIMock } from '@/renderer/vitest.electronApiMock';
 const DEST = '5526a65d0b4d23448206fd3485b76f5b';
 const SELF = '8fd7a9361aca12360c7985bc934bdd20';
 const identityId = 'reticulum-persist-test';
-const messageHash = 'abc123deliveredhash';
+const messageHash = 'abc123def4567890abc123def4567890abc123def4567890abc123def4567890';
 
 describe('applyReticulumOutboundDeliveryStatus', () => {
   beforeEach(() => {
@@ -27,10 +27,12 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     window.electronAPI = createElectronAPIMock();
   });
 
-  it('maps delivered/failed/other wire statuses', () => {
+  it('maps delivered/failed/sending; drops unknown wire statuses', () => {
     expect(mapLxmfOutboundWireStatus('delivered')).toBe('acked');
     expect(mapLxmfOutboundWireStatus('failed')).toBe('failed');
     expect(mapLxmfOutboundWireStatus('sending')).toBe('sending');
+    expect(mapLxmfOutboundWireStatus('queued')).toBeNull();
+    expect(mapLxmfOutboundWireStatus('garbage')).toBeNull();
   });
 
   it('marks Completes as acked and persists delivery_status delivered', () => {
@@ -59,7 +61,7 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
 
     applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'delivered');
 
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('acked');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('acked');
     expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         identity_id: identityId,
@@ -95,7 +97,7 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
 
     applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'failed');
 
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('failed');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('failed');
     expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         message_hash: messageHash,
@@ -148,12 +150,12 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     });
 
     applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'delivered');
-    expect(useMessageStore.getState().messages[identityId]?.[pendingId]?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId][pendingId].status).toBe('sending');
     expect(window.electronAPI.db.saveReticulumMessage).not.toHaveBeenCalled();
 
     renameMessageId(identityId, pendingId, messageHash);
     expect(flushPendingReticulumOutboundDeliveryStatus(identityId, messageHash)).toBe(true);
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('acked');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('acked');
     expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalled();
   });
 
@@ -176,7 +178,7 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     });
 
     persistReticulumOutboundMessageStatus(identityId, messageHash, 'sending');
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('acked');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('acked');
   });
 
   it('upgrades receivedVia from lxmf_outbound_status sent_via evidence', () => {
@@ -203,10 +205,8 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
       sentVia: 'rf+tcp',
     });
 
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.receivedVia).toBe(
-      'rf+tcp',
-    );
-    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('sending');
+    expect(useMessageStore.getState().messages[identityId][messageHash].receivedVia).toBe('rf+tcp');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('sending');
     expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         message_hash: messageHash,
@@ -214,5 +214,178 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
         delivery_status: 'sending',
       }),
     );
+  });
+
+  it('upgrades reticulumDeliveryMethod on Direct→PN fallback and persists', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: selfNodeId,
+            to: toNodeId,
+            senderName: 'Me',
+            payload: 'fallback',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+    expect(
+      useMessageStore.getState().messages[identityId][messageHash].reticulumDeliveryMethod,
+    ).toBe('propagated');
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'delivered', {
+      deliveryMethod: 'propagated',
+    });
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('acked');
+    expect(
+      useMessageStore.getState().messages[identityId][messageHash].reticulumDeliveryMethod,
+    ).toBe('propagated');
+    expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message_hash: messageHash,
+        delivery_status: 'delivered',
+        delivery_method: 'propagated',
+      }),
+    );
+  });
+
+  it('buffers early deliveryMethod upgrade until flush after rekey', () => {
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Test intentionally verifies an absent identity bucket.
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]).toBeUndefined();
+
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'early',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    expect(flushPendingReticulumOutboundDeliveryStatus(identityId, messageHash)).toBe(true);
+    expect(
+      useMessageStore.getState().messages[identityId][messageHash].reticulumDeliveryMethod,
+    ).toBe('propagated');
+  });
+
+  it('patches deliveryMethod on terminal row without regressing status', () => {
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'done',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'acked',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('acked');
+    expect(
+      useMessageStore.getState().messages[identityId][messageHash].reticulumDeliveryMethod,
+    ).toBe('propagated');
+  });
+
+  it('revives Failed to sending when Direct→PN fallback WS arrives after link-timeout bridge', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: selfNodeId,
+            to: toNodeId,
+            senderName: 'Me',
+            payload: 'race',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'failed',
+            error: 'Failed to send',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+
+    const row = useMessageStore.getState().messages[identityId][messageHash];
+    expect(row.status).toBe('sending');
+    expect(row.reticulumDeliveryMethod).toBe('propagated');
+    expect(row.error).toBeUndefined();
+    expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message_hash: messageHash,
+        delivery_status: 'sending',
+        delivery_method: 'propagated',
+      }),
+    );
+  });
+
+  it('drops invalid message_hash and unknown wire status', () => {
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'x',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+          },
+        },
+      },
+    });
+    applyReticulumOutboundDeliveryStatus(identityId, 'not-a-hash!!!', 'delivered');
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'queued');
+    expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('sending');
   });
 });

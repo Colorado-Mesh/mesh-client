@@ -4,6 +4,7 @@ import {
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
+import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
@@ -96,6 +97,7 @@ export function groupChatReactionsByParentKey(messages: ChatMessage[]): {
 
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   const to = record.to != null && !isMeshtasticBroadcastNodeNum(record.to) ? record.to : undefined;
   const reactionScalar = record.tapback
     ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)
@@ -104,6 +106,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const rxHops = record.rxHops ?? record.hopCount;
   return {
     ...(packetId != null ? { id: packetId } : {}),
+    ...(packetId == null ? { storeId: record.id } : {}),
     sender_id: record.from,
     sender_name:
       record.senderName?.trim() || (record.from > 0 ? formatMeshtasticNodeId(record.from) : ''),
@@ -150,6 +153,7 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     last_heard: record.lastHeardAt ?? 0,
     latitude: record.latitude ?? null,
     longitude: record.longitude ?? null,
+    altitude: record.altitude,
     role: record.role,
     hops_away: record.hopsAway,
     via_mqtt: record.viaMqtt,
@@ -163,7 +167,21 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     voltage: record.voltage,
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,
+    env_temperature: record.temperature,
+    env_humidity: record.relativeHumidity,
+    env_pressure: record.barometricPressure,
+    env_iaq: record.iaq,
+    env_gas_resistance: record.gasResistance,
+    env_lux: record.lux,
+    env_wind_speed: record.windSpeed,
+    env_wind_direction: record.windDirection,
+    lastPositionWarning: record.lastPositionWarning,
+    num_packets_rx_bad: record.numPacketsRxBad,
+    num_rx_dupe: record.numRxDupe,
+    num_packets_rx: record.numPacketsRx,
+    num_packets_tx: record.numPacketsTx,
     meshcore_local_stats: record.meshcoreLocalStats,
+    ...(record.publicKeyHex ? { public_key_hex: record.publicKeyHex } : {}),
     ...(record.reticulumDestinationHash
       ? { reticulum_destination_hash: record.reticulumDestinationHash }
       : {}),
@@ -186,6 +204,7 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.lastHeardAt === b.lastHeardAt &&
     a.latitude === b.latitude &&
     a.longitude === b.longitude &&
+    a.altitude === b.altitude &&
     a.role === b.role &&
     a.hopsAway === b.hopsAway &&
     a.viaMqtt === b.viaMqtt &&
@@ -199,7 +218,21 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.voltage === b.voltage &&
     a.channelUtilization === b.channelUtilization &&
     a.airUtilTx === b.airUtilTx &&
+    a.temperature === b.temperature &&
+    a.relativeHumidity === b.relativeHumidity &&
+    a.barometricPressure === b.barometricPressure &&
+    a.iaq === b.iaq &&
+    a.gasResistance === b.gasResistance &&
+    a.lux === b.lux &&
+    a.windSpeed === b.windSpeed &&
+    a.windDirection === b.windDirection &&
+    a.lastPositionWarning === b.lastPositionWarning &&
+    a.numPacketsRxBad === b.numPacketsRxBad &&
+    a.numRxDupe === b.numRxDupe &&
+    a.numPacketsRx === b.numPacketsRx &&
+    a.numPacketsTx === b.numPacketsTx &&
     a.meshcoreLocalStats === b.meshcoreLocalStats &&
+    a.publicKeyHex === b.publicKeyHex &&
     a.reticulumDestinationHash === b.reticulumDestinationHash
   );
 }
@@ -260,6 +293,7 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     lastHeardAt: node.last_heard,
     latitude: node.latitude ?? undefined,
     longitude: node.longitude ?? undefined,
+    altitude: node.altitude,
     role: role != null && Number.isFinite(role) ? role : undefined,
     hopsAway: node.hops_away,
     viaMqtt: node.via_mqtt,
@@ -273,7 +307,21 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     voltage: node.voltage,
     channelUtilization: node.channel_utilization,
     airUtilTx: node.air_util_tx,
+    temperature: node.env_temperature,
+    relativeHumidity: node.env_humidity,
+    barometricPressure: node.env_pressure,
+    iaq: node.env_iaq,
+    gasResistance: node.env_gas_resistance,
+    lux: node.env_lux,
+    windSpeed: node.env_wind_speed,
+    windDirection: node.env_wind_direction,
+    lastPositionWarning: node.lastPositionWarning,
+    numPacketsRxBad: node.num_packets_rx_bad,
+    numRxDupe: node.num_rx_dupe,
+    numPacketsRx: node.num_packets_rx,
+    numPacketsTx: node.num_packets_tx,
     meshcoreLocalStats: node.meshcore_local_stats,
+    publicKeyHex: node.public_key_hex,
     reticulumDestinationHash: node.reticulum_destination_hash,
   };
 }
@@ -328,6 +376,7 @@ export function traceRouteEventsToResultsMap(
 
 export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
   const id =
+    msg.storeId ??
     msg.reticulum_message_hash ??
     (msg.packetId != null
       ? String(msg.packetId)
@@ -372,6 +421,7 @@ export function reticulumDbRowToMessageRecord(row: {
   message_hash?: string | null;
   received_via?: string | null;
   delivery_status?: string | null;
+  delivery_method?: string | null;
   attachment_path?: string | null;
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
@@ -387,6 +437,7 @@ export function reticulumDbRowToMessageRecord(row: {
     row.received_via === 'both'
       ? row.received_via
       : undefined;
+  const deliveryMethod = parseReticulumDeliveryMethod(row.delivery_method);
   const status: MessageRecord['status'] =
     row.delivery_status === 'failed'
       ? 'failed'
@@ -412,6 +463,7 @@ export function reticulumDbRowToMessageRecord(row: {
         ? { reticulumReplyToHash: row.reply_to_hash }
         : {}),
     ...(receivedVia ? { receivedVia } : {}),
+    ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
     ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
   };
 }

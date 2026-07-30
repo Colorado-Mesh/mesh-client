@@ -1,3 +1,8 @@
+import {
+  parseRncpReceiveDestShare,
+  RNCP_RECEIVE_DEST_SHARE_PREFIX,
+} from '@/shared/rncpRequestEnable';
+
 import { registerReticulumDestinationHash, reticulumHashToNodeId } from './destHash';
 
 const RETICULUM_HASH_RE = /^[a-f0-9]{32}$/;
@@ -17,11 +22,20 @@ function stripWrappers(raw: string): string {
 
 /**
  * Parse user-entered Reticulum destination input into a normalized 32-char hex hash.
- * Accepts lxmf://, lxmf@, lxmf.delivery@, and bare 32-char hex.
+ * Accepts lxmf://, lxmf@, lxmf.delivery@, bare 32-char hex, and pasted
+ * `mesh-client:rncp-receive-dest:v1:<hash>` share lines (older peers paste these into chat).
  */
 export function parseReticulumDestinationInput(raw: string): string | null {
   const trimmed = stripWrappers(raw);
   if (!trimmed) return null;
+
+  // Prefer explicit receive-dest share sentinels before stripping non-hex (the
+  // human/prefix text otherwise contaminates bare hex extraction).
+  const fromShare = parseRncpReceiveDestShare(trimmed);
+  if (fromShare) return fromShare;
+  if (trimmed.toLowerCase().includes(RNCP_RECEIVE_DEST_SHARE_PREFIX)) {
+    return null;
+  }
 
   const lower = trimmed.toLowerCase();
 

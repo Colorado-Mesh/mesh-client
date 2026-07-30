@@ -106,7 +106,7 @@ export function getRecommendedAction(
   packetStats: { total: number; duplicates: number } | undefined,
 ): DiagnosticRemedy | null {
   const distMiles =
-    homeNode?.latitude && homeNode?.longitude && node.latitude && node.longitude
+    homeNode?.latitude && homeNode.longitude && node.latitude && node.longitude
       ? haversineDistanceKm(homeNode.latitude, homeNode.longitude, node.latitude, node.longitude) *
         0.621371
       : null;
@@ -228,6 +228,15 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
     severity: 'warning',
     titleKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.title',
     descriptionKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.description',
+  },
+  'High Companion TX Queue': {
+    title: 'Reduce outbound traffic or check the RF link',
+    description:
+      'Companion TX queue is nearly full — pause sends, reduce floods, or check for interference and weak links.',
+    category: 'Physical',
+    severity: 'critical',
+    titleKey: 'diagnosticsPanel.remedyRf.highCompanionTxQueue.title',
+    descriptionKey: 'diagnosticsPanel.remedyRf.highCompanionTxQueue.description',
   },
 };
 

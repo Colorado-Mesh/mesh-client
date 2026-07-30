@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
+
 import type { IdentityId } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
 
@@ -48,8 +50,8 @@ export interface MessageRecord {
   reticulumSenderHash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulumReplyToHash?: string;
-  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic). */
-  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
+  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic / paper). */
+  reticulumDeliveryMethod?: ReticulumDeliveryMethod;
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
@@ -91,6 +93,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumMessageHash',
   'reticulumSenderHash',
   'reticulumReplyToHash',
+  'reticulumDeliveryMethod',
   'reticulumAttachmentPath',
   'viaStoreForward',
 ];
@@ -232,13 +235,26 @@ export function pruneMessageRecordsForIdentityByChannel(
 /**
  * Re-key a message (used when the optimistic provisional id is replaced by the
  * SDK-assigned packetId on send completion).
+ *
+ * When `toId` already holds a Completes (`acked`) row, keep that row and drop
+ * `fromId` instead of overwriting — Reticulum retries must not turn an unrelated
+ * delivered bubble into ⏳ via hash collision / rename races.
  */
 export function renameMessageId(identityId: IdentityId, fromId: string, toId: string): void {
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[fromId];
     if (!existing) return s;
+    if (fromId === toId) {
+      const updated = { ...existing, id: toId };
+      if (messageRecordFieldsEqual(existing, updated)) return s;
+      return mergeIdentityMessages(s, identityId, { ...byIdentity, [toId]: updated });
+    }
     const rest = omitRecordKey(byIdentity, fromId);
+    const target = byIdentity[toId];
+    if (target?.status === 'acked') {
+      return mergeIdentityMessages(s, identityId, rest);
+    }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });
 }
@@ -253,6 +269,8 @@ export function updateMessageStatus(
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[messageId];
     if (!existing) return s;
+    // Completes must not regress to in-flight (retry / echo races).
+    if (existing.status === 'acked' && status === 'sending') return s;
     const updated: MessageRecord = { ...existing, status };
     if (error !== undefined) {
       updated.error = error;

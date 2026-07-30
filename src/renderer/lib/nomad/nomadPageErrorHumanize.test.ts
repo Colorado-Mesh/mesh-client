@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { humanizeNomadPageError, nomadPageErrorI18nKey } from './nomadPageErrorHumanize';
+import {
+  humanizeNomadPageError,
+  isRetryableNomadPageError,
+  nomadPageErrorI18nKey,
+} from './nomadPageErrorHumanize';
 
 describe('nomadPageErrorHumanize', () => {
   const t = (key: string) => `t:${key}`;
@@ -38,5 +42,18 @@ describe('nomadPageErrorHumanize', () => {
     );
     expect(humanizeNomadPageError('weird failure', t)).toBe('weird failure');
     expect(humanizeNomadPageError(null, t)).toBe('t:common.error');
+  });
+
+  it('classifies retryable path/link/identity errors', () => {
+    expect(isRetryableNomadPageError('path_timeout')).toBe(true);
+    expect(isRetryableNomadPageError('link_timeout')).toBe(true);
+    expect(isRetryableNomadPageError('response_timeout')).toBe(true);
+    expect(isRetryableNomadPageError('nomad_busy')).toBe(true);
+    expect(isRetryableNomadPageError('pubkey_not_found')).toBe(true);
+    expect(isRetryableNomadPageError('missing_identity_hash')).toBe(true);
+    expect(isRetryableNomadPageError('sidecar_not_running')).toBe(false);
+    expect(isRetryableNomadPageError('content_source_required')).toBe(false);
+    expect(isRetryableNomadPageError(null)).toBe(false);
+    expect(isRetryableNomadPageError('')).toBe(false);
   });
 });
