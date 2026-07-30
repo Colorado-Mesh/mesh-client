@@ -54,6 +54,7 @@ import {
 } from './ble-coexistence-coordinator';
 import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
 import { formatChatExportLines } from './chatExportFormat';
+import { showCrashReportDialog } from './crash-report-dialog';
 import {
   addContactToGroup,
   closeDatabase,
@@ -463,19 +464,8 @@ process.on('uncaughtException', (error) => {
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
   );
   void flushLogBeforeQuit();
-  try {
-    dialog.showErrorBox(
-      'Mesh-Client — Unexpected Error',
-      `${error.message}\n\n${error.stack ?? ''}`,
-    );
-  } catch {
-    // catch-no-log-ok dialog unavailable during early startup; error already logged above
-  }
+  showCrashReportDialog({ source: 'uncaughtException', error });
 });
-
-// Throttle user-visible dialog so a tight loop of rejections does not spam the user
-let lastUnhandledRejectionDialogAt = 0;
-const UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS = 60_000;
 
 process.on('unhandledRejection', (reason) => {
   console.error(
@@ -483,19 +473,8 @@ process.on('unhandledRejection', (reason) => {
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
   );
   void flushLogBeforeQuit();
-  const now = Date.now();
-  if (now - lastUnhandledRejectionDialogAt < UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS) return;
-  lastUnhandledRejectionDialogAt = now;
-  const message =
-    reason instanceof Error ? `${reason.message}\n\n${reason.stack ?? ''}` : String(reason);
-  try {
-    dialog.showErrorBox(
-      'Mesh-Client — Unhandled Promise Rejection',
-      `A promise rejected without a handler. Check the main process terminal for full details.\n\n${message.slice(0, 1500)}${message.length > 1500 ? '…' : ''}`,
-    );
-  } catch {
-    // catch-no-log-ok dialog unavailable during early startup; rejection already logged above
-  }
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  showCrashReportDialog({ source: 'unhandledRejection', error });
 });
 
 // ─── Bluetooth pairing handler (Linux only) ──────────────────────────
