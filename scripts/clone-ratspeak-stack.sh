@@ -39,12 +39,11 @@ ensure_repo() {
 }
 
 ensure_repo "${RNS_DIR}" 'https://github.com/ratspeak/rsReticulum.git' \
-  '6d2b28475321bc15c8f60796513d8878b47ed3ab' 'rsReticulum'
+  '9928abed269a83ec5a7ef165ff1142d938cad706' 'rsReticulum'
 
 "${SCRIPT_DIR}/apply-rsReticulum-packet-tap.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-auto-beacon-utun.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-link-client-nomad.sh"
-"${SCRIPT_DIR}/apply-rsReticulum-rnode-tcp-activity-keepalive.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-discovery-announce-egress.sh"
 

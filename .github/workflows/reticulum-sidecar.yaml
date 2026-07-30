@@ -98,7 +98,7 @@ jobs:
 
   build-rns-stack:
     env:
-      RS_RETICULUM_REF: 6d2b28475321bc15c8f60796513d8878b47ed3ab
+      RS_RETICULUM_REF: 9928abed269a83ec5a7ef165ff1142d938cad706
     strategy:
       fail-fast: false
       matrix:
@@ -167,7 +167,7 @@ jobs:
 
   build-windows-arm64-rns-stack:
     env:
-      RS_RETICULUM_REF: 6d2b28475321bc15c8f60796513d8878b47ed3ab
+      RS_RETICULUM_REF: 9928abed269a83ec5a7ef165ff1142d938cad706
     permissions:
       contents: read
     runs-on: windows-latest

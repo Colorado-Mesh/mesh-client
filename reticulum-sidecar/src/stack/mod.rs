@@ -2715,7 +2715,12 @@ mod tests {
     async fn list_peers_stub_empty_after_clear_announces() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let (tx, _) = broadcast::channel(8);
-        let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
         handle.clear_announces().await.expect("clear announces");
         assert!(handle.list_peers().await.is_empty());
         let _ = std::fs::remove_dir_all(config_dir);
@@ -2792,7 +2797,12 @@ mod tests {
     async fn clear_contacts_empties_persisted_lxmf_contacts() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let (tx, _) = broadcast::channel(8);
-        let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
         {
             let mut inner = handle.inner.write().await;
             inner.upsert_contact("aabbccddeeff00112233445566778899", Some("Announced".into()));
