@@ -42,7 +42,7 @@ export interface ReticulumProfileIconUnsetProps {
 export function ReticulumProfileIconUnset({
   className = '',
   size = 16,
-}: ReticulumProfileIconUnsetProps) {
+}: Readonly<ReticulumProfileIconUnsetProps>) {
   return (
     <span
       className={`inline-block shrink-0 rounded-full border border-dashed border-gray-500 ${className}`}
@@ -64,7 +64,7 @@ export function ReticulumProfileIcon({
   iconColor,
   className = '',
   size = 16,
-}: ReticulumProfileIconProps) {
+}: Readonly<ReticulumProfileIconProps>) {
   const name = resolveReticulumProfileIconName(iconName);
   if (name === 'circle') {
     return <ReticulumProfileIconUnset className={className} size={size} />;
@@ -86,7 +86,7 @@ export function ReticulumProfileIconSlot({
   iconColor,
   className = '',
   size = 16,
-}: ReticulumProfileIconProps) {
+}: Readonly<ReticulumProfileIconProps>) {
   if (!hasCustomReticulumProfileIcon(iconName, iconColor)) {
     return <ReticulumProfileIconUnset className={className} size={size} />;
   }

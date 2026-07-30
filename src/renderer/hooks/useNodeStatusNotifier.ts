@@ -71,11 +71,10 @@ export function useNodeStatusNotifier(
           i18n.t('nodeStatusNotifier.onlineBody', { protocol: protocolLabel }),
         );
       } else if (wasOnline && !isOnline) {
-        const lastHeardMs = node.last_heard
-          ? node.last_heard < 1e12
-            ? node.last_heard * 1000
-            : node.last_heard
-          : null;
+        let lastHeardMs: number | null = null;
+        if (node.last_heard) {
+          lastHeardMs = node.last_heard < 1e12 ? node.last_heard * 1000 : node.last_heard;
+        }
         const time =
           lastHeardMs != null
             ? formatDisplayTime(lastHeardMs, { use24Hour: use24HourTime })

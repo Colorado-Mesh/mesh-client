@@ -102,8 +102,37 @@ export function mapPnHostingPolicyError(code: string | null | undefined): string
   return known[code] ?? 'networkPanel.reticulumPnHosting.saveFailed';
 }
 
-/** Semantic checks matching sidecar `PnHostingPolicy::validate`. */
-export function validatePnHostingPolicy(policy: PnHostingPolicy): string | null {
+function validateStaticPeerList(peers: readonly string[]): string | null {
+  if (peers.length > MAX_STATIC_PEERS) {
+    return 'static_peers_too_many';
+  }
+  for (const peer of peers) {
+    const peerErr = validateStaticPeerHash(peer);
+    if (peerErr) return peerErr;
+  }
+  return null;
+}
+
+function validatePnHostingNodeName(nodeName: string | null): string | null {
+  if (nodeName == null) return null;
+  const trimmed = nodeName.trim();
+  let scalarCount = 0;
+  for (let i = 0; i < trimmed.length;) {
+    const cp = trimmed.codePointAt(i);
+    if (cp === undefined) break;
+    if (cp < 32 || cp === 127) {
+      return 'node_name_invalid';
+    }
+    scalarCount += 1;
+    i += cp > 0xffff ? 2 : 1;
+  }
+  if (scalarCount > MAX_NODE_NAME_CHARS) {
+    return 'node_name_too_long';
+  }
+  return null;
+}
+
+function validatePnHostingNumericRanges(policy: PnHostingPolicy): string | null {
   for (const key of NUMERIC_POLICY_KEYS) {
     if (!Number.isFinite(policy[key])) {
       return 'non_finite_number';
@@ -136,33 +165,16 @@ export function validatePnHostingPolicy(policy: PnHostingPolicy): string | null 
   if (policy.pn_announce_interval_sec > MAX_PN_ANNOUNCE_INTERVAL_SEC) {
     return 'pn_announce_interval_out_of_range';
   }
-  if (policy.static_peers.length > MAX_STATIC_PEERS) {
-    return 'static_peers_too_many';
-  }
-  for (const peer of policy.static_peers) {
-    const peerErr = validateStaticPeerHash(peer);
-    if (peerErr) return peerErr;
-  }
-  if (policy.node_name != null) {
-    const trimmed = policy.node_name.trim();
-    for (let i = 0; i < trimmed.length; i++) {
-      const code = trimmed.charCodeAt(i);
-      if (code < 32 || code === 127) {
-        return 'node_name_invalid';
-      }
-    }
-    let scalarCount = 0;
-    for (let i = 0; i < trimmed.length;) {
-      const cp = trimmed.codePointAt(i);
-      if (cp === undefined) break;
-      scalarCount += 1;
-      i += cp > 0xffff ? 2 : 1;
-    }
-    if (scalarCount > MAX_NODE_NAME_CHARS) {
-      return 'node_name_too_long';
-    }
-  }
   return null;
+}
+
+/** Semantic checks matching sidecar `PnHostingPolicy::validate`. */
+export function validatePnHostingPolicy(policy: PnHostingPolicy): string | null {
+  return (
+    validatePnHostingNumericRanges(policy) ??
+    validateStaticPeerList(policy.static_peers) ??
+    validatePnHostingNodeName(policy.node_name)
+  );
 }
 
 /**

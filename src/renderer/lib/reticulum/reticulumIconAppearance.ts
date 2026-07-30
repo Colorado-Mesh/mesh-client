@@ -70,9 +70,10 @@ export function mapRgbToReticulumIconColor(
  */
 export function isDefaultReticulumProfileIcon(
   iconName?: string | null,
+  // Color ignored; retained so existing call sites stay type-compatible.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- API compatibility
   iconColor?: string | null,
 ): boolean {
-  void iconColor;
   const name = iconName?.trim().toLowerCase() || 'circle';
   return name === 'circle';
 }

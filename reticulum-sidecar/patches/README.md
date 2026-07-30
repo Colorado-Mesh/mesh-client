@@ -370,3 +370,37 @@ git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/propag
 ### Sunset
 
 When [ratspeak/rsLXMF#6](https://github.com/ratspeak/rsLXMF/pull/6) merges and the clone pin includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
+## rsLXMF-link-delivery-has-pending-to.patch
+
+Expose `LinkDeliveryManager::has_pending_to` so the sidecar can serialize packed Propagated deposits (and propagation sync) against an in-flight Link to the same PN. Pinned rsLXMF only has `delivery_link_available` (reusable idle link), which is the wrong predicate for one-shot packed sessions.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `68ad7c835187c052c763bb28c41b04a655f35c64` |
+| **Upstream PR** | (none yet — mesh-client local API) |
+
+**Modifies (1 file):**
+
+- `crates/lxmf-core/src/link_delivery.rs` — `has_pending_to(&[u8; 16]) -> bool`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-link-delivery-has-pending-to.sh
+```
+
+`clone-ratspeak-stack.sh` and `ensure-rsReticulum-patches.sh` invoke this automatically.
+
+### Regenerate
+
+```bash
+cd ../rsLXMF
+git fetch origin
+git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/link_delivery.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsLXMF-link-delivery-has-pending-to.patch
+```
+
+### Sunset
+
+When upstream ships `has_pending_to` (or an equivalent) on the clone pin, remove this patch and drop the apply step.

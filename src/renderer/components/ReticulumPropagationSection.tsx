@@ -443,9 +443,9 @@ export default function ReticulumPropagationSection({
         </output>
       ) : null}
       {adding ? (
-        <p className="text-muted mt-1 text-xs" role="status">
+        <output className="text-muted mt-1 block text-xs">
           {t('reticulumPropagation.addProbing')}
-        </p>
+        </output>
       ) : null}
       <DiscoveredPropagationList
         discovered={discovered}

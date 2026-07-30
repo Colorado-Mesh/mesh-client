@@ -26,3 +26,4 @@ fi
 
 "${SCRIPT_DIR}/apply-rsLXMF-propagation-sync-peering.sh"
 "${SCRIPT_DIR}/apply-rsLXMF-propagation-node-policy-setters.sh"
+"${SCRIPT_DIR}/apply-rsLXMF-link-delivery-has-pending-to.sh"

@@ -46,6 +46,7 @@ export function parseRncpReceiveDestShare(body: string | null | undefined): stri
   const idx = body.indexOf(RNCP_RECEIVE_DEST_SHARE_PREFIX);
   if (idx < 0) return null;
   const after = body.slice(idx + RNCP_RECEIVE_DEST_SHARE_PREFIX.length);
-  const candidate = after.replace(/[^0-9a-fA-F].*$/, '').toLowerCase();
+  const hexPrefix = /^[0-9a-fA-F]+/.exec(after)?.[0] ?? '';
+  const candidate = hexPrefix.toLowerCase();
   return DEST_HASH_RE.test(candidate) ? candidate : null;
 }

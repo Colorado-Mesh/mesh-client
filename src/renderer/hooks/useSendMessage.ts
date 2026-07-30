@@ -54,6 +54,159 @@ function persistMeshcoreOutboundRow(
   });
 }
 
+function sendReticulumChatMessage(opts: {
+  identityId: IdentityId;
+  text: string;
+  channelIndex: number;
+  destination?: number;
+  replyTo?: string;
+  retryOfStoreId?: string;
+  onNoPropagationNode: () => void;
+}): boolean {
+  const {
+    identityId,
+    text,
+    channelIndex,
+    destination,
+    replyTo,
+    retryOfStoreId,
+    onNoPropagationNode,
+  } = opts;
+  const session = tryGetReticulumSession();
+  const send = getReticulumSendMessage(session);
+  if (!send || !session) {
+    console.warn('[useSendMessage] Reticulum runtime not mounted');
+    return true;
+  }
+  const destHash =
+    typeof destination === 'string'
+      ? destination
+      : (reticulumHashForNodeId(destination ?? 0) ?? resolveReticulumDestinationHash(destination));
+  if (!destHash) {
+    console.warn('[useSendMessage] no Reticulum destination hash for', destination);
+    return true;
+  }
+  const selfNodeId = session.selfNodeId;
+  if (typeof selfNodeId !== 'number') {
+    console.warn('[useSendMessage] Reticulum self node id not ready');
+    return true;
+  }
+  const receivedVia = resolveReticulumOutboundVia(destHash);
+  const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
+  const senderName = session.getFullNodeLabel(selfNodeId);
+  const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
+  const existing =
+    retryOfStoreId != null && retryOfStoreId !== ''
+      ? useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
+      : undefined;
+  const parent = replyTo ? findReticulumParentRecordByHash(identityId, replyTo) : undefined;
+  const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
+  const replyPreviewSender = parent?.senderName?.trim() || undefined;
+  const replyFields = replyTo
+    ? {
+        reticulumReplyToHash: replyTo,
+        ...(replyPreviewText ? { replyPreviewText } : {}),
+        ...(replyPreviewSender ? { replyPreviewSender } : {}),
+      }
+    : {};
+
+  let pendingId: string;
+  let record: MessageRecord;
+  if (existing) {
+    pendingId = existing.id;
+    record = {
+      ...existing,
+      from: selfNodeId >>> 0,
+      senderName,
+      to: toNodeId,
+      payload: text,
+      channelIndex,
+      status: 'sending',
+      receivedVia,
+      error: undefined,
+      reticulumDeliveryMethod: undefined,
+      reticulumMessageHash: undefined,
+      ...replyFields,
+    };
+    upsertMessage(identityId, record);
+  } else {
+    pendingId = `reticulum-pending-${Date.now()}`;
+    record = {
+      id: pendingId,
+      from: selfNodeId >>> 0,
+      senderName,
+      to: toNodeId,
+      payload: text,
+      channelIndex,
+      timestamp: Date.now(),
+      status: 'sending',
+      receivedVia,
+      ...replyFields,
+    };
+    addMessage(identityId, record);
+  }
+  if (senderHash) {
+    persistReticulumOutboundRecord(identityId, record, senderHash, senderName, destHash, 'sending');
+  }
+  void send(text, destHash, replyTo ?? undefined, pendingId, replyPreviewText).catch(
+    (e: unknown) => {
+      const err = errLikeToLogString(e);
+      if (err.includes('no_propagation_node')) {
+        onNoPropagationNode();
+      }
+      console.warn('[useSendMessage] reticulum send failed ' + err);
+    },
+  );
+  return true;
+}
+
+function trySendViaMeshtasticSession(
+  identityId: IdentityId,
+  handle: unknown,
+  text: string,
+  channelIndex: number,
+  destination: number | undefined,
+  replyTo: string | undefined,
+): boolean {
+  const session = tryGetMeshtasticSession();
+  if (!session) return false;
+  const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
+  const hasMqtt = mqttStatus === 'connected';
+  if (!handle && !hasMqtt) {
+    console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
+    return true;
+  }
+  const replyIdNum = replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
+  session.sendChatMessage(
+    text,
+    channelIndex,
+    destination,
+    replyIdNum != null && !Number.isNaN(replyIdNum) ? replyIdNum : undefined,
+  );
+  return true;
+}
+
+function allocateOutboundProvisionalId(
+  isMeshtastic: boolean,
+  isMeshcoreDm: boolean,
+): { provisionalId: string; meshtasticTempPacketId?: number; meshcoreDmTempPacketId?: number } {
+  const meshtasticTempPacketId = isMeshtastic
+    ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0 // NOSONAR non-crypto local temp packet id
+    : undefined;
+  const meshcoreDmTempPacketId = isMeshcoreDm
+    ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0 // NOSONAR non-crypto local temp packet id
+    : undefined;
+  let provisionalId: string;
+  if (meshtasticTempPacketId != null) {
+    provisionalId = String(meshtasticTempPacketId);
+  } else if (meshcoreDmTempPacketId != null) {
+    provisionalId = String(meshcoreDmTempPacketId);
+  } else {
+    provisionalId = `out:${Date.now()}:${Math.random().toString(36).slice(2)}`; // NOSONAR non-crypto local provisional id
+  }
+  return { provisionalId, meshtasticTempPacketId, meshcoreDmTempPacketId };
+}
+
 export function useSendMessage(
   identityId: IdentityId | null,
 ): (
@@ -81,99 +234,17 @@ export function useSendMessage(
       }
       // Reticulum: sidecar LXMF send (no ConnectionDriver handle).
       if (identity.protocol.type === 'reticulum') {
-        const session = tryGetReticulumSession();
-        const send = getReticulumSendMessage(session);
-        if (!send || !session) {
-          console.warn('[useSendMessage] Reticulum runtime not mounted');
-          return;
-        }
-        const destHash =
-          typeof destination === 'string'
-            ? destination
-            : (reticulumHashForNodeId(destination ?? 0) ??
-              resolveReticulumDestinationHash(destination));
-        if (!destHash) {
-          console.warn('[useSendMessage] no Reticulum destination hash for', destination);
-          return;
-        }
-        const selfNodeId = session.selfNodeId;
-        if (typeof selfNodeId !== 'number') {
-          console.warn('[useSendMessage] Reticulum self node id not ready');
-          return;
-        }
-        const receivedVia = resolveReticulumOutboundVia(destHash);
-        const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
-        const senderName = session.getFullNodeLabel(selfNodeId);
-        const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
-        const existing =
-          retryOfStoreId != null && retryOfStoreId !== ''
-            ? useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
-            : undefined;
-        const parent = replyTo ? findReticulumParentRecordByHash(identityId, replyTo) : undefined;
-        const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
-        const replyPreviewSender = parent?.senderName?.trim() || undefined;
-        const replyFields = replyTo
-          ? {
-              reticulumReplyToHash: replyTo,
-              ...(replyPreviewText ? { replyPreviewText } : {}),
-              ...(replyPreviewSender ? { replyPreviewSender } : {}),
-            }
-          : {};
-
-        let pendingId: string;
-        let record: MessageRecord;
-        if (existing) {
-          pendingId = existing.id;
-          record = {
-            ...existing,
-            from: selfNodeId >>> 0,
-            senderName,
-            to: toNodeId,
-            payload: text,
-            channelIndex,
-            status: 'sending',
-            receivedVia,
-            error: undefined,
-            reticulumDeliveryMethod: undefined,
-            reticulumMessageHash: undefined,
-            ...replyFields,
-          };
-          upsertMessage(identityId, record);
-        } else {
-          pendingId = `reticulum-pending-${Date.now()}`;
-          record = {
-            id: pendingId,
-            from: selfNodeId >>> 0,
-            senderName,
-            to: toNodeId,
-            payload: text,
-            channelIndex,
-            timestamp: Date.now(),
-            status: 'sending',
-            receivedVia,
-            ...replyFields,
-          };
-          addMessage(identityId, record);
-        }
-        if (senderHash) {
-          persistReticulumOutboundRecord(
-            identityId,
-            record,
-            senderHash,
-            senderName,
-            destHash,
-            'sending',
-          );
-        }
-        void send(text, destHash, replyTo ?? undefined, pendingId, replyPreviewText).catch(
-          (e: unknown) => {
-            const err = errLikeToLogString(e);
-            if (err.includes('no_propagation_node')) {
-              addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
-            }
-            console.warn('[useSendMessage] reticulum send failed ' + err);
+        sendReticulumChatMessage({
+          identityId,
+          text,
+          channelIndex,
+          destination,
+          replyTo,
+          retryOfStoreId,
+          onNoPropagationNode: () => {
+            addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
           },
-        );
+        });
         return;
       }
 
@@ -181,22 +252,9 @@ export function useSendMessage(
 
       // Meshtastic: runtime TransportManager sends RF + MQTT concurrently (hybrid or MQTT-only).
       if (identity.protocol.type === 'meshtastic') {
-        const session = tryGetMeshtasticSession();
-        if (session) {
-          const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
-          const hasMqtt = mqttStatus === 'connected';
-          if (!handle && !hasMqtt) {
-            console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
-            return;
-          }
-          const replyIdNum =
-            replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
-          session.sendChatMessage(
-            text,
-            channelIndex,
-            destination,
-            replyIdNum != null && !Number.isNaN(replyIdNum) ? replyIdNum : undefined,
-          );
+        if (
+          trySendViaMeshtasticSession(identityId, handle, text, channelIndex, destination, replyTo)
+        ) {
           return;
         }
         if (!handle) {
@@ -212,18 +270,10 @@ export function useSendMessage(
 
       const isMeshtastic = identity.protocol.type === 'meshtastic';
       const isMeshcoreDm = identity.protocol.type === 'meshcore' && destination != null;
-      const meshtasticTempPacketId = isMeshtastic
-        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0 // NOSONAR non-crypto local temp packet id
-        : undefined;
-      const meshcoreDmTempPacketId = isMeshcoreDm
-        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0 // NOSONAR non-crypto local temp packet id
-        : undefined;
-      const provisionalId =
-        meshtasticTempPacketId != null
-          ? String(meshtasticTempPacketId)
-          : meshcoreDmTempPacketId != null
-            ? String(meshcoreDmTempPacketId)
-            : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`; // NOSONAR non-crypto local provisional id
+      const { provisionalId, meshtasticTempPacketId } = allocateOutboundProvisionalId(
+        isMeshtastic,
+        isMeshcoreDm,
+      );
       const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
       const meshcoreSenderName =
         identity.protocol.type === 'meshcore'
