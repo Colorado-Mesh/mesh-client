@@ -4033,7 +4033,9 @@
     "enableLocalHostConfirmBody": "To urządzenie ogłosi się jako węzeł propagacji LXMF i będzie obsługiwać /offer i /get. Wykorzystuje pamięć masową, procesor i może łączyć się z innymi węzłami w sieci. Preferuj zdalny węzeł do wychodzącego przechowywania i przekazywania, chyba że zamierzasz hostować.",
     "enableLocalHostConfirm": "Włącz hosting",
     "addProbing": "Sprawdzanie obsługi /offer…",
-    "syncLocalNotSupported": "Lokalny węzeł propagacji hosta nie może być synchronizowany przez sieć jak zdalny węzeł propagacji LXMF."
+    "syncLocalNotSupported": "Lokalny węzeł propagacji hosta nie może być synchronizowany przez sieć jak zdalny węzeł propagacji LXMF.",
+    "enableFailed": "Nie można włączyć węzła propagacji.",
+    "disableFailed": "Nie można wyłączyć węzła propagacji."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

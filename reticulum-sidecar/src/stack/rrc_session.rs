@@ -779,19 +779,14 @@ async fn session_loop(
                             )
                             .await;
                             if let Err(e) = rejoin {
-                                warn!("rrc rejoin {room} failed: {e}");
-                                {
-                                    let mut g = inner.lock().await;
-                                    g.rooms.remove(&normalize_room(&room));
-                                }
-                                emit(
+                                handle_rejoin_failure(
+                                    &inner,
                                     &event_tx,
-                                    "rrc.error",
-                                    json!({
-                                        "message": format!("rejoin {room} failed: {e}"),
-                                        "hub_dest_hash": hub_hex,
-                                    }),
-                                );
+                                    &hub_hex,
+                                    &room,
+                                    &e,
+                                )
+                                .await;
                             }
                         }
                         if let Some(reply) = reply {
@@ -910,25 +905,7 @@ async fn session_loop(
                             )
                             .await;
                             if let Err(e) = rejoin {
-                                warn!("rrc auto-rejoin {room} failed: {e}");
-                                {
-                                    let mut g = inner.lock().await;
-                                    g.desired_rooms.remove(&normalize_room(&room));
-                                    g.rooms.remove(&normalize_room(&room));
-                                }
-                                emit(
-                                    &event_tx,
-                                    "rrc.room.parted",
-                                    json!({ "hub_dest_hash": hex, "room": room }),
-                                );
-                                emit(
-                                    &event_tx,
-                                    "rrc.error",
-                                    json!({
-                                        "hub_dest_hash": hex,
-                                        "message": format!("rejoin {room} failed: {e}"),
-                                    }),
-                                );
+                                handle_rejoin_failure(&inner, &event_tx, &hex, &room, &e).await;
                             }
                         }
                     }
@@ -1087,6 +1064,37 @@ async fn establish_session(
             }
         }
     }
+}
+
+/// Shared JOIN-failure cleanup for reconnect rejoin and pending_rejoins.
+/// Removes the room from desired + live maps and notifies the renderer.
+async fn handle_rejoin_failure(
+    inner: &Arc<Mutex<RrcSessionInner>>,
+    event_tx: &broadcast::Sender<String>,
+    hub_hex: &str,
+    room: &str,
+    err: &str,
+) {
+    warn!("rrc rejoin {room} failed: {err}");
+    {
+        let mut g = inner.lock().await;
+        let key = normalize_room(room);
+        g.desired_rooms.remove(&key);
+        g.rooms.remove(&key);
+    }
+    emit(
+        event_tx,
+        "rrc.room.parted",
+        json!({ "hub_dest_hash": hub_hex, "room": room }),
+    );
+    emit(
+        event_tx,
+        "rrc.error",
+        json!({
+            "hub_dest_hash": hub_hex,
+            "message": format!("rejoin {room} failed: {err}"),
+        }),
+    );
 }
 
 async fn send_room_control(

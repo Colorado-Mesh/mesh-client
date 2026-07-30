@@ -4033,7 +4033,9 @@
     "enableLocalHostConfirmBody": "Toto zařízení se oznámí jako uzel šíření LXMF a bude sloužit /offer a /get. To využívá úložiště, CPU a může být rovnocenné s jinými uzly v síti. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání, pokud nemáte v úmyslu hostovat.",
     "enableLocalHostConfirm": "Povolit hosting",
     "addProbing": "Kontrola podpory /offer…",
-    "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF."
+    "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
+    "enableFailed": "Uzel šíření nelze povolit.",
+    "disableFailed": "Uzel šíření nelze zakázat."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

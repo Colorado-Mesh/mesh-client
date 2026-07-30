@@ -4200,6 +4200,8 @@
     "renameFailed": "Could not rename the propagation node.",
     "deleteFailed": "Could not delete the propagation node.",
     "addFailed": "Could not add the propagation node.",
+    "enableFailed": "Could not enable the propagation node.",
+    "disableFailed": "Could not disable the propagation node.",
     "discoveredTitle": "Discovered on network",
     "discoveredEmpty": "No lxmf.propagation announces heard yet. Keep the stack connected or add a node by hash.",
     "discoveredInactive": "inactive",

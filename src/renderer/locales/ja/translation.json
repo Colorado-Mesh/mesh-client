@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "このデバイスは、LXMF 伝播ノードとしてアナウンスし、/offer および /get を提供します。これはストレージと CPU を使用し、ネットワーク上の他のノードとピアリングする場合があります。ホストするつもりがない限り、送信ストア アンド フォワードにはリモート ノードを優先します。",
     "enableLocalHostConfirm": "ホスティングを有効にする",
     "addProbing": "/offer サポートを確認中…",
-    "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。"
+    "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
+    "enableFailed": "伝播ノードを有効にできませんでした。",
+    "disableFailed": "伝播ノードを無効にできませんでした。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

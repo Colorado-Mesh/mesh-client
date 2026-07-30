@@ -4,16 +4,23 @@ import {
   normalizeRrcHubHash,
   storageRoomKey,
 } from '@/renderer/lib/rrcMessageStorageCommon';
+import {
+  clearHydratedRrcRoomKeysForHub,
+  hasHydratedRrcRoomKey,
+  markHydratedRrcRoomKey,
+  resetRrcRoomHistoryHydrationForTests,
+  unmarkHydratedRrcRoomKey,
+} from '@/renderer/lib/rrcRoomHistoryHydration';
 import { RRC_ROOM_HISTORY_LOAD_COUNT } from '@/renderer/lib/sessionMemoryCaps';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
-/** Keys already loaded from SQLite this session (`${hub}::${room}`). */
-const hydratedRoomKeys = new Set<string>();
-
 export function resetRrcRoomHistoryForTests(): void {
-  hydratedRoomKeys.clear();
+  resetRrcRoomHistoryHydrationForTests();
 }
+
+/** Re-export for hub teardown callers that already import this module. */
+export { clearHydratedRrcRoomKeysForHub };
 
 /**
  * Load SQLite history for a hub+room and merge into the session store (dedup by id).
@@ -28,14 +35,14 @@ export async function hydrateRrcRoomMessages(
   const roomKey = storageRoomKey(room);
   if (!hub || !roomKey) return;
   const key = `${hub}::${roomKey}`;
-  if (!opts?.force && hydratedRoomKeys.has(key)) return;
+  if (!opts?.force && hasHydratedRrcRoomKey(key)) return;
   try {
     const rows = await window.electronAPI.db.listRrcMessages(
       hub,
       roomKey,
       RRC_ROOM_HISTORY_LOAD_COUNT,
     );
-    hydratedRoomKeys.add(key);
+    markHydratedRrcRoomKey(key);
     const mapped: RrcChatMessage[] = [];
     for (const row of rows) {
       if (typeof row.message_id !== 'string' || typeof row.body !== 'string') continue;
@@ -72,6 +79,6 @@ export async function clearRrcRoomHistory(hubHash: string, room: string): Promis
   } catch (e) {
     console.warn('[rrcRoomHistory] deleteByRoom failed ' + errLikeToLogString(e));
   }
-  hydratedRoomKeys.delete(key);
+  unmarkHydratedRrcRoomKey(key);
   useRrcSessionStore.getState().clearRoomMessages(hub, roomKey);
 }

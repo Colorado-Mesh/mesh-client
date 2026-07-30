@@ -2137,7 +2137,16 @@ impl LiveBridge {
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
         let peering = self.resolve_propagation_peering(&dest_hex).await?;
+        // Claim outbound sync target so PN deposits defer during the offer probe
+        // (same latch as start_propagation_sync). cancel_propagation_sync clears it
+        // on every polling exit; release immediately if start_sync never begins.
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.set_propagation_sync_target(Some(hash));
+        }
         if !self.propagation.start_sync(hash, Some(peering)) {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
             return Err("PROPAGATION_OFFER_PROBE_FAILED".into());
         }
 

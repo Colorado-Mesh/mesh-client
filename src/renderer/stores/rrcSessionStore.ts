@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
+import { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 import {
   coalesceRrcMemberRoster,
   dedupeRrcMembers,
@@ -754,6 +755,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     set((s) => {
       const hub = normHub(hubHash);
       if (!hub) return {};
+      clearHydratedRrcRoomKeysForHub(hub);
       return removeHubSession(s, hub);
     });
   },

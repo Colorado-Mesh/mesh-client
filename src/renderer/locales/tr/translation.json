@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Bu cihaz bir LXMF yayılım düğümü olarak duyuru yapacak ve hizmet /teklif ve /alacaktır. Bu, depolamayı ve CPU'yu kullanır ve ağdaki diğer düğümlerle eşleşebilir. Barındırma niyetinde olmadığınız sürece giden depolama ve iletme için uzak bir düğümü tercih edin.",
     "enableLocalHostConfirm": "Barındırmayı etkinleştir",
     "addProbing": "/offer desteği kontrol ediliyor…",
-    "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez."
+    "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
+    "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
+    "disableFailed": "Yayılma düğümü devre dışı bırakılamadı."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

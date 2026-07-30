@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Dieses Gerät meldet sich als LXMF-Verbreitungsknoten und stellt /offer und /get bereit. Dies verbraucht Speicher und CPU und kann mit anderen Knoten im Netzwerk zusammenarbeiten. Bevorzugen Sie einen Remote-Knoten für das ausgehende Store-and-Forward, es sei denn, Sie möchten hosten.",
     "enableLocalHostConfirm": "Hosting aktivieren",
     "addProbing": "Prüfe /offer-Unterstützung…",
-    "syncLocalNotSupported": "Der lokale Host-Verbreitungsknoten kann nicht wie ein entfernter LXMF-Verbreitungsknoten über das Netzwerk synchronisiert werden."
+    "syncLocalNotSupported": "Der lokale Host-Verbreitungsknoten kann nicht wie ein entfernter LXMF-Verbreitungsknoten über das Netzwerk synchronisiert werden.",
+    "enableFailed": "Der Ausbreitungsknoten konnte nicht aktiviert werden.",
+    "disableFailed": "Der Ausbreitungsknoten konnte nicht deaktiviert werden."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

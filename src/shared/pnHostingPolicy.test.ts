@@ -37,6 +37,38 @@ describe('pnHostingPolicy', () => {
     ).toEqual(DEFAULT_PN_HOSTING_POLICY);
   });
 
+  it('rejects non-integer and negative numeric fields', () => {
+    expect(
+      validatePnHostingPolicy({
+        ...DEFAULT_PN_HOSTING_POLICY,
+        peering_cost: 18.5,
+      }),
+    ).toBe('non_finite_number');
+    expect(
+      validatePnHostingPolicy({
+        ...DEFAULT_PN_HOSTING_POLICY,
+        max_peers: -1,
+      }),
+    ).toBe('non_finite_number');
+  });
+
+  it('rejects u8 policy fields above 255', () => {
+    expect(
+      validatePnHostingPolicy({
+        ...DEFAULT_PN_HOSTING_POLICY,
+        peering_cost: 256,
+        max_peering_cost: 300,
+      }),
+    ).toBe('non_finite_number');
+    expect(
+      validatePnHostingPolicy({
+        ...DEFAULT_PN_HOSTING_POLICY,
+        propagation_stamp_cost: 300,
+        propagation_stamp_flex: 0,
+      }),
+    ).toBe('non_finite_number');
+  });
+
   it('rejects peering_cost above max', () => {
     expect(
       validatePnHostingPolicy({

@@ -67,10 +67,11 @@ export default function ReticulumPnHostingDangerZone({
 
   const [draft, setDraft] = useState<PnHostingPolicy>(hostingPolicy);
   const [policySnapshot, setPolicySnapshot] = useState(hostingPolicy);
+  const [draftDirty, setDraftDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
-  if (hostingPolicy !== policySnapshot) {
+  if (hostingPolicy !== policySnapshot && !draftDirty) {
     setPolicySnapshot(hostingPolicy);
     setDraft(hostingPolicy);
   }
@@ -80,6 +81,7 @@ export default function ReticulumPnHostingDangerZone({
   }, [refreshFromSidecar]);
 
   const patch = <K extends keyof PnHostingPolicy>(key: K, value: PnHostingPolicy[K]) => {
+    setDraftDirty(true);
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -351,6 +353,8 @@ export default function ReticulumPnHostingDangerZone({
               try {
                 const ok = await setHostingPolicyOnSidecar(draft);
                 if (ok) {
+                  setDraftDirty(false);
+                  setPolicySnapshot(draft);
                   addToast(t('networkPanel.reticulumPnHosting.saveOk'), 'success');
                 } else {
                   const errKey =

@@ -40,8 +40,9 @@ overrides:
   # Security floors (Dependabot GHSA-52cp-r559-cp3m / GHSA-395f-4hp3-45gv /
   # GHSA-w8wr-v893-vjvp / GHSA-3jxr-9vmj-r5cp / GHSA-r28c-9q8g-f849 /
   # GHSA-p2f4-r6v6-j797 / GHSA-7g7r-gx96-252g / GHSA-mh99-v99m-4gvg).
-  # brace-expansion: npm audit only treats >=5.0.8 as patched (GHSA also ships
-  # 1.1.17 / 2.1.3); pin all majors to 5.0.8 so pre-commit audit stays green.
+  # brace-expansion: keep a single 5.0.8 floor. Major-scoped pins (1.1.17 /
+  # 2.1.3) still fail `pnpm audit` because GHSA-mh99-v99m-4gvg’s advisory
+  # range is `<=5.0.7` (only >=5.0.8 counts as patched). CI audit is blocking.
   app-builder-lib: ^26.15.0
   brace-expansion: 5.0.8
   builder-util-runtime: 9.7.0

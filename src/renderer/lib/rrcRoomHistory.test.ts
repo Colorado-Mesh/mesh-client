@@ -194,4 +194,23 @@ describe('rrcRoomHistory', () => {
     await hydrateRrcRoomMessages(HUB, 'lobby');
     expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalled();
   });
+
+  it('clearHubSession drops hydrated keys for that hub only', async () => {
+    const hubB = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    await hydrateRrcRoomMessages(HUB, 'lobby');
+    await hydrateRrcRoomMessages(hubB, 'ops');
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockClear();
+
+    useRrcSessionStore.getState().clearHubSession(HUB);
+
+    await hydrateRrcRoomMessages(HUB, 'lobby');
+    expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalledWith(
+      HUB,
+      'lobby',
+      RRC_ROOM_HISTORY_LOAD_COUNT,
+    );
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockClear();
+    await hydrateRrcRoomMessages(hubB, 'ops');
+    expect(window.electronAPI.db.listRrcMessages).not.toHaveBeenCalled();
+  });
 });

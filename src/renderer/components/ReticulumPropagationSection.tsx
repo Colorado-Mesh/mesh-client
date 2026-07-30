@@ -188,14 +188,21 @@ export default function ReticulumPropagationSection({
   const handleAddFromDiscovered = (destinationHash: string, prefer = false) => {
     if (adding) return;
     setAdding(true);
-    void addFromDiscovered(destinationHash, prefer ? { prefer: true } : undefined).then((ok) => {
-      setAdding(false);
-      if (!ok) {
-        const errKey =
-          useReticulumPropagationStore.getState().lastAddError ?? 'reticulumPropagation.addFailed';
-        addToast(t(errKey), 'error');
-      }
-    });
+    void addFromDiscovered(destinationHash, prefer ? { prefer: true } : undefined)
+      .then((ok) => {
+        setAdding(false);
+        if (!ok) {
+          const errKey =
+            useReticulumPropagationStore.getState().lastAddError ??
+            'reticulumPropagation.addFailed';
+          addToast(t(errKey), 'error');
+        }
+      })
+      .catch((err: unknown) => {
+        setAdding(false);
+        console.warn('[ReticulumPropagationSection] addFromDiscovered rejected', err);
+        addToast(t('reticulumPropagation.addFailed'), 'error');
+      });
   };
 
   const configuredHashes = new Set(
@@ -351,7 +358,21 @@ export default function ReticulumPropagationSection({
                         `/api/v1/propagation/${node.id}/${node.enabled ? 'disable' : 'enable'}`,
                         {},
                       )
-                      .then(handleRefresh);
+                      .then(handleRefresh)
+                      .catch((err: unknown) => {
+                        console.warn(
+                          '[ReticulumPropagationSection] enable/disable proxyPost rejected',
+                          err,
+                        );
+                        addToast(
+                          t(
+                            node.enabled
+                              ? 'reticulumPropagation.disableFailed'
+                              : 'reticulumPropagation.enableFailed',
+                          ),
+                          'error',
+                        );
+                      });
                   }}
                   aria-label={
                     node.enabled
@@ -475,18 +496,24 @@ export default function ReticulumPropagationSection({
           onClick={() => {
             if (adding) return;
             setAdding(true);
-            void addPropagationNode(addHash.trim()).then((ok) => {
-              setAdding(false);
-              if (ok) {
-                setAddHash('');
-                void handleRefresh();
-              } else {
-                const errKey =
-                  useReticulumPropagationStore.getState().lastAddError ??
-                  'reticulumPropagation.addFailed';
-                addToast(t(errKey), 'error');
-              }
-            });
+            void addPropagationNode(addHash.trim())
+              .then((ok) => {
+                setAdding(false);
+                if (ok) {
+                  setAddHash('');
+                  void handleRefresh();
+                } else {
+                  const errKey =
+                    useReticulumPropagationStore.getState().lastAddError ??
+                    'reticulumPropagation.addFailed';
+                  addToast(t(errKey), 'error');
+                }
+              })
+              .catch((err: unknown) => {
+                setAdding(false);
+                console.warn('[ReticulumPropagationSection] addPropagationNode rejected', err);
+                addToast(t('reticulumPropagation.addFailed'), 'error');
+              });
           }}
         >
           {adding ? t('reticulumPropagation.addProbing') : t('reticulumPropagation.addNode')}
@@ -523,7 +550,14 @@ export default function ReticulumPropagationSection({
             setPendingEnableLocal(false);
             void window.electronAPI.reticulum
               .proxyPost('/api/v1/propagation/local-prop/enable', {})
-              .then(handleRefresh);
+              .then(handleRefresh)
+              .catch((err: unknown) => {
+                console.warn(
+                  '[ReticulumPropagationSection] local-prop enable proxyPost rejected',
+                  err,
+                );
+                addToast(t('reticulumPropagation.enableFailed'), 'error');
+              });
           }}
           onCancel={() => {
             setPendingEnableLocal(false);

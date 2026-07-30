@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Dit apparaat wordt aangekondigd als een LXMF-propagatieknooppunt en dient /offer en /get. Dat gebruikt opslag en CPU en kan peeren met andere knooppunten in het netwerk. Geef de voorkeur aan een extern knooppunt voor uitgaande store-and-forward, tenzij u van plan bent te hosten.",
     "enableLocalHostConfirm": "Hosting inschakelen",
     "addProbing": "/offer-ondersteuning controleren…",
-    "syncLocalNotSupported": "Het lokale hostvoortplantingsknooppunt kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-voortplantingsknooppunt."
+    "syncLocalNotSupported": "Het lokale hostvoortplantingsknooppunt kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-voortplantingsknooppunt.",
+    "enableFailed": "Kan het voortplantingsknooppunt niet inschakelen.",
+    "disableFailed": "Kan het voortplantingsknooppunt niet uitschakelen."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

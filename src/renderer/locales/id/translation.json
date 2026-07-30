@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Perangkat ini akan diumumkan sebagai node propagasi LXMF dan melayani /offer dan /get. Itu menggunakan penyimpanan, CPU, dan mungkin melakukan peer dengan node lain di jaringan. Lebih memilih node jarak jauh untuk penyimpanan dan penerusan keluar kecuali Anda bermaksud untuk menghostingnya.",
     "enableLocalHostConfirm": "Aktifkan hosting",
     "addProbing": "Memeriksa dukungan /offer…",
-    "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh."
+    "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
+    "enableFailed": "Tidak dapat mengaktifkan node propagasi.",
+    "disableFailed": "Tidak dapat menonaktifkan node propagasi."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

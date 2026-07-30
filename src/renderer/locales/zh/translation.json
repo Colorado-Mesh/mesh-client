@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "该设备将宣布为 LXMF 传播节点并提供 /offer 和 /get 服务。它使用存储、CPU，并且可以与网络上的其他节点对等。除非您打算托管，否则首选远程节点进行出站存储和转发。",
     "enableLocalHostConfirm": "启用托管",
     "addProbing": "正在检查 /offer 支持…",
-    "syncLocalNotSupported": "本地主机传播节点无法像远程 LXMF 传播节点一样通过网络同步。"
+    "syncLocalNotSupported": "本地主机传播节点无法像远程 LXMF 传播节点一样通过网络同步。",
+    "enableFailed": "无法启用传播节点。",
+    "disableFailed": "无法禁用传播节点。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

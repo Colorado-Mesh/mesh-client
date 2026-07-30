@@ -335,7 +335,7 @@ impl LxmfOutboundDriver {
         let pending_blocks = self.link_delivery.has_pending_to(&prop_hash);
         if should_defer_propagated_for_pn_link(sync_blocks, pending_blocks) {
             let now = now_f64();
-            message.next_delivery_attempt = now + PATH_REQUEST_WAIT as f64;
+            message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
             tracing::debug!(
                 prop = %prop_hex,
                 dest = %hex::encode(message.destination_hash),
@@ -761,7 +761,7 @@ impl LxmfOutboundDriver {
         let now = now_f64();
         message.method = DeliveryMethod::Propagated;
         message.last_delivery_attempt = now;
-        message.next_delivery_attempt = now + PATH_REQUEST_WAIT as f64;
+        message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
         let _ = try_queue_path_request(&self.transport_tx, prop_hash, false, reason);
         let msg_hash = message.hash.or(message.message_id);
         tracing::warn!(
@@ -800,7 +800,7 @@ fn mark_propagated_delivery_attempt(message: &mut LxMessage) -> u32 {
     let now = now_f64();
     message.delivery_attempts += 1;
     message.last_delivery_attempt = now;
-    message.next_delivery_attempt = now + DELIVERY_RETRY_WAIT as f64;
+    message.next_delivery_attempt = now + f64::from(DELIVERY_RETRY_WAIT as u32);
     message.delivery_attempts
 }
 

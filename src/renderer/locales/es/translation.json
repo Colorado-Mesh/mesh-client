@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Este dispositivo se anunciará como un nodo de propagación LXMF y servirá /oferta y /obtener. Utiliza almacenamiento, CPU y puede conectarse con otros nodos de la red. Prefiera un nodo remoto para el almacenamiento y reenvío saliente, a menos que tenga intención de alojarlo.",
     "enableLocalHostConfirm": "Habilitar alojamiento",
     "addProbing": "Comprobando compatibilidad con /offer…",
-    "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto."
+    "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
+    "enableFailed": "No se pudo habilitar el nodo de propagación.",
+    "disableFailed": "No se pudo deshabilitar el nodo de propagación."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",

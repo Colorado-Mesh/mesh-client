@@ -956,9 +956,14 @@ impl StackHandle {
     pub async fn set_pn_hosting_policy(&self, policy: PnHostingPolicy) -> Result<(), String> {
         let policy = {
             let mut inner = self.inner.write().await;
+            // Snapshot for rollback if durable save fails after in-memory mutate.
+            let snapshot = inner.pn_hosting_policy.clone();
             inner.set_pn_hosting_policy(policy)?;
             let policy = inner.pn_hosting_policy.clone();
-            inner.save(&self.config_dir, &self.storage_dir)?;
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                inner.pn_hosting_policy = snapshot;
+                return Err(e);
+            }
             policy
         };
         #[cfg(feature = "rns-stack")]

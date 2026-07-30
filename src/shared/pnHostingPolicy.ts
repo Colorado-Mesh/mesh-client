@@ -67,6 +67,14 @@ const NUMERIC_POLICY_KEYS = [
   'pn_announce_interval_sec',
 ] as const;
 
+/** Sidecar serializes these as `u8` — reject values outside 0..=255 before IPC. */
+const U8_POLICY_KEYS = [
+  'peering_cost',
+  'max_peering_cost',
+  'propagation_stamp_cost',
+  'propagation_stamp_flex',
+] as const;
+
 export type SanitizePnHostingPolicyResult =
   { ok: true; policy: PnHostingPolicy } | { ok: false; error: string };
 
@@ -134,7 +142,13 @@ function validatePnHostingNodeName(nodeName: string | null): string | null {
 
 function validatePnHostingNumericRanges(policy: PnHostingPolicy): string | null {
   for (const key of NUMERIC_POLICY_KEYS) {
-    if (!Number.isFinite(policy[key])) {
+    const n = policy[key];
+    if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
+      return 'non_finite_number';
+    }
+  }
+  for (const key of U8_POLICY_KEYS) {
+    if (policy[key] > 255) {
       return 'non_finite_number';
     }
   }

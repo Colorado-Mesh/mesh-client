@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Este dispositivo será anunciado como um nó de propagação LXMF e servirá /offer e /get. Isso usa armazenamento, CPU e pode fazer peering com outros nós da rede. Prefira um nó remoto para armazenamento e encaminhamento de saída, a menos que você pretenda hospedar.",
     "enableLocalHostConfirm": "Habilitar hospedagem",
     "addProbing": "Verificando suporte a /offer…",
-    "syncLocalNotSupported": "O nó de propagação do host local não pode ser sincronizado pela rede como um nó de propagação LXMF remoto."
+    "syncLocalNotSupported": "O nó de propagação do host local não pode ser sincronizado pela rede como um nó de propagação LXMF remoto.",
+    "enableFailed": "Não foi possível ativar o nó de propagação.",
+    "disableFailed": "Não foi possível desativar o nó de propagação."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

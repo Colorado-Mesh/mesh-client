@@ -85,29 +85,23 @@ impl PropagationServeHandle {
             let handler = PropagationRequestHandler::new(local_identity_hash);
             if path_hash == offer_path_hash {
                 tracing::info!(target: "propagation-serve", "handling /offer request");
-                let mut node = match pn_for_handler.lock() {
-                    Ok(n) => n,
-                    Err(_) => {
-                        tracing::warn!(
-                            target: "propagation-serve",
-                            "pn lock failed; dropping /offer request"
-                        );
-                        return None;
-                    }
+                let Ok(mut node) = pn_for_handler.lock() else {
+                    tracing::warn!(
+                        target: "propagation-serve",
+                        "pn lock failed; dropping /offer request"
+                    );
+                    return None;
                 };
                 Some(handler.handle_offer_request(remote_identity_ref, &data, &mut node))
             } else if path_hash == get_path_hash {
                 tracing::info!(target: "propagation-serve", "handling /get request");
                 let action = {
-                    let mut node = match pn_for_handler.lock() {
-                        Ok(n) => n,
-                        Err(_) => {
-                            tracing::warn!(
-                                target: "propagation-serve",
-                                "pn lock failed; dropping /get request"
-                            );
-                            return None;
-                        }
+                    let Ok(mut node) = pn_for_handler.lock() else {
+                        tracing::warn!(
+                            target: "propagation-serve",
+                            "pn lock failed; dropping /get request"
+                        );
+                        return None;
                     };
                     handler.handle_message_get_request(
                         remote_identity_ref,

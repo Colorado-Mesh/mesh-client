@@ -52,9 +52,8 @@ jobs:
           export PATH="${GITHUB_WORKSPACE}/.githooks/bin:${PATH}"
           actionlint
 
-      - name: pnpm audit (high+, non-blocking)
-        run: |
-          pnpm audit --audit-level=high || echo "::warning::pnpm audit found high-severity vulnerabilities"
+      - name: pnpm audit (high+)
+        run: pnpm audit --audit-level=high
 
       - name: Install yamllint
         run: pip install yamllint

@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "Cet appareil s'annoncera comme un nœud de propagation LXMF et servira /offer et /get. Cela utilise du stockage, du processeur et peut se connecter à d'autres nœuds du réseau. Préférez un nœud distant pour le stockage et le transfert sortant, sauf si vous avez l'intention d'héberger.",
     "enableLocalHostConfirm": "Activer l'hébergement",
     "addProbing": "Vérification de la prise en charge de /offer…",
-    "syncLocalNotSupported": "Le nœud de propagation de l'hôte local ne peut pas être synchronisé sur le réseau comme un nœud de propagation LXMF distant."
+    "syncLocalNotSupported": "Le nœud de propagation de l'hôte local ne peut pas être synchronisé sur le réseau comme un nœud de propagation LXMF distant.",
+    "enableFailed": "Impossible d'activer le nœud de propagation.",
+    "disableFailed": "Impossible de désactiver le nœud de propagation."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

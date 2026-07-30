@@ -4031,7 +4031,9 @@
     "enableLocalHostConfirmBody": "이 장치는 LXMF 전파 노드로 알리고 /offer 및 /get을 제공합니다. 이는 스토리지, CPU를 사용하고 네트워크의 다른 노드와 피어링할 수 있습니다. 호스팅할 의도가 없다면 아웃바운드 저장 및 전달을 위해 원격 노드를 선호합니다.",
     "enableLocalHostConfirm": "호스팅 활성화",
     "addProbing": "/offer 지원 확인 중…",
-    "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다."
+    "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다.",
+    "enableFailed": "전파 노드를 활성화할 수 없습니다.",
+    "disableFailed": "전파 노드를 비활성화할 수 없습니다."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",
