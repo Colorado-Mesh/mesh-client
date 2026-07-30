@@ -37,6 +37,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { fetchRecentInboundLxmf } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
 import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import {
   markStaleReticulumOutboundInStore,
@@ -596,6 +597,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, selfLxmfHash],
   );
 
+  const catchUpRecentInboundLxmf = useCallback(async () => {
+    if (!identityId) return;
+    const rows = await fetchRecentInboundLxmf({ limit: 200 });
+    if (rows.length === 0) return;
+    console.debug(`[useReticulumRuntime] inbound LXMF catch-up count=${rows.length}`);
+    for (const p of rows) {
+      ingestLxmfPayload(p);
+    }
+  }, [identityId, ingestLxmfPayload]);
+
   const refreshMessagesFromDb = useCallback(async () => {
     if (!identityId) return;
     try {
@@ -651,6 +662,23 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       if (evt.type === 'resource.received' && evt.payload && typeof evt.payload === 'object') {
         ingestLxmfPayload(evt.payload);
+      }
+      if (evt.type === 'events_lagged') {
+        const skipped =
+          evt.payload && typeof evt.payload === 'object'
+            ? (evt.payload as { skipped?: number }).skipped
+            : undefined;
+        console.warn(
+          `[useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
+        );
+        void catchUpRecentInboundLxmf();
+      }
+      if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
+        const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
+        if (reconnect) {
+          console.debug('[useReticulumRuntime] sidecar WS reconnected — catching up inbound LXMF');
+          void catchUpRecentInboundLxmf();
+        }
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as {
@@ -1151,6 +1179,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       appendRawPacket,
       identityId,
       ingestLxmfPayload,
+      catchUpRecentInboundLxmf,
       recordAnnounceActivity,
       refreshLocalInterfacesFromSidecar,
       scheduleDebouncedDiagnosticsRefresh,
@@ -1280,6 +1309,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await refreshMessagesFromDb();
       }
+      // Catch up any inbound LXMF that arrived while WS was lagging or before subscribe.
+      await catchUpRecentInboundLxmf();
       if (resumeGenerationRef.current !== generation) {
         // A later power-suspend fired while this connect attempt was still in flight — the
         // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
@@ -1320,6 +1351,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     refreshMessagesFromDb,
     syncDiagnosticsFromSidecar,
     hydrateRawPackets,
+    catchUpRecentInboundLxmf,
     identityId,
     syncConnectionStore,
     scheduleLocalInterfaceStatusBurst,
@@ -1383,6 +1415,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await refreshMessagesFromDb();
       }
+      await catchUpRecentInboundLxmf();
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -1415,6 +1448,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     syncConnectionStore,
     syncDiagnosticsFromSidecar,
     hydrateRawPackets,
+    catchUpRecentInboundLxmf,
     identityId,
     tearDownFromSidecarStop,
     scheduleLocalInterfaceStatusBurst,
@@ -1751,6 +1785,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       deviceLogs: [],
       rawPackets,
       clearRawPackets,
+      hydrateRawPackets,
       queueStatus: null,
       ourPosition: null,
       gpsLoading: false,
@@ -1802,6 +1837,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       onPowerSuspend,
       onPowerResume,
       clearRawPackets,
+      hydrateRawPackets,
       rawPackets,
       sendMessage,
       sendReaction,

@@ -64,6 +64,9 @@ impl PacketLogBuffer {
     }
 }
 
+/// Formerly emitted live `wire_packet` on the shared WS bus. Kept for unit tests /
+/// egress helpers; production PacketTap only fills [`PacketLogBuffer`] (Sniffer polls HTTP).
+#[allow(dead_code)]
 pub fn emit_wire_packet_event(event_tx: &broadcast::Sender<String>, row: &WirePacketRow) {
     let msg = serde_json::json!({ "type": "wire_packet", "payload": row });
     let _ = event_tx.send(msg.to_string());

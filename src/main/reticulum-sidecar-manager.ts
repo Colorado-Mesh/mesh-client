@@ -165,6 +165,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   private wsPort = 0;
   private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private wsReconnectAttempt = 0;
+  /** True after the first successful WS open for this sidecar process (reconnects set reconnect=true). */
+  private wsEverConnected = false;
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
@@ -615,7 +617,14 @@ export class ReticulumSidecarManager extends EventEmitter {
         maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
       });
       socket.on('open', () => {
+        const reconnect = this.wsEverConnected;
+        this.wsEverConnected = true;
         this.wsReconnectAttempt = 0;
+        // Notify renderer so inbound LXMF catch-up can run after lag/disconnect gaps.
+        this.emit('event', {
+          type: 'ws_connected',
+          payload: { reconnect },
+        });
       });
       socket.on('message', (data: Buffer) => {
         if (data.length > RETICULUM_WS_MAX_MESSAGE_BYTES) {
@@ -697,6 +706,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.clearWsReconnectTimer();
     this.wsPort = 0;
     this.wsReconnectAttempt = 0;
+    this.wsEverConnected = false;
     const prev = this.ws;
     this.ws = null;
     prev?.close();

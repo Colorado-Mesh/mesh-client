@@ -125,3 +125,23 @@ pub async fn lxmf_delete_message(
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct RecentLxmfQuery {
+    /// Inclusive lower bound on payload `timestamp` (ms). Omit to return the full ring.
+    #[serde(default)]
+    pub since_ts: Option<i64>,
+    /// Max rows (default 200, capped at 500).
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+/// Recent inbound LXMF payloads buffered for WS lag / reconnect catch-up.
+pub async fn list_recent_lxmf(
+    State(stack): State<Arc<StackHandle>>,
+    Query(q): Query<RecentLxmfQuery>,
+) -> Json<serde_json::Value> {
+    let limit = q.limit.unwrap_or(200).clamp(1, 500);
+    let messages = stack.list_recent_inbound_lxmf(q.since_ts, limit);
+    Json(serde_json::json!({ "messages": messages }))
+}

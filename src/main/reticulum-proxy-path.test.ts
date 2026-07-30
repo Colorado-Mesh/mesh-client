@@ -85,5 +85,6 @@ describe('reticulumProxyGetTimeoutMs', () => {
     expect(reticulumProxyGetTimeoutMs('/api/v1/interfaces')).toBe(30_000);
     expect(reticulumProxyGetTimeoutMs('/api/v1/topology')).toBe(30_000);
     expect(reticulumProxyGetTimeoutMs('/api/v1/packets?limit=500')).toBe(30_000);
+    expect(reticulumProxyGetTimeoutMs('/api/v1/lxmf/recent?limit=200')).toBe(30_000);
   });
 });
