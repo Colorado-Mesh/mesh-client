@@ -54,6 +54,26 @@ function persistMeshcoreOutboundRow(
   });
 }
 
+function resolveReticulumChatDestHash(destination: number | undefined): string | null {
+  if (typeof destination === 'string') return destination;
+  return reticulumHashForNodeId(destination ?? 0) ?? resolveReticulumDestinationHash(destination);
+}
+
+function buildReticulumReplyFields(
+  identityId: IdentityId,
+  replyTo: string | undefined,
+): Partial<MessageRecord> {
+  if (!replyTo) return {};
+  const parent = findReticulumParentRecordByHash(identityId, replyTo);
+  const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
+  const replyPreviewSender = parent?.senderName?.trim() || undefined;
+  return {
+    reticulumReplyToHash: replyTo,
+    ...(replyPreviewText ? { replyPreviewText } : {}),
+    ...(replyPreviewSender ? { replyPreviewSender } : {}),
+  };
+}
+
 function sendReticulumChatMessage(opts: {
   identityId: IdentityId;
   text: string;
@@ -78,10 +98,7 @@ function sendReticulumChatMessage(opts: {
     console.warn('[useSendMessage] Reticulum runtime not mounted');
     return true;
   }
-  const destHash =
-    typeof destination === 'string'
-      ? destination
-      : (reticulumHashForNodeId(destination ?? 0) ?? resolveReticulumDestinationHash(destination));
+  const destHash = resolveReticulumChatDestHash(destination);
   if (!destHash) {
     console.warn('[useSendMessage] no Reticulum destination hash for', destination);
     return true;
@@ -99,16 +116,7 @@ function sendReticulumChatMessage(opts: {
     retryOfStoreId != null && retryOfStoreId !== ''
       ? useMessageStore.getState().messages[identityId]?.[retryOfStoreId]
       : undefined;
-  const parent = replyTo ? findReticulumParentRecordByHash(identityId, replyTo) : undefined;
-  const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
-  const replyPreviewSender = parent?.senderName?.trim() || undefined;
-  const replyFields = replyTo
-    ? {
-        reticulumReplyToHash: replyTo,
-        ...(replyPreviewText ? { replyPreviewText } : {}),
-        ...(replyPreviewSender ? { replyPreviewSender } : {}),
-      }
-    : {};
+  const replyFields = buildReticulumReplyFields(identityId, replyTo);
 
   let pendingId: string;
   let record: MessageRecord;
@@ -148,6 +156,7 @@ function sendReticulumChatMessage(opts: {
   if (senderHash) {
     persistReticulumOutboundRecord(identityId, record, senderHash, senderName, destHash, 'sending');
   }
+  const replyPreviewText = replyFields.replyPreviewText;
   void send(text, destHash, replyTo ?? undefined, pendingId, replyPreviewText).catch(
     (e: unknown) => {
       const err = errLikeToLogString(e);

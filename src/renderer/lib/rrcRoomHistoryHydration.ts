@@ -25,7 +25,7 @@ export function unmarkHydratedRrcRoomKey(key: string): void {
 export function clearHydratedRrcRoomKeysForHub(hub: string): void {
   if (!hub) return;
   const prefix = `${hub}::`;
-  for (const key of [...hydratedRoomKeys]) {
+  for (const key of hydratedRoomKeys) {
     if (key.startsWith(prefix)) {
       hydratedRoomKeys.delete(key);
     }

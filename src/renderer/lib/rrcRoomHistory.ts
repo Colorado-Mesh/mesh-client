@@ -5,7 +5,6 @@ import {
   storageRoomKey,
 } from '@/renderer/lib/rrcMessageStorageCommon';
 import {
-  clearHydratedRrcRoomKeysForHub,
   hasHydratedRrcRoomKey,
   markHydratedRrcRoomKey,
   resetRrcRoomHistoryHydrationForTests,
@@ -20,7 +19,7 @@ export function resetRrcRoomHistoryForTests(): void {
 }
 
 /** Re-export for hub teardown callers that already import this module. */
-export { clearHydratedRrcRoomKeysForHub };
+export { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 
 /**
  * Load SQLite history for a hub+room and merge into the session store (dedup by id).
