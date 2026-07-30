@@ -59,6 +59,17 @@ async function shareRncpReceiveDestWithPeer(
       console.debug('[RncpEnableRequestModal] share receive dest failed: ' + (res.error ?? ''));
       return 'failed';
     }
+    // Best-effort: flood rncp.receive so the peer can resolve pubkey/path immediately.
+    try {
+      const ann = await window.electronAPI.reticulum.rncp.announce();
+      if (!ann?.ok) {
+        console.debug('[RncpEnableRequestModal] rncp announce after share: ' + (ann.error ?? ''));
+      }
+    } catch (annErr) {
+      console.debug(
+        '[RncpEnableRequestModal] rncp announce after share ' + errLikeToLogString(annErr),
+      );
+    }
     return 'shared';
   } catch (e) {
     // Non-fatal: listener is already enabled; peer can copy the hash manually.
@@ -142,7 +153,6 @@ export function RncpEnableRequestModal() {
         const { allowed, blocked } = policiesToRncpLists(
           useReticulumInboundPolicyStore.getState().policies,
         );
-        setInboundModeOptimistic('ask');
         const res = await window.electronAPI.reticulum.rncp.setListener({
           enabled: true,
           save_dir: dir.path,
@@ -163,6 +173,7 @@ export function RncpEnableRequestModal() {
           lastSaveDir: dir.path,
           allowFetch: false,
         });
+        setInboundModeOptimistic('ask');
         const listener = await window.electronAPI.reticulum.rncp.getListener();
         useRncpTransferStore.getState().setListener(listener);
         addToast(t('reticulumRemote.enableRequest.enabled'), 'success');

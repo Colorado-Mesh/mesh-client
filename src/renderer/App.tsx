@@ -62,6 +62,7 @@ import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshco
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
+import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
 import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
@@ -1478,6 +1479,19 @@ function AppContent() {
   );
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
+
+  // Live wire_packet WS frames are disabled (they starved LXMF). Poll while Sniffer/Stats is open.
+  useReticulumRawPacketPoll({
+    pollActive:
+      protocol === 'reticulum' &&
+      capabilities.hasRawPacketLog &&
+      (activePanelIndex === SNIFFER_PANEL_INDEX || activePanelIndex === STATS_PANEL_INDEX) &&
+      (reticulumRuntime.state.status === 'configured' ||
+        reticulumRuntime.state.status === 'connected' ||
+        reticulumRuntime.state.status === 'stale' ||
+        reticulumRuntime.state.status === 'connecting'),
+    hydrateRawPackets: () => reticulumRuntime.hydrateRawPackets?.() ?? Promise.resolve(),
+  });
 
   useEffect(() => {
     void useMapLayerStore.getState().hydrateFromDatabase();
@@ -4085,7 +4099,7 @@ function AppContent() {
                                   variant="reticulum"
                                   packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
                                   onClear={() => {
-                                    reticulumPanelActions.clearRawPackets?.();
+                                    void reticulumPanelActions.clearRawPackets?.();
                                   }}
                                   getNodeLabel={rawPacketGetNodeLabel}
                                 />

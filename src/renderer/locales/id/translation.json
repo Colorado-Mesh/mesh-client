@@ -4932,7 +4932,13 @@
       "autoReconnectShell": "Sambungkan kembali shell jarak jauh secara otomatis setelah pemutusan sambungan yang tidak terduga",
       "autoRetryTransfer": "Secara otomatis mencoba lagi transfer yang gagal",
       "identityTitle": "Identitas saya",
-      "myIdentity": "Identitas saya:"
+      "myIdentity": "Identitas saya:",
+      "rechooseSaveDir": "Pilih kembali folder simpan (diperlukan satu kali per peluncuran aplikasi untuk keamanan).",
+      "announceReceiveDest": "Umumkan tujuan penerimaan",
+      "announceReceiveDestAria": "Umumkan rncp menerima tujuan sehingga teman sebaya dapat menemukannya",
+      "announceReceiveDestDone": "Tujuan penerimaan RNCP diumumkan.",
+      "announceReceiveDestFailed": "Gagal mengumumkan tujuan penerimaan: {{error}}",
+      "announceReceiveDestListenerOff": "Aktifkan penerimaan file masuk (Minta atau Izinkan yang tercantum) sebelum mengumumkan."
     }
   },
   "meshcoreRoute": {

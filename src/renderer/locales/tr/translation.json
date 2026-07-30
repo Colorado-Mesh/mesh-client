@@ -4932,7 +4932,13 @@
       "autoReconnectShell": "Beklenmeyen bir bağlantı kesilmesinin ardından uzak kabuğu otomatik olarak yeniden bağlayın",
       "autoRetryTransfer": "Başarısız aktarımları otomatik olarak yeniden dene",
       "identityTitle": "Kimliğim",
-      "myIdentity": "Kimliğim:"
+      "myIdentity": "Kimliğim:",
+      "rechooseSaveDir": "Kaydetme klasörünü yeniden seçin (güvenlik için uygulama başlatma başına bir kez gereklidir).",
+      "announceReceiveDest": "Alım varış noktasını duyurun",
+      "announceReceiveDestAria": "Akranların keşfedebilmesi için rncp alma hedefini duyurun",
+      "announceReceiveDestDone": "RNCP alım hedefi açıklandı.",
+      "announceReceiveDestFailed": "Alım varış noktası bildirilemedi: {{error}}",
+      "announceReceiveDestListenerOff": "Duyurmadan önce gelen dosya alımını (Ask or Allow list) etkinleştirin."
     }
   },
   "meshcoreRoute": {

@@ -7,6 +7,7 @@ mod identity_apply;
 mod identity_import;
 mod identity_slots;
 mod local_rnode_primary;
+mod lxmf_inbound_log;
 mod nomad_content_source;
 mod nomad_file;
 mod nomad_link_errors;
@@ -55,6 +56,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
+use lxmf_inbound_log::{LxmfInboundBuffer, MAX_LXMF_INBOUND_LOG};
 use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
 pub use pn_hosting_policy::PnHostingPolicy;
@@ -86,6 +88,8 @@ pub struct StackHandle {
     inner: Arc<RwLock<PersistedState>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
+    /// Recent inbound LXMF payloads for WS lag / reconnect catch-up (not durable across restart).
+    inbound_lxmf: Arc<LxmfInboundBuffer>,
     /// When true, `list_contacts` must retry persisting contact name overlays after a prior save failure.
     contact_name_persist_dirty: std::sync::atomic::AtomicBool,
     /// Serializes create / switch / delete so on-disk slot state cannot interleave.
@@ -167,6 +171,7 @@ impl StackHandle {
 
         let inner = Arc::new(RwLock::new(persisted));
 
+        let inbound_lxmf = Arc::new(LxmfInboundBuffer::new(MAX_LXMF_INBOUND_LOG));
         #[cfg(feature = "rns-stack")]
         let packet_log = Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG));
         #[cfg(feature = "rns-stack")]
@@ -175,6 +180,7 @@ impl StackHandle {
             storage_dir.clone(),
             event_tx.clone(),
             packet_log.clone(),
+            inbound_lxmf.clone(),
             inner.clone(),
         )
         .await
@@ -206,6 +212,7 @@ impl StackHandle {
             inner,
             event_tx: event_tx.clone(),
             packet_log,
+            inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
             live,
@@ -217,6 +224,7 @@ impl StackHandle {
             inner,
             event_tx,
             packet_log: Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG)),
+            inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
         };
@@ -256,6 +264,15 @@ impl StackHandle {
 
     pub fn clear_packets(&self) {
         self.packet_log.clear();
+    }
+
+    /// Recent inbound LXMF payloads retained for catch-up after WS lag/reconnect.
+    pub fn list_recent_inbound_lxmf(
+        &self,
+        since_ts: Option<i64>,
+        limit: usize,
+    ) -> Vec<serde_json::Value> {
+        self.inbound_lxmf.snapshot(since_ts, limit)
     }
 
     async fn sync_interfaces_from_config(&self) {
@@ -1854,6 +1871,15 @@ impl StackHandle {
             return live.rncp_status().await;
         }
         serde_json::json!({ "transfers": [], "pending_offers": [] })
+    }
+
+    /// Force one `rncp.receive` announce while the inbound listener is enabled.
+    pub async fn rncp_announce_now(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_announce_now().await;
+        }
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
     }
 
     /// `enabled: false` tears down the listener and sets policy to `off`.

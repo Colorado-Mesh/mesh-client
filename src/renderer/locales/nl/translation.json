@@ -4932,7 +4932,13 @@
       "autoReconnectShell": "Maak automatisch opnieuw verbinding met de externe shell na een onverwachte verbinding",
       "autoRetryTransfer": "Probeer mislukte overdrachten automatisch opnieuw",
       "identityTitle": "Mijn identiteit",
-      "myIdentity": "Mijn identiteit:"
+      "myIdentity": "Mijn identiteit:",
+      "rechooseSaveDir": "Kies de opslagmap opnieuw (één keer per start van de app vereist voor beveiliging).",
+      "announceReceiveDest": "Ontvangstbestemming aankondigen",
+      "announceReceiveDestAria": "Rncp-ontvangstbestemming aankondigen, zodat collega's deze kunnen ontdekken",
+      "announceReceiveDestDone": "RNCP-ontvangstbestemming aangekondigd.",
+      "announceReceiveDestFailed": "Kan ontvangstbestemming niet aankondigen: {{error}}",
+      "announceReceiveDestListenerOff": "Inkomende bestandsontvangst inschakelen (Vraag of Sta toe vermeld) voordat u aankondigt."
     }
   },
   "meshcoreRoute": {

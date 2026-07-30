@@ -89,7 +89,9 @@ export interface ProtocolRuntime {
   traceRoute?: (nodeId: number) => Promise<boolean | undefined>;
   reboot?: () => Promise<void>;
   deleteNode?: (nodeId: number) => Promise<void>;
-  clearRawPackets?: () => void;
+  clearRawPackets?: () => void | Promise<void>;
+  /** Reticulum: refresh Sniffer/Stats from GET /api/v1/packets (wire_packet WS disabled). */
+  hydrateRawPackets?: () => Promise<void>;
   getRemoteAdminKeyForNode?: (nodeId: number) => string | null;
   setRemoteAdminKeyForNode?: (nodeId: number, key: string) => void;
   refreshOurPosition?: () => Promise<void>;

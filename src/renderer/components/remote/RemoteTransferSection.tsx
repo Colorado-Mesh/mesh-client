@@ -9,6 +9,7 @@ import i18n from '@/renderer/lib/i18n';
 import { pushRncpListenerPolicy } from '@/renderer/lib/pushRncpListenerPolicy';
 import type { RemoteSettings } from '@/renderer/lib/remoteSettingsStorage';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { isRncpPickerAllowlistError } from '@/renderer/lib/rncpListenerApply';
 import {
   acceptRncpOffer,
   rejectRncpOffer,
@@ -288,6 +289,9 @@ export function RemoteTransferSection({
       const push = await pushRncpListenerPolicy();
       if (!push.ok) {
         console.warn('[RemoteTransferSection] pushPolicy ' + (push.error ?? ''));
+        if (isRncpPickerAllowlistError(push.error)) {
+          addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'error');
+        }
       }
       addToast(
         decision === 'allow'

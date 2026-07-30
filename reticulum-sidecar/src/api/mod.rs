@@ -88,6 +88,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/ble/scan", get(interfaces::ble_scan))
         .route("/api/v1/lxmf/send", post(lxmf::lxmf_send))
         .route("/api/v1/lxmf/reaction", post(lxmf::lxmf_reaction))
+        .route("/api/v1/lxmf/recent", get(lxmf::list_recent_lxmf))
         .route(
             "/api/v1/lxmf/messages/{hash}",
             axum::routing::delete(lxmf::lxmf_delete_message),
@@ -212,6 +213,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/rncp/accept", post(rncp::rncp_accept))
         .route("/api/v1/rncp/reject", post(rncp::rncp_reject))
         .route("/api/v1/rncp/status", get(rncp::rncp_status))
+        .route("/api/v1/rncp/announce", post(rncp::rncp_announce))
         .route(
             "/api/v1/rncp/listener",
             get(rncp::get_rncp_listener).post(rncp::set_rncp_listener),

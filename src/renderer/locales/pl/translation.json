@@ -4936,7 +4936,13 @@
       "autoReconnectShell": "Automatycznie ponownie podłącz zdalną obudowę po nieoczekiwanym rozłączeniu",
       "autoRetryTransfer": "Wznawiaj automatycznie gdy zawiodło pobieranie",
       "identityTitle": "Moja tożsamość",
-      "myIdentity": "Moja tożsamość:"
+      "myIdentity": "Moja tożsamość:",
+      "rechooseSaveDir": "Ponownie wybierz folder zapisu (wymagany raz przy uruchomieniu aplikacji ze względów bezpieczeństwa).",
+      "announceReceiveDest": "Zapowiedz miejsce docelowe odbioru",
+      "announceReceiveDestAria": "Ogłoś, że rncp otrzyma miejsce docelowe, aby rówieśnicy mogli je odkryć",
+      "announceReceiveDestDone": "Ogłoszono miejsce docelowe odbioru RNCP.",
+      "announceReceiveDestFailed": "Nie udało się ogłosić miejsca docelowego odbioru: {{error}}",
+      "announceReceiveDestListenerOff": "Włącz odbiór plików przychodzących (na liście Zapytaj lub Zezwól) przed ogłoszeniem."
     }
   },
   "meshcoreRoute": {

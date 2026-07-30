@@ -4932,7 +4932,13 @@
       "autoReconnectShell": "Reconnecter automatiquement le shell distant après une déconnexion inattendue",
       "autoRetryTransfer": "Réessayer automatiquement les transferts interrompus",
       "identityTitle": "Mon identité",
-      "myIdentity": "Mon identité :"
+      "myIdentity": "Mon identité :",
+      "rechooseSaveDir": "Re-choisissez le dossier de sauvegarde (requis une fois par lancement d'application pour des raisons de sécurité).",
+      "announceReceiveDest": "Annoncer la destination de la réception",
+      "announceReceiveDestAria": "Annoncer la destination de réception rncp afin que les pairs puissent la découvrir",
+      "announceReceiveDestDone": "Destination de réception RNCP annoncée.",
+      "announceReceiveDestFailed": "Échec de l'annonce de la destination de réception : {{error}}",
+      "announceReceiveDestListenerOff": "Activez la réception de fichiers entrants (Demander ou Autoriser répertorié) avant d'annoncer."
     }
   },
   "meshcoreRoute": {

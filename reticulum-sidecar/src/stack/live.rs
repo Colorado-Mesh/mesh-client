@@ -43,8 +43,7 @@ use super::nomad_request_payload::nomad_page_request_payload;
 use super::nomad_server::NomadServerHandle;
 use super::nomad_timeouts;
 use super::packet_log::{
-    PacketLogBuffer, collect_tx_interface_names_for_egress, emit_wire_packet_event,
-    wire_packet_from_tap,
+    PacketLogBuffer, collect_tx_interface_names_for_egress, wire_packet_from_tap,
 };
 use super::path_speed;
 use super::persistence::PersistedState;
@@ -110,6 +109,10 @@ pub struct LiveBridge {
     last_lxmf_announce_at: Arc<Mutex<Option<Instant>>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
+    /// Recent inbound LXMF for WS catch-up (shared with StackHandle). Held so the
+    /// delivery callback Arc stays alive for the lifetime of the bridge.
+    #[allow(dead_code)]
+    inbound_lxmf: Arc<super::lxmf_inbound_log::LxmfInboundBuffer>,
     /// Serialize Nomad Link queries — transport actor is single-threaded and
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
@@ -211,6 +214,7 @@ impl LiveBridge {
         storage_dir: PathBuf,
         event_tx: broadcast::Sender<String>,
         packet_log: Arc<PacketLogBuffer>,
+        inbound_lxmf: Arc<super::lxmf_inbound_log::LxmfInboundBuffer>,
         inner: Arc<RwLock<PersistedState>>,
     ) -> Result<Self, String> {
         let config_str = config_dir
@@ -232,14 +236,14 @@ impl LiveBridge {
         let (tap_tx, mut tap_rx) = broadcast::channel(256);
         handle.register_packet_tap(tap_tx).await;
         let packet_log_tap = packet_log.clone();
-        let event_tx_tap = event_tx.clone();
+        // Keep PacketLogBuffer for GET /api/v1/packets + egress evidence, but do NOT emit
+        // wire_packet on the shared event bus — that starves lxmf_message under large meshes.
         tokio::spawn(async move {
             loop {
                 match tap_rx.recv().await {
                     Ok(evt) => {
                         let row = wire_packet_from_tap(&evt);
-                        packet_log_tap.push(row.clone());
-                        emit_wire_packet_event(&event_tx_tap, &row);
+                        packet_log_tap.push(row);
                     }
                     Err(broadcast::error::RecvError::Lagged(_)) => {}
                     Err(broadcast::error::RecvError::Closed) => break,
@@ -292,6 +296,7 @@ impl LiveBridge {
         let cache_for_cb = peer_via_cache.clone();
         let name_cache_for_cb = display_name_cache.clone();
         let event_tx_cb = event_tx.clone();
+        let inbound_lxmf_cb = inbound_lxmf.clone();
         let self_hash_cb = lxmf_hash_hex.clone();
         let self_name_cb = display_name.clone();
         let inner_for_cb = inner.clone();
@@ -327,6 +332,16 @@ impl LiveBridge {
                 None,
                 "inbound",
                 Some(&inbound_sender_name),
+            );
+            // Buffer before WS emit so lag/reconnect can catch up via GET /api/v1/lxmf/recent.
+            inbound_lxmf_cb.push(payload.clone());
+            tracing::info!(
+                from = %sender_hex,
+                message_hash = %payload
+                    .get("message_hash")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(""),
+                "inbound LXMF queued for clients"
             );
             let inner = inner_for_cb.clone();
             let config_dir = config_dir_for_cb.clone();
@@ -427,6 +442,7 @@ impl LiveBridge {
             last_lxmf_announce_at,
             event_tx: event_tx.clone(),
             packet_log,
+            inbound_lxmf,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
             rrc_session: Arc::new(RrcSessionManager::spawn(
                 handle.transport_tx.clone(),
@@ -443,6 +459,7 @@ impl LiveBridge {
                 identity.clone(),
                 event_tx.clone(),
                 storage_dir.clone(),
+                config_dir.clone(),
             )),
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
@@ -1487,6 +1504,13 @@ impl LiveBridge {
 
     pub async fn rncp_receive_destination_hash(&self) -> Option<String> {
         self.rncp_transfer.receive_destination_hash().await
+    }
+
+    pub async fn rncp_announce_now(&self) -> serde_json::Value {
+        match self.rncp_transfer.announce_now().await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
     }
 
     pub fn identity_hash_hex(&self) -> String {
