@@ -1,5 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
+import { RRC_ROOM_HISTORY_LOAD_COUNT } from '@/renderer/lib/sessionMemoryCaps';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { RrcChatMessage, RrcChatMessageKind } from '@/shared/rrc-types';
 
@@ -35,7 +36,11 @@ export async function hydrateRrcRoomMessages(
   const key = `${hub}::${roomKey}`;
   if (!opts?.force && hydratedRoomKeys.has(key)) return;
   try {
-    const rows = await window.electronAPI.db.listRrcMessages(hub, roomKey, 500);
+    const rows = await window.electronAPI.db.listRrcMessages(
+      hub,
+      roomKey,
+      RRC_ROOM_HISTORY_LOAD_COUNT,
+    );
     hydratedRoomKeys.add(key);
     const mapped: RrcChatMessage[] = [];
     for (const row of rows) {

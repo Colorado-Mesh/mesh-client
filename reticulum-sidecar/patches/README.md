@@ -2,6 +2,31 @@
 
 Patches applied on top of pinned [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) checkouts for mesh-client `rns-stack` builds.
 
+## Development — overlays/patches
+
+Overlays require **git checkouts** of sibling repos next to this clone (not a bare Cargo cache path):
+
+- `../rsReticulum` — rsReticulum source at the pinned commit used by `clone-ratspeak-stack.sh`
+- `../rsLXMF` — when applying LXMF overlays
+
+**First-time setup:**
+
+```bash
+# From mesh-client repo root — clones/pins siblings and applies known overlays
+./scripts/clone-ratspeak-stack.sh
+# Or ensure patches on an existing sibling tree:
+./scripts/ensure-rsReticulum-patches.sh
+```
+
+Apply a single overlay when developing that patch:
+
+```bash
+./scripts/apply-rsReticulum-discovery-announce-egress.sh
+git -C ../rsReticulum status --short
+```
+
+If a patch is skipped or conflicts after an upstream bump, CI/`ensure-rsReticulum-patches.sh` will fail. Rebase the overlay, regenerate the `.patch` file per the section below, then re-run the apply script.
+
 ## rsReticulum-packet-tap.patch
 
 Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSocket events, `GET /api/v1/packets`).

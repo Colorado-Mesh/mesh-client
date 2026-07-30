@@ -15,6 +15,7 @@ import {
   DEFAULT_PN_HOSTING_POLICY,
   parsePnHostingPolicy,
   type PnHostingPolicy,
+  sanitizePnHostingPolicy,
 } from '@/shared/pnHostingPolicy';
 import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumPropagationAutoSync';
 
@@ -167,17 +168,29 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         last_propagation_sync_at?: number | null;
       };
       const nodes = body.propagation ?? [];
+      const nowMs = Date.now();
+      let lastPropagationSyncAt = get().lastPropagationSyncAt;
+      if (typeof body.last_propagation_sync_at === 'number' && body.last_propagation_sync_at > 0) {
+        const fromSidecarMs = body.last_propagation_sync_at * 1000;
+        if (fromSidecarMs > nowMs) {
+          console.debug(
+            '[reticulumPropagationStore] clamping future last_propagation_sync_at from sidecar',
+          );
+          lastPropagationSyncAt = nowMs;
+        } else {
+          lastPropagationSyncAt = fromSidecarMs;
+        }
+      }
       set({
         nodes,
         preferredId: body.preferred_id ?? null,
         autoSyncIntervalSec:
           body.auto_sync_interval_sec ?? RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
         hostingPolicy: parsePnHostingPolicy(body.pn_hosting_policy),
-        lastRefreshedAt: Date.now(),
-        lastPropagationSyncAt:
-          typeof body.last_propagation_sync_at === 'number' && body.last_propagation_sync_at > 0
-            ? body.last_propagation_sync_at * 1000
-            : get().lastPropagationSyncAt,
+        lastRefreshedAt: nowMs,
+        lastPropagationSyncAt,
+        // Sidecar refresh is authoritative for node metadata; clear phantom in-flight stamp.
+        activePropagationSyncAttemptAt: null,
       });
       await get().refreshDiscoveredFromSidecar();
     } catch (e) {
@@ -237,13 +250,18 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   },
 
   setHostingPolicyOnSidecar: async (policy) => {
+    const sanitized = sanitizePnHostingPolicy(policy);
+    if (!sanitized.ok) {
+      set({ lastAddError: sanitized.error });
+      return false;
+    }
     try {
       const res = (await window.electronAPI.reticulum.proxyPost(
         '/api/v1/propagation/hosting-policy',
-        policy,
+        sanitized.policy,
       )) as { ok?: boolean; error?: string };
       if (res.ok) {
-        set({ hostingPolicy: policy });
+        set({ hostingPolicy: sanitized.policy });
         return true;
       }
       if (res.error) {
@@ -309,41 +327,41 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   },
 
   cancelSync: async (opts) => {
-    try {
-      clearPropagationSyncStallWatchdog();
-      await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync/cancel', {});
+    const applyCancelIdle = (lastSyncError: string) => {
+      set({
+        sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+        lastSyncError,
+        activePropagationSyncAttemptAt: null,
+      });
+    };
+    const resolveCancelError = (existing: string | null, fallback: string): string => {
       // Prefer a sidecar WS failure already applied while cancel awaited; do not let
       // a generic cancel overwrite establish/offer keys (dual 60s watchdog race).
-      set((state) => {
-        const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
-        const existing = state.lastSyncError;
-        const keepSidecar =
-          existing != null &&
-          existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
-          existing !== 'reticulumPropagation.syncTimedOut';
-        return {
-          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-          lastSyncError: keepSidecar ? existing : fallback,
-          activePropagationSyncAttemptAt: null,
-        };
-      });
+      const keepSidecar =
+        existing != null &&
+        existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
+        existing !== 'reticulumPropagation.syncTimedOut';
+      return keepSidecar && existing != null ? existing : fallback;
+    };
+    try {
+      clearPropagationSyncStallWatchdog();
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/sync/cancel',
+        {},
+      )) as { ok?: boolean; error?: string };
+      const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
+      if (res.ok === false || res.error) {
+        const mapped = mapPropagationSyncError(res.error);
+        applyCancelIdle(resolveCancelError(get().lastSyncError, mapped));
+        return false;
+      }
+      applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
       return true;
     } catch (e) {
       console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
       // Proxy failure must not leave sync.active stuck true.
-      set((state) => {
-        const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
-        const existing = state.lastSyncError;
-        const keepSidecar =
-          existing != null &&
-          existing !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
-          existing !== 'reticulumPropagation.syncTimedOut';
-        return {
-          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-          lastSyncError: keepSidecar ? existing : fallback,
-          activePropagationSyncAttemptAt: null,
-        };
-      });
+      const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
+      applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
       return false;
     }
   },

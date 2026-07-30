@@ -2,9 +2,10 @@
   "ignores": [
     "node_modules/**",
     ".cursor/**",
+    ".hermes/**",
     "site/**",
     "release/**",
     "dist/**",
-    "out/**"
+    "out/**",
   ],
 }

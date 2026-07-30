@@ -1130,6 +1130,26 @@ Unrecognized codes pass through unchanged.
 
 **Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]`. Tune announce interval under **Advanced PN hosting**.
 
+### Reticulum PN hosting policy apply fails
+
+**Symptoms**: Saving **Network → Advanced PN hosting** (peering cost, storage limits, static peers, announce interval) fails or reverts; Device log shows hosting-policy errors.
+
+**Cause / checks**:
+
+- Sidecar rejected the policy (`peering_cost_exceeds_max`, `stamp_flex_exceeds_cost`, range limits, or invalid 32-hex static peer). The renderer now validates the same rules before PUT; failure surfaces via the panel error path.
+- Stack/identity not ready (hosting apply needs a live sidecar). BLE/USB hubs themselves are unrelated — policy is local lxmf-core config, but the stack must be running to persist it.
+- Invalid `node_name` (control characters or longer than 128 characters).
+
+**Fix**: Fix the invalid field (keep peering cost ≤ max; stamp flex ≤ stamp cost; static peers as lowercase 32-hex). Confirm Reticulum stack is **running**, then re-apply. Check logs for `[reticulumPropagationStore] hosting policy` / sidecar `hosting-policy` responses.
+
+### Reticulum last synced time looks wrong after update
+
+**Symptoms**: Propagation UI shows a far-future or absurdly old “last synced” time after a sidecar upgrade or clock skew.
+
+**Cause**: `last_propagation_sync_at` comes from the sidecar as Unix seconds. A future clock (or bad stamp) was previously accepted wholesale; refresh now clamps future values to local `Date.now()`.
+
+**Fix**: Run **Refresh** / reopen Propagation after fixing the system clock. Trigger a successful **Sync** to rewrite a sane stamp.
+
 ### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
 
 **Symptoms**: MeshCore MQTT preset worked before upgrade; broker connection fails on port **1883** or wrong topic.

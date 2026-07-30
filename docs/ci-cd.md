@@ -119,7 +119,9 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
 - **Schedule:** Weekly on Saturdays
 - **npm dependencies:** Grouped PRs (Electron separate, all other deps together)
 - **GitHub Actions:** Grouped into one PR
-- **Limit:** 10 open PRs maximum
+- **Open PRs:** `open-pull-requests-limit: 0` — Dependabot scans but does **not** open PRs.
+  Dependency bumps are applied manually via `pnpm run update` (`scripts/update.sh`), which
+  also runs dedupe and Ratspeak/rsReticulum patch checks. See AGENTS.md §6.
 
 ### Testing Dependabot PRs locally
 

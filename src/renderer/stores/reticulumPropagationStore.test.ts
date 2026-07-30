@@ -142,7 +142,7 @@ describe('reticulumPropagationStore', () => {
       'number',
     );
 
-    proxyPost.mockResolvedValueOnce({});
+    proxyPost.mockResolvedValueOnce({ ok: true });
     await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(true);
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
@@ -152,7 +152,7 @@ describe('reticulumPropagationStore', () => {
 
   it('cancelSync keeps a prior sidecar establish failure over timeout reason', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
-    proxyPost.mockResolvedValueOnce({});
+    proxyPost.mockResolvedValueOnce({ ok: true });
     useReticulumPropagationStore.setState({
       sync: { active: true, progress: 10, message: null },
       lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
@@ -167,6 +167,22 @@ describe('reticulumPropagationStore', () => {
     );
   });
 
+  it('cancelSync preserves sidecar cancel error payload', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 40, message: null },
+      lastSyncError: null,
+      activePropagationSyncAttemptAt: 9_001,
+    });
+    await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(false);
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncIdentityUnknown',
+    );
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
+  });
+
   it('cancelSync clears active sync when proxyPost fails', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockRejectedValueOnce(new Error('proxy down'));
@@ -179,6 +195,48 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncCancelled',
     );
+  });
+
+  it('refreshFromSidecar clears phantom activePropagationSyncAttemptAt', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({
+      activePropagationSyncAttemptAt: 12_345,
+      lastPropagationSyncAttemptAt: 12_345,
+    });
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [],
+        preferred_id: null,
+        last_propagation_sync_at: 1_700_000_000,
+      })
+      .mockResolvedValueOnce({ discovered: [] });
+
+    await useReticulumPropagationStore.getState().refreshFromSidecar();
+
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBe(
+      1_700_000_000 * 1000,
+    );
+  });
+
+  it('refreshFromSidecar clamps future last_propagation_sync_at to now', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    const before = Date.now();
+    const futureSec = Math.floor(before / 1000) + 60 * 60 * 24 * 365;
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [],
+        preferred_id: null,
+        last_propagation_sync_at: futureSec,
+      })
+      .mockResolvedValueOnce({ discovered: [] });
+
+    await useReticulumPropagationStore.getState().refreshFromSidecar();
+
+    const at = useReticulumPropagationStore.getState().lastPropagationSyncAt;
+    expect(at).toBeTypeOf('number');
+    expect(at!).toBeLessThanOrEqual(Date.now());
+    expect(at!).toBeGreaterThanOrEqual(before);
   });
 
   it('startSync settles local-prop in-process without a stall watchdog error', async () => {
