@@ -15,6 +15,7 @@ export function useReticulumPanelActions(runtime: ReticulumRuntime) {
       setNodeFavorited: runtime.setNodeFavorited,
       sendReaction: runtime.sendReaction,
       clearRawPackets: runtime.clearRawPackets,
+      hydrateRawPackets: runtime.hydrateRawPackets,
     }),
     [runtime],
   );

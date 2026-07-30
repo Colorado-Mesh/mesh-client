@@ -483,6 +483,17 @@ describe('ReticulumSidecarManager', () => {
     const events: unknown[] = [];
     manager.on('event', (e) => events.push(e));
 
+    const openHandler = wsInstance.handlers.get('open');
+    expect(openHandler).toBeDefined();
+    openHandler?.();
+    expect(events).toEqual([{ type: 'ws_connected', payload: { reconnect: false } }]);
+    events.length = 0;
+
+    // Second open (reconnect path) reports reconnect=true.
+    openHandler?.();
+    expect(events).toEqual([{ type: 'ws_connected', payload: { reconnect: true } }]);
+    events.length = 0;
+
     const messageHandler = wsInstance.handlers.get('message');
     expect(messageHandler).toBeDefined();
 

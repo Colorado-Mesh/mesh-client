@@ -25,7 +25,22 @@ async fn handle_ws(mut socket: WebSocket, stack: Arc<StackHandle>) {
                             break;
                         }
                     }
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                        // Critical events (lxmf_message) may have been dropped. Notify the
+                        // client so it can catch up via GET /api/v1/lxmf/recent.
+                        tracing::warn!(
+                            skipped,
+                            "websocket event subscriber lagged; some events dropped"
+                        );
+                        let notice = serde_json::json!({
+                            "type": "events_lagged",
+                            "payload": { "skipped": skipped }
+                        })
+                        .to_string();
+                        if socket.send(Message::Text(notice.into())).await.is_err() {
+                            break;
+                        }
+                    }
                     Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
                 }
             }
