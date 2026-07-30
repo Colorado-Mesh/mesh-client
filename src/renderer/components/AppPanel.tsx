@@ -315,28 +315,46 @@ export default function AppPanel({
     setThemeColors((prev) => {
       if (prev[key] === hex) return prev;
       const next = { ...prev, [key]: hex };
-      applyThemeColors(next);
-      persistThemeColors(next);
-      return next;
+      // Prefer the clamped map applyThemeColors returns so readableGreen stays
+      // contrast-safe in React state and localStorage (not only on :root).
+      const applied = applyThemeColors(next);
+      if (!applied) return prev;
+      persistThemeColors(applied);
+      return applied;
     });
   }, []);
 
   const handleSaveThemeSnapshot = useCallback(() => {
-    saveThemeSnapshot();
-    setHasSavedThemeSnapshot(true);
-    addToast(t('appPanel.themeSaved'), 'success');
+    try {
+      saveThemeSnapshot();
+      setHasSavedThemeSnapshot(true);
+      addToast(t('appPanel.themeSaved'), 'success');
+    } catch (err) {
+      console.warn('[AppPanel] saveThemeSnapshot failed ' + errLikeToLogString(err));
+      addToast(t('appPanel.themeSaveFailed'), 'error');
+    }
   }, [addToast, t]);
 
   const handleRestoreThemeSnapshot = useCallback(() => {
-    const restored = restoreThemeSnapshot();
-    setThemeColors(restored);
-    addToast(t('appPanel.themeRestored'), 'success');
+    try {
+      const restored = restoreThemeSnapshot();
+      setThemeColors(restored);
+      addToast(t('appPanel.themeRestored'), 'success');
+    } catch (err) {
+      console.warn('[AppPanel] restoreThemeSnapshot failed ' + errLikeToLogString(err));
+      addToast(t('appPanel.themeRestoreFailed'), 'error');
+    }
   }, [addToast, t]);
 
   const handleResetThemeColors = useCallback(() => {
-    resetThemeColors();
-    setThemeColors({ ...DEFAULT_THEME_COLORS });
-    addToast(t('appPanel.colorsReset'), 'success');
+    try {
+      resetThemeColors();
+      setThemeColors({ ...DEFAULT_THEME_COLORS });
+      addToast(t('appPanel.colorsReset'), 'success');
+    } catch (err) {
+      console.warn('[AppPanel] resetThemeColors failed ' + errLikeToLogString(err));
+      addToast(t('appPanel.themeResetFailed'), 'error');
+    }
   }, [addToast, t]);
 
   const handleExportSupportBundle = useCallback(

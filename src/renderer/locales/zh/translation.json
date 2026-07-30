@@ -375,7 +375,10 @@
     "restoreThemeButton": "恢复",
     "reticulumPropagationHelp": "为离线DM配置远程LXMF传播节点。本地传播仅是此设备的收件箱—它不会替换远程节点。",
     "use24HourTime": "24小时时间",
-    "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。"
+    "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。",
+    "themeSaveFailed": "无法保存颜色检查点。",
+    "themeRestoreFailed": "无法还原颜色检查点。",
+    "themeResetFailed": "无法重置颜色。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

@@ -375,7 +375,10 @@
     "restoreThemeButton": "Wiederherstellen",
     "reticulumPropagationHelp": "Konfigurieren Sie Remote-LXMF-Verbreitungsknoten für Offline-DMS. Die lokale Ausbreitung ist nur der Posteingang dieses Geräts — sie ersetzt keinen Remote-Knoten.",
     "use24HourTime": "24-Stunden-Zeitformat",
-    "use24HourTimeDesc": "Erzwinge Uhren wie Chat-Zeitstempel im 24-Stunden-Format. Wenn diese Option deaktiviert ist, folgt sie Ihrem Systemgebietsschema."
+    "use24HourTimeDesc": "Erzwinge Uhren wie Chat-Zeitstempel im 24-Stunden-Format. Wenn diese Option deaktiviert ist, folgt sie Ihrem Systemgebietsschema.",
+    "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
+    "themeRestoreFailed": "Farbprüfpunkt konnte nicht wiederhergestellt werden.",
+    "themeResetFailed": "Farben konnten nicht zurückgesetzt werden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

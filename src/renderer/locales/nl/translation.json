@@ -375,7 +375,10 @@
     "restoreThemeButton": "Herstellen",
     "reticulumPropagationHelp": "Configureer externe LXMF-voortplantingsknooppunten voor offline DM's. Lokale verspreiding is alleen de inbox van dit apparaat — het vervangt geen extern knooppunt.",
     "use24HourTime": "24-uursaanduiding",
-    "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem."
+    "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem.",
+    "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
+    "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
+    "themeResetFailed": "Kan kleuren niet resetten."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

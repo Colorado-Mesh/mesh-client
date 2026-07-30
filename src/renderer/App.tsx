@@ -3142,6 +3142,7 @@ function AppContent() {
                                 isActive={
                                   activePanelIndex === RRC_PANEL_INDEX && capabilities.hasRrcPanel
                                 }
+                                alwaysShowMessageActions={alwaysShowMessageActions}
                               />
                             </div>
                           </Suspense>

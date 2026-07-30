@@ -3166,6 +3166,37 @@ describe('ChatPanel — copy button', () => {
   });
 });
 
+describe('ChatPanel — always show message actions', () => {
+  it('keeps the action bar opacity-100 when alwaysShowMessageActions is set', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          alwaysShowMessageActions
+          messages={[makeMsg({ payload: 'visible actions' })]}
+        />
+      </ToastProvider>,
+    );
+    const btn = await screen.findByTitle('Copy message');
+    const bar = btn.parentElement;
+    expect(bar?.className).toContain('opacity-100');
+    expect(bar?.className).not.toMatch(/(?:^|\s)opacity-0(?:\s|$)/);
+  });
+
+  it('uses hover/focus-within visibility for the action bar by default', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg({ payload: 'hover actions' })]} />
+      </ToastProvider>,
+    );
+    const btn = await screen.findByTitle('Copy message');
+    const bar = btn.parentElement;
+    expect(bar?.className).toMatch(/(?:^|\s)opacity-0(?:\s|$)/);
+    expect(bar?.className).toContain('group-focus-within/msg:opacity-100');
+    expect(bar?.className).toContain('group-hover/msg:opacity-100');
+  });
+});
+
 describe('ChatPanel — sender filter', () => {
   it('shows all messages by default, filter banner absent', () => {
     render(

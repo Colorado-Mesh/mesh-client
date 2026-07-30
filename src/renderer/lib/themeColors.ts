@@ -197,8 +197,11 @@ function resolveThemeHex(raw: string | undefined, key: ThemeColorKey): string | 
  * Apply theme colors to :root. Pass full map (merged with defaults) so every var is set.
  * If any value is not strictly # + 6 hex after normalize, skips all setProperty calls
  * and logs once — never applies partial/unsane strings.
+ * Returns the clamped/resolved map that was applied, or null when skipped.
  */
-export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
+export function applyThemeColors(
+  colors: Record<ThemeColorKey, string>,
+): Record<ThemeColorKey, string> | null {
   const merged = { ...colors };
   if (ensureReadableGreenContrast(merged)) {
     persistThemeColors(merged);
@@ -210,7 +213,7 @@ export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
       console.warn(
         `[themeColors] applyThemeColors skipped — invalid or non-strict hex key=${sanitizeLogMessage(key)} raw=${sanitizeLogMessage(merged[key])}`,
       );
-      return;
+      return null;
     }
     resolved[key] = hex;
   }
@@ -226,6 +229,7 @@ export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
       root.style.setProperty(THEME_CSS_VARS[key], hex);
     }
   }
+  return resolved;
 }
 
 const READABLE_GREEN_ON_WHITE_MIN_RATIO = 4.5;

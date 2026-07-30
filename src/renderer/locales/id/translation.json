@@ -375,7 +375,10 @@
     "restoreThemeButton": "Pulihkan",
     "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh.",
     "use24HourTime": "Gunakan waktu 24 jam",
-    "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda."
+    "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda.",
+    "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
+    "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
+    "themeResetFailed": "Gagal mengatur ulang warna."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -375,7 +375,10 @@
     "restoreThemeButton": "リストア",
     "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
     "use24HourTime": "24時間制を使用する",
-    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。"
+    "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。",
+    "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
+    "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
+    "themeResetFailed": "色をリセットできませんでした。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

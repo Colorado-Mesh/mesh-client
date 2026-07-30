@@ -124,12 +124,20 @@ describe('themeColors', () => {
     it('coerces inaccessible readableGreen to accessible default before applying', () => {
       const setProp = vi.fn();
       vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
-      applyThemeColors({ ...DEFAULT_THEME_COLORS, readableGreen: '#16a34a' });
+      const applied = applyThemeColors({ ...DEFAULT_THEME_COLORS, readableGreen: '#16a34a' });
       const call = setProp.mock.calls.find(([prop]) => prop === '--color-readable-green');
       expect(call).toBeDefined();
       expect(call![1]).toBe('#15803d');
+      expect(applied?.readableGreen).toBe('#15803d');
       expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
       vi.restoreAllMocks();
+    });
+
+    it('returns the resolved map so callers can persist the clamped colors', () => {
+      const applied = applyThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#112233' });
+      expect(applied).not.toBeNull();
+      expect(applied!.appBg).toBe('#112233');
+      expect(applied!.readableGreen).toBe(DEFAULT_THEME_COLORS.readableGreen);
     });
   });
 

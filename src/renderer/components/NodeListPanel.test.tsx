@@ -37,11 +37,15 @@ vi.mock('../stores/positionHistoryStore', () => ({
     selector(positionHistoryStoreState),
 }));
 
+const diagnosticsStoreState = vi.hoisted(() => ({
+  ignoreMqttEnabled: false,
+}));
+
 vi.mock('../stores/diagnosticsStore', () => ({
   useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
     const store = {
       diagnosticRows: [],
-      ignoreMqttEnabled: false,
+      ignoreMqttEnabled: diagnosticsStoreState.ignoreMqttEnabled,
       nodeRedundancy: new Map(),
     };
     return selector(store);
@@ -105,6 +109,7 @@ const defaultFilter = {
 
 describe('NodeListPanel accessibility', () => {
   beforeEach(() => {
+    diagnosticsStoreState.ignoreMqttEnabled = false;
     meshcoreContactCapacityState.contactCount = null;
     meshcoreContactCapacityState.loading = false;
     meshcoreContactCapacityState.offloadProgress = null;
@@ -145,6 +150,60 @@ describe('NodeListPanel accessibility', () => {
       />,
     );
     expect(screen.getByRole('heading', { name: 'Contacts (0)' })).toBeInTheDocument();
+  });
+
+  it('does not fade offline, stale, or MQTT-only rows with opacity classes', () => {
+    diagnosticsStoreState.ignoreMqttEnabled = true;
+    const now = Date.now();
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', last_heard: now })],
+      [
+        2,
+        makeNode({
+          node_id: 2,
+          long_name: 'OfflinePeer',
+          last_heard: now - 8 * 24 * 3_600_000,
+        }),
+      ],
+      [
+        3,
+        makeNode({
+          node_id: 3,
+          long_name: 'StalePeer',
+          last_heard: now - 3 * 3_600_000,
+        }),
+      ],
+      [
+        4,
+        makeNode({
+          node_id: 4,
+          long_name: 'MqttOnlyPeer',
+          last_heard: now,
+          heard_via_mqtt: true,
+          heard_via_mqtt_only: true,
+        }),
+      ],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+
+    for (const name of ['OfflinePeer', 'StalePeer', 'MqttOnlyPeer'] as const) {
+      const cell = screen.getByText(name);
+      const row = cell.closest('tr');
+      expect(row).not.toBeNull();
+      expect(row!.className).not.toMatch(/opacity-(?:20|35|50)\b/);
+      expect(row!.querySelector('[role="img"]')).not.toBeNull();
+    }
+    // MQTT-ignored peers still get a strikethrough name treatment without row fade.
+    expect(screen.getByText('MqttOnlyPeer').closest('td')?.className).toContain('line-through');
   });
 
   it('shows Signal and SNR columns for meshcore contacts with RF data', () => {

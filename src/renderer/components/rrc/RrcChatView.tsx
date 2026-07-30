@@ -71,6 +71,8 @@ export interface RrcChatViewProps {
   isMuted: boolean;
   /** Local session nick — used to highlight @mentions of self. */
   nickname?: string;
+  /** Keep the per-message copy control visible (same App Appearance setting as Chat). */
+  alwaysShowMessageActions?: boolean;
 }
 
 export function RrcChatView({
@@ -84,6 +86,7 @@ export function RrcChatView({
   canSend,
   isMuted,
   nickname = '',
+  alwaysShowMessageActions = false,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
@@ -149,7 +152,11 @@ export function RrcChatView({
                 </div>
                 <button
                   type="button"
-                  className="shrink-0 p-0.5 text-amber-200/20 opacity-0 group-hover:opacity-100 hover:text-amber-100"
+                  className={`shrink-0 p-0.5 text-amber-200/20 hover:text-amber-100 ${
+                    alwaysShowMessageActions
+                      ? 'opacity-100'
+                      : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+                  }`}
                   aria-label={t('rrc.copyMessage')}
                   title={t('rrc.copyMessage')}
                   onClick={() => {

@@ -375,7 +375,10 @@
     "restoreThemeButton": "Obnovit",
     "reticulumPropagationHelp": "Nakonfigurujte vzdálené uzly šíření LXMF pro offline DM. Místní propagace je pouze schránka tohoto zařízení — nenahrazuje vzdálený uzel.",
     "use24HourTime": "24hodinový čas",
-    "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému."
+    "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému.",
+    "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
+    "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
+    "themeResetFailed": "Obnovení barev se nezdařilo."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

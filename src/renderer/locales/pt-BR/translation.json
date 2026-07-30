@@ -375,7 +375,10 @@
     "restoreThemeButton": "Restaurar",
     "reticulumPropagationHelp": "Configurar nós de propagação LXMF remotos para DMs offline. A propagação local é apenas a caixa de entrada deste dispositivo — ela não substitui um nó remoto.",
     "use24HourTime": "Use o tempo de 24 horas",
-    "use24HourTimeDesc": "Forçar relógios como carimbos de data e hora de bate-papo para o formato de 24 horas. Quando desligado, segue a localidade do seu sistema."
+    "use24HourTimeDesc": "Forçar relógios como carimbos de data e hora de bate-papo para o formato de 24 horas. Quando desligado, segue a localidade do seu sistema.",
+    "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
+    "themeRestoreFailed": "Falha ao restaurar o ponto de verificação de cores.",
+    "themeResetFailed": "Falha ao redefinir as cores."
   },
   "aria": {
     "closeDialog": "Fechar janela",

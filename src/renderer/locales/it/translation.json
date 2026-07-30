@@ -375,7 +375,10 @@
     "restoreThemeButton": "Ripristina",
     "reticulumPropagationHelp": "Configurare nodi di propagazione LXMF remoti per DM offline. La propagazione locale è solo la casella di posta in arrivo di questo dispositivo — non sostituisce un nodo remoto.",
     "use24HourTime": "Formato 24 ore",
-    "use24HourTimeDesc": "Forza gli orologi come i timestamp della chat al formato di 24 ore. Quando è spento, seguire le impostazioni locali del sistema."
+    "use24HourTimeDesc": "Forza gli orologi come i timestamp della chat al formato di 24 ore. Quando è spento, seguire le impostazioni locali del sistema.",
+    "themeSaveFailed": "Impossibile salvare il checkpoint del colore.",
+    "themeRestoreFailed": "Impossibile ripristinare il checkpoint del colore.",
+    "themeResetFailed": "Impossibile reimpostare i colori."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
