@@ -112,7 +112,7 @@ Adding a cross-boundary feature:
 
 ## 6. Commands & CI Checks
 
-**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run check:pr`, `pnpm run update`. Reticulum sidecar: `pnpm run check:reticulum-sidecar` (full features), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
+**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run check:pr`, `pnpm run update`. Electron E2E (on demand / daily CI, not Vitest or pre-commit): `pnpm run test:e2e:build` (or `test:e2e` after `build`); workflow [`.github/workflows/e2e.yaml`](.github/workflows/e2e.yaml) (`schedule` on `main` + `workflow_dispatch`, 3-OS matrix). Reticulum sidecar: `pnpm run check:reticulum-sidecar` (full features), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
 
 **ESLint type-aware scopes:** production `src/**` enables `no-unsafe-*`; `*.test.ts` / `*.test.tsx` keep those off. `@typescript-eslint/no-unnecessary-condition` is error only for `src/shared/**` and `src/renderer/lib/**` (not UI components/runtimes).
 

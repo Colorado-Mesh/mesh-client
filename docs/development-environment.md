@@ -505,6 +505,7 @@ This section is the project test harness setup.
 Installed via `pnpm install` (from `package.json`):
 
 - `vitest`, `@vitest/coverage-v8`, and renderer/main test dependencies
+- `@playwright/test` (Electron E2E; browser downloads skipped via `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` in `.npmrc`)
 - `eslint`, `typescript`, `typescript-eslint`
 - `prettier`, `prettier-plugin-sh`, `prettier-plugin-tailwindcss`
 - `markdownlint-cli2`, `vitest-axe`
@@ -532,6 +533,22 @@ Worker counts are derived in [`vitest.harness.mts`](../vitest.harness.mts) via `
 By default all three Vitest projects run in **parallel** (`groupOrder: 0`). On memory-constrained hosts, set `VITEST_SEQUENTIAL_PROJECTS=1` to run `renderer-ui` first, then `renderer-logic` + `main` together (legacy behavior).
 
 CI runs coverage in three parallel jobs (`renderer-ui`, `renderer-logic`, `main`) and merges blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
+
+#### Playwright Electron E2E
+
+Standalone suite under [`e2e/`](../e2e/) launches the **unpackaged** production build with Playwright’s Electron API (`playwright._electron.launch`), using [`resolveLocalElectronBin()`](../scripts/start-electron.mjs) and an isolated `--user-data-dir` (`mesh-e2e-*` under the OS temp dir). Specs cover startup, preload IPC, tabs, window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.
+
+| Command                    | Purpose                                                              |
+| -------------------------- | -------------------------------------------------------------------- |
+| `pnpm run test:e2e:build`  | `pnpm run build` then Playwright                                     |
+| `pnpm run test:e2e`        | Playwright only (requires existing `dist-electron` + renderer build) |
+| `pnpm run test:e2e:headed` | Headed Electron windows                                              |
+
+Constraints:
+
+- **`workers: 1`** — main uses `requestSingleInstanceLock()`; parallel launches flake.
+- **Linux:** set `MESH_CLIENT_DISABLE_GPU=1` (harness does this); CI uses `xvfb-run -a`. Local headless Linux needs `DISPLAY` or Xvfb (`pnpm run check:environment` warns when neither is available).
+- **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Daily + manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml).
 
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes. Another example: [`meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`](../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts) asserts LocalStats / RF hop-SNR still call `processNodeUpdate` from `meshtasticNodeSideEffects` / `meshtasticRawPacketSideEffects`.
 

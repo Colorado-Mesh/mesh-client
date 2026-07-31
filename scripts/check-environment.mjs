@@ -548,6 +548,72 @@ function checkAct() {
 }
 
 /**
+ * Pure evaluator for Playwright optional check (unit-tested).
+ *
+ * @param {{
+ *   packageResolves: boolean,
+ *   versionOutput: string | null,
+ *   platform?: string,
+ *   hasDisplay?: boolean,
+ *   hasXvfbRun?: boolean,
+ * }} input
+ * @returns {CheckResult[]}
+ */
+export function evaluatePlaywrightCheck(input) {
+  const {
+    packageResolves,
+    versionOutput,
+    platform = process.platform,
+    hasDisplay = Boolean(process.env.DISPLAY),
+    hasXvfbRun = false,
+  } = input;
+
+  /** @type {CheckResult[]} */
+  const results = [];
+
+  if (!packageResolves || !versionOutput) {
+    results.push({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Playwright not found (optional)',
+      hint: 'Install deps (pnpm install), then run Electron E2E with pnpm run test:e2e:build',
+    });
+  } else {
+    results.push({
+      status: 'pass',
+      severity: 'optional',
+      label: 'Playwright',
+      detail: versionOutput.split('\n')[0],
+    });
+  }
+
+  if (platform === 'linux' && !hasDisplay && !hasXvfbRun) {
+    results.push({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Linux display for E2E (optional)',
+      hint: 'Local Electron E2E needs DISPLAY or xvfb-run (e.g. sudo apt install xvfb)',
+    });
+  }
+
+  return results;
+}
+
+function checkPlaywright() {
+  const playwrightPkg = join(repoRoot, 'node_modules', '@playwright', 'test', 'package.json');
+  const packageResolves = existsSync(playwrightPkg);
+  const versionOutput = commandOutput('pnpm', ['exec', 'playwright', '--version']);
+  const hasXvfbRun = Boolean(commandOutput('which', ['xvfb-run']));
+  return evaluatePlaywrightCheck({
+    packageResolves,
+    versionOutput,
+    platform: process.platform,
+    hasDisplay: Boolean(process.env.DISPLAY),
+    hasXvfbRun,
+  });
+}
+
+/**
  * @param {CheckResult[]} checks
  * @returns {string | null}
  */
@@ -637,6 +703,7 @@ export function runChecks(options = {}) {
     checkYamllint(),
     checkDocker(),
     checkAct(),
+    ...checkPlaywright(),
     checkLinuxDialout(),
   ].filter(Boolean);
 

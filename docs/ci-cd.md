@@ -6,15 +6,16 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                 | Trigger                         | Purpose                                                                         |
-| ------------------------ | ------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                | Push/PR to `main`               | Lint, typecheck, build, Flatpak manifest validation                             |
-| `tests.yaml`             | Push/PR to `main`               | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
-| `build.yaml`             | Manual `workflow_dispatch`      | Native 3-OS packaging smoke build                                               |
-| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main` | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
-| `release.yaml`           | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm)                                     |
-| `flatpak.yaml`           | Version tags (`v*`), manual     | Build Flatpak; publish to release on tags                                       |
-| `docs.yml`               | Push to `main`                  | Deploy MkDocs to GitHub Pages                                                   |
+| Workflow                 | Trigger                                      | Purpose                                                                         |
+| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `ci.yaml`                | Push/PR to `main`                            | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`             | Push/PR to `main`                            | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `e2e.yaml`               | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
+| `build.yaml`             | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build                                               |
+| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
+| `release.yaml`           | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
+| `flatpak.yaml`           | Version tags (`v*`), manual                  | Build Flatpak; publish to release on tags                                       |
+| `docs.yml`               | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
 
 ---
 
@@ -55,6 +56,18 @@ Runs on every push and pull request to `main`:
 Static analysis on PRs is **CodeQL** (security) plus ESLint, Clippy, and pre-commit `check:*` scanners. AI PR review is **CodeRabbit** (see [CodeRabbit](#coderabbit) below). SonarQube Cloud is not used.
 
 Test results are available as a downloadable artifact from the workflow run.
+
+### Electron E2E (`e2e.yaml`)
+
+Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manual** `workflow_dispatch`:
+
+1. Checkout, setup pnpm + Node 22, `pnpm install --frozen-lockfile` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
+2. Linux: install Electron runtime libraries + `xvfb`
+3. `pnpm run build` (unpackaged `dist-electron` + renderer)
+4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
+5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)
+
+Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
 
 ### Reticulum sidecar (`reticulum-sidecar.yaml`)
 

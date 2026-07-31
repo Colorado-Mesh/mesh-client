@@ -5,6 +5,7 @@ import {
   formatCheckResult,
   formatLocalActDockerNote,
   evaluateContainerEngineCheck,
+  evaluatePlaywrightCheck,
   parseVersion,
   resolveExitCode,
   versionGte,
@@ -232,5 +233,65 @@ describe('check-environment evaluateContainerEngineCheck', () => {
       label: 'Container engine not found (optional)',
     });
     expect(result.hint).toContain('/opt/podman/bin');
+  });
+});
+
+describe('check-environment evaluatePlaywrightCheck', () => {
+  it('passes when package resolves and version is available', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'darwin',
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      status: 'pass',
+      severity: 'optional',
+      label: 'Playwright',
+      detail: 'Version 1.62.1',
+    });
+  });
+
+  it('warns when Playwright is missing', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: false,
+      versionOutput: null,
+      platform: 'darwin',
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Playwright not found (optional)',
+    });
+    expect(results[0].hint).toContain('test:e2e:build');
+  });
+
+  it('warns on Linux when neither DISPLAY nor xvfb-run is available', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'linux',
+      hasDisplay: false,
+      hasXvfbRun: false,
+    });
+    expect(results).toHaveLength(2);
+    expect(results[0].status).toBe('pass');
+    expect(results[1]).toMatchObject({
+      status: 'warn',
+      label: 'Linux display for E2E (optional)',
+    });
+  });
+
+  it('skips Linux display warn when xvfb-run is present', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'linux',
+      hasDisplay: false,
+      hasXvfbRun: true,
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0].status).toBe('pass');
   });
 });
