@@ -56,6 +56,13 @@ describe('release.sh full-suite gate', () => {
     expect(script).not.toMatch(/precommit-tests\.mjs/);
   });
 
+  it('does not invoke pnpm dedupe --check (hoisted linker mutates node_modules)', () => {
+    // Comments may mention the unsafe flag; the active command must not run it.
+    expect(script).not.toMatch(/^\s*(?:if ! )?pnpm dedupe --check\b/m);
+    expect(script).toMatch(/assert_lockfile_deduped/);
+    expect(script).toMatch(/assert_release_clis/);
+  });
+
   it('requires actionlint and yamllint (no soft-skip)', () => {
     expect(script).toMatch(/actionlint not found/);
     expect(script).toMatch(/yamllint not found/);

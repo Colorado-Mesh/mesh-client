@@ -17,6 +17,49 @@ print_success() { echo -e "${GREEN}$1${NC}"; }
 print_warning() { echo -e "${YELLOW}$1${NC}"; }
 print_error() { echo -e "${RED}$1${NC}"; }
 
+# Hoisted nodeLinker (`pnpm-workspace.yaml`) + `pnpm dedupe --check` is unsafe: the
+# check moves packages into node_modules/.ignored (claiming a "different package
+# manager") and leaves dangling/missing .bin links (vitest, prettier, eslint).
+# Plain `pnpm dedupe` does not do that. Prefer lockfile re-dedupe stability instead.
+assert_lockfile_deduped() {
+  local before after
+  before=$(shasum -a 256 pnpm-lock.yaml | awk '{print $1}')
+  pnpm dedupe
+  after=$(shasum -a 256 pnpm-lock.yaml | awk '{print $1}')
+  if [ "$before" != "$after" ]; then
+    print_error "Dependency deduplication check failed. Lockfile changed on re-dedupe; run 'pnpm dedupe' and commit the lockfile."
+    return 1
+  fi
+  return 0
+}
+
+# Fail fast if release CLIs were removed/broken (dangling .bin after .ignored moves,
+# or bin targets without the execute bit).
+assert_release_clis() {
+  local missing
+  missing=$(
+    python3 - << 'PY'
+import os
+missing = []
+for cmd in ("prettier", "vitest", "eslint"):
+    link = os.path.join("node_modules", ".bin", cmd)
+    if not os.path.lexists(link):
+        missing.append(cmd)
+        continue
+    target = os.path.realpath(link)
+    if not os.path.isfile(target) or not os.access(target, os.X_OK):
+        missing.append(cmd)
+print(" ".join(missing))
+PY
+  )
+  if [ -n "$missing" ]; then
+    print_error "Release CLI(s) missing or broken in node_modules/.bin: $missing"
+    print_error "With nodeLinker=hoisted, repair with: rm -rf node_modules && pnpm install"
+    return 1
+  fi
+  return 0
+}
+
 # ====================== NEW: Generate nice copy-paste release notes ======================
 generate_release_notes() {
   local last_tag="$1"
@@ -264,6 +307,11 @@ if ! pnpm run check:environment; then
   exit 1
 fi
 
+echo "Verifying release CLIs (prettier/vitest/eslint)..."
+if ! assert_release_clis; then
+  exit 1
+fi
+
 # Check formatting
 echo "Checking code formatting..."
 if ! pnpm run format:check; then
@@ -396,9 +444,10 @@ if ! pnpm run check:flatpak-offline-pnpm; then
 fi
 
 # Dependency checks
-echo "Checking dependencies..."
-if ! pnpm dedupe --check; then
-  print_error "Dependency deduplication check failed. Run 'pnpm dedupe' to fix."
+# Do NOT use `pnpm dedupe --check` here: with nodeLinker=hoisted it mutates
+# node_modules (moves packages to .ignored) and breaks .bin (vitest not found).
+echo "Checking dependencies (re-dedupe lockfile stability)..."
+if ! assert_lockfile_deduped; then
   exit 1
 fi
 
@@ -444,6 +493,10 @@ fi
 
 # Full Vitest suite — never use the pre-commit staged subset or --changed filters here.
 # Pre-commit may run a staged subset; release must match PR CI coverage of all tests.
+echo "Verifying Vitest CLI before full suite..."
+if ! assert_release_clis; then
+  exit 1
+fi
 echo "Running full Vitest suite (pnpm run test:run)..."
 if ! pnpm run test:run; then
   print_error "Tests failed."
