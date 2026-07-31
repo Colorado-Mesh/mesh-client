@@ -4770,7 +4770,7 @@
       "enabled": "File receiving is enabled.",
       "enableFailed": "Could not enable file receiving: {{error}}",
       "saveDirRequired": "Choose a save folder to enable receiving.",
-      "identityUnknown": "Could not resolve this peer's identity hash yet — inbound Ask is enabled, but they were not added to the allow list. Try again after a path or announce arrives.",
+      "identityUnknown": "Inbound Ask is on, but this peer's identity hash is not known yet so they were not added to Always allow. You will still be asked before each file; try Always allow again after a path or announce arrives.",
       "lxmfBody": "Please enable rncp file receiving and reply with your rncp receive destination hash.",
       "lxmfShareBody": "File receiving is enabled. My rncp receive destination hash:"
     },

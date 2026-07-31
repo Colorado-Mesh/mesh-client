@@ -4903,10 +4903,10 @@
       "enabled": "La recepción de archivos está habilitada.",
       "enableFailed": "No se ha podido habilitar la recepción de archivos: {{error}}",
       "saveDirRequired": "Elija una carpeta de guardado para habilitar la recepción.",
-      "identityUnknown": "Aún no se pudo resolver el hash de identidad de este par — el modo Preguntar está activado, pero no se añadió a la lista de permitidos. Inténtalo de nuevo cuando llegue una ruta o un anuncio.",
       "shareDestWarning": "Si lo habilita, mesh-client enviará su destino de recepción rncp a este par para que pueda completar automáticamente el envío del archivo.",
       "lxmfBody": "Habilite la recepción de archivos rncp y responda con su hash de destino de recepción rncp.",
-      "lxmfShareBody": "La recepción de archivos está habilitada. Mi rncp recibe el hash de destino:"
+      "lxmfShareBody": "La recepción de archivos está habilitada. Mi rncp recibe el hash de destino:",
+      "identityUnknown": "La pregunta entrante está activada, pero aún no se conoce el hash de identidad de este par, por lo que no se agregaron a Permitir siempre. Aún se le preguntará antes de cada archivo; Intente Permitir siempre nuevamente después de que llegue una ruta o un anuncio."
     },
     "saved": {
       "labelPlaceholder": "Designación",

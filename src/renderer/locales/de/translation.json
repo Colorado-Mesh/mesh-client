@@ -4903,10 +4903,10 @@
       "enabled": "Der Dateiempfang ist aktiviert.",
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
-      "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
       "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann.",
       "lxmfBody": "Bitte aktivieren Sie den Empfang von RNCP-Dateien und antworten Sie mit Ihrem RNCP-Empfangsziel-Hash.",
-      "lxmfShareBody": "Der Dateiempfang ist aktiviert. Mein RNCP-Empfangsziel-Hash:"
+      "lxmfShareBody": "Der Dateiempfang ist aktiviert. Mein RNCP-Empfangsziel-Hash:",
+      "identityUnknown": "„Eingehende Anfragen“ ist aktiviert, aber der Identitäts-Hash dieses Peers ist noch nicht bekannt, sodass er nicht zu „Immer zulassen“ hinzugefügt wurde. Sie werden weiterhin vor jeder Datei gefragt; Versuchen Sie „Immer zulassen“ erneut, nachdem ein Pfad oder eine Ankündigung eintrifft."
     },
     "saved": {
       "labelPlaceholder": "Etikett",

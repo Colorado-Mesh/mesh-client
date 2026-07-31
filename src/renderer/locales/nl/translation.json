@@ -4903,10 +4903,10 @@
       "enabled": "Bestandsontvangst is ingeschakeld.",
       "enableFailed": "Kon het ontvangen van bestanden niet inschakelen: {{error}}",
       "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
-      "identityUnknown": "De identiteitshash van deze peer kon nog niet worden bepaald — inkomend vragen is ingeschakeld, maar de peer is niet aan de toestaanlijst toegevoegd. Probeer het opnieuw nadat een pad of aankondiging is ontvangen.",
       "shareDestWarning": "Als u dit inschakelt, zal mesh-client uw rncp-ontvangstbestemming naar deze peer sturen, zodat zij het verzenden van bestanden automatisch kunnen aanvullen.",
       "lxmfBody": "Schakel het ontvangen van rncp-bestanden in en antwoord met de hash van uw rncp-ontvangstbestemming.",
-      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Mijn rncp ontvangt bestemmingshash:"
+      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Mijn rncp ontvangt bestemmingshash:",
+      "identityUnknown": "Inkomend vragen is ingeschakeld, maar de identiteitshash van deze peer is nog niet bekend, dus deze is niet toegevoegd aan Altijd toestaan. U wordt nog steeds vóór elk bestand gevraagd; probeer Altijd opnieuw toestaan ​​nadat een pad of aankondiging binnenkomt."
     },
     "saved": {
       "labelPlaceholder": "Label",

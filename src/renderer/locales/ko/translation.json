@@ -4903,10 +4903,10 @@
       "enabled": "파일 수신이 활성화되었습니다.",
       "enableFailed": "파일 수신을 활성화할 수 없습니다: {{error}}",
       "saveDirRequired": "수신을 활성화하려면 저장 폴더를 선택하세요.",
-      "identityUnknown": "이 피어의 신원 해시를 아직 확인할 수 없습니다 — 수신 확인은 활성화되었지만 허용 목록에는 추가되지 않았습니다. 경로나 알림이 도착한 후 다시 시도하세요.",
       "shareDestWarning": "활성화하면 mesh-client는 rncp 수신 대상을 이 피어에 보내 파일 보내기를 자동 채울 수 있습니다.",
       "lxmfBody": "rncp 파일 수신을 활성화하고 rncp 수신 대상 해시로 응답하세요.",
-      "lxmfShareBody": "파일 수신이 활성화되었습니다. 내 rncp 수신 대상 해시:"
+      "lxmfShareBody": "파일 수신이 활성화되었습니다. 내 rncp 수신 대상 해시:",
+      "identityUnknown": "인바운드 요청이 켜져 있지만 이 피어의 ID 해시가 아직 알려지지 않았기 때문에 항상 허용에 추가되지 않았습니다. 각 파일 앞에는 여전히 질문이 표시됩니다. 경로나 알림이 도착한 후에는 항상 다시 허용해 보세요."
     },
     "saved": {
       "labelPlaceholder": "상표",

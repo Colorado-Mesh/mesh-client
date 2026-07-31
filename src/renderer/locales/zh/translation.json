@@ -4903,10 +4903,10 @@
       "enabled": "文件接收已启用。",
       "enableFailed": "无法启用文件接收： {{error}}",
       "saveDirRequired": "选择一个保存文件夹以启用接收。",
-      "identityUnknown": "暂时无法解析此对等节点的身份哈希 — 已启用来件询问，但未将其加入允许列表。等路径或公告到达后再试一次。",
       "shareDestWarning": "如果启用，mesh-client 会将您的 rncp 接收目标发送到该对等方，以便他们可以自动填充文件发送。",
       "lxmfBody": "请启用 rncp 文件接收并回复您的 rncp 接收目标哈希。",
-      "lxmfShareBody": "文件接收已启用。我的 rncp 接收目标哈希值："
+      "lxmfShareBody": "文件接收已启用。我的 rncp 接收目标哈希值：",
+      "identityUnknown": "入站询问已打开，但该对等方的身份哈希尚不清楚，因此它们未添加到始终允许中。每个文件之前仍会询问您；尝试在路径或公告到达后再次始终允许。"
     },
     "saved": {
       "labelPlaceholder": "标号",

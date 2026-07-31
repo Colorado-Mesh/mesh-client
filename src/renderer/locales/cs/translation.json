@@ -4905,10 +4905,10 @@
       "enabled": "Příjem souboru je povolen.",
       "enableFailed": "Nelze povolit příjem souboru: {{error}}",
       "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
-      "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
       "shareDestWarning": "Pokud povolíte, mesh-client odešle váš cíl příjmu rncp tomuto partnerovi, aby mohl automaticky vyplnit soubor.",
       "lxmfBody": "Povolte příjem souboru rncp a odpovězte pomocí cílového hash pro příjem rncp.",
-      "lxmfShareBody": "Příjem souborů je povolen. Můj rncp přijímá cílový hash:"
+      "lxmfShareBody": "Příjem souborů je povolen. Můj rncp přijímá cílový hash:",
+      "identityUnknown": "Příchozí dotaz je zapnutý, ale hash identity tohoto partnera zatím není znám, takže nebyl přidán do Vždy povolit. Před každým souborem budete stále dotázáni; zkuste Vždy znovu povolit po příchodu cesty nebo oznámení."
     },
     "saved": {
       "labelPlaceholder": "Označení",

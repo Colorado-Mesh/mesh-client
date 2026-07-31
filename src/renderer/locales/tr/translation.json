@@ -4903,10 +4903,10 @@
       "enabled": "Dosya alma etkinleştirildi.",
       "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
-      "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
       "shareDestWarning": "Etkinleştirirseniz mesh-client, dosya gönderimini otomatik olarak doldurabilmeleri için rncp alma hedefinizi bu eşe gönderecektir.",
       "lxmfBody": "Lütfen rncp dosya alımını etkinleştirin ve rncp alma hedefi karmanızla yanıtlayın.",
-      "lxmfShareBody": "Dosya alma etkinleştirildi. Benim rncp alma hedefi karması:"
+      "lxmfShareBody": "Dosya alma etkinleştirildi. Benim rncp alma hedefi karması:",
+      "identityUnknown": "Gelen Sor açık ancak bu eşin kimlik karması henüz bilinmediğinden Her zaman izin ver'e eklenmedi. Yine de her dosyadan önce size sorulacaktır; Bir yol veya duyuru geldiğinde Her zaman izin ver'i tekrar deneyin."
     },
     "saved": {
       "labelPlaceholder": "Etiket",

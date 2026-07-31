@@ -4903,10 +4903,10 @@
       "enabled": "Penerimaan file diaktifkan.",
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
-      "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
       "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file.",
       "lxmfBody": "Harap aktifkan penerimaan file rncp dan balas dengan hash tujuan penerimaan rncp Anda.",
-      "lxmfShareBody": "Penerimaan file diaktifkan. Rncp saya menerima hash tujuan:"
+      "lxmfShareBody": "Penerimaan file diaktifkan. Rncp saya menerima hash tujuan:",
+      "identityUnknown": "Tanya Masuk aktif, namun hash identitas rekan ini belum diketahui sehingga tidak ditambahkan ke Selalu izinkan. Anda masih akan ditanya sebelum setiap file; coba Selalu izinkan lagi setelah jalur atau pengumuman tiba."
     },
     "saved": {
       "labelPlaceholder": "Label",

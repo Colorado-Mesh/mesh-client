@@ -4907,10 +4907,10 @@
       "enabled": "Odbiór plików jest włączony.",
       "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
       "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
-      "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
       "shareDestWarning": "Jeśli włączysz, mesh-client wyśle miejsce docelowe odbioru rncp do tego partnera, aby mógł automatycznie wypełnić wysyłanie pliku.",
       "lxmfBody": "Włącz odbieranie pliku rncp i odpowiedz, podając hash miejsca docelowego odbioru rncp.",
-      "lxmfShareBody": "Odbieranie plików jest włączone. Mój rncp odbiera docelowy skrót:"
+      "lxmfShareBody": "Odbieranie plików jest włączone. Mój rncp odbiera docelowy skrót:",
+      "identityUnknown": "Zapytanie przychodzące jest włączone, ale skrót tożsamości tego partnera nie jest jeszcze znany, dlatego nie został on dodany do opcji Zawsze zezwalaj. Nadal będziesz pytany przed każdym plikiem; spróbuj Zawsze zezwalaj ponownie po nadejściu ścieżki lub ogłoszenia."
     },
     "saved": {
       "labelPlaceholder": "Oznaczenie",

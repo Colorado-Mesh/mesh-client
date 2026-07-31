@@ -4903,10 +4903,10 @@
       "enabled": "O recebimento de arquivos está ativado.",
       "enableFailed": "Não foi possível ativar o recebimento de arquivos: {{error}}",
       "saveDirRequired": "Escolha uma pasta de salvamento para ativar o recebimento.",
-      "identityUnknown": "Ainda não foi possível resolver o hash de identidade deste par — o modo Perguntar foi ativado, mas ele não foi adicionado à lista de permitidos. Tente novamente quando um caminho ou anúncio chegar.",
       "shareDestWarning": "Se você ativar, o mesh-client enviará seu destino de recebimento rncp para esse par para que eles possam preencher automaticamente o envio do arquivo.",
       "lxmfBody": "Ative o recebimento do arquivo rncp e responda com seu hash de destino de recebimento do rncp.",
-      "lxmfShareBody": "O recebimento de arquivos está habilitado. Meu rncp recebe hash de destino:"
+      "lxmfShareBody": "O recebimento de arquivos está habilitado. Meu rncp recebe hash de destino:",
+      "identityUnknown": "A solicitação de entrada está ativada, mas o hash de identidade desse peer ainda não é conhecido, portanto, eles não foram adicionados a Sempre permitir. Você ainda será questionado antes de cada arquivo; tente Sempre permitir novamente após a chegada de um caminho ou anúncio."
     },
     "saved": {
       "labelPlaceholder": "Etiqueta",
