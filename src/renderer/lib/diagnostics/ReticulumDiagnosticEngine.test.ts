@@ -358,6 +358,7 @@ describe('ReticulumDiagnosticEngine', () => {
       expect(row).toBeDefined();
       expect(row?.severity).toBe('warning');
       expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.announceBusPressure');
+      expect(row?.reticulumRepairKind).toBe('open_interfaces');
     } finally {
       vi.useRealTimers();
     }

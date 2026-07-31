@@ -9,7 +9,10 @@ import {
   DIAGNOSTICS_SEVERITY_TEXT,
   reticulumMeshHealthBand,
 } from '@/renderer/lib/diagnostics/diagnosticsPanelStyles';
-import { isReticulumDiagnosticRow } from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
+import {
+  isReticulumDiagnosticRow,
+  RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS,
+} from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
 import { translateReticulumDiagnosticCause } from '@/renderer/lib/diagnostics/reticulumDiagnosticLabels';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
@@ -51,7 +54,11 @@ function severityHeaderKey(severity: 'error' | 'warning' | 'info', count: number
 }
 
 function remedyCategoryForRow(row: RfDiagnosticRow): keyof typeof DIAGNOSTICS_CATEGORY_STYLES {
-  if (row.reticulumRepairKind === 'repair_config' || row.reticulumRepairKind === 'add_auto') {
+  if (
+    row.reticulumRepairKind === 'repair_config' ||
+    row.reticulumRepairKind === 'add_auto' ||
+    row.reticulumRepairKind === 'open_interfaces'
+  ) {
     return 'Configuration';
   }
   if (
@@ -146,6 +153,10 @@ export function ReticulumDiagnosticsSection({
         if (row.reticulumInterfaceId) {
           requestInterfaceEdit(row.reticulumInterfaceId);
         }
+        onNavigateToConnection?.();
+        return;
+      }
+      if (kind === 'open_interfaces') {
         onNavigateToConnection?.();
         return;
       }
@@ -247,7 +258,16 @@ export function ReticulumDiagnosticsSection({
                         <td
                           className={`px-4 py-2.5 text-xs ${DIAGNOSTICS_SEVERITY_TEXT[severity]}`}
                         >
-                          {row.causeI18n ? translateReticulumDiagnosticCause(t, row) : row.cause}
+                          <div className="max-w-md">
+                            {row.causeI18n ? translateReticulumDiagnosticCause(t, row) : row.cause}
+                            {row.condition === 'reticulum/announce-bus-pressure' ? (
+                              <ul className="text-muted mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] font-normal text-gray-400">
+                                {RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS.map((key) => (
+                                  <li key={key}>{t(key)}</li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-4 py-2.5">
                           <span

@@ -1539,7 +1539,8 @@
         "edit": "Editar interfaz",
         "restart_stack": "Reiniciar pila",
         "add_auto": "Agregar interfaz automática",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Interfaces abiertas"
       },
       "audit": {
         "tcp_enable_key": "La interfaz TCP \"{{name}}\" utiliza la clave de habilitación incorrecta: RNS no la cargará.",
@@ -1583,7 +1584,11 @@
         "sidecarUnhealthy": "El sidecar de Reticulum está en ejecución pero no responde a las comprobaciones de estado",
         "propagationSyncStuck": "La sincronización del nodo de propagación está atascada estableciendo un enlace",
         "propagationSyncFailing": "Error en la sincronización del nodo de propagación",
-        "announceBusPressure": "La alta tasa de anuncio/respuesta de ruta puede retrasar la entrega de chat LXMF entrante: la recuperación está activa; se esperan tablas de ruta grandes"
+        "announceBusPressure": "La alta tasa de anuncio/respuesta de ruta puede retrasar la entrega de chat LXMF entrante: la recuperación está activa; se esperan tablas de ruta grandes",
+        "announceBusPressureTipDisableHubs": "Deshabilite los concentradores TCP (→interfaces de conexión) no utilizados: la palanca más grande para la rotación de la mesa de ruta.",
+        "announceBusPressureTipShareInstance": "Desactive la instancia Compartir si otras aplicaciones locales de Reticulum están compitiendo con esta pila.",
+        "announceBusPressureTipAnnounceInterval": "El intervalo de anuncio de red solo controla los anuncios salientes de este nodo: no detiene las inundaciones de respuesta de ruta entrante.",
+        "announceBusPressureTipWait": "La recuperación ya está activa; esta advertencia se borra después de unos 5 minutos sin retraso, tormenta o desbordamiento."
       }
     },
     "routingPort": {

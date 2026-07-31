@@ -1541,7 +1541,8 @@
         "edit": "Upravit rozhraní",
         "restart_stack": "Restartujte zásobník",
         "add_auto": "Přidat automatické rozhraní",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Otevřená rozhraní."
       },
       "audit": {
         "tcp_enable_key": "Rozhraní TCP „{{name}}“ používá nesprávný povolovací klíč – RNS jej nenačte.",
@@ -1585,7 +1586,11 @@
         "sidecarUnhealthy": "Postranní vozík Reticulum běží, ale nereaguje na zdravotní prohlídky",
         "propagationSyncStuck": "Synchronizace propagačního uzlu se zasekla při vytváření odkazu",
         "propagationSyncFailing": "Synchronizace propagačního uzlu se nezdařila",
-        "announceBusPressure": "Vysoká míra odezvy na oznámení/cestu může zpozdit příchozí doručení chatu LXMF — dohnání je aktivní; očekávají se velké tabulky cest"
+        "announceBusPressure": "Vysoká míra odezvy na oznámení/cestu může zpozdit příchozí doručení chatu LXMF — dohnání je aktivní; očekávají se velké tabulky cest",
+        "announceBusPressureTipDisableHubs": "Zakázat nepoužívané rozbočovače TCP (Connection → Interfaces) — největší páka pro otočení traťového stolu.",
+        "announceBusPressureTipShareInstance": "Vypněte možnost Sdílet instanci, pokud s tímto zásobníkem bojují jiné místní aplikace Reticulum.",
+        "announceBusPressureTipAnnounceInterval": "Interval oznamování sítě řídí pouze odchozí oznámení tohoto uzlu — nezastaví příchozí zaplavení cesty a odezvy.",
+        "announceBusPressureTipWait": "Dohánění je již aktivní; toto varování se po asi 5 minutách vymaže, aniž by došlo ke zpoždění, bouři nebo přetečení."
       }
     },
     "routingPort": {

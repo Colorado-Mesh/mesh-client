@@ -1539,7 +1539,8 @@
         "edit": "Sunting antarmuka",
         "restart_stack": "Mulai ulang tumpukan",
         "add_auto": "Tambahkan antarmuka Otomatis",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Buka Antarmuka"
       },
       "audit": {
         "tcp_enable_key": "Antarmuka TCP \"{{name}}\" menggunakan kunci pengaktifan yang salah — RNS tidak akan memuatnya.",
@@ -1583,7 +1584,11 @@
         "sidecarUnhealthy": "Reticulum sidecar sedang berjalan tetapi tidak menanggapi pemeriksaan kesehatan",
         "propagationSyncStuck": "Sinkronisasi simpul propagasi macet membuat tautan",
         "propagationSyncFailing": "Sinkronisasi simpul propagasi gagal",
-        "announceBusPressure": "Tingkat pengumuman/respons jalur yang tinggi dapat menunda pengiriman Obrolan LXMF masuk — tangkapan aktif; tabel jalur besar diharapkan"
+        "announceBusPressure": "Tingkat pengumuman/respons jalur yang tinggi dapat menunda pengiriman Obrolan LXMF masuk — tangkapan aktif; tabel jalur besar diharapkan",
+        "announceBusPressureTipDisableHubs": "Nonaktifkan hub TCP yang tidak digunakan (→Antarmuka Koneksi) — tuas terbesar untuk churn tabel jalur.",
+        "announceBusPressureTipShareInstance": "Nonaktifkan Bagikan instance jika aplikasi Reticulum lokal lainnya bersaing dengan tumpukan ini.",
+        "announceBusPressureTipAnnounceInterval": "Interval pengumuman jaringan hanya mengontrol pengumuman keluar simpul ini — tidak menghentikan banjir respons jalur masuk.",
+        "announceBusPressureTipWait": "Penangkapan sudah aktif; peringatan ini hilang setelah sekitar 5 menit tanpa lag, badai, atau luapan."
       }
     },
     "routingPort": {

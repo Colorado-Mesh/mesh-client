@@ -69,6 +69,49 @@ describe('ReticulumDiagnosticsSection', () => {
     expect(screen.getByText('diagnosticsPanel.reticulum.runtime.rnsNotReady')).toBeInTheDocument();
   });
 
+  it('renders announce-bus-pressure tips and Open Interfaces action', async () => {
+    const user = userEvent.setup();
+    const onNavigateToConnection = vi.fn();
+    const pressureRow: RfDiagnosticRow = {
+      kind: 'rf',
+      id: 'rf:1:reticulum/announce-bus-pressure',
+      nodeId: 1,
+      condition: 'reticulum/announce-bus-pressure',
+      cause: 'announce pressure',
+      severity: 'warning',
+      detectedAt: Date.now(),
+      causeI18n: { key: 'diagnosticsPanel.reticulum.runtime.announceBusPressure' },
+      reticulumRepairKind: 'open_interfaces',
+    };
+    render(
+      <ReticulumDiagnosticsSection
+        rows={[pressureRow]}
+        onNavigateToConnection={onNavigateToConnection}
+      />,
+    );
+    expect(
+      screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressure'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressureTipAnnounceInterval'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressureTipWait'),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'diagnosticsPanel.reticulum.action.open_interfaces',
+      }),
+    );
+    expect(onNavigateToConnection).toHaveBeenCalledTimes(1);
+  });
+
   it('renders audit rows with repair action', () => {
     render(<ReticulumDiagnosticsSection rows={[reticulumRow]} />);
     expect(screen.getByText('diagnosticsPanel.reticulum.action.repair_config')).toBeInTheDocument();

@@ -1539,7 +1539,8 @@
         "edit": "編集インターフェース",
         "restart_stack": "スタックを再起動します",
         "add_auto": "自動インターフェースの追加",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "インターフェースを開く"
       },
       "audit": {
         "tcp_enable_key": "TCP インターフェイス「{{name}}」は間違った有効化キーを使用しています。RNS はそれをロードしません。",
@@ -1583,7 +1584,11 @@
         "sidecarUnhealthy": "Reticulumサイドカーは実行中ですが、ヘルスチェックに応答していません",
         "propagationSyncStuck": "伝播ノードの同期がリンクの確立に固執しています",
         "propagationSyncFailing": "伝播ノードの同期に失敗しました",
-        "announceBusPressure": "高いアナウンス/パス応答率は、インバウンドLXMFチャット配信を遅らせる可能性があります—キャッチアップがアクティブです。大きなパステーブルが予想されます"
+        "announceBusPressure": "高いアナウンス/パス応答率は、インバウンドLXMFチャット配信を遅らせる可能性があります—キャッチアップがアクティブです。大きなパステーブルが予想されます",
+        "announceBusPressureTipDisableHubs": "未使用のTCPハブ（接続→インターフェース）を無効にします。これは、パステーブルチャーンの最大のレバーです。",
+        "announceBusPressureTipShareInstance": "他のローカルReticulumアプリがこのスタックと競合している場合は、共有インスタンスをオフにします。",
+        "announceBusPressureTipAnnounceInterval": "ネットワークアナウンス間隔は、このノードのアウトバウンドアナウンスのみを制御します。インバウンドパス応答フラッドは停止しません。",
+        "announceBusPressureTipWait": "キャッチアップはすでに有効になっています。この警告は、約5分後にラグ、嵐、またはオーバーフローなしでクリアされます。"
       }
     },
     "routingPort": {

@@ -1561,7 +1561,8 @@
         "edit": "Edit interface",
         "restart_stack": "Restart stack",
         "add_auto": "Add Auto interface",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Open Interfaces"
       },
       "runtime": {
         "rnsNotReady": "RNS stack is not ready",
@@ -1584,7 +1585,11 @@
         "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
         "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
         "propagationSyncFailing": "Propagation node sync failed",
-        "announceBusPressure": "High announce/path-response rate may delay inbound LXMF Chat delivery — catch-up is active; large path tables are expected"
+        "announceBusPressure": "High announce/path-response rate may delay inbound LXMF Chat delivery — catch-up is active; large path tables are expected",
+        "announceBusPressureTipDisableHubs": "Disable unused TCP hubs (Connection → Interfaces) — the biggest lever for path-table churn.",
+        "announceBusPressureTipShareInstance": "Turn off Share instance if other local Reticulum apps are contending with this stack.",
+        "announceBusPressureTipAnnounceInterval": "Network announce interval only controls this node’s outbound announces — it does not stop inbound path-response floods.",
+        "announceBusPressureTipWait": "Catch-up is already active; this warning clears after about 5 minutes without lag, storm, or overflow."
       },
       "audit": {
         "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",

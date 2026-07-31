@@ -106,6 +106,18 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.propagationSyncStuck',
   'diagnosticsPanel.reticulum.runtime.propagationSyncFailing',
   'diagnosticsPanel.reticulum.runtime.announceBusPressure',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipAnnounceInterval',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipWait',
+] as const;
+
+/** Tip keys shown under reticulum/announce-bus-pressure in Diagnostics. */
+export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS = [
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipAnnounceInterval',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipWait',
 ] as const;
 
 /** Sidecar must stay unhealthy this long before emitting an error diagnostic. */
@@ -436,6 +448,7 @@ export function buildReticulumDiagnosticRows(
       causeI18n: runtimeCauseI18n('announceBusPressure'),
       severity: 'warning',
       detectedAt: now,
+      reticulumRepairKind: 'open_interfaces',
     });
   }
 

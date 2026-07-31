@@ -1539,7 +1539,8 @@
         "edit": "Modifier l'interface",
         "restart_stack": "Redémarrer la pile",
         "add_auto": "Ajouter une interface automatique",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "interfaces ouverts"
       },
       "audit": {
         "tcp_enable_key": "L'interface TCP \"{{name}}\" utilise la mauvaise clé d'activation — RNS ne la chargera pas.",
@@ -1583,7 +1584,11 @@
         "sidecarUnhealthy": "Le sidecar Reticulum est en cours d’exécution mais ne répond pas aux contrôles de santé",
         "propagationSyncStuck": "La synchronisation du nœud de propagation est bloquée pour établir un lien",
         "propagationSyncFailing": "Échec de la synchronisation du nœud de propagation",
-        "announceBusPressure": "Un taux élevé d'annonce/réponse au chemin peut retarder la livraison du chat LXMF entrant — le rattrapage est actif ; de grandes tables de chemin sont attendues"
+        "announceBusPressure": "Un taux élevé d'annonce/réponse au chemin peut retarder la livraison du chat LXMF entrant — le rattrapage est actif ; de grandes tables de chemin sont attendues",
+        "announceBusPressureTipDisableHubs": "Désactivez les concentrateurs TCP inutilisés (→interfaces de connexion) — le plus grand levier pour le désabonnement des tables de cheminement.",
+        "announceBusPressureTipShareInstance": "Désactivez Partager l'instance si d'autres applications Reticulum locales sont en conflit avec cette pile.",
+        "announceBusPressureTipAnnounceInterval": "L'intervalle d'annonce du réseau contrôle uniquement les annonces sortantes de ce nœud — il n'arrête pas les inondations de chemin-réponse entrantes.",
+        "announceBusPressureTipWait": "Le rattrapage est déjà actif ; cet avertissement disparaît après environ 5 minutes sans décalage, tempête ou débordement."
       }
     },
     "routingPort": {
