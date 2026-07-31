@@ -5,6 +5,7 @@ import { isReticulumDiagnosticRow } from '../diagnostics/ReticulumDiagnosticEngi
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { DiagnosticRow } from '../types';
 import type { ReticulumConfigAuditIssue } from './reticulumConfigAudit';
+import { getReticulumInboundLxmfDiagnostics } from './reticulumInboundLxmfDiagnostics';
 
 const RETICULUM_PROXY_ROUTES = [
   '/api/v1/status',
@@ -49,6 +50,15 @@ export interface ReticulumDiagnosticSidecarSnapshot {
   stack: ReticulumStackDiagnosticPayload | null;
   diagnosticRows: DiagnosticRow[];
   fetchErrors: Partial<Record<ReticulumDiagnosticFetchErrorKey, string>>;
+  /** Inbound LXMF catch-up / WS lag counters (renderer process-local). */
+  inboundLxmf?: {
+    lastEventsLaggedAt: number | null;
+    lastEventsLaggedSkipped: number | null;
+    lastInboundCatchUpAt: number | null;
+    lastInboundCatchUpCount: number | null;
+    inboundCatchUpWatermarkTs: number | null;
+    lastInboundRingLen: number | null;
+  };
 }
 
 function selectReticulumDiagnosticRows(): DiagnosticRow[] {
@@ -109,6 +119,7 @@ export function buildReticulumDiagnosticSnapshotSync(): ReticulumDiagnosticSidec
     stack: null,
     diagnosticRows: selectReticulumDiagnosticRows(),
     fetchErrors: {},
+    inboundLxmf: getReticulumInboundLxmfDiagnostics(),
   };
 }
 
@@ -152,5 +163,6 @@ export async function fetchReticulumDiagnosticSnapshot(): Promise<ReticulumDiagn
     stack: anyStackData ? stack : null,
     diagnosticRows,
     fetchErrors,
+    inboundLxmf: getReticulumInboundLxmfDiagnostics(),
   };
 }

@@ -5,6 +5,8 @@ import type { RfDiagnosticRow } from '@/renderer/lib/types';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
+  RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS,
+  shouldEmitAnnounceBusPressure,
 } from './ReticulumDiagnosticEngine';
 
 describe('ReticulumDiagnosticEngine', () => {
@@ -328,6 +330,133 @@ describe('ReticulumDiagnosticEngine', () => {
     );
     expect(
       tunnel.some((r) => r.kind === 'rf' && r.condition === 'reticulum/auto-beacon-tunnel'),
+    ).toBe(true);
+  });
+
+  it('flags announce-bus-pressure from recent WS lag with enough skipped frames', () => {
+    const now = 1_700_000_000_000;
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(now);
+      const rows = buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+        {
+          inboundLxmf: {
+            lastEventsLaggedAt: now - 60_000,
+            lastEventsLaggedSkipped: 8,
+            lastInboundCatchUpAt: null,
+            lastInboundCatchUpCount: null,
+            inboundCatchUpWatermarkTs: null,
+            lastInboundRingLen: null,
+          },
+        },
+      );
+      const row = rows.find(
+        (r): r is RfDiagnosticRow =>
+          r.kind === 'rf' && r.condition === 'reticulum/announce-bus-pressure',
+      );
+      expect(row).toBeDefined();
+      expect(row?.severity).toBe('warning');
+      expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.announceBusPressure');
+      expect(row?.reticulumRepairKind).toBe('open_interfaces');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('flags announce-bus-pressure from recent sidecar storm stamp', () => {
+    const now = 1_700_000_000_000;
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(now);
+      const rows = buildReticulumDiagnosticRows(
+        {
+          rns_ready: true,
+          lxmf_ready: true,
+          interface_count: 1,
+          peer_count: 5000,
+          announce_ws: {
+            last_window_ingress: 900,
+            last_window_unique: 400,
+            last_window_overflow: 0,
+            last_storm_at_ms: now - 30_000,
+            last_flush_at_ms: now - 30_000,
+          },
+        },
+        {},
+      );
+      expect(
+        rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/announce-bus-pressure'),
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not flag announce-bus-pressure without lag, storm, or fresh overflow', () => {
+    const now = 1_700_000_000_000;
+    expect(
+      shouldEmitAnnounceBusPressure(
+        {
+          last_window_ingress: 10,
+          last_window_unique: 8,
+          last_window_overflow: 0,
+          last_storm_at_ms: 0,
+          last_flush_at_ms: now - 1_000,
+        },
+        {
+          lastEventsLaggedAt: now - 60_000,
+          lastEventsLaggedSkipped: 3,
+          lastInboundCatchUpAt: null,
+          lastInboundCatchUpCount: null,
+          inboundCatchUpWatermarkTs: null,
+          lastInboundRingLen: null,
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      shouldEmitAnnounceBusPressure(
+        {
+          last_window_overflow: 50,
+          last_flush_at_ms: now - RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS - 1,
+          last_storm_at_ms: now - RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS - 1,
+        },
+        {
+          lastEventsLaggedAt: now - RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS - 1,
+          lastEventsLaggedSkipped: 20,
+          lastInboundCatchUpAt: null,
+          lastInboundCatchUpCount: null,
+          inboundCatchUpWatermarkTs: null,
+          lastInboundRingLen: null,
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(shouldEmitAnnounceBusPressure(undefined, undefined, now)).toBe(false);
+    // peer_count alone must not fire
+    expect(
+      buildReticulumDiagnosticRows({
+        rns_ready: true,
+        lxmf_ready: true,
+        interface_count: 1,
+        peer_count: 50_000,
+      }).some((r) => r.kind === 'rf' && r.condition === 'reticulum/announce-bus-pressure'),
+    ).toBe(false);
+  });
+
+  it('flags announce-bus-pressure from fresh coalesce overflow', () => {
+    const now = 1_700_000_000_000;
+    expect(
+      shouldEmitAnnounceBusPressure(
+        {
+          last_window_overflow: 12,
+          last_flush_at_ms: now - 10_000,
+          last_storm_at_ms: 0,
+        },
+        undefined,
+        now,
+      ),
     ).toBe(true);
   });
 

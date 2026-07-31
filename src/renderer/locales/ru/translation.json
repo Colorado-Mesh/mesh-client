@@ -1541,7 +1541,8 @@
         "edit": "Редактировать интерфейс",
         "restart_stack": "Перезапустить стек",
         "add_auto": "Добавить автоматический интерфейс",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Открытые интерфейсы"
       },
       "audit": {
         "tcp_enable_key": "TCP-интерфейс «{{name}}» использует неверный ключ включения — RNS не загрузит его.",
@@ -1584,7 +1585,12 @@
         "blePairingTimedOut": "Тайм-аут обмена ключами BLE RNode «{{name}}» — введите текущий PIN-код (не 123456) и повторите сопряжение.",
         "sidecarUnhealthy": "Sidecar Reticulum работает, но не отвечает на проверки состояния",
         "propagationSyncStuck": "Синхронизация узла распространения застряла при установлении канала",
-        "propagationSyncFailing": "Ошибка синхронизации узла распространения"
+        "propagationSyncFailing": "Ошибка синхронизации узла распространения",
+        "announceBusPressure": "Высокая скорость ответа на объявление/путь может задержать доставку входящего чата LXMF — активен догоняющий процесс; ожидаются большие таблицы путей",
+        "announceBusPressureTipDisableHubs": "Отключите неиспользуемые концентраторы TCP (→интерфейсы подключения) — самый большой рычаг для оттока таблиц путей.",
+        "announceBusPressureTipShareInstance": "Отключите Share instance, если с этим стеком борются другие локальные приложения Reticulum.",
+        "announceBusPressureTipAnnounceInterval": "Сетевой интервал объявлений управляет только исходящими объявлениями этого узла — он не останавливает флуды входящего пути-ответа.",
+        "announceBusPressureTipWait": "Перехват уже активен; это предупреждение исчезает примерно через 5 минут без задержки, шторма или переполнения."
       }
     },
     "routingPort": {

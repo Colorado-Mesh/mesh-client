@@ -125,9 +125,7 @@ export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivit
   }),
 );
 
-export function parseAnnounceActivityRows(payload: unknown): ReticulumIdentityActivityRow[] {
-  if (!payload || typeof payload !== 'object') return [];
-  const p = payload as Record<string, unknown>;
+function parseOneAnnounceActivityRow(p: Record<string, unknown>): ReticulumIdentityActivityRow[] {
   const destinationHash =
     typeof p.destination_hash === 'string'
       ? p.destination_hash
@@ -160,4 +158,19 @@ export function parseAnnounceActivityRows(payload: unknown): ReticulumIdentityAc
     last_seen: lastSeen,
     hops,
   }));
+}
+
+/** Parse single-legacy or batched `{ announces: [...] }` announce.received payloads. */
+export function parseAnnounceActivityRows(payload: unknown): ReticulumIdentityActivityRow[] {
+  if (!payload || typeof payload !== 'object') return [];
+  const p = payload as Record<string, unknown>;
+  if (Array.isArray(p.announces)) {
+    const out: ReticulumIdentityActivityRow[] = [];
+    for (const row of p.announces) {
+      if (!row || typeof row !== 'object') continue;
+      out.push(...parseOneAnnounceActivityRow(row as Record<string, unknown>));
+    }
+    return out;
+  }
+  return parseOneAnnounceActivityRow(p);
 }

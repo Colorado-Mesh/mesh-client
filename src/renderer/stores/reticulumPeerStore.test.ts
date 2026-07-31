@@ -643,6 +643,30 @@ describe('reticulumPeerStore', () => {
     expect(peer?.display_name).toBeNull();
   });
 
+  it('applyReticulumAnnounceReceivedOptimistic applies batched announces array', () => {
+    applyReticulumAnnounceReceivedOptimistic({
+      announces: [
+        {
+          destination_hash: 'AaBbCcDdEeFf00112233445566778899',
+          display_name: 'Batch A',
+          hops: 1,
+        },
+        {
+          destination_hash: '11223344556677889900aabbccddeeff',
+          display_name: 'Batch B',
+          hops: 2,
+        },
+      ],
+    });
+    applyReticulumPeerPatchesNow([]);
+    expect(
+      useReticulumPeerStore.getState().peers.get('aabbccddeeff00112233445566778899')?.display_name,
+    ).toBe('Batch A');
+    expect(
+      useReticulumPeerStore.getState().peers.get('11223344556677889900aabbccddeeff')?.display_name,
+    ).toBe('Batch B');
+  });
+
   it('refresh preserves announce alias when path-table peer omits display_name', async () => {
     const hash = 'aabbccddeeff00112233445566778899';
     applyReticulumAnnounceReceivedOptimistic({

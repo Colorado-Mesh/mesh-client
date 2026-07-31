@@ -1539,7 +1539,8 @@
         "edit": "Schnittstelle bearbeiten",
         "restart_stack": "Stapel neu starten",
         "add_auto": "Automatische Schnittstelle hinzufügen",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Offene Schnittstellen"
       },
       "audit": {
         "tcp_enable_key": "Die TCP-Schnittstelle „{{name}}“ verwendet den falschen Aktivierungsschlüssel – RNS lädt ihn nicht.",
@@ -1582,7 +1583,12 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" Passkey-Austausch abgelaufen — geben Sie die aktuelle PIN (nicht 123456) ein und koppeln Sie erneut",
         "sidecarUnhealthy": "Reticulum Sidecar läuft, reagiert aber nicht auf Gesundheitschecks",
         "propagationSyncStuck": "Die Synchronisierung des Ausbreitungsknotens bleibt hängen, um eine Verbindung herzustellen",
-        "propagationSyncFailing": "Synchronisierung des Ausbreitungsknotens fehlgeschlagen"
+        "propagationSyncFailing": "Synchronisierung des Ausbreitungsknotens fehlgeschlagen",
+        "announceBusPressure": "Hohe Ansage-/Pfad-Antwort-Rate kann eingehende LXMF-Chat-Zustellung verzögern — Aufholjagd ist aktiv; große Pfad-Tabellen werden erwartet",
+        "announceBusPressureTipDisableHubs": "Deaktivieren Sie unbenutzte TCP-Hubs (→Verbindungsschnittstellen) — der größte Hebel für Pfad-Tabellen-Abwanderung.",
+        "announceBusPressureTipShareInstance": "Deaktivieren Sie die Share-Instanz, wenn andere lokale Reticulum-Apps mit diesem Stack konkurrieren.",
+        "announceBusPressureTipAnnounceInterval": "Das Netzwerk-Ankündigungsintervall steuert nur die ausgehenden Ansagen dieses Knotens — es stoppt keine eingehenden Pfad-Antwort-Überschwemmungen.",
+        "announceBusPressureTipWait": "Catch-up ist bereits aktiv; diese Warnung löscht sich nach ca. 5 Minuten ohne Verzögerung, Sturm oder Überlauf."
       }
     },
     "routingPort": {

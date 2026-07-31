@@ -1539,7 +1539,8 @@
         "edit": "인터페이스 수정",
         "restart_stack": "스택 다시 시작",
         "add_auto": "자동 인터페이스 추가",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "인터페이스 열기"
       },
       "audit": {
         "tcp_enable_key": "TCP 인터페이스 \"{{name}}\"이 잘못된 활성화 키를 사용합니다. RNS가 이를 로드하지 않습니다.",
@@ -1582,7 +1583,12 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" 암호 키 교환 시간이 초과되었습니다. 현재 PIN(123456 아님)을 입력하고 다시 페어링하세요.",
         "sidecarUnhealthy": "Reticulum 사이드카가 작동 중이지만 상태 점검에 응답하지 않습니다",
         "propagationSyncStuck": "전파 노드 동기화가 링크 설정 중 중단됨",
-        "propagationSyncFailing": "전파 노드 동기화 실패"
+        "propagationSyncFailing": "전파 노드 동기화 실패",
+        "announceBusPressure": "높은 발표/경로 응답률로 인해 인바운드 LXMF 채팅 전달이 지연될 수 있음 — 캐치업이 활성화되어 있음, 큰 경로 테이블이 예상됨",
+        "announceBusPressureTipDisableHubs": "사용되지 않는 TCP 허브 (연결 → 인터페이스) 를 비활성화합니다. 이는 경로 테이블 이탈을 위한 가장 큰 레버입니다.",
+        "announceBusPressureTipShareInstance": "다른 로컬 Reticulum 앱이 이 스택과 경쟁하는 경우 인스턴스 공유를 끄십시오.",
+        "announceBusPressureTipAnnounceInterval": "네트워크 알림 간격은 이 노드의 아웃바운드 알림만 제어하며 인바운드 경로 응답 플러드를 중지하지 않습니다.",
+        "announceBusPressureTipWait": "따라잡기가 이미 활성화되어 있습니다. 이 경고는 지연, 폭풍 또는 오버플로 없이 약 5분 후에 지워집니다."
       }
     },
     "routingPort": {

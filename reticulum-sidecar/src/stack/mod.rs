@@ -1,5 +1,6 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
+mod announce_ws_coalesce;
 mod ble;
 pub mod config;
 pub mod config_audit;
@@ -273,6 +274,10 @@ impl StackHandle {
         limit: usize,
     ) -> Vec<serde_json::Value> {
         self.inbound_lxmf.snapshot(since_ts, limit)
+    }
+
+    pub fn inbound_lxmf_ring_len(&self) -> usize {
+        self.inbound_lxmf.len()
     }
 
     async fn sync_interfaces_from_config(&self) {
@@ -2189,6 +2194,7 @@ impl StackHandle {
                 })
             })
             .collect();
+        let announce_ws = announce_ws_coalesce::announce_ws_pressure_snapshot();
         serde_json::json!({
             "rns_ready": inner.rns_ready,
             "lxmf_ready": inner.lxmf_ready,
@@ -2197,6 +2203,13 @@ impl StackHandle {
             "peer_count": inner.peers.len(),
             "message_count": inner.messages.len(),
             "interfaces": interfaces,
+            "announce_ws": {
+                "last_window_ingress": announce_ws.last_window_ingress,
+                "last_window_unique": announce_ws.last_window_unique,
+                "last_window_overflow": announce_ws.last_window_overflow,
+                "last_storm_at_ms": announce_ws.last_storm_at_ms,
+                "last_flush_at_ms": announce_ws.last_flush_at_ms,
+            },
         })
     }
 

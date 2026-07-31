@@ -1539,7 +1539,8 @@
         "edit": "Editar interface",
         "restart_stack": "Reiniciar pilha",
         "add_auto": "Adicionar interface automática",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Open interfaces"
       },
       "audit": {
         "tcp_enable_key": "A interface TCP \"{{name}}\" usa a chave de ativação errada — o RNS não a carregará.",
@@ -1582,7 +1583,12 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" a troca de senha expirou - insira o PIN atual (não 123456) e emparelhe novamente",
         "sidecarUnhealthy": "O sidecar Reticulum está em execução, mas não responde às verificações de integridade",
         "propagationSyncStuck": "A sincronização do nó de propagação está travada, estabelecendo um link",
-        "propagationSyncFailing": "Falha na sincronização do nó de propagação"
+        "propagationSyncFailing": "Falha na sincronização do nó de propagação",
+        "announceBusPressure": "A alta taxa de anúncio/resposta ao caminho pode atrasar a entrega do chat LXMF de entrada — a recuperação está ativa; grandes tabelas de caminho são esperadas",
+        "announceBusPressureTipDisableHubs": "Desative os hubs TCP (→Interfaces de Conexão) não utilizados — a maior alavanca para rotatividade de mesa de caminho.",
+        "announceBusPressureTipShareInstance": "Desative a instância Compartilhar se outros aplicativos Reticulum locais estiverem em conflito com esta pilha.",
+        "announceBusPressureTipAnnounceInterval": "O intervalo de anúncio de rede controla apenas os anúncios de saída deste nó — ele não interrompe as inundações de resposta ao caminho de entrada.",
+        "announceBusPressureTipWait": "A recuperação já está ativa; este aviso desaparece após cerca de 5 minutos sem atraso, tempestade ou transbordamento."
       }
     },
     "routingPort": {

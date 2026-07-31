@@ -2,6 +2,7 @@ import {
   auditIssuesToDiagnosticRows,
   type ReticulumConfigAuditIssue,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import type { ReticulumInboundLxmfDiagnosticsSnapshot } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 import {
   collectReticulumLocalInterfaceAlerts,
   collectReticulumRemoteInterfaceAlerts,
@@ -20,6 +21,7 @@ import type {
   ReticulumAutoBeaconAlert,
   ReticulumInterfaceIssueAlert,
 } from '@/shared/reticulum-types';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 export interface ReticulumDiagnosticsSnapshot {
   rns_ready?: boolean;
@@ -29,7 +31,23 @@ export interface ReticulumDiagnosticsSnapshot {
   peer_count?: number;
   message_count?: number;
   interfaces?: ReticulumLocalInterfaceInput[];
+  /** Sidecar announce coalesce pressure (from GET /api/v1/diagnostics). */
+  announce_ws?: ReticulumAnnounceWsDiagnostics;
 }
+
+/** Sidecar `announce_ws` block — last coalesce-window pressure metrics. */
+export interface ReticulumAnnounceWsDiagnostics {
+  last_window_ingress?: number;
+  last_window_unique?: number;
+  last_window_overflow?: number;
+  last_storm_at_ms?: number;
+  last_flush_at_ms?: number;
+}
+
+/** How long announce-bus pressure signals stay actionable in Diagnostics. */
+export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS = 5 * MS_PER_MINUTE;
+/** Minimum WS frames skipped before lag alone opens the announce-bus pressure row. */
+export const RETICULUM_ANNOUNCE_BUS_PRESSURE_MIN_SKIPPED = 8;
 
 /** Propagation sync snapshot for diagnostics (derived from reticulumPropagationStore). */
 export interface ReticulumPropagationDiagnosticsInput {
@@ -54,6 +72,8 @@ export interface ReticulumDiagnosticsBuildOptions {
   sidecarHealthy?: boolean;
   sidecarUnhealthySince?: number;
   propagation?: ReticulumPropagationDiagnosticsInput;
+  /** Renderer-local WS lag / inbound catch-up counters. */
+  inboundLxmf?: ReticulumInboundLxmfDiagnosticsSnapshot;
 }
 
 function runtimeCauseI18n(
@@ -85,6 +105,19 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.sidecarUnhealthy',
   'diagnosticsPanel.reticulum.runtime.propagationSyncStuck',
   'diagnosticsPanel.reticulum.runtime.propagationSyncFailing',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressure',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipAnnounceInterval',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipWait',
+] as const;
+
+/** Tip keys shown under reticulum/announce-bus-pressure in Diagnostics. */
+export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS = [
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipAnnounceInterval',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipWait',
 ] as const;
 
 /** Sidecar must stay unhealthy this long before emitting an error diagnostic. */
@@ -404,6 +437,21 @@ export function buildReticulumDiagnosticRows(
     }
   }
 
+  if (shouldEmitAnnounceBusPressure(snapshot.announce_ws, options?.inboundLxmf, now)) {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/announce-bus-pressure'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/announce-bus-pressure',
+      cause:
+        'High announce/path-response rate may delay inbound LXMF Chat delivery (WS catch-up active)',
+      causeI18n: runtimeCauseI18n('announceBusPressure'),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumRepairKind: 'open_interfaces',
+    });
+  }
+
   const propagation = options?.propagation;
   if (propagation) {
     const attemptAt = propagation.lastAttemptAt;
@@ -447,6 +495,47 @@ export function buildReticulumDiagnosticRows(
   }
 
   return rows;
+}
+
+/** True when recent WS lag or sidecar announce coalesce pressure may affect Chat. */
+export function shouldEmitAnnounceBusPressure(
+  announceWs: ReticulumAnnounceWsDiagnostics | undefined,
+  inboundLxmf: ReticulumInboundLxmfDiagnosticsSnapshot | undefined,
+  nowMs: number = Date.now(),
+): boolean {
+  const ttl = RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS;
+  if (inboundLxmf?.lastEventsLaggedAt != null) {
+    const age = nowMs - inboundLxmf.lastEventsLaggedAt;
+    const skipped = inboundLxmf.lastEventsLaggedSkipped ?? 0;
+    if (age >= 0 && age < ttl && skipped >= RETICULUM_ANNOUNCE_BUS_PRESSURE_MIN_SKIPPED) {
+      return true;
+    }
+  }
+  if (announceWs) {
+    const stormAt = announceWs.last_storm_at_ms;
+    if (
+      typeof stormAt === 'number' &&
+      Number.isFinite(stormAt) &&
+      stormAt > 0 &&
+      nowMs - stormAt >= 0 &&
+      nowMs - stormAt < ttl
+    ) {
+      return true;
+    }
+    const overflow = announceWs.last_window_overflow ?? 0;
+    const flushAt = announceWs.last_flush_at_ms;
+    if (
+      overflow > 0 &&
+      typeof flushAt === 'number' &&
+      Number.isFinite(flushAt) &&
+      flushAt > 0 &&
+      nowMs - flushAt >= 0 &&
+      nowMs - flushAt < ttl
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Merge Reticulum rows into an existing diagnostic row list (replace prior Reticulum rows). */

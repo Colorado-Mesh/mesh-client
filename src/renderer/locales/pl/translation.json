@@ -1543,7 +1543,8 @@
         "edit": "Edytuj interfejs",
         "restart_stack": "Uruchom ponownie stos",
         "add_auto": "Dodaj interfejs automatyczny",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Otwarte interfejsy"
       },
       "audit": {
         "tcp_enable_key": "Interfejs TCP „{{name}}” używa niewłaściwego klucza włączającego — RNS go nie załaduje.",
@@ -1586,7 +1587,12 @@
         "blePairingTimedOut": "Upłynął limit czasu wymiany hasła BLE RNode „{{name}}” — wprowadź bieżący kod PIN (nie 123456) i sparuj ponownie",
         "sidecarUnhealthy": "Sidecar Reticulum działa, ale nie odpowiada na kontrole stanu",
         "propagationSyncStuck": "Synchronizacja węzła propagacji utknęła, tworząc łącze",
-        "propagationSyncFailing": "Synchronizacja węzła propagacji nie powiodła się"
+        "propagationSyncFailing": "Synchronizacja węzła propagacji nie powiodła się",
+        "announceBusPressure": "Wysoki wskaźnik zapowiedzi/reakcji na ścieżkę może opóźnić dostawę przychodzącego czatu LXMF — nadrabianie zaległości jest aktywne; oczekiwane są duże tabele ścieżek",
+        "announceBusPressureTipDisableHubs": "Wyłącz nieużywane koncentratory TCP (→interfejsy połączeń) — największa dźwignia do migracji tabeli ścieżek.",
+        "announceBusPressureTipShareInstance": "Wyłącz opcję Udostępnij instancję, jeśli inne lokalne aplikacje Reticulum walczą z tym stosem.",
+        "announceBusPressureTipAnnounceInterval": "Interwał ogłaszania sieci kontroluje tylko komunikaty wychodzące tego węzła — nie zatrzymuje powodzi odpowiedzi na trasę przychodzącą.",
+        "announceBusPressureTipWait": "Nadrabianie zaległości jest już aktywne; to ostrzeżenie zostaje usunięte po około 5 minutach bez opóźnień, burzy lub przepełnienia."
       }
     },
     "routingPort": {

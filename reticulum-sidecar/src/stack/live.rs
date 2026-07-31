@@ -31,6 +31,9 @@ use rns_transport::messages::{
 use tokio::sync::{RwLock, broadcast};
 
 use super::StackHandle;
+use super::announce_ws_coalesce::{
+    AnnounceWsCoalescer, AnnounceWsRow, build_announce_received_frame,
+};
 use super::config;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
@@ -335,14 +338,12 @@ impl LiveBridge {
             );
             // Buffer before WS emit so lag/reconnect can catch up via GET /api/v1/lxmf/recent.
             inbound_lxmf_cb.push(payload.clone());
-            tracing::info!(
-                from = %sender_hex,
-                message_hash = %payload
-                    .get("message_hash")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or(""),
-                "inbound LXMF queued for clients"
-            );
+            let message_hash = payload
+                .get("message_hash")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            // Rate-limited warn so developer bundles can prove sidecar receipt without spam.
+            rate_limited_inbound_lxmf_warn(&sender_hex, message_hash);
             let inner = inner_for_cb.clone();
             let config_dir = config_dir_for_cb.clone();
             let storage_dir = storage_dir_for_cb.clone();
@@ -1714,31 +1715,57 @@ impl LiveBridge {
                 return;
             }
 
-            while let Some(evt) = callback_rx.recv().await {
-                let dest_hex = hex::encode(evt.destination_hash);
-                if let Some(pub_key) = evt.public_key {
-                    if let Ok(mut driver) = outbound.lock() {
-                        driver.register_identity_key(&dest_hex, pub_key);
+            // Coalesce WS emits: ≤1 frame per flush window (O(1) bus), even under
+            // 100k-scale announce storms. Side effects (keys / name cache) stay immediate.
+            let mut coalescer = AnnounceWsCoalescer::new();
+            let mut window_start: Option<tokio::time::Instant> = None;
+            loop {
+                let flush_deadline =
+                    window_start.map(|start| start + coalescer.coalesce_duration());
+                tokio::select! {
+                    evt = callback_rx.recv() => {
+                        let Some(evt) = evt else { break; };
+                        let dest_hex = hex::encode(evt.destination_hash);
+                        if let Some(pub_key) = evt.public_key {
+                            if let Ok(mut driver) = outbound.lock() {
+                                driver.register_identity_key(&dest_hex, pub_key);
+                            }
+                        }
+                        // Named announces update the display-name cache for peer labels only —
+                        // do not upsert LXMF contacts (contacts are messaged / explicitly saved).
+                        let display_name = parse_announce_display_name(evt.app_data.as_deref());
+                        if let Some(ref name) = display_name {
+                            if let Ok(mut cache) = display_name_cache.lock() {
+                                insert_display_name_bounded(&mut cache, dest_hex.clone(), name.clone());
+                            }
+                        }
+                        if coalescer.is_empty() {
+                            window_start = Some(tokio::time::Instant::now());
+                        }
+                        coalescer.push(AnnounceWsRow {
+                            destination_hash: dest_hex,
+                            display_name,
+                            hops: evt.hops,
+                        });
+                    }
+                    () = async {
+                        match flush_deadline {
+                            Some(deadline) => tokio::time::sleep_until(deadline).await,
+                            None => std::future::pending::<()>().await,
+                        }
+                    }, if flush_deadline.is_some() => {
+                        let rows = coalescer.take_flush_rows();
+                        window_start = None;
+                        if let Some(frame) = build_announce_received_frame(&rows) {
+                            let _ = event_tx.send(frame);
+                        }
                     }
                 }
-                // Named announces update the display-name cache for peer labels only —
-                // do not upsert LXMF contacts (contacts are messaged / explicitly saved).
-                let display_name = parse_announce_display_name(evt.app_data.as_deref());
-                if let Some(ref name) = display_name {
-                    if let Ok(mut cache) = display_name_cache.lock() {
-                        insert_display_name_bounded(&mut cache, dest_hex.clone(), name.clone());
-                    }
-                }
-                // Always notify the UI so nameless announces still refresh Peers promptly.
-                let frame = serde_json::json!({
-                    "type": "announce.received",
-                    "payload": {
-                        "destination_hash": dest_hex,
-                        "display_name": display_name,
-                        "hops": evt.hops,
-                    }
-                });
-                let _ = event_tx.send(frame.to_string());
+            }
+            // Drain any leftover pending on handler exit.
+            let rows = coalescer.take_flush_rows();
+            if let Some(frame) = build_announce_received_frame(&rows) {
+                let _ = event_tx.send(frame);
             }
         });
     }
@@ -3344,6 +3371,32 @@ fn parse_optional_reply_to_hash(hex_str: Option<&str>) -> Option<[u8; 32]> {
             None
         }
     }
+}
+
+/// Min interval between inbound-LXMF receipt warns (developer-bundle visibility without spam).
+const INBOUND_LXMF_WARN_INTERVAL: Duration = Duration::from_secs(5);
+static LAST_INBOUND_LXMF_WARN_MS: AtomicU64 = AtomicU64::new(0);
+
+fn rate_limited_inbound_lxmf_warn(from: &str, message_hash: &str) {
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    let prev = LAST_INBOUND_LXMF_WARN_MS.load(Ordering::Relaxed);
+    if now_ms.saturating_sub(prev) < INBOUND_LXMF_WARN_INTERVAL.as_millis() as u64 {
+        tracing::debug!(
+            from = %from,
+            message_hash = %message_hash,
+            "inbound LXMF queued for clients"
+        );
+        return;
+    }
+    LAST_INBOUND_LXMF_WARN_MS.store(now_ms, Ordering::Relaxed);
+    tracing::warn!(
+        from = %from,
+        message_hash = %message_hash,
+        "inbound LXMF queued for clients"
+    );
 }
 
 /// Cap membership growth event payloads under path-table floods.

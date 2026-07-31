@@ -1539,7 +1539,8 @@
         "edit": "编辑界面",
         "restart_stack": "重启堆栈",
         "add_auto": "添加自动接口",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "打开接口"
       },
       "audit": {
         "tcp_enable_key": "TCP 接口“{{name}}”使用了错误的启用密钥 — RNS 将不会加载它。",
@@ -1582,7 +1583,12 @@
         "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对",
         "sidecarUnhealthy": "Reticulum sidecar正在运行，但未响应健康检查",
         "propagationSyncStuck": "传播节点同步卡住，无法建立链接",
-        "propagationSyncFailing": "传播节点同步失败"
+        "propagationSyncFailing": "传播节点同步失败",
+        "announceBusPressure": "高公告/路径响应率可能会延迟入站LXMF聊天交付—追赶处于活动状态；预计会有大型路径表",
+        "announceBusPressureTipDisableHubs": "禁用未使用的TCP集线器（连接→接口） —路径表流失的最大杠杆。",
+        "announceBusPressureTipShareInstance": "如果其他本地Reticulum应用程序正在与此堆栈竞争，请关闭共享实例。",
+        "announceBusPressureTipAnnounceInterval": "网络通告间隔仅控制此节点的出站通告—它不会停止入站路径响应泛洪。",
+        "announceBusPressureTipWait": "追赶已激活；此警告在大约5分钟后清除，没有滞后、暴风雨或溢出。"
       }
     },
     "routingPort": {

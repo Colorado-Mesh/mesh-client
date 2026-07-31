@@ -1539,7 +1539,8 @@
         "edit": "Bewerkingsinterface",
         "restart_stack": "Start de stapel opnieuw",
         "add_auto": "Automatische interface toevoegen",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Open interfaces"
       },
       "audit": {
         "tcp_enable_key": "TCP-interface \"{{name}}\" gebruikt de verkeerde inschakelsleutel - RNS zal deze niet laden.",
@@ -1582,7 +1583,12 @@
         "blePairingTimedOut": "Er is een time-out opgetreden bij het uitwisselen van de BLE RNode \"{{name}}\"-wachtwoord: voer de huidige pincode in (niet 123456) en koppel opnieuw",
         "sidecarUnhealthy": "Reticulum-zijspan loopt, maar reageert niet op gezondheidscontroles",
         "propagationSyncStuck": "Synchronisatie van propagatieknooppunt zit vast bij het tot stand brengen van een link",
-        "propagationSyncFailing": "Synchronisatie van propagatieknooppunt mislukt"
+        "propagationSyncFailing": "Synchronisatie van propagatieknooppunt mislukt",
+        "announceBusPressure": "Hoog aankondigings-/padresponspercentage kan inkomende LXMF-chatlevering vertragen — inhaalactie is actief; er worden grote padtabellen verwacht",
+        "announceBusPressureTipDisableHubs": "Schakel ongebruikte TCP-hubs (Connection → Interfaces) uit — de grootste hendel voor het churn van de path-table.",
+        "announceBusPressureTipShareInstance": "Schakel instantie delen uit als andere lokale Reticulum-apps met deze stapel te maken hebben.",
+        "announceBusPressureTipAnnounceInterval": "Netwerkaankondigingsinterval regelt alleen de uitgaande aankondigingen van dit knooppunt — het stopt inkomende padresponsoverstromingen niet.",
+        "announceBusPressureTipWait": "Inhalen is al actief; deze waarschuwing verdwijnt na ongeveer 5 minuten zonder vertraging, storm of overloop."
       }
     },
     "routingPort": {

@@ -1539,7 +1539,8 @@
         "edit": "Arayüzü düzenle",
         "restart_stack": "Yığını yeniden başlat",
         "add_auto": "Otomatik arayüz ekle",
-        "disable_share_instance": "Turn off Share instance"
+        "disable_share_instance": "Turn off Share instance",
+        "open_interfaces": "Açık Arayüzler"
       },
       "audit": {
         "tcp_enable_key": "TCP arayüzü \"{{name}}\" yanlış etkinleştirme anahtarını kullanıyor — RNS bunu yüklemeyecek.",
@@ -1582,7 +1583,12 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" şifre değişimi zaman aşımına uğradı — mevcut PIN'i girin (123456 değil) ve yeniden eşleştirin",
         "sidecarUnhealthy": "Reticulum sepeti çalışıyor ancak sağlık kontrollerine yanıt vermiyor",
         "propagationSyncStuck": "Yayılım düğümü senkronizasyonu bir bağlantı kurarken takıldı",
-        "propagationSyncFailing": "Yayılma düğümü senkronizasyonu başarısız oldu"
+        "propagationSyncFailing": "Yayılma düğümü senkronizasyonu başarısız oldu",
+        "announceBusPressure": "Yüksek anons/yol - yanıt oranı, gelen LXMF Sohbet teslimatını geciktirebilir — telafi aktif; büyük yol tabloları bekleniyor",
+        "announceBusPressureTipDisableHubs": "Yol tablosu dalgalanması için en büyük kaldıraç olan kullanılmayan TCP hub'larını (Bağlantı → Arabirimleri) devre dışı bırakın.",
+        "announceBusPressureTipShareInstance": "Diğer yerel Reticulum uygulamaları bu yığınla mücadele ediyorsa Paylaşım örneğini kapat.",
+        "announceBusPressureTipAnnounceInterval": "Ağ duyuru aralığı yalnızca bu düğümün giden duyurularını kontrol eder — gelen yol - yanıt sellerini durdurmaz.",
+        "announceBusPressureTipWait": "Yetişme zaten aktif; bu uyarı yaklaşık 5 dakika sonra gecikme, fırtına veya taşma olmadan silinir."
       }
     },
     "routingPort": {

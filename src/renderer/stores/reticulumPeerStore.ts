@@ -805,20 +805,32 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
 
 export const RETICULUM_PEER_REFRESH_MS = 30_000;
 
-/** Optimistic Peers-tab row from an `announce.received` WS payload (batched patch). */
+/** Optimistic Peers-tab row(s) from an `announce.received` WS payload (single or batched). */
 export function applyReticulumAnnounceReceivedOptimistic(payload: unknown): void {
   if (!payload || typeof payload !== 'object') return;
   const p = payload as Record<string, unknown>;
-  const peer = peerFromWirePatch({
-    ...p,
-    last_seen: typeof p.last_seen === 'number' ? p.last_seen : Date.now(),
-  });
-  if (!peer) return;
-  bufferReticulumPeerPatches([peer]);
-  registerReticulumDestinationHash(
-    reticulumHashToNodeId(peer.destination_hash),
-    peer.destination_hash,
-  );
+  const rows: unknown[] = Array.isArray(p.announces) ? p.announces : [p];
+  const now = Date.now();
+  const peers: ReticulumPeer[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const peer = peerFromWirePatch({
+      ...(row as Record<string, unknown>),
+      last_seen:
+        typeof (row as { last_seen?: unknown }).last_seen === 'number'
+          ? (row as { last_seen: number }).last_seen
+          : now,
+    });
+    if (!peer) continue;
+    peers.push(peer);
+    registerReticulumDestinationHash(
+      reticulumHashToNodeId(peer.destination_hash),
+      peer.destination_hash,
+    );
+  }
+  if (peers.length > 0) {
+    bufferReticulumPeerPatches(peers);
+  }
 }
 
 function appearancesFromDbRows(

@@ -107,7 +107,8 @@ export interface RfDiagnosticRow {
     | 'edit'
     | 'restart_stack'
     | 'add_auto'
-    | 'disable_share_instance';
+    | 'disable_share_instance'
+    | 'open_interfaces';
 }
 
 export type DiagnosticRow = RoutingDiagnosticRow | RfDiagnosticRow;

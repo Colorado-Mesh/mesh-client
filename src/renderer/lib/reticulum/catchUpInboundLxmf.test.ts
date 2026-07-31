@@ -1,21 +1,31 @@
 // @vitest-environment jsdom
 /**
  * Runtime catch-up after WS lag / reconnect / stack restart:
- * useReticulumRuntime → fetchRecentInboundLxmf → ingest (dedupe by message hash).
+ * useReticulumRuntime → fetchRecentInboundLxmfDetailed → ingest (dedupe by message hash).
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ingestReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { OFFLINE_RETICULUM_IDENTITY_ID } from '@/renderer/lib/offlineProtocolIdentities';
-import { fetchRecentInboundLxmf } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
+import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
+import {
+  getReticulumInboundLxmfDiagnostics,
+  resetReticulumInboundLxmfDiagnosticsForTests,
+} from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 import { resetReticulumManualStackStopSuppressForTests } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { useReticulumRuntime } from '@/renderer/runtime/useReticulumRuntime';
-import { useMessageStore } from '@/renderer/stores/messageStore';
+import {
+  addMessage,
+  mergeMessageRecordsFromDbForIdentity,
+  type MessageRecord,
+  useMessageStore,
+} from '@/renderer/stores/messageStore';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
   fetchRecentInboundLxmf: vi.fn(),
+  fetchRecentInboundLxmfDetailed: vi.fn(),
 }));
 
 vi.mock('@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher', () => ({
@@ -26,12 +36,12 @@ vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({
   useReticulumPropagationAutoSync: () => {},
 }));
 
-function sampleInbound(hash: string, text: string) {
+function sampleInbound(hash: string, text: string, timestamp = 1_000) {
   return {
     sender_hash: 'e16af7d675a0ae7f3067185800a46678',
     sender_name: 'Runr02',
     text,
-    timestamp: 1_000,
+    timestamp,
     direction: 'inbound' as const,
     message_hash: hash,
     received_via: 'tcp',
@@ -41,13 +51,16 @@ function sampleInbound(hash: string, text: string) {
 describe('useReticulumRuntime inbound LXMF catch-up', () => {
   const identityId = OFFLINE_RETICULUM_IDENTITY_ID;
   let eventHandler: ((evt: ReticulumSidecarEvent) => void) | null = null;
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
   beforeEach(() => {
     useMessageStore.setState({ messages: {} });
     resetReticulumManualStackStopSuppressForTests();
+    resetReticulumInboundLxmfDiagnosticsForTests();
     eventHandler = null;
-    vi.mocked(fetchRecentInboundLxmf).mockReset();
-    vi.mocked(fetchRecentInboundLxmf).mockResolvedValue([]);
+    warnSpy.mockClear();
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockReset();
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({ messages: [], ringLen: 0 });
     vi.mocked(window.electronAPI.reticulum.onEvent).mockImplementation((cb) => {
       eventHandler = cb;
       return () => {
@@ -75,7 +88,10 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
 
   it('connect catch-up ingests buffered inbound that never arrived live', async () => {
     const hash = 'ab'.repeat(32);
-    vi.mocked(fetchRecentInboundLxmf).mockResolvedValue([sampleInbound(hash, 'Test back 1')]);
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
+      messages: [sampleInbound(hash, 'Test back 1')],
+      ringLen: 1,
+    });
 
     const { result, unmount } = renderHook(() => useReticulumRuntime());
     await act(async () => {
@@ -85,7 +101,8 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     await waitFor(() => {
       expect(useMessageStore.getState().messages[identityId][hash].payload).toBe('Test back 1');
     });
-    expect(fetchRecentInboundLxmf).toHaveBeenCalledWith({ limit: 200 });
+    expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalledWith({ limit: 200 });
+    expect(getReticulumInboundLxmfDiagnostics().lastInboundCatchUpCount).toBe(1);
     unmount();
   });
 
@@ -94,7 +111,10 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     const payload = sampleInbound(hash, 'already live');
     expect(ingestReticulumLxmfPayload(identityId, payload)).toBe(true);
 
-    vi.mocked(fetchRecentInboundLxmf).mockResolvedValue([payload]);
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
+      messages: [payload],
+      ringLen: 1,
+    });
 
     const { result, unmount } = renderHook(() => useReticulumRuntime());
     await act(async () => {
@@ -103,7 +123,7 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     expect(eventHandler).toBeTruthy();
     const onEvent = eventHandler!;
 
-    const callsAfterConnect = vi.mocked(fetchRecentInboundLxmf).mock.calls.length;
+    const callsAfterConnect = vi.mocked(fetchRecentInboundLxmfDetailed).mock.calls.length;
 
     act(() => {
       onEvent({ type: 'events_lagged', payload: { skipped: 12 } });
@@ -117,8 +137,12 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     });
 
     await waitFor(() => {
-      expect(vi.mocked(fetchRecentInboundLxmf).mock.calls.length).toBe(callsAfterConnect + 2);
+      expect(vi.mocked(fetchRecentInboundLxmfDetailed).mock.calls.length).toBe(
+        callsAfterConnect + 2,
+      );
     });
+
+    expect(getReticulumInboundLxmfDiagnostics().lastEventsLaggedSkipped).toBe(12);
 
     const matches = Object.values(useMessageStore.getState().messages[identityId] ?? {}).filter(
       (m) => m.payload === 'already live',
@@ -129,14 +153,17 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
 
   it('sidecar restartStack catch-up ingests missed inbound', async () => {
     const hash = 'ef'.repeat(32);
-    vi.mocked(fetchRecentInboundLxmf).mockResolvedValue([]);
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({ messages: [], ringLen: 0 });
 
     const { result, unmount } = renderHook(() => useReticulumRuntime());
     await act(async () => {
       await result.current.connect();
     });
 
-    vi.mocked(fetchRecentInboundLxmf).mockResolvedValue([sampleInbound(hash, 'after restart')]);
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
+      messages: [sampleInbound(hash, 'after restart')],
+      ringLen: 1,
+    });
     const restartStack = result.current.restartStack;
     if (!restartStack) {
       throw new Error('expected restartStack on Reticulum runtime');
@@ -149,5 +176,29 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
       expect(useMessageStore.getState().messages[identityId][hash].payload).toBe('after restart');
     });
     unmount();
+  });
+
+  it('mergeMessageRecordsFromDbForIdentity preserves live rows absent from DB snapshot', () => {
+    const live: MessageRecord = {
+      id: 'live-hash',
+      from: 1,
+      to: 0,
+      payload: 'from WS',
+      channelIndex: 0,
+      timestamp: 2_000,
+    };
+    const fromDb: MessageRecord = {
+      id: 'db-hash',
+      from: 2,
+      to: 0,
+      payload: 'from DB',
+      channelIndex: 0,
+      timestamp: 1_000,
+    };
+    addMessage(identityId, live);
+    mergeMessageRecordsFromDbForIdentity(identityId, [fromDb]);
+    const bucket = useMessageStore.getState().messages[identityId];
+    expect(bucket['live-hash'].payload).toBe('from WS');
+    expect(bucket['db-hash'].payload).toBe('from DB');
   });
 });
