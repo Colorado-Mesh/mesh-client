@@ -2000,7 +2000,7 @@
       },
       "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor",
       "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
-      "pingFailed": "Ping başarısız olduComment",
+      "pingFailed": "Ping başarısız oldu",
       "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin."
     },
     "mqttHints": {
@@ -3076,7 +3076,7 @@
     "maxHopsFilter": "Maks hops",
     "maxHopsAll": "Tüm hops",
     "maxHopsOption": "{{count}} hops",
-    "resetView": "GÃ¶rÃ¼nÃ¼mÃ¼ SÄ±fÄ±rla",
+    "resetView": "Görünümü sıfırla",
     "compactLeafCount": "{{count}} kompakt doğrudan eşler"
   },
   "peerListPanel": {

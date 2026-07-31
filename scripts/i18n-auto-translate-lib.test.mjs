@@ -81,8 +81,17 @@ describe('filterMissingKeysToTranslate', () => {
   });
 
   it('auditIdentical: also includes present keys whose value matches English', () => {
-    const enFlat = { a: 'Translate me please', b: 'Flood Advert', c: 'Factory Reset' };
-    const existing = { a: 'Bereits übersetzt', b: 'Flood Advert' }; // a translated, b same as EN, c absent
+    const enFlat = {
+      a: 'Translate me please',
+      b: 'Flood Advert',
+      c: 'Factory Reset',
+      d: 'Keep your node visible on the mesh',
+    };
+    const existing = {
+      a: 'Bereits übersetzt',
+      b: 'Flood Advert',
+      d: 'Keep your node visible on the mesh',
+    }; // a translated; b protocol phrase (skip); d identical prose (audit); c absent
     expect(
       filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
         translateAllGaps: false,
@@ -90,7 +99,26 @@ describe('filterMissingKeysToTranslate', () => {
         auditIdentical: true,
         enFlat,
       }),
-    ).toEqual(['b', 'c']);
+    ).toEqual(['c', 'd']);
+  });
+
+  it('auditIdentical: skips Flood Advert / brand-only / verbatim leaf keys', () => {
+    const enFlat = {
+      'appPanel.floodAdvertSection': 'Flood Advert',
+      'app.brandName': 'Colorado Mesh',
+      'roomsPanel.guestPasswordPlaceholder': 'hello',
+      'rawPacketLog.filterChipAdvert': 'ADVERT',
+      prose: 'Quit mesh-client completely and reconnect',
+    };
+    const existing = { ...enFlat };
+    const result = filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+      translateAllGaps: false,
+      hasGitBaseline: false,
+      auditIdentical: true,
+      enFlat,
+    });
+    // prose still has translatable words after stripping mesh-client
+    expect(result).toEqual(['prose']);
   });
 
   it('auditIdentical: skips keys that are genuinely translated (value differs from English)', () => {
