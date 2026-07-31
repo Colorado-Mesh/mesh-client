@@ -28,6 +28,7 @@ import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
+import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
@@ -46,6 +47,7 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import { MS_PER_MINUTE } from '../shared/timeConstants';
 import {
   bleCoexistenceCoordinator,
   type BlePeripheralOwner,
@@ -53,7 +55,10 @@ import {
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
 import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
-import { formatChatExportLines } from './chatExportFormat';
+import {
+  assertChatExportMessageSizes,
+  formatChatExportLinesWithTotalCap,
+} from './chatExportFormat';
 import {
   addContactToGroup,
   closeDatabase,
@@ -105,6 +110,7 @@ import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
+import { createIpcRateLimiter } from './ipcRateLimit';
 import {
   clearLogFile,
   exportLogTo,
@@ -2685,8 +2691,16 @@ ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
     throw new Error('bleCoexistence:acquireScan: owner must be noble, reticulum, or webbt');
   }
-  await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
-  return bleCoexistenceCoordinator.getState();
+  try {
+    await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
+    return bleCoexistenceCoordinator.getState();
+  } catch (err) {
+    console.error(
+      '[main] bleCoexistence:acquireScan failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
 });
 ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:releaseScan');
@@ -2698,13 +2712,29 @@ ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
 });
 ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
   assertIpcSender(event, 'bleCoexistence:pauseNobleScan');
-  await bleCoexistenceCoordinator.pauseNobleScan();
-  return bleCoexistenceCoordinator.getState();
+  try {
+    await bleCoexistenceCoordinator.pauseNobleScan();
+    return bleCoexistenceCoordinator.getState();
+  } catch (err) {
+    console.error(
+      '[main] bleCoexistence:pauseNobleScan failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
 });
 ipcMain.handle('bleCoexistence:suspendNobleForReticulumBleConnect', async (event) => {
   assertIpcSender(event, 'bleCoexistence:suspendNobleForReticulumBleConnect');
-  await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
-  return bleCoexistenceCoordinator.getState();
+  try {
+    await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
+    return bleCoexistenceCoordinator.getState();
+  } catch (err) {
+    console.error(
+      '[main] bleCoexistence:suspendNobleForReticulumBleConnect failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
 });
 
 ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
@@ -2739,7 +2769,14 @@ ipcMain.handle('noble-ble-stop-scan', async (event, sessionId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-stop-scan: sessionId must be meshtastic or meshcore');
   }
-  await nobleBleManager.stopScanning(sessionId);
+  try {
+    await nobleBleManager.stopScanning(sessionId);
+  } catch (err) {
+    console.error(
+      `[main] noble-ble-stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+    );
+    throw err;
+  }
 });
 ipcMain.handle('noble-ble-connect', async (event, sessionId: unknown, peripheralId: unknown) => {
   assertIpcSender(event, 'noble-ble-connect');
@@ -2768,7 +2805,14 @@ ipcMain.handle('noble-ble-disconnect', async (event, sessionId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-disconnect: sessionId must be meshtastic or meshcore');
   }
-  await nobleBleManager.disconnect(sessionId);
+  try {
+    await nobleBleManager.disconnect(sessionId);
+  } catch (err) {
+    console.error(
+      `[main] noble-ble-disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+    );
+    throw err;
+  }
 });
 ipcMain.handle('noble-ble-is-connected', (event, sessionId: unknown) => {
   assertIpcSender(event, 'noble-ble-is-connected');
@@ -3356,6 +3400,19 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
 });
 
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
+/** Export / import dialogs — max 5 / 60s. */
+const exportIpcRateLimit = createIpcRateLimiter({
+  max: 5,
+  windowMs: MS_PER_MINUTE,
+  label: 'export',
+});
+/** storage:encrypt / storage:decrypt — max 30 / 60s. */
+const storageCryptoIpcRateLimit = createIpcRateLimiter({
+  max: 30,
+  windowMs: MS_PER_MINUTE,
+  label: 'storage:crypto',
+});
+
 ipcMain.handle('storage:isAvailable', (event) => {
   assertIpcSender(event, 'storage:isAvailable');
   try {
@@ -3371,6 +3428,7 @@ ipcMain.handle('storage:isAvailable', (event) => {
 
 ipcMain.handle('storage:encrypt', (event, plaintext: unknown) => {
   assertIpcSender(event, 'storage:encrypt');
+  storageCryptoIpcRateLimit.checkOrThrow();
   if (typeof plaintext !== 'string' || plaintext.length > 4096)
     throw new Error('storage:encrypt: invalid input');
   try {
@@ -3387,6 +3445,7 @@ ipcMain.handle('storage:encrypt', (event, plaintext: unknown) => {
 
 ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
   assertIpcSender(event, 'storage:decrypt');
+  storageCryptoIpcRateLimit.checkOrThrow();
   if (typeof ciphertext !== 'string' || ciphertext.length > 8192)
     throw new Error('storage:decrypt: invalid input');
   try {
@@ -3741,7 +3800,7 @@ ipcMain.handle('db:saveMessage', (event, message) => {
 ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
   if (!validateIpcSender(event)) throw new Error('db:getMessages: unauthorized sender');
   try {
-    const safeLimit = Math.min(Math.max(1, Number(limit) || 1000), 10000);
+    const safeLimit = clampQueryLimit(limit, { default: 1000, max: 10000 });
     const db = getDbForIpc('db:getMessages');
     if (!db) return [];
     const columns = `id, sender_id, sender_name, payload, channel, timestamp,
@@ -3890,8 +3949,9 @@ ipcMain.handle('db:setNodeFavorited', (event, nodeId: number, favorited: boolean
   }
 });
 
-ipcMain.handle('db:getNodeNote', (_event, nodeId: number) => {
+ipcMain.handle('db:getNodeNote', (event, nodeId: number) => {
   try {
+    assertIpcSender(event, 'db:getNodeNote');
     const id = safeNonNegativeInt(nodeId);
     const db = getDbForIpc('db:getNodeNote');
     if (!db) return null;
@@ -4414,6 +4474,7 @@ ipcMain.handle(
 // ─── IPC: Export database ───────────────────────────────────────────
 ipcMain.handle('db:export', async (event) => {
   if (!validateIpcSender(event)) throw new Error('db:export: unauthorized sender');
+  exportIpcRateLimit.checkOrThrow();
   try {
     if (!getDbForIpc('db:export')) return null;
     if (!mainWindow) return null;
@@ -4435,6 +4496,7 @@ ipcMain.handle('db:export', async (event) => {
 // ─── IPC: Import / merge database ───────────────────────────────────
 ipcMain.handle('db:import', async (event) => {
   if (!validateIpcSender(event)) throw new Error('db:import: unauthorized sender');
+  exportIpcRateLimit.checkOrThrow();
   try {
     if (!getDbForIpc('db:import')) return null;
     if (!mainWindow) return null;
@@ -4528,6 +4590,7 @@ ipcMain.handle('log:export', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
+  exportIpcRateLimit.checkOrThrow();
   try {
     if (!mainWindow) return null;
     const result = await dialog.showSaveDialog(mainWindow, {
@@ -4558,6 +4621,7 @@ ipcMain.handle('support:exportBundle', async (event, mode: unknown, debugSnapsho
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
+  exportIpcRateLimit.checkOrThrow();
   if (!isSupportBundleMode(mode)) {
     throw new Error('support:exportBundle: invalid mode');
   }
@@ -4592,10 +4656,12 @@ ipcMain.handle('support:exportBundle', async (event, mode: unknown, debugSnapsho
 
 ipcMain.handle('chat:export', async (event, messages: unknown) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  exportIpcRateLimit.checkOrThrow();
   if (!Array.isArray(messages)) throw new Error('messages must be an array');
   if (messages.length > CHAT_EXPORT_MAX_MESSAGES) {
     throw new Error(`chat:export: too many messages (max ${CHAT_EXPORT_MAX_MESSAGES})`);
   }
+  assertChatExportMessageSizes(messages);
   if (!mainWindow) return { success: false };
   try {
     const result = await dialog.showSaveDialog(mainWindow, {
@@ -4604,8 +4670,8 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
       filters: [{ name: 'Text file', extensions: ['txt'] }],
     });
     if (result.canceled || !result.filePath) return { success: false };
-    const lines = formatChatExportLines(messages as unknown[]);
-    await fs.promises.writeFile(result.filePath, lines.join('\n') + '\n', 'utf8');
+    const text = formatChatExportLinesWithTotalCap(messages);
+    await fs.promises.writeFile(result.filePath, text, 'utf8');
     return { success: true, path: result.filePath };
   } catch (err) {
     console.error(
@@ -4961,9 +5027,10 @@ function rowToOutboxEntry(row: Record<string, unknown>) {
 }
 
 // ─── IPC: MeshCore database operations ──────────────────────────────
-ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 200) => {
+ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 200) => {
   try {
-    const safeLimit = Math.min(Math.max(1, Number(limit) || 200), 10000);
+    assertIpcSender(event, 'db:getMeshcoreMessages');
+    const safeLimit = clampQueryLimit(limit, { default: 200, max: 10000 });
     const db = getDbForIpc('db:getMeshcoreMessages');
     if (!db) return [];
     // Order by row id (insert order at this client), not `timestamp`:
@@ -4996,8 +5063,9 @@ ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 2
   }
 });
 
-ipcMain.handle('db:searchMessages', (_event, query: string, limit?: number) => {
+ipcMain.handle('db:searchMessages', (event, query: string, limit?: number) => {
   try {
+    assertIpcSender(event, 'db:searchMessages');
     if (!getDbForIpc('db:searchMessages')) return [];
     if (typeof query !== 'string' || query.length > 500) return [];
     return searchMessages(query, Math.min(limit ?? 50, 200));
@@ -5006,8 +5074,9 @@ ipcMain.handle('db:searchMessages', (_event, query: string, limit?: number) => {
   }
 });
 
-ipcMain.handle('db:searchMeshcoreMessages', (_event, query: string, limit?: number) => {
+ipcMain.handle('db:searchMeshcoreMessages', (event, query: string, limit?: number) => {
   try {
+    assertIpcSender(event, 'db:searchMeshcoreMessages');
     if (!getDbForIpc('db:searchMeshcoreMessages')) return [];
     if (typeof query !== 'string' || query.length > 500) return [];
     return searchMeshcoreMessages(query, Math.min(limit ?? 50, 200));
@@ -5016,8 +5085,9 @@ ipcMain.handle('db:searchMeshcoreMessages', (_event, query: string, limit?: numb
   }
 });
 
-ipcMain.handle('db:getMeshcoreContacts', () => {
+ipcMain.handle('db:getMeshcoreContacts', (event) => {
   try {
+    assertIpcSender(event, 'db:getMeshcoreContacts');
     const db = getDbForIpc('db:getMeshcoreContacts');
     if (!db) return [];
     return db.prepareOnce('SELECT * FROM meshcore_contacts').all();
@@ -5376,8 +5446,9 @@ ipcMain.handle('db:clearMeshcoreMessages', (event) => {
   }
 });
 
-ipcMain.handle('db:getMeshcoreMessageChannels', () => {
+ipcMain.handle('db:getMeshcoreMessageChannels', (event) => {
   try {
+    assertIpcSender(event, 'db:getMeshcoreMessageChannels');
     const db = getDbForIpc('db:getMeshcoreMessageChannels');
     if (!db) return [];
     return db
@@ -5449,8 +5520,9 @@ ipcMain.handle('db:markAllMeshcoreContactsOffRadio', (event) => {
 });
 
 // Returns count of contacts currently marked as on_radio = 1.
-ipcMain.handle('db:getMeshcoreContactCount', () => {
+ipcMain.handle('db:getMeshcoreContactCount', (event) => {
   try {
+    assertIpcSender(event, 'db:getMeshcoreContactCount');
     const db = getDbForIpc('db:getMeshcoreContactCount');
     if (!db) return 0;
     const result = db
@@ -5512,8 +5584,9 @@ ipcMain.handle('db:offloadAllMeshcoreContacts', (event) => {
 });
 
 // Get a single contact by node_id (returns on_radio status).
-ipcMain.handle('db:getMeshcoreContactById', (_event, nodeId: number) => {
+ipcMain.handle('db:getMeshcoreContactById', (event, nodeId: number) => {
   try {
+    assertIpcSender(event, 'db:getMeshcoreContactById');
     const db = getDbForIpc('db:getMeshcoreContactById');
     if (!db) return null;
     const id = safeNonNegativeInt(nodeId);
@@ -5527,8 +5600,9 @@ ipcMain.handle('db:getMeshcoreContactById', (_event, nodeId: number) => {
 
 // ─── IPC: Contact groups ──────────────────────────────────────────────────────
 
-ipcMain.handle('db:getContactGroups', (_event, selfNodeId: number) => {
+ipcMain.handle('db:getContactGroups', (event, selfNodeId: number) => {
   try {
+    assertIpcSender(event, 'db:getContactGroups');
     if (!getDbForIpc('db:getContactGroups')) return [];
     return getContactGroups(safeNonNegativeInt(selfNodeId));
   } catch (err) {
@@ -5594,8 +5668,9 @@ ipcMain.handle('db:removeContactFromGroup', (event, groupId: number, contactNode
   }
 });
 
-ipcMain.handle('db:getContactGroupMembers', (_event, groupId: number) => {
+ipcMain.handle('db:getContactGroupMembers', (event, groupId: number) => {
   try {
+    assertIpcSender(event, 'db:getContactGroupMembers');
     if (!getDbForIpc('db:getContactGroupMembers')) return [];
     return getContactGroupMembers(safeNonNegativeInt(groupId));
   } catch (err) {
@@ -5743,8 +5818,9 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:getPositionHistory', (_event, sinceMs: number) => {
+ipcMain.handle('db:getPositionHistory', (event, sinceMs: number) => {
   try {
+    assertIpcSender(event, 'db:getPositionHistory');
     const db = getDbForIpc('db:getPositionHistory');
     if (!db) return [];
     const since = typeof sinceMs === 'number' && isFinite(sinceMs) ? sinceMs : 0;
@@ -5793,8 +5869,9 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:getMeshcoreHopHistory', (_event, nodeId: number) => {
+ipcMain.handle('db:getMeshcoreHopHistory', (event, nodeId: number) => {
   try {
+    assertIpcSender(event, 'db:getMeshcoreHopHistory');
     if (!getDbForIpc('db:getMeshcoreHopHistory')) return [];
     return getMeshcoreHopHistory(nodeId);
   } catch (err) {
@@ -5802,8 +5879,9 @@ ipcMain.handle('db:getMeshcoreHopHistory', (_event, nodeId: number) => {
   }
 });
 
-ipcMain.handle('db:getAllMeshcoreHopHistory', () => {
+ipcMain.handle('db:getAllMeshcoreHopHistory', (event) => {
   try {
+    assertIpcSender(event, 'db:getAllMeshcoreHopHistory');
     if (!getDbForIpc('db:getAllMeshcoreHopHistory')) return [];
     return getAllMeshcoreHopHistoryRows();
   } catch (err) {
@@ -5834,8 +5912,9 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:getMeshcoreTraceHistory', (_event, nodeId: number) => {
+ipcMain.handle('db:getMeshcoreTraceHistory', (event, nodeId: number) => {
   try {
+    assertIpcSender(event, 'db:getMeshcoreTraceHistory');
     if (!getDbForIpc('db:getMeshcoreTraceHistory')) return [];
     return getMeshcoreTraceHistory(nodeId);
   } catch (err) {
@@ -5900,8 +5979,9 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:getAllMeshcorePathHistory', () => {
+ipcMain.handle('db:getAllMeshcorePathHistory', (event) => {
   try {
+    assertIpcSender(event, 'db:getAllMeshcorePathHistory');
     if (!getDbForIpc('db:getAllMeshcorePathHistory')) return [];
     return getAllMeshcorePathHistory();
   } catch (err) {
@@ -5909,8 +5989,9 @@ ipcMain.handle('db:getAllMeshcorePathHistory', () => {
   }
 });
 
-ipcMain.handle('db:getMeshcorePathHistory', (_event, nodeId: number) => {
+ipcMain.handle('db:getMeshcorePathHistory', (event, nodeId: number) => {
   try {
+    assertIpcSender(event, 'db:getMeshcorePathHistory');
     if (!getDbForIpc('db:getMeshcorePathHistory')) return [];
     return getMeshcorePathHistory(nodeId);
   } catch (err) {

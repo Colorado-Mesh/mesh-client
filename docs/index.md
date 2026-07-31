@@ -74,7 +74,7 @@ Also useful:
   - Noble BLE coexistence when a Reticulum BLE RNode is connected — [Troubleshooting](troubleshooting.md#reticulum-ble-rnode-blocks-meshtasticmeshcore-noble-ble)
   - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 - **Support**
-  - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic tab), Reticulum interface audit; protocol-scoped row filtering
+  - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic & MeshCore tabs), Reticulum interface audit; protocol-scoped row filtering
   - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
   - Export for GitHub / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-export-for-github-app-tab)

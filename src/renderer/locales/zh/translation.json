@@ -1262,7 +1262,11 @@
       "disableShare": "关闭共享实例并重新启动",
       "disableShareAria": "关闭共享实例并重新启动堆栈",
       "disableFailed": "无法关闭共享实例。"
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh需要WebSocket传输。",
+    "letsMeshRequiresPort": "LetsMesh需要端口{{port}}。",
+    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper预设仅支持已知的设备签名代理。对其他经纪商使用自定义。",
+    "letsMeshUsernameV1Hex": "用户名必须为v1_后跟64个十六进制字符（公钥）。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

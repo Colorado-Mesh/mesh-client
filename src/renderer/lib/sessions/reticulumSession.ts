@@ -53,22 +53,3 @@ export function getReticulumSendMessage(
 export function resolveReticulumOutboundVia(_destinationHash: string): MessageTransport {
   return activeSession?.resolveOutboundVia?.(_destinationHash) ?? 'network';
 }
-
-/** @deprecated Use registerReticulumSession from useReticulumRuntime mount */
-export function bindReticulumSession(runtime: {
-  sendMessage: ReticulumSendMessageFn;
-  selfNodeId: string | number | null;
-  getFullNodeLabel: (nodeId: number) => string;
-  connect: () => Promise<void>;
-  connectAutomatic: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  finalizeDriverDisconnect?: () => Promise<void>;
-  sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
-  handleSidecarEvent?: ReticulumSessionApi['handleSidecarEvent'];
-  resolveOutboundVia?: (destinationHash: string) => MessageTransport;
-}): void {
-  registerReticulumSession({
-    ...runtime,
-    finalizeDriverDisconnect: runtime.finalizeDriverDisconnect ?? runtime.disconnect,
-  });
-}

@@ -107,7 +107,13 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
       hint: 'use "룸" for MeshCore Room, not hotel/meeting "객실/회의실"',
     },
   ],
-  it: [{ re: /\b[Cc]amera/i, hint: 'use "sala" for MeshCore Room, not hotel bedroom "camera"' }],
+  it: [
+    { re: /\b[Cc]amera/i, hint: 'use "sala" for MeshCore Room, not hotel bedroom "camera"' },
+    {
+      re: /\b[Cc]amere\b/i,
+      hint: 'use "sale" for MeshCore Rooms tab, not hotel bedrooms "camere"',
+    },
+  ],
   ru: [
     {
       re: /номер/i,

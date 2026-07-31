@@ -604,7 +604,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
             pushAppToast(i18n.t('reticulumRemote.transfer.receiveDestShareFailed'), 'error');
           }
         }
-      })();
+      })().catch((e: unknown) => {
+        console.warn('[useReticulumRuntime] ingestLxmfPayload failed ' + errLikeToLogString(e));
+      });
     },
     [identityId, selfLxmfHash],
   );
@@ -702,13 +704,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
         console.warn(
           `[useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
         );
-        void catchUpRecentInboundLxmf({ reason: 'events_lagged' });
+        void catchUpRecentInboundLxmf({ reason: 'events_lagged' }).catch((e: unknown) => {
+          console.warn(
+            '[useReticulumRuntime] catch-up after events_lagged failed ' + errLikeToLogString(e),
+          );
+        });
       }
       if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
         const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
         if (reconnect) {
           console.debug('[useReticulumRuntime] sidecar WS reconnected — catching up inbound LXMF');
-          void catchUpRecentInboundLxmf({ reason: 'ws_reconnect' });
+          void catchUpRecentInboundLxmf({ reason: 'ws_reconnect' }).catch((e: unknown) => {
+            console.warn(
+              '[useReticulumRuntime] catch-up after ws_reconnect failed ' + errLikeToLogString(e),
+            );
+          });
         }
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
@@ -1163,7 +1173,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
             identity_hash: p.identity_hash,
           });
           // Toast so offers are visible even when the user is not on Remote/Chat DM.
-          console.debug(`[useReticulumRuntime] rncp.offer ${p.file_name}`);
+          console.debug(
+            `[useReticulumRuntime] rncp.offer ${sanitizeLogMessage(p.file_name.slice(0, 200))}`,
+          );
           try {
             window.dispatchEvent(
               new CustomEvent('mesh-client:rncp-offer', {
@@ -1305,7 +1317,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
     if (connectInFlightRef.current) {
       const pending = connectInFlightDoneRef.current;
       if (pending) {
-        await pending.catch(() => {});
+        await pending.catch((e: unknown) => {
+          console.debug(
+            '[useReticulumRuntime] coalesced connect waited on failed in-flight attempt ' +
+              errLikeToLogString(e),
+          );
+        });
         return;
       }
       throw new Error('Reticulum connect already in progress');
@@ -1403,7 +1420,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     unsubEventRef.current?.();
     unsubEventRef.current = null;
-    await window.electronAPI.reticulum.stop();
+    try {
+      await window.electronAPI.reticulum.stop();
+    } catch (e) {
+      console.warn('[useReticulumRuntime] disconnect stop failed ' + errLikeToLogString(e));
+    }
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
@@ -1418,7 +1439,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
     if (connectInFlightRef.current) {
       const pending = connectInFlightDoneRef.current;
       if (pending) {
-        await pending.catch(() => {});
+        await pending.catch((e: unknown) => {
+          console.debug(
+            '[useReticulumRuntime] restart waited on failed in-flight connect ' +
+              errLikeToLogString(e),
+          );
+        });
       }
       if (connectInFlightRef.current) {
         throw new Error('Reticulum stack operation already in progress');
@@ -1528,7 +1554,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
           : RETICULUM_INBOUND_LXMF_CATCHUP_MS;
       timeoutId = setTimeout(() => {
         const sinceTs = getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs ?? undefined;
-        void catchUpRecentInboundLxmf({ sinceTs, reason: 'periodic' });
+        void catchUpRecentInboundLxmf({ sinceTs, reason: 'periodic' }).catch((e: unknown) => {
+          console.warn(
+            '[useReticulumRuntime] periodic inbound LXMF catch-up failed ' + errLikeToLogString(e),
+          );
+        });
         scheduleNext();
       }, ms);
     };

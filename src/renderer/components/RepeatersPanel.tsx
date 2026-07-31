@@ -43,6 +43,7 @@ import {
 } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import { MS_PER_DAY } from '../lib/timeConstants';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -87,7 +88,7 @@ interface Props {
   onToggleFavorite?: (nodeId: number, favorited: boolean) => void;
 }
 
-const SIGNAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const SIGNAL_MAX_AGE_MS = MS_PER_DAY;
 const REPEATER_ROW_ESTIMATE_PX = 48;
 const REPEATER_ROW_EXPANDED_EXTRA_PX = 160;
 const REPEATER_VIRTUALIZE_THRESHOLD = 100;

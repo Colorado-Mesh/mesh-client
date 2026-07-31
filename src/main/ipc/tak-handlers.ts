@@ -82,17 +82,25 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
 
   ipcMain.handle('tak:pushNodeUpdate', async (event, node: unknown) => {
     assertIpcSender(event, 'tak:pushNodeUpdate');
-    if (!node || typeof node !== 'object')
-      throw new Error('tak:pushNodeUpdate: node must be object');
-    const n = node as Record<string, unknown>;
-    const nodeId = Number(n.node_id);
-    if (!Number.isFinite(nodeId) || nodeId <= 0)
-      throw new Error('tak:pushNodeUpdate: invalid node_id');
-    const m = await ensureTakServerManager();
-    if (!m.getStatus().running) {
-      console.debug('[IPC] tak:pushNodeUpdate: TAK server not running, skipping');
-      return;
+    try {
+      if (!node || typeof node !== 'object')
+        throw new Error('tak:pushNodeUpdate: node must be object');
+      const n = node as Record<string, unknown>;
+      const nodeId = Number(n.node_id);
+      if (!Number.isFinite(nodeId) || nodeId <= 0)
+        throw new Error('tak:pushNodeUpdate: invalid node_id');
+      const m = await ensureTakServerManager();
+      if (!m.getStatus().running) {
+        console.debug('[IPC] tak:pushNodeUpdate: TAK server not running, skipping');
+        return;
+      }
+      m.onNodeUpdate(n as Parameters<TakServerManager['onNodeUpdate']>[0]);
+    } catch (err) {
+      console.error(
+        '[IPC] tak:pushNodeUpdate failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
     }
-    m.onNodeUpdate(n as Parameters<TakServerManager['onNodeUpdate']>[0]);
   });
 }

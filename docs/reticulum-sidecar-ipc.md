@@ -236,13 +236,14 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `events_lagged` (WS subscri
 
 ## Electron bridge
 
-Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
+Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly). Lifecycle / proxy / Remote / factory-reset handlers live in `src/main/ipc/reticulum-handlers.ts`. Reticulum destination / Remote address / inbound-policy DB handlers are in `src/main/ipc/reticulum-db-handlers.ts`; RRC room history uses `src/main/ipc/rrc-db-handlers.ts`.
 
 | IPC channel                                                        | Role                                                                                                         |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | `reticulum:start` / `stop` / `getStatus`                           | Sidecar lifecycle                                                                                            |
 | `reticulum:syncInterfaceIssueScope`                                | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines    |
 | `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`    | HTTP proxy to paths above                                                                                    |
+| `reticulum:factoryReset`                                           | Factory reset (generic `proxyPost` blocks `/api/v1/system/factory-reset`; UI must use this channel)          |
 | `reticulum:validateConfig`                                         | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)     |
 | `reticulum:readDefaultConfigFile`                                  | Read first existing system rnsd config path                                                                  |
 | `reticulum:showConfigImportDialog`                                 | Native file picker for config import                                                                         |

@@ -3154,7 +3154,11 @@ export function useMeshtasticRuntime() {
   useEffect(() => {
     if (configureTargetNodeNum == null) return;
     if (state.status !== 'configured') return;
-    void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'radio');
+    void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'radio').catch((e: unknown) => {
+      console.warn(
+        '[useMeshtasticRuntime] refreshRemoteConfigSnapshot effect failed ' + errLikeToLogString(e),
+      );
+    });
   }, [configureTargetNodeNum, state.status, refreshRemoteConfigSnapshot]);
 
   const runRemoteAdminOp = useCallback(

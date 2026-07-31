@@ -2,18 +2,15 @@
 /**
  * Source contract tests for useReticulumRuntime sidecar reconnect hardening.
  */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractUseCallbackBody,
+  loadRuntimeSource,
 } from '../lib/sourceContractTestHelpers';
 
-const TEST_DIR = import.meta.dirname ?? __dirname;
-const SOURCE = readFileSync(join(TEST_DIR, 'useReticulumRuntime.ts'), 'utf-8');
+const SOURCE = loadRuntimeSource('useReticulumRuntime.ts');
 
 describe('useReticulumRuntime reconnect hardening (regression)', () => {
   it('ignores sidecar stop status while connect is in flight', () => {

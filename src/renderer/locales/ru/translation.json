@@ -1264,7 +1264,11 @@
       "disableShare": "Отключите «Поделиться экземпляром» и перезапустите",
       "disableShareAria": "Отключите «Поделиться экземпляром» и перезапустите стек",
       "disableFailed": "Не удалось отключить экземпляр Share."
-    }
+    },
+    "letsMeshRequiresWebSocket": "Для LetsMesh требуется транспорт WebSocket.",
+    "letsMeshRequiresPort": "LetsMesh требует порт {{port}}.",
+    "letsMeshKnownBrokersOnly": "Предустановка LetsMesh /MeshMapper поддерживает только известные брокеры подписи устройств. Используйте Custom для других брокеров.",
+    "letsMeshUsernameV1Hex": "Имя пользователя должно быть v1_, за которым должны следовать 64 шестнадцатеричных символа (открытый ключ)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

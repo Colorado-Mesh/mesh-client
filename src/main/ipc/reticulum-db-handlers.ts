@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { IpcMain } from 'electron';
 
+import { clampQueryLimit } from '../../shared/clampQueryLimit';
 import { isMeshProtocol } from '../../shared/meshProtocol';
 import type {
   RemoteAddressBookRow,
@@ -109,7 +110,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     try {
       assertIpcSender(event, 'db:getReticulumMessages');
       if (typeof identityId !== 'string' || identityId.length > 128) return [];
-      const safeLimit = Math.min(Math.max(1, Number(limit) || 500), 10000);
+      const safeLimit = clampQueryLimit(limit, { default: 500, max: 10000 });
       const db = getDbForIpc('db:getReticulumMessages');
       if (!db) return [];
       const rows = db
@@ -287,7 +288,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         assertIpcSender(event, 'db:searchReticulumMessages');
         if (typeof identityId !== 'string' || identityId.length > 128) return [];
         if (typeof query !== 'string' || query.length > 256) return [];
-        const safeLimit = Math.min(Math.max(1, Number(limit) || 200), 5000);
+        const safeLimit = clampQueryLimit(limit, { default: 200, max: 5000 });
         const db = getDbForIpc('db:searchReticulumMessages');
         if (!db) return [];
         const ftsQuery = buildFtsMatchQuery(query);

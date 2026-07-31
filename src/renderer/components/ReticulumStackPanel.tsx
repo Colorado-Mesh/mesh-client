@@ -308,7 +308,12 @@ export function ReticulumStackPanel({
               void (async () => {
                 await onStopStack();
                 await refreshSidecarStatus();
-              })();
+              })().catch((e: unknown) => {
+                console.warn(
+                  '[ReticulumStackPanel] stop stack failed ' +
+                    (e instanceof Error ? e.message : String(e)),
+                );
+              });
             }}
             className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-40"
           >

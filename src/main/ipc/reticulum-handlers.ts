@@ -6,6 +6,8 @@ import type {
   ReticulumSidecarStatus,
 } from '../../shared/reticulum-types';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
+import { MS_PER_MINUTE } from '../../shared/timeConstants';
+import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
 import {
   isAllowedNomadContentSourcePath,
@@ -28,6 +30,13 @@ import {
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
 import { parseEnabledInterfaceNames } from '../reticulumInterfaceIssueScope';
 import { assertIpcSender } from '../validate-ipc-sender';
+
+/** Shared rolling window for all reticulum proxy verbs (Get/Post/Put/Delete). */
+const reticulumProxyIpcRateLimit = createIpcRateLimiter({
+  max: 120,
+  windowMs: MS_PER_MINUTE,
+  label: 'reticulum:proxy',
+});
 
 export interface ReticulumIpcDeps {
   idleStatus: ReticulumSidecarStatus;
@@ -132,8 +141,16 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:stop', async (event) => {
     assertIpcSender(event, 'reticulum:stop');
-    console.debug('[ReticulumIPC] stop');
-    await getManager()?.stop();
+    try {
+      console.debug('[ReticulumIPC] stop');
+      await getManager()?.stop();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] stop failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:getStatus', (event) => {
@@ -151,6 +168,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyGet');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     try {
       const m = ensureManager();
@@ -163,6 +181,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyPost', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPost');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     if (isRncpPickerGatedApiPath(pathArg)) {
       throw new Error(
@@ -192,6 +211,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPut');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     if (isNomadContentSourceApiPath(pathArg)) {
       throw new Error(
@@ -209,6 +229,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyDelete', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyDelete');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     try {
       const m = ensureManager();
@@ -226,17 +247,41 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:showConfigImportDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showConfigImportDialog');
-    return showReticulumConfigImportDialog();
+    try {
+      return await showReticulumConfigImportDialog();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] showConfigImportDialog failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:showIdentityImportDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showIdentityImportDialog');
-    return showReticulumIdentityImportDialog();
+    try {
+      return await showReticulumIdentityImportDialog();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] showIdentityImportDialog failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:showNomadContentSourceDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showNomadContentSourceDialog');
-    return showNomadContentSourceDialog();
+    try {
+      return await showNomadContentSourceDialog();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] showNomadContentSourceDialog failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
   });
 
   /**
@@ -284,12 +329,28 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:showRncpOpenFileDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showRncpOpenFileDialog');
-    return showRncpOpenFileDialog();
+    try {
+      return await showRncpOpenFileDialog();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] showRncpOpenFileDialog failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:showRncpSaveDirectoryDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showRncpSaveDirectoryDialog');
-    return showRncpSaveDirectoryDialog();
+    try {
+      return await showRncpSaveDirectoryDialog();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] showRncpSaveDirectoryDialog failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:revealInFolder', (event, pathArg: unknown) => {

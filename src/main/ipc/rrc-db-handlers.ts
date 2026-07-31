@@ -1,5 +1,6 @@
 import type { IpcMain } from 'electron';
 
+import { clampQueryLimit } from '../../shared/clampQueryLimit';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import type { RrcChatMessageKind } from '../../shared/rrc-types';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
@@ -87,7 +88,7 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
       const hub = canonicalizeHubHash(hubHash);
       const roomKey = normalizeRoom(room);
       if (!hub || !roomKey) return [];
-      const safeLimit = Math.min(Math.max(1, Number(limit) || 500), 10_000);
+      const safeLimit = clampQueryLimit(limit, { default: 500, max: 10_000 });
       const db = getDbForIpc('db:listRrcMessages');
       if (!db) return [];
       const rows = db

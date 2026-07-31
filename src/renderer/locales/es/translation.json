@@ -1262,7 +1262,11 @@
       "disableShare": "Desactivar la instancia Compartir y reiniciar",
       "disableShareAria": "Desactivar la instancia Compartir y reiniciar la pila",
       "disableFailed": "No se ha podido desactivar la instancia Compartir."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh requiere transporte WebSocket.",
+    "letsMeshRequiresPort": "LetsMesh requiere el puerto {{port}}.",
+    "letsMeshKnownBrokersOnly": "El ajuste preestablecido de LetsMesh/MeshMapper solo admite brókers de firma de dispositivos conocidos. Utilice Personalizado para otros brókers.",
+    "letsMeshUsernameV1Hex": "El nombre de usuario debe ser v1_ seguido de 64 caracteres hexadecimales (clave pública)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

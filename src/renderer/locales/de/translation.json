@@ -1262,7 +1262,11 @@
       "disableShare": "Share-Instanz deaktivieren und neu starten",
       "disableShareAria": "Deaktivieren Sie die Share-Instanz und starten Sie den Stack neu",
       "disableFailed": "Fehler beim Deaktivieren der Share-Instanz."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh erfordert WebSocket-Transport.",
+    "letsMeshRequiresPort": "LetsMesh erfordert Port {{port}}.",
+    "letsMeshKnownBrokersOnly": "Die LetsMesh /MeshMapper-Voreinstellung unterstützt nur bekannte Gerätesignatur-Broker. Verwenden Sie Custom für andere Broker.",
+    "letsMeshUsernameV1Hex": "Der Benutzername muss v1_ gefolgt von 64 Hexadezimalzeichen (öffentlicher Schlüssel) sein."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

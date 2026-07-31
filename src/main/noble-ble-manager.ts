@@ -1209,6 +1209,7 @@ export class NobleBleManager extends EventEmitter {
           rejectGatt = reject;
         });
         // Avoid unhandledRejection when no duplicate connect is awaiting coalesce.
+        // catch-no-log-ok coalesce tail — duplicate connects await the same promise; lone setup uses this
         void promise.catch(() => {});
         session.meshcoreGattInflight = {
           promise,

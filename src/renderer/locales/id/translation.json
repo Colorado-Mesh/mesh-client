@@ -1262,7 +1262,11 @@
       "disableShare": "Nonaktifkan Bagikan sesi dan mulai ulang",
       "disableShareAria": "Nonaktifkan Bagikan instance dan mulai ulang tumpukan",
       "disableFailed": "Gagal menonaktifkan Bagikan instance."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh membutuhkan transportasi WebSocket.",
+    "letsMeshRequiresPort": "LetsMesh membutuhkan port {{port}}.",
+    "letsMeshKnownBrokersOnly": "Preset LetsMesh/ MeshMapper hanya mendukung broker penandatanganan perangkat yang dikenal. Gunakan Custom untuk broker lain.",
+    "letsMeshUsernameV1Hex": "Nama pengguna harus v1_disusul oleh 64 karakter hex (kunci publik)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

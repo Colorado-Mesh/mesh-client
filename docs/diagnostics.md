@@ -9,7 +9,7 @@ This document is the authoritative reference for every diagnostic output in Mesh
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
 - **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
-- **Peer Graph panel**: SVG force-directed graph of directly connected nodes (hops 0–1)
+- **Peer Graph panel**: SVG force-directed graph of directly connected nodes (hops 0–1) — **Meshtastic and MeshCore only**; Reticulum uses the **Topology** tab instead
 
 All three protocols share one **Diagnostics** sidebar tab; sections differ by `ProtocolCapabilities` (see **Multi-protocol tab scoping** below).
 

@@ -1,19 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshtasticDmKeyBackupStorageKey } from '../lib/meshtasticDmKeyBackupStorage';
+import { renderWithToast } from '../lib/testRenderHelpers';
 import SecurityPanel from './SecurityPanel';
-import { ToastProvider } from './Toast';
 
 vi.mock('../lib/writeClipboardText', () => ({
   writeClipboardText: vi.fn().mockResolvedValue(undefined),
 }));
-
-function renderWithToast(ui: ReactElement) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
-}
 
 function makeSecurityConfig() {
   return {

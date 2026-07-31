@@ -1264,7 +1264,11 @@
       "disableShare": "Вимкнути спільний екземпляр і перезапустити",
       "disableShareAria": "Вимкніть функцію Поділитися екземпляром і перезапустіть стек",
       "disableFailed": "Не вдалося вимкнути екземпляр спільного доступу."
-    }
+    },
+    "letsMeshRequiresWebSocket": "Для LetsMesh потрібен транспорт WebSocket.",
+    "letsMeshRequiresPort": "Для LetsMesh потрібен порт {{port}}.",
+    "letsMeshKnownBrokersOnly": "Попереднє налаштування LetsMesh /MeshMapper підтримує лише відомих брокерів, які підписують пристрої. Використовуйте Custom для інших брокерів.",
+    "letsMeshUsernameV1Hex": "Ім'я користувача має бути v1_ з 64 шістнадцятковими символами (відкритий ключ)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

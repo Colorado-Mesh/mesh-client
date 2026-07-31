@@ -2,13 +2,11 @@
 /**
  * Source contract tests for RRC multi-hub WebSocket event routing.
  */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
-const TEST_DIR = import.meta.dirname ?? __dirname;
-const SOURCE = readFileSync(join(TEST_DIR, 'useReticulumRuntime.ts'), 'utf-8');
+import { loadRuntimeSource } from '../lib/sourceContractTestHelpers';
+
+const SOURCE = loadRuntimeSource('useReticulumRuntime.ts');
 
 describe('useReticulumRuntime RRC event routing (regression)', () => {
   it('honors will_reconnect=false by clearing the hub session', () => {

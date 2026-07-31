@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest';
 import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractUseCallbackBody,
+  loadRuntimeSource,
 } from '../lib/sourceContractTestHelpers';
 
-const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
+const RUNTIME_SOURCE = loadRuntimeSource('useMeshcoreRuntime.ts');
 const CONN_EVENTS_SOURCE = readFileSync(
   join(__dirname, '../hooks/meshcore/meshcoreConnSideEffects.ts'),
   'utf-8',

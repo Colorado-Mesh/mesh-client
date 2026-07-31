@@ -26,6 +26,7 @@ import {
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/shared/nodeNameUtils';
+import { MS_PER_DAY } from '@/shared/timeConstants';
 
 import {
   diagnosticRowsToRoutingMap,
@@ -944,7 +945,7 @@ export default function DiagnosticsPanel({
               const samples = cuHistory.get(myNodeNum) ?? [];
               if (samples.length < 2) return null;
               const now = Date.now();
-              const cutoff = now - 24 * 60 * 60 * 1000;
+              const cutoff = now - MS_PER_DAY;
               const chartData = samples
                 .filter((s) => s.t >= cutoff)
                 .map((s) => ({

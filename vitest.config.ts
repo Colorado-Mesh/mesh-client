@@ -138,6 +138,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/applyRncpReceiveDestShareFromChatHistory.test.ts',
   'src/renderer/lib/pushRncpListenerPolicy.test.ts',
   'src/renderer/lib/rncpListenerApply.test.ts',
+  'src/renderer/lib/rncpTransferUiHelpers.test.ts',
   'src/renderer/lib/rfReconnectHelper.test.ts',
   'src/renderer/lib/reticulum/useReticulumSidecarApi.test.ts',
   'src/renderer/lib/reticulum/useReticulumInterfaceSnapshot.test.ts',

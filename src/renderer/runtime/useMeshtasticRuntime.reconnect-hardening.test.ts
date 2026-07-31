@@ -16,10 +16,11 @@ import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractIfBlockBody,
   extractUseCallbackBody,
+  loadRuntimeSource,
 } from '../lib/sourceContractTestHelpers';
 
+const SOURCE = loadRuntimeSource('useMeshtasticRuntime.ts');
 const TEST_DIR = import.meta.dirname ?? __dirname;
-const SOURCE = readFileSync(join(TEST_DIR, 'useMeshtasticRuntime.ts'), 'utf-8');
 
 describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   it('uses suspend-aware delayUnlessSuspended for reconnect backoff', () => {

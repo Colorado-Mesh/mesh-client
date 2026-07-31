@@ -1262,7 +1262,11 @@
       "disableShare": "Disattiva istanza di condivisione e riavvia",
       "disableShareAria": "Disattiva l'istanza di condivisione e riavvia lo stack",
       "disableFailed": "Impossibile disattivare l'istanza di condivisione."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh richiede il trasporto WebSocket.",
+    "letsMeshRequiresPort": "LetsMesh richiede la porta {{port}}.",
+    "letsMeshKnownBrokersOnly": "Il preset LetsMesh / MeshMapper supporta solo broker noti per la firma del dispositivo. Usa Custom per altri broker.",
+    "letsMeshUsernameV1Hex": "Il nome utente deve essere v1_ seguito da 64 caratteri esadecimali (chiave pubblica)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -4420,7 +4424,7 @@
     "repeaters": "Ripetitori",
     "rf": "RF",
     "graph": "Graph",
-    "rooms": "Camere",
+    "rooms": "Sale",
     "admin": "Amministrazione",
     "peers": "Compagni",
     "nomadnetwork": "Nomad Network",

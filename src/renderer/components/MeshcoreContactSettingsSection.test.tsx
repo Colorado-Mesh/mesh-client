@@ -1,16 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { enrichMeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
+import { renderWithToast } from '../lib/testRenderHelpers';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
-import { ToastProvider } from './Toast';
-
-function renderWithToast(ui: ReactElement) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
-}
 
 function minimalSelfInfo(manualAddContacts: boolean) {
   return enrichMeshCoreSelfInfo({
