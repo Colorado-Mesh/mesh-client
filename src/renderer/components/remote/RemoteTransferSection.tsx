@@ -90,11 +90,12 @@ export function RemoteTransferSection({
   const transferAllowed = capability?.transfer_allowed ?? false;
 
   const resolveLxmfPeerHash = useCallback((destinationHash: string): string | null => {
-    const savedForDest = useReticulumRemoteAddressStore
-      .getState()
-      .findByDestination(destinationHash, 'rncp');
+    const dest = destinationHash.trim().toLowerCase();
+    const savedForDest = useReticulumRemoteAddressStore.getState().findByDestination(dest, 'rncp');
     const peer = savedForDest?.lxmf_peer_hash?.trim().toLowerCase() ?? '';
-    return isRncpHexHash(peer) ? peer : null;
+    // Saved lxmf must be a distinct delivery hash — never the rncp.receive dest itself.
+    if (!isRncpHexHash(peer) || peer === dest) return null;
+    return peer;
   }, []);
 
   /** Returns true when the transfer may proceed. */
@@ -232,16 +233,18 @@ export function RemoteTransferSection({
   }, []);
 
   const maxRetry = settings.maxRetryAttempts ?? DEFAULT_RNCP_MAX_RETRY_ATTEMPTS;
+  /** Blocks concurrent manual/auto retry of the same transfer_id. */
+  const retryInFlightRef = useRef(new Set<string>());
 
   const handleRetry = useCallback(
     async (transferId: string) => {
+      if (retryInFlightRef.current.has(transferId)) return;
       const transfer = transfers.get(transferId);
       if (!transfer?.retryArgs) return;
-      // Sidecar returns a new transfer_id on each resubmit — seed the next
-      // record with the incremented count so auto-retry still honors maxRetry.
-      const nextRetryCount = incrementRetry(transferId);
+      retryInFlightRef.current.add(transferId);
       try {
         // Do not open the enable-request modal from auto/manual retry loops.
+        // Leave retryCount / auto-retry markers alone when the dest is unreachable.
         if (
           !(await assertReachableForTransfer(transfer.destination_hash, { promptEnable: false }))
         ) {
@@ -253,6 +256,8 @@ export function RemoteTransferSection({
             path: transfer.retryArgs.path,
           });
           if (res.ok && res.transfer_id) {
+            // Sidecar returns a new transfer_id — seed the next record after accept.
+            const nextRetryCount = incrementRetry(transferId);
             startTransfer({
               transfer_id: res.transfer_id,
               kind: 'send',
@@ -269,6 +274,7 @@ export function RemoteTransferSection({
             save_path: transfer.retryArgs.save_path,
           });
           if (res.ok && res.transfer_id) {
+            const nextRetryCount = incrementRetry(transferId);
             startTransfer({
               transfer_id: res.transfer_id,
               kind: 'fetch',
@@ -281,12 +287,16 @@ export function RemoteTransferSection({
         }
       } catch (e) {
         console.warn('[RemoteTransferSection] retry ' + errLikeToLogString(e));
+      } finally {
+        retryInFlightRef.current.delete(transferId);
       }
     },
     [assertReachableForTransfer, incrementRetry, startTransfer, transfers],
   );
 
   // Auto-retry each failed transfer once per failure, up to the configured cap.
+  // Mark before await so handleRetry identity churn cannot re-enter while a probe runs;
+  // handleRetry only bumps retryCount after the sidecar accepts the resubmit.
   const autoRetriedRef = useRef(new Set<string>());
   useEffect(() => {
     if (!settings.autoRetryTransfer) return;
@@ -294,6 +304,7 @@ export function RemoteTransferSection({
       if (transfer.status !== 'failed' || !transfer.retryArgs) continue;
       if (transfer.retryCount >= maxRetry) continue;
       if (autoRetriedRef.current.has(transfer.transfer_id)) continue;
+      if (retryInFlightRef.current.has(transfer.transfer_id)) continue;
       autoRetriedRef.current.add(transfer.transfer_id);
       void handleRetry(transfer.transfer_id);
     }
@@ -370,16 +381,30 @@ export function RemoteTransferSection({
   );
 
   const handleRequestEnable = useCallback(async () => {
-    if (!parsedHash) {
+    if (!parsedHash || !isRncpHexHash(parsedHash)) {
       addToast(t('reticulumRemote.errors.invalidAddress'), 'error');
       return;
     }
-    // Request enable must target the peer's LXMF delivery hash. Prefer the saved
-    // lxmf_peer_hash when the destination field holds an rncp.receive hash.
-    const peerLxmfHash = resolveLxmfPeerHash(parsedHash) ?? parsedHash;
+    // Prefer a saved LXMF delivery hash for this rncp dest. Reject missing/invalid
+    // or dest-duplicate saved values — never fall back to the rncp.receive hash.
+    const savedForDest = useReticulumRemoteAddressStore
+      .getState()
+      .findByDestination(parsedHash, 'rncp');
+    let peerLxmfHash: string;
+    if (savedForDest) {
+      const peer = savedForDest.lxmf_peer_hash?.trim().toLowerCase() ?? '';
+      if (!isRncpHexHash(peer) || peer === parsedHash) {
+        addToast(t('reticulumRemote.errors.invalidAddress'), 'error');
+        return;
+      }
+      peerLxmfHash = peer;
+    } else {
+      // No saved address: treat the destination field as a direct LXMF delivery hash.
+      peerLxmfHash = parsedHash;
+    }
     const res = await sendRncpRequestEnable(peerLxmfHash);
     toastRncpRequestEnableResult(res, addToast, t);
-  }, [addToast, parsedHash, resolveLxmfPeerHash, t]);
+  }, [addToast, parsedHash, t]);
 
   const handleConfirmEnableRequest = useCallback(() => {
     setEnableRequestConfirmOpen(false);

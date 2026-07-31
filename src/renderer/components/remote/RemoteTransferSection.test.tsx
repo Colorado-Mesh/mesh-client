@@ -158,6 +158,13 @@ describe('RemoteTransferSection', () => {
     });
   }
 
+  async function prepareFetchForm(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+    render(<RemoteTransferSection sidecarRunning settings={DEFAULT_REMOTE_SETTINGS} />);
+    await user.click(screen.getByRole('button', { name: 'Switch to fetch mode' }));
+    await user.type(screen.getByLabelText('rncp destination hash'), DEST_HASH);
+    await user.type(screen.getByLabelText('Remote file path to fetch'), '/remote/file.bin');
+  }
+
   it('hard-blocks send when peerUnreachable', async () => {
     vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'peerUnreachable' });
     const user = userEvent.setup();
@@ -171,10 +178,58 @@ describe('RemoteTransferSection', () => {
       });
     });
     expect(window.electronAPI.reticulum.rncp.send).not.toHaveBeenCalled();
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
     expect(addToast).toHaveBeenCalledWith(
       'No path to that destination. The peer may be offline.',
       'error',
     );
+  });
+
+  it('hard-blocks fetch when peerUnreachable', async () => {
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'peerUnreachable' });
+    vi.mocked(window.electronAPI.reticulum.rncp.fetch).mockReset();
+    const user = userEvent.setup();
+    await prepareFetchForm(user);
+    await user.click(screen.getByRole('button', { name: 'Fetch file' }));
+
+    await waitFor(() => {
+      expect(ensureRncpDestinationReachable).toHaveBeenCalledWith({
+        destinationHash: DEST_HASH,
+        lxmfPeerHash: LXMF_HASH,
+      });
+    });
+    expect(window.electronAPI.reticulum.rncp.fetch).not.toHaveBeenCalled();
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
+  });
+
+  it('hard-blocks retry when unreachable without enable-request or IPC', async () => {
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'peerUnreachable' });
+    useRncpTransferStore.getState().startTransfer({
+      transfer_id: 'failed-1',
+      kind: 'send',
+      destination_hash: DEST_HASH,
+      file_name: 'notes.txt',
+      retryArgs: { path: '/tmp/notes.txt' },
+    });
+    useRncpTransferStore.getState().applyFailed({
+      transfer_id: 'failed-1',
+      file_name: 'notes.txt',
+      error: 'timeout',
+    });
+    const user = userEvent.setup();
+    render(<RemoteTransferSection sidecarRunning settings={DEFAULT_REMOTE_SETTINGS} />);
+
+    await user.click(screen.getByRole('button', { name: 'Retry transfer of notes.txt' }));
+
+    await waitFor(() => {
+      expect(ensureRncpDestinationReachable).toHaveBeenCalledWith({
+        destinationHash: DEST_HASH,
+        lxmfPeerHash: LXMF_HASH,
+      });
+    });
+    expect(window.electronAPI.reticulum.rncp.send).not.toHaveBeenCalled();
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
+    expect(useRncpTransferStore.getState().transfers.get('failed-1')?.retryCount).toBe(0);
   });
 
   it('opens enable-request confirm on listenerLikelyOff and confirm sends the request', async () => {
@@ -192,6 +247,34 @@ describe('RemoteTransferSection', () => {
     });
   });
 
+  it('retry on listenerLikelyOff does not open enable-request or call IPC', async () => {
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'listenerLikelyOff' });
+    useRncpTransferStore.getState().startTransfer({
+      transfer_id: 'failed-2',
+      kind: 'send',
+      destination_hash: DEST_HASH,
+      file_name: 'notes.txt',
+      retryArgs: { path: '/tmp/notes.txt' },
+    });
+    useRncpTransferStore.getState().applyFailed({
+      transfer_id: 'failed-2',
+      file_name: 'notes.txt',
+      error: 'timeout',
+    });
+    const user = userEvent.setup();
+    render(<RemoteTransferSection sidecarRunning settings={DEFAULT_REMOTE_SETTINGS} />);
+
+    await user.click(screen.getByRole('button', { name: 'Retry transfer of notes.txt' }));
+
+    await waitFor(() => {
+      expect(ensureRncpDestinationReachable).toHaveBeenCalled();
+    });
+    expect(screen.queryByText('File receiving may be off')).not.toBeInTheDocument();
+    expect(window.electronAPI.reticulum.rncp.send).not.toHaveBeenCalled();
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
+    expect(useRncpTransferStore.getState().transfers.get('failed-2')?.retryCount).toBe(0);
+  });
+
   it('sends when the receive dest is reachable', async () => {
     const user = userEvent.setup();
     await prepareSendForm(user);
@@ -203,5 +286,100 @@ describe('RemoteTransferSection', () => {
         path: '/tmp/notes.txt',
       });
     });
+  });
+
+  it('rejects request-enable when saved LXMF hash is missing', async () => {
+    useReticulumRemoteAddressStore.setState({
+      addresses: new Map([
+        [
+          'addr1',
+          {
+            id: 'addr1',
+            label: 'Peer',
+            service: 'rncp',
+            destination_hash: DEST_HASH,
+            lxmf_peer_hash: null,
+            created_at: 1,
+            updated_at: 1,
+          },
+        ],
+      ]),
+      hydrated: true,
+      hydrate: () => Promise.resolve(),
+    });
+    const user = userEvent.setup();
+    render(<RemoteTransferSection sidecarRunning settings={DEFAULT_REMOTE_SETTINGS} />);
+    await user.type(screen.getByLabelText('rncp destination hash'), DEST_HASH);
+    await user.click(
+      screen.getByRole('button', { name: 'Request that this peer enable file receiving' }),
+    );
+
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
+    expect(addToast).toHaveBeenCalledWith(
+      'Enter a valid 32-character hex destination hash.',
+      'error',
+    );
+  });
+
+  it('rejects request-enable when saved LXMF hash equals the rncp dest', async () => {
+    useReticulumRemoteAddressStore.setState({
+      addresses: new Map([
+        [
+          'addr1',
+          {
+            id: 'addr1',
+            label: 'Peer',
+            service: 'rncp',
+            destination_hash: DEST_HASH,
+            lxmf_peer_hash: DEST_HASH,
+            created_at: 1,
+            updated_at: 1,
+          },
+        ],
+      ]),
+      hydrated: true,
+      hydrate: () => Promise.resolve(),
+    });
+    const user = userEvent.setup();
+    render(<RemoteTransferSection sidecarRunning settings={DEFAULT_REMOTE_SETTINGS} />);
+    await user.type(screen.getByLabelText('rncp destination hash'), DEST_HASH);
+    await user.click(
+      screen.getByRole('button', { name: 'Request that this peer enable file receiving' }),
+    );
+
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
+    expect(addToast).toHaveBeenCalledWith(
+      'Enter a valid 32-character hex destination hash.',
+      'error',
+    );
+  });
+
+  it('rejects request-enable when saved LXMF hash is invalid', async () => {
+    useReticulumRemoteAddressStore.setState({
+      addresses: new Map([
+        [
+          'addr1',
+          {
+            id: 'addr1',
+            label: 'Peer',
+            service: 'rncp',
+            destination_hash: DEST_HASH,
+            lxmf_peer_hash: 'not-a-hash',
+            created_at: 1,
+            updated_at: 1,
+          },
+        ],
+      ]),
+      hydrated: true,
+      hydrate: () => Promise.resolve(),
+    });
+    const user = userEvent.setup();
+    render(<RemoteTransferSection sidecarRunning settings={DEFAULT_REMOTE_SETTINGS} />);
+    await user.type(screen.getByLabelText('rncp destination hash'), DEST_HASH);
+    await user.click(
+      screen.getByRole('button', { name: 'Request that this peer enable file receiving' }),
+    );
+
+    expect(sendRncpRequestEnable).not.toHaveBeenCalled();
   });
 });
