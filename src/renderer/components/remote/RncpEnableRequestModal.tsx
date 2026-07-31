@@ -6,7 +6,11 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { rememberRncpListenerDirs } from '@/renderer/lib/pushRncpListenerPolicy';
 import { probeReticulumPeer } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
-import { tryConsumeRncpAlreadyEnabledAutoShareSlot } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
+import {
+  commitRncpAlreadyEnabledAutoShareSlot,
+  releaseRncpAlreadyEnabledAutoShareSlot,
+  tryReserveRncpAlreadyEnabledAutoShareSlot,
+} from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
@@ -129,11 +133,18 @@ export function RncpEnableRequestModal() {
         if (cancelled) return;
         setListener(status);
         if (!status?.enabled) return;
-        if (tryConsumeRncpAlreadyEnabledAutoShareSlot(peerHash)) {
-          await shareRncpReceiveDestWithPeer(
+        const reservation = tryReserveRncpAlreadyEnabledAutoShareSlot(peerHash);
+        if (reservation) {
+          const outcome = await shareRncpReceiveDestWithPeer(
             peerHash,
             t('reticulumRemote.enableRequest.lxmfShareBody'),
           );
+          if (outcome === 'shared') {
+            commitRncpAlreadyEnabledAutoShareSlot(reservation);
+          } else {
+            // no_hash / failed — no LXMF sent; release so a later prompt can retry.
+            releaseRncpAlreadyEnabledAutoShareSlot(reservation);
+          }
         }
         if (!cancelled) {
           dismiss(peerHash, false);

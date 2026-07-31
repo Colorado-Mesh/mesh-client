@@ -86,8 +86,60 @@ describe('reticulumRmapDiscovery', () => {
     { id: 'rnode-disabled', type: 'rnode', enabled: false, serial_port: '/dev/ttyUSB0' },
     { id: 'rnode-noserial', type: 'rnode', serial_port: '' },
     { id: 'kiss-noserial', type: 'kiss', serial_port: '   ' },
+    {
+      id: 'shared',
+      name: 'SharedInstanceServer',
+      type: 'rnode',
+      serial_port: '/dev/ttyUSB0',
+    },
   ] as const)('isReticulumRmapDiscoveryCapable is false for $id', (partial) => {
     expect(isReticulumRmapDiscoveryCapable(row({ ...partial }))).toBe(false);
+  });
+
+  it('excludes system-managed shared-instance rnode from publish targets and coverage', () => {
+    const interfaces = [
+      row({
+        id: 'shared',
+        name: 'SharedInstanceServer',
+        type: 'rnode',
+        serial_port: '/dev/ttyUSB0',
+        discoverable: true,
+      }),
+      row({ id: 'user', type: 'ble_peer', discoverable: false }),
+    ];
+    expect(listReticulumRmapDiscoveryCapable(interfaces)).toEqual([
+      expect.objectContaining({ id: 'user' }),
+    ]);
+    expect(readRmapAnyPublishing(interfaces)).toBe(false);
+    expect(readRmapPublishState(interfaces)).toBe(false);
+    expect(readRmapPublishPartial(interfaces)).toBe(false);
+    expect(summarizeRmapPublishStatus(interfaces)).toEqual({
+      publishing: false,
+      discoverableCount: 0,
+      publishTargetCount: 1,
+      needsSyncCount: 0,
+    });
+    expect(
+      isReticulumRmapNeedsSyncRow(
+        row({
+          id: 'shared',
+          name: 'SharedInstanceServer',
+          type: 'rnode',
+          serial_port: '/dev/ttyUSB0',
+          discoverable: false,
+        }),
+        [
+          row({ id: 'user', type: 'ble_peer', discoverable: true }),
+          row({
+            id: 'shared',
+            name: 'SharedInstanceServer',
+            type: 'rnode',
+            serial_port: '/dev/ttyUSB0',
+            discoverable: false,
+          }),
+        ],
+      ),
+    ).toBe(false);
   });
 
   it('classifies LoRa discovery rows for transport bridge', () => {

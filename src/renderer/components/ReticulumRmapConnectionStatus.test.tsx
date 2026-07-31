@@ -2,7 +2,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 
 import { ReticulumRmapConnectionStatus } from './ReticulumRmapConnectionStatus';
@@ -48,7 +50,7 @@ describe('ReticulumRmapConnectionStatus', () => {
     ).toHaveAttribute('href', 'https://rmap.world/');
   });
 
-  it('shows amber X of Y when partially publishing', () => {
+  it('shows amber X of Y when partially publishing', async () => {
     render(
       <ReticulumRmapConnectionStatus
         sidecarApiReady
@@ -59,15 +61,19 @@ describe('ReticulumRmapConnectionStatus', () => {
         ]}
       />,
     );
-    const status = screen.getByText(
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent(
       'connectionPanel.reticulumRmap.publishingOf:{"current":1,"total":2}',
     );
-    expect(status).toBeInTheDocument();
-    expect(status).toHaveClass('text-amber-300');
+    expect(
+      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":1,"total":2}'),
+    ).toHaveClass('text-amber-300');
     expect(screen.queryByText(/needsSync/)).not.toBeInTheDocument();
+    hydrateAxeThemeColors(status);
+    expect(await axe(status)).toHaveNoViolations();
   });
 
-  it('shows green X of Y when fully publishing', () => {
+  it('shows green X of Y when fully publishing', async () => {
     render(
       <ReticulumRmapConnectionStatus
         sidecarApiReady
@@ -78,11 +84,15 @@ describe('ReticulumRmapConnectionStatus', () => {
         ]}
       />,
     );
-    const status = screen.getByText(
-      'connectionPanel.reticulumRmap.publishingOf:{"current":3,"total":3}',
-    );
-    expect(status).toHaveClass('text-brand-green');
-    expect(status).not.toHaveClass('text-amber-300');
+    const status = screen.getByRole('status');
+    expect(
+      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":3,"total":3}'),
+    ).toHaveClass('text-brand-green');
+    expect(
+      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":3,"total":3}'),
+    ).not.toHaveClass('text-amber-300');
+    hydrateAxeThemeColors(status);
+    expect(await axe(status)).toHaveNoViolations();
   });
 
   it('excludes tcp hubs from Y and shows noPublishTargets when none eligible', () => {

@@ -4,11 +4,17 @@ import { computeReticulumMessageHash } from '@/renderer/lib/reticulum/messageHas
 import { RNCP_REQUEST_ENABLE_COOLDOWN_MS } from '@/shared/rncpRequestEnable';
 
 import {
+  commitRncpAlreadyEnabledAutoShareSlot,
+  commitRncpLxmfControlHandled,
+  releaseRncpAlreadyEnabledAutoShareSlot,
+  releaseRncpLxmfControlHandled,
   resetRncpLxmfControlSideEffectDedupForTests,
   resolveRncpLxmfControlMessageHash,
   RNCP_LXMF_CONTROL_HANDLED_TTL_MS,
   tryConsumeRncpAlreadyEnabledAutoShareSlot,
   tryMarkRncpLxmfControlHandled,
+  tryReserveRncpAlreadyEnabledAutoShareSlot,
+  tryReserveRncpLxmfControlHandled,
 } from './rncpLxmfControlSideEffectDedup';
 
 describe('rncpLxmfControlSideEffectDedup', () => {
@@ -65,6 +71,67 @@ describe('rncpLxmfControlSideEffectDedup', () => {
     expect(tryConsumeRncpAlreadyEnabledAutoShareSlot(peer, now + 1)).toBe(false);
     expect(
       tryConsumeRncpAlreadyEnabledAutoShareSlot(peer, now + RNCP_REQUEST_ENABLE_COOLDOWN_MS),
+    ).toBe(true);
+  });
+
+  it('releases a recoverable control reservation so a later attempt can proceed', () => {
+    const hash = 'b'.repeat(64);
+    const now = 2_000_000;
+    const first = tryReserveRncpLxmfControlHandled(hash, now);
+    expect(first).not.toBeNull();
+    expect(tryReserveRncpLxmfControlHandled(hash, now + 1)).toBeNull();
+    releaseRncpLxmfControlHandled(first!);
+    const retry = tryReserveRncpLxmfControlHandled(hash, now + 2);
+    expect(retry).not.toBeNull();
+    commitRncpLxmfControlHandled(retry!, now + 2);
+    expect(tryReserveRncpLxmfControlHandled(hash, now + 3)).toBeNull();
+  });
+
+  it('ignores release/commit for a superseded control reservation token', () => {
+    const hash = 'c'.repeat(64);
+    const now = 3_000_000;
+    const stale = tryReserveRncpLxmfControlHandled(hash, now);
+    expect(stale).not.toBeNull();
+    releaseRncpLxmfControlHandled(stale!);
+    const fresh = tryReserveRncpLxmfControlHandled(hash, now + 1);
+    expect(fresh).not.toBeNull();
+    releaseRncpLxmfControlHandled(stale!);
+    expect(tryReserveRncpLxmfControlHandled(hash, now + 2)).toBeNull();
+    commitRncpLxmfControlHandled(fresh!, now + 2);
+    expect(tryMarkRncpLxmfControlHandled(hash, now + 3)).toBe(false);
+  });
+
+  it('releases an auto-share reservation when no share was sent', () => {
+    const peer = 'cd'.repeat(16);
+    const now = 6_000_000;
+    const first = tryReserveRncpAlreadyEnabledAutoShareSlot(peer, now);
+    expect(first).not.toBeNull();
+    expect(tryReserveRncpAlreadyEnabledAutoShareSlot(peer, now + 1)).toBeNull();
+    releaseRncpAlreadyEnabledAutoShareSlot(first!);
+    const retry = tryReserveRncpAlreadyEnabledAutoShareSlot(peer, now + 2);
+    expect(retry).not.toBeNull();
+    commitRncpAlreadyEnabledAutoShareSlot(retry!, now + 2);
+    expect(tryReserveRncpAlreadyEnabledAutoShareSlot(peer, now + 3)).toBeNull();
+  });
+
+  it('prunes expired peer cooldown entries and caps retained peers', () => {
+    const now = 7_000_000;
+    for (let i = 0; i < 520; i++) {
+      const peer = i.toString(16).padStart(32, '0');
+      expect(tryConsumeRncpAlreadyEnabledAutoShareSlot(peer, now + i)).toBe(true);
+    }
+    // Expired peer can reserve again after cooldown.
+    const expiredPeer = (0).toString(16).padStart(32, '0');
+    expect(
+      tryConsumeRncpAlreadyEnabledAutoShareSlot(
+        expiredPeer,
+        now + RNCP_REQUEST_ENABLE_COOLDOWN_MS + 1,
+      ),
+    ).toBe(true);
+    // Cap: inserting after many live entries still succeeds (oldest evicted).
+    const newest = 'f'.repeat(32);
+    expect(
+      tryConsumeRncpAlreadyEnabledAutoShareSlot(newest, now + RNCP_REQUEST_ENABLE_COOLDOWN_MS + 2),
     ).toBe(true);
   });
 });

@@ -7,6 +7,7 @@ import {
   RETICULUM_RMAP_WORLD_HUB_PRESET,
   reticulumInterfaceMatchesHubPreset,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { isValidConnectHost } from '@/shared/connectHost';
@@ -97,13 +98,24 @@ const RMAP_DISCOVERY_EXCLUDED_TYPES = new Set(['auto', 'tcp']);
 
 /**
  * Enabled interfaces that support per-interface discoverable=yes in rnsd config.
- * Excludes Auto (LAN) and outbound TCP client hubs — Scenario A server/backbone
- * interfaces are not CRUD-managed in mesh-client today.
+ * Excludes Auto (LAN), outbound TCP client hubs, and system-managed shared-instance
+ * rows — Scenario A server/backbone interfaces are not CRUD-managed in mesh-client today.
  */
 export function isReticulumRmapDiscoveryCapable(
-  row: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port'>,
+  row: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port'> &
+    Partial<Pick<ReticulumInterfaceRow, 'id' | 'name'>>,
 ): boolean {
   if (!row.enabled) {
+    return false;
+  }
+  if (
+    getReticulumInterfaceHelp({
+      id: row.id ?? '',
+      name: row.name ?? '',
+      type: row.type,
+      serial_port: row.serial_port,
+    }).isSystemManaged
+  ) {
     return false;
   }
   const type = row.type.trim().toLowerCase();
@@ -233,13 +245,15 @@ export function summarizeRmapPublishStatus(
 }
 
 export function isReticulumRmapDiscoverableRow(
-  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'> &
+    Partial<Pick<ReticulumInterfaceRow, 'id' | 'name'>>,
 ): boolean {
   return iface.discoverable === true && isReticulumRmapDiscoveryCapable(iface);
 }
 
 export function isReticulumRmapNeedsSyncRow(
-  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'> &
+    Partial<Pick<ReticulumInterfaceRow, 'id' | 'name'>>,
   interfaces: readonly ReticulumInterfaceRow[],
 ): boolean {
   return (

@@ -141,6 +141,35 @@ describe('RncpEnableRequestModal', () => {
     expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(1);
   });
 
+  it('retries auto-share for the same peer after a failed first attempt', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: true,
+      inbound_mode: 'ask',
+      allowed: [],
+      blocked: [],
+    });
+    vi.mocked(window.electronAPI.reticulum.proxyPost)
+      .mockResolvedValueOnce({ ok: false, error: 'network down' })
+      .mockResolvedValue({ ok: true });
+
+    const { rerender } = render(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
+    });
+    expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(1);
+
+    useRncpEnableRequestStore.getState().enqueue({
+      peerHash: 'a'.repeat(32),
+      peerLabel: 'Alice',
+      receivedAt: Date.now(),
+    });
+    rerender(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(2);
+    });
+    expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
+  });
+
   it('enables Ask and still shares when Always allow cannot resolve identity', async () => {
     vi.mocked(window.electronAPI.reticulum.rncp.getListener)
       .mockResolvedValueOnce({
