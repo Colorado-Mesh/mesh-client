@@ -47,7 +47,7 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
-import { MS_PER_MINUTE } from '../shared/timeConstants';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '../shared/timeConstants';
 import {
   bleCoexistenceCoordinator,
   type BlePeripheralOwner,
@@ -448,6 +448,8 @@ let lastSerialPortIds = new Set<string>();
 
 // Linux Web Bluetooth device selection session: linuxWebBluetoothDeviceSelection
 // (retain-first callback + device merge — see linuxWebBluetoothDeviceSelection.ts)
+// MeshCore may need bluetoothctl pairing + PIN before resolving requestDevice().
+const BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS = 300 * MS_PER_SECOND;
 
 // Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
 // Electron's Response type requires confirmed: boolean, pin is optional
@@ -1754,16 +1756,14 @@ function createWindow() {
     );
 
     if (isNewRequest) {
-      // MeshCore Linux may need bluetoothctl pairing + PIN before resolving requestDevice();
       // 60s was too short and left the session empty so selectBluetoothDevice was ignored.
-      const selectionStaleMs = 300_000;
       setTimeout(() => {
         if (linuxWebBluetoothDeviceSelection.cancelIfCallback(callback)) {
           console.warn(
-            `[IPC] Bluetooth device selection stale after ${selectionStaleMs / 1000}s — auto-cancelling`,
+            `[IPC] Bluetooth device selection stale after ${BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS / MS_PER_SECOND}s — auto-cancelling`,
           );
         }
-      }, selectionStaleMs);
+      }, BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS);
     }
 
     console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
