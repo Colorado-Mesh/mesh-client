@@ -77,6 +77,18 @@ describe('precommit-tests related planning', () => {
     expect(plan.mode).toBe('related');
     expect(plan.projects).toEqual(['main']);
     expect(plan.relatedPaths).toContain('src/main/foo.ts');
+    expect(plan.relatedPaths).toContain('src/architecture/sourcePolicy.test.ts');
+  });
+
+  it('appends source-policy test for renderer staged files and includes main project', () => {
+    const plan = planPrecommitTests(['src/renderer/components/ChatPanel.tsx']);
+    expect(plan.mode).toBe('related');
+    expect(plan.relatedPaths).toContain('src/architecture/sourcePolicy.test.ts');
+    expect(plan.projects).toContain('main');
+  });
+
+  it('picks main for architecture paths', () => {
+    expect(pickProjects(['src/architecture/sourcePolicy.test.ts'])).toEqual(['main']);
   });
 });
 

@@ -4,6 +4,7 @@ import { axe } from 'vitest-axe';
 
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
   MESHCORE_CAPABILITIES,
@@ -96,6 +97,7 @@ describe('DiagnosticsPanel accessibility', () => {
         protocol="meshtastic"
       />,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

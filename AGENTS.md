@@ -31,12 +31,13 @@ Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/r
 
 Path alias `@/*` → `src/*` (see `tsconfig.json`).
 
-| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                |
-| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
-| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                                                                                                        |
-| Shared   | `src/shared/`   | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                                                                                                   |
+| Boundary     | Path                | Role                                                                                                                                                                                                                                                                                                |
+| ------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main         | `src/main/`         | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
+| Preload      | `src/preload/`      | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
+| Renderer     | `src/renderer/`     | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                                                                                                        |
+| Shared       | `src/shared/`       | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                                                                                                   |
+| Architecture | `src/architecture/` | Vitest source-policy registry (file-local invariants; prefer over new `check-*.mjs`)                                                                                                                                                                                                                |
 
 Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`, `src/renderer/App.tsx`.
 
@@ -88,12 +89,13 @@ Adding a cross-boundary feature:
 
 ## 5. Testing
 
-- Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
+- Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`, `src/architecture/**/*.test.ts`, `src/shared` / preload / scripts).
+- **Source policy (Vitest registry):** file-local / small-glob invariants live in [`src/architecture/sourcePolicyRules.ts`](src/architecture/sourcePolicyRules.ts) + walker [`sourcePolicy.ts`](src/architecture/sourcePolicy.ts) — prefer adding a rule there over a new `scripts/check-*.mjs`. Suppress with `// source-policy-ok <rule-id> <reason>`. Pre-commit always appends `src/architecture/sourcePolicy.test.ts` when any TypeScript under `src/` is staged (the registry is not import-related). Keep cross-cutting always-on hygiene in existing `check:*` scanners.
 - **Reticulum sidecar (Rust):** Clippy + rustfmt via `pnpm run check:reticulum-sidecar` (full-feature fmt + Clippy + test when `cargo` is on `PATH` **and** sidecar-related paths are staged) and the same feature set in `reticulum-sidecar.yaml`. Coverage threshold (`cargo llvm-cov --fail-under-lines`) is enforced only in `tests.yaml` when sidecar paths change — not in pre-commit.
 - **Temp dirs in tests:** Use `mkdtempSync(path.join(os.tmpdir(), 'prefix-'))` — never write to a fixed name under `os.tmpdir()` (CodeQL + `check:insecure-temp-files`).
 - Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
 - Prefer `mockConsoleWarn` / `withMockedConsoleWarn` from `src/renderer/lib/vitestConsoleMock.ts` over ad-hoc `vi.spyOn(console, 'warn')` in renderer tests.
-- Monolithic runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`, `noble-ble-manager`) may use **source contract tests** (`sourceContractTestHelpers.ts`, `*.reconnect*.test.ts`) when full integration mocking is impractical — see [development-environment.md](docs/development-environment.md#vitest-projects-and-worker-allocation).
+- Monolithic runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`, `noble-ble-manager`) may use **source contract tests** (`sourceContractTestHelpers.ts`, `*.reconnect*.test.ts`) when full integration mocking is impractical — see [development-environment.md](docs/development-environment.md#vitest-projects-and-worker-allocation). Runtime contract tests that load `use*Runtime.ts` must use `loadRuntimeSource()` (enforced by source policy).
 - Mock console before spying logged errors: `vi.spyOn(console, 'warn').mockImplementation(() => {})` in `beforeEach` when shared.
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 
@@ -101,7 +103,7 @@ Adding a cross-boundary feature:
 
 - **Dev:** `@axe-core/react` runs in `pnpm run dev` (`src/renderer/main.tsx`); treat `serious` axe console output as a bug.
 - **CI:** Use `vitest-axe` (`import { axe } from 'vitest-axe'`); assert `toHaveNoViolations()` on the rendered subtree.
-- **Do not mock `themeColors` in component axe tests** — call `hydrateAxeThemeColors()` from `src/renderer/lib/a11yTestHelpers.ts` so color-contrast runs against real hex values (jsdom does not load Tailwind CSS).
+- **Do not mock `themeColors` in component axe tests** — call `hydrateAxeThemeColors()` from `src/renderer/lib/a11yTestHelpers.ts` so color-contrast runs against real hex values (jsdom does not load Tailwind CSS). Enforced by source-policy rule `axe-tests-hydrate-theme-colors`.
 - **When to add tests:** New or changed UI with custom foreground/background pairs (badges, pills, buttons)—especially `text-[10px]` / `text-xs` on saturated fills.
 - **Theme tokens:** `readable-green` is for white-on-green fills; the default must pass **4.5:1** contrast with white (enforced in `src/renderer/lib/themeColors.test.ts`).
 - **`animate-pulse`:** Never on the same element as small text with strict contrast fills. Use a separate `aria-hidden` decorative pulse layer; the text-bearing element stays fully opaque (see `ProtocolUnreadBadge.tsx`). Connection-status header pulses remain the documented exception.

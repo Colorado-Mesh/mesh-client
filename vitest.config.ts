@@ -275,6 +275,7 @@ export default defineConfig({
             'src/main/**/*.test.ts',
             'src/shared/**/*.test.ts',
             'src/preload/**/*.test.ts',
+            'src/architecture/**/*.test.ts',
             'scripts/**/*.test.mjs',
             'vitest.harness.test.ts',
           ],

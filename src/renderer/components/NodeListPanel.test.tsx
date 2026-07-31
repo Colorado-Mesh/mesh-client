@@ -5,6 +5,7 @@ import { join } from 'path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import {
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
@@ -134,6 +135,7 @@ describe('NodeListPanel accessibility', () => {
         onToggleFavorite={vi.fn()}
       />,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -364,6 +366,7 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.getByText('RelayPeer')).toBeInTheDocument();
     expect(screen.getByLabelText(HYBRID_MQTT_PATH_ARIA)).toBeInTheDocument();
     expect(screen.queryByText('relay')).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
 

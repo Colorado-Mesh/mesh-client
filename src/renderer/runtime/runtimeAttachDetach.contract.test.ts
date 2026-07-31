@@ -3,14 +3,12 @@
  * cleanupSubscriptions invokes; MeshCore conn attach similarly tears down via
  * meshcoreIngressDetachRef / teardownMeshcoreConnEventListeners.
  */
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+import { extractUseCallbackBody, loadRuntimeSource } from '../lib/sourceContractTestHelpers';
 
-const MESHTASTIC_RUNTIME = readFileSync(join(__dirname, 'useMeshtasticRuntime.ts'), 'utf-8');
-const MESHCORE_RUNTIME = readFileSync(join(__dirname, 'useMeshcoreRuntime.ts'), 'utf-8');
+const MESHTASTIC_RUNTIME = loadRuntimeSource('useMeshtasticRuntime.ts');
+const MESHCORE_RUNTIME = loadRuntimeSource('useMeshcoreRuntime.ts');
 
 describe('runtime attach/detach source contracts', () => {
   it('Meshtastic cleanupSubscriptions invokes meshtasticIngressDetachRef', () => {

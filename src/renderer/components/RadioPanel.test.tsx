@@ -7,6 +7,7 @@ import type { MeshCoreSelfInfo } from '@/renderer/lib/meshcore/meshcoreHookTypes
 import { MESHCORE_CAPABILITIES } from '@/renderer/lib/radio/BaseRadioProvider';
 import { generateConfigUrl, MESHTASTIC_CHANNEL_ROLE } from '@/shared/meshtasticUrlEncoder';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import RadioPanel, { ConfigNumber } from './RadioPanel';
 import { ToastProvider } from './Toast';
 
@@ -69,6 +70,7 @@ describe('RadioPanel accessibility', () => {
         <RadioPanel {...defaultProps} />
       </ToastProvider>,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

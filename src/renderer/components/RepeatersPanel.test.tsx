@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -107,6 +108,7 @@ describe('RepeatersPanel', () => {
       <RepeatersPanel {...makeBaseProps()} onSendCliCommand={vi.fn().mockResolvedValue('ok')} />,
     );
     expect(screen.getByRole('button', { name: 'CLI interface' })).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -114,6 +116,7 @@ describe('RepeatersPanel', () => {
   it('hides CLI interface button when onSendCliCommand is omitted', async () => {
     const { container } = render(<RepeatersPanel {...makeBaseProps()} />);
     expect(screen.queryByRole('button', { name: 'CLI interface' })).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

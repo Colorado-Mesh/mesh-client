@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
 import AppPanel from './AppPanel';
 import { ToastProvider } from './Toast';
@@ -23,6 +24,7 @@ describe('AppPanel accessibility', () => {
       </ToastProvider>,
     );
     await act(async () => {});
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

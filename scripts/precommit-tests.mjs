@@ -24,6 +24,10 @@ const ROOT = path.resolve(__dirname, '..');
 const SOURCE_EXT_RE = /\.(?:[cm]?[jt]sx?)$/i;
 const TEST_SIBLING_RE = /\.test\.(?:[cm]?[jt]sx?)$/i;
 
+/** Central source-policy suite — always related when any TypeScript under src/ is staged. */
+export const SOURCE_POLICY_TEST_PATH = 'src/architecture/sourcePolicy.test.ts';
+const SRC_TS_PATH_RE = /^src\/.+\.(?:ts|tsx)$/;
+
 const FORCE_FULL_PATTERNS = [
   /^vitest\.config\./,
   /^vitest\.harness(\.|$)/,
@@ -104,6 +108,37 @@ export function expandWithSiblingTests(stagedPaths, opts = {}) {
 }
 
 /**
+ * Registry walker is not imported by production files, so `vitest related` would
+ * miss it. Append whenever any TypeScript under `src/` is in the related set.
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendSourcePolicyTestIfNeeded(relatedPaths) {
+  const normalized = relatedPaths.map((p) => p.replace(/\\/g, '/'));
+  const needsPolicy = normalized.some((p) => SRC_TS_PATH_RE.test(p));
+  if (!needsPolicy) return [...relatedPaths].sort();
+  if (normalized.includes(SOURCE_POLICY_TEST_PATH)) return [...normalized].sort();
+  return [...normalized, SOURCE_POLICY_TEST_PATH].sort();
+}
+
+/**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isMainProjectPath(filePath) {
+  const p = filePath.replace(/\\/g, '/');
+  return (
+    p.startsWith('src/main/') ||
+    p.startsWith('src/shared/') ||
+    p.startsWith('src/preload/') ||
+    p.startsWith('src/architecture/') ||
+    p.startsWith('scripts/') ||
+    p === 'vitest.harness.ts' ||
+    p === 'vitest.harness.test.ts'
+  );
+}
+
+/**
  * Pick Vitest projects for a related-file set.
  * Ambiguous / unknown paths fall back to all three projects.
  * @param {string[]} relatedPaths
@@ -114,38 +149,36 @@ export function pickProjects(relatedPaths) {
 
   const normalized = relatedPaths.map((p) => p.replace(/\\/g, '/'));
 
-  const onlyMain = normalized.every(
-    (p) =>
-      p.startsWith('src/main/') ||
-      p.startsWith('src/shared/') ||
-      p.startsWith('src/preload/') ||
-      p.startsWith('scripts/') ||
-      p === 'vitest.harness.ts' ||
-      p === 'vitest.harness.test.ts',
-  );
+  const onlyMain = normalized.every((p) => isMainProjectPath(p));
   if (onlyMain) return ['main'];
 
   const onlyRendererLibOrStores = normalized.every(
     (p) =>
       p.startsWith('src/renderer/lib/') ||
       p.startsWith('src/renderer/stores/') ||
-      p === 'src/renderer/locales/locale-quality.test.ts',
+      p === 'src/renderer/locales/locale-quality.test.ts' ||
+      p === SOURCE_POLICY_TEST_PATH,
   );
   if (onlyRendererLibOrStores) {
-    // Logic owns most lib tests; UI owns borderline lib exclusions — run both, skip main.
+    // Logic owns most lib tests; UI owns borderline lib exclusions — run both.
+    // Source-policy lives in the main project; include it when appended.
+    if (normalized.includes(SOURCE_POLICY_TEST_PATH)) {
+      return ['renderer-logic', 'renderer-ui', 'main'];
+    }
     return ['renderer-logic', 'renderer-ui'];
   }
 
-  const onlyRenderer = normalized.every((p) => p.startsWith('src/renderer/'));
-  if (onlyRenderer) return ['renderer-ui', 'renderer-logic'];
-
-  const hasMain = normalized.some(
-    (p) =>
-      p.startsWith('src/main/') ||
-      p.startsWith('src/shared/') ||
-      p.startsWith('src/preload/') ||
-      p.startsWith('scripts/'),
+  const onlyRendererOrPolicy = normalized.every(
+    (p) => p.startsWith('src/renderer/') || p === SOURCE_POLICY_TEST_PATH,
   );
+  if (onlyRendererOrPolicy) {
+    if (normalized.includes(SOURCE_POLICY_TEST_PATH)) {
+      return ['renderer-ui', 'renderer-logic', 'main'];
+    }
+    return ['renderer-ui', 'renderer-logic'];
+  }
+
+  const hasMain = normalized.some((p) => isMainProjectPath(p));
   const hasRenderer = normalized.some((p) => p.startsWith('src/renderer/'));
   if (hasMain && hasRenderer) return ['renderer-ui', 'renderer-logic', 'main'];
   if (hasMain) return ['main'];
@@ -167,7 +200,7 @@ export function planPrecommitTests(stagedPaths) {
     };
   }
 
-  const relatedPaths = expandWithSiblingTests(stagedPaths);
+  const relatedPaths = appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths));
   if (relatedPaths.length === 0) {
     return { mode: 'skip', relatedPaths: [], projects: [] };
   }
