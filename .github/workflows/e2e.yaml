@@ -32,9 +32,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check environment (pre-pnpm)
-        run: node scripts/check-environment.mjs
-
       - name: Setup pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
 
@@ -42,6 +39,10 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
+
+      # After toolchain is on PATH; skip node_modules until install (still fatal on git/node/pnpm).
+      - name: Check environment (pre-install)
+        run: node scripts/check-environment.mjs --skip-node-modules
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

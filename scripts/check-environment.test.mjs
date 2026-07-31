@@ -6,10 +6,23 @@ import {
   formatLocalActDockerNote,
   evaluateContainerEngineCheck,
   evaluatePlaywrightCheck,
+  parseCheckEnvironmentArgs,
   parseVersion,
   resolveExitCode,
   versionGte,
 } from './check-environment.mjs';
+
+describe('check-environment parseCheckEnvironmentArgs', () => {
+  it('defaults skipNodeModules to false', () => {
+    expect(parseCheckEnvironmentArgs([])).toEqual({ skipNodeModules: false });
+  });
+
+  it('enables skipNodeModules for --skip-node-modules', () => {
+    expect(parseCheckEnvironmentArgs(['--skip-node-modules'])).toEqual({
+      skipNodeModules: true,
+    });
+  });
+});
 
 describe('check-environment parseVersion', () => {
   it('parses v-prefixed semver strings', () => {
