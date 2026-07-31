@@ -1387,12 +1387,12 @@ export default function AppPanel({
                 id="apppanel-reticulum-destination-cap-count"
                 type="number"
                 min={1}
-                max={50000}
+                max={100000}
                 value={settings.reticulumDestinationCapCount}
                 onChange={(e) => {
                   updateSetting(
                     'reticulumDestinationCapCount',
-                    Math.max(1, Math.min(50000, parseInt(e.target.value) || 1)),
+                    Math.max(1, Math.min(100000, parseInt(e.target.value) || 1)),
                   );
                 }}
                 disabled={!settings.reticulumDestinationCapEnabled}

@@ -20,8 +20,11 @@ import {
   fetchReticulumInterfaces,
   fetchReticulumRmapDiscovered,
   formatReticulumPeerProbeToast,
+  invalidateReticulumInterfacesCache,
   isReticulumSidecar404Error,
+  isReticulumSidecarExpectedProxyError,
   isReticulumSidecarNotRunningError,
+  isReticulumSidecarRateLimitError,
   isReticulumSidecarRunning,
   pingReticulumDestination,
   probeReticulumPeer,
@@ -33,6 +36,7 @@ describe('reticulumSidecarReads', () => {
     getStatus.mockReset();
     proxyGet.mockReset();
     proxyPost.mockReset();
+    invalidateReticulumInterfacesCache();
   });
 
   it('isReticulumSidecarRunning returns true when sidecar reports running with port', async () => {
@@ -45,13 +49,25 @@ describe('reticulumSidecarReads', () => {
     await expect(isReticulumSidecarRunning()).resolves.toBe(false);
   });
 
-  it('classifies not-running and 404 proxy errors', () => {
+  it('classifies not-running, 404, and rate-limit proxy errors', () => {
     expect(isReticulumSidecarNotRunningError(new Error('Reticulum sidecar is not running'))).toBe(
       true,
     );
     expect(isReticulumSidecar404Error(new Error('sidecar GET /api/v1/topology failed: 404'))).toBe(
       true,
     );
+    expect(
+      isReticulumSidecarRateLimitError(new Error('reticulum:proxy: rate limit exceeded')),
+    ).toBe(true);
+    expect(
+      isReticulumSidecarExpectedProxyError(new Error('reticulum:proxy: rate limit exceeded')),
+    ).toBe(true);
+  });
+
+  it('fetchReticulumInterfaces rethrows rate-limit errors for poll backoff', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockRejectedValue(new Error('reticulum:proxy: rate limit exceeded'));
+    await expect(fetchReticulumInterfaces()).rejects.toThrow('rate limit exceeded');
   });
 
   it('fetchReticulumIdentityStatus skips proxyGet when sidecar is down', async () => {

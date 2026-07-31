@@ -205,7 +205,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
   if (s.reticulumDestinationCapEnabled) {
     const cap =
       typeof s.reticulumDestinationCapCount === 'number' && s.reticulumDestinationCapCount > 0
-        ? Math.min(50_000, s.reticulumDestinationCapCount)
+        ? Math.min(100_000, s.reticulumDestinationCapCount)
         : DEFAULT_APP_SETTINGS_SHARED.reticulumDestinationCapCount;
     ops.push(
       window.electronAPI.db.pruneReticulumDestinationsByCount(cap).catch((e: unknown) => {

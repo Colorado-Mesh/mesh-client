@@ -84,8 +84,8 @@ function readReticulumDestinationCap(): number {
     typeof s.reticulumDestinationCapCount === 'number' && s.reticulumDestinationCapCount > 0
       ? Math.floor(s.reticulumDestinationCapCount)
       : DEFAULT_APP_SETTINGS_SHARED.reticulumDestinationCapCount;
-  /** User-facing max is 50k; hard ceiling is {@link MAX_MESH_ENTITY_CAP}. */
-  return Math.min(Math.max(1, cap), 50_000, MAX_MESH_ENTITY_CAP);
+  /** User-facing max matches {@link MAX_MESH_ENTITY_CAP}. */
+  return Math.min(Math.max(1, cap), MAX_MESH_ENTITY_CAP);
 }
 
 function normalizeHash(hash: string): string {
@@ -750,6 +750,16 @@ export function applyReticulumPeersUpdatedPatches(payload: unknown): void {
       if (peer) patches.push(peer);
     }
   }
+  // Probe / path-request single-hash events — seed/touch without a full dump.
+  if (patches.length === 0 && typeof p.hash === 'string' && p.hash.trim()) {
+    const peer = peerFromWirePatch({
+      destination_hash: p.hash,
+      last_seen: typeof p.last_seen === 'number' ? p.last_seen : Date.now(),
+      hops: typeof p.hops === 'number' ? p.hops : undefined,
+      interface: typeof p.interface === 'string' ? p.interface : undefined,
+    });
+    if (peer) patches.push(peer);
+  }
   if (patches.length === 0) return;
   bufferReticulumPeerPatches(patches);
   for (const peer of patches) {
@@ -868,17 +878,22 @@ let peerRefreshInFlight: Promise<ReticulumContact[]> | null = null;
 let peerRefreshPendingRerun = false;
 /** OR of forceRefresh across coalesced callers (manual Refresh must not soften to cache). */
 let peerRefreshPendingForce = false;
+/** AND of skipNomad across coalesced callers (any non-skip wins). */
+let peerRefreshPendingSkipNomad = true;
 
 /** Test helper — reset peer-refresh coalesce state. */
 export function resetReticulumPeerRefreshSingleFlightForTests(): void {
   peerRefreshInFlight = null;
   peerRefreshPendingRerun = false;
   peerRefreshPendingForce = false;
+  peerRefreshPendingSkipNomad = true;
 }
 
 export interface RefreshReticulumPeersOptions {
   /** Force live GetPathTable (`?refresh=1`) — required for manual Refresh. */
   forceRefresh?: boolean;
+  /** Skip Nomad nodes overlay (large-mesh timer refresh). */
+  skipNomad?: boolean;
 }
 
 async function refreshReticulumPeersFromSidecarOnce(
@@ -894,9 +909,13 @@ async function refreshReticulumPeersFromSidecarOnce(
       peers?: ReticulumPeerWireRow[];
     }>,
     window.electronAPI.db.getReticulumDestinations() as Promise<ReticulumDestinationDbRow[]>,
-    window.electronAPI.reticulum.proxyGet('/api/v1/nomadnetwork/nodes') as Promise<{
-      nodes?: { destination_hash: string; display_name?: string | null }[];
-    }>,
+    opts.skipNomad
+      ? Promise.resolve({
+          nodes: [] as { destination_hash: string; display_name?: string | null }[],
+        })
+      : (window.electronAPI.reticulum.proxyGet('/api/v1/nomadnetwork/nodes') as Promise<{
+          nodes?: { destination_hash: string; display_name?: string | null }[];
+        }>),
   ]);
 
   // A newer request arrived while we were fetching — skip applying this stale snapshot.
@@ -1007,28 +1026,39 @@ export function refreshReticulumPeersFromSidecar(
   if (peerRefreshInFlight) {
     peerRefreshPendingRerun = true;
     if (opts.forceRefresh) peerRefreshPendingForce = true;
+    if (!opts.skipNomad) peerRefreshPendingSkipNomad = false;
     return peerRefreshInFlight;
   }
 
   peerRefreshInFlight = (async () => {
     try {
       let forceRefresh = Boolean(opts.forceRefresh) || peerRefreshPendingForce;
+      let skipNomad = Boolean(opts.skipNomad) && peerRefreshPendingSkipNomad;
       peerRefreshPendingForce = false;
+      peerRefreshPendingSkipNomad = true;
       peerRefreshPendingRerun = false;
-      let result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh });
+      let result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh, skipNomad });
       while (peerRefreshPendingRerun) {
         peerRefreshPendingRerun = false;
         forceRefresh = peerRefreshPendingForce;
+        skipNomad = peerRefreshPendingSkipNomad;
         peerRefreshPendingForce = false;
-        result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh });
+        peerRefreshPendingSkipNomad = true;
+        result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh, skipNomad });
       }
       return result;
     } catch (e) {
-      console.warn('[reticulumPeerStore] refresh ' + errLikeToLogString(e));
+      const msg = errLikeToLogString(e);
+      if (msg.toLowerCase().includes('rate limit exceeded')) {
+        console.debug('[reticulumPeerStore] refresh ' + msg);
+      } else {
+        console.warn('[reticulumPeerStore] refresh ' + msg);
+      }
       return [];
     } finally {
       peerRefreshInFlight = null;
       peerRefreshPendingForce = false;
+      peerRefreshPendingSkipNomad = true;
     }
   })();
 

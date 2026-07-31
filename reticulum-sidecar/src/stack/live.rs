@@ -72,7 +72,7 @@ const LXMF_EGRESS_TAP_SETTLE_MS: u64 = 1500;
 
 /// Cap blocking transport control queries so HTTP handlers return cached state
 /// before the Electron IPC proxy GET timeout (10s default).
-const TRANSPORT_QUERY_TIMEOUT: Duration = Duration::from_secs(8);
+const TRANSPORT_QUERY_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// Aspect Nomad Network nodes announce and serve page/file requests under.
 const NOMAD_NODE_ASPECT: &str = "nomadnetwork.node";
@@ -3400,9 +3400,9 @@ fn rate_limited_inbound_lxmf_warn(from: &str, message_hash: &str) {
 }
 
 /// Cap membership growth event payloads under path-table floods.
-const MAX_PEERS_UPDATED_ADDED: usize = 1024;
+const MAX_PEERS_UPDATED_ADDED: usize = 4096;
 /// Bound announce / contact display-name labels independently of the live path table.
-const MAX_DISPLAY_NAME_CACHE: usize = 50_000;
+const MAX_DISPLAY_NAME_CACHE: usize = 100_000;
 /// Serve HTTP peer list from the maintenance snapshot when newer than this.
 const PATH_PEER_CACHE_TTL: Duration = Duration::from_secs(2);
 
