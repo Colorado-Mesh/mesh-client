@@ -28,6 +28,7 @@ import {
   applyReticulumOutboundDeliveryStatus,
   flushPendingReticulumOutboundDeliveryStatus,
 } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
+import { catchUpRecentInboundLxmf as runInboundLxmfCatchUp } from '@/renderer/lib/reticulum/catchUpRecentInboundLxmf';
 import {
   resolveReticulumOutboundViaFromPath,
   reticulumViaToMessageTransport,
@@ -37,7 +38,6 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
-import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
 import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import {
   markStaleReticulumOutboundInStore,
@@ -612,29 +612,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const catchUpRecentInboundLxmf = useCallback(
     async (opts?: { sinceTs?: number; reason?: string }) => {
       if (!identityId) return;
-      const { messages: rows } = await fetchRecentInboundLxmfDetailed({
-        limit: 200,
+      const outcome = await runInboundLxmfCatchUp({
+        identityId,
+        ingest: ingestLxmfPayload,
         ...(opts?.sinceTs != null ? { sinceTs: opts.sinceTs } : {}),
+        ...(opts?.reason != null ? { reason: opts.reason } : {}),
       });
-      if (rows.length === 0) return;
-      const reason = opts?.reason ?? 'catch-up';
-      console.warn(
-        `[useReticulumRuntime] inbound LXMF catch-up count=${rows.length} reason=${reason}`,
-      );
-      noteReticulumInboundCatchUp(rows.length);
-      let maxTs = opts?.sinceTs ?? 0;
-      for (const p of rows) {
-        ingestLxmfPayload(p);
-        if (
-          typeof p.timestamp === 'number' &&
-          Number.isFinite(p.timestamp) &&
-          p.timestamp > maxTs
-        ) {
-          maxTs = p.timestamp;
-        }
-      }
-      if (maxTs > 0) {
-        advanceReticulumInboundCatchUpWatermark(maxTs);
+      if (!outcome) return;
+      noteReticulumInboundCatchUp(outcome.count);
+      if (outcome.watermarkTs != null) {
+        advanceReticulumInboundCatchUpWatermark(outcome.watermarkTs);
       }
     },
     [identityId, ingestLxmfPayload],

@@ -177,6 +177,15 @@ pub fn build_announce_received_frame(rows: &[AnnounceWsRow]) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Mutex, OnceLock};
+
+    /// Process-global pressure atomics — serialize tests that flush / read them.
+    fn pressure_metrics_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
 
     fn row(hash: &str, name: Option<&str>) -> AnnounceWsRow {
         AnnounceWsRow {
@@ -188,6 +197,7 @@ mod tests {
 
     #[test]
     fn last_write_wins_per_destination() {
+        let _guard = pressure_metrics_lock();
         let mut c = AnnounceWsCoalescer::new();
         c.push(row("aa", Some("Old")));
         c.push(row("aa", Some("New")));
@@ -209,6 +219,7 @@ mod tests {
 
     #[test]
     fn flush_prefers_named_when_over_cap_and_records_overflow() {
+        let _guard = pressure_metrics_lock();
         let mut c = AnnounceWsCoalescer::new();
         for i in 0..(ANNOUNCE_WS_FLUSH_MAX + 50) {
             c.push(row(&format!("{i:032x}"), None));
@@ -234,6 +245,7 @@ mod tests {
 
     #[test]
     fn storm_widens_coalesce_duration_and_stamps_storm_time() {
+        let _guard = pressure_metrics_lock();
         let mut c = AnnounceWsCoalescer::new();
         for i in 0..=ANNOUNCE_WS_STORM_PENDING {
             c.push(row(&format!("{i:032x}"), None));
@@ -272,6 +284,7 @@ mod tests {
 
     #[test]
     fn many_distinct_dests_still_one_flush_batch() {
+        let _guard = pressure_metrics_lock();
         let mut c = AnnounceWsCoalescer::new();
         for i in 0..5000 {
             c.push(row(&format!("{i:032x}"), None));
