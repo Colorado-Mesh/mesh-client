@@ -45,6 +45,8 @@ Key outcomes:
 
 Pre-built binaries are available in [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases).
 
+Arch Linux users may also find a **third-party** AUR package ([`mesh-client`](https://aur.archlinux.org/packages/mesh-client)) — not maintained by Colorado Mesh; prefer GitHub Releases for official builds.
+
 For development setup, scripts, test harness, and git hooks, see [Development Guide](development-environment.md).
 
 Also useful:

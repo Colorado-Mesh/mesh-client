@@ -47,7 +47,7 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
-import { MS_PER_MINUTE } from '../shared/timeConstants';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '../shared/timeConstants';
 import {
   bleCoexistenceCoordinator,
   type BlePeripheralOwner,
@@ -111,6 +111,10 @@ import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-h
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
+import {
+  formatBluetoothctlSpawnError,
+  linuxWebBluetoothDeviceSelection,
+} from './linuxWebBluetoothDeviceSelection';
 import {
   clearLogFile,
   exportLogTo,
@@ -442,9 +446,10 @@ function clearPendingSerialSelectionTimer(): void {
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
 
-// Pending Web Bluetooth callback (Linux only — select-bluetooth-device on webContents)
-let pendingBluetoothCallback: ((deviceId: string) => void) | null = null;
-let lastBluetoothDeviceIds = new Set<string>();
+// Linux Web Bluetooth device selection session: linuxWebBluetoothDeviceSelection
+// (retain-first callback + device merge — see linuxWebBluetoothDeviceSelection.ts)
+// MeshCore may need bluetoothctl pairing + PIN before resolving requestDevice().
+const BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS = 300 * MS_PER_SECOND;
 
 // Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
 // Electron's Response type requires confirmed: boolean, pin is optional
@@ -987,12 +992,14 @@ function validateMqttPublishWaypointArgs(args: unknown): void {
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publishWaypoint');
 }
 
-// Enable Web Serial (experimental)
-app.commandLine.appendSwitch('enable-blink-features', 'Serial');
-
-// Enable Web Bluetooth on Linux (experimental - required for BLE on Linux)
+// Enable Web Serial; on Linux also enable Web Bluetooth at the process level
+// (per-webContents enableBlinkFeatures is not enough — Chromium gates WebBluetooth behind this switch).
 if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-blink-features', 'Serial,WebBluetooth');
+  app.commandLine.appendSwitch('enable-features', 'WebBluetooth');
   app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+} else {
+  app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 }
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
@@ -1738,44 +1745,34 @@ function createWindow() {
   // On Linux, Electron does not show a native Bluetooth chooser. Instead it fires
   // select-bluetooth-device on the webContents. Without a handler the request is
   // immediately cancelled ("User cancelled the requestDevice() chooser.").
-  // We intercept, forward the device list to the renderer, and resolve the callback
-  // when the user picks a device (or cancels) via IPC.
+  // Chromium multi-fires this event with a new callback each time — retain the first
+  // via linuxWebBluetoothDeviceSelection and merge device lists (do not overwrite).
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault();
 
-    const isNewRequest = !pendingBluetoothCallback;
-    pendingBluetoothCallback = callback;
+    const { isNewRequest, devices, generation } =
+      linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery(deviceList, callback);
 
     if (isNewRequest) {
-      // MeshCore Linux may need bluetoothctl pairing + PIN before resolving requestDevice();
-      // 60s was too short and left pendingBluetoothCallback null so selectBluetoothDevice was ignored.
-      const selectionStaleMs = 300_000;
-      setTimeout(() => {
-        if (pendingBluetoothCallback === callback) {
+      // 60s was too short and left the session empty so selectBluetoothDevice was ignored.
+      linuxWebBluetoothDeviceSelection.armStaleTimeout(
+        BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS,
+        () => {
           console.warn(
-            `[IPC] Bluetooth device selection stale after ${selectionStaleMs / 1000}s — auto-cancelling`,
+            `[IPC] Bluetooth device selection stale after ${BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS / MS_PER_SECOND}s — auto-cancelling`,
           );
-          pendingBluetoothCallback('');
-          pendingBluetoothCallback = null;
-          lastBluetoothDeviceIds.clear();
-        }
-      }, selectionStaleMs);
+        },
+      );
     }
 
     console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
-    lastBluetoothDeviceIds = new Set(deviceList.map((d) => d.deviceId));
 
     if (!mainWindow || mainWindow.isDestroyed()) {
       console.warn('[IPC] select-bluetooth-device: mainWindow unavailable — cancelling selection');
-      pendingBluetoothCallback?.('');
-      pendingBluetoothCallback = null;
-      lastBluetoothDeviceIds.clear();
+      linuxWebBluetoothDeviceSelection.cancelSelection();
       return;
     }
-    mainWindow.webContents.send(
-      'bluetooth-devices-discovered',
-      deviceList.map((d) => ({ deviceId: d.deviceId, deviceName: d.deviceName })),
-    );
+    mainWindow.webContents.send('bluetooth-devices-discovered', devices, generation);
   });
 
   // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
@@ -2077,30 +2074,36 @@ ipcMain.on('serial-port-cancelled', () => {
 
 // ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
 ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
-  if (!pendingBluetoothCallback) {
+  if (!linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.warn(
       '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
     );
     return;
   }
   const id = typeof deviceId === 'string' ? deviceId : '';
-  if (id !== '' && !lastBluetoothDeviceIds.has(id)) {
+  if (id !== '' && !linuxWebBluetoothDeviceSelection.knownDeviceIds().has(id)) {
     console.warn('[IPC] bluetooth-device-selected: ignoring unknown deviceId');
     return;
   }
   console.debug('[IPC] bluetooth-device-selected:', sanitizeLogMessage(id || '(cancelled)'));
-  pendingBluetoothCallback(id);
-  pendingBluetoothCallback = null;
-  lastBluetoothDeviceIds.clear();
+  if (!linuxWebBluetoothDeviceSelection.resolveSelection(id)) {
+    console.warn('[IPC] bluetooth-device-selected: resolve ignored');
+  }
 });
 
 // ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-ipcMain.on('bluetooth-device-cancelled', () => {
-  if (pendingBluetoothCallback) {
-    pendingBluetoothCallback(''); // Empty string cancels the request
-    pendingBluetoothCallback = null;
+// Optional generation: when provided, ignore delayed cancels from an earlier chooser.
+// When omitted, force-cancel (pre-connect cleanup / legacy callers).
+ipcMain.on('bluetooth-device-cancelled', (_event, generation: unknown) => {
+  if (typeof generation === 'number' && Number.isFinite(generation)) {
+    if (!linuxWebBluetoothDeviceSelection.cancelIfGeneration(generation)) {
+      console.debug(
+        '[IPC] bluetooth-device-cancelled: generation mismatch or no pending — ignored',
+      );
+    }
+    return;
   }
-  lastBluetoothDeviceIds.clear();
+  linuxWebBluetoothDeviceSelection.cancelSelection();
 });
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
@@ -2153,11 +2156,9 @@ ipcMain.handle('bluetooth-unpair', async (event, macAddress: unknown) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      console.error(
-        '[IPC] bluetooth-unpair error:',
-        sanitizeLogMessage(err?.message ?? String(err)),
-      );
-      reject(err);
+      const msg = formatBluetoothctlSpawnError(err);
+      console.error('[IPC] bluetooth-unpair error:', sanitizeLogMessage(msg));
+      reject(new Error(msg));
     });
   });
 });
@@ -2198,11 +2199,9 @@ ipcMain.handle('bluetooth-start-scan', async (event) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      console.warn(
-        '[IPC] bluetooth-start-scan error:',
-        sanitizeLogMessage(err?.message ?? String(err)),
-      );
-      reject(err);
+      const msg = formatBluetoothctlSpawnError(err);
+      console.warn('[IPC] bluetooth-start-scan error:', sanitizeLogMessage(msg));
+      reject(new Error(msg));
     });
   });
 });
@@ -2432,8 +2431,11 @@ ipcMain.handle('bluetooth-pair', async (event, macAddress: unknown, pin: unknown
     });
     proc.on('error', (err) => {
       if (settled) return;
-      console.warn('[IPC] bluetooth-pair error:', sanitizeLogMessage(err?.message ?? String(err)));
-      finishReject(err instanceof Error ? err : new Error(String(err)));
+      console.warn(
+        '[IPC] bluetooth-pair error:',
+        sanitizeLogMessage(formatBluetoothctlSpawnError(err)),
+      );
+      finishReject(new Error(formatBluetoothctlSpawnError(err)));
     });
   });
 });
@@ -2470,11 +2472,9 @@ ipcMain.handle('bluetooth-connect', async (event, macAddress: unknown) => {
       }
     });
     proc.on('error', (err) => {
-      console.warn(
-        '[IPC] bluetooth-connect error:',
-        sanitizeLogMessage(err?.message ?? String(err)),
-      );
-      reject(err);
+      const msg = formatBluetoothctlSpawnError(err);
+      console.warn('[IPC] bluetooth-connect error:', sanitizeLogMessage(msg));
+      reject(new Error(msg));
     });
   });
 });
@@ -2556,7 +2556,7 @@ ipcMain.handle('bluetooth-get-info', async (event, macAddress: unknown) => {
       finish(output);
     });
     proc.on('error', (err) => {
-      const msg = err?.message ?? String(err);
+      const msg = formatBluetoothctlSpawnError(err);
       finish(msg);
     });
   });
@@ -6644,11 +6644,9 @@ void app
 
 app.on('before-quit', (event) => {
   // Clean up any pending Bluetooth device selection to prevent callback leak
-  if (pendingBluetoothCallback) {
+  if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.debug('[main] before-quit: cleaning up pending Bluetooth callback');
-    pendingBluetoothCallback('');
-    pendingBluetoothCallback = null;
-    lastBluetoothDeviceIds.clear();
+    linuxWebBluetoothDeviceSelection.cancelSelection();
   }
 
   if (shutdownDone) {
@@ -6759,11 +6757,9 @@ app.on('will-quit', (event) => {
 
 app.on('window-all-closed', () => {
   // Clean up any pending Bluetooth device selection to prevent callback leak
-  if (pendingBluetoothCallback) {
+  if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
-    pendingBluetoothCallback('');
-    pendingBluetoothCallback = null;
-    lastBluetoothDeviceIds.clear();
+    linuxWebBluetoothDeviceSelection.cancelSelection();
   }
   const hasConnection = isConnected || isAnyMqttConnected();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)

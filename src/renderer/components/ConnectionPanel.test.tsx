@@ -635,6 +635,65 @@ describe('ConnectionPanel Linux BLE path', () => {
 
     expect(onConnect).toHaveBeenCalledWith('ble', undefined);
     expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+    const cancelOrder = vi.mocked(window.electronAPI.cancelBluetoothSelection).mock
+      .invocationCallOrder[0];
+    const connectOrder = onConnect.mock.invocationCallOrder[0];
+    expect(cancelOrder).toBeDefined();
+    expect(connectOrder).toBeDefined();
+    expect(cancelOrder).toBeLessThan(connectOrder);
+    userAgentSpy.mockRestore();
+  });
+
+  it('passes Linux BLE chooser generation to cancelBluetoothSelection on Cancel', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockClear();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+
+    const discovered = {
+      cb: null as
+        null | ((devices: { deviceId: string; deviceName: string }[], generation?: number) => void),
+    };
+    vi.mocked(window.electronAPI.onBluetoothDevicesDiscovered).mockImplementation((cb) => {
+      discovered.cb = cb;
+      return () => {};
+    });
+
+    const onConnect = vi.fn().mockImplementation(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so Cancel stays available */
+        }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+    expect(onConnect).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(discovered.cb).toBeTruthy();
+    });
+    discovered.cb?.([{ deviceId: 'aa:bb:cc:dd:ee:ff', deviceName: 'Node' }], 3);
+
+    const cancelBtn = await screen.findByRole('button', { name: /^Cancel$/i });
+    await user.click(cancelBtn);
+
+    expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalledWith(3);
     userAgentSpy.mockRestore();
   });
 

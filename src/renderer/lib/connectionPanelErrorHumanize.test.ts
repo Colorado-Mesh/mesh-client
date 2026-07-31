@@ -243,6 +243,20 @@ describe('humanizeBleError', () => {
     expect(result).toContain('macWakeRecoveryHint');
     expect(result.split('macWakeRecoveryHint').length - 1).toBe(1);
   });
+
+  it('humanizes requestDevice chooser cancel with a non-empty hint', () => {
+    mockPlatform('linux');
+    const result = humanizeBleError(new Error('User cancelled the requestDevice() chooser.'), t);
+    expect(result).not.toBe('');
+    expect(result).toContain('chooserCancelledHint');
+  });
+
+  it('humanizes missing bluetoothctl with a non-empty hint', () => {
+    mockPlatform('linux');
+    const result = humanizeBleError(new Error('bluetoothctl not found'), t);
+    expect(result).not.toBe('');
+    expect(result).toContain('bluetoothctlMissingHint');
+  });
 });
 
 describe('humanizeReticulumSidecarError', () => {

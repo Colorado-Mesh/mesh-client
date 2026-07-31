@@ -865,7 +865,9 @@
         "macWakeRecoveryHint": "Uykudan sonra mesh-client'ten çıkın (Cmd+Q), Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar bağlanın. İki radyoyla MeshCore'u Meshtastic'ten önce bağlayın.",
         "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin.",
         "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
-        "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı."
+        "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı.",
+        "chooserCancelledHint": "İptal etmediyseniz Bluetooth'un açık olduğundan emin olun (systemctl durumu bluetooth) ve ardından tekrar Bağlan'a dokunun. Flatpak'te, Bluetooth'a izin verilen bir yapıyı yeniden yükleyin veya AppImage/.deb/.rpm dosyasını kullanın.",
+        "bluetoothctlMissingHint": "İşletim Sistemi Bluetooth eşleştirme araçları bu ortamda kullanılamaz (Flatpak'ta yaygındır). Resmi AppImage, .deb veya .rpm'yi kullanın veya radyoyu ana bilgisayar bluetoothctl ile eşleştirin ve ardından Bağlanmayı yeniden deneyin."
       }
     },
     "error": {

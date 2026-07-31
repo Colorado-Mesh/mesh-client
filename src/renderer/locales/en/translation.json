@@ -1255,7 +1255,9 @@
         "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
         "dualProtocolContentionHint": "The other protocol may still be connecting over Bluetooth. Wait a few seconds and try again, or switch to the other protocol tab to check its connection status.",
         "scanBusy": "Another Bluetooth scan is in progress. Try again in a moment.",
-        "sameDeviceConflict": "This Bluetooth device is already connected to {{owner}}."
+        "sameDeviceConflict": "This Bluetooth device is already connected to {{owner}}.",
+        "chooserCancelledHint": " If you did not cancel, ensure Bluetooth is on (systemctl status bluetooth), then tap Connect again. On Flatpak, reinstall a build with Bluetooth allowed, or use the AppImage/.deb/.rpm.",
+        "bluetoothctlMissingHint": " OS Bluetooth pairing tools are unavailable in this environment (common in Flatpak). Use the official AppImage, .deb, or .rpm, or pair the radio with host bluetoothctl, then retry Connect."
       }
     },
     "error": {

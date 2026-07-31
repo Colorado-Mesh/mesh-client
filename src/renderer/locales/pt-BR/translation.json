@@ -865,7 +865,9 @@
         "macWakeRecoveryHint": "Após a suspensão, saia do mesh-client (Cmd+Q), desligue e ligue o Bluetooth nas Configurações do Sistema, aguarde alguns segundos e conecte-se novamente. Com dois rádios, conecte o MeshCore antes do Meshtastic.",
         "dualProtocolContentionHint": "O outro protocolo ainda pode estar se conectando via Bluetooth. Aguarde alguns segundos e tente novamente ou mude para a outra guia de protocolo para verificar o status da conexão.",
         "scanBusy": "Outra varredura de Bluetooth está em andamento. Tente novamente em alguns instantes.",
-        "sameDeviceConflict": "Este dispositivo Bluetooth já está conectado a {{owner}}."
+        "sameDeviceConflict": "Este dispositivo Bluetooth já está conectado a {{owner}}.",
+        "chooserCancelledHint": "Se você não cancelou, certifique-se de que o Bluetooth esteja ativado (systemctl status bluetooth) e toque em Conectar novamente. No Flatpak, reinstale uma compilação com Bluetooth permitido ou use AppImage/.deb/.rpm.",
+        "bluetoothctlMissingHint": "As ferramentas de emparelhamento Bluetooth do sistema operacional não estão disponíveis neste ambiente (comum no Flatpak). Use o AppImage, .deb ou .rpm oficial ou emparelhe o rádio com o host bluetoothctl e tente novamente o Connect."
       }
     },
     "error": {

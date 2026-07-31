@@ -865,7 +865,9 @@
         "macWakeRecoveryHint": "Setelah tidur, keluar dari mesh-client (Cmd+Q), matikan dan nyalakan Bluetooth di Pengaturan Sistem, tunggu beberapa detik, lalu Hubungkan lagi. Dengan dua radio, hubungkan MeshCore sebelum Meshtastic.",
         "dualProtocolContentionHint": "Protokol lain mungkin masih terhubung melalui Bluetooth. Tunggu beberapa detik dan coba lagi, atau beralih ke tab protokol lain untuk memeriksa status koneksinya.",
         "scanBusy": "Pemindaian Bluetooth lainnya sedang berlangsung. Coba lagi sebentar lagi.",
-        "sameDeviceConflict": "Perangkat Bluetooth ini sudah terhubung ke {{owner}}."
+        "sameDeviceConflict": "Perangkat Bluetooth ini sudah terhubung ke {{owner}}.",
+        "chooserCancelledHint": "Jika Anda tidak membatalkan, pastikan Bluetooth aktif (status sistemctl bluetooth), lalu ketuk Hubungkan lagi. Di Flatpak, instal ulang build dengan Bluetooth yang diizinkan, atau gunakan AppImage/.deb/.rpm.",
+        "bluetoothctlMissingHint": "Alat pemasangan OS Bluetooth tidak tersedia di lingkungan ini (umum di Flatpak). Gunakan AppImage resmi, .deb, atau .rpm, atau pasangkan radio dengan host bluetoothctl, lalu coba lagi Hubungkan."
       }
     },
     "error": {

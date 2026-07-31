@@ -385,6 +385,12 @@ flatpak run org.coloradomesh.MeshClient
 
 VMware guests and other GPU edge cases: [Flatpak troubleshooting](docs/troubleshooting.md#flatpak-vmwgfx-driver-missing-vmware-on-macos).
 
+**Arch Linux (AUR, third-party):** community package [`mesh-client`](https://aur.archlinux.org/packages/mesh-client) (maintainer `victorix`) — **not** maintained by Colorado Mesh. Prefer [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) AppImage / `.deb` / `.rpm` / Flatpak for official builds. Report packaging issues on the AUR package page; report app bugs on GitHub.
+
+```bash
+yay -S mesh-client # or: paru -S mesh-client
+```
+
 **macOS (release download):**
 
 - **Official [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (v5.22.0+):** macOS builds are **Developer ID signed and notarized**. Drag to **Applications** and open normally — you should **not** need `xattr` or Right-click → Open.

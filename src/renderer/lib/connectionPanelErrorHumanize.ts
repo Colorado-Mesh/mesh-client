@@ -160,6 +160,18 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
         : t('connectionPanel.humanize.ble.adapterGenericHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
+  if (/User cancelled the requestDevice\(\) chooser/i.test(msg)) {
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.ble.chooserCancelledHint'),
+    });
+  }
+  if (/bluetoothctl not found/i.test(msg)) {
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.ble.bluetoothctlMissingHint'),
+    });
+  }
   if (msg.includes('SecurityError') || msg.includes('not allowed to access')) {
     return t('connectionPanel.humanize.prefixedHint', {
       message: msg,

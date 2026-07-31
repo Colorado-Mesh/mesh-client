@@ -865,7 +865,9 @@
         "macWakeRecoveryHint": "절전 모드가 끝나면 mesh-client (Cmd + Q) 를 종료하고 시스템 설정에서 블루투스를 껐다 켜고 몇 초 기다린 다음 다시 연결하십시오. 두 개의 라디오를 사용하여 Meshtastic 전에 MeshCore를 연결합니다.",
         "dualProtocolContentionHint": "다른 프로토콜은 여전히 블루투스를 통해 연결될 수 있습니다. 몇 초 후 다시 시도하거나 다른 프로토콜 탭으로 전환하여 연결 상태를 확인하세요.",
         "scanBusy": "다른 Bluetooth 검색이 진행 중입니다. 잠시 후에 다시 시도해 보세요.",
-        "sameDeviceConflict": "이 블루투스 장치는 이미 {{owner}}에 연결되어 있습니다."
+        "sameDeviceConflict": "이 블루투스 장치는 이미 {{owner}}에 연결되어 있습니다.",
+        "chooserCancelledHint": "취소하지 않은 경우 Bluetooth가 켜져 있는지(systemctl status bluetooth) 확인한 다음 연결을 다시 탭하세요. Flatpak에서는 Bluetooth가 허용된 빌드를 다시 설치하거나 AppImage/.deb/.rpm을 사용하세요.",
+        "bluetoothctlMissingHint": "이 환경에서는 OS Bluetooth 페어링 도구를 사용할 수 없습니다(Flatpak에서 일반적임). 공식 AppImage, .deb 또는 .rpm을 사용하거나 라디오를 호스트 bluetoothctl과 페어링한 다음 연결을 다시 시도하세요."
       }
     },
     "error": {

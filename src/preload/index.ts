@@ -717,9 +717,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ─── Bluetooth device selection (Linux Web Bluetooth) ──────────────
   // Main process intercepts select-bluetooth-device and sends the device
   // list here. Renderer shows a picker, then calls selectBluetoothDevice.
-  onBluetoothDevicesDiscovered: (callback: (devices: NobleBleDevice[]) => void) => {
-    const handler = (_event: unknown, devices: NobleBleDevice[]) => {
-      callback(devices);
+  onBluetoothDevicesDiscovered: (
+    callback: (devices: NobleBleDevice[], generation?: number) => void,
+  ) => {
+    const handler = (_event: unknown, devices: NobleBleDevice[], generation?: number) => {
+      callback(devices, generation);
     };
     ipcRenderer.on('bluetooth-devices-discovered', handler);
     return () => {
@@ -731,7 +733,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('bluetooth-device-selected', deviceId);
   },
 
-  cancelBluetoothSelection: () => {
+  cancelBluetoothSelection: (generation?: number | null) => {
+    if (typeof generation === 'number' && Number.isFinite(generation)) {
+      ipcRenderer.send('bluetooth-device-cancelled', generation);
+      return;
+    }
     ipcRenderer.send('bluetooth-device-cancelled');
   },
 
