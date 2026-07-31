@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const probeReticulumPeerMock = vi.fn();
 const updatePeerMock = vi.fn();
-const refreshPeersMock = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   probeReticulumPeer: (...args: unknown[]) => probeReticulumPeerMock(...args),
@@ -15,7 +14,6 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
       updatePeer: (...args: unknown[]) => updatePeerMock(...args),
     }),
   },
-  refreshReticulumPeersFromSidecar: (...args: unknown[]) => refreshPeersMock(...args),
 }));
 
 import { useReticulumDmPathProbe } from './useReticulumDmPathProbe';
@@ -24,8 +22,6 @@ describe('useReticulumDmPathProbe', () => {
   beforeEach(() => {
     probeReticulumPeerMock.mockReset();
     updatePeerMock.mockReset();
-    refreshPeersMock.mockReset();
-    refreshPeersMock.mockResolvedValue([]);
   });
 
   it('probes when enabled and destination hash is set', async () => {
@@ -44,7 +40,6 @@ describe('useReticulumDmPathProbe', () => {
     expect(result.current.hops).toBe(2);
     expect(probeReticulumPeerMock).toHaveBeenCalledWith('aabbccddeeff00112233445566778899');
     expect(updatePeerMock).toHaveBeenCalledWith('aabbccddeeff00112233445566778899', { hops: 2 });
-    expect(refreshPeersMock).toHaveBeenCalled();
   });
 
   it('reprobe re-runs the sidecar probe', async () => {
@@ -147,7 +142,6 @@ describe('useReticulumDmPathProbe', () => {
       expect(result.current.status).toBe('unreachable');
     });
     expect(result.current.hops).toBeNull();
-    expect(refreshPeersMock).not.toHaveBeenCalled();
   });
 
   it('reprobe forces probing even when passive hops are known', async () => {

@@ -19,6 +19,8 @@ import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
   fetchReticulumRmapDiscovered,
+  fetchReticulumSerialPortOptions,
+  fetchReticulumSerialPorts,
   formatReticulumPeerProbeToast,
   invalidateReticulumInterfacesCache,
   isReticulumSidecar404Error,
@@ -66,11 +68,57 @@ describe('reticulumSidecarReads', () => {
 
   it('fetchReticulumInterfaces rethrows rate-limit only when propagateRateLimit is set', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValueOnce({
+      interfaces: [{ id: '1', name: 'tcp', type: 'tcp', enabled: true, status: 'up' }],
+    });
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+
     proxyGet.mockRejectedValue(new Error('reticulum:proxy: rate limit exceeded'));
-    await expect(fetchReticulumInterfaces()).resolves.toEqual([]);
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+    // Cache TTL still warm — no extra proxyGet after the seed call.
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+
+    invalidateReticulumInterfacesCache();
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+    expect(proxyGet).toHaveBeenCalledTimes(2);
     await expect(fetchReticulumInterfaces({ propagateRateLimit: true })).rejects.toThrow(
       'rate limit exceeded',
     );
+    expect(proxyGet).toHaveBeenCalledTimes(3);
+  });
+
+  it('fetchReticulumSerialPortOptions shares cache and rate-limit fallback with path helper', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValueOnce({
+      ports: [{ path: '/dev/ttyUSB0', label: 'USB' }],
+    });
+    await expect(fetchReticulumSerialPortOptions()).resolves.toEqual([
+      { path: '/dev/ttyUSB0', label: 'USB' },
+    ]);
+    await expect(fetchReticulumSerialPorts()).resolves.toEqual(['/dev/ttyUSB0']);
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+
+    proxyGet.mockRejectedValue(new Error('reticulum:proxy: rate limit exceeded'));
+    await expect(fetchReticulumSerialPortOptions()).resolves.toEqual([
+      { path: '/dev/ttyUSB0', label: 'USB' },
+    ]);
+    await expect(fetchReticulumSerialPorts()).resolves.toEqual(['/dev/ttyUSB0']);
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+
+    invalidateReticulumInterfacesCache();
+    await expect(fetchReticulumSerialPortOptions()).resolves.toEqual([
+      { path: '/dev/ttyUSB0', label: 'USB' },
+    ]);
+    expect(proxyGet).toHaveBeenCalledTimes(2);
+    await expect(fetchReticulumSerialPortOptions({ propagateRateLimit: true })).rejects.toThrow(
+      'rate limit exceeded',
+    );
+    await expect(fetchReticulumSerialPorts({ propagateRateLimit: true })).rejects.toThrow(
+      'rate limit exceeded',
+    );
+    expect(proxyGet).toHaveBeenCalledTimes(4);
   });
 
   it('fetchReticulumIdentityStatus skips proxyGet when sidecar is down', async () => {
