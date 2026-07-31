@@ -521,6 +521,20 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(4);
   });
 
+  it('refreshReticulumPeersFromSidecar rethrows rate-limit errors after debug log', async () => {
+    const proxyGet = vi.fn().mockRejectedValue(new Error('reticulum:proxy: rate limit exceeded'));
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    await expect(refreshReticulumPeersFromSidecar()).rejects.toThrow('rate limit exceeded');
+    expect(debug).toHaveBeenCalled();
+    debug.mockRestore();
+  });
+
   it('refreshReticulumPeersFromSidecar OR-accumulates forceRefresh across coalesced callers', async () => {
     let releaseFirst!: () => void;
     const firstGate = new Promise<void>((resolve) => {

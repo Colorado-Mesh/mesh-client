@@ -52,11 +52,16 @@ export function isReticulumSidecar404Error(err: unknown): boolean {
   return errLikeToLogString(err).includes('404');
 }
 
+export function isReticulumSidecarRateLimitError(err: unknown): boolean {
+  return errLikeToLogString(err).toLowerCase().includes('rate limit exceeded');
+}
+
 export function isReticulumSidecarExpectedProxyError(err: unknown): boolean {
   const msg = errLikeToLogString(err).toLowerCase();
   return (
     isReticulumSidecarNotRunningError(err) ||
     isReticulumSidecar404Error(err) ||
+    isReticulumSidecarRateLimitError(err) ||
     msg.includes('fetch failed') ||
     msg.includes('aborted')
   );
@@ -69,41 +74,109 @@ export interface ReticulumSidecarInterfaceRow {
   enabled: boolean;
   status: string;
   serial_port?: string | null;
+  host?: string | null;
+  port?: number | null;
+  frequency?: number | null;
+  bandwidth?: number | null;
+  txpower?: number | null;
+  spreading_factor?: number | null;
+  coding_rate?: number | null;
+  callsign?: string | null;
+  preset?: string | null;
+  mode?: string | null;
+  seed_addresses?: string[];
+  discoverable?: boolean | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  height?: number | null;
+  discovery_name?: string | null;
+  announce_interval_min?: number | null;
+  connectable?: boolean | null;
+  reachable_on?: string | null;
+  network_name?: string | null;
+  passphrase?: string | null;
+  extra_config?: Record<string, string> | null;
+}
+
+export interface ReticulumSerialPortOption {
+  path: string;
+  label?: string;
 }
 
 const RETICULUM_INTERFACES_CACHE_MS = 5_000;
 let cachedReticulumInterfaces: ReticulumSidecarInterfaceRow[] = [];
 let cachedEffectivePrimaryLocalSerialInterfaceId: string | null = null;
 let cachedReticulumInterfacesAt = 0;
+let cachedReticulumSerialPorts: ReticulumSerialPortOption[] = [];
+let cachedReticulumSerialPortsAt = 0;
 
 export function invalidateReticulumInterfacesCache(): void {
   cachedReticulumInterfacesAt = 0;
+  cachedReticulumSerialPortsAt = 0;
 }
 
 export function getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(): string | null {
   return cachedEffectivePrimaryLocalSerialInterfaceId;
 }
 
-/** Fetch OS serial port paths from the sidecar (for local interface health checks). */
-export async function fetchReticulumSerialPorts(): Promise<string[]> {
+export interface FetchReticulumSidecarReadOpts {
+  /**
+   * When true, rate-limit errors are rethrown so pollers can back off.
+   * Default false: return cached rows (or []) so unguarded callers keep working.
+   */
+  propagateRateLimit?: boolean;
+}
+
+/** Fetch OS serial port options from the sidecar (shared cache with path-only helper). */
+export async function fetchReticulumSerialPortOptions(
+  opts?: FetchReticulumSidecarReadOpts,
+): Promise<ReticulumSerialPortOption[]> {
   if (!(await isReticulumSidecarRunning())) {
+    cachedReticulumSerialPorts = [];
+    cachedReticulumSerialPortsAt = 0;
     return [];
+  }
+  const now = Date.now();
+  if (
+    cachedReticulumSerialPorts.length > 0 &&
+    now - cachedReticulumSerialPortsAt < RETICULUM_INTERFACES_CACHE_MS
+  ) {
+    return cachedReticulumSerialPorts;
   }
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/serial/ports')) as {
-      ports?: { path: string }[];
+      ports?: ReticulumSerialPortOption[];
     };
-    return (body.ports ?? []).map((p) => p.path);
+    const ports = body.ports ?? [];
+    cachedReticulumSerialPorts = ports;
+    cachedReticulumSerialPortsAt = now;
+    return ports;
   } catch (e) {
+    if (opts?.propagateRateLimit && isReticulumSidecarRateLimitError(e)) {
+      throw e instanceof Error ? e : new Error(String(e));
+    }
     if (!isReticulumSidecarExpectedProxyError(e)) {
       console.debug('[reticulumSidecarReads] serial ports ' + errLikeToLogString(e));
+    }
+    if (cachedReticulumSerialPorts.length > 0) {
+      return cachedReticulumSerialPorts;
     }
     return [];
   }
 }
 
-/** Fetch configured sidecar interfaces (shared by runtime and radio panel). */
-export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterfaceRow[]> {
+/** Fetch OS serial port paths from the sidecar (for local interface health checks). */
+export async function fetchReticulumSerialPorts(
+  opts?: FetchReticulumSidecarReadOpts,
+): Promise<string[]> {
+  const ports = await fetchReticulumSerialPortOptions(opts);
+  return ports.map((p) => p.path);
+}
+
+/** Fetch configured sidecar interfaces (shared by runtime and Connection panel). */
+export async function fetchReticulumInterfaces(
+  opts?: FetchReticulumSidecarReadOpts,
+): Promise<ReticulumSidecarInterfaceRow[]> {
   if (!(await isReticulumSidecarRunning())) {
     cachedReticulumInterfaces = [];
     cachedEffectivePrimaryLocalSerialInterfaceId = null;
@@ -129,6 +202,9 @@ export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterf
     cachedReticulumInterfacesAt = now;
     return interfaces;
   } catch (e) {
+    if (opts?.propagateRateLimit && isReticulumSidecarRateLimitError(e)) {
+      throw e instanceof Error ? e : new Error(String(e));
+    }
     if (!isReticulumSidecarExpectedProxyError(e)) {
       console.debug('[reticulumSidecarReads] interfaces ' + errLikeToLogString(e));
     }

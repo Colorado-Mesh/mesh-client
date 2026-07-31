@@ -19,7 +19,7 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   reticulumAutoPruneEnabled: true,
   reticulumAutoPruneDays: 30,
   reticulumDestinationCapEnabled: true,
-  reticulumDestinationCapCount: 10000,
+  reticulumDestinationCapCount: 50000,
   distanceFilterEnabled: false,
   distanceFilterMax: 500,
   distanceUnit: 'miles' as const,

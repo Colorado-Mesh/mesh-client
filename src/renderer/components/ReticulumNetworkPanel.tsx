@@ -569,7 +569,9 @@ export function ReticulumNetworkPanel({
                       last_heard: Math.floor(Date.now() / 1000),
                     });
                     addToast(t('qrIngest.contactImported'), 'success');
-                    void refreshReticulumPeersFromSidecar({ forceRefresh: true });
+                    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(() => {
+                      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+                    });
                   } catch (err) {
                     console.error(
                       '[ReticulumNetworkPanel] QR contact upsert failed: ' +

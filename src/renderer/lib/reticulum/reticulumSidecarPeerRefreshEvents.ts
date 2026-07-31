@@ -98,7 +98,7 @@ export function peersUpdatedRequiresFullRefresh(payload: unknown): boolean {
   if (typeof p.demoted_from_contacts === 'number') return true;
   if (Array.isArray(p.patches) && p.patches.length > 0) return false;
   if (Array.isArray(p.added) && p.added.length > 0) return false;
-  // Probe / path-request single-hash events — rare; reconcile with a full dump.
-  if (typeof p.hash === 'string' && p.hash.trim()) return true;
+  // Probe / path-request single-hash events — apply incrementally (no full dump).
+  if (typeof p.hash === 'string' && p.hash.trim()) return false;
   return true;
 }

@@ -33,7 +33,7 @@ import { assertIpcSender } from '../validate-ipc-sender';
 
 /** Shared rolling window for all reticulum proxy verbs (Get/Post/Put/Delete). */
 const reticulumProxyIpcRateLimit = createIpcRateLimiter({
-  max: 120,
+  max: 300,
   windowMs: MS_PER_MINUTE,
   label: 'reticulum:proxy',
 });
@@ -52,7 +52,8 @@ function isExpectedReticulumProxyError(message: string): boolean {
     message.includes('404') ||
     lower.includes('fetch failed') ||
     lower.includes('aborted') ||
-    lower.includes('timeout')
+    lower.includes('timeout') ||
+    lower.includes('rate limit exceeded')
   );
 }
 

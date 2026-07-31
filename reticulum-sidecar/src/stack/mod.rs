@@ -2514,8 +2514,8 @@ fn enumerate_serial_ports() -> Vec<serde_json::Value> {
 }
 
 /// Hard ceiling on peer rows returned / persisted after a live path-table sync.
-/// Matches the renderer destination cap (`50_000` / `MAX_MESH_ENTITY_CAP` floor).
-const MAX_PEER_CACHE: usize = 50_000;
+/// Matches the renderer `MAX_MESH_ENTITY_CAP` (100_000).
+const MAX_PEER_CACHE: usize = 100_000;
 /// Cap on peers retained after leaving the live path table (e.g. Clear Contacts demotions).
 const MAX_ORPHAN_PEERS: usize = 5_000;
 /// Drop orphaned peers with `last_seen` older than this (Unix seconds). Missing

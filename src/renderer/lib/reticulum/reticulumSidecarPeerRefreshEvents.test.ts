@@ -73,10 +73,13 @@ describe('peersUpdatedRequiresFullRefresh', () => {
     expect(peersUpdatedRequiresFullRefresh({ added: ['aa'], count: 1 })).toBe(false);
   });
 
-  it('returns true for clear / demote / probe payloads', () => {
+  it('returns true for clear / demote payloads', () => {
     expect(peersUpdatedRequiresFullRefresh({ cleared: true })).toBe(true);
     expect(peersUpdatedRequiresFullRefresh({ demoted_from_contacts: 3 })).toBe(true);
-    expect(peersUpdatedRequiresFullRefresh({ hash: 'aabb' })).toBe(true);
+  });
+
+  it('returns false for probe / path-request single-hash payloads', () => {
+    expect(peersUpdatedRequiresFullRefresh({ hash: 'aabb' })).toBe(false);
   });
 });
 

@@ -8,10 +8,7 @@ import {
   seedReticulumDmPathStatus,
 } from '@/renderer/lib/reticulum/reticulumDmPathReachability';
 import { probeReticulumPeer } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import {
-  refreshReticulumPeersFromSidecar,
-  useReticulumPeerStore,
-} from '@/renderer/stores/reticulumPeerStore';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 
 export interface UseReticulumDmPathProbeArgs {
   /** When false, resets to idle and does not probe. */
@@ -87,11 +84,8 @@ export function useReticulumDmPathProbe({
         setStatus(reticulumDmPathStatusFromProbe(result.ok));
         const nextHops = result.hops ?? null;
         setHops(nextHops);
-        if (result.ok) {
-          if (nextHops != null) {
-            useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
-          }
-          void refreshReticulumPeersFromSidecar();
+        if (result.ok && nextHops != null) {
+          useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
         }
       } catch (e) {
         // Failure point: probe IPC reject. Fallback: treat as unreachable.

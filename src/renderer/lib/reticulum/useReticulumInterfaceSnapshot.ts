@@ -13,9 +13,16 @@ import type { ReticulumLocalInterfaceHealthOptions } from '@/renderer/lib/reticu
 import { logReticulumLocalInterfaceHealthChanges } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
 import {
   pickReticulumLocalHealthPollMs,
+  RETICULUM_LOCAL_HEALTH_POLL_MS,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
-import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  fetchReticulumInterfaces,
+  fetchReticulumSerialPortOptions,
+  getCachedReticulumEffectivePrimaryLocalSerialInterfaceId,
+  invalidateReticulumInterfacesCache,
+  isReticulumSidecarRateLimitError,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 export interface ReticulumInterfaceRow {
@@ -103,30 +110,25 @@ export function useReticulumInterfaceSnapshot({
   const refresh = useCallback(async () => {
     if (!sidecarApiReady) return undefined;
     try {
-      invalidateReticulumInterfacesCache();
-      const [body, portsBody] = await Promise.all([
-        window.electronAPI.reticulum.proxyGet('/api/v1/interfaces') as Promise<{
-          interfaces?: ReticulumInterfaceRow[];
-          effective_primary_local_serial_interface_id?: string | null;
-        }>,
-        window.electronAPI.reticulum.proxyGet('/api/v1/serial/ports') as Promise<{
-          ports?: ReticulumSerialPortOption[];
-        }>,
+      const [rows, ports] = await Promise.all([
+        fetchReticulumInterfaces({ propagateRateLimit: true }),
+        fetchReticulumSerialPortOptions({ propagateRateLimit: true }),
       ]);
-      const rows = body.interfaces ?? [];
-      const ports = portsBody.ports ?? [];
       const paths = ports.map((p) => p.path);
       setInterfaces(rows);
       setSerialPorts(ports);
       setInterfacesHydrated(true);
       setEffectivePrimaryLocalSerialInterfaceId(
-        body.effective_primary_local_serial_interface_id ?? null,
+        getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
       );
       logReticulumLocalInterfaceHealthChanges(rows, paths);
       await syncReticulumBleRegistry(rows);
       return { interfaces: rows, paths };
     } catch (e) {
       console.debug('[useReticulumInterfaceSnapshot] refresh ' + errLikeToLogString(e));
+      if (isReticulumSidecarRateLimitError(e)) {
+        return { interfaces: [], paths: [], rateLimited: true as const };
+      }
       return undefined;
     }
   }, [sidecarApiReady]);
@@ -145,6 +147,9 @@ export function useReticulumInterfaceSnapshot({
       ) {
         if (evt.type === 'stack_restart_requested') {
           beginBleConnectGrace();
+        }
+        if (evt.type === 'interface.state' || evt.type === 'stack_restart_requested') {
+          invalidateReticulumInterfacesCache();
         }
         void refreshRef.current?.();
       }
@@ -166,6 +171,7 @@ export function useReticulumInterfaceSnapshot({
       return;
     }
     beginBleConnectGrace();
+    invalidateReticulumInterfacesCache();
     void refresh();
     burstCancelRef.current?.();
     burstCancelRef.current = scheduleReticulumLocalInterfaceBurst(() => {
@@ -198,6 +204,10 @@ export function useReticulumInterfaceSnapshot({
     const tick = async () => {
       const snapshot = await refreshRef.current?.();
       if (cancelled || !snapshot) return;
+      if ('rateLimited' in snapshot && snapshot.rateLimited) {
+        scheduleNextPoll(RETICULUM_LOCAL_HEALTH_POLL_MS);
+        return;
+      }
       scheduleNextPoll(
         pickReticulumLocalHealthPollMs(snapshot.interfaces, snapshot.paths, healthOptions),
       );
@@ -221,7 +231,10 @@ export function useReticulumInterfaceSnapshot({
     serialPortPaths,
     effectivePrimaryLocalSerialInterfaceId,
     healthOptions,
-    refresh,
+    refresh: async () => {
+      invalidateReticulumInterfacesCache();
+      return refresh();
+    },
     beginBleConnectGrace,
     handleSidecarEvent,
   };

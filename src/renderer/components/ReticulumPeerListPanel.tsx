@@ -223,8 +223,8 @@ export default function ReticulumPeerListPanel({
 }: ReticulumPeerListPanelProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  const peers = useReticulumPeerStore((s) => s.peers);
   const peersRevision = useReticulumPeerStore((s) => s.peersRevision);
+  const peersSize = useReticulumPeerStore((s) => s.peers.size);
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
   const isContact = useReticulumPeerStore((s) => s.isContact);
@@ -350,6 +350,7 @@ export default function ReticulumPeerListPanel({
     const gen = ++sortedRowsPrepGenRef.current;
     const run = () => {
       if (gen !== sortedRowsPrepGenRef.current) return;
+      const peers = useReticulumPeerStore.getState().peers;
       const sourceRows = buildSourcePeerRows(
         activeTab,
         peers,
@@ -370,12 +371,13 @@ export default function ReticulumPeerListPanel({
     };
     const approxCount =
       activeTab === 'peers'
-        ? peers.size
+        ? peersSize
         : activeTab === 'contacts'
           ? contacts.size
-          : peers.size + contacts.size;
-    // Debounce large-list rebuilds under patch storms; keep small lists snappy.
-    const debounceMs = approxCount > RETICULUM_PEER_VIRTUALIZE_THRESHOLD ? 120 : 0;
+          : peersSize + contacts.size;
+    // Debounce large-list rebuilds under patch storms; stretch further at mega-mesh.
+    const debounceMs =
+      approxCount > 10_000 ? 400 : approxCount > RETICULUM_PEER_VIRTUALIZE_THRESHOLD ? 250 : 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
     if (debounceMs > 0) {
       timer = setTimeout(() => {
@@ -387,14 +389,14 @@ export default function ReticulumPeerListPanel({
     return () => {
       if (timer != null) clearTimeout(timer);
     };
-    // peersRevision ensures Map identity churn still recomputes when patches flush.
+    // peersRevision (not Map identity) drives rebuilds when patches flush.
   }, [
     activeTab,
     contacts,
     debouncedSearchQuery,
     groupMemberIds,
-    peers,
     peersRevision,
+    peersSize,
     resolvePeerLabel,
     selectedGroupId,
     sortDir,
@@ -447,9 +449,7 @@ export default function ReticulumPeerListPanel({
       const result = await requestReticulumPeerPath(hash);
       const toast = formatReticulumPeerPathToast(t, result);
       addToast(toast.message, toast.variant);
-      if (result.ok) {
-        await refreshReticulumPeersFromSidecar({ forceRefresh: true });
-      }
+      // Path results arrive via WS peers_updated patches — avoid a full dump.
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] path ' + errLikeToLogString(e));
     } finally {
@@ -470,9 +470,7 @@ export default function ReticulumPeerListPanel({
       if (result.ok && result.hops != null) {
         useReticulumPeerStore.getState().updatePeer(hash, { hops: result.hops });
       }
-      if (result.ok) {
-        await refreshReticulumPeersFromSidecar({ forceRefresh: true });
-      }
+      // Probe hops applied locally; skip full path-table refresh.
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
     } finally {
