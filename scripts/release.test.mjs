@@ -63,6 +63,25 @@ describe('release.sh full-suite gate', () => {
     expect(script).toMatch(/assert_release_clis/);
   });
 
+  it('reads package.json version after pnpm version (never uses pnpm stdout as NEW_VERSION)', () => {
+    expect(script).not.toMatch(/^\s*NEW_VERSION=\$\(pnpm version\b/m);
+    expect(script).toMatch(/CLEAN_VERSION=\$\(read_package_version\)/);
+    expect(script).toMatch(/NEW_VERSION="v\$\{CLEAN_VERSION\}"/);
+    expect(script).toMatch(/prepend-metainfo-release\.mjs/);
+  });
+
+  it('supports --finish to complete a mid-release without re-bumping', () => {
+    expect(script).toMatch(/\[ "\$\{1:-\}" = "--finish" \]/);
+    expect(script).toMatch(/finish_pending_release/);
+    expect(script).toMatch(/pnpm run release --finish/);
+    // Finish path must not re-enter full preflight / update.
+    const finishFn = script.slice(script.indexOf('finish_pending_release()'));
+    const finishBody = finishFn.slice(0, finishFn.indexOf('\n}\n\n#'));
+    expect(finishBody).not.toMatch(/pnpm update\b/);
+    expect(finishBody).not.toMatch(/pnpm version\b/);
+    expect(finishBody).not.toMatch(/pnpm run test:run/);
+  });
+
   it('requires actionlint and yamllint (no soft-skip)', () => {
     expect(script).toMatch(/actionlint not found/);
     expect(script).toMatch(/yamllint not found/);

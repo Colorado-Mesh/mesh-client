@@ -60,6 +60,102 @@ PY
   return 0
 }
 
+METAINFO_FILE="flatpak/org.coloradomesh.MeshClient.metainfo.xml"
+
+read_package_version() {
+  node -p "require('./package.json').version"
+}
+
+assert_release_semver() {
+  local version="$1"
+  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    print_error "Invalid release version \"$version\" — expected X.Y.Z from package.json (never trust pnpm version stdout)."
+    return 1
+  fi
+  return 0
+}
+
+sync_metainfo_release() {
+  local version="$1"
+  local today
+  today=$(date +"%Y-%m-%d")
+  if [ ! -f "$METAINFO_FILE" ]; then
+    print_warning "MetaInfo file missing ($METAINFO_FILE); skipping release entry."
+    return 0
+  fi
+  node scripts/prepend-metainfo-release.mjs "$version" "$today"
+}
+
+commit_tag_and_push_release() {
+  local new_version="$1"
+  git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
+  [ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
+  git commit -m "chore: release $new_version"
+
+  print_header "Creating tag $new_version..."
+  git tag -a "$new_version" -m "Release $new_version"
+
+  print_header "Pushing to GitHub..."
+  git push origin main
+  git push origin "$new_version"
+
+  print_success "--------------------------------------------------------"
+  print_success "Success! $new_version has been pushed."
+  print_success "GitHub Actions will now begin building the distributables."
+  echo "Check progress at: https://github.com/Colorado-Mesh/mesh-client/actions"
+  print_warning "Releases are created as drafts — review artifacts, then publish on GitHub."
+  print_success "--------------------------------------------------------"
+}
+
+# Complete a mid-release bump (package.json already at the new version; no re-bump).
+finish_pending_release() {
+  print_header "Finishing pending release (no version bump)..."
+
+  local last_tag clean_version new_version last_tag_version
+  last_tag=$(git describe --tags --abbrev=0 2> /dev/null || echo "")
+  if [ -z "$last_tag" ]; then
+    print_error "Error: No tags found. Cannot finish a release without a previous tag."
+    exit 1
+  fi
+
+  clean_version=$(read_package_version)
+  if ! assert_release_semver "$clean_version"; then
+    exit 1
+  fi
+  new_version="v${clean_version}"
+  last_tag_version="${last_tag#v}"
+
+  if [ "$clean_version" = "$last_tag_version" ]; then
+    print_error "package.json version ($clean_version) equals latest tag ($last_tag). Nothing to finish."
+    exit 1
+  fi
+
+  if git rev-parse "$new_version" > /dev/null 2>&1; then
+    print_error "Tag $new_version already exists. Nothing to finish (or delete the bad tag first)."
+    exit 1
+  fi
+
+  echo "Verifying Flatpak MetaInfo matches package.json..."
+  if ! pnpm run check:flatpak; then
+    print_error "MetaInfo does not match package.json."
+    print_error "Do NOT re-run \`pnpm run release\` (that would bump again)."
+    print_error "Fix flatpak/org.coloradomesh.MeshClient.metainfo.xml top <release version=\"$clean_version\">, then: pnpm run release --finish"
+    exit 1
+  fi
+
+  generate_release_notes "$last_tag" "$new_version"
+
+  echo ""
+  echo -e "${BOLD}package.json is already at $clean_version. Commit, tag $new_version, and push?${NC} [y/N]"
+  read -r FINAL_CONFIRM
+  if [ "$FINAL_CONFIRM" != "y" ] && [ "$FINAL_CONFIRM" != "Y" ]; then
+    print_warning "Release finish cancelled."
+    exit 0
+  fi
+
+  commit_tag_and_push_release "$new_version"
+}
+
 # ====================== NEW: Generate nice copy-paste release notes ======================
 generate_release_notes() {
   local last_tag="$1"
@@ -166,32 +262,41 @@ detect_version_bump() {
   fi
 }
 
-# 1. Check if a version argument was provided or auto-detect
+# 1. Check if a version argument was provided or auto-detect / finish
 VERSION_TYPE=""
 AUTO_DETECT=false
+FINISH_ONLY=false
 
-if [ -z "$1" ] || [ "$1" = "--auto" ]; then
+if [ "${1:-}" = "--finish" ]; then
+  FINISH_ONLY=true
+elif [ -z "$1" ] || [ "$1" = "--auto" ]; then
   AUTO_DETECT=true
 elif [ "$1" = "patch" ] || [ "$1" = "minor" ] || [ "$1" = "major" ]; then
   VERSION_TYPE="$1"
 elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   VERSION_TYPE="$1"
 else
-  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto]"
+  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish]"
   echo "       pnpm run release               # Auto-detect from commits"
   echo "       pnpm run release --auto         # Explicit auto-detect"
   echo "       pnpm run release minor          # Force minor release"
   echo "       pnpm run release 2.0.0          # Force specific version"
+  echo "       pnpm run release --finish       # Complete mid-release (no re-bump)"
   exit 1
 fi
 
-# 2. Ensure we are on the main branch and up to date
+# 2. Ensure we are on the main branch
 print_header "Checking git status..."
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$CURRENT_BRANCH" != "main" ]; then
   print_error "Error: You must be on the main branch to release."
   print_error "Current branch: $CURRENT_BRANCH"
   exit 1
+fi
+
+if [ "$FINISH_ONLY" = true ]; then
+  finish_pending_release
+  exit 0
 fi
 
 git pull origin main
@@ -528,36 +633,23 @@ fi
 # ====================== Generate release notes ======================
 generate_release_notes "$LAST_TAG" "v$NEW_VERSION_PREVIEW"
 
-# 10. Bump version
+# 10. Bump version — never use `pnpm version` stdout as the version string (pnpm 11
+# prints a multi-line success banner that corrupted Flatpak MetaInfo).
 print_header "Bumping version..."
-NEW_VERSION=$(pnpm version "$VERSION_TYPE" --no-git-tag-version)
+pnpm version "$VERSION_TYPE" --no-git-tag-version > /dev/null
+CLEAN_VERSION=$(read_package_version)
+if ! assert_release_semver "$CLEAN_VERSION"; then
+  exit 1
+fi
+if [ "$CLEAN_VERSION" != "$NEW_VERSION_PREVIEW" ]; then
+  print_error "package.json version ($CLEAN_VERSION) does not match release preview ($NEW_VERSION_PREVIEW)."
+  exit 1
+fi
+NEW_VERSION="v${CLEAN_VERSION}"
 
 # 10a. Prepend a new <release> entry to the Flatpak MetaInfo file
-METAINFO_FILE="flatpak/org.coloradomesh.MeshClient.metainfo.xml"
-if [ -f "$METAINFO_FILE" ]; then
-  CLEAN_VERSION="${NEW_VERSION#v}"
-  TODAY=$(date +"%Y-%m-%d")
-  perl -i -pe "s|(<releases>)|\$1\n    <release version=\"${CLEAN_VERSION}\" date=\"${TODAY}\"/>|" "$METAINFO_FILE"
-  print_success "Updated $METAINFO_FILE with release $CLEAN_VERSION ($TODAY)"
-fi
+sync_metainfo_release "$CLEAN_VERSION"
+print_success "Updated $METAINFO_FILE with release $CLEAN_VERSION"
 
-# 11. Commit the version bump
-git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
-[ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
-git commit -m "chore: release $NEW_VERSION"
-
-# 12. Create the git tag
-print_header "Creating tag $NEW_VERSION..."
-git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
-
-# 13. Push to GitHub
-print_header "Pushing to GitHub..."
-git push origin main
-git push origin "$NEW_VERSION"
-
-print_success "--------------------------------------------------------"
-print_success "Success! $NEW_VERSION has been pushed."
-print_success "GitHub Actions will now begin building the distributables."
-echo "Check progress at: https://github.com/Colorado-Mesh/mesh-client/actions"
-print_warning "Releases are created as drafts — review artifacts, then publish on GitHub."
-print_success "--------------------------------------------------------"
+# 11–13. Commit, tag, push
+commit_tag_and_push_release "$NEW_VERSION"

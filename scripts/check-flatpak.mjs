@@ -8,6 +8,7 @@ import {
   flatpakWorkflowStoreVersionViolations,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
+import { metainfoVersionMismatchMessage } from './metainfoRelease.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -77,7 +78,7 @@ function checkMetainfoVersionMatchesPackage(pkg) {
   if (m[1] !== pkgVersion) {
     violations.push({
       file: rel,
-      message: `top <release version="${m[1]}"> does not match package.json version "${pkgVersion}" — re-run \`pnpm run release\` or update MetaInfo manually`,
+      message: metainfoVersionMismatchMessage(m[1], pkgVersion),
     });
   }
   return violations;

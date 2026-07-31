@@ -48,10 +48,11 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 ```bash
 git checkout main
 git pull origin main
-pnpm run release        # auto-detect bump from commits since last tag
-pnpm run release minor  # force minor
-pnpm run release 5.21.0 # force exact version
-pnpm run release --auto # explicit auto-detect
+pnpm run release          # auto-detect bump from commits since last tag
+pnpm run release minor    # force minor
+pnpm run release 5.21.0   # force exact version
+pnpm run release --auto   # explicit auto-detect
+pnpm run release --finish # complete a mid-release after package.json was already bumped
 ```
 
 The script prompts twice (start pre-flight, then confirm after checks pass). **Expect several minutes** for the full validation chain.
@@ -59,6 +60,16 @@ The script prompts twice (start pre-flight, then confirm after checks pass). **E
 **Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
 If pre-flight fails, fix the issue on `main` and run `pnpm run release` again — do not tag manually until checks pass.
+
+### Mid-release MetaInfo failure
+
+If `package.json` was already bumped but the Flatpak MetaInfo `<release>` entry is wrong/corrupt (or the release commit was blocked by `check:flatpak`):
+
+1. **Do not** re-run `pnpm run release` — that would bump again.
+2. Fix the top `<release version="…">` in `flatpak/org.coloradomesh.MeshClient.metainfo.xml` to match `package.json`’s `version`.
+3. Complete with `pnpm run release --finish` (commit + tag + push; no version bump, no full preflight replay).
+
+The version written into MetaInfo always comes from `package.json` after `pnpm version` (never from `pnpm version` stdout).
 
 ---
 
