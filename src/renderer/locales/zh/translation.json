@@ -865,7 +865,9 @@
         "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
         "dualProtocolContentionHint": "另一个协议可能仍在通过蓝牙连接。请等待几秒钟，然后重试，或切换到其他协议选项卡以检查其连接状态。",
         "scanBusy": "另一次蓝牙扫描正在进行中。稍后再试一次。",
-        "sameDeviceConflict": "该蓝牙设备已连接到 {{owner}}。"
+        "sameDeviceConflict": "该蓝牙设备已连接到 {{owner}}。",
+        "chooserCancelledHint": "如果您没有取消，请确保蓝牙已打开（systemctl status bluetooth），然后再次点击“连接”。在 Flatpak 上，重新安装允许蓝牙的版本，或使用 AppImage/.deb/.rpm。",
+        "bluetoothctlMissingHint": "操作系统蓝牙配对工具在此环境中不可用（在 Flatpak 中常见）。使用官方 AppImage、.deb 或 .rpm，或将无线电与主机 bluetoothctl 配对，然后重试连接。"
       }
     },
     "error": {

@@ -16,6 +16,7 @@ build-options:
 
 finish-args:
   - --device=all
+  - --allow=bluetooth
   - --share=network
   - --share=ipc
   - --socket=x11

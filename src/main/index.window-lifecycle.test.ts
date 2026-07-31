@@ -69,6 +69,26 @@ describe('navigation and window-open security', () => {
   });
 });
 
+describe('Linux Web Bluetooth device selection', () => {
+  it('imports and uses linuxWebBluetoothDeviceSelection for retain-first multi-fire', () => {
+    expect(INDEX_SOURCE).toContain("from './linuxWebBluetoothDeviceSelection'");
+    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery');
+    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.resolveSelection');
+    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.cancelSelection');
+    // Must not overwrite pending callback on every select-bluetooth-device event
+    const handlerIdx = INDEX_SOURCE.indexOf("on('select-bluetooth-device'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
+    expect(body).toContain('beginOrMergeDiscovery');
+    expect(body).not.toMatch(/pendingBluetoothCallback\s*=\s*callback/);
+  });
+
+  it('enables WebBluetooth blink features on Linux', () => {
+    expect(INDEX_SOURCE).toContain("'Serial,WebBluetooth'");
+    expect(INDEX_SOURCE).toContain("appendSwitch('enable-features', 'WebBluetooth')");
+  });
+});
+
 // ─── Session permission handlers ─────────────────────────────────────────────
 
 describe('session permission handlers', () => {

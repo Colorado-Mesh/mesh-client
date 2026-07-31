@@ -259,6 +259,14 @@ function checkManifestBranchAndElectronPayload(pkg) {
     });
   }
 
+  if (!yaml.includes('--allow=bluetooth')) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest finish-args must include --allow=bluetooth for Web Bluetooth (AF_BLUETOOTH)',
+    });
+  }
+
   return violations;
 }
 

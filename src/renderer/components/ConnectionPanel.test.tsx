@@ -635,6 +635,13 @@ describe('ConnectionPanel Linux BLE path', () => {
 
     expect(onConnect).toHaveBeenCalledWith('ble', undefined);
     expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+    const cancelOrder = vi.mocked(window.electronAPI.cancelBluetoothSelection).mock
+      .invocationCallOrder[0];
+    const connectOrder = onConnect.mock.invocationCallOrder[0];
+    expect(cancelOrder).toBeDefined();
+    expect(connectOrder).toBeDefined();
+    expect(cancelOrder).toBeLessThan(connectOrder);
     userAgentSpy.mockRestore();
   });
 

@@ -1145,6 +1145,11 @@ export default function ConnectionPanel({
         // Same-tick IPC: select-bluetooth-device can fire before React commits connectionType;
         // discovery uses connectionTypeRef for shouldShowEmbeddedPicker.
         connectionTypeRef.current = 'ble';
+        // Clear any stale Chromium chooser session before a new requestDevice().
+        window.electronAPI.cancelBluetoothSelection();
+        pendingMeshcoreLinuxWbMacRef.current = null;
+        bleLinuxPickerSelectionResolvedRef.current = false;
+        setShowBlePicker(false);
         try {
           console.debug('[ConnectionPanel] handleConnect calling onConnect');
           await onConnect('ble', undefined);
