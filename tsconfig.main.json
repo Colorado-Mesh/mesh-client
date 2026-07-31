@@ -21,6 +21,7 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/shared/**/*",
+    "src/architecture/**/*",
     "src/main/types/**/*",
     "vitest.harness.ts",
     "vitest.harness.test.ts"

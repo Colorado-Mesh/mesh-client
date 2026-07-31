@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useMapLayerStore } from '../stores/mapLayerStore';
@@ -332,6 +333,7 @@ describe('MapPanel accessibility', () => {
     );
     // Exclude the mocked leaflet map container from axe scope
     // (third-party DOM with potentially non-standard attributes)
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 
 describe('FirmwareStatusIndicator', () => {
@@ -64,6 +65,7 @@ describe('FirmwareStatusIndicator', () => {
     const { container } = render(
       <FirmwareStatusIndicator phase="checking" onOpenReleases={noop} />,
     );
+    hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -71,6 +73,7 @@ describe('FirmwareStatusIndicator', () => {
     const { container } = render(
       <FirmwareStatusIndicator phase="up-to-date" onOpenReleases={noop} />,
     );
+    hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -82,6 +85,7 @@ describe('FirmwareStatusIndicator', () => {
         onOpenReleases={noop}
       />,
     );
+    hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

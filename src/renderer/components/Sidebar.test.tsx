@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import Sidebar from './Sidebar';
 
 const defaultProps = {
@@ -198,7 +199,9 @@ describe('Sidebar', () => {
         onToggle={vi.fn()}
       />,
     );
-    expect(await axe(screen.getByText('99+'))).toHaveNoViolations();
+    const badge = screen.getByText('99+');
+    hydrateAxeThemeColors(badge);
+    expect(await axe(badge)).toHaveNoViolations();
   });
 
   it('shows Rooms unread badge when roomsUnread > 0', () => {
@@ -299,7 +302,9 @@ describe('Sidebar', () => {
         onToggle={vi.fn()}
       />,
     );
-    expect(await axe(screen.getByText('3'))).toHaveNoViolations();
+    const roomsBadge = screen.getByText('3');
+    hydrateAxeThemeColors(roomsBadge);
+    expect(await axe(roomsBadge)).toHaveNoViolations();
   });
 
   it('has no axe violations when Rooms unread badge shows 99+', async () => {
@@ -315,7 +320,9 @@ describe('Sidebar', () => {
         onToggle={vi.fn()}
       />,
     );
-    expect(await axe(screen.getByText('99+'))).toHaveNoViolations();
+    const roomsBadge99 = screen.getByText('99+');
+    hydrateAxeThemeColors(roomsBadge99);
+    expect(await axe(roomsBadge99)).toHaveNoViolations();
   });
 
   it('does not show Chat and Rooms badges on the same tab (mutually exclusive slot ids)', () => {

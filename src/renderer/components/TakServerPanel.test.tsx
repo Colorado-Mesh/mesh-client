@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import TakServerPanel from './TakServerPanel';
 
 describe('TakServerPanel', () => {
@@ -138,6 +139,7 @@ describe('TakServerPanel', () => {
   it('has no axe accessibility violations', async () => {
     const { container } = render(<TakServerPanel />);
     await act(async () => {});
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

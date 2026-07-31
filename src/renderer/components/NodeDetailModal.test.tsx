@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
@@ -117,6 +118,7 @@ describe('NodeDetailModal accessibility', () => {
         homeNode={null}
       />,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { enrichMeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
 import { renderWithToast } from '../lib/testRenderHelpers';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
@@ -136,6 +137,7 @@ describe('MeshcoreContactSettingsSection consistency', () => {
         onApply={vi.fn()}
       />,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

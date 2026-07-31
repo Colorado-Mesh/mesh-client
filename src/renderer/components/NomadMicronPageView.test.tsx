@@ -2,6 +2,7 @@ import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import NomadMicronPageView from './NomadMicronPageView';
 
 const LXMF_HASH = '368f994c056de0d8882855eb0d627497';
@@ -43,6 +44,7 @@ describe('NomadMicronPageView', () => {
     const { container } = render(
       <NomadMicronPageView {...defaultProps} content="`!Nomad page:`!\n`[Link`:/page/other.mu`]" />,
     );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

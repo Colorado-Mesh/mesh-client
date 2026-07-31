@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { MESHCORE_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import TelemetryPanel from './TelemetryPanel';
 
@@ -30,6 +31,7 @@ describe('TelemetryPanel', () => {
     expect(
       screen.getByRole('img', { name: /Temperature and humidity chart/i }),
     ).toHaveAccessibleName(/21\.3/);
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
