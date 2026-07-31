@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RemotePathCapabilityChip } from '@/renderer/components/remote/RemotePathCapabilityChip';
 import { useToast } from '@/renderer/components/Toast';
 import { useRemotePathCapability } from '@/renderer/hooks/useRemotePathCapability';
+import { ensureRncpDestinationReachable } from '@/renderer/lib/ensureRncpDestinationReachable';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import i18n from '@/renderer/lib/i18n';
 import { pushRncpListenerPolicy } from '@/renderer/lib/pushRncpListenerPolicy';
@@ -73,6 +75,8 @@ export function RemoteTransferSection({
   const [remotePath, setRemotePath] = useState('');
   const [pickedFile, setPickedFile] = useState<string | null>(null);
   const [pickedSaveDir, setPickedSaveDir] = useState<string | null>(null);
+  const [enableRequestConfirmOpen, setEnableRequestConfirmOpen] = useState(false);
+  const [transferBusy, setTransferBusy] = useState(false);
   const [identity, setIdentity] = useState<{
     identity_hash: string | null;
     rncp_receive_hash: string | null;
@@ -81,6 +85,32 @@ export function RemoteTransferSection({
   const parsedHash = parseReticulumDestinationInput(destinationInput);
   const { capability, loading: capabilityLoading } = useRemotePathCapability(parsedHash);
   const transferAllowed = capability?.transfer_allowed ?? false;
+
+  const resolveLxmfPeerHash = useCallback((destinationHash: string): string | null => {
+    const savedForDest = useReticulumRemoteAddressStore
+      .getState()
+      .findByDestination(destinationHash, 'rncp');
+    const peer = savedForDest?.lxmf_peer_hash?.trim().toLowerCase() ?? '';
+    return /^[0-9a-f]{32}$/.test(peer) ? peer : null;
+  }, []);
+
+  /** Returns true when the transfer may proceed. */
+  const assertReachableForTransfer = useCallback(
+    async (destinationHash: string, opts: { promptEnable: boolean }): Promise<boolean> => {
+      const reach = await ensureRncpDestinationReachable({
+        destinationHash,
+        lxmfPeerHash: resolveLxmfPeerHash(destinationHash),
+      });
+      if (reach.status === 'reachable') return true;
+      if (reach.status === 'listenerLikelyOff' && opts.promptEnable) {
+        setEnableRequestConfirmOpen(true);
+        return false;
+      }
+      addToast(t('reticulumRemote.transfer.peerUnreachable'), 'error');
+      return false;
+    },
+    [addToast, resolveLxmfPeerHash, t],
+  );
 
   useEffect(() => {
     if (!sidecarRunning) {
@@ -114,7 +144,9 @@ export function RemoteTransferSection({
 
   const handleSend = useCallback(async () => {
     if (!parsedHash || !pickedFile) return;
+    setTransferBusy(true);
     try {
+      if (!(await assertReachableForTransfer(parsedHash, { promptEnable: true }))) return;
       const res = await window.electronAPI.reticulum.rncp.send({
         destination_hash: parsedHash,
         path: pickedFile,
@@ -137,12 +169,16 @@ export function RemoteTransferSection({
     } catch (e) {
       console.debug('[RemoteTransferSection] send ' + errLikeToLogString(e));
       addToast(t('reticulumRemote.transfer.sendFailed', { error: errLikeToLogString(e) }), 'error');
+    } finally {
+      setTransferBusy(false);
     }
-  }, [addToast, parsedHash, pickedFile, startTransfer, t]);
+  }, [addToast, assertReachableForTransfer, parsedHash, pickedFile, startTransfer, t]);
 
   const handleFetch = useCallback(async () => {
     if (!parsedHash || !remotePath.trim()) return;
+    setTransferBusy(true);
     try {
+      if (!(await assertReachableForTransfer(parsedHash, { promptEnable: true }))) return;
       const res = await window.electronAPI.reticulum.rncp.fetch({
         destination_hash: parsedHash,
         remote_path: remotePath.trim(),
@@ -171,8 +207,18 @@ export function RemoteTransferSection({
         t('reticulumRemote.transfer.fetchFailed', { error: errLikeToLogString(e) }),
         'error',
       );
+    } finally {
+      setTransferBusy(false);
     }
-  }, [addToast, parsedHash, pickedSaveDir, remotePath, startTransfer, t]);
+  }, [
+    addToast,
+    assertReachableForTransfer,
+    parsedHash,
+    pickedSaveDir,
+    remotePath,
+    startTransfer,
+    t,
+  ]);
 
   const handleCancel = useCallback(async (transferId: string) => {
     try {
@@ -192,6 +238,12 @@ export function RemoteTransferSection({
       // record with the incremented count so auto-retry still honors maxRetry.
       const nextRetryCount = incrementRetry(transferId);
       try {
+        // Do not open the enable-request modal from auto/manual retry loops.
+        if (
+          !(await assertReachableForTransfer(transfer.destination_hash, { promptEnable: false }))
+        ) {
+          return;
+        }
         if ('path' in transfer.retryArgs) {
           const res = await window.electronAPI.reticulum.rncp.send({
             destination_hash: transfer.destination_hash,
@@ -228,7 +280,7 @@ export function RemoteTransferSection({
         console.warn('[RemoteTransferSection] retry ' + errLikeToLogString(e));
       }
     },
-    [incrementRetry, startTransfer, transfers],
+    [assertReachableForTransfer, incrementRetry, startTransfer, transfers],
   );
 
   // Auto-retry each failed transfer once per failure, up to the configured cap.
@@ -321,13 +373,15 @@ export function RemoteTransferSection({
     }
     // Request enable must target the peer's LXMF delivery hash. Prefer the saved
     // lxmf_peer_hash when the destination field holds an rncp.receive hash.
-    const savedForDest = useReticulumRemoteAddressStore
-      .getState()
-      .findByDestination(parsedHash, 'rncp');
-    const peerLxmfHash = savedForDest?.lxmf_peer_hash?.trim() || parsedHash;
+    const peerLxmfHash = resolveLxmfPeerHash(parsedHash) ?? parsedHash;
     const res = await sendRncpRequestEnable(peerLxmfHash);
     toastRncpRequestEnableResult(res, addToast, t);
-  }, [addToast, parsedHash, t]);
+  }, [addToast, parsedHash, resolveLxmfPeerHash, t]);
+
+  const handleConfirmEnableRequest = useCallback(() => {
+    setEnableRequestConfirmOpen(false);
+    void handleRequestEnable();
+  }, [handleRequestEnable]);
 
   const handleCopyInstructions = useCallback(() => {
     const text = buildRncpRequestEnableMessageBody(
@@ -523,12 +577,17 @@ export function RemoteTransferSection({
             </span>
             <button
               type="button"
-              disabled={!sidecarRunning || !parsedHash || !pickedFile || !transferAllowed}
+              disabled={
+                !sidecarRunning || !parsedHash || !pickedFile || !transferAllowed || transferBusy
+              }
               aria-label={t('reticulumRemote.transfer.sendAria')}
+              aria-busy={transferBusy}
               onClick={() => void handleSend()}
               className="rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
             >
-              {t('reticulumRemote.transfer.send')}
+              {transferBusy
+                ? t('reticulumRemote.transfer.checkingReachability')
+                : t('reticulumRemote.transfer.send')}
             </button>
           </div>
         ) : (
@@ -556,12 +615,21 @@ export function RemoteTransferSection({
             </span>
             <button
               type="button"
-              disabled={!sidecarRunning || !parsedHash || !remotePath.trim() || !transferAllowed}
+              disabled={
+                !sidecarRunning ||
+                !parsedHash ||
+                !remotePath.trim() ||
+                !transferAllowed ||
+                transferBusy
+              }
               aria-label={t('reticulumRemote.transfer.fetchAria')}
+              aria-busy={transferBusy}
               onClick={() => void handleFetch()}
               className="rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
             >
-              {t('reticulumRemote.transfer.fetch')}
+              {transferBusy
+                ? t('reticulumRemote.transfer.checkingReachability')
+                : t('reticulumRemote.transfer.fetch')}
             </button>
           </div>
         )}
@@ -632,6 +700,17 @@ export function RemoteTransferSection({
           ))
         )}
       </div>
+      {enableRequestConfirmOpen && (
+        <ConfirmModal
+          title={t('reticulumRemote.transfer.listenerLikelyOffTitle')}
+          message={t('reticulumRemote.transfer.listenerLikelyOffBody')}
+          confirmLabel={t('reticulumRemote.transfer.listenerLikelyOffConfirm')}
+          onConfirm={handleConfirmEnableRequest}
+          onCancel={() => {
+            setEnableRequestConfirmOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

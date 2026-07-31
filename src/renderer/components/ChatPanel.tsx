@@ -151,6 +151,7 @@ import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
+import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import {
   ReticulumDmPathActions,
@@ -3035,6 +3036,12 @@ function ChatPanel({
       />
 
       {/* Compose emoji picker — Linux only; macOS/Windows use native showEmojiPanel() */}
+      {protocol === 'reticulum' &&
+        hasRncpTransfer &&
+        isDmMode &&
+        reticulumDmDestinationHash != null && (
+          <ChatDmRncpOfferBanner lxmfPeerHash={reticulumDmDestinationHash} />
+        )}
       <ChatComposer
         className="mt-1"
         protocol={protocol}

@@ -602,7 +602,6 @@
       "rememberAddress": "この住所を記憶する",
       "rememberAddressAria": "このピアのこのrncp宛先を覚えておいてください",
       "chooseAndSend": "ファイルを選択して送信…",
-      "sending": "送信中・・・",
       "sendStarted": "{{file}}を送信中…",
       "sendFailed": "次の送信に失敗しました： {{error}}",
       "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
@@ -623,7 +622,9 @@
       "forgetAddress": "保存された行き先を忘れる",
       "forgetAddressAria": "このピアの保存されたrncp受信先を削除します",
       "forgotAddressToast": "このピアの保存されたrncp宛先を忘れました。",
-      "filledFromChatToast": "チャットから移動先を入力します（保存されていません。忘れずに保存するようにチェックしてください）。"
+      "filledFromChatToast": "チャットから移動先を入力します（保存されていません。忘れずに保存するようにチェックしてください）。",
+      "offerBannerTitle": "受信ファイルオファー",
+      "offerBannerTitleAria": "このピアからの保留中の受信ファイル オファー"
     },
     "shareLocation": "位置情報を共有する",
     "shareLocationLabel": "📍 共有場所",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "手順をコピー",
       "instructionsCopied": "手順をコピーしました。",
       "receiveDestSharedToast": "{{peer}} の rncp 受信先を保存しました — ファイルを送信できます。",
-      "receiveDestShareFailed": "ピアの rncp 受信先を保存できませんでした。"
+      "receiveDestShareFailed": "ピアの rncp 受信先を保存できませんでした。",
+      "peerUnreachable": "その目的地への道はありません。ピアがオフラインである可能性があります。",
+      "checkingReachability": "到達可能性を確認しています…",
+      "listenerLikelyOffTitle": "ファイル受信がオフになっている可能性があります",
+      "listenerLikelyOffBody": "ファイルの受信先へのパスはありませんが、オンラインでチャットを探しています。ファイル受信を有効にするよう依頼して (リモート → 設定 → 受信ファイル オファー)、もう一度試してください。",
+      "listenerLikelyOffConfirm": "有効化リクエストを送信する"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",

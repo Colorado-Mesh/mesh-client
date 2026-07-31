@@ -601,7 +601,6 @@
       "rememberAddress": "Diese Adresse merken",
       "rememberAddressAria": "Merken Sie sich dieses rncp-Ziel für diesen Peer",
       "chooseAndSend": "Datei auswählen & senden...",
-      "sending": "Senden…",
       "sendStarted": "{{file}} wird gesendet...",
       "sendFailed": "Senden fehlgeschlagen: {{error}}",
       "newOfferToast": "{{peer}} möchte dir eine Datei senden: {{file}}",
@@ -622,7 +621,9 @@
       "forgetAddress": "Gespeichertes Ziel vergessen",
       "forgetAddressAria": "Entfernen Sie das gespeicherte rncp-Empfangsziel für diesen Peer",
       "forgotAddressToast": "Gespeichertes rncp-Ziel für diesen Peer vergessen.",
-      "filledFromChatToast": "Gefülltes Ziel aus dem Chat (nicht gespeichert — aktivieren Sie Denken Sie daran, es zu behalten)."
+      "filledFromChatToast": "Gefülltes Ziel aus dem Chat (nicht gespeichert — aktivieren Sie Denken Sie daran, es zu behalten).",
+      "offerBannerTitle": "Eingehende Dateiangebote",
+      "offerBannerTitleAria": "Ausstehende eingehende Dateiangebote von diesem Peer"
     },
     "shareLocation": "Standort teilen",
     "shareLocationLabel": "📍 Geteilter Standort",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Anweisungen kopieren",
       "instructionsCopied": "Anweisungen kopiert.",
       "receiveDestSharedToast": "rncp-Empfangsziel von {{peer}} gespeichert — Sie können jetzt eine Datei senden.",
-      "receiveDestShareFailed": "Das RNCP-Empfangsziel des Peers konnte nicht gespeichert werden."
+      "receiveDestShareFailed": "Das RNCP-Empfangsziel des Peers konnte nicht gespeichert werden.",
+      "peerUnreachable": "Kein Weg zu diesem Ziel. Der Peer ist möglicherweise offline.",
+      "checkingReachability": "Erreichbarkeit prüfen…",
+      "listenerLikelyOffTitle": "Möglicherweise ist der Dateiempfang deaktiviert",
+      "listenerLikelyOffBody": "Kein Pfad zu ihrem Dateiempfangsziel, aber sie suchen online nach Chat. Bitten Sie sie, den Dateiempfang zu aktivieren (Remote → Einstellungen → Angebote für eingehende Dateien) und versuchen Sie es dann erneut.",
+      "listenerLikelyOffConfirm": "Aktivierungsanfrage senden"
     },
     "enableRequest": {
       "title": "Dateiempfang aktivieren?",

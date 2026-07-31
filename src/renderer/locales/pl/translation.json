@@ -601,7 +601,6 @@
       "rememberAddress": "Zapamiętaj ten adres",
       "rememberAddressAria": "Zapamiętaj to miejsce docelowe rncp dla tego partnera",
       "chooseAndSend": "Wybierz plik i wyślij...",
-      "sending": "Wysyłanie…",
       "sendStarted": "Wysyłanie: {{file}}…",
       "sendFailed": "Nie udało się wysłać: {{error}}",
       "newOfferToast": "{{peer}} chce wysłać Ci plik: {{file}}",
@@ -624,7 +623,9 @@
       "forgetAddress": "Zapomnij o zapisanym miejscu docelowym",
       "forgetAddressAria": "Usuń zapisane miejsce docelowe odbioru rncp dla tego partnera",
       "forgotAddressToast": "Nie pamiętasz zapisanego miejsca docelowego rncp dla tego partnera.",
-      "filledFromChatToast": "Wypełnione miejsce docelowe z czatu (niezapisane — zaznacz Pamiętaj, aby je zachować)."
+      "filledFromChatToast": "Wypełnione miejsce docelowe z czatu (niezapisane — zaznacz Pamiętaj, aby je zachować).",
+      "offerBannerTitle": "Przychodzące oferty plików",
+      "offerBannerTitleAria": "Oczekujące oferty plików przychodzących od tego partnera"
     },
     "shareLocation": "Udostępnij lokalizację",
     "shareLocationLabel": "📍 Udostępniona lokalizacja",
@@ -4883,7 +4884,12 @@
       "copyInstructions": "Kopiuj instrukcje",
       "instructionsCopied": "Skopiowano instrukcje.",
       "receiveDestSharedToast": "Zapisano miejsce docelowe odbioru rncp użytkownika {{peer}} — możesz teraz wysłać plik.",
-      "receiveDestShareFailed": "Nie można zapisać miejsca docelowego odbioru rncp urządzenia równorzędnego."
+      "receiveDestShareFailed": "Nie można zapisać miejsca docelowego odbioru rncp urządzenia równorzędnego.",
+      "peerUnreachable": "Żadnej drogi do tego celu. Partner może być offline.",
+      "checkingReachability": "Sprawdzam osiągalność…",
+      "listenerLikelyOffTitle": "Odbieranie plików może być wyłączone",
+      "listenerLikelyOffBody": "Brak ścieżki do miejsca docelowego odbioru pliku, ale szukają czatu w Internecie. Poproś o włączenie odbierania plików (Zdalne → Ustawienia → Oferty plików przychodzących), a następnie spróbuj ponownie.",
+      "listenerLikelyOffConfirm": "Wyślij prośbę o włączenie"
     },
     "enableRequest": {
       "title": "Włączyć odbiór plików?",

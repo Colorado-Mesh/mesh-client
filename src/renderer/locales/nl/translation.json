@@ -600,7 +600,6 @@
       "rememberAddress": "Dit adres onthouden",
       "rememberAddressAria": "Onthoud deze rncp-bestemming voor deze collega",
       "chooseAndSend": "Bestand kiezen en verzenden...",
-      "sending": "Versturen...",
       "sendStarted": "{{file}} verzenden…",
       "sendFailed": "Verzenden mislukt: {{error}}",
       "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
@@ -621,7 +620,9 @@
       "forgetAddress": "Opgeslagen bestemming vergeten",
       "forgetAddressAria": "Verwijder de opgeslagen rncp-ontvangstbestemming voor deze peer",
       "forgotAddressToast": "Opgeslagen rncp-bestemming voor deze peer vergeten.",
-      "filledFromChatToast": "Gevuld doel van chat (niet opgeslagen — vink Vergeet niet om het te bewaren)."
+      "filledFromChatToast": "Gevuld doel van chat (niet opgeslagen — vink Vergeet niet om het te bewaren).",
+      "offerBannerTitle": "Inkomende bestandsaanbiedingen",
+      "offerBannerTitleAria": "In afwachting van inkomende bestandsaanbiedingen van deze peer"
     },
     "shareLocation": "Deel locatie",
     "shareLocationLabel": "📍 Gedeelde locatie",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Kopieer instructies",
       "instructionsCopied": "Instructies gekopieerd.",
       "receiveDestSharedToast": "rncp-ontvangstbestemming van {{peer}} opgeslagen — u kunt nu een bestand verzenden.",
-      "receiveDestShareFailed": "Kan de rncp-ontvangstbestemming van de peer niet opslaan."
+      "receiveDestShareFailed": "Kan de rncp-ontvangstbestemming van de peer niet opslaan.",
+      "peerUnreachable": "Geen pad naar die bestemming. De peer is mogelijk offline.",
+      "checkingReachability": "Bereikbaarheid controleren...",
+      "listenerLikelyOffTitle": "Het ontvangen van bestanden is mogelijk uitgeschakeld",
+      "listenerLikelyOffBody": "Er is geen pad naar de bestemming van hun bestand, maar ze zoeken online naar chat. Vraag hen om het ontvangen van bestanden in te schakelen (Op afstand → Instellingen → Inkomende bestandsaanbiedingen) en probeer het vervolgens opnieuw.",
+      "listenerLikelyOffConfirm": "Inschakelverzoek verzenden"
     },
     "enableRequest": {
       "title": "Bestandsontvangst inschakelen?",

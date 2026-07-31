@@ -2,6 +2,7 @@ import { Upload } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RemotePathCapabilityChip } from '@/renderer/components/remote/RemotePathCapabilityChip';
 import { useToast } from '@/renderer/components/Toast';
 import { useRemotePathCapability } from '@/renderer/hooks/useRemotePathCapability';
@@ -9,6 +10,7 @@ import {
   findLatestRncpReceiveDestShareInDmCandidates,
   type RncpDmShareCandidate,
 } from '@/renderer/lib/applyRncpReceiveDestShareFromChatHistory';
+import { ensureRncpDestinationReachable } from '@/renderer/lib/ensureRncpDestinationReachable';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import { rncpOfferMatchesLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
@@ -84,6 +86,7 @@ export function ChatDmRncpControl({
   const [destinationInput, setDestinationInput] = useState(savedAddress?.destination_hash ?? '');
   const [rememberAddress, setRememberAddress] = useState(false);
   const [sending, setSending] = useState(false);
+  const [enableRequestConfirmOpen, setEnableRequestConfirmOpen] = useState(false);
   const [localTransferIds, setLocalTransferIds] = useState<string[]>([]);
   const chatShareAppliedRef = useRef<string | null>(null);
   const notifiedTerminalRef = useRef(new Set<string>());
@@ -191,10 +194,22 @@ export function ChatDmRncpControl({
       addToast(t('reticulumRemote.errors.invalidAddress'), 'error');
       return;
     }
-    const picked = await window.electronAPI.reticulum.rncp.showOpenFileDialog();
-    if (picked.canceled || !picked.path) return;
     setSending(true);
     try {
+      const reach = await ensureRncpDestinationReachable({
+        destinationHash: parsedHash,
+        lxmfPeerHash,
+      });
+      if (reach.status === 'peerUnreachable') {
+        addToast(t('reticulumRemote.transfer.peerUnreachable'), 'error');
+        return;
+      }
+      if (reach.status === 'listenerLikelyOff') {
+        setEnableRequestConfirmOpen(true);
+        return;
+      }
+      const picked = await window.electronAPI.reticulum.rncp.showOpenFileDialog();
+      if (picked.canceled || !picked.path) return;
       const res = await window.electronAPI.reticulum.rncp.send({
         destination_hash: parsedHash,
         path: picked.path,
@@ -293,6 +308,11 @@ export function ChatDmRncpControl({
       }
     }
   }, [addToast, dmShareCandidates, lxmfPeerHash, t]);
+
+  const handleConfirmEnableRequest = useCallback(() => {
+    setEnableRequestConfirmOpen(false);
+    void handleRequestEnable();
+  }, [handleRequestEnable]);
 
   const handleUseFromChat = useCallback(() => {
     const fromDm = findLatestRncpReceiveDestShareInDmCandidates(dmShareCandidates);
@@ -501,10 +521,13 @@ export function ChatDmRncpControl({
             type="button"
             disabled={!parsedHash || sending}
             aria-label={t('reticulumRemote.transfer.sendAria')}
+            aria-busy={sending}
             onClick={() => void handleSend()}
             className="w-full rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
           >
-            {sending ? t('chatPanel.rncp.sending') : t('chatPanel.rncp.chooseAndSend')}
+            {sending
+              ? t('reticulumRemote.transfer.checkingReachability')
+              : t('chatPanel.rncp.chooseAndSend')}
           </button>
           {!savedAddress && (
             <button
@@ -529,6 +552,17 @@ export function ChatDmRncpControl({
             {t('chatPanel.rncp.requestEnable')}
           </button>
         </div>
+      )}
+      {enableRequestConfirmOpen && (
+        <ConfirmModal
+          title={t('reticulumRemote.transfer.listenerLikelyOffTitle')}
+          message={t('reticulumRemote.transfer.listenerLikelyOffBody')}
+          confirmLabel={t('reticulumRemote.transfer.listenerLikelyOffConfirm')}
+          onConfirm={handleConfirmEnableRequest}
+          onCancel={() => {
+            setEnableRequestConfirmOpen(false);
+          }}
+        />
       )}
     </div>
   );

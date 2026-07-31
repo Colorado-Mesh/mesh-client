@@ -238,6 +238,39 @@ describe('Sidebar', () => {
     expect(screen.getByRole('tab', { name: 'RRC, 7 unread' })).toBeInTheDocument();
   });
 
+  it('shows Remote pending-offer badge when remotePendingOffers > 0', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Remote']}
+        tabSlotIds={['Remote']}
+        active={0}
+        onChange={onChange}
+        remotePendingOffers={2}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /2 pending inbound file offers/i })).toBeInTheDocument();
+  });
+
+  it('hides Remote badge when remotePendingOffers is 0', () => {
+    render(
+      <Sidebar
+        tabs={['Remote']}
+        tabSlotIds={['Remote']}
+        active={0}
+        onChange={vi.fn()}
+        remotePendingOffers={0}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Remote' })).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
   it('hides RRC unread badge when rrcUnread is 0', () => {
     const onChange = vi.fn();
     render(
