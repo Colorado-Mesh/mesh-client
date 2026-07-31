@@ -702,7 +702,12 @@ export function ReticulumInterfacesPanel({
         });
         if (synced) {
           addToast(t('connectionPanel.reticulumRmap.syncSuccess'), 'success');
-          await onRefresh();
+          try {
+            await onRefresh();
+          } catch (e) {
+            // catch-no-log-ok refresh failure must not mask successful RMAP sync
+            console.debug('[ReticulumInterfacesPanel] rmap sync refresh ' + errLikeToLogString(e));
+          }
           setShowRmapRestartConfirm(true);
         }
       } catch (e) {
@@ -737,7 +742,12 @@ export function ReticulumInterfacesPanel({
             : t('connectionPanel.reticulumInterfaces.rmapDisableSuccess', { name: iface.name }),
           'success',
         );
-        await onRefresh();
+        try {
+          await onRefresh();
+        } catch (e) {
+          // catch-no-log-ok refresh failure must not mask successful RMAP toggle
+          console.debug('[ReticulumInterfacesPanel] rmap toggle refresh ' + errLikeToLogString(e));
+        }
         setShowRmapRestartConfirm(true);
       } catch (e) {
         if (e instanceof ReticulumRmapGpsRequiredError) {
