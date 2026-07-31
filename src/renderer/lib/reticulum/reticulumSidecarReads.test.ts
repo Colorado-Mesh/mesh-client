@@ -64,10 +64,13 @@ describe('reticulumSidecarReads', () => {
     ).toBe(true);
   });
 
-  it('fetchReticulumInterfaces rethrows rate-limit errors for poll backoff', async () => {
+  it('fetchReticulumInterfaces rethrows rate-limit only when propagateRateLimit is set', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyGet.mockRejectedValue(new Error('reticulum:proxy: rate limit exceeded'));
-    await expect(fetchReticulumInterfaces()).rejects.toThrow('rate limit exceeded');
+    await expect(fetchReticulumInterfaces()).resolves.toEqual([]);
+    await expect(fetchReticulumInterfaces({ propagateRateLimit: true })).rejects.toThrow(
+      'rate limit exceeded',
+    );
   });
 
   it('fetchReticulumIdentityStatus skips proxyGet when sidecar is down', async () => {

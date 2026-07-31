@@ -119,8 +119,18 @@ export function getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(): stri
   return cachedEffectivePrimaryLocalSerialInterfaceId;
 }
 
+export interface FetchReticulumSidecarReadOpts {
+  /**
+   * When true, rate-limit errors are rethrown so pollers can back off.
+   * Default false: return cached rows (or []) so unguarded callers keep working.
+   */
+  propagateRateLimit?: boolean;
+}
+
 /** Fetch OS serial port options from the sidecar (shared cache with path-only helper). */
-export async function fetchReticulumSerialPortOptions(): Promise<ReticulumSerialPortOption[]> {
+export async function fetchReticulumSerialPortOptions(
+  opts?: FetchReticulumSidecarReadOpts,
+): Promise<ReticulumSerialPortOption[]> {
   if (!(await isReticulumSidecarRunning())) {
     cachedReticulumSerialPorts = [];
     cachedReticulumSerialPortsAt = 0;
@@ -142,7 +152,7 @@ export async function fetchReticulumSerialPortOptions(): Promise<ReticulumSerial
     cachedReticulumSerialPortsAt = now;
     return ports;
   } catch (e) {
-    if (isReticulumSidecarRateLimitError(e)) {
+    if (opts?.propagateRateLimit && isReticulumSidecarRateLimitError(e)) {
       throw e instanceof Error ? e : new Error(String(e));
     }
     if (!isReticulumSidecarExpectedProxyError(e)) {
@@ -156,13 +166,17 @@ export async function fetchReticulumSerialPortOptions(): Promise<ReticulumSerial
 }
 
 /** Fetch OS serial port paths from the sidecar (for local interface health checks). */
-export async function fetchReticulumSerialPorts(): Promise<string[]> {
-  const ports = await fetchReticulumSerialPortOptions();
+export async function fetchReticulumSerialPorts(
+  opts?: FetchReticulumSidecarReadOpts,
+): Promise<string[]> {
+  const ports = await fetchReticulumSerialPortOptions(opts);
   return ports.map((p) => p.path);
 }
 
 /** Fetch configured sidecar interfaces (shared by runtime and Connection panel). */
-export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterfaceRow[]> {
+export async function fetchReticulumInterfaces(
+  opts?: FetchReticulumSidecarReadOpts,
+): Promise<ReticulumSidecarInterfaceRow[]> {
   if (!(await isReticulumSidecarRunning())) {
     cachedReticulumInterfaces = [];
     cachedEffectivePrimaryLocalSerialInterfaceId = null;
@@ -188,7 +202,7 @@ export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterf
     cachedReticulumInterfacesAt = now;
     return interfaces;
   } catch (e) {
-    if (isReticulumSidecarRateLimitError(e)) {
+    if (opts?.propagateRateLimit && isReticulumSidecarRateLimitError(e)) {
       throw e instanceof Error ? e : new Error(String(e));
     }
     if (!isReticulumSidecarExpectedProxyError(e)) {

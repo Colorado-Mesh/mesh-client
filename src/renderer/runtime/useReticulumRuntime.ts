@@ -480,7 +480,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const scheduleFullPeerRefresh = useCallback(() => {
     const peerCount = useReticulumPeerStore.getState().peers.size;
     const onRefresh = () => {
-      void refreshContactsFromSidecar();
+      void refreshContactsFromSidecar().catch(() => {
+        // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+      });
       void syncDiagnosticsFromSidecar();
     };
     if (peerCount > LARGE_MESH_NODE_THRESHOLD) {
@@ -1529,7 +1531,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
       return;
     }
-    void refreshContactsFromSidecar();
+    void refreshContactsFromSidecar().catch(() => {
+      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+    });
     void refreshSelfNodeDisplayNameFromSidecar();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const scheduleNext = () => {
@@ -1553,6 +1557,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
         void refreshContactsFromSidecar({
           skipNomad: count > LARGE_MESH_NODE_THRESHOLD,
+        }).catch(() => {
+          // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
         });
         void refreshSelfNodeDisplayNameFromSidecar();
         scheduleNext();
@@ -1633,7 +1639,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
     const tick = async () => {
       try {
-        const health = await refreshLocalInterfacesFromSidecar();
+        // Propagate rate-limit so we can back off; other refreshLocalInterfaces
+        // callers keep the cached-fallback default.
+        const [interfaces, osSerialPorts] = await Promise.all([
+          fetchReticulumInterfaces({ propagateRateLimit: true }),
+          fetchReticulumSerialPorts({ propagateRateLimit: true }),
+        ]);
+        localInterfacesRef.current = interfaces;
+        logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+        const health = { interfaces, osSerialPorts };
         if (cancelled) return;
         const peerCount = useReticulumPeerStore.getState().peers.size;
         // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy
@@ -1665,7 +1679,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       localInterfaceBurstCancelRef.current?.();
       localInterfaceBurstCancelRef.current = null;
     };
-  }, [state.status, refreshLocalInterfacesFromSidecar, syncDiagnosticsFromSidecar]);
+  }, [state.status, syncDiagnosticsFromSidecar]);
 
   const connectAutomatic = useCallback(async () => {
     await connect();

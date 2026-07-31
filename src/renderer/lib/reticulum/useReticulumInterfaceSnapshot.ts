@@ -111,8 +111,8 @@ export function useReticulumInterfaceSnapshot({
     if (!sidecarApiReady) return undefined;
     try {
       const [rows, ports] = await Promise.all([
-        fetchReticulumInterfaces(),
-        fetchReticulumSerialPortOptions(),
+        fetchReticulumInterfaces({ propagateRateLimit: true }),
+        fetchReticulumSerialPortOptions({ propagateRateLimit: true }),
       ]);
       const paths = ports.map((p) => p.path);
       setInterfaces(rows);

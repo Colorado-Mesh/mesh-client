@@ -33,6 +33,7 @@ describe('useReticulumRuntime mega-mesh / proxy thrash guards (source contract)'
 
   it('backs off local interface polls on IPC rate-limit errors', () => {
     expect(SOURCE).toContain('isReticulumSidecarRateLimitError');
+    expect(SOURCE).toMatch(/propagateRateLimit:\s*true/);
     expect(SOURCE).toMatch(
       /isReticulumSidecarRateLimitError\(e\)[\s\S]*?RETICULUM_LOCAL_HEALTH_POLL_MS/,
     );

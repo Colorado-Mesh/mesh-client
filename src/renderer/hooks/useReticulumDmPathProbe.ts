@@ -91,7 +91,9 @@ export function useReticulumDmPathProbe({
           if (nextHops != null) {
             useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
           }
-          void refreshReticulumPeersFromSidecar();
+          void refreshReticulumPeersFromSidecar().catch(() => {
+            // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+          });
         }
       } catch (e) {
         // Failure point: probe IPC reject. Fallback: treat as unreachable.

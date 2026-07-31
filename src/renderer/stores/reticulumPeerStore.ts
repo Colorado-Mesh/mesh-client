@@ -1051,9 +1051,9 @@ export function refreshReticulumPeersFromSidecar(
       const msg = errLikeToLogString(e);
       if (msg.toLowerCase().includes('rate limit exceeded')) {
         console.debug('[reticulumPeerStore] refresh ' + msg);
-      } else {
-        console.warn('[reticulumPeerStore] refresh ' + msg);
+        throw e instanceof Error ? e : new Error(msg);
       }
+      console.warn('[reticulumPeerStore] refresh ' + msg);
       return [];
     } finally {
       peerRefreshInFlight = null;
