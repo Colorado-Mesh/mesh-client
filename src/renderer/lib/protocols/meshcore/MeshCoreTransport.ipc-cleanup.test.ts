@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  *
  * Needs window.electronAPI; keep in renderer-logic via per-file jsdom rather than
- * listing in vitest.config.ts RENDERER_LOGIC_EXCLUDE (eslint-ignored config).
+ * listing in vitest.config.mts RENDERER_LOGIC_EXCLUDE (eslint-ignored config).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

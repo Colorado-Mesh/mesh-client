@@ -1,7 +1,6 @@
 import { readdirSync } from 'node:fs';
 import os from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, relative, resolve } from 'node:path';
 
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
@@ -11,10 +10,9 @@ import {
   resolveVitestProjectMaxWorkers,
   VITEST_CORE_DEPS,
   VITEST_SERVER_INLINE_DEPS,
-} from './vitest.harness';
+} from './vitest.harness.mts';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const srcAlias = { '@': resolve(__dirname, 'src') };
+const srcAlias = { '@': resolve(import.meta.dirname, 'src') };
 const cpuCount = os.cpus().length;
 
 /** Per-project CI shards skip global thresholds; merge job enforces them on combined coverage. */
@@ -179,7 +177,7 @@ const RENDERER_LOGIC_LIB_UI_FALLBACK = new Set(
 );
 
 function collectRendererLibTestFiles(): string[] {
-  const libRoot = join(__dirname, 'src/renderer/lib');
+  const libRoot = join(import.meta.dirname, 'src/renderer/lib');
   const results: string[] = [];
   const walk = (dir: string): void => {
     for (const ent of readdirSync(dir, { withFileTypes: true })) {
@@ -187,7 +185,7 @@ function collectRendererLibTestFiles(): string[] {
       if (ent.isDirectory()) {
         walk(path);
       } else if (ent.name.endsWith('.test.ts')) {
-        results.push(relative(__dirname, path).split('\\').join('/'));
+        results.push(relative(import.meta.dirname, path).split('\\').join('/'));
       }
     }
   };
@@ -235,7 +233,7 @@ export default defineConfig({
           name: 'renderer-ui',
           globals: true,
           environment: 'jsdom',
-          setupFiles: [resolve(__dirname, 'src/renderer/vitest.setup.ts')],
+          setupFiles: [resolve(import.meta.dirname, 'src/renderer/vitest.setup.ts')],
           include: ['src/renderer/**/*.test.{ts,tsx}'],
           exclude: RENDERER_UI_EXCLUDE,
           pool: 'forks',

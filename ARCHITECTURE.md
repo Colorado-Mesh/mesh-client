@@ -16,7 +16,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 **Entry points:** `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`, `src/renderer/App.tsx`.
 
-**Repo root (not exhaustive):** `.github/workflows/`, `scripts/check-*.mjs` (IPC, migrations, log injection, etc.), `docs/`, `resources/`, `vite.config.ts`, `electron-builder.yml`, `package.json`.
+**Repo root (not exhaustive):** `.github/workflows/`, `scripts/check-*.mjs` (IPC, migrations, log injection, etc.), `docs/`, `resources/`, `vite.config.mts`, `electron-builder.yml`, `package.json`.
 
 ## Process boundaries
 

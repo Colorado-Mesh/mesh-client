@@ -7,7 +7,7 @@ import react from '@vitejs/plugin-react';
 /** Emscripten glue fetches `orlp-ed25519.wasm` relative to the page; it is not inlined by Vite. */
 const ORLP_WASM_NAME = 'orlp-ed25519.wasm';
 const ORLP_WASM_SRC = path.resolve(
-  __dirname,
+  import.meta.dirname,
   `node_modules/@michaelhart/meshcore-decoder/lib/${ORLP_WASM_NAME}`,
 );
 
@@ -37,9 +37,9 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
       if (!existsSync(ORLP_WASM_SRC)) return;
       const buf = readFileSync(ORLP_WASM_SRC);
       // Next to index.html (relative URL "orlp-ed25519.wasm" from document)
-      writeFileSync(path.resolve(__dirname, 'dist/renderer', ORLP_WASM_NAME), buf);
+      writeFileSync(path.resolve(import.meta.dirname, 'dist/renderer', ORLP_WASM_NAME), buf);
       // Some Emscripten builds resolve WASM relative to the JS chunk in assets/
-      writeFileSync(path.resolve(__dirname, 'dist/renderer/assets', ORLP_WASM_NAME), buf);
+      writeFileSync(path.resolve(import.meta.dirname, 'dist/renderer/assets', ORLP_WASM_NAME), buf);
     },
   };
 }
@@ -68,10 +68,10 @@ export default defineConfig({
     // Electron's renderer already has process.type === "renderer"; this matches that.
     'process.type': JSON.stringify('renderer'),
   },
-  root: path.resolve(__dirname, 'src/renderer'),
+  root: path.resolve(import.meta.dirname, 'src/renderer'),
   base: './',
   build: {
-    outDir: path.resolve(__dirname, 'dist/renderer'),
+    outDir: path.resolve(import.meta.dirname, 'dist/renderer'),
     emptyOutDir: true,
     sourcemap: false,
     // Production: omit source maps (smaller bundle). For crash symbolication use
@@ -109,22 +109,22 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(import.meta.dirname, 'src'),
       // Node built-ins imported by transitive deps (e.g. @meshtastic/core 2.6.7 via
       // @meshtastic/transport-web-serial). Listing them as rollup externals emits bare
       // `import "os"` etc. which the browser rejects. Redirect to renderer-safe stubs instead.
-      fs: path.resolve(__dirname, 'src/renderer/shims/node-fs-stub.ts'),
-      os: path.resolve(__dirname, 'src/renderer/shims/node-os-stub.ts'),
-      path: path.resolve(__dirname, 'src/renderer/shims/node-path-stub.ts'),
-      util: path.resolve(__dirname, 'src/renderer/shims/node-util-stub.ts'),
-      stream: path.resolve(__dirname, 'src/renderer/shims/node-stream-stub.ts'),
-      child_process: path.resolve(__dirname, 'src/renderer/shims/node-child-process-stub.ts'),
-      net: path.resolve(__dirname, 'src/renderer/shims/node-net-stub.ts'),
-      events: path.resolve(__dirname, 'src/renderer/shims/node-events-stub.ts'),
+      fs: path.resolve(import.meta.dirname, 'src/renderer/shims/node-fs-stub.ts'),
+      os: path.resolve(import.meta.dirname, 'src/renderer/shims/node-os-stub.ts'),
+      path: path.resolve(import.meta.dirname, 'src/renderer/shims/node-path-stub.ts'),
+      util: path.resolve(import.meta.dirname, 'src/renderer/shims/node-util-stub.ts'),
+      stream: path.resolve(import.meta.dirname, 'src/renderer/shims/node-stream-stub.ts'),
+      child_process: path.resolve(import.meta.dirname, 'src/renderer/shims/node-child-process-stub.ts'),
+      net: path.resolve(import.meta.dirname, 'src/renderer/shims/node-net-stub.ts'),
+      events: path.resolve(import.meta.dirname, 'src/renderer/shims/node-events-stub.ts'),
     },
   },
   css: {
-    postcss: path.resolve(__dirname, 'postcss.config.cjs'),
+    postcss: path.resolve(import.meta.dirname, 'postcss.config.cjs'),
   },
   server: {
     port: 5173,

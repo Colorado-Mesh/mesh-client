@@ -134,6 +134,7 @@ function isMainProjectPath(filePath) {
     p.startsWith('src/architecture/') ||
     p.startsWith('scripts/') ||
     p === 'vitest.harness.ts' ||
+    p === 'vitest.harness.mts' ||
     p === 'vitest.harness.test.ts'
   );
 }

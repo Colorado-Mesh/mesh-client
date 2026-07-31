@@ -10,7 +10,7 @@ import {
   resolveVitestProjectMaxWorkers,
   VITEST_CORE_DEPS,
   VITEST_SERVER_INLINE_DEPS,
-} from './vitest.harness';
+} from './vitest.harness.mts';
 
 describe('vitest.harness', () => {
   it('computeVitestMaxWorkers applies ratio and MIN_VITEST_WORKERS floor', () => {
