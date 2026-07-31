@@ -60,17 +60,24 @@ export function formatChatExportLines(messages: unknown[]): string[] {
 }
 
 /**
- * Format export lines and enforce total serialized size.
+ * Format export lines and enforce total serialized size incrementally.
  * Call after {@link assertChatExportMessageSizes}.
  */
 export function formatChatExportLinesWithTotalCap(messages: unknown[]): string {
-  const lines = formatChatExportLines(messages);
-  const text = lines.join('\n') + '\n';
-  const byteLength = Buffer.byteLength(text, 'utf8');
-  if (byteLength > CHAT_EXPORT_MAX_TOTAL_BYTES) {
-    throw new Error(
-      `chat:export: serialized output exceeds max size (${CHAT_EXPORT_MAX_TOTAL_BYTES} bytes)`,
-    );
+  const lines: string[] = [];
+  let byteLength = 0;
+  for (const m of messages) {
+    const line = formatChatExportLine(m as ChatExportLineInput);
+    if (line == null) continue;
+    // Each line is followed by a newline in the final `join('\n') + '\n'` text.
+    const nextBytes = Buffer.byteLength(line, 'utf8') + 1;
+    if (byteLength + nextBytes > CHAT_EXPORT_MAX_TOTAL_BYTES) {
+      throw new Error(
+        `chat:export: serialized output exceeds max size (${CHAT_EXPORT_MAX_TOTAL_BYTES} bytes)`,
+      );
+    }
+    lines.push(line);
+    byteLength += nextBytes;
   }
-  return text;
+  return lines.join('\n') + '\n';
 }

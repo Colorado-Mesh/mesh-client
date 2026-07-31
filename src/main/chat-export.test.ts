@@ -5,6 +5,7 @@ import {
   assertChatExportMessageSizes,
   CHAT_EXPORT_MAX_PAYLOAD_CHARS,
   CHAT_EXPORT_MAX_SENDER_NAME_CHARS,
+  CHAT_EXPORT_MAX_TOTAL_BYTES,
   formatChatExportLine,
   formatChatExportLinesWithTotalCap,
 } from './chatExportFormat';
@@ -77,5 +78,22 @@ describe('formatChatExportLinesWithTotalCap', () => {
     expect(text).toContain('Alice');
     expect(text).toContain('hi');
     expect(text.endsWith('\n')).toBe(true);
+  });
+
+  it('throws before completing when serialized UTF-8 would exceed the total cap', () => {
+    // One oversized line (under per-field caps) that alone exceeds the total byte budget.
+    const payload = 'x'.repeat(CHAT_EXPORT_MAX_TOTAL_BYTES);
+    expect(() => {
+      formatChatExportLinesWithTotalCap([
+        {
+          timestamp: 1_700_000_000_000,
+          sender_name: 'Alice',
+          channel: 0,
+          payload,
+        },
+      ]);
+    }).toThrow(
+      `chat:export: serialized output exceeds max size (${CHAT_EXPORT_MAX_TOTAL_BYTES} bytes)`,
+    );
   });
 });
