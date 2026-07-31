@@ -15,6 +15,9 @@ export const repoRoot = process.cwd();
 
 const MAIN_ENTRY = path.join(repoRoot, 'dist-electron', 'main', 'index.js');
 
+const DISPOSE_USER_DATA_MAX_ATTEMPTS = 5;
+const DISPOSE_USER_DATA_RETRY_BASE_MS = 50;
+
 export interface LaunchAppOptions {
   /** Reuse an existing user-data dir (for relaunch tests). */
   userDataDir?: string;
@@ -57,14 +60,41 @@ function createUserDataDir(): string {
   return mkdtempSync(path.join(tmpdir(), 'mesh-e2e-'));
 }
 
-export function disposeUserData(userDataDir: string): void {
-  try {
-    rmSync(userDataDir, { recursive: true, force: true });
-  } catch {
-    // catch-no-log-ok best-effort temp cleanup
-  }
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
+/**
+ * Remove a temp user-data directory. Retries transient rm failures (e.g. Electron
+ * still releasing file locks), then surfaces the final error.
+ */
+export async function disposeUserData(userDataDir: string): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= DISPOSE_USER_DATA_MAX_ATTEMPTS; attempt++) {
+    try {
+      rmSync(userDataDir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      lastError = err;
+      if (attempt < DISPOSE_USER_DATA_MAX_ATTEMPTS) {
+        await sleepMs(DISPOSE_USER_DATA_RETRY_BASE_MS * attempt);
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+/**
+ * Launch the unpackaged Electron app for E2E.
+ *
+ * Failure path: if setup after `electron.launch` fails (firstWindow, CDP, readiness),
+ * close the Electron process, remove a user-data dir owned by this call (created here,
+ * not a retained caller-owned dir), and rethrow the original error. Specs assign
+ * `launched` only after this resolves, so afterEach teardown is not required for
+ * that failure path.
+ */
 export async function launchApp(options: LaunchAppOptions = {}): Promise<LaunchedApp> {
   assertProductionBuildPresent();
 
@@ -74,16 +104,19 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
     throw new Error(`Electron binary not found at ${executablePath}. Run pnpm install.`);
   }
 
+  const ownsUserDataDir = options.userDataDir == null;
   const userDataDir = options.userDataDir ?? createUserDataDir();
   const retainUserData = options.retainUserData ?? false;
 
   const args = ['.', `--user-data-dir=${userDataDir}`];
+  // OS-specific: Chromium setuid sandbox is unreliable in headless/CI Linux; match start-electron.mjs.
   if (process.platform === 'linux') {
     args.push('--disable-setuid-sandbox');
   }
 
   const env: Record<string, string | undefined> = { ...process.env };
   delete env.VITE_DEV_SERVER_URL;
+  // OS-specific: disable GPU on Linux headless/Xvfb (MESH_CLIENT_DISABLE_GPU honored in main).
   if (process.platform === 'linux') {
     env.MESH_CLIENT_DISABLE_GPU = '1';
   }
@@ -95,50 +128,64 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
     env: env as Record<string, string>,
   });
 
-  const launched: LaunchedApp = {
-    app,
-    page: undefined as unknown as Page,
-    userDataDir,
-    retainUserData,
-    rendererConsoleErrors: [],
-    crashed: false,
-    didFailLoad: false,
-  };
-
-  const page = await app.firstWindow();
-  launched.page = page;
-
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') {
-      launched.rendererConsoleErrors.push(msg.text());
-    }
-  });
-  page.on('crash', () => {
-    launched.crashed = true;
-  });
-  page.on('pageerror', (err) => {
-    launched.rendererConsoleErrors.push(String(err));
-  });
-
   try {
-    const session = await page.context().newCDPSession(page);
-    await session.send('Network.enable');
-    session.on('Network.loadingFailed', (event: { type?: string; canceled?: boolean }) => {
-      if (event.canceled) return;
-      if (event.type === 'Document') {
-        launched.didFailLoad = true;
+    const page = await app.firstWindow();
+    const launched: LaunchedApp = {
+      app,
+      page,
+      userDataDir,
+      retainUserData,
+      rendererConsoleErrors: [],
+      crashed: false,
+      didFailLoad: false,
+    };
+
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        launched.rendererConsoleErrors.push(msg.text());
       }
     });
-  } catch {
-    // catch-no-log-ok CDP optional on some Electron builds
+    page.on('crash', () => {
+      launched.crashed = true;
+    });
+    page.on('pageerror', (err) => {
+      launched.rendererConsoleErrors.push(String(err));
+    });
+
+    try {
+      const session = await page.context().newCDPSession(page);
+      await session.send('Network.enable');
+      session.on('Network.loadingFailed', (event: { type?: string; canceled?: boolean }) => {
+        if (event.canceled) return;
+        if (event.type === 'Document') {
+          launched.didFailLoad = true;
+        }
+      });
+    } catch {
+      // catch-no-log-ok CDP optional on some Electron builds
+    }
+
+    await page.waitForSelector('#root', { state: 'visible', timeout: 45_000 });
+    await page
+      .getByRole('group', { name: 'Protocol switcher' })
+      .waitFor({ state: 'visible', timeout: 45_000 });
+
+    return launched;
+  } catch (err) {
+    try {
+      await app.close();
+    } catch {
+      // catch-no-log-ok best-effort close after launch failure
+    }
+    if (ownsUserDataDir) {
+      try {
+        await disposeUserData(userDataDir);
+      } catch {
+        // catch-no-log-ok best-effort; original launch error is rethrown
+      }
+    }
+    throw err;
   }
-
-  await page.waitForSelector('#root', { state: 'visible', timeout: 45_000 });
-  await page
-    .getByRole('group', { name: 'Protocol switcher' })
-    .waitFor({ state: 'visible', timeout: 45_000 });
-
-  return launched;
 }
 
 export async function closeApp(launched: LaunchedApp): Promise<void> {
@@ -152,7 +199,7 @@ export async function closeApp(launched: LaunchedApp): Promise<void> {
 export async function teardownApp(launched: LaunchedApp): Promise<void> {
   await closeApp(launched);
   if (!launched.retainUserData) {
-    disposeUserData(launched.userDataDir);
+    await disposeUserData(launched.userDataDir);
   }
 }
 

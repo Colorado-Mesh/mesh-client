@@ -28,7 +28,7 @@ test.describe('settings relaunch', () => {
       await expect(reduceMotionAgain).toBeChecked();
     } finally {
       await teardownApp(launched);
-      disposeUserData(userDataDir);
+      await disposeUserData(userDataDir);
     }
   });
 });

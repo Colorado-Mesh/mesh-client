@@ -571,12 +571,19 @@ export function evaluatePlaywrightCheck(input) {
   /** @type {CheckResult[]} */
   const results = [];
 
-  if (!packageResolves || !versionOutput) {
+  if (!packageResolves) {
     results.push({
       status: 'warn',
       severity: 'optional',
       label: 'Playwright not found (optional)',
       hint: 'Install deps (pnpm install), then run Electron E2E with pnpm run test:e2e:build',
+    });
+  } else if (!versionOutput) {
+    results.push({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Playwright CLI failed (optional)',
+      hint: 'pnpm exec playwright --version failed; check PATH / node_modules/.bin, then pnpm run test:e2e:build',
     });
   } else {
     results.push({

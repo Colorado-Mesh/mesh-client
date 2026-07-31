@@ -264,7 +264,23 @@ describe('check-environment evaluatePlaywrightCheck', () => {
       severity: 'optional',
       label: 'Playwright not found (optional)',
     });
-    expect(results[0].hint).toContain('test:e2e:build');
+    expect(results[0].hint).toContain('pnpm install');
+  });
+
+  it('warns when package resolves but CLI version check fails', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: null,
+      platform: 'darwin',
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Playwright CLI failed (optional)',
+    });
+    expect(results[0].hint).toContain('playwright --version');
+    expect(results[0].hint).not.toContain('pnpm install');
   });
 
   it('warns on Linux when neither DISPLAY nor xvfb-run is available', () => {
