@@ -1236,16 +1236,15 @@
     "hintMeshtasticTcp2": "Jeśli połączenie jest zawodne (np. z meshtastic.local), spróbuj zamiast tego adresu IP urządzenia — mDNS na pulpicie może być błędny.",
     "channelPsksMqttOnlyIndexHint": "Bez podłączonego radia przychodzące wiadomości MQTT są kierowane do kart czatu według nazwy kanału. Użyj ChannelName@index=base64, aby każda nazwa odpowiadała właściwemu slotowi — na przykład LongFast@1=AQ==, gdy Twój publiczny kanał mesh to slot 1 (styl Colorado mesh). LongFast bez @ odpowiada slotowi 0.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: publikowanie na interfejsach {{count}}",
       "notPublishing": "RMAP v4: nieopublikowany",
       "openSettings": "Ustawienia sieci",
       "openSettingsAria": "Otwórz ustawienia wykrywania RMAP na karcie Sieć",
-      "needsSync": "Interfejsy lokalne z włączoną funkcją {{count}} wymagają synchronizacji wykrywania RMAP",
       "noPublishTargets": "Brak włączonych interfejsów lokalnych do publikowania w RMAP.",
       "syncSuccess": "Wykrywanie RMAP zsynchronizowane z interfejsem.",
       "openGlobalMap": "Mapa globalna",
       "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
-      "syncFailed": "Synchronizacja wykrywania RMAP nie powiodła się."
+      "syncFailed": "Synchronizacja wykrywania RMAP nie powiodła się.",
+      "publishingOf": "RMAP v4: publikowanie {{current}} z {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Ustawienie wstępne jest publikowane w ramach meshcore/DEN (Denver IATA). Jeśli nie jesteś w Kolorado, użyj LetsMesh lub MeshMapper. Kontynuować?",
     "coloradoServerNote": "Colorado Mesh jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Prefiks tematu używa Denver IATA (meshcore/DEN).",
@@ -4114,11 +4113,11 @@
       "invalidHost": "Nieprawidłowa nazwa hosta dla dostępnego dnia.",
       "tooLong": "Wartość osiągalna jest zbyt długa."
     },
-    "hint": "Stosuje wykrywalne=tak i App współrzędne GPS do wszystkich włączonych interfejsów obsługujących RMAP (RNode, KISS, BLE peer, I2P, UDP, Pipe). Użyj przełączników RMAP dla każdego interfejsu w Połączeniu, aby uzyskać dokładną kontrolę. Ścieżki LoRa umożliwiają również transport i hub rmap.world.",
     "openGlobalMap": "Otwórz mapę globalną",
     "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
     "applyPartialSuccess": "Ustawienia RMAP zastosowane do {{applied}} z interfejsów {{total}}.",
-    "disablePartialSuccess": "Publikowanie RMAP wyłączone na {{applied}} z interfejsów {{total}}."
+    "disablePartialSuccess": "Publikowanie RMAP wyłączone na {{applied}} z interfejsów {{total}}.",
+    "hint": "Umożliwia publikowanie RMAP i współrzędne GPS aplikacji na wszystkich włączonych interfejsach obsługujących RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, potok). Pole wyboru jest włączone tylko wtedy, gdy publikuje każdy kwalifikujący się interfejs; stan częściowy jest nieokreślony — sprawdź ponownie, aby zsynchronizować resztę. Użyj przełączników RMAP dla poszczególnych interfejsów w obszarze Połączenie, aby uzyskać precyzyjną kontrolę. Ścieżki LoRa umożliwiają także transport i hub rmap.world."
   },
   "reticulumTopology": {
     "title": "Topologia sieci",

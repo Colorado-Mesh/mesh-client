@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   RMAP_GLOBAL_MAP_URL,
+  rmapPublishCoverageTone,
   summarizeRmapPublishStatus,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
@@ -21,20 +22,25 @@ export function ReticulumRmapConnectionStatus({
 }: ReticulumRmapConnectionStatusProps) {
   const { t } = useTranslation();
   const summary = useMemo(() => summarizeRmapPublishStatus(interfaces), [interfaces]);
+  const tone = useMemo(() => rmapPublishCoverageTone(summary), [summary]);
 
   if (!sidecarApiReady) {
     return null;
   }
 
+  const statusClass =
+    tone === 'full' ? 'text-brand-green' : tone === 'partial' ? 'text-amber-300' : 'text-gray-400';
+
   return (
     <div className="rounded border border-gray-700 bg-slate-900/40 px-3 py-2 text-xs" role="status">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className={summary.publishing ? 'text-brand-green' : 'text-gray-400'}>
-          {summary.publishing
-            ? t('connectionPanel.reticulumRmap.publishing', {
-                count: summary.discoverableCount,
-              })
-            : t('connectionPanel.reticulumRmap.notPublishing')}
+        <span className={statusClass}>
+          {tone === 'off'
+            ? t('connectionPanel.reticulumRmap.notPublishing')
+            : t('connectionPanel.reticulumRmap.publishingOf', {
+                current: summary.discoverableCount,
+                total: summary.publishTargetCount,
+              })}
         </span>
         {onOpenRmapSettings ? (
           <button
@@ -56,12 +62,7 @@ export function ReticulumRmapConnectionStatus({
           {t('connectionPanel.reticulumRmap.openGlobalMap')}
         </a>
       </div>
-      {summary.needsSyncCount > 0 ? (
-        <p className="mt-1 text-amber-300">
-          {t('connectionPanel.reticulumRmap.needsSync', { count: summary.needsSyncCount })}
-        </p>
-      ) : null}
-      {summary.publishing && summary.publishTargetCount === 0 ? (
+      {summary.publishTargetCount === 0 ? (
         <p className="mt-1 text-gray-400">{t('connectionPanel.reticulumRmap.noPublishTargets')}</p>
       ) : null}
     </div>

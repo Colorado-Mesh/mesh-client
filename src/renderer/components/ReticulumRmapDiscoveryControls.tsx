@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { ExternalLink } from 'lucide-react-motion';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getAppSettingsRaw } from '@/renderer/lib/appSettingsStorage';
@@ -12,6 +12,7 @@ import {
   clampRmapAnnounceIntervalMin,
   disableReticulumRmapDiscovery,
   persistRmapUiPrefs,
+  readRmapPublishPartial,
   readRmapPublishState,
   resolveRmapCoordinates,
   ReticulumRmapGpsRequiredError,
@@ -46,6 +47,8 @@ export function ReticulumRmapDiscoveryControls({
   const { addToast } = useToast();
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
   const [publishOn, setPublishOn] = useState(false);
+  const [publishPartial, setPublishPartial] = useState(false);
+  const publishCheckboxRef = useRef<HTMLInputElement>(null);
   const [announceIntervalMin, setAnnounceIntervalMin] = useState(
     RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN,
   );
@@ -85,6 +88,7 @@ export function ReticulumRmapDiscoveryControls({
       const rows = body.interfaces ?? [];
       setInterfaces(rows);
       setPublishOn(readRmapPublishState(rows));
+      setPublishPartial(readRmapPublishPartial(rows));
     } catch (e) {
       console.debug('[ReticulumRmapDiscoveryControls] refresh ' + errLikeToLogString(e));
     }
@@ -97,6 +101,13 @@ export function ReticulumRmapDiscoveryControls({
   useEffect(() => {
     void refreshInterfaces();
   }, [refreshInterfaces]);
+
+  useEffect(() => {
+    const el = publishCheckboxRef.current;
+    if (el) {
+      el.indeterminate = publishPartial;
+    }
+  }, [publishPartial]);
 
   useEffect(() => {
     setCoords(resolveRmapCoordinates());
@@ -215,6 +226,7 @@ export function ReticulumRmapDiscoveryControls({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-200">
             <input
+              ref={publishCheckboxRef}
               type="checkbox"
               checked={publishOn}
               disabled={controlsDisabled}

@@ -131,8 +131,29 @@ export function listReticulumRmapDiscoveryCapable(
 /** @deprecated Prefer listReticulumRmapDiscoveryCapable */
 export const listReticulumRmapPublishTargets = listReticulumRmapDiscoveryCapable;
 
-export function readRmapPublishState(interfaces: readonly ReticulumInterfaceRow[]): boolean {
+/** True when at least one eligible interface is discoverable (publishing intent / maybeSync). */
+export function readRmapAnyPublishing(interfaces: readonly ReticulumInterfaceRow[]): boolean {
   return listReticulumRmapDiscoveryCapable(interfaces).some((row) => row.discoverable === true);
+}
+
+/**
+ * Network "Publish on RMAP v4" checked state: true only when every eligible
+ * enabled interface is discoverable. Partial coverage returns false so the user
+ * can check again to enable-all.
+ */
+export function readRmapPublishState(interfaces: readonly ReticulumInterfaceRow[]): boolean {
+  const targets = listReticulumRmapDiscoveryCapable(interfaces);
+  return targets.length > 0 && targets.every((row) => row.discoverable === true);
+}
+
+/** True when some but not all eligible interfaces are discoverable. */
+export function readRmapPublishPartial(interfaces: readonly ReticulumInterfaceRow[]): boolean {
+  const targets = listReticulumRmapDiscoveryCapable(interfaces);
+  if (targets.length === 0) {
+    return false;
+  }
+  const discoverableCount = targets.filter((row) => row.discoverable === true).length;
+  return discoverableCount > 0 && discoverableCount < targets.length;
 }
 
 /** LoRa/BLE paths that need a TCP transport bridge to reach RMAP (Scenario B). */
@@ -181,6 +202,22 @@ export interface RmapPublishStatusSummary {
   needsSyncCount: number;
 }
 
+export type RmapPublishCoverageTone = 'off' | 'partial' | 'full';
+
+/** Connection status color tone for X of Y publish coverage. */
+export function rmapPublishCoverageTone(
+  summary: Pick<RmapPublishStatusSummary, 'discoverableCount' | 'publishTargetCount'>,
+): RmapPublishCoverageTone {
+  const { discoverableCount: x, publishTargetCount: y } = summary;
+  if (x <= 0 || y <= 0) {
+    return 'off';
+  }
+  if (x < y) {
+    return 'partial';
+  }
+  return 'full';
+}
+
 export function summarizeRmapPublishStatus(
   interfaces: readonly ReticulumInterfaceRow[],
 ): RmapPublishStatusSummary {
@@ -206,7 +243,7 @@ export function isReticulumRmapNeedsSyncRow(
   interfaces: readonly ReticulumInterfaceRow[],
 ): boolean {
   return (
-    readRmapPublishState(interfaces) &&
+    readRmapAnyPublishing(interfaces) &&
     isReticulumRmapDiscoveryCapable(iface) &&
     iface.discoverable !== true
   );
@@ -259,7 +296,8 @@ export async function maybeSyncReticulumRmapAfterInterfaceEnable(
   opts: { discoveryName?: string | null },
 ): Promise<boolean> {
   const interfaces = await fetchReticulumInterfaceRows();
-  if (!readRmapPublishState(interfaces)) {
+  // Any-publishing intent (including partial X of Y), not Network all-checked.
+  if (!readRmapAnyPublishing(interfaces)) {
     return false;
   }
   const iface = interfaces.find((row) => row.id === interfaceId);

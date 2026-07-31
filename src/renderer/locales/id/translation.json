@@ -1234,16 +1234,15 @@
     "hintMeshtasticTcp2": "Jika koneksi tidak dapat diandalkan (misalnya dengan meshtastic.local), coba alamat IP perangkat sebagai gantinya — mDNS desktop dapat terkelupas.",
     "channelPsksMqttOnlyIndexHint": "Tanpa radio terhubung, pesan MQTT masuk diarahkan ke tab obrolan berdasarkan nama saluran. Gunakan ChannelName@index=base64 agar setiap nama memetakan ke slot yang benar — misalnya LongFast@1=AQ== ketika saluran mesh publik Anda adalah slot 1 (gaya Colorado mesh). LongFast tanpa @ memetakan ke slot 0.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: memublikasikan di antarmuka {{count}}",
       "notPublishing": "RMAP v4: tidak memublikasikan",
       "openSettings": "Pengaturan Jaringan",
       "openSettingsAria": "Buka pengaturan penemuan RMAP di tab Jaringan",
-      "needsSync": "{{count}} antarmuka lokal yang diaktifkan memerlukan sinkronisasi penemuan RMAP",
       "noPublishTargets": "Tidak ada antarmuka lokal yang diaktifkan untuk dipublikasikan di RMAP.",
       "syncSuccess": "Penemuan RMAP disinkronkan ke antarmuka.",
       "openGlobalMap": "Peta global",
       "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world",
-      "syncFailed": "Sinkronisasi penemuan RMAP gagal."
+      "syncFailed": "Sinkronisasi penemuan RMAP gagal.",
+      "publishingOf": "RMAP v4: menerbitkan {{current}} dari {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT ditujukan bagi pengguna mesh di wilayah Colorado. Prasetel diterbitkan di bawah meshcore/DEN (Denver IATA). Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper sebagai gantinya. Lanjutkan?",
     "coloradoServerNote": "Colorado Mesh ditujukan bagi pengguna mesh di wilayah Colorado. Awalan topik menggunakan IATA Denver (meshcore/DEN).",
@@ -4110,11 +4109,11 @@
       "invalidHost": "Nama host tidak valid untuk dapat dihubungi pada.",
       "tooLong": "Nilai Reachable on terlalu panjang."
     },
-    "hint": "Menerapkan publikasi RMAP dan koordinat GPS Aplikasi ke semua antarmuka berkemampuan RMAP yang diaktifkan (RNode, KISS, BLE peer, I2P, UDP, pipe). Gunakan sakelar RMAP per antarmuka pada Koneksi untuk kontrol yang baik. Jalur LoRa juga memungkinkan transportasi dan hub rmap.world.",
     "openGlobalMap": "Buka peta global",
     "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world",
     "applyPartialSuccess": "Pengaturan RMAP diterapkan ke {{applied}} dari antarmuka {{total}}.",
-    "disablePartialSuccess": "Penerbitan RMAP dinonaktifkan pada {{applied}} dari antarmuka {{total}}."
+    "disablePartialSuccess": "Penerbitan RMAP dinonaktifkan pada {{applied}} dari antarmuka {{total}}.",
+    "hint": "Mengaktifkan penerbitan RMAP dan koordinat GPS Aplikasi pada semua antarmuka berkemampuan RMAP yang diaktifkan (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Kotak centang hanya aktif ketika setiap antarmuka yang memenuhi syarat dipublikasikan; sebagian keadaan tidak dapat ditentukan — periksa lagi untuk menyinkronkan sisanya. Gunakan tombol RMAP per antarmuka pada Koneksi untuk kontrol yang baik. Jalur LoRa juga mengaktifkan transportasi dan hub rmap.world."
   },
   "reticulumTopology": {
     "title": "Topologi jaringan",

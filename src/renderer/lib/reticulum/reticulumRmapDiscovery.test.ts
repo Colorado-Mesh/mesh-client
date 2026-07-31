@@ -14,10 +14,13 @@ import {
   isReticulumRmapNeedsSyncRow,
   listReticulumRmapDiscoveryCapable,
   maybeSyncReticulumRmapAfterInterfaceEnable,
+  readRmapAnyPublishing,
+  readRmapPublishPartial,
   readRmapPublishState,
   readRmapUiPrefs,
   resolveRmapCoordinates,
   ReticulumRmapGpsRequiredError,
+  rmapPublishCoverageTone,
   setReticulumRmapDiscoverableForInterface,
   summarizeRmapPublishStatus,
   validateRmapReachableOn,
@@ -35,6 +38,20 @@ function row(
     ...partial,
   };
 }
+
+const ELIGIBLE_CAPABLE_CASES: {
+  id: string;
+  type: string;
+  serial_port?: string;
+}[] = [
+  { id: 'rnode', type: 'rnode', serial_port: '/dev/ttyUSB0' },
+  { id: 'rnode_multi', type: 'rnode_multi', serial_port: '/dev/ttyUSB1' },
+  { id: 'kiss', type: 'kiss', serial_port: '/dev/kiss' },
+  { id: 'ble_peer', type: 'ble_peer' },
+  { id: 'i2p', type: 'i2p' },
+  { id: 'udp', type: 'udp' },
+  { id: 'pipe', type: 'pipe' },
+];
 
 describe('reticulumRmapDiscovery', () => {
   beforeEach(() => {
@@ -54,28 +71,29 @@ describe('reticulumRmapDiscovery', () => {
     window.electronAPI = createElectronAPIMock();
   });
 
-  it('classifies discovery-capable types and excludes tcp/auto hubs', () => {
-    expect(
-      isReticulumRmapDiscoveryCapable(row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0' })),
-    ).toBe(true);
-    expect(
-      isReticulumRmapDiscoveryCapable(row({ id: 'k', type: 'kiss', serial_port: '/dev/kiss' })),
-    ).toBe(true);
-    expect(isReticulumRmapDiscoveryCapable(row({ id: 'b', type: 'ble_peer' }))).toBe(true);
-    expect(isReticulumRmapDiscoveryCapable(row({ id: 'i', type: 'i2p' }))).toBe(true);
-    expect(isReticulumRmapDiscoveryCapable(row({ id: 'u', type: 'udp' }))).toBe(true);
-    expect(isReticulumRmapDiscoveryCapable(row({ id: 'p', type: 'pipe' }))).toBe(true);
-    expect(
-      isReticulumRmapDiscoveryCapable(
-        row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
-      ),
-    ).toBe(false);
-    expect(isReticulumRmapDiscoveryCapable(row({ id: 'a', type: 'auto' }))).toBe(false);
-    expect(
-      isReticulumRmapDiscoveryCapable(
-        row({ id: 'r', type: 'rnode', enabled: false, serial_port: '/dev/ttyUSB0' }),
-      ),
-    ).toBe(false);
+  it.each(ELIGIBLE_CAPABLE_CASES)(
+    'isReticulumRmapDiscoveryCapable is true for $type',
+    ({ id, type, serial_port }) => {
+      expect(
+        isReticulumRmapDiscoveryCapable(row({ id, type, serial_port: serial_port ?? null })),
+      ).toBe(true);
+    },
+  );
+
+  it.each([
+    { id: 'tcp', type: 'tcp', host: 'rmap.world', port: 4242 },
+    { id: 'auto', type: 'auto' },
+    { id: 'rnode-disabled', type: 'rnode', enabled: false, serial_port: '/dev/ttyUSB0' },
+    { id: 'rnode-noserial', type: 'rnode', serial_port: '' },
+    { id: 'kiss-noserial', type: 'kiss', serial_port: '   ' },
+  ] as const)('isReticulumRmapDiscoveryCapable is false for $id', (partial) => {
+    expect(isReticulumRmapDiscoveryCapable(row({ ...partial }))).toBe(false);
+  });
+
+  it('classifies LoRa discovery rows for transport bridge', () => {
+    expect(isReticulumRmapLoRaDiscoveryRow(row({ id: 'r', type: 'rnode' }))).toBe(true);
+    expect(isReticulumRmapLoRaDiscoveryRow(row({ id: 'i', type: 'i2p' }))).toBe(false);
+    expect(isReticulumRmapLoRaDiscoveryRow(row({ id: 'u', type: 'udp' }))).toBe(false);
   });
 
   it('buildRmapDiscoveryPatch sets discovery fields and I2P connectable', () => {
@@ -114,13 +132,33 @@ describe('reticulumRmapDiscovery', () => {
     expect(resolveRmapCoordinates()).toBeNull();
   });
 
-  it('readRmapPublishState reflects discoverable publish targets', () => {
-    const interfaces = [
+  it('readRmapPublishState is true only when every eligible interface is discoverable', () => {
+    const full = [
       row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+      row({ id: 'b', type: 'ble_peer', discoverable: true }),
       row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242, discoverable: false }),
     ];
-    expect(readRmapPublishState(interfaces)).toBe(true);
-    expect(listReticulumRmapDiscoveryCapable(interfaces)).toHaveLength(1);
+    expect(readRmapPublishState(full)).toBe(true);
+    expect(readRmapAnyPublishing(full)).toBe(true);
+    expect(readRmapPublishPartial(full)).toBe(false);
+
+    const partial = [
+      row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+      row({ id: 'b', type: 'ble_peer', discoverable: false }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    expect(readRmapPublishState(partial)).toBe(false);
+    expect(readRmapAnyPublishing(partial)).toBe(true);
+    expect(readRmapPublishPartial(partial)).toBe(true);
+
+    const none = [
+      row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: false }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    expect(readRmapPublishState(none)).toBe(false);
+    expect(readRmapAnyPublishing(none)).toBe(false);
+    expect(readRmapPublishPartial(none)).toBe(false);
+    expect(listReticulumRmapDiscoveryCapable(none)).toHaveLength(1);
   });
 
   it('clampRmapAnnounceIntervalMin enforces bounds', () => {
@@ -146,6 +184,46 @@ describe('reticulumRmapDiscovery', () => {
       }),
     ).rejects.toBeInstanceOf(ReticulumRmapGpsRequiredError);
     expect(put).not.toHaveBeenCalled();
+  });
+
+  it('applyReticulumRmapDiscovery patches every eligible type and skips tcp hub', async () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ staticLat: 40, staticLon: -105 }),
+    );
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({});
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ id: 'hub-new' });
+
+    const interfaces = [
+      row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0' }),
+      row({ id: 'k', type: 'kiss', serial_port: '/dev/kiss' }),
+      row({ id: 'b', type: 'ble_peer' }),
+      row({ id: 'i', type: 'i2p' }),
+      row({ id: 'u', type: 'udp' }),
+      row({ id: 'p', type: 'pipe' }),
+      row({ id: 'rm', type: 'rnode_multi', serial_port: '/dev/ttyACM0' }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    const result = await applyReticulumRmapDiscovery({
+      interfaces,
+      announceIntervalMin: 60,
+      discoveryName: 'Test',
+      stackSettings: { enable_transport: true, share_instance: true, loglevel: 4 },
+    });
+
+    expect(result.applied).toBe(7);
+    expect(result.total).toBe(7);
+    expect(result.errors).toEqual([]);
+    for (const id of ['r', 'k', 'b', 'i', 'u', 'p', 'rm']) {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        `/api/v1/interfaces/${id}`,
+        expect.objectContaining({ discoverable: true, latitude: 40 }),
+      );
+    }
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalledWith(
+      '/api/v1/interfaces/t',
+      expect.anything(),
+    );
   });
 
   it('applyReticulumRmapDiscovery patches interfaces and enables transport + hub', async () => {
@@ -198,18 +276,38 @@ describe('reticulumRmapDiscovery', () => {
     });
   });
 
-  it('summarizeRmapPublishStatus counts discoverable and needs-sync targets', () => {
-    const interfaces = [
+  it('summarizeRmapPublishStatus and rmapPublishCoverageTone cover off/partial/full', () => {
+    const partial = [
       row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
       row({ id: 'r2', type: 'ble_peer', discoverable: false }),
       row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
     ];
-    expect(summarizeRmapPublishStatus(interfaces)).toEqual({
+    const partialSummary = summarizeRmapPublishStatus(partial);
+    expect(partialSummary).toEqual({
       publishing: true,
       discoverableCount: 1,
       publishTargetCount: 2,
       needsSyncCount: 1,
     });
+    expect(rmapPublishCoverageTone(partialSummary)).toBe('partial');
+
+    const full = [
+      row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+      row({ id: 'r2', type: 'ble_peer', discoverable: true }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    const fullSummary = summarizeRmapPublishStatus(full);
+    expect(fullSummary.discoverableCount).toBe(2);
+    expect(fullSummary.publishTargetCount).toBe(2);
+    expect(rmapPublishCoverageTone(fullSummary)).toBe('full');
+
+    const off = [
+      row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: false }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    const offSummary = summarizeRmapPublishStatus(off);
+    expect(offSummary.publishing).toBe(false);
+    expect(rmapPublishCoverageTone(offSummary)).toBe('off');
   });
 
   // Driver online lag (e.g. BLE RNode still coming up) surfaces as status: 'down'
@@ -232,18 +330,22 @@ describe('reticulumRmapDiscovery', () => {
       publishTargetCount: 1,
       needsSyncCount: 0,
     });
+    expect(rmapPublishCoverageTone(summarizeRmapPublishStatus(interfaces))).toBe('full');
   });
 
-  it('isReticulumRmapNeedsSyncRow when publishing globally but row missing discoverable', () => {
+  it('isReticulumRmapNeedsSyncRow when any publishing but row missing discoverable', () => {
     const interfaces = [
       row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
       row({ id: 'r2', type: 'ble_peer', discoverable: false }),
     ];
     expect(isReticulumRmapNeedsSyncRow(interfaces[1], interfaces)).toBe(true);
     expect(isReticulumRmapDiscoverableRow(interfaces[0])).toBe(true);
+    // Network all-checked is false while maybeSync intent (any publishing) is true
+    expect(readRmapPublishState(interfaces)).toBe(false);
+    expect(readRmapAnyPublishing(interfaces)).toBe(true);
   });
 
-  it('maybeSyncReticulumRmapAfterInterfaceEnable patches when RMAP is on', async () => {
+  it('maybeSyncReticulumRmapAfterInterfaceEnable patches when any interface is publishing', async () => {
     localStorage.setItem(
       GPS_SETTINGS_STORAGE_KEY,
       JSON.stringify({ staticLat: 40, staticLon: -105 }),

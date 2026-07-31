@@ -1234,16 +1234,15 @@
     "hintMeshtasticTcp2": "Si la conexión no es fiable (por ejemplo, con meshtastic.local), pruebe la dirección IP del dispositivo en su lugar: el mDNS de escritorio puede ser escamoso.",
     "channelPsksMqttOnlyIndexHint": "Sin radio conectada, los mensajes MQTT entrantes se enrutan a las pestañas de chat por nombre de canal. Use ChannelName@index=base64 para que cada nombre se asigne a la ranura correcta; por ejemplo LongFast@1=AQ== cuando su canal mesh público es la ranura 1 (estilo Colorado mesh). LongFast sin @ se asigna a la ranura 0.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: publicación en {{count}} interfaz(es)",
       "notPublishing": "RMAP v4: no publicar",
       "openSettings": "Preferencias de red",
       "openSettingsAria": "Abrir la configuración de detección de RMAP en la pestaña Red",
-      "needsSync": "{{count}} interfaz(es) local (es) habilitada (s) necesita (n) la sincronización de descubrimiento RMAP",
       "noPublishTargets": "No hay interfaces locales habilitadas para publicar en RMAP.",
       "syncSuccess": "Descubrimiento de RMAP sincronizado con la interfaz.",
       "openGlobalMap": "Mapa mundial",
       "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world",
-      "syncFailed": "Error de sincronización de descubrimiento de RMAP."
+      "syncFailed": "Error de sincronización de descubrimiento de RMAP.",
+      "publishingOf": "RMAP v4: publicación {{current}} de {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT es para usuarios de malla del área de Colorado. El preset se publica en meshcore/DEN (Denver IATA). Si no estás en Colorado, usa LetsMesh o MeshMapper en su lugar. ¿Continuar?",
     "coloradoServerNote": "Colorado Mesh es para usuarios de malla del área de Colorado. El prefijo del tema utiliza la IATA de Denver (meshcore/DEN).",
@@ -4110,11 +4109,11 @@
       "invalidHost": "Nombre de host no válido para estar disponible el.",
       "tooLong": "El valor alcanzable es demasiado largo."
     },
-    "hint": "Aplica la publicación RMAP y las coordenadas GPS de App a todas las interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use los conmutadores RMAP por interfaz en Conexión para un control fino. Las rutas LoRa también habilitan transporte y el hub rmap.world.",
     "openGlobalMap": "Mapa mundial",
     "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world",
     "applyPartialSuccess": "Configuración de RMAP aplicada a las interfaces {{applied}} de {{total}}.",
-    "disablePartialSuccess": "Publicación RMAP deshabilitada en las interfaces {{applied}} de {{total}}."
+    "disablePartialSuccess": "Publicación RMAP deshabilitada en las interfaces {{applied}} de {{total}}.",
+    "hint": "Habilita la publicación de RMAP y las coordenadas GPS de la aplicación en todas las interfaces habilitadas con capacidad RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La casilla de verificación está activada solo cuando se están publicando todas las interfaces elegibles; un estado parcial es indeterminado; verifique nuevamente para sincronizar el resto. Utilice RMAP por interfaz para alternar en Conexión para un control preciso. Las rutas LoRa también permiten el transporte y el centro rmap.world."
   },
   "reticulumTopology": {
     "title": "Topología de red",

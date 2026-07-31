@@ -1090,7 +1090,8 @@ Unrecognized codes pass through unchanged.
 7. **Stub sidecar** — dev builds without `rns-stack` return an empty discovered list.
 8. **Filter empty** — interface-type filter pills may exclude all rows; try **All**.
 9. **Refresh errors** — transient sidecar errors show inline `refreshFailed` without clearing last-good markers.
-10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery.
+10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery. Eligible types are RNode / RNode Multi / KISS (with serial), BLE peer, I2P, UDP, and pipe.
+11. **Partial publishing (amber X of Y)** — Connection shows **publishing X of Y** in amber when some but not all eligible interfaces have `discoverable=yes`. TCP hubs never count toward Y. Use Network → **Publish on RMAP v4** (check again while indeterminate) or per-interface **RMAP** toggles on Connection to sync the rest.
 
 ### Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE
 

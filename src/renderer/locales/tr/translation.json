@@ -1234,16 +1234,15 @@
     "hintMeshtasticTcp2": "Bağlantı güvenilir değilse (örneğin meshtastic.local ile), bunun yerine cihazın IP adresini deneyin — masaüstü mDNS zayıf olabilir.",
     "channelPsksMqttOnlyIndexHint": "Radyo bağlı değilken gelen MQTT mesajları kanal adına göre sohbet sekmelerine yönlendirilir. Her adın doğru yuvaya eşlenmesi için ChannelName@index=base64 kullanın — örneğin genel mesh kanalınız yuva 1 ise (Colorado mesh stili) LongFast@1=AQ==. @ olmadan LongFast yuva 0'a eşlenir.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: {{count}} arayüzlerinde yayınlama",
       "notPublishing": "RMAP v4: yayınlanmıyor",
       "openSettings": "Sosyal Ağ Ayarları",
       "openSettingsAria": "Ağ sekmesinde RMAP keşif ayarlarını aç",
-      "needsSync": "{{count}} etkin yerel arabirim(ler) in RMAP keşif senkronizasyonuna ihtiyacı var",
       "noPublishTargets": "RMAP'te yayınlanacak etkinleştirilmiş yerel arayüz yok.",
       "syncSuccess": "RMAP keşfi arayüzle senkronize edildi.",
       "openGlobalMap": "Küresel harita",
       "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
-      "syncFailed": "RMAP keşif senkronizasyonu başarısız oldu."
+      "syncFailed": "RMAP keşif senkronizasyonu başarısız oldu.",
+      "publishingOf": "RMAP v4: {{current}} / {{total}} yayınlanıyor"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Ön ayar meshcore/DEN (Denver IATA) altında yayınlanır. Colorado'da değilseniz, bunun yerine LetsMesh veya MeshMapper kullanın. Devam edilsin mi?",
     "coloradoServerNote": "Colorado Mesh, Colorado bölgesindeki mesh kullanıcıları içindir. Konu ön eki Denver IATA (meshcore/DEN) kullanır.",
@@ -4110,11 +4109,11 @@
       "invalidHost": "Tarihinde erişilebilen için geçersiz ana bilgisayar adı.",
       "tooLong": "Değerde ulaşılabilirlik çok uzun."
     },
-    "hint": "Etkinleştirilmiş tüm RMAP özellikli arayüzlere (RNode, KISS, BLE peer, I2P, UDP, pipe) bulunabilir=evet ve Uygulama GPS koordinatlarını uygular. İnce kontrol için Bağlantı üzerindeki arayüz başına RMAP geçişlerini kullanın. LoRa yolları ayrıca ulaşımı ve rmap.world hub'ını etkinleştirir.",
     "openGlobalMap": "Küresel haritayı aç",
     "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
     "applyPartialSuccess": "{{total}} arabirimlerinin {{applied}} öğesine uygulanan RMAP ayarları.",
-    "disablePartialSuccess": "{{total}} arayüzlerinin {{applied}} üzerinde RMAP yayınlama devre dışı bırakıldı."
+    "disablePartialSuccess": "{{total}} arayüzlerinin {{applied}} üzerinde RMAP yayınlama devre dışı bırakıldı.",
+    "hint": "Etkinleştirilen tüm RMAP özellikli arayüzlerde (RNode/Multi, KISS, BLE eş, I2P, UDP, pipe) RMAP yayınlamayı ve Uygulama GPS koordinatlarını etkinleştirir. Onay kutusu yalnızca tüm uygun arayüzler yayınlanırken açıktır; kısmi bir durum belirsizdir; geri kalanını senkronize etmek için tekrar kontrol edin. Hassas kontrol için her arayüz için RMAP geçişlerini Bağlantı üzerinde kullanın. LoRa yolları aynı zamanda ulaşımı ve rmap.world merkezini de mümkün kılar."
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",
