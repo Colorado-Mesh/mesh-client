@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import yaml from 'js-yaml';
+import path from 'node:path';
 import {
   expectedPnpmStoreVersion,
+  FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR,
   flatpakWorkflowGeneratorInstallViolations,
   flatpakWorkflowStoreVersionViolations,
   generatedSourcesStoreDirYamlViolations,
@@ -13,10 +15,99 @@ import {
   parseGeneratedPnpmManifest,
   pnpmMajorFromPackageManager,
   probePnpmWorkspaceAfterStoreDirAppend,
+  resolveFlatpakNodeGeneratorBin,
   storeVersionFromPackageManager,
   stripNpmrcStoreDirLines,
   stripPnpmWorkspaceStoreDirLines,
 } from './flatpakPnpmStoreVersion.mjs';
+
+describe('resolveFlatpakNodeGeneratorBin', () => {
+  const root = '/repo';
+  const unixVenv = path.join(
+    root,
+    FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR,
+    'bin',
+    'flatpak-node-generator',
+  );
+  const winVenv = path.join(
+    root,
+    FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR,
+    'Scripts',
+    'flatpak-node-generator.exe',
+  );
+
+  it('prefers FLATPAK_NODE_GENERATOR over PATH and local venv', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: { FLATPAK_NODE_GENERATOR: ' /custom/bin ' },
+        which: () => '/usr/bin/flatpak-node-generator',
+        existsSync: () => true,
+        accessSync: () => {},
+        X_OK: 1,
+        platform: 'linux',
+      }),
+    ).toBe('/custom/bin');
+  });
+
+  it('uses PATH when env unset', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: {},
+        which: () => '/usr/local/bin/flatpak-node-generator',
+        existsSync: () => true,
+        accessSync: () => {},
+        X_OK: 1,
+        platform: 'darwin',
+      }),
+    ).toBe('/usr/local/bin/flatpak-node-generator');
+  });
+
+  it('falls back to local CI-pin venv when PATH misses', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: {},
+        which: () => null,
+        existsSync: (p) => p === unixVenv,
+        accessSync: () => {},
+        X_OK: 1,
+        platform: 'darwin',
+      }),
+    ).toBe(unixVenv);
+  });
+
+  it('uses win32 Scripts layout for local venv', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: {},
+        which: () => null,
+        existsSync: (p) => p === winVenv,
+        accessSync: () => {},
+        X_OK: 1,
+        platform: 'win32',
+      }),
+    ).toBe(winVenv);
+  });
+
+  it('returns null when env, PATH, and local venv are all missing', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: { FLATPAK_NODE_GENERATOR: '  ' },
+        which: () => null,
+        existsSync: () => false,
+        accessSync: () => {
+          throw new Error('not executable');
+        },
+        X_OK: 1,
+        platform: 'linux',
+      }),
+    ).toBeNull();
+  });
+});
 
 describe('flatpakPnpmStoreVersion', () => {
   it('maps packageManager major to store version', () => {

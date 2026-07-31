@@ -2,6 +2,8 @@
  * Flatpak offline pnpm store version must match the packageManager major
  * (pnpm 11 → store v11). flatpak-node-generator defaults to v10 for lockfile 9.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Pinned flatpak-builder-tools commit used by Flatpak CI + PR offline checks.
@@ -29,6 +31,71 @@ export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_ARGS = [
 
 /** Shell one-liner for workflows / docs (keep in sync with PIP_INSTALL_ARGS). */
 export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_CMD = `pip3 ${FLATPAK_NODE_GENERATOR_PIP_INSTALL_ARGS.map((a) => (/\s/.test(a) ? `'${a}'` : a)).join(' ')}`;
+
+/** Documented local CI-pin venv (see check:flatpak-offline-pnpm install hint). */
+export const FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR = '.cache/flatpak-node-venv';
+
+/**
+ * Resolve flatpak-node-generator: FLATPAK_NODE_GENERATOR → PATH → local CI-pin venv.
+ *
+ * @param {{
+ *   root: string;
+ *   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
+ *   which?: (() => string | null) | null;
+ *   platform?: NodeJS.Platform;
+ *   existsSync?: (p: string) => boolean;
+ *   accessSync?: (p: string, mode?: number) => void;
+ *   X_OK?: number;
+ * }} opts
+ * @returns {string | null}
+ */
+export function resolveFlatpakNodeGeneratorBin(opts) {
+  const env = opts.env ?? process.env;
+  const fromEnv =
+    typeof env.FLATPAK_NODE_GENERATOR === 'string' ? env.FLATPAK_NODE_GENERATOR.trim() : '';
+  if (fromEnv) return fromEnv;
+
+  if (opts.which) {
+    const fromPath = opts.which()?.trim();
+    if (fromPath) return fromPath;
+  }
+
+  const platform = opts.platform ?? process.platform;
+  const exists = opts.existsSync ?? ((p) => fs.existsSync(p));
+  const access = opts.accessSync ?? ((p, mode) => fs.accessSync(p, mode));
+  const xOk = opts.X_OK ?? fs.constants.X_OK;
+
+  /** @param {string} candidate */
+  const usable = (candidate) => {
+    try {
+      if (!exists(candidate)) return false;
+      access(candidate, xOk);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  if (platform === 'win32') {
+    const winBin = path.join(
+      opts.root,
+      FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR,
+      'Scripts',
+      'flatpak-node-generator.exe',
+    );
+    if (usable(winBin)) return winBin;
+  }
+
+  const unixBin = path.join(
+    opts.root,
+    FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR,
+    'bin',
+    'flatpak-node-generator',
+  );
+  if (usable(unixBin)) return unixBin;
+
+  return null;
+}
 
 /**
  * @param {string | null | undefined} packageManager
