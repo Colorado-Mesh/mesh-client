@@ -16,7 +16,9 @@ import {
 describe('precommit-tests force-full', () => {
   it('detects vitest harness and lockfile', () => {
     expect(isForceFullSuitePath('vitest.harness.ts')).toBe(true);
+    expect(isForceFullSuitePath('vitest.harness.mts')).toBe(true);
     expect(isForceFullSuitePath('vitest.config.ts')).toBe(true);
+    expect(isForceFullSuitePath('vitest.config.mts')).toBe(true);
     expect(isForceFullSuitePath('package.json')).toBe(true);
     expect(isForceFullSuitePath('pnpm-lock.yaml')).toBe(true);
     expect(isForceFullSuitePath('src/renderer/vitest.setup.ts')).toBe(true);
@@ -159,7 +161,7 @@ describe('precommit-tests runPrecommitTests', () => {
 
 describe('precommit-tests shouldForceFullSuite', () => {
   it('is true when any force-full path is present', () => {
-    expect(shouldForceFullSuite(['src/main/index.ts', 'vitest.config.ts'])).toBe(true);
+    expect(shouldForceFullSuite(['src/main/index.ts', 'vitest.config.mts'])).toBe(true);
     expect(shouldForceFullSuite(['src/main/index.ts'])).toBe(false);
   });
 });
