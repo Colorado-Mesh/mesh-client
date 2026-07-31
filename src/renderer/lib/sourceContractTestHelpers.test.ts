@@ -4,6 +4,7 @@ import {
   extractBalancedBlock,
   extractIfBlockBody,
   extractUseCallbackBody,
+  loadRuntimeSource,
 } from './sourceContractTestHelpers';
 
 describe('sourceContractTestHelpers', () => {
@@ -42,5 +43,10 @@ describe('sourceContractTestHelpers', () => {
 
   it('extractUseCallbackBody returns empty string when marker is missing', () => {
     expect(extractUseCallbackBody('const x = 1;', 'missing')).toBe('');
+  });
+
+  it('loadRuntimeSource reads a runtime module', () => {
+    const source = loadRuntimeSource('useReticulumRuntime.ts');
+    expect(source).toContain('useReticulumRuntime');
   });
 });

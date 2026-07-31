@@ -69,41 +69,26 @@ function parseCount(v: string | undefined, fallback: number): number {
   return Math.max(MESSAGE_RETENTION_MIN_COUNT, Math.min(MESSAGE_RETENTION_MAX_COUNT, n));
 }
 
+const MESSAGE_RETENTION_PROTOCOLS = ['meshtastic', 'meshcore', 'reticulum', 'rrc'] as const;
+
 export function parseMessageRetention(
   raw: Record<string, string> | null | undefined,
 ): MessageRetentionSettings {
   const r = raw ?? {};
-  return {
-    meshtasticEnabled: parseBool(
-      r[MESSAGE_RETENTION_KEYS.meshtasticEnabled],
-      DEFAULT_MESSAGE_RETENTION.meshtasticEnabled,
-    ),
-    meshtasticCount: parseCount(
-      r[MESSAGE_RETENTION_KEYS.meshtasticCount],
-      DEFAULT_MESSAGE_RETENTION.meshtasticCount,
-    ),
-    meshcoreEnabled: parseBool(
-      r[MESSAGE_RETENTION_KEYS.meshcoreEnabled],
-      DEFAULT_MESSAGE_RETENTION.meshcoreEnabled,
-    ),
-    meshcoreCount: parseCount(
-      r[MESSAGE_RETENTION_KEYS.meshcoreCount],
-      DEFAULT_MESSAGE_RETENTION.meshcoreCount,
-    ),
-    reticulumEnabled: parseBool(
-      r[MESSAGE_RETENTION_KEYS.reticulumEnabled],
-      DEFAULT_MESSAGE_RETENTION.reticulumEnabled,
-    ),
-    reticulumCount: parseCount(
-      r[MESSAGE_RETENTION_KEYS.reticulumCount],
-      DEFAULT_MESSAGE_RETENTION.reticulumCount,
-    ),
-    rrcEnabled: parseBool(
-      r[MESSAGE_RETENTION_KEYS.rrcEnabled],
-      DEFAULT_MESSAGE_RETENTION.rrcEnabled,
-    ),
-    rrcCount: parseCount(r[MESSAGE_RETENTION_KEYS.rrcCount], DEFAULT_MESSAGE_RETENTION.rrcCount),
-  };
+  const settings = { ...DEFAULT_MESSAGE_RETENTION };
+  for (const protocol of MESSAGE_RETENTION_PROTOCOLS) {
+    const enabledKey = `${protocol}Enabled` as const;
+    const countKey = `${protocol}Count` as const;
+    settings[enabledKey] = parseBool(
+      r[MESSAGE_RETENTION_KEYS[enabledKey]],
+      DEFAULT_MESSAGE_RETENTION[enabledKey],
+    );
+    settings[countKey] = parseCount(
+      r[MESSAGE_RETENTION_KEYS[countKey]],
+      DEFAULT_MESSAGE_RETENTION[countKey],
+    );
+  }
+  return settings;
 }
 
 /**

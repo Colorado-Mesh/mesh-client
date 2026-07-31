@@ -1262,7 +1262,11 @@
       "disableShare": "Paylaşım örneğini kapatın ve yeniden başlatın",
       "disableShareAria": "Paylaşım örneğini kapat ve yığını yeniden başlat",
       "disableFailed": "Paylaşım örneği kapatılamadı."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh, WebSocket taşımacılığı gerektirir.",
+    "letsMeshRequiresPort": "LetsMesh, {{port}} numaralı bağlantı noktasını gerektirir.",
+    "letsMeshKnownBrokersOnly": "LetsMesh /MeshMapper ön ayarı yalnızca bilinen cihaz imzalama aracılarını destekler. Diğer brokerler için Özel'i kullanın.",
+    "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

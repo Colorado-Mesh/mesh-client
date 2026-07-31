@@ -1,3 +1,4 @@
+import i18n from './i18n';
 import { isLetsMeshSettings } from './letsMeshJwt';
 import type { MQTTSettings } from './types';
 
@@ -6,13 +7,13 @@ const DEVICE_SIGNING_BROKER_PORT = 443;
 /** Hard validation before connecting with the LetsMesh preset (public US/EU brokers only). */
 export function validateLetsMeshPresetConnect(settings: MQTTSettings): string | null {
   if (!(settings.useWebSocket ?? false)) {
-    return 'LetsMesh requires WebSocket transport.';
+    return i18n.t('connectionPanel.letsMeshRequiresWebSocket');
   }
   if (settings.port !== DEVICE_SIGNING_BROKER_PORT) {
-    return `LetsMesh requires port ${DEVICE_SIGNING_BROKER_PORT}.`;
+    return i18n.t('connectionPanel.letsMeshRequiresPort', { port: DEVICE_SIGNING_BROKER_PORT });
   }
   if (!isLetsMeshSettings(settings.server)) {
-    return 'LetsMesh / MeshMapper preset only supports known device-signing brokers. Use Custom for other brokers.';
+    return i18n.t('connectionPanel.letsMeshKnownBrokersOnly');
   }
   return null;
 }
@@ -25,7 +26,7 @@ export function validateLetsMeshManualCredentials(settings: MQTTSettings): strin
   if (!settings.password?.trim()) return null;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Persisted legacy settings may omit username at runtime.
   if (!V1_USERNAME_HEX.test(settings.username?.trim() ?? '')) {
-    return 'Username must be v1_ followed by 64 hex characters (public key).';
+    return i18n.t('connectionPanel.letsMeshUsernameV1Hex');
   }
   return null;
 }

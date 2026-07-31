@@ -454,6 +454,22 @@ describe('privileged IPC sender validation (source contract)', () => {
     'db:saveNodePath',
     'db:getNodes',
     'db:getMessageChannels',
+    'db:getNodeNote',
+    'db:getMeshcoreMessages',
+    'db:searchMessages',
+    'db:searchMeshcoreMessages',
+    'db:getMeshcoreContacts',
+    'db:getMeshcoreMessageChannels',
+    'db:getMeshcoreContactCount',
+    'db:getMeshcoreContactById',
+    'db:getContactGroups',
+    'db:getContactGroupMembers',
+    'db:getPositionHistory',
+    'db:getMeshcoreHopHistory',
+    'db:getAllMeshcoreHopHistory',
+    'db:getMeshcoreTraceHistory',
+    'db:getAllMeshcorePathHistory',
+    'db:getMeshcorePathHistory',
     'log:getPath',
     'log:getRecentLines',
     'mqtt:getCachedNodes',
@@ -502,6 +518,34 @@ describe('privileged IPC sender validation (source contract)', () => {
 
   it('chat:export caps message array length', () => {
     expect(INDEX_SOURCE).toContain('CHAT_EXPORT_MAX_MESSAGES');
+  });
+
+  it('chat:export validates per-message field sizes and total bytes', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('chat:export'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 900);
+    expect(body).toContain('assertChatExportMessageSizes(messages)');
+    expect(body).toContain('formatChatExportLinesWithTotalCap(messages)');
+    expect(body).toContain('exportIpcRateLimit.checkOrThrow()');
+  });
+
+  it('expensive export/crypto IPC channels use createIpcRateLimiter', () => {
+    expect(INDEX_SOURCE).toContain('createIpcRateLimiter');
+    expect(INDEX_SOURCE).toContain('exportIpcRateLimit');
+    expect(INDEX_SOURCE).toContain('storageCryptoIpcRateLimit');
+    for (const channel of [
+      'db:export',
+      'db:import',
+      'log:export',
+      'support:exportBundle',
+      'storage:encrypt',
+      'storage:decrypt',
+    ] as const) {
+      const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+      expect(handlerIdx).toBeGreaterThan(-1);
+      const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
+      expect(body).toMatch(/RateLimit\.checkOrThrow\(\)/);
+    }
   });
 
   it('support:exportBundle validates mode and snapshot size', () => {
@@ -602,6 +646,34 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     expect(handlerBody).toContain('validateIpcSender(event)');
   });
 
+  const dbReadChannels = [
+    'db:getNodeNote',
+    'db:getMeshcoreMessages',
+    'db:searchMessages',
+    'db:searchMeshcoreMessages',
+    'db:getMeshcoreContacts',
+    'db:getMeshcoreMessageChannels',
+    'db:getMeshcoreContactCount',
+    'db:getMeshcoreContactById',
+    'db:getContactGroups',
+    'db:getContactGroupMembers',
+    'db:getPositionHistory',
+    'db:getMeshcoreHopHistory',
+    'db:getAllMeshcoreHopHistory',
+    'db:getMeshcoreTraceHistory',
+    'db:getAllMeshcorePathHistory',
+    'db:getMeshcorePathHistory',
+    'db:getNodes',
+    'db:getMessageChannels',
+  ] as const;
+
+  it.each(dbReadChannels)('%s calls assertIpcSender', (channel) => {
+    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
+  });
+
   it.each([
     ['app:setLoginItem', "assertIpcSender(event, 'app:setLoginItem')"],
     ['app:getLoginItem', "assertIpcSender(event, 'app:getLoginItem')"],
@@ -613,16 +685,14 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     expect(body).toContain(expectedCheck);
   });
 
-  it('regression: no db:* mutator (non-get/search) is missing a sender check', () => {
-    // Any db:* handler whose name is not a read-only getter/search must call
-    // assertIpcSender or validateIpcSender within the first 400 chars of its body.
+  it('regression: no db:* handler is missing a sender check', () => {
+    // Any db:* handler must call assertIpcSender or validateIpcSender within the
+    // first 400 chars of its body (reads and mutators alike).
     const re = /ipcMain\.handle\(\s*\n?\s*'(db:[a-zA-Z]+)'/g;
-    const readOnlyPrefixes = ['db:get', 'db:search'];
     const missing: string[] = [];
     let m: RegExpExecArray | null;
     while ((m = re.exec(INDEX_SOURCE))) {
       const channel = m[1];
-      if (readOnlyPrefixes.some((p) => channel.startsWith(p))) continue;
       const body = INDEX_SOURCE.slice(m.index, m.index + 400);
       const hasCheck =
         body.includes('assertIpcSender(event') || body.includes('validateIpcSender(event)');

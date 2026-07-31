@@ -1266,7 +1266,11 @@
       "disableShare": "Wyłącz udostępnianie instancji i uruchom ponownie",
       "disableShareAria": "Wyłącz opcję Udostępnij instancję i uruchom ponownie stos",
       "disableFailed": "Nie udało się wyłączyć instancji udostępniania."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh wymaga transportu WebSocket.",
+    "letsMeshRequiresPort": "LetsMesh wymaga portu {{port}}.",
+    "letsMeshKnownBrokersOnly": "Ustawienie wstępne LetsMesh /MeshMapper obsługuje tylko znane brokery podpisujące urządzenia. Użyj Custom dla innych brokerów.",
+    "letsMeshUsernameV1Hex": "Nazwa użytkownika musi składać się z v1_oraz 64 znaków szesnastkowych (klucz publiczny)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

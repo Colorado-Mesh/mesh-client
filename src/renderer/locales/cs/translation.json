@@ -1264,7 +1264,11 @@
       "disableShare": "Vypnout sdílení instance a restartovat",
       "disableShareAria": "Vypněte možnost Sdílet instanci a restartujte zásobník",
       "disableFailed": "Sdílení instance se nezdařilo vypnout."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh vyžaduje WebSocket transport.",
+    "letsMeshRequiresPort": "LetsMesh vyžaduje port {{port}}.",
+    "letsMeshKnownBrokersOnly": "Přednastavení LetsMesh /MeshMapper podporuje pouze známé makléře podepisující zařízení. Použít vlastní pro ostatní makléře.",
+    "letsMeshUsernameV1Hex": "Uživatelské jméno musí být v1_ následované 64 hexadecimálními znaky (veřejný klíč)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

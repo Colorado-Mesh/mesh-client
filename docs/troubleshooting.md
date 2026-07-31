@@ -445,6 +445,17 @@ flatpak run org.coloradomesh.MeshClient
 
 **Fix**: Click **Forget this device** on the reconnect card and pair fresh using the Bluetooth picker.
 
+### Dual-radio Noble BLE startup serialization (macOS/Windows)
+
+When both Meshtastic and MeshCore have **different** saved BLE peripherals, startup auto-connect is serialized so two Noble connects do not race:
+
+- Coordinator: `meshcoreDualNobleBleInit.ts`; wired from **`App.tsx` `useLayoutEffect`** (not `useEffect` — child ConnectionPanel auto-connect effects must see primary/secondary roles first).
+- **Primary** is chosen from `mesh-client:protocol` localStorage (`meshcore` / `meshtastic`; Reticulum or missing → Meshtastic).
+- **Secondary** waits on `awaitNobleBlePrimaryAutoConnectSettled()` (GATT + handshake ready or first attempt settled) — not full device configure.
+- All Noble IPC connects go through `withNobleBleConnectMutex()`.
+
+See also wake recovery under [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions) (Meshtastic-first stagger). For Reticulum BLE RNode vs Noble, see [Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE](#reticulum-ble-rnode-blocks-meshtasticmeshcore-noble-ble).
+
 ## USB serial
 
 ### Serial port not detected
@@ -567,6 +578,8 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 - **Renderer hung after wake:** Same as macOS — if you see `[main] renderer unresponsive after system resume (no heartbeat within 30s)` without `[usePowerRecovery]` logs, quit fully and relaunch.
 
 **Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
+
+**Reticulum (all platforms):** On suspend, `onPowerSuspend` clears in-memory rnsh sessions and rncp transfers. On resume, `onPowerResume` restarts the sidecar via `connect()` unless the user disconnected.
 
 ### Long-running sessions (multi-day uptime)
 
@@ -699,6 +712,10 @@ If a module section stays on **Waiting for … settings from the device** with A
 - Update to the latest mesh-client release.
 - Confirm **Channel PSKs** on the Connection tab match the channel (16- or 32-byte base64 per line; `ChannelName=base64` for MQTT-only names).
 - Enable **Enable TLS (mqtts / wss)** when the broker requires TLS on a non-standard port.
+
+### Meshtastic SDK routing failures mark chat rows failed
+
+When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts matched `console.error` / `console.warn` lines via `meshtasticSdkRoutingErrorConsoleHook.ts`, logs them at `console.debug`, and applies `applyMeshtasticOutboundRoutingErrorFromLog` (or `FromRejection`) so the outbound Chat row shows **Failed**. Unmatched queue rejections may still appear as `[meshtasticSdkRoutingErrorLog]`.
 
 ## MeshCore
 
@@ -1028,7 +1045,7 @@ Unrecognized codes pass through unchanged.
 
 ### Reticulum `proxyGet` fetch failed / many `[ReticulumIPC] start` lines
 
-**Symptoms**: Device log or devtools shows `Error occurred in handler for 'reticulum:proxyGet': TypeError: fetch failed`, often in bursts of three or more at once. The app log may also show dozens of `[ReticulumIPC] start` entries within a few seconds while Nomad/Radio/Peers panels stay empty or stale.
+**Symptoms**: Device log or devtools shows `Error occurred in handler for 'reticulum:proxyGet': TypeError: fetch failed`, often in bursts of three or more at once. The app log may also show dozens of `[ReticulumIPC] start` entries within a few seconds while Nomad/Network/Peers panels stay empty or stale.
 
 **Cause**: Overlapping sidecar start attempts restart the process before its HTTP server is ready (start/reconnect storm). Panels keep calling `proxyGet` against a dead or stale localhost port during the churn.
 
@@ -1304,6 +1321,8 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 **Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
 
 **Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied only if a pending mark exists (`rncpReceiveDestSharePending`, TTL); shares without a prior request-enable from this session are ignored.
+
+**Sleep / wake**: Suspend clears in-memory rnsh sessions and rncp transfers; reopen Remote (or wait for resume reconnect) after wake. See [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions).
 
 ### Reticulum Remote inbound rncp blocked (Ask mode / policy)
 

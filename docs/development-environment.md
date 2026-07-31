@@ -134,7 +134,7 @@ curl -s http://127.0.0.1:19437/api/v1/status
 # → {"status":"ok",...}
 ```
 
-In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection** → **Start stack**. Then use **Radio** to generate/import identity and manage interfaces (add, edit, delete). Dev builds resolve the binary from `reticulum-sidecar/target/debug/mesh-client-reticulum`.
+In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection** → **Start stack**. Then use **Network** for identity (generate/import) and **Connection** for interfaces (add, edit, delete). Dev builds resolve the binary from `reticulum-sidecar/target/debug/mesh-client-reticulum`.
 
 #### Keep Rust and the sidecar current
 

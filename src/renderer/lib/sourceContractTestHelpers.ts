@@ -1,4 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { expect } from 'vitest';
+
+const RUNTIME_DIR = join(import.meta.dirname, '../runtime');
+
+/** Load a `src/renderer/runtime/*` source file for contract tests. */
+export function loadRuntimeSource(filename: string): string {
+  return readFileSync(join(RUNTIME_DIR, filename), 'utf-8');
+}
 
 /** Returns the inner text of a `{ ... }` block starting at `openBraceIndex`. */
 export function extractBalancedBlock(source: string, openBraceIndex: number): string {

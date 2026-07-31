@@ -1,4 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('./i18n', () => ({
+  default: {
+    t: (key: string, opts?: { port?: number }) => {
+      switch (key) {
+        case 'connectionPanel.letsMeshRequiresWebSocket':
+          return 'LetsMesh requires WebSocket transport.';
+        case 'connectionPanel.letsMeshRequiresPort':
+          return `LetsMesh requires port ${opts?.port ?? ''}.`;
+        case 'connectionPanel.letsMeshKnownBrokersOnly':
+          return 'LetsMesh / MeshMapper preset only supports known device-signing brokers. Use Custom for other brokers.';
+        case 'connectionPanel.letsMeshUsernameV1Hex':
+          return 'Username must be v1_ followed by 64 hex characters (public key).';
+        default:
+          return key;
+      }
+    },
+  },
+}));
 
 import {
   letsMeshPresetConfigurationDeviation,

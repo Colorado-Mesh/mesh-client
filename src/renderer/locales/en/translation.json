@@ -728,6 +728,10 @@
   "connectionPanel": {
     "maxReconnectAttempts": "Max MQTT reconnect attempts",
     "letsMeshRegion": "LetsMesh region",
+    "letsMeshRequiresWebSocket": "LetsMesh requires WebSocket transport.",
+    "letsMeshRequiresPort": "LetsMesh requires port {{port}}.",
+    "letsMeshKnownBrokersOnly": "LetsMesh / MeshMapper preset only supports known device-signing brokers. Use Custom for other brokers.",
+    "letsMeshUsernameV1Hex": "Username must be v1_ followed by 64 hex characters (public key).",
     "ripplePresetConfirm": "The Ripple preset uses shared community credentials and disables TLS certificate verification. Only use this on a trusted network. Continue?",
     "coloradoPresetConfirm": "Colorado Mesh MQTT is for Colorado-area mesh users. The preset publishes under meshcore/DEN (Denver IATA). If you are not in Colorado, use LetsMesh or MeshMapper instead. Continue?",
     "coloradoServerNote": "Colorado Mesh is for Colorado-area mesh users. Topic prefix uses the Denver IATA (meshcore/DEN).",

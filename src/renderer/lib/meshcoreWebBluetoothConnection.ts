@@ -41,6 +41,7 @@ export class MeshcoreWebBluetoothConnection extends Connection {
   async close(): Promise<void> {
     this._serializedToDevice = null;
     if (this._fromDeviceReader) {
+      // catch-no-log-ok cancel during close — reader may already be cancelled
       await this._fromDeviceReader.cancel().catch(() => {});
       this._fromDeviceReader = null;
     }

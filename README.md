@@ -160,7 +160,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 - **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
-- **Accessibility**: modal focus trap, screen reader labels, reduce-motion toggle — see [Accessibility Checklist](docs/accessibility-checklist.md)
+- **Accessibility**: modal focus trap, screen reader labels, reduce-motion and **Use 24-hour time** toggles in App → Appearance — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
 - **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab; **Export for GitHub** (zip: debug snapshot + logs) and **Export for Developer** (includes full SQLite — share privately only)
 - **Updates & tray**: footer update status; system tray unread badge when the window is backgrounded
@@ -202,7 +202,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 **Node Management**
 
 - Node list with SNR, battery, GPS, **last heard** (any live RF packet—position, telemetry, traceroute, text—not only chat); **signal bars** appear only for direct (0-hop) RF neighbors; multi-hop and MQTT-only paths omit bars; SNR in traces and neighbor views uses **color-coded quality** (good / marginal / poor)
-- **Cross-Protocol Signal Analyzer**: foreign LoRa traffic detection (MeshCore, Reticulum RNS, other Meshtastic, unknown) on the **Meshtastic** Diagnostics tab and in node detail when RF rows are present; not shown on MeshCore/Reticulum tabs
+- **Cross-Protocol Signal Analyzer**: foreign LoRa traffic detection (MeshCore, Reticulum RNS, other Meshtastic, unknown) on the **Meshtastic** and **MeshCore** Diagnostics tabs and in node detail when RF rows are present; not shown on the Reticulum Diagnostics tab
 - Distance filter, favorite/pin nodes, device role icons
 - Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **channel utilization** (Meshtastic), **export/share contact** (MeshCore), **node notes** (free-text, SQLite-persisted), **watch / notify** (OS desktop notification on online/offline transition)
 - **Node Health Score**: composite 0–100 badge on each node row (signal 40 pts, recency 30 pts, load 20 pts, battery 10 pts); color-coded green / yellow / red with tooltip breakdown

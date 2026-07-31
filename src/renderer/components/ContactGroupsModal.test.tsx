@@ -1,17 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ContactGroup } from '@/shared/electron-api.types';
 
+import { renderWithToast } from '../lib/testRenderHelpers';
 import type { MeshNode } from '../lib/types';
 import ContactGroupsModal from './ContactGroupsModal';
-import { ToastProvider } from './Toast';
-
-function renderWithToast(ui: ReactElement) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
-}
 
 function makeNode(partial: Partial<MeshNode> & Pick<MeshNode, 'node_id' | 'long_name'>): MeshNode {
   return {

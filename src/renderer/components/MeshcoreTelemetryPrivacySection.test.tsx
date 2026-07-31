@@ -1,16 +1,10 @@
-import { render } from '@testing-library/react';
-import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { enrichMeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
+import { renderWithToast } from '../lib/testRenderHelpers';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
-import { ToastProvider } from './Toast';
-
-function renderWithToast(ui: ReactElement) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
-}
 
 function minimalSelfInfo() {
   return enrichMeshCoreSelfInfo({

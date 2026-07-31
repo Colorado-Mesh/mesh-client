@@ -1262,7 +1262,11 @@
       "disableShare": "Désactiver l'instance de partage et redémarrer",
       "disableShareAria": "Désactiver l'instance de partage et redémarrer la pile",
       "disableFailed": "Impossible de désactiver l'instance de partage."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh nécessite le transport WebSocket.",
+    "letsMeshRequiresPort": "LetsMesh nécessite le port {{port}}.",
+    "letsMeshKnownBrokersOnly": "Le préréglage LetsMesh/ MeshMapper ne prend en charge que les courtiers de signature d'appareils connus. Utilisez Personnalisé pour les autres courtiers.",
+    "letsMeshUsernameV1Hex": "Le nom d'utilisateur doit être v1_ suivi de 64 caractères hexadécimaux (clé publique)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

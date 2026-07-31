@@ -2,10 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '../components/Toast';
+import { MS_PER_DAY, MS_PER_HOUR, MS_PER_SECOND } from '../lib/timeConstants';
 
 /** Main-process uptime before showing a one-time restart suggestion toast. */
-const RESTART_NUDGE_UPTIME_SEC = 4 * 24 * 60 * 60;
-const RESTART_NUDGE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const RESTART_NUDGE_UPTIME_SEC = (4 * MS_PER_DAY) / MS_PER_SECOND;
+const RESTART_NUDGE_CHECK_INTERVAL_MS = MS_PER_HOUR;
 
 const RESTART_NUDGE_SHOWN_KEY = 'mesh-client:longSessionRestartNudgeShown';
 

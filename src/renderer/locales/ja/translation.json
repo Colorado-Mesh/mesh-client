@@ -1262,7 +1262,11 @@
       "disableShare": "インスタンスの共有をオフにして再起動する",
       "disableShareAria": "共有インスタンスをオフにして、スタックを再起動します",
       "disableFailed": "共有インスタンスをオフにできませんでした。"
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMeshにはWebSocketトランスポートが必要です。",
+    "letsMeshRequiresPort": "LetsMeshにはポート{{port}}が必要です。",
+    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapperプリセットは、既知のデバイス署名ブローカーのみをサポートします。他のブローカーにはカスタムを使用します。",
+    "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

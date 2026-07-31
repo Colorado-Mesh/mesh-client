@@ -1262,7 +1262,11 @@
       "disableShare": "Deel instantie uitschakelen en opnieuw opstarten",
       "disableShareAria": "Schakel de instantie Delen uit en start de stapel opnieuw",
       "disableFailed": "Kan de instantie Delen niet uitschakelen."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh vereist WebSocket transport.",
+    "letsMeshRequiresPort": "LetsMesh vereist poort {{port}}.",
+    "letsMeshKnownBrokersOnly": "LetsMesh / MeshMapper preset ondersteunt alleen bekende apparaatondertekenende makelaars. Gebruik Aangepast voor andere makelaars.",
+    "letsMeshUsernameV1Hex": "Gebruikersnaam moet v1_zijn, gevolgd door 64 hexadecimale tekens (openbare sleutel)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

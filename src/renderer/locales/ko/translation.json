@@ -1262,7 +1262,11 @@
       "disableShare": "인스턴스 공유 끄고 다시 시작",
       "disableShareAria": "인스턴스 공유 끄고 스택 다시 시작",
       "disableFailed": "회차 공유 기능을 끄지 못했습니다."
-    }
+    },
+    "letsMeshRequiresWebSocket": "LetsMesh는 WebSocket 전송이 필요합니다.",
+    "letsMeshRequiresPort": "LetsMesh에는 {{port}} 포트가 필요합니다.",
+    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper 사전 설정은 알려진 장치 서명 브로커만 지원합니다. 다른 브로커에 대해 사용자 정의를 사용하십시오.",
+    "letsMeshUsernameV1Hex": "사용자 이름은 v1_뒤에 64 16진수 문자 (공개 키) 이어야 합니다."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

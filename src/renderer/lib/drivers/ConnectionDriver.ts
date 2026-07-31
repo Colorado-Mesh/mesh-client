@@ -65,17 +65,38 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
  * protocol events into PacketRouter, and resolves identity signatures so that
  * reconnecting a previously-seen device reuses its existing store slices.
  *
- * Watchdog and reconnect-with-backoff are intentionally not yet implemented;
- * they layer on top of the slot registry's `lastDataAt`.
- *
- * MQTT status mirroring into `connectionStore` is updated from legacy runtime
- * MQTT IPC handlers via `mirrorMqttStatusToConnection` until MQTT moves fully into
- * drivers (see AGENTS.md).
+ * Watchdog and reconnect-with-backoff remain in protocol runtimes
+ * (`useMeshtasticRuntime` / `useMeshcoreRuntime`); this driver owns connect/
+ * disconnect serialization and slot registry only. MQTT status mirroring into
+ * `connectionStore` is updated from runtime MQTT IPC handlers via
+ * `mirrorMqttStatusToConnection` until MQTT moves fully into drivers (see AGENTS.md).
  */
 export class ConnectionDriver {
   private slots = new Map<string, TransportSlot>();
   /** transport-key → identityId; persists identity across reconnects of the same physical device. */
   private transportKeyMap = new Map<string, IdentityId>();
+  /** Serializes connect/disconnect so teardown cannot interleave with GATT setup. */
+  private lifecycleGate: Promise<unknown> = Promise.resolve();
+
+  private async withLifecycle<T>(fn: () => Promise<T>): Promise<T> {
+    const prev = this.lifecycleGate;
+    let release!: (value: unknown) => void;
+    const gate = new Promise<unknown>((resolve) => {
+      release = resolve;
+    });
+    this.lifecycleGate = prev.then(
+      () => gate,
+      () => gate,
+    );
+    await prev.catch(() => {
+      // catch-no-log-ok prior lifecycle failure must not block the next connect/disconnect
+    });
+    try {
+      return await fn();
+    } finally {
+      release(undefined);
+    }
+  }
 
   /** Resolve identity from transport and/or device-intrinsic signature keys. */
   lookupIdentityId(...keys: string[]): IdentityId | null {
@@ -164,106 +185,110 @@ export class ConnectionDriver {
       }
     }
 
-    let handle: unknown;
-    try {
-      handle = await protocol.createDevice(params);
-    } catch (err) {
-      if (createdProvisional) removeIdentityFromStore(identityId);
-      throw err;
-    }
-
-    let info: DiscoveryInfo | undefined;
-    if (protocol.discoverSelf) {
+    return this.withLifecycle(async () => {
+      let handle: unknown;
       try {
-        info = await protocol.discoverSelf(handle);
+        handle = await protocol.createDevice(params);
       } catch (err) {
-        await protocol.destroyDevice(handle).catch((e: unknown) => {
-          console.warn('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
-        });
         if (createdProvisional) removeIdentityFromStore(identityId);
         throw err;
       }
-    }
 
-    if (info) {
-      const resolvedKey = protocol.identitySignature(params, info);
-      if (resolvedKey !== provisionalKey) {
-        const matched = findIdentityBySignature(resolvedKey);
-        if (matched && matched.id !== identityId) {
+      let info: DiscoveryInfo | undefined;
+      if (protocol.discoverSelf) {
+        try {
+          info = await protocol.discoverSelf(handle);
+        } catch (err) {
+          await protocol.destroyDevice(handle).catch((e: unknown) => {
+            console.warn('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
+          });
           if (createdProvisional) removeIdentityFromStore(identityId);
-          identityId = matched.id;
+          throw err;
         }
       }
-      updateIdentity(identityId, {
-        signature: resolvedKey,
-        publicKey: info.publicKey,
-        selfNodeNum: info.myNodeNum,
-      });
-      this.registerTransportKeys(identityId, provisionalKey, resolvedKey);
-    } else {
-      this.registerTransportKeys(identityId, provisionalKey);
-    }
 
-    const transportId = randomPrefixedId('t');
-    const resolvedIdentityId = identityId;
-    const teardown = protocol.subscribe(handle, (event: DomainEvent) => {
-      const slot = this.slots.get(transportId);
-      if (slot) slot.lastDataAt = Date.now();
-      try {
-        packetRouter.dispatch(event, resolvedIdentityId);
-      } catch (err) {
-        console.error(
-          '[ConnectionDriver] packetRouter.dispatch failed:',
-          err instanceof Error ? err.message : String(err),
-        );
+      if (info) {
+        const resolvedKey = protocol.identitySignature(params, info);
+        if (resolvedKey !== provisionalKey) {
+          const matched = findIdentityBySignature(resolvedKey);
+          if (matched && matched.id !== identityId) {
+            if (createdProvisional) removeIdentityFromStore(identityId);
+            identityId = matched.id;
+          }
+        }
+        updateIdentity(identityId, {
+          signature: resolvedKey,
+          publicKey: info.publicKey,
+          selfNodeNum: info.myNodeNum,
+        });
+        this.registerTransportKeys(identityId, provisionalKey, resolvedKey);
+      } else {
+        this.registerTransportKeys(identityId, provisionalKey);
       }
+
+      const transportId = randomPrefixedId('t');
+      const resolvedIdentityId = identityId;
+      const teardown = protocol.subscribe(handle, (event: DomainEvent) => {
+        const slot = this.slots.get(transportId);
+        if (slot) slot.lastDataAt = Date.now();
+        try {
+          packetRouter.dispatch(event, resolvedIdentityId);
+        } catch (err) {
+          console.error(
+            '[ConnectionDriver] packetRouter.dispatch failed:',
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+      });
+
+      const transportRef: TransportRef = {
+        transportId,
+        type: params.type,
+        status: 'connected',
+        params,
+        lastDataReceivedAt: Date.now(),
+      };
+      addTransport(identityId, transportRef);
+
+      this.slots.set(transportId, {
+        transportId,
+        identityId,
+        protocol,
+        handle,
+        type: params.type,
+        params,
+        teardown,
+        lastDataAt: Date.now(),
+      });
+
+      setConnection(identityId, {
+        status: 'connecting',
+        connectionType: transportTypeToConnectionType(params.type),
+      });
+      setActiveIdentity(identityId);
+      mergeOfflineStoreIntoIdentity(protocol.type as MeshProtocol, identityId);
+
+      return identityId;
     });
-
-    const transportRef: TransportRef = {
-      transportId,
-      type: params.type,
-      status: 'connected',
-      params,
-      lastDataReceivedAt: Date.now(),
-    };
-    addTransport(identityId, transportRef);
-
-    this.slots.set(transportId, {
-      transportId,
-      identityId,
-      protocol,
-      handle,
-      type: params.type,
-      params,
-      teardown,
-      lastDataAt: Date.now(),
-    });
-
-    setConnection(identityId, {
-      status: 'connecting',
-      connectionType: transportTypeToConnectionType(params.type),
-    });
-    setActiveIdentity(identityId);
-    mergeOfflineStoreIntoIdentity(protocol.type as MeshProtocol, identityId);
-
-    return identityId;
   }
 
   async disconnect(identityId: IdentityId): Promise<void> {
-    const slotsToRemove = [...this.slots.values()].filter((s) => s.identityId === identityId);
-    for (const slot of slotsToRemove) {
-      try {
-        slot.teardown();
-      } catch (e) {
-        console.warn('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
+    await this.withLifecycle(async () => {
+      const slotsToRemove = [...this.slots.values()].filter((s) => s.identityId === identityId);
+      for (const slot of slotsToRemove) {
+        try {
+          slot.teardown();
+        } catch (e) {
+          console.warn('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
+        }
+        await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
+          console.warn('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
+        });
+        this.slots.delete(slot.transportId);
+        removeTransport(identityId, slot.transportId);
       }
-      await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
-        console.warn('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
-      });
-      this.slots.delete(slot.transportId);
-      removeTransport(identityId, slot.transportId);
-    }
-    setConnection(identityId, { status: 'disconnected' });
+      setConnection(identityId, { status: 'disconnected' });
+    });
   }
 
   /** "Forget this device": disconnects + clears every per-identity store slice. */
