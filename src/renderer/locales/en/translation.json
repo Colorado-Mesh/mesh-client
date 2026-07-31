@@ -4685,6 +4685,7 @@
       "pendingOffersTitle": "Pending inbound files",
       "pendingOffersBadgeAria_one": "{{count}} pending inbound file offer",
       "pendingOffersBadgeAria_other": "{{count}} pending inbound file offers",
+      "pendingOffersBadgeAriaCapped": "99+ pending inbound file offers",
       "offerLabel": "{{file}} ({{bytes}})",
       "acceptAria": "Accept {{file}}",
       "accept": "Accept",
@@ -4744,8 +4745,9 @@
       "peerUnreachable": "No path to that destination. The peer may be offline.",
       "checkingReachability": "Checking reachability…",
       "listenerLikelyOffTitle": "File receiving may be off",
-      "listenerLikelyOffBody": "No path to their file receive destination, but they look online for chat. Ask them to enable file receiving (Remote → Settings → Inbound file offers), then try again.",
+      "listenerLikelyOffBody": "No path to their file receive destination, but they look online for chat. Ask them to enable rncp file receiving and send their rncp receive hash, then try again.",
       "listenerLikelyOffConfirm": "Send enable request",
+      "listenerLikelyOffToast": "No path to their file receive destination; file receiving may be off. Ask them to enable rncp receive and send their hash, then try again.",
       "offerToast": "Incoming file offer: {{file}}",
       "copyInstructionsAria": "Copy instructions for enabling file receive",
       "copyInstructions": "Copy instructions",
@@ -4768,9 +4770,9 @@
       "enabled": "File receiving is enabled.",
       "enableFailed": "Could not enable file receiving: {{error}}",
       "saveDirRequired": "Choose a save folder to enable receiving.",
-      "identityUnknown": "Could not resolve this peer's identity hash yet — inbound Ask is enabled, but they were not added to the allow list. Try again after a path or announce arrives.",
-      "lxmfBody": "Please enable rncp receive (Remote → Settings → Inbound file offers) and send me your rncp receive hash.",
-      "lxmfShareBody": "File receiving is enabled. Here is my rncp receive destination (mesh-client will save it for you)."
+      "identityUnknown": "Inbound Ask is on, but this peer's identity hash is not known yet so they were not added to Always allow. You will still be asked before each file; try Always allow again after a path or announce arrives.",
+      "lxmfBody": "Please enable rncp file receiving and reply with your rncp receive destination hash.",
+      "lxmfShareBody": "File receiving is enabled. My rncp receive destination hash:"
     },
     "saved": {
       "labelPlaceholder": "Label",

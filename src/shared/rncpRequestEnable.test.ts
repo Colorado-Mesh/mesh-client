@@ -10,10 +10,9 @@ import {
 } from './rncpRequestEnable';
 
 describe('rncpRequestEnable', () => {
-  it('embeds sentinel after human instructions', () => {
+  it('appends mesh-client sentinel after human instructions for receiver automation', () => {
     const body = buildRncpRequestEnableMessageBody('Please enable file receiving.');
-    expect(body).toContain('Please enable file receiving.');
-    expect(body).toContain(RNCP_REQUEST_ENABLE_SENTINEL);
+    expect(body).toBe(`Please enable file receiving.\n\n${RNCP_REQUEST_ENABLE_SENTINEL}`);
   });
 
   it('detects sentinel in inbound body', () => {
@@ -22,9 +21,10 @@ describe('rncpRequestEnable', () => {
     expect(lxmfBodyContainsRncpRequestEnable(null)).toBe(false);
   });
 
-  it('builds and parses receive-dest share bodies', () => {
+  it('builds and parses receive-dest share bodies with a plain hash line', () => {
     const hash = 'ab'.repeat(16);
     const body = buildRncpReceiveDestShareBody('Here is my rncp receive destination.', hash);
+    expect(body).toContain(`Here is my rncp receive destination.\n${hash}`);
     expect(body).toContain(RNCP_RECEIVE_DEST_SHARE_PREFIX + hash);
     expect(parseRncpReceiveDestShare(body)).toBe(hash);
   });

@@ -106,8 +106,12 @@ export function RemoteTransferSection({
         lxmfPeerHash: resolveLxmfPeerHash(destinationHash),
       });
       if (reach.status === 'reachable') return true;
-      if (reach.status === 'listenerLikelyOff' && opts.promptEnable) {
-        setEnableRequestConfirmOpen(true);
+      if (reach.status === 'listenerLikelyOff') {
+        if (opts.promptEnable) {
+          setEnableRequestConfirmOpen(true);
+        } else {
+          addToast(t('reticulumRemote.transfer.listenerLikelyOffToast'), 'error');
+        }
         return false;
       }
       addToast(t('reticulumRemote.transfer.peerUnreachable'), 'error');

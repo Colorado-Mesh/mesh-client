@@ -4884,8 +4884,10 @@
       "peerUnreachable": "Geen pad naar die bestemming. De peer is mogelijk offline.",
       "checkingReachability": "Bereikbaarheid controleren...",
       "listenerLikelyOffTitle": "Het ontvangen van bestanden is mogelijk uitgeschakeld",
-      "listenerLikelyOffBody": "Er is geen pad naar de bestemming van hun bestand, maar ze zoeken online naar chat. Vraag hen om het ontvangen van bestanden in te schakelen (Op afstand → Instellingen → Inkomende bestandsaanbiedingen) en probeer het vervolgens opnieuw.",
-      "listenerLikelyOffConfirm": "Inschakelverzoek verzenden"
+      "listenerLikelyOffConfirm": "Inschakelverzoek verzenden",
+      "pendingOffersBadgeAriaCapped": "99+ openstaande aanbiedingen voor inkomende bestanden",
+      "listenerLikelyOffBody": "Er is geen pad naar de bestemming van hun bestand, maar ze zoeken online naar chat. Vraag hen om het ontvangen van rncp-bestanden in te schakelen en hun rncp-ontvangst-hash te verzenden, en probeer het vervolgens opnieuw.",
+      "listenerLikelyOffToast": "Geen pad naar hun bestandsontvangstbestemming; Het ontvangen van bestanden is mogelijk uitgeschakeld. Vraag hen om rncp het ontvangen en verzenden van hun hash in te schakelen en probeer het vervolgens opnieuw."
     },
     "enableRequest": {
       "title": "Bestandsontvangst inschakelen?",
@@ -4901,10 +4903,10 @@
       "enabled": "Bestandsontvangst is ingeschakeld.",
       "enableFailed": "Kon het ontvangen van bestanden niet inschakelen: {{error}}",
       "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
-      "identityUnknown": "De identiteitshash van deze peer kon nog niet worden bepaald — inkomend vragen is ingeschakeld, maar de peer is niet aan de toestaanlijst toegevoegd. Probeer het opnieuw nadat een pad of aankondiging is ontvangen.",
-      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Dit is mijn rncp-ontvangstbestemming (mesh-client bewaart dit voor u).",
       "shareDestWarning": "Als u dit inschakelt, zal mesh-client uw rncp-ontvangstbestemming naar deze peer sturen, zodat zij het verzenden van bestanden automatisch kunnen aanvullen.",
-      "lxmfBody": "Schakel rncp-ontvangst in (Op afstand → Instellingen → Inkomende bestandsaanbiedingen) en stuur mij uw rncp-ontvangst-hash."
+      "lxmfBody": "Schakel het ontvangen van rncp-bestanden in en antwoord met de hash van uw rncp-ontvangstbestemming.",
+      "lxmfShareBody": "Bestandsontvangst is ingeschakeld. Mijn rncp ontvangt bestemmingshash:",
+      "identityUnknown": "Inkomend vragen is ingeschakeld, maar de identiteitshash van deze peer is nog niet bekend, dus deze is niet toegevoegd aan Altijd toestaan. U wordt nog steeds vóór elk bestand gevraagd; probeer Altijd opnieuw toestaan ​​nadat een pad of aankondiging binnenkomt."
     },
     "saved": {
       "labelPlaceholder": "Label",

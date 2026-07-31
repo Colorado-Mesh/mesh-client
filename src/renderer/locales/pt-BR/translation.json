@@ -4884,8 +4884,10 @@
       "peerUnreachable": "Nenhum caminho para esse destino. O par pode estar offline.",
       "checkingReachability": "Verificando acessibilidade…",
       "listenerLikelyOffTitle": "O recebimento de arquivos pode estar desativado",
-      "listenerLikelyOffBody": "Nenhum caminho para o destino de recebimento do arquivo, mas eles procuram bate-papo on-line. Peça-lhes para ativar o recebimento de arquivos (Remoto → Configurações → Ofertas de arquivos de entrada) e tente novamente.",
-      "listenerLikelyOffConfirm": "Enviar solicitação de ativação"
+      "listenerLikelyOffConfirm": "Enviar solicitação de ativação",
+      "pendingOffersBadgeAriaCapped": "Mais de 99 ofertas pendentes de arquivos de entrada",
+      "listenerLikelyOffBody": "Nenhum caminho para o destino de recebimento do arquivo, mas eles procuram bate-papo on-line. Peça-lhes para ativar o recebimento do arquivo rncp e enviar o hash de recebimento do rncp e, em seguida, tente novamente.",
+      "listenerLikelyOffToast": "Nenhum caminho para o destino de recebimento do arquivo; o recebimento de arquivos pode estar desativado. Peça-lhes para ativar o recebimento e envio do rncp e tente novamente."
     },
     "enableRequest": {
       "title": "Habilitar recebimento de arquivos?",
@@ -4901,10 +4903,10 @@
       "enabled": "O recebimento de arquivos está ativado.",
       "enableFailed": "Não foi possível ativar o recebimento de arquivos: {{error}}",
       "saveDirRequired": "Escolha uma pasta de salvamento para ativar o recebimento.",
-      "identityUnknown": "Ainda não foi possível resolver o hash de identidade deste par — o modo Perguntar foi ativado, mas ele não foi adicionado à lista de permitidos. Tente novamente quando um caminho ou anúncio chegar.",
-      "lxmfShareBody": "O recebimento de arquivos está ativado. Aqui está meu destino de recebimento rncp (mesh-client salvará para você).",
       "shareDestWarning": "Se você ativar, o mesh-client enviará seu destino de recebimento rncp para esse par para que eles possam preencher automaticamente o envio do arquivo.",
-      "lxmfBody": "Ative o recebimento do rncp (Remoto → Configurações → Ofertas de arquivos de entrada) e envie-me seu hash de recebimento do rncp."
+      "lxmfBody": "Ative o recebimento do arquivo rncp e responda com seu hash de destino de recebimento do rncp.",
+      "lxmfShareBody": "O recebimento de arquivos está habilitado. Meu rncp recebe hash de destino:",
+      "identityUnknown": "A solicitação de entrada está ativada, mas o hash de identidade desse peer ainda não é conhecido, portanto, eles não foram adicionados a Sempre permitir. Você ainda será questionado antes de cada arquivo; tente Sempre permitir novamente após a chegada de um caminho ou anúncio."
     },
     "saved": {
       "labelPlaceholder": "Etiqueta",

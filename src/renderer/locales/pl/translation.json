@@ -4888,8 +4888,10 @@
       "peerUnreachable": "Żadnej drogi do tego celu. Partner może być offline.",
       "checkingReachability": "Sprawdzam osiągalność…",
       "listenerLikelyOffTitle": "Odbieranie plików może być wyłączone",
-      "listenerLikelyOffBody": "Brak ścieżki do miejsca docelowego odbioru pliku, ale szukają czatu w Internecie. Poproś o włączenie odbierania plików (Zdalne → Ustawienia → Oferty plików przychodzących), a następnie spróbuj ponownie.",
-      "listenerLikelyOffConfirm": "Wyślij prośbę o włączenie"
+      "listenerLikelyOffConfirm": "Wyślij prośbę o włączenie",
+      "pendingOffersBadgeAriaCapped": "Ponad 99 oczekujących ofert plików przychodzących",
+      "listenerLikelyOffBody": "Brak ścieżki do miejsca docelowego odbioru pliku, ale szukają czatu w Internecie. Poproś ich o włączenie odbierania plików rncp i wysłanie skrótu odbioru rncp, a następnie spróbuj ponownie.",
+      "listenerLikelyOffToast": "Brak ścieżki do miejsca docelowego odbioru pliku; odbieranie plików może być wyłączone. Poproś ich, aby umożliwili rncp odbieranie i wysyłanie skrótu, a następnie spróbuj ponownie."
     },
     "enableRequest": {
       "title": "Włączyć odbiór plików?",
@@ -4905,10 +4907,10 @@
       "enabled": "Odbiór plików jest włączony.",
       "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
       "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
-      "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
-      "lxmfShareBody": "Odbieranie plików jest włączone. Oto moje miejsce docelowe odbioru rncp (mesh-client zapisze je dla Ciebie).",
       "shareDestWarning": "Jeśli włączysz, mesh-client wyśle miejsce docelowe odbioru rncp do tego partnera, aby mógł automatycznie wypełnić wysyłanie pliku.",
-      "lxmfBody": "Włącz odbieranie rncp (Zdalne → Ustawienia → Oferty plików przychodzących) i wyślij mi swój skrót odbierania rncp."
+      "lxmfBody": "Włącz odbieranie pliku rncp i odpowiedz, podając hash miejsca docelowego odbioru rncp.",
+      "lxmfShareBody": "Odbieranie plików jest włączone. Mój rncp odbiera docelowy skrót:",
+      "identityUnknown": "Zapytanie przychodzące jest włączone, ale skrót tożsamości tego partnera nie jest jeszcze znany, dlatego nie został on dodany do opcji Zawsze zezwalaj. Nadal będziesz pytany przed każdym plikiem; spróbuj Zawsze zezwalaj ponownie po nadejściu ścieżki lub ogłoszenia."
     },
     "saved": {
       "labelPlaceholder": "Oznaczenie",

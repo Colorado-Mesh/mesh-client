@@ -80,9 +80,9 @@ export default function Sidebar({
           const showBadge = showChatBadge || showRoomsBadge || showRrcBadge || showRemoteBadge;
           const tabAriaLabel = showBadge
             ? showRemoteBadge
-              ? t('reticulumRemote.transfer.pendingOffersBadgeAria', {
-                  count: badgeCount > 99 ? 99 : badgeCount,
-                })
+              ? badgeCount > 99
+                ? t('reticulumRemote.transfer.pendingOffersBadgeAriaCapped')
+                : t('reticulumRemote.transfer.pendingOffersBadgeAria', { count: badgeCount })
               : t('aria.tabWithUnread', {
                   label: displayLabel,
                   count: badgeCount > 99 ? '99+' : badgeCount,
@@ -120,7 +120,7 @@ export default function Sidebar({
                 {showBadge && (
                   <span
                     className={`absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ${
-                      showRemoteBadge ? 'bg-amber-600' : 'bg-red-600'
+                      showRemoteBadge ? 'bg-amber-800' : 'bg-red-600'
                     }`}
                   >
                     {badgeCount > 99 ? '99+' : badgeCount}
