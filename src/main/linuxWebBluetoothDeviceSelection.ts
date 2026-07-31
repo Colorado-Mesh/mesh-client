@@ -5,6 +5,10 @@
  * Overwriting the stored callback cancels the in-flight requestDevice() with
  * "User cancelled the requestDevice() chooser." Retain the first callback and merge
  * device lists until the user selects, cancels, or the session is cleared.
+ *
+ * Each new chooser bumps `generation` so a delayed cancel from an earlier Connect
+ * cannot tear down a later chooser. Stale-selection timers are owned here and cleared
+ * on resolve / cancel / shutdown.
  */
 
 export interface LinuxWebBluetoothDiscoveredDevice {
@@ -17,9 +21,16 @@ export type LinuxWebBluetoothSelectCallback = (deviceId: string) => void;
 export class LinuxWebBluetoothDeviceSelection {
   private pendingCallback: LinuxWebBluetoothSelectCallback | null = null;
   private readonly devices = new Map<string, LinuxWebBluetoothDiscoveredDevice>();
+  private generation = 0;
+  private selectionTimer: ReturnType<typeof setTimeout> | null = null;
 
   hasPendingSelection(): boolean {
     return this.pendingCallback !== null;
+  }
+
+  /** Monotonic chooser generation; 0 means no session has started yet. */
+  currentGeneration(): number {
+    return this.generation;
   }
 
   /** Device ids allowed for resolveSelection (accumulated this session). */
@@ -34,9 +45,11 @@ export class LinuxWebBluetoothDeviceSelection {
   beginOrMergeDiscovery(
     deviceList: readonly { deviceId: string; deviceName?: string | null }[],
     callback: LinuxWebBluetoothSelectCallback,
-  ): { isNewRequest: boolean; devices: LinuxWebBluetoothDiscoveredDevice[] } {
+  ): { isNewRequest: boolean; devices: LinuxWebBluetoothDiscoveredDevice[]; generation: number } {
     const isNewRequest = this.pendingCallback === null;
     if (isNewRequest) {
+      this.clearTimer();
+      this.generation += 1;
       this.pendingCallback = callback;
       this.devices.clear();
     }
@@ -48,7 +61,29 @@ export class LinuxWebBluetoothDeviceSelection {
         deviceName: d.deviceName || 'Unknown Device',
       });
     }
-    return { isNewRequest, devices: Array.from(this.devices.values()) };
+    return {
+      isNewRequest,
+      devices: Array.from(this.devices.values()),
+      generation: this.generation,
+    };
+  }
+
+  /**
+   * Arm (or replace) the stale-selection auto-cancel timer for the current session.
+   * Cleared automatically on resolve / cancel / clear.
+   */
+  armStaleTimeout(timeoutMs: number, onStale: () => void): void {
+    this.clearTimer();
+    const callback = this.pendingCallback;
+    const generation = this.generation;
+    if (!callback) return;
+    this.selectionTimer = setTimeout(() => {
+      this.selectionTimer = null;
+      if (this.generation !== generation || this.pendingCallback !== callback) return;
+      if (this.cancelSelection()) {
+        onStale();
+      }
+    }, timeoutMs);
   }
 
   /**
@@ -75,6 +110,15 @@ export class LinuxWebBluetoothDeviceSelection {
   }
 
   /**
+   * Cancel only if `generation` matches the active chooser (ignores delayed cancels).
+   */
+  cancelIfGeneration(generation: number): boolean {
+    if (!this.pendingCallback) return false;
+    if (this.generation !== generation) return false;
+    return this.cancelSelection();
+  }
+
+  /**
    * Auto-cancel only if `callback` is still the retained first callback (stale-timeout guard).
    */
   cancelIfCallback(callback: LinuxWebBluetoothSelectCallback): boolean {
@@ -83,8 +127,16 @@ export class LinuxWebBluetoothDeviceSelection {
   }
 
   clear(): void {
+    this.clearTimer();
     this.pendingCallback = null;
     this.devices.clear();
+  }
+
+  private clearTimer(): void {
+    if (this.selectionTimer) {
+      clearTimeout(this.selectionTimer);
+      this.selectionTimer = null;
+    }
   }
 }
 

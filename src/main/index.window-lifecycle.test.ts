@@ -75,11 +75,14 @@ describe('Linux Web Bluetooth device selection', () => {
     expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery');
     expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.resolveSelection');
     expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.cancelSelection');
+    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.armStaleTimeout');
+    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.cancelIfGeneration');
     // Must not overwrite pending callback on every select-bluetooth-device event
     const handlerIdx = INDEX_SOURCE.indexOf("on('select-bluetooth-device'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
     expect(body).toContain('beginOrMergeDiscovery');
+    expect(body).toContain('armStaleTimeout');
     expect(body).not.toMatch(/pendingBluetoothCallback\s*=\s*callback/);
   });
 

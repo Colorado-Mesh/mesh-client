@@ -1750,20 +1750,19 @@ function createWindow() {
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault();
 
-    const { isNewRequest, devices } = linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery(
-      deviceList,
-      callback,
-    );
+    const { isNewRequest, devices, generation } =
+      linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery(deviceList, callback);
 
     if (isNewRequest) {
       // 60s was too short and left the session empty so selectBluetoothDevice was ignored.
-      setTimeout(() => {
-        if (linuxWebBluetoothDeviceSelection.cancelIfCallback(callback)) {
+      linuxWebBluetoothDeviceSelection.armStaleTimeout(
+        BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS,
+        () => {
           console.warn(
             `[IPC] Bluetooth device selection stale after ${BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS / MS_PER_SECOND}s — auto-cancelling`,
           );
-        }
-      }, BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS);
+        },
+      );
     }
 
     console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
@@ -1773,7 +1772,7 @@ function createWindow() {
       linuxWebBluetoothDeviceSelection.cancelSelection();
       return;
     }
-    mainWindow.webContents.send('bluetooth-devices-discovered', devices);
+    mainWindow.webContents.send('bluetooth-devices-discovered', devices, generation);
   });
 
   // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
@@ -2093,7 +2092,17 @@ ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
 });
 
 // ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-ipcMain.on('bluetooth-device-cancelled', () => {
+// Optional generation: when provided, ignore delayed cancels from an earlier chooser.
+// When omitted, force-cancel (pre-connect cleanup / legacy callers).
+ipcMain.on('bluetooth-device-cancelled', (_event, generation: unknown) => {
+  if (typeof generation === 'number' && Number.isFinite(generation)) {
+    if (!linuxWebBluetoothDeviceSelection.cancelIfGeneration(generation)) {
+      console.debug(
+        '[IPC] bluetooth-device-cancelled: generation mismatch or no pending — ignored',
+      );
+    }
+    return;
+  }
   linuxWebBluetoothDeviceSelection.cancelSelection();
 });
 

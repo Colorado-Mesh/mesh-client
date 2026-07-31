@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   BLUETOOTHCTL_NOT_FOUND_MESSAGE,
@@ -8,11 +8,16 @@ import {
 } from './linuxWebBluetoothDeviceSelection';
 
 describe('LinuxWebBluetoothDeviceSelection', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('stores the first callback and seeds the device map', () => {
     const session = new LinuxWebBluetoothDeviceSelection();
     const a = vi.fn();
     const result = session.beginOrMergeDiscovery([{ deviceId: 'aa:bb', deviceName: 'Radio A' }], a);
     expect(result.isNewRequest).toBe(true);
+    expect(result.generation).toBe(1);
     expect(result.devices).toEqual([{ deviceId: 'aa:bb', deviceName: 'Radio A' }]);
     expect(session.hasPendingSelection()).toBe(true);
     expect(session.knownDeviceIds().has('aa:bb')).toBe(true);
@@ -25,6 +30,7 @@ describe('LinuxWebBluetoothDeviceSelection', () => {
     session.beginOrMergeDiscovery([{ deviceId: 'aa:bb', deviceName: 'A' }], a);
     const second = session.beginOrMergeDiscovery([{ deviceId: 'cc:dd', deviceName: 'B' }], b);
     expect(second.isNewRequest).toBe(false);
+    expect(second.generation).toBe(1);
     expect(second.devices).toEqual([
       { deviceId: 'aa:bb', deviceName: 'A' },
       { deviceId: 'cc:dd', deviceName: 'B' },
@@ -62,6 +68,7 @@ describe('LinuxWebBluetoothDeviceSelection', () => {
     session.cancelSelection();
     const next = session.beginOrMergeDiscovery([{ deviceId: 'ee:ff', deviceName: 'C' }], c);
     expect(next.isNewRequest).toBe(true);
+    expect(next.generation).toBe(2);
     expect(session.resolveSelection('ee:ff')).toBe(true);
     expect(c).toHaveBeenCalledWith('ee:ff');
     expect(a).toHaveBeenCalledTimes(1);
@@ -101,6 +108,60 @@ describe('LinuxWebBluetoothDeviceSelection', () => {
     expect(session.hasPendingSelection()).toBe(true);
     expect(session.cancelIfCallback(a)).toBe(true);
     expect(a).toHaveBeenCalledWith('');
+  });
+
+  it('ignores a delayed cancel from an earlier chooser after a later Connect session starts', () => {
+    const session = new LinuxWebBluetoothDeviceSelection();
+    const first = vi.fn();
+    const second = vi.fn();
+    const firstSession = session.beginOrMergeDiscovery([{ deviceId: 'aa:bb' }], first);
+    expect(firstSession.generation).toBe(1);
+
+    // Simulate handleConnect: cancel prior generation, then a new requestDevice() chooser.
+    expect(session.cancelIfGeneration(1)).toBe(true);
+    expect(first).toHaveBeenCalledWith('');
+
+    const next = session.beginOrMergeDiscovery([{ deviceId: 'cc:dd' }], second);
+    expect(next.generation).toBe(2);
+    expect(session.hasPendingSelection()).toBe(true);
+
+    // Delayed cancel from the earlier Cancel / Connect still carries generation 1.
+    expect(session.cancelIfGeneration(1)).toBe(false);
+    expect(second).not.toHaveBeenCalled();
+    expect(session.hasPendingSelection()).toBe(true);
+    expect(session.currentGeneration()).toBe(2);
+  });
+
+  it('armStaleTimeout auto-cancels and clears; resolve clears the timer without firing', () => {
+    vi.useFakeTimers();
+    const session = new LinuxWebBluetoothDeviceSelection();
+    const a = vi.fn();
+    const onStale = vi.fn();
+    session.beginOrMergeDiscovery([{ deviceId: 'aa:bb' }], a);
+    session.armStaleTimeout(300_000, onStale);
+    expect(session.resolveSelection('aa:bb')).toBe(true);
+    vi.advanceTimersByTime(300_000);
+    expect(onStale).not.toHaveBeenCalled();
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(a).toHaveBeenCalledWith('aa:bb');
+  });
+
+  it('armStaleTimeout fires cancel only for the active generation', () => {
+    vi.useFakeTimers();
+    const session = new LinuxWebBluetoothDeviceSelection();
+    const first = vi.fn();
+    const second = vi.fn();
+    const onStale = vi.fn();
+    session.beginOrMergeDiscovery([{ deviceId: 'aa:bb' }], first);
+    session.armStaleTimeout(300_000, onStale);
+    session.cancelSelection();
+    session.beginOrMergeDiscovery([{ deviceId: 'cc:dd' }], second);
+    session.armStaleTimeout(300_000, onStale);
+    vi.advanceTimersByTime(300_000);
+    expect(onStale).toHaveBeenCalledTimes(1);
+    expect(first).toHaveBeenCalledWith('');
+    expect(second).toHaveBeenCalledWith('');
+    expect(session.hasPendingSelection()).toBe(false);
   });
 
   it('defaults missing device names to Unknown Device', () => {

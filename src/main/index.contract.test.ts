@@ -57,10 +57,31 @@ describe('Meshtastic MQTT waypoint IPC (source contract)', () => {
 
 describe('MQTT forwarder dropped-event logs (source contract)', () => {
   it('sanitizes dynamic MQTT fields when mainWindow is not ready', () => {
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(s\)/g) ?? []).length).toBe(2);
-    // MQTT dropped-event paths (3) + Linux bluetoothctl spawn error paths (3)
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(msg\)/g) ?? []).length).toBe(6);
-    expect((INDEX_SOURCE.match(/sanitizeLogMessage\(id\)/g) ?? []).length).toBe(2);
+    // Path-specific (not aggregate counts): each dropped-event branch sanitizes its payload.
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:status dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(s\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:error dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(msg\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:clientId dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(id\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:status \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(s\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:error \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:clientId \(meshcore\) dropped \(mainWindow not ready\)',[\s\S]{0,40}sanitizeLogMessage\(id\)/,
+    );
+  });
+
+  it('sanitizes Linux bluetoothctl spawn-error log paths', () => {
+    expect(INDEX_SOURCE).toMatch(/bluetooth-unpair error:',\s*sanitizeLogMessage\(msg\)/);
+    expect(INDEX_SOURCE).toMatch(/bluetooth-start-scan error:',\s*sanitizeLogMessage\(msg\)/);
+    expect(INDEX_SOURCE).toMatch(/bluetooth-connect error:',\s*sanitizeLogMessage\(msg\)/);
   });
 });
 
