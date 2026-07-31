@@ -26,17 +26,13 @@ describe('sendRncpRequestEnable', () => {
     expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalled();
   });
 
-  it('posts destination_hash and human enable-request text', async () => {
+  it('posts destination_hash and text with human body plus sentinel', async () => {
     const hash = 'ab'.repeat(16);
     await expect(sendRncpRequestEnable(hash)).resolves.toEqual({ ok: true });
     expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/send', {
       destination_hash: hash,
-      text: 'reticulumRemote.enableRequest.lxmfBody',
+      text: `reticulumRemote.enableRequest.lxmfBody\n\n${RNCP_REQUEST_ENABLE_SENTINEL}`,
     });
-    const text = (
-      vi.mocked(window.electronAPI.reticulum.proxyPost).mock.calls[0]?.[1] as { text: string }
-    ).text;
-    expect(text).not.toContain(RNCP_REQUEST_ENABLE_SENTINEL);
   });
 
   it('rate-limits a second send to the same peer within the cooldown', async () => {

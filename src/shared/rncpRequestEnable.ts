@@ -1,9 +1,8 @@
 /**
  * LXMF control sentinels for mesh-client rncp receive enable / dest sharing.
  * Human-readable LXMF bodies must stay app-agnostic (Sideband, Nomad, etc.).
- * mesh-client still recognizes these sentinels when present for UI automation;
- * request-enable outbound text is human-only so non-mesh-client peers are not
- * shown opaque mesh-client tokens.
+ * mesh-client peers additionally parse these sentinels for UI automation
+ * (enable-request modal + receive-dest autofill).
  */
 
 export const RNCP_REQUEST_ENABLE_SENTINEL = 'mesh-client:request-rncp-receive:v1';
@@ -16,14 +15,18 @@ export const RNCP_REQUEST_ENABLE_COOLDOWN_MS = 10 * 60 * 1000;
 
 const DEST_HASH_RE = /^[0-9a-f]{32}$/;
 
-/** Human-only enable request body (no mesh-client sentinel). */
+/**
+ * Enable-request LXMF body: app-agnostic human instructions, then the mesh-client
+ * sentinel so receiving mesh-client builds can open the enable/share modal.
+ * Other LXMF apps show the sentinel as an extra line they can ignore.
+ */
 export function buildRncpRequestEnableMessageBody(instructions: string): string {
-  return instructions.trim();
+  const trimmed = instructions.trim();
+  return `${trimmed}\n\n${RNCP_REQUEST_ENABLE_SENTINEL}`;
 }
 
 export function lxmfBodyContainsRncpRequestEnable(body: string | null | undefined): boolean {
   if (!body) return false;
-  // Legacy outbound bodies from older mesh-client builds still include the sentinel.
   return body.includes(RNCP_REQUEST_ENABLE_SENTINEL);
 }
 

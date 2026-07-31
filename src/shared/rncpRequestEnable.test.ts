@@ -10,10 +10,9 @@ import {
 } from './rncpRequestEnable';
 
 describe('rncpRequestEnable', () => {
-  it('returns human instructions only (no mesh-client sentinel)', () => {
+  it('appends mesh-client sentinel after human instructions for receiver automation', () => {
     const body = buildRncpRequestEnableMessageBody('Please enable file receiving.');
-    expect(body).toBe('Please enable file receiving.');
-    expect(body).not.toContain(RNCP_REQUEST_ENABLE_SENTINEL);
+    expect(body).toBe(`Please enable file receiving.\n\n${RNCP_REQUEST_ENABLE_SENTINEL}`);
   });
 
   it('detects sentinel in inbound body', () => {
