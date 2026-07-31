@@ -1090,7 +1090,8 @@ Unrecognized codes pass through unchanged.
 7. **Stub sidecar** — dev builds without `rns-stack` return an empty discovered list.
 8. **Filter empty** — interface-type filter pills may exclude all rows; try **All**.
 9. **Refresh errors** — transient sidecar errors show inline `refreshFailed` without clearing last-good markers.
-10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery.
+10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery. Eligible types are RNode / RNode Multi / KISS (with serial), BLE peer, I2P, UDP, and pipe.
+11. **Partial publishing (amber X of Y)** — Connection shows **publishing X of Y** in amber when some but not all eligible interfaces have `discoverable=yes`. TCP hubs never count toward Y. Use Network → **Publish on RMAP v4** (check again while indeterminate) or per-interface **RMAP** toggles on Connection to sync the rest.
 
 ### Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE
 
@@ -1322,7 +1323,7 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 **Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
 
-**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied only if a pending mark exists (`rncpReceiveDestSharePending`, TTL); shares without a prior request-enable from this session are ignored.
+**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied when present (prefer a pending mark from `rncpReceiveDestSharePending` in this session; shares without that mark are still applied so older peers / pasted hashes autofill). Inbound enable-request modal enqueue and dest-share apply are deduped by LXMF `message_hash` so periodic catch-up / WS duplicates do not re-open the modal or re-toast; when the peer is already listening, dest is auto-shared at most once per peer per outbound request-enable cooldown.
 
 **Sleep / wake**: Suspend clears in-memory rnsh sessions and rncp transfers; reopen Remote (or wait for resume reconnect) after wake. See [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions).
 

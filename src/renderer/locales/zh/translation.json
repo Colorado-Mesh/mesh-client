@@ -1234,16 +1234,15 @@
     "hintMeshtasticTcp2": "如果连接不可靠（例如使用meshtastic.local ） ，请尝试使用设备的IP地址—桌面mDNS可能不稳定。",
     "channelPsksMqttOnlyIndexHint": "未连接电台时，入站 MQTT 消息按频道名称路由到聊天标签页。使用 ChannelName@index=base64，使每个名称映射到正确的槽位 — 例如当您的公共 mesh 频道为槽位 1 时（Colorado mesh 风格）使用 LongFast@1=AQ==。不带 @ 的 LongFast 映射到槽位 0。",
     "reticulumRmap": {
-      "publishing": "RMAP v4 ：在{{count}}界面上发布",
       "notPublishing": "RMAP v4 ：未发布",
       "openSettings": "网络设置",
       "openSettingsAria": "在“网络”选项卡上打开RMAP发现设置",
-      "needsSync": "{{count}}启用的本地接口需要RMAP发现同步",
       "noPublishTargets": "没有启用要在RMAP上发布的本地接口。",
       "syncSuccess": "RMAP发现已同步到接口。",
       "openGlobalMap": "全球测绘",
       "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
-      "syncFailed": "RMAP发现同步失败。"
+      "syncFailed": "RMAP发现同步失败。",
+      "publishingOf": "RMAP v4：发布 {{total}} 的 {{current}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
     "coloradoServerNote": "Colorado Mesh 面向科罗拉多州地区的网格用户。主题前缀使用丹佛 IATA（meshcore/DEN）。",
@@ -4110,11 +4109,11 @@
       "invalidHost": "上可访问的主机名无效。",
       "tooLong": "可触及的值太长。"
     },
-    "hint": "将RMAP发布和应用GPS坐标应用于所有启用的支持RMAP的接口（RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
     "openGlobalMap": "全球测绘",
     "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
     "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",
-    "disablePartialSuccess": "在{{applied}}/{{total}}接口上禁用RMAP发布。"
+    "disablePartialSuccess": "在{{applied}}/{{total}}接口上禁用RMAP发布。",
+    "hint": "在所有启用的支持 RMAP 的接口（RNode/Multi、KISS、BLE 对等、I2P、UDP、管道）上启用 RMAP 发布和应用程序 GPS 坐标。仅当每个符合条件的接口都在发布时，该复选框才会打开；部分状态是不确定的——再次检查以同步其余部分。使用连接上的每个接口 RMAP 切换进行精细控制。 LoRa 路径还支持传输和 rmap.world 中心。"
   },
   "reticulumTopology": {
     "title": "网络拓扑图",

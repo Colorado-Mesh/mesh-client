@@ -109,6 +109,122 @@ describe('ReticulumRmapDiscoveryControls', () => {
     expect(await screen.findByText('reticulumRmapDiscovery.restartTitle')).toBeInTheDocument();
   });
 
+  it('enables RMAP on every eligible interface when Network publish is checked', async () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ staticLat: 40.01, staticLon: -105.02 }),
+    );
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'rnode-1',
+              name: 'LoRa',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB0',
+              discoverable: false,
+            },
+            {
+              id: 'ble-1',
+              name: 'BLE',
+              type: 'ble_peer',
+              enabled: true,
+              status: 'up',
+              discoverable: false,
+            },
+            {
+              id: 'i2p-1',
+              name: 'I2P',
+              type: 'i2p',
+              enabled: true,
+              status: 'up',
+              discoverable: false,
+            },
+            {
+              id: 'hub-1',
+              name: 'RMAP World',
+              type: 'tcp',
+              enabled: true,
+              status: 'up',
+              host: 'rmap.world',
+              port: 4242,
+              discoverable: false,
+            },
+          ],
+        });
+      }
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: true,
+          loglevel: 4,
+        });
+      }
+      return Promise.resolve({});
+    });
+    const user = userEvent.setup();
+    renderControls();
+    await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
+    await user.click(screen.getByLabelText('reticulumRmapDiscovery.publishToggle'));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        '/api/v1/interfaces/rnode-1',
+        expect.objectContaining({ discoverable: true }),
+      );
+    });
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+      '/api/v1/interfaces/ble-1',
+      expect.objectContaining({ discoverable: true }),
+    );
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+      '/api/v1/interfaces/i2p-1',
+      expect.objectContaining({ discoverable: true, connectable: true }),
+    );
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalledWith(
+      '/api/v1/interfaces/hub-1',
+      expect.anything(),
+    );
+  });
+
+  it('shows indeterminate Network checkbox when only some eligible interfaces publish', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'rnode-1',
+              name: 'LoRa',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB0',
+              discoverable: true,
+            },
+            {
+              id: 'ble-1',
+              name: 'BLE',
+              type: 'ble_peer',
+              enabled: true,
+              status: 'up',
+              discoverable: false,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({});
+    });
+    renderControls();
+    const checkbox = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
+    await waitFor(() => {
+      expect(checkbox).not.toBeChecked();
+      expect(checkbox).toHaveProperty('indeterminate', true);
+    });
+  });
+
   it('has no serious axe violations on GPS warning state', async () => {
     const { container } = renderControls();
     await screen.findByText('reticulumRmapDiscovery.gpsMissingWarning');

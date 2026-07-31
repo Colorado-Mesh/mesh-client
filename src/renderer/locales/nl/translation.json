@@ -1233,16 +1233,15 @@
     "hintMeshtasticTcp2": "Als de verbinding onbetrouwbaar is (bijv. met meshtastic.local), probeer dan in plaats daarvan het IP-adres van het apparaat — desktop mDNS kan schilferig zijn.",
     "channelPsksMqttOnlyIndexHint": "Zonder radioverbinding worden inkomende MQTT-berichten per kanaalnaam naar chattabbladen gerouteerd. Gebruik ChannelName@index=base64 zodat elke naam naar de juiste sleuf wijst — bijvoorbeeld LongFast@1=AQ== wanneer uw openbare meshkanaal sleuf 1 is (Colorado-mesh-stijl). LongFast zonder @ wijst naar sleuf 0.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: publiceren op {{count}} interface(s)",
       "notPublishing": "RMAP v4: niet publiceren",
       "openSettings": "Netwerk instellingen",
       "openSettingsAria": "Open RMAP-detectie-instellingen op het tabblad Netwerk",
-      "needsSync": "{{count}} ingeschakelde lokale interface(s) hebben RMAP-detectiesynchronisatie nodig",
       "noPublishTargets": "Geen ingeschakelde lokale interfaces om op RMAP te publiceren.",
       "syncSuccess": "RMAP-detectie gesynchroniseerd met interface.",
       "openGlobalMap": "Wereldkaart",
       "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
-      "syncFailed": "Synchronisatie van RMAP-detectie mislukt."
+      "syncFailed": "Synchronisatie van RMAP-detectie mislukt.",
+      "publishingOf": "RMAP v4: publicatie van {{current}} van {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT is voor gebruikers van Colorado-zone mesh. De preset publiceert onder meshcore/DEN (Denver IATA). Als je niet in Colorado bent, gebruik dan LetsMesh of MeshMapper. Doorgaan?",
     "coloradoServerNote": "Colorado Mesh is voor meshgebruikers in de regio Colorado. Onderwerpvoorvoegsel gebruikt de Denver IATA (meshcore/DEN).",
@@ -4110,11 +4109,11 @@
       "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
       "tooLong": "Bereikbaar op waarde is te lang."
     },
-    "hint": "Is detecteerbaar=ja en past GPS-coördinaten toe op alle ingeschakelde RMAP-compatibele interfaces (RNode, KISS, BLE-peer, I2P, UDP, pipe). Gebruik per interface RMAP-schakelaars op Verbinding voor FINE-besturing. LoRa-paden maken ook transport en de rmap.world-hub mogelijk.",
     "openGlobalMap": "Globale kaart openen",
     "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
     "applyPartialSuccess": "RMAP-instellingen toegepast op {{applied}} van {{total}} interfaces.",
-    "disablePartialSuccess": "RMAP-publicatie uitgeschakeld op {{applied}} van {{total}} interfaces."
+    "disablePartialSuccess": "RMAP-publicatie uitgeschakeld op {{applied}} van {{total}} interfaces.",
+    "hint": "Maakt RMAP-publicatie en app-GPS-coördinaten mogelijk op alle ingeschakelde RMAP-compatibele interfaces (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Het selectievakje is alleen ingeschakeld als elke in aanmerking komende interface publiceert; een gedeeltelijke status is onbepaald. Controleer opnieuw om de rest te synchroniseren. Gebruik per interface RMAP-schakelaars op Verbinding voor nauwkeurige controle. LoRa-paden maken ook transport en de rmap.world-hub mogelijk."
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",

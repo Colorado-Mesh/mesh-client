@@ -1234,16 +1234,15 @@
     "hintMeshtasticTcp2": "接続が信頼できない場合（ meshtastic.localなど）は、代わりにデバイスのIPアドレスを試してみてください。デスクトップのmDNSが不安定な場合があります。",
     "channelPsksMqttOnlyIndexHint": "無線が未接続のとき、受信 MQTT メッセージはチャネル名でチャットタブに振り分けられます。ChannelName@index=base64 を使い、各名前を正しいスロットに対応させます — 例: 公開 mesh チャネルがスロット 1 のとき（Colorado mesh 方式）は LongFast@1=AQ==。LongFast に @ がない場合はスロット 0 です。",
     "reticulumRmap": {
-      "publishing": "RMAP v 4 ： {{count}}インターフェースでの公開",
       "notPublishing": "RMAP v 4 ：公開されていません",
       "openSettings": "ネットワーク設定",
       "openSettingsAria": "[ネットワーク]タブでRMAP検出設定を開く",
-      "needsSync": "{{count}}有効なローカルインターフェースにはRMAP検出の同期が必要です",
       "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
       "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
       "openGlobalMap": "グローバルマップ",
       "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
-      "syncFailed": "RMAP検出の同期に失敗しました。"
+      "syncFailed": "RMAP検出の同期に失敗しました。",
+      "publishingOf": "RMAP v4: {{current}} または {{total}} を公開しています"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
     "coloradoServerNote": "Colorado Mesh はコロラド地域のメッシュ利用者向けです。トピック接頭辞はデンバー IATA（meshcore/DEN）を使用します。",
@@ -4110,11 +4109,11 @@
       "invalidHost": "に到達可能なホスト名が無効です。",
       "tooLong": "値で到達可能な時間が長すぎます。"
     },
-    "hint": "すべての有効なRMAP対応インターフェイス（RNode、KISS、BLEピア、I2P、UDP、パイプ）にRMAP公開とApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。",
     "openGlobalMap": "グローバルマップを開く",
     "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
     "applyPartialSuccess": "RMAP設定は、{{total}}インターフェイスの{{applied}}に適用されます。",
-    "disablePartialSuccess": "RMAPの公開は、{{total}}インターフェイスの{{applied}}で無効になっています。"
+    "disablePartialSuccess": "RMAPの公開は、{{total}}インターフェイスの{{applied}}で無効になっています。",
+    "hint": "すべての有効な RMAP 対応インターフェイス (RNode/Multi、KISS、BLE ピア、I2P、UDP、パイプ) で RMAP 公開とアプリ GPS 座標を有効にします。このチェックボックスは、対象となるすべてのインターフェイスが公開されている場合にのみオンになります。部分的な状態は不定です。残りを同期するにはもう一度確認してください。細かく制御するには、インターフェイスごとの RMAP の [接続] 切り替えを使用します。 LoRa パスにより、トランスポートと rmap.world ハブも有効になります。"
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",

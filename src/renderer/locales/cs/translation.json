@@ -1235,16 +1235,15 @@
     "hintMeshtasticTcp2": "Pokud je připojení nespolehlivé (např. s meshtastic.local), zkuste místo toho IP adresu zařízení — desktop mDNS může být šupinatý.",
     "channelPsksMqttOnlyIndexHint": "Bez připojeného rádia směřují příchozí zprávy MQTT na karty chatu podle názvu kanálu. Použijte ChannelName@index=base64, aby se každý název mapoval na správný slot — například LongFast@1=AQ==, když je váš veřejný mesh kanál slot 1 (styl Colorado mesh). LongFast bez @ odpovídá slotu 0.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: publikování na rozhraní {{count}}",
       "notPublishing": "RMAP v4: nezveřejňuje se",
       "openSettings": "Nastavení sítě",
       "openSettingsAria": "Otevřít nastavení zjišťování RMAP na kartě Síť",
-      "needsSync": "{{count}} povolená místní rozhraní vyžadují synchronizaci zjišťování RMAP",
       "noPublishTargets": "Žádná povolená místní rozhraní pro publikování v RMAP.",
       "syncSuccess": "Zjištění RMAP synchronizováno s rozhraním.",
       "openGlobalMap": "Globální mapa",
       "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
-      "syncFailed": "Synchronizace zjišťování RMAP se nezdařila."
+      "syncFailed": "Synchronizace zjišťování RMAP se nezdařila.",
+      "publishingOf": "RMAP v4: publikování {{current}} z {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT je určen pro uživatele síťoviny v oblasti Colorada. Přednastavení publikuje pod meshcore/DEN (Denver IATA). Pokud nejste v Coloradu, použijte LetsMesh nebo MeshMapper. Pokračovat?",
     "coloradoServerNote": "Colorado Mesh je určen pro uživatele mesh v oblasti Colorada. Předpona tématu používá Denver IATA (meshcore/DEN).",
@@ -4112,11 +4111,11 @@
       "invalidHost": "Neplatné jméno hostitele pro dosažitelné dne.",
       "tooLong": "Dosažitelná hodnota je příliš dlouhá."
     },
-    "hint": "Aplikuje zjistitelné=ano a GPS souřadnice aplikace na všechna povolená rozhraní podporující RMAP (RNode, KISS, ble peer, I2P, UDP, Pipe). Použijte přepínače RMAP na připojení pro jemné ovládání. Cesty LoRa také umožňují dopravu a rozbočovač rmap.world.",
     "openGlobalMap": "Otevřít globální mapu",
     "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
     "applyPartialSuccess": "Nastavení RMAP použito pro {{applied}} z {{total}} rozhraní.",
-    "disablePartialSuccess": "Publikování RMAP je zakázáno na {{applied}} z {{total}} rozhraní."
+    "disablePartialSuccess": "Publikování RMAP je zakázáno na {{applied}} z {{total}} rozhraní.",
+    "hint": "Umožňuje publikování RMAP a souřadnice App GPS na všech povolených rozhraních podporujících RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, potrubí). Zaškrtávací políčko je zapnuto pouze v případě, že každé způsobilé rozhraní publikuje; částečný stav je neurčitý – zaškrtněte znovu pro synchronizaci zbytku. Pro jemné ovládání použijte přepínače RMAP pro jednotlivá rozhraní na Připojení. LoRa cesty také umožňují dopravu a rmap.world hub."
   },
   "reticulumTopology": {
     "title": "topologie sítě",

@@ -7,6 +7,7 @@ import {
   RETICULUM_RMAP_WORLD_HUB_PRESET,
   reticulumInterfaceMatchesHubPreset,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { isValidConnectHost } from '@/shared/connectHost';
@@ -97,13 +98,24 @@ const RMAP_DISCOVERY_EXCLUDED_TYPES = new Set(['auto', 'tcp']);
 
 /**
  * Enabled interfaces that support per-interface discoverable=yes in rnsd config.
- * Excludes Auto (LAN) and outbound TCP client hubs — Scenario A server/backbone
- * interfaces are not CRUD-managed in mesh-client today.
+ * Excludes Auto (LAN), outbound TCP client hubs, and system-managed shared-instance
+ * rows — Scenario A server/backbone interfaces are not CRUD-managed in mesh-client today.
  */
 export function isReticulumRmapDiscoveryCapable(
-  row: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port'>,
+  row: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port'> &
+    Partial<Pick<ReticulumInterfaceRow, 'id' | 'name'>>,
 ): boolean {
   if (!row.enabled) {
+    return false;
+  }
+  if (
+    getReticulumInterfaceHelp({
+      id: row.id ?? '',
+      name: row.name ?? '',
+      type: row.type,
+      serial_port: row.serial_port,
+    }).isSystemManaged
+  ) {
     return false;
   }
   const type = row.type.trim().toLowerCase();
@@ -131,8 +143,29 @@ export function listReticulumRmapDiscoveryCapable(
 /** @deprecated Prefer listReticulumRmapDiscoveryCapable */
 export const listReticulumRmapPublishTargets = listReticulumRmapDiscoveryCapable;
 
-export function readRmapPublishState(interfaces: readonly ReticulumInterfaceRow[]): boolean {
+/** True when at least one eligible interface is discoverable (publishing intent / maybeSync). */
+export function readRmapAnyPublishing(interfaces: readonly ReticulumInterfaceRow[]): boolean {
   return listReticulumRmapDiscoveryCapable(interfaces).some((row) => row.discoverable === true);
+}
+
+/**
+ * Network "Publish on RMAP v4" checked state: true only when every eligible
+ * enabled interface is discoverable. Partial coverage returns false so the user
+ * can check again to enable-all.
+ */
+export function readRmapPublishState(interfaces: readonly ReticulumInterfaceRow[]): boolean {
+  const targets = listReticulumRmapDiscoveryCapable(interfaces);
+  return targets.length > 0 && targets.every((row) => row.discoverable === true);
+}
+
+/** True when some but not all eligible interfaces are discoverable. */
+export function readRmapPublishPartial(interfaces: readonly ReticulumInterfaceRow[]): boolean {
+  const targets = listReticulumRmapDiscoveryCapable(interfaces);
+  if (targets.length === 0) {
+    return false;
+  }
+  const discoverableCount = targets.filter((row) => row.discoverable === true).length;
+  return discoverableCount > 0 && discoverableCount < targets.length;
 }
 
 /** LoRa/BLE paths that need a TCP transport bridge to reach RMAP (Scenario B). */
@@ -181,6 +214,22 @@ export interface RmapPublishStatusSummary {
   needsSyncCount: number;
 }
 
+export type RmapPublishCoverageTone = 'off' | 'partial' | 'full';
+
+/** Connection status color tone for X of Y publish coverage. */
+export function rmapPublishCoverageTone(
+  summary: Pick<RmapPublishStatusSummary, 'discoverableCount' | 'publishTargetCount'>,
+): RmapPublishCoverageTone {
+  const { discoverableCount: x, publishTargetCount: y } = summary;
+  if (x <= 0 || y <= 0) {
+    return 'off';
+  }
+  if (x < y) {
+    return 'partial';
+  }
+  return 'full';
+}
+
 export function summarizeRmapPublishStatus(
   interfaces: readonly ReticulumInterfaceRow[],
 ): RmapPublishStatusSummary {
@@ -196,17 +245,19 @@ export function summarizeRmapPublishStatus(
 }
 
 export function isReticulumRmapDiscoverableRow(
-  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'> &
+    Partial<Pick<ReticulumInterfaceRow, 'id' | 'name'>>,
 ): boolean {
   return iface.discoverable === true && isReticulumRmapDiscoveryCapable(iface);
 }
 
 export function isReticulumRmapNeedsSyncRow(
-  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'> &
+    Partial<Pick<ReticulumInterfaceRow, 'id' | 'name'>>,
   interfaces: readonly ReticulumInterfaceRow[],
 ): boolean {
   return (
-    readRmapPublishState(interfaces) &&
+    readRmapAnyPublishing(interfaces) &&
     isReticulumRmapDiscoveryCapable(iface) &&
     iface.discoverable !== true
   );
@@ -259,7 +310,8 @@ export async function maybeSyncReticulumRmapAfterInterfaceEnable(
   opts: { discoveryName?: string | null },
 ): Promise<boolean> {
   const interfaces = await fetchReticulumInterfaceRows();
-  if (!readRmapPublishState(interfaces)) {
+  // Any-publishing intent (including partial X of Y), not Network all-checked.
+  if (!readRmapAnyPublishing(interfaces)) {
     return false;
   }
   const iface = interfaces.find((row) => row.id === interfaceId);

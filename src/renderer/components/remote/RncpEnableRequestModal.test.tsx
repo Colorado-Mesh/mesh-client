@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetRncpLxmfControlSideEffectDedupForTests } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { useRncpEnableRequestStore } from '@/renderer/stores/rncpEnableRequestStore';
 import { RNCP_RECEIVE_DEST_SHARE_PREFIX } from '@/shared/rncpRequestEnable';
 
@@ -21,6 +22,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 describe('RncpEnableRequestModal', () => {
   beforeEach(() => {
     addToast.mockReset();
+    resetRncpLxmfControlSideEffectDedupForTests();
     useRncpEnableRequestStore.setState({ prompts: [], dismissedPeers: new Set() });
     useRncpEnableRequestStore.getState().enqueue({
       peerHash: 'a'.repeat(32),
@@ -113,7 +115,7 @@ describe('RncpEnableRequestModal', () => {
     expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
   });
 
-  it('auto-dismisses a repeat enable-request while already listening', async () => {
+  it('auto-dismisses a repeat enable-request while already listening without re-sharing', async () => {
     vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
       enabled: true,
       inbound_mode: 'ask',
@@ -124,6 +126,7 @@ describe('RncpEnableRequestModal', () => {
     await waitFor(() => {
       expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
     });
+    expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(1);
 
     useRncpEnableRequestStore.getState().enqueue({
       peerHash: 'a'.repeat(32),
@@ -134,9 +137,37 @@ describe('RncpEnableRequestModal', () => {
     await waitFor(() => {
       expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
     });
-    expect(
-      vi.mocked(window.electronAPI.reticulum.proxyPost).mock.calls.length,
-    ).toBeGreaterThanOrEqual(2);
+    // Cooldown: second already-enabled pass dismisses only — no duplicate dest-share LXMF.
+    expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries auto-share for the same peer after a failed first attempt', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: true,
+      inbound_mode: 'ask',
+      allowed: [],
+      blocked: [],
+    });
+    vi.mocked(window.electronAPI.reticulum.proxyPost)
+      .mockResolvedValueOnce({ ok: false, error: 'network down' })
+      .mockResolvedValue({ ok: true });
+
+    const { rerender } = render(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
+    });
+    expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(1);
+
+    useRncpEnableRequestStore.getState().enqueue({
+      peerHash: 'a'.repeat(32),
+      peerLabel: 'Alice',
+      receivedAt: Date.now(),
+    });
+    rerender(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(vi.mocked(window.electronAPI.reticulum.proxyPost)).toHaveBeenCalledTimes(2);
+    });
+    expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
   });
 
   it('enables Ask and still shares when Always allow cannot resolve identity', async () => {

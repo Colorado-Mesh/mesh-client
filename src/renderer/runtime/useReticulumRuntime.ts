@@ -99,6 +99,13 @@ import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/ret
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
+import {
+  commitRncpLxmfControlHandled,
+  releaseRncpLxmfControlHandled,
+  resolveRncpLxmfControlMessageHash,
+  tryMarkRncpLxmfControlHandled,
+  tryReserveRncpLxmfControlHandled,
+} from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import {
@@ -584,13 +591,22 @@ export function useReticulumRuntime(): ProtocolRuntime {
           p.sender_hash &&
           lxmfBodyContainsRncpRequestEnable(p.text)
         ) {
-          useRncpEnableRequestStore.getState().enqueue({
-            peerHash: p.sender_hash,
-            peerLabel: p.sender_name ?? null,
-            receivedAt: Date.now(),
-          });
+          // Catch-up / WS duplicates must not re-open the enable modal or auto-share.
+          const controlHash = resolveRncpLxmfControlMessageHash(p);
+          if (!controlHash || tryMarkRncpLxmfControlHandled(controlHash)) {
+            useRncpEnableRequestStore.getState().enqueue({
+              peerHash: p.sender_hash,
+              peerLabel: p.sender_name ?? null,
+              receivedAt: Date.now(),
+            });
+          }
         }
         if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
+          const controlHash = resolveRncpLxmfControlMessageHash(p);
+          const reservation = controlHash ? tryReserveRncpLxmfControlHandled(controlHash) : null;
+          if (controlHash && !reservation) {
+            return;
+          }
           // Prefer request-enable pending (consumes the slot). Older peers may paste the
           // share sentinel into chat without that round-trip — still apply so Chat can autofill.
           const hadPending = consumeRncpReceiveDestSharePending(p.sender_hash);
@@ -604,6 +620,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
             senderName: p.sender_name,
             text: p.text,
           });
+          if (reservation) {
+            // Commit success + terminal invalid; release upsert_failed so catch-up can retry.
+            if (share.ok || share.reason === 'no_share' || share.reason === 'invalid_sender') {
+              commitRncpLxmfControlHandled(reservation);
+            } else {
+              releaseRncpLxmfControlHandled(reservation);
+            }
+          }
           if (share.ok) {
             const peer = p.sender_name?.trim() || share.lxmfPeerHash.slice(0, 12);
             pushAppToast(rncpReceiveDestShareSavedToastMessage(peer), 'success');

@@ -1099,13 +1099,12 @@
       }
     },
     "reticulumRmap": {
-      "publishing": "RMAP v4: publishing on {{count}} interface(s)",
+      "publishingOf": "RMAP v4: publishing {{current}} of {{total}}",
       "notPublishing": "RMAP v4: not publishing",
       "openSettings": "Network settings",
       "openSettingsAria": "Open RMAP discovery settings on Network tab",
       "openGlobalMap": "Global map",
       "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
-      "needsSync": "{{count}} enabled local interface(s) need RMAP discovery sync",
       "noPublishTargets": "No enabled RMAP-capable interfaces to publish on RMAP.",
       "syncSuccess": "RMAP discovery synced to interface.",
       "syncFailed": "RMAP discovery sync failed."
@@ -4266,7 +4265,7 @@
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 discovery",
     "publishToggle": "Publish on RMAP v4",
-    "hint": "Applies RMAP publishing and App GPS coordinates to all enabled RMAP-capable interfaces (RNode, KISS, BLE peer, I2P, UDP, pipe). Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
+    "hint": "Enables RMAP publishing and App GPS coordinates on all enabled RMAP-capable interfaces (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). The checkbox is on only when every eligible interface is publishing; a partial state is indeterminate — check again to sync the rest. Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
     "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
     "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
     "announceIntervalMin": "Announce interval (minutes)",

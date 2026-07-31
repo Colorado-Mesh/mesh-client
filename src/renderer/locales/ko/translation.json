@@ -1234,16 +1234,15 @@
     "hintMeshtasticTcp2": "연결이 불안정하면 (예: meshtastic.local) 장치의 IP 주소를 사용해 보십시오. 데스크톱 mDNS가 깨질 수 있습니다.",
     "channelPsksMqttOnlyIndexHint": "무선이 연결되지 않은 경우 수신 MQTT 메시지는 채널 이름별로 채팅 탭으로 라우팅됩니다. ChannelName@index=base64를 사용해 각 이름을 올바른 슬롯에 매핑하세요 — 예: 공개 mesh 채널이 슬롯 1일 때(Colorado mesh 스타일) LongFast@1=AQ==. @ 없는 LongFast는 슬롯 0에 매핑됩니다.",
     "reticulumRmap": {
-      "publishing": "RMAP v4: {{count}} 인터페이스에 게시",
       "notPublishing": "RMAP v4: 게시되지 않음",
       "openSettings": "네트워크 설정",
       "openSettingsAria": "네트워크 탭에서 RMAP 검색 설정 열기",
-      "needsSync": "{{count}} 활성화된 로컬 인터페이스에는 RMAP 검색 동기화 필요",
       "noPublishTargets": "RMAP에 게시할 수 있는 로컬 인터페이스가 없습니다.",
       "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다.",
       "openGlobalMap": "글로벌 맵",
       "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
-      "syncFailed": "RMAP 검색 동기화에 실패했습니다."
+      "syncFailed": "RMAP 검색 동기화에 실패했습니다.",
+      "publishingOf": "RMAP v4: {{total}} 중 {{current}} 게시"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것입니다. 사전 설정은 meshcore/DEN(덴버 IATA) 아래에 게시됩니다. 콜로라도에 있지 않은 경우 LetsMesh 또는 MeshMapper를 대신 사용하십시오. 계속하시겠습니까?",
     "coloradoServerNote": "Colorado Mesh는 콜로라도 지역의 메쉬 사용자를 위한 것입니다. 주제 접두사는 덴버 IATA(meshcore/DEN)를 사용합니다.",
@@ -4110,11 +4109,11 @@
       "invalidHost": "에 연결할 수 있는 호스트 이름이 잘못되었습니다.",
       "tooLong": "값에 도달할 수 있는 시간이 너무 깁니다."
     },
-    "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 모든 RMAP 가능 인터페이스 (RNode, KISS, BLE 피어, I2P, UDP, 파이프) 에 적용합니다. 미세 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용하십시오. LoRa 경로는 또한 전송 및 rmap.world 허브를 활성화합니다.",
     "openGlobalMap": "전역 지도 열기",
     "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
     "applyPartialSuccess": "{{total}} 인터페이스의 {{applied}}에 RMAP 설정이 적용되었습니다.",
-    "disablePartialSuccess": "{{total}} 인터페이스 중 {{applied}}에서 RMAP 게시가 비활성화되었습니다."
+    "disablePartialSuccess": "{{total}} 인터페이스 중 {{applied}}에서 RMAP 게시가 비활성화되었습니다.",
+    "hint": "활성화된 모든 RMAP 지원 인터페이스(RNode/Multi, KISS, BLE 피어, I2P, UDP, 파이프)에서 RMAP 게시 및 앱 GPS 좌표를 활성화합니다. 확인란은 모든 적격 인터페이스가 게시될 때만 활성화됩니다. 부분적인 상태는 불확실합니다. 나머지를 동기화하려면 다시 확인하세요. 미세한 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용합니다. LoRa 경로는 전송 및 rmap.world 허브도 가능하게 합니다."
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",

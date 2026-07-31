@@ -94,7 +94,13 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 | **Map tab (local)**       | rsReticulum `DiscoveryStore` via `GET /api/v1/rmap/discovered`; refreshed on a timer and via WebSocket `rmap.discovery` |
 | **Global map (external)** | [rmap.world](https://rmap.world/) — link in Map tab and Network → RMAP controls                                         |
 
-**Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface RMAP toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
+**Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface **RMAP** toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
+
+**Eligible publish interfaces:** enabled RNode / RNode Multi / KISS (with serial port), BLE peer, I2P, UDP, and pipe. **Not eligible:** Auto, outbound TCP client hubs (including community presets), and system-managed shared-instance rows.
+
+**Network → Publish on RMAP v4:** enables `discoverable` on **all** eligible enabled interfaces (plus LoRa/BLE transport + `rmap.world` hub when needed). The checkbox is checked only when every eligible interface is publishing; a partial set is indeterminate — check again to sync the rest. Uncheck clears discoverable on all eligible rows.
+
+**Connection status:** shows **publishing X of Y** (eligible interfaces only; TCP hubs do not count toward Y). Amber when `0 < X < Y`, brand green when `X === Y`, gray when not publishing.
 
 **Consume (Map tab):** Sidecar bootstrap migrations in rnsd config: `discover_interfaces = Yes` so the stack listens for discovery announces; when `announce_interval_sec` is absent, writes **3600** (explicit **0** is preserved). Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
 
@@ -112,7 +118,7 @@ Reticulum destination age prune is enabled by default at **30 days** and affects
 
 **Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`.
 
-**Implementation:** `ReticulumMapPanel.tsx`, `reticulumDiscoveryMapStore.ts`, `reticulumDiscoveryMapLayout.ts`, `reticulumRmapDiscovery.ts`, `useReticulumRuntime.ts` (WS `rmap.discovery`).
+**Implementation:** `ReticulumMapPanel.tsx`, `reticulumDiscoveryMapStore.ts`, `reticulumDiscoveryMapLayout.ts`, `reticulumRmapDiscovery.ts` (capable gate, Network all-eligible checked state, X-of-Y tone), `ReticulumRmapDiscoveryControls` / `ReticulumRmapConnectionStatus`, `useReticulumRuntime.ts` (WS `rmap.discovery`).
 
 **Related panels:** **Topology** = logical hops (no geography); **Peers** = path table; **Map** = geographic discovery + reachability.
 
