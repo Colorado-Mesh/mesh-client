@@ -43,4 +43,23 @@ describe('dedupe-dist.mjs', () => {
     expect(status).toBe(1);
     expect(spawnPnpm).toHaveBeenCalledTimes(3);
   });
+
+  it('logs and throws when spawn fails to launch with null status', () => {
+    const err = Object.assign(new Error('spawn pnpm ENOENT'), { code: 'ENOENT' });
+    const spawnPnpm = vi.fn().mockReturnValue({ status: null, error: err });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect(() =>
+        runDedupeDist({
+          cwd: '/tmp/mesh-dedupe-fixture',
+          spawnPnpm,
+          cleanTemps: () => {},
+        }),
+      ).toThrow(err);
+      expect(errorSpy).toHaveBeenCalledWith('[dedupe-dist] failed to spawn pnpm:', err);
+      expect(spawnPnpm).toHaveBeenCalledTimes(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
 });

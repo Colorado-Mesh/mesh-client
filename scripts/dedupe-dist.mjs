@@ -30,6 +30,7 @@ export const DEDUPE_DIST_MAX_ATTEMPTS = 3;
  *   cleanTemps?: (root: string) => void;
  * }} [opts]
  * @returns {number} process exit status
+ * @throws {Error} when pnpm fails to launch (`spawnSync` `result.error`)
  */
 export function runDedupeDist(opts = {}) {
   const cwd = opts.cwd ?? projectRoot;
@@ -48,6 +49,10 @@ export function runDedupeDist(opts = {}) {
       stdio: 'inherit',
       shell: process.platform === 'win32',
     });
+    if (result.error) {
+      console.error('[dedupe-dist] failed to spawn pnpm:', result.error);
+      throw result.error;
+    }
     lastStatus = result.status ?? 1;
     if (lastStatus === 0) {
       return 0;
