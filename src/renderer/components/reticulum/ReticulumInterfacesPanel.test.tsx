@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { GPS_SETTINGS_STORAGE_KEY } from '@/renderer/lib/gpsSource';
 import {
   buildDefaultHubAddRequest,
   RETICULUM_DEFAULT_HUB_PRESETS,
@@ -20,13 +21,18 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+const { addToastMock, restartStackMock } = vi.hoisted(() => ({
+  addToastMock: vi.fn(),
+  restartStackMock: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/renderer/components/Toast', () => ({
-  useToast: () => ({ addToast: vi.fn() }),
+  useToast: () => ({ addToast: addToastMock }),
 }));
 
 vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   tryGetReticulumSession: () => ({
-    restartStack: vi.fn().mockResolvedValue(undefined),
+    restartStack: restartStackMock,
   }),
 }));
 
@@ -43,8 +49,31 @@ const defaultProps = {
   onBeginBleConnectGrace: vi.fn(),
 };
 
+const rmapCapableRnode: ReticulumInterfaceRow = {
+  id: 'rnode-41f4',
+  name: 'RNode 41F4',
+  type: 'rnode',
+  enabled: true,
+  status: 'up',
+  serial_port: 'ble://eccf2847-e1fd-3f5f-0811-064db1639a3d',
+  discoverable: false,
+};
+
+const rmapWorldHub: ReticulumInterfaceRow = {
+  id: 'rmap-world',
+  name: 'RMAP World',
+  type: 'tcp',
+  enabled: true,
+  status: 'up',
+  host: 'rmap.world',
+  port: 4242,
+};
+
 describe('ReticulumInterfacesPanel', () => {
   beforeEach(() => {
+    addToastMock.mockClear();
+    restartStackMock.mockClear();
+    localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
     useConnectionStore.setState({ connections: {} });
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
@@ -63,6 +92,16 @@ describe('ReticulumInterfacesPanel', () => {
       }
       if (path === '/api/v1/config/audit') {
         return Promise.resolve({ issues: [] });
+      }
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+        });
+      }
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({ interfaces: [rmapCapableRnode, rmapWorldHub] });
       }
       return Promise.resolve({});
     });
@@ -1109,5 +1148,108 @@ describe('ReticulumInterfacesPanel', () => {
       await screen.findByText('connectionPanel.reticulumInterfaces.identityNotConfigured'),
     ).toBeInTheDocument();
     expect(screen.queryByText('identity not configured')).not.toBeInTheDocument();
+  });
+
+  describe('RMAP discoverable toggle restart confirm', () => {
+    beforeEach(() => {
+      localStorage.setItem(
+        GPS_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ staticLat: 40.19444, staticLon: -105.06722 }),
+      );
+    });
+
+    it('refreshes then shows restart confirm; confirm restarts the stack', async () => {
+      const user = userEvent.setup();
+      const onRefresh = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          onRefresh={onRefresh}
+          interfaces={[rmapCapableRnode, rmapWorldHub]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+        }),
+      );
+
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      });
+      expect(await screen.findByText('reticulumRmapDiscovery.restartTitle')).toBeInTheDocument();
+      expect(restartStackMock).not.toHaveBeenCalled();
+
+      const dialog = screen.getByRole('alertdialog');
+      await user.click(
+        within(dialog).getByRole('button', { name: 'reticulumRmapDiscovery.restartConfirm' }),
+      );
+
+      await waitFor(() => {
+        expect(restartStackMock).toHaveBeenCalled();
+      });
+      expect(screen.queryByText('reticulumRmapDiscovery.restartTitle')).not.toBeInTheDocument();
+    });
+
+    it('cancel closes restart confirm and shows the restart hint', async () => {
+      const user = userEvent.setup();
+      const onRefresh = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          onRefresh={onRefresh}
+          interfaces={[rmapCapableRnode, rmapWorldHub]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+        }),
+      );
+
+      expect(await screen.findByText('reticulumRmapDiscovery.restartTitle')).toBeInTheDocument();
+
+      const dialog = screen.getByRole('alertdialog');
+      await user.click(within(dialog).getByRole('button', { name: 'common.cancel' }));
+
+      expect(screen.queryByText('reticulumRmapDiscovery.restartTitle')).not.toBeInTheDocument();
+      expect(
+        screen.getByText('connectionPanel.reticulumInterfaces.restartStackHint'),
+      ).toBeInTheDocument();
+      expect(restartStackMock).not.toHaveBeenCalled();
+    });
+
+    it('still shows restart confirm when onRefresh rejects after a successful toggle', async () => {
+      const user = userEvent.setup();
+      const onRefresh = vi.fn().mockRejectedValue(new Error('refresh failed'));
+
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          onRefresh={onRefresh}
+          interfaces={[rmapCapableRnode, rmapWorldHub]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+        }),
+      );
+
+      expect(await screen.findByText('reticulumRmapDiscovery.restartTitle')).toBeInTheDocument();
+      expect(addToastMock).toHaveBeenCalledWith(
+        'connectionPanel.reticulumInterfaces.rmapEnableSuccess',
+        'success',
+      );
+      expect(addToastMock).not.toHaveBeenCalledWith(
+        expect.stringContaining('rmapToggleFailed'),
+        'error',
+      );
+    });
   });
 });

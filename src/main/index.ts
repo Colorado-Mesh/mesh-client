@@ -3455,6 +3455,9 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'reduceMotion',
   'alwaysShowMessageActions',
   'reticulumAutostart',
+  'reticulumRmapAnnounceIntervalMin',
+  'reticulumRmapReachableOn',
+  'reticulumRmapHeightMeters',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);

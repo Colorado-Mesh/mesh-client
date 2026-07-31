@@ -413,7 +413,31 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');
+    expect(INDEX_SOURCE).toContain('reticulumRmapAnnounceIntervalMin');
+    expect(INDEX_SOURCE).toContain('reticulumRmapReachableOn');
+    expect(INDEX_SOURCE).toContain('reticulumRmapHeightMeters');
+    expect(INDEX_SOURCE).not.toContain('reticulumRmapNotAllowed');
+    expect(INDEX_SOURCE).toMatch(/key not allowed/);
     expect(INDEX_SOURCE).toMatch(/INSERT OR REPLACE INTO app_settings\(key, value\) VALUES/);
+  });
+
+  it('appSettings:set allowlists RMAP prefs for SQLite persistence', () => {
+    // Source-level: Electron-bound IPC cannot be exercised here; assert write path + allowlist.
+    const allowListBlock = INDEX_SOURCE.slice(
+      INDEX_SOURCE.indexOf('APP_SETTINGS_ALLOWED_KEYS'),
+      INDEX_SOURCE.indexOf('APP_SETTINGS_MAX_VALUE_LENGTH'),
+    );
+    expect(allowListBlock).toContain("'reticulumRmapAnnounceIntervalMin'");
+    expect(allowListBlock).toContain("'reticulumRmapReachableOn'");
+    expect(allowListBlock).toContain("'reticulumRmapHeightMeters'");
+    expect(allowListBlock).not.toContain("'reticulumRmapNotAllowed'");
+    expect(INDEX_SOURCE).toMatch(
+      /isAppSettingsKeyAllowed\(key\)[\s\S]*?throw new Error\('appSettings:set: key not allowed'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /\.prepareOnce\('INSERT OR REPLACE INTO app_settings\(key, value\) VALUES \(\?, \?\)'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(/SELECT key, value FROM app_settings/);
   });
 
   it('appSettings:set rejects oversized values to bound DB writes', () => {
