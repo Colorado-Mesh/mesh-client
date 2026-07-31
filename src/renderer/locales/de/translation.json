@@ -4902,9 +4902,9 @@
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
       "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
-      "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus.",
       "lxmfShareBody": "Dateiempfang ist aktiviert. Hier ist mein rncp-Empfangsziel (mesh-client speichert es für Sie).",
-      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann."
+      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann.",
+      "lxmfBody": "Bitte aktivieren Sie den rncp-Empfang (Remote → Einstellungen → Angebote für eingehende Dateien) und senden Sie mir Ihren rncp-Empfangs-Hash."
     },
     "saved": {
       "labelPlaceholder": "Etikett",

@@ -4906,9 +4906,9 @@
       "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
       "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
       "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
-      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania.",
       "lxmfShareBody": "Odbieranie plików jest włączone. Oto moje miejsce docelowe odbioru rncp (mesh-client zapisze je dla Ciebie).",
-      "shareDestWarning": "Jeśli włączysz, mesh-client wyśle miejsce docelowe odbioru rncp do tego partnera, aby mógł automatycznie wypełnić wysyłanie pliku."
+      "shareDestWarning": "Jeśli włączysz, mesh-client wyśle miejsce docelowe odbioru rncp do tego partnera, aby mógł automatycznie wypełnić wysyłanie pliku.",
+      "lxmfBody": "Włącz odbieranie rncp (Zdalne → Ustawienia → Oferty plików przychodzących) i wyślij mi swój skrót odbierania rncp."
     },
     "saved": {
       "labelPlaceholder": "Oznaczenie",
