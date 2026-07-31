@@ -7,7 +7,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { userInfo } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, win32 as pathWin32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { resolveDockerSocket } from './run-act.mjs';
@@ -137,13 +137,53 @@ function checkNode(nodeEngine) {
   };
 }
 
+/**
+ * pnpm/action-setup on Windows may put shims under PNPM_HOME or PNPM_HOME/bin
+ * rather than on PATH for spawnSync('pnpm').
+ *
+ * @param {string | undefined} pnpmHome
+ * @param {string} [platform]
+ * @returns {string[]}
+ */
+export function resolvePnpmBinCandidates(pnpmHome, platform = process.platform) {
+  if (!pnpmHome || platform !== 'win32') return [];
+  // Always use win32 separators so unit tests on darwin/linux match CI paths.
+  return [
+    pathWin32.join(pnpmHome, 'pnpm.CMD'),
+    pathWin32.join(pnpmHome, 'pnpm.cmd'),
+    pathWin32.join(pnpmHome, 'pnpm.exe'),
+    pathWin32.join(pnpmHome, 'bin', 'pnpm.CMD'),
+    pathWin32.join(pnpmHome, 'bin', 'pnpm.cmd'),
+    pathWin32.join(pnpmHome, 'bin', 'pnpm.exe'),
+  ];
+}
+
+function resolvePnpmVersionOutput() {
+  const fromPath = commandOutput('pnpm', ['--version']);
+  if (fromPath) return fromPath;
+  for (const candidate of resolvePnpmBinCandidates(process.env.PNPM_HOME)) {
+    if (!existsSync(candidate)) continue;
+    // Windows .CMD/.cmd shims need shell:true for spawnSync.
+    const needsShell = /\.cmd$/i.test(candidate);
+    const res = spawnSync(candidate, ['--version'], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      shell: needsShell,
+    });
+    if (res.status !== 0) continue;
+    const out = (res.stdout || res.stderr || '').trim();
+    if (out) return out;
+  }
+  return null;
+}
+
 function checkPnpm(pnpmEngine, packageManager) {
   const pinMatch =
     typeof packageManager === 'string' ? packageManager.match(/^pnpm@([^+]+)/) : null;
   const pinVersion = pinMatch?.[1] ?? null;
   const prepareHint = formatPnpmPrepareHint(pinVersion ?? '11');
 
-  const out = commandOutput('pnpm', ['--version']);
+  const out = resolvePnpmVersionOutput();
   if (!out) {
     return {
       status: 'fail',
@@ -247,20 +287,10 @@ function checkPlatformBuildDeps() {
   }
 
   if (platform === 'win32') {
-    if (commandOk('where', ['cl'])) {
-      return {
-        status: 'pass',
-        severity: 'required',
-        label: 'Windows build dependencies',
-        detail: 'MSVC compiler (cl) found',
-      };
-    }
-    return {
-      status: 'fail',
-      severity: 'required',
-      label: 'Windows build dependencies missing',
-      hint: "Install Visual Studio Build Tools with 'Desktop development with C++' workload",
-    };
+    return evaluateWindowsBuildDepsCheck({
+      clOnPath: commandOk('where', ['cl']),
+      vswhereInstallPath: resolveWindowsVsInstallPath(),
+    });
   }
 
   return {
@@ -269,6 +299,55 @@ function checkPlatformBuildDeps() {
     label: 'Platform build dependencies',
     detail: `unsupported platform: ${platform}`,
     hint: 'See docs/development-environment.md',
+  };
+}
+
+const WINDOWS_VSWHERE = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe';
+
+function resolveWindowsVsInstallPath() {
+  if (!existsSync(WINDOWS_VSWHERE)) return null;
+  return commandOutput(WINDOWS_VSWHERE, [
+    '-latest',
+    '-products',
+    '*',
+    '-requires',
+    'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+    '-property',
+    'installationPath',
+  ]);
+}
+
+/**
+ * Pure evaluator for Windows MSVC detection (unit-tested).
+ * GHA windows-latest often has VS installed but `cl` is not on PATH outside
+ * the Developer Command Prompt — prefer vswhere when present.
+ *
+ * @param {{ clOnPath: boolean, vswhereInstallPath: string | null }} input
+ * @returns {CheckResult}
+ */
+export function evaluateWindowsBuildDepsCheck(input) {
+  const { clOnPath, vswhereInstallPath } = input;
+  if (clOnPath) {
+    return {
+      status: 'pass',
+      severity: 'required',
+      label: 'Windows build dependencies',
+      detail: 'MSVC compiler (cl) found',
+    };
+  }
+  if (vswhereInstallPath && vswhereInstallPath.trim()) {
+    return {
+      status: 'pass',
+      severity: 'required',
+      label: 'Windows build dependencies',
+      detail: `MSVC via vswhere (${vswhereInstallPath.trim()})`,
+    };
+  }
+  return {
+    status: 'fail',
+    severity: 'required',
+    label: 'Windows build dependencies missing',
+    hint: "Install Visual Studio Build Tools with 'Desktop development with C++' workload",
   };
 }
 
