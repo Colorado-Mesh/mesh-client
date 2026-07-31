@@ -72,6 +72,7 @@ export function resolveFlatpakNodeGeneratorBin(opts) {
       access(candidate, xOk);
       return true;
     } catch {
+      // catch-no-log-ok missing/non-executable local venv is a normal miss, not a fault
       return false;
     }
   };

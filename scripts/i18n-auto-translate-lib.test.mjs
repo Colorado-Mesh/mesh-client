@@ -102,12 +102,14 @@ describe('filterMissingKeysToTranslate', () => {
     ).toEqual(['c', 'd']);
   });
 
-  it('auditIdentical: skips Flood Advert / brand-only / verbatim leaf keys', () => {
+  it('auditIdentical: skips Flood Advert / brand-only / token-only via hasTranslatableContent', () => {
+    // Generic leaf keys — must not match SKIP_AUDIT_LEAF_KEYS so exclusions come from
+    // phrase/token stripping in hasTranslatableContent.
     const enFlat = {
-      'appPanel.floodAdvertSection': 'Flood Advert',
-      'app.brandName': 'Colorado Mesh',
-      'roomsPanel.guestPasswordPlaceholder': 'hello',
-      'rawPacketLog.filterChipAdvert': 'ADVERT',
+      protocolPhrase: 'Flood Advert',
+      brandOnly: 'Colorado Mesh',
+      wirePassword: 'hello',
+      filterToken: 'ADVERT',
       prose: 'Quit mesh-client completely and reconnect',
     };
     const existing = { ...enFlat };

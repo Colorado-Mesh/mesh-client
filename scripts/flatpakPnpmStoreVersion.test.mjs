@@ -107,6 +107,22 @@ describe('resolveFlatpakNodeGeneratorBin', () => {
       }),
     ).toBeNull();
   });
+
+  it('returns null when local venv exists but is not executable', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: { FLATPAK_NODE_GENERATOR: '  ' },
+        which: () => null,
+        existsSync: (p) => p === unixVenv,
+        accessSync: () => {
+          throw new Error('not executable');
+        },
+        X_OK: 1,
+        platform: 'linux',
+      }),
+    ).toBeNull();
+  });
 });
 
 describe('flatpakPnpmStoreVersion', () => {
