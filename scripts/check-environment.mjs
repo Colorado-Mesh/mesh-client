@@ -594,12 +594,15 @@ export function evaluatePlaywrightCheck(input) {
     });
   }
 
-  if (platform === 'linux' && !hasDisplay && !hasXvfbRun) {
+  // xvfb-run being installed is not an active display for direct `pnpm run test:e2e`.
+  if (platform === 'linux' && !hasDisplay) {
     results.push({
       status: 'warn',
       severity: 'optional',
       label: 'Linux display for E2E (optional)',
-      hint: 'Local Electron E2E needs DISPLAY or xvfb-run (e.g. sudo apt install xvfb)',
+      hint: hasXvfbRun
+        ? 'No DISPLAY set — run Electron E2E via xvfb-run (e.g. xvfb-run -a pnpm run test:e2e), or export DISPLAY'
+        : 'Local Electron E2E needs DISPLAY, or install xvfb and run via xvfb-run -a pnpm run test:e2e',
     });
   }
 

@@ -61,8 +61,8 @@ Test results are available as a downloadable artifact from the workflow run.
 
 Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manual** `workflow_dispatch`:
 
-1. Checkout, setup pnpm + Node 22, `pnpm install --frozen-lockfile` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
-2. Linux: install Electron runtime libraries + `xvfb`
+1. Checkout (`persist-credentials: false`), `node scripts/check-environment.mjs`, setup pnpm + Node 22, `pnpm install --frozen-lockfile`, then `pnpm run check:environment` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
+2. Linux (`ubuntu-24.04`): install Electron runtime libraries (`libatk-bridge2.0-0t64`, `libgtk-3-0t64`, `libasound2t64`, …) + `xvfb`
 3. `pnpm run build` (unpackaged `dist-electron` + renderer)
 4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
 5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)

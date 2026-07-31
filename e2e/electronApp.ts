@@ -89,11 +89,12 @@ export async function disposeUserData(userDataDir: string): Promise<void> {
 /**
  * Launch the unpackaged Electron app for E2E.
  *
- * Failure path: if setup after `electron.launch` fails (firstWindow, CDP, readiness),
- * close the Electron process, remove a user-data dir owned by this call (created here,
- * not a retained caller-owned dir), and rethrow the original error. Specs assign
- * `launched` only after this resolves, so afterEach teardown is not required for
- * that failure path.
+ * Failure path: if setup after `electron.launch` fails (`firstWindow` or readiness
+ * waits), close the Electron process, remove a user-data dir owned by this call
+ * (created here, not a retained caller-owned dir), and rethrow the original error.
+ * CDP session setup is optional and swallowed by a local catch — those errors do not
+ * reach this outer cleanup path. Specs assign `launched` only after this resolves,
+ * so afterEach teardown is not required for that failure path.
  */
 export async function launchApp(options: LaunchAppOptions = {}): Promise<LaunchedApp> {
   assertProductionBuildPresent();

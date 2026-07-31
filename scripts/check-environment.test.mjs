@@ -283,7 +283,24 @@ describe('check-environment evaluatePlaywrightCheck', () => {
     expect(results[0].hint).not.toContain('pnpm install');
   });
 
-  it('warns on Linux when neither DISPLAY nor xvfb-run is available', () => {
+  it('warns on Linux when DISPLAY is unset even if xvfb-run is installed', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'linux',
+      hasDisplay: false,
+      hasXvfbRun: true,
+    });
+    expect(results).toHaveLength(2);
+    expect(results[0].status).toBe('pass');
+    expect(results[1]).toMatchObject({
+      status: 'warn',
+      label: 'Linux display for E2E (optional)',
+    });
+    expect(results[1].hint).toContain('xvfb-run -a');
+  });
+
+  it('warns on Linux when DISPLAY is unset and xvfb-run is missing', () => {
     const results = evaluatePlaywrightCheck({
       packageResolves: true,
       versionOutput: 'Version 1.62.1',
@@ -292,20 +309,16 @@ describe('check-environment evaluatePlaywrightCheck', () => {
       hasXvfbRun: false,
     });
     expect(results).toHaveLength(2);
-    expect(results[0].status).toBe('pass');
-    expect(results[1]).toMatchObject({
-      status: 'warn',
-      label: 'Linux display for E2E (optional)',
-    });
+    expect(results[1].hint).toContain('install xvfb');
   });
 
-  it('skips Linux display warn when xvfb-run is present', () => {
+  it('skips Linux display warn when DISPLAY is set', () => {
     const results = evaluatePlaywrightCheck({
       packageResolves: true,
       versionOutput: 'Version 1.62.1',
       platform: 'linux',
-      hasDisplay: false,
-      hasXvfbRun: true,
+      hasDisplay: true,
+      hasXvfbRun: false,
     });
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('pass');

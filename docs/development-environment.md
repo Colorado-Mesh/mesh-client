@@ -547,7 +547,7 @@ Standalone suite under [`e2e/`](../e2e/) launches the **unpackaged** production 
 Constraints:
 
 - **`workers: 1`** — main uses `requestSingleInstanceLock()`; parallel launches flake.
-- **Linux:** set `MESH_CLIENT_DISABLE_GPU=1` (harness does this); CI uses `xvfb-run -a`. Local headless Linux needs `DISPLAY` or Xvfb (`pnpm run check:environment` warns when neither is available).
+- **Linux:** set `MESH_CLIENT_DISABLE_GPU=1` (harness does this); CI uses `xvfb-run -a`. Local headless Linux needs `DISPLAY` for direct `pnpm run test:e2e`, or wrap with `xvfb-run -a` (`pnpm run check:environment` warns when `DISPLAY` is unset).
 - **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Daily + manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml).
 
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes. Another example: [`meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`](../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts) asserts LocalStats / RF hop-SNR still call `processNodeUpdate` from `meshtasticNodeSideEffects` / `meshtasticRawPacketSideEffects`.
