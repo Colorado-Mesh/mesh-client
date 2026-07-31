@@ -209,6 +209,7 @@ export function ReticulumInterfacesPanel({
   } | null>(null);
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
   const [restartStackHint, setRestartStackHint] = useState(false);
+  const [showRmapRestartConfirm, setShowRmapRestartConfirm] = useState(false);
   const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
   const [rmapToggleBusyId, setRmapToggleBusyId] = useState<string | null>(null);
 
@@ -701,8 +702,8 @@ export function ReticulumInterfacesPanel({
         });
         if (synced) {
           addToast(t('connectionPanel.reticulumRmap.syncSuccess'), 'success');
-          setRestartStackHint(true);
           await onRefresh();
+          setShowRmapRestartConfirm(true);
         }
       } catch (e) {
         addToast(t('connectionPanel.reticulumRmap.syncFailed'), 'error');
@@ -736,8 +737,8 @@ export function ReticulumInterfacesPanel({
             : t('connectionPanel.reticulumInterfaces.rmapDisableSuccess', { name: iface.name }),
           'success',
         );
-        setRestartStackHint(true);
         await onRefresh();
+        setShowRmapRestartConfirm(true);
       } catch (e) {
         if (e instanceof ReticulumRmapGpsRequiredError) {
           addToast(t('reticulumRmapDiscovery.gpsMissingWarning'), 'error');
@@ -882,6 +883,21 @@ export function ReticulumInterfacesPanel({
           }}
           onCancel={() => {
             setPendingDeleteInterface(null);
+          }}
+        />
+      ) : null}
+      {showRmapRestartConfirm ? (
+        <ConfirmModal
+          title={t('reticulumRmapDiscovery.restartTitle')}
+          message={t('reticulumRmapDiscovery.restartBody')}
+          confirmLabel={t('reticulumRmapDiscovery.restartConfirm')}
+          onConfirm={() => {
+            setShowRmapRestartConfirm(false);
+            void restartStackForInterfaceChange();
+          }}
+          onCancel={() => {
+            setShowRmapRestartConfirm(false);
+            setRestartStackHint(true);
           }}
         />
       ) : null}
