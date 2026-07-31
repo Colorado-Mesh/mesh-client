@@ -106,6 +106,40 @@ describe('collectSourcePolicyViolations (fixtures)', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('advances past zero-length forbid matches even when suppressed', () => {
+    const root = mkdtempSync(join(tmpdir(), 'source-policy-zerolen-'));
+    try {
+      const dir = join(root, 'src', 'fixture');
+      mkdirSync(dir, { recursive: true });
+      // Zero-width lookbehind-style /(?=a)/g matches empty string before each 'a'.
+      writeFileSync(
+        join(dir, 'zero.ts'),
+        ['a // source-policy-ok demo-zerolen intentional', 'a', ''].join('\n'),
+        'utf-8',
+      );
+
+      const rules: SourcePolicyRule[] = [
+        {
+          id: 'demo-zerolen',
+          include: ['src/fixture/zero.ts'],
+          forbid: /(?=a)/g,
+          message: 'zero-length forbid',
+        },
+      ];
+
+      const violations = collectSourcePolicyViolations({ root, rules });
+      expect(violations).toEqual([
+        expect.objectContaining({
+          ruleId: 'demo-zerolen',
+          file: 'src/fixture/zero.ts',
+          line: 2,
+        }),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('SOURCE_POLICY_RULES (repo)', () => {
@@ -121,6 +155,7 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
     );
   });
 
+  /** Repo-wide gate: every `SOURCE_POLICY_RULES` include under src/ stays clean. */
   it('reports no violations against the current tree', () => {
     const violations = collectSourcePolicyViolations();
     expect(violations).toEqual([]);

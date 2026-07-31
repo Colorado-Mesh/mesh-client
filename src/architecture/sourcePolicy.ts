@@ -161,6 +161,9 @@ export function collectSourcePolicyViolations(
         const forbidRe = cloneRegExp(rule.forbid);
         let match: RegExpExecArray | null;
         while ((match = forbidRe.exec(source)) !== null) {
+          // Always advance past zero-length matches (including suppressed ones)
+          // so /(?:)/g-style patterns cannot infinite-loop on continue.
+          if (match[0].length === 0) forbidRe.lastIndex++;
           if (lineHasSuppress(source, match.index, rule.id)) continue;
           violations.push({
             ruleId: rule.id,
@@ -169,8 +172,6 @@ export function collectSourcePolicyViolations(
             message: rule.message,
             detail: `forbid matched: ${match[0].slice(0, 80)}`,
           });
-          // Avoid zero-length infinite loops
-          if (match[0].length === 0) forbidRe.lastIndex++;
         }
       }
 
