@@ -1,7 +1,8 @@
 /**
  * LXMF control sentinels for mesh-client rncp receive enable / dest sharing.
- * Ordinary LXMF DM bodies always include human-readable instructions; mesh-client
- * peers additionally parse these sentinels for UI automation.
+ * Human-readable LXMF bodies must stay app-agnostic (Sideband, Nomad, etc.).
+ * mesh-client peers additionally parse these sentinels for UI automation
+ * (enable-request modal + receive-dest autofill).
  */
 
 export const RNCP_REQUEST_ENABLE_SENTINEL = 'mesh-client:request-rncp-receive:v1';
@@ -14,6 +15,11 @@ export const RNCP_REQUEST_ENABLE_COOLDOWN_MS = 10 * 60 * 1000;
 
 const DEST_HASH_RE = /^[0-9a-f]{32}$/;
 
+/**
+ * Enable-request LXMF body: app-agnostic human instructions, then the mesh-client
+ * sentinel so receiving mesh-client builds can open the enable/share modal.
+ * Other LXMF apps show the sentinel as an extra line they can ignore.
+ */
 export function buildRncpRequestEnableMessageBody(instructions: string): string {
   const trimmed = instructions.trim();
   return `${trimmed}\n\n${RNCP_REQUEST_ENABLE_SENTINEL}`;
@@ -26,7 +32,7 @@ export function lxmfBodyContainsRncpRequestEnable(body: string | null | undefine
 
 /**
  * Build an LXMF body that shares this client's rncp.receive destination with a peer
- * who requested enable (human line + machine-readable sentinel).
+ * who requested enable (plain hash for any LXMF client + mesh-client sentinel).
  */
 export function buildRncpReceiveDestShareBody(instructions: string, receiveHash: string): string {
   const hash = receiveHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
@@ -34,7 +40,7 @@ export function buildRncpReceiveDestShareBody(instructions: string, receiveHash:
     throw new Error('invalid_rncp_receive_hash');
   }
   const trimmed = instructions.trim();
-  return `${trimmed}\n\n${RNCP_RECEIVE_DEST_SHARE_PREFIX}${hash}`;
+  return `${trimmed}\n${hash}\n\n${RNCP_RECEIVE_DEST_SHARE_PREFIX}${hash}`;
 }
 
 /**

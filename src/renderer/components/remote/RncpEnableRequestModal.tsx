@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { rememberRncpListenerDirs } from '@/renderer/lib/pushRncpListenerPolicy';
+import { probeReticulumPeer } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
+import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpEnableRequestStore } from '@/renderer/stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
@@ -16,19 +18,40 @@ import { buildRncpReceiveDestShareBody } from '@/shared/rncpRequestEnable';
  * Resolve a Reticulum **identity** hash for an LXMF delivery destination hash.
  * rncp LinkIdentify gates on identity_hash, which is not the LXMF sender dest.
  */
-async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Promise<string | null> {
+export async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Promise<string | null> {
   const dest = canonicalizeReticulumDestinationHash(peerDestHash);
   if (!dest) return null;
+
+  const fromRows = (rows: { identity_hash?: string | null }[]): string | null => {
+    for (const row of rows) {
+      const id = row.identity_hash ? canonicalizeReticulumDestinationHash(row.identity_hash) : null;
+      if (id) return id;
+    }
+    return null;
+  };
+
   const store = useReticulumIdentityActivityStore.getState();
   let rows = store.getActivity(dest);
   if (rows.length === 0) {
     rows = await store.loadForDestination(dest);
   }
-  for (const row of rows) {
-    const id = row.identity_hash ? canonicalizeReticulumDestinationHash(row.identity_hash) : null;
+  const fromActivity = fromRows(rows);
+  if (fromActivity) return fromActivity;
+
+  const saved = useReticulumRemoteAddressStore.getState().findByLxmfPeer(dest);
+  if (saved?.identity_hash) {
+    const id = canonicalizeReticulumDestinationHash(saved.identity_hash);
     if (id) return id;
   }
-  return null;
+
+  // Path/probe can surface announce identity for peers we have only chatted with.
+  try {
+    await probeReticulumPeer(dest);
+  } catch {
+    // catch-no-log-ok probe is best-effort before allow-list upsert
+  }
+  rows = await store.loadForDestination(dest);
+  return fromRows(rows);
 }
 
 /**
@@ -92,14 +115,12 @@ export function RncpEnableRequestModal() {
   const setListener = useRncpTransferStore((s) => s.setListener);
 
   const current = prompts[0] ?? null;
-  const autoSharedPeerRef = useRef<string | null>(null);
 
-  // If inbound rncp is already enabled, re-share our receive dest immediately so the
-  // requester does not stay empty when the peer thinks they are "already enabled".
+  // Already listening: re-share dest and clear the prompt so repeat enable-requests
+  // from the same peer do not leave a sticky modal (do not latch a one-shot peer ref).
   useEffect(() => {
     if (!current) return;
     const peerHash = current.peerHash;
-    if (autoSharedPeerRef.current === peerHash) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -107,18 +128,20 @@ export function RncpEnableRequestModal() {
         if (cancelled) return;
         setListener(status);
         if (!status?.enabled) return;
-        autoSharedPeerRef.current = peerHash;
-        const shareResult = await shareRncpReceiveDestWithPeer(
+        await shareRncpReceiveDestWithPeer(
           peerHash,
           t('reticulumRemote.enableRequest.lxmfShareBody'),
         );
-        if (!cancelled && shareResult === 'shared') {
+        if (!cancelled) {
           dismiss(peerHash, false);
         }
       } catch (e) {
         console.debug(
           '[RncpEnableRequestModal] already-enabled auto-share ' + errLikeToLogString(e),
         );
+        if (!cancelled) {
+          dismiss(peerHash, false);
+        }
       }
     })();
     return () => {
@@ -139,9 +162,7 @@ export function RncpEnableRequestModal() {
         let identityHash: string | null = null;
         if (allowIdentity) {
           identityHash = await resolveIdentityHashForLxmfPeer(current.peerHash);
-          if (!identityHash) {
-            addToast(t('reticulumRemote.enableRequest.identityUnknown'), 'info');
-          } else {
+          if (identityHash) {
             await upsertPolicy({
               identity_hash: identityHash,
               decision: 'allow',
@@ -177,6 +198,9 @@ export function RncpEnableRequestModal() {
         const listener = await window.electronAPI.reticulum.rncp.getListener();
         useRncpTransferStore.getState().setListener(listener);
         addToast(t('reticulumRemote.enableRequest.enabled'), 'success');
+        if (allowIdentity && !identityHash) {
+          addToast(t('reticulumRemote.enableRequest.identityUnknown'), 'info');
+        }
         const peerHash = current.peerHash;
         dismiss(peerHash, false);
         // Best-effort: tell the requester our rncp.receive dest so they can autofill.

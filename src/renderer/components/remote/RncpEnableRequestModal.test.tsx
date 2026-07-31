@@ -14,6 +14,10 @@ vi.mock('@/renderer/components/Toast', () => ({
   useToast: () => ({ addToast }),
 }));
 
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
+  probeReticulumPeer: vi.fn().mockResolvedValue({ ok: false }),
+}));
+
 describe('RncpEnableRequestModal', () => {
   beforeEach(() => {
     addToast.mockReset();
@@ -100,6 +104,69 @@ describe('RncpEnableRequestModal', () => {
       blocked: [],
     });
     render(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/send', {
+        destination_hash: 'a'.repeat(32),
+        text: expect.stringContaining(`${RNCP_RECEIVE_DEST_SHARE_PREFIX}${'c'.repeat(32)}`),
+      });
+    });
+    expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
+  });
+
+  it('auto-dismisses a repeat enable-request while already listening', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: true,
+      inbound_mode: 'ask',
+      allowed: [],
+      blocked: [],
+    });
+    const { rerender } = render(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
+    });
+
+    useRncpEnableRequestStore.getState().enqueue({
+      peerHash: 'a'.repeat(32),
+      peerLabel: 'Alice',
+      receivedAt: Date.now(),
+    });
+    rerender(<RncpEnableRequestModal />);
+    await waitFor(() => {
+      expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(0);
+    });
+    expect(
+      vi.mocked(window.electronAPI.reticulum.proxyPost).mock.calls.length,
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it('enables Ask and still shares when Always allow cannot resolve identity', async () => {
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener)
+      .mockResolvedValueOnce({
+        enabled: false,
+        inbound_mode: 'off',
+        allowed: [],
+        blocked: [],
+      })
+      .mockResolvedValue({
+        enabled: true,
+        inbound_mode: 'ask',
+        allowed: [],
+        blocked: [],
+      });
+    const user = userEvent.setup();
+    render(<RncpEnableRequestModal />);
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Enable inbound file offers and allow this sender',
+      }),
+    );
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('File receiving is enabled.', 'success');
+    });
+    expect(addToast).toHaveBeenCalledWith(
+      expect.stringContaining('identity hash is not known yet'),
+      'info',
+    );
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/send', {
         destination_hash: 'a'.repeat(32),

@@ -4886,8 +4886,10 @@
       "peerUnreachable": "その目的地への道はありません。ピアがオフラインである可能性があります。",
       "checkingReachability": "到達可能性を確認しています…",
       "listenerLikelyOffTitle": "ファイル受信がオフになっている可能性があります",
-      "listenerLikelyOffBody": "ファイルの受信先へのパスはありませんが、オンラインでチャットを探しています。ファイル受信を有効にするよう依頼して (リモート → 設定 → 受信ファイル オファー)、もう一度試してください。",
-      "listenerLikelyOffConfirm": "有効化リクエストを送信する"
+      "listenerLikelyOffConfirm": "有効化リクエストを送信する",
+      "pendingOffersBadgeAriaCapped": "99 件以上の保留中の受信ファイル オファー",
+      "listenerLikelyOffBody": "ファイルの受信先へのパスはありませんが、オンラインでチャットを探しています。 rncp ファイル受信を有効にし、rncp 受信ハッシュを送信してから、再試行するように依頼してください。",
+      "listenerLikelyOffToast": "ファイルの受信先へのパスがありません。ファイル受信がオフになっている可能性があります。 rncp のハッシュの送受信を有効にするよう依頼してから、再試行してください。"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",
@@ -4903,10 +4905,10 @@
       "enabled": "ファイル受信が有効になっています。",
       "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
       "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
-      "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
-      "lxmfShareBody": "ファイル受信が有効です。これが私の rncp 受信先です（mesh-client が保存します）。",
       "shareDestWarning": "有効にすると、mesh-client は rncp 受信宛先をこのピアに送信し、ファイル送信を自動入力できるようになります。",
-      "lxmfBody": "rncp 受信を有効にして (リモート → 設定 → インバウンド ファイル オファー)、rncp 受信ハッシュを送信してください。"
+      "lxmfBody": "rncp ファイル受信を有効にし、rncp 受信宛先ハッシュを返信してください。",
+      "lxmfShareBody": "ファイル受信が有効になっています。私のrncp受信宛先ハッシュ:",
+      "identityUnknown": "Inbound Ask はオンですが、このピアの ID ハッシュがまだ不明であるため、常に許可には追加されませんでした。各ファイルの前に引き続き質問されます。 try パスまたはアナウンスが到着した後は、常に再度許可します。"
     },
     "saved": {
       "labelPlaceholder": "ラベル",

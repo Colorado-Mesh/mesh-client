@@ -4886,8 +4886,10 @@
       "peerUnreachable": "Aucun chemin vers cette destination. L'homologue est peut-être hors ligne.",
       "checkingReachability": "Vérification de l'accessibilité…",
       "listenerLikelyOffTitle": "La réception de fichiers est peut-être désactivée",
-      "listenerLikelyOffBody": "Aucun chemin vers la destination de réception de leur fichier, mais ils recherchent en ligne pour discuter. Demandez-leur d'activer la réception de fichiers (À distance → Paramètres → Offres de fichiers entrants), puis réessayez.",
-      "listenerLikelyOffConfirm": "Envoyer une demande d'activation"
+      "listenerLikelyOffConfirm": "Envoyer une demande d'activation",
+      "pendingOffersBadgeAriaCapped": "Plus de 99 offres de fichiers entrants en attente",
+      "listenerLikelyOffBody": "Aucun chemin vers la destination de réception de leur fichier, mais ils recherchent en ligne pour discuter. Demandez-leur d'activer la réception de fichiers rncp et d'envoyer leur hachage de réception rncp, puis réessayez.",
+      "listenerLikelyOffToast": "Aucun chemin vers leur destination de réception de fichier ; la réception du fichier est peut-être désactivée. Demandez-leur d'activer la réception et l'envoi de leur hachage par RNCP, puis réessayez."
     },
     "enableRequest": {
       "title": "Activer la réception de fichiers ?",
@@ -4903,10 +4905,10 @@
       "enabled": "La réception de fichiers est activée.",
       "enableFailed": "Impossible d'activer la réception du fichier : {{error}}",
       "saveDirRequired": "Choisissez un dossier de sauvegarde pour activer la réception.",
-      "identityUnknown": "Impossible de résoudre le hachage d'identité de ce pair pour le moment — le mode Demander est activé, mais il n'a pas été ajouté à la liste d'autorisation. Réessayez après l'arrivée d'un chemin ou d'une annonce.",
-      "lxmfShareBody": "La réception de fichiers est activée. Voici ma destination de réception rncp (mesh-client l'enregistrera pour vous).",
       "shareDestWarning": "Si vous l'activez, mesh-client enverra votre destination de réception rncp à cet homologue afin qu'il puisse remplir automatiquement l'envoi de fichiers.",
-      "lxmfBody": "Veuillez activer la réception rncp (À distance → Paramètres → Offres de fichiers entrants) et envoyez-moi votre hachage de réception rncp."
+      "lxmfBody": "Veuillez activer la réception de fichiers RNCP et répondre avec votre hachage de destination de réception RNCP.",
+      "lxmfShareBody": "La réception de fichiers est activée. Mon rncp reçoit le hachage de destination :",
+      "identityUnknown": "La demande entrante est activée, mais le hachage d'identité de cet homologue n'est pas encore connu et n'a donc pas été ajouté à Toujours autoriser. Il vous sera toujours demandé avant chaque dossier ; essayez Toujours autoriser à nouveau après l'arrivée d'un chemin ou d'une annonce."
     },
     "saved": {
       "labelPlaceholder": "Dénomination",

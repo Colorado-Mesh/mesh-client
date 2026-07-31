@@ -4886,8 +4886,10 @@
       "peerUnreachable": "Nessun percorso per quella destinazione. Il peer potrebbe essere offline.",
       "checkingReachability": "Verifica della raggiungibilità…",
       "listenerLikelyOffTitle": "La ricezione dei file potrebbe essere disattivata",
-      "listenerLikelyOffBody": "Nessun percorso verso la destinazione di ricezione del file, ma cercano online la chat. Chiedi loro di abilitare la ricezione dei file (Telecomando → Impostazioni → Offerte di file in entrata), quindi riprova.",
-      "listenerLikelyOffConfirm": "Invia richiesta di abilitazione"
+      "listenerLikelyOffConfirm": "Invia richiesta di abilitazione",
+      "pendingOffersBadgeAriaCapped": "Oltre 99 offerte di file in entrata in sospeso",
+      "listenerLikelyOffBody": "Nessun percorso verso la destinazione di ricezione del file, ma cercano online la chat. Chiedi loro di abilitare la ricezione di file rncp e di inviare l'hash di ricezione rncp, quindi riprova.",
+      "listenerLikelyOffToast": "Nessun percorso per la destinazione di ricezione del file; la ricezione dei file potrebbe essere disattivata. Chiedi loro di abilitare la ricezione rncp e di inviare il loro hash, quindi riprova."
     },
     "enableRequest": {
       "title": "Abilitare la ricezione dei file?",
@@ -4903,10 +4905,10 @@
       "enabled": "La ricezione dei file è abilitata.",
       "enableFailed": "Impossibile abilitare la ricezione dei file: {{error}}",
       "saveDirRequired": "Scegli una cartella di salvataggio per abilitare la ricezione.",
-      "identityUnknown": "Non è stato ancora possibile risolvere l'hash di identità di questo peer — la modalità Chiedi è attiva, ma il peer non è stato aggiunto alla lista dei consentiti. Riprova dopo l'arrivo di un percorso o di un annuncio.",
-      "lxmfShareBody": "La ricezione file è abilitata. Ecco la mia destinazione di ricezione rncp (mesh-client la salverà per te).",
       "shareDestWarning": "Se abiliti, mesh-client invierà la destinazione di ricezione rncp a questo peer in modo che possa compilare automaticamente l'invio del file.",
-      "lxmfBody": "Abilita la ricezione rncp (Telecomando → Impostazioni → Offerte file in entrata) e inviami il tuo hash di ricezione rncp."
+      "lxmfBody": "Abilita la ricezione di file rncp e rispondi con l'hash di destinazione di ricezione rncp.",
+      "lxmfShareBody": "La ricezione dei file è abilitata. Il mio rncp riceve l'hash di destinazione:",
+      "identityUnknown": "La richiesta in entrata è attiva, ma l'hash dell'identità di questo peer non è ancora noto, quindi non è stato aggiunto a Consenti sempre. Ti verrà comunque chiesto prima di ogni file; prova Consenti sempre di nuovo dopo l'arrivo di un percorso o di un annuncio."
     },
     "saved": {
       "labelPlaceholder": "Label",

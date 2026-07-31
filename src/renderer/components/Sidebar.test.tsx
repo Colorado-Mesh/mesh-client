@@ -271,6 +271,41 @@ describe('Sidebar', () => {
     expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
+  it('caps Remote pending-offer badge at 99+ with matching aria', () => {
+    render(
+      <Sidebar
+        tabs={['Remote']}
+        tabSlotIds={['Remote']}
+        active={0}
+        onChange={vi.fn()}
+        remotePendingOffers={150}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('99+')).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: '99+ pending inbound file offers' }),
+    ).toBeInTheDocument();
+  });
+
+  it('has no axe violations when Remote pending-offer badge shows', async () => {
+    render(
+      <Sidebar
+        tabs={['Remote']}
+        tabSlotIds={['Remote']}
+        active={0}
+        onChange={vi.fn()}
+        remotePendingOffers={2}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    const badge = screen.getByText('2');
+    hydrateAxeThemeColors(badge);
+    expect(await axe(badge)).toHaveNoViolations();
+  });
+
   it('hides RRC unread badge when rrcUnread is 0', () => {
     const onChange = vi.fn();
     render(
