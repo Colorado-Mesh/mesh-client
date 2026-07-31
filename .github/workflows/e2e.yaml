@@ -1,0 +1,93 @@
+name: E2E
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+# Schedules only run on the default branch (main). workflow_dispatch can run from any branch.
+on:
+  schedule:
+    # Daily 09:00 UTC — restricted to main via job `if` below as defense in depth.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Electron E2E (${{ matrix.os }})
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Pin Ubuntu 24.04 for t64 Electron runtime package names (not floating ubuntu-latest).
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Check environment (pre-pnpm)
+        run: node scripts/check-environment.mjs
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check environment (post-install)
+        run: pnpm run check:environment
+
+      - name: Install Linux Electron runtime libs + xvfb
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb \
+            libnss3 \
+            libatk-bridge2.0-0t64 \
+            libgtk-3-0t64 \
+            libgbm1 \
+            libasound2t64 \
+            libxshmfence1 \
+            libx11-xcb1 \
+            libxcb1 \
+            libxext6 \
+            libxfixes3 \
+            libxrender1 \
+            libxi6 \
+            libdrm2 \
+            libdbus-1-3
+
+      - name: Build unpackaged app
+        run: pnpm run build
+
+      - name: Run Playwright Electron E2E (Linux)
+        if: matrix.os == 'ubuntu-24.04'
+        run: xvfb-run -a pnpm run test:e2e
+
+      - name: Run Playwright Electron E2E
+        if: matrix.os != 'ubuntu-24.04'
+        run: pnpm run test:e2e
+
+      - name: Upload Playwright artifacts on failure
+        if: failure() && github.actor != 'nektos/act'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.os }}-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

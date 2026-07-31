@@ -78,6 +78,7 @@ Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/me
 | @meshtastic/transport-http       | npm:@jsr/meshtastic\_\_transport-http@^0.2.1       | Apache-2.0      | HTTP transport                   |
 | @meshtastic/transport-web-serial | npm:@jsr/meshtastic\_\_transport-web-serial@^0.2.5 | Apache-2.0      | Web Serial transport             |
 | @michaelhart/meshcore-decoder    | ^0.3.0                                             | MIT             | MeshCore decoder                 |
+| @playwright/test                 | ^1.62.1                                            | Apache-2.0      | Electron E2E testing             |
 | @tailwindcss/postcss             | ^4.3.3                                             | MIT             | Tailwind CSS for PostCSS         |
 | @tanstack/react-virtual          | ^3.14.8                                            | MIT             | Virtual scrolling for React      |
 | @testing-library/jest-dom        | ^6.10.0                                            | MIT             | Jest DOM matchers                |

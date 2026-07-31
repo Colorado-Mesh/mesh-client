@@ -37,7 +37,7 @@ export default tseslint.config(
     files: ['**/*.{ts,tsx,mts,cts}'],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.main.json'],
+        project: ['./tsconfig.json', './tsconfig.main.json', './tsconfig.e2e.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -197,7 +197,7 @@ export default tseslint.config(
       ...jsxA11y.flatConfigs.recommended.languageOptions,
       parserOptions: {
         ...jsxA11y.flatConfigs.recommended.languageOptions.parserOptions,
-        project: ['./tsconfig.json', './tsconfig.main.json'],
+        project: ['./tsconfig.json', './tsconfig.main.json', './tsconfig.e2e.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },

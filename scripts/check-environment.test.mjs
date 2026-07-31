@@ -5,6 +5,7 @@ import {
   formatCheckResult,
   formatLocalActDockerNote,
   evaluateContainerEngineCheck,
+  evaluatePlaywrightCheck,
   parseVersion,
   resolveExitCode,
   versionGte,
@@ -232,5 +233,94 @@ describe('check-environment evaluateContainerEngineCheck', () => {
       label: 'Container engine not found (optional)',
     });
     expect(result.hint).toContain('/opt/podman/bin');
+  });
+});
+
+describe('check-environment evaluatePlaywrightCheck', () => {
+  it('passes when package resolves and version is available', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'darwin',
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      status: 'pass',
+      severity: 'optional',
+      label: 'Playwright',
+      detail: 'Version 1.62.1',
+    });
+  });
+
+  it('warns when Playwright is missing', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: false,
+      versionOutput: null,
+      platform: 'darwin',
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Playwright not found (optional)',
+    });
+    expect(results[0].hint).toContain('pnpm install');
+  });
+
+  it('warns when package resolves but CLI version check fails', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: null,
+      platform: 'darwin',
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      status: 'warn',
+      severity: 'optional',
+      label: 'Playwright CLI failed (optional)',
+    });
+    expect(results[0].hint).toContain('playwright --version');
+    expect(results[0].hint).not.toContain('pnpm install');
+  });
+
+  it('warns on Linux when DISPLAY is unset even if xvfb-run is installed', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'linux',
+      hasDisplay: false,
+      hasXvfbRun: true,
+    });
+    expect(results).toHaveLength(2);
+    expect(results[0].status).toBe('pass');
+    expect(results[1]).toMatchObject({
+      status: 'warn',
+      label: 'Linux display for E2E (optional)',
+    });
+    expect(results[1].hint).toContain('xvfb-run -a');
+  });
+
+  it('warns on Linux when DISPLAY is unset and xvfb-run is missing', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'linux',
+      hasDisplay: false,
+      hasXvfbRun: false,
+    });
+    expect(results).toHaveLength(2);
+    expect(results[1].hint).toContain('install xvfb');
+  });
+
+  it('skips Linux display warn when DISPLAY is set', () => {
+    const results = evaluatePlaywrightCheck({
+      packageResolves: true,
+      versionOutput: 'Version 1.62.1',
+      platform: 'linux',
+      hasDisplay: true,
+      hasXvfbRun: false,
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0].status).toBe('pass');
   });
 });
