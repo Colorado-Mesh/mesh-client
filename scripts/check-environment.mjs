@@ -692,6 +692,16 @@ function checkLinuxDialout() {
 }
 
 /**
+ * @param {string[]} argv
+ * @returns {{ skipNodeModules: boolean }}
+ */
+export function parseCheckEnvironmentArgs(argv = process.argv.slice(2)) {
+  return {
+    skipNodeModules: argv.includes('--skip-node-modules'),
+  };
+}
+
+/**
  * @returns {CheckResult[]}
  */
 export function runChecks(options = {}) {
@@ -745,9 +755,13 @@ function printSummary(checks) {
 
 function main() {
   const platformLabel = PLATFORM_LABELS[process.platform] ?? process.platform;
+  const args = parseCheckEnvironmentArgs();
   console.log(`Mesh Client environment check (platform: ${platformLabel})\n`);
+  if (args.skipNodeModules) {
+    console.log('(skipping node_modules check — pre-install mode)\n');
+  }
 
-  const checks = runChecks();
+  const checks = runChecks({ skipNodeModules: args.skipNodeModules });
 
   for (const check of checks) {
     for (const line of formatCheckResult(check)) {
