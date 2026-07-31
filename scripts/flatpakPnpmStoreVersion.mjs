@@ -84,7 +84,7 @@ export function resolveFlatpakNodeGeneratorBin(opts) {
       'Scripts',
       'flatpak-node-generator.exe',
     );
-    if (usable(winBin)) return winBin;
+    return usable(winBin) ? winBin : null;
   }
 
   const unixBin = path.join(

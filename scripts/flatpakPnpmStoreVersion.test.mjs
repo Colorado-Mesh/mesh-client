@@ -92,6 +92,20 @@ describe('resolveFlatpakNodeGeneratorBin', () => {
     ).toBe(winVenv);
   });
 
+  it('does not fall through to Unix bin on win32 when Scripts exe is missing', () => {
+    expect(
+      resolveFlatpakNodeGeneratorBin({
+        root,
+        env: {},
+        which: () => null,
+        existsSync: (p) => p === unixVenv,
+        accessSync: () => {},
+        X_OK: 1,
+        platform: 'win32',
+      }),
+    ).toBeNull();
+  });
+
   it('returns null when env, PATH, and local venv are all missing', () => {
     expect(
       resolveFlatpakNodeGeneratorBin({
