@@ -4884,10 +4884,10 @@
       "peerUnreachable": "해당 목적지까지의 경로가 없습니다. 피어가 오프라인일 수 있습니다.",
       "checkingReachability": "연결 가능성 확인 중…",
       "listenerLikelyOffTitle": "파일 수신이 꺼져 있을 수 있습니다.",
-      "listenerLikelyOffBody": "파일 수신 대상에 대한 경로가 없지만 온라인에서 채팅을 찾습니다. 파일 수신 활성화(원격 → 설정 → 인바운드 파일 제공)를 요청한 후 다시 시도하세요.",
       "listenerLikelyOffConfirm": "활성화 요청 보내기",
       "pendingOffersBadgeAriaCapped": "99개 이상의 대기 중인 인바운드 파일 제안",
-      "listenerLikelyOffToast": "파일 수신 대상에 대한 경로가 없습니다. 파일 수신이 꺼져 있을 수 있습니다. 활성화 요청을 보낸 후 다시 시도하세요."
+      "listenerLikelyOffBody": "파일 수신 대상에 대한 경로가 없지만 온라인에서 채팅을 찾습니다. rncp 파일 수신을 활성화하고 rncp 수신 해시를 보낸 후 다시 시도하세요.",
+      "listenerLikelyOffToast": "파일 수신 대상에 대한 경로가 없습니다. 파일 수신이 꺼져 있을 수 있습니다. rncp 수신 및 해시 전송을 활성화하도록 요청한 후 다시 시도하세요."
     },
     "enableRequest": {
       "title": "파일 수신을 활성화하시겠습니까?",
@@ -4904,9 +4904,9 @@
       "enableFailed": "파일 수신을 활성화할 수 없습니다: {{error}}",
       "saveDirRequired": "수신을 활성화하려면 저장 폴더를 선택하세요.",
       "identityUnknown": "이 피어의 신원 해시를 아직 확인할 수 없습니다 — 수신 확인은 활성화되었지만 허용 목록에는 추가되지 않았습니다. 경로나 알림이 도착한 후 다시 시도하세요.",
-      "lxmfShareBody": "파일 수신이 활성화되었습니다. 제 rncp 수신 대상입니다(mesh-client가 저장합니다).",
       "shareDestWarning": "활성화하면 mesh-client는 rncp 수신 대상을 이 피어에 보내 파일 보내기를 자동 채울 수 있습니다.",
-      "lxmfBody": "rncp 수신을 활성화하고(원격 → 설정 → 인바운드 파일 제공) rncp 수신 해시를 보내주세요."
+      "lxmfBody": "rncp 파일 수신을 활성화하고 rncp 수신 대상 해시로 응답하세요.",
+      "lxmfShareBody": "파일 수신이 활성화되었습니다. 내 rncp 수신 대상 해시:"
     },
     "saved": {
       "labelPlaceholder": "상표",

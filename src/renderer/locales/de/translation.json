@@ -4884,10 +4884,10 @@
       "peerUnreachable": "Kein Weg zu diesem Ziel. Der Peer ist möglicherweise offline.",
       "checkingReachability": "Erreichbarkeit prüfen…",
       "listenerLikelyOffTitle": "Möglicherweise ist der Dateiempfang deaktiviert",
-      "listenerLikelyOffBody": "Kein Pfad zu ihrem Dateiempfangsziel, aber sie suchen online nach Chat. Bitten Sie sie, den Dateiempfang zu aktivieren (Remote → Einstellungen → Angebote für eingehende Dateien) und versuchen Sie es dann erneut.",
       "listenerLikelyOffConfirm": "Aktivierungsanfrage senden",
       "pendingOffersBadgeAriaCapped": "Über 99 ausstehende Angebote für eingehende Dateien",
-      "listenerLikelyOffToast": "Kein Pfad zu ihrem Dateiempfangsziel; Der Dateiempfang ist möglicherweise deaktiviert. Senden Sie eine Aktivierungsanforderung und versuchen Sie es dann erneut."
+      "listenerLikelyOffBody": "Kein Pfad zu ihrem Dateiempfangsziel, aber sie suchen online nach Chat. Bitten Sie sie, den Empfang von RNCP-Dateien zu aktivieren und ihren RNCP-Empfangs-Hash zu senden, und versuchen Sie es dann erneut.",
+      "listenerLikelyOffToast": "Kein Pfad zu ihrem Dateiempfangsziel; Der Dateiempfang ist möglicherweise deaktiviert. Bitten Sie sie, den RNCP-Empfang und das Senden ihres Hashs zu aktivieren, und versuchen Sie es dann erneut."
     },
     "enableRequest": {
       "title": "Dateiempfang aktivieren?",
@@ -4904,9 +4904,9 @@
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
       "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
-      "lxmfShareBody": "Dateiempfang ist aktiviert. Hier ist mein rncp-Empfangsziel (mesh-client speichert es für Sie).",
       "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann.",
-      "lxmfBody": "Bitte aktivieren Sie den rncp-Empfang (Remote → Einstellungen → Angebote für eingehende Dateien) und senden Sie mir Ihren rncp-Empfangs-Hash."
+      "lxmfBody": "Bitte aktivieren Sie den Empfang von RNCP-Dateien und antworten Sie mit Ihrem RNCP-Empfangsziel-Hash.",
+      "lxmfShareBody": "Der Dateiempfang ist aktiviert. Mein RNCP-Empfangsziel-Hash:"
     },
     "saved": {
       "labelPlaceholder": "Etikett",

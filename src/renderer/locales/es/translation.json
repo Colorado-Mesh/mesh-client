@@ -4884,10 +4884,10 @@
       "peerUnreachable": "No hay camino hacia ese destino. Es posible que el interlocutor esté desconectado.",
       "checkingReachability": "Comprobando accesibilidad...",
       "listenerLikelyOffTitle": "La recepción de archivos puede estar desactivada",
-      "listenerLikelyOffBody": "No hay ruta al destino de recepción de su archivo, pero buscan chat en línea. Pídales que habiliten la recepción de archivos (Remoto → Configuración → Ofertas de archivos entrantes) y luego vuelva a intentarlo.",
       "listenerLikelyOffConfirm": "Enviar solicitud de habilitación",
       "pendingOffersBadgeAriaCapped": "Más de 99 ofertas de archivos entrantes pendientes",
-      "listenerLikelyOffToast": "No hay ruta al destino de recepción de su archivo; La recepción de archivos puede estar desactivada. Envíe una solicitud de habilitación y vuelva a intentarlo."
+      "listenerLikelyOffBody": "No hay ruta al destino de recepción de su archivo, pero buscan chat en línea. Pídales que habiliten la recepción de archivos rncp y envíen su hash de recepción rncp, luego vuelva a intentarlo.",
+      "listenerLikelyOffToast": "No hay ruta al destino de recepción de su archivo; La recepción de archivos puede estar desactivada. Pídales que habiliten rncp para recibir y enviar su hash, luego intente nuevamente."
     },
     "enableRequest": {
       "title": "¿Habilitar la recepción de archivos?",
@@ -4904,9 +4904,9 @@
       "enableFailed": "No se ha podido habilitar la recepción de archivos: {{error}}",
       "saveDirRequired": "Elija una carpeta de guardado para habilitar la recepción.",
       "identityUnknown": "Aún no se pudo resolver el hash de identidad de este par — el modo Preguntar está activado, pero no se añadió a la lista de permitidos. Inténtalo de nuevo cuando llegue una ruta o un anuncio.",
-      "lxmfShareBody": "La recepción de archivos está habilitada. Aquí está mi destino de recepción rncp (mesh-client lo guardará para usted).",
       "shareDestWarning": "Si lo habilita, mesh-client enviará su destino de recepción rncp a este par para que pueda completar automáticamente el envío del archivo.",
-      "lxmfBody": "Habilite la recepción de rncp (Remoto → Configuración → Ofertas de archivos entrantes) y envíeme su hash de recepción de rncp."
+      "lxmfBody": "Habilite la recepción de archivos rncp y responda con su hash de destino de recepción rncp.",
+      "lxmfShareBody": "La recepción de archivos está habilitada. Mi rncp recibe el hash de destino:"
     },
     "saved": {
       "labelPlaceholder": "Designación",

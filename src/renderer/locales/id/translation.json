@@ -4884,10 +4884,10 @@
       "peerUnreachable": "Tidak ada jalan menuju tujuan itu. Rekan tersebut mungkin sedang offline.",
       "checkingReachability": "Memeriksa jangkauan…",
       "listenerLikelyOffTitle": "Penerimaan file mungkin tidak aktif",
-      "listenerLikelyOffBody": "Tidak ada jalur ke tujuan penerimaan file mereka, tetapi mereka mencari obrolan online. Minta mereka untuk mengaktifkan penerimaan file (Jarak Jauh → Pengaturan → Penawaran file masuk), lalu coba lagi.",
       "listenerLikelyOffConfirm": "Kirim permintaan pengaktifan",
       "pendingOffersBadgeAriaCapped": "99+ penawaran file masuk yang tertunda",
-      "listenerLikelyOffToast": "Tidak ada jalur ke tujuan penerimaan file mereka; penerimaan file mungkin tidak aktif. Kirim permintaan pengaktifan, lalu coba lagi."
+      "listenerLikelyOffBody": "Tidak ada jalur ke tujuan penerimaan file mereka, tetapi mereka mencari obrolan online. Minta mereka untuk mengaktifkan penerimaan file rncp dan mengirimkan hash penerimaan rncp mereka, lalu coba lagi.",
+      "listenerLikelyOffToast": "Tidak ada jalur ke tujuan penerimaan file mereka; penerimaan file mungkin tidak aktif. Minta mereka untuk mengaktifkan rncp menerima dan mengirim hash mereka, lalu coba lagi."
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",
@@ -4904,9 +4904,9 @@
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
       "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
-      "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda).",
       "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file.",
-      "lxmfBody": "Harap aktifkan penerimaan rncp (Jarak Jauh → Pengaturan → Penawaran file masuk) dan kirimkan saya hash penerimaan rncp Anda."
+      "lxmfBody": "Harap aktifkan penerimaan file rncp dan balas dengan hash tujuan penerimaan rncp Anda.",
+      "lxmfShareBody": "Penerimaan file diaktifkan. Rncp saya menerima hash tujuan:"
     },
     "saved": {
       "labelPlaceholder": "Label",
