@@ -1,4 +1,5 @@
 import { probeReticulumPeer } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { isCanonicalReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 
 export type RncpDestinationReachability =
   | { status: 'reachable'; hops?: number }
@@ -16,6 +17,11 @@ export interface EnsureRncpDestinationReachableArgs {
   lxmfPeerHash?: string | null;
 }
 
+/** True when `value` is already trimmed/lowercased 32-char hex (rncp/LXMF dest). */
+export function isRncpHexHash(value: string): boolean {
+  return isCanonicalReticulumDestinationHash(value);
+}
+
 /**
  * Preflight before rncp send/fetch: require a live path to the transfer destination.
  * When that fails but LXMF still probes ok, classify as listener-likely-off so the
@@ -25,7 +31,7 @@ export async function ensureRncpDestinationReachable(
   args: EnsureRncpDestinationReachableArgs,
 ): Promise<RncpDestinationReachability> {
   const destinationHash = args.destinationHash.trim().toLowerCase();
-  if (!/^[0-9a-f]{32}$/.test(destinationHash)) {
+  if (!isRncpHexHash(destinationHash)) {
     return { status: 'peerUnreachable' };
   }
 
@@ -41,7 +47,7 @@ export async function ensureRncpDestinationReachable(
   }
 
   const lxmf = args.lxmfPeerHash?.trim().toLowerCase() ?? '';
-  if (!/^[0-9a-f]{32}$/.test(lxmf) || lxmf === destinationHash) {
+  if (!isRncpHexHash(lxmf) || lxmf === destinationHash) {
     return { status: 'peerUnreachable' };
   }
 

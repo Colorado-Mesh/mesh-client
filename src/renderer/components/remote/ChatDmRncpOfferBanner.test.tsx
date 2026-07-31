@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -61,5 +61,38 @@ describe('ChatDmRncpOfferBanner', () => {
     await user.click(screen.getByRole('button', { name: 'Accept photo.jpg' }));
     expect(window.electronAPI.reticulum.rncp.accept).toHaveBeenCalledWith({ transfer_id: 't1' });
     expect(useRncpTransferStore.getState().pendingOffers.has('t1')).toBe(false);
+  });
+
+  it('blocks Reject while Accept is in flight so only one IPC runs', async () => {
+    useRncpTransferStore.getState().applyOffer({
+      transfer_id: 't1',
+      file_name: 'photo.jpg',
+      bytes: 100,
+      identity_hash: PEER_IDENTITY,
+    });
+
+    let resolveAccept: ((value: { ok: boolean }) => void) | undefined;
+    vi.mocked(window.electronAPI.reticulum.rncp.accept).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAccept = resolve;
+        }),
+    );
+    vi.mocked(window.electronAPI.reticulum.rncp.reject).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rncp.reject).mockResolvedValue({ ok: true });
+
+    const user = userEvent.setup();
+    render(<ChatDmRncpOfferBanner lxmfPeerHash={PEER_HASH} />);
+
+    await user.click(screen.getByRole('button', { name: 'Accept photo.jpg' }));
+    await user.click(screen.getByRole('button', { name: 'Reject photo.jpg' }));
+
+    expect(window.electronAPI.reticulum.rncp.accept).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.reticulum.rncp.reject).not.toHaveBeenCalled();
+
+    resolveAccept?.({ ok: true });
+    await waitFor(() => {
+      expect(useRncpTransferStore.getState().pendingOffers.has('t1')).toBe(false);
+    });
   });
 });

@@ -5,7 +5,10 @@ import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RemotePathCapabilityChip } from '@/renderer/components/remote/RemotePathCapabilityChip';
 import { useToast } from '@/renderer/components/Toast';
 import { useRemotePathCapability } from '@/renderer/hooks/useRemotePathCapability';
-import { ensureRncpDestinationReachable } from '@/renderer/lib/ensureRncpDestinationReachable';
+import {
+  ensureRncpDestinationReachable,
+  isRncpHexHash,
+} from '@/renderer/lib/ensureRncpDestinationReachable';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import i18n from '@/renderer/lib/i18n';
 import { pushRncpListenerPolicy } from '@/renderer/lib/pushRncpListenerPolicy';
@@ -91,7 +94,7 @@ export function RemoteTransferSection({
       .getState()
       .findByDestination(destinationHash, 'rncp');
     const peer = savedForDest?.lxmf_peer_hash?.trim().toLowerCase() ?? '';
-    return /^[0-9a-f]{32}$/.test(peer) ? peer : null;
+    return isRncpHexHash(peer) ? peer : null;
   }, []);
 
   /** Returns true when the transfer may proceed. */

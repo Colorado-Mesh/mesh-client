@@ -18,6 +18,7 @@ vi.mock('@/renderer/components/Toast', () => ({
 
 vi.mock('@/renderer/lib/ensureRncpDestinationReachable', () => ({
   ensureRncpDestinationReachable: vi.fn(),
+  isRncpHexHash: (value: string) => /^[0-9a-f]{32}$/.test(value),
 }));
 
 vi.mock('@/renderer/lib/sendRncpRequestEnable', () => ({
