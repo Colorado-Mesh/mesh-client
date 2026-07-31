@@ -258,7 +258,7 @@ Complete reference of all pnpm scripts in [`package.json`](../package.json), org
 | `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging |
 | `dist:win:publish`   | Build Windows and upload to release server                                   |
 
-`dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` before packaging. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward.
+`dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` (`scripts/dedupe-dist.mjs`) before packaging; that helper retries on transient `@jsr/_tmp_*` rename races. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward.
 
 #### Building a Flatpak (Linux)
 
@@ -444,27 +444,27 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Setup / helpers
 
-| Script                          | Description                                                    |
-| ------------------------------- | -------------------------------------------------------------- |
-| `clean`                         | Remove `dist-electron`, `dist`, and `node_modules`             |
-| `dedupe:dist`                   | Dedupe dependency tree before packaging (`predist` hook)       |
-| `i18n:auto-translate`           | Machine-translate missing locale keys (MyMemory default)       |
-| `i18n:prune-unused`             | Remove orphaned translation keys from locale files             |
-| `rebuild`                       | Rebuild native Node modules for Electron                       |
-| `release`                       | Maintainer release script (`scripts/release.sh`)               |
-| `reticulum:sidecar:build`       | Build debug `mesh-client-reticulum` (requires `cargo`)         |
-| `reticulum:sidecar:clippy`      | Clippy stub build (`-D warnings`)                              |
-| `reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp`                  |
-| `reticulum:sidecar:coverage`    | Optional HTML coverage via `cargo llvm-cov` (no CI threshold)  |
-| `reticulum:sidecar:dev`         | Run sidecar standalone on `127.0.0.1:19437`                    |
-| `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                            |
-| `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                            |
-| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones Ratspeak siblings if needed) |
-| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                             |
-| `setup:actionlint`              | Install actionlint for GitHub workflow linting                 |
-| `setup:build-deps`              | Install native build dependencies                              |
-| `setup:dialout`                 | Add user to dialout group for serial port access (Linux)       |
-| `update`                        | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar     |
+| Script                          | Description                                                           |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `clean`                         | Remove `dist-electron`, `dist`, and `node_modules`                    |
+| `dedupe:dist`                   | Retrying dist dedupe (`scripts/dedupe-dist.mjs`; `@jsr/_tmp_*` races) |
+| `i18n:auto-translate`           | Machine-translate missing locale keys (MyMemory default)              |
+| `i18n:prune-unused`             | Remove orphaned translation keys from locale files                    |
+| `rebuild`                       | Rebuild native Node modules for Electron                              |
+| `release`                       | Maintainer release script (`scripts/release.sh`)                      |
+| `reticulum:sidecar:build`       | Build debug `mesh-client-reticulum` (requires `cargo`)                |
+| `reticulum:sidecar:clippy`      | Clippy stub build (`-D warnings`)                                     |
+| `reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp`                         |
+| `reticulum:sidecar:coverage`    | Optional HTML coverage via `cargo llvm-cov` (no CI threshold)         |
+| `reticulum:sidecar:dev`         | Run sidecar standalone on `127.0.0.1:19437`                           |
+| `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                   |
+| `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                   |
+| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones Ratspeak siblings if needed)        |
+| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                                    |
+| `setup:actionlint`              | Install actionlint for GitHub workflow linting                        |
+| `setup:build-deps`              | Install native build dependencies                                     |
+| `setup:dialout`                 | Add user to dialout group for serial port access (Linux)              |
+| `update`                        | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar            |
 
 #### Lifecycle (automatic)
 
