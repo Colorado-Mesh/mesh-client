@@ -600,7 +600,6 @@
       "rememberAddress": "Zapamatovat si tuto adresu",
       "rememberAddressAria": "Zapamatovat si tento cíl RNCP pro tohoto kolegu",
       "chooseAndSend": "Vyberte soubor a odešlete...",
-      "sending": "Odesílání...",
       "sendStarted": "Odesílání {{file}}…",
       "sendFailed": "Odeslání se nezdařilo: {{error}}",
       "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
@@ -621,7 +620,9 @@
       "forgetAddress": "Zapomenout uložený cíl",
       "forgetAddressAria": "Odebrat uložený cíl příjmu rncp pro tohoto kolegu",
       "forgotAddressToast": "Zapomněli jste uložený cíl rncp pro tohoto kolegu.",
-      "filledFromChatToast": "Vyplněný cíl z chatu (neuloženo — zaškrtněte Nezapomeňte jej ponechat)."
+      "filledFromChatToast": "Vyplněný cíl z chatu (neuloženo — zaškrtněte Nezapomeňte jej ponechat).",
+      "offerBannerTitle": "Nabídky příchozích souborů",
+      "offerBannerTitleAria": "Nevyřízené nabídky příchozích souborů od tohoto partnera"
     },
     "shareLocation": "Sdílejte polohu",
     "shareLocationLabel": "📍 Sdílená poloha",
@@ -4881,7 +4882,12 @@
       "copyInstructions": "Kopírovat pokyny",
       "instructionsCopied": "Pokyny zkopírovány.",
       "receiveDestSharedToast": "Uložen rncp receive destination uživatele {{peer}} — nyní můžete odeslat soubor.",
-      "receiveDestShareFailed": "Nelze uložit cíl příjmu rncp partnera."
+      "receiveDestShareFailed": "Nelze uložit cíl příjmu rncp partnera.",
+      "peerUnreachable": "Žádná cesta k tomuto cíli. Partner může být offline.",
+      "checkingReachability": "Kontrola dosažitelnosti…",
+      "listenerLikelyOffTitle": "Příjem souborů může být vypnutý",
+      "listenerLikelyOffBody": "Žádná cesta k cílovému umístění jejich souboru, ale hledají online chat. Požádejte je, aby povolili příjem souborů (Vzdálené → Nastavení → Nabídky příchozích souborů), a zkuste to znovu.",
+      "listenerLikelyOffConfirm": "Odeslat požadavek na povolení"
     },
     "enableRequest": {
       "title": "Povolit příjem souborů?",
@@ -4898,9 +4904,9 @@
       "enableFailed": "Nelze povolit příjem souboru: {{error}}",
       "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
       "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
-      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu.",
       "lxmfShareBody": "Příjem souborů je povolen. Zde je můj rncp receive destination (mesh-client jej pro vás uloží).",
-      "shareDestWarning": "Pokud povolíte, mesh-client odešle váš cíl příjmu rncp tomuto partnerovi, aby mohl automaticky vyplnit soubor."
+      "shareDestWarning": "Pokud povolíte, mesh-client odešle váš cíl příjmu rncp tomuto partnerovi, aby mohl automaticky vyplnit soubor.",
+      "lxmfBody": "Povolte příjem rncp (Vzdálené → Nastavení → Nabídky příchozích souborů) a pošlete mi svůj hash pro příjem rncp."
     },
     "saved": {
       "labelPlaceholder": "Označení",

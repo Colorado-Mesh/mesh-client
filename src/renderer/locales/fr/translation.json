@@ -601,7 +601,6 @@
       "rememberAddress": "Mémoriser cette adresse",
       "rememberAddressAria": "Mémoriser cette destination rncp pour cet homologue",
       "chooseAndSend": "Choisissez le fichier et envoyez…",
-      "sending": "Envoi en cours...",
       "sendStarted": "Envoi {{file}}…",
       "sendFailed": "Échec de l'envoi : {{error}}",
       "newOfferToast": "{{peer}} souhaite vous envoyer un fichier : {{file}}",
@@ -622,7 +621,9 @@
       "forgetAddress": "Oublier la destination enregistrée",
       "forgetAddressAria": "Supprimer la destination de réception rncp enregistrée pour cet homologue",
       "forgotAddressToast": "Destination rncp enregistrée oubliée pour cet homologue.",
-      "filledFromChatToast": "Destination remplie à partir du chat (non enregistrée — cochez la case N'oubliez pas de la conserver)."
+      "filledFromChatToast": "Destination remplie à partir du chat (non enregistrée — cochez la case N'oubliez pas de la conserver).",
+      "offerBannerTitle": "Offres de fichiers entrants",
+      "offerBannerTitleAria": "Offres de fichiers entrants en attente de cet homologue"
     },
     "shareLocation": "Partager l'emplacement",
     "shareLocationLabel": "📍 Emplacement partagé",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Copier les instructions",
       "instructionsCopied": "Instructions copiées.",
       "receiveDestSharedToast": "Destination de réception rncp de {{peer}} enregistrée — vous pouvez envoyer un fichier.",
-      "receiveDestShareFailed": "Impossible d'enregistrer la destination de réception RNCP du homologue."
+      "receiveDestShareFailed": "Impossible d'enregistrer la destination de réception RNCP du homologue.",
+      "peerUnreachable": "Aucun chemin vers cette destination. L'homologue est peut-être hors ligne.",
+      "checkingReachability": "Vérification de l'accessibilité…",
+      "listenerLikelyOffTitle": "La réception de fichiers est peut-être désactivée",
+      "listenerLikelyOffBody": "Aucun chemin vers la destination de réception de leur fichier, mais ils recherchent en ligne pour discuter. Demandez-leur d'activer la réception de fichiers (À distance → Paramètres → Offres de fichiers entrants), puis réessayez.",
+      "listenerLikelyOffConfirm": "Envoyer une demande d'activation"
     },
     "enableRequest": {
       "title": "Activer la réception de fichiers ?",
@@ -4896,9 +4902,9 @@
       "enableFailed": "Impossible d'activer la réception du fichier : {{error}}",
       "saveDirRequired": "Choisissez un dossier de sauvegarde pour activer la réception.",
       "identityUnknown": "Impossible de résoudre le hachage d'identité de ce pair pour le moment — le mode Demander est activé, mais il n'a pas été ajouté à la liste d'autorisation. Réessayez après l'arrivée d'un chemin ou d'une annonce.",
-      "lxmfBody": "Veuillez activer la réception de fichiers (rncp) si vous utilisez mesh-client : Remote → Settings → Inbound file offers. Ou exécutez rncp/rncp-rs en mode écoute.",
       "lxmfShareBody": "La réception de fichiers est activée. Voici ma destination de réception rncp (mesh-client l'enregistrera pour vous).",
-      "shareDestWarning": "Si vous l'activez, mesh-client enverra votre destination de réception rncp à cet homologue afin qu'il puisse remplir automatiquement l'envoi de fichiers."
+      "shareDestWarning": "Si vous l'activez, mesh-client enverra votre destination de réception rncp à cet homologue afin qu'il puisse remplir automatiquement l'envoi de fichiers.",
+      "lxmfBody": "Veuillez activer la réception rncp (À distance → Paramètres → Offres de fichiers entrants) et envoyez-moi votre hachage de réception rncp."
     },
     "saved": {
       "labelPlaceholder": "Dénomination",

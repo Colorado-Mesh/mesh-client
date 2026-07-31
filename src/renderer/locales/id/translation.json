@@ -602,7 +602,6 @@
       "rememberAddress": "Ingat alamat ini",
       "rememberAddressAria": "Ingat tujuan rncp untuk rekan ini",
       "chooseAndSend": "Pilih file & kirim…",
-      "sending": "Mengirim…",
       "sendStarted": "Mengirim {{file}}…",
       "sendFailed": "Gagal mengirim: {{error}}",
       "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
@@ -623,7 +622,9 @@
       "forgetAddress": "Lupakan tujuan tersimpan",
       "forgetAddressAria": "Hapus tujuan penerimaan rncp yang disimpan untuk rekan ini",
       "forgotAddressToast": "Lupa menyimpan tujuan rncp untuk rekan ini.",
-      "filledFromChatToast": "Tujuan yang diisi dari obrolan (tidak disimpan — centang Ingat untuk menyimpannya)."
+      "filledFromChatToast": "Tujuan yang diisi dari obrolan (tidak disimpan — centang Ingat untuk menyimpannya).",
+      "offerBannerTitle": "Penawaran file masuk",
+      "offerBannerTitleAria": "Penawaran file masuk yang tertunda dari rekan ini"
     },
     "shareLocation": "Bagikan lokasi",
     "shareLocationLabel": "📍 Lokasi bersama",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Salin instruksi",
       "instructionsCopied": "Instruksi disalin.",
       "receiveDestSharedToast": "Destinasi penerimaan rncp {{peer}} disimpan — Anda dapat mengirim file sekarang.",
-      "receiveDestShareFailed": "Tidak dapat menyimpan tujuan penerimaan rncp rekan."
+      "receiveDestShareFailed": "Tidak dapat menyimpan tujuan penerimaan rncp rekan.",
+      "peerUnreachable": "Tidak ada jalan menuju tujuan itu. Rekan tersebut mungkin sedang offline.",
+      "checkingReachability": "Memeriksa jangkauan…",
+      "listenerLikelyOffTitle": "Penerimaan file mungkin tidak aktif",
+      "listenerLikelyOffBody": "Tidak ada jalur ke tujuan penerimaan file mereka, tetapi mereka mencari obrolan online. Minta mereka untuk mengaktifkan penerimaan file (Jarak Jauh → Pengaturan → Penawaran file masuk), lalu coba lagi.",
+      "listenerLikelyOffConfirm": "Kirim permintaan pengaktifan"
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",
@@ -4896,9 +4902,9 @@
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
       "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
-      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan.",
       "lxmfShareBody": "Penerimaan file diaktifkan. Ini tujuan penerimaan rncp saya (mesh-client akan menyimpannya untuk Anda).",
-      "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file."
+      "shareDestWarning": "Jika Anda mengaktifkannya, mesh-client akan mengirimkan tujuan penerimaan rncp Anda ke rekan ini sehingga mereka dapat mengisi otomatis pengiriman file.",
+      "lxmfBody": "Harap aktifkan penerimaan rncp (Jarak Jauh → Pengaturan → Penawaran file masuk) dan kirimkan saya hash penerimaan rncp Anda."
     },
     "saved": {
       "labelPlaceholder": "Label",

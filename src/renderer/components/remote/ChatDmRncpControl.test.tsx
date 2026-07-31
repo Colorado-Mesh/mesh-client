@@ -1,18 +1,67 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ensureRncpDestinationReachable } from '@/renderer/lib/ensureRncpDestinationReachable';
+import { sendRncpRequestEnable } from '@/renderer/lib/sendRncpRequestEnable';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 
 import { ChatDmRncpControl } from './ChatDmRncpControl';
 
+vi.mock('@/renderer/lib/ensureRncpDestinationReachable', () => ({
+  ensureRncpDestinationReachable: vi.fn(),
+}));
+
+vi.mock('@/renderer/lib/sendRncpRequestEnable', () => ({
+  sendRncpRequestEnable: vi.fn(),
+}));
+
+const addToast = vi.fn();
+
+vi.mock('@/renderer/components/Toast', () => ({
+  useToast: () => ({ addToast }),
+}));
+
 const PEER_HASH = 'a'.repeat(32);
 const PEER_IDENTITY = 'd'.repeat(32);
+const DEST_HASH = 'c'.repeat(32);
+
+function seedSavedRncpAddress(): void {
+  useReticulumRemoteAddressStore.setState({
+    addresses: new Map([
+      [
+        'addr1',
+        {
+          id: 'addr1',
+          label: 'Alice',
+          service: 'rncp',
+          destination_hash: DEST_HASH,
+          lxmf_peer_hash: PEER_HASH,
+          created_at: 1,
+          updated_at: 1,
+        },
+      ],
+    ]),
+    hydrated: true,
+    hydrate: () => Promise.resolve(),
+  });
+}
 
 describe('ChatDmRncpControl', () => {
   beforeEach(() => {
+    addToast.mockReset();
+    vi.mocked(ensureRncpDestinationReachable).mockReset();
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'reachable', hops: 1 });
+    vi.mocked(sendRncpRequestEnable).mockReset();
+    vi.mocked(sendRncpRequestEnable).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.rncp.showOpenFileDialog).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rncp.showOpenFileDialog).mockResolvedValue({
+      canceled: true,
+      path: null,
+    });
+    vi.mocked(window.electronAPI.reticulum.rncp.send).mockReset();
     useRncpTransferStore.getState().clearAll();
     useReticulumRemoteAddressStore.setState({
       addresses: new Map(),
@@ -174,5 +223,68 @@ describe('ChatDmRncpControl', () => {
     await user.click(screen.getByRole('button', { name: 'Accept a.txt' }));
     expect(window.electronAPI.reticulum.rncp.accept).toHaveBeenCalledWith({ transfer_id: 't1' });
     expect(useRncpTransferStore.getState().pendingOffers.size).toBe(0);
+  });
+
+  it('hard-blocks send when the receive dest is peerUnreachable', async () => {
+    seedSavedRncpAddress();
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'peerUnreachable' });
+    const user = userEvent.setup();
+    render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+    await user.click(screen.getByRole('button', { name: 'Send file to Alice via rncp' }));
+    await user.click(screen.getByRole('button', { name: 'Send file' }));
+
+    await waitFor(() => {
+      expect(ensureRncpDestinationReachable).toHaveBeenCalledWith({
+        destinationHash: DEST_HASH,
+        lxmfPeerHash: PEER_HASH,
+      });
+    });
+    expect(window.electronAPI.reticulum.rncp.showOpenFileDialog).not.toHaveBeenCalled();
+    expect(window.electronAPI.reticulum.rncp.send).not.toHaveBeenCalled();
+    expect(addToast).toHaveBeenCalledWith(
+      'No path to that destination. The peer may be offline.',
+      'error',
+    );
+  });
+
+  it('opens enable-request confirm when listenerLikelyOff and confirm sends the request', async () => {
+    seedSavedRncpAddress();
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'listenerLikelyOff' });
+    const user = userEvent.setup();
+    render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+    await user.click(screen.getByRole('button', { name: 'Send file to Alice via rncp' }));
+    await user.click(screen.getByRole('button', { name: 'Send file' }));
+
+    expect(await screen.findByText('File receiving may be off')).toBeInTheDocument();
+    expect(window.electronAPI.reticulum.rncp.showOpenFileDialog).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Send enable request' }));
+    await waitFor(() => {
+      expect(sendRncpRequestEnable).toHaveBeenCalledWith(PEER_HASH);
+    });
+  });
+
+  it('proceeds to the file picker when the receive dest is reachable', async () => {
+    seedSavedRncpAddress();
+    vi.mocked(ensureRncpDestinationReachable).mockResolvedValue({ status: 'reachable', hops: 2 });
+    vi.mocked(window.electronAPI.reticulum.rncp.showOpenFileDialog).mockResolvedValue({
+      canceled: false,
+      path: '/tmp/hello.txt',
+    });
+    vi.mocked(window.electronAPI.reticulum.rncp.send).mockResolvedValue({
+      ok: true,
+      transfer_id: 'xfer-1',
+    });
+    const user = userEvent.setup();
+    render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+    await user.click(screen.getByRole('button', { name: 'Send file to Alice via rncp' }));
+    await user.click(screen.getByRole('button', { name: 'Send file' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rncp.send).toHaveBeenCalledWith({
+        destination_hash: DEST_HASH,
+        path: '/tmp/hello.txt',
+      });
+    });
   });
 });

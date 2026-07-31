@@ -602,7 +602,6 @@
       "rememberAddress": "Bu adresi hatırla",
       "rememberAddressAria": "Bu eş için bu rncp hedefini hatırla",
       "chooseAndSend": "Dosya seç ve gönder…",
-      "sending": "Gönderiliyor…",
       "sendStarted": "{{file}} gönderiliyor…",
       "sendFailed": "Gönderilemedi: {{error}}",
       "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
@@ -623,7 +622,9 @@
       "forgetAddress": "Kaydedilen hedefi unut",
       "forgetAddressAria": "Bu eş için kaydedilen rncp alma hedefini kaldır",
       "forgotAddressToast": "Bu eş için kaydedilen rncp hedefini unuttum.",
-      "filledFromChatToast": "Sohbetten dolu hedef (kaydedilmedi — saklamayı unutmayın seçeneğini işaretleyin)."
+      "filledFromChatToast": "Sohbetten dolu hedef (kaydedilmedi — saklamayı unutmayın seçeneğini işaretleyin).",
+      "offerBannerTitle": "Gelen dosya teklifleri",
+      "offerBannerTitleAria": "Bu eşten gelen dosya teklifleri bekleniyor"
     },
     "shareLocation": "Konumu paylaş",
     "shareLocationLabel": "📍 Paylaşılan konum",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Talimatları kopyala",
       "instructionsCopied": "Talimatlar kopyalandı.",
       "receiveDestSharedToast": "{{peer}} için rncp alma hedefi kaydedildi — şimdi dosya gönderebilirsiniz.",
-      "receiveDestShareFailed": "Eşin rncp alma hedefi kaydedilemedi."
+      "receiveDestShareFailed": "Eşin rncp alma hedefi kaydedilemedi.",
+      "peerUnreachable": "O hedefe giden yol yok. Eş çevrimdışı olabilir.",
+      "checkingReachability": "Erişilebilirlik kontrol ediliyor…",
+      "listenerLikelyOffTitle": "Dosya alma kapalı olabilir",
+      "listenerLikelyOffBody": "Dosyalarının varış noktasına giden yolu yok, ancak sohbet için çevrimiçi görünüyorlar. Dosya almayı etkinleştirmelerini isteyin (Uzak → Ayarlar → Gelen dosya teklifleri), ardından tekrar deneyin.",
+      "listenerLikelyOffConfirm": "Etkinleştirme isteği gönder"
     },
     "enableRequest": {
       "title": "Dosya alımı etkinleştirilsin mi?",
@@ -4896,9 +4902,9 @@
       "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
       "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
-      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın.",
       "lxmfShareBody": "Dosya alma etkinleştirildi. İşte rncp alma hedefim (mesh-client sizin için kaydedecek).",
-      "shareDestWarning": "Etkinleştirirseniz mesh-client, dosya gönderimini otomatik olarak doldurabilmeleri için rncp alma hedefinizi bu eşe gönderecektir."
+      "shareDestWarning": "Etkinleştirirseniz mesh-client, dosya gönderimini otomatik olarak doldurabilmeleri için rncp alma hedefinizi bu eşe gönderecektir.",
+      "lxmfBody": "Lütfen rncp alımını etkinleştirin (Uzak → Ayarlar → Gelen dosya teklifleri) ve bana rncp alma karmanızı gönderin."
     },
     "saved": {
       "labelPlaceholder": "Etiket",

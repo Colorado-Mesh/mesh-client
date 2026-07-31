@@ -602,7 +602,6 @@
       "rememberAddress": "记住此地址",
       "rememberAddressAria": "记住此节点的此rncp目标",
       "chooseAndSend": "选择文件并发送…",
-      "sending": "发送中…",
       "sendStarted": "正在发送{{file}} …",
       "sendFailed": "发送失败： {{error}}",
       "newOfferToast": "{{peer}}想向您发送文件： {{file}}",
@@ -623,7 +622,9 @@
       "forgetAddress": "忘记已保存的目的地",
       "forgetAddressAria": "删除此对等体已保存的rncp接收目的地",
       "forgotAddressToast": "忘记了此对等方的保存的rncp目的地。",
-      "filledFromChatToast": "通过聊天填写目的地（未保存—选中请记住保留）。"
+      "filledFromChatToast": "通过聊天填写目的地（未保存—选中请记住保留）。",
+      "offerBannerTitle": "传入文件报价",
+      "offerBannerTitleAria": "来自该对等方的待定入站文件报价"
     },
     "shareLocation": "分享位置",
     "shareLocationLabel": "📍 共享位置",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "复制说明",
       "instructionsCopied": "说明已复制。",
       "receiveDestSharedToast": "已保存 {{peer}} 的 rncp 接收目的地 — 现在可以发送文件。",
-      "receiveDestShareFailed": "无法保存对等方的 rncp 接收目的地。"
+      "receiveDestShareFailed": "无法保存对等方的 rncp 接收目的地。",
+      "peerUnreachable": "没有通往那个目的地的路。对等方可能离线。",
+      "checkingReachability": "检查可达性...",
+      "listenerLikelyOffTitle": "文件接收可能已关闭",
+      "listenerLikelyOffBody": "没有通往文件接收目的地的路径，但他们在网上查找聊天内容。要求他们启用文件接收（远程 → 设置 → 入站文件提供），然后重试。",
+      "listenerLikelyOffConfirm": "发送启用请求"
     },
     "enableRequest": {
       "title": "启用文件接收？",
@@ -4896,9 +4902,9 @@
       "enableFailed": "无法启用文件接收： {{error}}",
       "saveDirRequired": "选择一个保存文件夹以启用接收。",
       "identityUnknown": "暂时无法解析此对等节点的身份哈希 — 已启用来件询问，但未将其加入允许列表。等路径或公告到达后再试一次。",
-      "lxmfBody": "如果您使用mesh-client ：远程→设置→入站文件提供，请启用文件接收（ rncp ）。或者在监听模式下运行rncp/rncp-rs。",
       "lxmfShareBody": "文件接收已启用。这是我的 rncp 接收目的地（mesh-client 将为您保存）。",
-      "shareDestWarning": "如果启用，mesh-client 会将您的 rncp 接收目标发送到该对等方，以便他们可以自动填充文件发送。"
+      "shareDestWarning": "如果启用，mesh-client 会将您的 rncp 接收目标发送到该对等方，以便他们可以自动填充文件发送。",
+      "lxmfBody": "请启用 rncp 接收（远程 → 设置 → 入站文件提供）并向我发送您的 rncp 接收哈希值。"
     },
     "saved": {
       "labelPlaceholder": "标号",

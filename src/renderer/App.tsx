@@ -261,6 +261,7 @@ import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
 import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
+import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
@@ -1290,6 +1291,7 @@ function AppContent() {
     void rrcSessionsByHub;
     return useRrcSessionStore.getState().totalUnread();
   }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
+  const remotePendingOffers = useRncpTransferStore((s) => s.pendingOffers.size);
   const rrcMessageFlat = useMemo(() => {
     const out: RrcChatMessage[] = [];
     for (const list of rrcMessages.values()) out.push(...list);
@@ -2836,6 +2838,11 @@ function AppContent() {
               chatUnread={chatUnread}
               roomsUnread={roomsUnread}
               rrcUnread={rrcUnread}
+              remotePendingOffers={
+                protocol === 'reticulum' && capabilities.hasReticulumRemotePanel
+                  ? remotePendingOffers
+                  : 0
+              }
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />

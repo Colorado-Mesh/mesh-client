@@ -601,7 +601,6 @@
       "rememberAddress": "Ricorda questo indirizzo",
       "rememberAddressAria": "Ricorda questa destinazione rncp per questo peer",
       "chooseAndSend": "Scegli file e invia...",
-      "sending": "Invio in corso…",
       "sendStarted": "Invio di {{file}} in corso...",
       "sendFailed": "Invio non riuscito: {{error}}",
       "newOfferToast": "{{peer}} vuole inviarle un file: {{file}}",
@@ -622,7 +621,9 @@
       "forgetAddress": "Dimentica la destinazione salvata",
       "forgetAddressAria": "Rimuovi la destinazione di ricezione rncp salvata per questo peer",
       "forgotAddressToast": "Ho dimenticato la destinazione rncp salvata per questo peer.",
-      "filledFromChatToast": "Destinazione riempita dalla chat (non salvata — seleziona Ricordati di conservarla)."
+      "filledFromChatToast": "Destinazione riempita dalla chat (non salvata — seleziona Ricordati di conservarla).",
+      "offerBannerTitle": "Offerte di file in arrivo",
+      "offerBannerTitleAria": "Offerte di file in entrata in sospeso da questo peer"
     },
     "shareLocation": "Condividi posizione",
     "shareLocationLabel": "📍Posizione condivisa",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Copia istruzioni",
       "instructionsCopied": "Istruzioni copiate.",
       "receiveDestSharedToast": "Destinazione di ricezione rncp di {{peer}} salvata: ora puoi inviare un file.",
-      "receiveDestShareFailed": "Impossibile salvare la destinazione di ricezione rncp del peer."
+      "receiveDestShareFailed": "Impossibile salvare la destinazione di ricezione rncp del peer.",
+      "peerUnreachable": "Nessun percorso per quella destinazione. Il peer potrebbe essere offline.",
+      "checkingReachability": "Verifica della raggiungibilità…",
+      "listenerLikelyOffTitle": "La ricezione dei file potrebbe essere disattivata",
+      "listenerLikelyOffBody": "Nessun percorso verso la destinazione di ricezione del file, ma cercano online la chat. Chiedi loro di abilitare la ricezione dei file (Telecomando → Impostazioni → Offerte di file in entrata), quindi riprova.",
+      "listenerLikelyOffConfirm": "Invia richiesta di abilitazione"
     },
     "enableRequest": {
       "title": "Abilitare la ricezione dei file?",
@@ -4896,9 +4902,9 @@
       "enableFailed": "Impossibile abilitare la ricezione dei file: {{error}}",
       "saveDirRequired": "Scegli una cartella di salvataggio per abilitare la ricezione.",
       "identityUnknown": "Non è stato ancora possibile risolvere l'hash di identità di questo peer — la modalità Chiedi è attiva, ma il peer non è stato aggiunto alla lista dei consentiti. Riprova dopo l'arrivo di un percorso o di un annuncio.",
-      "lxmfBody": "Abilitare la ricezione dei file (rncp) se si utilizzano le offerte di file mesh-client: Remote → Settings → Inbound. Oppure esegui rncp/rncp-rs in modalità di ascolto.",
       "lxmfShareBody": "La ricezione file è abilitata. Ecco la mia destinazione di ricezione rncp (mesh-client la salverà per te).",
-      "shareDestWarning": "Se abiliti, mesh-client invierà la destinazione di ricezione rncp a questo peer in modo che possa compilare automaticamente l'invio del file."
+      "shareDestWarning": "Se abiliti, mesh-client invierà la destinazione di ricezione rncp a questo peer in modo che possa compilare automaticamente l'invio del file.",
+      "lxmfBody": "Abilita la ricezione rncp (Telecomando → Impostazioni → Offerte file in entrata) e inviami il tuo hash di ricezione rncp."
     },
     "saved": {
       "labelPlaceholder": "Label",

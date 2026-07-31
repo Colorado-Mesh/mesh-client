@@ -602,7 +602,6 @@
       "rememberAddress": "Lembrar este endereço",
       "rememberAddressAria": "Lembre-se deste destino rncp para este par",
       "chooseAndSend": "Escolher arquivo e enviar...",
-      "sending": "Enviando…",
       "sendStarted": "Enviando {{file}}…",
       "sendFailed": "Falha ao enviar: {{error}}",
       "newOfferToast": "{{peer}} deseja enviar-lhe um arquivo: {{file}}",
@@ -623,7 +622,9 @@
       "forgetAddress": "Esqueça o destino guardado",
       "forgetAddressAria": "Remover o destino de recebimento rncp salvo para este par",
       "forgotAddressToast": "Esqueci o destino rncp salvo para este par.",
-      "filledFromChatToast": "Destino preenchido do chat (não salvo — marque Lembre-se de mantê-lo)."
+      "filledFromChatToast": "Destino preenchido do chat (não salvo — marque Lembre-se de mantê-lo).",
+      "offerBannerTitle": "Ofertas de arquivos recebidos",
+      "offerBannerTitleAria": "Ofertas de arquivos de entrada pendentes deste peer"
     },
     "shareLocation": "Compartilhar localização",
     "shareLocationLabel": "📍 Localização compartilhada",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Copiar instruções",
       "instructionsCopied": "Instruções copiadas.",
       "receiveDestSharedToast": "Destino de recebimento rncp de {{peer}} salvo — você já pode enviar um arquivo.",
-      "receiveDestShareFailed": "Não foi possível salvar o destino de recebimento do rncp do par."
+      "receiveDestShareFailed": "Não foi possível salvar o destino de recebimento do rncp do par.",
+      "peerUnreachable": "Nenhum caminho para esse destino. O par pode estar offline.",
+      "checkingReachability": "Verificando acessibilidade…",
+      "listenerLikelyOffTitle": "O recebimento de arquivos pode estar desativado",
+      "listenerLikelyOffBody": "Nenhum caminho para o destino de recebimento do arquivo, mas eles procuram bate-papo on-line. Peça-lhes para ativar o recebimento de arquivos (Remoto → Configurações → Ofertas de arquivos de entrada) e tente novamente.",
+      "listenerLikelyOffConfirm": "Enviar solicitação de ativação"
     },
     "enableRequest": {
       "title": "Habilitar recebimento de arquivos?",
@@ -4896,9 +4902,9 @@
       "enableFailed": "Não foi possível ativar o recebimento de arquivos: {{error}}",
       "saveDirRequired": "Escolha uma pasta de salvamento para ativar o recebimento.",
       "identityUnknown": "Ainda não foi possível resolver o hash de identidade deste par — o modo Perguntar foi ativado, mas ele não foi adicionado à lista de permitidos. Tente novamente quando um caminho ou anúncio chegar.",
-      "lxmfBody": "Ative o recebimento de arquivos (rncp) se você usar mesh-client: Remote → Settings → Inbound file offers. Ou execute rncp/rncp-rs no modo de escuta.",
       "lxmfShareBody": "O recebimento de arquivos está ativado. Aqui está meu destino de recebimento rncp (mesh-client salvará para você).",
-      "shareDestWarning": "Se você ativar, o mesh-client enviará seu destino de recebimento rncp para esse par para que eles possam preencher automaticamente o envio do arquivo."
+      "shareDestWarning": "Se você ativar, o mesh-client enviará seu destino de recebimento rncp para esse par para que eles possam preencher automaticamente o envio do arquivo.",
+      "lxmfBody": "Ative o recebimento do rncp (Remoto → Configurações → Ofertas de arquivos de entrada) e envie-me seu hash de recebimento do rncp."
     },
     "saved": {
       "labelPlaceholder": "Etiqueta",

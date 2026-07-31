@@ -601,7 +601,6 @@
       "rememberAddress": "Diese Adresse merken",
       "rememberAddressAria": "Merken Sie sich dieses rncp-Ziel für diesen Peer",
       "chooseAndSend": "Datei auswählen & senden...",
-      "sending": "Senden…",
       "sendStarted": "{{file}} wird gesendet...",
       "sendFailed": "Senden fehlgeschlagen: {{error}}",
       "newOfferToast": "{{peer}} möchte dir eine Datei senden: {{file}}",
@@ -622,7 +621,9 @@
       "forgetAddress": "Gespeichertes Ziel vergessen",
       "forgetAddressAria": "Entfernen Sie das gespeicherte rncp-Empfangsziel für diesen Peer",
       "forgotAddressToast": "Gespeichertes rncp-Ziel für diesen Peer vergessen.",
-      "filledFromChatToast": "Gefülltes Ziel aus dem Chat (nicht gespeichert — aktivieren Sie Denken Sie daran, es zu behalten)."
+      "filledFromChatToast": "Gefülltes Ziel aus dem Chat (nicht gespeichert — aktivieren Sie Denken Sie daran, es zu behalten).",
+      "offerBannerTitle": "Eingehende Dateiangebote",
+      "offerBannerTitleAria": "Ausstehende eingehende Dateiangebote von diesem Peer"
     },
     "shareLocation": "Standort teilen",
     "shareLocationLabel": "📍 Geteilter Standort",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "Anweisungen kopieren",
       "instructionsCopied": "Anweisungen kopiert.",
       "receiveDestSharedToast": "rncp-Empfangsziel von {{peer}} gespeichert — Sie können jetzt eine Datei senden.",
-      "receiveDestShareFailed": "Das RNCP-Empfangsziel des Peers konnte nicht gespeichert werden."
+      "receiveDestShareFailed": "Das RNCP-Empfangsziel des Peers konnte nicht gespeichert werden.",
+      "peerUnreachable": "Kein Weg zu diesem Ziel. Der Peer ist möglicherweise offline.",
+      "checkingReachability": "Erreichbarkeit prüfen…",
+      "listenerLikelyOffTitle": "Möglicherweise ist der Dateiempfang deaktiviert",
+      "listenerLikelyOffBody": "Kein Pfad zu ihrem Dateiempfangsziel, aber sie suchen online nach Chat. Bitten Sie sie, den Dateiempfang zu aktivieren (Remote → Einstellungen → Angebote für eingehende Dateien) und versuchen Sie es dann erneut.",
+      "listenerLikelyOffConfirm": "Aktivierungsanfrage senden"
     },
     "enableRequest": {
       "title": "Dateiempfang aktivieren?",
@@ -4896,9 +4902,9 @@
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
       "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
-      "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus.",
       "lxmfShareBody": "Dateiempfang ist aktiviert. Hier ist mein rncp-Empfangsziel (mesh-client speichert es für Sie).",
-      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann."
+      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann.",
+      "lxmfBody": "Bitte aktivieren Sie den rncp-Empfang (Remote → Einstellungen → Angebote für eingehende Dateien) und senden Sie mir Ihren rncp-Empfangs-Hash."
     },
     "saved": {
       "labelPlaceholder": "Etikett",

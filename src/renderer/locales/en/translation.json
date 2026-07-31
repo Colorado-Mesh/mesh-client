@@ -515,12 +515,13 @@
       "forgotAddressToast": "Forgot saved rncp destination for this peer.",
       "filledFromChatToast": "Filled destination from chat (not saved — check Remember to keep it).",
       "chooseAndSend": "Choose file & send…",
-      "sending": "Sending…",
       "sendStarted": "Sending {{file}}…",
       "sendFailed": "Failed to send: {{error}}",
       "newOfferToast": "{{peer}} wants to send you a file: {{file}}",
       "requestEnable": "Request enable",
-      "requestEnableAria": "Ask this peer to enable file receiving"
+      "requestEnableAria": "Ask this peer to enable file receiving",
+      "offerBannerTitle": "Incoming file offers",
+      "offerBannerTitleAria": "Pending inbound file offers from this peer"
     },
     "closeDm": "Close DM",
     "resendMessage": "Resend message",
@@ -4740,6 +4741,11 @@
       "requestEnableSent": "Asked the peer to enable file receiving.",
       "requestEnableRateLimited": "You already sent a request recently. Try again later.",
       "requestEnableFailed": "Could not send enable request: {{error}}",
+      "peerUnreachable": "No path to that destination. The peer may be offline.",
+      "checkingReachability": "Checking reachability…",
+      "listenerLikelyOffTitle": "File receiving may be off",
+      "listenerLikelyOffBody": "No path to their file receive destination, but they look online for chat. Ask them to enable file receiving (Remote → Settings → Inbound file offers), then try again.",
+      "listenerLikelyOffConfirm": "Send enable request",
       "offerToast": "Incoming file offer: {{file}}",
       "copyInstructionsAria": "Copy instructions for enabling file receive",
       "copyInstructions": "Copy instructions",
@@ -4763,7 +4769,7 @@
       "enableFailed": "Could not enable file receiving: {{error}}",
       "saveDirRequired": "Choose a save folder to enable receiving.",
       "identityUnknown": "Could not resolve this peer's identity hash yet — inbound Ask is enabled, but they were not added to the allow list. Try again after a path or announce arrives.",
-      "lxmfBody": "Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers. Or run rncp/rncp-rs in listen mode.",
+      "lxmfBody": "Please enable rncp receive (Remote → Settings → Inbound file offers) and send me your rncp receive hash.",
       "lxmfShareBody": "File receiving is enabled. Here is my rncp receive destination (mesh-client will save it for you)."
     },
     "saved": {

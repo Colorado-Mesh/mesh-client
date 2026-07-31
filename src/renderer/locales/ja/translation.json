@@ -602,7 +602,6 @@
       "rememberAddress": "この住所を記憶する",
       "rememberAddressAria": "このピアのこのrncp宛先を覚えておいてください",
       "chooseAndSend": "ファイルを選択して送信…",
-      "sending": "送信中・・・",
       "sendStarted": "{{file}}を送信中…",
       "sendFailed": "次の送信に失敗しました： {{error}}",
       "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
@@ -623,7 +622,9 @@
       "forgetAddress": "保存された行き先を忘れる",
       "forgetAddressAria": "このピアの保存されたrncp受信先を削除します",
       "forgotAddressToast": "このピアの保存されたrncp宛先を忘れました。",
-      "filledFromChatToast": "チャットから移動先を入力します（保存されていません。忘れずに保存するようにチェックしてください）。"
+      "filledFromChatToast": "チャットから移動先を入力します（保存されていません。忘れずに保存するようにチェックしてください）。",
+      "offerBannerTitle": "受信ファイルオファー",
+      "offerBannerTitleAria": "このピアからの保留中の受信ファイル オファー"
     },
     "shareLocation": "位置情報を共有する",
     "shareLocationLabel": "📍 共有場所",
@@ -4879,7 +4880,12 @@
       "copyInstructions": "手順をコピー",
       "instructionsCopied": "手順をコピーしました。",
       "receiveDestSharedToast": "{{peer}} の rncp 受信先を保存しました — ファイルを送信できます。",
-      "receiveDestShareFailed": "ピアの rncp 受信先を保存できませんでした。"
+      "receiveDestShareFailed": "ピアの rncp 受信先を保存できませんでした。",
+      "peerUnreachable": "その目的地への道はありません。ピアがオフラインである可能性があります。",
+      "checkingReachability": "到達可能性を確認しています…",
+      "listenerLikelyOffTitle": "ファイル受信がオフになっている可能性があります",
+      "listenerLikelyOffBody": "ファイルの受信先へのパスはありませんが、オンラインでチャットを探しています。ファイル受信を有効にするよう依頼して (リモート → 設定 → 受信ファイル オファー)、もう一度試してください。",
+      "listenerLikelyOffConfirm": "有効化リクエストを送信する"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",
@@ -4896,9 +4902,9 @@
       "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
       "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
       "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
-      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。",
       "lxmfShareBody": "ファイル受信が有効です。これが私の rncp 受信先です（mesh-client が保存します）。",
-      "shareDestWarning": "有効にすると、mesh-client は rncp 受信宛先をこのピアに送信し、ファイル送信を自動入力できるようになります。"
+      "shareDestWarning": "有効にすると、mesh-client は rncp 受信宛先をこのピアに送信し、ファイル送信を自動入力できるようになります。",
+      "lxmfBody": "rncp 受信を有効にして (リモート → 設定 → インバウンド ファイル オファー)、rncp 受信ハッシュを送信してください。"
     },
     "saved": {
       "labelPlaceholder": "ラベル",
