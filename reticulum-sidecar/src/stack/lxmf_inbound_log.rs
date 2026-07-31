@@ -44,6 +44,10 @@ impl LxmfInboundBuffer {
         buf.push_back(payload);
     }
 
+    pub fn len(&self) -> usize {
+        self.inner.lock().map(|buf| buf.len()).unwrap_or(0)
+    }
+
     /// Snapshot newest-first filtered by optional `since_ts` (inclusive, ms), then reverse to
     /// chronological order for ingest catch-up.
     pub fn snapshot(&self, since_ts: Option<i64>, limit: usize) -> Vec<serde_json::Value> {

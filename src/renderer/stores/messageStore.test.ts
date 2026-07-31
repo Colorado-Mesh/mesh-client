@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   addMessage,
+  mergeMessageRecordsFromDbForIdentity,
   type MessageRecord,
   pruneMessageRecordsForIdentityByChannel,
   renameMessageId,
@@ -68,6 +69,21 @@ describe('messageStore replace and prune', () => {
     const bucket = useMessageStore.getState().messages[ID_A];
     expect(bucket?.old).toBeUndefined();
     expect(bucket?.new?.from).toBe(2);
+  });
+
+  it('mergeMessageRecordsFromDbForIdentity keeps live rows missing from DB', () => {
+    addMessage(ID_A, sampleRecord('live', 1));
+    mergeMessageRecordsFromDbForIdentity(ID_A, [sampleRecord('db', 2)]);
+    const bucket = useMessageStore.getState().messages[ID_A];
+    expect(bucket?.live?.from).toBe(1);
+    expect(bucket?.db?.from).toBe(2);
+  });
+
+  it('mergeMessageRecordsFromDbForIdentity lets DB win on id collision', () => {
+    addMessage(ID_A, { ...sampleRecord('same', 1), payload: 'live' });
+    mergeMessageRecordsFromDbForIdentity(ID_A, [{ ...sampleRecord('same', 9), payload: 'db' }]);
+    expect(useMessageStore.getState().messages[ID_A]?.same?.payload).toBe('db');
+    expect(useMessageStore.getState().messages[ID_A]?.same?.from).toBe(9);
   });
 
   it('pruneMessageRecordsForIdentityByChannel removes one channel slice', () => {

@@ -37,7 +37,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
-import { fetchRecentInboundLxmf } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
+import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
 import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import {
   markStaleReticulumOutboundInStore,
@@ -46,6 +46,12 @@ import {
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import {
+  advanceReticulumInboundCatchUpWatermark,
+  getReticulumInboundLxmfDiagnostics,
+  noteReticulumEventsLagged,
+  noteReticulumInboundCatchUp,
+} from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 import {
   logReticulumInterfaceStateEvent,
   logReticulumLocalInterfaceHealthChanges,
@@ -127,6 +133,7 @@ import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
+  mergeMessageRecordsFromDbForIdentity,
   renameMessageId,
   replaceMessageRecordsForIdentity,
   updateMessageStatus,
@@ -166,6 +173,10 @@ import type { ProtocolRuntime } from './protocolRuntime';
 
 /** Safety poll interval when the path table is large. */
 const RETICULUM_PEER_REFRESH_LARGE_MS = 60_000;
+/** Periodic inbound LXMF ring catch-up on large meshes (O(1) HTTP poll). */
+const RETICULUM_INBOUND_LXMF_CATCHUP_LARGE_MS = 15_000;
+/** Periodic inbound LXMF ring catch-up on smaller meshes. */
+const RETICULUM_INBOUND_LXMF_CATCHUP_MS = 60_000;
 
 const INITIAL_STATE: DeviceState = {
   status: 'disconnected',
@@ -597,39 +608,70 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, selfLxmfHash],
   );
 
-  const catchUpRecentInboundLxmf = useCallback(async () => {
-    if (!identityId) return;
-    const rows = await fetchRecentInboundLxmf({ limit: 200 });
-    if (rows.length === 0) return;
-    console.debug(`[useReticulumRuntime] inbound LXMF catch-up count=${rows.length}`);
-    for (const p of rows) {
-      ingestLxmfPayload(p);
-    }
-  }, [identityId, ingestLxmfPayload]);
-
-  const refreshMessagesFromDb = useCallback(async () => {
-    if (!identityId) return;
-    try {
-      const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
-        sender_id: string;
-        sender_name?: string;
-        payload: string;
-        timestamp: number;
-        to_hash?: string | null;
-        reply_to_hash?: string | null;
-        message_hash?: string | null;
-        received_via?: string | null;
-        delivery_status?: string | null;
-        attachment_path?: string | null;
-      }[];
-      replaceMessageRecordsForIdentity(
-        identityId,
-        rows.map((row) => reticulumDbRowToMessageRecord(row)),
+  const catchUpRecentInboundLxmf = useCallback(
+    async (opts?: { sinceTs?: number; reason?: string }) => {
+      if (!identityId) return;
+      const { messages: rows } = await fetchRecentInboundLxmfDetailed({
+        limit: 200,
+        ...(opts?.sinceTs != null ? { sinceTs: opts.sinceTs } : {}),
+      });
+      if (rows.length === 0) return;
+      const reason = opts?.reason ?? 'catch-up';
+      console.warn(
+        `[useReticulumRuntime] inbound LXMF catch-up count=${rows.length} reason=${reason}`,
       );
-    } catch (e) {
-      console.warn('[useReticulumRuntime] refresh messages ' + errLikeToLogString(e));
-    }
-  }, [identityId]);
+      noteReticulumInboundCatchUp(rows.length);
+      let maxTs = opts?.sinceTs ?? 0;
+      for (const p of rows) {
+        ingestLxmfPayload(p);
+        if (
+          typeof p.timestamp === 'number' &&
+          Number.isFinite(p.timestamp) &&
+          p.timestamp > maxTs
+        ) {
+          maxTs = p.timestamp;
+        }
+      }
+      if (maxTs > 0) {
+        advanceReticulumInboundCatchUpWatermark(maxTs);
+      }
+    },
+    [identityId, ingestLxmfPayload],
+  );
+
+  const loadMessagesFromDb = useCallback(
+    async (mode: 'replace' | 'merge') => {
+      if (!identityId) return;
+      try {
+        const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
+          sender_id: string;
+          sender_name?: string;
+          payload: string;
+          timestamp: number;
+          to_hash?: string | null;
+          reply_to_hash?: string | null;
+          message_hash?: string | null;
+          received_via?: string | null;
+          delivery_status?: string | null;
+          attachment_path?: string | null;
+        }[];
+        const records = rows.map((row) => reticulumDbRowToMessageRecord(row));
+        if (mode === 'merge') {
+          mergeMessageRecordsFromDbForIdentity(identityId, records);
+        } else {
+          replaceMessageRecordsForIdentity(identityId, records);
+        }
+      } catch (e) {
+        console.warn('[useReticulumRuntime] refresh messages ' + errLikeToLogString(e));
+      }
+    },
+    [identityId],
+  );
+
+  /** Full replace — prune / manual reload. Connect uses merge via loadMessagesFromDb. */
+  const refreshMessagesFromDb = useCallback(async () => {
+    await loadMessagesFromDb('replace');
+  }, [loadMessagesFromDb]);
 
   const recordAnnounceActivity = useCallback((payload: unknown, defaultAspect?: string) => {
     const rows = parseAnnounceActivityRows(payload);
@@ -668,16 +710,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
           evt.payload && typeof evt.payload === 'object'
             ? (evt.payload as { skipped?: number }).skipped
             : undefined;
+        noteReticulumEventsLagged(skipped);
         console.warn(
           `[useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
         );
-        void catchUpRecentInboundLxmf();
+        void catchUpRecentInboundLxmf({ reason: 'events_lagged' });
       }
       if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
         const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
         if (reconnect) {
           console.debug('[useReticulumRuntime] sidecar WS reconnected — catching up inbound LXMF');
-          void catchUpRecentInboundLxmf();
+          void catchUpRecentInboundLxmf({ reason: 'ws_reconnect' });
         }
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
@@ -1307,10 +1350,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
-        await refreshMessagesFromDb();
+        // Merge — do not wipe live WS ingest whose fire-and-forget DB persist is still in flight.
+        await loadMessagesFromDb('merge');
       }
       // Catch up any inbound LXMF that arrived while WS was lagging or before subscribe.
-      await catchUpRecentInboundLxmf();
+      await catchUpRecentInboundLxmf({ reason: 'connect' });
       if (resumeGenerationRef.current !== generation) {
         // A later power-suspend fired while this connect attempt was still in flight — the
         // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
@@ -1348,7 +1392,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
-    refreshMessagesFromDb,
+    loadMessagesFromDb,
     syncDiagnosticsFromSidecar,
     hydrateRawPackets,
     catchUpRecentInboundLxmf,
@@ -1413,9 +1457,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
-        await refreshMessagesFromDb();
+        await loadMessagesFromDb('merge');
       }
-      await catchUpRecentInboundLxmf();
+      await catchUpRecentInboundLxmf({ reason: 'restartStack' });
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -1444,7 +1488,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
-    refreshMessagesFromDb,
+    loadMessagesFromDb,
     syncConnectionStore,
     syncDiagnosticsFromSidecar,
     hydrateRawPackets,
@@ -1482,6 +1526,29 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (timeoutId != null) clearTimeout(timeoutId);
     };
   }, [state.status, refreshContactsFromSidecar, refreshSelfNodeDisplayNameFromSidecar]);
+
+  /** Watermarked ring catch-up — safety net when WS lag notices are missed (O(1) work). */
+  useEffect(() => {
+    if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
+      return;
+    }
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const scheduleNext = () => {
+      const ms =
+        useReticulumPeerStore.getState().peers.size > LARGE_MESH_NODE_THRESHOLD
+          ? RETICULUM_INBOUND_LXMF_CATCHUP_LARGE_MS
+          : RETICULUM_INBOUND_LXMF_CATCHUP_MS;
+      timeoutId = setTimeout(() => {
+        const sinceTs = getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs ?? undefined;
+        void catchUpRecentInboundLxmf({ sinceTs, reason: 'periodic' });
+        scheduleNext();
+      }, ms);
+    };
+    scheduleNext();
+    return () => {
+      if (timeoutId != null) clearTimeout(timeoutId);
+    };
+  }, [state.status, catchUpRecentInboundLxmf]);
 
   /** Keep nodeStore longName in sync when Network panel updates identity display_name. */
   useEffect(() => {

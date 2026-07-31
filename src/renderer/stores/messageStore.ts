@@ -210,6 +210,36 @@ export function replaceMessageRecordsForIdentity(
   });
 }
 
+/**
+ * Union DB snapshot into the in-memory bucket without dropping live rows that are
+ * not yet persisted (connect-time race with fire-and-forget SQLite writes).
+ * DB rows win on id collision when fields differ.
+ */
+export function mergeMessageRecordsFromDbForIdentity(
+  identityId: IdentityId,
+  records: MessageRecord[],
+): void {
+  useMessageStore.setState((s) => {
+    const prior = s.messages[identityId] ?? {};
+    const byIdentity: Record<string, MessageRecord> = { ...prior };
+    let changed = false;
+    for (const message of records) {
+      const existing = byIdentity[message.id];
+      if (!existing) {
+        byIdentity[message.id] = message;
+        changed = true;
+        continue;
+      }
+      if (!messageRecordFieldsEqual(existing, message)) {
+        byIdentity[message.id] = message;
+        changed = true;
+      }
+    }
+    if (!changed) return s;
+    return mergeIdentityMessages(s, identityId, byIdentity);
+  });
+}
+
 /** Remove all store messages matching a cleared SQLite channel index. */
 export function pruneMessageRecordsForIdentityByChannel(
   identityId: IdentityId,

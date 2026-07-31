@@ -1,5 +1,6 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
+mod announce_ws_coalesce;
 mod ble;
 pub mod config;
 pub mod config_audit;
@@ -273,6 +274,10 @@ impl StackHandle {
         limit: usize,
     ) -> Vec<serde_json::Value> {
         self.inbound_lxmf.snapshot(since_ts, limit)
+    }
+
+    pub fn inbound_lxmf_ring_len(&self) -> usize {
+        self.inbound_lxmf.len()
     }
 
     async fn sync_interfaces_from_config(&self) {

@@ -28,4 +28,15 @@ describe('parseAnnounceActivityRows', () => {
     });
     expect(rows.map((r) => r.aspect)).toEqual(['nomadnetwork.node', 'lxmf.delivery']);
   });
+
+  it('parses batched announces array payload', () => {
+    const rows = parseAnnounceActivityRows({
+      announces: [
+        { destination_hash: 'aaa', hops: 1 },
+        { destination_hash: 'bbb', display_name: 'Bob', hops: 2 },
+      ],
+    });
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.destination_hash)).toEqual(['aaa', 'bbb']);
+  });
 });

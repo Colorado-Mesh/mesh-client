@@ -143,5 +143,6 @@ pub async fn list_recent_lxmf(
 ) -> Json<serde_json::Value> {
     let limit = q.limit.unwrap_or(200).clamp(1, 500);
     let messages = stack.list_recent_inbound_lxmf(q.since_ts, limit);
-    Json(serde_json::json!({ "messages": messages }))
+    let ring_len = stack.inbound_lxmf_ring_len();
+    Json(serde_json::json!({ "messages": messages, "ring_len": ring_len }))
 }

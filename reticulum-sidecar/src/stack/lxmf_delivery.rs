@@ -1,6 +1,7 @@
 //! LXMF delivery destination announce + inbound link receive (Ratspeak/lxmd parity).
 
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -25,6 +26,23 @@ pub const LXMF_APP: &str = "lxmf.delivery";
 /// Brief pause after a successful pre-sync LXMF announce so hubs can flood the reverse path
 /// before LinkRequest (matches the effective delay of “Announce now, then Sync”).
 pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
+
+const UNPACK_WARN_INTERVAL: Duration = Duration::from_secs(5);
+static LAST_UNPACK_WARN_MS: AtomicU64 = AtomicU64::new(0);
+
+fn rate_limited_unpack_warn(error: &str, len: usize) {
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    let prev = LAST_UNPACK_WARN_MS.load(Ordering::Relaxed);
+    if now_ms.saturating_sub(prev) < UNPACK_WARN_INTERVAL.as_millis() as u64 {
+        tracing::debug!(error = %error, len, "link data not an LXMF message");
+        return;
+    }
+    LAST_UNPACK_WARN_MS.store(now_ms, Ordering::Relaxed);
+    tracing::warn!(error = %error, len, "link data not an LXMF message");
+}
 
 fn mark_announce_sent(last_at: &Arc<Mutex<Option<Instant>>>) {
     if let Ok(mut slot) = last_at.lock() {
@@ -223,11 +241,11 @@ async fn handle_link_delivered_data(
     let msg = match LxMessage::unpack(&unpack_data) {
         Ok(msg) => msg,
         Err(e) => {
-            tracing::debug!("link data not an LXMF message: {e}");
+            rate_limited_unpack_warn(&e.to_string(), unpack_data.len());
             return;
         }
     };
-    tracing::info!(
+    tracing::debug!(
         from = %hex::encode(msg.source_hash),
         len = msg.content.len(),
         "inbound LXMF message via link"

@@ -10,11 +10,19 @@ vi.stubGlobal('window', {
   },
 });
 
-import { fetchRecentInboundLxmf } from './fetchRecentInboundLxmf';
+import { fetchRecentInboundLxmf, fetchRecentInboundLxmfDetailed } from './fetchRecentInboundLxmf';
+import {
+  getReticulumInboundLxmfDiagnostics,
+  resetReticulumInboundLxmfDiagnosticsForTests,
+} from './reticulumInboundLxmfDiagnostics';
 
 describe('fetchRecentInboundLxmf', () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
   beforeEach(() => {
     proxyGet.mockReset();
+    warnSpy.mockClear();
+    resetReticulumInboundLxmfDiagnosticsForTests();
   });
 
   it('returns inbound rows from sidecar recent API', async () => {
@@ -34,16 +42,21 @@ describe('fetchRecentInboundLxmf', () => {
         },
         { sender_hash: 'dd'.repeat(16) },
       ],
+      ring_len: 3,
     });
 
     const rows = await fetchRecentInboundLxmf({ sinceTs: 500, limit: 50 });
     expect(proxyGet).toHaveBeenCalledWith('/api/v1/lxmf/recent?since_ts=500&limit=50');
     expect(rows).toHaveLength(1);
     expect(rows[0]?.text).toBe('hello');
+    expect(getReticulumInboundLxmfDiagnostics().lastInboundRingLen).toBe(3);
   });
 
-  it('returns empty array on proxy failure', async () => {
+  it('returns empty array and warns on proxy failure', async () => {
     proxyGet.mockRejectedValue(new Error('offline'));
     await expect(fetchRecentInboundLxmf()).resolves.toEqual([]);
+    expect(warnSpy).toHaveBeenCalled();
+    const detailed = await fetchRecentInboundLxmfDetailed();
+    expect(detailed).toEqual({ messages: [], ringLen: null });
   });
 });

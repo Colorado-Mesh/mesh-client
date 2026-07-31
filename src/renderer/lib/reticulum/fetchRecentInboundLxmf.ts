@@ -1,10 +1,16 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
+import { noteReticulumInboundRingLen } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 
 export interface FetchRecentInboundLxmfOpts {
   /** Inclusive lower bound on payload timestamp (ms). */
   sinceTs?: number;
   limit?: number;
+}
+
+export interface FetchRecentInboundLxmfResult {
+  messages: ReticulumLxmfPayload[];
+  ringLen: number | null;
 }
 
 /**
@@ -14,6 +20,14 @@ export interface FetchRecentInboundLxmfOpts {
 export async function fetchRecentInboundLxmf(
   opts: FetchRecentInboundLxmfOpts = {},
 ): Promise<ReticulumLxmfPayload[]> {
+  const result = await fetchRecentInboundLxmfDetailed(opts);
+  return result.messages;
+}
+
+/** Same as {@link fetchRecentInboundLxmf} but also returns ring size when present. */
+export async function fetchRecentInboundLxmfDetailed(
+  opts: FetchRecentInboundLxmfOpts = {},
+): Promise<FetchRecentInboundLxmfResult> {
   const params = new URLSearchParams();
   if (opts.sinceTs != null && Number.isFinite(opts.sinceTs)) {
     params.set('since_ts', String(Math.floor(opts.sinceTs)));
@@ -26,12 +40,23 @@ export async function fetchRecentInboundLxmf(
   try {
     const body = (await window.electronAPI.reticulum.proxyGet(path)) as {
       messages?: unknown;
+      ring_len?: unknown;
     };
-    if (!Array.isArray(body.messages)) return [];
-    return body.messages.filter(isInboundLxmfPayload);
+    const ringLen =
+      typeof body.ring_len === 'number' && Number.isFinite(body.ring_len)
+        ? Math.trunc(body.ring_len)
+        : null;
+    noteReticulumInboundRingLen(ringLen);
+    if (!Array.isArray(body.messages)) {
+      return { messages: [], ringLen };
+    }
+    return {
+      messages: body.messages.filter(isInboundLxmfPayload),
+      ringLen,
+    };
   } catch (e) {
-    console.debug('[fetchRecentInboundLxmf] ' + errLikeToLogString(e));
-    return [];
+    console.warn('[fetchRecentInboundLxmf] ' + errLikeToLogString(e));
+    return { messages: [], ringLen: null };
   }
 }
 
