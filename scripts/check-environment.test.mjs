@@ -6,11 +6,63 @@ import {
   formatLocalActDockerNote,
   evaluateContainerEngineCheck,
   evaluatePlaywrightCheck,
+  evaluateWindowsBuildDepsCheck,
   parseCheckEnvironmentArgs,
   parseVersion,
   resolveExitCode,
+  resolvePnpmBinCandidates,
   versionGte,
 } from './check-environment.mjs';
+
+describe('check-environment resolvePnpmBinCandidates', () => {
+  it('returns Windows PNPM_HOME shim paths including bin/', () => {
+    expect(resolvePnpmBinCandidates('C:\\pnpm-home', 'win32')).toEqual([
+      'C:\\pnpm-home\\pnpm.CMD',
+      'C:\\pnpm-home\\pnpm.cmd',
+      'C:\\pnpm-home\\pnpm.exe',
+      'C:\\pnpm-home\\bin\\pnpm.CMD',
+      'C:\\pnpm-home\\bin\\pnpm.cmd',
+      'C:\\pnpm-home\\bin\\pnpm.exe',
+    ]);
+  });
+
+  it('returns empty for non-Windows or missing PNPM_HOME', () => {
+    expect(resolvePnpmBinCandidates('C:\\pnpm-home', 'linux')).toEqual([]);
+    expect(resolvePnpmBinCandidates(undefined, 'win32')).toEqual([]);
+  });
+});
+
+describe('check-environment evaluateWindowsBuildDepsCheck', () => {
+  it('passes when cl is on PATH', () => {
+    expect(
+      evaluateWindowsBuildDepsCheck({ clOnPath: true, vswhereInstallPath: null }),
+    ).toMatchObject({
+      status: 'pass',
+      detail: 'MSVC compiler (cl) found',
+    });
+  });
+
+  it('passes when vswhere reports a VC Tools install', () => {
+    expect(
+      evaluateWindowsBuildDepsCheck({
+        clOnPath: false,
+        vswhereInstallPath: 'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise',
+      }),
+    ).toMatchObject({
+      status: 'pass',
+      detail: expect.stringContaining('vswhere'),
+    });
+  });
+
+  it('fails when neither cl nor vswhere VC Tools are available', () => {
+    expect(
+      evaluateWindowsBuildDepsCheck({ clOnPath: false, vswhereInstallPath: null }),
+    ).toMatchObject({
+      status: 'fail',
+      label: 'Windows build dependencies missing',
+    });
+  });
+});
 
 describe('check-environment parseCheckEnvironmentArgs', () => {
   it('defaults skipNodeModules to false', () => {
