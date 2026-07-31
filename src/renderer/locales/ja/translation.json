@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" パスキー交換がタイムアウトしました — 現在の PIN (123456 ではない) を入力して、再ペアリングしてください",
         "sidecarUnhealthy": "Reticulumサイドカーは実行中ですが、ヘルスチェックに応答していません",
         "propagationSyncStuck": "伝播ノードの同期がリンクの確立に固執しています",
-        "propagationSyncFailing": "伝播ノードの同期に失敗しました"
+        "propagationSyncFailing": "伝播ノードの同期に失敗しました",
+        "announceBusPressure": "高いアナウンス/パス応答率は、インバウンドLXMFチャット配信を遅らせる可能性があります—キャッチアップがアクティブです。大きなパステーブルが予想されます"
       }
     },
     "routingPort": {

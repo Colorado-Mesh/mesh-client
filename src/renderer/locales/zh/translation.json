@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "BLE RNode“{{name}}”密钥交换超时 — 输入当前 PIN（不是 123456）并重新配对",
         "sidecarUnhealthy": "Reticulum sidecar正在运行，但未响应健康检查",
         "propagationSyncStuck": "传播节点同步卡住，无法建立链接",
-        "propagationSyncFailing": "传播节点同步失败"
+        "propagationSyncFailing": "传播节点同步失败",
+        "announceBusPressure": "高公告/路径响应率可能会延迟入站LXMF聊天交付—追赶处于活动状态；预计会有大型路径表"
       }
     },
     "routingPort": {

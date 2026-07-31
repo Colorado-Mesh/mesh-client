@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "Er is een time-out opgetreden bij het uitwisselen van de BLE RNode \"{{name}}\"-wachtwoord: voer de huidige pincode in (niet 123456) en koppel opnieuw",
         "sidecarUnhealthy": "Reticulum-zijspan loopt, maar reageert niet op gezondheidscontroles",
         "propagationSyncStuck": "Synchronisatie van propagatieknooppunt zit vast bij het tot stand brengen van een link",
-        "propagationSyncFailing": "Synchronisatie van propagatieknooppunt mislukt"
+        "propagationSyncFailing": "Synchronisatie van propagatieknooppunt mislukt",
+        "announceBusPressure": "Hoog aankondigings-/padresponspercentage kan inkomende LXMF-chatlevering vertragen — inhaalactie is actief; er worden grote padtabellen verwacht"
       }
     },
     "routingPort": {

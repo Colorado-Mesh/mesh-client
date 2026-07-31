@@ -1584,7 +1584,8 @@
         "blePairingTimedOut": "Vypršel časový limit výměny klíčů ble RNode „{{name}}“ — zadejte aktuální PIN (ne 123456) a znovu spárujte",
         "sidecarUnhealthy": "Postranní vozík Reticulum běží, ale nereaguje na zdravotní prohlídky",
         "propagationSyncStuck": "Synchronizace propagačního uzlu se zasekla při vytváření odkazu",
-        "propagationSyncFailing": "Synchronizace propagačního uzlu se nezdařila"
+        "propagationSyncFailing": "Synchronizace propagačního uzlu se nezdařila",
+        "announceBusPressure": "Vysoká míra odezvy na oznámení/cestu může zpozdit příchozí doručení chatu LXMF — dohnání je aktivní; očekávají se velké tabulky cest"
       }
     },
     "routingPort": {

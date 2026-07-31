@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "Se agotó el tiempo de espera para el intercambio de clave de acceso de BLE RNode \"{{name}}\": ingrese el PIN actual (no 123456) y vuelva a emparejar",
         "sidecarUnhealthy": "El sidecar de Reticulum está en ejecución pero no responde a las comprobaciones de estado",
         "propagationSyncStuck": "La sincronización del nodo de propagación está atascada estableciendo un enlace",
-        "propagationSyncFailing": "Error en la sincronización del nodo de propagación"
+        "propagationSyncFailing": "Error en la sincronización del nodo de propagación",
+        "announceBusPressure": "La alta tasa de anuncio/respuesta de ruta puede retrasar la entrega de chat LXMF entrante: la recuperación está activa; se esperan tablas de ruta grandes"
       }
     },
     "routingPort": {

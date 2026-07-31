@@ -433,11 +433,12 @@ Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are 
 
 Additional runtime rows (refreshed from sidecar status + `reticulumPropagationStore`, not only the config audit poll):
 
-| Condition                            | Trigger                                                                                             | Severity | Action                                      |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------- |
-| `reticulum/sidecar-unhealthy`        | Sidecar `running && healthy === false` for ≥ 60 s (`sidecarUnhealthySince`)                         | error    | **Restart stack**                           |
-| `reticulum/propagation-sync-stuck`   | Sync active ≥ ~45 s (`RETICULUM_PROPAGATION_SYNC_STALL_MS`) with progress still Establishing (< 15) | warning  | Retry sync; check PN path / announce        |
-| `reticulum/propagation-sync-failing` | Sync idle with `lastSyncError` (excludes user cancel) and attempt within 1 h                        | warning  | See Network → Propagation / troubleshooting |
+| Condition                            | Trigger                                                                                             | Severity | Action                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------- |
+| `reticulum/sidecar-unhealthy`        | Sidecar `running && healthy === false` for ≥ 60 s (`sidecarUnhealthySince`)                         | error    | **Restart stack**                                   |
+| `reticulum/announce-bus-pressure`    | Recent WS `events_lagged` (skipped ≥ 8) **or** sidecar `announce_ws` storm/overflow within 5 min    | warning  | Informational — catch-up active; not a broken radio |
+| `reticulum/propagation-sync-stuck`   | Sync active ≥ ~45 s (`RETICULUM_PROPAGATION_SYNC_STALL_MS`) with progress still Establishing (< 15) | warning  | Retry sync; check PN path / announce                |
+| `reticulum/propagation-sync-failing` | Sync idle with `lastSyncError` (excludes user cancel) and attempt within 1 h                        | warning  | See Network → Propagation / troubleshooting         |
 
 | Issue kind                                  | Typical cause                                                                                               | In-app action                                                       |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |

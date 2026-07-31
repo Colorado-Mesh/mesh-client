@@ -445,6 +445,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         sidecarRunning: sidecarStatus.running,
         sidecarHealthy: sidecarStatus.healthy,
         sidecarUnhealthySince: sidecarStatus.unhealthySince,
+        inboundLxmf: getReticulumInboundLxmfDiagnostics(),
         propagation: {
           syncActive: propState.sync.active,
           syncProgress: propState.sync.progress,

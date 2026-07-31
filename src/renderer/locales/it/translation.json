@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "Scambio passkey BLE RNode \"{{name}}\" scaduto: inserire il PIN corrente (non 123456) e associare nuovamente",
         "sidecarUnhealthy": "Il sidecar Reticulum è in esecuzione ma non risponde ai controlli di integrità",
         "propagationSyncStuck": "La sincronizzazione del nodo di propagazione è bloccata stabilendo un collegamento",
-        "propagationSyncFailing": "Sincronizzazione del nodo di propagazione non riuscita"
+        "propagationSyncFailing": "Sincronizzazione del nodo di propagazione non riuscita",
+        "announceBusPressure": "Un alto tasso di annuncio/risposta al percorso può ritardare la consegna della chat LXMF in entrata — il recupero è attivo; sono previste tabelle di percorso di grandi dimensioni"
       }
     },
     "routingPort": {

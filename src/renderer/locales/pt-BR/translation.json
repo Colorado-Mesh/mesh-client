@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" a troca de senha expirou - insira o PIN atual (não 123456) e emparelhe novamente",
         "sidecarUnhealthy": "O sidecar Reticulum está em execução, mas não responde às verificações de integridade",
         "propagationSyncStuck": "A sincronização do nó de propagação está travada, estabelecendo um link",
-        "propagationSyncFailing": "Falha na sincronização do nó de propagação"
+        "propagationSyncFailing": "Falha na sincronização do nó de propagação",
+        "announceBusPressure": "A alta taxa de anúncio/resposta ao caminho pode atrasar a entrega do chat LXMF de entrada — a recuperação está ativa; grandes tabelas de caminho são esperadas"
       }
     },
     "routingPort": {

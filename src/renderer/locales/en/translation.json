@@ -1583,7 +1583,8 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX is failing on {{ifaces}} — local LAN discovery may not work until this is fixed.",
         "sidecarUnhealthy": "Reticulum sidecar is running but not responding to health checks",
         "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
-        "propagationSyncFailing": "Propagation node sync failed"
+        "propagationSyncFailing": "Propagation node sync failed",
+        "announceBusPressure": "High announce/path-response rate may delay inbound LXMF Chat delivery — catch-up is active; large path tables are expected"
       },
       "audit": {
         "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",

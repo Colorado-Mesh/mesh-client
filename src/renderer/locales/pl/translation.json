@@ -1586,7 +1586,8 @@
         "blePairingTimedOut": "Upłynął limit czasu wymiany hasła BLE RNode „{{name}}” — wprowadź bieżący kod PIN (nie 123456) i sparuj ponownie",
         "sidecarUnhealthy": "Sidecar Reticulum działa, ale nie odpowiada na kontrole stanu",
         "propagationSyncStuck": "Synchronizacja węzła propagacji utknęła, tworząc łącze",
-        "propagationSyncFailing": "Synchronizacja węzła propagacji nie powiodła się"
+        "propagationSyncFailing": "Synchronizacja węzła propagacji nie powiodła się",
+        "announceBusPressure": "Wysoki wskaźnik zapowiedzi/reakcji na ścieżkę może opóźnić dostawę przychodzącego czatu LXMF — nadrabianie zaległości jest aktywne; oczekiwane są duże tabele ścieżek"
       }
     },
     "routingPort": {

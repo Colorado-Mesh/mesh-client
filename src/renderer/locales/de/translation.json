@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" Passkey-Austausch abgelaufen — geben Sie die aktuelle PIN (nicht 123456) ein und koppeln Sie erneut",
         "sidecarUnhealthy": "Reticulum Sidecar läuft, reagiert aber nicht auf Gesundheitschecks",
         "propagationSyncStuck": "Die Synchronisierung des Ausbreitungsknotens bleibt hängen, um eine Verbindung herzustellen",
-        "propagationSyncFailing": "Synchronisierung des Ausbreitungsknotens fehlgeschlagen"
+        "propagationSyncFailing": "Synchronisierung des Ausbreitungsknotens fehlgeschlagen",
+        "announceBusPressure": "Hohe Ansage-/Pfad-Antwort-Rate kann eingehende LXMF-Chat-Zustellung verzögern — Aufholjagd ist aktiv; große Pfad-Tabellen werden erwartet"
       }
     },
     "routingPort": {

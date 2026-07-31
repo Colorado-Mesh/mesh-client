@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali",
         "sidecarUnhealthy": "Reticulum sidecar sedang berjalan tetapi tidak menanggapi pemeriksaan kesehatan",
         "propagationSyncStuck": "Sinkronisasi simpul propagasi macet membuat tautan",
-        "propagationSyncFailing": "Sinkronisasi simpul propagasi gagal"
+        "propagationSyncFailing": "Sinkronisasi simpul propagasi gagal",
+        "announceBusPressure": "Tingkat pengumuman/respons jalur yang tinggi dapat menunda pengiriman Obrolan LXMF masuk — tangkapan aktif; tabel jalur besar diharapkan"
       }
     },
     "routingPort": {

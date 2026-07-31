@@ -1582,7 +1582,8 @@
         "blePairingTimedOut": "BLE RNode \"{{name}}\" şifre değişimi zaman aşımına uğradı — mevcut PIN'i girin (123456 değil) ve yeniden eşleştirin",
         "sidecarUnhealthy": "Reticulum sepeti çalışıyor ancak sağlık kontrollerine yanıt vermiyor",
         "propagationSyncStuck": "Yayılım düğümü senkronizasyonu bir bağlantı kurarken takıldı",
-        "propagationSyncFailing": "Yayılma düğümü senkronizasyonu başarısız oldu"
+        "propagationSyncFailing": "Yayılma düğümü senkronizasyonu başarısız oldu",
+        "announceBusPressure": "Yüksek anons/yol - yanıt oranı, gelen LXMF Sohbet teslimatını geciktirebilir — telafi aktif; büyük yol tabloları bekleniyor"
       }
     },
     "routingPort": {

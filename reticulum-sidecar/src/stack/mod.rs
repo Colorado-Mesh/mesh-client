@@ -2194,6 +2194,7 @@ impl StackHandle {
                 })
             })
             .collect();
+        let announce_ws = announce_ws_coalesce::announce_ws_pressure_snapshot();
         serde_json::json!({
             "rns_ready": inner.rns_ready,
             "lxmf_ready": inner.lxmf_ready,
@@ -2202,6 +2203,13 @@ impl StackHandle {
             "peer_count": inner.peers.len(),
             "message_count": inner.messages.len(),
             "interfaces": interfaces,
+            "announce_ws": {
+                "last_window_ingress": announce_ws.last_window_ingress,
+                "last_window_unique": announce_ws.last_window_unique,
+                "last_window_overflow": announce_ws.last_window_overflow,
+                "last_storm_at_ms": announce_ws.last_storm_at_ms,
+                "last_flush_at_ms": announce_ws.last_flush_at_ms,
+            },
         })
     }
 
