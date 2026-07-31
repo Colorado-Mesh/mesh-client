@@ -1323,7 +1323,7 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 **Chat DM note**: the destination field is the peer's **`rncp.receive`** hash, not their LXMF/Chat hash. Prefer **Request enable** (mesh-client peers share the receive hash after they accept) or paste from their Remote → **My rncp receive destination**.
 
-**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied only if a pending mark exists (`rncpReceiveDestSharePending`, TTL); shares without a prior request-enable from this session are ignored.
+**Request enable / 422**: `sendRncpRequestEnable` must POST LXMF with a `text` field (not `content`) — wrong key → HTTP **422**. After you send request-enable, the peer's `mesh-client:rncp-receive-dest:v1:<hash>` reply is applied when present (prefer a pending mark from `rncpReceiveDestSharePending` in this session; shares without that mark are still applied so older peers / pasted hashes autofill). Inbound enable-request modal enqueue and dest-share apply are deduped by LXMF `message_hash` so periodic catch-up / WS duplicates do not re-open the modal or re-toast; when the peer is already listening, dest is auto-shared at most once per peer per outbound request-enable cooldown.
 
 **Sleep / wake**: Suspend clears in-memory rnsh sessions and rncp transfers; reopen Remote (or wait for resume reconnect) after wake. See [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions).
 

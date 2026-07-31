@@ -6,6 +6,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { rememberRncpListenerDirs } from '@/renderer/lib/pushRncpListenerPolicy';
 import { probeReticulumPeer } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
+import { tryConsumeRncpAlreadyEnabledAutoShareSlot } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
@@ -116,8 +117,8 @@ export function RncpEnableRequestModal() {
 
   const current = prompts[0] ?? null;
 
-  // Already listening: re-share dest and clear the prompt so repeat enable-requests
-  // from the same peer do not leave a sticky modal (do not latch a one-shot peer ref).
+  // Already listening: clear the prompt so catch-up duplicates do not leave a sticky
+  // modal. Share dest at most once per peer per cooldown (message_hash dedup is primary).
   useEffect(() => {
     if (!current) return;
     const peerHash = current.peerHash;
@@ -128,10 +129,12 @@ export function RncpEnableRequestModal() {
         if (cancelled) return;
         setListener(status);
         if (!status?.enabled) return;
-        await shareRncpReceiveDestWithPeer(
-          peerHash,
-          t('reticulumRemote.enableRequest.lxmfShareBody'),
-        );
+        if (tryConsumeRncpAlreadyEnabledAutoShareSlot(peerHash)) {
+          await shareRncpReceiveDestWithPeer(
+            peerHash,
+            t('reticulumRemote.enableRequest.lxmfShareBody'),
+          );
+        }
         if (!cancelled) {
           dismiss(peerHash, false);
         }
