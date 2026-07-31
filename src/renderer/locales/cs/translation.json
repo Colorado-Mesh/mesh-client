@@ -2002,7 +2002,7 @@
       },
       "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
       "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
-      "pingFailed": "Ping selhalComment",
+      "pingFailed": "Ping selhal",
       "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti."
     },
     "mqttHints": {
@@ -3078,7 +3078,7 @@
     "maxHopsFilter": "Max. hops",
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
-    "resetView": "PÅenastavit pohled",
+    "resetView": "Přenastavit pohled",
     "compactLeafCount": "{{count}} kompaktní přímé protějšky"
   },
   "peerListPanel": {

@@ -1978,7 +1978,7 @@
         "illegalArg": "Postingan ruangan ditolak (format pesan tidak valid).",
         "notFound": "Postingan ruangan ditolak (kontak ruangan tidak ditemukan di radio).",
         "unsupportedCmd": "Postingan ruangan ditolak (jenis pesan di radio tidak didukung). Masuk ke ruangan, lalu coba lagi.",
-        "default": "Postingan kamar ditolak oleh radio. Keluar, masuk lagi, lalu coba lagi.",
+        "default": "Postingan ruangan ditolak oleh radio. Keluar, masuk lagi, lalu coba lagi.",
         "timeout": "Waktu posting kamar habis menunggu radio. Periksa jangkauan atau coba lagi."
       },
       "roomLogin": {
@@ -4420,7 +4420,7 @@
     "app": "Aplikasi",
     "diagnostics": "Diagnostik",
     "stats": "Statistik",
-    "sniffer": "Sapu tangan",
+    "sniffer": "Sniffer",
     "repeaters": "Repeater",
     "rf": "RF",
     "graph": "Grafik",

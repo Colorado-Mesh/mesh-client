@@ -23,6 +23,7 @@ import {
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
   listLockfilePackageIds,
+  resolveFlatpakNodeGeneratorBin,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
 
@@ -39,15 +40,16 @@ const GENERATOR_TIMEOUT_MS = 5 * 60 * 1000;
  * @returns {string | null}
  */
 function resolveGeneratorBin() {
-  const fromEnv = process.env.FLATPAK_NODE_GENERATOR?.trim();
-  if (fromEnv) return fromEnv;
-
-  const which = spawnSync('which', ['flatpak-node-generator'], { encoding: 'utf8' });
-  if (which.status === 0) {
-    const bin = which.stdout.trim().split('\n')[0];
-    if (bin) return bin;
-  }
-  return null;
+  return resolveFlatpakNodeGeneratorBin({
+    root: ROOT,
+    env: process.env,
+    which: () => {
+      const result = spawnSync('which', ['flatpak-node-generator'], { encoding: 'utf8' });
+      if (result.status !== 0) return null;
+      const bin = result.stdout.trim().split('\n')[0];
+      return bin || null;
+    },
+  });
 }
 
 /**

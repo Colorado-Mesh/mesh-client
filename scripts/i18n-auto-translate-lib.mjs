@@ -95,10 +95,34 @@ export function setDeepLocaleValue(obj, dotKey, value) {
   cur[last] = value;
 }
 
+// Multi-word brands / protocol phrases stripped before the single-token list.
+const SKIP_AUDIT_PHRASE_RE =
+  /\b(Colorado Mesh|Nomad Network|Ripple Networks|mesh-client|Mesh-Client|Liam's|CalTopo|LetsMesh|MeshMapper|Flood Advert|Reticulum)\b/gi;
+
 // Tokens that are legitimately identical across languages and should not be
 // treated as "untranslated" when a locale value matches English verbatim.
 const SKIP_AUDIT_RE =
-  /\b(TAK|Discord|Meshtastic|MeshCore|MQTT|LoRa|GPS|BLE|SNR|RSSI|dBm|Hz|MHz|kHz|bps|ACK|NAK|CSV|JSON|URL|URI|UUID|API|WiFi|USB|Bluetooth|SX126x|GPIO|Base64|base64|AES-128|AES-256|SHA-256|NTP|Hops?|Mesh-Client|MGRS|Firmware|Router)\b/gi;
+  /\b(TAK|Discord|Meshtastic|MeshCore|MQTT|LoRa|GPS|BLE|SNR|RSSI|dBm|Hz|MHz|kHz|bps|ACK|NAK|CSV|JSON|URL|URI|UUID|API|WiFi|USB|Bluetooth|SX126x|GPIO|Base64|base64|AES-128|AES-256|SHA-256|NTP|Hops?|MGRS|Firmware|Router|Flood|Advert|ADVERT|FLOOD|DIRECT|LOCAL|TXT_MSG|Sniffer|Repeater|Repeaters|Radio|Client|Imperial|hello)\b/gi;
+
+/** Leaf keys that must stay English (protocol chips / wire samples) — never audit-retranslate. */
+const SKIP_AUDIT_LEAF_KEYS = new Set([
+  'floodAdvertButton',
+  'floodAdvertSection',
+  'buttonFloodAdvert',
+  'sendButtonDm',
+  'pinPlaceholder',
+  'channelPsksPlaceholder',
+  'guestPasswordPlaceholder',
+  'filterChipAdvert',
+  'filterChipFlood',
+  'filterChipDirect',
+  'filterChipLocal',
+  'filterChipTxtMsg',
+  'filterChipGrpTxt',
+  'filterChipPath',
+  'filterChipTrace',
+  'filterChipAnon',
+]);
 
 /**
  * Returns true when an English value contains enough non-technical content to
@@ -106,9 +130,10 @@ const SKIP_AUDIT_RE =
  * placeholders and known loanwords/brands are skipped in --audit mode.
  * @param {string} enVal
  */
-function hasTranslatableContent(enVal) {
+export function hasTranslatableContent(enVal) {
   const stripped = enVal
     .replace(/\{\{[^}]+\}\}/g, '') // remove i18next {{placeholders}}
+    .replace(SKIP_AUDIT_PHRASE_RE, '')
     .replace(SKIP_AUDIT_RE, '')
     .replace(/[^a-zA-Z]/g, '')
     .trim();
@@ -132,6 +157,8 @@ export function filterMissingKeysToTranslate(enKeys, existingFlat, addedEnglishK
   const { translateAllGaps, hasGitBaseline, auditIdentical = false, enFlat = null } = opts;
   return enKeys.filter((k) => {
     if (k in existingFlat) {
+      const leaf = k.split('.').pop() ?? k;
+      if (SKIP_AUDIT_LEAF_KEYS.has(leaf)) return false;
       return (
         auditIdentical &&
         enFlat !== null &&

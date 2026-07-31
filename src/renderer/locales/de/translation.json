@@ -148,7 +148,7 @@
     "historyWindow3d": "3 Tage",
     "historyWindow7d": "7 Tage",
     "retentionLimitsHeading": "Aufbewahrung & Grenzen",
-    "floodAdvertHelp": "Sendet eine Überschwemmungswerbung, wenn sie verbunden ist, und wiederholt sich im gewählten Intervall, um Ihren Knoten im Netz sichtbar zu halten.",
+    "floodAdvertHelp": "Sendet ein Flood-Advert bei Verbindung und wiederholt es im gewählten Intervall, damit Ihr Knoten im Netz sichtbar bleibt.",
     "filterDistantNodesCheckbox": "Entfernte Knoten aus Karte und Knotenliste filtern",
     "maxDistanceLabel": "Abreise:",
     "latPlaceholderExample": "z.B. 40.12345",
@@ -1409,7 +1409,7 @@
       "unknownLoraTraffic": "Unbekannter LoRa-Verkehr",
       "potentialMeshcoreRepeaterConflict": "Potenzieller MeshCore-Repeater-Konflikt",
       "elevatedNoiseFloor": "Boden mit erhöhtem Geräuschpegel",
-      "excessiveFlooding": "Übermäßige Überschwemmungen",
+      "excessiveFlooding": "Übermäßiges Flooding",
       "reticulumTrafficDetected": "Reticulum-Verkehr erkannt",
       "highCompanionTxQueue": "High Companion TX-Warteschlange"
     },
@@ -1978,8 +1978,8 @@
         "illegalArg": "Raumbeitrag abgelehnt (ungültiges Nachrichtenformat).",
         "notFound": "Raumbeitrag abgelehnt (Raumkontakt im Radio nicht gefunden).",
         "unsupportedCmd": "Raumbeitrag abgelehnt (nicht unterstützter Nachrichtentyp im Radio). Melden Sie sich im Raum an und versuchen Sie es erneut.",
-        "default": "Zimmerpost vom Radio abgelehnt. Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
-        "timeout": "Beim Warten auf das Radio ist die Zeit für den Zimmerposten abgelaufen. Überprüfen Sie die Reichweite oder versuchen Sie es erneut."
+        "default": "Raumbeitrag vom Radio abgelehnt. Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
+        "timeout": "Beim Warten auf das Radio ist die Zeit für den Raumbeitrag abgelaufen. Überprüfen Sie die Reichweite oder versuchen Sie es erneut."
       },
       "roomLogin": {
         "noRoute": "Keine Route zu diesem Raumserver. Verfolgen Sie den Knoten auf der Karte oder warten Sie auf Pfadanzeigen und versuchen Sie es dann erneut.",
@@ -2000,7 +2000,7 @@
       },
       "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
       "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
-      "pingFailed": "Ping fehlgeschlagenComment",
+      "pingFailed": "Ping fehlgeschlagen",
       "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut."
     },
     "mqttHints": {
@@ -2334,7 +2334,7 @@
       "transportLost": "Serielle oder Bluetooth-Verbindung verloren — Wiederverbindung...",
       "mqttAddressRequired": "Geben Sie eine MQTT-Brokeradresse ein, bevor Sie das geräteseitige MQTT-Relay aktivieren.",
       "mqttDefaultServerTls": "Der öffentliche Meshtastic MQTT Broker unterstützt TLS nicht. Deaktivieren Sie TLS oder verwenden Sie eine benutzerdefinierte Broker-Adresse.",
-      "mqttDefaultServerPort": "Fügen Sie keinen Port in die öffentliche Meshtastic MQTT-Brokeradresse ein (verwenden Sie mqtt.meshtastic.org mit no :port).",
+      "mqttDefaultServerPort": "Fügen Sie keinen Port in die öffentliche Meshtastic MQTT-Brokeradresse ein (verwenden Sie mqtt.meshtastic.org ohne :port).",
       "mqttProxyRequired": "Dieses Radio hat kein WLAN. Aktivieren Sie „Proxy zum Client“, damit die App MQTT weiterleitet, oder verwenden Sie LoRa „OK to MQTT“ anstelle von geräteseitigem MQTT.",
       "serialOverrideRequiresMode": "Die serielle Konsolenüberschreibung ist auf dem Gerät aktiviert. Stellen Sie einen gültigen seriellen Modus am Radio ein, bevor Sie das serielle Modul hier aktivieren."
     },
@@ -2834,7 +2834,7 @@
     "importResultSuccessWithSkipped_other": "{{count}} Kontakte importiert, {{skipped}} übersprungen.",
     "importResultError": "{{imported}} importiert, {{skipped}} übersprungen. Fehler: {{errors}}",
     "refreshContacts": "Kontakte aus dem Radio aktualisieren",
-    "sendFloodAdvert": "Überschwemmungsanzeige senden",
+    "sendFloodAdvert": "Flood-Advert senden",
     "filterByContactGroup": "Nach Kontaktgruppe filtern",
     "manageContactGroups": "Kontaktgruppen verwalten",
     "manageGroups": "Gruppen verwalten",
@@ -3173,7 +3173,7 @@
         "label": "Metrik"
       },
       "1": {
-        "label": "zöllig"
+        "label": "Imperial"
       }
     },
     "deviceRoles": {
@@ -4412,7 +4412,7 @@
     "contacts": "Kontakte",
     "nodes": "Knoten",
     "map": "Karte",
-    "radio": "Auswahlfelder",
+    "radio": "Radio",
     "modules": "Module",
     "telemetry": "Telemetrie",
     "security": "Sicherheit",
@@ -4420,7 +4420,7 @@
     "diagnostics": "Diagnostik",
     "stats": "Statistik",
     "sniffer": "Sniffer",
-    "repeaters": "Wiederholbare Felder",
+    "repeaters": "Repeater",
     "rf": "RF",
     "graph": "Grafik",
     "tak": "TAK",

@@ -148,7 +148,7 @@
     "historyWindow3d": "3 jours",
     "historyWindow7d": "7 jours",
     "retentionLimitsHeading": "Rétention et limites",
-    "floodAdvertHelp": "Envoie une annonce d'inondation lorsqu'elle est connectée et se répète à l'intervalle choisi pour garder votre nœud visible sur le maillage.",
+    "floodAdvertHelp": "Envoie un flood advert lorsqu'elle est connectée et se répète à l'intervalle choisi pour garder votre nœud visible sur le maillage.",
     "filterDistantNodesCheckbox": "Filtrer les nœuds distants à partir de la carte et de la liste",
     "maxDistanceLabel": "Distance maxi",
     "latPlaceholderExample": "par exemple 40.12345",
@@ -1409,7 +1409,7 @@
       "unknownLoraTraffic": "Trafic LoRa inconnu",
       "potentialMeshcoreRepeaterConflict": "Conflit potentiel de répéteur MeshCore",
       "elevatedNoiseFloor": "Plancher de bruit surélevé",
-      "excessiveFlooding": "Inondations excessives",
+      "excessiveFlooding": "Flooding excessif",
       "reticulumTrafficDetected": "Trafic Reticulum détecté",
       "highCompanionTxQueue": "File d'attente TX Companion élevée"
     },
@@ -1604,7 +1604,7 @@
       "remoteHardware": "Matériel distant",
       "admin": "Administrateur",
       "discoveryFlood": "DécouverteInondation",
-      "roomAdvert": "ChambreAnnonce",
+      "roomAdvert": "RoomAdvert",
       "generic": "Port{{port}}"
     },
     "signalColumn": "Signal",
@@ -1974,12 +1974,12 @@
       "bleTimeoutHandshake": "Bluetooth connecté mais la négociation du protocole MeshCore ne s'est pas terminée avant la déconnexion/l'expiration du délai. Réessayez, gardez l'appareil éveillé et à proximité, redémarrez BLE ou utilisez Serial/TCP.",
       "bleTimeoutNoble": "La connexion Bluetooth a expiré lors de l'ouverture de MeshCore sur Noble IPC. Réessayez, redémarrez BLE sur l'appareil ou utilisez Serial/TCP.",
       "roomPost": {
-        "badState": "Post de chambre rejeté (non connecté à la radio). Déconnectez-vous, reconnectez-vous, puis réessayez.",
+        "badState": "Publication de salle rejetée (non connecté à la radio). Déconnectez-vous, reconnectez-vous, puis réessayez.",
         "illegalArg": "Message de salle rejeté (format de message invalide).",
-        "notFound": "Post de chambre rejeté (contact de chambre introuvable à la radio).",
+        "notFound": "Publication de salle rejetée (contact de salle introuvable à la radio).",
         "unsupportedCmd": "Message de salle rejeté (type de message non pris en charge à la radio). Connectez-vous à la salle, puis réessayez.",
-        "default": "Post de chambre rejeté par la radio. Déconnectez-vous, reconnectez-vous, puis réessayez.",
-        "timeout": "Le délai de publication dans la chambre a expiré en attendant la radio. Vérifiez la portée ou réessayez."
+        "default": "Publication de salle rejetée par la radio. Déconnectez-vous, reconnectez-vous, puis réessayez.",
+        "timeout": "Le délai de publication dans la salle a expiré en attendant la radio. Vérifiez la portée ou réessayez."
       },
       "roomLogin": {
         "noRoute": "Aucun itinéraire vers ce serveur de salle. Tracez le nœud sur la carte ou attendez les annonces de chemin, puis réessayez.",
@@ -1994,13 +1994,13 @@
         "failed": "La connexion à la salle a échoué"
       },
       "roomLogout": {
-        "timedOut": "Le délai de déconnexion de la salle a expiré. La pièce est peut-être hors de portée ou ne répond pas.",
+        "timedOut": "Le délai de déconnexion de la salle a expiré. La salle est peut-être hors de portée ou ne répond pas.",
         "rejected": "Déconnexion de la salle refusée par radio.",
-        "failed": "Impossible de quitter la chambre"
+        "failed": "Impossible de quitter la salle"
       },
       "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
       "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
-      "pingFailed": "Échec de la réponseComment",
+      "pingFailed": "Échec du ping",
       "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif."
     },
     "mqttHints": {
@@ -2834,7 +2834,7 @@
     "importResultSuccessWithSkipped_other": "Contacts {{count}} importés, {{skipped}} ignorés.",
     "importResultError": "{{imported}} importé, {{skipped}} ignoré. Erreurs : {{errors}}",
     "refreshContacts": "Actualiser les contacts de la radio",
-    "sendFloodAdvert": "Envoyer une annonce d'inondation",
+    "sendFloodAdvert": "Envoyer un flood advert",
     "filterByContactGroup": "Filtrer par groupe de contacts",
     "manageContactGroups": "Gérer les groupes de contacts",
     "manageGroups": "Gérer les groupes",

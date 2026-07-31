@@ -940,7 +940,7 @@
       "displayNameSaved": "Nazwa wyświetlana zapisana.",
       "copyLxmfHash": "Skopiuj skrót LXMF",
       "slotsTitle": "Tożsamość",
-      "slotsHint": "Twórz dodatkowe tożsamości i przełączaj się między nimi. Przełączanie restartuje stos Siatkówki.",
+      "slotsHint": "Twórz dodatkowe tożsamości i przełączaj się między nimi. Przełączanie restartuje stos Reticulum.",
       "slotActive": "Aktywna",
       "slotSwitch": "Przełącznik",
       "slotSwitchAria": "Przełącz na tożsamość {{id}}",
@@ -3080,7 +3080,7 @@
     "maxHopsFilter": "Maks. hops",
     "maxHopsAll": "Wszystkie hops",
     "maxHopsOption": "{{count}} hops",
-    "resetView": "Odśwież widok",
+    "resetView": "Resetuj widok",
     "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich"
   },
   "peerListPanel": {
