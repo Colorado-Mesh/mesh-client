@@ -4889,7 +4889,9 @@
       "checkingReachability": "Sprawdzam osiągalność…",
       "listenerLikelyOffTitle": "Odbieranie plików może być wyłączone",
       "listenerLikelyOffBody": "Brak ścieżki do miejsca docelowego odbioru pliku, ale szukają czatu w Internecie. Poproś o włączenie odbierania plików (Zdalne → Ustawienia → Oferty plików przychodzących), a następnie spróbuj ponownie.",
-      "listenerLikelyOffConfirm": "Wyślij prośbę o włączenie"
+      "listenerLikelyOffConfirm": "Wyślij prośbę o włączenie",
+      "pendingOffersBadgeAriaCapped": "Ponad 99 oczekujących ofert plików przychodzących",
+      "listenerLikelyOffToast": "Brak ścieżki do miejsca docelowego odbioru pliku; odbieranie plików może być wyłączone. Wyślij prośbę o włączenie i spróbuj ponownie."
     },
     "enableRequest": {
       "title": "Włączyć odbiór plików?",

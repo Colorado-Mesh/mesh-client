@@ -4887,7 +4887,9 @@
       "checkingReachability": "Kontrola dosažitelnosti…",
       "listenerLikelyOffTitle": "Příjem souborů může být vypnutý",
       "listenerLikelyOffBody": "Žádná cesta k cílovému umístění jejich souboru, ale hledají online chat. Požádejte je, aby povolili příjem souborů (Vzdálené → Nastavení → Nabídky příchozích souborů), a zkuste to znovu.",
-      "listenerLikelyOffConfirm": "Odeslat požadavek na povolení"
+      "listenerLikelyOffConfirm": "Odeslat požadavek na povolení",
+      "pendingOffersBadgeAriaCapped": "99+ čekajících nabídek příchozích souborů",
+      "listenerLikelyOffToast": "Žádná cesta k cíli příjmu jejich souboru; příjem souborů může být vypnutý. Odešlete žádost o povolení a zkuste to znovu."
     },
     "enableRequest": {
       "title": "Povolit příjem souborů?",

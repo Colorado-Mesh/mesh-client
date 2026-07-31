@@ -4885,7 +4885,9 @@
       "checkingReachability": "Verificando acessibilidade…",
       "listenerLikelyOffTitle": "O recebimento de arquivos pode estar desativado",
       "listenerLikelyOffBody": "Nenhum caminho para o destino de recebimento do arquivo, mas eles procuram bate-papo on-line. Peça-lhes para ativar o recebimento de arquivos (Remoto → Configurações → Ofertas de arquivos de entrada) e tente novamente.",
-      "listenerLikelyOffConfirm": "Enviar solicitação de ativação"
+      "listenerLikelyOffConfirm": "Enviar solicitação de ativação",
+      "pendingOffersBadgeAriaCapped": "Mais de 99 ofertas pendentes de arquivos de entrada",
+      "listenerLikelyOffToast": "Nenhum caminho para o destino de recebimento do arquivo; o recebimento de arquivos pode estar desativado. Envie uma solicitação de ativação e tente novamente."
     },
     "enableRequest": {
       "title": "Habilitar recebimento de arquivos?",

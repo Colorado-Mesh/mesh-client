@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 
@@ -52,11 +54,13 @@ describe('ChatDmRncpOfferBanner', () => {
     });
 
     const user = userEvent.setup();
-    render(<ChatDmRncpOfferBanner lxmfPeerHash={PEER_HASH} />);
+    const { container } = render(<ChatDmRncpOfferBanner lxmfPeerHash={PEER_HASH} />);
 
     expect(screen.getByText('Incoming file offers')).toBeInTheDocument();
     expect(screen.getByText('photo.jpg')).toBeInTheDocument();
     expect(screen.queryByText('other.txt')).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
 
     await user.click(screen.getByRole('button', { name: 'Accept photo.jpg' }));
     expect(window.electronAPI.reticulum.rncp.accept).toHaveBeenCalledWith({ transfer_id: 't1' });

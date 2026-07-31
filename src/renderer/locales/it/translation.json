@@ -4885,7 +4885,9 @@
       "checkingReachability": "Verifica della raggiungibilità…",
       "listenerLikelyOffTitle": "La ricezione dei file potrebbe essere disattivata",
       "listenerLikelyOffBody": "Nessun percorso verso la destinazione di ricezione del file, ma cercano online la chat. Chiedi loro di abilitare la ricezione dei file (Telecomando → Impostazioni → Offerte di file in entrata), quindi riprova.",
-      "listenerLikelyOffConfirm": "Invia richiesta di abilitazione"
+      "listenerLikelyOffConfirm": "Invia richiesta di abilitazione",
+      "pendingOffersBadgeAriaCapped": "Oltre 99 offerte di file in entrata in sospeso",
+      "listenerLikelyOffToast": "Nessun percorso per la destinazione di ricezione del file; la ricezione dei file potrebbe essere disattivata. Invia una richiesta di abilitazione, quindi riprova."
     },
     "enableRequest": {
       "title": "Abilitare la ricezione dei file?",

@@ -4885,7 +4885,9 @@
       "checkingReachability": "Erreichbarkeit prüfen…",
       "listenerLikelyOffTitle": "Möglicherweise ist der Dateiempfang deaktiviert",
       "listenerLikelyOffBody": "Kein Pfad zu ihrem Dateiempfangsziel, aber sie suchen online nach Chat. Bitten Sie sie, den Dateiempfang zu aktivieren (Remote → Einstellungen → Angebote für eingehende Dateien) und versuchen Sie es dann erneut.",
-      "listenerLikelyOffConfirm": "Aktivierungsanfrage senden"
+      "listenerLikelyOffConfirm": "Aktivierungsanfrage senden",
+      "pendingOffersBadgeAriaCapped": "Über 99 ausstehende Angebote für eingehende Dateien",
+      "listenerLikelyOffToast": "Kein Pfad zu ihrem Dateiempfangsziel; Der Dateiempfang ist möglicherweise deaktiviert. Senden Sie eine Aktivierungsanforderung und versuchen Sie es dann erneut."
     },
     "enableRequest": {
       "title": "Dateiempfang aktivieren?",

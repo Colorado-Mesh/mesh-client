@@ -4885,7 +4885,9 @@
       "checkingReachability": "연결 가능성 확인 중…",
       "listenerLikelyOffTitle": "파일 수신이 꺼져 있을 수 있습니다.",
       "listenerLikelyOffBody": "파일 수신 대상에 대한 경로가 없지만 온라인에서 채팅을 찾습니다. 파일 수신 활성화(원격 → 설정 → 인바운드 파일 제공)를 요청한 후 다시 시도하세요.",
-      "listenerLikelyOffConfirm": "활성화 요청 보내기"
+      "listenerLikelyOffConfirm": "활성화 요청 보내기",
+      "pendingOffersBadgeAriaCapped": "99개 이상의 대기 중인 인바운드 파일 제안",
+      "listenerLikelyOffToast": "파일 수신 대상에 대한 경로가 없습니다. 파일 수신이 꺼져 있을 수 있습니다. 활성화 요청을 보낸 후 다시 시도하세요."
     },
     "enableRequest": {
       "title": "파일 수신을 활성화하시겠습니까?",

@@ -4885,7 +4885,9 @@
       "checkingReachability": "检查可达性...",
       "listenerLikelyOffTitle": "文件接收可能已关闭",
       "listenerLikelyOffBody": "没有通往文件接收目的地的路径，但他们在网上查找聊天内容。要求他们启用文件接收（远程 → 设置 → 入站文件提供），然后重试。",
-      "listenerLikelyOffConfirm": "发送启用请求"
+      "listenerLikelyOffConfirm": "发送启用请求",
+      "pendingOffersBadgeAriaCapped": "超过 99 个待处理的入站文件优惠",
+      "listenerLikelyOffToast": "没有文件接收目的地的路径；文件接收可能已关闭。发送启用请求，然后重试。"
     },
     "enableRequest": {
       "title": "启用文件接收？",

@@ -4885,7 +4885,9 @@
       "checkingReachability": "到達可能性を確認しています…",
       "listenerLikelyOffTitle": "ファイル受信がオフになっている可能性があります",
       "listenerLikelyOffBody": "ファイルの受信先へのパスはありませんが、オンラインでチャットを探しています。ファイル受信を有効にするよう依頼して (リモート → 設定 → 受信ファイル オファー)、もう一度試してください。",
-      "listenerLikelyOffConfirm": "有効化リクエストを送信する"
+      "listenerLikelyOffConfirm": "有効化リクエストを送信する",
+      "pendingOffersBadgeAriaCapped": "99 件以上の保留中の受信ファイル オファー",
+      "listenerLikelyOffToast": "ファイルの受信先へのパスがありません。ファイル受信がオフになっている可能性があります。有効化リクエストを送信して、再試行してください。"
     },
     "enableRequest": {
       "title": "ファイル受信を有効にしますか？",

@@ -4885,7 +4885,9 @@
       "checkingReachability": "Vérification de l'accessibilité…",
       "listenerLikelyOffTitle": "La réception de fichiers est peut-être désactivée",
       "listenerLikelyOffBody": "Aucun chemin vers la destination de réception de leur fichier, mais ils recherchent en ligne pour discuter. Demandez-leur d'activer la réception de fichiers (À distance → Paramètres → Offres de fichiers entrants), puis réessayez.",
-      "listenerLikelyOffConfirm": "Envoyer une demande d'activation"
+      "listenerLikelyOffConfirm": "Envoyer une demande d'activation",
+      "pendingOffersBadgeAriaCapped": "Plus de 99 offres de fichiers entrants en attente",
+      "listenerLikelyOffToast": "Aucun chemin vers leur destination de réception de fichier ; la réception du fichier est peut-être désactivée. Envoyez une demande d'activation, puis réessayez."
     },
     "enableRequest": {
       "title": "Activer la réception de fichiers ?",

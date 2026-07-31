@@ -4885,7 +4885,9 @@
       "checkingReachability": "Memeriksa jangkauan…",
       "listenerLikelyOffTitle": "Penerimaan file mungkin tidak aktif",
       "listenerLikelyOffBody": "Tidak ada jalur ke tujuan penerimaan file mereka, tetapi mereka mencari obrolan online. Minta mereka untuk mengaktifkan penerimaan file (Jarak Jauh → Pengaturan → Penawaran file masuk), lalu coba lagi.",
-      "listenerLikelyOffConfirm": "Kirim permintaan pengaktifan"
+      "listenerLikelyOffConfirm": "Kirim permintaan pengaktifan",
+      "pendingOffersBadgeAriaCapped": "99+ penawaran file masuk yang tertunda",
+      "listenerLikelyOffToast": "Tidak ada jalur ke tujuan penerimaan file mereka; penerimaan file mungkin tidak aktif. Kirim permintaan pengaktifan, lalu coba lagi."
     },
     "enableRequest": {
       "title": "Aktifkan penerimaan file?",

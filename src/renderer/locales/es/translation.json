@@ -4885,7 +4885,9 @@
       "checkingReachability": "Comprobando accesibilidad...",
       "listenerLikelyOffTitle": "La recepción de archivos puede estar desactivada",
       "listenerLikelyOffBody": "No hay ruta al destino de recepción de su archivo, pero buscan chat en línea. Pídales que habiliten la recepción de archivos (Remoto → Configuración → Ofertas de archivos entrantes) y luego vuelva a intentarlo.",
-      "listenerLikelyOffConfirm": "Enviar solicitud de habilitación"
+      "listenerLikelyOffConfirm": "Enviar solicitud de habilitación",
+      "pendingOffersBadgeAriaCapped": "Más de 99 ofertas de archivos entrantes pendientes",
+      "listenerLikelyOffToast": "No hay ruta al destino de recepción de su archivo; La recepción de archivos puede estar desactivada. Envíe una solicitud de habilitación y vuelva a intentarlo."
     },
     "enableRequest": {
       "title": "¿Habilitar la recepción de archivos?",

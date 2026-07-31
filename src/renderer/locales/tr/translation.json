@@ -4885,7 +4885,9 @@
       "checkingReachability": "Erişilebilirlik kontrol ediliyor…",
       "listenerLikelyOffTitle": "Dosya alma kapalı olabilir",
       "listenerLikelyOffBody": "Dosyalarının varış noktasına giden yolu yok, ancak sohbet için çevrimiçi görünüyorlar. Dosya almayı etkinleştirmelerini isteyin (Uzak → Ayarlar → Gelen dosya teklifleri), ardından tekrar deneyin.",
-      "listenerLikelyOffConfirm": "Etkinleştirme isteği gönder"
+      "listenerLikelyOffConfirm": "Etkinleştirme isteği gönder",
+      "pendingOffersBadgeAriaCapped": "99'dan fazla bekleyen gelen dosya teklifi",
+      "listenerLikelyOffToast": "Dosya alma hedefine giden yol yok; dosya alma kapalı olabilir. Etkinleştirme isteği gönderin ve tekrar deneyin."
     },
     "enableRequest": {
       "title": "Dosya alımı etkinleştirilsin mi?",

@@ -273,6 +273,10 @@ describe('RemoteTransferSection', () => {
     expect(window.electronAPI.reticulum.rncp.send).not.toHaveBeenCalled();
     expect(sendRncpRequestEnable).not.toHaveBeenCalled();
     expect(useRncpTransferStore.getState().transfers.get('failed-2')?.retryCount).toBe(0);
+    expect(addToast).toHaveBeenCalledWith(
+      'No path to their file receive destination; file receiving may be off. Send an enable request, then try again.',
+      'error',
+    );
   });
 
   it('sends when the receive dest is reachable', async () => {
