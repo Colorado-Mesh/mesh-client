@@ -50,4 +50,15 @@ describe('reticulumInterfaceHelp', () => {
     });
     expect(help.purposeKey).toBe('connectionPanel.reticulumInterfaces.purpose.rnodeBle');
   });
+
+  it('classifies I2P interface purpose (SAM bridge hint)', () => {
+    const help = getReticulumInterfaceHelp({
+      id: 'rns-i2p-hub-a',
+      name: 'RNS I2P Hub A',
+      type: 'i2p',
+    });
+    expect(help.purposeKey).toBe('connectionPanel.reticulumInterfaces.purpose.i2p');
+    expect(help.isRuntimeOnly).toBe(false);
+    expect(help.isSystemManaged).toBe(false);
+  });
 });

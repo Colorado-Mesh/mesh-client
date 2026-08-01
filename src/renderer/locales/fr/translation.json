@@ -1039,7 +1039,8 @@
         "rnodeWifi": "Maillage LoRa via RNode Wi-Fi (hôte tcp://).",
         "blePeer": "Maillage d’homologues BLE utilisant des adresses d’homologues de départ.",
         "generic": "Interface réseau Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Backbone I2P via un routeur sur cette machine. Activez le pont d'application SAM (127.0.0.1:7656) — pas les proxys HTTP/HTTPS I2PTunnel (4444/4445). Redémarrez I2P après avoir activé SAM pour que le pont écoute, puis redémarrez la pile Reticulum si cette interface reste en panne."
       },
       "rfProfile": {
         "coordinated": "Coordination régionale",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Partager l'instance de Reticulum",
       "logLevel": "Niveau de journalisation",
       "save": "Enregistrer les paramètres de la pile",
-      "saveFailed": "Échec de l'enregistrement des paramètres de la pile."
+      "saveFailed": "Échec de l'enregistrement des paramètres de la pile.",
+      "pathMediumPreference": "Milieu de chemin privilégié",
+      "pathMediumPreferenceHint": "Lorsqu'un pair est joignable sur RF et réseau (TCP/I2P/etc.), choisissez quel support gagne par défaut. Le chemin le plus bas se classe uniquement en fonction du nombre de sauts. Les épingles par pair de l'onglet Pairs peuvent remplacer cela.",
+      "pathMediumLowest": "Chemin le plus bas (nombre de sauts)",
+      "pathMediumNetwork": "Réseau (non-RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Milieu de chemin privilégié global",
+      "pathMediumPreferenceSaved": "Préférence de support de chemin enregistrée.",
+      "pathMediumPreferenceSaveFailed": "Échec de l'enregistrement de la préférence de support de chemin."
     },
     "reticulumConfigImport": {
       "title": "Importer la configuration du Reticulum",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Rechercher",
     "lookupSubmitAria": "Demander un chemin et sonder le hash de destination",
     "lookupInvalid": "Saisissez un hash de destination LXMF valide de 32 caractères ou un lien lxmf://.",
-    "lookupHint": "Demandez un chemin pour un hachage qui ne figure pas encore dans la liste des pairs (par exemple, un pair sur un hub que vous partagez)."
+    "lookupHint": "Demandez un chemin pour un hachage qui ne figure pas encore dans la liste des pairs (par exemple, un pair sur un hub que vous partagez).",
+    "paths": "Chemins",
+    "pathsAria": "Afficher les chemins classés pour {{hash}}",
+    "pathsDetailAria": "Chemins classés pour {{hash}}",
+    "pathsHeading": "Chemins · {{hash}}…",
+    "pathsCloseAria": "Fermer les détails des chemins",
+    "pathsPreferLabel": "Préférez moyen",
+    "pathsPreferAria": "Support de chemin préféré pour ce pair",
+    "pathsPreferAuto": "Auto (global)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Réseau",
+    "pathsGlobalPreference": "Global : {{preference}}",
+    "pathsListAria": "Emplacements de chemin classés",
+    "pathsActiveBadge": "Actif",
+    "pathsBackupBadge": "Sauvegarde",
+    "pathsMedium": "Moyenne",
+    "pathsExpired": "Expiré",
+    "pathsEmpty": "Aucun emplacement de chemin pour le moment. Demandez un chemin ou attendez une annonce.",
+    "pathsLoadFailed": "Échec du chargement des emplacements de chemin.",
+    "pathsPinFailed": "Échec de la mise à jour de la préférence moyenne pour cet homologue."
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",

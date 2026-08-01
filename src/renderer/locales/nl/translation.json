@@ -1039,7 +1039,8 @@
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp://host).",
         "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
         "generic": "Reticulum-netwerkinterface.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt."
       },
       "rfProfile": {
         "coordinated": "Regionaal gecoördineerd",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Deel Reticulum-instantie",
       "logLevel": "Logniveau",
       "save": "Bewaar stapelinstellingen",
-      "saveFailed": "Kan stapelinstellingen niet opslaan."
+      "saveFailed": "Kan stapelinstellingen niet opslaan.",
+      "pathMediumPreference": "Voorkeurspad medium",
+      "pathMediumPreferenceHint": "Wanneer een peer bereikbaar is via RF en netwerk (TCP/I2P/etc.), kies dan standaard welk medium wint. Het laagste pad wordt alleen gerangschikt op hoptelling. Per-peer pins op het tabblad Peers kunnen dit overschrijven.",
+      "pathMediumLowest": "Laagste pad (hoptelling)",
+      "pathMediumNetwork": "Netwerk (niet-RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Globaal voorkeurspadmedium",
+      "pathMediumPreferenceSaved": "Pad medium voorkeur opgeslagen.",
+      "pathMediumPreferenceSaveFailed": "Kan pad mediumvoorkeur niet opslaan."
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Opzoeken",
     "lookupSubmitAria": "Pad aanvragen en bestemmings-hash sondieren",
     "lookupInvalid": "Voer een geldige 32-tekens LXMF-bestemmings-hash of lxmf://-link in.",
-    "lookupHint": "Vraag een pad aan voor een hash die nog niet in de lijst met peers staat (bijvoorbeeld een peer op een hub die je deelt)."
+    "lookupHint": "Vraag een pad aan voor een hash die nog niet in de lijst met peers staat (bijvoorbeeld een peer op een hub die je deelt).",
+    "paths": "Paden",
+    "pathsAria": "Toon gerangschikte paden voor {{hash}}",
+    "pathsDetailAria": "Gerangschikte paden voor {{hash}}",
+    "pathsHeading": "Paden · {{hash}}…",
+    "pathsCloseAria": "Padendetail sluiten",
+    "pathsPreferLabel": "Voorkeur voor medium",
+    "pathsPreferAria": "Voorkeurspadmedium voor deze peer",
+    "pathsPreferAuto": "Auto (globaal)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Netwerk",
+    "pathsGlobalPreference": "Wereldwijd: {{preference}}",
+    "pathsListAria": "Gerangschikte pad-sleuven",
+    "pathsActiveBadge": "Actief",
+    "pathsBackupBadge": "Back-up",
+    "pathsMedium": "Gemiddeld",
+    "pathsExpired": "Verlopen",
+    "pathsEmpty": "Nog geen padvakken. Vraag een pad aan of wacht op een aankondiging.",
+    "pathsLoadFailed": "Kan padvakken niet laden.",
+    "pathsPinFailed": "Kan mediumvoorkeur voor deze peer niet bijwerken."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",

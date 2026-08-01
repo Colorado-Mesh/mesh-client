@@ -28,6 +28,8 @@ const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
   path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
   path.join(ROOT, 'src', 'main', 'log-service.ts'),
+  // Linux Web Bluetooth cancel handlers live beside the session helper (not under ipc/).
+  path.join(ROOT, 'src', 'main', 'linuxWebBluetoothCancelIpc.ts'),
   ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
 ];
 

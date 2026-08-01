@@ -190,7 +190,7 @@ export function createElectronAPIMock(): ElectronAPI {
     cancelSerialSelection: vi.fn(),
     onBluetoothDevicesDiscovered: vi.fn().mockReturnValue(() => {}),
     selectBluetoothDevice: vi.fn(),
-    cancelBluetoothSelection: vi.fn(),
+    cancelBluetoothSelection: vi.fn().mockResolvedValue({ cancelled: false }),
     bluetoothUnpair: vi.fn().mockResolvedValue(undefined),
     bluetoothStartScan: vi.fn().mockResolvedValue(undefined),
     bluetoothStopScan: vi.fn().mockResolvedValue(undefined),

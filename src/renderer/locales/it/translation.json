@@ -1038,7 +1038,8 @@
         "rnodeWifi": "Mesh LoRa tramite RNode Wi-Fi (tcp:// host).",
         "blePeer": "Mesh peer BLE che utilizza indirizzi peer seed.",
         "generic": "Interfaccia di rete Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Dorsale I2P tramite un router su questa macchina. Abilitare il bridge dell'applicazione SAM (127.0.0.1:7656) — non i proxy HTTP/HTTPS I2PTunnel (4444/4445). Riavviare I2P dopo aver abilitato SAM in modo che il bridge ascolti, quindi riavviare lo stack Reticulum se questa interfaccia rimane inattiva."
       },
       "rfProfile": {
         "coordinated": "Coordinamento regionale",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Condividi l'istanza di Reticulum",
       "logLevel": "Livello di registro",
       "save": "Salva le impostazioni dello stack",
-      "saveFailed": "Impossibile salvare le impostazioni dello stack."
+      "saveFailed": "Impossibile salvare le impostazioni dello stack.",
+      "pathMediumPreference": "Mezzo del percorso preferito",
+      "pathMediumPreferenceHint": "Quando un peer è raggiungibile tramite RF e rete (TCP/I2P/ecc.), scegli quale mezzo vince per impostazione predefinita. Il percorso più basso viene classificato solo in base al numero di hop. I pin per peer nella scheda Peers possono sovrascriverlo.",
+      "pathMediumLowest": "Percorso più basso (numero di hop)",
+      "pathMediumNetwork": "Rete (non RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Mezzo percorso preferito globale",
+      "pathMediumPreferenceSaved": "Preferenza media del percorso salvata.",
+      "pathMediumPreferenceSaveFailed": "Impossibile salvare la preferenza media del percorso."
     },
     "reticulumConfigImport": {
       "title": "Importa configurazione Reticulum",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Cerca",
     "lookupSubmitAria": "Richiedi percorso e verifica l’hash di destinazione",
     "lookupInvalid": "Inserisci un hash di destinazione LXMF valido di 32 caratteri o un collegamento lxmf://.",
-    "lookupHint": "Richiedi un percorso per un hash che non è ancora nell'elenco dei peer (ad esempio un peer su un hub che condividi)."
+    "lookupHint": "Richiedi un percorso per un hash che non è ancora nell'elenco dei peer (ad esempio un peer su un hub che condividi).",
+    "paths": "Percorsi",
+    "pathsAria": "Mostra percorsi classificati per {{hash}}",
+    "pathsDetailAria": "Percorsi classificati per {{hash}}",
+    "pathsHeading": "Percorsi · {{hash}}…",
+    "pathsCloseAria": "Dettaglio percorsi di chiusura",
+    "pathsPreferLabel": "Preferisco il medio",
+    "pathsPreferAria": "Mezzo di percorso preferito per questo peer",
+    "pathsPreferAuto": "Auto (globale)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Network",
+    "pathsGlobalPreference": "Globale: {{preference}}",
+    "pathsListAria": "Slot percorsi classificati",
+    "pathsActiveBadge": "Attivo",
+    "pathsBackupBadge": "Backup",
+    "pathsMedium": "Medio",
+    "pathsExpired": "scaduta",
+    "pathsEmpty": "Ancora nessuno slot di percorso. Richiedi un percorso o attendi un annuncio.",
+    "pathsLoadFailed": "Impossibile caricare gli slot del percorso.",
+    "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer."
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",

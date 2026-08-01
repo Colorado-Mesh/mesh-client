@@ -208,6 +208,7 @@ check_ratspeak_patches() {
   # Format: "patch-basename|github-owner/repo|pr-number-or-empty|display-label|review-url"
   local RATSPEAK_PATCH_ENTRIES=(
     'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
+    'rsReticulum-path-medium-slots.patch|ratspeak/rsReticulum||rsReticulum path-medium slots|'
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
     'rsReticulum-link-client-proof-budget.patch|ratspeak/rsReticulum||rsReticulum LinkClient proof-budget cap|'

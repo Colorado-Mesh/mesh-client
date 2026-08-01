@@ -1042,7 +1042,8 @@
         "rnodeWifi": "Siatka LoRa przez Wi-Fi RNode (tcp://host).",
         "blePeer": "Siatka równorzędna BLE wykorzystująca adresy równorzędne początkowe.",
         "generic": "Interfejs sieciowy Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Szkielet I2P za pośrednictwem routera na tym komputerze. Włącz mostek aplikacji SAM (127.0.0.1:7656) — nie proxy HTTP/HTTPS I2PTunnel (4444/4445). Uruchom ponownie I2P po włączeniu SAM, aby mostek nasłuchiwał, a następnie uruchom ponownie stos Reticulum, jeśli ten interfejs pozostanie wyłączony."
       },
       "rfProfile": {
         "coordinated": "Skoordynowane regionalnie",
@@ -2500,7 +2501,15 @@
       "shareInstance": "Udostępnij instancję Reticulum",
       "logLevel": "Poziom dziennika",
       "save": "Zapisz ustawienia stosu",
-      "saveFailed": "Nie udało się zapisać ustawień stosu."
+      "saveFailed": "Nie udało się zapisać ustawień stosu.",
+      "pathMediumPreference": "Preferowana ścieżka medium",
+      "pathMediumPreferenceHint": "Gdy partner jest osiągalny przez RF i sieć (TCP/I2P/itp.), wybierz, które medium domyślnie wygrywa. Najniższa ścieżka plasuje się tylko według liczby przeskoków. Pinezki per peer na karcie Peers mogą to zastąpić.",
+      "pathMediumLowest": "Najniższa ścieżka (liczba przeskoków)",
+      "pathMediumNetwork": "Sieć (nie-RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Globalna preferowana ścieżka medium",
+      "pathMediumPreferenceSaved": "Zapisano preferencję medium ścieżki.",
+      "pathMediumPreferenceSaveFailed": "Nie udało się zapisać preferencji medium ścieżki."
     },
     "reticulumConfigImport": {
       "title": "Importuj config Reticulum",
@@ -3125,7 +3134,26 @@
     "lookupSubmit": "Wyszukaj",
     "lookupSubmitAria": "Poproś o ścieżkę i zbadaj hash docelowy",
     "lookupInvalid": "Wprowadź prawidłowy 32-znakowy hash docelowy LXMF lub łącze lxmf://.",
-    "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście partnerów (na przykład partner w centrum, które udostępniasz)."
+    "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście partnerów (na przykład partner w centrum, które udostępniasz).",
+    "paths": "Ścieżki",
+    "pathsAria": "Pokaż ścieżki uszeregowane dla {{hash}}",
+    "pathsDetailAria": "Ścieżki rankingowe dla {{hash}}",
+    "pathsHeading": "Ścieżki · {{hash}}…",
+    "pathsCloseAria": "Zamknij szczegóły ścieżek",
+    "pathsPreferLabel": "Preferowane medium",
+    "pathsPreferAria": "Preferowana ścieżka medium dla tego partnera",
+    "pathsPreferAuto": "Automatyczny (globalny)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Sieć",
+    "pathsGlobalPreference": "Globalnie: {{preference}}",
+    "pathsListAria": "Miejsca na ścieżkę rankingową",
+    "pathsActiveBadge": "Aktywna",
+    "pathsBackupBadge": "Backup",
+    "pathsMedium": "Średnia",
+    "pathsExpired": "Wygasłe",
+    "pathsEmpty": "Nie ma jeszcze slotów ścieżek. Poproś o ścieżkę lub poczekaj na ogłoszenie.",
+    "pathsLoadFailed": "Nie udało się załadować slotów ścieżki.",
+    "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",

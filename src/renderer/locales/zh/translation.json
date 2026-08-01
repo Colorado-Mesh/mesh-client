@@ -1040,7 +1040,8 @@
         "rnodeWifi": "通过 RNode Wi-Fi (tcp:// 主机) 的 LoRa 网格。",
         "blePeer": "使用种子对等地址的 BLE 对等网格。",
         "generic": "Reticulum 网络接口。",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。"
       },
       "rfProfile": {
         "coordinated": "区域协调",
@@ -1243,7 +1244,7 @@
       "openGlobalMap": "全球测绘",
       "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
       "syncFailed": "RMAP发现同步失败。",
-      "publishingOf": "RMAP v4：发布 {{total}} 的 {{current}}"
+      "publishingOf": "RMAP v4：正在发布 {{current}}/{{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
     "coloradoServerNote": "Colorado Mesh 面向科罗拉多州地区的网格用户。主题前缀使用丹佛 IATA（meshcore/DEN）。",
@@ -2496,7 +2497,15 @@
       "shareInstance": "共享 Reticulum 实例",
       "logLevel": "日志级别",
       "save": "保存堆栈设置",
-      "saveFailed": "无法保存堆栈设置。"
+      "saveFailed": "无法保存堆栈设置。",
+      "pathMediumPreference": "首选路径介质",
+      "pathMediumPreferenceHint": "当可以通过射频和网络（ TCP/I2P等）访问对等节点时，默认情况下选择哪种介质获胜。最低路径仅按跳数排名。“同行”选项卡上的每点引脚可以覆盖此设置。",
+      "pathMediumLowest": "最低路径（跳数）",
+      "pathMediumNetwork": "网络（非RF ）",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "全局首选路径介质",
+      "pathMediumPreferenceSaved": "路径介质首选项已保存。",
+      "pathMediumPreferenceSaveFailed": "保存路径介质首选项失败。"
     },
     "reticulumConfigImport": {
       "title": "导入 Reticulum config",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "查找",
     "lookupSubmitAria": "请求路径并探测目标哈希",
     "lookupInvalid": "请输入有效的 32 字符 LXMF 目标哈希或 lxmf:// 链接。",
-    "lookupHint": "请求尚未在对等体列表中的哈希路径（例如，您共享的集线器上的对等体）。"
+    "lookupHint": "请求尚未在对等体列表中的哈希路径（例如，您共享的集线器上的对等体）。",
+    "paths": "路径",
+    "pathsAria": "显示 {{hash}} 的排名路径",
+    "pathsDetailAria": "{{hash}}的排名路径",
+    "pathsHeading": "路径· {{hash}} …",
+    "pathsCloseAria": "关闭路径详细信息",
+    "pathsPreferLabel": "首选中等",
+    "pathsPreferAria": "此对等方的首选路径介质",
+    "pathsPreferAuto": "自动/全局",
+    "pathsPreferRf": "射频",
+    "pathsPreferNetwork": "网络",
+    "pathsGlobalPreference": "全球： {{preference}}",
+    "pathsListAria": "排名路径槽位",
+    "pathsActiveBadge": "Active",
+    "pathsBackupBadge": "后援",
+    "pathsMedium": "中粗线",
+    "pathsExpired": "已失效",
+    "pathsEmpty": "还没有路径插槽。请求路径或等待公告。",
+    "pathsLoadFailed": "加载路径插槽失败。",
+    "pathsPinFailed": "无法更新此对等方的媒体首选项。"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",

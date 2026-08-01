@@ -1038,7 +1038,8 @@
         "rnodeWifi": "LoRa-Mesh über RNode Wi-Fi (tcp:// host).",
         "blePeer": "BLE-Peer-Mesh unter Verwendung von Seed-Peer-Adressen.",
         "generic": "Reticulum-Netzwerkschnittstelle.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt."
       },
       "rfProfile": {
         "coordinated": "Regional koordiniert",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Teilen Sie die Reticulum-Instanz",
       "logLevel": "Protokollebene",
       "save": "Stapeleinstellungen speichern",
-      "saveFailed": "Stapeleinstellungen konnten nicht gespeichert werden."
+      "saveFailed": "Stapeleinstellungen konnten nicht gespeichert werden.",
+      "pathMediumPreference": "Bevorzugtes Pfadmedium",
+      "pathMediumPreferenceHint": "Wenn ein Peer über RF und Netzwerk (TCP/I2P/etc.) erreichbar ist, wählen Sie standardmäßig aus, welches Medium gewinnt. Niedrigste Pfadreihen nur nach Hop-Anzahl. Per-Peer-Pins auf der Registerkarte Peers können dies außer Kraft setzen.",
+      "pathMediumLowest": "Niedrigster Pfad (Hop Count)",
+      "pathMediumNetwork": "Netzwerk (nicht RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Global bevorzugtes Pfadmedium",
+      "pathMediumPreferenceSaved": "Pfad Medium Präferenz gespeichert.",
+      "pathMediumPreferenceSaveFailed": "Pfad-Medium-Präferenz konnte nicht gespeichert werden."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",
@@ -3014,7 +3023,7 @@
     "pageLoadingCountdownOverdue": "Seite wird geladen... funktioniert immer noch",
     "pageReadyToast": "Nomad-Seite bereit: {{name}}",
     "staleLastSeenHint": "Zuletzt gehört {{time}} – dieser Knoten ist möglicherweise offline, auch wenn er als online aufgeführt ist.",
-    "pageLoadingRetryCountdown": "Zeitüberschreitung beim ersten Versuch — Pfad wird aktualisiert und es wird erneut versucht… {{time}} left",
+    "pageLoadingRetryCountdown": "Zeitüberschreitung beim ersten Versuch — Pfad wird aktualisiert und es wird erneut versucht… noch {{time}}",
     "pageLoadingRetryOverdue": "Erfrischungspfad und erneuter Versuch… funktioniert noch"
   },
   "packetDistribution": {
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Suchen",
     "lookupSubmitAria": "Pfad anfordern und Ziel-Hash prüfen",
     "lookupInvalid": "Gib einen gültigen 32-stelligen LXMF-Ziel-Hash oder einen lxmf://-Link ein.",
-    "lookupHint": "Fordern Sie einen Pfad für einen Hash an, der noch nicht in der Peers-Liste enthalten ist (z. B. einen Peer auf einem Hub, den Sie teilen)."
+    "lookupHint": "Fordern Sie einen Pfad für einen Hash an, der noch nicht in der Peers-Liste enthalten ist (z. B. einen Peer auf einem Hub, den Sie teilen).",
+    "paths": "Pfade",
+    "pathsAria": "Ranglistenpfade für {{hash}} anzeigen",
+    "pathsDetailAria": "Ranglistenpfade für {{hash}}",
+    "pathsHeading": "Pfade · {{hash}}…",
+    "pathsCloseAria": "Detail Pfade schließen",
+    "pathsPreferLabel": "Bevorzugt mittel",
+    "pathsPreferAria": "Bevorzugtes Pfadmedium für diesen Peer",
+    "pathsPreferAuto": "Auto (global)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Netzwerk-",
+    "pathsGlobalPreference": "Global: {{preference}}",
+    "pathsListAria": "Ranglistenpfad-Slots",
+    "pathsActiveBadge": "Aktiv",
+    "pathsBackupBadge": "Backup",
+    "pathsMedium": "Medium",
+    "pathsExpired": "Abgelaufen",
+    "pathsEmpty": "Noch keine Pfad-Slots. Fordern Sie einen Pfad an oder warten Sie auf eine Ankündigung.",
+    "pathsLoadFailed": "Pfad-Slots konnten nicht geladen werden.",
+    "pathsPinFailed": "Die Medieneinstellung für diesen Peer konnte nicht aktualisiert werden."
   },
   "radioPanel": {
     "offloadedContacts": "Entladen von {{count}} Kontakten in die Datenbank.",

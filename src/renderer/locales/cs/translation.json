@@ -1041,7 +1041,8 @@
         "rnodeWifi": "LoRa mesh přes RNode Wi-Fi (tcp:// hostitel).",
         "blePeer": "BLE peer mesh pomocí seed peer adres.",
         "generic": "Síťové rozhraní Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz."
       },
       "rfProfile": {
         "coordinated": "Koordinované regionální",
@@ -2498,7 +2499,15 @@
       "shareInstance": "Sdílet instanci Reticulum",
       "logLevel": "Úroveň protokolu",
       "save": "Uložte nastavení zásobníku",
-      "saveFailed": "Nastavení zásobníku se nepodařilo uložit."
+      "saveFailed": "Nastavení zásobníku se nepodařilo uložit.",
+      "pathMediumPreference": "Preferované médium cesty",
+      "pathMediumPreferenceHint": "Když je peer dosažitelný přes RF a síť (TCP/I2P/atd.), zvolte, které médium ve výchozím nastavení vyhrává. Nejnižší pořadí cest pouze podle počtu hopů. Špendlíky per-peer na kartě Peers to mohou přepsat.",
+      "pathMediumLowest": "Nejnižší cesta (počet hopů)",
+      "pathMediumNetwork": "Síť (jiná než RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Globální preferované médium cesty",
+      "pathMediumPreferenceSaved": "Předvolba média cesty uložena.",
+      "pathMediumPreferenceSaveFailed": "Uložení předvolby média cesty se nezdařilo."
     },
     "reticulumConfigImport": {
       "title": "Import konfigurace Reticulum",
@@ -3123,7 +3132,26 @@
     "lookupSubmit": "Vyhledat",
     "lookupSubmitAria": "Vyžádat cestu a otestovat cílový hash",
     "lookupInvalid": "Zadejte platný 32znakový LXMF cílový hash nebo odkaz lxmf://.",
-    "lookupHint": "Požádejte o cestu pro hash, který ještě není v seznamu kolegů (například kolega v centru, které sdílíte)."
+    "lookupHint": "Požádejte o cestu pro hash, který ještě není v seznamu kolegů (například kolega v centru, které sdílíte).",
+    "paths": "Složky",
+    "pathsAria": "Zobrazit hodnocené cesty pro {{hash}}",
+    "pathsDetailAria": "Hodnocené cesty pro {{hash}}",
+    "pathsHeading": "Cesty · {{hash}}…",
+    "pathsCloseAria": "Podrobnosti o zavření cest",
+    "pathsPreferLabel": "Preferovat médium",
+    "pathsPreferAria": "Preferované médium cesty pro tohoto kolegu",
+    "pathsPreferAuto": "Auto (globální)",
+    "pathsPreferRf": "regionální facilitátor",
+    "pathsPreferNetwork": "Síť",
+    "pathsGlobalPreference": "Globální: {{preference}}",
+    "pathsListAria": "Hodnocené sloty cesty",
+    "pathsActiveBadge": "Aktivní",
+    "pathsBackupBadge": "Záloha",
+    "pathsMedium": "Střední",
+    "pathsExpired": "Platnost vypršela",
+    "pathsEmpty": "Zatím žádné sloty pro cestu. Požádejte o cestu nebo počkejte na oznámení.",
+    "pathsLoadFailed": "Načtení slotů cesty se nezdařilo.",
+    "pathsPinFailed": "Aktualizace předvolby média pro tohoto protějšku se nezdařila."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",

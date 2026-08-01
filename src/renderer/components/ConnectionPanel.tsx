@@ -1089,7 +1089,9 @@ export default function ConnectionPanel({
       bleLinuxPickerSelectionResolvedRef.current = false;
       const generation = linuxBleChooserGenerationRef.current;
       linuxBleChooserGenerationRef.current = null;
-      window.electronAPI.cancelBluetoothSelection(generation);
+      void window.electronAPI.cancelBluetoothSelection(generation).catch((e: unknown) => {
+        console.debug('[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e));
+      });
       setShowPinPrompt(false);
       setPinInputValue('');
       setConnecting(false);
@@ -1153,11 +1155,22 @@ export default function ConnectionPanel({
         // discovery uses connectionTypeRef for shouldShowEmbeddedPicker.
         connectionTypeRef.current = 'ble';
         // Clear any stale Chromium chooser session before a new requestDevice().
+        // Must await: fire-and-forget cancel raced behind select-bluetooth-device and
+        // cancelled the new chooser (immediate "User cancelled the requestDevice() chooser").
         // Pass the prior generation when known so a delayed cancel cannot hit the next chooser;
         // omit generation only when we have no tracked session (force-clear orphans).
         const priorGeneration = linuxBleChooserGenerationRef.current;
         linuxBleChooserGenerationRef.current = null;
-        window.electronAPI.cancelBluetoothSelection(priorGeneration);
+        try {
+          await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+        } catch (e: unknown) {
+          console.debug(
+            '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
+          );
+          setConnecting(false);
+          setConnectionStage('');
+          return;
+        }
         pendingMeshcoreLinuxWbMacRef.current = null;
         bleLinuxPickerSelectionResolvedRef.current = false;
         setShowBlePicker(false);
@@ -1251,7 +1264,11 @@ export default function ConnectionPanel({
           // Cancel in-flight requestDevice() (picker or MeshCore pre-connect PIN gate)
           const generation = linuxBleChooserGenerationRef.current;
           linuxBleChooserGenerationRef.current = null;
-          window.electronAPI.cancelBluetoothSelection(generation);
+          void window.electronAPI.cancelBluetoothSelection(generation).catch((e: unknown) => {
+            console.debug(
+              '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
+            );
+          });
         }
         pendingMeshcoreLinuxWbMacRef.current = null;
         setShowPinPrompt(false);
@@ -1628,6 +1645,23 @@ export default function ConnectionPanel({
           setConnectionStage('connectionPanel.stageReconnecting');
           // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
           connectionTypeRef.current = 'ble';
+          // Mirror handleConnect: await cancel so a stale chooser cannot merge into the new requestDevice().
+          const priorGeneration = linuxBleChooserGenerationRef.current;
+          linuxBleChooserGenerationRef.current = null;
+          try {
+            await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+          } catch (e: unknown) {
+            console.debug(
+              '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
+            );
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+            return;
+          }
+          pendingMeshcoreLinuxWbMacRef.current = null;
+          bleLinuxPickerSelectionResolvedRef.current = false;
           try {
             await onConnect('ble', undefined);
             isAutoConnectingRef.current = false;

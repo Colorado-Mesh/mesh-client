@@ -111,6 +111,7 @@ import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-h
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
+import { registerLinuxWebBluetoothCancelIpcHandlers } from './linuxWebBluetoothCancelIpc';
 import {
   formatBluetoothctlSpawnError,
   linuxWebBluetoothDeviceSelection,
@@ -2092,19 +2093,7 @@ ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
 });
 
 // ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-// Optional generation: when provided, ignore delayed cancels from an earlier chooser.
-// When omitted, force-cancel (pre-connect cleanup / legacy callers).
-ipcMain.on('bluetooth-device-cancelled', (_event, generation: unknown) => {
-  if (typeof generation === 'number' && Number.isFinite(generation)) {
-    if (!linuxWebBluetoothDeviceSelection.cancelIfGeneration(generation)) {
-      console.debug(
-        '[IPC] bluetooth-device-cancelled: generation mismatch or no pending — ignored',
-      );
-    }
-    return;
-  }
-  linuxWebBluetoothDeviceSelection.cancelSelection();
-});
+registerLinuxWebBluetoothCancelIpcHandlers();
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
 // Not used on routine disconnect; only ConnectionPanel manual re-pair flow.

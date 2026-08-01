@@ -90,6 +90,37 @@ describe('nomadPageViewerStore loadPage cache', () => {
     }
   });
 
+  it('does not auto-retry when loadPage already requested forcePathRefresh', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      const fetchNomadPage = vi.fn().mockResolvedValue({
+        ok: false,
+        error: 'link_timeout',
+        egress: 'tcp',
+        link_hops: 5,
+        proof_budget_secs: 30,
+      });
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      // Caller already forced (announce reload / manual ↻) — skip debounce.
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu', { forcePathRefresh: true });
+      await loadPromise;
+
+      expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/index.mu', undefined, {
+        forcePathRefresh: true,
+      });
+      expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
+      expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(false);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
   it('auto-retries TCP link_timeout once with forcePathRefresh', async () => {
     vi.useFakeTimers();
     const { restore } = mockConsoleWarn();

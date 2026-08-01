@@ -1040,7 +1040,8 @@
         "rnodeWifi": "RNode Wi-Fi (tcp:// ホスト) 経由の LoRa メッシュ。",
         "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
         "generic": "Reticulumネットワークインターフェース。",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "このマシンのルーターを介したI 2 Pバックボーン。HTTP/HTTPS I 2 PTunnelプロキシ（ 4444/4445 ）ではなく、SAMアプリケーションブリッジ（ 127.0.0.1 ： 7656 ）を有効にします。ブリッジがリッスンするようにSAMを有効にした後、I 2 Pを再起動し、このインターフェースがダウンしたままになっている場合は、Reticulumスタックを再起動します。"
       },
       "rfProfile": {
         "coordinated": "地域連携",
@@ -1243,7 +1244,7 @@
       "openGlobalMap": "グローバルマップ",
       "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
       "syncFailed": "RMAP検出の同期に失敗しました。",
-      "publishingOf": "RMAP v4: {{current}} または {{total}} を公開しています"
+      "publishingOf": "RMAP v4: {{total}} 中 {{current}} を公開しています"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
     "coloradoServerNote": "Colorado Mesh はコロラド地域のメッシュ利用者向けです。トピック接頭辞はデンバー IATA（meshcore/DEN）を使用します。",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Reticulum インスタンスを共有する",
       "logLevel": "ログレベル",
       "save": "スタック設定の保存",
-      "saveFailed": "スタック設定の保存に失敗しました。"
+      "saveFailed": "スタック設定の保存に失敗しました。",
+      "pathMediumPreference": "好ましいパス媒体",
+      "pathMediumPreferenceHint": "ピアがRFおよびネットワーク（ TCP/I 2 Pなど）を介して到達可能な場合は、デフォルトでどのメディアが勝つかを選択します。最低パスはホップカウントのみでランク付けされます。[ピア]タブのピアごとのピンは、これを上書きできます。",
+      "pathMediumLowest": "最低パス（ホップカウント）",
+      "pathMediumNetwork": "ネットワーク（非RF ）",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "グローバル優先パスメディア",
+      "pathMediumPreferenceSaved": "パスのメディア設定が保存されました。",
+      "pathMediumPreferenceSaveFailed": "パスのメディア設定を保存できませんでした。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "検索",
     "lookupSubmitAria": "パスを要求し宛先ハッシュをプローブ",
     "lookupInvalid": "有効な32文字のLXMF宛先ハッシュ、または lxmf:// リンクを入力してください。",
-    "lookupHint": "まだピアリストにないハッシュのパスを要求します（たとえば、共有するハブ上のピア）。"
+    "lookupHint": "まだピアリストにないハッシュのパスを要求します（たとえば、共有するハブ上のピア）。",
+    "paths": "パス",
+    "pathsAria": "{{hash}}のランク付けされたパスを表示",
+    "pathsDetailAria": "{{hash}}のランクパス",
+    "pathsHeading": "パス· {{hash}} …",
+    "pathsCloseAria": "パス詳細を閉じる",
+    "pathsPreferLabel": "ミディアムを好む",
+    "pathsPreferAria": "このピアの優先パスメディア",
+    "pathsPreferAuto": "自動（グローバル）",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "ネットワーク",
+    "pathsGlobalPreference": "グローバル： {{preference}}",
+    "pathsListAria": "ランクパススロット",
+    "pathsActiveBadge": "アクティブ",
+    "pathsBackupBadge": "バックアップ",
+    "pathsMedium": "中程度",
+    "pathsExpired": "有効期限切れ",
+    "pathsEmpty": "パススロットはまだありません。パスをリクエストするか、アナウンスを待ちます。",
+    "pathsLoadFailed": "パススロットの読み込みに失敗しました。",
+    "pathsPinFailed": "このピアのメディア設定を更新できませんでした。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",

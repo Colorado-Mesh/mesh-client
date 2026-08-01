@@ -1040,7 +1040,8 @@
         "rnodeWifi": "Malla LoRa a través de RNode Wi-Fi (tcp://host).",
         "blePeer": "Malla de pares BLE que utiliza direcciones de pares iniciales.",
         "generic": "Interfaz de red Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Red troncal I2P a través de un router en esta máquina. Habilite el puente de aplicación SAM (127.0.0.1:7656), no los proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie I2P después de habilitar SAM para que el puente escuche, luego reinicie la pila Reticulum si esta interfaz permanece inactiva."
       },
       "rfProfile": {
         "coordinated": "Regional coordinado",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Compartir instancia Reticulum",
       "logLevel": "Nivel de registro",
       "save": "Guardar configuración de pila",
-      "saveFailed": "No se pudo guardar la configuración de la pila."
+      "saveFailed": "No se pudo guardar la configuración de la pila.",
+      "pathMediumPreference": "Medio Path preferido",
+      "pathMediumPreferenceHint": "Cuando se puede acceder a un par a través de RF y red (TCP/I2P/etc.), elija qué medio gana de forma predeterminada. La ruta más baja se clasifica solo por recuento de saltos. Los pines Per-peer en la pestaña Peers pueden anular esto.",
+      "pathMediumLowest": "Ruta más baja (conteo de saltos)",
+      "pathMediumNetwork": "Red (no RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Medio Path preferido global",
+      "pathMediumPreferenceSaved": "Ruta de preferencia media guardada.",
+      "pathMediumPreferenceSaveFailed": "Error al guardar la preferencia del medio de ruta."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",
@@ -3014,7 +3023,7 @@
     "pageLoadingCountdownOverdue": "Cargando página… sigue funcionando",
     "pageReadyToast": "Nomad — Página nómada lista: {{name}}",
     "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea.",
-    "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… {{time}} left",
+    "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… quedan {{time}}",
     "pageLoadingRetryOverdue": "Actualizando ruta y reintentando... sigue funcionando"
   },
   "packetDistribution": {
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Buscar",
     "lookupSubmitAria": "Solicitar ruta y sondear el hash de destino",
     "lookupInvalid": "Introduce un hash de destino LXMF válido de 32 caracteres o un enlace lxmf://.",
-    "lookupHint": "Solicita una ruta para un hash que aún no está en la lista de compañeros (por ejemplo, un compañero en un centro que compartes)."
+    "lookupHint": "Solicita una ruta para un hash que aún no está en la lista de compañeros (por ejemplo, un compañero en un centro que compartes).",
+    "paths": "Paths",
+    "pathsAria": "Mostrar rutas clasificadas para {{hash}}",
+    "pathsDetailAria": "Rutas clasificadas para {{hash}}",
+    "pathsHeading": "Rutas · {{hash}}…",
+    "pathsCloseAria": "Detalle de cerrar rutas",
+    "pathsPreferLabel": "Prefiero medio",
+    "pathsPreferAria": "Medio de ruta preferido para este compañero",
+    "pathsPreferAuto": "Automático/Global",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Red",
+    "pathsGlobalPreference": "Global: {{preference}}",
+    "pathsListAria": "Ranuras de ruta clasificadas",
+    "pathsActiveBadge": "Activo",
+    "pathsBackupBadge": "Respaldo",
+    "pathsMedium": "Medio",
+    "pathsExpired": "Caducada",
+    "pathsEmpty": "Aún no hay ranuras de ruta. Solicita una ruta o espera un anuncio.",
+    "pathsLoadFailed": "No se han podido cargar las ranuras de ruta.",
+    "pathsPinFailed": "Error al actualizar la preferencia del medio para este compañero."
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",

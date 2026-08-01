@@ -16,6 +16,7 @@ mod nomad_link_errors;
 mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
+mod path_medium;
 mod path_speed;
 mod persistence;
 #[cfg(feature = "rns-stack")]
@@ -59,6 +60,7 @@ use std::sync::Arc;
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
 use lxmf_inbound_log::{LxmfInboundBuffer, MAX_LXMF_INBOUND_LOG};
 use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
+pub use path_medium::{PathMediumPreferenceSetting, PathMediumSetting};
 use persistence::PersistedState;
 pub use pn_hosting_policy::PnHostingPolicy;
 use tokio::sync::{Mutex, RwLock, broadcast};
@@ -95,8 +97,13 @@ pub struct StackHandle {
     contact_name_persist_dirty: std::sync::atomic::AtomicBool,
     /// Serializes create / switch / delete so on-disk slot state cannot interleave.
     identity_op_lock: Mutex<()>,
+    /// Serializes path-medium preference/pin persist → live-apply → rollback sequences.
+    path_medium_op_lock: Mutex<()>,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
+    /// Test-only: next preference/pin apply returns this error after persist (exercises rollback).
+    #[cfg(test)]
+    test_path_medium_apply_error: Mutex<Option<String>>,
 }
 
 impl StackHandle {
@@ -216,7 +223,10 @@ impl StackHandle {
             inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
+            path_medium_op_lock: Mutex::new(()),
             live,
+            #[cfg(test)]
+            test_path_medium_apply_error: Mutex::new(None),
         };
         #[cfg(not(feature = "rns-stack"))]
         let handle = Self {
@@ -228,6 +238,9 @@ impl StackHandle {
             inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
+            path_medium_op_lock: Mutex::new(()),
+            #[cfg(test)]
+            test_path_medium_apply_error: Mutex::new(None),
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &handle.live {
@@ -872,6 +885,156 @@ impl StackHandle {
             self.emit_event("peers_updated", serde_json::json!({ "hash": hash }));
         }
         res
+    }
+
+    /// Persisted global path-medium preference (default `lowest`).
+    pub async fn path_medium_preference(&self) -> PathMediumPreferenceSetting {
+        self.inner.read().await.path_medium_preference
+    }
+
+    /// Persist the global preference, then hot-apply it to a live transport.
+    ///
+    /// Failure point: durable save — the in-memory value is rolled back so the
+    /// stored and applied preference cannot diverge. Failure point: live apply —
+    /// persisted preference is rolled back to the prior snapshot so disk/UI cannot
+    /// drift ahead of the transport. When the stack is not live the value is
+    /// stored only and applied on the next start.
+    pub async fn set_path_medium_preference(
+        &self,
+        preference: PathMediumPreferenceSetting,
+    ) -> Result<(), String> {
+        let _op = self.path_medium_op_lock.lock().await;
+        let snapshot = {
+            let mut inner = self.inner.write().await;
+            let snapshot = inner.path_medium_preference;
+            inner.set_path_medium_preference(preference);
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                inner.set_path_medium_preference(snapshot);
+                return Err(e);
+            }
+            snapshot
+        };
+        #[cfg(test)]
+        if let Some(err) = self.take_test_path_medium_apply_error().await {
+            self.rollback_path_medium_preference(snapshot).await;
+            return Err(err);
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            if let Err(e) = live.apply_path_medium_preference(preference).await {
+                self.rollback_path_medium_preference(snapshot).await;
+                return Err(e);
+            }
+        }
+        self.emit_event(
+            "path_medium_preference",
+            serde_json::json!({ "preference": preference.as_str() }),
+        );
+        Ok(())
+    }
+
+    /// All persisted medium pins as `{ "<32 hex dest>": "rf" | "network" }`.
+    pub async fn peer_medium_pins_json(&self) -> serde_json::Value {
+        self.inner.read().await.peer_medium_pins.to_json()
+    }
+
+    /// Persist a destination medium pin (`None` clears it), then hot-apply it.
+    ///
+    /// Failure point: live apply — pin map is rolled back to the pre-save snapshot
+    /// so disk cannot drift ahead of the transport.
+    pub async fn set_peer_medium_pin(
+        &self,
+        hash: &str,
+        pin: Option<PathMediumSetting>,
+    ) -> Result<String, String> {
+        let _op = self.path_medium_op_lock.lock().await;
+        let (canonical, pin_snapshot) = {
+            let mut inner = self.inner.write().await;
+            let pin_snapshot = inner.peer_medium_pins.clone();
+            let canonical = inner.set_peer_medium_pin(hash, pin)?;
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                inner.peer_medium_pins = pin_snapshot;
+                return Err(e);
+            }
+            (canonical, pin_snapshot)
+        };
+        #[cfg(test)]
+        if let Some(err) = self.take_test_path_medium_apply_error().await {
+            self.rollback_peer_medium_pins(pin_snapshot).await;
+            return Err(err);
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            if let Err(e) = live.apply_peer_medium_pin(&canonical, pin).await {
+                self.rollback_peer_medium_pins(pin_snapshot).await;
+                return Err(e);
+            }
+        }
+        self.emit_event("peers_updated", serde_json::json!({ "hash": canonical }));
+        Ok(canonical)
+    }
+
+    async fn rollback_path_medium_preference(&self, snapshot: PathMediumPreferenceSetting) {
+        let mut inner = self.inner.write().await;
+        inner.set_path_medium_preference(snapshot);
+        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+            tracing::warn!("path medium preference rollback persist failed: {save_err}");
+        }
+    }
+
+    async fn rollback_peer_medium_pins(&self, snapshot: path_medium::PeerMediumPins) {
+        let mut inner = self.inner.write().await;
+        inner.peer_medium_pins = snapshot;
+        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+            tracing::warn!("peer medium pin rollback persist failed: {save_err}");
+        }
+    }
+
+    #[cfg(test)]
+    async fn take_test_path_medium_apply_error(&self) -> Option<String> {
+        self.test_path_medium_apply_error.lock().await.take()
+    }
+
+    #[cfg(test)]
+    async fn force_next_path_medium_apply_error(&self, err: impl Into<String>) {
+        *self.test_path_medium_apply_error.lock().await = Some(err.into());
+    }
+
+    /// Ranked transport path slots for one destination plus the stored preference / pin.
+    pub async fn peer_path_slots(&self, hash: &str) -> Result<serde_json::Value, String> {
+        let canonical = canonical_peer_hash(hash)?;
+        let (preference, pin) = {
+            let inner = self.inner.read().await;
+            (
+                inner.path_medium_preference,
+                inner.peer_medium_pins.get(&canonical),
+            )
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let (paths, effective_preference) = live.path_slots(&canonical).await?;
+            return Ok(peer_path_slots_json(
+                &canonical,
+                &PeerPathSlotsView {
+                    preference,
+                    pin,
+                    effective_preference: Some(effective_preference),
+                    paths,
+                    live: true,
+                },
+            ));
+        }
+        // Stack not live: report the stored preference / pin with no live slots.
+        Ok(peer_path_slots_json(
+            &canonical,
+            &PeerPathSlotsView {
+                preference,
+                pin,
+                effective_preference: None,
+                paths: Vec::new(),
+                live: false,
+            },
+        ))
     }
 
     pub async fn list_propagation(&self) -> serde_json::Value {
@@ -2615,6 +2778,36 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
     merged
 }
 
+/// Canonicalize a peer destination hash for path-medium routes (32 lowercase hex).
+fn canonical_peer_hash(hash: &str) -> Result<String, String> {
+    topology::canonicalize_destination_hash(hash)
+        .ok_or_else(|| "destination_hash must be 32 hex characters".to_string())
+}
+
+/// Path-slot response fields for one destination.
+struct PeerPathSlotsView {
+    /// Persisted global preference.
+    preference: PathMediumPreferenceSetting,
+    /// Persisted pin for this destination.
+    pin: Option<PathMediumSetting>,
+    /// Preference the live transport actually applies here (pin resolved); `None` when offline.
+    effective_preference: Option<PathMediumPreferenceSetting>,
+    paths: Vec<serde_json::Value>,
+    live: bool,
+}
+
+fn peer_path_slots_json(destination_hash: &str, view: &PeerPathSlotsView) -> serde_json::Value {
+    serde_json::json!({
+        "ok": true,
+        "destination_hash": destination_hash,
+        "preference": view.preference.as_str(),
+        "pin": view.pin.map(PathMediumSetting::as_str),
+        "effective_preference": view.effective_preference.map(PathMediumPreferenceSetting::as_str),
+        "live": view.live,
+        "paths": view.paths,
+    })
+}
+
 /// Apply a live path-table fetch: update cache only when non-empty; otherwise keep last known peers.
 fn merge_live_peer_fetch(
     cache: &mut Vec<PeerRow>,
@@ -2845,6 +3038,214 @@ mod tests {
         assert!(merged.iter().any(|p| p.destination_hash == "aa".repeat(16)));
         assert!(!merged.iter().any(|p| p.destination_hash == "ff".repeat(16)));
         assert!(merged.len() <= 1 + MAX_ORPHAN_PEERS);
+    }
+
+    #[test]
+    fn canonical_peer_hash_requires_32_hex() {
+        assert_eq!(
+            canonical_peer_hash("AABBCCDDEEFF00112233445566778899").expect("canonical"),
+            "aabbccddeeff00112233445566778899"
+        );
+        assert!(canonical_peer_hash("abcd").is_err());
+        assert!(canonical_peer_hash("aabbccddeeff0011223344556677889g").is_err());
+    }
+
+    #[test]
+    fn peer_path_slots_json_reports_stored_preference_and_pin() {
+        let hash = "aabbccddeeff00112233445566778899";
+        let value = peer_path_slots_json(
+            hash,
+            &PeerPathSlotsView {
+                preference: PathMediumPreferenceSetting::Rf,
+                pin: Some(PathMediumSetting::Network),
+                effective_preference: Some(PathMediumPreferenceSetting::Network),
+                paths: vec![serde_json::json!({ "active": true, "medium": "network" })],
+                live: true,
+            },
+        );
+        assert_eq!(value["ok"], true);
+        assert_eq!(value["destination_hash"], hash);
+        assert_eq!(value["preference"], "rf");
+        assert_eq!(value["pin"], "network");
+        assert_eq!(value["effective_preference"], "network");
+        assert_eq!(value["live"], true);
+        assert_eq!(value["paths"].as_array().map(Vec::len), Some(1));
+    }
+
+    #[test]
+    fn peer_path_slots_json_offline_omits_slots_and_effective_preference() {
+        let hash = "deadbeefcafebabe0123456789abcdef";
+        let value = peer_path_slots_json(
+            hash,
+            &PeerPathSlotsView {
+                preference: PathMediumPreferenceSetting::Lowest,
+                pin: None,
+                effective_preference: None,
+                paths: Vec::new(),
+                live: false,
+            },
+        );
+        assert_eq!(value["preference"], "lowest");
+        assert!(value["pin"].is_null());
+        assert!(value["effective_preference"].is_null());
+        assert_eq!(value["live"], false);
+        assert!(value["paths"].as_array().expect("array").is_empty());
+    }
+
+    #[tokio::test]
+    async fn path_medium_preference_defaults_to_lowest_and_survives_restart() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let hash = "aabbccddeeff00112233445566778899";
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        assert_eq!(
+            handle.path_medium_preference().await,
+            PathMediumPreferenceSetting::Lowest
+        );
+        assert_eq!(handle.peer_medium_pins_json().await, serde_json::json!({}));
+
+        handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Rf)
+            .await
+            .expect("set preference");
+        let canonical = handle
+            .set_peer_medium_pin(&hash.to_ascii_uppercase(), Some(PathMediumSetting::Network))
+            .await
+            .expect("set pin");
+        assert_eq!(canonical, hash);
+
+        let (tx2, _) = broadcast::channel(8);
+        let reloaded = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx2,
+        ))
+        .await;
+        assert_eq!(
+            reloaded.path_medium_preference().await,
+            PathMediumPreferenceSetting::Rf
+        );
+        assert_eq!(
+            reloaded.peer_medium_pins_json().await,
+            serde_json::json!({ hash: "network" })
+        );
+
+        // Offline path slots still report the stored preference and pin.
+        let slots = reloaded.peer_path_slots(hash).await.expect("slots");
+        assert_eq!(slots["preference"], "rf");
+        assert_eq!(slots["pin"], "network");
+        assert_eq!(slots["live"], false);
+
+        reloaded
+            .set_peer_medium_pin(hash, None)
+            .await
+            .expect("clear pin");
+        assert_eq!(
+            reloaded.peer_medium_pins_json().await,
+            serde_json::json!({})
+        );
+        assert!(reloaded.peer_path_slots("nothex").await.is_err());
+
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn path_medium_preference_emits_event_only_after_success() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        // Subscribe after bootstrap so stats_update / startup noise is not in the queue.
+        let mut rx = handle.subscribe_events();
+
+        handle
+            .force_next_path_medium_apply_error("path_medium_preference_apply_failed")
+            .await;
+        let _ = handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Rf)
+            .await
+            .expect_err("apply must fail");
+        assert!(
+            rx.try_recv().is_err(),
+            "failed preference apply must not emit path_medium_preference"
+        );
+
+        handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Network)
+            .await
+            .expect("set preference");
+        let raw = rx.try_recv().expect("success must emit");
+        let msg: serde_json::Value = serde_json::from_str(&raw).expect("json");
+        assert_eq!(msg["type"], "path_medium_preference");
+        assert_eq!(msg["payload"]["preference"], "network");
+
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn path_medium_apply_failure_rolls_back_persisted_preference_and_pin() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let hash = "aabbccddeeff00112233445566778899";
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        assert_eq!(
+            handle.path_medium_preference().await,
+            PathMediumPreferenceSetting::Lowest
+        );
+
+        handle
+            .force_next_path_medium_apply_error("path_medium_preference_apply_failed")
+            .await;
+        let err = handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Rf)
+            .await
+            .expect_err("apply must fail");
+        assert_eq!(err, "path_medium_preference_apply_failed");
+        assert_eq!(
+            handle.path_medium_preference().await,
+            PathMediumPreferenceSetting::Lowest
+        );
+
+        // Persist a known-good pin first, then fail the next apply so rollback restores it.
+        handle
+            .set_peer_medium_pin(hash, Some(PathMediumSetting::Rf))
+            .await
+            .expect("set pin while offline/apply-ok");
+        assert_eq!(
+            handle.peer_medium_pins_json().await,
+            serde_json::json!({ hash: "rf" })
+        );
+        handle
+            .force_next_path_medium_apply_error("peer_medium_pin_apply_failed")
+            .await;
+        let pin_err = handle
+            .set_peer_medium_pin(hash, Some(PathMediumSetting::Network))
+            .await
+            .expect_err("pin apply must fail");
+        assert_eq!(pin_err, "peer_medium_pin_apply_failed");
+        assert_eq!(
+            handle.peer_medium_pins_json().await,
+            serde_json::json!({ hash: "rf" })
+        );
+
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
     }
 
     #[tokio::test]

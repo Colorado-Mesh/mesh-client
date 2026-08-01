@@ -554,6 +554,7 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
     );
     const onConnect = vi.fn().mockResolvedValue(undefined);
     vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockClear();
 
     try {
       render(
@@ -573,7 +574,74 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
         expect(onConnect).toHaveBeenCalledWith('ble', undefined);
       });
       expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+      expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+      const cancelOrder = vi.mocked(window.electronAPI.cancelBluetoothSelection).mock
+        .invocationCallOrder[0];
+      const connectOrder = onConnect.mock.invocationCallOrder[0];
+      expect(cancelOrder).toBeDefined();
+      expect(connectOrder).toBeDefined();
+      expect(cancelOrder).toBeLessThan(connectOrder);
     } finally {
+      localStorage.removeItem(lastConnKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+
+  it('awaits cancelBluetoothSelection before Reconnect onConnect on Linux', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = mockLinuxUserAgent();
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'linux-ble-device' }),
+    );
+    let releaseCancel: (() => void) | undefined;
+    const cancelSettled = new Promise<void>((resolve) => {
+      releaseCancel = resolve;
+    });
+    let onConnectStarted = false;
+    const onConnect = vi.fn().mockImplementation(() => {
+      onConnectStarted = true;
+      return Promise.resolve();
+    });
+    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockImplementation(
+      () =>
+        new Promise<{ cancelled: boolean }>((resolve) => {
+          void cancelSettled.then(() => {
+            resolve({ cancelled: true });
+          });
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+
+      await waitFor(() => {
+        expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+      });
+      expect(onConnectStarted).toBe(false);
+      expect(onConnect).not.toHaveBeenCalled();
+
+      releaseCancel?.();
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+      });
+      expect(onConnectStarted).toBe(true);
+    } finally {
+      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue({
+        cancelled: false,
+      });
       localStorage.removeItem(lastConnKey);
       userAgentSpy.mockRestore();
     }
@@ -643,6 +711,69 @@ describe('ConnectionPanel Linux BLE path', () => {
     expect(connectOrder).toBeDefined();
     expect(cancelOrder).toBeLessThan(connectOrder);
     userAgentSpy.mockRestore();
+  });
+
+  it('awaits cancelBluetoothSelection before onConnect so force-clear cannot race the chooser', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+
+    let releaseCancel: (() => void) | undefined;
+    const cancelSettled = new Promise<void>((resolve) => {
+      releaseCancel = resolve;
+    });
+    let onConnectStarted = false;
+    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockImplementation(
+      () =>
+        new Promise<{ cancelled: boolean }>((resolve) => {
+          void cancelSettled.then(() => {
+            resolve({ cancelled: true });
+          });
+        }),
+    );
+    const onConnect = vi.fn().mockImplementation(() => {
+      onConnectStarted = true;
+      return Promise.resolve();
+    });
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+      expect(radioCard).toBeTruthy();
+      const connectClick = user.click(
+        within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }),
+      );
+
+      await waitFor(() => {
+        expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+      });
+      expect(onConnectStarted).toBe(false);
+      expect(onConnect).not.toHaveBeenCalled();
+
+      releaseCancel?.();
+      await connectClick;
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+      });
+      expect(onConnectStarted).toBe(true);
+    } finally {
+      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue({
+        cancelled: false,
+      });
+      userAgentSpy.mockRestore();
+    }
   });
 
   it('passes Linux BLE chooser generation to cancelBluetoothSelection on Cancel', async () => {

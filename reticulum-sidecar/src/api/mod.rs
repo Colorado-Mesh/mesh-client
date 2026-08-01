@@ -5,6 +5,7 @@ mod identity;
 mod interfaces;
 mod lxmf;
 mod nomad;
+mod path_medium;
 mod propagation;
 mod remote;
 mod rmap;
@@ -100,6 +101,19 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/peers", get(lxmf::list_peers))
         .route("/api/v1/peers/{hash}/path", post(lxmf::peer_path))
         .route("/api/v1/peers/{hash}/probe", post(lxmf::peer_probe))
+        .route(
+            "/api/v1/peers/{hash}/paths",
+            get(path_medium::get_peer_paths),
+        )
+        .route(
+            "/api/v1/peers/{hash}/medium-pin",
+            put(path_medium::put_peer_medium_pin),
+        )
+        .route(
+            "/api/v1/settings/path-medium-preference",
+            get(path_medium::get_path_medium_preference)
+                .put(path_medium::put_path_medium_preference),
+        )
         .route("/api/v1/ping", post(lxmf::ping))
         .route("/api/v1/topology", get(system::topology))
         .route("/api/v1/rmap/discovered", get(rmap::list_rmap_discovered))

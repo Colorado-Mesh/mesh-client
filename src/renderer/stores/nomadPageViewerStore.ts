@@ -357,7 +357,9 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         set({ pageLoadingBudgetSec: budgetSec });
       }
 
+      // Caller already forced (announce reload / manual ↻) — do not DropPath again.
       if (
+        !options.forcePathRefresh &&
         (!res.ok || !res.content) &&
         shouldForceNomadPathRefreshRetry(res.error, egressFromNomadPageResponse(res))
       ) {

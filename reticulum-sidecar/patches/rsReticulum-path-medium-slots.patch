@@ -1,0 +1,2153 @@
+--- a/crates/rns-transport/src/constants.rs
++++ b/crates/rns-transport/src/constants.rs
+@@ -47,6 +47,12 @@
+ /// Max local rebroadcasts before stopping.
+ pub const LOCAL_REBROADCASTS_MAX: u32 = 2;
+ 
++/// Ranked path slots retained per destination: one active route plus
++/// `MAX_PATH_SLOTS - 1` backups. Backups let a probe/link failure reroute
++/// without waiting for a fresh announce, and are bounded so a destination
++/// heard on many interfaces cannot grow the table without limit.
++pub const MAX_PATH_SLOTS: usize = 3;
++
+ /// Path request timeout (seconds).
+ pub const PATH_REQUEST_TIMEOUT: f64 = 15.0;
+ 
+@@ -272,8 +278,74 @@
+     Unknown = 0x00,
+     Unresponsive = 0x01,
+     Responsive = 0x02,
++}
++
++/// Transport medium a path was learned over.
++///
++/// Coarser than [`InterfaceMode`] on purpose: routing preference is only ever
++/// expressed as "radio" versus "network", so callers do not have to enumerate
++/// every mode. See `path_table::path_medium` for the mapping.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum PathMedium {
++    /// LoRa / RNode radio links.
++    Rf,
++    /// IP-style links — TCP/UDP/I2P hubs, gateways, boundaries, shared instances.
++    Network,
++}
++
++impl PathMedium {
++    pub fn as_str(self) -> &'static str {
++        match self {
++            Self::Rf => "rf",
++            Self::Network => "network",
++        }
++    }
++
++    /// Parse the wire/RPC spelling produced by [`PathMedium::as_str`].
++    pub fn from_str_opt(value: &str) -> Option<Self> {
++        match value.trim().to_ascii_lowercase().as_str() {
++            "rf" => Some(Self::Rf),
++            "network" => Some(Self::Network),
++            _ => None,
++        }
++    }
+ }
+ 
++/// Which medium should own the active path slot when both are reachable.
++///
++/// `Lowest` applies no medium bias and ranks purely by hop count. The other
++/// two are "prefer if possible": when the preferred medium has no live slot,
++/// the best slot of the other medium becomes active without clearing the
++/// preference, so the preferred medium can reclaim the route later.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
++pub enum PathMediumPreference {
++    #[default]
++    Lowest,
++    Network,
++    Rf,
++}
++
++impl PathMediumPreference {
++    pub fn as_str(self) -> &'static str {
++        match self {
++            Self::Lowest => "lowest",
++            Self::Network => "network",
++            Self::Rf => "rf",
++        }
++    }
++
++    /// Parse the wire/RPC spelling produced by
++    /// [`PathMediumPreference::as_str`].
++    pub fn from_str_opt(value: &str) -> Option<Self> {
++        match value.trim().to_ascii_lowercase().as_str() {
++            "lowest" => Some(Self::Lowest),
++            "network" => Some(Self::Network),
++            "rf" => Some(Self::Rf),
++            _ => None,
++        }
++    }
++}
++
+ /// Configured operating mode for an interface.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub enum InterfaceMode {
+--- a/crates/rns-transport/src/path_table.rs
++++ b/crates/rns-transport/src/path_table.rs
+@@ -8,6 +8,8 @@
+ use crate::messages::InterfaceId;
+ use rns_wire::types::DestHash;
+ 
++pub use crate::constants::{MAX_PATH_SLOTS, PathMedium, PathMediumPreference};
++
+ /// One known path to a destination.
+ #[derive(Debug, Clone)]
+ pub struct PathEntry {
+@@ -22,6 +24,9 @@
+     /// anti-replay memory on long-lived paths.
+     pub random_blobs: VecDeque<[u8; 10]>,
+     pub interface_id: InterfaceId,
++    /// Medium of the interface this path was learned on, captured at insert so
++    /// ranking never has to reach back into the interface table.
++    pub medium: PathMedium,
+     /// Hash of the cached announce packet — used to satisfy CacheRequest
+     /// without holding the full packet bytes.
+     pub packet_hash: Option<[u8; 32]>,
+@@ -44,6 +49,7 @@
+             expires,
+             random_blobs: VecDeque::new(),
+             interface_id,
++            medium: path_medium(interface_mode),
+             packet_hash: None,
+         }
+     }
+@@ -86,20 +92,76 @@
+     }
+ }
+ 
+-/// Destination-hash → path mapping plus a parallel liveness state map so we
+-/// can probe unresponsive paths without rewriting the entries.
++/// A path candidate carried by an inbound announce, before it becomes a
++/// [`PathEntry`]. Ranking is a pure read over this so callers can order their
++/// own bookkeeping (announce table, rebroadcast dedup) before mutating.
++#[derive(Debug, Clone, Copy)]
++pub struct AnnouncedPath {
++    pub interface_id: InterfaceId,
++    /// Next-hop transport id; `None` for a directly reachable destination.
++    pub next_hop: Option<[u8; 16]>,
++    pub hops: u8,
++    pub medium: PathMedium,
++    /// Announce random blob — the anti-replay key.
++    pub random_blob: [u8; 10],
++    /// Announce timebase decoded from `random_blob` (see `announce_timebase`).
++    pub emitted: u64,
++    /// The learning interface is temporarily barred from installing paths for
++    /// this destination (probe or link-establishment failure).
++    pub suppressed: bool,
++}
++
++/// Where a ranked candidate belongs.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum PathRank {
++    /// Candidate takes the active slot; the previous active is demoted to a
++    /// backup unless it is the same route.
++    Activate,
++    /// Candidate is a usable alternate but must not displace the active slot.
++    Backup,
++    /// Candidate is dropped — suppressed interface, or a replay of the route
++    /// that already owns the active slot.
++    Reject,
++}
++
++/// Destination-hash → ranked path slots, plus a parallel liveness state map so
++/// we can probe unresponsive paths without rewriting the entries.
++///
++/// `entries` holds the active route per destination — every legacy accessor
++/// (`get`, `has_path`, `hops_to`, `iter`) reads it, so routing is unchanged for
++/// callers that do not care about alternates. `backups` holds up to
++/// `MAX_PATH_SLOTS - 1` ranked alternates, best first, and only ever exists
++/// alongside an active entry.
+ #[derive(Clone)]
+ pub struct PathTable {
+     entries: HashMap<DestHash, PathEntry>,
++    backups: HashMap<DestHash, Vec<PathEntry>>,
+     states: HashMap<DestHash, PathState>,
++    /// Global medium preference. Ranking calls that know the destination pass
++    /// their own effective preference; cull and interface-drop promotions have
++    /// no destination context and fall back to this.
++    preference: PathMediumPreference,
+ }
+ 
+ impl PathTable {
+     pub fn new() -> Self {
+         Self {
+             entries: HashMap::new(),
++            backups: HashMap::new(),
+             states: HashMap::new(),
++            preference: PathMediumPreference::default(),
+         }
++    }
++
++    /// Set the global medium preference used by promotions that have no
++    /// per-destination pin available. Callers that own pins should follow this
++    /// with a `rerank` pass over known destinations.
++    pub fn set_preference(&mut self, preference: PathMediumPreference) {
++        self.preference = preference;
++    }
++
++    pub fn preference(&self) -> PathMediumPreference {
++        self.preference
+     }
+ 
+     /// Insert or replace a path entry. The parallel liveness state is
+@@ -113,9 +175,15 @@
+     /// sites (announce install, PathResponse install, tunnel path restore, disk
+     /// load), so the invariant is enforced here: state is never older than the
+     /// entry it describes.
++    ///
++    /// Backup slots for the same route are dropped so the alternate ring never
++    /// shadows the freshly installed active path; alternates on other
++    /// interfaces are left alone. Use [`PathTable::upsert_ranked`] when the old
++    /// active should be demoted rather than discarded.
+     pub fn insert(&mut self, dest_hash: impl Into<DestHash>, entry: PathEntry) {
+         let hash: DestHash = dest_hash.into();
+         self.states.remove(&hash);
++        self.drop_backup_slot(&hash, entry.interface_id, entry.next_hop);
+         self.entries.insert(hash, entry);
+     }
+ 
+@@ -145,29 +213,39 @@
+         self.get_live(dest_hash).map(|e| e.hops)
+     }
+ 
++    /// Remove every slot for a destination, active and backups.
+     pub fn remove(&mut self, dest_hash: &[u8; 16]) -> Option<PathEntry> {
+         self.states.remove(dest_hash);
++        self.backups.remove(dest_hash);
+         self.entries.remove(dest_hash)
+     }
+ 
+-    /// Drop every path whose interface id matches — used when an interface
+-    /// goes down so we don't keep routing through a dead transport.
++    /// Drop every slot whose interface id matches — used when an interface goes
++    /// down so we don't keep routing through a dead transport. Destinations
++    /// whose active path is dropped promote their best live alternate, so a
++    /// multi-homed peer stays routable. Returns the number of active paths
++    /// removed (promoted or not).
+     pub fn drop_all_via(&mut self, interface_id: InterfaceId) -> usize {
+-        let before = self.entries.len();
+-        self.entries.retain(|_, e| e.interface_id != interface_id);
+-        before - self.entries.len()
++        self.retain_backups(|entry| entry.interface_id != interface_id);
++        self.drop_active_where(|entry| entry.interface_id == interface_id)
+     }
+ 
+     pub fn drop_all_via_next_hop(&mut self, next_hop: &[u8; 16]) -> usize {
+-        let before = self.entries.len();
+-        self.entries.retain(|_, e| e.next_hop != Some(*next_hop));
+-        before - self.entries.len()
++        let next_hop = *next_hop;
++        self.retain_backups(|entry| entry.next_hop != Some(next_hop));
++        self.drop_active_where(|entry| entry.next_hop == Some(next_hop))
+     }
+ 
+-    /// Force-expire a path and cull immediately. Useful when the caller
+-    /// already knows the path is bad (e.g. a link proof failed) and
++    /// Force-drop a destination's route and cull immediately. Useful when the
++    /// caller already knows the path is bad (e.g. a link proof failed) and
+     /// shouldn't wait for the periodic cull cycle.
++    ///
++    /// Backups are dropped too: callers use this to make a destination
++    /// *unrouted* (path rediscovery, `DropPath` RPC), so silently promoting an
++    /// alternate would defeat the request. Use
++    /// [`PathTable::suppress_interface`] to reroute onto a backup instead.
+     pub fn expire(&mut self, dest_hash: &[u8; 16]) -> bool {
++        self.backups.remove(dest_hash);
+         if let Some(entry) = self.entries.get_mut(dest_hash) {
+             entry.expires = 0.0;
+             self.cull_expired();
+@@ -189,17 +267,17 @@
+     }
+ 
+     /// Full cull pass. Prefer `cull_expired_batch` on the hot path to bound
+-    /// per-tick work.
++    /// per-tick work. Expired alternates are dropped first so a destination
++    /// whose active path expired can only promote a still-live alternate.
++    /// Returns the number of expired active paths removed.
+     pub fn cull_expired(&mut self) -> usize {
+-        let before = self.entries.len();
+-        self.entries.retain(|_, entry| !entry.is_expired());
+-        self.states
+-            .retain(|hash, _| self.entries.contains_key(hash));
+-        before - self.entries.len()
++        self.retain_backups(|entry| !entry.is_expired());
++        self.drop_active_where(|entry| entry.is_expired())
+     }
+ 
+     /// Batched cull — removes at most `limit` expired entries so the actor
+-    /// cannot stall on a very large path table.
++    /// cannot stall on a very large path table. Alternates are only inspected
++    /// for the destinations in this batch, keeping per-tick work bounded.
+     pub fn cull_expired_batch(&mut self, limit: usize) -> usize {
+         let to_remove: Vec<DestHash> = self
+             .entries
+@@ -212,21 +290,321 @@
+         for hash in &to_remove {
+             self.entries.remove(hash.as_bytes());
+             self.states.remove(hash.as_bytes());
++            self.promote_best_backup(hash, self.preference);
+         }
+         count
+     }
+ 
+-    /// Drop paths whose interface id is no longer active.
++    /// Drop slots whose interface id is no longer active, promoting alternates
++    /// on live interfaces where possible.
+     pub fn cull_dead_interfaces(
+         &mut self,
+         active_interfaces: &std::collections::HashSet<InterfaceId>,
+     ) -> usize {
+-        let before = self.entries.len();
+-        self.entries
+-            .retain(|_, entry| active_interfaces.contains(&entry.interface_id));
++        self.retain_backups(|entry| active_interfaces.contains(&entry.interface_id));
++        self.drop_active_where(|entry| !active_interfaces.contains(&entry.interface_id))
++    }
++
++    // ----- ranked multi-path slots -------------------------------------------
++
++    /// Every known slot for a destination, active first, then alternates in
++    /// rank order. Empty when the destination is unknown.
++    pub fn slots(&self, dest_hash: &[u8; 16]) -> Vec<&PathEntry> {
++        let mut slots = Vec::new();
++        if let Some(active) = self.entries.get(dest_hash) {
++            slots.push(active);
++        } else {
++            return slots;
++        }
++        if let Some(backups) = self.backups.get(dest_hash) {
++            slots.extend(backups.iter());
++        }
++        slots
++    }
++
++    /// Ranked alternates for a destination, best first.
++    pub fn backups(&self, dest_hash: &[u8; 16]) -> &[PathEntry] {
++        self.backups
++            .get(dest_hash)
++            .map(|backups| backups.as_slice())
++            .unwrap_or(&[])
++    }
++
++    /// Decide where a freshly heard announce belongs. Pure read — apply the
++    /// result with [`PathTable::upsert_ranked`].
++    ///
++    /// `preference` is the *effective* preference for this destination (a
++    /// per-destination pin already resolved against the global setting).
++    ///
++    /// Layering, outermost first:
++    /// 1. A suppressed interface is always rejected.
++    /// 2. A live path on the preferred medium is never displaced by the other
++    ///    medium, and a preferred-medium candidate always reclaims the active
++    ///    slot from the other medium.
++    /// 3. Within one medium rank, a strictly shorter route on a *different*
++    ///    interface or next hop wins — this is what lets a second TCP hub or an
++    ///    RF neighbour take over when it hears the same announce closer to the
++    ///    source.
++    /// 4. Otherwise the pre-multipath announce rules decide (newer announce
++    ///    timebase, unseen random blob, expired or unresponsive path), so equal
++    ///    hop counts still cannot flap the route.
++    pub fn rank_announced(
++        &self,
++        dest_hash: &[u8; 16],
++        candidate: &AnnouncedPath,
++        preference: PathMediumPreference,
++    ) -> PathRank {
++        if candidate.suppressed {
++            return PathRank::Reject;
++        }
++        let Some(active) = self.entries.get(dest_hash) else {
++            return PathRank::Activate;
++        };
++
++        let random_seen = active.has_random_blob(&candidate.random_blob);
++        let path_timebase = path_timebase_from_random_blobs(active.random_blobs.iter());
++        let timebase_allows = if candidate.hops <= active.hops {
++            !random_seen && candidate.emitted > path_timebase
++        } else if active.is_expired() || candidate.emitted > path_timebase {
++            !random_seen
++        } else if candidate.emitted == path_timebase {
++            self.get_state(dest_hash) == PathState::Unresponsive
++        } else {
++            false
++        };
++
++        let same_route = is_same_route(active, candidate.interface_id, candidate.next_hop);
++        let candidate_rank = medium_rank(candidate.medium, preference);
++        let active_rank = medium_rank(active.medium, preference);
++
++        let activate = if active.is_expired() {
++            // Nothing live to protect: prefer-if-possible means the other
++            // medium may take over until the preferred one is heard again.
++            timebase_allows
++        } else if candidate_rank < active_rank {
++            true
++        } else if candidate_rank > active_rank {
++            false
++        } else if !same_route && candidate.hops < active.hops {
++            true
++        } else {
++            timebase_allows
++        };
++
++        if activate {
++            PathRank::Activate
++        } else if same_route {
++            PathRank::Reject
++        } else {
++            PathRank::Backup
++        }
++    }
++
++    /// Apply a [`PathRank`] decision. Returns `true` when the destination's
++    /// active route changed — a fresh install, or a different interface /
++    /// next hop than before — so callers know when to re-probe or notify.
++    ///
++    /// `Activate` demotes the previous active into the alternate ring;
++    /// `Backup` refreshes the matching alternate slot or inserts a new one,
++    /// evicting the worst-ranked slot once `MAX_PATH_SLOTS` is reached.
++    pub fn upsert_ranked(
++        &mut self,
++        dest_hash: impl Into<DestHash>,
++        entry: PathEntry,
++        rank: PathRank,
++        preference: PathMediumPreference,
++    ) -> bool {
++        let hash: DestHash = dest_hash.into();
++        match rank {
++            PathRank::Reject => false,
++            PathRank::Activate => {
++                let interface_id = entry.interface_id;
++                let next_hop = entry.next_hop;
++                let previous = self.entries.insert(hash, entry);
++                self.states.remove(&hash);
++                self.drop_backup_slot(&hash, interface_id, next_hop);
++                let changed = match previous {
++                    Some(previous) => {
++                        let changed = !is_same_route(&previous, interface_id, next_hop);
++                        if changed {
++                            self.backups.entry(hash).or_default().push(previous);
++                        }
++                        changed
++                    }
++                    None => true,
++                };
++                self.resort_backups(&hash, preference);
++                changed
++            }
++            PathRank::Backup => {
++                if !self.entries.contains_key(hash.as_bytes()) {
++                    // No active route to back up — install directly so the
++                    // alternate ring never holds the only known path.
++                    self.states.remove(&hash);
++                    self.entries.insert(hash, entry);
++                    return true;
++                }
++                let backups = self.backups.entry(hash).or_default();
++                match backups
++                    .iter_mut()
++                    .find(|slot| is_same_route(slot, entry.interface_id, entry.next_hop))
++                {
++                    Some(slot) => *slot = entry,
++                    None => backups.push(entry),
++                }
++                self.resort_backups(&hash, preference);
++                false
++            }
++        }
++    }
++
++    /// Re-rank a destination's slots after a preference or pin change, without
++    /// waiting for a new announce. Returns `true` when the active route moved.
++    /// Ties keep the incumbent active so a preference write cannot flap a route.
++    pub fn rerank(&mut self, dest_hash: &[u8; 16], preference: PathMediumPreference) -> bool {
++        let hash: DestHash = (*dest_hash).into();
++        if !self.backups.contains_key(&hash) {
++            return false;
++        }
++        let Some(active) = self.entries.remove(&hash) else {
++            self.backups.remove(&hash);
++            return false;
++        };
++        let previous = (active.interface_id, active.next_hop);
++        let incumbent_rank = slot_rank_key(&active, preference);
++        let mut slots = vec![active];
++        slots.extend(self.backups.remove(&hash).unwrap_or_default());
++        sort_slots(&mut slots, preference);
++        if slot_rank_key(&slots[0], preference) >= incumbent_rank {
++            // Nothing strictly better — keep the incumbent to avoid a flap.
++            let position = slots
++                .iter()
++                .position(|entry| is_same_route(entry, previous.0, previous.1))
++                .unwrap_or(0);
++            let incumbent = slots.remove(position);
++            slots.insert(0, incumbent);
++        }
++        let best = slots.remove(0);
++        let changed = !is_same_route(&best, previous.0, previous.1);
++        if changed {
++            self.states.remove(&hash);
++        }
++        self.entries.insert(hash, best);
++        if !slots.is_empty() {
++            self.backups.insert(hash, slots);
++        }
++        self.resort_backups(&hash, preference);
++        changed
++    }
++
++    /// Drop every slot for a destination that goes through `interface_id` and
++    /// promote the best remaining live alternate. Called when a probe or link
++    /// attempt over the active interface fails, so the reroute happens before
++    /// rediscovery rather than after it.
++    ///
++    /// Returns `true` when the active slot was owned by `interface_id` — it is
++    /// now either a promoted alternate or absent.
++    pub fn suppress_interface(
++        &mut self,
++        dest_hash: &[u8; 16],
++        interface_id: InterfaceId,
++        preference: PathMediumPreference,
++    ) -> bool {
++        let hash: DestHash = (*dest_hash).into();
++        if let Some(backups) = self.backups.get_mut(&hash) {
++            backups.retain(|entry| entry.interface_id != interface_id);
++            if backups.is_empty() {
++                self.backups.remove(&hash);
++            }
++        }
++        let owns_active = self
++            .entries
++            .get(&hash)
++            .is_some_and(|entry| entry.interface_id == interface_id);
++        if !owns_active {
++            return false;
++        }
++        self.entries.remove(&hash);
++        self.states.remove(&hash);
++        self.promote_best_backup(&hash, preference);
++        true
++    }
++
++    /// Promote the best live alternate into an empty active slot. Returns
++    /// `true` when a route was promoted.
++    fn promote_best_backup(&mut self, hash: &DestHash, preference: PathMediumPreference) -> bool {
++        if self.entries.contains_key(hash.as_bytes()) {
++            return false;
++        }
++        let Some(mut backups) = self.backups.remove(hash) else {
++            return false;
++        };
++        backups.retain(|entry| !entry.is_expired());
++        sort_slots(&mut backups, preference);
++        if backups.is_empty() {
++            return false;
++        }
++        let promoted = backups.remove(0);
++        if !backups.is_empty() {
++            self.backups.insert(*hash, backups);
++        }
++        // A promoted route is not the one the old liveness reading described.
++        self.states.remove(hash);
++        self.entries.insert(*hash, promoted);
++        true
++    }
++
++    fn resort_backups(&mut self, hash: &DestHash, preference: PathMediumPreference) {
++        let Some(backups) = self.backups.get_mut(hash) else {
++            return;
++        };
++        sort_slots(backups, preference);
++        backups.truncate(MAX_PATH_SLOTS.saturating_sub(1));
++        if backups.is_empty() {
++            self.backups.remove(hash);
++        }
++    }
++
++    fn drop_backup_slot(
++        &mut self,
++        hash: &DestHash,
++        interface_id: InterfaceId,
++        next_hop: Option<[u8; 16]>,
++    ) {
++        let Some(backups) = self.backups.get_mut(hash) else {
++            return;
++        };
++        backups.retain(|entry| !is_same_route(entry, interface_id, next_hop));
++        if backups.is_empty() {
++            self.backups.remove(hash);
++        }
++    }
++
++    fn retain_backups(&mut self, keep: impl Fn(&PathEntry) -> bool) {
++        self.backups.retain(|_, backups| {
++            backups.retain(&keep);
++            !backups.is_empty()
++        });
++    }
++
++    /// Remove every active entry matching `drop`, promoting the best live
++    /// alternate for each. Returns the number of active entries removed.
++    fn drop_active_where(&mut self, drop: impl Fn(&PathEntry) -> bool) -> usize {
++        let hashes: Vec<DestHash> = self
++            .entries
++            .iter()
++            .filter(|(_, entry)| drop(entry))
++            .map(|(hash, _)| *hash)
++            .collect();
++        let preference = self.preference;
++        for hash in &hashes {
++            self.entries.remove(hash.as_bytes());
++            self.states.remove(hash.as_bytes());
++            self.promote_best_backup(hash, preference);
++        }
+         self.states
+             .retain(|hash, _| self.entries.contains_key(hash));
+-        before - self.entries.len()
++        hashes.len()
+     }
+ 
+     pub fn len(&self) -> usize {
+@@ -263,10 +641,153 @@
+     }
+ }
+ 
++/// Classify an interface mode into its transport medium.
++///
++/// RNodes and other radios are configured as access points (the RNode default)
++/// or roaming; every other mode is an IP-style network link.
++pub fn path_medium(mode: InterfaceMode) -> PathMedium {
++    match mode {
++        InterfaceMode::AccessPoint | InterfaceMode::Roaming => PathMedium::Rf,
++        _ => PathMedium::Network,
++    }
++}
++
++/// Resolve a per-destination pin against the global preference. A pin always
++/// wins; without one the global setting applies.
++pub fn effective_path_medium_preference(
++    global: PathMediumPreference,
++    pin: Option<PathMedium>,
++) -> PathMediumPreference {
++    match pin {
++        Some(PathMedium::Rf) => PathMediumPreference::Rf,
++        Some(PathMedium::Network) => PathMediumPreference::Network,
++        None => global,
++    }
++}
++
++/// 0 for the preferred medium, 1 for the other. `Lowest` ranks both at 0 so
++/// hop count alone decides.
++fn medium_rank(medium: PathMedium, preference: PathMediumPreference) -> u8 {
++    let preferred = match preference {
++        PathMediumPreference::Lowest => return 0,
++        PathMediumPreference::Network => PathMedium::Network,
++        PathMediumPreference::Rf => PathMedium::Rf,
++    };
++    u8::from(medium != preferred)
++}
++
++/// Two slots describe the same route when they share both the learning
++/// interface and the next hop; a hub reachable over two interfaces, or two
++/// relays on one interface, are distinct slots.
++fn is_same_route(entry: &PathEntry, interface_id: InterfaceId, next_hop: Option<[u8; 16]>) -> bool {
++    entry.interface_id == interface_id && entry.next_hop == next_hop
++}
++
++/// Routing quality of a slot: live before expired, preferred medium before the
++/// other, fewer hops before more. Deliberately excludes learn time so a
++/// re-rank cannot hand the active slot to an equally good route.
++fn slot_rank_key(entry: &PathEntry, preference: PathMediumPreference) -> (u8, u8, u8) {
++    (
++        u8::from(entry.is_expired()),
++        medium_rank(entry.medium, preference),
++        entry.hops,
++    )
++}
++
++/// Rank plus newest-learn-time, used to order the backup ring and to decide
++/// which slot is evicted once `MAX_PATH_SLOTS` is reached.
++fn slot_sort_key(entry: &PathEntry, preference: PathMediumPreference) -> (u8, u8, u8, f64) {
++    let (expired, medium, hops) = slot_rank_key(entry, preference);
++    (expired, medium, hops, -entry.timestamp)
++}
++
++/// Stable sort so equal-ranked slots keep their relative order — callers rely
++/// on that to avoid flapping the active route.
++fn sort_slots(slots: &mut [PathEntry], preference: PathMediumPreference) {
++    slots.sort_by(|a, b| {
++        slot_sort_key(a, preference)
++            .partial_cmp(&slot_sort_key(b, preference))
++            .unwrap_or(std::cmp::Ordering::Equal)
++    });
++}
++
++/// Announce emission timebase encoded in the trailing 5 bytes of an announce
++/// random blob. Used to order announces without trusting the hop count.
++pub fn announce_timebase(random_blob: &[u8; 10]) -> u64 {
++    let mut emitted = [0u8; 8];
++    emitted[3..].copy_from_slice(&random_blob[5..10]);
++    u64::from_be_bytes(emitted)
++}
++
++/// Newest announce timebase recorded on a path.
++pub fn path_timebase_from_random_blobs<'a>(
++    random_blobs: impl Iterator<Item = &'a [u8; 10]>,
++) -> u64 {
++    random_blobs.map(announce_timebase).max().unwrap_or(0)
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
++    /// Announce blob whose trailing bytes encode `emitted` — mirrors what the
++    /// wire carries so `announce_timebase` agrees with the test's intent.
++    fn blob_for(prefix: u8, emitted: u64) -> [u8; 10] {
++        let mut blob = [prefix; 10];
++        let emitted = emitted.to_be_bytes();
++        blob[5..].copy_from_slice(&emitted[3..8]);
++        blob
++    }
++
++    fn announced(
++        hops: u8,
++        interface_id: InterfaceId,
++        medium: PathMedium,
++        blob: [u8; 10],
++    ) -> AnnouncedPath {
++        AnnouncedPath {
++            interface_id,
++            next_hop: None,
++            hops,
++            medium,
++            random_blob: blob,
++            emitted: announce_timebase(&blob),
++            suppressed: false,
++        }
++    }
++
++    fn slot(hops: u8, interface_id: InterfaceId, medium: PathMedium, blob: [u8; 10]) -> PathEntry {
++        let mode = match medium {
++            PathMedium::Rf => InterfaceMode::AccessPoint,
++            PathMedium::Network => InterfaceMode::Gateway,
++        };
++        let mut entry = PathEntry::new(None, hops, interface_id, mode);
++        entry.add_random_blob(blob);
++        entry
++    }
++
++    /// Rank + apply in one step, the way the announce path does.
++    fn learn(
++        table: &mut PathTable,
++        dest: [u8; 16],
++        candidate: &AnnouncedPath,
++        preference: PathMediumPreference,
++    ) -> PathRank {
++        let rank = table.rank_announced(&dest, candidate, preference);
++        let entry = slot(
++            candidate.hops,
++            candidate.interface_id,
++            candidate.medium,
++            candidate.random_blob,
++        );
++        table.upsert_ranked(dest, entry, rank, preference);
++        rank
++    }
++
++    fn interface_ids(slots: &[PathEntry]) -> Vec<InterfaceId> {
++        slots.iter().map(|entry| entry.interface_id).collect()
++    }
++
+     #[test]
+     fn test_path_table_basic() {
+         let mut table = PathTable::new();
+@@ -392,6 +913,448 @@
+     }
+ 
+     #[test]
++    fn path_medium_maps_radio_modes_to_rf() {
++        assert_eq!(path_medium(InterfaceMode::AccessPoint), PathMedium::Rf);
++        assert_eq!(path_medium(InterfaceMode::Roaming), PathMedium::Rf);
++        for mode in [
++            InterfaceMode::Full,
++            InterfaceMode::Gateway,
++            InterfaceMode::Boundary,
++            InterfaceMode::PointToPoint,
++            InterfaceMode::Internal,
++        ] {
++            assert_eq!(path_medium(mode), PathMedium::Network, "{mode:?}");
++        }
++    }
++
++    #[test]
++    fn medium_and_preference_round_trip_their_wire_spelling() {
++        for medium in [PathMedium::Rf, PathMedium::Network] {
++            assert_eq!(PathMedium::from_str_opt(medium.as_str()), Some(medium));
++        }
++        for preference in [
++            PathMediumPreference::Lowest,
++            PathMediumPreference::Network,
++            PathMediumPreference::Rf,
++        ] {
++            assert_eq!(
++                PathMediumPreference::from_str_opt(preference.as_str()),
++                Some(preference)
++            );
++        }
++        assert_eq!(PathMedium::from_str_opt(" RF "), Some(PathMedium::Rf));
++        assert_eq!(PathMedium::from_str_opt("lora"), None);
++        assert_eq!(PathMediumPreference::from_str_opt("fastest"), None);
++    }
++
++    #[test]
++    fn effective_preference_prefers_the_pin() {
++        assert_eq!(
++            effective_path_medium_preference(PathMediumPreference::Lowest, Some(PathMedium::Rf)),
++            PathMediumPreference::Rf
++        );
++        assert_eq!(
++            effective_path_medium_preference(PathMediumPreference::Rf, Some(PathMedium::Network)),
++            PathMediumPreference::Network
++        );
++        assert_eq!(
++            effective_path_medium_preference(PathMediumPreference::Network, None),
++            PathMediumPreference::Network
++        );
++    }
++
++    /// The multi-TCP case: the same announce heard closer to the source on a
++    /// second interface takes over, and the longer route is kept as a backup.
++    #[test]
++    fn same_blob_with_fewer_hops_on_another_interface_takes_active_slot() {
++        let mut table = PathTable::new();
++        let dest = [0xA0; 16];
++        let blob = blob_for(0x11, 100);
++        table.insert(dest, slot(4, 1, PathMedium::Network, blob));
++
++        let candidate = announced(2, 2, PathMedium::Network, blob);
++        assert_eq!(
++            learn(&mut table, dest, &candidate, PathMediumPreference::Lowest),
++            PathRank::Activate
++        );
++
++        assert_eq!(table.get(&dest).unwrap().interface_id, 2);
++        assert_eq!(table.hops_to(&dest), Some(2));
++        assert_eq!(interface_ids(table.backups(&dest)), vec![1]);
++        assert_eq!(table.slots(&dest).len(), 2);
++    }
++
++    #[test]
++    fn same_blob_with_more_hops_on_another_interface_is_backup_only() {
++        let mut table = PathTable::new();
++        let dest = [0xA1; 16];
++        let blob = blob_for(0x22, 100);
++        table.insert(dest, slot(2, 1, PathMedium::Network, blob));
++
++        let candidate = announced(5, 2, PathMedium::Network, blob);
++        assert_eq!(
++            learn(&mut table, dest, &candidate, PathMediumPreference::Lowest),
++            PathRank::Backup
++        );
++
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert_eq!(interface_ids(table.backups(&dest)), vec![2]);
++    }
++
++    /// Equal hop counts must not flap the route, even across interfaces.
++    #[test]
++    fn equal_hops_on_another_interface_does_not_flap_the_active_slot() {
++        let mut table = PathTable::new();
++        let dest = [0xA2; 16];
++        let blob = blob_for(0x33, 100);
++        table.insert(dest, slot(3, 1, PathMedium::Network, blob));
++
++        let same_blob = announced(3, 2, PathMedium::Network, blob);
++        assert_eq!(
++            learn(&mut table, dest, &same_blob, PathMediumPreference::Lowest),
++            PathRank::Backup
++        );
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++
++        // An *older* announce at the same hop count is equally powerless.
++        let older_blob = announced(3, 3, PathMedium::Network, blob_for(0x44, 99));
++        assert_eq!(
++            learn(&mut table, dest, &older_blob, PathMediumPreference::Lowest),
++            PathRank::Backup
++        );
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert_eq!(table.hops_to(&dest), Some(3));
++    }
++
++    #[test]
++    fn a_fourth_route_evicts_the_worst_ranked_slot() {
++        let mut table = PathTable::new();
++        let dest = [0xA3; 16];
++        let blob = blob_for(0x55, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        for (hops, interface_id) in [(2u8, 2u64), (5, 3)] {
++            let candidate = announced(hops, interface_id, PathMedium::Network, blob);
++            learn(&mut table, dest, &candidate, PathMediumPreference::Lowest);
++        }
++        assert_eq!(interface_ids(table.backups(&dest)), vec![2, 3]);
++        assert_eq!(table.slots(&dest).len(), MAX_PATH_SLOTS);
++
++        let fourth = announced(3, 4, PathMedium::Network, blob);
++        learn(&mut table, dest, &fourth, PathMediumPreference::Lowest);
++
++        assert_eq!(table.slots(&dest).len(), MAX_PATH_SLOTS);
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert_eq!(
++            interface_ids(table.backups(&dest)),
++            vec![2, 4],
++            "the 5-hop route should be the one evicted"
++        );
++    }
++
++    #[test]
++    fn suppressing_the_active_interface_promotes_a_backup() {
++        let mut table = PathTable::new();
++        let dest = [0xA4; 16];
++        let blob = blob_for(0x66, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let candidate = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &candidate, PathMediumPreference::Lowest);
++        table.set_state(dest, PathState::Responsive);
++
++        assert!(table.suppress_interface(&dest, 1, PathMediumPreference::Lowest));
++
++        let active = table.get(&dest).expect("backup should have been promoted");
++        assert_eq!(active.interface_id, 2);
++        assert_eq!(active.hops, 4);
++        assert!(table.backups(&dest).is_empty());
++        assert_eq!(
++            table.get_state(&dest),
++            PathState::Unknown,
++            "a promoted route must be re-probed"
++        );
++    }
++
++    #[test]
++    fn suppressing_the_only_interface_leaves_the_destination_unrouted() {
++        let mut table = PathTable::new();
++        let dest = [0xA5; 16];
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob_for(0x77, 100)));
++
++        assert!(table.suppress_interface(&dest, 1, PathMediumPreference::Lowest));
++        assert!(!table.has_path(&dest));
++
++        assert!(
++            !table.suppress_interface(&dest, 1, PathMediumPreference::Lowest),
++            "an unknown destination cannot be rerouted"
++        );
++    }
++
++    #[test]
++    fn suppressing_a_backup_interface_leaves_the_active_route_alone() {
++        let mut table = PathTable::new();
++        let dest = [0xA6; 16];
++        let blob = blob_for(0x88, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let candidate = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &candidate, PathMediumPreference::Lowest);
++
++        assert!(!table.suppress_interface(&dest, 2, PathMediumPreference::Lowest));
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert!(table.backups(&dest).is_empty());
++    }
++
++    #[test]
++    fn network_preference_keeps_a_shorter_rf_route_in_the_backups() {
++        let mut table = PathTable::new();
++        let dest = [0xA7; 16];
++        let blob = blob_for(0x99, 100);
++        table.insert(dest, slot(4, 1, PathMedium::Network, blob));
++
++        let rf = announced(1, 2, PathMedium::Rf, blob);
++        assert_eq!(
++            learn(&mut table, dest, &rf, PathMediumPreference::Network),
++            PathRank::Backup
++        );
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert_eq!(interface_ids(table.backups(&dest)), vec![2]);
++
++        // Without a medium preference the same announce would have won.
++        let mut lowest = PathTable::new();
++        lowest.insert(dest, slot(4, 1, PathMedium::Network, blob));
++        assert_eq!(
++            learn(&mut lowest, dest, &rf, PathMediumPreference::Lowest),
++            PathRank::Activate
++        );
++        assert_eq!(lowest.get(&dest).unwrap().interface_id, 2);
++    }
++
++    #[test]
++    fn rf_preference_reclaims_the_active_slot_from_a_shorter_network_route() {
++        let mut table = PathTable::new();
++        let dest = [0xA8; 16];
++        let blob = blob_for(0xAA, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++
++        let rf = announced(6, 2, PathMedium::Rf, blob);
++        assert_eq!(
++            learn(&mut table, dest, &rf, PathMediumPreference::Rf),
++            PathRank::Activate
++        );
++        assert_eq!(table.get(&dest).unwrap().medium, PathMedium::Rf);
++        assert_eq!(interface_ids(table.backups(&dest)), vec![1]);
++    }
++
++    /// Prefer-if-possible: an RF pin with no live RF slot falls back to the
++    /// network route, and the RF route reclaims the slot when heard again.
++    #[test]
++    fn rf_preference_falls_back_to_network_and_reclaims_later() {
++        let mut table = PathTable::new();
++        let dest = [0xA9; 16];
++        let blob = blob_for(0xBB, 100);
++        table.insert(dest, slot(6, 1, PathMedium::Rf, blob));
++        let network = announced(2, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &network, PathMediumPreference::Rf);
++        assert_eq!(table.get(&dest).unwrap().medium, PathMedium::Rf);
++
++        assert!(table.suppress_interface(&dest, 1, PathMediumPreference::Rf));
++        assert_eq!(
++            table.get(&dest).unwrap().medium,
++            PathMedium::Network,
++            "with no RF slot left the network route must carry traffic"
++        );
++
++        let rf_again = announced(6, 3, PathMedium::Rf, blob_for(0xCC, 101));
++        assert_eq!(
++            learn(&mut table, dest, &rf_again, PathMediumPreference::Rf),
++            PathRank::Activate
++        );
++        assert_eq!(table.get(&dest).unwrap().medium, PathMedium::Rf);
++        assert_eq!(interface_ids(table.backups(&dest)), vec![2]);
++    }
++
++    #[test]
++    fn preference_change_reranks_without_a_new_announce() {
++        let mut table = PathTable::new();
++        let dest = [0xB0; 16];
++        let blob = blob_for(0xDD, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Rf, blob));
++        let network = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &network, PathMediumPreference::Lowest);
++        assert_eq!(table.get(&dest).unwrap().medium, PathMedium::Rf);
++
++        table.set_preference(PathMediumPreference::Network);
++        assert!(table.rerank(&dest, PathMediumPreference::Network));
++        assert_eq!(table.get(&dest).unwrap().medium, PathMedium::Network);
++        assert_eq!(interface_ids(table.backups(&dest)), vec![1]);
++
++        // Re-running the same rerank is a no-op — no flap on repeated writes.
++        assert!(!table.rerank(&dest, PathMediumPreference::Network));
++        assert_eq!(table.get(&dest).unwrap().medium, PathMedium::Network);
++    }
++
++    #[test]
++    fn rerank_keeps_the_incumbent_on_ties() {
++        let mut table = PathTable::new();
++        let dest = [0xB1; 16];
++        let blob = blob_for(0xEE, 100);
++        table.insert(dest, slot(3, 1, PathMedium::Network, blob));
++        let peer = announced(3, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++
++        assert!(!table.rerank(&dest, PathMediumPreference::Lowest));
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++    }
++
++    #[test]
++    fn suppressed_interfaces_are_rejected_outright() {
++        let mut table = PathTable::new();
++        let dest = [0xB2; 16];
++        let blob = blob_for(0x0F, 100);
++        table.insert(dest, slot(4, 1, PathMedium::Network, blob));
++
++        let mut candidate = announced(1, 2, PathMedium::Network, blob);
++        candidate.suppressed = true;
++        assert_eq!(
++            table.rank_announced(&dest, &candidate, PathMediumPreference::Lowest),
++            PathRank::Reject
++        );
++        assert_eq!(
++            learn(&mut table, dest, &candidate, PathMediumPreference::Lowest),
++            PathRank::Reject
++        );
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert!(table.backups(&dest).is_empty());
++    }
++
++    #[test]
++    fn drop_all_via_clears_backups_and_promotes() {
++        let mut table = PathTable::new();
++        let dest = [0xB3; 16];
++        let blob = blob_for(0x1F, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let peer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++
++        assert_eq!(
++            table.drop_all_via(2),
++            0,
++            "no active path went through iface 2"
++        );
++        assert!(table.backups(&dest).is_empty());
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++
++        let peer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++        assert_eq!(table.drop_all_via(1), 1);
++        assert_eq!(
++            table.get(&dest).unwrap().interface_id,
++            2,
++            "the surviving backup should carry the destination"
++        );
++        assert!(table.backups(&dest).is_empty());
++    }
++
++    #[test]
++    fn cull_expired_promotes_a_live_backup() {
++        let mut table = PathTable::new();
++        let dest = [0xB4; 16];
++        let blob = blob_for(0x2F, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let peer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++        table.get_mut(&dest).unwrap().expires = now_f64() - 1.0;
++
++        assert_eq!(table.cull_expired(), 1);
++        assert_eq!(table.get(&dest).unwrap().interface_id, 2);
++        assert!(table.has_path(&dest));
++    }
++
++    #[test]
++    fn cull_expired_drops_expired_backups_before_promoting() {
++        let mut table = PathTable::new();
++        let dest = [0xB5; 16];
++        let blob = blob_for(0x3F, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let peer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++        table.get_mut(&dest).unwrap().expires = now_f64() - 1.0;
++        table.backups.get_mut(&DestHash::from(dest)).unwrap()[0].expires = now_f64() - 1.0;
++
++        assert_eq!(table.cull_expired(), 1);
++        assert!(!table.has_path(&dest));
++        assert!(table.slots(&dest).is_empty());
++    }
++
++    #[test]
++    fn expire_drops_every_slot_for_the_destination() {
++        let mut table = PathTable::new();
++        let dest = [0xB6; 16];
++        let blob = blob_for(0x4F, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let peer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++
++        assert!(table.expire(&dest));
++        assert!(!table.has_path(&dest));
++        assert!(table.slots(&dest).is_empty());
++    }
++
++    #[test]
++    fn remove_and_insert_keep_the_backup_ring_consistent() {
++        let mut table = PathTable::new();
++        let dest = [0xB7; 16];
++        let blob = blob_for(0x5F, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let peer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++
++        // Re-installing the backup's route as active must not leave a duplicate.
++        table.insert(dest, slot(4, 2, PathMedium::Network, blob));
++        assert!(table.backups(&dest).is_empty());
++        assert_eq!(table.slots(&dest).len(), 1);
++
++        let peer = announced(6, 3, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++        assert_eq!(table.slots(&dest).len(), 2);
++        table.remove(&dest);
++        assert!(table.slots(&dest).is_empty());
++    }
++
++    #[test]
++    fn backup_upsert_without_an_active_route_installs_directly() {
++        let mut table = PathTable::new();
++        let dest = [0xB8; 16];
++        let entry = slot(3, 1, PathMedium::Network, blob_for(0x6F, 100));
++
++        assert!(table.upsert_ranked(dest, entry, PathRank::Backup, PathMediumPreference::Lowest));
++        assert_eq!(table.get(&dest).unwrap().interface_id, 1);
++        assert!(table.backups(&dest).is_empty());
++    }
++
++    #[test]
++    fn refreshing_a_backup_route_replaces_its_slot() {
++        let mut table = PathTable::new();
++        let dest = [0xB9; 16];
++        let blob = blob_for(0x7F, 100);
++        table.insert(dest, slot(1, 1, PathMedium::Network, blob));
++        let peer = announced(6, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &peer, PathMediumPreference::Lowest);
++        assert_eq!(table.backups(&dest)[0].hops, 6);
++
++        let closer = announced(4, 2, PathMedium::Network, blob);
++        learn(&mut table, dest, &closer, PathMediumPreference::Lowest);
++        assert_eq!(interface_ids(table.backups(&dest)), vec![2]);
++        assert_eq!(table.backups(&dest)[0].hops, 4);
++    }
++
++    #[test]
++    fn unknown_destination_has_no_slots() {
++        let table = PathTable::new();
++        assert!(table.slots(&[0xFF; 16]).is_empty());
++        assert!(table.backups(&[0xFF; 16]).is_empty());
++    }
++
++    #[test]
+     fn test_cull_dead_interfaces() {
+         let mut table = PathTable::new();
+         let mut active = std::collections::HashSet::new();
+--- a/crates/rns-transport/src/messages.rs
++++ b/crates/rns-transport/src/messages.rs
+@@ -664,7 +664,24 @@
+     SuppressCurrentPathInterface {
+         dest: [u8; 16],
+         duration: f64,
++    },
++    /// Set the global medium preference for the active path slot and re-rank
++    /// known destinations. Response: `IntResult(destinations_rerouted)`.
++    SetPathMediumPreference {
++        preference: crate::constants::PathMediumPreference,
++    },
++    /// Pin `dest` to a medium (or clear the pin with `None`), overriding the
++    /// global preference for that destination.
++    /// Response: `BoolResult(active_route_moved)`.
++    SetPeerMediumPin {
++        dest: [u8; 16],
++        pin: Option<crate::constants::PathMedium>,
+     },
++    /// Ranked path slots for `dest` — the active route plus up to
++    /// `MAX_PATH_SLOTS - 1` alternates. Response: `PathSlots`.
++    GetPathSlots {
++        dest: [u8; 16],
++    },
+     DropAnnounceQueues,
+     GetBlackholedIdentities,
+     BlackholeIdentity {
+@@ -780,6 +797,7 @@
+ #[derive(Debug)]
+ pub enum TransportQueryResponse {
+     PathTable(Vec<PathTableRpcEntry>),
++    PathSlots(PathSlotsRpcEntry),
+     InterfaceStats(Vec<InterfaceStatRpcEntry>),
+     RateTable(Vec<RateTableRpcEntry>),
+     Announces(Vec<AnnounceRpcEntry>),
+@@ -813,9 +831,35 @@
+     pub interface_id: InterfaceId,
+     pub interface_mode: InterfaceMode,
+     pub interface_role: InterfaceRole,
++}
++
++/// Ranked path slots for one destination, active first.
++#[derive(Debug, Clone)]
++pub struct PathSlotsRpcEntry {
++    pub dest: [u8; 16],
++    /// Preference actually applied to this destination (pin resolved against
++    /// the global setting).
++    pub preference: crate::constants::PathMediumPreference,
++    /// Per-destination pin, when one is set.
++    pub pin: Option<crate::constants::PathMedium>,
++    pub slots: Vec<PathSlotRpcEntry>,
+ }
+ 
+ #[derive(Debug, Clone)]
++pub struct PathSlotRpcEntry {
++    /// True for the route currently used for outbound traffic.
++    pub active: bool,
++    pub hops: u8,
++    pub via: Option<[u8; 16]>,
++    pub interface_id: InterfaceId,
++    pub interface: String,
++    pub medium: crate::constants::PathMedium,
++    pub timestamp: f64,
++    pub expires: f64,
++    pub expired: bool,
++}
++
++#[derive(Debug, Clone)]
+ pub struct InterfaceStatRpcEntry {
+     pub id: InterfaceId,
+     pub name: String,
+--- a/crates/rns-transport/src/actor/inbound.rs
++++ b/crates/rns-transport/src/actor/inbound.rs
+@@ -375,25 +375,52 @@
+             .unwrap_or_default();
+         let suppressed =
+             self.is_path_interface_suppressed(header.destination_hash, interface_id, now_f64());
+-        let should_add = if suppressed {
+-            false
+-        } else if let Some(existing) = self.path_table.get(&header.destination_hash) {
+-            let random_seen = existing.has_random_blob(&announce_random_hash);
+-            let path_timebase = path_timebase_from_random_blobs(existing.random_blobs.iter());
+-            if header.hops <= existing.hops {
+-                !random_seen && announce_emitted > path_timebase
+-            } else if existing.is_expired() || announce_emitted > path_timebase {
+-                !random_seen
+-            } else if announce_emitted == path_timebase {
+-                self.path_table.get_state(&header.destination_hash)
+-                    == crate::constants::PathState::Unresponsive
+-            } else {
+-                false
+-            }
+-        } else {
+-            true
++        let candidate = crate::path_table::AnnouncedPath {
++            interface_id,
++            next_hop: header.transport_id,
++            hops: header.hops,
++            medium: crate::path_table::path_medium(iface_mode),
++            random_blob: announce_random_hash,
++            emitted: announce_emitted,
++            suppressed,
+         };
++        let preference = self.effective_path_medium_preference(&header.destination_hash);
++        let rank = self
++            .path_table
++            .rank_announced(&header.destination_hash, &candidate, preference);
++        if rank == crate::path_table::PathRank::Reject {
++            debug!(
++                dest = hex::encode(header.destination_hash),
++                hops = header.hops,
++                announce_emitted,
++                interface_id,
++                suppressed,
++                "ignoring replayed or stale announce"
++            );
++            return;
++        }
++        let should_add = rank == crate::path_table::PathRank::Activate;
+ 
++        // For Header2 announces via a transport node, next_hop is the relay's
++        // hash from transport_id; for Header1 announces the destination is
++        // directly reachable and next_hop stays None.
++        let mut entry = crate::path_table::PathEntry::new(
++            header.transport_id,
++            header.hops,
++            interface_id,
++            iface_mode,
++        );
++        if !random_blobs.contains(&announce_random_hash) {
++            if random_blobs.len() >= MAX_RANDOM_BLOBS {
++                random_blobs.pop_front();
++            }
++            random_blobs.push_back(announce_random_hash);
++        }
++        entry.random_blobs = random_blobs;
++        // Store the announce packet hash so a later CacheRequest for this
++        // destination can replay the exact announce bytes.
++        entry.packet_hash = Some(rns_wire::hash::packet_hash(raw, header.flags.header_type));
++
+         if should_add {
+             // Announce-table update MUST precede path-table update — the dedup
+             // check above compares against our own queued copy. Non-transport
+@@ -434,26 +461,6 @@
+                     .insert(header.destination_hash, announce_entry);
+             }
+ 
+-            // For Header2 announces via a transport node, next_hop is the relay's
+-            // hash from transport_id; for Header1 announces the destination is
+-            // directly reachable and next_hop stays None.
+-            let mut entry = crate::path_table::PathEntry::new(
+-                header.transport_id,
+-                header.hops,
+-                interface_id,
+-                iface_mode,
+-            );
+-            if !random_blobs.contains(&announce_random_hash) {
+-                if random_blobs.len() >= MAX_RANDOM_BLOBS {
+-                    random_blobs.pop_front();
+-                }
+-                random_blobs.push_back(announce_random_hash);
+-            }
+-            entry.random_blobs = random_blobs;
+-            // Store the announce packet hash so a later CacheRequest for this
+-            // destination can replay the exact announce bytes.
+-            let announce_packet_hash = rns_wire::hash::packet_hash(raw, header.flags.header_type);
+-            entry.packet_hash = Some(announce_packet_hash);
+             let tunnel_path = crate::tunnel::TunnelPath {
+                 timestamp: entry.timestamp,
+                 next_hop: entry.next_hop,
+@@ -462,7 +469,12 @@
+                 random_blobs: entry.random_blobs.iter().copied().collect(),
+                 packet_hash: entry.packet_hash,
+             };
+-            self.path_table.insert(header.destination_hash, entry);
++            self.path_table.upsert_ranked(
++                header.destination_hash,
++                entry,
++                crate::path_table::PathRank::Activate,
++                preference,
++            );
+             if let Some(tunnel) = self.tunnel_table.get_mut_by_interface(interface_id) {
+                 tunnel
+                     .tunnel_paths
+@@ -494,13 +506,24 @@
+                 "path learned from announce"
+             );
+         } else {
++            // A route that loses the active slot can still be worth keeping:
++            // parking it in a backup slot lets a later probe or link failure
++            // reroute without a fresh announce. Everything else about the
++            // announce is still ignored — no rebroadcast, no handler dispatch,
++            // no announce-cache refresh — so replays stay inert.
++            let stored_hops = entry.hops;
++            self.path_table.upsert_ranked(
++                header.destination_hash,
++                entry,
++                crate::path_table::PathRank::Backup,
++                preference,
++            );
++            self.state_dirty = true;
+             debug!(
+                 dest = hex::encode(header.destination_hash),
+-                hops = header.hops,
+-                announce_emitted,
++                hops = stored_hops,
+                 interface_id,
+-                suppressed,
+-                "ignoring replayed or stale announce"
++                "alternate path stored in backup slot"
+             );
+             return;
+         }
+--- a/crates/rns-transport/src/actor/mod.rs
++++ b/crates/rns-transport/src/actor/mod.rs
+@@ -19,6 +19,7 @@
+     InterfaceEntry, InterfaceId, InterfaceRole, TransportMessage, msg_variant_name,
+ };
+ use crate::path_table::PathTable;
++pub(crate) use crate::path_table::{announce_timebase, path_timebase_from_random_blobs};
+ use crate::rate_limit::RateTable;
+ use crate::reverse_table::ReverseTable;
+ use crate::traffic::TrafficCounter;
+@@ -81,6 +82,11 @@
+     /// Used when a Direct LinkRequest timed out on one route, so the next
+     /// path request can discover alternates instead of instantly reusing it.
+     pub path_interface_suppressions: HashMap<([u8; 16], InterfaceId), f64>,
++    /// Global medium preference for the active path slot.
++    pub path_medium_preference: PathMediumPreference,
++    /// Per-destination medium pins overriding `path_medium_preference`. Only
++    /// pinned destinations appear here; clearing a pin removes the entry.
++    pub peer_medium_pins: HashMap<[u8; 16], PathMedium>,
+     last_discovery_pr_tx: f64,
+     /// External interface waiting for a path response from a local shared client.
+     /// Python calls this `pending_local_path_requests`.
+@@ -315,6 +321,8 @@
+             discovery_pr_tags: HashMap::new(),
+             pending_discovery_prs: VecDeque::new(),
+             path_interface_suppressions: HashMap::new(),
++            path_medium_preference: PathMediumPreference::default(),
++            peer_medium_pins: HashMap::new(),
+             last_discovery_pr_tx: 0.0,
+             pending_local_path_requests: HashMap::new(),
+             path_states: HashMap::new(),
+@@ -1237,13 +1245,90 @@
+         let until = now_f64() + duration;
+         self.path_interface_suppressions
+             .insert((dest, interface_id), until);
++        // Reroute onto the best remaining slot now: rediscovery would otherwise
++        // run with the failed route still installed.
++        let preference = self.effective_path_medium_preference(&dest);
++        let rerouted = self
++            .path_table
++            .suppress_interface(&dest, interface_id, preference);
++        if rerouted {
++            self.state_dirty = true;
++        }
+         debug!(
+             dest = %hex::encode(dest),
+             interface_id,
+             duration,
++            rerouted,
+             "temporarily suppressing path interface"
+         );
+         true
++    }
++
++    /// Preference in force for a destination: its pin if any, else the global
++    /// setting.
++    pub(super) fn effective_path_medium_preference(&self, dest: &[u8; 16]) -> PathMediumPreference {
++        crate::path_table::effective_path_medium_preference(
++            self.path_medium_preference,
++            self.peer_medium_pins.get(dest).copied(),
++        )
++    }
++
++    /// Set the global medium preference and re-rank every known destination so
++    /// the change applies without waiting for fresh announces. Returns the
++    /// number of destinations whose active route moved.
++    pub(super) fn set_path_medium_preference(&mut self, preference: PathMediumPreference) -> usize {
++        self.path_medium_preference = preference;
++        self.path_table.set_preference(preference);
++        let moved = self.rerank_all_paths();
++        debug!(
++            preference = ?preference,
++            moved, "path medium preference updated"
++        );
++        moved
++    }
++
++    /// Pin or unpin a destination to a medium. Returns `true` when the pin
++    /// changed the destination's active route.
++    pub(super) fn set_peer_medium_pin(&mut self, dest: [u8; 16], pin: Option<PathMedium>) -> bool {
++        match pin {
++            Some(medium) => {
++                self.peer_medium_pins.insert(dest, medium);
++            }
++            None => {
++                self.peer_medium_pins.remove(&dest);
++            }
++        }
++        let preference = self.effective_path_medium_preference(&dest);
++        let moved = self.path_table.rerank(&dest, preference);
++        if moved {
++            self.state_dirty = true;
++        }
++        debug!(
++            dest = %hex::encode(dest),
++            pin = ?pin,
++            moved,
++            "peer medium pin updated"
++        );
++        moved
++    }
++
++    fn rerank_all_paths(&mut self) -> usize {
++        let dests: Vec<[u8; 16]> = self
++            .path_table
++            .iter()
++            .map(|(hash, _)| hash.into_bytes())
++            .collect();
++        let mut moved = 0usize;
++        for dest in dests {
++            let preference = self.effective_path_medium_preference(&dest);
++            if self.path_table.rerank(&dest, preference) {
++                moved += 1;
++            }
++        }
++        if moved > 0 {
++            self.state_dirty = true;
++        }
++        moved
+     }
+ 
+     fn is_path_interface_suppressed(
+@@ -1697,16 +1782,6 @@
+         .as_ref()
+         .map(|online| !online.load(std::sync::atomic::Ordering::SeqCst))
+         .unwrap_or(false)
+-}
+-
+-fn announce_timebase(random_blob: &[u8; 10]) -> u64 {
+-    let mut emitted = [0u8; 8];
+-    emitted[3..].copy_from_slice(&random_blob[5..10]);
+-    u64::from_be_bytes(emitted)
+-}
+-
+-fn path_timebase_from_random_blobs<'a>(random_blobs: impl Iterator<Item = &'a [u8; 10]>) -> u64 {
+-    random_blobs.map(announce_timebase).max().unwrap_or(0)
+ }
+ 
+ /// Random jitter in `[0, PATHFINDER_RW)` for announce rebroadcast timing.
+@@ -2011,6 +2086,14 @@
+         (entry, rx)
+     }
+ 
++    /// Radio interfaces run in access-point mode, so paths learned here rank as
++    /// [`PathMedium::Rf`].
++    fn make_rf_test_interface(name: &str) -> (InterfaceEntry, mpsc::Receiver<Bytes>) {
++        let (mut entry, rx) = make_test_interface(name);
++        entry.mode = InterfaceMode::AccessPoint;
++        (entry, rx)
++    }
++
+     #[test]
+     fn test_actor_creation() {
+         let (actor, _tx) = TransportActor::new();
+@@ -4242,6 +4325,9 @@
+         assert!(actor.state_dirty);
+     }
+ 
++    /// A replay of the same announce on another interface that is *no closer*
++    /// to the source keeps its hands off the active route — it only earns a
++    /// backup slot, and none of the announce-driven side effects fire.
+     #[test]
+     fn test_replayed_announce_random_blob_does_not_replace_path() {
+         let (mut actor, _tx) = TransportActor::new();
+@@ -4254,9 +4340,9 @@
+         let identity = rns_identity::identity::Identity::new();
+         let blob = random_blob(0xA1, 100);
+         let (raw_first, dest_hash) =
+-            make_announce_for_with_random_blob(&identity, "test.replay.same", 3, blob);
+-        let (raw_replay, _) =
+             make_announce_for_with_random_blob(&identity, "test.replay.same", 1, blob);
++        let (raw_replay, _) =
++            make_announce_for_with_random_blob(&identity, "test.replay.same", 3, blob);
+         let (htx, mut hrx) = mpsc::channel(8);
+         actor.announce_handlers.push(AnnounceHandlerRegistration {
+             id: crate::messages::AnnounceHandlerId(0),
+@@ -4274,7 +4360,7 @@
+             q: None,
+         });
+         let first_event = hrx.try_recv().expect("fresh announce should dispatch");
+-        assert_eq!(first_event.hops, 4);
++        assert_eq!(first_event.hops, 2);
+ 
+         actor.on_inbound(InboundPacket {
+             raw: raw_replay,
+@@ -4285,13 +4371,19 @@
+         });
+ 
+         let path = actor.path_table.get(&dest_hash).unwrap();
+-        assert_eq!(path.hops, 4);
++        assert_eq!(path.hops, 2);
+         assert_eq!(path.interface_id, 1);
+         assert_eq!(path.random_blobs.len(), 1);
+         assert!(path.has_random_blob(&blob));
+         assert_eq!(
++            actor.path_table.backups(&dest_hash).len(),
++            1,
++            "the longer route is still worth keeping as an alternate"
++        );
++        assert_eq!(actor.path_table.backups(&dest_hash)[0].interface_id, 2);
++        assert_eq!(
+             actor.recent_announces.get(&dest_hash).unwrap().hops,
+-            4,
++            2,
+             "replayed announces must not refresh recent announce state"
+         );
+         assert!(
+@@ -4309,7 +4401,335 @@
+         );
+     }
+ 
++    /// Same announce, fewer hops, second interface: the shorter route wins even
++    /// though the random blob was already seen. This is the multi-TCP / RF+TCP
++    /// case that the pre-multipath replay guard used to block.
+     #[test]
++    fn replayed_announce_with_fewer_hops_takes_over_and_demotes_the_old_route() {
++        let (mut actor, _tx) = TransportActor::new();
++        actor.is_transport_enabled = true;
++        let (entry1, _rx1) = make_test_interface("iface1");
++        let (entry2, _rx2) = make_test_interface("iface2");
++        actor.interfaces.insert(1, entry1);
++        actor.interfaces.insert(2, entry2);
++
++        let identity = rns_identity::identity::Identity::new();
++        let blob = random_blob(0xA5, 100);
++        let (raw_far, dest_hash) =
++            make_announce_for_with_random_blob(&identity, "test.replay.closer", 3, blob);
++        let (raw_close, _) =
++            make_announce_for_with_random_blob(&identity, "test.replay.closer", 1, blob);
++
++        actor.on_inbound(InboundPacket {
++            raw: raw_far,
++            interface_id: 1,
++            rssi: None,
++            snr: None,
++            q: None,
++        });
++        actor.on_inbound(InboundPacket {
++            raw: raw_close,
++            interface_id: 2,
++            rssi: None,
++            snr: None,
++            q: None,
++        });
++
++        let path = actor.path_table.get(&dest_hash).unwrap();
++        assert_eq!(path.hops, 2);
++        assert_eq!(path.interface_id, 2);
++        let backups = actor.path_table.backups(&dest_hash);
++        assert_eq!(backups.len(), 1);
++        assert_eq!(backups[0].interface_id, 1);
++        assert_eq!(backups[0].hops, 4);
++    }
++
++    /// A failed probe or link attempt reroutes onto the backup immediately —
++    /// no path request, no fresh announce.
++    #[test]
++    fn suppressing_the_current_path_interface_promotes_the_backup_route() {
++        let (mut actor, _tx) = TransportActor::new();
++        actor.is_transport_enabled = true;
++        let (entry1, _rx1) = make_test_interface("iface1");
++        let (entry2, _rx2) = make_test_interface("iface2");
++        actor.interfaces.insert(1, entry1);
++        actor.interfaces.insert(2, entry2);
++
++        let identity = rns_identity::identity::Identity::new();
++        let blob = random_blob(0xA6, 100);
++        let (raw_close, dest_hash) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.failover", 1, blob);
++        let (raw_far, _) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.failover", 4, blob);
++        for (raw, interface_id) in [(raw_close, 1u64), (raw_far, 2)] {
++            actor.on_inbound(InboundPacket {
++                raw,
++                interface_id,
++                rssi: None,
++                snr: None,
++                q: None,
++            });
++        }
++        assert_eq!(actor.path_table.get(&dest_hash).unwrap().interface_id, 1);
++        assert_eq!(actor.path_table.backups(&dest_hash).len(), 1);
++
++        match actor.handle_query(TransportQuery::SuppressCurrentPathInterface {
++            dest: dest_hash,
++            duration: 30.0,
++        }) {
++            TransportQueryResponse::BoolResult(true) => {}
++            other => panic!("expected current path-interface suppression, got {other:?}"),
++        }
++
++        let path = actor
++            .path_table
++            .get(&dest_hash)
++            .expect("the backup route should now carry the destination");
++        assert_eq!(path.interface_id, 2);
++        assert_eq!(path.hops, 5);
++        assert!(actor.path_table.backups(&dest_hash).is_empty());
++    }
++
++    #[test]
++    fn network_preference_keeps_an_rf_shortcut_out_of_the_active_slot() {
++        let (mut actor, _tx) = TransportActor::new();
++        actor.is_transport_enabled = true;
++        let (tcp, _tcp_rx) = make_test_interface("tcp");
++        let (rf, _rf_rx) = make_rf_test_interface("rnode");
++        actor.interfaces.insert(1, tcp);
++        actor.interfaces.insert(2, rf);
++        assert_eq!(
++            actor.set_path_medium_preference(PathMediumPreference::Network),
++            0
++        );
++
++        let identity = rns_identity::identity::Identity::new();
++        let blob = random_blob(0xA7, 100);
++        let (raw_tcp, dest_hash) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.netpref", 4, blob);
++        let (raw_rf, _) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.netpref", 0, blob);
++        for (raw, interface_id) in [(raw_tcp, 1u64), (raw_rf, 2)] {
++            actor.on_inbound(InboundPacket {
++                raw,
++                interface_id,
++                rssi: None,
++                snr: None,
++                q: None,
++            });
++        }
++
++        let path = actor.path_table.get(&dest_hash).unwrap();
++        assert_eq!(path.medium, PathMedium::Network);
++        assert_eq!(path.interface_id, 1);
++        let backups = actor.path_table.backups(&dest_hash);
++        assert_eq!(backups.len(), 1);
++        assert_eq!(backups[0].medium, PathMedium::Rf);
++        assert_eq!(backups[0].hops, 1);
++    }
++
++    /// A per-destination RF pin beats the global `Lowest` default, survives an
++    /// RF failure, and reclaims the route once RF is heard again.
++    #[test]
++    fn rf_pin_overrides_global_preference_and_survives_failover() {
++        let (mut actor, _tx) = TransportActor::new();
++        actor.is_transport_enabled = true;
++        let (tcp, _tcp_rx) = make_test_interface("tcp");
++        let (rf, _rf_rx) = make_rf_test_interface("rnode");
++        actor.interfaces.insert(1, tcp);
++        actor.interfaces.insert(2, rf);
++
++        let identity = rns_identity::identity::Identity::new();
++        let (raw_tcp, dest_hash) = make_announce_for_with_random_blob(
++            &identity,
++            "test.multipath.pin",
++            0,
++            random_blob(0xA8, 100),
++        );
++        let (raw_rf, _) = make_announce_for_with_random_blob(
++            &identity,
++            "test.multipath.pin",
++            5,
++            random_blob(0xA9, 101),
++        );
++        assert!(!actor.set_peer_medium_pin(dest_hash, Some(PathMedium::Rf)));
++        for (raw, interface_id) in [(raw_tcp, 1u64), (raw_rf, 2)] {
++            actor.on_inbound(InboundPacket {
++                raw,
++                interface_id,
++                rssi: None,
++                snr: None,
++                q: None,
++            });
++        }
++
++        // The 6-hop RF route wins over a 1-hop network route because of the pin.
++        assert_eq!(
++            actor.path_table.get(&dest_hash).unwrap().medium,
++            PathMedium::Rf
++        );
++
++        match actor.handle_query(TransportQuery::SuppressCurrentPathInterface {
++            dest: dest_hash,
++            duration: 30.0,
++        }) {
++            TransportQueryResponse::BoolResult(true) => {}
++            other => panic!("expected suppression, got {other:?}"),
++        }
++        assert_eq!(
++            actor.path_table.get(&dest_hash).unwrap().medium,
++            PathMedium::Network,
++            "with no live RF slot the network route must carry traffic"
++        );
++        assert_eq!(
++            actor.peer_medium_pins.get(&dest_hash).copied(),
++            Some(PathMedium::Rf),
++            "failover must not clear the pin"
++        );
++
++        // Once suppression lapses, a fresh RF announce reclaims the route.
++        actor.path_interface_suppressions.clear();
++        let (raw_rf_again, _) = make_announce_for_with_random_blob(
++            &identity,
++            "test.multipath.pin",
++            5,
++            random_blob(0xAA, 102),
++        );
++        actor.on_inbound(InboundPacket {
++            raw: raw_rf_again,
++            interface_id: 2,
++            rssi: None,
++            snr: None,
++            q: None,
++        });
++        assert_eq!(
++            actor.path_table.get(&dest_hash).unwrap().medium,
++            PathMedium::Rf
++        );
++    }
++
++    #[test]
++    fn changing_the_global_preference_reranks_known_destinations() {
++        let (mut actor, _tx) = TransportActor::new();
++        actor.is_transport_enabled = true;
++        let (tcp, _tcp_rx) = make_test_interface("tcp");
++        let (rf, _rf_rx) = make_rf_test_interface("rnode");
++        actor.interfaces.insert(1, tcp);
++        actor.interfaces.insert(2, rf);
++
++        let identity = rns_identity::identity::Identity::new();
++        let blob = random_blob(0xAB, 100);
++        let (raw_rf, dest_hash) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.rerank", 0, blob);
++        let (raw_tcp, _) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.rerank", 4, blob);
++        for (raw, interface_id) in [(raw_rf, 2u64), (raw_tcp, 1)] {
++            actor.on_inbound(InboundPacket {
++                raw,
++                interface_id,
++                rssi: None,
++                snr: None,
++                q: None,
++            });
++        }
++        assert_eq!(
++            actor.path_table.get(&dest_hash).unwrap().medium,
++            PathMedium::Rf,
++            "Lowest preference should pick the 1-hop RF route"
++        );
++
++        assert_eq!(
++            actor.set_path_medium_preference(PathMediumPreference::Network),
++            1
++        );
++        assert_eq!(
++            actor.path_table.get(&dest_hash).unwrap().medium,
++            PathMedium::Network
++        );
++        assert_eq!(
++            actor.path_table.backups(&dest_hash)[0].medium,
++            PathMedium::Rf
++        );
++    }
++
++    #[test]
++    fn get_path_slots_reports_ranked_slots_and_the_pin() {
++        let (mut actor, _tx) = TransportActor::new();
++        actor.is_transport_enabled = true;
++        let (tcp, _tcp_rx) = make_test_interface("tcp");
++        let (rf, _rf_rx) = make_rf_test_interface("rnode");
++        actor.interfaces.insert(1, tcp);
++        actor.interfaces.insert(2, rf);
++
++        let identity = rns_identity::identity::Identity::new();
++        let blob = random_blob(0xAC, 100);
++        let (raw_tcp, dest_hash) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.slots", 1, blob);
++        let (raw_rf, _) =
++            make_announce_for_with_random_blob(&identity, "test.multipath.slots", 4, blob);
++        for (raw, interface_id) in [(raw_tcp, 1u64), (raw_rf, 2)] {
++            actor.on_inbound(InboundPacket {
++                raw,
++                interface_id,
++                rssi: None,
++                snr: None,
++                q: None,
++            });
++        }
++        assert!(actor.set_peer_medium_pin(dest_hash, Some(PathMedium::Rf)));
++
++        match actor.handle_query(TransportQuery::GetPathSlots { dest: dest_hash }) {
++            TransportQueryResponse::PathSlots(entry) => {
++                assert_eq!(entry.dest, dest_hash);
++                assert_eq!(entry.pin, Some(PathMedium::Rf));
++                assert_eq!(entry.preference, PathMediumPreference::Rf);
++                assert_eq!(entry.slots.len(), 2);
++                assert!(entry.slots[0].active);
++                assert_eq!(entry.slots[0].medium, PathMedium::Rf);
++                assert_eq!(entry.slots[0].interface, "rnode");
++                assert!(!entry.slots[0].expired);
++                assert!(!entry.slots[1].active);
++                assert_eq!(entry.slots[1].medium, PathMedium::Network);
++                assert_eq!(entry.slots[1].interface, "tcp");
++            }
++            other => panic!("expected PathSlots, got {other:?}"),
++        }
++
++        match actor.handle_query(TransportQuery::GetPathSlots { dest: [0xFE; 16] }) {
++            TransportQueryResponse::PathSlots(entry) => {
++                assert!(entry.slots.is_empty());
++                assert_eq!(entry.pin, None);
++                assert_eq!(entry.preference, PathMediumPreference::Lowest);
++            }
++            other => panic!("expected PathSlots, got {other:?}"),
++        }
++    }
++
++    #[test]
++    fn clearing_a_peer_medium_pin_restores_the_global_preference() {
++        let (mut actor, _tx) = TransportActor::new();
++        let dest = [0xCD; 16];
++        actor.set_peer_medium_pin(dest, Some(PathMedium::Network));
++        assert_eq!(
++            actor.effective_path_medium_preference(&dest),
++            PathMediumPreference::Network
++        );
++
++        actor.set_peer_medium_pin(dest, None);
++        assert!(actor.peer_medium_pins.is_empty());
++        assert_eq!(
++            actor.effective_path_medium_preference(&dest),
++            PathMediumPreference::Lowest
++        );
++
++        actor.set_path_medium_preference(PathMediumPreference::Rf);
++        assert_eq!(
++            actor.effective_path_medium_preference(&dest),
++            PathMediumPreference::Rf
++        );
++    }
++
++    #[test]
+     fn test_newer_equal_or_higher_hop_announce_replaces_path() {
+         let (mut actor, _tx) = TransportActor::new();
+         let (entry1, _rx1) = make_test_interface("iface1");
+@@ -7232,6 +7652,7 @@
+                 expires: now - 1.0,
+                 random_blobs: Default::default(),
+                 interface_id: 7,
++                medium: crate::path_table::PathMedium::Network,
+                 packet_hash: None,
+             },
+         );
+@@ -10903,9 +11324,9 @@
+         let dest_hash = [0xD1; 16];
+         insert_announce_for(&mut actor, dest_hash, &identity);
+ 
+-        let hit = actor.handle_query(crate::messages::TransportQuery::RecallDestinationPublicKey {
+-            dest: dest_hash,
+-        });
++        let hit = actor.handle_query(
++            crate::messages::TransportQuery::RecallDestinationPublicKey { dest: dest_hash },
++        );
+         match hit {
+             crate::messages::TransportQueryResponse::PublicKeyResult(Some(pk)) => {
+                 assert_eq!(pk, identity.get_public_key());
+@@ -10913,10 +11334,9 @@
+             other => panic!("expected PublicKeyResult(Some(_)), got {other:?}"),
+         }
+ 
+-        let miss =
+-            actor.handle_query(crate::messages::TransportQuery::RecallDestinationPublicKey {
+-                dest: [0xEE; 16],
+-            });
++        let miss = actor.handle_query(
++            crate::messages::TransportQuery::RecallDestinationPublicKey { dest: [0xEE; 16] },
++        );
+         assert!(matches!(
+             miss,
+             crate::messages::TransportQueryResponse::PublicKeyResult(None)
+@@ -10924,33 +11344,6 @@
+     }
+ 
+     #[test]
+-    fn deregister_announce_handler_none_only_sweeps_closed() {
+-        let (mut actor, _tx) = TransportActor::new();
+-        let (live_tx, _live_rx) = tokio::sync::mpsc::channel(4);
+-        let (dead_tx, dead_rx) = tokio::sync::mpsc::channel(4);
+-        drop(dead_rx);
+-
+-        actor.announce_handlers.push(AnnounceHandlerRegistration {
+-            aspect_filter: Some("nomadnetwork.node".into()),
+-            receive_path_responses: false,
+-            tx: live_tx,
+-        });
+-        actor.announce_handlers.push(AnnounceHandlerRegistration {
+-            aspect_filter: Some("nomadnetwork.node".into()),
+-            receive_path_responses: true,
+-            tx: dead_tx,
+-        });
+-
+-        actor.handle_message(TransportMessage::DeregisterAnnounceHandler { aspect_filter: None });
+-        assert_eq!(actor.announce_handlers.len(), 1);
+-        assert_eq!(
+-            actor.announce_handlers[0].aspect_filter.as_deref(),
+-            Some("nomadnetwork.node")
+-        );
+-        assert!(!actor.announce_handlers[0].tx.is_closed());
+-    }
+-
+-    #[test]
+     fn filter_blackholed_dests_returns_only_blackholed() {
+         let (mut actor, _tx) = TransportActor::new();
+         let blocked = rns_identity::identity::Identity::new();
+--- a/crates/rns-transport/src/actor/rpc.rs
++++ b/crates/rns-transport/src/actor/rpc.rs
+@@ -261,7 +261,42 @@
+                 TransportQueryResponse::BoolResult(interface_id.is_some_and(|interface_id| {
+                     self.suppress_path_interface(dest, interface_id, duration)
+                 }))
++            }
++            TransportQuery::SetPathMediumPreference { preference } => {
++                TransportQueryResponse::IntResult(self.set_path_medium_preference(preference) as i64)
++            }
++            TransportQuery::SetPeerMediumPin { dest, pin } => {
++                TransportQueryResponse::BoolResult(self.set_peer_medium_pin(dest, pin))
+             }
++            TransportQuery::GetPathSlots { dest } => {
++                let slots: Vec<PathSlotRpcEntry> = self
++                    .path_table
++                    .slots(&dest)
++                    .into_iter()
++                    .enumerate()
++                    .map(|(index, entry)| PathSlotRpcEntry {
++                        active: index == 0,
++                        hops: entry.hops,
++                        via: entry.next_hop,
++                        interface_id: entry.interface_id,
++                        interface: self
++                            .interfaces
++                            .get(&entry.interface_id)
++                            .map(|e| e.name.clone())
++                            .unwrap_or_else(|| format!("interface_{}", entry.interface_id)),
++                        medium: entry.medium,
++                        timestamp: entry.timestamp,
++                        expires: entry.expires,
++                        expired: entry.is_expired(),
++                    })
++                    .collect();
++                TransportQueryResponse::PathSlots(PathSlotsRpcEntry {
++                    dest,
++                    preference: self.effective_path_medium_preference(&dest),
++                    pin: self.peer_medium_pins.get(&dest).copied(),
++                    slots,
++                })
++            }
+             TransportQuery::DropAnnounceQueues => {
+                 for entry in self.interfaces.values_mut() {
+                     entry.announce_queue.clear();
+--- a/crates/rns-transport/src/actor/outbound.rs
++++ b/crates/rns-transport/src/actor/outbound.rs
+@@ -801,6 +801,12 @@
+                     expires: tunnel_path.expires,
+                     random_blobs: tunnel_path.random_blobs.iter().copied().collect(),
+                     interface_id,
++                    medium: crate::path_table::path_medium(
++                        self.interfaces
++                            .get(&interface_id)
++                            .map(|entry| entry.mode)
++                            .unwrap_or(crate::constants::InterfaceMode::Full),
++                    ),
+                     packet_hash: tunnel_path.packet_hash,
+                 };
+                 self.path_table.insert(*dest_hash, entry);
+--- a/crates/rns-transport/src/actor/persistence.rs
++++ b/crates/rns-transport/src/actor/persistence.rs
+@@ -1061,6 +1061,14 @@
+     /// just-registered interface. Bound to `RegisterInterface` so each entry
+     /// rebinds to whatever `interface_id` the runtime allocated this boot.
+     pub(super) fn drain_pending_for_interface(&mut self, id: InterfaceId, name: &str) {
++        // Restored entries have no persisted medium — recover it from the
++        // interface that is registering now.
++        let medium = crate::path_table::path_medium(
++            self.interfaces
++                .get(&id)
++                .map(|entry| entry.mode)
++                .unwrap_or(crate::constants::InterfaceMode::Full),
++        );
+         if !self.pending_path_entries.is_empty() {
+             let mut promoted = 0usize;
+             self.pending_path_entries.retain(|pe| {
+@@ -1104,6 +1112,7 @@
+                         })
+                         .collect(),
+                     interface_id: id,
++                    medium,
+                     packet_hash: pe.packet_hash.as_ref().and_then(|h| {
+                         if h.len() == 32 {
+                             let mut arr = [0u8; 32];
+@@ -1316,6 +1325,7 @@
+                 expires: crate::now_f64() + 600.0,
+                 random_blobs: std::collections::VecDeque::new(),
+                 interface_id: 7,
++                medium: crate::path_table::PathMedium::Network,
+                 packet_hash: Some(path_hash),
+             },
+         );
+@@ -1471,6 +1481,7 @@
+                 expires: crate::now_f64() + 600.0,
+                 random_blobs: std::collections::VecDeque::new(),
+                 interface_id: 7,
++                medium: crate::path_table::PathMedium::Network,
+                 packet_hash: Some([0x33; 32]),
+             },
+         );
+@@ -1587,6 +1598,7 @@
+                     expires: crate::now_f64() + 600.0,
+                     random_blobs: std::collections::VecDeque::new(),
+                     interface_id: 7,
++                    medium: crate::path_table::PathMedium::Network,
+                     packet_hash: Some([0x66; 32]),
+                 },
+             );

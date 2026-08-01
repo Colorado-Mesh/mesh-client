@@ -1040,7 +1040,8 @@
         "rnodeWifi": "LoRa mesh melalui RNode Wi-Fi (tcp:// host).",
         "blePeer": "Mesh rekan BLE menggunakan alamat rekan benih.",
         "generic": "Antarmuka jaringan Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down."
       },
       "rfProfile": {
         "coordinated": "Daerah yang terkoordinasi",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Bagikan instance Reticulum",
       "logLevel": "tingkat log",
       "save": "Simpan pengaturan tumpukan",
-      "saveFailed": "Gagal menyimpan pengaturan tumpukan."
+      "saveFailed": "Gagal menyimpan pengaturan tumpukan.",
+      "pathMediumPreference": "Media jalur yang disukai",
+      "pathMediumPreferenceHint": "Jika peer dapat dijangkau melalui RF dan jaringan (TCP/I2P/dll.), pilih media mana yang menang secara default. Jalur terendah hanya diurutkan berdasarkan jumlah hop. Pin per-peer di tab Peers dapat menimpa ini.",
+      "pathMediumLowest": "Jalur terendah (jumlah hop)",
+      "pathMediumNetwork": "Jaringan (non-RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Media jalur global yang disukai",
+      "pathMediumPreferenceSaved": "Preferensi media jalur disimpan.",
+      "pathMediumPreferenceSaveFailed": "Gagal menyimpan preferensi media jalur."
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Cari",
     "lookupSubmitAria": "Minta jalur dan probe hash tujuan",
     "lookupInvalid": "Masukkan hash tujuan LXMF 32 karakter yang valid atau tautan lxmf://.",
-    "lookupHint": "Minta jalur untuk hash yang belum ada dalam daftar rekan (misalnya rekan di hub yang Anda bagikan)."
+    "lookupHint": "Minta jalur untuk hash yang belum ada dalam daftar rekan (misalnya rekan di hub yang Anda bagikan).",
+    "paths": "Jalur",
+    "pathsAria": "Tampilkan jalur berperingkat untuk {{hash}}",
+    "pathsDetailAria": "Jalur berperingkat untuk {{hash}}",
+    "pathsHeading": "Jalur · {{hash}}…",
+    "pathsCloseAria": "Tutup detail jalur",
+    "pathsPreferLabel": "Utamakan media",
+    "pathsPreferAria": "Media jalur yang disukai untuk peer ini",
+    "pathsPreferAuto": "Otomatis (global)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Jaringan",
+    "pathsGlobalPreference": "Global: {{preference}}",
+    "pathsListAria": "Slot jalur berperingkat",
+    "pathsActiveBadge": "Aktif",
+    "pathsBackupBadge": "Cadangan",
+    "pathsMedium": "Media",
+    "pathsExpired": "Kedaluwarsa",
+    "pathsEmpty": "Belum ada slot jalur. Minta jalur atau tunggu pengumuman.",
+    "pathsLoadFailed": "Gagal memuat slot jalur.",
+    "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini."
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

@@ -733,12 +733,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('bluetooth-device-selected', deviceId);
   },
 
-  cancelBluetoothSelection: (generation?: number | null) => {
-    if (typeof generation === 'number' && Number.isFinite(generation)) {
-      ipcRenderer.send('bluetooth-device-cancelled', generation);
-      return;
-    }
-    ipcRenderer.send('bluetooth-device-cancelled');
+  // Awaitable invoke so Connect can clear a stale chooser before requestDevice()
+  // (fire-and-forget send raced behind select-bluetooth-device and cancelled the new session).
+  cancelBluetoothSelection: async (generation?: number | null): Promise<{ cancelled: boolean }> => {
+    const gen =
+      typeof generation === 'number' && Number.isFinite(generation) ? generation : undefined;
+    return (await ipcRenderer.invoke('bluetooth-device-cancel', gen)) as { cancelled: boolean };
   },
 
   // ─── Bluetooth pairing (Linux) ──────────────────────────────────────

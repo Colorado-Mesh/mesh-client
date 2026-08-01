@@ -1042,7 +1042,8 @@
         "rnodeWifi": "Сітка LoRa через RNode Wi-Fi (tcp:// host).",
         "blePeer": "Однорангова сітка BLE з використанням початкових однорангових адрес.",
         "generic": "Мережевий інтерфейс Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Магістраль I2P через маршрутизатор на цьому комп'ютері. Увімкніть міст додатків SAM (127.0.0.1:7656), а не проксі-сервери HTTP/HTTPS I2PTunnel (4444/4445). Перезапустіть I2P після ввімкнення SAM, щоб міст прослуховував, а потім перезапустіть стек Reticulum, якщо цей інтерфейс не працює."
       },
       "rfProfile": {
         "coordinated": "Узгоджена обл",
@@ -2498,7 +2499,15 @@
       "shareInstance": "Поділитися екземпляром Reticulum",
       "logLevel": "Рівень журналу",
       "save": "Зберегти налаштування стека",
-      "saveFailed": "Не вдалося зберегти налаштування стека."
+      "saveFailed": "Не вдалося зберегти налаштування стека.",
+      "pathMediumPreference": "Бажаний носій шляху",
+      "pathMediumPreferenceHint": "Коли вузол доступний через радіочастоту та мережу (TCP/I2P/тощо), виберіть, який носій виграє за замовчуванням. Найнижчий шлях ранжується лише за кількістю стрибків. PIN-коди однорангових вузлів на вкладці Однорангові вузли можуть замінити це.",
+      "pathMediumLowest": "Найнижчий шлях (кількість стрибків)",
+      "pathMediumNetwork": "Мережа (не-RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Глобальне бажане середовище шляху",
+      "pathMediumPreferenceSaved": "Налаштування носія шляху збережено.",
+      "pathMediumPreferenceSaveFailed": "Не вдалося зберегти налаштування середнього шляху."
     },
     "reticulumConfigImport": {
       "title": "Імпорт конфігурації Reticulum",
@@ -3123,7 +3132,26 @@
     "lookupSubmit": "Шукати",
     "lookupSubmitAria": "Запитати шлях і перевірити хеш призначення",
     "lookupInvalid": "Введіть дійсний 32-символьний хеш призначення LXMF або посилання lxmf://.",
-    "lookupHint": "Запит шляху для хешу, якого ще немає в списку вузлів (наприклад, вузол на концентраторі, яким ви ділитеся)."
+    "lookupHint": "Запит шляху для хешу, якого ще немає в списку вузлів (наприклад, вузол на концентраторі, яким ви ділитеся).",
+    "paths": "Стежки",
+    "pathsAria": "Показати ранжовані шляхи для {{hash}}",
+    "pathsDetailAria": "Шляхи ранжування для {{hash}}",
+    "pathsHeading": "Шляхи · {{hash}}…",
+    "pathsCloseAria": "Детальна інформація про закриті шляхи",
+    "pathsPreferLabel": "Віддавати перевагу середньому",
+    "pathsPreferAria": "Бажане середовище шляху для цього вузла",
+    "pathsPreferAuto": "Автоматично (глобально)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Засоби зв'язку",
+    "pathsGlobalPreference": "Глобально: {{preference}}",
+    "pathsListAria": "Ранжування слотів траєкторії",
+    "pathsActiveBadge": "Активний",
+    "pathsBackupBadge": "Заднім ходом",
+    "pathsMedium": "Середній",
+    "pathsExpired": "Минув термін дії",
+    "pathsEmpty": "Ще немає слотів для шляхів. Запитуйте шлях або чекайте оголошення.",
+    "pathsLoadFailed": "Не вдалося завантажити слоти шляху.",
+    "pathsPinFailed": "Не вдалося оновити налаштування середовища для цього вузла."
   },
   "radioPanel": {
     "offloadedContacts": "Вивантажено {{count}} контакти до бази даних.",

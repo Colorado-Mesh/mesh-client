@@ -1042,7 +1042,8 @@
         "rnodeWifi": "Сетка LoRa через RNode Wi-Fi (хост tcp://).",
         "blePeer": "Одноранговая сеть BLE с использованием начальных одноранговых адресов.",
         "generic": "Сетевой интерфейс Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Магистраль I2P через маршрутизатор на этом компьютере. Включите мост приложения SAM (127.0.0.1:7656) — не прокси HTTP/HTTPS I2PTunnel (4444/4445). Перезапустите I2P после включения SAM, чтобы мост прослушивал, а затем перезапустите стек Reticulum, если этот интерфейс не работает."
       },
       "rfProfile": {
         "coordinated": "Скоординированная региональная",
@@ -2498,7 +2499,15 @@
       "shareInstance": "Поделиться экземпляром Reticulum",
       "logLevel": "Уровень журнала",
       "save": "Сохранить настройки стека",
-      "saveFailed": "Не удалось сохранить настройки стека."
+      "saveFailed": "Не удалось сохранить настройки стека.",
+      "pathMediumPreference": "Предпочтительная среда пути",
+      "pathMediumPreferenceHint": "Когда одноранговый узел доступен по радиочастоте и сети (TCP/I2P/и т. д.), выберите, какой носитель выигрывает по умолчанию. Самый низкий путь ранжируется только по количеству прыжков. Одноранговые контакты на вкладке Одноранговые узлы могут переопределить это.",
+      "pathMediumLowest": "Наименьший путь (количество прыжков)",
+      "pathMediumNetwork": "Сеть (не-RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Глобальная предпочтительная среда пути",
+      "pathMediumPreferenceSaved": "Предпочтение среды пути сохранено.",
+      "pathMediumPreferenceSaveFailed": "Не удалось сохранить настройки среды пути."
     },
     "reticulumConfigImport": {
       "title": "Импортировать конфигурацию Reticulum",
@@ -3123,7 +3132,26 @@
     "lookupSubmit": "Найти",
     "lookupSubmitAria": "Запросить путь и проверить хеш назначения",
     "lookupInvalid": "Введите действительный 32-символьный хеш назначения LXMF или ссылку lxmf://.",
-    "lookupHint": "Запросите путь для хеша, которого еще нет в списке одноранговых узлов (например, одноранговый узел на концентраторе, которым вы делитесь)."
+    "lookupHint": "Запросите путь для хеша, которого еще нет в списке одноранговых узлов (например, одноранговый узел на концентраторе, которым вы делитесь).",
+    "paths": "Пути",
+    "pathsAria": "Показать ранжированные пути для {{hash}}",
+    "pathsDetailAria": "Ранжированные пути для {{hash}}",
+    "pathsHeading": "Пути · {{hash}}…",
+    "pathsCloseAria": "Сведения о закрытых путях",
+    "pathsPreferLabel": "Предпочтительная среда",
+    "pathsPreferAria": "Предпочтительная среда пути для этого однорангового узла",
+    "pathsPreferAuto": "Авто (глобально)",
+    "pathsPreferRf": "RF",
+    "pathsPreferNetwork": "Сеть",
+    "pathsGlobalPreference": "Глобальный: {{preference}}",
+    "pathsListAria": "Слоты ранжированного пути",
+    "pathsActiveBadge": "Действующая",
+    "pathsBackupBadge": "Резервное копирование",
+    "pathsMedium": "Средний",
+    "pathsExpired": "Истек срок действия",
+    "pathsEmpty": "Слотов для траекторий пока нет. Запросите путь или дождитесь объявления.",
+    "pathsLoadFailed": "Не удалось загрузить слоты пути.",
+    "pathsPinFailed": "Не удалось обновить настройки среды для этого узла."
   },
   "radioPanel": {
     "offloadedContacts": "Контакты {{count}} выгружены в базу данных.",

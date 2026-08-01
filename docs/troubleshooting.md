@@ -422,7 +422,10 @@ flatpak run org.coloradomesh.MeshClient
 
 - The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
 - Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
-- **Immediate "User cancelled the requestDevice() chooser"** on Connect (AppImage / `.deb` / `.rpm`) without dismissing a picker: Chromium multi-fires `select-bluetooth-device`; the app must retain the first callback. Upgrade to a build that includes that fix, then retry Connect. If the picker still never opens, check `systemctl status bluetooth` and `rfkill list`.
+- **Immediate "User cancelled the requestDevice() chooser"** on Connect (AppImage / `.deb` / `.rpm`) without dismissing a picker:
+  1. Chromium multi-fires `select-bluetooth-device`; the app must retain the first callback (#749).
+  2. A fire-and-forget cancel-before-connect can also race behind the new chooser and kill it (seen on CachyOS / Arch with 5.25.0). Builds that **await** `cancelBluetoothSelection` before `requestDevice()` fix that race.
+     Upgrade to a release that includes both fixes, then retry Connect. If the picker still never opens, check `systemctl status bluetooth` and `rfkill list`.
 - **Flatpak:** Connect that fails with little or no UI often means the sandbox lacked `--allow=bluetooth` (needed with `--system-talk-name=org.bluez`). Reinstall a Flatpak from a release that includes that finish-arg. If pairing then fails with **bluetoothctl not found**, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
 - **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).
@@ -1021,6 +1024,9 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 | `link_timeout`          | Link could not be established in time (UI may say path OK vs stale) |
 | `response_timeout`      | Link opened but page payload did not arrive in time                 |
 | `missing_identity_hash` | No remembered identity for the node yet                             |
+| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack   |
+| `nomad_not_serving`     | Remote node is not serving Nomad pages                              |
+| `invalid_url`           | Malformed Nomad page/file URL                                       |
 | `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
 | `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
 | `response_too_large`    | Remote response exceeded the sidecar size cap                       |
@@ -1273,6 +1279,18 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 **TCP / UDP / I2P / Auto / Pipe not active after add**: Sidecar live `apply_interfaces` only hot-applies **BLE Peer**; other types are written to config and require a stack restart. The Connection UI auto-restarts after add/enable/edit/delete for those types (`reticulumInterfaceChangeRequiresStackRestart`). If a transport still does not appear, use **Stop stack** then **Start stack**, or check the amber restart hint. **Add default hubs** still shows the hint only (no auto-restart).
 
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
+
+### Reticulum I2P interface stays down
+
+**Symptoms**: Connection → Interfaces shows an enabled I2P row (e.g. **RNS I2P Hub A**) as **down**; Diagnostics may list `reticulum/interface-down`. The I2P router appears running and “clients” look ready, but mesh-client never comes up.
+
+**Checks**:
+
+1. **Host-local only**: mesh-client expects an I2P router on **this machine**. Remote SAM is not supported.
+2. **SAM application bridge**, not I2PTunnel: HTTP/HTTPS proxies on `127.0.0.1:4444` / `4445` (and similar “Client ready” lines) are classic I2PTunnel clients. Reticulum needs the **SAM** bridge on **`127.0.0.1:7656`**. In the I2P Router Console → **Clients**, enable **SAM application bridge** (Run on load). The Connection ⓘ tooltip on I2P rows repeats this.
+3. **Restart I2P after enabling SAM**: flipping SAM on while the router is already running often does not open `7656` until you fully restart I2P. Confirm something listens on `7656` (e.g. `nc -z 127.0.0.1 7656`). SAM may also delay ~2 minutes after router boot (`delay=120` in the SAM client config).
+4. **Restart the Reticulum stack** after SAM is listening (stack restart alone cannot help while `7656` is refused).
+5. **Tunnel build time**: first connect to a hub `.b32.i2p` peer can take a while on a fresh router. Sidecar / Device logs may show `I2P client:` / `I2P server:` messages (`failed to connect to SAM bridge`, `STREAM CONNECT failed`, `stream connected`).
 
 ### Reticulum Peers stale or slow with many hubs or testnets
 

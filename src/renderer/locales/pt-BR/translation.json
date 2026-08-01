@@ -1040,7 +1040,8 @@
         "rnodeWifi": "Malha LoRa via RNode Wi-Fi (tcp: // host).",
         "blePeer": "Malha de pares BLE usando endereços de pares iniciais.",
         "generic": "Interface de rede Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Backbone I2P através de um roteador nesta máquina. Habilite a ponte do aplicativo SAM (127.0.0.1:7656) — não proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie o I2P depois de habilitar o SAM para que a ponte ouça e reinicie a pilha Reticulum se essa interface permanecer inativa."
       },
       "rfProfile": {
         "coordinated": "Regional coordenado",
@@ -2496,7 +2497,15 @@
       "shareInstance": "Compartilhar instância do Reticulum",
       "logLevel": "Nível de registro",
       "save": "Salvar configurações de pilha",
-      "saveFailed": "Falha ao salvar as configurações da pilha."
+      "saveFailed": "Falha ao salvar as configurações da pilha.",
+      "pathMediumPreference": "Meio de caminho preferido",
+      "pathMediumPreferenceHint": "Quando um par é acessível por RF e rede (TCP/I2P/etc.), escolha qual meio ganha por padrão. O caminho mais baixo é classificado apenas por contagem de saltos. Os pinos por peer na guia Peers podem substituir isso.",
+      "pathMediumLowest": "Caminho mais baixo (contagem de saltos)",
+      "pathMediumNetwork": "Rede (não RF)",
+      "pathMediumRf": "RF (RNode)",
+      "pathMediumPreferenceAria": "Meio de caminho preferido global",
+      "pathMediumPreferenceSaved": "Preferência média do caminho salva.",
+      "pathMediumPreferenceSaveFailed": "Falha ao salvar a preferência do meio do caminho."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",
@@ -3121,7 +3130,26 @@
     "lookupSubmit": "Pesquisar",
     "lookupSubmitAria": "Solicitar caminho e sondar o hash de destino",
     "lookupInvalid": "Digite um hash de destino LXMF válido de 32 caracteres ou um link lxmf://.",
-    "lookupHint": "Solicite um caminho para um hash que ainda não está na lista de pares (por exemplo, um ponto em um hub que você compartilha)."
+    "lookupHint": "Solicite um caminho para um hash que ainda não está na lista de pares (por exemplo, um ponto em um hub que você compartilha).",
+    "paths": "Trilhas",
+    "pathsAria": "Mostrar caminhos classificados para {{hash}}",
+    "pathsDetailAria": "Caminhos classificados para {{hash}}",
+    "pathsHeading": "Caminhos · {{hash}}…",
+    "pathsCloseAria": "Fechar detalhes dos caminhos",
+    "pathsPreferLabel": "Preferir médio",
+    "pathsPreferAria": "Meio de caminho preferido para este par",
+    "pathsPreferAuto": "Automático (global)",
+    "pathsPreferRf": "Frequência de rádio (RF)",
+    "pathsPreferNetwork": "Rede",
+    "pathsGlobalPreference": "Global: {{preference}}",
+    "pathsListAria": "Ranhuras de caminho classificado",
+    "pathsActiveBadge": "Ativo",
+    "pathsBackupBadge": "Backup",
+    "pathsMedium": "Médio",
+    "pathsExpired": "Expirado",
+    "pathsEmpty": "Ainda não há slots de caminho. Solicite um caminho ou aguarde um anúncio.",
+    "pathsLoadFailed": "Falha ao carregar slots de caminho.",
+    "pathsPinFailed": "Falha ao atualizar a preferência do meio para este par."
   },
   "radioPanel": {
     "offloadedContacts": "Transferiu contatos {{count}} para o banco de dados.",
