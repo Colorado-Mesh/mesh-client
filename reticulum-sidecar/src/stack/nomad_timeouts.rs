@@ -75,14 +75,17 @@ pub fn resolve_nomad_page_timeout_secs(
 ///
 /// MeshChat uses a flat 15s TCP link establishment timeout. Path-table hops on
 /// hub routes are often inflated (e.g. 8) and must not stretch proof waits to
-/// ~48s / the full overall TCP budget.
+/// ~48s / the full overall TCP budget. TCP/network always use a flat 3 hops
+/// (3 × 6s ≈ 18s) so true 1-hop peers are not shortened to a 6s proof wait.
 pub fn nomad_link_initiator_hops(egress_via: &str, path_hops: u8) -> u8 {
     if egress_via == "rf" || egress_via == "ble" {
         path_hops.clamp(1, 32)
     } else {
-        // 3 × 6s = 18s ≈ MeshChat TCP link_establishment_timeout (15s).
+        // Flat MeshChat-like TCP establish (~18s). Do not use path_hops — clamp(1, 3)
+        // incorrectly left 1-hop peers at 6s after the #756 proof-budget cap.
         const TCP_LINK_INITIATOR_HOPS: u8 = 3;
-        path_hops.clamp(1, TCP_LINK_INITIATOR_HOPS)
+        let _ = path_hops;
+        TCP_LINK_INITIATOR_HOPS
     }
 }
 
@@ -195,11 +198,15 @@ mod tests {
     }
 
     #[test]
-    fn tcp_link_initiator_hops_capped_for_meshchat_establish() {
+    fn tcp_link_initiator_hops_flat_for_meshchat_establish() {
         assert_eq!(nomad_link_initiator_hops("tcp", 8), 3);
-        assert_eq!(nomad_link_initiator_hops("network", 1), 1);
+        assert_eq!(nomad_link_initiator_hops("tcp", 1), 3);
+        assert_eq!(nomad_link_initiator_hops("tcp", 2), 3);
+        assert_eq!(nomad_link_initiator_hops("network", 1), 3);
+        assert_eq!(nomad_link_initiator_hops("network", 8), 3);
         assert_eq!(nomad_link_initiator_hops("rf", 8), 8);
         assert_eq!(nomad_link_initiator_hops("ble", 6), 6);
+        assert_eq!(nomad_link_initiator_hops("rf", 1), 1);
     }
 
     #[test]

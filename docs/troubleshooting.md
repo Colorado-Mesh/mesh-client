@@ -1028,6 +1028,8 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 Unrecognized codes pass through unchanged.
 
+TCP/network Nomad Links use a **flat ~18s** link-proof budget (`link_hops=3` × 6s, MeshChat parity) regardless of path-table hops — not `6s × path hops`. Failure lines in the app log may include `link_hops`, `proof_budget_secs`, `timeout_secs`, and `raw=` for triage.
+
 **Cause**: Older `LinkClient` always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all `nomadnetwork.node` announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).
 
 **Fix**:
@@ -1036,6 +1038,7 @@ Unrecognized codes pass through unchanged.
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
+5. For TCP `link_timeout`, check log fields `link_hops` / `proof_budget_secs` / `raw=` — short fails with `link_hops=1` were a known budget bug; persistent fails after ~18s proof usually mean the peer/hub did not return LRPROOF.
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 

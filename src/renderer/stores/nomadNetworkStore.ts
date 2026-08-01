@@ -58,14 +58,48 @@ function nomadHashPrefixForLog(hash: string): string {
 
 function logNomadFetchFailure(
   kind: 'page' | 'file',
-  opts: { hash: string; path: string; hops: number; egress: string; error: string },
+  opts: {
+    hash: string;
+    path: string;
+    hops: number;
+    egress: string;
+    error: string;
+    pathHops?: number;
+    linkHops?: number;
+    proofBudgetSecs?: number;
+    timeoutSecs?: number;
+    forcePathOk?: boolean;
+    rawError?: string;
+  },
 ): void {
   const pathSafe = opts.path.replace(/[\r\n]+/g, ' ').slice(0, 200);
   const errorSafe = opts.error.replace(/[\r\n]+/g, ' ').slice(0, 200);
+  const parts = [
+    `path=${pathSafe}`,
+    `hops=${opts.hops}`,
+    `egress=${opts.egress}`,
+    `error=${errorSafe}`,
+  ];
+  if (opts.pathHops != null) parts.push(`path_hops=${opts.pathHops}`);
+  if (opts.linkHops != null) parts.push(`link_hops=${opts.linkHops}`);
+  if (opts.proofBudgetSecs != null) parts.push(`proof_budget_secs=${opts.proofBudgetSecs}`);
+  if (opts.timeoutSecs != null) parts.push(`timeout_secs=${opts.timeoutSecs}`);
+  if (opts.forcePathOk != null) parts.push(`force_path_ok=${opts.forcePathOk}`);
+  if (opts.rawError) {
+    parts.push(`raw=${opts.rawError.replace(/[\r\n]+/g, ' ').slice(0, 200)}`);
+  }
   console.warn(
     `[nomadNetworkStore] ${kind} fetch failed hash=${nomadHashPrefixForLog(opts.hash)}… ` +
-      `path=${pathSafe} hops=${opts.hops} egress=${opts.egress} error=${errorSafe}`,
+      parts.join(' '),
   );
+}
+
+function optionalFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function hopsForNomadHash(nodes: Map<string, NomadNodeRow>, hash: string): number {
@@ -111,14 +145,30 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     const apiPath = `/api/v1/nomadnetwork/${kind}/${cleanHash}?${qs.toString()}`;
     const res = (await window.electronAPI.reticulum.proxyGet(apiPath)) as T;
     if (!res.ok) {
-      const resRecord = res as { egress?: unknown };
+      const resRecord = res as {
+        egress?: unknown;
+        path_hops?: unknown;
+        link_hops?: unknown;
+        proof_budget_secs?: unknown;
+        timeout_secs?: unknown;
+        force_path_ok?: unknown;
+        raw_error?: unknown;
+      };
       const resEgress = typeof resRecord.egress === 'string' ? resRecord.egress : egress;
+      const rawError =
+        typeof resRecord.raw_error === 'string' ? resRecord.raw_error.trim() : undefined;
       logNomadFetchFailure(kind, {
         hash: cleanHash,
         path: opts.path,
         hops,
         egress: resEgress,
         error: res.error?.trim() || 'unknown',
+        pathHops: optionalFiniteNumber(resRecord.path_hops),
+        linkHops: optionalFiniteNumber(resRecord.link_hops),
+        proofBudgetSecs: optionalFiniteNumber(resRecord.proof_budget_secs),
+        timeoutSecs: optionalFiniteNumber(resRecord.timeout_secs),
+        forcePathOk: optionalBoolean(resRecord.force_path_ok),
+        rawError: rawError || undefined,
       });
     }
     return res;
