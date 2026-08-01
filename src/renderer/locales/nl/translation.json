@@ -643,7 +643,8 @@
     "emojiButton": "Emoji",
     "openDmByAddress": "Open",
     "reticulumSendStoredAtPn": "Opgeslagen op propagatieknooppunt",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Bijgewerkt vanaf RF-pad"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

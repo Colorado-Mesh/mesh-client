@@ -20,6 +20,7 @@ import {
   meshtasticSenderIdForRawLogFallback,
   type PacketClass,
 } from '../foreignLoraDetection';
+import { applyMeshcoreLateRfHopEnrichment } from '../meshcoreLateRfHopEnrichment';
 import {
   meshcoreRawPacketLogFromBytesFallback,
   meshcoreRawPacketResolveFromParsed,
@@ -641,6 +642,21 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
       ctx.fromNodeId ?? meshtasticSenderIdForRawLogFallback(ctx.parseOk, rawU8);
     const rxEntry = buildMeshcoreRfRawPacketEntry(ctx, effectiveFromNodeId, now, snr, rssi, rawU8);
     pushMeshcoreRfRawPacketLog(deps, rxEntry);
+
+    if (
+      ctx.parseOk &&
+      (ctx.payloadTypeString === 'TXT_MSG' || ctx.payloadTypeString === 'GRP_TXT')
+    ) {
+      applyMeshcoreLateRfHopEnrichment(deps.meshcoreIdentityIdRef.current, {
+        payloadTypeString: ctx.payloadTypeString,
+        hopCount: ctx.hopCount,
+        fromNodeId: effectiveFromNodeId,
+        messageFingerprintHex: ctx.messageFingerprintHex,
+        parseOk: true,
+        now,
+        myNodeNum: deps.myNodeNumRef.current,
+      });
+    }
 
     mqttFields = buildMeshcoreRfMqttPacketLogFields(ctx, rawU8);
     recordMeshcoreRfNoisePorts(ctx, effectiveFromNodeId);

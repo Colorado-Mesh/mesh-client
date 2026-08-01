@@ -643,7 +643,8 @@
     "notificationDmTitle": "DM de {{sender}}",
     "notificationMessageTitle": "Mensagem de {{sender}}",
     "reticulumSendStoredAtPn": "Armazenado no nó de propagação",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Atualizado a partir do caminho de RF"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

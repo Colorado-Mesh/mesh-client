@@ -643,7 +643,8 @@
     "notificationDmTitle": "{{sender}}からのDM",
     "notificationMessageTitle": "{{sender}}からのメッセージ",
     "reticulumSendStoredAtPn": "伝播ノードに格納されています",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "RFパスから更新されました"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

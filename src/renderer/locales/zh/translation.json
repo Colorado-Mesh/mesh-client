@@ -643,7 +643,8 @@
     "notificationDmTitle": "来自{{sender}}的DM",
     "notificationMessageTitle": "来自{{sender}}的消息",
     "reticulumSendStoredAtPn": "存储在传播节点",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "从射频路径更新"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

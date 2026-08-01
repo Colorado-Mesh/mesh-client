@@ -111,6 +111,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshtastic/transportDisplayNameCache.test.ts',
   'src/renderer/lib/meshcoreDualNobleBleInit.test.ts',
   'src/renderer/lib/meshcoreKeyBackupStorage.test.ts',
+  'src/renderer/lib/meshcoreLateRfHopEnrichment.test.ts',
   'src/renderer/lib/meshcoreMqttSettingsStorage.test.ts',
   'src/renderer/lib/meshcoreContactAutoAdd.test.ts',
   'src/renderer/lib/meshcoreDbCacheHydration.repair.test.ts',
@@ -185,7 +186,11 @@ function collectRendererLibTestFiles(): string[] {
       if (ent.isDirectory()) {
         walk(path);
       } else if (ent.name.endsWith('.test.ts')) {
-        results.push(relative(import.meta.dirname, path).split('\\').join('/'));
+        results.push(
+          relative(import.meta.dirname, path)
+            .split('\\')
+            .join('/'),
+        );
       }
     }
   };

@@ -389,12 +389,20 @@ describe('meshcoreCompanionRxPathLenToHopCount', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(255)).toBe(0);
   });
 
-  it('returns flood hop count for other pathLen values', () => {
+  it('returns flood hop count for plain 0..63 pathLen values', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(0)).toBe(0);
     expect(meshcoreCompanionRxPathLenToHopCount(1)).toBe(1);
     expect(meshcoreCompanionRxPathLenToHopCount(3)).toBe(3);
     expect(meshcoreCompanionRxPathLenToHopCount(63)).toBe(63);
     expect(meshcoreCompanionRxPathLenToHopCount(1.9)).toBe(1);
+  });
+
+  it('unpacks packed multibyte path-hash pathLen bytes (low 6 bits)', () => {
+    // 2-byte hash mode: pack(1,2)=65, pack(0,2)=64; 3-byte: pack(3,3)=131
+    expect(meshcoreCompanionRxPathLenToHopCount(64)).toBe(0);
+    expect(meshcoreCompanionRxPathLenToHopCount(65)).toBe(1);
+    expect(meshcoreCompanionRxPathLenToHopCount(131)).toBe(3);
+    expect(meshcoreCompanionRxPathLenToHopCount(254)).toBe(62);
   });
 
   it('returns undefined for missing or non-finite values', () => {
@@ -404,12 +412,10 @@ describe('meshcoreCompanionRxPathLenToHopCount', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(Number.NaN)).toBeUndefined();
   });
 
-  it('rejects negatives, oversized, and non-direct high bytes without wrapping', () => {
+  it('rejects negatives and oversized values without wrapping', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(-1)).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHopCount(256)).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHopCount(511)).toBeUndefined();
-    expect(meshcoreCompanionRxPathLenToHopCount(64)).toBeUndefined();
-    expect(meshcoreCompanionRxPathLenToHopCount(254)).toBeUndefined();
   });
 });
 

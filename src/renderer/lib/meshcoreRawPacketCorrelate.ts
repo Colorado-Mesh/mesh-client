@@ -59,7 +59,7 @@ export function meshcoreFindRecentGrpTxtRawPacket<T extends ChatCorrelateRxLike>
   return undefined;
 }
 
-/** Most recent unattributed TXT_MSG raw log row within the chat correlation window (DM path). */
+/** Most recent TXT_MSG raw log row within the chat correlation window (any fromNodeId). */
 export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>(
   prev: readonly T[],
   now: number,
@@ -68,7 +68,7 @@ export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>
   for (let i = prev.length - 1; i >= 0; i--) {
     const e = prev[i];
     if (now - e.ts > windowMs) break;
-    if (e.payloadTypeString === 'TXT_MSG' && e.fromNodeId === null) return e;
+    if (e.payloadTypeString === 'TXT_MSG') return e;
   }
   return undefined;
 }

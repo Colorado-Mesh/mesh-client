@@ -202,20 +202,20 @@ describe('meshcoreFindRecentGrpTxtRawPacket', () => {
 describe('meshcoreFindRecentTxtMsgRawPacket', () => {
   const now = 20_000;
 
-  it('returns unattributed TXT_MSG within window', () => {
+  it('returns the most recent TXT_MSG within window (attributed or not)', () => {
     const packets: ChatCorrelateRxLike[] = [
-      { ts: now - 400, payloadTypeString: 'TXT_MSG', fromNodeId: 0xabc, hopCount: 9 },
-      { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 2 },
+      { ts: now - 400, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 9 },
+      { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: 0xabc, hopCount: 2 },
     ];
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)?.hopCount).toBe(2);
   });
 
-  it('matches unattributed TXT_MSG in the widened correlation window', () => {
+  it('matches attributed TXT_MSG in the correlation window', () => {
     const packets: ChatCorrelateRxLike[] = [
       {
         ts: now - (MESHCORE_CHAT_CORRELATE_WINDOW_MS - 500),
         payloadTypeString: 'TXT_MSG',
-        fromNodeId: null,
+        fromNodeId: 0x111,
         hopCount: 6,
       },
     ];
@@ -234,10 +234,9 @@ describe('meshcoreFindRecentTxtMsgRawPacket', () => {
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)).toBeUndefined();
   });
 
-  it('ignores GRP_TXT and attributed TXT_MSG rows', () => {
+  it('ignores GRP_TXT rows when looking for TXT_MSG', () => {
     const packets: ChatCorrelateRxLike[] = [
       { ts: now - 100, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 5 },
-      { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: 0x111, hopCount: 4 },
     ];
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)).toBeUndefined();
   });

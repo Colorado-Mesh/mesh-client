@@ -142,6 +142,21 @@ describe('MeshCoreProtocol.subscribe', () => {
     teardown();
   });
 
+  it('unpacks packed multibyte pathLen on channel messages (e.g. 65 → 1 hop)', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 0,
+      text: 'packed hops',
+      senderTimestamp: 1_700_002,
+      pathLen: 65, // pack(1, 2-byte hashes)
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text?.type === 'text_message' && text.payload.hopCount).toBe(1);
+    teardown();
+  });
+
   it('maps DM pathLen to hopCount', () => {
     const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
     const nodeId = pubkeyToNodeId(publicKey);

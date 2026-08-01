@@ -647,7 +647,8 @@
     "notificationMessageTitle": "Wiadomość od {{sender}}",
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Przechowywane w węźle propagacji",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Zaktualizowano ze ścieżki RF"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

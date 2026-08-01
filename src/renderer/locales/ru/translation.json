@@ -645,7 +645,8 @@
     "notificationDmTitle": "ДМ от {{sender}}",
     "notificationMessageTitle": "Сообщение от {{sender}}",
     "reticulumSendStoredAtPn": "Сохранено в узле распространения",
-    "reticulumPnAbbrev": "КН"
+    "reticulumPnAbbrev": "КН",
+    "hopCountRefinedFromRf": "Обновлено из радиочастотного тракта"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
