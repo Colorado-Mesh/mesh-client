@@ -54,6 +54,13 @@ export function getReticulumInterfaceHelp(
       isSystemManaged: false,
     };
   }
+  if (iface.type === 'i2p') {
+    return {
+      purposeKey: 'connectionPanel.reticulumInterfaces.purpose.i2p',
+      isRuntimeOnly: false,
+      isSystemManaged: false,
+    };
+  }
   if (iface.type === 'rnode') {
     const port = iface.serial_port ?? '';
     if (isReticulumBleRnodeSerialPort(port)) {

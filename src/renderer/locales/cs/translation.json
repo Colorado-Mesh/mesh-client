@@ -1041,7 +1041,8 @@
         "rnodeWifi": "LoRa mesh přes RNode Wi-Fi (tcp:// hostitel).",
         "blePeer": "BLE peer mesh pomocí seed peer adres.",
         "generic": "Síťové rozhraní Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz."
       },
       "rfProfile": {
         "coordinated": "Koordinované regionální",

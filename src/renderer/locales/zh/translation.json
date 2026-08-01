@@ -1040,7 +1040,8 @@
         "rnodeWifi": "通过 RNode Wi-Fi (tcp:// 主机) 的 LoRa 网格。",
         "blePeer": "使用种子对等地址的 BLE 对等网格。",
         "generic": "Reticulum 网络接口。",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。"
       },
       "rfProfile": {
         "coordinated": "区域协调",

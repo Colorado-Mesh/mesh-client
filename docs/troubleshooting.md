@@ -1274,6 +1274,18 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
 
+### Reticulum I2P interface stays down
+
+**Symptoms**: Connection → Interfaces shows an enabled I2P row (e.g. **RNS I2P Hub A**) as **down**; Diagnostics may list `reticulum/interface-down`. The I2P router appears running and “clients” look ready, but mesh-client never comes up.
+
+**Checks**:
+
+1. **Host-local only**: mesh-client expects an I2P router on **this machine**. Remote SAM is not supported.
+2. **SAM application bridge**, not I2PTunnel: HTTP/HTTPS proxies on `127.0.0.1:4444` / `4445` (and similar “Client ready” lines) are classic I2PTunnel clients. Reticulum needs the **SAM** bridge on **`127.0.0.1:7656`**. In the I2P Router Console → **Clients**, enable **SAM application bridge** (Run on load). The Connection ⓘ tooltip on I2P rows repeats this.
+3. **Restart I2P after enabling SAM**: flipping SAM on while the router is already running often does not open `7656` until you fully restart I2P. Confirm something listens on `7656` (e.g. `nc -z 127.0.0.1 7656`). SAM may also delay ~2 minutes after router boot (`delay=120` in the SAM client config).
+4. **Restart the Reticulum stack** after SAM is listening (stack restart alone cannot help while `7656` is refused).
+5. **Tunnel build time**: first connect to a hub `.b32.i2p` peer can take a while on a fresh router. Sidecar / Device logs may show `I2P client:` / `I2P server:` messages (`failed to connect to SAM bridge`, `STREAM CONNECT failed`, `stream connected`).
+
 ### Reticulum Peers stale or slow with many hubs or testnets
 
 **Symptoms**: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on **Contacts** or **Favorites** because those tabs show a smaller LXMF contact set.

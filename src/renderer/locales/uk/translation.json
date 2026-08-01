@@ -1042,7 +1042,8 @@
         "rnodeWifi": "Сітка LoRa через RNode Wi-Fi (tcp:// host).",
         "blePeer": "Однорангова сітка BLE з використанням початкових однорангових адрес.",
         "generic": "Мережевий інтерфейс Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Магістраль I2P через маршрутизатор на цьому комп'ютері. Увімкніть міст додатків SAM (127.0.0.1:7656), а не проксі-сервери HTTP/HTTPS I2PTunnel (4444/4445). Перезапустіть I2P після ввімкнення SAM, щоб міст прослуховував, а потім перезапустіть стек Reticulum, якщо цей інтерфейс не працює."
       },
       "rfProfile": {
         "coordinated": "Узгоджена обл",

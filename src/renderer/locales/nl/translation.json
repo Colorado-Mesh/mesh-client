@@ -1039,7 +1039,8 @@
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp://host).",
         "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
         "generic": "Reticulum-netwerkinterface.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt."
       },
       "rfProfile": {
         "coordinated": "Regionaal gecoördineerd",

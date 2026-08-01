@@ -1087,6 +1087,7 @@
         "sharedInstance": "Localhost TCP server when Share instance is on — lets other apps on this machine use this stack.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
         "tcp": "Outbound TCP tunnel to a remote Reticulum hub or gateway.",
+        "i2p": "I2P backbone via a router on this machine. Enable the SAM application bridge (127.0.0.1:7656) — not HTTP/HTTPS I2PTunnel proxies (4444/4445). Restart I2P after enabling SAM so the bridge listens, then restart the Reticulum stack if this interface stays down.",
         "rnodeUsb": "LoRa mesh via USB RNode.",
         "rnodeBle": "LoRa mesh via Bluetooth RNode.",
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp:// host).",

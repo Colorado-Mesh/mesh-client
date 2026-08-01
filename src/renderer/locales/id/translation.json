@@ -1040,7 +1040,8 @@
         "rnodeWifi": "LoRa mesh melalui RNode Wi-Fi (tcp:// host).",
         "blePeer": "Mesh rekan BLE menggunakan alamat rekan benih.",
         "generic": "Antarmuka jaringan Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down."
       },
       "rfProfile": {
         "coordinated": "Daerah yang terkoordinasi",

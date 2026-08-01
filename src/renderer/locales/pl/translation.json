@@ -1042,7 +1042,8 @@
         "rnodeWifi": "Siatka LoRa przez Wi-Fi RNode (tcp://host).",
         "blePeer": "Siatka równorzędna BLE wykorzystująca adresy równorzędne początkowe.",
         "generic": "Interfejs sieciowy Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Szkielet I2P za pośrednictwem routera na tym komputerze. Włącz mostek aplikacji SAM (127.0.0.1:7656) — nie proxy HTTP/HTTPS I2PTunnel (4444/4445). Uruchom ponownie I2P po włączeniu SAM, aby mostek nasłuchiwał, a następnie uruchom ponownie stos Reticulum, jeśli ten interfejs pozostanie wyłączony."
       },
       "rfProfile": {
         "coordinated": "Skoordynowane regionalnie",

@@ -1040,7 +1040,8 @@
         "rnodeWifi": "RNode Wi-Fi (tcp:// ana bilgisayarı) aracılığıyla LoRa ağı.",
         "blePeer": "Çekirdek eş adreslerini kullanan BLE eş ağı.",
         "generic": "Reticulum ağ arayüzü.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Bu makinedeki bir yönlendirici aracılığıyla I2P omurgası. HTTP/https I2PTunnel proxy'leri (4444/4445) değil, SAM uygulama köprüsünü (127.0.0.1:7656) etkinleştirin. Köprünün dinlemesi için SAM'İ etkinleştirdikten sonra I2P'yi yeniden başlatın, ardından bu arayüz kapalı kalırsa Reticulum yığınını yeniden başlatın."
       },
       "rfProfile": {
         "coordinated": "Koordineli bölgesel",

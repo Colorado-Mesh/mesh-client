@@ -1038,7 +1038,8 @@
         "rnodeWifi": "LoRa-Mesh über RNode Wi-Fi (tcp:// host).",
         "blePeer": "BLE-Peer-Mesh unter Verwendung von Seed-Peer-Adressen.",
         "generic": "Reticulum-Netzwerkschnittstelle.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt."
       },
       "rfProfile": {
         "coordinated": "Regional koordiniert",

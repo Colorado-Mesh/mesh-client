@@ -1040,7 +1040,8 @@
         "rnodeWifi": "Malha LoRa via RNode Wi-Fi (tcp: // host).",
         "blePeer": "Malha de pares BLE usando endereços de pares iniciais.",
         "generic": "Interface de rede Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "Backbone I2P através de um roteador nesta máquina. Habilite a ponte do aplicativo SAM (127.0.0.1:7656) — não proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie o I2P depois de habilitar o SAM para que a ponte ouça e reinicie a pilha Reticulum se essa interface permanecer inativa."
       },
       "rfProfile": {
         "coordinated": "Regional coordenado",

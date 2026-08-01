@@ -1040,7 +1040,8 @@
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp:// host).",
         "blePeer": "시드 피어 주소를 사용하는 BLE 피어 메시.",
         "generic": "Reticulum 네트워크 인터페이스.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 다리가 들리도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오."
       },
       "rfProfile": {
         "coordinated": "지역별 조정",

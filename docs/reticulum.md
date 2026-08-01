@@ -169,7 +169,7 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 - **IFAC (all types):** optional `network_name` and `passphrase` for private/authenticated network segments ([common interface options](https://reticulum.network/manual/interfaces.html#common-interface-options)). Shown on add and edit; passphrase uses a masked input with show/hide.
 - **Advanced (edit only):** free-form `key = value` lines for other common options (e.g. `forward_interval`, `ifac_size`). Keys that duplicate typed form fields are ignored. Unknown INI keys are preserved across enable/edit/repair via sidecar `extra_config` (no longer silently dropped).
 - **TCP client:** host, port (mesh hub — default port **4242**); IPv6 literals use brackets: `[2001:db8::1]:4242`
-- **I2P:** comma-separated peer hostnames (`.b32.i2p` addresses, e.g. `{52-base32-chars}.b32.i2p`); max **512** characters total; validated in UI and sidecar before write
+- **I2P:** comma-separated peer hostnames (`.b32.i2p` addresses, e.g. `{52-base32-chars}.b32.i2p`); max **512** characters total; validated in UI and sidecar before write. **Host-local only:** run an I2P router on the same machine and enable the **SAM application bridge** on `127.0.0.1:7656` (not HTTP/HTTPS I2PTunnel proxies on `4444`/`4445`). **Restart I2P after enabling SAM** so the bridge listens, then restart the Reticulum stack if the interface stays down. RMAP publish on I2P sets `connectable=yes` (inbound); hub `peers` are dialed as clients as well (Python RNS parity)
 - **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
