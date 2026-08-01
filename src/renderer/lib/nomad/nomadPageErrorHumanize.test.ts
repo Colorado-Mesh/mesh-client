@@ -63,8 +63,16 @@ describe('nomadPageErrorHumanize', () => {
     expect(shouldForceNomadPathRefreshRetry('path_timeout')).toBe(true);
     expect(shouldForceNomadPathRefreshRetry('pubkey_not_found')).toBe(true);
     expect(shouldForceNomadPathRefreshRetry('missing_identity_hash')).toBe(true);
-    expect(shouldForceNomadPathRefreshRetry('link_timeout')).toBe(false);
     expect(shouldForceNomadPathRefreshRetry('response_timeout')).toBe(false);
     expect(shouldForceNomadPathRefreshRetry('nomad_busy')).toBe(false);
+
+    // TCP/network hub link_timeout: force DropPath; RF/BLE does not.
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'tcp')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'network')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'unknown')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'rf')).toBe(false);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'ble')).toBe(false);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'RF')).toBe(false);
   });
 });

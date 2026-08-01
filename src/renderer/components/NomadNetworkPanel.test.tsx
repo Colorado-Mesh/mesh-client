@@ -874,12 +874,14 @@ describe('NomadNetworkPanel', () => {
     }
   });
 
-  it('does not auto-retry link_timeout (shows error after one fetch)', async () => {
+  it('does not auto-retry RF link_timeout (shows error after one fetch)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { restore } = mockConsoleWarn();
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const fetchNomadPage = vi.fn().mockResolvedValue({ ok: false, error: 'link_timeout' });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValue({ ok: false, error: 'link_timeout', egress: 'rf' });
       useNomadNetworkStore.setState({
         nodes: new Map([
           [
@@ -910,6 +912,147 @@ describe('NomadNetworkPanel', () => {
         await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
       });
       expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('auto-retries TCP link_timeout once with forcePathRefresh', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout', egress: 'tcp' })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: '>>>hello after tcp retry',
+          content_type: 'micron',
+          egress: 'tcp',
+        });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'TTP Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 1,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+      });
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        2,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('announce reload after TCP link_timeout uses forcePathRefresh', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout', egress: 'tcp' })
+        .mockResolvedValueOnce({ ok: false, error: 'link_timeout', egress: 'tcp' })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: '>>>hello after announce',
+          content_type: 'micron',
+          egress: 'tcp',
+        });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'TTP Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 1,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+        expect(screen.getByText(/nomadNetwork.pageFailed/)).toBeInTheDocument();
+      });
+
+      act(() => {
+        useNomadNetworkStore.setState({
+          nodes: new Map([
+            [
+              'abc1234567890',
+              {
+                destination_hash: 'abc1234567890',
+                display_name: 'TTP Node',
+                favorited: false,
+                last_seen: 200,
+                hops: 1,
+              },
+            ],
+          ]),
+        });
+      });
+
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(3);
+        expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+      });
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        3,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
     } finally {
       restore();
       vi.useRealTimers();

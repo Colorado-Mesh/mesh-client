@@ -37,14 +37,22 @@ const ANNOUNCE_RELOAD_NOMAD_PAGE_ERRORS = new Set([
 
 /**
  * Errors worth one automatic re-fetch with `force_path_refresh`.
- * Link/response timeouts already exercised path+link — forcing RequestPath again
- * doubles RF lock time without fixing the failure mode.
+ * RF/BLE `link_timeout` already exercised path+link — forcing RequestPath again
+ * doubles RF lock time without fixing the failure mode. TCP/network hub routes
+ * often keep a present-but-dead path; DropPath + short Nomad fall-through can
+ * recover those (release 5.25.0 always force-pathed `link_timeout`).
  */
 const FORCE_PATH_REFRESH_NOMAD_PAGE_ERRORS = new Set([
   'path_timeout',
   'pubkey_not_found',
   'missing_identity_hash',
 ]);
+
+/** True when sidecar egress is RF/BLE (skip force-path on link_timeout). */
+function isRfOrBleNomadEgress(egress: string | null | undefined): boolean {
+  const atom = egress?.trim().toLowerCase();
+  return atom === 'rf' || atom === 'ble';
+}
 
 export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {
   if (error == null) return null;
@@ -60,11 +68,21 @@ export function isRetryableNomadPageError(error: string | null | undefined): boo
   return ANNOUNCE_RELOAD_NOMAD_PAGE_ERRORS.has(trimmed);
 }
 
-/** True when one-shot auto-retry should call fetch with forcePathRefresh. */
-export function shouldForceNomadPathRefreshRetry(error: string | null | undefined): boolean {
+/**
+ * True when one-shot auto-retry / announce reload should call fetch with forcePathRefresh.
+ * Pass sidecar `egress` when known so TCP hub `link_timeout` can DropPath while RF/BLE does not.
+ */
+export function shouldForceNomadPathRefreshRetry(
+  error: string | null | undefined,
+  egress?: string | null,
+): boolean {
   const trimmed = error?.trim();
   if (!trimmed) return false;
-  return FORCE_PATH_REFRESH_NOMAD_PAGE_ERRORS.has(trimmed);
+  if (FORCE_PATH_REFRESH_NOMAD_PAGE_ERRORS.has(trimmed)) return true;
+  // Hub peers: present-but-stale TCP routes often surface as link_timeout, not path_timeout.
+  // Missing/unknown egress defaults to force (TCP countdown default); only skip RF/BLE.
+  if (trimmed === 'link_timeout' && !isRfOrBleNomadEgress(egress)) return true;
+  return false;
 }
 
 /** Resolve a Nomad page/file error for display via i18n when known. */
