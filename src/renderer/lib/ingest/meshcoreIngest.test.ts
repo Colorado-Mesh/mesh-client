@@ -612,7 +612,7 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
   it('correlates DM rxHops from TXT_MSG raw packet log when hopCount omitted', () => {
     const detach = attachMeshcoreIngest(ID, {
       rawPacketsForHopCorrelation: () => [
-        { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 1 },
+        { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: 0xabcd, hopCount: 1 },
       ],
     });
     upsertMessage(ID, {

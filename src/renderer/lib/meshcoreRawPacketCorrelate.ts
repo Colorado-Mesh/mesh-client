@@ -12,6 +12,41 @@ export interface ChatCorrelateRxLike {
   hopCount?: number;
   /** When false, hopCount is unreliable (failed parse / synthetic chat row). Absent = trusted. */
   parseOk?: boolean;
+  /** CRC-32 packet fingerprint (8 hex chars) when known from RF parse. */
+  messageFingerprintHex?: string | null;
+}
+
+/** Optional DM hop-correlation match against the ingesting event's sender. */
+export interface MeshcoreTxtMsgHopMatch {
+  /** Companion / PacketRouter sender node id (`event.payload.from`). */
+  fromNodeId?: number | null;
+  /** Optional RF packet fingerprint when available on the chat path. */
+  messageFingerprintHex?: string | null;
+}
+
+function normalizeCorrelateFingerprint(hex: string | null | undefined): string | null {
+  if (typeof hex !== 'string') return null;
+  const t = hex.trim();
+  if (!/^[0-9A-Fa-f]{8}$/.test(t)) return null;
+  return t.toUpperCase();
+}
+
+function meshcoreTxtMsgRawPacketMatchesSender(
+  entry: ChatCorrelateRxLike,
+  match?: MeshcoreTxtMsgHopMatch,
+): boolean {
+  if (!match) return true;
+  const wantFp = normalizeCorrelateFingerprint(match.messageFingerprintHex);
+  if (wantFp && normalizeCorrelateFingerprint(entry.messageFingerprintHex) === wantFp) {
+    return true;
+  }
+  const wantFrom = match.fromNodeId;
+  if (wantFrom != null && wantFrom !== 0 && entry.fromNodeId === wantFrom) {
+    return true;
+  }
+  // No usable sender constraint → keep prior any-TXT_MSG behavior.
+  if ((wantFrom == null || wantFrom === 0) && !wantFp) return true;
+  return false;
 }
 
 /**
@@ -59,16 +94,23 @@ export function meshcoreFindRecentGrpTxtRawPacket<T extends ChatCorrelateRxLike>
   return undefined;
 }
 
-/** Most recent TXT_MSG raw log row within the chat correlation window (any fromNodeId). */
+/**
+ * Most recent TXT_MSG raw log row within the chat correlation window.
+ * When `match` includes a sender id or fingerprint, only that sender's row is used
+ * so interleaved DMs in the window cannot steal hop counts.
+ */
 export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>(
   prev: readonly T[],
   now: number,
   windowMs: number = MESHCORE_CHAT_CORRELATE_WINDOW_MS,
+  match?: MeshcoreTxtMsgHopMatch,
 ): T | undefined {
   for (let i = prev.length - 1; i >= 0; i--) {
     const e = prev[i];
     if (now - e.ts > windowMs) break;
-    if (e.payloadTypeString === 'TXT_MSG') return e;
+    if (e.payloadTypeString !== 'TXT_MSG') continue;
+    if (!meshcoreTxtMsgRawPacketMatchesSender(e, match)) continue;
+    return e;
   }
   return undefined;
 }
@@ -78,10 +120,16 @@ export function resolveMeshcoreIngestRxHops(
   rawPackets: readonly ChatCorrelateRxLike[],
   isChannel: boolean,
   now: number = Date.now(),
+  txtMsgMatch?: MeshcoreTxtMsgHopMatch,
 ): number | undefined {
   const match = isChannel
     ? meshcoreFindRecentGrpTxtRawPacket(rawPackets, now)
-    : meshcoreFindRecentTxtMsgRawPacket(rawPackets, now);
+    : meshcoreFindRecentTxtMsgRawPacket(
+        rawPackets,
+        now,
+        MESHCORE_CHAT_CORRELATE_WINDOW_MS,
+        txtMsgMatch,
+      );
   // Failed parses / synthetic chat rows default hopCount to 0 — do not adopt those.
   if (!match || match.parseOk === false) return undefined;
   const hops = match.hopCount;
