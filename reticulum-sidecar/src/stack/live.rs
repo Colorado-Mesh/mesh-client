@@ -1105,7 +1105,6 @@ impl LiveBridge {
                         timeout_secs,
                         path_hops: hops,
                         link_hops,
-                        proof_budget_secs,
                         force_path_ok,
                         path_ensure_kind,
                         elapsed_ms,
@@ -2268,16 +2267,15 @@ impl LiveBridge {
                 "path refresh timed out after dropping cached route"
             );
         }
-        let kind = if !accept {
-            PathEnsureKind::Missing
-        } else if force && already && !saw_path_absent && accept_existing_on_timeout {
-            PathEnsureKind::StaleAccept
-        } else {
-            PathEnsureKind::Rediscovered
-        };
         PathEnsureReport {
             ok: accept,
-            kind,
+            kind: path_ensure_kind_after_timeout(
+                accept,
+                force,
+                already,
+                saw_path_absent,
+                accept_existing_on_timeout,
+            ),
             had_cached: already,
             saw_path_absent,
         }
@@ -3680,7 +3678,6 @@ struct NomadRemoteQueryOk {
     timeout_secs: u64,
     path_hops: u8,
     link_hops: u8,
-    proof_budget_secs: u64,
     force_path_ok: Option<bool>,
     path_ensure_kind: Option<&'static str>,
     elapsed_ms: u64,
@@ -3749,11 +3746,6 @@ fn merge_nomad_remote_ok_fields(out: &mut serde_json::Value, meta: &NomadRemoteQ
         meta.path_ensure_kind,
         Some(meta.elapsed_ms),
     );
-    // Prefer the explicit proof budget from the query (same as link_hops × 6).
-    obj.insert(
-        "proof_budget_secs".into(),
-        serde_json::json!(meta.proof_budget_secs),
-    );
 }
 
 /// Remote Nomad page/file error JSON; include path-aware egress and Link budgets when known.
@@ -3813,6 +3805,24 @@ fn force_path_refresh_timeout_accepts(
     }
     // Non-force miss, or force with no path at start: accept any path that appeared.
     accept_existing_on_timeout
+}
+
+/// Classify path-ensure outcome after the RequestPath wait times out.
+#[allow(clippy::fn_params_excessive_bools)] // mirrors force_path_refresh_timeout_accepts flags
+fn path_ensure_kind_after_timeout(
+    accept: bool,
+    force: bool,
+    had_path_at_start: bool,
+    saw_path_absent: bool,
+    accept_existing_on_timeout: bool,
+) -> PathEnsureKind {
+    if !accept {
+        PathEnsureKind::Missing
+    } else if force && had_path_at_start && !saw_path_absent && accept_existing_on_timeout {
+        PathEnsureKind::StaleAccept
+    } else {
+        PathEnsureKind::Rediscovered
+    }
 }
 
 /// Hashes present in `next` but not in `prev` (path-table membership growth).
@@ -4166,7 +4176,6 @@ mod announce_display_name_tests {
                 timeout_secs: 45,
                 path_hops: 1,
                 link_hops: 3,
-                proof_budget_secs: 18,
                 force_path_ok: None,
                 path_ensure_kind: None,
                 elapsed_ms: 4200,
@@ -4206,6 +4215,40 @@ mod announce_display_name_tests {
         assert!(!force_path_refresh_timeout_accepts(
             true, false, true, false, false
         ));
+    }
+
+    #[test]
+    fn path_ensure_kind_after_timeout_matches_accept_matrix() {
+        // Same input matrix as force_path_refresh_timeout_accepts_fallthrough_when_never_absent.
+        let cases: &[(bool, bool, bool, bool, bool, PathEnsureKind)] = &[
+            // force, had_start, has_path, saw_absent, accept_existing → kind
+            (true, true, true, false, true, PathEnsureKind::StaleAccept),
+            (true, true, true, false, false, PathEnsureKind::Missing),
+            (true, true, true, true, false, PathEnsureKind::Rediscovered),
+            (true, true, false, true, true, PathEnsureKind::Missing),
+            (true, false, true, false, true, PathEnsureKind::Rediscovered),
+            (true, false, true, false, false, PathEnsureKind::Missing),
+        ];
+        for &(force, had_start, has_path, saw_absent, accept_existing, expected) in cases {
+            let accept = force_path_refresh_timeout_accepts(
+                force,
+                had_start,
+                has_path,
+                saw_absent,
+                accept_existing,
+            );
+            assert_eq!(
+                path_ensure_kind_after_timeout(
+                    accept,
+                    force,
+                    had_start,
+                    saw_absent,
+                    accept_existing,
+                ),
+                expected,
+                "force={force} had_start={had_start} has_path={has_path} saw_absent={saw_absent} accept_existing={accept_existing} accept={accept}"
+            );
+        }
     }
 
     #[test]

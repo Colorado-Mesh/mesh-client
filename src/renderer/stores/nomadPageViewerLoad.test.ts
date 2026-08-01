@@ -119,14 +119,16 @@ describe('nomadPageViewerStore loadPage cache', () => {
         ok: false,
         error: 'link_timeout',
         egress: 'tcp',
+        link_hops: 5,
+        proof_budget_secs: 30,
       });
       await Promise.resolve();
       await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
       const retryStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
       expect(retryStartedAt).toBeTypeOf('number');
       expect(retryStartedAt).toBeGreaterThan(firstStartedAt!);
-      // Retry countdown = 4s path refresh + clamp(path_hops,3,7)×6 proof (no fake 45s).
-      expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(4 + 3 * 6);
+      // Retry countdown = 4s path refresh + sidecar-reported proof_budget_secs.
+      expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(4 + 30);
       expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(true);
 
       resolveSecond?.({

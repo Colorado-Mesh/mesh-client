@@ -206,6 +206,31 @@ function egressFromNomadPageResponse(res: NomadPageResponse): string | null {
   return trimmed || null;
 }
 
+/** Force-path retry countdown: prefer sidecar proof budget; clamp only when link_hops absent. */
+function nomadPageRetryLoadingBudgetSec(
+  res: NomadPageResponse,
+  nodeHops: number | null | undefined,
+): number {
+  const pathRefreshSec = 4;
+  if (typeof res.proof_budget_secs === 'number' && Number.isFinite(res.proof_budget_secs)) {
+    return pathRefreshSec + Math.max(0, Math.trunc(res.proof_budget_secs));
+  }
+  if (typeof res.link_hops === 'number' && Number.isFinite(res.link_hops)) {
+    return pathRefreshSec + Math.max(1, Math.trunc(res.link_hops)) * 6;
+  }
+  // path_timeout (and similar) responses omit link_hops — local clamp fallback.
+  const pathHops =
+    typeof res.path_hops === 'number' && Number.isFinite(res.path_hops)
+      ? Math.max(1, Math.trunc(res.path_hops))
+      : Math.max(1, nodeHops ?? 8);
+  const retryEgress = egressFromNomadPageResponse(res);
+  const retryLinkHops =
+    retryEgress === 'rf' || retryEgress === 'ble'
+      ? Math.min(32, pathHops)
+      : Math.min(7, Math.max(3, pathHops));
+  return pathRefreshSec + retryLinkHops * 6;
+}
+
 export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) => ({
   ...initialViewerState,
 
@@ -342,17 +367,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         if (get().loadGeneration !== generation) return;
         // Restart countdown for the retry using the sidecar proof window (not a
         // fresh fake 45s) so the timer does not jump back up mid-load.
-        const retryEgress = egressFromNomadPageResponse(res);
-        const pathHops =
-          typeof res.path_hops === 'number' && Number.isFinite(res.path_hops)
-            ? Math.max(1, Math.trunc(res.path_hops))
-            : (node?.hops ?? 8);
-        const retryLinkHops =
-          retryEgress === 'rf' || retryEgress === 'ble'
-            ? Math.min(32, pathHops)
-            : Math.min(7, Math.max(3, pathHops));
-        // ~4s force-path refresh + link_hops × 6s proof (MeshChat-style).
-        budgetSec = 4 + retryLinkHops * 6;
+        budgetSec = nomadPageRetryLoadingBudgetSec(res, node?.hops);
         set({
           pageLoadingStartedAt: Date.now(),
           pageLoadingBudgetSec: budgetSec,
