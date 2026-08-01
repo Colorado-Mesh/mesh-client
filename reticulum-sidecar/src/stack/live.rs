@@ -1179,7 +1179,7 @@ impl LiveBridge {
         {
             Ok((bytes, meta)) => {
                 if bytes.len() > NOMAD_FILE_MAX_BYTES {
-                    return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                    return nomad_response_too_large_json(&meta);
                 }
                 let file_name = nomad_file_name_from_path(path);
                 let content_base64 =
@@ -1253,7 +1253,7 @@ impl LiveBridge {
         {
             Ok((bytes, meta)) => {
                 if bytes.len() > NOMAD_PAGE_MAX_BYTES {
-                    return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                    return nomad_response_too_large_json(&meta);
                 }
                 let content = String::from_utf8_lossy(&bytes).into_owned();
                 let content_type = if path.split('`').next().is_some_and(|p| p.ends_with(".mu")) {
@@ -3748,6 +3748,13 @@ fn merge_nomad_remote_ok_fields(out: &mut serde_json::Value, meta: &NomadRemoteQ
     );
 }
 
+/// Oversized remote Nomad page/file response — keep Link-budget diagnostics.
+fn nomad_response_too_large_json(meta: &NomadRemoteQueryOk) -> serde_json::Value {
+    let mut out = serde_json::json!({ "ok": false, "error": "response_too_large" });
+    merge_nomad_remote_ok_fields(&mut out, meta);
+    out
+}
+
 /// Remote Nomad page/file error JSON; include path-aware egress and Link budgets when known.
 fn nomad_remote_error_json(err: &NomadRemoteQueryError) -> serde_json::Value {
     let mut out = serde_json::json!({ "ok": false, "error": err.code });
@@ -3785,9 +3792,9 @@ fn force_path_refresh_accepts_current_path(
 
 /// Timeout decision for [`LiveStack::ensure_path_for_direct_with_opts`].
 ///
-/// When `accept_existing_on_timeout` is set (Nomad force refresh), a path that
-/// never went absent may still be accepted so the Link attempt can proceed
-/// inside the overall budget.
+/// `accept_existing_on_timeout` is only for forced refresh of a path that was
+/// already present (stale fall-through). Non-force probes accept any path that
+/// appeared by timeout without that flag.
 #[allow(clippy::fn_params_excessive_bools)] // mirrors ensure_path wait-loop flags
 fn force_path_refresh_timeout_accepts(
     force: bool,
@@ -3800,11 +3807,12 @@ fn force_path_refresh_timeout_accepts(
         return false;
     }
     if force && had_path_at_start {
+        // Reserve accept_existing_on_timeout for forced stale-path fall-through.
         return force_path_refresh_accepts_current_path(force, had_path_at_start, saw_path_absent)
             || accept_existing_on_timeout;
     }
-    // Non-force miss, or force with no path at start: accept any path that appeared.
-    accept_existing_on_timeout
+    // Non-force probe (or force with no path at start): accept a path that appeared.
+    true
 }
 
 /// Classify path-ensure outcome after the RequestPath wait times out.
@@ -4191,6 +4199,31 @@ mod announce_display_name_tests {
     }
 
     #[test]
+    fn nomad_response_too_large_json_retains_link_budget_diagnostics() {
+        let meta = NomadRemoteQueryOk {
+            egress: "tcp",
+            timeout_secs: 45,
+            path_hops: 5,
+            link_hops: 5,
+            force_path_ok: Some(false),
+            path_ensure_kind: Some("cached_hit"),
+            elapsed_ms: 1200,
+        };
+        // Same helper used by remote page and file oversized branches.
+        let out = nomad_response_too_large_json(&meta);
+        assert_eq!(out["ok"], false);
+        assert_eq!(out["error"], "response_too_large");
+        assert_eq!(out["egress"], "tcp");
+        assert_eq!(out["path_hops"], 5);
+        assert_eq!(out["link_hops"], 5);
+        assert_eq!(out["proof_budget_secs"], 30);
+        assert_eq!(out["timeout_secs"], 45);
+        assert_eq!(out["force_path_ok"], false);
+        assert_eq!(out["path_ensure_kind"], "cached_hit");
+        assert_eq!(out["elapsed_ms"], 1200);
+    }
+
+    #[test]
     fn force_path_refresh_timeout_accepts_fallthrough_when_never_absent() {
         // Nomad force refresh: path never left the table, but fall-through is on.
         assert!(force_path_refresh_timeout_accepts(
@@ -4208,12 +4241,20 @@ mod announce_display_name_tests {
         assert!(!force_path_refresh_timeout_accepts(
             true, true, false, true, true
         ));
-        // Force started without a path: fall-through accepts whatever appeared.
+        // Force started without a path: accept whatever appeared (accept_existing unused).
         assert!(force_path_refresh_timeout_accepts(
             true, false, true, false, true
         ));
-        assert!(!force_path_refresh_timeout_accepts(
+        assert!(force_path_refresh_timeout_accepts(
             true, false, true, false, false
+        ));
+        // Non-force first probe: path that appears by timeout is accepted even when
+        // accept_existing_on_timeout is false (reserved for forced stale fall-through).
+        assert!(force_path_refresh_timeout_accepts(
+            false, false, true, true, false
+        ));
+        assert!(!force_path_refresh_timeout_accepts(
+            false, false, false, true, false
         ));
     }
 
@@ -4227,7 +4268,23 @@ mod announce_display_name_tests {
             (true, true, true, true, false, PathEnsureKind::Rediscovered),
             (true, true, false, true, true, PathEnsureKind::Missing),
             (true, false, true, false, true, PathEnsureKind::Rediscovered),
-            (true, false, true, false, false, PathEnsureKind::Missing),
+            (
+                true,
+                false,
+                true,
+                false,
+                false,
+                PathEnsureKind::Rediscovered,
+            ),
+            (
+                false,
+                false,
+                true,
+                true,
+                false,
+                PathEnsureKind::Rediscovered,
+            ),
+            (false, false, false, true, false, PathEnsureKind::Missing),
         ];
         for &(force, had_start, has_path, saw_absent, accept_existing, expected) in cases {
             let accept = force_path_refresh_timeout_accepts(

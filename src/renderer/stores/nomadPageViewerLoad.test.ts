@@ -155,6 +155,123 @@ describe('nomadPageViewerStore loadPage cache', () => {
     }
   });
 
+  it('retry budget uses link_hops when proof_budget_secs is absent', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      let resolveFirst: ((value: unknown) => void) | undefined;
+      let resolveSecond: ((value: unknown) => void) | undefined;
+      const fetchNomadPage = vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecond = resolve;
+            }),
+        );
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      const firstStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
+      expect(firstStartedAt).toBeTypeOf('number');
+
+      resolveFirst?.({
+        ok: false,
+        error: 'link_timeout',
+        egress: 'tcp',
+        link_hops: 5,
+      });
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      const retryStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
+      expect(retryStartedAt).toBeTypeOf('number');
+      expect(retryStartedAt).toBeGreaterThan(firstStartedAt!);
+      // 4s path refresh + link_hops × 6s proof.
+      expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(4 + 5 * 6);
+      expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(true);
+
+      resolveSecond?.({
+        ok: true,
+        content: 'ok via link_hops budget',
+        content_type: 'micron',
+        egress: 'tcp',
+      });
+      await loadPromise;
+      expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+      expect(useNomadPageViewerStore.getState().pageContent).toBe('ok via link_hops budget');
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('retry budget falls back to local clamp for path_timeout without link fields', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      let resolveFirst: ((value: unknown) => void) | undefined;
+      let resolveSecond: ((value: unknown) => void) | undefined;
+      const fetchNomadPage = vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecond = resolve;
+            }),
+        );
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      const firstStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
+      expect(firstStartedAt).toBeTypeOf('number');
+
+      resolveFirst?.({
+        ok: false,
+        error: 'path_timeout',
+        egress: 'tcp',
+      });
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      const retryStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
+      expect(retryStartedAt).toBeTypeOf('number');
+      expect(retryStartedAt).toBeGreaterThan(firstStartedAt!);
+      // Node hops=1 → TCP clamp floor 3 → 4 + 3×6.
+      expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(4 + 3 * 6);
+      expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(true);
+
+      resolveSecond?.({
+        ok: true,
+        content: 'ok via path_timeout fallback',
+        content_type: 'micron',
+        egress: 'tcp',
+      });
+      await loadPromise;
+      expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+      expect(useNomadPageViewerStore.getState().pageContent).toBe('ok via path_timeout fallback');
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
   it('snapshots the node on unexpected fetch rejection', async () => {
     vi.useFakeTimers();
     const { restore } = mockConsoleWarn();
@@ -182,11 +299,19 @@ describe('nomadPageViewerStore loadPage cache', () => {
   });
 
   it('setInvalidUrlError stores the raw invalid_url code', () => {
+    useNomadPageViewerStore.setState({
+      pageLoadingRetrying: true,
+      pageLoadingBudgetSec: 42,
+      pageLoading: true,
+      pageLoadingStartedAt: Date.now(),
+    });
     useNomadPageViewerStore.getState().setInvalidUrlError();
     const state = useNomadPageViewerStore.getState();
     expect(state.pageErrorRaw).toBe('invalid_url');
     expect(state.pageErrorNodeSnapshot).toBeNull();
     expect(state.pageLoading).toBe(false);
     expect(state.pageLoadingStartedAt).toBeNull();
+    expect(state.pageLoadingRetrying).toBe(false);
+    expect(state.pageLoadingBudgetSec).toBe(0);
   });
 });

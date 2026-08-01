@@ -259,6 +259,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageErrorNodeSnapshot: null,
       pageLoading: false,
       pageLoadingStartedAt: null,
+      pageLoadingRetrying: false,
+      pageLoadingBudgetSec: 0,
     });
   },
 
