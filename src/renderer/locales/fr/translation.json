@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Réduire la liste des nœuds",
     "expandNodeList": "Développer la liste des nœuds",
     "errors": {
-      "pathTimeout": "Aucun itinéraire vers ce nœud (délai de recherche de chemin dépassé). Essayez un nœud plus proche ou attendez une annonce plus récente.",
+      "pathTimeout": "Aucun chemin utilisable vers ce nœud (délai de recherche de chemin dépassé). Attendez la prochaine annonce Nomad, puis réessayez. Si cela échoue encore, essayez un autre hub ou un nœud plus proche.",
       "pubkeyNotFound": "Impossible de trouver la clé d'identité de ce nœud. Attendez une annonce Nomad, puis réessayez.",
       "linkTimeout": "Le lien vers le nœud n'a pas pu être établi à temps.",
       "responseTimeout": "Le nœud a accepté le lien mais n'a pas renvoyé la page à temps.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "Le nœud a renvoyé plus de données que mesh-client n’accepte pour cette requête.",
       "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant.",
       "nomadNotServing": "Il s'agit de votre nœud Nomad, mais l'hébergement Mes pages ne fonctionne pas. Ouvrez Mes pages, choisissez un dossier et commencez à diffuser un aperçu localement.",
-      "networkNotReady": "En attente de la mise en ligne d'un hub ou d'une interface radio. Réessayez une fois que Connection affiche une interface."
+      "networkNotReady": "En attente de la mise en ligne d'un hub ou d'une interface radio. Réessayez une fois que Connection affiche une interface.",
+      "pathTimeoutStale": "Impossible d'actualiser l'itinéraire vers ce nœud (chemin obsolète). Attendez la prochaine annonce, puis réessayez. Les défaillances persistantes signifient souvent que le nœud est hors ligne.",
+      "linkTimeoutCachedPath": "Un chemin d'accès à ce nœud est répertorié, mais le lien n'est jamais terminé — l'itinéraire peut être obsolète. Attendez la prochaine annonce, puis réessayez. Les défaillances persistantes signifient généralement que le nœud est hors ligne ou inaccessible via TCP.",
+      "linkTimeoutPathOk": "Un itinéraire vers ce nœud a été confirmé, mais la page Nomad n'a pas répondu. Attendez une annonce plus fraîche et réessayez. S'il continue à échouer, le nœud peut être hors ligne ou ne pas héberger cette page."
     },
     "fitWidth": "Ajuster la page à la fenêtre",
     "openWidth": "Largeur de la page",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Chargement de la page… {{time}} gauche",
     "pageLoadingCountdownOverdue": "Chargement de la page… fonctionne toujours",
     "pageReadyToast": "Nomad — Page nomade prête : {{name}}",
-    "staleLastSeenHint": "Dernière écoute {{time}} — ce nœud peut être hors ligne même s'il est répertorié comme en ligne."
+    "staleLastSeenHint": "Dernière écoute {{time}} — ce nœud peut être hors ligne même s'il est répertorié comme en ligne.",
+    "pageLoadingRetryCountdown": "Première tentative expirée — actualisation du chemin et nouvelle tentative… {{time}} restante",
+    "pageLoadingRetryOverdue": "Actualiser le chemin et réessayer… toujours en cours"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

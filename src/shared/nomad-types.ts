@@ -9,16 +9,26 @@ export interface NomadNodeRow {
   status?: string | null;
 }
 
-/** Optional Link-budget diagnostics on failed Nomad page/file fetches. */
+/** Optional Link-budget diagnostics on Nomad page/file fetches (ok or error). */
 export interface NomadLinkFailureDiagnostics {
   /** Path-table hop count used for overall timeout classification. */
   path_hops?: number;
-  /** Hops passed to Link::new_initiator (TCP/network flat 3 → ~18s proof). */
+  /** Hops passed to Link::new_initiator (TCP/network: path hops clamped 3–7). */
   link_hops?: number;
   /** Effective link-proof wait (seconds): link_hops × 6. */
   proof_budget_secs?: number;
-  /** Sidecar `force_path_refresh` result when that retry path ran. */
+  /**
+   * True only when DropPath→RequestPath rediscovered a path after absence.
+   * First-attempt cache hits set false — not a reachability proof.
+   */
   force_path_ok?: boolean;
+  /**
+   * Path-ensure outcome: `cached_hit` | `rediscovered` | `stale_accept` | `missing`.
+   * Not a separate peer probe — used to humanize link vs path failures.
+   */
+  path_ensure_kind?: string;
+  /** Sidecar wall time for the Link query attempt (milliseconds). */
+  elapsed_ms?: number;
   /** Unmapped LinkClient error string before sidecar code mapping. */
   raw_error?: string;
 }

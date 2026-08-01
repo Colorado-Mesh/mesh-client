@@ -2951,7 +2951,7 @@
     "collapseNodeList": "Sbalit seznam uzlů",
     "expandNodeList": "Rozbalit seznam uzlů",
     "errors": {
-      "pathTimeout": "K tomuto uzlu neexistuje cesta (vypršel časový limit vyhledávání cesty). Zkuste bližší uzel nebo počkejte na novější announce.",
+      "pathTimeout": "K tomuto uzlu neexistuje použitelná cesta (vypršel časový limit vyhledávání cesty). Počkejte na další oznámení Nomad a zkuste to znovu. Pokud to stále selže, zkuste jiný hub nebo bližší uzel.",
       "pubkeyNotFound": "Nelze najít identifikační klíč tohoto uzlu. Počkejte na oznámení Nomad a zkuste to znovu.",
       "linkTimeout": "Propojení s uzlem se nepodařilo navázat včas.",
       "responseTimeout": "Uzel přijal odkaz, ale stránku nevrátil včas.",
@@ -2961,7 +2961,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Jiný požadavek na stránku nebo soubor Nomad stále probíhá. Zkuste to znovu za chvíli.",
       "nomadNotServing": "Toto je váš uzel Nomad, ale hosting My Pages neběží. Otevřete Moje stránky, vyberte složku a začněte poskytovat místní náhled.",
-      "networkNotReady": "Čekání na připojení hubu nebo rádiového rozhraní. Zkuste to znovu, jakmile připojení zobrazí rozhraní."
+      "networkNotReady": "Čekání na připojení hubu nebo rádiového rozhraní. Zkuste to znovu, jakmile připojení zobrazí rozhraní.",
+      "pathTimeoutStale": "Nelze obnovit trasu k tomuto uzlu (zastaralá cesta). Počkej na další oznámení a zkus to znovu. Trvalé poruchy často znamenají, že uzel je offline.",
+      "linkTimeoutCachedPath": "Je uvedena cesta k tomuto uzlu, ale odkaz nebyl nikdy dokončen — trasa může být zastaralá. Počkej na další oznámení a zkus to znovu. Trvalé poruchy obvykle znamenají, že uzel je offline nebo není dosažitelný přes TCP.",
+      "linkTimeoutPathOk": "Trasa k tomuto uzlu byla potvrzena, ale stránka Nomad neodpověděla. Počkejte na čerstvější oznámení a zkuste to znovu. Pokud stále selhává, uzel může být offline nebo nemůže hostit tuto stránku."
     },
     "fitWidth": "Přizpůsobit stránku oknu",
     "openWidth": "Šířka stránky",
@@ -3011,7 +3014,9 @@
     "pageLoadingCountdown": "Načítání stránky… Zbývá {{time}}",
     "pageLoadingCountdownOverdue": "Načítání stránky… stále funguje",
     "pageReadyToast": "Nomad — Nomádská stránka připravena: {{name}}",
-    "staleLastSeenHint": "Naposledy slyšet {{time}} – tento uzel může být offline, i když je uveden jako online."
+    "staleLastSeenHint": "Naposledy slyšet {{time}} – tento uzel může být offline, i když je uveden jako online.",
+    "pageLoadingRetryCountdown": "Vypršel časový limit prvního pokusu — osvěžující cesta a opakování… zbývá {{time}}",
+    "pageLoadingRetryOverdue": "Obnovení cesty a opakování... stále funguje"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

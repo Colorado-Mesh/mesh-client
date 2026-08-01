@@ -94,26 +94,47 @@ describe('nomadPageViewerStore loadPage cache', () => {
     vi.useFakeTimers();
     const { restore } = mockConsoleWarn();
     try {
+      let resolveFirst: ((value: unknown) => void) | undefined;
+      let resolveSecond: ((value: unknown) => void) | undefined;
+      const firstFetch = new Promise((resolve) => {
+        resolveFirst = resolve;
+      });
+      const secondFetch = new Promise((resolve) => {
+        resolveSecond = resolve;
+      });
       const fetchNomadPage = vi
         .fn()
-        .mockResolvedValueOnce({
-          ok: false,
-          error: 'link_timeout',
-          egress: 'tcp',
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          content: 'hello after tcp retry',
-          content_type: 'micron',
-          egress: 'tcp',
-        });
+        .mockImplementationOnce(() => firstFetch)
+        .mockImplementationOnce(() => secondFetch);
       useNomadNetworkStore.setState({ fetchNomadPage });
 
       const loadPromise = useNomadPageViewerStore
         .getState()
         .loadPage('abc1234567890', '/page/index.mu');
       await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      const firstStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
+      expect(firstStartedAt).toBeTypeOf('number');
+
+      resolveFirst?.({
+        ok: false,
+        error: 'link_timeout',
+        egress: 'tcp',
+      });
+      await Promise.resolve();
       await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      const retryStartedAt = useNomadPageViewerStore.getState().pageLoadingStartedAt;
+      expect(retryStartedAt).toBeTypeOf('number');
+      expect(retryStartedAt).toBeGreaterThan(firstStartedAt!);
+      // Retry countdown = 4s path refresh + clamp(path_hops,3,7)×6 proof (no fake 45s).
+      expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(4 + 3 * 6);
+      expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(true);
+
+      resolveSecond?.({
+        ok: true,
+        content: 'hello after tcp retry',
+        content_type: 'micron',
+        egress: 'tcp',
+      });
       await loadPromise;
 
       expect(fetchNomadPage).toHaveBeenCalledTimes(2);

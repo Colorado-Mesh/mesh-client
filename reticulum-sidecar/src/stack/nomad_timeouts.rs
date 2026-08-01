@@ -73,19 +73,17 @@ pub fn resolve_nomad_page_timeout_secs(
 
 /// Hops passed to `Link::new_initiator` (scales establishment timeout at 6s/hop).
 ///
-/// MeshChat uses a flat 15s TCP link establishment timeout. Path-table hops on
-/// hub routes are often inflated (e.g. 8) and must not stretch proof waits to
-/// ~48s / the full overall TCP budget. TCP/network always use a flat 3 hops
-/// (3 × 6s ≈ 18s) so true 1-hop peers are not shortened to a 6s proof wait.
+/// TCP/network: restore release-like multi-hop proof windows (v5.25.0 passed raw
+/// path hops into LinkClient). Floor at 3 (~18s) so 1-hop UI/path under-budget
+/// does not collapse to 6s; cap at 7 (~42s) under the 45s MeshChat TCP overall.
+/// #756's flat max-3 (~18s) is why some hub pages work on release but fail on HEAD.
 pub fn nomad_link_initiator_hops(egress_via: &str, path_hops: u8) -> u8 {
     if egress_via == "rf" || egress_via == "ble" {
         path_hops.clamp(1, 32)
     } else {
-        // Flat MeshChat-like TCP establish (~18s). Do not use path_hops — clamp(1, 3)
-        // incorrectly left 1-hop peers at 6s after the #756 proof-budget cap.
-        const TCP_LINK_INITIATOR_HOPS: u8 = 3;
-        let _ = path_hops;
-        TCP_LINK_INITIATOR_HOPS
+        const TCP_LINK_INITIATOR_HOPS_MIN: u8 = 3;
+        const TCP_LINK_INITIATOR_HOPS_MAX: u8 = 7;
+        path_hops.clamp(TCP_LINK_INITIATOR_HOPS_MIN, TCP_LINK_INITIATOR_HOPS_MAX)
     }
 }
 
@@ -198,12 +196,16 @@ mod tests {
     }
 
     #[test]
-    fn tcp_link_initiator_hops_flat_for_meshchat_establish() {
-        assert_eq!(nomad_link_initiator_hops("tcp", 8), 3);
+    fn tcp_link_initiator_hops_floored_and_capped_for_release_parity() {
+        // Floor 3 (~18s); scale with path; cap 7 (~42s) under 45s overall.
         assert_eq!(nomad_link_initiator_hops("tcp", 1), 3);
         assert_eq!(nomad_link_initiator_hops("tcp", 2), 3);
         assert_eq!(nomad_link_initiator_hops("network", 1), 3);
-        assert_eq!(nomad_link_initiator_hops("network", 8), 3);
+        assert_eq!(nomad_link_initiator_hops("tcp", 5), 5);
+        assert_eq!(nomad_link_initiator_hops("network", 4), 4);
+        assert_eq!(nomad_link_initiator_hops("tcp", 7), 7);
+        assert_eq!(nomad_link_initiator_hops("tcp", 8), 7);
+        assert_eq!(nomad_link_initiator_hops("network", 32), 7);
         assert_eq!(nomad_link_initiator_hops("rf", 8), 8);
         assert_eq!(nomad_link_initiator_hops("ble", 6), 6);
         assert_eq!(nomad_link_initiator_hops("rf", 1), 1);

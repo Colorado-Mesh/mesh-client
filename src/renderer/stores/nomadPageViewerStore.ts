@@ -13,7 +13,11 @@ import {
   MAX_NOMAD_PAGE_CACHE_CHARS,
   setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
-import { shouldForceNomadPathRefreshRetry } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
+import {
+  type NomadPageErrorDiag,
+  nomadPageErrorDiagFromResponse,
+  shouldForceNomadPathRefreshRetry,
+} from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import {
   NOMAD_PAGE_FETCH_DEBOUNCE_MS,
   NOMAD_PAGE_FETCH_RETRY_SETTLE_MS,
@@ -56,10 +60,14 @@ interface NomadPageViewerState {
   pageLoadingStartedAt: number | null;
   /** Sidecar/proxy budget used for the countdown (seconds). */
   pageLoadingBudgetSec: number;
+  /** True while the one-shot force-path auto-retry is running (explain countdown restart). */
+  pageLoadingRetrying: boolean;
   /** Raw sidecar/proxy error code or message (humanize in UI). */
   pageErrorRaw: string | null;
   /** Sidecar egress atom from the failed fetch (`tcp` / `rf` / …) for retry policy. */
   pageErrorEgress: string | null;
+  /** Path-ensure / force_path diagnostics for richer error copy. */
+  pageErrorDiag: NomadPageErrorDiag | null;
   pageErrorNodeSnapshot: NomadPageErrorNodeSnapshot | null;
   announceReloadDone: boolean;
   /** True while Nomad tab is visible — suppress completion toast when true. */
@@ -182,8 +190,10 @@ const initialViewerState = {
   pageLoading: false,
   pageLoadingStartedAt: null as number | null,
   pageLoadingBudgetSec: 0,
+  pageLoadingRetrying: false,
   pageErrorRaw: null as string | null,
   pageErrorEgress: null as string | null,
+  pageErrorDiag: null as NomadPageErrorDiag | null,
   pageErrorNodeSnapshot: null as NomadPageErrorNodeSnapshot | null,
   announceReloadDone: false,
   panelActive: false,
@@ -204,7 +214,12 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
   },
 
   clearPageErrorForAnnounceReload: () => {
-    set({ pageErrorRaw: null, pageErrorEgress: null, pageErrorNodeSnapshot: null });
+    set({
+      pageErrorRaw: null,
+      pageErrorEgress: null,
+      pageErrorDiag: null,
+      pageErrorNodeSnapshot: null,
+    });
   },
 
   markAnnounceReloadDone: () => {
@@ -215,6 +230,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     set({
       pageErrorRaw: 'invalid_url',
       pageErrorEgress: null,
+      pageErrorDiag: null,
       pageErrorNodeSnapshot: null,
       pageLoading: false,
       pageLoadingStartedAt: null,
@@ -249,8 +265,10 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoading: true,
       pageLoadingStartedAt: null,
       pageLoadingBudgetSec: budgetSec,
+      pageLoadingRetrying: false,
       pageErrorRaw: null,
       pageErrorEgress: null,
+      pageErrorDiag: null,
       pageErrorNodeSnapshot: null,
       announceReloadDone: false,
       loadGeneration: generation,
@@ -271,6 +289,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           pageLoading: false,
           pageLoadingStartedAt: null,
           pageLoadingBudgetSec: 0,
+          pageLoadingRetrying: false,
           pageContent: cached.content,
           pageContentType: cached.content_type,
           pageContentTruncated: false,
@@ -321,6 +340,24 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
         });
         if (get().loadGeneration !== generation) return;
+        // Restart countdown for the retry using the sidecar proof window (not a
+        // fresh fake 45s) so the timer does not jump back up mid-load.
+        const retryEgress = egressFromNomadPageResponse(res);
+        const pathHops =
+          typeof res.path_hops === 'number' && Number.isFinite(res.path_hops)
+            ? Math.max(1, Math.trunc(res.path_hops))
+            : (node?.hops ?? 8);
+        const retryLinkHops =
+          retryEgress === 'rf' || retryEgress === 'ble'
+            ? Math.min(32, pathHops)
+            : Math.min(7, Math.max(3, pathHops));
+        // ~4s force-path refresh + link_hops × 6s proof (MeshChat-style).
+        budgetSec = 4 + retryLinkHops * 6;
+        set({
+          pageLoadingStartedAt: Date.now(),
+          pageLoadingBudgetSec: budgetSec,
+          pageLoadingRetrying: true,
+        });
         res = await fetchNomadPageDeduped(hash, normalizedPath, normalizedRequest, true);
         if (get().loadGeneration !== generation) return;
         if (typeof res.egress === 'string' && res.egress.trim()) {
@@ -336,8 +373,10 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       set({
         pageLoading: false,
         pageLoadingStartedAt: null,
+        pageLoadingRetrying: false,
         pageErrorRaw: 'unknown',
         pageErrorEgress: null,
+        pageErrorDiag: null,
         pageErrorNodeSnapshot: snapshotNomadNodeForPageError(hash, liveNode),
       });
       return;
@@ -351,8 +390,10 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       set({
         pageLoading: false,
         pageLoadingStartedAt: null,
+        pageLoadingRetrying: false,
         pageErrorRaw: rawCode,
         pageErrorEgress: egressFromNomadPageResponse(res),
+        pageErrorDiag: nomadPageErrorDiagFromResponse(res),
         pageErrorNodeSnapshot: snapshotNomadNodeForPageError(hash, liveNode),
         announceReloadDone: false,
       });
@@ -375,11 +416,13 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoading: false,
       pageLoadingStartedAt: null,
       pageLoadingBudgetSec: 0,
+      pageLoadingRetrying: false,
       pageContent: text,
       pageContentType: res.content_type,
       pageContentTruncated: truncated,
       pageErrorRaw: null,
       pageErrorEgress: null,
+      pageErrorDiag: null,
       pageErrorNodeSnapshot: null,
     });
 

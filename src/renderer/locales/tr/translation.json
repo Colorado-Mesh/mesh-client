@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Düğüm listesini daralt",
     "expandNodeList": "Düğüm listesini genişlet",
     "errors": {
-      "pathTimeout": "Bu düğüme rota yok (yol araması zaman aşımına uğradı). Daha yakın bir düğüm deneyin veya daha yeni bir announce bekleyin.",
+      "pathTimeout": "Bu düğüme kullanılabilir bir yol yok (yol araması zaman aşımına uğradı). Sonraki Nomad duyurusunu bekleyin ve tekrar deneyin. Hâlâ başarısız olursa başka bir hub veya daha yakın bir düğüm deneyin.",
       "pubkeyNotFound": "Bu düğümün kimlik anahtarı bulunamadı. Bir Nomad duyurusunu bekleyin, sonra tekrar deneyin.",
       "linkTimeout": "Düğüme bağlantı zamanında kurulamadı.",
       "responseTimeout": "Düğüm bağlantıyı kabul etti ancak sayfayı zamanında döndürmedi.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Başka bir Nomad sayfa veya dosya isteği hâlâ devam ediyor. Biraz sonra tekrar deneyin.",
       "nomadNotServing": "Bu sizin Nomad düğümünüz, ancak Sayfalarım barındırma çalışmıyor. Sayfalarım'ı açın, bir klasör seçin ve yerel olarak önizlemeye sunmaya başlayın.",
-      "networkNotReady": "Bir hub veya radyo arayüzünün çevrimiçi olması bekleniyor. Bağlantı bir arayüz gösterdiğinde tekrar deneyin."
+      "networkNotReady": "Bir hub veya radyo arayüzünün çevrimiçi olması bekleniyor. Bağlantı bir arayüz gösterdiğinde tekrar deneyin.",
+      "pathTimeoutStale": "Bu düğüme giden yol yenilenemedi (eski yol). Bir sonraki duyuruyu bekleyin, ardından yeniden deneyin. Kalıcı arızalar genellikle düğümün çevrimdışı olduğu anlamına gelir.",
+      "linkTimeoutCachedPath": "Bu düğüme giden bir yol listelenir, ancak bağlantı asla tamamlanmaz — rota eski olabilir. Bir sonraki duyuruyu bekleyin, ardından yeniden deneyin. Kalıcı arızalar genellikle düğümün çevrimdışı olduğu veya TCP üzerinden erişilemediği anlamına gelir.",
+      "linkTimeoutPathOk": "Bu düğüme giden bir rota onaylandı, ancak Nomad sayfası yanıt vermedi. Daha yeni bir duyuru bekleyin ve tekrar deneyin. Başarısız olmaya devam ederse, düğüm çevrimdışı olabilir veya o sayfayı barındırmıyor olabilir."
     },
     "fitWidth": "Pencereye sığdır",
     "openWidth": "Sayfa Genişliği",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Sayfa yükleniyor… {{time}} kaldı",
     "pageLoadingCountdownOverdue": "Sayfa yükleniyor… hala çalışıyor",
     "pageReadyToast": "Nomad sayfası hazır: {{name}}",
-    "staleLastSeenHint": "Son duyulan {{time}} — bu düğüm çevrimiçi olarak listelense bile çevrimdışı olabilir."
+    "staleLastSeenHint": "Son duyulan {{time}} — bu düğüm çevrimiçi olarak listelense bile çevrimdışı olabilir.",
+    "pageLoadingRetryCountdown": "İlk deneme zaman aşımına uğradı — yol yenileniyor ve yeniden deneniyor… {{time}} kaldı",
+    "pageLoadingRetryOverdue": "Yol yenileniyor ve yeniden deneniyor... hala çalışıyor"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

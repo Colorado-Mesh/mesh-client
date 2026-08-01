@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Contraer lista de nodos",
     "expandNodeList": "Expandir lista de nodos",
     "errors": {
-      "pathTimeout": "No hay ruta a este nodo (agotó el tiempo de búsqueda de ruta). Prueba un nodo más cercano o espera un anuncio más reciente.",
+      "pathTimeout": "No hay una ruta usable a este nodo (agotó el tiempo de búsqueda de ruta). Espera el siguiente anuncio Nomad e inténtalo de nuevo. Si sigue fallando, prueba otro hub o un nodo más cercano.",
       "pubkeyNotFound": "No se ha podido encontrar la clave de identidad de este nodo. Espera a un anuncio Nomad e inténtalo de nuevo.",
       "linkTimeout": "No se ha podido establecer el enlace al nodo a tiempo.",
       "responseTimeout": "El nodo aceptó el enlace pero no devolvió la página a tiempo.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "El nodo devolvió más datos de los que mesh-client acepta para esta solicitud.",
       "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento.",
       "nomadNotServing": "Este es su nodo Nomad, pero el alojamiento Mis páginas no se está ejecutando. Abra Mis páginas, elija una carpeta y comience a publicar para obtener una vista previa local.",
-      "networkNotReady": "Esperando a que se conecte un concentrador o una interfaz de radio. Inténtelo de nuevo una vez que Connection muestre una interfaz."
+      "networkNotReady": "Esperando a que se conecte un concentrador o una interfaz de radio. Inténtelo de nuevo una vez que Connection muestre una interfaz.",
+      "pathTimeoutStale": "No se ha podido actualizar la ruta a este nodo (ruta obsoleta). Espere el próximo anuncio y vuelva a intentarlo. Las fallas persistentes a menudo significan que el nodo está desconectado.",
+      "linkTimeoutCachedPath": "Se muestra una ruta a este nodo, pero el enlace nunca se completó; la ruta puede estar obsoleta. Espere el próximo anuncio y vuelva a intentarlo. Las fallas persistentes generalmente significan que el nodo está desconectado o no es accesible a través de TCP.",
+      "linkTimeoutPathOk": "Se confirmó una ruta a este nodo, pero la página Nomad no respondió. Espere un anuncio más reciente e inténtelo de nuevo. Si sigue fallando, el nodo puede estar desconectado o no alojar esa página."
     },
     "fitWidth": "Ajustar a la ventana",
     "openWidth": "Anchura de la página",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Cargando página... {{time}} izquierda",
     "pageLoadingCountdownOverdue": "Cargando página… sigue funcionando",
     "pageReadyToast": "Nomad — Página nómada lista: {{name}}",
-    "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea."
+    "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea.",
+    "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… {{time}} left",
+    "pageLoadingRetryOverdue": "Actualizando ruta y reintentando... sigue funcionando"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

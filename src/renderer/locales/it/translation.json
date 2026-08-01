@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Comprimi l'elenco dei nodi",
     "expandNodeList": "Espandi elenco nodi",
     "errors": {
-      "pathTimeout": "Nessun percorso verso questo nodo (timeout ricerca percorso). Prova un nodo più vicino o attendi un announce più recente.",
+      "pathTimeout": "Nessun percorso utilizzabile verso questo nodo (timeout ricerca percorso). Attendi il prossimo annuncio Nomad e riprova. Se continua a fallire, prova un altro hub o un nodo più vicino.",
       "pubkeyNotFound": "Impossibile trovare la chiave di identità di questo nodo. Attendi un annuncio Nomad, quindi riprova.",
       "linkTimeout": "Impossibile stabilire in tempo il collegamento al nodo.",
       "responseTimeout": "Il nodo ha accettato il collegamento ma non ha restituito la pagina in tempo.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Un'altra richiesta di pagina o file Nomad è ancora in corso. Riprova tra un momento.",
       "nomadNotServing": "Questo è il tuo nodo Nomad, ma l'hosting di Le mie pagine non è in esecuzione. Apri Le mie pagine, scegli una cartella e inizia a pubblicare per visualizzare l'anteprima localmente.",
-      "networkNotReady": "In attesa che un hub o un'interfaccia radio siano online. Riprovare quando Connection mostra un'interfaccia."
+      "networkNotReady": "In attesa che un hub o un'interfaccia radio siano online. Riprovare quando Connection mostra un'interfaccia.",
+      "pathTimeoutStale": "Impossibile aggiornare il percorso a questo nodo (percorso obsoleto). Attendere l'annuncio successivo, quindi riprovare. Gli errori persistenti spesso indicano che il nodo è offline.",
+      "linkTimeoutCachedPath": "Viene elencato un percorso per questo nodo, ma il collegamento non è mai stato completato: il percorso potrebbe essere obsoleto. Attendere l'annuncio successivo, quindi riprovare. Gli errori persistenti di solito indicano che il nodo è offline o non raggiungibile tramite TCP.",
+      "linkTimeoutPathOk": "Un percorso verso questo nodo è stato confermato, ma la pagina Nomad non ha risposto. Attendi un annuncio più recente e riprova. Se continua a fallire, il nodo potrebbe essere offline o non ospitare quella pagina."
     },
     "fitWidth": "Adatta alla finestra",
     "openWidth": "Larghezza pagina",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Caricamento pagina… {{time}} sinistra",
     "pageLoadingCountdownOverdue": "Caricamento della pagina... ancora funzionante",
     "pageReadyToast": "Pagina Nomad pronta: {{name}}",
-    "staleLastSeenHint": "Ultimo ascolto {{time}}: questo nodo potrebbe essere offline anche se elencato come online."
+    "staleLastSeenHint": "Ultimo ascolto {{time}}: questo nodo potrebbe essere offline anche se elencato come online.",
+    "pageLoadingRetryCountdown": "Timeout del primo tentativo: aggiornamento del percorso e nuovo tentativo... {{time}} rimasti",
+    "pageLoadingRetryOverdue": "Aggiornamento del percorso e nuovo tentativo... ancora in corso"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

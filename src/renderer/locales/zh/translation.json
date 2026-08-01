@@ -2949,7 +2949,7 @@
     "collapseNodeList": "折叠节点列表",
     "expandNodeList": "展开节点列表",
     "errors": {
-      "pathTimeout": "无法到达此节点（路径查找超时）。请尝试更近的节点，或等待更新的 announce。",
+      "pathTimeout": "无法到达此节点（路径查找超时）。请等待下一次 Nomad 公告后重试。如果仍然失败，请尝试其他 hub 或更近的节点。",
       "pubkeyNotFound": "找不到此节点的标识密钥。等待 Nomad 公告，然后重试。",
       "linkTimeout": "无法及时建立到节点的链接。",
       "responseTimeout": "节点接受了链接，但没有及时返回页面。",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "该节点返回的数据超出了 mesh-client 对此请求的接受上限。",
       "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。",
       "nomadNotServing": "这是您的 Nomad 节点，但“我的页面”托管未运行。打开“我的页面”，选择一个文件夹，然后开始在本地预览。",
-      "networkNotReady": "等待集线器或无线电接口上线。连接显示界面后重试。"
+      "networkNotReady": "等待集线器或无线电接口上线。连接显示界面后重试。",
+      "pathTimeoutStale": "无法刷新到此节点的路由（过时的路径）。等待下一个公告，然后重试。持续故障通常意味着节点处于离线状态。",
+      "linkTimeoutCachedPath": "列出了指向此节点的路径，但链接从未完成—路由可能已过时。等待下一个公告，然后重试。持续故障通常意味着节点处于离线状态或无法通过TCP访问。",
+      "linkTimeoutPathOk": "已确认到此节点的路由，但 Nomad 页面未应答。请等待更新的公告，然后重试。如果持续出现故障，则节点可能处于脱机状态或未托管该页面。"
     },
     "fitWidth": "适合窗口",
     "openWidth": "图框宽度",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "正在加载页面... {{time}} 左",
     "pageLoadingCountdownOverdue": "正在加载页面...仍在工作",
     "pageReadyToast": "Nomad 页面就绪：{{name}}",
-    "staleLastSeenHint": "最后听说 {{time}} — 即使列为在线，该节点也可能处于离线状态。"
+    "staleLastSeenHint": "最后听说 {{time}} — 即使列为在线，该节点也可能处于离线状态。",
+    "pageLoadingRetryCountdown": "首次尝试超时—刷新路径并重试……剩余{{time}}",
+    "pageLoadingRetryOverdue": "正在刷新路径并重试……仍在工作"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

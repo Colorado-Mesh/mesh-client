@@ -2953,7 +2953,7 @@
     "collapseNodeList": "Zwiń listę węzłów",
     "expandNodeList": "Rozwiń listę węzłów",
     "errors": {
-      "pathTimeout": "Brak trasy do tego węzła (przekroczono limit czasu wyszukiwania ścieżki). Spróbuj bliższego węzła lub poczekaj na nowszy announce.",
+      "pathTimeout": "Brak użytecznej trasy do tego węzła (przekroczono limit czasu wyszukiwania ścieżki). Poczekaj na następne ogłoszenie Nomad i spróbuj ponownie. Jeśli nadal się nie uda, spróbuj innego huba lub bliższego węzła.",
       "pubkeyNotFound": "Nie można znaleźć klucza tożsamości tego węzła. Poczekaj na ogłoszenie Nomad, a następnie spróbuj ponownie.",
       "linkTimeout": "Połączenie z węzłem nie mogło zostać ustanowione na czas.",
       "responseTimeout": "Węzeł zaakceptował link, ale nie zwrócił strony na czas.",
@@ -2963,7 +2963,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Inne żądanie strony lub pliku Nomad jest nadal w toku. Spróbuj ponownie za chwilę.",
       "nomadNotServing": "To jest Twój węzeł Nomad, ale hosting Moich stron nie jest uruchomiony. Otwórz Moje strony, wybierz folder i rozpocznij udostępnianie, aby uzyskać podgląd lokalny.",
-      "networkNotReady": "Oczekiwanie na połączenie koncentratora lub interfejsu radiowego z Internetem. Spróbuj ponownie, gdy połączenie wyświetli interfejs."
+      "networkNotReady": "Oczekiwanie na połączenie koncentratora lub interfejsu radiowego z Internetem. Spróbuj ponownie, gdy połączenie wyświetli interfejs.",
+      "pathTimeoutStale": "Nie można odświeżyć trasy do tego węzła (nieaktualna ścieżka). Poczekaj na następne ogłoszenie, a następnie spróbuj ponownie. Trwałe awarie często oznaczają, że węzeł jest offline.",
+      "linkTimeoutCachedPath": "Podana jest ścieżka do tego węzła, ale link nigdy nie został ukończony — trasa może być nieświeża. Poczekaj na następne ogłoszenie, a następnie spróbuj ponownie. Trwałe awarie zwykle oznaczają, że węzeł jest offline lub nieosiągalny przez TCP.",
+      "linkTimeoutPathOk": "Trasa do tego węzła została potwierdzona, ale strona Nomad nie odpowiedziała. Poczekaj na świeższe ogłoszenie i spróbuj ponownie. Jeśli to się nie powiedzie, węzeł może być w trybie offline lub nie hostować tej strony."
     },
     "fitWidth": "Dopasuj do okna",
     "openWidth": "Szerokość strony",
@@ -3013,7 +3016,9 @@
     "pageLoadingCountdown": "Ładowanie strony… Pozostało {{time}}",
     "pageLoadingCountdownOverdue": "Ładowanie strony… nadal działa",
     "pageReadyToast": "Strona Nomad gotowa: {{name}}",
-    "staleLastSeenHint": "Ostatnio słuchano {{time}} — ten węzeł może być w trybie offline, nawet jeśli jest wymieniony jako online."
+    "staleLastSeenHint": "Ostatnio słuchano {{time}} — ten węzeł może być w trybie offline, nawet jeśli jest wymieniony jako online.",
+    "pageLoadingRetryCountdown": "Upłynął limit czasu pierwszej próby — odświeżanie ścieżki i ponowna próba… pozostało: {{time}}",
+    "pageLoadingRetryOverdue": "Odświeżanie ścieżki i ponawianie próby… nadal działa"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",
