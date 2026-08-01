@@ -5,6 +5,10 @@ import {
   getNomadPageCache,
   nomadPageCacheSizeForTests,
 } from '@/renderer/lib/nomad/nomadPageCache';
+import {
+  NOMAD_PAGE_FETCH_DEBOUNCE_MS,
+  NOMAD_PAGE_FETCH_RETRY_SETTLE_MS,
+} from '@/renderer/lib/timeConstants';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
@@ -60,23 +64,72 @@ describe('nomadPageViewerStore loadPage cache', () => {
 
   it('updates countdown budget from sidecar egress on uncached RF responses', async () => {
     vi.useFakeTimers();
-    const fetchNomadPage = vi.fn().mockResolvedValue({
-      ok: false,
-      error: 'link_timeout',
-      egress: 'rf',
-      timeout_secs: 99,
-    });
-    useNomadNetworkStore.setState({ fetchNomadPage });
+    const { restore } = mockConsoleWarn();
+    try {
+      const fetchNomadPage = vi.fn().mockResolvedValue({
+        ok: false,
+        error: 'link_timeout',
+        egress: 'rf',
+        timeout_secs: 99,
+      });
+      useNomadNetworkStore.setState({ fetchNomadPage });
 
-    const loadPromise = useNomadPageViewerStore
-      .getState()
-      .loadPage('abc1234567890', '/page/index.mu');
-    await vi.advanceTimersByTimeAsync(300);
-    await loadPromise;
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      await loadPromise;
 
-    expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(99);
-    expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
-    vi.useRealTimers();
+      expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(99);
+      expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
+      expect(useNomadPageViewerStore.getState().pageErrorEgress).toBe('rf');
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('auto-retries TCP link_timeout once with forcePathRefresh', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          error: 'link_timeout',
+          egress: 'tcp',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          content: 'hello after tcp retry',
+          content_type: 'micron',
+          egress: 'tcp',
+        });
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      await loadPromise;
+
+      expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+      expect(fetchNomadPage).toHaveBeenNthCalledWith(
+        2,
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        { forcePathRefresh: true },
+      );
+      expect(useNomadPageViewerStore.getState().pageContent).toBe('hello after tcp retry');
+      expect(useNomadPageViewerStore.getState().pageErrorEgress).toBeNull();
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
   });
 
   it('snapshots the node on unexpected fetch rejection', async () => {

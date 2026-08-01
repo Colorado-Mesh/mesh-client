@@ -58,6 +58,8 @@ interface NomadPageViewerState {
   pageLoadingBudgetSec: number;
   /** Raw sidecar/proxy error code or message (humanize in UI). */
   pageErrorRaw: string | null;
+  /** Sidecar egress atom from the failed fetch (`tcp` / `rf` / …) for retry policy. */
+  pageErrorEgress: string | null;
   pageErrorNodeSnapshot: NomadPageErrorNodeSnapshot | null;
   announceReloadDone: boolean;
   /** True while Nomad tab is visible — suppress completion toast when true. */
@@ -181,11 +183,18 @@ const initialViewerState = {
   pageLoadingStartedAt: null as number | null,
   pageLoadingBudgetSec: 0,
   pageErrorRaw: null as string | null,
+  pageErrorEgress: null as string | null,
   pageErrorNodeSnapshot: null as NomadPageErrorNodeSnapshot | null,
   announceReloadDone: false,
   panelActive: false,
   loadGeneration: 0,
 };
+
+function egressFromNomadPageResponse(res: NomadPageResponse): string | null {
+  if (typeof res.egress !== 'string') return null;
+  const trimmed = res.egress.trim();
+  return trimmed || null;
+}
 
 export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) => ({
   ...initialViewerState,
@@ -195,7 +204,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
   },
 
   clearPageErrorForAnnounceReload: () => {
-    set({ pageErrorRaw: null, pageErrorNodeSnapshot: null });
+    set({ pageErrorRaw: null, pageErrorEgress: null, pageErrorNodeSnapshot: null });
   },
 
   markAnnounceReloadDone: () => {
@@ -205,6 +214,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
   setInvalidUrlError: () => {
     set({
       pageErrorRaw: 'invalid_url',
+      pageErrorEgress: null,
       pageErrorNodeSnapshot: null,
       pageLoading: false,
       pageLoadingStartedAt: null,
@@ -240,6 +250,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingStartedAt: null,
       pageLoadingBudgetSec: budgetSec,
       pageErrorRaw: null,
+      pageErrorEgress: null,
       pageErrorNodeSnapshot: null,
       announceReloadDone: false,
       loadGeneration: generation,
@@ -300,7 +311,10 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         set({ pageLoadingBudgetSec: budgetSec });
       }
 
-      if ((!res.ok || !res.content) && shouldForceNomadPathRefreshRetry(res.error)) {
+      if (
+        (!res.ok || !res.content) &&
+        shouldForceNomadPathRefreshRetry(res.error, egressFromNomadPageResponse(res))
+      ) {
         const retryCode = res.error?.trim() || 'unknown';
         console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
         await new Promise<void>((resolve) => {
@@ -323,6 +337,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         pageLoading: false,
         pageLoadingStartedAt: null,
         pageErrorRaw: 'unknown',
+        pageErrorEgress: null,
         pageErrorNodeSnapshot: snapshotNomadNodeForPageError(hash, liveNode),
       });
       return;
@@ -337,6 +352,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         pageLoading: false,
         pageLoadingStartedAt: null,
         pageErrorRaw: rawCode,
+        pageErrorEgress: egressFromNomadPageResponse(res),
         pageErrorNodeSnapshot: snapshotNomadNodeForPageError(hash, liveNode),
         announceReloadDone: false,
       });
@@ -363,6 +379,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageContentType: res.content_type,
       pageContentTruncated: truncated,
       pageErrorRaw: null,
+      pageErrorEgress: null,
       pageErrorNodeSnapshot: null,
     });
 

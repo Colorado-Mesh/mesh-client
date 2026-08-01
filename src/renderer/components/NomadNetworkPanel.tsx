@@ -254,6 +254,7 @@ export default function NomadNetworkPanel({
   const pageLoadingStartedAt = useNomadPageViewerStore((s) => s.pageLoadingStartedAt);
   const pageLoadingBudgetSec = useNomadPageViewerStore((s) => s.pageLoadingBudgetSec);
   const pageErrorRaw = useNomadPageViewerStore((s) => s.pageErrorRaw);
+  const pageErrorEgress = useNomadPageViewerStore((s) => s.pageErrorEgress);
   const pageErrorNodeSnapshot = useNomadPageViewerStore((s) => s.pageErrorNodeSnapshot);
   const announceReloadDone = useNomadPageViewerStore((s) => s.announceReloadDone);
   const loadPage = useNomadPageViewerStore((s) => s.loadPage);
@@ -449,7 +450,7 @@ export default function NomadNetworkPanel({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-retry after announce updates node metadata
     void loadNodePage(selectedHash, pagePath, {
       forceReload: true,
-      forcePathRefresh: shouldForceNomadPathRefreshRetry(pageErrorCode),
+      forcePathRefresh: shouldForceNomadPathRefreshRetry(pageErrorCode, pageErrorEgress),
       requestData: pageRequestData,
     });
   }, [
@@ -457,6 +458,7 @@ export default function NomadNetworkPanel({
     loadNodePage,
     markAnnounceReloadDone,
     pageErrorCode,
+    pageErrorEgress,
     pageErrorNodeSnapshot,
     pageLoading,
     pagePath,
@@ -981,7 +983,10 @@ export default function NomadNetworkPanel({
                     onClick={() => {
                       void loadNodePage(selectedNode.destination_hash, pagePath, {
                         forceReload: true,
-                        forcePathRefresh: shouldForceNomadPathRefreshRetry(pageErrorCode),
+                        forcePathRefresh: shouldForceNomadPathRefreshRetry(
+                          pageErrorCode,
+                          pageErrorEgress,
+                        ),
                         requestData: pageRequestData,
                       });
                     }}
