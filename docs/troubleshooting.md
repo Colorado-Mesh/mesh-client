@@ -422,7 +422,10 @@ flatpak run org.coloradomesh.MeshClient
 
 - The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
 - Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
-- **Immediate "User cancelled the requestDevice() chooser"** on Connect (AppImage / `.deb` / `.rpm`) without dismissing a picker: Chromium multi-fires `select-bluetooth-device`; the app must retain the first callback. Upgrade to a build that includes that fix, then retry Connect. If the picker still never opens, check `systemctl status bluetooth` and `rfkill list`.
+- **Immediate "User cancelled the requestDevice() chooser"** on Connect (AppImage / `.deb` / `.rpm`) without dismissing a picker:
+  1. Chromium multi-fires `select-bluetooth-device`; the app must retain the first callback (#749).
+  2. A fire-and-forget cancel-before-connect can also race behind the new chooser and kill it (seen on CachyOS / Arch with 5.25.0). Builds that **await** `cancelBluetoothSelection` before `requestDevice()` fix that race.
+     Upgrade to a release that includes both fixes, then retry Connect. If the picker still never opens, check `systemctl status bluetooth` and `rfkill list`.
 - **Flatpak:** Connect that fails with little or no UI often means the sandbox lacked `--allow=bluetooth` (needed with `--system-talk-name=org.bluez`). Reinstall a Flatpak from a release that includes that finish-arg. If pairing then fails with **bluetoothctl not found**, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
 - **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).

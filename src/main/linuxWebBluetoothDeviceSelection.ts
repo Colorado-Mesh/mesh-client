@@ -18,6 +18,16 @@ export interface LinuxWebBluetoothDiscoveredDevice {
 
 export type LinuxWebBluetoothSelectCallback = (deviceId: string) => void;
 
+/** Result of applyCancel — used by main IPC for logging / awaitable Connect cleanup. */
+export type LinuxWebBluetoothCancelResult =
+  | { cancelled: true; mode: 'generation' | 'force'; generation: number }
+  | {
+      cancelled: false;
+      mode: 'ignored' | 'force';
+      generation?: number;
+      activeGeneration?: number;
+    };
+
 export class LinuxWebBluetoothDeviceSelection {
   private pendingCallback: LinuxWebBluetoothSelectCallback | null = null;
   private readonly devices = new Map<string, LinuxWebBluetoothDiscoveredDevice>();
@@ -116,6 +126,31 @@ export class LinuxWebBluetoothDeviceSelection {
     if (!this.pendingCallback) return false;
     if (this.generation !== generation) return false;
     return this.cancelSelection();
+  }
+
+  /**
+   * Apply a renderer cancel request.
+   * - Finite `generation`: cancel only that chooser (ignore stale/delayed cancels).
+   * - Otherwise: force-cancel any pending session (pre-connect cleanup).
+   */
+  applyCancel(generation: unknown): LinuxWebBluetoothCancelResult {
+    if (typeof generation === 'number' && Number.isFinite(generation)) {
+      const activeGeneration = this.generation;
+      if (this.cancelIfGeneration(generation)) {
+        return { cancelled: true, mode: 'generation', generation };
+      }
+      return {
+        cancelled: false,
+        mode: 'ignored',
+        generation,
+        activeGeneration: this.pendingCallback ? activeGeneration : undefined,
+      };
+    }
+    const activeGeneration = this.generation;
+    if (this.cancelSelection()) {
+      return { cancelled: true, mode: 'force', generation: activeGeneration };
+    }
+    return { cancelled: false, mode: 'force' };
   }
 
   /**

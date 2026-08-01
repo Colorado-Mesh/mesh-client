@@ -169,7 +169,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     cancelSerialSelection: noop,
     onBluetoothDevicesDiscovered: noopUnsub,
     selectBluetoothDevice: noop,
-    cancelBluetoothSelection: noop,
+    cancelBluetoothSelection: noopAsync,
     bluetoothUnpair: noopAsync,
     bluetoothStartScan: noopAsync,
     bluetoothStopScan: noopAsync,

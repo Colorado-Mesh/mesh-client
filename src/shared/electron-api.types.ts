@@ -815,8 +815,12 @@ export interface ElectronAPI {
     callback: (devices: NobleBleDevice[], generation?: number) => void,
   ) => () => void;
   selectBluetoothDevice: (deviceId: string) => void;
-  /** Pass the chooser generation from onBluetoothDevicesDiscovered to ignore stale cancels. */
-  cancelBluetoothSelection: (generation?: number | null) => void;
+  /**
+   * Cancel the Linux Web Bluetooth chooser.
+   * Pass the generation from onBluetoothDevicesDiscovered to ignore stale cancels.
+   * Await before starting a new requestDevice() so force-clear cannot race the new session.
+   */
+  cancelBluetoothSelection: (generation?: number | null) => Promise<void>;
 
   // ─── Bluetooth pairing (Linux) ──────────────────────────────────────────────
   bluetoothUnpair: (macAddress: string) => Promise<void>;

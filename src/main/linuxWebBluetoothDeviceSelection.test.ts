@@ -132,6 +132,36 @@ describe('LinuxWebBluetoothDeviceSelection', () => {
     expect(session.currentGeneration()).toBe(2);
   });
 
+  it('applyCancel force-clears orphans and generation-scopes delayed cancels', () => {
+    const session = new LinuxWebBluetoothDeviceSelection();
+    const first = vi.fn();
+    const second = vi.fn();
+    session.beginOrMergeDiscovery([{ deviceId: 'aa:bb' }], first);
+
+    expect(session.applyCancel(undefined)).toEqual({
+      cancelled: true,
+      mode: 'force',
+      generation: 1,
+    });
+    expect(first).toHaveBeenCalledWith('');
+    expect(session.applyCancel(null)).toEqual({ cancelled: false, mode: 'force' });
+
+    session.beginOrMergeDiscovery([{ deviceId: 'cc:dd' }], second);
+    expect(session.applyCancel(1)).toEqual({
+      cancelled: false,
+      mode: 'ignored',
+      generation: 1,
+      activeGeneration: 2,
+    });
+    expect(second).not.toHaveBeenCalled();
+    expect(session.applyCancel(2)).toEqual({
+      cancelled: true,
+      mode: 'generation',
+      generation: 2,
+    });
+    expect(second).toHaveBeenCalledWith('');
+  });
+
   it('armStaleTimeout auto-cancels and clears; resolve clears the timer without firing', () => {
     vi.useFakeTimers();
     const session = new LinuxWebBluetoothDeviceSelection();
