@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Il trasporto Reticulum non è disponibile. Riavviare lo stack e riprovare.",
       "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack da Connessione, quindi riprovare.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Un'altra richiesta di pagina o file Nomad è ancora in corso. Riprova tra un momento."
+      "nomadBusy": "Un'altra richiesta di pagina o file Nomad è ancora in corso. Riprova tra un momento.",
+      "nomadNotServing": "Questo è il tuo nodo Nomad, ma l'hosting di Le mie pagine non è in esecuzione. Apri Le mie pagine, scegli una cartella e inizia a pubblicare per visualizzare l'anteprima localmente.",
+      "networkNotReady": "In attesa che un hub o un'interfaccia radio siano online. Riprovare quando Connection mostra un'interfaccia."
     },
     "fitWidth": "Adatta alla finestra",
     "openWidth": "Larghezza pagina",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Ordina per salti, dal più vicino",
     "sortByHopsDesc": "Ordina per salti, prima il più lontano",
     "sortByNameAsc": "Ordina per nome - dalla A alla Z",
-    "sortByNameDesc": "Ordina per nome - dalla Z alla A"
+    "sortByNameDesc": "Ordina per nome - dalla Z alla A",
+    "pageLoadingCountdown": "Caricamento pagina… {{time}} sinistra",
+    "pageLoadingCountdownOverdue": "Caricamento della pagina... ancora funzionante",
+    "pageReadyToast": "Pagina Nomad pronta: {{name}}",
+    "staleLastSeenHint": "Ultimo ascolto {{time}}: questo nodo potrebbe essere offline anche se elencato come online."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

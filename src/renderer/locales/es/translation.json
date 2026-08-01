@@ -2957,7 +2957,9 @@
       "transportUnavailable": "El transporte de Reticulum no está disponible. Reinicie la pila e inténtelo de nuevo.",
       "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila desde Conexión y vuelva a intentarlo.",
       "responseTooLarge": "El nodo devolvió más datos de los que mesh-client acepta para esta solicitud.",
-      "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento."
+      "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento.",
+      "nomadNotServing": "Este es su nodo Nomad, pero el alojamiento Mis páginas no se está ejecutando. Abra Mis páginas, elija una carpeta y comience a publicar para obtener una vista previa local.",
+      "networkNotReady": "Esperando a que se conecte un concentrador o una interfaz de radio. Inténtelo de nuevo una vez que Connection muestre una interfaz."
     },
     "fitWidth": "Ajustar a la ventana",
     "openWidth": "Anchura de la página",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Ordenar por saltos, el más cercano primero",
     "sortByHopsDesc": "Ordenar por saltos, el más lejano primero",
     "sortByNameAsc": "Ordenar por nombre A->Z",
-    "sortByNameDesc": "Ordenar por nombre Z->A"
+    "sortByNameDesc": "Ordenar por nombre Z->A",
+    "pageLoadingCountdown": "Cargando página... {{time}} izquierda",
+    "pageLoadingCountdownOverdue": "Cargando página… sigue funcionando",
+    "pageReadyToast": "Nomad — Página nómada lista: {{name}}",
+    "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea."
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

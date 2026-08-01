@@ -15,6 +15,7 @@ fi
 "${SCRIPT_DIR}/apply-rsReticulum-packet-tap.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-auto-beacon-utun.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-link-client-nomad.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-link-client-proof-budget.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-discovery-announce-egress.sh"
 

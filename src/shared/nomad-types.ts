@@ -14,6 +14,10 @@ export interface NomadPageResponse {
   content?: string;
   content_type?: string;
   error?: string;
+  /** Sidecar path-aware egress atom (`tcp` / `rf` / `ble` / `network`). */
+  egress?: string;
+  /** Sidecar LinkClient overall timeout used for this attempt (seconds). */
+  timeout_secs?: number;
 }
 
 /** NomadNet link request field map (`field_*` / `var_*` keys). */
@@ -24,6 +28,8 @@ export interface NomadFileResponse {
   file_name?: string;
   content_base64?: string;
   error?: string;
+  egress?: string;
+  timeout_secs?: number;
 }
 
 export interface NomadServeStats {

@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Transport Reticulum tidak tersedia. Mulai ulang stack dan coba lagi.",
       "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack dari Connection, lalu coba lagi.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Permintaan halaman atau berkas Nomad lain masih berlangsung. Coba lagi sebentar lagi."
+      "nomadBusy": "Permintaan halaman atau berkas Nomad lain masih berlangsung. Coba lagi sebentar lagi.",
+      "nomadNotServing": "Ini adalah node Nomad Anda, tetapi hosting Halaman Saya tidak berjalan. Buka Halaman Saya, pilih folder, dan mulai melayani untuk melihat pratinjau secara lokal.",
+      "networkNotReady": "Menunggu hub atau antarmuka radio online. Coba lagi setelah Koneksi menampilkan antarmuka."
     },
     "fitWidth": "Muat halaman ke jendela",
     "openWidth": "Buka lebar halaman",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Urutkan berdasarkan Hop, paling dekat dulu",
     "sortByHopsDesc": "Urutkan berdasarkan Hop, terjauh dulu",
     "sortByNameAsc": "Menurut Nama - A ke Z",
-    "sortByNameDesc": "Menurut Nama - Z ke A"
+    "sortByNameDesc": "Menurut Nama - Z ke A",
+    "pageLoadingCountdown": "Memuat halaman… {{time}} tersisa",
+    "pageLoadingCountdownOverdue": "Memuat halaman… masih berfungsi",
+    "pageReadyToast": "Nomad — Halaman pengembara siap: {{name}}",
+    "staleLastSeenHint": "Terakhir terdengar {{time}} — node ini mungkin offline meskipun terdaftar sebagai online."
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

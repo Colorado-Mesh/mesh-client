@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Reticulum 传输不可用。请重新启动协议栈后重试。",
       "sidecarNotRunning": "Reticulum sidecar 未运行。请从 Connection 启动协议栈，然后重试。",
       "responseTooLarge": "该节点返回的数据超出了 mesh-client 对此请求的接受上限。",
-      "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。"
+      "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。",
+      "nomadNotServing": "这是您的 Nomad 节点，但“我的页面”托管未运行。打开“我的页面”，选择一个文件夹，然后开始在本地预览。",
+      "networkNotReady": "等待集线器或无线电接口上线。连接显示界面后重试。"
     },
     "fitWidth": "适合窗口",
     "openWidth": "图框宽度",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "按跃点排序，最近的在前",
     "sortByHopsDesc": "按跃点排序，最远的在前",
     "sortByNameAsc": "按名称排序 - A 到 Z",
-    "sortByNameDesc": "按名称排序 - Z 到 A"
+    "sortByNameDesc": "按名称排序 - Z 到 A",
+    "pageLoadingCountdown": "正在加载页面... {{time}} 左",
+    "pageLoadingCountdownOverdue": "正在加载页面...仍在工作",
+    "pageReadyToast": "Nomad 页面就绪：{{name}}",
+    "staleLastSeenHint": "最后听说 {{time}} — 即使列为在线，该节点也可能处于离线状态。"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

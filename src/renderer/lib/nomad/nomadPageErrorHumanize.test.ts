@@ -4,6 +4,7 @@ import {
   humanizeNomadPageError,
   isRetryableNomadPageError,
   nomadPageErrorI18nKey,
+  shouldForceNomadPathRefreshRetry,
 } from './nomadPageErrorHumanize';
 
 describe('nomadPageErrorHumanize', () => {
@@ -15,6 +16,8 @@ describe('nomadPageErrorHumanize', () => {
       'nomadNetwork.errors.responseTooLarge',
     );
     expect(nomadPageErrorI18nKey('nomad_busy')).toBe('nomadNetwork.errors.nomadBusy');
+    expect(nomadPageErrorI18nKey('nomad_not_serving')).toBe('nomadNetwork.errors.nomadNotServing');
+    expect(nomadPageErrorI18nKey('network_not_ready')).toBe('nomadNetwork.errors.networkNotReady');
     expect(nomadPageErrorI18nKey('missing_identity_hash')).toBe(
       'nomadNetwork.errors.missingIdentity',
     );
@@ -44,16 +47,23 @@ describe('nomadPageErrorHumanize', () => {
     expect(humanizeNomadPageError(null, t)).toBe('t:common.error');
   });
 
-  it('classifies retryable path/link/identity errors', () => {
+  it('classifies announce-reload vs force-path-refresh errors', () => {
     expect(isRetryableNomadPageError('path_timeout')).toBe(true);
     expect(isRetryableNomadPageError('link_timeout')).toBe(true);
     expect(isRetryableNomadPageError('response_timeout')).toBe(true);
-    expect(isRetryableNomadPageError('nomad_busy')).toBe(true);
+    expect(isRetryableNomadPageError('nomad_busy')).toBe(false);
     expect(isRetryableNomadPageError('pubkey_not_found')).toBe(true);
     expect(isRetryableNomadPageError('missing_identity_hash')).toBe(true);
     expect(isRetryableNomadPageError('sidecar_not_running')).toBe(false);
     expect(isRetryableNomadPageError('content_source_required')).toBe(false);
     expect(isRetryableNomadPageError(null)).toBe(false);
     expect(isRetryableNomadPageError('')).toBe(false);
+
+    expect(shouldForceNomadPathRefreshRetry('path_timeout')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('pubkey_not_found')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('missing_identity_hash')).toBe(true);
+    expect(shouldForceNomadPathRefreshRetry('link_timeout')).toBe(false);
+    expect(shouldForceNomadPathRefreshRetry('response_timeout')).toBe(false);
+    expect(shouldForceNomadPathRefreshRetry('nomad_busy')).toBe(false);
   });
 });

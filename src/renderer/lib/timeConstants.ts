@@ -269,3 +269,10 @@ export function meshcoreRepeaterRpcTimeoutMs(hopsAway?: number | null): number {
 
 /** Brief settle before one-shot Nomad page re-fetch after a transient path/link error. */
 export const NOMAD_PAGE_FETCH_RETRY_SETTLE_MS = 750;
+
+/**
+ * Coalesce rapid Nomad node/page selection before starting a Link query.
+ * Link queries are serialized in the sidecar; rapid clicks should only keep
+ * the latest selection after this debounce.
+ */
+export const NOMAD_PAGE_FETCH_DEBOUNCE_MS = 300;

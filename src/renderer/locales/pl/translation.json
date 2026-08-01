@@ -2961,7 +2961,9 @@
       "transportUnavailable": "Transport Reticulum jest niedostępny. Uruchom ponownie stos i spróbuj ponownie.",
       "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Inne żądanie strony lub pliku Nomad jest nadal w toku. Spróbuj ponownie za chwilę."
+      "nomadBusy": "Inne żądanie strony lub pliku Nomad jest nadal w toku. Spróbuj ponownie za chwilę.",
+      "nomadNotServing": "To jest Twój węzeł Nomad, ale hosting Moich stron nie jest uruchomiony. Otwórz Moje strony, wybierz folder i rozpocznij udostępnianie, aby uzyskać podgląd lokalny.",
+      "networkNotReady": "Oczekiwanie na połączenie koncentratora lub interfejsu radiowego z Internetem. Spróbuj ponownie, gdy połączenie wyświetli interfejs."
     },
     "fitWidth": "Dopasuj do okna",
     "openWidth": "Szerokość strony",
@@ -3007,7 +3009,11 @@
     "sortByHopsAsc": "Sortuj według przeskoków, najpierw najbliższe",
     "sortByHopsDesc": "Sortuj według przeskoków, najpierw najdalej",
     "sortByNameAsc": "Sortuj wg nazwy: od A do Z",
-    "sortByNameDesc": "Sortuj wg nazwy: od Z do A"
+    "sortByNameDesc": "Sortuj wg nazwy: od Z do A",
+    "pageLoadingCountdown": "Ładowanie strony… Pozostało {{time}}",
+    "pageLoadingCountdownOverdue": "Ładowanie strony… nadal działa",
+    "pageReadyToast": "Strona Nomad gotowa: {{name}}",
+    "staleLastSeenHint": "Ostatnio słuchano {{time}} — ten węzeł może być w trybie offline, nawet jeśli jest wymieniony jako online."
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

@@ -2959,7 +2959,9 @@
       "transportUnavailable": "Транспорт Reticulum недоступен. Перезапустите стек и повторите попытку.",
       "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Другой запрос страницы или файла Nomad всё ещё выполняется. Попробуйте снова через мгновение."
+      "nomadBusy": "Другой запрос страницы или файла Nomad всё ещё выполняется. Попробуйте снова через мгновение.",
+      "nomadNotServing": "Это ваш узел Nomad, но хостинг My Pages не работает. Откройте «Мои страницы», выберите папку и начните локальный предварительный просмотр.",
+      "networkNotReady": "Ожидание подключения концентратора или радиоинтерфейса к сети. Попробуйте еще раз, как только Connection отобразит интерфейс."
     },
     "fitWidth": "Уместить в окне",
     "openWidth": "ширина страницы",
@@ -3005,7 +3007,11 @@
     "sortByHopsAsc": "Сортировать по хопам, сначала по ближайшим",
     "sortByHopsDesc": "Сортировать по хопам, сначала самые дальние",
     "sortByNameAsc": "Сортировать по имени А - Я",
-    "sortByNameDesc": "Сортировать по имени Я - А"
+    "sortByNameDesc": "Сортировать по имени Я - А",
+    "pageLoadingCountdown": "Загрузка страницы… Осталось {{time}}",
+    "pageLoadingCountdownOverdue": "Загрузка страницы… все еще работает",
+    "pageReadyToast": "Страница Nomad готова: {{name}}",
+    "staleLastSeenHint": "Последний раз слышал {{time}} — этот узел может быть отключен, даже если он указан как подключенный."
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

@@ -162,6 +162,21 @@ git -C /tmp/rsReticulum-patch-test diff \
 
 When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
+## rsReticulum-link-client-proof-budget.patch
+
+Cap `LinkClient::query` proof wait at `link.establishment_timeout` so a cached path cannot burn the entire overall Nomad deadline (MeshChat TCP link stage ~15s). Apply **after** the LinkClient Nomad overlay.
+
+| Field | Value |
+| ----- | ----- |
+| **Depends on** | `rsReticulum-link-client-nomad.patch` |
+| **Upstream PR** | (mesh-client local; fold into #14 follow-up when possible) |
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-link-client-proof-budget.sh
+```
+
 ## Removed: rsReticulum-rnode-tcp-activity-keepalive.patch
 
 Sunset when upstream landed `RNodeIdleProbe` (`88d3d38` — *rnode: restore TCP application idle probes*). [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) was closed as superseded; mesh-client no longer carries that overlay (pin `9928abed269a83ec5a7ef165ff1142d938cad706` or later already includes idle probes). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.

@@ -3092,6 +3092,9 @@
     "reloadPage": "Reload page",
     "closeViewer": "Close page viewer",
     "pageLoading": "Loading page…",
+    "pageLoadingCountdown": "Loading page… {{time}} left",
+    "pageLoadingCountdownOverdue": "Loading page… still working",
+    "pageReadyToast": "Nomad page ready: {{name}}",
     "pageFailed": "Failed to load page: {{error}}",
     "pageTruncated": "Page truncated for display",
     "errors": {
@@ -3103,8 +3106,11 @@
       "transportUnavailable": "Reticulum transport is unavailable. Restart the stack and try again.",
       "sidecarNotRunning": "Reticulum sidecar is not running. Start the stack from Connection, then try again.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Another Nomad page request is still in progress. Try again in a moment.",
+      "nomadNotServing": "This is your Nomad node, but My Pages hosting is not running. Open My Pages, choose a folder, and start serving to preview locally.",
+      "networkNotReady": "Waiting for a hub or radio interface to come online. Try again once Connection shows an interface up."
     },
+    "staleLastSeenHint": "Last heard {{time}} — this node may be offline even if listed as online.",
     "showSource": "Show page source",
     "hideSource": "Show formatted page",
     "fitWidth": "Fit page to window",

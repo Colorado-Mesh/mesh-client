@@ -2959,7 +2959,9 @@
       "transportUnavailable": "Транспорт Reticulum недоступний. Перезапустіть стек і спробуйте ще раз.",
       "sidecarNotRunning": "Sidecar Reticulum не працює. Запустіть стек із Підключення, а потім спробуйте ще раз.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Інший запит сторінки або файлу Nomad ще виконується. Спробуйте знову за мить."
+      "nomadBusy": "Інший запит сторінки або файлу Nomad ще виконується. Спробуйте знову за мить.",
+      "nomadNotServing": "Це ваш вузол Nomad, але хостинг My Pages не працює. Відкрийте «Мої сторінки», виберіть папку та почніть показ для попереднього перегляду локально.",
+      "networkNotReady": "Очікування підключення концентратора або радіоінтерфейсу. Повторіть спробу, коли підключення відобразить інтерфейс."
     },
     "fitWidth": "Вмістити у вікно",
     "openWidth": "Відкрити ширину сторінки",
@@ -3005,7 +3007,11 @@
     "sortByHopsAsc": "Сортувати за хопами, спочатку найближчими",
     "sortByHopsDesc": "Сортувати за хопами, спочатку найдалі",
     "sortByNameAsc": "Сортувати за назвою, від А до Я",
-    "sortByNameDesc": "Сортувати за назвою, від Я до А"
+    "sortByNameDesc": "Сортувати за назвою, від Я до А",
+    "pageLoadingCountdown": "Завантаження сторінки... Залишилося {{time}}",
+    "pageLoadingCountdownOverdue": "Завантаження сторінки… все ще працює",
+    "pageReadyToast": "Сторінка Nomad готова: {{name}}",
+    "staleLastSeenHint": "Востаннє почуто {{time}} — цей вузол може бути офлайн, навіть якщо вказано як онлайн."
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

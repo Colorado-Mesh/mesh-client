@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Reticulum-Transport ist nicht verfügbar. Starten Sie den Stack neu und versuchen Sie es erneut.",
       "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut.",
       "responseTooLarge": "Der Knoten hat mehr Daten zurückgegeben, als mesh-client für diese Anfrage akzeptiert.",
-      "nomadBusy": "Eine andere Nomad-Seiten- oder Dateianfrage läuft noch. Versuche es gleich noch einmal."
+      "nomadBusy": "Eine andere Nomad-Seiten- oder Dateianfrage läuft noch. Versuche es gleich noch einmal.",
+      "nomadNotServing": "Dies ist Ihr Nomad-Knoten, aber das Hosting „Meine Seiten“ läuft nicht. Öffnen Sie „Meine Seiten“, wählen Sie einen Ordner aus und beginnen Sie mit der Bereitstellung zur lokalen Vorschau.",
+      "networkNotReady": "Warten darauf, dass ein Hub oder eine Funkschnittstelle online geht. Versuchen Sie es erneut, sobald Connection eine Schnittstelle anzeigt."
     },
     "fitWidth": "An Fenster anpassen",
     "openWidth": "Seitenbreite",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Sortieren nach Hops, nächstgelegener zuerst",
     "sortByHopsDesc": "Nach Hops sortieren, am weitesten vorne",
     "sortByNameAsc": "Nach Name sortieren: A bis Z",
-    "sortByNameDesc": "Nach Name sortieren: Z bis A"
+    "sortByNameDesc": "Nach Name sortieren: Z bis A",
+    "pageLoadingCountdown": "Seite wird geladen… {{time}} übrig",
+    "pageLoadingCountdownOverdue": "Seite wird geladen... funktioniert immer noch",
+    "pageReadyToast": "Nomad-Seite bereit: {{name}}",
+    "staleLastSeenHint": "Zuletzt gehört {{time}} – dieser Knoten ist möglicherweise offline, auch wenn er als online aufgeführt ist."
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

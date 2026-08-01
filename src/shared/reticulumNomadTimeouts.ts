@@ -27,11 +27,20 @@ export const NOMAD_RF_TRANSFER_GRACE_SECS = 30;
 /** RNS transport default overall cap. */
 export const NOMAD_RF_MAX_OVERALL_SECS = 180;
 
+/**
+ * Main-process IPC proxy AbortSignal timeout for Nomad page/file GETs.
+ * Sidecar LinkClient already enforces the egress×hops deadline; main must not
+ * cut off early when UI hops are stale (use a flat cap above the RF max).
+ */
+export const NOMAD_PROXY_GET_TIMEOUT_MS = (NOMAD_RF_MAX_OVERALL_SECS + 5) * 1_000;
+
 const NOMAD_EGRESS_VIA_VALUES: readonly ReticulumNomadEgressVia[] = ['rf', 'tcp', 'network'];
 
 export function parseReticulumNomadEgressVia(
   value: string | null | undefined,
 ): ReticulumNomadEgressVia {
+  // BLE RNode shares the RF per-hop timeout budget (proxy + sidecar).
+  if (value === 'ble') return 'rf';
   if (value != null && (NOMAD_EGRESS_VIA_VALUES as readonly string[]).includes(value)) {
     return value as ReticulumNomadEgressVia;
   }
@@ -63,14 +72,11 @@ export function nomadPageProxyTimeoutMs(egressVia: ReticulumNomadEgressVia, hops
 }
 
 /**
- * IPC proxy timeout for Nomad page/file fetches. Uses the larger of the
- * egress-specific budget and the RF worst-case budget so a stale `network`
- * egress guess cannot abort before the sidecar finishes an RF link query.
+ * IPC proxy timeout for Nomad page/file fetches.
+ * Always the flat {@link NOMAD_PROXY_GET_TIMEOUT_MS} so stale renderer hops
+ * cannot abort before the sidecar's own LinkClient deadline.
  */
-export function nomadPageProxyTimeoutMsFromApiPath(apiPath: string): number {
-  const query = apiPath.includes('?') ? (apiPath.split('?')[1] ?? '') : '';
-  const params = new URLSearchParams(query);
-  const hops = Number.parseInt(params.get('hops') ?? '8', 10);
-  const egress = parseReticulumNomadEgressVia(params.get('egress'));
-  return Math.max(nomadPageProxyTimeoutMs(egress, hops), nomadPageProxyTimeoutMs('rf', hops));
+export function nomadPageProxyTimeoutMsFromApiPath(_apiPath: string): number {
+  void _apiPath;
+  return NOMAD_PROXY_GET_TIMEOUT_MS;
 }

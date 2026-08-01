@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Reticulum taşıması kullanılamıyor. Yığını yeniden başlatın ve tekrar deneyin.",
       "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Başka bir Nomad sayfa veya dosya isteği hâlâ devam ediyor. Biraz sonra tekrar deneyin."
+      "nomadBusy": "Başka bir Nomad sayfa veya dosya isteği hâlâ devam ediyor. Biraz sonra tekrar deneyin.",
+      "nomadNotServing": "Bu sizin Nomad düğümünüz, ancak Sayfalarım barındırma çalışmıyor. Sayfalarım'ı açın, bir klasör seçin ve yerel olarak önizlemeye sunmaya başlayın.",
+      "networkNotReady": "Bir hub veya radyo arayüzünün çevrimiçi olması bekleniyor. Bağlantı bir arayüz gösterdiğinde tekrar deneyin."
     },
     "fitWidth": "Pencereye sığdır",
     "openWidth": "Sayfa Genişliği",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Atlamaya göre sırala, önce en yakın",
     "sortByHopsDesc": "Atlamaya göre sırala, önce en uzak",
     "sortByNameAsc": "Alfabetik sırala (A'dan Z'ye)",
-    "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)"
+    "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)",
+    "pageLoadingCountdown": "Sayfa yükleniyor… {{time}} kaldı",
+    "pageLoadingCountdownOverdue": "Sayfa yükleniyor… hala çalışıyor",
+    "pageReadyToast": "Nomad sayfası hazır: {{name}}",
+    "staleLastSeenHint": "Son duyulan {{time}} — bu düğüm çevrimiçi olarak listelense bile çevrimdışı olabilir."
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

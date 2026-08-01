@@ -2959,7 +2959,9 @@
       "transportUnavailable": "Transport Reticulum není k dispozici. Restartujte zásobník a zkuste to znovu.",
       "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Jiný požadavek na stránku nebo soubor Nomad stále probíhá. Zkuste to znovu za chvíli."
+      "nomadBusy": "Jiný požadavek na stránku nebo soubor Nomad stále probíhá. Zkuste to znovu za chvíli.",
+      "nomadNotServing": "Toto je váš uzel Nomad, ale hosting My Pages neběží. Otevřete Moje stránky, vyberte složku a začněte poskytovat místní náhled.",
+      "networkNotReady": "Čekání na připojení hubu nebo rádiového rozhraní. Zkuste to znovu, jakmile připojení zobrazí rozhraní."
     },
     "fitWidth": "Přizpůsobit stránku oknu",
     "openWidth": "Šířka stránky",
@@ -3005,7 +3007,11 @@
     "sortByHopsAsc": "Třídit podle skoků, nejdříve nejblíže",
     "sortByHopsDesc": "Třídit podle skoků, nejdále",
     "sortByNameAsc": "Seřadit podle názvu: A až Z",
-    "sortByNameDesc": "Řadit podle názvu (Z až A)"
+    "sortByNameDesc": "Řadit podle názvu (Z až A)",
+    "pageLoadingCountdown": "Načítání stránky… Zbývá {{time}}",
+    "pageLoadingCountdownOverdue": "Načítání stránky… stále funguje",
+    "pageReadyToast": "Nomad — Nomádská stránka připravena: {{name}}",
+    "staleLastSeenHint": "Naposledy slyšet {{time}} – tento uzel může být offline, i když je uveden jako online."
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

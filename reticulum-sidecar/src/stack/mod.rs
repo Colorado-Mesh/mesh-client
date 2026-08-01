@@ -1267,7 +1267,22 @@ impl StackHandle {
     }
 
     pub async fn list_nomad_nodes(&self) -> Vec<NomadNodeRow> {
-        self.inner.read().await.nomad_nodes.clone()
+        let mut nodes = self.inner.read().await.nomad_nodes.clone();
+        // Own Nomad announces often sit in the path table as multi-hop echoes.
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let our_id = live.identity_hash_hex();
+            for node in &mut nodes {
+                if node
+                    .identity_hash
+                    .as_ref()
+                    .is_some_and(|id| id.eq_ignore_ascii_case(&our_id))
+                {
+                    node.hops = Some(0);
+                }
+            }
+        }
+        nodes
     }
 
     pub async fn set_nomad_favorite(&self, hash: &str, favorited: bool) -> Result<(), String> {

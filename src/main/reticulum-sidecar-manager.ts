@@ -497,8 +497,9 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error('Reticulum sidecar is not running');
     }
     const normalized = assertReticulumProxyPath(apiPath);
+    const timeoutMs = reticulumProxyGetTimeoutMs(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
-      signal: AbortSignal.timeout(reticulumProxyGetTimeoutMs(apiPath)),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) {
       throw new Error(`sidecar GET ${normalized} failed: ${res.status}`);

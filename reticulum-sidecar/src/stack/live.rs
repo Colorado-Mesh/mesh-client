@@ -119,6 +119,10 @@ pub struct LiveBridge {
     /// Serialize Nomad Link queries — transport actor is single-threaded and
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
+    /// Cancel in-flight Nomad Link when a newer page selection arrives (renderer
+    /// debounce coalesces clicks; leaving the Nomad tab does not cancel).
+    nomad_link_cancel: Arc<tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
+    nomad_link_generation: Arc<AtomicU64>,
     rrc_session: Arc<RrcSessionManager>,
     rnsh_session: Arc<RnshSessionManager>,
     rncp_transfer: Arc<RncpTransferManager>,
@@ -445,6 +449,8 @@ impl LiveBridge {
             packet_log,
             inbound_lxmf,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
+            nomad_link_cancel: Arc::new(tokio::sync::Mutex::new(None)),
+            nomad_link_generation: Arc::new(AtomicU64::new(0)),
             rrc_session: Arc::new(RrcSessionManager::spawn(
                 handle.transport_tx.clone(),
                 identity.clone(),
@@ -811,6 +817,7 @@ impl LiveBridge {
     /// hash recovered from its announce (`AnnounceHandlerEvent::identity_hash`),
     /// required by `LinkClient::query` to rebuild the `nomadnetwork.node`
     /// destination on our side.
+    /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
     async fn query_nomad_node(
         &self,
         hash_hex: &str,
@@ -819,38 +826,107 @@ impl LiveBridge {
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
-    ) -> Result<Vec<u8>, String> {
+    ) -> Result<(Vec<u8>, &'static str, u64), String> {
+        let remote_hash = parse_hash16(identity_hash_hex)?;
+        // Prefer path-peer cache (maintenance refreshes every ~2s). Avoid a synchronous
+        // GetPathTable here — that control query alone can stall TCP page loads for seconds.
+        let key = hash_hex.to_lowercase();
+        let read_path_cache = || -> (Option<u8>, Option<String>) {
+            let mut hops = None;
+            let mut iface = None;
+            if let Ok(cache) = self.path_peer_cache.lock() {
+                if let Some(peer) = cache.iter().find(|p| p.destination_hash == key) {
+                    hops = peer.hops;
+                    iface = peer.interface.clone().filter(|n| !n.is_empty());
+                }
+            }
+            if iface.is_none() {
+                iface = self.path_interface_for_hash(&key);
+            }
+            (hops, iface)
+        };
+        let (mut cached_hops, mut path_iface) = read_path_cache();
         // Stale cached hops often survive LinkClient pubkey recall; force a
-        // RequestPath on retry so the second attempt is not a no-op.
+        // RequestPath on retry so the second attempt is not a no-op. Nomad uses a
+        // shorter wait and may fall through on never-absent hub routes.
         if force_path_refresh {
-            let path_ok = self.ensure_path_for_direct(hash_hex, true).await;
+            let path_ok = self
+                .ensure_path_for_direct_with_opts(
+                    hash_hex,
+                    true,
+                    NOMAD_FORCE_PATH_REFRESH_WAIT,
+                    true,
+                )
+                .await;
             tracing::info!(
                 target: "nomad",
                 dest = %hash_hex,
                 path_ok,
                 "forced path refresh before Nomad query"
             );
+            let refreshed = read_path_cache();
+            cached_hops = refreshed.0;
+            path_iface = refreshed.1;
         }
-        let remote_hash = parse_hash16(identity_hash_hex)?;
-        let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
-        let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
+        let hops = match cached_hops {
+            Some(h) => h,
+            None => self.hops_to_destination(hash_hex).await.unwrap_or(8),
+        };
+        let (timeout_secs, egress) = nomad_timeouts::resolve_nomad_page_timeout_secs(
+            interfaces,
+            hops,
+            path_iface.as_deref(),
+            self.primary_local_serial_id().as_deref(),
+        );
+        if !nomad_timeouts::nomad_remote_network_ready(interfaces, path_iface.as_deref()) {
+            return Err("network_not_ready".into());
+        }
+        let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
+        // Preempt the prior Link query so switching Nomad nodes does not wait
+        // for the full TCP/RF deadline (or crash the HTTP client mid-query).
+        let my_gen = self
+            .nomad_link_generation
+            .fetch_add(1, Ordering::SeqCst)
+            .wrapping_add(1);
+        let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
+        {
+            let mut slot = self.nomad_link_cancel.lock().await;
+            if let Some(prev) = slot.take() {
+                let _ = prev.send(());
+            }
+            *slot = Some(cancel_tx);
+        }
         let Ok(_guard) =
             tokio::time::timeout(NOMAD_LINK_LOCK_WAIT, self.nomad_link_lock.lock()).await
         else {
+            if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
+                *self.nomad_link_cancel.lock().await = None;
+            }
             return Err("nomad_busy".into());
         };
+        if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+            return Err("nomad_busy".into());
+        }
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
-        client
-            .query(
-                remote_hash,
-                NOMAD_NODE_ASPECT,
-                path,
-                payload,
-                hops,
-                Duration::from_secs(timeout_secs),
-            )
-            .await
-            .map_err(|e| map_nomad_link_error(&format!("{e}")))
+        let query_fut = client.query(
+            remote_hash,
+            NOMAD_NODE_ASPECT,
+            path,
+            payload,
+            link_hops,
+            Duration::from_secs(timeout_secs),
+        );
+        let result = tokio::select! {
+            biased;
+            _ = cancel_rx => Err("nomad_busy".into()),
+            query_result = query_fut => {
+                query_result.map_err(|e| map_nomad_link_error(&format!("{e}")))
+            }
+        };
+        if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
+            *self.nomad_link_cancel.lock().await = None;
+        }
+        result.map(|bytes| (bytes, egress, timeout_secs))
     }
 
     pub async fn fetch_nomad_file(
@@ -882,6 +958,9 @@ impl LiveBridge {
         let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
+        if self.is_own_identity_hash(identity_hash_hex) {
+            return serde_json::json!({ "ok": false, "error": "nomad_not_serving" });
+        }
         match self
             .query_nomad_node(
                 hash_hex,
@@ -893,7 +972,7 @@ impl LiveBridge {
             )
             .await
         {
-            Ok(bytes) => {
+            Ok((bytes, egress, timeout_secs)) => {
                 if bytes.len() > NOMAD_FILE_MAX_BYTES {
                     return serde_json::json!({ "ok": false, "error": "response_too_large" });
                 }
@@ -904,6 +983,8 @@ impl LiveBridge {
                     "ok": true,
                     "file_name": file_name,
                     "content_base64": content_base64,
+                    "egress": egress,
+                    "timeout_secs": timeout_secs,
                 })
             }
             Err(e) => serde_json::json!({
@@ -941,6 +1022,8 @@ impl LiveBridge {
                         "ok": true,
                         "content": content,
                         "content_type": content_type,
+                        "egress": "local",
+                        "timeout_secs": 0,
                     })
                 }
                 Err(e) => serde_json::json!({ "ok": false, "error": e }),
@@ -949,6 +1032,11 @@ impl LiveBridge {
         let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
+        // Own Nomad announce can echo back via the mesh (multi-hop). Never open a
+        // Link to ourselves — require My Pages hosting for local preview.
+        if self.is_own_identity_hash(identity_hash_hex) {
+            return serde_json::json!({ "ok": false, "error": "nomad_not_serving" });
+        }
         let payload = nomad_page_request_payload(data_b64);
         match self
             .query_nomad_node(
@@ -961,7 +1049,7 @@ impl LiveBridge {
             )
             .await
         {
-            Ok(bytes) => {
+            Ok((bytes, egress, timeout_secs)) => {
                 if bytes.len() > NOMAD_PAGE_MAX_BYTES {
                     return serde_json::json!({ "ok": false, "error": "response_too_large" });
                 }
@@ -975,6 +1063,8 @@ impl LiveBridge {
                     "ok": true,
                     "content": content,
                     "content_type": content_type,
+                    "egress": egress,
+                    "timeout_secs": timeout_secs,
                 })
             }
             Err(e) => serde_json::json!({
@@ -982,6 +1072,10 @@ impl LiveBridge {
                 "error": e,
             }),
         }
+    }
+
+    fn is_own_identity_hash(&self, identity_hash_hex: &str) -> bool {
+        identity_hash_hex.eq_ignore_ascii_case(&self.identity_hash_hex())
     }
 
     async fn query_control_timed(&self, query: TransportQuery) -> Option<TransportQueryResponse> {
@@ -1021,6 +1115,7 @@ impl LiveBridge {
     ) {
         let transport_tx = self.handle.transport_tx.clone();
         let event_tx = self.event_tx.clone();
+        let our_identity_hash = self.identity_hash_hex();
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
@@ -1041,7 +1136,15 @@ impl LiveBridge {
                 let hash_hex = hex::encode(evt.destination_hash);
                 let identity_hash_hex = evt.identity_hash.map(hex::encode);
                 let display_name = parse_announce_display_name(evt.app_data.as_deref());
-                let hops = Some(evt.hops);
+                // Own Nomad announces often reappear via multi-hop path-table echoes.
+                let hops = if identity_hash_hex
+                    .as_ref()
+                    .is_some_and(|id| id.eq_ignore_ascii_case(&our_identity_hash))
+                {
+                    Some(0)
+                } else {
+                    Some(evt.hops)
+                };
                 let payload = {
                     let mut state = inner.write().await;
                     state.upsert_nomad_node(
@@ -1056,7 +1159,7 @@ impl LiveBridge {
                     serde_json::json!({
                         "destination_hash": hash_hex,
                         "display_name": display_name,
-                        "hops": evt.hops,
+                        "hops": hops.unwrap_or(0),
                     })
                 };
                 let frame = serde_json::json!({ "type": "nomadnetwork.node", "payload": payload });
@@ -1831,6 +1934,20 @@ impl LiveBridge {
     /// When `force` is true, drop any cached path and RequestPath so we wait for a
     /// fresh route response instead of returning on the stale `has_path_to` entry.
     async fn ensure_path_for_direct(&self, destination_hex: &str, force: bool) -> bool {
+        self.ensure_path_for_direct_with_opts(destination_hex, force, Duration::from_secs(8), false)
+            .await
+    }
+
+    /// Like [`Self::ensure_path_for_direct`], with a custom wait and optional
+    /// fall-through when a forced DropPath never observes path absence (common
+    /// on TCP hub routes that reinstall immediately).
+    async fn ensure_path_for_direct_with_opts(
+        &self,
+        destination_hex: &str,
+        force: bool,
+        max_wait: Duration,
+        accept_existing_on_timeout: bool,
+    ) -> bool {
         let already = self
             .outbound
             .lock()
@@ -1875,7 +1992,7 @@ impl LiveBridge {
                 destination_hash: dest,
             })
             .await;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+        let deadline = tokio::time::Instant::now() + max_wait;
         while tokio::time::Instant::now() < deadline {
             let _ = self.refresh_outbound_path_table().await;
             let has_path = self
@@ -1914,7 +2031,8 @@ impl LiveBridge {
             .unwrap_or(false);
         if force && already {
             let accept = has_path
-                && force_path_refresh_accepts_current_path(force, already, saw_path_absent);
+                && (force_path_refresh_accepts_current_path(force, already, saw_path_absent)
+                    || accept_existing_on_timeout);
             tracing::info!(
                 target: "propagation-sync",
                 dest = %destination_hex,
@@ -1922,9 +2040,14 @@ impl LiveBridge {
                 has_path,
                 saw_path_absent,
                 accept,
+                accept_existing_on_timeout,
                 "path refresh timed out after dropping cached route"
             );
             return accept;
+        }
+        // Non-force miss, or force with no path at start: accept any path that appeared.
+        if accept_existing_on_timeout && has_path {
+            return true;
         }
         false
     }
@@ -3419,7 +3542,13 @@ fn insert_display_name_bounded(cache: &mut HashMap<String, String>, hash: String
 const NOMAD_PAGE_MAX_BYTES: usize = 512 * 1024;
 /// Cap Nomad file body before base64 (aligned with Axum 4 MiB body limit).
 const NOMAD_FILE_MAX_BYTES: usize = 4 * 1024 * 1024;
-const NOMAD_LINK_LOCK_WAIT: Duration = Duration::from_secs(2);
+/// After preempting the prior query, allow time for LinkClient to unwind and
+/// release the lock before surfacing `nomad_busy` to a newer request.
+/// Wait for a preempted Nomad Link query to unwind (not the full page budget).
+const NOMAD_LINK_LOCK_WAIT: Duration = Duration::from_secs(8);
+
+/// Cap DropPath + rediscover before a Nomad Link attempt (inside overall TCP budget).
+const NOMAD_FORCE_PATH_REFRESH_WAIT: Duration = Duration::from_secs(4);
 
 fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
     let mut added = path_table_added_hashes(prev, next);
