@@ -378,3 +378,24 @@ git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/link_d
 ### Sunset
 
 When upstream ships `has_pending_to` (or an equivalent) on the clone pin, remove this patch and drop the apply step.
+
+## rsReticulum-path-medium-slots.patch
+
+Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-network medium preference in `rns-transport`. Apply **after** the other rsReticulum overlays (packet-tap, discovery egress, …).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` (+ prior mesh-client overlays) |
+| **Upstream PR** | none yet (mesh-client-local) |
+
+**Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-path-medium-slots.sh
+```
+
+### Sunset
+
+When ratspeak/rsReticulum lands equivalent multi-slot ranking + medium preference, remove this patch and the apply step from `ensure-rsReticulum-patches.sh` / `clone-ratspeak-stack.sh` / `update.sh`.

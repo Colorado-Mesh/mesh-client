@@ -65,6 +65,25 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 
 **Config bootstrap (stack start):** When `announce_interval_sec` is missing from rnsd config, the sidecar writes **3600**; explicit **0** is left unchanged (`ensure_announce_interval_sec_default` in `reticulum-sidecar/src/stack/config.rs`). Missing `share_instance` / `instance_name` are filled as **No** / **mesh-client** (explicit values are preserved). Same bootstrap pass may set `discover_interfaces = Yes` for RMAP ingest.
 
+### Path medium preference and pins
+
+Routing bias between **RF** (LoRa / RNode) and **network** (TCP/UDP/I2P/gateway/shared-instance) path slots. Backed by rsReticulum `TransportQuery::SetPathMediumPreference` / `SetPeerMediumPin` / `GetPathSlots`; persisted in `mesh_client_stack.json` as `path_medium_preference` (default `"lowest"`) and `peer_medium_pins` (`{ "<32 hex dest>": "rf" | "network" }`, max 256 entries).
+
+| Method | Path                                      | Body / notes                                     | Response                                                                                                                       |
+| ------ | ----------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/v1/settings/path-medium-preference` |                                                  | `{ ok, preference: "lowest"\|"network"\|"rf", pins: { "<hash>": "rf"\|"network" } }`                                           |
+| PUT    | `/api/v1/settings/path-medium-preference` | `{ preference: "lowest"\|"network"\|"rf" }`      | `{ ok, preference }`; **400** `{ ok: false, error: "invalid_path_medium_preference" }` on an unknown token                     |
+| GET    | `/api/v1/peers/{hash}/paths`              |                                                  | `{ ok, destination_hash, preference, pin, effective_preference, live, paths: PathSlot[] }`; **400** on a non-32-hex hash       |
+| PUT    | `/api/v1/peers/{hash}/medium-pin`         | `{ pin: "rf"\|"network"\|null }` (`null` clears) | `{ ok, destination_hash, pin }`; **400** `"pin_required"` (key absent), `"invalid_pin"`, or bad hash. Emits `peers_updated` WS |
+
+**`PathSlot` fields:** `active` (route currently used for outbound), `hops`, `via_hash` (immediate transport id, may be `null`), `interface` (live interface name), `interface_id`, `medium` (`rf` / `network`), `timestamp`, `expires`, `expired`. Slots are ranked active-first and capped by rsReticulum `MAX_PATH_SLOTS` (**3**).
+
+**`preference` vs `effective_preference`:** `preference` is the persisted global setting and `pin` the persisted per-destination override; `effective_preference` is what the live transport actually applies for that destination (pin resolved against the global) and is `null` when the stack is not live.
+
+**Offline behavior:** PUTs always persist, so a preference or pin set while the stack is down is applied on the next live start (`LiveBridge::spawn` re-applies the preference — skipped when it is the default `lowest` — then every pin). `GET …/paths` returns `live: false` with an empty `paths` array when there is no live transport. `GET /api/v1/peers` stays active-route-only and does **not** embed path arrays; fetch slots per destination.
+
+`preference` semantics (rsReticulum): `lowest` applies no medium bias and ranks purely by hops; `network` / `rf` are "prefer if possible" — when the preferred medium has no live slot the other medium becomes active without clearing the preference, so the preferred medium can reclaim the route later.
+
 ### LXMF and contacts
 
 | Method | Path                           | Body / notes                                                                    | Response                                                                                                                                                                                                                                                                                                                                                                       |

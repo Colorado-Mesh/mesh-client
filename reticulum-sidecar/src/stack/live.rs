@@ -48,6 +48,7 @@ use super::nomad_timeouts;
 use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, wire_packet_from_tap,
 };
+use super::path_medium::{self, PathMediumPreferenceSetting, PathMediumSetting};
 use super::path_speed;
 use super::persistence::PersistedState;
 use super::pn_hosting_apply::{apply_pn_hosting_policy_to_node, apply_pn_hosting_policy_to_router};
@@ -612,6 +613,30 @@ impl LiveBridge {
                     .await;
                 if result.get("ok").and_then(serde_json::Value::as_bool) != Some(true) {
                     tracing::warn!("[rncp] failed to restore inbound listener: {result}");
+                }
+            }
+        }
+
+        // Re-apply the persisted routing preference and per-destination pins to
+        // the fresh transport. Failure point: control query timeout — log and
+        // continue on the transport default (`lowest`); the user can re-apply
+        // from Settings, and the stored values survive for the next start.
+        let (path_preference, peer_pins) = {
+            let state = inner.read().await;
+            (state.path_medium_preference, state.peer_medium_pins.clone())
+        };
+        if path_preference != PathMediumPreferenceSetting::default() {
+            if let Err(e) = bridge.apply_path_medium_preference(path_preference).await {
+                tracing::warn!(
+                    "[path-medium] failed to restore preference {}: {e}",
+                    path_preference.as_str()
+                );
+            }
+        }
+        if !peer_pins.is_empty() {
+            for (hash, pin) in peer_pins.iter() {
+                if let Err(e) = bridge.apply_peer_medium_pin(hash, Some(pin)).await {
+                    tracing::warn!("[path-medium] failed to restore pin for {hash}: {e}");
                 }
             }
         }
@@ -3025,6 +3050,76 @@ impl LiveBridge {
             Ok(hops) => Ok(serde_json::json!({ "ok": true, "hops": hops })),
             Err(e) => Ok(serde_json::json!({ "ok": false, "error": format!("{e:?}") })),
         }
+    }
+
+    /// Apply the global path-medium preference; returns destinations rerouted.
+    pub async fn apply_path_medium_preference(
+        &self,
+        preference: PathMediumPreferenceSetting,
+    ) -> Result<i64, String> {
+        let resp = self
+            .query_control_timed(TransportQuery::SetPathMediumPreference {
+                preference: path_medium::to_transport_preference(preference),
+            })
+            .await;
+        match resp {
+            Some(TransportQueryResponse::IntResult(rerouted)) => Ok(rerouted),
+            _ => Err("path_medium_preference_apply_failed".into()),
+        }
+    }
+
+    /// Pin (or unpin with `None`) one destination to a medium; returns whether the active route moved.
+    pub async fn apply_peer_medium_pin(
+        &self,
+        hash: &str,
+        pin: Option<PathMediumSetting>,
+    ) -> Result<bool, String> {
+        let dest = parse_hash16(hash)?;
+        let resp = self
+            .query_control_timed(TransportQuery::SetPeerMediumPin {
+                dest,
+                pin: pin.map(path_medium::to_transport_medium),
+            })
+            .await;
+        match resp {
+            Some(TransportQueryResponse::BoolResult(moved)) => Ok(moved),
+            _ => Err("peer_medium_pin_apply_failed".into()),
+        }
+    }
+
+    /// Ranked path slots for `hash` (active first) plus the preference the transport applies there.
+    pub async fn path_slots(
+        &self,
+        hash: &str,
+    ) -> Result<(Vec<serde_json::Value>, PathMediumPreferenceSetting), String> {
+        let dest = parse_hash16(hash)?;
+        let resp = self
+            .query_control_timed(TransportQuery::GetPathSlots { dest })
+            .await;
+        let Some(TransportQueryResponse::PathSlots(entry)) = resp else {
+            return Err("path_slots_query_failed".into());
+        };
+        let paths = entry
+            .slots
+            .iter()
+            .map(|slot| {
+                serde_json::json!({
+                    "active": slot.active,
+                    "hops": slot.hops,
+                    "via_hash": slot.via.map(hex::encode),
+                    "interface": slot.interface,
+                    "interface_id": slot.interface_id,
+                    "medium": slot.medium.as_str(),
+                    "timestamp": slot.timestamp,
+                    "expires": slot.expires,
+                    "expired": slot.expired,
+                })
+            })
+            .collect();
+        Ok((
+            paths,
+            path_medium::from_transport_preference(entry.preference),
+        ))
     }
 
     pub async fn send_lxmf(&self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {

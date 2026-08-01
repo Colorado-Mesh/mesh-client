@@ -47,6 +47,7 @@ ensure_repo "${RNS_DIR}" 'https://github.com/ratspeak/rsReticulum.git' \
 "${SCRIPT_DIR}/apply-rsReticulum-link-client-proof-budget.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-discovery-announce-egress.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-path-medium-slots.sh"
 
 ensure_repo "${LXMF_DIR}" 'https://github.com/ratspeak/rsLXMF.git' \
   '68ad7c835187c052c763bb28c41b04a655f35c64' 'rsLXMF'

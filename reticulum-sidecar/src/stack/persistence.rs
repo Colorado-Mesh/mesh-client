@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use serde::Deserialize;
 
+use super::path_medium::{PathMediumPreferenceSetting, PathMediumSetting, PeerMediumPins};
 use super::pn_hosting_policy::PnHostingPolicy;
 use super::types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
@@ -49,6 +50,10 @@ pub struct PersistedState {
     /// Identity hashes for `allow_all_listed` policy; empty means `ask` mode.
     pub rncp_listener_allowed: Vec<String>,
     pub rncp_listener_blocked: Vec<String>,
+    /// Global transport bias for the active path slot (rsReticulum `PathMediumPreference`).
+    pub path_medium_preference: PathMediumPreferenceSetting,
+    /// Per-destination medium pins that override the global preference.
+    pub peer_medium_pins: PeerMediumPins,
 }
 
 impl PersistedState {
@@ -93,6 +98,8 @@ impl PersistedState {
             rncp_listener_overwrite: false,
             rncp_listener_allowed: Vec::new(),
             rncp_listener_blocked: Vec::new(),
+            path_medium_preference: PathMediumPreferenceSetting::default(),
+            peer_medium_pins: PeerMediumPins::default(),
         }
     }
 
@@ -399,6 +406,19 @@ impl PersistedState {
         let policy = policy.sanitized()?;
         self.pn_hosting_policy = policy;
         Ok(())
+    }
+
+    pub fn set_path_medium_preference(&mut self, preference: PathMediumPreferenceSetting) {
+        self.path_medium_preference = preference;
+    }
+
+    /// Set (`Some`) or clear (`None`) a destination's medium pin; returns the canonical hash.
+    pub fn set_peer_medium_pin(
+        &mut self,
+        hash: &str,
+        pin: Option<PathMediumSetting>,
+    ) -> Result<String, String> {
+        self.peer_medium_pins.set(hash, pin)
     }
 
     pub fn upsert_nomad_node(
@@ -780,7 +800,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 25)?;
+        let mut s = serializer.serialize_struct("PersistedState", 27)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -815,6 +835,8 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("rncp_listener_overwrite", &self.rncp_listener_overwrite)?;
         s.serialize_field("rncp_listener_allowed", &self.rncp_listener_allowed)?;
         s.serialize_field("rncp_listener_blocked", &self.rncp_listener_blocked)?;
+        s.serialize_field("path_medium_preference", &self.path_medium_preference)?;
+        s.serialize_field("peer_medium_pins", &self.peer_medium_pins)?;
         s.end()
     }
 }
@@ -869,6 +891,10 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             rncp_listener_allowed: Vec<String>,
             #[serde(default)]
             rncp_listener_blocked: Vec<String>,
+            #[serde(default)]
+            path_medium_preference: PathMediumPreferenceSetting,
+            #[serde(default)]
+            peer_medium_pins: PeerMediumPins,
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
@@ -901,6 +927,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             rncp_listener_overwrite: raw.rncp_listener_overwrite,
             rncp_listener_allowed: raw.rncp_listener_allowed,
             rncp_listener_blocked: raw.rncp_listener_blocked,
+            path_medium_preference: raw.path_medium_preference,
+            peer_medium_pins: raw.peer_medium_pins,
         })
     }
 }
@@ -1148,6 +1176,92 @@ mod tests {
             "peering_cost_exceeds_max"
         );
         assert_eq!(state.pn_hosting_policy, before);
+    }
+
+    #[test]
+    fn path_medium_defaults_to_lowest_with_no_pins() {
+        let state = PersistedState::default_empty();
+        assert_eq!(
+            state.path_medium_preference,
+            PathMediumPreferenceSetting::Lowest
+        );
+        assert!(state.peer_medium_pins.is_empty());
+    }
+
+    #[test]
+    fn path_medium_fields_round_trip_and_default_when_absent() {
+        let hash = "aabbccddeeff00112233445566778899";
+        let mut state = PersistedState::default_empty();
+        state.set_path_medium_preference(PathMediumPreferenceSetting::Rf);
+        state
+            .set_peer_medium_pin(hash, Some(PathMediumSetting::Network))
+            .expect("pin");
+        let json = serde_json::to_string(&state).expect("serialize");
+        let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(
+            loaded.path_medium_preference,
+            PathMediumPreferenceSetting::Rf
+        );
+        assert_eq!(
+            loaded.peer_medium_pins.get(hash),
+            Some(PathMediumSetting::Network)
+        );
+
+        // Strip the new keys from a valid serialized document (older clients).
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        obj.remove("path_medium_preference");
+        obj.remove("peer_medium_pins");
+        let legacy_state: PersistedState =
+            serde_json::from_value(value).expect("legacy without path medium keys");
+        assert_eq!(
+            legacy_state.path_medium_preference,
+            PathMediumPreferenceSetting::Lowest
+        );
+        assert!(legacy_state.peer_medium_pins.is_empty());
+    }
+
+    #[test]
+    fn set_peer_medium_pin_updates_and_clears() {
+        let hash = "deadbeefcafebabe0123456789abcdef";
+        let mut state = PersistedState::default_empty();
+        let canonical = state
+            .set_peer_medium_pin(&hash.to_ascii_uppercase(), Some(PathMediumSetting::Rf))
+            .expect("pin");
+        assert_eq!(canonical, hash);
+        assert_eq!(
+            state.peer_medium_pins.get(hash),
+            Some(PathMediumSetting::Rf)
+        );
+        state
+            .set_peer_medium_pin(hash, None)
+            .expect("clear existing pin");
+        assert!(state.peer_medium_pins.get(hash).is_none());
+        assert!(
+            state
+                .set_peer_medium_pin("nothex", Some(PathMediumSetting::Rf))
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn corrupt_path_medium_values_do_not_reset_state_file() {
+        let mut state = PersistedState::default_empty();
+        state.set_path_medium_preference(PathMediumPreferenceSetting::Network);
+        let json = serde_json::to_string(&state).expect("serialize");
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        obj.insert("path_medium_preference".into(), serde_json::json!("bogus"));
+        obj.insert(
+            "peer_medium_pins".into(),
+            serde_json::json!({ "nothex": "rf" }),
+        );
+        let loaded: PersistedState = serde_json::from_value(value).expect("tolerant load");
+        assert_eq!(
+            loaded.path_medium_preference,
+            PathMediumPreferenceSetting::Lowest
+        );
+        assert!(loaded.peer_medium_pins.is_empty());
     }
 
     #[test]

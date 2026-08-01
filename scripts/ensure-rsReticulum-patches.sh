@@ -18,6 +18,7 @@ fi
 "${SCRIPT_DIR}/apply-rsReticulum-link-client-proof-budget.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-discovery-announce-egress.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-path-medium-slots.sh"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   echo "rsLXMF not found at ${LXMF_DIR}; skipping lxmf overlay apply"

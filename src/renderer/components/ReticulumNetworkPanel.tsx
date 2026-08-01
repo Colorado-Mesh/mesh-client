@@ -6,6 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { translateReticulumAuditIssue } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import {
+  fetchPathMediumPreference,
+  type PathMediumPreference,
+  setPathMediumPreference,
+} from '@/renderer/lib/reticulum/reticulumPathMedium';
 import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import {
   createReticulumIdentitySlot,
@@ -143,6 +148,9 @@ export function ReticulumNetworkPanel({
     share_instance: false,
     loglevel: 4,
   });
+  const [pathMediumPreference, setPathMediumPreferenceState] =
+    useState<PathMediumPreference>('lowest');
+  const [pathMediumBusy, setPathMediumBusy] = useState(false);
   const [configValidateBusy, setConfigValidateBusy] = useState(false);
   const [configValidateResult, setConfigValidateResult] =
     useState<ReticulumConfigValidateResult | null>(null);
@@ -158,10 +166,30 @@ export function ReticulumNetworkPanel({
         share_instance: body.share_instance,
         loglevel: typeof body.loglevel === 'number' ? body.loglevel : 4,
       });
+      const pref = await fetchPathMediumPreference();
+      if (pref.ok) setPathMediumPreferenceState(pref.preference);
     } catch (e) {
       console.debug('[ReticulumNetworkPanel] stack settings ' + errLikeToLogString(e));
     }
   }, [sidecarApiReady]);
+
+  const savePathMediumPreference = async (preference: PathMediumPreference) => {
+    setPathMediumBusy(true);
+    try {
+      const res = await setPathMediumPreference(preference);
+      if (!res.ok) {
+        addToast(t('networkPanel.reticulumStackSettings.pathMediumPreferenceSaveFailed'), 'error');
+        return;
+      }
+      setPathMediumPreferenceState(preference);
+      addToast(t('networkPanel.reticulumStackSettings.pathMediumPreferenceSaved'), 'success');
+    } catch (e) {
+      console.warn('[ReticulumNetworkPanel] path medium ' + errLikeToLogString(e));
+      addToast(t('networkPanel.reticulumStackSettings.pathMediumPreferenceSaveFailed'), 'error');
+    } finally {
+      setPathMediumBusy(false);
+    }
+  };
 
   const refreshPeers = useCallback(async () => {
     if (!sidecarApiReady) return;
@@ -528,6 +556,29 @@ export function ReticulumNetworkPanel({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="block text-xs text-gray-400">
+            {t('networkPanel.reticulumStackSettings.pathMediumPreference')}
+            <select
+              value={pathMediumPreference}
+              disabled={!sidecarApiReady || pathMediumBusy}
+              aria-label={t('networkPanel.reticulumStackSettings.pathMediumPreferenceAria')}
+              onChange={(e) => {
+                void savePathMediumPreference(e.target.value as PathMediumPreference);
+              }}
+              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+            >
+              <option value="lowest">
+                {t('networkPanel.reticulumStackSettings.pathMediumLowest')}
+              </option>
+              <option value="network">
+                {t('networkPanel.reticulumStackSettings.pathMediumNetwork')}
+              </option>
+              <option value="rf">{t('networkPanel.reticulumStackSettings.pathMediumRf')}</option>
+            </select>
+            <span className="mt-1 block text-[11px] text-gray-500">
+              {t('networkPanel.reticulumStackSettings.pathMediumPreferenceHint')}
+            </span>
           </label>
           <button
             type="button"

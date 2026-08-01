@@ -49,6 +49,7 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { ReticulumPeerPathsDetail } from './reticulum/ReticulumPeerPathsDetail';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
 
@@ -253,6 +254,7 @@ export default function ReticulumPeerListPanel({
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [refreshing, setRefreshing] = useState(false);
   const [actionBusyHash, setActionBusyHash] = useState<string | null>(null);
+  const [pathsDetailHash, setPathsDetailHash] = useState<string | null>(null);
   const [sortedRows, setSortedRows] = useState<PreparedReticulumPeerRow[]>([]);
   const [verifiedHashes, setVerifiedHashes] = useState<Set<string>>(() => new Set());
 
@@ -566,6 +568,20 @@ export default function ReticulumPeerListPanel({
         }}
       >
         {t('connectionPanel.reticulumPeers.probe')}
+      </button>
+      <button
+        type="button"
+        className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        aria-label={t('peerListPanel.pathsAria')}
+        onClick={(e) => {
+          e.stopPropagation();
+          setPathsDetailHash((cur) =>
+            cur === peer.destination_hash ? null : peer.destination_hash,
+          );
+        }}
+      >
+        {t('peerListPanel.paths')}
       </button>
     </>
   );
@@ -894,6 +910,15 @@ export default function ReticulumPeerListPanel({
           </tbody>
         </table>
       </div>
+
+      {pathsDetailHash ? (
+        <ReticulumPeerPathsDetail
+          destinationHash={pathsDetailHash}
+          onClose={() => {
+            setPathsDetailHash(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
