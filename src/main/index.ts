@@ -111,6 +111,7 @@ import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-h
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
+import { registerLinuxWebBluetoothCancelIpcHandlers } from './linuxWebBluetoothCancelIpc';
 import {
   formatBluetoothctlSpawnError,
   linuxWebBluetoothDeviceSelection,
@@ -2092,42 +2093,7 @@ ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
 });
 
 // ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-// Optional generation: when provided, ignore delayed cancels from an earlier chooser.
-// When omitted, force-cancel (pre-connect cleanup).
-// Prefer invoke (`bluetooth-device-cancel`) before starting requestDevice() so the
-// cancel cannot race behind a new select-bluetooth-device session.
-function applyLinuxWebBluetoothCancelIpc(generation: unknown): {
-  cancelled: boolean;
-} {
-  const result = linuxWebBluetoothDeviceSelection.applyCancel(generation);
-  if (result.cancelled && result.mode === 'generation') {
-    console.debug(`[IPC] bluetooth-device-cancelled: cancelled generation=${result.generation}`);
-  } else if (result.cancelled && result.mode === 'force') {
-    console.debug(`[IPC] bluetooth-device-cancelled: force-clear generation=${result.generation}`);
-  } else if (result.mode === 'ignored') {
-    const requested =
-      typeof result.generation === 'number' ? ` requested=${result.generation}` : '';
-    const active =
-      typeof result.activeGeneration === 'number' ? ` active=${result.activeGeneration}` : '';
-    console.debug(
-      `[IPC] bluetooth-device-cancelled: generation mismatch or no pending — ignored${requested}${active}`,
-    );
-  } else {
-    console.debug('[IPC] bluetooth-device-cancelled: force-clear (no pending)');
-  }
-  return { cancelled: result.cancelled };
-}
-
-ipcMain.handle('bluetooth-device-cancel', (event, generation: unknown) => {
-  assertIpcSender(event, 'bluetooth-device-cancel');
-  return applyLinuxWebBluetoothCancelIpc(generation);
-});
-
-// Fire-and-forget path (Cancel button / teardown). Connect must use the invoke handle.
-ipcMain.on('bluetooth-device-cancelled', (event, generation: unknown) => {
-  assertIpcSender(event, 'bluetooth-device-cancelled');
-  applyLinuxWebBluetoothCancelIpc(generation);
-});
+registerLinuxWebBluetoothCancelIpcHandlers();
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
 // Not used on routine disconnect; only ConnectionPanel manual re-pair flow.

@@ -820,7 +820,7 @@ export interface ElectronAPI {
    * Pass the generation from onBluetoothDevicesDiscovered to ignore stale cancels.
    * Await before starting a new requestDevice() so force-clear cannot race the new session.
    */
-  cancelBluetoothSelection: (generation?: number | null) => Promise<void>;
+  cancelBluetoothSelection: (generation?: number | null) => Promise<{ cancelled: boolean }>;
 
   // ─── Bluetooth pairing (Linux) ──────────────────────────────────────────────
   bluetoothUnpair: (macAddress: string) => Promise<void>;

@@ -574,6 +574,7 @@ export default function ReticulumPeerListPanel({
         className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
         disabled={busy}
         aria-label={t('peerListPanel.pathsAria', { hash: peer.destination_hash })}
+        aria-expanded={pathsDetailHash === peer.destination_hash}
         onClick={(e) => {
           e.stopPropagation();
           setPathsDetailHash((cur) =>

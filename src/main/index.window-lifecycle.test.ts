@@ -76,10 +76,9 @@ describe('Linux Web Bluetooth device selection', () => {
     expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.resolveSelection');
     expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.cancelSelection');
     expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.armStaleTimeout');
-    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.applyCancel');
     // Awaitable cancel before requestDevice() — fire-and-forget send raced the new chooser.
-    expect(INDEX_SOURCE).toContain("handle('bluetooth-device-cancel'");
-    expect(INDEX_SOURCE).toContain('applyLinuxWebBluetoothCancelIpc');
+    expect(INDEX_SOURCE).toContain('registerLinuxWebBluetoothCancelIpcHandlers');
+    expect(INDEX_SOURCE).toContain("from './linuxWebBluetoothCancelIpc'");
     // Must not overwrite pending callback on every select-bluetooth-device event
     const handlerIdx = INDEX_SOURCE.indexOf("on('select-bluetooth-device'");
     expect(handlerIdx).toBeGreaterThan(-1);

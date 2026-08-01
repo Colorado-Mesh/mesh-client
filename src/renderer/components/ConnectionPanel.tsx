@@ -1161,7 +1161,16 @@ export default function ConnectionPanel({
         // omit generation only when we have no tracked session (force-clear orphans).
         const priorGeneration = linuxBleChooserGenerationRef.current;
         linuxBleChooserGenerationRef.current = null;
-        await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+        try {
+          await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+        } catch (e: unknown) {
+          console.debug(
+            '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
+          );
+          setConnecting(false);
+          setConnectionStage('');
+          return;
+        }
         pendingMeshcoreLinuxWbMacRef.current = null;
         bleLinuxPickerSelectionResolvedRef.current = false;
         setShowBlePicker(false);
@@ -1639,7 +1648,18 @@ export default function ConnectionPanel({
           // Mirror handleConnect: await cancel so a stale chooser cannot merge into the new requestDevice().
           const priorGeneration = linuxBleChooserGenerationRef.current;
           linuxBleChooserGenerationRef.current = null;
-          await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+          try {
+            await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+          } catch (e: unknown) {
+            console.debug(
+              '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
+            );
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+            return;
+          }
           pendingMeshcoreLinuxWbMacRef.current = null;
           bleLinuxPickerSelectionResolvedRef.current = false;
           try {

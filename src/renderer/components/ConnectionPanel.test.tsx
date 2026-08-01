@@ -606,9 +606,9 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
     });
     vi.mocked(window.electronAPI.cancelBluetoothSelection).mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<{ cancelled: boolean }>((resolve) => {
           void cancelSettled.then(() => {
-            resolve();
+            resolve({ cancelled: true });
           });
         }),
     );
@@ -639,7 +639,9 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
       });
       expect(onConnectStarted).toBe(true);
     } finally {
-      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue(undefined);
+      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue({
+        cancelled: false,
+      });
       localStorage.removeItem(lastConnKey);
       userAgentSpy.mockRestore();
     }
@@ -725,9 +727,9 @@ describe('ConnectionPanel Linux BLE path', () => {
     let onConnectStarted = false;
     vi.mocked(window.electronAPI.cancelBluetoothSelection).mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<{ cancelled: boolean }>((resolve) => {
           void cancelSettled.then(() => {
-            resolve();
+            resolve({ cancelled: true });
           });
         }),
     );
@@ -767,7 +769,9 @@ describe('ConnectionPanel Linux BLE path', () => {
       });
       expect(onConnectStarted).toBe(true);
     } finally {
-      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue(undefined);
+      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue({
+        cancelled: false,
+      });
       userAgentSpy.mockRestore();
     }
   });

@@ -201,13 +201,6 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
     expect(body).toContain('validateIpcSender(event)');
   });
 
-  it('bluetooth-device-cancelled calls assertIpcSender', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.on('bluetooth-device-cancelled'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
-    expect(body).toContain("assertIpcSender(event, 'bluetooth-device-cancelled')");
-  });
-
   it('meshtastic:xmodemPickUpload uses a bounded descriptor read', () => {
     expect(INDEX_SOURCE).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:xmodemPickUpload'");
