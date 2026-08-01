@@ -12,6 +12,15 @@ vi.mock('react-i18next', () => ({
       if (key === 'peerListPanel.pathsHeading') return `Paths · ${opts?.hash ?? ''}…`;
       if (key === 'peerListPanel.pathsDetailAria') return `Ranked paths for ${opts?.hash ?? ''}`;
       if (key === 'peerListPanel.pathsGlobalPreference') return `Global: ${opts?.preference ?? ''}`;
+      if (key === 'networkPanel.reticulumStackSettings.pathMediumLowest') {
+        return 'Lowest path (hop count)';
+      }
+      if (key === 'networkPanel.reticulumStackSettings.pathMediumNetwork') {
+        return 'Network (non-RF)';
+      }
+      if (key === 'networkPanel.reticulumStackSettings.pathMediumRf') {
+        return 'RF (RNode)';
+      }
       return key;
     },
   }),
@@ -29,7 +38,22 @@ vi.mock('@/renderer/lib/reticulum/reticulumPathMedium', async () => {
   };
 });
 
-import { ReticulumPeerPathsDetail } from './ReticulumPeerPathsDetail';
+import { pathMediumPreferenceLabelKey, ReticulumPeerPathsDetail } from './ReticulumPeerPathsDetail';
+
+describe('pathMediumPreferenceLabelKey', () => {
+  it('maps wire tokens to Network-tab path-medium keys', () => {
+    expect(pathMediumPreferenceLabelKey('lowest')).toBe(
+      'networkPanel.reticulumStackSettings.pathMediumLowest',
+    );
+    expect(pathMediumPreferenceLabelKey('RF')).toBe(
+      'networkPanel.reticulumStackSettings.pathMediumRf',
+    );
+    expect(pathMediumPreferenceLabelKey('network')).toBe(
+      'networkPanel.reticulumStackSettings.pathMediumNetwork',
+    );
+    expect(pathMediumPreferenceLabelKey('wired')).toBeNull();
+  });
+});
 
 describe('ReticulumPeerPathsDetail', () => {
   beforeEach(() => {
@@ -79,6 +103,7 @@ describe('ReticulumPeerPathsDetail', () => {
     await waitFor(() => {
       expect(screen.getByText(/RNode 41F4/)).toBeInTheDocument();
     });
+    expect(screen.getByText('Global: Lowest path (hop count)')).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });

@@ -1244,7 +1244,7 @@
       "openGlobalMap": "全球测绘",
       "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
       "syncFailed": "RMAP发现同步失败。",
-      "publishingOf": "RMAP v4：发布 {{total}} 的 {{current}}"
+      "publishingOf": "RMAP v4：正在发布 {{current}}/{{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
     "coloradoServerNote": "Colorado Mesh 面向科罗拉多州地区的网格用户。主题前缀使用丹佛 IATA（meshcore/DEN）。",

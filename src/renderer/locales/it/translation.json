@@ -2499,7 +2499,7 @@
       "save": "Salva le impostazioni dello stack",
       "saveFailed": "Impossibile salvare le impostazioni dello stack.",
       "pathMediumPreference": "Mezzo del percorso preferito",
-      "pathMediumPreferenceHint": "Quando un peer è raggiungibile tramite RF e rete (TCP/I2P/ecc.), Scegli quale mezzo vince per impostazione predefinita. Classifica dei percorsi più bassi solo per numero di hop. I pin per peer nella scheda Peers possono sovrascriverlo.",
+      "pathMediumPreferenceHint": "Quando un peer è raggiungibile tramite RF e rete (TCP/I2P/ecc.), scegli quale mezzo vince per impostazione predefinita. Il percorso più basso viene classificato solo in base al numero di hop. I pin per peer nella scheda Peers possono sovrascriverlo.",
       "pathMediumLowest": "Percorso più basso (numero di hop)",
       "pathMediumNetwork": "Rete (non RF)",
       "pathMediumRf": "RF (RNode)",

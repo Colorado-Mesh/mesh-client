@@ -1630,6 +1630,12 @@ export default function ConnectionPanel({
           setConnectionStage('connectionPanel.stageReconnecting');
           // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
           connectionTypeRef.current = 'ble';
+          // Mirror handleConnect: await cancel so a stale chooser cannot merge into the new requestDevice().
+          const priorGeneration = linuxBleChooserGenerationRef.current;
+          linuxBleChooserGenerationRef.current = null;
+          await window.electronAPI.cancelBluetoothSelection(priorGeneration);
+          pendingMeshcoreLinuxWbMacRef.current = null;
+          bleLinuxPickerSelectionResolvedRef.current = false;
           try {
             await onConnect('ble', undefined);
             isAutoConnectingRef.current = false;

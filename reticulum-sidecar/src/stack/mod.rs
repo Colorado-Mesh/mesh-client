@@ -99,6 +99,9 @@ pub struct StackHandle {
     identity_op_lock: Mutex<()>,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
+    /// Test-only: next preference/pin apply returns this error after persist (exercises rollback).
+    #[cfg(test)]
+    test_path_medium_apply_error: Mutex<Option<String>>,
 }
 
 impl StackHandle {
@@ -219,6 +222,8 @@ impl StackHandle {
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
             live,
+            #[cfg(test)]
+            test_path_medium_apply_error: Mutex::new(None),
         };
         #[cfg(not(feature = "rns-stack"))]
         let handle = Self {
@@ -230,6 +235,8 @@ impl StackHandle {
             inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
+            #[cfg(test)]
+            test_path_medium_apply_error: Mutex::new(None),
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &handle.live {
@@ -884,13 +891,15 @@ impl StackHandle {
     /// Persist the global preference, then hot-apply it to a live transport.
     ///
     /// Failure point: durable save — the in-memory value is rolled back so the
-    /// stored and applied preference cannot diverge. When the stack is not live
-    /// the value is stored only and applied on the next start.
+    /// stored and applied preference cannot diverge. Failure point: live apply —
+    /// persisted preference is rolled back to the prior snapshot so disk/UI cannot
+    /// drift ahead of the transport. When the stack is not live the value is
+    /// stored only and applied on the next start.
     pub async fn set_path_medium_preference(
         &self,
         preference: PathMediumPreferenceSetting,
     ) -> Result<(), String> {
-        {
+        let snapshot = {
             let mut inner = self.inner.write().await;
             let snapshot = inner.path_medium_preference;
             inner.set_path_medium_preference(preference);
@@ -898,10 +907,19 @@ impl StackHandle {
                 inner.set_path_medium_preference(snapshot);
                 return Err(e);
             }
+            snapshot
+        };
+        #[cfg(test)]
+        if let Some(err) = self.take_test_path_medium_apply_error().await {
+            self.rollback_path_medium_preference(snapshot).await;
+            return Err(err);
         }
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            live.apply_path_medium_preference(preference).await?;
+            if let Err(e) = live.apply_path_medium_preference(preference).await {
+                self.rollback_path_medium_preference(snapshot).await;
+                return Err(e);
+            }
         }
         Ok(())
     }
@@ -912,27 +930,64 @@ impl StackHandle {
     }
 
     /// Persist a destination medium pin (`None` clears it), then hot-apply it.
+    ///
+    /// Failure point: live apply — pin map is rolled back to the pre-save snapshot
+    /// so disk cannot drift ahead of the transport.
     pub async fn set_peer_medium_pin(
         &self,
         hash: &str,
         pin: Option<PathMediumSetting>,
     ) -> Result<String, String> {
-        let canonical = {
+        let (canonical, pin_snapshot) = {
             let mut inner = self.inner.write().await;
-            let snapshot = inner.peer_medium_pins.clone();
+            let pin_snapshot = inner.peer_medium_pins.clone();
             let canonical = inner.set_peer_medium_pin(hash, pin)?;
             if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-                inner.peer_medium_pins = snapshot;
+                inner.peer_medium_pins = pin_snapshot;
                 return Err(e);
             }
-            canonical
+            (canonical, pin_snapshot)
         };
+        #[cfg(test)]
+        if let Some(err) = self.take_test_path_medium_apply_error().await {
+            self.rollback_peer_medium_pins(pin_snapshot).await;
+            return Err(err);
+        }
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            live.apply_peer_medium_pin(&canonical, pin).await?;
+            if let Err(e) = live.apply_peer_medium_pin(&canonical, pin).await {
+                self.rollback_peer_medium_pins(pin_snapshot).await;
+                return Err(e);
+            }
         }
         self.emit_event("peers_updated", serde_json::json!({ "hash": canonical }));
         Ok(canonical)
+    }
+
+    async fn rollback_path_medium_preference(&self, snapshot: PathMediumPreferenceSetting) {
+        let mut inner = self.inner.write().await;
+        inner.set_path_medium_preference(snapshot);
+        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+            tracing::warn!("path medium preference rollback persist failed: {save_err}");
+        }
+    }
+
+    async fn rollback_peer_medium_pins(&self, snapshot: path_medium::PeerMediumPins) {
+        let mut inner = self.inner.write().await;
+        inner.peer_medium_pins = snapshot;
+        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+            tracing::warn!("peer medium pin rollback persist failed: {save_err}");
+        }
+    }
+
+    #[cfg(test)]
+    async fn take_test_path_medium_apply_error(&self) -> Option<String> {
+        self.test_path_medium_apply_error.lock().await.take()
+    }
+
+    #[cfg(test)]
+    async fn force_next_path_medium_apply_error(&self, err: impl Into<String>) {
+        *self.test_path_medium_apply_error.lock().await = Some(err.into());
     }
 
     /// Ranked transport path slots for one destination plus the stored preference / pin.
@@ -3085,6 +3140,61 @@ mod tests {
             serde_json::json!({})
         );
         assert!(reloaded.peer_path_slots("nothex").await.is_err());
+
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn path_medium_apply_failure_rolls_back_persisted_preference_and_pin() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let hash = "aabbccddeeff00112233445566778899";
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        assert_eq!(
+            handle.path_medium_preference().await,
+            PathMediumPreferenceSetting::Lowest
+        );
+
+        handle
+            .force_next_path_medium_apply_error("path_medium_preference_apply_failed")
+            .await;
+        let err = handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Rf)
+            .await
+            .expect_err("apply must fail");
+        assert_eq!(err, "path_medium_preference_apply_failed");
+        assert_eq!(
+            handle.path_medium_preference().await,
+            PathMediumPreferenceSetting::Lowest
+        );
+
+        // Persist a known-good pin first, then fail the next apply so rollback restores it.
+        handle
+            .set_peer_medium_pin(hash, Some(PathMediumSetting::Rf))
+            .await
+            .expect("set pin while offline/apply-ok");
+        assert_eq!(
+            handle.peer_medium_pins_json().await,
+            serde_json::json!({ hash: "rf" })
+        );
+        handle
+            .force_next_path_medium_apply_error("peer_medium_pin_apply_failed")
+            .await;
+        let pin_err = handle
+            .set_peer_medium_pin(hash, Some(PathMediumSetting::Network))
+            .await
+            .expect_err("pin apply must fail");
+        assert_eq!(pin_err, "peer_medium_pin_apply_failed");
+        assert_eq!(
+            handle.peer_medium_pins_json().await,
+            serde_json::json!({ hash: "rf" })
+        );
 
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);

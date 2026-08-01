@@ -12,6 +12,26 @@ import {
   setReticulumPeerMediumPin,
 } from '@/renderer/lib/reticulum/reticulumPathMedium';
 
+/** Map wire preference tokens to Network-tab path-medium labels (avoid raw API enums in UI). */
+export function pathMediumPreferenceLabelKey(
+  preference: string,
+):
+  | 'networkPanel.reticulumStackSettings.pathMediumLowest'
+  | 'networkPanel.reticulumStackSettings.pathMediumNetwork'
+  | 'networkPanel.reticulumStackSettings.pathMediumRf'
+  | null {
+  switch (preference.trim().toLowerCase()) {
+    case 'lowest':
+      return 'networkPanel.reticulumStackSettings.pathMediumLowest';
+    case 'network':
+      return 'networkPanel.reticulumStackSettings.pathMediumNetwork';
+    case 'rf':
+      return 'networkPanel.reticulumStackSettings.pathMediumRf';
+    default:
+      return null;
+  }
+}
+
 export interface ReticulumPeerPathsDetailProps {
   destinationHash: string;
   onClose: () => void;
@@ -49,6 +69,9 @@ export function ReticulumPeerPathsDetail({
   }, [refresh]);
 
   const pinChoice = peerMediumPinChoiceFromApi(result?.pin);
+  const preferenceLabelKey = result?.preference
+    ? pathMediumPreferenceLabelKey(result.preference)
+    : null;
 
   const onPinChange = async (choice: PeerMediumPinChoice) => {
     const previous = result;
@@ -119,9 +142,11 @@ export function ReticulumPeerPathsDetail({
           <option value="rf">{t('peerListPanel.pathsPreferRf')}</option>
           <option value="network">{t('peerListPanel.pathsPreferNetwork')}</option>
         </select>
-        {result?.preference ? (
+        {preferenceLabelKey ? (
           <span className="text-[11px] text-gray-500">
-            {t('peerListPanel.pathsGlobalPreference', { preference: result.preference })}
+            {t('peerListPanel.pathsGlobalPreference', {
+              preference: t(preferenceLabelKey),
+            })}
           </span>
         ) : null}
       </label>

@@ -554,6 +554,7 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
     );
     const onConnect = vi.fn().mockResolvedValue(undefined);
     vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockClear();
 
     try {
       render(
@@ -573,7 +574,72 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
         expect(onConnect).toHaveBeenCalledWith('ble', undefined);
       });
       expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+      expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+      const cancelOrder = vi.mocked(window.electronAPI.cancelBluetoothSelection).mock
+        .invocationCallOrder[0];
+      const connectOrder = onConnect.mock.invocationCallOrder[0];
+      expect(cancelOrder).toBeDefined();
+      expect(connectOrder).toBeDefined();
+      expect(cancelOrder).toBeLessThan(connectOrder);
     } finally {
+      localStorage.removeItem(lastConnKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+
+  it('awaits cancelBluetoothSelection before Reconnect onConnect on Linux', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = mockLinuxUserAgent();
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'linux-ble-device' }),
+    );
+    let releaseCancel: (() => void) | undefined;
+    const cancelSettled = new Promise<void>((resolve) => {
+      releaseCancel = resolve;
+    });
+    let onConnectStarted = false;
+    const onConnect = vi.fn().mockImplementation(() => {
+      onConnectStarted = true;
+      return Promise.resolve();
+    });
+    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          void cancelSettled.then(() => {
+            resolve();
+          });
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+
+      await waitFor(() => {
+        expect(window.electronAPI.cancelBluetoothSelection).toHaveBeenCalled();
+      });
+      expect(onConnectStarted).toBe(false);
+      expect(onConnect).not.toHaveBeenCalled();
+
+      releaseCancel?.();
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+      });
+      expect(onConnectStarted).toBe(true);
+    } finally {
+      vi.mocked(window.electronAPI.cancelBluetoothSelection).mockResolvedValue(undefined);
       localStorage.removeItem(lastConnKey);
       userAgentSpy.mockRestore();
     }

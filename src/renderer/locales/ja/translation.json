@@ -1244,7 +1244,7 @@
       "openGlobalMap": "グローバルマップ",
       "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
       "syncFailed": "RMAP検出の同期に失敗しました。",
-      "publishingOf": "RMAP v4: {{current}} または {{total}} を公開しています"
+      "publishingOf": "RMAP v4: {{total}} 中 {{current}} を公開しています"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
     "coloradoServerNote": "Colorado Mesh はコロラド地域のメッシュ利用者向けです。トピック接頭辞はデンバー IATA（meshcore/DEN）を使用します。",

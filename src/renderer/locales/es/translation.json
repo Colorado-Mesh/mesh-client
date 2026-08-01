@@ -3023,7 +3023,7 @@
     "pageLoadingCountdownOverdue": "Cargando página… sigue funcionando",
     "pageReadyToast": "Nomad — Página nómada lista: {{name}}",
     "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea.",
-    "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… {{time}} left",
+    "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… quedan {{time}}",
     "pageLoadingRetryOverdue": "Actualizando ruta y reintentando... sigue funcionando"
   },
   "packetDistribution": {

@@ -1024,6 +1024,9 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 | `link_timeout`          | Link could not be established in time (UI may say path OK vs stale) |
 | `response_timeout`      | Link opened but page payload did not arrive in time                 |
 | `missing_identity_hash` | No remembered identity for the node yet                             |
+| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack   |
+| `nomad_not_serving`     | Remote node is not serving Nomad pages                              |
+| `invalid_url`           | Malformed Nomad page/file URL                                       |
 | `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
 | `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
 | `response_too_large`    | Remote response exceeded the sidecar size cap                       |
