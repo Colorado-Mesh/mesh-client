@@ -37,11 +37,11 @@ if git -C "${RNS_DIR}" apply --check "${PATCH_FILE}" > "${apply_err}" 2>&1; then
   exit 0
 fi
 
-# Neither reverse nor forward matched. Accept only an explicit upstream-equivalent cap.
+# Neither reverse nor forward matched. Accept only the full upstream-equivalent data
+# flow: proof_budget is capped by establishment_timeout AND passed to wait_for_proof.
 if [[ -f "${LINK_CLIENT_RS}" ]] \
-  && grep -q 'let proof_budget' "${LINK_CLIENT_RS}" \
-  && grep -q 'establishment_timeout' "${LINK_CLIENT_RS}" \
-  && grep -qE 'proof_budget\s*=\s*time_remaining\(deadline\)\?\.min\(link\.establishment_timeout\)|wait_for_proof\([^;]*proof_budget' "${LINK_CLIENT_RS}"; then
+  && grep -qE 'let proof_budget\s*=\s*time_remaining\(deadline\)\?\.min\(link\.establishment_timeout\)' "${LINK_CLIENT_RS}" \
+  && grep -qE 'wait_for_proof\([^;]*proof_budget' "${LINK_CLIENT_RS}"; then
   echo "link-client proof-budget capability already upstream on rsReticulum @ $(short_head)"
   exit 0
 fi

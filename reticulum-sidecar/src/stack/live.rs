@@ -818,6 +818,7 @@ impl LiveBridge {
     /// required by `LinkClient::query` to rebuild the `nomadnetwork.node`
     /// destination on our side.
     /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
+    /// Remote errors after egress is known include that atom so the UI countdown can update.
     async fn query_nomad_node(
         &self,
         hash_hex: &str,
@@ -826,8 +827,8 @@ impl LiveBridge {
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
-    ) -> Result<(Vec<u8>, &'static str, u64), String> {
-        let remote_hash = parse_hash16(identity_hash_hex)?;
+    ) -> Result<(Vec<u8>, &'static str, u64), (String, Option<&'static str>)> {
+        let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| (e, None))?;
         // Prefer path-peer cache (maintenance refreshes every ~2s). Avoid a synchronous
         // GetPathTable here — that control query alone can stall TCP page loads for seconds.
         let key = hash_hex.to_lowercase();
@@ -879,7 +880,7 @@ impl LiveBridge {
             self.primary_local_serial_id().as_deref(),
         );
         if !nomad_timeouts::nomad_remote_network_ready(interfaces, path_iface.as_deref()) {
-            return Err("network_not_ready".into());
+            return Err(("network_not_ready".into(), Some(egress)));
         }
         let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
         // Preempt the prior Link query so switching Nomad nodes does not wait
@@ -902,10 +903,10 @@ impl LiveBridge {
             if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
                 *self.nomad_link_cancel.lock().await = None;
             }
-            return Err("nomad_busy".into());
+            return Err(("nomad_busy".into(), Some(egress)));
         };
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
-            return Err("nomad_busy".into());
+            return Err(("nomad_busy".into(), Some(egress)));
         }
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         let query_fut = client.query(
@@ -926,7 +927,9 @@ impl LiveBridge {
         if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
             *self.nomad_link_cancel.lock().await = None;
         }
-        result.map(|bytes| (bytes, egress, timeout_secs))
+        result
+            .map(|bytes| (bytes, egress, timeout_secs))
+            .map_err(|e| (e, Some(egress)))
     }
 
     pub async fn fetch_nomad_file(
@@ -987,10 +990,7 @@ impl LiveBridge {
                     "timeout_secs": timeout_secs,
                 })
             }
-            Err(e) => serde_json::json!({
-                "ok": false,
-                "error": e,
-            }),
+            Err((e, egress)) => nomad_remote_error_json(&e, egress),
         }
     }
 
@@ -1067,10 +1067,7 @@ impl LiveBridge {
                     "timeout_secs": timeout_secs,
                 })
             }
-            Err(e) => serde_json::json!({
-                "ok": false,
-                "error": e,
-            }),
+            Err((e, egress)) => nomad_remote_error_json(&e, egress),
         }
     }
 
@@ -3443,6 +3440,14 @@ fn resolve_inbound_sender_name_map(names: &HashMap<String, String>, sender_hash:
         .unwrap_or_else(|| prefix.to_string())
 }
 
+/// Remote Nomad page/file error JSON; include path-aware egress when known.
+fn nomad_remote_error_json(error: &str, egress: Option<&'static str>) -> serde_json::Value {
+    match egress {
+        Some(egress) => serde_json::json!({ "ok": false, "error": error, "egress": egress }),
+        None => serde_json::json!({ "ok": false, "error": error }),
+    }
+}
+
 /// After a forced DropPath, accept a path only once it has been observed absent
 /// and then reinstalled — otherwise the first refresh succeeds on the stale route.
 fn force_path_refresh_accepts_current_path(
@@ -3742,6 +3747,20 @@ mod announce_display_name_tests {
         // Non-force discovery with a path present — accept.
         let has_path = true;
         assert!(has_path && force_path_refresh_accepts_current_path(false, false, false));
+    }
+
+    #[test]
+    fn nomad_remote_error_json_includes_egress_when_known() {
+        let with_egress = nomad_remote_error_json("link_timeout", Some("tcp"));
+        assert_eq!(with_egress["ok"], false);
+        assert_eq!(with_egress["error"], "link_timeout");
+        assert_eq!(with_egress["egress"], "tcp");
+        assert!(with_egress.get("timeout_secs").is_none());
+
+        let without = nomad_remote_error_json("missing_identity_hash", None);
+        assert_eq!(without["ok"], false);
+        assert_eq!(without["error"], "missing_identity_hash");
+        assert!(without.get("egress").is_none());
     }
 
     #[test]
