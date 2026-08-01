@@ -148,6 +148,7 @@ import { reticulumHashForNodeId, useReticulumPeerStore } from '../stores/reticul
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
+import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
@@ -2717,12 +2718,7 @@ function ChatPanel({
                                 <div className="mt-0.5 flex items-center justify-end gap-2">
                                   {msg.rxHops != null &&
                                     (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
-                                      <span
-                                        className="text-[10px] text-gray-500"
-                                        title={t('nodeDetailModal.hopsFromRoutingTitle')}
-                                      >
-                                        {t('nodeDetailModal.hopLabel', { count: msg.rxHops })}
-                                      </span>
+                                      <ChatRfHopLabel rxHops={msg.rxHops} msg={msg} />
                                     )}
                                   {msg.viaStoreForward && <StoreForwardBadge />}
                                   {msg.receivedVia && (

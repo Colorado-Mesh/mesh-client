@@ -470,6 +470,7 @@
     "receivedViaRf": "Received via RF",
     "receivedViaMqtt": "Received via MQTT",
     "receivedViaRfAndMqtt": "Received via RF + MQTT",
+    "hopCountRefinedFromRf": "Updated from RF path",
     "receivedViaStoreForward": "Replayed from Store & Forward",
     "receivedViaTcp": "Received via TCP",
     "receivedViaNetwork": "Received via network",

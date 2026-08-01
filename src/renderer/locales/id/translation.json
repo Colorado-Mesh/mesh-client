@@ -643,7 +643,8 @@
     "notificationDmTitle": "DM dari {{sender}}",
     "notificationMessageTitle": "Pesan dari {{sender}}",
     "reticulumSendStoredAtPn": "Disimpan di simpul propagasi",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Diperbarui dari jalur RF"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

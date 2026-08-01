@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   type ChatCorrelateRxLike,
@@ -6,9 +6,14 @@ import {
   meshcoreCorrelateOrSynthesizeChatEntry,
   meshcoreFindRecentGrpTxtRawPacket,
   meshcoreFindRecentTxtMsgRawPacket,
+  resetMeshcoreTxtMsgHopCorrelateConsumedForTests,
   resolveMeshcoreIngestRxHops,
 } from './meshcoreRawPacketCorrelate';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from './rawPacketLogConstants';
+
+afterEach(() => {
+  resetMeshcoreTxtMsgHopCorrelateConsumedForTests();
+});
 
 function entry(
   partial: Partial<ChatCorrelateRxLike> & Pick<ChatCorrelateRxLike, 'ts'>,
@@ -202,20 +207,20 @@ describe('meshcoreFindRecentGrpTxtRawPacket', () => {
 describe('meshcoreFindRecentTxtMsgRawPacket', () => {
   const now = 20_000;
 
-  it('returns unattributed TXT_MSG within window', () => {
+  it('returns the most recent TXT_MSG within window (attributed or not)', () => {
     const packets: ChatCorrelateRxLike[] = [
-      { ts: now - 400, payloadTypeString: 'TXT_MSG', fromNodeId: 0xabc, hopCount: 9 },
-      { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 2 },
+      { ts: now - 400, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 9 },
+      { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: 0xabc, hopCount: 2 },
     ];
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)?.hopCount).toBe(2);
   });
 
-  it('matches unattributed TXT_MSG in the widened correlation window', () => {
+  it('matches attributed TXT_MSG in the correlation window', () => {
     const packets: ChatCorrelateRxLike[] = [
       {
         ts: now - (MESHCORE_CHAT_CORRELATE_WINDOW_MS - 500),
         payloadTypeString: 'TXT_MSG',
-        fromNodeId: null,
+        fromNodeId: 0x111,
         hopCount: 6,
       },
     ];
@@ -234,12 +239,68 @@ describe('meshcoreFindRecentTxtMsgRawPacket', () => {
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)).toBeUndefined();
   });
 
-  it('ignores GRP_TXT and attributed TXT_MSG rows', () => {
+  it('ignores GRP_TXT rows when looking for TXT_MSG', () => {
     const packets: ChatCorrelateRxLike[] = [
       { ts: now - 100, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 5 },
-      { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: 0x111, hopCount: 4 },
     ];
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)).toBeUndefined();
+  });
+
+  it('scopes to the event sender when interleaved TXT_MSG rows share the window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 300,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0xaaa,
+        hopCount: 1,
+        parseOk: true,
+      },
+      {
+        ts: now - 100,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0xbbb,
+        hopCount: 5,
+        parseOk: true,
+      },
+    ];
+    // Most recent overall is 0xbbb @ 5 hops — but ingesting 0xaaa must not adopt that.
+    expect(
+      meshcoreFindRecentTxtMsgRawPacket(packets, now, MESHCORE_CHAT_CORRELATE_WINDOW_MS, {
+        fromNodeId: 0xaaa,
+      })?.hopCount,
+    ).toBe(1);
+    expect(
+      meshcoreFindRecentTxtMsgRawPacket(packets, now, MESHCORE_CHAT_CORRELATE_WINDOW_MS, {
+        fromNodeId: 0xbbb,
+      })?.hopCount,
+    ).toBe(5);
+  });
+
+  it('matches TXT_MSG by fingerprint when fromNodeId differs or is null', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 200,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: null,
+        hopCount: 4,
+        parseOk: true,
+        messageFingerprintHex: 'deadbeef',
+      },
+      {
+        ts: now - 50,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0x999,
+        hopCount: 9,
+        parseOk: true,
+        messageFingerprintHex: 'cafebabe',
+      },
+    ];
+    expect(
+      meshcoreFindRecentTxtMsgRawPacket(packets, now, MESHCORE_CHAT_CORRELATE_WINDOW_MS, {
+        fromNodeId: 0x111,
+        messageFingerprintHex: 'DEADBEEF',
+      })?.hopCount,
+    ).toBe(4);
   });
 });
 
@@ -253,6 +314,57 @@ describe('resolveMeshcoreIngestRxHops', () => {
     ];
     expect(resolveMeshcoreIngestRxHops(packets, true, now)).toBe(2);
     expect(resolveMeshcoreIngestRxHops(packets, false, now)).toBe(1);
+  });
+
+  it('does not adopt another sender DM hops within the correlation window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 400,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0x111,
+        hopCount: 2,
+        parseOk: true,
+      },
+      { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: 0x222, hopCount: 7, parseOk: true },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0x111 })).toBe(2);
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0x333 })).toBeUndefined();
+  });
+
+  it('consumes a TXT_MSG row so duplicate same-sender DMs cannot reuse it', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 200,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0xabc,
+        hopCount: 1,
+        parseOk: true,
+      },
+      {
+        ts: now - 100,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0xabc,
+        hopCount: 3,
+        parseOk: true,
+      },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0xabc })).toBe(3);
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0xabc })).toBe(1);
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0xabc })).toBeUndefined();
+  });
+
+  it('does not fall back to another sender when fromNodeId is 0', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 50,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0x222,
+        hopCount: 7,
+        parseOk: true,
+      },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0 })).toBeUndefined();
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: null })).toBeUndefined();
   });
 
   it('returns undefined when matched row has no hopCount', () => {

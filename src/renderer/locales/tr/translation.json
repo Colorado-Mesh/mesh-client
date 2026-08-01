@@ -643,7 +643,8 @@
     "notificationDmTitle": "{{sender}} 'dan DM",
     "notificationMessageTitle": "{{sender}} adlı kişiden mesaj",
     "reticulumSendStoredAtPn": "Yayılma düğümünde depolanır",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "RF yolundan güncellendi"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

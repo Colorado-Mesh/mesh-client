@@ -645,7 +645,8 @@
     "notificationDmTitle": "ДМ від {{sender}}",
     "notificationMessageTitle": "Повідомлення від {{sender}}",
     "reticulumSendStoredAtPn": "Зберігається на вузлі розповсюдження",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Оновлено з RF PATH"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

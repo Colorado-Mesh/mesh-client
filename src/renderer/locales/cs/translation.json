@@ -645,7 +645,8 @@
     "floodScopeOverrideUnscoped": "Unscoped",
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Uloženo v propagačním uzlu",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Aktualizováno z RF cesty"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

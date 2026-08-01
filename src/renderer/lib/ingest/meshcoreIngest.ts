@@ -181,7 +181,12 @@ function handleTextMessage(
   const isChannel = event.payload.id.startsWith('ch:');
   const hopCount =
     event.payload.hopCount ??
-    resolveMeshcoreIngestRxHops(options.rawPacketsForHopCorrelation?.() ?? [], isChannel);
+    resolveMeshcoreIngestRxHops(
+      options.rawPacketsForHopCorrelation?.() ?? [],
+      isChannel,
+      Date.now(),
+      isChannel ? undefined : { fromNodeId: event.payload.from },
+    );
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.

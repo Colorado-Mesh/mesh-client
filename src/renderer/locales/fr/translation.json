@@ -643,7 +643,8 @@
     "notificationMessageTitle": "Message de {{sender}}",
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Stocké au nœud de propagation",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "Mise à jour à partir du chemin RF"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

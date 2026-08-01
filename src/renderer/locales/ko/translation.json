@@ -643,7 +643,8 @@
     "notificationDmTitle": "{{sender}} 님의 DM",
     "notificationMessageTitle": "{{sender}} 님의 메시지",
     "reticulumSendStoredAtPn": "전파 노드에 저장됨",
-    "reticulumPnAbbrev": "PN"
+    "reticulumPnAbbrev": "PN",
+    "hopCountRefinedFromRf": "RF 경로에서 업데이트됨"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
