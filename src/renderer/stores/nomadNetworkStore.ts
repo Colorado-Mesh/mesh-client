@@ -94,12 +94,13 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     return { ok: false, error: 'sidecar_not_running' } as T;
   }
   try {
-    const egress = await resolveNomadEgress();
-    const qs = new URLSearchParams({
-      path: opts.path,
-      hops: String(hops),
-      egress,
+    // Sidecar recomputes path-table egress for its Link deadline; main uses a flat
+    // Nomad proxy timeout. Cached local egress is logging-only (never block on GET).
+    const egress = cachedNomadEgressAt > 0 ? cachedNomadEgress : 'network';
+    void resolveNomadEgress().catch((e: unknown) => {
+      console.warn('[nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(e));
     });
+    const qs = new URLSearchParams({ path: opts.path });
     if (opts.requestData && Object.keys(opts.requestData).length > 0) {
       qs.set('data', btoa(JSON.stringify(opts.requestData)));
     }
@@ -107,15 +108,16 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
       qs.set('force_path_refresh', 'true');
     }
     const cleanHash = opts.hash.replace(/[^a-fA-F0-9]/g, '');
-    const res = (await window.electronAPI.reticulum.proxyGet(
-      `/api/v1/nomadnetwork/${kind}/${cleanHash}?${qs.toString()}`,
-    )) as T;
+    const apiPath = `/api/v1/nomadnetwork/${kind}/${cleanHash}?${qs.toString()}`;
+    const res = (await window.electronAPI.reticulum.proxyGet(apiPath)) as T;
     if (!res.ok) {
+      const resRecord = res as { egress?: unknown };
+      const resEgress = typeof resRecord.egress === 'string' ? resRecord.egress : egress;
       logNomadFetchFailure(kind, {
         hash: cleanHash,
         path: opts.path,
         hops,
-        egress,
+        egress: resEgress,
         error: res.error?.trim() || 'unknown',
       });
     }
@@ -175,7 +177,9 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       }
       set({ nodes: map, lastRefreshAt: Date.now(), nomadApiAvailable: true });
       invalidateNomadEgressCache();
-      void resolveNomadEgress();
+      void resolveNomadEgress().catch((err: unknown) => {
+        console.warn('[nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(err));
+      });
     } catch (e) {
       if (isReticulumSidecar404Error(e)) {
         set({ nomadApiAvailable: false });

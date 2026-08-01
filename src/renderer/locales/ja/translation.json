@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Reticulum トランスポートは利用できません。スタックを再起動してもう一度お試しください。",
       "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続からスタックを開始してから、もう一度お試しください。",
       "responseTooLarge": "ノードが返すデータ量が、この要求で mesh-client が受け入れる上限を超えました。",
-      "nomadBusy": "別の Nomad ページまたはファイル要求が処理中です。しばらくしてから再試行してください。"
+      "nomadBusy": "別の Nomad ページまたはファイル要求が処理中です。しばらくしてから再試行してください。",
+      "nomadNotServing": "これは Nomad ノードですが、My Pages ホスティングは実行されていません。 [マイ ページ] を開いてフォルダーを選択し、ローカルでプレビューするための配信を開始します。",
+      "networkNotReady": "ハブまたは無線インターフェイスがオンラインになるのを待っています。接続にインターフェイスが表示されたら、もう一度試してください。"
     },
     "fitWidth": "ウィンドウに適合",
     "openWidth": "ページ幅",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "ホップで並べ替え、最も近い順",
     "sortByHopsDesc": "ホップで並べ替え、最も遠い順",
     "sortByNameAsc": "名前で並べ替え、AからZ",
-    "sortByNameDesc": "名前で並べ替え、ZからA"
+    "sortByNameDesc": "名前で並べ替え、ZからA",
+    "pageLoadingCountdown": "ページを読み込み中… {{time}} 残り",
+    "pageLoadingCountdownOverdue": "ページを読み込み中…まだ動作中",
+    "pageReadyToast": "Nomadページの準備ができました: {{name}}",
+    "staleLastSeenHint": "最後に受信したのは {{time}} — このノードはオンラインとしてリストされている場合でもオフラインである可能性があります。"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

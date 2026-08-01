@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Reticulum 전송을 사용할 수 없습니다. 스택을 다시 시작한 다음 다시 시도하십시오.",
       "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "다른 Nomad 페이지 또는 파일 요청이 아직 진행 중입니다. 잠시 후 다시 시도하세요."
+      "nomadBusy": "다른 Nomad 페이지 또는 파일 요청이 아직 진행 중입니다. 잠시 후 다시 시도하세요.",
+      "nomadNotServing": "이것은 Nomad 노드이지만 내 페이지 호스팅이 실행되고 있지 않습니다. 내 페이지를 열고 폴더를 선택한 후 로컬에서 미리 볼 수 있는 서비스를 시작하세요.",
+      "networkNotReady": "허브 또는 무선 인터페이스가 온라인 상태가 될 때까지 기다리는 중입니다. Connection에 인터페이스가 표시되면 다시 시도하십시오."
     },
     "fitWidth": "창에 맞춤",
     "openWidth": "페이지 폭",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "홉으로 정렬, 가장 가까운 우선순위",
     "sortByHopsDesc": "홉 순으로 정렬, 가장 먼 순",
     "sortByNameAsc": "이름 A-Z",
-    "sortByNameDesc": "이름 Z-A"
+    "sortByNameDesc": "이름 Z-A",
+    "pageLoadingCountdown": "페이지 로드 중… {{time}} 남음",
+    "pageLoadingCountdownOverdue": "페이지 로드 중… 아직 작동 중",
+    "pageReadyToast": "Nomad 페이지 준비됨: {{name}}",
+    "staleLastSeenHint": "마지막으로 청취된 {{time}} — 이 노드는 온라인으로 나열되어 있어도 오프라인일 수 있습니다."
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

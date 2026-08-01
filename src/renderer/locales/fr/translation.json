@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Le transport Reticulum n’est pas disponible. Redémarrez la pile et réessayez.",
       "sidecarNotRunning": "Le sidecar Reticulum n’est pas en cours d’exécution. Démarrez la pile depuis Connexion, puis réessayez.",
       "responseTooLarge": "Le nœud a renvoyé plus de données que mesh-client n’accepte pour cette requête.",
-      "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant."
+      "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant.",
+      "nomadNotServing": "Il s'agit de votre nœud Nomad, mais l'hébergement Mes pages ne fonctionne pas. Ouvrez Mes pages, choisissez un dossier et commencez à diffuser un aperçu localement.",
+      "networkNotReady": "En attente de la mise en ligne d'un hub ou d'une interface radio. Réessayez une fois que Connection affiche une interface."
     },
     "fitWidth": "Ajuster la page à la fenêtre",
     "openWidth": "Largeur de la page",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Trier par sauts, le plus proche en premier",
     "sortByHopsDesc": "Trier par sauts, le plus éloigné en premier",
     "sortByNameAsc": "Tri par nom : A à Z",
-    "sortByNameDesc": "Tri par nom : Z à A"
+    "sortByNameDesc": "Tri par nom : Z à A",
+    "pageLoadingCountdown": "Chargement de la page… {{time}} gauche",
+    "pageLoadingCountdownOverdue": "Chargement de la page… fonctionne toujours",
+    "pageReadyToast": "Nomad — Page nomade prête : {{name}}",
+    "staleLastSeenHint": "Dernière écoute {{time}} — ce nœud peut être hors ligne même s'il est répertorié comme en ligne."
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

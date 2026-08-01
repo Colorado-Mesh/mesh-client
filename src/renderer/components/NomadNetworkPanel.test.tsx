@@ -5,7 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
-import { NOMAD_PAGE_FETCH_RETRY_SETTLE_MS } from '@/renderer/lib/timeConstants';
+import {
+  NOMAD_PAGE_FETCH_DEBOUNCE_MS,
+  NOMAD_PAGE_FETCH_RETRY_SETTLE_MS,
+} from '@/renderer/lib/timeConstants';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 vi.mock('react-i18next', () => ({
@@ -47,6 +50,7 @@ vi.mock('./NomadPageServerPanel', () => ({
 import { clearNomadPageCache } from '@/renderer/lib/nomad/nomadPageCache';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
+import { resetNomadPageViewerStoreForTests } from '../stores/nomadPageViewerStore';
 import NomadNetworkPanel from './NomadNetworkPanel';
 
 async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
@@ -57,6 +61,7 @@ async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
 describe('NomadNetworkPanel', () => {
   beforeEach(() => {
     clearNomadPageCache();
+    resetNomadPageViewerStoreForTests();
     localStorage.removeItem('mesh-client:nomadPageFitWidth');
     localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
     localStorage.removeItem('mesh-client:nomadNodeSort');
@@ -320,12 +325,14 @@ describe('NomadNetworkPanel', () => {
     await waitFor(() => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Hello Nomad');
     });
+    const callsAfterFirstLoad = fetchNomadPage.mock.calls.length;
 
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.homePage' }));
     await waitFor(() => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Hello Nomad');
     });
-    expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+    // Session cache must satisfy home navigation without another wire fetch.
+    expect(fetchNomadPage).toHaveBeenCalledTimes(callsAfterFirstLoad);
   });
 
   it('reload bypasses cache and refetches', async () => {
@@ -801,14 +808,14 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByLabelText('nomadNetwork.fitWidth')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('auto-retries once after link_timeout and renders on success', async () => {
+  it('auto-retries once after path_timeout with forcePathRefresh and renders on success', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { restore } = mockConsoleWarn();
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       const fetchNomadPage = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' })
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' })
         .mockResolvedValueOnce({
           ok: true,
           content: '>>>hello after retry',
@@ -833,6 +840,9 @@ describe('NomadNetworkPanel', () => {
       render(<NomadNetworkPanel />);
       await openAnnouncesNode(user);
 
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
       await waitFor(() => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(1);
       });
@@ -864,15 +874,12 @@ describe('NomadNetworkPanel', () => {
     }
   });
 
-  it('shows page error once when both fetch attempts fail', async () => {
+  it('does not auto-retry link_timeout (shows error after one fetch)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { restore } = mockConsoleWarn();
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const fetchNomadPage = vi
-        .fn()
-        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' })
-        .mockResolvedValueOnce({ ok: false, error: 'link_timeout' });
+      const fetchNomadPage = vi.fn().mockResolvedValue({ ok: false, error: 'link_timeout' });
       useNomadNetworkStore.setState({
         nodes: new Map([
           [
@@ -892,6 +899,54 @@ describe('NomadNetworkPanel', () => {
       render(<NomadNetworkPanel />);
       await openAnnouncesNode(user);
 
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+        expect(screen.getByText(/nomadNetwork.pageFailed/)).toBeInTheDocument();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+      });
+      expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows page error once when both path_timeout fetch attempts fail', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchNomadPage = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' })
+        .mockResolvedValueOnce({ ok: false, error: 'path_timeout' });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Fail Node',
+              favorited: false,
+              last_seen: 100,
+              hops: 3,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
       await waitFor(() => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(1);
       });
@@ -941,6 +996,9 @@ describe('NomadNetworkPanel', () => {
       render(<NomadNetworkPanel />);
       await openAnnouncesNode(user);
 
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
       await waitFor(() => {
         expect(fetchNomadPage).toHaveBeenCalledTimes(1);
       });
@@ -1009,6 +1067,47 @@ describe('NomadNetworkPanel', () => {
         await vi.advanceTimersByTimeAsync(50);
       });
       expect(fetchNomadPage).toHaveBeenCalledTimes(3);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('has no axe violations for stale-last-seen page error state', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const nowSec = Math.floor(Date.now() / 1000);
+      const fetchNomadPage = vi.fn().mockResolvedValue({ ok: false, error: 'link_timeout' });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Stale Peer',
+              favorited: false,
+              last_seen: nowSec - 3 * 60 * 60,
+              hops: 2,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/nomadNetwork.staleLastSeenHint/)).toBeInTheDocument();
+      });
+
+      const staleHint = screen.getByText(/nomadNetwork.staleLastSeenHint/);
+      hydrateAxeThemeColors(staleHint);
+      expect(await axe(staleHint)).toHaveNoViolations();
     } finally {
       restore();
       vi.useRealTimers();

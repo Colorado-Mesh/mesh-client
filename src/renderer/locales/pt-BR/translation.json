@@ -2957,7 +2957,9 @@
       "transportUnavailable": "O transporte Reticulum não está disponível. Reinicie a pilha e tente novamente.",
       "sidecarNotRunning": "O sidecar Reticulum não está em execução. Inicie a pilha a partir de Conexão e tente novamente.",
       "responseTooLarge": "O nó retornou mais dados do que o mesh-client aceita para esta solicitação.",
-      "nomadBusy": "Outra solicitação de página ou arquivo Nomad ainda está em andamento. Tente novamente em um momento."
+      "nomadBusy": "Outra solicitação de página ou arquivo Nomad ainda está em andamento. Tente novamente em um momento.",
+      "nomadNotServing": "Este é o seu nó Nomad, mas a hospedagem My Pages não está em execução. Abra Minhas páginas, escolha uma pasta e comece a servir para visualização local.",
+      "networkNotReady": "Aguardando que um hub ou interface de rádio fique online. Tente novamente quando o Connection mostrar uma interface."
     },
     "fitWidth": "Encaixar na janela",
     "openWidth": "Largura da Página",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Ordenar por saltos, o mais próximo primeiro",
     "sortByHopsDesc": "Ordenar por saltos, o mais distante primeiro",
     "sortByNameAsc": "Ordenar por nome de A a Z",
-    "sortByNameDesc": "Ordenar por nome: z à a"
+    "sortByNameDesc": "Ordenar por nome: z à a",
+    "pageLoadingCountdown": "Carregando página… {{time}} esquerda",
+    "pageLoadingCountdownOverdue": "Carregando página… ainda funcionando",
+    "pageReadyToast": "Página Nomad pronta: {{name}}",
+    "staleLastSeenHint": "Ouvido pela última vez em {{time}} — este nó pode estar offline mesmo se estiver listado como online."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

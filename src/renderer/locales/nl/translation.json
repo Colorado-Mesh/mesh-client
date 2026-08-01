@@ -2957,7 +2957,9 @@
       "transportUnavailable": "Reticulum-transport is niet beschikbaar. Start de stack opnieuw en probeer het opnieuw.",
       "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack vanuit Verbinding en probeer het opnieuw.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Een ander Nomad-pagina- of bestandsverzoek is nog bezig. Probeer het zo opnieuw."
+      "nomadBusy": "Een ander Nomad-pagina- of bestandsverzoek is nog bezig. Probeer het zo opnieuw.",
+      "nomadNotServing": "Dit is uw Nomad-knooppunt, maar de My Pages-hosting is niet actief. Open Mijn pagina's, kies een map en begin met het weergeven van lokale voorbeelden.",
+      "networkNotReady": "Wachten tot een hub of radio-interface online komt. Probeer het opnieuw zodra Connection een interface toont."
     },
     "fitWidth": "In venster passen",
     "openWidth": "Paginabreedte",
@@ -3003,7 +3005,11 @@
     "sortByHopsAsc": "Sorteer op Hop, dichtstbijzijnde eerst",
     "sortByHopsDesc": "Sorteer op Hop, verste eerst",
     "sortByNameAsc": "Sorteer op naam: A tot Z",
-    "sortByNameDesc": "Sorteer op Naam, Z tot A"
+    "sortByNameDesc": "Sorteer op Naam, Z tot A",
+    "pageLoadingCountdown": "Pagina wordt geladen… {{time}} over",
+    "pageLoadingCountdownOverdue": "Pagina wordt geladen... werkt nog steeds",
+    "pageReadyToast": "Nomad-pagina klaar: {{name}}",
+    "staleLastSeenHint": "Laatst gehoord {{time}}: dit knooppunt is mogelijk offline, zelfs als het als online wordt vermeld."
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

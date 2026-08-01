@@ -112,11 +112,11 @@ describe('nomadNetworkStore', () => {
 
     expect(fetchReticulumInterfaces).toHaveBeenCalledTimes(2);
     expect(proxyGet).toHaveBeenLastCalledWith(
-      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=8&egress=rf',
+      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu',
     );
   });
 
-  it('fetchNomadPage requests page path with hops and egress', async () => {
+  it('fetchNomadPage requests page path without unused hops/egress query params', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'rnode', enabled: true }]);
     useNomadNetworkStore.setState({
@@ -136,9 +136,7 @@ describe('nomadNetworkStore', () => {
 
     const res = await useNomadNetworkStore.getState().fetchNomadPage('abc', '/page/index.mu');
 
-    expect(proxyGet).toHaveBeenCalledWith(
-      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=3&egress=rf',
-    );
+    expect(proxyGet).toHaveBeenCalledWith('/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu');
     expect(res).toEqual({ ok: true, content: 'page body', content_type: 'micron' });
   });
 
@@ -152,11 +150,11 @@ describe('nomadNetworkStore', () => {
       .fetchNomadPage('abc', '/page/index.mu', undefined, { forcePathRefresh: true });
 
     expect(proxyGet).toHaveBeenCalledWith(
-      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=8&egress=tcp&force_path_refresh=true',
+      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&force_path_refresh=true',
     );
   });
 
-  it('fetchNomadFile requests file path with hops and egress', async () => {
+  it('fetchNomadFile requests file path without unused hops/egress query params', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
     useNomadNetworkStore.setState({
@@ -181,7 +179,7 @@ describe('nomadNetworkStore', () => {
     const res = await useNomadNetworkStore.getState().fetchNomadFile('abc', '/file/readme.txt');
 
     expect(proxyGet).toHaveBeenCalledWith(
-      '/api/v1/nomadnetwork/file/abc?path=%2Ffile%2Freadme.txt&hops=2&egress=tcp',
+      '/api/v1/nomadnetwork/file/abc?path=%2Ffile%2Freadme.txt',
     );
     expect(res).toEqual({ ok: true, file_name: 'readme.txt', content_base64: 'aGVsbG8=' });
   });
