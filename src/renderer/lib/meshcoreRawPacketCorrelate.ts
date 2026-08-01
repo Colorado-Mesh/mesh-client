@@ -3,6 +3,9 @@ import { MAX_RAW_PACKET_LOG_ENTRIES } from './rawPacketLogConstants';
 /** Correlation window: event 7/8 must arrive within this many ms of the matching event 136. */
 export const MESHCORE_CHAT_CORRELATE_WINDOW_MS = 3000;
 
+/** Cap session-scoped consumed TXT_MSG hop-correlation keys (FIFO). */
+const MAX_CONSUMED_TXT_MSG_HOP_KEYS = 256;
+
 /** Minimal shape needed for chat-entry correlation (avoids importing RxPacketEntry from useMeshcoreRuntime). */
 export interface ChatCorrelateRxLike {
   ts: number;
@@ -24,6 +27,9 @@ export interface MeshcoreTxtMsgHopMatch {
   messageFingerprintHex?: string | null;
 }
 
+const consumedTxtMsgHopKeys: string[] = [];
+const consumedTxtMsgHopKeySet = new Set<string>();
+
 function normalizeCorrelateFingerprint(hex: string | null | undefined): string | null {
   if (typeof hex !== 'string') return null;
   const t = hex.trim();
@@ -31,6 +37,38 @@ function normalizeCorrelateFingerprint(hex: string | null | undefined): string |
   return t.toUpperCase();
 }
 
+/** Stable key for session-scoped consumption of a correlated TXT_MSG raw row. */
+export function meshcoreTxtMsgHopCorrelateKey(entry: ChatCorrelateRxLike): string {
+  const fp = normalizeCorrelateFingerprint(entry.messageFingerprintHex) ?? '';
+  return `${entry.ts}|${entry.fromNodeId ?? 'n'}|${fp}|${entry.hopCount ?? ''}`;
+}
+
+function isTxtMsgHopCorrelateConsumed(entry: ChatCorrelateRxLike): boolean {
+  return consumedTxtMsgHopKeySet.has(meshcoreTxtMsgHopCorrelateKey(entry));
+}
+
+function markTxtMsgHopCorrelateConsumed(entry: ChatCorrelateRxLike): void {
+  const key = meshcoreTxtMsgHopCorrelateKey(entry);
+  if (consumedTxtMsgHopKeySet.has(key)) return;
+  consumedTxtMsgHopKeySet.add(key);
+  consumedTxtMsgHopKeys.push(key);
+  while (consumedTxtMsgHopKeys.length > MAX_CONSUMED_TXT_MSG_HOP_KEYS) {
+    const old = consumedTxtMsgHopKeys.shift();
+    if (old != null) consumedTxtMsgHopKeySet.delete(old);
+  }
+}
+
+/** Test helper — clears session consumed-row markers. */
+export function resetMeshcoreTxtMsgHopCorrelateConsumedForTests(): void {
+  consumedTxtMsgHopKeys.length = 0;
+  consumedTxtMsgHopKeySet.clear();
+}
+
+/**
+ * Match a raw TXT_MSG row to the ingesting DM event.
+ * Requires a non-zero fromNodeId match or fingerprint match — never falls back to
+ * another sender's row when fromNodeId is 0 / missing.
+ */
 function meshcoreTxtMsgRawPacketMatchesSender(
   entry: ChatCorrelateRxLike,
   match?: MeshcoreTxtMsgHopMatch,
@@ -44,8 +82,6 @@ function meshcoreTxtMsgRawPacketMatchesSender(
   if (wantFrom != null && wantFrom !== 0 && entry.fromNodeId === wantFrom) {
     return true;
   }
-  // No usable sender constraint → keep prior any-TXT_MSG behavior.
-  if ((wantFrom == null || wantFrom === 0) && !wantFp) return true;
   return false;
 }
 
@@ -97,7 +133,8 @@ export function meshcoreFindRecentGrpTxtRawPacket<T extends ChatCorrelateRxLike>
 /**
  * Most recent TXT_MSG raw log row within the chat correlation window.
  * When `match` includes a sender id or fingerprint, only that sender's row is used
- * so interleaved DMs in the window cannot steal hop counts.
+ * so interleaved DMs in the window cannot steal hop counts. Already-consumed rows
+ * (session-scoped) are skipped so one RF row cannot enrich multiple DMs.
  */
 export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>(
   prev: readonly T[],
@@ -109,6 +146,7 @@ export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>
     const e = prev[i];
     if (now - e.ts > windowMs) break;
     if (e.payloadTypeString !== 'TXT_MSG') continue;
+    if (isTxtMsgHopCorrelateConsumed(e)) continue;
     if (!meshcoreTxtMsgRawPacketMatchesSender(e, match)) continue;
     return e;
   }
@@ -133,5 +171,10 @@ export function resolveMeshcoreIngestRxHops(
   // Failed parses / synthetic chat rows default hopCount to 0 — do not adopt those.
   if (!match || match.parseOk === false) return undefined;
   const hops = match.hopCount;
-  return hops != null && Number.isFinite(hops) ? hops : undefined;
+  if (hops == null || !Number.isFinite(hops)) return undefined;
+  // Consume TXT_MSG rows only (channel GRP_TXT correlation stays shared / best-effort).
+  if (!isChannel && match.payloadTypeString === 'TXT_MSG') {
+    markTxtMsgHopCorrelateConsumed(match);
+  }
+  return hops;
 }

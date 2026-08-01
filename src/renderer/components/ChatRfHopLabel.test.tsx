@@ -10,18 +10,23 @@ import {
 } from '../lib/meshcoreLateRfHopEnrichment';
 import { ChatRfHopLabel, chatRfHopLabelPresentation } from './ChatRfHopLabel';
 
+/** Production Tailwind gray-400 / amber-400 on chat slate-800 for axe contrast. */
+const HOP_LABEL_BG_SLATE_800 = '#1e293b';
+const HOP_LABEL_GRAY_400 = '#9ca3af';
+const HOP_LABEL_AMBER_400 = '#fbbf24';
+
 /** jsdom has no Tailwind CSS — set chat-like slate + label colors for axe contrast. */
 function prepareHopLabelForAxe(container: HTMLElement, label: HTMLElement, color: string): void {
-  container.style.backgroundColor = '#1e293b';
+  container.style.backgroundColor = HOP_LABEL_BG_SLATE_800;
   label.style.color = color;
   hydrateAxeThemeColors(container);
 }
 
 describe('chatRfHopLabelPresentation', () => {
   it('uses amber accent only when corrected and motion is allowed', () => {
-    expect(chatRfHopLabelPresentation(false, false).className).toContain('text-gray-500');
+    expect(chatRfHopLabelPresentation(false, false).className).toContain('text-gray-400');
     expect(chatRfHopLabelPresentation(true, false).className).toContain('text-amber-400');
-    expect(chatRfHopLabelPresentation(true, true).className).toContain('text-gray-500');
+    expect(chatRfHopLabelPresentation(true, true).className).toContain('text-gray-400');
     expect(chatRfHopLabelPresentation(true, true).refined).toBe(true);
     expect(chatRfHopLabelPresentation(false, false).refined).toBe(false);
   });
@@ -43,7 +48,8 @@ describe('ChatRfHopLabel', () => {
     const label = screen.getByText('3 hops');
     expect(label).toBeInTheDocument();
     expect(label).toHaveAttribute('title', expect.stringMatching(/hop|routing/i));
-    prepareHopLabelForAxe(container, label, '#6b7280'); // gray-500
+    expect(label.className).toContain('text-gray-400');
+    prepareHopLabelForAxe(container, label, HOP_LABEL_GRAY_400);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -58,7 +64,7 @@ describe('ChatRfHopLabel', () => {
     const label = screen.getByText('4 hops');
     expect(label).toHaveAttribute('title', 'Updated from RF path');
     expect(label.className).toContain('text-amber-400');
-    prepareHopLabelForAxe(container, label, '#fbbf24'); // amber-400
+    prepareHopLabelForAxe(container, label, HOP_LABEL_AMBER_400);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

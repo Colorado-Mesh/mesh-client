@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   type ChatCorrelateRxLike,
@@ -6,9 +6,14 @@ import {
   meshcoreCorrelateOrSynthesizeChatEntry,
   meshcoreFindRecentGrpTxtRawPacket,
   meshcoreFindRecentTxtMsgRawPacket,
+  resetMeshcoreTxtMsgHopCorrelateConsumedForTests,
   resolveMeshcoreIngestRxHops,
 } from './meshcoreRawPacketCorrelate';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from './rawPacketLogConstants';
+
+afterEach(() => {
+  resetMeshcoreTxtMsgHopCorrelateConsumedForTests();
+});
 
 function entry(
   partial: Partial<ChatCorrelateRxLike> & Pick<ChatCorrelateRxLike, 'ts'>,
@@ -324,6 +329,42 @@ describe('resolveMeshcoreIngestRxHops', () => {
     ];
     expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0x111 })).toBe(2);
     expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0x333 })).toBeUndefined();
+  });
+
+  it('consumes a TXT_MSG row so duplicate same-sender DMs cannot reuse it', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 200,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0xabc,
+        hopCount: 1,
+        parseOk: true,
+      },
+      {
+        ts: now - 100,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0xabc,
+        hopCount: 3,
+        parseOk: true,
+      },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0xabc })).toBe(3);
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0xabc })).toBe(1);
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0xabc })).toBeUndefined();
+  });
+
+  it('does not fall back to another sender when fromNodeId is 0', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 50,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: 0x222,
+        hopCount: 7,
+        parseOk: true,
+      },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: 0 })).toBeUndefined();
+    expect(resolveMeshcoreIngestRxHops(packets, false, now, { fromNodeId: null })).toBeUndefined();
   });
 
   it('returns undefined when matched row has no hopCount', () => {

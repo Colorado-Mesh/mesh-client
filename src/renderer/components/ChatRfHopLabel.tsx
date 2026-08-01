@@ -24,15 +24,16 @@ export function chatRfHopLabelPresentation(
   corrected: boolean,
   reduceMotion: boolean,
 ): { className: string; refined: boolean } {
+  // gray-400 (#9ca3af) on chat slate-800 (#1e293b) keeps 4.5:1+ for text-[10px].
   if (!corrected) {
     return {
-      className: 'text-[10px] text-gray-500 transition-colors duration-500',
+      className: 'text-[10px] text-gray-400 transition-colors duration-500',
       refined: false,
     };
   }
   if (reduceMotion) {
     return {
-      className: 'text-[10px] text-gray-500 transition-colors duration-500',
+      className: 'text-[10px] text-gray-400 transition-colors duration-500',
       refined: true,
     };
   }
