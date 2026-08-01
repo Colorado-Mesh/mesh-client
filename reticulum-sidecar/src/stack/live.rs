@@ -827,8 +827,19 @@ impl LiveBridge {
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
-    ) -> Result<(Vec<u8>, &'static str, u64), (String, Option<&'static str>)> {
-        let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| (e, None))?;
+    ) -> Result<(Vec<u8>, NomadRemoteQueryOk), NomadRemoteQueryError> {
+        let query_started = tokio::time::Instant::now();
+        let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| NomadRemoteQueryError {
+            code: e,
+            egress: None,
+            path_hops: None,
+            link_hops: None,
+            timeout_secs: None,
+            force_path_ok: None,
+            path_ensure_kind: None,
+            raw_error: None,
+            elapsed_ms: None,
+        })?;
         // Prefer path-peer cache (maintenance refreshes every ~2s). Avoid a synchronous
         // GetPathTable here — that control query alone can stall TCP page loads for seconds.
         let key = hash_hex.to_lowercase();
@@ -847,11 +858,13 @@ impl LiveBridge {
             (hops, iface)
         };
         let (mut cached_hops, mut path_iface) = read_path_cache();
-        // Stale cached hops often survive LinkClient pubkey recall; force a
-        // RequestPath on retry so the second attempt is not a no-op. Nomad uses a
-        // shorter wait and may fall through on never-absent hub routes.
+        // Release-like: do not DropPath on every first TCP load (causes storms and
+        // did not predict LRPROOF). Force refresh only on retry; on first attempt
+        // only RequestPath when the path table has no row yet.
+        let force_path_ok: Option<bool>;
+        let path_ensure_kind: Option<&'static str>;
         if force_path_refresh {
-            let path_ok = self
+            let report = self
                 .ensure_path_for_direct_with_opts(
                     hash_hex,
                     true,
@@ -859,15 +872,77 @@ impl LiveBridge {
                     true,
                 )
                 .await;
-            tracing::info!(
+            let kind = report.kind.as_str();
+            // Honest signal: true only for rediscovered-after-absence.
+            let path_ok = matches!(report.kind, PathEnsureKind::Rediscovered);
+            force_path_ok = Some(path_ok);
+            path_ensure_kind = Some(kind);
+            tracing::debug!(
                 target: "nomad",
                 dest = %hash_hex,
-                path_ok,
-                "forced path refresh before Nomad query"
+                kind,
+                ok = report.ok,
+                force_path_ok = path_ok,
+                had_cached = report.had_cached,
+                saw_path_absent = report.saw_path_absent,
+                "Nomad path ensure (retry)"
             );
             let refreshed = read_path_cache();
             cached_hops = refreshed.0;
             path_iface = refreshed.1;
+        } else {
+            let had_cached = self
+                .outbound
+                .lock()
+                .map(|d| d.has_path_to(hash_hex))
+                .unwrap_or(false);
+            if had_cached {
+                force_path_ok = Some(false);
+                path_ensure_kind = Some(PathEnsureKind::CachedHit.as_str());
+            } else {
+                let report = self
+                    .ensure_path_for_direct_with_opts(
+                        hash_hex,
+                        false,
+                        NOMAD_TCP_PATH_PROBE_WAIT,
+                        false,
+                    )
+                    .await;
+                let kind = report.kind.as_str();
+                let path_ok = matches!(report.kind, PathEnsureKind::Rediscovered);
+                force_path_ok = Some(path_ok);
+                path_ensure_kind = Some(kind);
+                tracing::debug!(
+                    target: "nomad",
+                    dest = %hash_hex,
+                    kind,
+                    ok = report.ok,
+                    "Nomad path ensure (first, missing)"
+                );
+                let refreshed = read_path_cache();
+                cached_hops = refreshed.0;
+                path_iface = refreshed.1;
+                if !report.ok {
+                    let hops = cached_hops.unwrap_or(8);
+                    let (timeout_secs, egress) = nomad_timeouts::resolve_nomad_page_timeout_secs(
+                        interfaces,
+                        hops,
+                        path_iface.as_deref(),
+                        self.primary_local_serial_id().as_deref(),
+                    );
+                    return Err(NomadRemoteQueryError {
+                        code: "path_timeout".into(),
+                        egress: Some(egress),
+                        path_hops: Some(hops),
+                        link_hops: None,
+                        timeout_secs: Some(timeout_secs),
+                        force_path_ok,
+                        path_ensure_kind,
+                        raw_error: Some(format!("path ensure kind={kind} (no cached path)")),
+                        elapsed_ms: Some(elapsed_ms_since(query_started)),
+                    });
+                }
+            }
         }
         let hops = match cached_hops {
             Some(h) => h,
@@ -880,9 +955,44 @@ impl LiveBridge {
             self.primary_local_serial_id().as_deref(),
         );
         if !nomad_timeouts::nomad_remote_network_ready(interfaces, path_iface.as_deref()) {
-            return Err(("network_not_ready".into(), Some(egress)));
+            return Err(NomadRemoteQueryError {
+                code: "network_not_ready".into(),
+                egress: Some(egress),
+                path_hops: Some(hops),
+                link_hops: None,
+                timeout_secs: Some(timeout_secs),
+                force_path_ok,
+                path_ensure_kind,
+                raw_error: None,
+                elapsed_ms: Some(elapsed_ms_since(query_started)),
+            });
         }
         let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
+        let proof_budget_secs = u64::from(link_hops).saturating_mul(6);
+        // Announce destination (URL/path-table) vs LinkClient dest from identity+aspect.
+        let link_dest_hex = hex::encode(Destination::hash_from_name_and_identity(
+            NOMAD_NODE_ASPECT,
+            Some(&remote_hash),
+        ));
+        let announce_dest_matches_link_dest = link_dest_hex.eq_ignore_ascii_case(&key);
+        tracing::debug!(
+            target: "nomad",
+            dest = %hash_hex,
+            identity = %identity_hash_hex,
+            link_dest = %link_dest_hex,
+            announce_dest_matches_link_dest,
+            path = %path,
+            path_hops = hops,
+            link_hops,
+            proof_budget_secs,
+            timeout_secs,
+            egress,
+            path_iface = ?path_iface,
+            force_path_refresh,
+            force_path_ok = ?force_path_ok,
+            path_ensure_kind = ?path_ensure_kind,
+            "Nomad Link query start"
+        );
         // Preempt the prior Link query so switching Nomad nodes does not wait
         // for the full TCP/RF deadline (or crash the HTTP client mid-query).
         let my_gen = self
@@ -903,10 +1013,30 @@ impl LiveBridge {
             if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
                 *self.nomad_link_cancel.lock().await = None;
             }
-            return Err(("nomad_busy".into(), Some(egress)));
+            return Err(NomadRemoteQueryError {
+                code: "nomad_busy".into(),
+                egress: Some(egress),
+                path_hops: Some(hops),
+                link_hops: Some(link_hops),
+                timeout_secs: Some(timeout_secs),
+                force_path_ok,
+                path_ensure_kind,
+                raw_error: None,
+                elapsed_ms: Some(elapsed_ms_since(query_started)),
+            });
         };
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
-            return Err(("nomad_busy".into(), Some(egress)));
+            return Err(NomadRemoteQueryError {
+                code: "nomad_busy".into(),
+                egress: Some(egress),
+                path_hops: Some(hops),
+                link_hops: Some(link_hops),
+                timeout_secs: Some(timeout_secs),
+                force_path_ok,
+                path_ensure_kind,
+                raw_error: None,
+                elapsed_ms: Some(elapsed_ms_since(query_started)),
+            });
         }
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         let query_fut = client.query(
@@ -919,17 +1049,89 @@ impl LiveBridge {
         );
         let result = tokio::select! {
             biased;
-            _ = cancel_rx => Err("nomad_busy".into()),
+            _ = cancel_rx => Err(NomadRemoteQueryError {
+                code: "nomad_busy".into(),
+                egress: Some(egress),
+                path_hops: Some(hops),
+                link_hops: Some(link_hops),
+                timeout_secs: Some(timeout_secs),
+                force_path_ok,
+                        path_ensure_kind,
+                raw_error: None,
+                elapsed_ms: None,
+            }),
             query_result = query_fut => {
-                query_result.map_err(|e| map_nomad_link_error(&format!("{e}")))
+                query_result.map_err(|e| {
+                    let raw = format!("{e}");
+                    let code = map_nomad_link_error(&raw);
+                    NomadRemoteQueryError {
+                        code,
+                        egress: Some(egress),
+                        path_hops: Some(hops),
+                        link_hops: Some(link_hops),
+                        timeout_secs: Some(timeout_secs),
+                        force_path_ok,
+                        path_ensure_kind,
+                        raw_error: Some(raw),
+                        elapsed_ms: None,
+                    }
+                })
             }
         };
         if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
             *self.nomad_link_cancel.lock().await = None;
         }
-        result
-            .map(|bytes| (bytes, egress, timeout_secs))
-            .map_err(|e| (e, Some(egress)))
+        let elapsed_ms = elapsed_ms_since(query_started);
+        match result {
+            Ok(bytes) => {
+                tracing::debug!(
+                    target: "nomad",
+                    dest = %hash_hex,
+                    identity = %identity_hash_hex,
+                    path_hops = hops,
+                    link_hops,
+                    proof_budget_secs,
+                    timeout_secs,
+                    egress,
+                    force_path_ok = ?force_path_ok,
+                    path_ensure_kind = ?path_ensure_kind,
+                    elapsed_ms,
+                    "Nomad Link query ok"
+                );
+                Ok((
+                    bytes,
+                    NomadRemoteQueryOk {
+                        egress,
+                        timeout_secs,
+                        path_hops: hops,
+                        link_hops,
+                        force_path_ok,
+                        path_ensure_kind,
+                        elapsed_ms,
+                    },
+                ))
+            }
+            Err(mut err) => {
+                err.elapsed_ms = Some(elapsed_ms);
+                tracing::warn!(
+                    target: "nomad",
+                    dest = %hash_hex,
+                    identity = %identity_hash_hex,
+                    path_hops = ?err.path_hops,
+                    link_hops = ?err.link_hops,
+                    proof_budget_secs,
+                    egress = ?err.egress,
+                    force_path_ok = ?err.force_path_ok,
+                    path_ensure_kind = ?err.path_ensure_kind,
+                    timeout_secs = ?err.timeout_secs,
+                    elapsed_ms,
+                    error = %err.code,
+                    raw_error = err.raw_error.as_deref().unwrap_or(""),
+                    "Nomad Link query failed"
+                );
+                Err(err)
+            }
+        }
     }
 
     pub async fn fetch_nomad_file(
@@ -975,22 +1177,22 @@ impl LiveBridge {
             )
             .await
         {
-            Ok((bytes, egress, timeout_secs)) => {
+            Ok((bytes, meta)) => {
                 if bytes.len() > NOMAD_FILE_MAX_BYTES {
-                    return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                    return nomad_response_too_large_json(&meta);
                 }
                 let file_name = nomad_file_name_from_path(path);
                 let content_base64 =
                     base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
-                serde_json::json!({
+                let mut out = serde_json::json!({
                     "ok": true,
                     "file_name": file_name,
                     "content_base64": content_base64,
-                    "egress": egress,
-                    "timeout_secs": timeout_secs,
-                })
+                });
+                merge_nomad_remote_ok_fields(&mut out, &meta);
+                out
             }
-            Err((e, egress)) => nomad_remote_error_json(&e, egress),
+            Err(e) => nomad_remote_error_json(&e),
         }
     }
 
@@ -1049,9 +1251,9 @@ impl LiveBridge {
             )
             .await
         {
-            Ok((bytes, egress, timeout_secs)) => {
+            Ok((bytes, meta)) => {
                 if bytes.len() > NOMAD_PAGE_MAX_BYTES {
-                    return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                    return nomad_response_too_large_json(&meta);
                 }
                 let content = String::from_utf8_lossy(&bytes).into_owned();
                 let content_type = if path.split('`').next().is_some_and(|p| p.ends_with(".mu")) {
@@ -1059,15 +1261,15 @@ impl LiveBridge {
                 } else {
                     "text"
                 };
-                serde_json::json!({
+                let mut out = serde_json::json!({
                     "ok": true,
                     "content": content,
                     "content_type": content_type,
-                    "egress": egress,
-                    "timeout_secs": timeout_secs,
-                })
+                });
+                merge_nomad_remote_ok_fields(&mut out, &meta);
+                out
             }
-            Err((e, egress)) => nomad_remote_error_json(&e, egress),
+            Err(e) => nomad_remote_error_json(&e),
         }
     }
 
@@ -1933,29 +2135,43 @@ impl LiveBridge {
     async fn ensure_path_for_direct(&self, destination_hex: &str, force: bool) -> bool {
         self.ensure_path_for_direct_with_opts(destination_hex, force, Duration::from_secs(8), false)
             .await
+            .ok
     }
 
     /// Like [`Self::ensure_path_for_direct`], with a custom wait and optional
     /// fall-through when a forced DropPath never observes path absence (common
     /// on TCP hub routes that reinstall immediately).
+    ///
+    /// `ok` alone is not enough for Nomad TCP: `kind` distinguishes a cache hit,
+    /// a real DropPath→RequestPath rediscovery, and stale accept fall-through.
     async fn ensure_path_for_direct_with_opts(
         &self,
         destination_hex: &str,
         force: bool,
         max_wait: Duration,
         accept_existing_on_timeout: bool,
-    ) -> bool {
+    ) -> PathEnsureReport {
         let already = self
             .outbound
             .lock()
             .map(|d| d.has_path_to(destination_hex))
             .unwrap_or(false);
         if already && !force {
-            return true;
+            return PathEnsureReport {
+                ok: true,
+                kind: PathEnsureKind::CachedHit,
+                had_cached: true,
+                saw_path_absent: false,
+            };
         }
         let hops_before = self.hops_to_destination(destination_hex).await;
         let Ok(dest) = parse_hash16(destination_hex) else {
-            return false;
+            return PathEnsureReport {
+                ok: false,
+                kind: PathEnsureKind::Missing,
+                had_cached: already,
+                saw_path_absent: false,
+            };
         };
 
         // Drop the installed route first so the wait loop cannot succeed on the
@@ -2016,7 +2232,12 @@ impl LiveBridge {
                     "refreshed path hops before propagation sync"
                 );
             }
-            return true;
+            return PathEnsureReport {
+                ok: true,
+                kind: PathEnsureKind::Rediscovered,
+                had_cached: already,
+                saw_path_absent,
+            };
         }
         // Forced refresh: only accept a path that passed the same absence gate as
         // the wait loop — never the never-invalidated stale route (unless Nomad
@@ -2046,7 +2267,18 @@ impl LiveBridge {
                 "path refresh timed out after dropping cached route"
             );
         }
-        accept
+        PathEnsureReport {
+            ok: accept,
+            kind: path_ensure_kind_after_timeout(
+                accept,
+                force,
+                already,
+                saw_path_absent,
+                accept_existing_on_timeout,
+            ),
+            had_cached: already,
+            saw_path_absent,
+        }
     }
 
     /// Ensure destination public key is known before choosing Direct delivery.
@@ -3440,12 +3672,109 @@ fn resolve_inbound_sender_name_map(names: &HashMap<String, String>, sender_hash:
         .unwrap_or_else(|| prefix.to_string())
 }
 
-/// Remote Nomad page/file error JSON; include path-aware egress when known.
-fn nomad_remote_error_json(error: &str, egress: Option<&'static str>) -> serde_json::Value {
-    match egress {
-        Some(egress) => serde_json::json!({ "ok": false, "error": error, "egress": egress }),
-        None => serde_json::json!({ "ok": false, "error": error }),
+/// Success metadata for a remote Nomad Link query (page or file).
+struct NomadRemoteQueryOk {
+    egress: &'static str,
+    timeout_secs: u64,
+    path_hops: u8,
+    link_hops: u8,
+    force_path_ok: Option<bool>,
+    path_ensure_kind: Option<&'static str>,
+    elapsed_ms: u64,
+}
+
+/// Diagnostics for a failed remote Nomad Link query (page or file).
+struct NomadRemoteQueryError {
+    code: String,
+    egress: Option<&'static str>,
+    path_hops: Option<u8>,
+    link_hops: Option<u8>,
+    timeout_secs: Option<u64>,
+    force_path_ok: Option<bool>,
+    path_ensure_kind: Option<&'static str>,
+    raw_error: Option<String>,
+    elapsed_ms: Option<u64>,
+}
+
+fn elapsed_ms_since(started: tokio::time::Instant) -> u64 {
+    u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)
+}
+
+fn insert_nomad_link_budget_fields(
+    obj: &mut serde_json::Map<String, serde_json::Value>,
+    path_hops: Option<u8>,
+    link_hops: Option<u8>,
+    timeout_secs: Option<u64>,
+    force_path_ok: Option<bool>,
+    path_ensure_kind: Option<&str>,
+    elapsed_ms: Option<u64>,
+) {
+    if let Some(path_hops) = path_hops {
+        obj.insert("path_hops".into(), serde_json::json!(path_hops));
     }
+    if let Some(link_hops) = link_hops {
+        obj.insert("link_hops".into(), serde_json::json!(link_hops));
+        // Link::new_initiator uses ESTABLISHMENT_TIMEOUT_PER_HOP (6s) × hops.
+        obj.insert(
+            "proof_budget_secs".into(),
+            serde_json::json!(u64::from(link_hops).saturating_mul(6)),
+        );
+    }
+    if let Some(timeout_secs) = timeout_secs {
+        obj.insert("timeout_secs".into(), serde_json::json!(timeout_secs));
+    }
+    if let Some(force_path_ok) = force_path_ok {
+        obj.insert("force_path_ok".into(), serde_json::json!(force_path_ok));
+    }
+    if let Some(kind) = path_ensure_kind.filter(|s| !s.is_empty()) {
+        obj.insert("path_ensure_kind".into(), serde_json::json!(kind));
+    }
+    if let Some(elapsed_ms) = elapsed_ms {
+        obj.insert("elapsed_ms".into(), serde_json::json!(elapsed_ms));
+    }
+}
+
+fn merge_nomad_remote_ok_fields(out: &mut serde_json::Value, meta: &NomadRemoteQueryOk) {
+    let obj = out.as_object_mut().expect("json object");
+    obj.insert("egress".into(), serde_json::json!(meta.egress));
+    insert_nomad_link_budget_fields(
+        obj,
+        Some(meta.path_hops),
+        Some(meta.link_hops),
+        Some(meta.timeout_secs),
+        meta.force_path_ok,
+        meta.path_ensure_kind,
+        Some(meta.elapsed_ms),
+    );
+}
+
+/// Oversized remote Nomad page/file response — keep Link-budget diagnostics.
+fn nomad_response_too_large_json(meta: &NomadRemoteQueryOk) -> serde_json::Value {
+    let mut out = serde_json::json!({ "ok": false, "error": "response_too_large" });
+    merge_nomad_remote_ok_fields(&mut out, meta);
+    out
+}
+
+/// Remote Nomad page/file error JSON; include path-aware egress and Link budgets when known.
+fn nomad_remote_error_json(err: &NomadRemoteQueryError) -> serde_json::Value {
+    let mut out = serde_json::json!({ "ok": false, "error": err.code });
+    let obj = out.as_object_mut().expect("json object");
+    if let Some(egress) = err.egress {
+        obj.insert("egress".into(), serde_json::json!(egress));
+    }
+    insert_nomad_link_budget_fields(
+        obj,
+        err.path_hops,
+        err.link_hops,
+        err.timeout_secs,
+        err.force_path_ok,
+        err.path_ensure_kind,
+        err.elapsed_ms,
+    );
+    if let Some(raw) = err.raw_error.as_deref().filter(|s| !s.is_empty()) {
+        obj.insert("raw_error".into(), serde_json::json!(raw));
+    }
+    out
 }
 
 /// After a forced DropPath, accept a path only once it has been observed absent
@@ -3463,9 +3792,9 @@ fn force_path_refresh_accepts_current_path(
 
 /// Timeout decision for [`LiveStack::ensure_path_for_direct_with_opts`].
 ///
-/// When `accept_existing_on_timeout` is set (Nomad force refresh), a path that
-/// never went absent may still be accepted so the Link attempt can proceed
-/// inside the overall budget.
+/// `accept_existing_on_timeout` is only for forced refresh of a path that was
+/// already present (stale fall-through). Non-force probes accept any path that
+/// appeared by timeout without that flag.
 #[allow(clippy::fn_params_excessive_bools)] // mirrors ensure_path wait-loop flags
 fn force_path_refresh_timeout_accepts(
     force: bool,
@@ -3478,11 +3807,30 @@ fn force_path_refresh_timeout_accepts(
         return false;
     }
     if force && had_path_at_start {
+        // Reserve accept_existing_on_timeout for forced stale-path fall-through.
         return force_path_refresh_accepts_current_path(force, had_path_at_start, saw_path_absent)
             || accept_existing_on_timeout;
     }
-    // Non-force miss, or force with no path at start: accept any path that appeared.
-    accept_existing_on_timeout
+    // Non-force probe (or force with no path at start): accept a path that appeared.
+    true
+}
+
+/// Classify path-ensure outcome after the RequestPath wait times out.
+#[allow(clippy::fn_params_excessive_bools)] // mirrors force_path_refresh_timeout_accepts flags
+fn path_ensure_kind_after_timeout(
+    accept: bool,
+    force: bool,
+    had_path_at_start: bool,
+    saw_path_absent: bool,
+    accept_existing_on_timeout: bool,
+) -> PathEnsureKind {
+    if !accept {
+        PathEnsureKind::Missing
+    } else if force && had_path_at_start && !saw_path_absent && accept_existing_on_timeout {
+        PathEnsureKind::StaleAccept
+    } else {
+        PathEnsureKind::Rediscovered
+    }
 }
 
 /// Hashes present in `next` but not in `prev` (path-table membership growth).
@@ -3578,6 +3926,41 @@ const NOMAD_LINK_LOCK_WAIT: Duration = Duration::from_secs(8);
 
 /// Cap DropPath + rediscover before a Nomad Link attempt (inside overall TCP budget).
 const NOMAD_FORCE_PATH_REFRESH_WAIT: Duration = Duration::from_secs(4);
+
+/// Strict TCP/network DropPath→RequestPath wait before Link (no stale-accept fall-through).
+const NOMAD_TCP_PATH_PROBE_WAIT: Duration = Duration::from_secs(5);
+
+/// Outcome of [`LiveStack::ensure_path_for_direct_with_opts`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PathEnsureKind {
+    /// `has_path_to` was already true and `force` was false — not a reachability check.
+    CachedHit,
+    /// Path was absent (or never present), then reappeared after RequestPath.
+    Rediscovered,
+    /// Forced refresh timed out but accepted the never-cleared route (`accept_existing`).
+    StaleAccept,
+    /// No usable path after the wait.
+    Missing,
+}
+
+impl PathEnsureKind {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::CachedHit => "cached_hit",
+            Self::Rediscovered => "rediscovered",
+            Self::StaleAccept => "stale_accept",
+            Self::Missing => "missing",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct PathEnsureReport {
+    ok: bool,
+    kind: PathEnsureKind,
+    had_cached: bool,
+    saw_path_absent: bool,
+}
 
 fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
     let mut added = path_table_added_hashes(prev, next);
@@ -3750,17 +4133,94 @@ mod announce_display_name_tests {
     }
 
     #[test]
-    fn nomad_remote_error_json_includes_egress_when_known() {
-        let with_egress = nomad_remote_error_json("link_timeout", Some("tcp"));
-        assert_eq!(with_egress["ok"], false);
-        assert_eq!(with_egress["error"], "link_timeout");
-        assert_eq!(with_egress["egress"], "tcp");
-        assert!(with_egress.get("timeout_secs").is_none());
+    fn nomad_remote_error_json_includes_egress_and_link_budget_when_known() {
+        let with_diag = nomad_remote_error_json(&NomadRemoteQueryError {
+            code: "link_timeout".into(),
+            egress: Some("tcp"),
+            path_hops: Some(1),
+            link_hops: Some(3),
+            timeout_secs: Some(45),
+            force_path_ok: Some(true),
+            path_ensure_kind: None,
+            raw_error: Some("timed out waiting for link proof".into()),
+            elapsed_ms: Some(18_250),
+        });
+        assert_eq!(with_diag["ok"], false);
+        assert_eq!(with_diag["error"], "link_timeout");
+        assert_eq!(with_diag["egress"], "tcp");
+        assert_eq!(with_diag["path_hops"], 1);
+        assert_eq!(with_diag["link_hops"], 3);
+        assert_eq!(with_diag["proof_budget_secs"], 18);
+        assert_eq!(with_diag["timeout_secs"], 45);
+        assert_eq!(with_diag["force_path_ok"], true);
+        assert_eq!(with_diag["elapsed_ms"], 18250);
+        assert_eq!(with_diag["raw_error"], "timed out waiting for link proof");
 
-        let without = nomad_remote_error_json("missing_identity_hash", None);
+        let without = nomad_remote_error_json(&NomadRemoteQueryError {
+            code: "missing_identity_hash".into(),
+            egress: None,
+            path_hops: None,
+            link_hops: None,
+            timeout_secs: None,
+            force_path_ok: None,
+            path_ensure_kind: None,
+            raw_error: None,
+            elapsed_ms: None,
+        });
         assert_eq!(without["ok"], false);
         assert_eq!(without["error"], "missing_identity_hash");
         assert!(without.get("egress").is_none());
+        assert!(without.get("link_hops").is_none());
+        assert!(without.get("timeout_secs").is_none());
+    }
+
+    #[test]
+    fn nomad_remote_ok_json_includes_link_budget_fields() {
+        let mut out = serde_json::json!({ "ok": true, "content": "hi" });
+        merge_nomad_remote_ok_fields(
+            &mut out,
+            &NomadRemoteQueryOk {
+                egress: "tcp",
+                timeout_secs: 45,
+                path_hops: 1,
+                link_hops: 3,
+                force_path_ok: None,
+                path_ensure_kind: None,
+                elapsed_ms: 4200,
+            },
+        );
+        assert_eq!(out["egress"], "tcp");
+        assert_eq!(out["path_hops"], 1);
+        assert_eq!(out["link_hops"], 3);
+        assert_eq!(out["proof_budget_secs"], 18);
+        assert_eq!(out["timeout_secs"], 45);
+        assert_eq!(out["elapsed_ms"], 4200);
+        assert!(out.get("force_path_ok").is_none());
+    }
+
+    #[test]
+    fn nomad_response_too_large_json_retains_link_budget_diagnostics() {
+        let meta = NomadRemoteQueryOk {
+            egress: "tcp",
+            timeout_secs: 45,
+            path_hops: 5,
+            link_hops: 5,
+            force_path_ok: Some(false),
+            path_ensure_kind: Some("cached_hit"),
+            elapsed_ms: 1200,
+        };
+        // Same helper used by remote page and file oversized branches.
+        let out = nomad_response_too_large_json(&meta);
+        assert_eq!(out["ok"], false);
+        assert_eq!(out["error"], "response_too_large");
+        assert_eq!(out["egress"], "tcp");
+        assert_eq!(out["path_hops"], 5);
+        assert_eq!(out["link_hops"], 5);
+        assert_eq!(out["proof_budget_secs"], 30);
+        assert_eq!(out["timeout_secs"], 45);
+        assert_eq!(out["force_path_ok"], false);
+        assert_eq!(out["path_ensure_kind"], "cached_hit");
+        assert_eq!(out["elapsed_ms"], 1200);
     }
 
     #[test]
@@ -3781,13 +4241,71 @@ mod announce_display_name_tests {
         assert!(!force_path_refresh_timeout_accepts(
             true, true, false, true, true
         ));
-        // Force started without a path: fall-through accepts whatever appeared.
+        // Force started without a path: accept whatever appeared (accept_existing unused).
         assert!(force_path_refresh_timeout_accepts(
             true, false, true, false, true
         ));
-        assert!(!force_path_refresh_timeout_accepts(
+        assert!(force_path_refresh_timeout_accepts(
             true, false, true, false, false
         ));
+        // Non-force first probe: path that appears by timeout is accepted even when
+        // accept_existing_on_timeout is false (reserved for forced stale fall-through).
+        assert!(force_path_refresh_timeout_accepts(
+            false, false, true, true, false
+        ));
+        assert!(!force_path_refresh_timeout_accepts(
+            false, false, false, true, false
+        ));
+    }
+
+    #[test]
+    fn path_ensure_kind_after_timeout_matches_accept_matrix() {
+        // Same input matrix as force_path_refresh_timeout_accepts_fallthrough_when_never_absent.
+        let cases: &[(bool, bool, bool, bool, bool, PathEnsureKind)] = &[
+            // force, had_start, has_path, saw_absent, accept_existing → kind
+            (true, true, true, false, true, PathEnsureKind::StaleAccept),
+            (true, true, true, false, false, PathEnsureKind::Missing),
+            (true, true, true, true, false, PathEnsureKind::Rediscovered),
+            (true, true, false, true, true, PathEnsureKind::Missing),
+            (true, false, true, false, true, PathEnsureKind::Rediscovered),
+            (
+                true,
+                false,
+                true,
+                false,
+                false,
+                PathEnsureKind::Rediscovered,
+            ),
+            (
+                false,
+                false,
+                true,
+                true,
+                false,
+                PathEnsureKind::Rediscovered,
+            ),
+            (false, false, false, true, false, PathEnsureKind::Missing),
+        ];
+        for &(force, had_start, has_path, saw_absent, accept_existing, expected) in cases {
+            let accept = force_path_refresh_timeout_accepts(
+                force,
+                had_start,
+                has_path,
+                saw_absent,
+                accept_existing,
+            );
+            assert_eq!(
+                path_ensure_kind_after_timeout(
+                    accept,
+                    force,
+                    had_start,
+                    saw_absent,
+                    accept_existing,
+                ),
+                expected,
+                "force={force} had_start={had_start} has_path={has_path} saw_absent={saw_absent} accept_existing={accept_existing} accept={accept}"
+            );
+        }
     }
 
     #[test]

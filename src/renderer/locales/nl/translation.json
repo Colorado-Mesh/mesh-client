@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Knooppuntenlijst samenvouwen",
     "expandNodeList": "Knooppuntenlijst uitvouwen",
     "errors": {
-      "pathTimeout": "Geen route naar dit knooppunt (padzoekopdracht time-out). Probeer een dichter knooppunt of wacht op een recentere announce.",
+      "pathTimeout": "Geen bruikbaar pad naar dit knooppunt (padzoekopdracht time-out). Wacht op de volgende Nomad-aankondiging en probeer het opnieuw. Als het blijft mislukken, probeer een andere hub of een dichter knooppunt.",
       "pubkeyNotFound": "Kon de identiteitssleutel van dit knooppunt niet vinden. Wacht op een Nomad-aankondiging en probeer het dan opnieuw.",
       "linkTimeout": "Link naar het knooppunt kon niet op tijd worden vastgesteld.",
       "responseTimeout": "Het knooppunt heeft de link geaccepteerd, maar de pagina niet op tijd teruggestuurd.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Een ander Nomad-pagina- of bestandsverzoek is nog bezig. Probeer het zo opnieuw.",
       "nomadNotServing": "Dit is uw Nomad-knooppunt, maar de My Pages-hosting is niet actief. Open Mijn pagina's, kies een map en begin met het weergeven van lokale voorbeelden.",
-      "networkNotReady": "Wachten tot een hub of radio-interface online komt. Probeer het opnieuw zodra Connection een interface toont."
+      "networkNotReady": "Wachten tot een hub of radio-interface online komt. Probeer het opnieuw zodra Connection een interface toont.",
+      "pathTimeoutStale": "Kon de route naar dit knooppunt (oud pad) niet vernieuwen. Wacht op de volgende aankondiging en probeer het dan opnieuw. Aanhoudende storingen betekenen vaak dat het knooppunt offline is.",
+      "linkTimeoutCachedPath": "Er wordt een pad naar dit knooppunt weergegeven, maar de link is nooit voltooid — de route kan verouderd zijn. Wacht op de volgende aankondiging en probeer het dan opnieuw. Aanhoudende storingen betekenen meestal dat het knooppunt offline is of niet bereikbaar is via TCP.",
+      "linkTimeoutPathOk": "Een route naar dit knooppunt werd bevestigd, maar de Nomad-pagina antwoordde niet. Wacht op een versere aankondiging en probeer het opnieuw. Als het blijft mislukken, is het knooppunt mogelijk offline of host het die pagina niet."
     },
     "fitWidth": "In venster passen",
     "openWidth": "Paginabreedte",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Pagina wordt geladen… {{time}} over",
     "pageLoadingCountdownOverdue": "Pagina wordt geladen... werkt nog steeds",
     "pageReadyToast": "Nomad-pagina klaar: {{name}}",
-    "staleLastSeenHint": "Laatst gehoord {{time}}: dit knooppunt is mogelijk offline, zelfs als het als online wordt vermeld."
+    "staleLastSeenHint": "Laatst gehoord {{time}}: dit knooppunt is mogelijk offline, zelfs als het als online wordt vermeld.",
+    "pageLoadingRetryCountdown": "Time-out voor eerste poging — pad verversen en opnieuw proberen… {{time}} over",
+    "pageLoadingRetryOverdue": "Pad verversen en opnieuw proberen... werkt nog steeds"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

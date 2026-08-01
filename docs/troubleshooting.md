@@ -1018,7 +1018,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 | ----------------------- | ------------------------------------------------------------------- |
 | `path_timeout`          | No route to the node (path lookup timed out)                        |
 | `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce |
-| `link_timeout`          | Link could not be established in time                               |
+| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale) |
 | `response_timeout`      | Link opened but page payload did not arrive in time                 |
 | `missing_identity_hash` | No remembered identity for the node yet                             |
 | `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
@@ -1028,6 +1028,8 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 Unrecognized codes pass through unchanged.
 
+TCP/network Nomad Links use path-scaled proof budgets (`link_hops = clamp(path_hops, 3, 7)` → ~18–42s), matching released v5.25.0 multi-hop behavior more closely than #756’s flat ~18s cap (a HEAD regression for slower hub peers). First attempts use a cached path when present (no DropPath storm); missing paths RequestPath briefly and may return `path_timeout`. Retries may DropPath + rediscover; `force_path_ok=true` means rediscovered after absence only (cache hits log `force_path_ok=false`). Failure logs (`[nomadNetworkStore] … fetch failed` and sidecar `Nomad Link query failed`) include `path_hops`, `link_hops`, `proof_budget_secs`, `force_path_ok`, `path_ensure`, `elapsed_ms`, and `raw=`. UI errors distinguish cached-path vs rediscovered-path link failures.
+
 **Cause**: Older `LinkClient` always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all `nomadnetwork.node` announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).
 
 **Fix**:
@@ -1036,6 +1038,7 @@ Unrecognized codes pass through unchanged.
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
+5. For TCP `link_timeout`, check log fields `path_hops` / `link_hops` / `proof_budget_secs` / `raw=` — UI hop counts can lag the path table; trust `path_hops`. Persistent fails after the full proof budget usually mean the peer/hub did not return LRPROOF.
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 

@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Knotenliste einklappen",
     "expandNodeList": "Knotenliste erweitern",
     "errors": {
-      "pathTimeout": "Keine Route zu diesem Knoten (Pfadabfrage zeitüberschritten). Versuche einen näheren Knoten oder warte auf einen aktuelleren Announce.",
+      "pathTimeout": "Kein nutzbarer Pfad zu diesem Knoten (Pfadabfrage zeitüberschritten). Warten Sie auf die nächste Nomad-Ankündigung und versuchen Sie es erneut. Wenn es weiterhin fehlschlägt, versuchen Sie einen anderen Hub oder einen näheren Knoten.",
       "pubkeyNotFound": "Der Identitätsschlüssel dieses Knotens konnte nicht gefunden werden. Warten Sie auf eine Nomad-Ankündigung und versuchen Sie es dann erneut.",
       "linkTimeout": "Verbindung zum Knoten konnte nicht rechtzeitig hergestellt werden.",
       "responseTimeout": "Der Knoten hat den Link akzeptiert, aber die Seite nicht rechtzeitig zurückgegeben.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "Der Knoten hat mehr Daten zurückgegeben, als mesh-client für diese Anfrage akzeptiert.",
       "nomadBusy": "Eine andere Nomad-Seiten- oder Dateianfrage läuft noch. Versuche es gleich noch einmal.",
       "nomadNotServing": "Dies ist Ihr Nomad-Knoten, aber das Hosting „Meine Seiten“ läuft nicht. Öffnen Sie „Meine Seiten“, wählen Sie einen Ordner aus und beginnen Sie mit der Bereitstellung zur lokalen Vorschau.",
-      "networkNotReady": "Warten darauf, dass ein Hub oder eine Funkschnittstelle online geht. Versuchen Sie es erneut, sobald Connection eine Schnittstelle anzeigt."
+      "networkNotReady": "Warten darauf, dass ein Hub oder eine Funkschnittstelle online geht. Versuchen Sie es erneut, sobald Connection eine Schnittstelle anzeigt.",
+      "pathTimeoutStale": "Die Route zu diesem Knoten (veralteter Pfad) konnte nicht aktualisiert werden. Warten Sie auf die nächste Ankündigung und versuchen Sie es dann erneut. Anhaltende Fehler bedeuten oft, dass der Knoten offline ist.",
+      "linkTimeoutCachedPath": "Ein Pfad zu diesem Knoten wird aufgelistet, aber die Verbindung wurde nie abgeschlossen — die Route kann veraltet sein. Warten Sie auf die nächste Ankündigung und versuchen Sie es dann erneut. Anhaltende Ausfälle bedeuten in der Regel, dass der Knoten offline oder nicht über TCP erreichbar ist.",
+      "linkTimeoutPathOk": "Eine Route zu diesem Knoten wurde bestätigt, aber die Nomad-Seite antwortete nicht. Warten Sie auf eine frischere Ankündigung und versuchen Sie es erneut. Wenn es weiterhin fehlschlägt, ist der Knoten möglicherweise offline oder hostet diese Seite nicht."
     },
     "fitWidth": "An Fenster anpassen",
     "openWidth": "Seitenbreite",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Seite wird geladen… {{time}} übrig",
     "pageLoadingCountdownOverdue": "Seite wird geladen... funktioniert immer noch",
     "pageReadyToast": "Nomad-Seite bereit: {{name}}",
-    "staleLastSeenHint": "Zuletzt gehört {{time}} – dieser Knoten ist möglicherweise offline, auch wenn er als online aufgeführt ist."
+    "staleLastSeenHint": "Zuletzt gehört {{time}} – dieser Knoten ist möglicherweise offline, auch wenn er als online aufgeführt ist.",
+    "pageLoadingRetryCountdown": "Zeitüberschreitung beim ersten Versuch — Pfad wird aktualisiert und es wird erneut versucht… {{time}} left",
+    "pageLoadingRetryOverdue": "Erfrischungspfad und erneuter Versuch… funktioniert noch"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

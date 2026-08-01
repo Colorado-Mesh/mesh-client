@@ -48,6 +48,28 @@ describe('nomadPageErrorHumanize', () => {
     expect(humanizeNomadPageError(null, t)).toBe('t:common.error');
   });
 
+  it('uses path-ensure diagnostics for link_timeout copy', () => {
+    expect(nomadPageErrorI18nKey('link_timeout')).toBe('nomadNetwork.errors.linkTimeout');
+    expect(
+      nomadPageErrorI18nKey('link_timeout', {
+        forcePathOk: true,
+        pathEnsureKind: 'rediscovered',
+      }),
+    ).toBe('nomadNetwork.errors.linkTimeoutPathOk');
+    expect(
+      nomadPageErrorI18nKey('link_timeout', { pathEnsureKind: 'cached_hit', forcePathOk: false }),
+    ).toBe('nomadNetwork.errors.linkTimeoutCachedPath');
+    expect(nomadPageErrorI18nKey('path_timeout', { pathEnsureKind: 'stale_accept' })).toBe(
+      'nomadNetwork.errors.pathTimeoutStale',
+    );
+    expect(
+      humanizeNomadPageError('link_timeout', t, {
+        forcePathOk: true,
+        pathEnsureKind: 'rediscovered',
+      }),
+    ).toBe('t:nomadNetwork.errors.linkTimeoutPathOk');
+  });
+
   it('classifies announce-reload vs force-path-refresh errors', () => {
     expect(isRetryableNomadPageError('path_timeout')).toBe(true);
     expect(isRetryableNomadPageError('link_timeout')).toBe(true);

@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Recolher lista de nós",
     "expandNodeList": "Expandir lista de nós",
     "errors": {
-      "pathTimeout": "Nenhuma rota para este nó (tempo esgotado na busca de caminho). Tente um nó mais próximo ou aguarde um announce mais recente.",
+      "pathTimeout": "Nenhum caminho utilizável para este nó (tempo esgotado na busca de caminho). Aguarde o próximo anúncio Nomad e tente novamente. Se continuar falhando, tente outro hub ou um nó mais próximo.",
       "pubkeyNotFound": "Não foi possível encontrar a chave de identidade deste nó. Aguarde um anúncio do Nomad e tente novamente.",
       "linkTimeout": "O link para o nó não pôde ser estabelecido a tempo.",
       "responseTimeout": "O nó aceitou o link, mas não retornou a página a tempo.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "O nó retornou mais dados do que o mesh-client aceita para esta solicitação.",
       "nomadBusy": "Outra solicitação de página ou arquivo Nomad ainda está em andamento. Tente novamente em um momento.",
       "nomadNotServing": "Este é o seu nó Nomad, mas a hospedagem My Pages não está em execução. Abra Minhas páginas, escolha uma pasta e comece a servir para visualização local.",
-      "networkNotReady": "Aguardando que um hub ou interface de rádio fique online. Tente novamente quando o Connection mostrar uma interface."
+      "networkNotReady": "Aguardando que um hub ou interface de rádio fique online. Tente novamente quando o Connection mostrar uma interface.",
+      "pathTimeoutStale": "Não foi possível atualizar a rota para este nó (caminho obsoleto). Aguarde o próximo anúncio e tente novamente. Falhas persistentes geralmente significam que o nó está offline.",
+      "linkTimeoutCachedPath": "Um caminho para este nó está listado, mas o link nunca foi concluído — a rota pode estar obsoleta. Aguarde o próximo anúncio e tente novamente. Falhas persistentes geralmente significam que o nó está offline ou não pode ser acessado pelo TCP.",
+      "linkTimeoutPathOk": "Uma rota para este nó foi confirmada, mas a página Nomad não respondeu. Aguarde um anúncio mais recente e tente novamente. Se continuar falhando, o nó pode estar offline ou não hospedar essa página."
     },
     "fitWidth": "Encaixar na janela",
     "openWidth": "Largura da Página",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Carregando página… {{time}} esquerda",
     "pageLoadingCountdownOverdue": "Carregando página… ainda funcionando",
     "pageReadyToast": "Página Nomad pronta: {{name}}",
-    "staleLastSeenHint": "Ouvido pela última vez em {{time}} — este nó pode estar offline mesmo se estiver listado como online."
+    "staleLastSeenHint": "Ouvido pela última vez em {{time}} — este nó pode estar offline mesmo se estiver listado como online.",
+    "pageLoadingRetryCountdown": "A primeira tentativa expirou — atualizando o caminho e tentando novamente… {{time}} restante",
+    "pageLoadingRetryOverdue": "Atualizando o caminho e tentando novamente... ainda funcionando"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

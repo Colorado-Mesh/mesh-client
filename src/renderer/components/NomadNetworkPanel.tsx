@@ -253,8 +253,10 @@ export default function NomadNetworkPanel({
   const pageLoading = useNomadPageViewerStore((s) => s.pageLoading);
   const pageLoadingStartedAt = useNomadPageViewerStore((s) => s.pageLoadingStartedAt);
   const pageLoadingBudgetSec = useNomadPageViewerStore((s) => s.pageLoadingBudgetSec);
+  const pageLoadingRetrying = useNomadPageViewerStore((s) => s.pageLoadingRetrying);
   const pageErrorRaw = useNomadPageViewerStore((s) => s.pageErrorRaw);
   const pageErrorEgress = useNomadPageViewerStore((s) => s.pageErrorEgress);
+  const pageErrorDiag = useNomadPageViewerStore((s) => s.pageErrorDiag);
   const pageErrorNodeSnapshot = useNomadPageViewerStore((s) => s.pageErrorNodeSnapshot);
   const announceReloadDone = useNomadPageViewerStore((s) => s.announceReloadDone);
   const loadPage = useNomadPageViewerStore((s) => s.loadPage);
@@ -263,7 +265,7 @@ export default function NomadNetworkPanel({
   const setInvalidUrlError = useNomadPageViewerStore((s) => s.setInvalidUrlError);
   const markAnnounceReloadDone = useNomadPageViewerStore((s) => s.markAnnounceReloadDone);
 
-  const pageError = pageErrorRaw ? humanizeNomadPageError(pageErrorRaw, t) : null;
+  const pageError = pageErrorRaw ? humanizeNomadPageError(pageErrorRaw, t, pageErrorDiag) : null;
   const pageErrorCode = pageErrorRaw;
 
   const [activeTab, setActiveTab] = useState<NomadListTab>('favourites');
@@ -1041,11 +1043,17 @@ export default function NomadNetworkPanel({
                     <p className="text-muted text-sm">
                       {pageLoadingStartedAt == null
                         ? t('nomadNetwork.pageLoading')
-                        : pageLoadingRemainingSec > 0
-                          ? t('nomadNetwork.pageLoadingCountdown', {
-                              time: formatNomadPageCountdown(pageLoadingRemainingSec),
-                            })
-                          : t('nomadNetwork.pageLoadingCountdownOverdue')}
+                        : pageLoadingRetrying
+                          ? pageLoadingRemainingSec > 0
+                            ? t('nomadNetwork.pageLoadingRetryCountdown', {
+                                time: formatNomadPageCountdown(pageLoadingRemainingSec),
+                              })
+                            : t('nomadNetwork.pageLoadingRetryOverdue')
+                          : pageLoadingRemainingSec > 0
+                            ? t('nomadNetwork.pageLoadingCountdown', {
+                                time: formatNomadPageCountdown(pageLoadingRemainingSec),
+                              })
+                            : t('nomadNetwork.pageLoadingCountdownOverdue')}
                     </p>
                   ) : pageError ? (
                     <div className="space-y-2">

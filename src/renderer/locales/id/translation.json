@@ -2949,7 +2949,7 @@
     "collapseNodeList": "Ciutkan daftar simpul",
     "expandNodeList": "Perluas daftar simpul",
     "errors": {
-      "pathTimeout": "Tidak ada rute ke node ini (pencarian jalur habis waktu). Coba node yang lebih dekat atau tunggu announce yang lebih baru.",
+      "pathTimeout": "Tidak ada jalur yang dapat digunakan ke node ini (pencarian jalur habis waktu). Tunggu pengumuman Nomad berikutnya lalu coba lagi. Jika masih gagal, coba hub lain atau node yang lebih dekat.",
       "pubkeyNotFound": "Tidak dapat menemukan kunci identitas simpul ini. Tunggu pengumuman Nomad, lalu coba lagi.",
       "linkTimeout": "Tautan ke simpul tidak dapat dibuat tepat waktu.",
       "responseTimeout": "Node menerima tautan tetapi tidak mengembalikan halaman tepat waktu.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Permintaan halaman atau berkas Nomad lain masih berlangsung. Coba lagi sebentar lagi.",
       "nomadNotServing": "Ini adalah node Nomad Anda, tetapi hosting Halaman Saya tidak berjalan. Buka Halaman Saya, pilih folder, dan mulai melayani untuk melihat pratinjau secara lokal.",
-      "networkNotReady": "Menunggu hub atau antarmuka radio online. Coba lagi setelah Koneksi menampilkan antarmuka."
+      "networkNotReady": "Menunggu hub atau antarmuka radio online. Coba lagi setelah Koneksi menampilkan antarmuka.",
+      "pathTimeoutStale": "Tidak dapat menyegarkan rute ke simpul ini (jalur basi). Tunggu pengumuman berikutnya, lalu coba lagi. Kegagalan terus - menerus sering berarti node sedang offline.",
+      "linkTimeoutCachedPath": "Jalur ke simpul ini terdaftar, tetapi tautannya tidak pernah selesai — rutenya mungkin basi. Tunggu pengumuman berikutnya, lalu coba lagi. Kegagalan persisten biasanya berarti node offline atau tidak dapat dijangkau melalui TCP.",
+      "linkTimeoutPathOk": "Rute ke simpul ini dikonfirmasi, tetapi halaman Nomad tidak menjawab. Tunggu pengumuman yang lebih segar dan coba lagi. Jika terus gagal, node mungkin offline atau tidak menghosting halaman tersebut."
     },
     "fitWidth": "Muat halaman ke jendela",
     "openWidth": "Buka lebar halaman",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "Memuat halaman… {{time}} tersisa",
     "pageLoadingCountdownOverdue": "Memuat halaman… masih berfungsi",
     "pageReadyToast": "Nomad — Halaman pengembara siap: {{name}}",
-    "staleLastSeenHint": "Terakhir terdengar {{time}} — node ini mungkin offline meskipun terdaftar sebagai online."
+    "staleLastSeenHint": "Terakhir terdengar {{time}} — node ini mungkin offline meskipun terdaftar sebagai online.",
+    "pageLoadingRetryCountdown": "Waktu percobaan pertama habis — jalur yang menyegarkan dan mencoba lagi… {{time}} tersisa",
+    "pageLoadingRetryOverdue": "Menyegarkan jalur dan mencoba lagi... masih berfungsi"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

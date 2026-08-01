@@ -2949,7 +2949,7 @@
     "collapseNodeList": "노드 목록 축소",
     "expandNodeList": "노드 목록 펼치기",
     "errors": {
-      "pathTimeout": "이 노드로 가는 경로가 없습니다(경로 조회 시간 초과). 더 가까운 노드를 시도하거나 새 announce를 기다리세요.",
+      "pathTimeout": "이 노드로 가는 사용 가능한 경로가 없습니다(경로 조회 시간 초과). 다음 Nomad 공지를 기다렸다가 다시 시도하세요. 계속 실패하면 다른 허브나 더 가까운 노드를 시도하세요.",
       "pubkeyNotFound": "이 노드의 ID 키를 찾을 수 없습니다. Nomad 공지를 기다렸다가 다시 시도하세요.",
       "linkTimeout": "노드에 대한 링크를 제시간에 설정할 수 없습니다.",
       "responseTimeout": "노드가 링크를 수락했지만 제시간에 페이지를 반환하지 않았습니다.",
@@ -2959,7 +2959,10 @@
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "다른 Nomad 페이지 또는 파일 요청이 아직 진행 중입니다. 잠시 후 다시 시도하세요.",
       "nomadNotServing": "이것은 Nomad 노드이지만 내 페이지 호스팅이 실행되고 있지 않습니다. 내 페이지를 열고 폴더를 선택한 후 로컬에서 미리 볼 수 있는 서비스를 시작하세요.",
-      "networkNotReady": "허브 또는 무선 인터페이스가 온라인 상태가 될 때까지 기다리는 중입니다. Connection에 인터페이스가 표시되면 다시 시도하십시오."
+      "networkNotReady": "허브 또는 무선 인터페이스가 온라인 상태가 될 때까지 기다리는 중입니다. Connection에 인터페이스가 표시되면 다시 시도하십시오.",
+      "pathTimeoutStale": "이 노드로의 경로를 새로 고칠 수 없습니다 (오래된 경로). 다음 발표를 기다렸다가 다시 시도하세요. 지속적인 실패는 종종 노드가 오프라인 상태임을 의미합니다.",
+      "linkTimeoutCachedPath": "이 노드로 연결되는 경로가 나열되지만 링크가 완료되지 않았습니다. 경로가 오래되었을 수 있습니다. 다음 발표를 기다렸다가 다시 시도하세요. 지속적인 장애는 일반적으로 노드가 오프라인이거나 TCP를 통해 연결할 수 없음을 의미합니다.",
+      "linkTimeoutPathOk": "이 노드로 가는 경로가 확인되었지만 Nomad 페이지는 응답하지 않았습니다. 새로 고침될 때까지 기다렸다가 다시 시도하세요. 계속 실패하면 노드가 오프라인이거나 해당 페이지를 호스팅하지 않을 수 있습니다."
     },
     "fitWidth": "창에 맞춤",
     "openWidth": "페이지 폭",
@@ -3009,7 +3012,9 @@
     "pageLoadingCountdown": "페이지 로드 중… {{time}} 남음",
     "pageLoadingCountdownOverdue": "페이지 로드 중… 아직 작동 중",
     "pageReadyToast": "Nomad 페이지 준비됨: {{name}}",
-    "staleLastSeenHint": "마지막으로 청취된 {{time}} — 이 노드는 온라인으로 나열되어 있어도 오프라인일 수 있습니다."
+    "staleLastSeenHint": "마지막으로 청취된 {{time}} — 이 노드는 온라인으로 나열되어 있어도 오프라인일 수 있습니다.",
+    "pageLoadingRetryCountdown": "첫 번째 시도 시간 초과 — 경로 새로 고침 및 재시도 중… {{time}} 남음",
+    "pageLoadingRetryOverdue": "경로 새로 고침 및 재시도 중... 여전히 작동 중"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

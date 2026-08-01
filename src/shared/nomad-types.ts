@@ -9,7 +9,31 @@ export interface NomadNodeRow {
   status?: string | null;
 }
 
-export interface NomadPageResponse {
+/** Optional Link-budget diagnostics on Nomad page/file fetches (ok or error). */
+export interface NomadLinkFailureDiagnostics {
+  /** Path-table hop count used for overall timeout classification. */
+  path_hops?: number;
+  /** Hops passed to Link::new_initiator (TCP/network: path hops clamped 3–7). */
+  link_hops?: number;
+  /** Effective link-proof wait (seconds): link_hops × 6. */
+  proof_budget_secs?: number;
+  /**
+   * True only when DropPath→RequestPath rediscovered a path after absence.
+   * First-attempt cache hits set false — not a reachability proof.
+   */
+  force_path_ok?: boolean;
+  /**
+   * Path-ensure outcome: `cached_hit` | `rediscovered` | `stale_accept` | `missing`.
+   * Not a separate peer probe — used to humanize link vs path failures.
+   */
+  path_ensure_kind?: string;
+  /** Sidecar wall time for the Link query attempt (milliseconds). */
+  elapsed_ms?: number;
+  /** Unmapped LinkClient error string before sidecar code mapping. */
+  raw_error?: string;
+}
+
+export interface NomadPageResponse extends NomadLinkFailureDiagnostics {
   ok: boolean;
   content?: string;
   content_type?: string;
@@ -23,7 +47,7 @@ export interface NomadPageResponse {
 /** NomadNet link request field map (`field_*` / `var_*` keys). */
 export type NomadPageRequestData = Record<string, string>;
 
-export interface NomadFileResponse {
+export interface NomadFileResponse extends NomadLinkFailureDiagnostics {
   ok: boolean;
   file_name?: string;
   content_base64?: string;

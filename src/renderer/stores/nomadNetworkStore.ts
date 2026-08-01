@@ -56,15 +56,90 @@ function nomadHashPrefixForLog(hash: string): string {
   return clean.slice(0, 8) || 'unknown';
 }
 
+interface NomadFetchLogDiag {
+  pathHops?: number;
+  linkHops?: number;
+  proofBudgetSecs?: number;
+  timeoutSecs?: number;
+  forcePathOk?: boolean;
+  pathEnsureKind?: string;
+  elapsedMs?: number;
+  rawError?: string;
+}
+
+function optionalFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function diagFieldsFromResponse(res: unknown): NomadFetchLogDiag {
+  const r = res as {
+    path_hops?: unknown;
+    link_hops?: unknown;
+    proof_budget_secs?: unknown;
+    timeout_secs?: unknown;
+    force_path_ok?: unknown;
+    path_ensure_kind?: unknown;
+    elapsed_ms?: unknown;
+    raw_error?: unknown;
+  };
+  const rawError = typeof r.raw_error === 'string' ? r.raw_error.trim() : undefined;
+  const pathEnsureKind =
+    typeof r.path_ensure_kind === 'string' && r.path_ensure_kind.trim()
+      ? r.path_ensure_kind.trim()
+      : undefined;
+  return {
+    pathHops: optionalFiniteNumber(r.path_hops),
+    linkHops: optionalFiniteNumber(r.link_hops),
+    proofBudgetSecs: optionalFiniteNumber(r.proof_budget_secs),
+    timeoutSecs: optionalFiniteNumber(r.timeout_secs),
+    forcePathOk: optionalBoolean(r.force_path_ok),
+    pathEnsureKind,
+    elapsedMs: optionalFiniteNumber(r.elapsed_ms),
+    rawError: rawError || undefined,
+  };
+}
+
+function appendNomadDiagParts(parts: string[], diag: NomadFetchLogDiag): void {
+  if (diag.pathHops != null) parts.push(`path_hops=${diag.pathHops}`);
+  if (diag.linkHops != null) parts.push(`link_hops=${diag.linkHops}`);
+  if (diag.proofBudgetSecs != null) parts.push(`proof_budget_secs=${diag.proofBudgetSecs}`);
+  if (diag.timeoutSecs != null) parts.push(`timeout_secs=${diag.timeoutSecs}`);
+  if (diag.forcePathOk != null) parts.push(`force_path_ok=${diag.forcePathOk}`);
+  if (diag.pathEnsureKind) parts.push(`path_ensure=${diag.pathEnsureKind}`);
+  if (diag.elapsedMs != null) parts.push(`elapsed_ms=${diag.elapsedMs}`);
+  if (diag.rawError) {
+    parts.push(`raw=${diag.rawError.replace(/[\r\n]+/g, ' ').slice(0, 200)}`);
+  }
+}
+
+/** Failure-only warn — keep link-budget / path-ensure fields for triage (not success spam). */
 function logNomadFetchFailure(
   kind: 'page' | 'file',
-  opts: { hash: string; path: string; hops: number; egress: string; error: string },
+  opts: {
+    hash: string;
+    path: string;
+    hops: number;
+    egress: string;
+    error: string;
+    diag?: NomadFetchLogDiag;
+  },
 ): void {
   const pathSafe = opts.path.replace(/[\r\n]+/g, ' ').slice(0, 200);
   const errorSafe = opts.error.replace(/[\r\n]+/g, ' ').slice(0, 200);
+  const parts = [
+    `path=${pathSafe}`,
+    `hops=${opts.hops}`,
+    `egress=${opts.egress}`,
+    `error=${errorSafe}`,
+  ];
+  appendNomadDiagParts(parts, opts.diag ?? {});
   console.warn(
     `[nomadNetworkStore] ${kind} fetch failed hash=${nomadHashPrefixForLog(opts.hash)}… ` +
-      `path=${pathSafe} hops=${opts.hops} egress=${opts.egress} error=${errorSafe}`,
+      parts.join(' '),
   );
 }
 
@@ -119,6 +194,7 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
         hops,
         egress: resEgress,
         error: res.error?.trim() || 'unknown',
+        diag: diagFieldsFromResponse(res),
       });
     }
     return res;

@@ -1,5 +1,12 @@
 /** Map sidecar Nomad page/file error codes to i18n keys / display text. */
 
+/** Optional path/link diagnostics from the sidecar Nomad fetch response. */
+export interface NomadPageErrorDiag {
+  forcePathOk?: boolean | null;
+  pathEnsureKind?: string | null;
+  pathHops?: number | null;
+}
+
 const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   path_timeout: 'nomadNetwork.errors.pathTimeout',
   pubkey_not_found: 'nomadNetwork.errors.pubkeyNotFound',
@@ -54,10 +61,46 @@ function isRfOrBleNomadEgress(egress: string | null | undefined): boolean {
   return atom === 'rf' || atom === 'ble';
 }
 
-export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {
+function normalizePathEnsureKind(kind: string | null | undefined): string | null {
+  const trimmed = kind?.trim().toLowerCase();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * Pick an i18n key for a Nomad page/file error, using path-ensure diagnostics when present.
+ * We do not run a separate peer probe API — `path_ensure_kind` / `force_path_ok` are the
+ * DropPath→RequestPath (or cache-hit) result from the Nomad Link attempt.
+ */
+export function nomadPageErrorI18nKey(
+  error: string | null | undefined,
+  diag?: NomadPageErrorDiag | null,
+): string | null {
   if (error == null) return null;
   const trimmed = error.trim();
   if (!trimmed) return null;
+
+  const kind = normalizePathEnsureKind(diag?.pathEnsureKind);
+  if (trimmed === 'link_timeout') {
+    // Retry rediscovered a path after DropPath, but LRPROOF / page still failed.
+    if (diag?.forcePathOk === true || kind === 'rediscovered') {
+      return 'nomadNetwork.errors.linkTimeoutPathOk';
+    }
+    // First attempt used a listed path that never completed a link.
+    if (kind === 'cached_hit') {
+      return 'nomadNetwork.errors.linkTimeoutCachedPath';
+    }
+    return 'nomadNetwork.errors.linkTimeout';
+  }
+  if (trimmed === 'path_timeout') {
+    if (kind === 'stale_accept') {
+      return 'nomadNetwork.errors.pathTimeoutStale';
+    }
+    return 'nomadNetwork.errors.pathTimeout';
+  }
+  if (trimmed === 'response_timeout') {
+    return 'nomadNetwork.errors.responseTimeout';
+  }
+
   return NOMAD_ERROR_I18N_KEYS[trimmed] ?? null;
 }
 
@@ -89,11 +132,26 @@ export function shouldForceNomadPathRefreshRetry(
 export function humanizeNomadPageError(
   error: string | null | undefined,
   t: (key: string) => string,
+  diag?: NomadPageErrorDiag | null,
 ): string {
   const trimmed = error?.trim();
   if (!trimmed) {
     return t('common.error');
   }
-  const key = nomadPageErrorI18nKey(trimmed);
+  const key = nomadPageErrorI18nKey(trimmed, diag);
   return key ? t(key) : trimmed;
+}
+
+/** Build diag from a Nomad page/file API response for humanize / store. */
+export function nomadPageErrorDiagFromResponse(res: {
+  force_path_ok?: unknown;
+  path_ensure_kind?: unknown;
+  path_hops?: unknown;
+}): NomadPageErrorDiag {
+  return {
+    forcePathOk: typeof res.force_path_ok === 'boolean' ? res.force_path_ok : null,
+    pathEnsureKind: typeof res.path_ensure_kind === 'string' ? res.path_ensure_kind : null,
+    pathHops:
+      typeof res.path_hops === 'number' && Number.isFinite(res.path_hops) ? res.path_hops : null,
+  };
 }
