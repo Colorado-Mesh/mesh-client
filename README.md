@@ -13,6 +13,8 @@
 
 **For everyone, everywhere.** We welcome community participation and collaboration in the development of this project!
 
+Releases and build artifacts are published on [GitHub](https://github.com/Colorado-Mesh/mesh-client); source is also manually mirrored to [gitworkshop](https://gitworkshop.dev/npub1wwaq5gyk7yljly3cwl3wleuk79nz63ukpp2a6lq5x4q9s9r4nrgqjk3dlv/relay.ngit.dev/mesh-client).
+
 ---
 
 ## Why
