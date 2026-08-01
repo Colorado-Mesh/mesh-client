@@ -12,6 +12,7 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   nomad_busy: 'nomadNetwork.errors.nomadBusy',
   nomad_not_serving: 'nomadNetwork.errors.nomadNotServing',
   network_not_ready: 'nomadNetwork.errors.networkNotReady',
+  invalid_url: 'nomadNetwork.invalidUrl',
   content_source_required: 'nomadNetwork.serving.contentSourceRequired',
   content_source_unavailable: 'nomadNetwork.serving.contentSourceUnavailable',
   content_source_not_directory: 'nomadNetwork.serving.contentSourceNotDirectory',

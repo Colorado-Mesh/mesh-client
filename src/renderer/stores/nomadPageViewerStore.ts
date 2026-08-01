@@ -65,6 +65,7 @@ interface NomadPageViewerState {
   loadGeneration: number;
 
   setPanelActive: (active: boolean) => void;
+  setInvalidUrlError: () => void;
   loadPage: (hash: string, path: string, options?: NomadPageLoadOptions) => Promise<void>;
   closeViewer: () => void;
   clearPageErrorForAnnounceReload: () => void;
@@ -201,6 +202,15 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     set({ announceReloadDone: true });
   },
 
+  setInvalidUrlError: () => {
+    set({
+      pageErrorRaw: 'invalid_url',
+      pageErrorNodeSnapshot: null,
+      pageLoading: false,
+      pageLoadingStartedAt: null,
+    });
+  },
+
   closeViewer: () => {
     set({
       ...initialViewerState,
@@ -216,7 +226,9 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     const generation = get().loadGeneration + 1;
     const nodes = useNomadNetworkStore.getState().nodes;
     const node = nodes.get(hash.toLowerCase());
-    const budgetSec = nomadPageLoadingBudgetSec(node?.hops ?? undefined);
+    // Default TCP/MeshChat until the sidecar reports this request's egress — do not
+    // use cached local outbound via (BLE RNode would falsely extend hub countdowns).
+    let budgetSec = nomadPageLoadingBudgetSec(node?.hops ?? undefined);
 
     // Selection updates immediately; countdown starts only when the wire fetch begins
     // so rapid node clicks during debounce do not keep resetting the timer.
@@ -283,6 +295,11 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         return;
       }
 
+      if (typeof res.egress === 'string' && res.egress.trim()) {
+        budgetSec = nomadPageLoadingBudgetSec(node?.hops ?? undefined, res.egress);
+        set({ pageLoadingBudgetSec: budgetSec });
+      }
+
       if ((!res.ok || !res.content) && shouldForceNomadPathRefreshRetry(res.error)) {
         const retryCode = res.error?.trim() || 'unknown';
         console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
@@ -292,15 +309,21 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         if (get().loadGeneration !== generation) return;
         res = await fetchNomadPageDeduped(hash, normalizedPath, normalizedRequest, true);
         if (get().loadGeneration !== generation) return;
+        if (typeof res.egress === 'string' && res.egress.trim()) {
+          budgetSec = nomadPageLoadingBudgetSec(node?.hops ?? undefined, res.egress);
+          set({ pageLoadingBudgetSec: budgetSec });
+        }
       }
     } catch (e) {
       // Failure point: unexpected fetchNomadPage reject. Fallback: clear loading + raw error.
       console.warn('[NomadNetwork] page fetch ' + errLikeToLogString(e));
       if (get().loadGeneration !== generation) return;
+      const liveNode = useNomadNetworkStore.getState().nodes.get(hash.toLowerCase());
       set({
         pageLoading: false,
         pageLoadingStartedAt: null,
         pageErrorRaw: 'unknown',
+        pageErrorNodeSnapshot: snapshotNomadNodeForPageError(hash, liveNode),
       });
       return;
     }

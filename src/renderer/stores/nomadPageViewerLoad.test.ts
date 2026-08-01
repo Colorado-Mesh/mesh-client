@@ -5,6 +5,7 @@ import {
   getNomadPageCache,
   nomadPageCacheSizeForTests,
 } from '@/renderer/lib/nomad/nomadPageCache';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
 import { resetNomadPageViewerStoreForTests, useNomadPageViewerStore } from './nomadPageViewerStore';
@@ -55,5 +56,61 @@ describe('nomadPageViewerStore loadPage cache', () => {
     await useNomadPageViewerStore.getState().loadPage('abc1234567890', '/page/index.mu');
     expect(fetchNomadPage).toHaveBeenCalledTimes(1);
     expect(useNomadPageViewerStore.getState().pageContent).toBe('hello');
+  });
+
+  it('updates countdown budget from sidecar egress on uncached RF responses', async () => {
+    vi.useFakeTimers();
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: false,
+      error: 'link_timeout',
+      egress: 'rf',
+      timeout_secs: 99,
+    });
+    useNomadNetworkStore.setState({ fetchNomadPage });
+
+    const loadPromise = useNomadPageViewerStore
+      .getState()
+      .loadPage('abc1234567890', '/page/index.mu');
+    await vi.advanceTimersByTimeAsync(300);
+    await loadPromise;
+
+    expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(99);
+    expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
+    vi.useRealTimers();
+  });
+
+  it('snapshots the node on unexpected fetch rejection', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      const fetchNomadPage = vi.fn().mockRejectedValue(new Error('boom'));
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(300);
+      await loadPromise;
+
+      const state = useNomadPageViewerStore.getState();
+      expect(state.pageErrorRaw).toBe('unknown');
+      expect(state.pageErrorNodeSnapshot).toEqual({
+        hash: 'abc1234567890',
+        lastSeen: 1,
+        hops: 1,
+      });
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('setInvalidUrlError stores the raw invalid_url code', () => {
+    useNomadPageViewerStore.getState().setInvalidUrlError();
+    const state = useNomadPageViewerStore.getState();
+    expect(state.pageErrorRaw).toBe('invalid_url');
+    expect(state.pageErrorNodeSnapshot).toBeNull();
+    expect(state.pageLoading).toBe(false);
+    expect(state.pageLoadingStartedAt).toBeNull();
   });
 });

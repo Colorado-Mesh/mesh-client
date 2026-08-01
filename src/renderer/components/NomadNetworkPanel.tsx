@@ -36,6 +36,7 @@ import { isNomadLastSeenStale } from '@/renderer/lib/nomad/nomadNodeStale';
 import {
   humanizeNomadPageError,
   isRetryableNomadPageError,
+  shouldForceNomadPathRefreshRetry,
 } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
@@ -258,6 +259,7 @@ export default function NomadNetworkPanel({
   const loadPage = useNomadPageViewerStore((s) => s.loadPage);
   const closeViewerStore = useNomadPageViewerStore((s) => s.closeViewer);
   const setPanelActive = useNomadPageViewerStore((s) => s.setPanelActive);
+  const setInvalidUrlError = useNomadPageViewerStore((s) => s.setInvalidUrlError);
   const markAnnounceReloadDone = useNomadPageViewerStore((s) => s.markAnnounceReloadDone);
 
   const pageError = pageErrorRaw ? humanizeNomadPageError(pageErrorRaw, t) : null;
@@ -447,7 +449,7 @@ export default function NomadNetworkPanel({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-retry after announce updates node metadata
     void loadNodePage(selectedHash, pagePath, {
       forceReload: true,
-      forcePathRefresh: true,
+      forcePathRefresh: shouldForceNomadPathRefreshRetry(pageErrorCode),
       requestData: pageRequestData,
     });
   }, [
@@ -532,11 +534,7 @@ export default function NomadNetworkPanel({
     const { destination: baseDestination, requestData } = buildNomadLinkRequest(target, null, null);
     const parsed = parseNomadNetworkLinkUrl(baseDestination, DEFAULT_NOMAD_NODE_PAGE_PATH);
     if (!parsed) {
-      useNomadPageViewerStore.setState({
-        pageErrorRaw: t('nomadNetwork.invalidUrl'),
-        pageLoading: false,
-        pageLoadingStartedAt: null,
-      });
+      setInvalidUrlError();
       return;
     }
 
@@ -545,7 +543,7 @@ export default function NomadNetworkPanel({
     void loadNodePage(hash, parsed.path, {
       requestData: normalizedRequest,
     });
-  }, [loadNodePage, selectedNode, t, urlBarValue]);
+  }, [loadNodePage, selectedNode, setInvalidUrlError, urlBarValue]);
 
   const closeViewer = useCallback(() => {
     closeViewerStore();
@@ -983,7 +981,7 @@ export default function NomadNetworkPanel({
                     onClick={() => {
                       void loadNodePage(selectedNode.destination_hash, pagePath, {
                         forceReload: true,
-                        forcePathRefresh: isRetryableNomadPageError(pageErrorCode),
+                        forcePathRefresh: shouldForceNomadPathRefreshRetry(pageErrorCode),
                         requestData: pageRequestData,
                       });
                     }}

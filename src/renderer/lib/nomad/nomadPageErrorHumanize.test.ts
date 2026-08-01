@@ -18,6 +18,7 @@ describe('nomadPageErrorHumanize', () => {
     expect(nomadPageErrorI18nKey('nomad_busy')).toBe('nomadNetwork.errors.nomadBusy');
     expect(nomadPageErrorI18nKey('nomad_not_serving')).toBe('nomadNetwork.errors.nomadNotServing');
     expect(nomadPageErrorI18nKey('network_not_ready')).toBe('nomadNetwork.errors.networkNotReady');
+    expect(nomadPageErrorI18nKey('invalid_url')).toBe('nomadNetwork.invalidUrl');
     expect(nomadPageErrorI18nKey('missing_identity_hash')).toBe(
       'nomadNetwork.errors.missingIdentity',
     );

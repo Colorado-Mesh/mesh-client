@@ -4,6 +4,8 @@
  * RF uses Python RNS per-hop link establishment scaling).
  */
 
+import { MS_PER_SECOND } from './timeConstants';
+
 export type ReticulumNomadEgressVia = 'rf' | 'tcp' | 'network';
 
 /** MeshChat `NomadnetDownloader.download()` path_lookup_timeout default. */
@@ -32,7 +34,7 @@ export const NOMAD_RF_MAX_OVERALL_SECS = 180;
  * Sidecar LinkClient already enforces the egress×hops deadline; main must not
  * cut off early when UI hops are stale (use a flat cap above the RF max).
  */
-export const NOMAD_PROXY_GET_TIMEOUT_MS = (NOMAD_RF_MAX_OVERALL_SECS + 5) * 1_000;
+export const NOMAD_PROXY_GET_TIMEOUT_MS = (NOMAD_RF_MAX_OVERALL_SECS + 5) * MS_PER_SECOND;
 
 const NOMAD_EGRESS_VIA_VALUES: readonly ReticulumNomadEgressVia[] = ['rf', 'tcp', 'network'];
 
@@ -64,11 +66,6 @@ export function nomadPageOverallTimeoutSecs(
     return Math.min(NOMAD_RF_MAX_OVERALL_SECS, total);
   }
   return NOMAD_PATH_LOOKUP_SECS + NOMAD_TCP_LINK_ESTABLISH_SECS + NOMAD_TCP_TRANSFER_GRACE_SECS;
-}
-
-/** Main-process proxy GET AbortSignal timeout with small buffer. */
-export function nomadPageProxyTimeoutMs(egressVia: ReticulumNomadEgressVia, hops: number): number {
-  return nomadPageOverallTimeoutSecs(egressVia, hops) * 1_000 + 2_000;
 }
 
 /**

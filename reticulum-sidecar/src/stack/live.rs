@@ -2022,17 +2022,22 @@ impl LiveBridge {
             return true;
         }
         // Forced refresh: only accept a path that passed the same absence gate as
-        // the wait loop — never the never-invalidated stale route.
+        // the wait loop — never the never-invalidated stale route (unless Nomad
+        // fall-through via accept_existing_on_timeout).
         let _ = self.refresh_outbound_path_table().await;
         let has_path = self
             .outbound
             .lock()
             .map(|d| d.has_path_to(destination_hex))
             .unwrap_or(false);
+        let accept = force_path_refresh_timeout_accepts(
+            force,
+            already,
+            has_path,
+            saw_path_absent,
+            accept_existing_on_timeout,
+        );
         if force && already {
-            let accept = has_path
-                && (force_path_refresh_accepts_current_path(force, already, saw_path_absent)
-                    || accept_existing_on_timeout);
             tracing::info!(
                 target: "propagation-sync",
                 dest = %destination_hex,
@@ -2043,13 +2048,8 @@ impl LiveBridge {
                 accept_existing_on_timeout,
                 "path refresh timed out after dropping cached route"
             );
-            return accept;
         }
-        // Non-force miss, or force with no path at start: accept any path that appeared.
-        if accept_existing_on_timeout && has_path {
-            return true;
-        }
-        false
+        accept
     }
 
     /// Ensure destination public key is known before choosing Direct delivery.
@@ -3456,6 +3456,30 @@ fn force_path_refresh_accepts_current_path(
     saw_path_absent
 }
 
+/// Timeout decision for [`LiveStack::ensure_path_for_direct_with_opts`].
+///
+/// When `accept_existing_on_timeout` is set (Nomad force refresh), a path that
+/// never went absent may still be accepted so the Link attempt can proceed
+/// inside the overall budget.
+#[allow(clippy::fn_params_excessive_bools)] // mirrors ensure_path wait-loop flags
+fn force_path_refresh_timeout_accepts(
+    force: bool,
+    had_path_at_start: bool,
+    has_path: bool,
+    saw_path_absent: bool,
+    accept_existing_on_timeout: bool,
+) -> bool {
+    if !has_path {
+        return false;
+    }
+    if force && had_path_at_start {
+        return force_path_refresh_accepts_current_path(force, had_path_at_start, saw_path_absent)
+            || accept_existing_on_timeout;
+    }
+    // Non-force miss, or force with no path at start: accept any path that appeared.
+    accept_existing_on_timeout
+}
+
 /// Hashes present in `next` but not in `prev` (path-table membership growth).
 fn path_table_added_hashes(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
     next.difference(prev).cloned().collect()
@@ -3718,6 +3742,33 @@ mod announce_display_name_tests {
         // Non-force discovery with a path present — accept.
         let has_path = true;
         assert!(has_path && force_path_refresh_accepts_current_path(false, false, false));
+    }
+
+    #[test]
+    fn force_path_refresh_timeout_accepts_fallthrough_when_never_absent() {
+        // Nomad force refresh: path never left the table, but fall-through is on.
+        assert!(force_path_refresh_timeout_accepts(
+            true, true, true, false, true
+        ));
+        // Same never-absent stale route without fall-through must reject.
+        assert!(!force_path_refresh_timeout_accepts(
+            true, true, true, false, false
+        ));
+        // Absence observed then path back — accept even without fall-through.
+        assert!(force_path_refresh_timeout_accepts(
+            true, true, true, true, false
+        ));
+        // No path at timeout — never accept.
+        assert!(!force_path_refresh_timeout_accepts(
+            true, true, false, true, true
+        ));
+        // Force started without a path: fall-through accepts whatever appeared.
+        assert!(force_path_refresh_timeout_accepts(
+            true, false, true, false, true
+        ));
+        assert!(!force_path_refresh_timeout_accepts(
+            true, false, true, false, false
+        ));
     }
 
     #[test]

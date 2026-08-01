@@ -97,7 +97,9 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     // Sidecar recomputes path-table egress for its Link deadline; main uses a flat
     // Nomad proxy timeout. Cached local egress is logging-only (never block on GET).
     const egress = cachedNomadEgressAt > 0 ? cachedNomadEgress : 'network';
-    void resolveNomadEgress();
+    void resolveNomadEgress().catch((e: unknown) => {
+      console.warn('[nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(e));
+    });
     const qs = new URLSearchParams({ path: opts.path });
     if (opts.requestData && Object.keys(opts.requestData).length > 0) {
       qs.set('data', btoa(JSON.stringify(opts.requestData)));
@@ -175,7 +177,9 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       }
       set({ nodes: map, lastRefreshAt: Date.now(), nomadApiAvailable: true });
       invalidateNomadEgressCache();
-      void resolveNomadEgress();
+      void resolveNomadEgress().catch((err: unknown) => {
+        console.warn('[nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(err));
+      });
     } catch (e) {
       if (isReticulumSidecar404Error(e)) {
         set({ nomadApiAvailable: false });

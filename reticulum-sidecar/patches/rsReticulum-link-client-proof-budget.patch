@@ -1,10 +1,8 @@
 diff --git a/crates/rns-runtime/src/link_client.rs b/crates/rns-runtime/src/link_client.rs
-index c024504..e2acbb1 100644
 --- a/crates/rns-runtime/src/link_client.rs
 +++ b/crates/rns-runtime/src/link_client.rs
-@@ -101,7 +101,12 @@ impl LinkClient {
-             destination_hash: dest_hash,
-         })
+@@ -101,7 +101,11 @@ impl LinkClient {
+         }))
          .await?;
  
 -        let proof_data = wait_for_proof(&mut dest_rx, link_id, time_remaining(deadline)?).await?;
@@ -16,4 +14,3 @@ index c024504..e2acbb1 100644
  
          let identity_ed25519_pub: [u8; 32] = pubkey[32..64].try_into().map_err(|_| {
              LinkClientError::ProofInvalid("remote public key is not 64 bytes".into())
-         })?;

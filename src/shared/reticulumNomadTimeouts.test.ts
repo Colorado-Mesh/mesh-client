@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   NOMAD_PROXY_GET_TIMEOUT_MS,
   nomadPageOverallTimeoutSecs,
-  nomadPageProxyTimeoutMs,
   nomadPageProxyTimeoutMsFromApiPath,
   parseReticulumNomadEgressVia,
 } from './reticulumNomadTimeouts';
@@ -18,11 +17,6 @@ describe('reticulumNomadTimeouts', () => {
     expect(nomadPageOverallTimeoutSecs('rf', 1)).toBe(57);
     expect(nomadPageOverallTimeoutSecs('rf', 8)).toBe(99);
     expect(nomadPageOverallTimeoutSecs('rf', 32)).toBe(180);
-  });
-
-  it('adds proxy buffer in milliseconds for egress helpers', () => {
-    expect(nomadPageProxyTimeoutMs('tcp', 8)).toBe(47_000);
-    expect(nomadPageProxyTimeoutMs('rf', 8)).toBe(101_000);
   });
 
   it('uses a flat IPC proxy cap for all Nomad page/file paths', () => {

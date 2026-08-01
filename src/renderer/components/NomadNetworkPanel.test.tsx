@@ -1072,4 +1072,45 @@ describe('NomadNetworkPanel', () => {
       vi.useRealTimers();
     }
   });
+
+  it('has no axe violations for stale-last-seen page error state', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { restore } = mockConsoleWarn();
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const nowSec = Math.floor(Date.now() / 1000);
+      const fetchNomadPage = vi.fn().mockResolvedValue({ ok: false, error: 'link_timeout' });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [
+            'abc1234567890',
+            {
+              destination_hash: 'abc1234567890',
+              display_name: 'Stale Peer',
+              favorited: false,
+              last_seen: nowSec - 3 * 60 * 60,
+              hops: 2,
+            },
+          ],
+        ]),
+        fetchNomadPage,
+      });
+
+      render(<NomadNetworkPanel />);
+      await openAnnouncesNode(user);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/nomadNetwork.staleLastSeenHint/)).toBeInTheDocument();
+      });
+
+      const staleHint = screen.getByText(/nomadNetwork.staleLastSeenHint/);
+      hydrateAxeThemeColors(staleHint);
+      expect(await axe(staleHint)).toHaveNoViolations();
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
 });
