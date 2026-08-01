@@ -3134,7 +3134,7 @@
     "lookupInvalid": "Zadejte platný 32znakový LXMF cílový hash nebo odkaz lxmf://.",
     "lookupHint": "Požádejte o cestu pro hash, který ještě není v seznamu kolegů (například kolega v centru, které sdílíte).",
     "paths": "Složky",
-    "pathsAria": "Zobrazit hodnocené cesty pro tohoto kolegu",
+    "pathsAria": "Zobrazit hodnocené cesty pro {{hash}}",
     "pathsDetailAria": "Hodnocené cesty pro {{hash}}",
     "pathsHeading": "Cesty · {{hash}}…",
     "pathsCloseAria": "Podrobnosti o zavření cest",

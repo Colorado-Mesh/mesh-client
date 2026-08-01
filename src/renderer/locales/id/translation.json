@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Masukkan hash tujuan LXMF 32 karakter yang valid atau tautan lxmf://.",
     "lookupHint": "Minta jalur untuk hash yang belum ada dalam daftar rekan (misalnya rekan di hub yang Anda bagikan).",
     "paths": "Jalur",
-    "pathsAria": "Tampilkan jalur berperingkat untuk peer ini",
+    "pathsAria": "Tampilkan jalur berperingkat untuk {{hash}}",
     "pathsDetailAria": "Jalur berperingkat untuk {{hash}}",
     "pathsHeading": "Jalur · {{hash}}…",
     "pathsCloseAria": "Tutup detail jalur",

@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Inserisci un hash di destinazione LXMF valido di 32 caratteri o un collegamento lxmf://.",
     "lookupHint": "Richiedi un percorso per un hash che non è ancora nell'elenco dei peer (ad esempio un peer su un hub che condividi).",
     "paths": "Percorsi",
-    "pathsAria": "Mostra percorsi classificati per questo peer",
+    "pathsAria": "Mostra percorsi classificati per {{hash}}",
     "pathsDetailAria": "Percorsi classificati per {{hash}}",
     "pathsHeading": "Percorsi · {{hash}}…",
     "pathsCloseAria": "Dettaglio percorsi di chiusura",

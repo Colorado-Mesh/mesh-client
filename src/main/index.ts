@@ -2124,7 +2124,8 @@ ipcMain.handle('bluetooth-device-cancel', (event, generation: unknown) => {
 });
 
 // Fire-and-forget path (Cancel button / teardown). Connect must use the invoke handle.
-ipcMain.on('bluetooth-device-cancelled', (_event, generation: unknown) => {
+ipcMain.on('bluetooth-device-cancelled', (event, generation: unknown) => {
+  assertIpcSender(event, 'bluetooth-device-cancelled');
   applyLinuxWebBluetoothCancelIpc(generation);
 });
 

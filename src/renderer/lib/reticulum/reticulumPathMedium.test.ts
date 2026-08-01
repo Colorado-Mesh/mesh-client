@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  fetchReticulumPeerPaths,
   parsePathMedium,
   parsePathMediumPreference,
   parsePeerPathsResponse,
   pathMediumFromInterfaceNameOrType,
   peerMediumPinApiFromChoice,
   peerMediumPinChoiceFromApi,
+  setReticulumPeerMediumPin,
 } from './reticulumPathMedium';
 
 describe('reticulumPathMedium', () => {
@@ -76,5 +78,31 @@ describe('reticulumPathMedium', () => {
       paths: [],
       error: 'path_slots_query_failed',
     });
+  });
+
+  it('rejects malformed hashes without calling proxyGet', async () => {
+    const proxyGet = vi.fn();
+    const proxyPut = vi.fn();
+    const getStatus = vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { getStatus, proxyGet, proxyPut },
+      },
+    });
+    try {
+      await expect(fetchReticulumPeerPaths('not-a-hash')).resolves.toEqual({
+        ok: false,
+        paths: [],
+        error: 'invalid_hash',
+      });
+      await expect(setReticulumPeerMediumPin('zzzz', 'rf')).resolves.toEqual({
+        ok: false,
+        error: 'invalid_hash',
+      });
+      expect(proxyGet).not.toHaveBeenCalled();
+      expect(proxyPut).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

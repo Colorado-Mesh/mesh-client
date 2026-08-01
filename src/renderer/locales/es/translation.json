@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Introduce un hash de destino LXMF válido de 32 caracteres o un enlace lxmf://.",
     "lookupHint": "Solicita una ruta para un hash que aún no está en la lista de compañeros (por ejemplo, un compañero en un centro que compartes).",
     "paths": "Paths",
-    "pathsAria": "Mostrar rutas clasificadas para este compañero",
+    "pathsAria": "Mostrar rutas clasificadas para {{hash}}",
     "pathsDetailAria": "Rutas clasificadas para {{hash}}",
     "pathsHeading": "Rutas · {{hash}}…",
     "pathsCloseAria": "Detalle de cerrar rutas",

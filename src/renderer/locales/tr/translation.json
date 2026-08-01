@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Geçerli 32 karakterlik bir LXMF hedef özeti veya lxmf:// bağlantısı girin.",
     "lookupHint": "Henüz eşler listesinde olmayan bir karma için bir yol isteyin (örneğin, paylaştığınız bir merkezdeki bir eş).",
     "paths": "Yollar",
-    "pathsAria": "Bu akran için sıralanmış yolları göster",
+    "pathsAria": "{{hash}} için sıralanmış yolları göster",
     "pathsDetailAria": "{{hash}} için dereceli yollar",
     "pathsHeading": "Yollar · {{hash}}…",
     "pathsCloseAria": "Yol detayını kapat",

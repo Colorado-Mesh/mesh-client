@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect -- load path slots when destination changes */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -46,26 +45,44 @@ export function ReticulumPeerPathsDetail({
   const [busy, setBusy] = useState(false);
   const [pinBusy, setPinBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Bumps on each refresh so stale responses cannot overwrite newer ones. */
+  const refreshGenRef = useRef(0);
 
   const refresh = useCallback(async () => {
+    const gen = ++refreshGenRef.current;
+    const requestedHash = destinationHash;
     setBusy(true);
     setError(null);
     try {
-      const next = await fetchReticulumPeerPaths(destinationHash);
+      const next = await fetchReticulumPeerPaths(requestedHash);
+      if (gen !== refreshGenRef.current) return;
       setResult(next);
       if (!next.ok) {
         setError(next.error ?? t('peerListPanel.pathsLoadFailed'));
       }
     } catch (e) {
+      if (gen !== refreshGenRef.current) return;
       console.warn('[ReticulumPeerPathsDetail] load ' + errLikeToLogString(e));
       setError(t('peerListPanel.pathsLoadFailed'));
     } finally {
-      setBusy(false);
+      if (gen === refreshGenRef.current) {
+        setBusy(false);
+      }
     }
   }, [destinationHash, t]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load path slots when destination changes
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const unsub = window.electronAPI.reticulum.onEvent((evt) => {
+      if (evt.type === 'path_medium_preference') {
+        void refresh();
+      }
+    });
+    return unsub;
   }, [refresh]);
 
   const pinChoice = peerMediumPinChoiceFromApi(result?.pin);

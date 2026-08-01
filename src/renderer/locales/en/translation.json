@@ -3271,7 +3271,7 @@
     "toggleFavorite": "Toggle favourite",
     "openChat": "Open chat",
     "paths": "Paths",
-    "pathsAria": "Show ranked paths for this peer",
+    "pathsAria": "Paths · {{hash}}",
     "pathsDetailAria": "Ranked paths for {{hash}}",
     "pathsHeading": "Paths · {{hash}}…",
     "pathsCloseAria": "Close paths detail",

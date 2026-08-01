@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Saisissez un hash de destination LXMF valide de 32 caractères ou un lien lxmf://.",
     "lookupHint": "Demandez un chemin pour un hachage qui ne figure pas encore dans la liste des pairs (par exemple, un pair sur un hub que vous partagez).",
     "paths": "Chemins",
-    "pathsAria": "Afficher les chemins classés pour ce pair",
+    "pathsAria": "Afficher les chemins classés pour {{hash}}",
     "pathsDetailAria": "Chemins classés pour {{hash}}",
     "pathsHeading": "Chemins · {{hash}}…",
     "pathsCloseAria": "Fermer les détails des chemins",

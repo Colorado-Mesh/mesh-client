@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Voer een geldige 32-tekens LXMF-bestemmings-hash of lxmf://-link in.",
     "lookupHint": "Vraag een pad aan voor een hash die nog niet in de lijst met peers staat (bijvoorbeeld een peer op een hub die je deelt).",
     "paths": "Paden",
-    "pathsAria": "Toon gerangschikte paden voor deze peer",
+    "pathsAria": "Toon gerangschikte paden voor {{hash}}",
     "pathsDetailAria": "Gerangschikte paden voor {{hash}}",
     "pathsHeading": "Paden · {{hash}}…",
     "pathsCloseAria": "Padendetail sluiten",

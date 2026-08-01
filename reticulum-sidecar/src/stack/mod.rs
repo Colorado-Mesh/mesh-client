@@ -97,6 +97,8 @@ pub struct StackHandle {
     contact_name_persist_dirty: std::sync::atomic::AtomicBool,
     /// Serializes create / switch / delete so on-disk slot state cannot interleave.
     identity_op_lock: Mutex<()>,
+    /// Serializes path-medium preference/pin persist → live-apply → rollback sequences.
+    path_medium_op_lock: Mutex<()>,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
     /// Test-only: next preference/pin apply returns this error after persist (exercises rollback).
@@ -221,6 +223,7 @@ impl StackHandle {
             inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
+            path_medium_op_lock: Mutex::new(()),
             live,
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
@@ -235,6 +238,7 @@ impl StackHandle {
             inbound_lxmf,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
+            path_medium_op_lock: Mutex::new(()),
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
         };
@@ -899,6 +903,7 @@ impl StackHandle {
         &self,
         preference: PathMediumPreferenceSetting,
     ) -> Result<(), String> {
+        let _op = self.path_medium_op_lock.lock().await;
         let snapshot = {
             let mut inner = self.inner.write().await;
             let snapshot = inner.path_medium_preference;
@@ -921,6 +926,10 @@ impl StackHandle {
                 return Err(e);
             }
         }
+        self.emit_event(
+            "path_medium_preference",
+            serde_json::json!({ "preference": preference.as_str() }),
+        );
         Ok(())
     }
 
@@ -938,6 +947,7 @@ impl StackHandle {
         hash: &str,
         pin: Option<PathMediumSetting>,
     ) -> Result<String, String> {
+        let _op = self.path_medium_op_lock.lock().await;
         let (canonical, pin_snapshot) = {
             let mut inner = self.inner.write().await;
             let pin_snapshot = inner.peer_medium_pins.clone();
@@ -3140,6 +3150,44 @@ mod tests {
             serde_json::json!({})
         );
         assert!(reloaded.peer_path_slots("nothex").await.is_err());
+
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn path_medium_preference_emits_event_only_after_success() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        // Subscribe after bootstrap so stats_update / startup noise is not in the queue.
+        let mut rx = handle.subscribe_events();
+
+        handle
+            .force_next_path_medium_apply_error("path_medium_preference_apply_failed")
+            .await;
+        let _ = handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Rf)
+            .await
+            .expect_err("apply must fail");
+        assert!(
+            rx.try_recv().is_err(),
+            "failed preference apply must not emit path_medium_preference"
+        );
+
+        handle
+            .set_path_medium_preference(PathMediumPreferenceSetting::Network)
+            .await
+            .expect("set preference");
+        let raw = rx.try_recv().expect("success must emit");
+        let msg: serde_json::Value = serde_json::from_str(&raw).expect("json");
+        assert_eq!(msg["type"], "path_medium_preference");
+        assert_eq!(msg["payload"]["preference"], "network");
 
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);

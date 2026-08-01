@@ -3132,7 +3132,7 @@
     "lookupInvalid": "Gib einen gültigen 32-stelligen LXMF-Ziel-Hash oder einen lxmf://-Link ein.",
     "lookupHint": "Fordern Sie einen Pfad für einen Hash an, der noch nicht in der Peers-Liste enthalten ist (z. B. einen Peer auf einem Hub, den Sie teilen).",
     "paths": "Pfade",
-    "pathsAria": "Ranglistenpfade für diesen Peer anzeigen",
+    "pathsAria": "Ranglistenpfade für {{hash}} anzeigen",
     "pathsDetailAria": "Ranglistenpfade für {{hash}}",
     "pathsHeading": "Pfade · {{hash}}…",
     "pathsCloseAria": "Detail Pfade schließen",

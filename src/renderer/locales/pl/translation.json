@@ -3136,7 +3136,7 @@
     "lookupInvalid": "Wprowadź prawidłowy 32-znakowy hash docelowy LXMF lub łącze lxmf://.",
     "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście partnerów (na przykład partner w centrum, które udostępniasz).",
     "paths": "Ścieżki",
-    "pathsAria": "Pokaż ścieżki uszeregowane dla tego partnera",
+    "pathsAria": "Pokaż ścieżki uszeregowane dla {{hash}}",
     "pathsDetailAria": "Ścieżki rankingowe dla {{hash}}",
     "pathsHeading": "Ścieżki · {{hash}}…",
     "pathsCloseAria": "Zamknij szczegóły ścieżek",

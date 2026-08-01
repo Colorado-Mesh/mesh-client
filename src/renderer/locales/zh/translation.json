@@ -3132,7 +3132,7 @@
     "lookupInvalid": "请输入有效的 32 字符 LXMF 目标哈希或 lxmf:// 链接。",
     "lookupHint": "请求尚未在对等体列表中的哈希路径（例如，您共享的集线器上的对等体）。",
     "paths": "路径",
-    "pathsAria": "显示此同行的排名路径",
+    "pathsAria": "显示 {{hash}} 的排名路径",
     "pathsDetailAria": "{{hash}}的排名路径",
     "pathsHeading": "路径· {{hash}} …",
     "pathsCloseAria": "关闭路径详细信息",

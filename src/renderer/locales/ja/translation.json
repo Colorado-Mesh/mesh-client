@@ -3132,7 +3132,7 @@
     "lookupInvalid": "有効な32文字のLXMF宛先ハッシュ、または lxmf:// リンクを入力してください。",
     "lookupHint": "まだピアリストにないハッシュのパスを要求します（たとえば、共有するハブ上のピア）。",
     "paths": "パス",
-    "pathsAria": "このピアのランク付けされたパスを表示",
+    "pathsAria": "{{hash}}のランク付けされたパスを表示",
     "pathsDetailAria": "{{hash}}のランクパス",
     "pathsHeading": "パス· {{hash}} …",
     "pathsCloseAria": "パス詳細を閉じる",

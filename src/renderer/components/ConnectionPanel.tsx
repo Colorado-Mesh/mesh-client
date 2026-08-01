@@ -1089,7 +1089,9 @@ export default function ConnectionPanel({
       bleLinuxPickerSelectionResolvedRef.current = false;
       const generation = linuxBleChooserGenerationRef.current;
       linuxBleChooserGenerationRef.current = null;
-      void window.electronAPI.cancelBluetoothSelection(generation);
+      void window.electronAPI.cancelBluetoothSelection(generation).catch((e: unknown) => {
+        console.debug('[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e));
+      });
       setShowPinPrompt(false);
       setPinInputValue('');
       setConnecting(false);
@@ -1253,7 +1255,11 @@ export default function ConnectionPanel({
           // Cancel in-flight requestDevice() (picker or MeshCore pre-connect PIN gate)
           const generation = linuxBleChooserGenerationRef.current;
           linuxBleChooserGenerationRef.current = null;
-          void window.electronAPI.cancelBluetoothSelection(generation);
+          void window.electronAPI.cancelBluetoothSelection(generation).catch((e: unknown) => {
+            console.debug(
+              '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
+            );
+          });
         }
         pendingMeshcoreLinuxWbMacRef.current = null;
         setShowPinPrompt(false);
