@@ -74,8 +74,9 @@ export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
       event.preventDefault();
     }
   };
-  window.addEventListener('unhandledrejection', handler);
+  // Capture phase so preventDefault runs before the bubble-phase renderer logger.
+  window.addEventListener('unhandledrejection', handler, { capture: true });
   return () => {
-    window.removeEventListener('unhandledrejection', handler);
+    window.removeEventListener('unhandledrejection', handler, { capture: true });
   };
 }

@@ -109,6 +109,7 @@ function makeDeps() {
       isDuplicate: vi.fn().mockReturnValue(false),
       ensureNodeExists,
       clearConfigureTimeout: vi.fn(),
+      isBleReconnectAttemptActive: () => false,
       applyMeshtasticForeignLoraFromLog: vi.fn(),
       emptyNode: vi.fn(),
       setMeshtasticIdentityId: vi.fn(),

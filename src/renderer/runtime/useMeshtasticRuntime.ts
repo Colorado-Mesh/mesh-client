@@ -1887,6 +1887,8 @@ export function useMeshtasticRuntime() {
       isDuplicate,
       ensureNodeExists,
       clearConfigureTimeout,
+      isBleReconnectAttemptActive: () =>
+        isReconnectingRef.current || reconnectConnectInFlightRef.current,
       applyMeshtasticForeignLoraFromLog,
       emptyNode,
       setMeshtasticIdentityId,
@@ -1982,14 +1984,13 @@ export function useMeshtasticRuntime() {
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = false;
       meshtasticIngestSessionRef.current?.setConfiguring(false);
-      // Clean up existing connection before reconnect (BlueZ needs GATT fully torn down).
+      // Tear down GATT/SDK before unsubscribing so toDevice stays defined for disconnect.
       clearConfigureTimeout();
       const staleDevice = deviceRef.current;
-      cleanupSubscriptions();
-      stopWatchdog();
-      stopGpsInterval();
       const driverIdentity =
         meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+      stopWatchdog();
+      stopGpsInterval();
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
@@ -2008,6 +2009,8 @@ export function useMeshtasticRuntime() {
           );
         });
       }
+      // After disconnect: detach wire effects / loss-watch (restores toDevice; never deletes).
+      cleanupSubscriptions();
       // Single-flight: if open+configure is still running, generation bump invalidates it;
       // that attempt's failure path (or finally deferred flush) schedules the next cycle.
       if (reconnectConnectInFlightRef.current) {

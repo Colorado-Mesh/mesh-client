@@ -371,7 +371,9 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     expect(onQueueRejection).toHaveBeenCalledWith(reason);
     expect(preventDefault).toHaveBeenCalled();
     restore();
-    expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', handler);
+    expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', handler, {
+      capture: true,
+    });
   });
 
   it('does not preventDefault when handler returns false', () => {
@@ -417,5 +419,20 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     expect(onQueueRejection).not.toHaveBeenCalled();
     expect(preventDefault).toHaveBeenCalled();
     restore();
+  });
+
+  it('registers unhandledrejection listener in capture phase', () => {
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(vi.fn());
+    expect(window.addEventListener).toHaveBeenCalledWith(
+      'unhandledrejection',
+      expect.any(Function),
+      { capture: true },
+    );
+    restore();
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      'unhandledrejection',
+      expect.any(Function),
+      { capture: true },
+    );
   });
 });

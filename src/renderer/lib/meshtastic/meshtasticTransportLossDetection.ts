@@ -53,7 +53,15 @@ export function createSerializedWritableStream(
 
   const writeInner = async (chunk: Uint8Array): Promise<void> => {
     await runExclusive(async () => {
-      const writer = inner.getWriter();
+      let writer: WritableStreamDefaultWriter<Uint8Array>;
+      try {
+        writer = inner.getWriter();
+      } catch (err) {
+        if (onWriteError && isMeshtasticTransportLostError(err)) {
+          onWriteError(err);
+        }
+        throw err;
+      }
       try {
         await writer.write(chunk);
       } catch (err) {
@@ -62,26 +70,47 @@ export function createSerializedWritableStream(
         }
         throw err;
       } finally {
-        writer.releaseLock();
+        try {
+          writer.releaseLock();
+        } catch {
+          // catch-no-log-ok stream already closed/errored during teardown
+        }
       }
     });
   };
 
   const closeInner = async (): Promise<void> => {
     await runExclusive(async () => {
-      const writer = inner.getWriter();
       try {
-        await writer.close();
-      } finally {
-        writer.releaseLock();
+        const writer = inner.getWriter();
+        try {
+          await writer.close();
+        } finally {
+          try {
+            writer.releaseLock();
+          } catch {
+            // catch-no-log-ok stream already closed/errored during teardown
+          }
+        }
+      } catch {
+        // catch-no-log-ok closed/errored inner stream during teardown (Illegal invocation)
       }
     });
+  };
+
+  const abortInner = (reason?: unknown): Promise<void> => {
+    try {
+      return inner.abort(reason);
+    } catch {
+      // catch-no-log-ok abort on closed/errored stream during teardown
+      return Promise.resolve();
+    }
   };
 
   const body = new WritableStream<Uint8Array>({
     write: writeInner,
     close: closeInner,
-    abort: (reason) => inner.abort(reason),
+    abort: abortInner,
   });
 
   return new Proxy(body, {
@@ -104,7 +133,7 @@ export function createSerializedWritableStream(
             return closeInner();
           },
           abort(reason?: unknown): Promise<void> {
-            return inner.abort(reason);
+            return abortInner(reason);
           },
         });
       }
@@ -166,20 +195,41 @@ export function attachMeshtasticTransportLossWatch(
 
   const transport = device.transport as { toDevice?: WritableStream<Uint8Array> } | undefined;
   if (transport?.toDevice) {
-    const wrapped = createLossAwareWritableStream(transport.toDevice, (err) => {
+    const transportObj = device.transport as object;
+    const originalDesc = Object.getOwnPropertyDescriptor(transportObj, 'toDevice');
+    const originalToDevice = transport.toDevice;
+    const wrapped = createLossAwareWritableStream(originalToDevice, (err) => {
       notify('write-failure', err);
     });
-    Object.defineProperty(device.transport, 'toDevice', {
+    Object.defineProperty(transportObj, 'toDevice', {
       configurable: true,
+      enumerable: true,
       get() {
         return wrapped;
       },
     });
     cleanups.push(() => {
+      // Never delete toDevice — in-flight SDK processQueue/getWriter needs a defined stream.
       try {
-        delete (device.transport as { toDevice?: WritableStream<Uint8Array> }).toDevice;
+        if (originalDesc) {
+          Object.defineProperty(transportObj, 'toDevice', originalDesc);
+        } else {
+          Object.defineProperty(transportObj, 'toDevice', {
+            configurable: true,
+            enumerable: true,
+            writable: true,
+            value: originalToDevice,
+          });
+        }
       } catch {
-        // catch-no-log-ok restore original getter after teardown
+        // catch-no-log-ok leave a soft-fail stub if restore fails
+        Object.defineProperty(transportObj, 'toDevice', {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return createSerializedWritableStream(null);
+          },
+        });
       }
     });
   }

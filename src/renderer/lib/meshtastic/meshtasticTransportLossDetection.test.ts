@@ -156,4 +156,33 @@ describe('meshtasticTransportLossDetection', () => {
 
     expect(device.transport.toDevice).toBe(inner);
   });
+
+  it('restores toDevice on cleanup instead of deleting (getWriter race regression)', async () => {
+    const inner = new WritableStream<Uint8Array>({
+      write: vi.fn(),
+    });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    const detach = attachMeshtasticTransportLossWatch(device, 'ble', vi.fn());
+    expect(device.transport.toDevice).not.toBe(inner);
+
+    detach();
+
+    // Must remain defined so in-flight SDK processQueue/getWriter does not throw.
+    expect(device.transport.toDevice).toBeDefined();
+    expect(typeof device.transport.toDevice.getWriter).toBe('function');
+    const writer = device.transport.toDevice.getWriter();
+    // Original stream may still accept writes after restore; close must not throw.
+    await expect(writer.close()).resolves.toBeUndefined();
+  });
+
+  it('createSerializedWritableStream close soft-fails when inner is already closed', async () => {
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    await inner.close();
+    const serialized = createSerializedWritableStream(inner);
+    const writer = serialized.getWriter();
+    await expect(writer.close()).resolves.toBeUndefined();
+  });
 });
