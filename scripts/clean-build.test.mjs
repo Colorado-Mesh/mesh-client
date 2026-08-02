@@ -52,6 +52,7 @@ describe('clean-build', () => {
     expect(() => parseFlags(['--bogus'])).toThrow(/unknown argument/);
     expect(parseFlags(['--full', '-y'])).toEqual({ full: true, yes: true });
     expect(parseFlags([])).toEqual({ full: false, yes: false });
+    expect(parseFlags(['--', '-y'])).toEqual({ full: false, yes: true });
   });
 
   it('resolvePaths stays inside rootDir and rejects escapes', () => {

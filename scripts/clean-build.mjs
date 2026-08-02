@@ -103,6 +103,7 @@ export function printPlan(full, removals, reinstall) {
 export function parseFlags(argv = process.argv.slice(2)) {
   const flags = { full: false, yes: false };
   for (const arg of argv) {
+    if (arg === '--') continue;
     if (arg === '--full') flags.full = true;
     else if (arg === '-y' || arg === '--yes') flags.yes = true;
     else throw new Error(`clean-build: unknown argument '${arg}'`);
