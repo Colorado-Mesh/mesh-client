@@ -1286,11 +1286,20 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 
 **Checks**:
 
-1. **Host-local only**: mesh-client expects an I2P router on **this machine**. Remote SAM is not supported.
-2. **SAM application bridge**, not I2PTunnel: HTTP/HTTPS proxies on `127.0.0.1:4444` / `4445` (and similar “Client ready” lines) are classic I2PTunnel clients. Reticulum needs the **SAM** bridge on **`127.0.0.1:7656`**. In the I2P Router Console → **Clients**, enable **SAM application bridge** (Run on load). The Connection ⓘ tooltip on I2P rows repeats this.
-3. **Restart I2P after enabling SAM**: flipping SAM on while the router is already running often does not open `7656` until you fully restart I2P. Confirm something listens on `7656` (e.g. `nc -z 127.0.0.1 7656`). SAM may also delay ~2 minutes after router boot (`delay=120` in the SAM client config).
-4. **Restart the Reticulum stack** after SAM is listening (stack restart alone cannot help while `7656` is refused).
-5. **Tunnel build time**: first connect to a hub `.b32.i2p` peer can take a while on a fresh router. Sidecar / Device logs may show `I2P client:` / `I2P server:` messages (`failed to connect to SAM bridge`, `STREAM CONNECT failed`, `stream connected`).
+1. **Interface enabled**: default hub presets (including **RNS I2P Hub A**) are added **disabled**. Enable the row after configuring SAM, then let the UI restart the stack (or Stop/Start).
+2. **SAM application bridge**, not I2PTunnel: HTTP/HTTPS proxies on `127.0.0.1:4444` / `4445` (and similar “Client ready” lines) are classic I2PTunnel clients. Reticulum needs the **SAM** bridge (default **`127.0.0.1:7656`** on the mesh-client machine). In the I2P Router Console → **Clients**, enable **SAM application bridge** (Run on load). The Connection ⓘ tooltip on I2P rows covers the local case.
+3. **Remote SAM (optional)**: if I2P runs on another LAN host, do **not** put that IP in the typed Host field (that field is hub **peers** / `.b32.i2p`). Edit the I2P interface → **Advanced** and set:
+
+   ```ini
+   i2p_sam_host = 192.168.1.86
+   i2p_sam_port = 7656
+   ```
+
+   Use rsReticulum keys `i2p_sam_host` / `i2p_sam_port` (not Python RNS `sam_address` / `sam_port`). On the I2P router, bind SAM to the LAN address or `0.0.0.0` (localhost-only SAM is unreachable remotely). Confirm from the mesh-client host: `nc -z <sam-host> 7656`. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
+
+4. **Restart I2P after enabling SAM**: flipping SAM on while the router is already running often does not open `7656` until you fully restart I2P. Confirm something listens on the configured SAM address/port. SAM may also delay ~2 minutes after router boot (`delay=120` in the SAM client config).
+5. **Restart the Reticulum stack** after SAM is listening (stack restart alone cannot help while SAM is refused).
+6. **Tunnel build time**: first connect to a hub `.b32.i2p` peer can take a while on a fresh router. Sidecar / Device logs may show `I2P client:` / `I2P server:` messages (`failed to connect to SAM bridge`, `STREAM CONNECT failed`, `stream connected`).
 
 ### Reticulum Peers stale or slow with many hubs or testnets
 
