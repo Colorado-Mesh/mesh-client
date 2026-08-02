@@ -1740,7 +1740,7 @@ function ChatPanel({
   const reticulumDmPeerHops = useReticulumPeerStore((s) => {
     if (!reticulumDmDestinationHash) return null;
     const key = reticulumDmDestinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-    const peer = s.contacts.get(key) ?? s.peers.get(key);
+    const peer = s.contacts.get(key) ?? s.history.get(key) ?? s.peers.get(key);
     return peer?.hops ?? null;
   });
 

@@ -3086,7 +3086,6 @@
     "saveContact": "Opslaan als contactpersoon",
     "removeContact": "Contact verwijderen",
     "removeContactConfirmTitle": "Contact verwijderen",
-    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit je lijst verwijderd. De chatgeschiedenis wordt bewaard; door ze opnieuw een bericht te sturen, wordt het contact opnieuw toegevoegd.",
     "probeOk": "Sonde OK — pad bereikbaar.",
     "blockContact": "Contactpersoon blokkeren",
     "unblockContact": "Contactpersoon deblokkeren",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Contact-QR delen",
     "shareContactQrAria": "Toon QR-code voor dit contact",
     "verifiedRowAria": "Contact geverifieerd",
-    "renameFailed": "Kan de weergavenaam niet opslaan."
+    "renameFailed": "Kan de weergavenaam niet opslaan.",
+    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit uw opgeslagen lijst verwijderd. Chatberichten blijven; ze blijven in de geschiedenis staan als je ze een bericht hebt gestuurd."
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Favoriet in-/uitschakelen",
     "openChat": "Open chat",
     "emptyPeers": "Nog geen collega's ontdekt. Stuur een aankondiging of wacht op netwerkverkeer.",
-    "emptyContacts": "Nog geen contacten — stuur een bericht naar een collega om ze hier toe te voegen.",
     "groupFilterAria": "Contacten filteren op groep",
     "allGroups": "Alle groepen",
     "manageGroups": "Groepen beheren",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "Verlopen",
     "pathsEmpty": "Nog geen padvakken. Vraag een pad aan of wacht op een aankondiging.",
     "pathsLoadFailed": "Kan padvakken niet laden.",
-    "pathsPinFailed": "Kan mediumvoorkeur voor deze peer niet bijwerken."
+    "pathsPinFailed": "Kan mediumvoorkeur voor deze peer niet bijwerken.",
+    "tabHistory": "Historie",
+    "emptyHistory": "Nog geen berichtgeschiedenis — verzend of ontvang een LXMF-bericht om collega's hier te zien.",
+    "emptyContacts": "Nog geen opgeslagen contacten — open een peer en kies Opslaan als contactpersoon."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",

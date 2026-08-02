@@ -3086,7 +3086,6 @@
     "saveContact": "연락처로 저장",
     "removeContact": "연락처 삭제",
     "removeContactConfirmTitle": "연락처 삭제",
-    "removeContactConfirmBody": "이렇게 하면 목록에서 연락처가 제거됩니다. 채팅 기록이 유지됩니다. 메시지를 다시 보내면 문의가 다시 추가됩니다.",
     "probeOk": "프로브 확인 — 경로에 도달할 수 있습니다.",
     "blockContact": "대화 상대 차단( B)",
     "unblockContact": "대화 상대 차단 해제( B)",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "연락처 QR 공유",
     "shareContactQrAria": "이 연락처의 QR 코드 표시",
     "verifiedRowAria": "연락처가 확인되었습니다.",
-    "renameFailed": "표시 이름을 저장할 수 없습니다."
+    "renameFailed": "표시 이름을 저장할 수 없습니다.",
+    "removeContactConfirmBody": "이렇게 하면 저장된 목록에서 연락처가 제거됩니다. 채팅 메시지는 계속 유지됩니다. 메시지를 보낸 경우 채팅 메시지는 기록에 남아 있습니다."
   },
   "peerGraph": {
     "title": "동료 커뮤니케이션 그래프",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "즐겨찾기 전환",
     "openChat": "채팅창 열기",
     "emptyPeers": "아직 동료가 발견되지 않았습니다. 공지 사항을 보내거나 네트워크 트래픽을 기다립니다.",
-    "emptyContacts": "아직 연락처가 없습니다. 동료에게 메시지를 보내 여기에 추가하세요.",
     "groupFilterAria": "그룹별로 연락처 필터링",
     "allGroups": "전체 그룹",
     "manageGroups": "그룹 관리",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "만료됨",
     "pathsEmpty": "아직 경로 슬롯이 없습니다. 경로를 요청하거나 발표를 기다리세요.",
     "pathsLoadFailed": "경로 슬롯을 로드하지 못했습니다.",
-    "pathsPinFailed": "이 피어의 중간 환경 설정을 업데이트하지 못했습니다."
+    "pathsPinFailed": "이 피어의 중간 환경 설정을 업데이트하지 못했습니다.",
+    "tabHistory": "기록",
+    "emptyHistory": "아직 메시지 기록이 없습니다. 여기에서 동료들을 보려면 LXMF 메시지를 보내거나 받으세요.",
+    "emptyContacts": "아직 저장된 연락처가 없습니다. 피어를 열고 연락처로 저장 을 선택합니다."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 연락처를 데이터베이스로 오프로드했습니다.",

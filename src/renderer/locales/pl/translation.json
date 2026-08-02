@@ -3090,7 +3090,6 @@
     "saveContact": "Zapisz jako kontakt",
     "removeContact": "Zdjąć soczewki kontaktowe,",
     "removeContactConfirmTitle": "Zdjąć soczewki kontaktowe,",
-    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z listy. Historia czatu jest zachowana; ponowne wysłanie wiadomości spowoduje ponowne dodanie kontaktu.",
     "probeOk": "Sonda OK — ścieżka osiągalna.",
     "blockContact": "Blokuj kontakt",
     "unblockContact": "Odblokuj kontakt",
@@ -3104,7 +3103,8 @@
     "shareContactQr": "Udostępnij kontaktowy QR",
     "shareContactQrAria": "Pokaż kod QR dla tego kontaktu",
     "verifiedRowAria": "Kontakt zweryfikowany",
-    "renameFailed": "Nie można zapisać nazwy wyświetlanej."
+    "renameFailed": "Nie można zapisać nazwy wyświetlanej.",
+    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z zapisanej listy. Wiadomości na czacie pozostają w Historii, jeśli zostały przez Ciebie wysłane."
   },
   "peerGraph": {
     "title": "Wykres komunikacji z partnerami",
@@ -3144,7 +3144,6 @@
     "toggleFavorite": "Przełącz ulubione",
     "openChat": "Otwórz czat",
     "emptyPeers": "Nie odkryto jeszcze żadnych partnerów. Wyślij ogłoszenie lub poczekaj na ruch sieciowy.",
-    "emptyContacts": "Brak kontaktów — wyślij wiadomość do partnera, aby dodać je tutaj.",
     "groupFilterAria": "Filtruj kontakty według grupy",
     "allGroups": "Wszystkie grupy",
     "manageGroups": "Zarządzaj grupami",
@@ -3178,7 +3177,10 @@
     "pathsExpired": "Wygasłe",
     "pathsEmpty": "Nie ma jeszcze slotów ścieżek. Poproś o ścieżkę lub poczekaj na ogłoszenie.",
     "pathsLoadFailed": "Nie udało się załadować slotów ścieżki.",
-    "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera."
+    "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera.",
+    "tabHistory": "Historia",
+    "emptyHistory": "Brak historii wiadomości — wyślij lub otrzymaj wiadomość LXMF, aby zobaczyć rówieśników tutaj.",
+    "emptyContacts": "Brak zapisanych kontaktów — otwórz partnera i wybierz Zapisz jako kontakt."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",

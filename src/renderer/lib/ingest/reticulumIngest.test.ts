@@ -8,6 +8,7 @@ import {
   ingestReticulumLxmfPayloadWithSideEffects,
   isReticulumHashPrefixAlias,
   persistReticulumContactFromPayload,
+  persistReticulumHistoryFromPayload,
   reticulumContactDisplayNameFromPayload,
 } from './reticulumIngest';
 
@@ -94,6 +95,7 @@ describe('reticulumIngest alias helpers', () => {
     expect(upsertReticulumDestination).toHaveBeenCalledWith({
       destination_hash: hash,
       last_heard: 1_700_000_000,
+      is_contact: true,
     });
   });
 
@@ -107,6 +109,7 @@ describe('reticulumIngest alias helpers', () => {
       destination_hash: hash,
       display_name: 'Alice',
       last_heard: 1_700_000_000,
+      is_contact: true,
     });
   });
 
@@ -125,11 +128,26 @@ describe('reticulumIngest alias helpers', () => {
       destination_hash: peerHash,
       display_name: 'Bob',
       last_heard: 1_700_000_000,
+      is_contact: true,
+    });
+  });
+
+  it('persistReticulumHistoryFromPayload stamps last_heard without is_contact', async () => {
+    await persistReticulumHistoryFromPayload({
+      sender_hash: hash,
+      sender_name: 'Alice',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(restoreDismissedContact).not.toHaveBeenCalled();
+    expect(upsertReticulumDestination).toHaveBeenCalledWith({
+      destination_hash: hash,
+      display_name: 'Alice',
+      last_heard: 1_700_000_000,
     });
   });
 });
 
-describe('reticulumIngest side effects — no auto-contact', () => {
+describe('reticulumIngest side effects — history stamp, no auto-contact', () => {
   beforeEach(() => {
     upsertMessage.mockClear();
     messagesState = {};
@@ -141,7 +159,7 @@ describe('reticulumIngest side effects — no auto-contact', () => {
     });
   });
 
-  it('inbound LXMF does not upsert contact or restore dismissed', () => {
+  it('inbound LXMF stamps history last_heard without is_contact', async () => {
     const hash = 'allowedhash1234567890allowedhash12';
     const ingested = ingestReticulumLxmfPayloadWithSideEffects('id-1', {
       sender_hash: hash,
@@ -154,10 +172,17 @@ describe('reticulumIngest side effects — no auto-contact', () => {
     expect(upsertMessage).toHaveBeenCalled();
     expect(saveReticulumMessage).toHaveBeenCalled();
     expect(restoreDismissedContact).not.toHaveBeenCalled();
-    expect(upsertReticulumDestination).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(upsertReticulumDestination).toHaveBeenCalledWith({
+        destination_hash: hash,
+        display_name: 'Alice',
+        last_heard: 1_700_000_000,
+      });
+    });
+    expect(upsertReticulumDestination.mock.calls[0]?.[0]).not.toHaveProperty('is_contact');
   });
 
-  it('outbound LXMF does not upsert recipient as contact', () => {
+  it('outbound LXMF stamps recipient history without is_contact', async () => {
     const selfHash = 'deadbeef'.repeat(4);
     const peerHash = 'cafebabe'.repeat(4);
     getPeer.mockReturnValue({ display_name: 'Bob' });
@@ -173,7 +198,14 @@ describe('reticulumIngest side effects — no auto-contact', () => {
     expect(upsertMessage).toHaveBeenCalled();
     expect(saveReticulumMessage).toHaveBeenCalled();
     expect(restoreDismissedContact).not.toHaveBeenCalled();
-    expect(upsertReticulumDestination).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(upsertReticulumDestination).toHaveBeenCalledWith({
+        destination_hash: peerHash,
+        display_name: 'Bob',
+        last_heard: 1_700_000_000,
+      });
+    });
+    expect(upsertReticulumDestination.mock.calls[0]?.[0]).not.toHaveProperty('is_contact');
   });
 });
 

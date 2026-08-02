@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 47;
+export const CURRENT_SCHEMA_VERSION = 48;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -195,6 +195,7 @@ export const CANONICAL_TABLES_DDL = `
         display_name     TEXT,
         last_heard       INTEGER,
         favorited        INTEGER DEFAULT 0,
+        is_contact       INTEGER DEFAULT 0,
         icon_name        TEXT,
         icon_color       TEXT,
         verified         INTEGER DEFAULT 0,
@@ -502,6 +503,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     display_name: 'TEXT',
     last_heard: 'INTEGER',
     favorited: 'INTEGER DEFAULT 0',
+    is_contact: 'INTEGER DEFAULT 0',
     icon_name: 'TEXT',
     icon_color: 'TEXT',
     verified: 'INTEGER DEFAULT 0',
@@ -944,7 +946,7 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
 
   const rows = db
     .prepare(
-      `SELECT destination_hash, display_name, last_heard, favorited, icon_name, icon_color
+      `SELECT destination_hash, display_name, last_heard, favorited, is_contact, icon_name, icon_color
        FROM reticulum_destinations`,
     )
     .all() as {
@@ -952,6 +954,7 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
     display_name: string | null;
     last_heard: number | null;
     favorited: number | null;
+    is_contact: number | null;
     icon_name: string | null;
     icon_color: string | null;
   }[];
@@ -970,8 +973,8 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
   const del = db.prepare('DELETE FROM reticulum_destinations WHERE destination_hash = ?');
   const upsert = db.prepare(
     `INSERT INTO reticulum_destinations
-       (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
-     VALUES (?, ?, ?, ?, ?, ?)
+       (destination_hash, display_name, last_heard, favorited, is_contact, icon_name, icon_color)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(destination_hash) DO UPDATE SET
        display_name = COALESCE(excluded.display_name, reticulum_destinations.display_name),
        last_heard = CASE
@@ -985,6 +988,10 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
          WHEN excluded.favorited = 1 OR reticulum_destinations.favorited = 1 THEN 1
          ELSE 0
        END,
+       is_contact = CASE
+         WHEN excluded.is_contact = 1 OR reticulum_destinations.is_contact = 1 THEN 1
+         ELSE 0
+       END,
        icon_name = COALESCE(excluded.icon_name, reticulum_destinations.icon_name),
        icon_color = COALESCE(excluded.icon_color, reticulum_destinations.icon_color)`,
   );
@@ -996,6 +1003,7 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
     let displayName: string | null = null;
     let lastHeard: number | null = null;
     let favorited = 0;
+    let isContact = 0;
     let iconName: string | null = null;
     let iconColor: string | null = null;
     for (const r of group) {
@@ -1008,6 +1016,7 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
         lastHeard = Math.trunc(heard);
       }
       if (r.favorited === 1) favorited = 1;
+      if (r.is_contact === 1) isContact = 1;
       if (iconName == null && r.icon_name != null) iconName = r.icon_name;
       if (iconColor == null && r.icon_color != null) iconColor = r.icon_color;
     }
@@ -1015,8 +1024,24 @@ function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
     for (const r of group) {
       if (r.destination_hash !== canonical) del.run(r.destination_hash);
     }
-    upsert.run(canonical, displayName, lastHeard, favorited, iconName, iconColor);
+    upsert.run(canonical, displayName, lastHeard, favorited, isContact, iconName, iconColor);
   }
+}
+
+/**
+ * v48: prior auto-contacts used last_heard as membership. Promote those rows to
+ * explicit is_contact so they stay on Contacts after History/Contacts split.
+ * Only run when upgrading from schema versions below 48 (not on every startup).
+ */
+function backfillReticulumIsContactFromLastHeard(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'reticulum_destinations')) return;
+  if (!getColumnNames(db, 'reticulum_destinations').has('is_contact')) return;
+  db.prepare(
+    `UPDATE reticulum_destinations
+     SET is_contact = 1
+     WHERE last_heard IS NOT NULL
+       AND (is_contact IS NULL OR is_contact = 0)`,
+  ).run();
 }
 
 function structuralUpgrades(db: NodeSqliteDB): void {
@@ -1048,6 +1073,10 @@ export function runSchemaUpgrade(db: NodeSqliteDB): void {
   try {
     ensureTablesOnly(db);
     ensureColumns(db);
+    // One-time: legacy last_heard-only rows were Contacts before the History split.
+    if (cur < 48) {
+      backfillReticulumIsContactFromLastHeard(db);
+    }
     structuralUpgrades(db);
     ensureIndexes(db);
     seedAppSettings(db);

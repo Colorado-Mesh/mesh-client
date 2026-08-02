@@ -3086,7 +3086,6 @@
     "saveContact": "Enregistrer comme contact",
     "removeContact": "Enlever les lentilles de contact",
     "removeContactConfirmTitle": "Enlever les lentilles de contact",
-    "removeContactConfirmBody": "Cela supprime le contact de votre liste. L'historique du chat est conservé ; leur envoyer à nouveau un message ajoutera à nouveau le contact.",
     "probeOk": "Sonde OK — chemin accessible.",
     "blockContact": "Bloquer contact",
     "unblockContact": "Débloquer contact",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Partager le contact via",
     "shareContactQrAria": "Afficher le code QR pour ce contact",
     "verifiedRowAria": "Contact vérifié",
-    "renameFailed": "Impossible d'enregistrer le nom d'affichage."
+    "renameFailed": "Impossible d'enregistrer le nom d'affichage.",
+    "removeContactConfirmBody": "Cela supprime le contact de votre liste enregistrée. Les messages de chat restent ; ils restent dans l'historique si vous leur avez envoyé un message."
   },
   "peerGraph": {
     "title": "Graphique de communication par les pairs",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Basculer en favori",
     "openChat": "Ouvrir le Chat",
     "emptyPeers": "Aucun pair n'a encore été découvert. Envoyez une annonce ou attendez le trafic réseau.",
-    "emptyContacts": "Aucun contact pour le moment — envoyez un message à un pair pour l'ajouter ici.",
     "groupFilterAria": "Filtrer les contacts par groupe",
     "allGroups": "Tous les groupes",
     "manageGroups": "Gestion des groupes",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "Expiré",
     "pathsEmpty": "Aucun emplacement de chemin pour le moment. Demandez un chemin ou attendez une annonce.",
     "pathsLoadFailed": "Échec du chargement des emplacements de chemin.",
-    "pathsPinFailed": "Échec de la mise à jour de la préférence moyenne pour cet homologue."
+    "pathsPinFailed": "Échec de la mise à jour de la préférence moyenne pour cet homologue.",
+    "tabHistory": "Historique",
+    "emptyHistory": "Pas encore d'historique des messages — envoyez ou recevez un message LXMF pour voir les pairs ici.",
+    "emptyContacts": "Aucun contact enregistré pour le moment — ouvrez un homologue et choisissez Enregistrer en tant que contact."
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",

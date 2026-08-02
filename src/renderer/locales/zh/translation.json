@@ -3086,7 +3086,6 @@
     "saveContact": "另存为联系人",
     "removeContact": "移除联系人",
     "removeContactConfirmTitle": "移除联系人",
-    "removeContactConfirmBody": "这会将联系人从您的列表中删除。会保留聊天记录；再次向他们发送消息将重新添加工单。",
     "probeOk": "探测正常—路径可达。",
     "blockContact": "阻止联系人",
     "unblockContact": "取消阻止联系人",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "分享联系人",
     "shareContactQrAria": "显示此联系人的二维码",
     "verifiedRowAria": "已验证联系人48",
-    "renameFailed": "无法保存显示名称。"
+    "renameFailed": "无法保存显示名称。",
+    "removeContactConfirmBody": "此操作会将联系人从保存的列表中删除。聊天消息会保留；如果您向其发送消息，它们将保留在历史记录中。"
   },
   "peerGraph": {
     "title": "同行沟通图表",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "切换收藏夹",
     "openChat": "打开聊天",
     "emptyPeers": "尚未发现同行。发送公告或等待网络流量。",
-    "emptyContacts": "还没有联系人—向同行发送消息以在此处添加他们。",
     "groupFilterAria": "按组筛选联系人",
     "allGroups": "所有群组",
     "manageGroups": "管理组",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "已失效",
     "pathsEmpty": "还没有路径插槽。请求路径或等待公告。",
     "pathsLoadFailed": "加载路径插槽失败。",
-    "pathsPinFailed": "无法更新此对等方的媒体首选项。"
+    "pathsPinFailed": "无法更新此对等方的媒体首选项。",
+    "tabHistory": "历史",
+    "emptyHistory": "尚无消息历史记录—发送或接收LXMF消息以在此处查看同行。",
+    "emptyContacts": "还没有保存的联系人—打开对等点并选择“另存为联系人”。"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",

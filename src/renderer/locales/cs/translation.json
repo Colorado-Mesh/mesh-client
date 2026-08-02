@@ -3088,7 +3088,6 @@
     "saveContact": "Uložit jako kontakt",
     "removeContact": "Odstraňte kontaktní",
     "removeContactConfirmTitle": "Odstraňte kontaktní",
-    "removeContactConfirmBody": "Tím se kontakt odstraní ze seznamu. Historie chatu je zachována; opětovné zaslání zprávy kontakt znovu přidá.",
     "probeOk": "Sonda OK — cesta dosažitelná.",
     "blockContact": "Zablokovat kontakt",
     "unblockContact": "Odblokovat kontakt",
@@ -3102,7 +3101,8 @@
     "shareContactQr": "Sdílet kontakt",
     "shareContactQrAria": "Zobrazit QR kód pro tento kontakt",
     "verifiedRowAria": "Kontakt ověřen",
-    "renameFailed": "Zobrazovaný název nelze uložit."
+    "renameFailed": "Zobrazovaný název nelze uložit.",
+    "removeContactConfirmBody": "Tím odeberete kontakt ze svého uloženého seznamu. Zprávy chatu zůstávají v Historii, pokud jsi jim poslal/a zprávu."
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",
@@ -3142,7 +3142,6 @@
     "toggleFavorite": "Přepnout oblíbené",
     "openChat": "Otevřít chat",
     "emptyPeers": "Zatím nebyly objeveny žádné protějšky. Odešlete oznámení nebo počkejte na síťový provoz.",
-    "emptyContacts": "Zatím žádné kontakty — pošlete zprávu kolegovi, aby je sem přidal.",
     "groupFilterAria": "Filtrovat kontakty podle skupiny",
     "allGroups": "Všechny skupiny",
     "manageGroups": "Spravovat skupiny",
@@ -3176,7 +3175,10 @@
     "pathsExpired": "Platnost vypršela",
     "pathsEmpty": "Zatím žádné sloty pro cestu. Požádejte o cestu nebo počkejte na oznámení.",
     "pathsLoadFailed": "Načtení slotů cesty se nezdařilo.",
-    "pathsPinFailed": "Aktualizace předvolby média pro tohoto protějšku se nezdařila."
+    "pathsPinFailed": "Aktualizace předvolby média pro tohoto protějšku se nezdařila.",
+    "tabHistory": "Dějepis",
+    "emptyHistory": "Zatím žádná historie zpráv — odešlete nebo přijměte zprávu LXMF, abyste zde viděli kolegy.",
+    "emptyContacts": "Zatím žádné uložené kontakty — otevřete kolegu a zvolte Uložit jako kontakt."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",

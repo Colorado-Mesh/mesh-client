@@ -3086,7 +3086,6 @@
     "saveContact": "Simpan sebagai kontak",
     "removeContact": "Hapus kontak",
     "removeContactConfirmTitle": "Hapus kontak",
-    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar Anda. Riwayat obrolan disimpan; mengirim pesan lagi kepada mereka akan menambahkan kembali kontak.",
     "probeOk": "Probe OK — jalur dapat dijangkau.",
     "blockContact": "Blokir kontak",
     "unblockContact": "Buka blokir kontak",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Bagikan kontak QR",
     "shareContactQrAria": "Tampilkan kode QR untuk kontak ini",
     "verifiedRowAria": "Kontak terverifikasi",
-    "renameFailed": "Tidak dapat menyimpan nama tampilan."
+    "renameFailed": "Tidak dapat menyimpan nama tampilan.",
+    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar tersimpan Anda. Pesan obrolan tetap ada; pesan tersebut akan tetap ada di Riwayat jika Anda mengirimkannya melalui pesan."
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Alihkan favorit",
     "openChat": "Buka obrolan",
     "emptyPeers": "Belum ada teman sebaya yang ditemukan. Kirim pengumuman atau tunggu lalu lintas jaringan.",
-    "emptyContacts": "Belum ada kontak — kirimkan pesan kepada rekan untuk menambahkannya di sini.",
     "groupFilterAria": "Filter kontak menurut grup",
     "allGroups": "Semua groups",
     "manageGroups": "Kelola Grup",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "Kedaluwarsa",
     "pathsEmpty": "Belum ada slot jalur. Minta jalur atau tunggu pengumuman.",
     "pathsLoadFailed": "Gagal memuat slot jalur.",
-    "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini."
+    "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini.",
+    "tabHistory": "Riwayat",
+    "emptyHistory": "Belum ada riwayat pesan — kirim atau terima pesan LXMF untuk melihat rekan - rekan di sini.",
+    "emptyContacts": "Belum ada kontak tersimpan — buka rekan dan pilih Simpan sebagai kontak."
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

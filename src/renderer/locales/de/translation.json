@@ -3086,7 +3086,6 @@
     "saveContact": "Als Kontakt speichern",
     "removeContact": "Vorhandene Kontaktlinsen entfernen,",
     "removeContactConfirmTitle": "Vorhandene Kontaktlinsen entfernen,",
-    "removeContactConfirmBody": "Dadurch wird der Kontakt aus Ihrer Liste entfernt. Der Chat-Verlauf wird beibehalten. Wenn Sie sie erneut benachrichtigen, wird der Kontakt erneut hinzugefügt.",
     "probeOk": "Sonde OK — Weg erreichbar.",
     "serviceBadge": "{{service}}",
     "blockContact": "Kontakt blockieren",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Kontakt teilen",
     "shareContactQrAria": "QR-Code für diesen Kontakt anzeigen",
     "verifiedRowAria": "Kontakt verifiziert",
-    "renameFailed": "Der Anzeigename konnte nicht gespeichert werden."
+    "renameFailed": "Der Anzeigename konnte nicht gespeichert werden.",
+    "removeContactConfirmBody": "Dadurch wird der Kontakt aus Ihrer gespeicherten Liste entfernt. Chat-Nachrichten bleiben bestehen; sie bleiben im Verlauf, wenn Sie ihnen eine Nachricht gesendet haben."
   },
   "peerGraph": {
     "title": "Peer-Kommunikationsgrafik",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Ihren Favoriten hinzufügen",
     "openChat": "Chat öffnen",
     "emptyPeers": "Noch keine Peers entdeckt. Senden Sie eine Ansage oder warten Sie auf den Netzwerkverkehr.",
-    "emptyContacts": "Noch keine Kontakte — senden Sie eine Nachricht an einen Peer, um ihn hier hinzuzufügen.",
     "groupFilterAria": "Kontakte nach Gruppe filtern",
     "allGroups": "Alle Gruppen",
     "manageGroups": "Gruppen verwalten",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "Abgelaufen",
     "pathsEmpty": "Noch keine Pfad-Slots. Fordern Sie einen Pfad an oder warten Sie auf eine Ankündigung.",
     "pathsLoadFailed": "Pfad-Slots konnten nicht geladen werden.",
-    "pathsPinFailed": "Die Medieneinstellung für diesen Peer konnte nicht aktualisiert werden."
+    "pathsPinFailed": "Die Medieneinstellung für diesen Peer konnte nicht aktualisiert werden.",
+    "tabHistory": "Geschichte",
+    "emptyHistory": "Noch kein Nachrichtenverlauf — senden oder empfangen Sie eine LXMF-Nachricht, um Kollegen hier zu sehen.",
+    "emptyContacts": "Noch keine gespeicherten Kontakte — öffnen Sie einen Peer und wählen Sie Als Kontakt speichern."
   },
   "radioPanel": {
     "offloadedContacts": "Entladen von {{count}} Kontakten in die Datenbank.",

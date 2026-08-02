@@ -93,6 +93,7 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
           destination_hash: PEER_HASH,
           display_name: 'Test Peer',
           last_heard: expect.any(Number),
+          is_contact: true,
         }),
       );
     });

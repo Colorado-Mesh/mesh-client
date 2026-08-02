@@ -3086,7 +3086,6 @@
     "saveContact": "Salvar como contato",
     "removeContact": "Remover contato",
     "removeContactConfirmTitle": "Remover contato",
-    "removeContactConfirmBody": "Isso remove o contato da sua lista. O histórico de bate-papo é mantido; enviar mensagens novamente adicionará novamente o contato.",
     "probeOk": "Sonda OK — caminho alcançável.",
     "blockContact": "Bloquear contacto",
     "unblockContact": "Desbloquear contacto",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Partilhar contacto",
     "shareContactQrAria": "Mostrar código QR para este contato",
     "verifiedRowAria": "Contato verificado",
-    "renameFailed": "Não foi possível salvar o nome de exibição."
+    "renameFailed": "Não foi possível salvar o nome de exibição.",
+    "removeContactConfirmBody": "Isso remove o contato da sua lista salva. As mensagens de bate-papo permanecem; elas permanecem no Histórico se você as enviou."
   },
   "peerGraph": {
     "title": "Gráfico de Comunicação entre Pares",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Alternar favorito",
     "openChat": "Abrir bate-papo",
     "emptyPeers": "Nenhum colega descoberto ainda. Envie um anúncio ou aguarde o tráfego da rede.",
-    "emptyContacts": "Ainda não há contatos — envie uma mensagem a um colega para adicioná-los aqui.",
     "groupFilterAria": "Filtrar contatos por grupo",
     "allGroups": "Todos os grupos",
     "manageGroups": "Gerenciar grupos",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "Expirado",
     "pathsEmpty": "Ainda não há slots de caminho. Solicite um caminho ou aguarde um anúncio.",
     "pathsLoadFailed": "Falha ao carregar slots de caminho.",
-    "pathsPinFailed": "Falha ao atualizar a preferência do meio para este par."
+    "pathsPinFailed": "Falha ao atualizar a preferência do meio para este par.",
+    "tabHistory": "Histórico",
+    "emptyHistory": "Ainda não há histórico de mensagens — envie ou receba uma mensagem LXMF para ver os colegas aqui.",
+    "emptyContacts": "Ainda não há contatos salvos — abra um ponto e escolha Salvar como contato."
   },
   "radioPanel": {
     "offloadedContacts": "Transferiu contatos {{count}} para o banco de dados.",

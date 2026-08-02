@@ -217,34 +217,61 @@ export async function persistReticulumMessageToDb(
   }
 }
 
+function reticulumHistoryPeerHash(p: ReticulumLxmfPayload): string | undefined {
+  return p.direction === 'outbound' ? p.to_hash : p.sender_hash;
+}
+
+function reticulumHistoryDisplayName(
+  p: ReticulumLxmfPayload,
+  peerHash: string,
+): string | undefined {
+  if (p.direction === 'outbound') {
+    const peer = useReticulumPeerStore.getState().getPeer(peerHash);
+    const candidate = peer?.custom_display_name?.trim() || peer?.display_name?.trim() || undefined;
+    if (candidate && !isReticulumHashPrefixAlias(peerHash, candidate)) {
+      return sanitizeReticulumDisplayName(candidate) ?? undefined;
+    }
+    return undefined;
+  }
+  return reticulumContactDisplayNameFromPayload(p);
+}
+
 /**
- * Persist a peer as a contact destination (explicit Save as contact / helpers).
- * Messaging must NOT call this — contacts are manual-only.
- * Inbound-shaped payloads → sender; outbound → recipient (`to_hash`).
+ * Stamp History (`last_heard`) for inbound sender / outbound recipient.
+ * Does NOT set `is_contact` — Contacts are Save-as-contact only.
+ */
+export async function persistReticulumHistoryFromPayload(p: ReticulumLxmfPayload): Promise<void> {
+  const peerHash = reticulumHistoryPeerHash(p);
+  if (!peerHash) return;
+  const displayName = reticulumHistoryDisplayName(p, peerHash);
+  try {
+    await window.electronAPI.db.upsertReticulumDestination({
+      destination_hash: peerHash,
+      ...(displayName ? { display_name: displayName } : {}),
+      last_heard: Math.floor((p.timestamp ?? Date.now()) / 1000),
+    });
+  } catch (e) {
+    console.warn('[reticulumIngest] upsert history ' + errLikeToLogString(e));
+  }
+}
+
+/**
+ * Persist an explicit saved contact (`is_contact` + `last_heard`).
+ * Messaging must NOT call this — use {@link persistReticulumHistoryFromPayload}.
  */
 export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload): Promise<void> {
-  const isOutbound = p.direction === 'outbound';
-  const contactHash = isOutbound ? p.to_hash : p.sender_hash;
-  if (!contactHash) return;
+  const peerHash = reticulumHistoryPeerHash(p);
+  if (!peerHash) return;
 
-  useReticulumPeerStore.getState().restoreDismissedContact(contactHash);
-
-  let displayName: string | undefined;
-  if (isOutbound) {
-    const peer = useReticulumPeerStore.getState().getPeer(contactHash);
-    const candidate = peer?.custom_display_name?.trim() || peer?.display_name?.trim() || undefined;
-    if (candidate && !isReticulumHashPrefixAlias(contactHash, candidate)) {
-      displayName = sanitizeReticulumDisplayName(candidate) ?? undefined;
-    }
-  } else {
-    displayName = reticulumContactDisplayNameFromPayload(p);
-  }
+  useReticulumPeerStore.getState().restoreDismissedContact(peerHash);
+  const displayName = reticulumHistoryDisplayName(p, peerHash);
 
   try {
     await window.electronAPI.db.upsertReticulumDestination({
-      destination_hash: contactHash,
+      destination_hash: peerHash,
       ...(displayName ? { display_name: displayName } : {}),
       last_heard: Math.floor((p.timestamp ?? Date.now()) / 1000),
+      is_contact: true,
     });
   } catch (e) {
     console.warn('[reticulumIngest] upsert contact ' + errLikeToLogString(e));
@@ -279,7 +306,8 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
   void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);
-  // Contacts are manual-only (peer detail Save as contact); do not upsert on LXMF.
+  // History stamp only — Contacts require explicit Save as contact.
+  void persistReticulumHistoryFromPayload(p);
   return true;
 }
 

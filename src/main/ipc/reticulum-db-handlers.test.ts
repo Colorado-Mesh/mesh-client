@@ -106,9 +106,13 @@ describe('reticulum-db-handlers SQL contracts', () => {
     expect(source).toContain('.replace(/[\\r\\n]+/g');
     expect(source).toContain('canonicalizeReticulumDestinationHash(rawHash)');
     expect(source).toContain('WHEN ? = 1 THEN excluded.favorited');
+    expect(source).toContain('WHEN ? = 1 THEN excluded.is_contact');
     // Age prune must use Unix-seconds cutoff (destinations store seconds, not ms).
     expect(source).toMatch(
       /deleteReticulumDestinationsByAge[\s\S]*?Math\.floor\(Date\.now\(\) \/ 1000\) - safeDays \* 86_400/,
+    );
+    expect(source).toMatch(
+      /deleteReticulumDestinationsByAge[\s\S]*?is_contact IS NULL OR is_contact = 0/,
     );
   });
 });
@@ -366,6 +370,71 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.favorited).toBe(1);
     expect(row.icon_name).toBe('heart');
     expect(row.icon_color).toBe('cyan');
+  });
+
+  it('upsertReticulumDestination history stamp does not clear is_contact', () => {
+    const upsert = handlers.get('db:upsertReticulumDestination');
+    const hash = 'cafebabedeadbeef0123456789abcdef';
+    upsert?.(event, {
+      destination_hash: hash,
+      display_name: 'Saved',
+      is_contact: true,
+      last_heard: 1_700_000_000,
+    });
+    upsert?.(event, {
+      destination_hash: hash,
+      last_heard: 1_700_000_100,
+    });
+    const row = db!
+      .prepareOnce('SELECT * FROM reticulum_destinations WHERE destination_hash = ?')
+      .get(hash) as Record<string, unknown>;
+    expect(row.is_contact).toBe(1);
+    expect(row.last_heard).toBe(1_700_000_100);
+  });
+
+  it('deleteReticulumDestinationsByAge keeps is_contact rows', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    db!
+      .prepareOnce(
+        `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, is_contact)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run('ff'.repeat(16), 'Contact', nowSec - 40 * 86_400, 0, 1);
+    db!
+      .prepareOnce(
+        `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, is_contact)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run('ee'.repeat(16), 'History', nowSec - 40 * 86_400, 0, 0);
+    const result = handlers.get('db:deleteReticulumDestinationsByAge')?.(event, 30) as {
+      changes: number;
+    };
+    expect(result.changes).toBe(1);
+    const remaining = db!
+      .prepareOnce('SELECT destination_hash FROM reticulum_destinations')
+      .all() as { destination_hash: string }[];
+    expect(remaining.map((r) => r.destination_hash)).toEqual(['ff'.repeat(16)]);
+  });
+
+  it('clearReticulumContactDestinations clears is_contact and keeps last_heard', () => {
+    const upsert = handlers.get('db:upsertReticulumDestination');
+    const hash = 'aabbccddeeff00112233445566778899';
+    upsert?.(event, {
+      destination_hash: hash,
+      last_heard: 1_700_000_000,
+      is_contact: true,
+    });
+    const result = handlers.get('db:clearReticulumContactDestinations')?.(event) as {
+      changes: number;
+    };
+    expect(result.changes).toBe(1);
+    const row = db!
+      .prepareOnce(
+        'SELECT is_contact, last_heard FROM reticulum_destinations WHERE destination_hash = ?',
+      )
+      .get(hash) as { is_contact: number; last_heard: number };
+    expect(row.is_contact).toBe(0);
+    expect(row.last_heard).toBe(1_700_000_000);
   });
 
   it('upsertReticulumDestination rejects stripped/malformed hashes', () => {

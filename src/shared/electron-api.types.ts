@@ -388,6 +388,8 @@ export interface ElectronAPI {
       display_name?: string | null;
       last_heard?: number | null;
       favorited?: boolean | number | null;
+      /** Explicit saved contact (Contacts tab). Omitted patches must not clear. */
+      is_contact?: boolean | number | null;
       icon_name?: string | null;
       icon_color?: string | null;
     }) => Promise<void>;

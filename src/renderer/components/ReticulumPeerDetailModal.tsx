@@ -323,6 +323,7 @@ export default function ReticulumPeerDetailModal({
         destination_hash: key,
         display_name: label,
         last_heard: Math.floor(Date.now() / 1000),
+        is_contact: true,
         favorited: Boolean(peer.favorited),
       });
       registerReticulumDestinationHash(reticulumHashToNodeId(key), key);

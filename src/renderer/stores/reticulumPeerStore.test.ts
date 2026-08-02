@@ -70,6 +70,7 @@ describe('capReticulumPeerMaps', () => {
     const { peers: cappedPeers, contacts: cappedContacts } = capReticulumPeerMaps(
       peers,
       contacts,
+      new Map(),
       2,
     );
     expect(cappedPeers.size).toBe(2);
@@ -110,12 +111,14 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peers.get('abc123')?.favorited).toBe(true);
     expect(peers.get('abc123')?.custom_display_name).toBe('Custom A');
     expect(contacts.has('abc123')).toBe(false);
+    // Wire LXMF contacts are still saved contacts (+ history when last_heard set).
     expect(contacts.get('def456')?.last_heard).toBe(1000);
+    expect(contacts.get('def456')?.is_contact).toBe(true);
     expect(peers.has('def456')).toBe(true);
   });
 
   it('does not promote favorited path peers without last_heard into contacts', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [
         {
           destination_hash: 'aabb01',
@@ -136,10 +139,38 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peers.get('aabb01')?.favorited).toBe(true);
     expect(peers.get('aabb01')?.custom_display_name).toBe('Renamed Peer');
     expect(contacts.has('aabb01')).toBe(false);
+    expect(history.has('aabb01')).toBe(false);
   });
 
-  it('promotes SQLite rows with last_heard into contacts (Save Contact)', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+  it('promotes SQLite last_heard into History without is_contact', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
+      [
+        {
+          destination_hash: 'aabb02',
+          display_name: 'Announce Name',
+          hops: 3,
+        },
+      ],
+      [],
+      [
+        {
+          destination_hash: 'aabb02',
+          display_name: 'Messaged Label',
+          last_heard: 1_700_000_000,
+          favorited: 0,
+        },
+      ],
+    );
+
+    expect(contacts.has('aabb02')).toBe(false);
+    expect(history.get('aabb02')?.last_heard).toBe(1_700_000_000);
+    expect(history.get('aabb02')?.custom_display_name).toBe('Messaged Label');
+    expect(history.get('aabb02')?.hops).toBe(3);
+    expect(peers.has('aabb02')).toBe(true);
+  });
+
+  it('promotes SQLite is_contact into Contacts (Save Contact)', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [
         {
           destination_hash: 'aabb02',
@@ -153,33 +184,36 @@ describe('mergeReticulumPeerMaps', () => {
           destination_hash: 'aabb02',
           display_name: 'Saved Label',
           last_heard: 1_700_000_000,
+          is_contact: 1,
           favorited: 0,
         },
       ],
     );
 
     expect(contacts.get('aabb02')?.last_heard).toBe(1_700_000_000);
+    expect(contacts.get('aabb02')?.is_contact).toBe(true);
     expect(contacts.get('aabb02')?.custom_display_name).toBe('Saved Label');
-    expect(contacts.get('aabb02')?.hops).toBe(3);
+    expect(history.get('aabb02')?.last_heard).toBe(1_700_000_000);
     expect(peers.has('aabb02')).toBe(true);
   });
 
-  it('promotes DB-only last_heard rows into contacts when peer is absent', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+  it('promotes DB-only last_heard rows into History when peer is absent', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [],
       [],
       [
         {
           destination_hash: 'aabb03',
-          display_name: 'Offline Contact',
+          display_name: 'Offline History',
           last_heard: 1_700_000_100,
           favorited: 1,
         },
       ],
     );
 
-    expect(contacts.get('aabb03')?.last_heard).toBe(1_700_000_100);
-    expect(contacts.get('aabb03')?.favorited).toBe(true);
+    expect(contacts.has('aabb03')).toBe(false);
+    expect(history.get('aabb03')?.last_heard).toBe(1_700_000_100);
+    expect(history.get('aabb03')?.favorited).toBe(true);
     expect(peers.has('aabb03')).toBe(true);
   });
 

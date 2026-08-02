@@ -3086,7 +3086,6 @@
     "saveContact": "Salva come contatto",
     "removeContact": "Togliere le eventuali lenti a contatto,",
     "removeContactConfirmTitle": "Togliere le eventuali lenti a contatto,",
-    "removeContactConfirmBody": "In questo modo il contatto verrà rimosso dall'elenco. La cronologia chat viene mantenuta; inviando nuovamente un messaggio, si aggiungerà nuovamente il contatto.",
     "probeOk": "Sonda OK — percorso raggiungibile.",
     "blockContact": "Blocca contatto",
     "unblockContact": "Sblocca contatto",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Condividi QR contatto",
     "shareContactQrAria": "Mostra il codice QR per questo contatto",
     "verifiedRowAria": "Contatto verificato",
-    "renameFailed": "Impossibile salvare il nome visualizzato."
+    "renameFailed": "Impossibile salvare il nome visualizzato.",
+    "removeContactConfirmBody": "Questo rimuove il contatto dall'elenco salvato. I messaggi di chat rimangono; rimangono nella Cronologia se li hai inviati."
   },
   "peerGraph": {
     "title": "Grafico di comunicazione peer",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Attiva/disattiva preferiti",
     "openChat": "Apri chat",
     "emptyPeers": "Nessun coetaneo ancora scoperto. Invia un annuncio o attendi il traffico di rete.",
-    "emptyContacts": "Ancora nessun contatto — invia un messaggio a un collega per aggiungerli qui.",
     "groupFilterAria": "Filtra contatti per gruppo",
     "allGroups": "Tutti i gruppi",
     "manageGroups": "Gestisci gruppi",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "scaduta",
     "pathsEmpty": "Ancora nessuno slot di percorso. Richiedi un percorso o attendi un annuncio.",
     "pathsLoadFailed": "Impossibile caricare gli slot del percorso.",
-    "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer."
+    "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer.",
+    "tabHistory": "Storia",
+    "emptyHistory": "Ancora nessuna cronologia dei messaggi: invia o ricevi un messaggio LXMF per vedere i colleghi qui.",
+    "emptyContacts": "Ancora nessun contatto salvato — apri un peer e scegli Salva come contatto."
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",

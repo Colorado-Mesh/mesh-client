@@ -3086,7 +3086,6 @@
     "saveContact": "連絡用として保存）",
     "removeContact": "連絡先を削除",
     "removeContactConfirmTitle": "連絡先を削除",
-    "removeContactConfirmBody": "これにより、連絡先がリストから削除されます。チャット履歴は保持されます。再度メッセージを送信すると、連絡先が再度追加されます。",
     "probeOk": "プローブOK —到達可能なパス。",
     "blockContact": "連絡先をブロックする",
     "unblockContact": "連絡先のブロックを解除する",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "連絡先QRを共有",
     "shareContactQrAria": "この連絡先のQRコードを表示",
     "verifiedRowAria": "連絡先が認証されました",
-    "renameFailed": "表示名を保存できませんでした。"
+    "renameFailed": "表示名を保存できませんでした。",
+    "removeContactConfirmBody": "これにより、保存したリストから連絡先が削除されます。チャットメッセージは残ります。メッセージを送信した場合は履歴に残ります。"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "お気に入りを切り替える",
     "openChat": "チャットを開始",
     "emptyPeers": "まだピアが見つかりません。アナウンスを送信するか、ネットワークトラフィックを待ちます。",
-    "emptyContacts": "連絡先はまだありません。ここに追加するには、同僚にメッセージを送信してください。",
     "groupFilterAria": "グループで連絡先を絞り込む",
     "allGroups": "すべてのグループ",
     "manageGroups": "グループを管理",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "有効期限切れ",
     "pathsEmpty": "パススロットはまだありません。パスをリクエストするか、アナウンスを待ちます。",
     "pathsLoadFailed": "パススロットの読み込みに失敗しました。",
-    "pathsPinFailed": "このピアのメディア設定を更新できませんでした。"
+    "pathsPinFailed": "このピアのメディア設定を更新できませんでした。",
+    "tabHistory": "歴史",
+    "emptyHistory": "メッセージ履歴はまだありません—ここでピアを見るためにLXMFメッセージを送受信します。",
+    "emptyContacts": "保存された連絡先はまだありません。ピアを開き、[連絡先として保存]を選択します。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",

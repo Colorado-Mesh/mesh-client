@@ -3086,7 +3086,6 @@
     "saveContact": "Kişi olarak kaydet",
     "removeContact": "Yapılabiliyorsa",
     "removeContactConfirmTitle": "Yapılabiliyorsa",
-    "removeContactConfirmBody": "Bu, kişiyi listenizden kaldırır. Sohbet geçmişi tutulur; onlara tekrar mesaj göndermek kişiyi yeniden ekleyecektir.",
     "probeOk": "Prob tamam — yola ulaşılabilir.",
     "blockContact": "Kişiyi & Engelle",
     "unblockContact": "& Kişinin Engellemesini Kaldır",
@@ -3100,7 +3099,8 @@
     "shareContactQr": "Kişi QR'sini paylaşın",
     "shareContactQrAria": "Bu kişiye ait QR kodunu göster",
     "verifiedRowAria": "Kişi doğrulandı",
-    "renameFailed": "Görünen ad kaydedilemedi."
+    "renameFailed": "Görünen ad kaydedilemedi.",
+    "removeContactConfirmBody": "Bu, kişiyi kayıtlı listenizden kaldırır. Sohbet mesajları kalır; mesaj gönderdiyseniz Geçmiş'te kalır."
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",
@@ -3140,7 +3140,6 @@
     "toggleFavorite": "Favorileri aç/kapat",
     "openChat": "Sohbeti Açın",
     "emptyPeers": "Henüz hiçbir akran keşfedilmedi. Bir duyuru gönderin veya ağ trafiğini bekleyin.",
-    "emptyContacts": "Henüz kişi yok — buraya eklemek için bir arkadaşınıza mesaj gönderin.",
     "groupFilterAria": "Kişileri gruba göre filtrele",
     "allGroups": "Tüm gruplar",
     "manageGroups": "Grup Yönetimi",
@@ -3174,7 +3173,10 @@
     "pathsExpired": "Süresi doldu",
     "pathsEmpty": "Henüz yol aralığı yok. Bir yol isteyin veya bir duyuru bekleyin.",
     "pathsLoadFailed": "Yol yuvaları yüklenemedi.",
-    "pathsPinFailed": "Bu eş için ortam tercihi güncellenemedi."
+    "pathsPinFailed": "Bu eş için ortam tercihi güncellenemedi.",
+    "tabHistory": "Tarih",
+    "emptyHistory": "Henüz mesaj geçmişi yok — akranları burada görmek için bir LXMF mesajı gönderin veya alın.",
+    "emptyContacts": "Henüz kayıtlı kişi yok — bir eş açın ve Kişi olarak kaydet'i seçin."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",
