@@ -48,6 +48,10 @@ use super::nomad_timeouts;
 use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, wire_packet_from_tap,
 };
+use super::path_failover::{
+    self, MAX_VIA_FAILOVERS, PathSlotCandidate, active_via_hash_from_slots, live_interface_names,
+    push_tried_iface, remaining_live_ifaces, select_unblocked_slot, via_prefix,
+};
 use super::path_medium::{self, PathMediumPreferenceSetting, PathMediumSetting};
 use super::path_speed;
 use super::persistence::PersistedState;
@@ -66,7 +70,7 @@ use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
     resolve_lxmf_sent_via,
 };
-use lxmf_outbound::LxmfOutboundDriver;
+use lxmf_outbound::{LxmfOutboundDriver, PathTableRoute};
 
 /// Settle window for PacketTap Tx correlation after LXMF enqueue.
 const LXMF_EGRESS_TAP_SETTLE_MS: u64 = 1500;
@@ -867,6 +871,8 @@ impl LiveBridge {
             raw_error: None,
             elapsed_ms: None,
             tried_interfaces: None,
+            failover_rounds: None,
+            last_iface: None,
         })?;
         // Prefer path-peer cache (maintenance refreshes every ~2s). Avoid a synchronous
         // GetPathTable here — that control query alone can stall TCP page loads for seconds.
@@ -969,6 +975,8 @@ impl LiveBridge {
                         raw_error: Some(format!("path ensure kind={kind} (no cached path)")),
                         elapsed_ms: Some(elapsed_ms_since(query_started)),
                         tried_interfaces: None,
+                        failover_rounds: None,
+                        last_iface: None,
                     });
                 }
             }
@@ -995,6 +1003,8 @@ impl LiveBridge {
                 raw_error: None,
                 elapsed_ms: Some(elapsed_ms_since(query_started)),
                 tried_interfaces: None,
+                failover_rounds: None,
+                last_iface: None,
             });
         }
         let mut link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
@@ -1031,6 +1041,7 @@ impl LiveBridge {
 
         let mut current_iface = path_iface.clone();
         let mut current_via = active_via_hash_from_slots(&path_slots_snapshot);
+        let live_ifaces = live_interface_names(interfaces);
         // One generation for this page request + all via failovers. Bumping per
         // Link attempt would cancel a newer request when the older one retries.
         let link_gen = self
@@ -1045,7 +1056,7 @@ impl LiveBridge {
             serde_json::json!({
                 "round": 0,
                 "iface": current_iface,
-                "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                "via_prefix": via_prefix(current_via.as_deref()),
                 "hops": hops,
                 "timeout_secs": timeout_secs,
             }),
@@ -1067,9 +1078,11 @@ impl LiveBridge {
             .await;
 
         // Dead next-hops often reappear on another local iface (same via_hash).
-        // Suppress the failed iface, DropAllVia that hop, and retry on a truly
-        // different via — up to two failovers inside one page fetch.
+        // Suppress the failed iface, DropAllVia that hop, promote ranked backups
+        // / other live hubs, and retry — up to MAX_VIA_FAILOVERS inside one fetch.
         let mut failover_round: u8 = 0;
+        let mut tried_interfaces: Vec<String> = Vec::new();
+        push_tried_iface(&mut tried_interfaces, current_iface.as_deref());
         let mut blocked_ifaces: Vec<String> = Vec::new();
         let mut blocked_vias: Vec<String> = Vec::new();
         if let Some(iface) = current_iface.clone() {
@@ -1082,7 +1095,7 @@ impl LiveBridge {
             .as_ref()
             .err()
             .is_some_and(|e| e.code == "link_timeout")
-            && failover_round < NOMAD_MAX_VIA_FAILOVERS
+            && failover_round < MAX_VIA_FAILOVERS
         {
             if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
                 break;
@@ -1096,7 +1109,7 @@ impl LiveBridge {
                 serde_json::json!({
                     "round": failover_round,
                     "iface": current_iface,
-                    "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                    "via_prefix": via_prefix(current_via.as_deref()),
                     "hops": hops,
                 }),
             );
@@ -1108,11 +1121,15 @@ impl LiveBridge {
                 serde_json::json!({
                     "round": failover_round,
                     "iface": current_iface,
-                    "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                    "via_prefix": via_prefix(current_via.as_deref()),
                 }),
             );
-            let Some((failover_hops, failover_iface, failover_via)) = self
-                .nomad_suppress_via_and_rediscover(hash_hex, &blocked_ifaces, &blocked_vias)
+            let Some(PathSlotCandidate {
+                hops: failover_hops,
+                iface: failover_iface,
+                via: failover_via,
+            }) = self
+                .suppress_via_and_rediscover(hash_hex, &blocked_ifaces, &blocked_vias, &live_ifaces)
                 .await
             else {
                 self.emit_nomad_page_progress(
@@ -1123,7 +1140,7 @@ impl LiveBridge {
                     serde_json::json!({
                         "round": failover_round,
                         "iface": current_iface,
-                        "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                        "via_prefix": via_prefix(current_via.as_deref()),
                     }),
                 );
                 break;
@@ -1131,6 +1148,7 @@ impl LiveBridge {
             if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
                 break;
             }
+            push_tried_iface(&mut tried_interfaces, failover_iface.as_deref());
             if let Some(iface) = failover_iface.clone() {
                 blocked_ifaces.push(iface);
             }
@@ -1157,7 +1175,7 @@ impl LiveBridge {
                 serde_json::json!({
                     "round": failover_round,
                     "iface": current_iface,
-                    "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                    "via_prefix": via_prefix(current_via.as_deref()),
                     "hops": failover_hops,
                     "timeout_secs": failover_timeout,
                 }),
@@ -1187,9 +1205,13 @@ impl LiveBridge {
         }
 
         if let Err(ref mut err) = result {
-            if !blocked_ifaces.is_empty() {
-                err.tried_interfaces = Some(blocked_ifaces.clone());
+            if !tried_interfaces.is_empty() {
+                err.tried_interfaces = Some(tried_interfaces);
             }
+            if failover_round > 0 {
+                err.failover_rounds = Some(failover_round);
+            }
+            err.last_iface = current_iface.clone();
         }
 
         let elapsed_ms = elapsed_ms_since(query_started);
@@ -1240,6 +1262,8 @@ impl LiveBridge {
                 raw_error: None,
                 elapsed_ms: None,
                 tried_interfaces: None,
+                failover_rounds: None,
+                last_iface: None,
             });
         }
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
@@ -1257,6 +1281,8 @@ impl LiveBridge {
                     raw_error: None,
                     elapsed_ms: None,
                     tried_interfaces: None,
+                    failover_rounds: None,
+                    last_iface: None,
                 });
             }
             if let Some(prev) = slot.take() {
@@ -1281,6 +1307,8 @@ impl LiveBridge {
                 raw_error: None,
                 elapsed_ms: None,
                 tried_interfaces: None,
+                failover_rounds: None,
+                last_iface: None,
             });
         };
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
@@ -1295,6 +1323,8 @@ impl LiveBridge {
                 raw_error: None,
                 elapsed_ms: None,
                 tried_interfaces: None,
+                failover_rounds: None,
+                last_iface: None,
             });
         }
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
@@ -1319,6 +1349,8 @@ impl LiveBridge {
                 raw_error: None,
                 elapsed_ms: None,
                 tried_interfaces: None,
+                failover_rounds: None,
+                last_iface: None,
             }),
             query_result = query_fut => {
                 query_result.map_err(|e| {
@@ -1335,6 +1367,8 @@ impl LiveBridge {
                         raw_error: Some(raw),
                         elapsed_ms: None,
                         tried_interfaces: None,
+                failover_rounds: None,
+                last_iface: None,
                     }
                 })
             }
@@ -1346,15 +1380,16 @@ impl LiveBridge {
         result
     }
 
-    /// After LRPROOF timeout, suppress the active iface and drop the failed
-    /// next-hop so rediscovery cannot reinstall the same blackhole via a
-    /// different local interface name (Ratspeak vs RMAP World sharing a via).
-    async fn nomad_suppress_via_and_rediscover(
+    /// After a link failure, suppress the dead iface, drop failed vias, promote
+    /// ranked backups / other live hubs, and RequestPath until an unblocked slot
+    /// appears (or the probe budget expires).
+    async fn suppress_via_and_rediscover(
         &self,
         hash_hex: &str,
         blocked_ifaces: &[String],
         blocked_vias: &[String],
-    ) -> Option<(u8, Option<String>, Option<String>)> {
+        live_ifaces: &[String],
+    ) -> Option<PathSlotCandidate> {
         let dest = parse_hash16(hash_hex).ok()?;
         let slots_before = self
             .path_slots(hash_hex)
@@ -1362,10 +1397,21 @@ impl LiveBridge {
             .map(|(slots, _)| slots)
             .unwrap_or_default();
         let failed_via = active_via_hash_from_slots(&slots_before);
+        let prefer = remaining_live_ifaces(live_ifaces, blocked_ifaces);
+
+        // Promote an already-known unblocked backup before waiting on rediscovery.
+        let known_backup = select_unblocked_slot(
+            &slots_before,
+            blocked_ifaces,
+            blocked_vias,
+            failed_via.as_deref(),
+            &prefer,
+        );
+
         let _ = self
             .query_control_timed(TransportQuery::SuppressCurrentPathInterface {
                 dest,
-                duration: NOMAD_IFACE_SUPPRESS_SECS,
+                duration: path_failover::IFACE_SUPPRESS_SECS,
             })
             .await;
         // Drop every known-bad next hop (not only the currently active slot —
@@ -1389,6 +1435,40 @@ impl LiveBridge {
         if let Ok(mut cache) = self.peer_via_cache.lock() {
             cache.remove(&hash_hex.to_lowercase());
         }
+
+        if let Some(backup) = known_backup {
+            // Brief settle so transport can activate the promoted backup slot.
+            let _ = self
+                .handle
+                .transport_tx
+                .send(TransportMessage::RequestPath {
+                    destination_hash: dest,
+                })
+                .await;
+            let settle_deadline =
+                tokio::time::Instant::now() + path_failover::VIA_FAILOVER_POLL_INTERVAL * 10;
+            while tokio::time::Instant::now() < settle_deadline {
+                let _ = self.refresh_outbound_path_table().await;
+                let slots = self
+                    .path_slots(hash_hex)
+                    .await
+                    .map(|(slots, _)| slots)
+                    .unwrap_or_default();
+                if let Some(found) = select_unblocked_slot(
+                    &slots,
+                    blocked_ifaces,
+                    blocked_vias,
+                    failed_via.as_deref(),
+                    &prefer,
+                ) {
+                    return Some(found);
+                }
+                tokio::time::sleep(path_failover::VIA_FAILOVER_POLL_INTERVAL).await;
+            }
+            // Backup was known before suppress; return it even if the table is slow.
+            return Some(backup);
+        }
+
         let _ = self
             .handle
             .transport_tx
@@ -1396,9 +1476,58 @@ impl LiveBridge {
                 destination_hash: dest,
             })
             .await;
-        // Longer wait: alternate hubs may be slower to answer path requests.
-        let deadline = tokio::time::Instant::now() + NOMAD_VIA_FAILOVER_PROBE_WAIT;
-        let mut found: Option<(u8, Option<String>, Option<String>)> = None;
+
+        let mut found = self
+            .poll_unblocked_path_slot(
+                hash_hex,
+                blocked_ifaces,
+                blocked_vias,
+                failed_via.as_deref(),
+                &prefer,
+                path_failover::VIA_FAILOVER_PROBE_WAIT,
+            )
+            .await;
+
+        // When other live hubs remain, issue a second RequestPath + wait instead of
+        // giving up after a single short probe (TTP-only cache vs Local Pi up).
+        if found.is_none() && !prefer.is_empty() {
+            tracing::debug!(
+                target: "nomad",
+                dest = %hash_hex,
+                remaining = ?prefer,
+                "Nomad path failover: extra RequestPath toward remaining live interfaces"
+            );
+            let _ = self
+                .handle
+                .transport_tx
+                .send(TransportMessage::RequestPath {
+                    destination_hash: dest,
+                })
+                .await;
+            found = self
+                .poll_unblocked_path_slot(
+                    hash_hex,
+                    blocked_ifaces,
+                    blocked_vias,
+                    failed_via.as_deref(),
+                    &prefer,
+                    path_failover::VIA_FAILOVER_EXTRA_PROBE_WAIT,
+                )
+                .await;
+        }
+        found
+    }
+
+    async fn poll_unblocked_path_slot(
+        &self,
+        hash_hex: &str,
+        blocked_ifaces: &[String],
+        blocked_vias: &[String],
+        failed_via: Option<&str>,
+        prefer_ifaces: &[String],
+        wait: Duration,
+    ) -> Option<PathSlotCandidate> {
+        let deadline = tokio::time::Instant::now() + wait;
         while tokio::time::Instant::now() < deadline {
             let _ = self.refresh_outbound_path_table().await;
             let slots = self
@@ -1406,46 +1535,18 @@ impl LiveBridge {
                 .await
                 .map(|(slots, _)| slots)
                 .unwrap_or_default();
-            // Prefer any live slot that is not on a blocked iface/via.
-            for slot in &slots {
-                let iface = slot
-                    .get("interface")
-                    .and_then(|v| v.as_str())
-                    .map(str::to_string);
-                let via = slot
-                    .get("via_hash")
-                    .and_then(|v| v.as_str())
-                    .map(str::to_string);
-                let hops = slot
-                    .get("hops")
-                    .and_then(serde_json::Value::as_u64)
-                    .map(|h| h as u8);
-                let Some(h) = hops else { continue };
-                let iface_blocked = iface
-                    .as_ref()
-                    .is_some_and(|i| blocked_ifaces.iter().any(|b| b.eq_ignore_ascii_case(i)));
-                let via_blocked = via
-                    .as_ref()
-                    .is_some_and(|v| blocked_vias.iter().any(|b| b.eq_ignore_ascii_case(v)));
-                if iface_blocked || via_blocked {
-                    continue;
-                }
-                // Also reject the via we just failed on this round.
-                if failed_via
-                    .as_ref()
-                    .is_some_and(|fv| via.as_ref().is_some_and(|v| v.eq_ignore_ascii_case(fv)))
-                {
-                    continue;
-                }
-                found = Some((h, iface, via));
-                break;
+            if let Some(found) = select_unblocked_slot(
+                &slots,
+                blocked_ifaces,
+                blocked_vias,
+                failed_via,
+                prefer_ifaces,
+            ) {
+                return Some(found);
             }
-            if found.is_some() {
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(200)).await;
+            tokio::time::sleep(path_failover::VIA_FAILOVER_POLL_INTERVAL).await;
         }
-        found
+        None
     }
 
     pub async fn fetch_nomad_file(
@@ -2284,7 +2385,13 @@ impl LiveBridge {
                     Some(
                         entries
                             .iter()
-                            .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+                            .map(|e| PathTableRoute {
+                                hash: e.hash,
+                                hops: e.hops,
+                                hex_key: hex::encode(e.hash),
+                                interface: Some(e.interface.clone()).filter(|s| !s.is_empty()),
+                                via: e.via.map(hex::encode),
+                            })
                             .collect::<Vec<_>>(),
                     )
                 } else {
@@ -2439,7 +2546,13 @@ impl LiveBridge {
         }
         let path_entries = entries
             .iter()
-            .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+            .map(|e| PathTableRoute {
+                hash: e.hash,
+                hops: e.hops,
+                hex_key: hex::encode(e.hash),
+                interface: Some(e.interface.clone()).filter(|s| !s.is_empty()),
+                via: e.via.map(hex::encode),
+            })
             .collect::<Vec<_>>();
         if let Ok(mut driver) = self.outbound.lock() {
             driver.update_path_table(&path_entries);
@@ -3686,10 +3799,6 @@ impl LiveBridge {
     }
 }
 
-fn nomad_via_prefix(via: Option<&str>) -> Option<String> {
-    via.map(|v| v.chars().take(8).collect())
-}
-
 pub(super) fn lxmf_payload_from_message(
     msg: &LxMessage,
     self_lxmf_hash: &str,
@@ -4111,6 +4220,10 @@ struct NomadRemoteQueryError {
     elapsed_ms: Option<u64>,
     /// Local interface names attempted (including via-aware failovers).
     tried_interfaces: Option<Vec<String>>,
+    /// In-request via/iface failover rounds completed (0 if none).
+    failover_rounds: Option<u8>,
+    /// Last local interface used for the Link attempt.
+    last_iface: Option<String>,
 }
 
 fn elapsed_ms_since(started: tokio::time::Instant) -> u64 {
@@ -4193,6 +4306,17 @@ fn nomad_remote_error_json(err: &NomadRemoteQueryError) -> serde_json::Value {
     }
     if let Some(ifaces) = err.tried_interfaces.as_ref().filter(|v| !v.is_empty()) {
         obj.insert("tried_interfaces".into(), serde_json::json!(ifaces));
+    }
+    if let Some(rounds) = err.failover_rounds {
+        obj.insert("failover_rounds".into(), serde_json::json!(rounds));
+    }
+    if let Some(iface) = err
+        .last_iface
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        obj.insert("iface".into(), serde_json::json!(iface));
     }
     out
 }
@@ -4349,32 +4473,6 @@ const NOMAD_FORCE_PATH_REFRESH_WAIT: Duration = Duration::from_secs(4);
 
 /// Strict TCP/network DropPath→RequestPath wait before Link (no stale-accept fall-through).
 const NOMAD_TCP_PATH_PROBE_WAIT: Duration = Duration::from_secs(5);
-
-/// How long to reject the failed Nomad path interface after LRPROOF timeout so
-/// an alternate hub slot (e.g. TTP_TCP vs Ratspeak) can become active.
-const NOMAD_IFACE_SUPPRESS_SECS: f64 = 120.0;
-
-/// Wait for a path with a different via_hash after DropAllVia + suppress.
-const NOMAD_VIA_FAILOVER_PROBE_WAIT: Duration = Duration::from_secs(8);
-
-/// Max in-request via failovers after the first link_timeout (total Link tries = 1 + this).
-const NOMAD_MAX_VIA_FAILOVERS: u8 = 2;
-
-fn active_via_hash_from_slots(slots: &[serde_json::Value]) -> Option<String> {
-    slots.iter().find_map(|slot| {
-        let active = slot
-            .get("active")
-            .and_then(serde_json::Value::as_bool)
-            .unwrap_or(false);
-        if !active {
-            return None;
-        }
-        slot.get("via_hash")
-            .and_then(|v| v.as_str())
-            .filter(|s| !s.is_empty())
-            .map(str::to_string)
-    })
-}
 
 #[allow(clippy::too_many_arguments, clippy::result_large_err)] // Nomad Link diagnostics bundle
 fn finish_nomad_link_result(
@@ -4578,41 +4676,6 @@ mod announce_display_name_tests {
     }
 
     #[test]
-    fn active_via_hash_from_slots_skips_inactive_and_empty() {
-        assert_eq!(active_via_hash_from_slots(&[]), None);
-        assert_eq!(
-            active_via_hash_from_slots(&[serde_json::json!({
-                "active": true,
-                "via_hash": "",
-            })]),
-            None
-        );
-        assert_eq!(
-            active_via_hash_from_slots(&[
-                serde_json::json!({
-                    "active": false,
-                    "via_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                }),
-                serde_json::json!({
-                    "active": true,
-                    "via_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                }),
-            ]),
-            Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into())
-        );
-    }
-
-    #[test]
-    fn nomad_via_prefix_handles_none_and_truncates() {
-        assert_eq!(nomad_via_prefix(None), None);
-        assert_eq!(
-            nomad_via_prefix(Some("abcdefghijklmnop")),
-            Some("abcdefgh".into())
-        );
-        assert_eq!(nomad_via_prefix(Some("abcd")), Some("abcd".into()));
-    }
-
-    #[test]
     fn force_path_refresh_rejects_stale_route_until_absent_then_accepts_refresh() {
         // Existing stale route still installed — must not accept yet.
         assert!(!force_path_refresh_accepts_current_path(true, true, false));
@@ -4692,6 +4755,8 @@ mod announce_display_name_tests {
             raw_error: Some("timed out waiting for link proof".into()),
             elapsed_ms: Some(18_250),
             tried_interfaces: Some(vec!["Ratspeak".into(), "RNS_Transport_US-East".into()]),
+            failover_rounds: Some(1),
+            last_iface: Some("RNS_Transport_US-East".into()),
         });
         assert_eq!(with_diag["ok"], false);
         assert_eq!(with_diag["error"], "link_timeout");
@@ -4707,6 +4772,8 @@ mod announce_display_name_tests {
             with_diag["tried_interfaces"],
             serde_json::json!(["Ratspeak", "RNS_Transport_US-East"])
         );
+        assert_eq!(with_diag["failover_rounds"], 1);
+        assert_eq!(with_diag["iface"], "RNS_Transport_US-East");
 
         let without = nomad_remote_error_json(&NomadRemoteQueryError {
             code: "missing_identity_hash".into(),
@@ -4719,6 +4786,8 @@ mod announce_display_name_tests {
             raw_error: None,
             elapsed_ms: None,
             tried_interfaces: None,
+            failover_rounds: None,
+            last_iface: None,
         });
         assert_eq!(without["ok"], false);
         assert_eq!(without["error"], "missing_identity_hash");

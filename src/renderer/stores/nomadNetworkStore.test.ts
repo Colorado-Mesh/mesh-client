@@ -201,6 +201,9 @@ describe('nomadNetworkStore', () => {
         path_ensure_kind: 'rediscovered',
         elapsed_ms: 18250,
         raw_error: 'timed out waiting for link proof',
+        tried_interfaces: ['TTP_TCP', 'Local Transport Pi'],
+        failover_rounds: 1,
+        iface: 'Local Transport Pi',
       });
 
       const res = await useNomadNetworkStore
@@ -221,6 +224,9 @@ describe('nomadNetworkStore', () => {
       expect(failed).toContain('force_path_ok=true');
       expect(failed).toContain('path_ensure=rediscovered');
       expect(failed).toContain('elapsed_ms=18250');
+      expect(failed).toContain('tried_interfaces=TTP_TCP,Local Transport Pi');
+      expect(failed).toContain('failover_rounds=1');
+      expect(failed).toContain('iface=Local Transport Pi');
       expect(failed).toContain('raw=timed out waiting for link proof');
     } finally {
       restore();

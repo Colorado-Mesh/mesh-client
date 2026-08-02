@@ -16,6 +16,7 @@ mod nomad_link_errors;
 mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
+mod path_failover;
 mod path_medium;
 mod path_speed;
 mod persistence;

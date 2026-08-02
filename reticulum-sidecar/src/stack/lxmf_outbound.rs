@@ -19,10 +19,32 @@ use rns_transport::messages::{TransportMessage, TransportQuery};
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
+use super::super::path_failover::{
+    IFACE_SUPPRESS_SECS, push_tried_iface, should_retry_direct_path_failover,
+};
 use super::{lxmf_payload_from_message, parse_hash16};
 
 const PATH_REQUEST_BACKOFF_SECS: f64 = 20.0;
 const PATH_REQUEST_MAX_ATTEMPTS: u32 = 12;
+
+/// Per-message Direct path exhaustion before preferred-PN fallback.
+#[derive(Debug, Clone, Default)]
+struct DirectPathFailoverState {
+    rounds: u8,
+    blocked_ifaces: Vec<String>,
+    blocked_vias: Vec<String>,
+    tried_interfaces: Vec<String>,
+}
+
+/// One GetPathTable row mirrored into the outbound driver cache.
+#[derive(Debug, Clone)]
+pub struct PathTableRoute {
+    pub hash: [u8; 16],
+    pub hops: u8,
+    pub hex_key: String,
+    pub interface: Option<String>,
+    pub via: Option<String>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PathRequestDecision {
@@ -99,9 +121,15 @@ pub struct LxmfOutboundDriver {
     /// Eviction must not remove these while Establishing.
     pinned_identities: HashMap<String, [u8; 64]>,
     path_table_hashes: HashSet<String>,
+    /// Last known path interface name per destination (from GetPathTable).
+    path_interfaces: HashMap<[u8; 16], String>,
+    /// Last known next-hop via hash hex per destination.
+    path_vias: HashMap<[u8; 16], String>,
     path_request_gate: PathRequestGate,
     /// Message hashes that already consumed the one-shot Direct→PN fallback.
     pn_fallback_attempted: HashSet<[u8; 32]>,
+    /// Direct link failures still exhausting alternate path slots / ifaces.
+    direct_path_failovers: HashMap<[u8; 32], DirectPathFailoverState>,
     /// When set, remote propagation sync holds a Link to this dest — do not race deposits.
     propagation_sync_target: Option<[u8; 16]>,
     self_lxmf_hash: String,
@@ -127,8 +155,11 @@ impl LxmfOutboundDriver {
             known_identities: HashMap::new(),
             pinned_identities: HashMap::new(),
             path_table_hashes: HashSet::new(),
+            path_interfaces: HashMap::new(),
+            path_vias: HashMap::new(),
             path_request_gate: PathRequestGate::new(),
             pn_fallback_attempted: HashSet::new(),
+            direct_path_failovers: HashMap::new(),
             propagation_sync_target: None,
             self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
@@ -193,13 +224,32 @@ impl LxmfOutboundDriver {
         router.set_outbound_propagation_node(hash);
     }
 
-    pub fn update_path_table(&mut self, entries: &[([u8; 16], u8, String)]) {
+    /// Refresh local path cache from transport GetPathTable rows.
+    pub fn update_path_table(&mut self, entries: &[PathTableRoute]) {
         self.route_hops.clear();
         self.path_table_hashes.clear();
-        for (hash, hops, hex_key) in entries {
-            self.route_hops.insert(*hash, (*hops).max(1));
-            self.path_table_hashes.insert(hex_key.to_lowercase());
-            self.path_request_gate.clear_destination(*hash);
+        self.path_interfaces.clear();
+        self.path_vias.clear();
+        for entry in entries {
+            self.route_hops.insert(entry.hash, entry.hops.max(1));
+            self.path_table_hashes.insert(entry.hex_key.to_lowercase());
+            self.path_request_gate.clear_destination(entry.hash);
+            if let Some(name) = entry
+                .interface
+                .as_ref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
+                self.path_interfaces.insert(entry.hash, name.to_string());
+            }
+            if let Some(via_hex) = entry
+                .via
+                .as_ref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
+                self.path_vias.insert(entry.hash, via_hex.to_string());
+            }
         }
     }
 
@@ -209,6 +259,8 @@ impl LxmfOutboundDriver {
         self.path_table_hashes.remove(&key);
         if let Ok(dest) = parse_hash16(&key) {
             self.route_hops.remove(&dest);
+            self.path_interfaces.remove(&dest);
+            self.path_vias.remove(&dest);
             self.path_request_gate.clear_destination(dest);
         }
     }
@@ -614,6 +666,7 @@ impl LxmfOutboundDriver {
             .pending_outbound
             .retain(|m| m.hash != Some(msg_hash) && m.message_id != Some(msg_hash));
         self.remember_pn_fallback(msg_hash);
+        self.direct_path_failovers.remove(&msg_hash);
         message.method = DeliveryMethod::Propagated;
         message.delivery_attempts = 0;
         message.next_delivery_attempt = 0.0;
@@ -697,6 +750,7 @@ impl LxmfOutboundDriver {
                         None
                     };
                     self.pn_fallback_attempted.remove(&hash);
+                    self.direct_path_failovers.remove(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
                     emit_outbound_status_by_hash(event_tx, &hash, "delivered", method);
                 }
@@ -741,12 +795,116 @@ impl LxmfOutboundDriver {
                     );
                     return;
                 }
+                // Exhaust alternate path slots / live ifaces before Direct→PN fallback.
+                let message = if message.method == DeliveryMethod::Direct
+                    && is_retryable_link_delivery_failure(&reason)
+                {
+                    match self.requeue_direct_after_path_failover(
+                        router, event_tx, message, dest_hash, &reason,
+                    ) {
+                        Ok(()) => return,
+                        Err(message) => *message,
+                    }
+                } else {
+                    message
+                };
                 match self.try_requeue_via_propagation(router, event_tx, message) {
                     Ok(()) => {}
                     Err(message) => self.emit_outbound_failed(router, event_tx, *message),
                 }
             }
         }
+    }
+
+    /// Suppress the dead iface/via, RequestPath, and re-queue Direct while failover
+    /// budget remains. `Ok(())` = re-queued; `Err(message)` = fall through to PN fallback.
+    fn requeue_direct_after_path_failover(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        mut message: LxMessage,
+        dest_hash: [u8; 16],
+        reason: &str,
+    ) -> Result<(), Box<LxMessage>> {
+        let Some(msg_hash) = message.hash.or(message.message_id) else {
+            return Err(Box::new(message));
+        };
+        let iface = self.path_interfaces.get(&dest_hash).cloned();
+        let via = self.path_vias.get(&dest_hash).cloned();
+        let failover = {
+            let state = self.direct_path_failovers.entry(msg_hash).or_default();
+            if should_retry_direct_path_failover(state.rounds) {
+                push_tried_iface(&mut state.tried_interfaces, iface.as_deref());
+                if let Some(name) = iface.clone() {
+                    if !state
+                        .blocked_ifaces
+                        .iter()
+                        .any(|b| b.eq_ignore_ascii_case(&name))
+                    {
+                        state.blocked_ifaces.push(name);
+                    }
+                }
+                if let Some(via_hex) = via.clone() {
+                    if !state
+                        .blocked_vias
+                        .iter()
+                        .any(|b| b.eq_ignore_ascii_case(&via_hex))
+                    {
+                        state.blocked_vias.push(via_hex);
+                    }
+                }
+                state.rounds = state.rounds.saturating_add(1);
+                Ok((
+                    state.rounds,
+                    state.tried_interfaces.clone(),
+                    state.blocked_vias.clone(),
+                ))
+            } else {
+                Err((state.rounds, state.tried_interfaces.clone()))
+            }
+        };
+        let (rounds, tried, vias_to_drop) = match failover {
+            Ok(v) => v,
+            Err((rounds, tried)) => {
+                tracing::info!(
+                    dest = %hex::encode(dest_hash),
+                    msg = %hex::encode(msg_hash),
+                    rounds,
+                    tried = ?tried,
+                    reason,
+                    "Direct path failover exhausted; allowing preferred-PN fallback"
+                );
+                self.direct_path_failovers.remove(&msg_hash);
+                return Err(Box::new(message));
+            }
+        };
+        queue_path_failover_queries(&self.transport_tx, dest_hash, &vias_to_drop, reason);
+        self.clear_path_to(&hex::encode(dest_hash));
+
+        let now = now_f64();
+        message.method = DeliveryMethod::Direct;
+        message.last_delivery_attempt = now;
+        message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+        tracing::info!(
+            dest = %hex::encode(dest_hash),
+            msg = %hex::encode(msg_hash),
+            rounds,
+            tried = ?tried,
+            reason,
+            "Direct path failover: suppress/drop via + RequestPath; re-queuing Direct"
+        );
+        emit_outbound_status_detailed(
+            event_tx,
+            Some(serde_json::Value::String(hex::encode(msg_hash))),
+            Some(serde_json::Value::String(hex::encode(dest_hash))),
+            "sending",
+            Some("direct"),
+            iface,
+            Some(tried),
+            Some(rounds),
+        );
+        router.send(message);
+        Ok(())
     }
 
     /// Re-queue a Propagated deposit after a retryable link failure (lxmd parity).
@@ -896,6 +1054,29 @@ pub fn emit_outbound_status_with_via(
     delivery_method: Option<&str>,
     sent_via: Option<String>,
 ) {
+    emit_outbound_status_detailed(
+        event_tx,
+        message_hash,
+        to_hash,
+        status,
+        delivery_method,
+        sent_via,
+        None,
+        None,
+    );
+}
+
+#[allow(clippy::too_many_arguments)] // status frame fields travel together
+fn emit_outbound_status_detailed(
+    event_tx: &broadcast::Sender<String>,
+    message_hash: Option<serde_json::Value>,
+    to_hash: Option<serde_json::Value>,
+    status: &str,
+    delivery_method: Option<&str>,
+    sent_via: Option<String>,
+    tried_interfaces: Option<Vec<String>>,
+    failover_rounds: Option<u8>,
+) {
     let mut payload = serde_json::Map::new();
     if let Some(h) = message_hash {
         payload.insert("message_hash".into(), h);
@@ -912,6 +1093,12 @@ pub fn emit_outbound_status_with_via(
     }
     if let Some(via) = sent_via {
         payload.insert("sent_via".into(), serde_json::Value::String(via));
+    }
+    if let Some(ifaces) = tried_interfaces.filter(|v| !v.is_empty()) {
+        payload.insert("tried_interfaces".into(), serde_json::json!(ifaces));
+    }
+    if let Some(rounds) = failover_rounds {
+        payload.insert("failover_rounds".into(), serde_json::json!(rounds));
     }
     let frame = serde_json::json!({
         "type": "lxmf_outbound_status",
@@ -1019,6 +1206,33 @@ fn try_queue_path_request(
         .is_ok()
 }
 
+/// Fire-and-forget suppress + DropAllVia + DropPath + RequestPath for Direct failover.
+fn queue_path_failover_queries(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    dest: [u8; 16],
+    vias_to_drop: &[String],
+    reason: &str,
+) {
+    let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
+    let _ = transport_tx.try_send(TransportMessage::Rpc {
+        query: TransportQuery::SuppressCurrentPathInterface {
+            dest,
+            duration: IFACE_SUPPRESS_SECS,
+        },
+        response_tx,
+    });
+    for via_hex in vias_to_drop {
+        if let Ok(next_hop) = parse_hash16(via_hex) {
+            let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
+            let _ = transport_tx.try_send(TransportMessage::Rpc {
+                query: TransportQuery::DropAllVia { next_hop },
+                response_tx,
+            });
+        }
+    }
+    let _ = try_queue_path_request(transport_tx, dest, true, reason);
+}
+
 pub fn parse_propagation_hash(hex_str: &str) -> Option<[u8; 16]> {
     parse_hash16(hex_str).ok()
 }
@@ -1088,17 +1302,38 @@ mod tests {
         let dest_hash = dest(0xab);
         let dest_hex = hex::encode(dest_hash);
         // Stale cached route (5 hops).
-        driver.update_path_table(&[(dest_hash, 5, dest_hex.clone())]);
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 5,
+            hex_key: dest_hex.clone(),
+            interface: Some("TTP_TCP".into()),
+            via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+        }]);
         assert!(driver.has_path_to(&dest_hex));
+        assert_eq!(
+            driver.path_interfaces.get(&dest_hash).map(String::as_str),
+            Some("TTP_TCP")
+        );
 
         // Force refresh: drop local cache (transport DropPath happens in live.rs).
         driver.clear_path_to(&dest_hex);
         assert!(!driver.has_path_to(&dest_hex));
+        assert!(!driver.path_interfaces.contains_key(&dest_hash));
 
         // Fresh route response reinstalls with updated hops.
-        driver.update_path_table(&[(dest_hash, 2, dest_hex.clone())]);
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 2,
+            hex_key: dest_hex.clone(),
+            interface: Some("Local Transport Pi".into()),
+            via: Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into()),
+        }]);
         assert!(driver.has_path_to(&dest_hex));
         assert_eq!(driver.route_hops.get(&dest_hash).copied(), Some(2));
+        assert_eq!(
+            driver.path_interfaces.get(&dest_hash).map(String::as_str),
+            Some("Local Transport Pi")
+        );
     }
 
     #[test]
