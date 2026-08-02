@@ -146,6 +146,26 @@ describe('NobleBleManager.connect — macOS wake zombie peripheral (regression)'
  * MeshCore uses notify-only (like Web Bluetooth); GATT read on NUS TX fails on Windows WinRT.
  * Meshtastic keeps a non-Darwin read-pump safety net when notify is active.
  */
+describe('NobleBleManager — connected link RSSI polling (regression)', () => {
+  it('declares link RSSI poll timer fields and start/stop helpers', () => {
+    expect(SOURCE).toContain('linkRssiPollTimer: ReturnType<typeof setInterval> | null');
+    expect(SOURCE).toContain('NOBLE_LINK_RSSI_POLL_MS');
+    expect(SOURCE).toContain('startLinkRssiPolling');
+    expect(SOURCE).toContain('stopLinkRssiPolling');
+    expect(SOURCE).toContain("emit('linkRssi'");
+    expect(SOURCE).toContain('updateRssiAsync');
+  });
+
+  it('starts link RSSI polling after successful connect and stops in clearSessionState', () => {
+    expect(SOURCE).toMatch(
+      /this\.startLinkRssiPolling\(sessionId, session, peripheral, connectRssi\)/,
+    );
+    const clearMatch = /private clearSessionState\([\s\S]+?\n {2}\}/.exec(SOURCE);
+    expect(clearMatch).not.toBeNull();
+    expect(clearMatch![0]).toContain('stopLinkRssiPolling');
+  });
+});
+
 describe('NobleBleManager — notify-first fromRadio read pump strategy (regression)', () => {
   it('declares fromRadioNotifyOnly in session state and initialises it to false', () => {
     expect(SOURCE).toContain('fromRadioNotifyOnly: boolean');

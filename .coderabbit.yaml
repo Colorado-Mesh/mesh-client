@@ -12,6 +12,8 @@ reviews:
   enable_prompt_for_ai_agents: true
   path_filters:
     - '!src/renderer/locales/**'
+    - '!**/package-lock.json'
+    - '!**/yarn.lock'
     - '!**/pnpm-lock.yaml'
     - '!flatpak/generated-sources.json'
     - '!patches/**'
@@ -19,6 +21,7 @@ reviews:
     - '!**/coverage/**'
     - '!**/dist/**'
     - '!**/dist-electron/**'
+    - '!**/generated/**'
     - '!**/target/**'
   path_instructions:
     - path: '**/*'
@@ -38,6 +41,9 @@ reviews:
     enabled: true
     drafts: false
     auto_pause_after_reviewed_commits: 2
+    exclude_user_handles:
+      - 'dependabot[bot]'
+      - 'renovate[bot]'
     ignore_title_keywords:
       - 'chore: bump'
       - 'chore(deps)'

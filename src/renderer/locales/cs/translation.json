@@ -1275,7 +1275,13 @@
     "letsMeshKnownBrokersOnly": "Přednastavení LetsMesh /MeshMapper podporuje pouze známé makléře podepisující zařízení. Použít vlastní pro ostatní makléře.",
     "letsMeshUsernameV1Hex": "Uživatelské jméno musí být v1_ následované 64 hexadecimálními znaky (veřejný klíč).",
     "bleWeakSignalWarning": "Signál Bluetooth je slabý ({{rssi}} dBm). Přibližte se pro stabilní připojení.",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "Signál",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Kvalita spoje",
+    "linkQualityMs": "{{ms}} ms",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Nedostupné (webový Bluetooth)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

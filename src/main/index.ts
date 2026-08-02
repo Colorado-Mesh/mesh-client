@@ -103,6 +103,7 @@ import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ip
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
+import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
@@ -2607,6 +2608,12 @@ nobleBleManager.on(
   'deviceDiscovered',
   (device: { deviceId: string; deviceName: string; rssi: number | null }) => {
     mainWindow?.webContents.send('noble-ble-device-discovered', device);
+  },
+);
+nobleBleManager.on(
+  'linkRssi',
+  ({ sessionId, rssi }: { sessionId: NobleSessionId; rssi: number | null }) => {
+    mainWindow?.webContents.send('noble-ble-link-rssi', { sessionId, rssi });
   },
 );
 nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) => {
@@ -6337,6 +6344,24 @@ ipcMain.handle('http:preflight', async (event, host: unknown, tls: unknown) => {
     throw new Error('Invalid tls');
   }
   await httpPreflight(host, tls);
+});
+
+ipcMain.handle('hostLink:probeHttpRtt', async (event, host: unknown, tls: unknown) => {
+  assertIpcSender(event, 'hostLink:probeHttpRtt');
+  validateHttpHost(host);
+  if (typeof tls !== 'boolean') {
+    throw new Error('Invalid tls');
+  }
+  return probeHttpRttMs(host, tls);
+});
+
+ipcMain.handle('hostLink:probeTcpRtt', async (event, host: unknown, port: unknown) => {
+  assertIpcSender(event, 'hostLink:probeTcpRtt');
+  validateHttpHost(host);
+  if (!Number.isInteger(port) || (port as number) < 1 || (port as number) > 65535) {
+    throw new Error('Invalid port');
+  }
+  return probeTcpRttMs(host, port as number);
 });
 
 ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {

@@ -154,6 +154,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     },
     onNobleBleAdapterState: noopUnsub,
     onNobleBleDeviceDiscovered: noopUnsub,
+    onNobleBleLinkRssi: noopUnsub,
     onNobleBleConnected: noopUnsub,
     onNobleBleDisconnected: noopUnsub,
     onNobleBleConnectAborted: noopUnsub,
@@ -238,6 +239,10 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       write: noopAsync,
       disconnect: noopAsync,
       onData: noopUnsub,
+    },
+    hostLink: {
+      probeHttpRtt: async () => null,
+      probeTcpRtt: async () => null,
     },
     meshtastic: {
       tcp: {

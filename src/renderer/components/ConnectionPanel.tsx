@@ -34,6 +34,7 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
+import { useHostLinkMeter } from '../hooks/useHostLinkMeter';
 import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
 import {
   flushPendingMqttSave,
@@ -121,6 +122,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { BleWeakSignalBanner } from './BleWeakSignalBanner';
 import { ConfirmModal } from './ConfirmModal';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
+import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
@@ -417,9 +419,23 @@ export default function ConnectionPanel({
   const activeHostAddress =
     protocol === 'meshcore'
       ? `${tcpHost}:${tcpPort}`
-      : connectionType === 'tcp'
+      : connectionType === 'tcp' || state.connectionType === 'tcp'
         ? tcpAddress
         : httpAddress;
+  const hostLinkMeter = useHostLinkMeter({
+    protocol,
+    connectionType: state.connectionType,
+    status: state.status,
+    hostAddress:
+      state.connectionType === 'tcp'
+        ? tcpAddress
+        : state.connectionType === 'http'
+          ? protocol === 'meshcore'
+            ? `${tcpHost}:${tcpPort}`
+            : httpAddress
+          : activeHostAddress,
+    platform: window.electronAPI.getPlatform() as NodeJS.Platform,
+  });
 
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
@@ -3062,6 +3078,14 @@ export default function ConnectionPanel({
               <span className="text-muted">{t('connectionPanel.connectionType')}</span>
               <span className="text-gray-200 uppercase">{state.connectionType}</span>
             </div>
+            {hostLinkMeter.kind != null && (
+              <ConnectionLinkMeter
+                kind={hostLinkMeter.kind}
+                rssi={hostLinkMeter.rssi}
+                rttMs={hostLinkMeter.rttMs}
+                level={hostLinkMeter.level}
+              />
+            )}
             {state.myNodeNum > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('connectionPanel.myNode')}</span>

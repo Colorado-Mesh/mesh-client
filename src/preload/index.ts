@@ -10,6 +10,7 @@ import type {
   MQTTStatus,
   NobleBleConnectResult,
   NobleBleDevice,
+  NobleBleLinkRssiPayload,
   NobleBleSessionId,
   OutboxEntry,
   OutboxEntryInput,
@@ -645,6 +646,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('noble-ble-device-discovered', handler);
     return () => ipcRenderer.off('noble-ble-device-discovered', handler);
   },
+  onNobleBleLinkRssi: (cb: (payload: NobleBleLinkRssiPayload) => void) => {
+    const handler = (_: unknown, payload: NobleBleLinkRssiPayload) => {
+      cb(payload);
+    };
+    ipcRenderer.on('noble-ble-link-rssi', handler);
+    return () => ipcRenderer.off('noble-ble-link-rssi', handler);
+  },
   onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => {
     const handler = (_: unknown, payload: { sessionId: NobleBleSessionId }) => {
       cb(payload.sessionId);
@@ -982,6 +990,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('http:data', handler);
       return () => ipcRenderer.off('http:data', handler);
     },
+  },
+
+  // ─── Host↔radio link quality (Connection panel) ───────────────────
+  hostLink: {
+    probeHttpRtt: (host: string, tls: boolean): Promise<number | null> =>
+      ipcRenderer.invoke('hostLink:probeHttpRtt', host, tls),
+    probeTcpRtt: (host: string, port: number): Promise<number | null> =>
+      ipcRenderer.invoke('hostLink:probeTcpRtt', host, port),
   },
 
   // ─── Meshtastic TCP bridge ────────────────────────────────────────
