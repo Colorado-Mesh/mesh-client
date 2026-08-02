@@ -1122,7 +1122,8 @@
       "advanced": "高度",
       "advancedHint": "追加のキー=このインターフェイスの値ペア、1行に1つ。既知のフィールド（ホスト、モード、ネットワーク名など）は上記のフォームのままです。",
       "advancedAria": "高度なインターフェースキーバリューオプション",
-      "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。"
+      "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1270,7 +1271,9 @@
     "letsMeshRequiresWebSocket": "LetsMeshにはWebSocketトランスポートが必要です。",
     "letsMeshRequiresPort": "LetsMeshにはポート{{port}}が必要です。",
     "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapperプリセットは、既知のデバイス署名ブローカーのみをサポートします。他のブローカーにはカスタムを使用します。",
-    "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。"
+    "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。",
+    "bleWeakSignalWarning": "Bluetooth信号が弱い（ {{rssi}} dBm ）。安定した接続のために近づいてください。",
+    "bleRssiDbm": "{{rssi}} dBm"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

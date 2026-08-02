@@ -86,6 +86,20 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     );
   });
 
+  it('bounds connect-error disconnectAsync and skips when already disconnected', () => {
+    expect(SOURCE).toContain('BLE connect-error disconnectAsync');
+    expect(SOURCE).toMatch(
+      /peripheral\.state !== 'disconnected'[\s\S]*?withTimeout\(\s*peripheral\.disconnectAsync\(\)/,
+    );
+  });
+
+  it('emits deviceDiscovered with rssi on scan and at connect start', () => {
+    expect(SOURCE).toMatch(
+      /emit\('deviceDiscovered',\s*\{\s*deviceId:\s*id,\s*deviceName:\s*name,\s*rssi\s*\}\)/,
+    );
+    expect(SOURCE).toContain('Refresh picker / connecting banner with connect-time RSSI');
+  });
+
   it('branches on sessionId to pick the correct service UUID for discovery', () => {
     // There must be a conditional that distinguishes meshcore from meshtastic sessions
     expect(SOURCE).toMatch(/sessionId\s*===\s*['"]meshcore['"]/);

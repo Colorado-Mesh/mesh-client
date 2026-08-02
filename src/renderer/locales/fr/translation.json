@@ -1121,7 +1121,8 @@
       "advanced": "Avancé",
       "advancedHint": "Touche supplémentaire = paires de valeurs pour cette interface, une par ligne. Les champs connus (hôte, mode, nom de réseau, …) restent dans le formulaire ci-dessus.",
       "advancedAria": "Options avancées de valeur de clé d'interface",
-      "advancedKeyReserved": "La clé « {{key}} » est un champ connu et a été ignoré — utilisez le formulaire ci-dessus."
+      "advancedKeyReserved": "La clé « {{key}} » est un champ connu et a été ignoré — utilisez le formulaire ci-dessus.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1270,7 +1271,9 @@
     "letsMeshRequiresWebSocket": "LetsMesh nécessite le transport WebSocket.",
     "letsMeshRequiresPort": "LetsMesh nécessite le port {{port}}.",
     "letsMeshKnownBrokersOnly": "Le préréglage LetsMesh/ MeshMapper ne prend en charge que les courtiers de signature d'appareils connus. Utilisez Personnalisé pour les autres courtiers.",
-    "letsMeshUsernameV1Hex": "Le nom d'utilisateur doit être v1_ suivi de 64 caractères hexadécimaux (clé publique)."
+    "letsMeshUsernameV1Hex": "Le nom d'utilisateur doit être v1_ suivi de 64 caractères hexadécimaux (clé publique).",
+    "bleWeakSignalWarning": "Le signal Bluetooth est faible ({{rssi}} dBm). Rapprochez-vous pour une connexion stable.",
+    "bleRssiDbm": "{{rssi}} dBm"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

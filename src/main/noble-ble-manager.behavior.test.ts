@@ -133,6 +133,7 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -339,6 +340,75 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     expect(connectAsyncSpy).not.toHaveBeenCalled();
     expect(disconnectSpy).not.toHaveBeenCalled();
     expect(manager.isConnected('meshtastic')).toBe(true);
+  });
+
+  it('connect error rejects promptly when disconnectAsync hangs after mid-GATT drop', async () => {
+    vi.useFakeTimers();
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHTASTIC_TORADIO_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHTASTIC_FROMRADIO_UUID, {
+      properties: ['read', 'notify'],
+      readResults: [Buffer.alloc(0)],
+    });
+    const fromNum = new FakeCharacteristic(MESHTASTIC_FROMNUM_UUID, { properties: ['notify'] });
+    const peripheral = new FakePeripheral('hang-disconnect-cleanup', [toRadio, fromRadio, fromNum]);
+    peripheral.discoverSomeServicesAndCharacteristicsAsync = () => {
+      peripheral.state = 'connected';
+      // Simulate OS drop mid-GATT that leaves noble stuck on disconnectAsync.
+      return Promise.reject(new Error('Disconnected unknown'));
+    };
+    peripheral.disconnectAsync = () => new Promise(() => {});
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    const connectPromise = manager.connect('meshtastic', peripheral.id);
+    // Attach rejection handler before advancing timers so the budget timeout is not unhandled.
+    const rejected = expect(connectPromise).rejects.toThrow('Disconnected unknown');
+    await vi.advanceTimersByTimeAsync(5_100);
+    await rejected;
+    vi.useRealTimers();
+
+    // Queue must be free for a follow-up connect (mutex / IPC settle).
+    const peripheral2 = new FakePeripheral('after-hang', [toRadio, fromRadio, fromNum]);
+    (manager as any).knownPeripherals.set(peripheral2.id, peripheral2);
+    await expect(manager.connect('meshtastic', peripheral2.id)).resolves.toBeUndefined();
+  });
+
+  it('skips connect-error disconnectAsync when peripheral already disconnected', async () => {
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHTASTIC_TORADIO_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHTASTIC_FROMRADIO_UUID, {
+      properties: ['read', 'notify'],
+      readResults: [Buffer.alloc(0)],
+    });
+    const fromNum = new FakeCharacteristic(MESHTASTIC_FROMNUM_UUID, { properties: ['notify'] });
+    const peripheral = new FakePeripheral('already-disconnected', [toRadio, fromRadio, fromNum]);
+    let disconnectCalls = 0;
+    peripheral.discoverSomeServicesAndCharacteristicsAsync = () => {
+      peripheral.state = 'disconnected';
+      return Promise.reject(new Error('Disconnected unknown'));
+    };
+    peripheral.disconnectAsync = async () => {
+      disconnectCalls += 1;
+      await new Promise(() => {});
+    };
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    await expect(manager.connect('meshtastic', peripheral.id)).rejects.toThrow(
+      'Disconnected unknown',
+    );
+    expect(disconnectCalls).toBe(0);
   });
 
   it('second concurrent connect awaits in-flight GATT setup instead of disconnecting', async () => {

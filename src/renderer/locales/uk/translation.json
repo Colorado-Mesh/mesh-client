@@ -1124,7 +1124,8 @@
       "advanced": "Додатково",
       "advancedHint": "Додатковий ключ= пари значень для цього інтерфейсу, по одному на рядок. Відомі поля (хост, режим, назва мережі тощо) залишаються у формі вище.",
       "advancedAria": "Розширені параметри ключа-значення інтерфейсу",
-      "advancedKeyReserved": "Ключ \"{{key}}\" є відомим полем і був проігнорований — скористайтеся формою вище."
+      "advancedKeyReserved": "Ключ \"{{key}}\" є відомим полем і був проігнорований — скористайтеся формою вище.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1272,7 +1273,9 @@
     "letsMeshRequiresWebSocket": "Для LetsMesh потрібен транспорт WebSocket.",
     "letsMeshRequiresPort": "Для LetsMesh потрібен порт {{port}}.",
     "letsMeshKnownBrokersOnly": "Попереднє налаштування LetsMesh /MeshMapper підтримує лише відомих брокерів, які підписують пристрої. Використовуйте Custom для інших брокерів.",
-    "letsMeshUsernameV1Hex": "Ім'я користувача має бути v1_ з 64 шістнадцятковими символами (відкритий ключ)."
+    "letsMeshUsernameV1Hex": "Ім'я користувача має бути v1_ з 64 шістнадцятковими символами (відкритий ключ).",
+    "bleWeakSignalWarning": "Сигнал Bluetooth слабкий ({{rssi}} dBm). Підійдіть ближче для стабільного з'єднання.",
+    "bleRssiDbm": "{{rssi}} дБм"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

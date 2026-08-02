@@ -138,6 +138,8 @@ export interface UpdateCheckingPayload {
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
+  /** Advertised / last-seen BLE RSSI in dBm; null when unknown (e.g. Linux Web Bluetooth). */
+  rssi?: number | null;
 }
 
 export type NobleBleSessionId = MeshProtocol;

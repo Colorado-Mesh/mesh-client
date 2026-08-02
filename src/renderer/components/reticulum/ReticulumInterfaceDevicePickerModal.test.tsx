@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
@@ -7,7 +7,10 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { ReticulumInterfaceDevicePickerModal } from './ReticulumInterfaceDevicePickerModal';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, unknown>) =>
+      params ? `${key}:${JSON.stringify(params)}` : key,
+  }),
 }));
 
 describe('ReticulumInterfaceDevicePickerModal', () => {
@@ -61,5 +64,74 @@ describe('ReticulumInterfaceDevicePickerModal', () => {
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('shows weak BLE signal banner when a listed device is ≤ -80 dBm', () => {
+    render(
+      <ReticulumInterfaceDevicePickerModal
+        open
+        mode="ble-rnode"
+        devices={[
+          { address: 'AA:BB:CC:DD:EE:01', name: 'Strong', rssi: -55 },
+          { address: 'AA:BB:CC:DD:EE:02', name: 'Weak', rssi: -92 },
+        ]}
+        serialPorts={[]}
+        scanning={false}
+        scanError={null}
+        manualPath=""
+        onManualPathChange={vi.fn()}
+        onSelect={vi.fn()}
+        onCancel={vi.fn()}
+        onRefreshSerial={vi.fn()}
+        onRescanBle={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(/connectionPanel\.bleWeakSignalWarning.*"rssi":-92/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /connectionPanel\.reticulumInterfaces\.pickerDeviceAriaWithRssi.*"rssi":-92/,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not show weak BLE banner when RSSI is strong or unknown', () => {
+    const { rerender } = render(
+      <ReticulumInterfaceDevicePickerModal
+        open
+        mode="ble-peer"
+        devices={[{ address: 'AA:BB:CC:DD:EE:FF', name: 'Peer', rssi: -55 }]}
+        serialPorts={[]}
+        scanning={false}
+        scanError={null}
+        manualPath=""
+        onManualPathChange={vi.fn()}
+        onSelect={vi.fn()}
+        onCancel={vi.fn()}
+        onRefreshSerial={vi.fn()}
+        onRescanBle={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/connectionPanel\.bleWeakSignalWarning/)).not.toBeInTheDocument();
+
+    rerender(
+      <ReticulumInterfaceDevicePickerModal
+        open
+        mode="ble-peer"
+        devices={[{ address: 'AA:BB:CC:DD:EE:FF', name: 'Peer' }]}
+        serialPorts={[]}
+        scanning={false}
+        scanError={null}
+        manualPath=""
+        onManualPathChange={vi.fn()}
+        onSelect={vi.fn()}
+        onCancel={vi.fn()}
+        onRefreshSerial={vi.fn()}
+        onRescanBle={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/connectionPanel\.bleWeakSignalWarning/)).not.toBeInTheDocument();
   });
 });

@@ -1122,7 +1122,8 @@
       "advanced": "Gelişmiş",
       "advancedHint": "Ek anahtar= bu arayüz için değer çiftleri, satır başına bir tane. Bilinen alanlar (ana bilgisayar, mod, ağ adı,...) yukarıdaki formda kalır.",
       "advancedAria": "Gelişmiş arayüz anahtar - değer seçenekleri",
-      "advancedKeyReserved": "\"{{key}}\" anahtarı bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın."
+      "advancedKeyReserved": "\"{{key}}\" anahtarı bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1270,7 +1271,9 @@
     "letsMeshRequiresWebSocket": "LetsMesh, WebSocket taşımacılığı gerektirir.",
     "letsMeshRequiresPort": "LetsMesh, {{port}} numaralı bağlantı noktasını gerektirir.",
     "letsMeshKnownBrokersOnly": "LetsMesh /MeshMapper ön ayarı yalnızca bilinen cihaz imzalama aracılarını destekler. Diğer brokerler için Özel'i kullanın.",
-    "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır."
+    "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır.",
+    "bleWeakSignalWarning": "Bluetooth sinyali zayıf ({{rssi}} dBm). Sabit bir bağlantı için yaklaşın.",
+    "bleRssiDbm": "{{rssi}} dBm"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

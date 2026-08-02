@@ -1123,7 +1123,8 @@
       "advanced": "Advanced",
       "advancedHint": "Další klíč= páry hodnot pro toto rozhraní, jeden na řádek. Známá pole (hostitel, režim, název sítě, …) zůstávají ve formuláři výše.",
       "advancedAria": "Pokročilé možnosti klíč-hodnota rozhraní",
-      "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář."
+      "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1272,7 +1273,9 @@
     "letsMeshRequiresWebSocket": "LetsMesh vyžaduje WebSocket transport.",
     "letsMeshRequiresPort": "LetsMesh vyžaduje port {{port}}.",
     "letsMeshKnownBrokersOnly": "Přednastavení LetsMesh /MeshMapper podporuje pouze známé makléře podepisující zařízení. Použít vlastní pro ostatní makléře.",
-    "letsMeshUsernameV1Hex": "Uživatelské jméno musí být v1_ následované 64 hexadecimálními znaky (veřejný klíč)."
+    "letsMeshUsernameV1Hex": "Uživatelské jméno musí být v1_ následované 64 hexadecimálními znaky (veřejný klíč).",
+    "bleWeakSignalWarning": "Signál Bluetooth je slabý ({{rssi}} dBm). Přibližte se pro stabilní připojení.",
+    "bleRssiDbm": "{{rssi}} dBm"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

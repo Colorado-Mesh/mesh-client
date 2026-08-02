@@ -8,6 +8,10 @@ import type {
 import { ConnectionIcon } from '@/renderer/lib/icons/connectionIcons';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
 import { reticulumPickerScanErrorI18nKey } from '@/renderer/lib/reticulum/reticulumPickerScanError';
+import { isWeakBleRssi, weakestBleRssi } from '@/renderer/lib/signal';
+
+import { BleWeakSignalBanner } from '../BleWeakSignalBanner';
+import SignalBars from '../SignalBars';
 
 export interface ReticulumInterfaceDevicePickerModalProps {
   open: boolean;
@@ -180,14 +184,23 @@ export function ReticulumInterfaceDevicePickerModal({
             devices.map((device) => {
               const displayName = device.name?.trim() || device.address;
               const value = mode === 'ble-rnode' ? `ble://${device.address}` : device.address;
+              const hasRssi = device.rssi != null && Number.isFinite(device.rssi);
               return (
                 <button
                   key={`${device.address}-${device.kind ?? 'ble'}`}
                   type="button"
-                  aria-label={t('connectionPanel.reticulumInterfaces.pickerDeviceAria', {
-                    name: displayName,
-                    address: device.address,
-                  })}
+                  aria-label={
+                    hasRssi
+                      ? t('connectionPanel.reticulumInterfaces.pickerDeviceAriaWithRssi', {
+                          name: displayName,
+                          address: device.address,
+                          rssi: Math.round(device.rssi!),
+                        })
+                      : t('connectionPanel.reticulumInterfaces.pickerDeviceAria', {
+                          name: displayName,
+                          address: device.address,
+                        })
+                  }
                   onClick={() => {
                     onSelect({ value, deviceName: displayName });
                   }}
@@ -195,7 +208,13 @@ export function ReticulumInterfaceDevicePickerModal({
                 >
                   <div className="flex items-center gap-2 text-sm text-gray-200">
                     <ConnectionIcon type="ble" />
-                    {displayName}
+                    <span className="min-w-0 flex-1 truncate">{displayName}</span>
+                    {hasRssi ? (
+                      <span className="text-muted flex shrink-0 items-center gap-1 text-xs">
+                        <SignalBars rssi={device.rssi} className="h-3 w-4" />
+                        {t('connectionPanel.bleRssiDbm', { rssi: Math.round(device.rssi!) })}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="text-muted ml-7 font-mono text-xs">{device.address}</div>
                 </button>
@@ -203,6 +222,14 @@ export function ReticulumInterfaceDevicePickerModal({
             })
           )}
         </div>
+        {!isSerial ? (
+          <BleWeakSignalBanner
+            rssi={(() => {
+              const weakest = weakestBleRssi(devices);
+              return isWeakBleRssi(weakest) ? weakest : null;
+            })()}
+          />
+        ) : null}
       </div>
     </div>
   );

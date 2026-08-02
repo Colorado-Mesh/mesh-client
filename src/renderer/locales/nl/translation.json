@@ -1121,7 +1121,8 @@
       "advanced": "Geavanceerd",
       "advancedHint": "Extra sleutel=waardeparen voor deze interface, één per regel. Bekende velden (host, modus, netwerknaam,...) blijven in het bovenstaande formulier staan.",
       "advancedAria": "Geavanceerde interface key-value opties",
-      "advancedKeyReserved": "Sleutel \"{{key}}\" is een bekend veld en werd genegeerd — gebruik het bovenstaande formulier."
+      "advancedKeyReserved": "Sleutel \"{{key}}\" is een bekend veld en werd genegeerd — gebruik het bovenstaande formulier.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1270,7 +1271,9 @@
     "letsMeshRequiresWebSocket": "LetsMesh vereist WebSocket transport.",
     "letsMeshRequiresPort": "LetsMesh vereist poort {{port}}.",
     "letsMeshKnownBrokersOnly": "LetsMesh / MeshMapper preset ondersteunt alleen bekende apparaatondertekenende makelaars. Gebruik Aangepast voor andere makelaars.",
-    "letsMeshUsernameV1Hex": "Gebruikersnaam moet v1_zijn, gevolgd door 64 hexadecimale tekens (openbare sleutel)."
+    "letsMeshUsernameV1Hex": "Gebruikersnaam moet v1_zijn, gevolgd door 64 hexadecimale tekens (openbare sleutel).",
+    "bleWeakSignalWarning": "Bluetooth-signaal is zwak ({{rssi}} dBm). Kom dichterbij voor een stabiele verbinding.",
+    "bleRssiDbm": "{{rssi}} dBm"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
