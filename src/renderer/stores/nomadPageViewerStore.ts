@@ -19,6 +19,12 @@ import {
   shouldForceNomadPathRefreshRetry,
 } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import {
+  asNomadPageProgressPayload,
+  mapNomadPageProgress,
+  type NomadPageLoadingProgress,
+  nomadPageProgressMatchesLoad,
+} from '@/renderer/lib/nomad/nomadPageProgress';
+import {
   NOMAD_PAGE_FETCH_DEBOUNCE_MS,
   NOMAD_PAGE_FETCH_RETRY_SETTLE_MS,
 } from '@/renderer/lib/timeConstants';
@@ -62,6 +68,10 @@ interface NomadPageViewerState {
   pageLoadingBudgetSec: number;
   /** True while the one-shot force-path auto-retry is running (explain countdown restart). */
   pageLoadingRetrying: boolean;
+  /** Live sidecar progress while a page Link/failover is in flight. */
+  pageLoadingProgress: NomadPageLoadingProgress | null;
+  /** Interface names observed via progress events during this load (incl. auto-retry). */
+  pageLoadingTriedIfaces: string[];
   /** Raw sidecar/proxy error code or message (humanize in UI). */
   pageErrorRaw: string | null;
   /** Sidecar egress atom from the failed fetch (`tcp` / `rf` / …) for retry policy. */
@@ -76,6 +86,7 @@ interface NomadPageViewerState {
 
   setPanelActive: (active: boolean) => void;
   setInvalidUrlError: () => void;
+  applyPageProgress: (payload: unknown) => void;
   loadPage: (hash: string, path: string, options?: NomadPageLoadOptions) => Promise<void>;
   closeViewer: () => void;
   clearPageErrorForAnnounceReload: () => void;
@@ -191,6 +202,8 @@ const initialViewerState = {
   pageLoadingStartedAt: null as number | null,
   pageLoadingBudgetSec: 0,
   pageLoadingRetrying: false,
+  pageLoadingProgress: null as NomadPageLoadingProgress | null,
+  pageLoadingTriedIfaces: [] as string[],
   pageErrorRaw: null as string | null,
   pageErrorEgress: null as string | null,
   pageErrorDiag: null as NomadPageErrorDiag | null,
@@ -204,6 +217,20 @@ function egressFromNomadPageResponse(res: NomadPageResponse): string | null {
   if (typeof res.egress !== 'string') return null;
   const trimmed = res.egress.trim();
   return trimmed || null;
+}
+
+function mergeTriedInterfaces(
+  accumulated: string[],
+  fromRes: string[] | null | undefined,
+): string[] | null {
+  const out: string[] = [];
+  for (const name of [...accumulated, ...(fromRes ?? [])]) {
+    const trimmed = name.trim();
+    if (!trimmed) continue;
+    if (out.some((n) => n.toLowerCase() === trimmed.toLowerCase())) continue;
+    out.push(trimmed);
+  }
+  return out.length > 0 ? out : null;
 }
 
 /** Force-path retry countdown: prefer sidecar proof budget; clamp only when link_hops absent. */
@@ -238,6 +265,33 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     set({ panelActive: active });
   },
 
+  applyPageProgress: (payload) => {
+    const progress = asNomadPageProgressPayload(payload);
+    if (!progress) return;
+    const state = get();
+    if (!state.pageLoading) return;
+    if (!nomadPageProgressMatchesLoad(progress, state.selectedHash, state.pagePath)) return;
+    const mapped = mapNomadPageProgress(progress);
+    if (!mapped) return;
+    const add = mapped.addBudgetSecs ?? 0;
+    const iface =
+      typeof progress.iface === 'string' && progress.iface.trim() ? progress.iface.trim() : null;
+    const phase = progress.phase?.trim().toLowerCase();
+    let tried = state.pageLoadingTriedIfaces;
+    if (
+      iface &&
+      (phase === 'link_attempt' || phase === 'failover') &&
+      !tried.some((n) => n.toLowerCase() === iface.toLowerCase())
+    ) {
+      tried = [...tried, iface];
+    }
+    set({
+      pageLoadingProgress: mapped,
+      pageLoadingTriedIfaces: tried,
+      pageLoadingBudgetSec: add > 0 ? state.pageLoadingBudgetSec + add : state.pageLoadingBudgetSec,
+    });
+  },
+
   clearPageErrorForAnnounceReload: () => {
     set({
       pageErrorRaw: null,
@@ -261,6 +315,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingStartedAt: null,
       pageLoadingRetrying: false,
       pageLoadingBudgetSec: 0,
+      pageLoadingProgress: null,
+      pageLoadingTriedIfaces: [],
     });
   },
 
@@ -293,6 +349,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingStartedAt: null,
       pageLoadingBudgetSec: budgetSec,
       pageLoadingRetrying: false,
+      pageLoadingProgress: null,
+      pageLoadingTriedIfaces: [],
       pageErrorRaw: null,
       pageErrorEgress: null,
       pageErrorDiag: null,
@@ -317,6 +375,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           pageLoadingStartedAt: null,
           pageLoadingBudgetSec: 0,
           pageLoadingRetrying: false,
+          pageLoadingProgress: null,
+          pageLoadingTriedIfaces: [],
           pageContent: cached.content,
           pageContentType: cached.content_type,
           pageContentTruncated: false,
@@ -361,7 +421,11 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       if (
         !options.forcePathRefresh &&
         (!res.ok || !res.content) &&
-        shouldForceNomadPathRefreshRetry(res.error, egressFromNomadPageResponse(res))
+        shouldForceNomadPathRefreshRetry(
+          res.error,
+          egressFromNomadPageResponse(res),
+          nomadPageErrorDiagFromResponse(res),
+        )
       ) {
         const retryCode = res.error?.trim() || 'unknown';
         console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
@@ -376,6 +440,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           pageLoadingStartedAt: Date.now(),
           pageLoadingBudgetSec: budgetSec,
           pageLoadingRetrying: true,
+          // Keep pageLoadingTriedIfaces — progress events continue accumulating.
+          pageLoadingProgress: null,
         });
         res = await fetchNomadPageDeduped(hash, normalizedPath, normalizedRequest, true);
         if (get().loadGeneration !== generation) return;
@@ -393,6 +459,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         pageLoading: false,
         pageLoadingStartedAt: null,
         pageLoadingRetrying: false,
+        pageLoadingProgress: null,
+        pageLoadingTriedIfaces: [],
         pageErrorRaw: 'unknown',
         pageErrorEgress: null,
         pageErrorDiag: null,
@@ -406,13 +474,18 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     if (!res.ok || !res.content) {
       const rawCode = res.error?.trim() || 'unknown';
       const liveNode = useNomadNetworkStore.getState().nodes.get(hash.toLowerCase());
+      const fromRes = nomadPageErrorDiagFromResponse(res);
+      const accumulated = get().pageLoadingTriedIfaces;
+      const mergedTried = mergeTriedInterfaces(accumulated, fromRes.triedInterfaces);
       set({
         pageLoading: false,
         pageLoadingStartedAt: null,
         pageLoadingRetrying: false,
+        pageLoadingProgress: null,
+        pageLoadingTriedIfaces: [],
         pageErrorRaw: rawCode,
         pageErrorEgress: egressFromNomadPageResponse(res),
-        pageErrorDiag: nomadPageErrorDiagFromResponse(res),
+        pageErrorDiag: { ...fromRes, triedInterfaces: mergedTried },
         pageErrorNodeSnapshot: snapshotNomadNodeForPageError(hash, liveNode),
         announceReloadDone: false,
       });
@@ -436,6 +509,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingStartedAt: null,
       pageLoadingBudgetSec: 0,
       pageLoadingRetrying: false,
+      pageLoadingProgress: null,
+      pageLoadingTriedIfaces: [],
       pageContent: text,
       pageContentType: res.content_type,
       pageContentTruncated: truncated,

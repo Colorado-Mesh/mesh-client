@@ -188,13 +188,14 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     if (!res.ok) {
       const resRecord = res as { egress?: unknown };
       const resEgress = typeof resRecord.egress === 'string' ? resRecord.egress : egress;
+      const diag = diagFieldsFromResponse(res);
       logNomadFetchFailure(kind, {
         hash: cleanHash,
         path: opts.path,
         hops,
         egress: resEgress,
         error: res.error?.trim() || 'unknown',
-        diag: diagFieldsFromResponse(res),
+        diag,
       });
     }
     return res;

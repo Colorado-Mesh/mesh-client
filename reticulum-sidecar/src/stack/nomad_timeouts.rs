@@ -12,11 +12,6 @@ pub const NOMAD_TCP_LINK_ESTABLISH_SECS: u64 = 15;
 /// Grace for RTT-scaled link.request transfer after path + link stages.
 pub const NOMAD_TCP_TRANSFER_GRACE_SECS: u64 = 15;
 
-/// Floor for LinkClient LRPROOF wait (rsReticulum proof-budget overlay).
-/// MeshChat TCP overall is 45s; keep 15s transfer grace → 30s proof floor so
-/// slow hub peers are not cut off at hops×6 (18s for the TCP link_hops floor).
-pub const NOMAD_TCP_PROOF_FLOOR_SECS: u64 = 30;
-
 /// Python RNS `DEFAULT_PER_HOP_TIMEOUT`.
 pub const NOMAD_RF_PER_HOP_TIMEOUT_SECS: u64 = 6;
 
@@ -94,13 +89,11 @@ pub fn nomad_link_initiator_hops(egress_via: &str, path_hops: u8) -> u8 {
 
 /// Effective LRPROOF budget reported to the UI / failure logs.
 ///
-/// Matches `rsReticulum-link-client-proof-budget.patch`:
-/// `min(remaining, max(establishment = hops×6, NOMAD_TCP_PROOF_FLOOR_SECS))`.
-/// Callers that already know remaining overall time may still clamp further.
-pub fn nomad_link_proof_budget_secs(link_hops: u8) -> u64 {
-    u64::from(link_hops)
-        .saturating_mul(NOMAD_RF_PER_HOP_TIMEOUT_SECS)
-        .max(NOMAD_TCP_PROOF_FLOOR_SECS)
+/// Matches `rsReticulum-link-client-proof-budget.patch` (release parity):
+/// LinkClient waits for proof until the overall deadline remaining after
+/// pubkey/path discovery. With a cached key that is ~`timeout_secs`.
+pub fn nomad_link_proof_budget_secs(timeout_secs: u64) -> u64 {
+    timeout_secs
 }
 
 fn interface_status_live(status: &str) -> bool {
@@ -213,8 +206,8 @@ mod tests {
 
     #[test]
     fn tcp_link_initiator_hops_floored_and_capped_for_release_parity() {
-        // Floor 3 (~18s establishment); scale with path; cap 7 (~42s) under 45s overall.
-        // LinkClient proof wait then floors at NOMAD_TCP_PROOF_FLOOR_SECS (30s).
+        // Floor 3; scale with path; cap 7 under 45s overall. Proof wait itself
+        // uses remaining overall deadline (see nomad_link_proof_budget_secs).
         assert_eq!(nomad_link_initiator_hops("tcp", 1), 3);
         assert_eq!(nomad_link_initiator_hops("tcp", 2), 3);
         assert_eq!(nomad_link_initiator_hops("network", 1), 3);
@@ -229,14 +222,9 @@ mod tests {
     }
 
     #[test]
-    fn link_proof_budget_floors_at_thirty_for_low_initiator_hops() {
-        // 3 × 6s = 18s establishment → floor 30s (TCP hub slow-LRPROOF fix).
-        assert_eq!(nomad_link_proof_budget_secs(3), 30);
-        assert_eq!(nomad_link_proof_budget_secs(1), 30);
-        assert_eq!(nomad_link_proof_budget_secs(5), 30);
-        // Above the floor, scale with hops×6.
-        assert_eq!(nomad_link_proof_budget_secs(6), 36);
-        assert_eq!(nomad_link_proof_budget_secs(7), 42);
+    fn link_proof_budget_matches_overall_timeout_release_parity() {
+        assert_eq!(nomad_link_proof_budget_secs(45), 45);
+        assert_eq!(nomad_link_proof_budget_secs(99), 99);
     }
 
     #[test]

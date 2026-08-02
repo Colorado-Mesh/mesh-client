@@ -2971,7 +2971,8 @@
       "networkNotReady": "허브 또는 무선 인터페이스가 온라인 상태가 될 때까지 기다리는 중입니다. Connection에 인터페이스가 표시되면 다시 시도하십시오.",
       "pathTimeoutStale": "이 노드로의 경로를 새로 고칠 수 없습니다 (오래된 경로). 다음 발표를 기다렸다가 다시 시도하세요. 지속적인 실패는 종종 노드가 오프라인 상태임을 의미합니다.",
       "linkTimeoutCachedPath": "이 노드로 연결되는 경로가 나열되지만 링크가 완료되지 않았습니다. 경로가 오래되었을 수 있습니다. 다음 발표를 기다렸다가 다시 시도하세요. 지속적인 장애는 일반적으로 노드가 오프라인이거나 TCP를 통해 연결할 수 없음을 의미합니다.",
-      "linkTimeoutPathOk": "이 노드로 가는 경로가 확인되었지만 Nomad 페이지는 응답하지 않았습니다. 새로 고침될 때까지 기다렸다가 다시 시도하세요. 계속 실패하면 노드가 오프라인이거나 해당 페이지를 호스팅하지 않을 수 있습니다."
+      "linkTimeoutPathOk": "이 노드로 가는 경로가 확인되었지만 Nomad 페이지는 응답하지 않았습니다. 새로 고침될 때까지 기다렸다가 다시 시도하세요. 계속 실패하면 노드가 오프라인이거나 해당 페이지를 호스팅하지 않을 수 있습니다.",
+      "linkTimeoutRoutesTried": "여러 경로 ({{ifaces}}) 를 시도했지만 노드가 응답하지 않았습니다. 더 새로운 발표를 기다리거나, 다른 허브를 활성화하거나, 나중에 다시 시도하십시오. 노드가 오프라인일 수 있습니다."
     },
     "fitWidth": "창에 맞춤",
     "openWidth": "페이지 폭",
@@ -3026,7 +3027,19 @@
     "pageLoadingRetryOverdue": "경로 새로 고침 및 재시도 중... 여전히 작동 중",
     "enterUrlHint": "Nomad 주소를 붙여넣거나 목록에서 노드를 선택합니다.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
-    "goToUrl": "시작"
+    "goToUrl": "시작",
+    "pageLoadingTimeLeft": "{{time}} 이 (가) 이 시도에 남았습니다.",
+    "pageLoadingStillWorking": "진행 중",
+    "pageProgressLinking": "{{iface}} ({{hops}} HOPS) 을 (를) 통해 연결 중...",
+    "pageProgressLinkingIface": "{{iface}} 을 (를) 통해 연결 중…",
+    "pageProgressLinkingGeneric": "노드에 대한 링크를 설정하는 중...",
+    "pageProgressDeadRoute": "{{iface}} 을 (를) 통해 응답 없음 — 다른 경로를 찾고 있음...",
+    "pageProgressDeadRouteGeneric": "링크 시간이 초과되었습니다 — 다른 경로를 찾고 있습니다...",
+    "pageProgressSearchingRoute": "다른 다음 홉을 검색하는 중...",
+    "pageProgressFailover": "{{iface}} ({{hops}} HOPS) 을 (를) 통해 다른 경로로 시도 중...",
+    "pageProgressFailoverIface": "{{iface}} 을 (를) 경유하는 다른 경로로 시도 중...",
+    "pageProgressFailoverGeneric": "다른 경로로 시도 중...",
+    "pageProgressNoAlternate": "사용 가능한 다른 경로가 없습니다. 이 시도를 완료하는 중..."
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

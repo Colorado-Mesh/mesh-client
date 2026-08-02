@@ -2971,7 +2971,8 @@
       "networkNotReady": "In attesa che un hub o un'interfaccia radio siano online. Riprovare quando Connection mostra un'interfaccia.",
       "pathTimeoutStale": "Impossibile aggiornare il percorso a questo nodo (percorso obsoleto). Attendere l'annuncio successivo, quindi riprovare. Gli errori persistenti spesso indicano che il nodo è offline.",
       "linkTimeoutCachedPath": "Viene elencato un percorso per questo nodo, ma il collegamento non è mai stato completato: il percorso potrebbe essere obsoleto. Attendere l'annuncio successivo, quindi riprovare. Gli errori persistenti di solito indicano che il nodo è offline o non raggiungibile tramite TCP.",
-      "linkTimeoutPathOk": "Un percorso verso questo nodo è stato confermato, ma la pagina Nomad non ha risposto. Attendi un annuncio più recente e riprova. Se continua a fallire, il nodo potrebbe essere offline o non ospitare quella pagina."
+      "linkTimeoutPathOk": "Un percorso verso questo nodo è stato confermato, ma la pagina Nomad non ha risposto. Attendi un annuncio più recente e riprova. Se continua a fallire, il nodo potrebbe essere offline o non ospitare quella pagina.",
+      "linkTimeoutRoutesTried": "Ho provato più percorsi ({{ifaces}}) ma il nodo non ha mai risposto. Attendi un annuncio più recente, abilita un altro hub o riprova più tardi: il nodo potrebbe essere offline."
     },
     "fitWidth": "Adatta alla finestra",
     "openWidth": "Larghezza pagina",
@@ -3026,7 +3027,19 @@
     "pageLoadingRetryOverdue": "Aggiornamento del percorso e nuovo tentativo... ancora in corso",
     "enterUrlHint": "Incolla un indirizzo Nomad o seleziona un nodo dall'elenco.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
-    "goToUrl": "Vai"
+    "goToUrl": "Vai",
+    "pageLoadingTimeLeft": "{{time}} rimasti in questo tentativo",
+    "pageLoadingStillWorking": "Funziona ancora...",
+    "pageProgressLinking": "Connessione tramite {{iface}} ({{hops}} Hops)...",
+    "pageProgressLinkingIface": "Connessione tramite {{iface}}...",
+    "pageProgressLinkingGeneric": "Stabilire il collegamento con il nodo...",
+    "pageProgressDeadRoute": "Nessuna risposta tramite {{iface}} — alla ricerca di un altro percorso...",
+    "pageProgressDeadRouteGeneric": "Link scaduto — alla ricerca di un altro percorso...",
+    "pageProgressSearchingRoute": "Alla ricerca di un salto successivo diverso...",
+    "pageProgressFailover": "Prova un percorso diverso tramite {{iface}} ({{hops}} Hops)...",
+    "pageProgressFailoverIface": "Prova un percorso diverso tramite {{iface}}...",
+    "pageProgressFailoverGeneric": "Sto provando un percorso diverso...",
+    "pageProgressNoAlternate": "Nessun altro percorso disponibile — terminare questo tentativo..."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

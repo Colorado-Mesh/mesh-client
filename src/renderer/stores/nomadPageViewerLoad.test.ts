@@ -186,6 +186,42 @@ describe('nomadPageViewerStore loadPage cache', () => {
     }
   });
 
+  it('does not auto-retry TCP link_timeout after sidecar via failover rediscovered', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      const fetchNomadPage = vi.fn().mockResolvedValue({
+        ok: false,
+        error: 'link_timeout',
+        egress: 'tcp',
+        force_path_ok: true,
+        path_ensure_kind: 'rediscovered',
+        tried_interfaces: ['Ratspeak', 'RNS_Transport_US-East'],
+        link_hops: 7,
+        proof_budget_secs: 45,
+      });
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('e7d84cefc1f9a8f9a80336f3fa2d2309', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      await loadPromise;
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+
+      expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(false);
+      expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
+      expect(useNomadPageViewerStore.getState().pageErrorDiag?.triedInterfaces).toEqual([
+        'Ratspeak',
+        'RNS_Transport_US-East',
+      ]);
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
   it('retry budget uses link_hops when proof_budget_secs is absent', async () => {
     vi.useFakeTimers();
     const { restore } = mockConsoleWarn();

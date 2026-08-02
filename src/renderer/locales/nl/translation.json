@@ -2971,7 +2971,8 @@
       "networkNotReady": "Wachten tot een hub of radio-interface online komt. Probeer het opnieuw zodra Connection een interface toont.",
       "pathTimeoutStale": "Kon de route naar dit knooppunt (oud pad) niet vernieuwen. Wacht op de volgende aankondiging en probeer het dan opnieuw. Aanhoudende storingen betekenen vaak dat het knooppunt offline is.",
       "linkTimeoutCachedPath": "Er wordt een pad naar dit knooppunt weergegeven, maar de link is nooit voltooid — de route kan verouderd zijn. Wacht op de volgende aankondiging en probeer het dan opnieuw. Aanhoudende storingen betekenen meestal dat het knooppunt offline is of niet bereikbaar is via TCP.",
-      "linkTimeoutPathOk": "Een route naar dit knooppunt werd bevestigd, maar de Nomad-pagina antwoordde niet. Wacht op een versere aankondiging en probeer het opnieuw. Als het blijft mislukken, is het knooppunt mogelijk offline of host het die pagina niet."
+      "linkTimeoutPathOk": "Een route naar dit knooppunt werd bevestigd, maar de Nomad-pagina antwoordde niet. Wacht op een versere aankondiging en probeer het opnieuw. Als het blijft mislukken, is het knooppunt mogelijk offline of host het die pagina niet.",
+      "linkTimeoutRoutesTried": "Probeerde meerdere routes ({{ifaces}}), maar het knooppunt antwoordde nooit. Wacht op een versere aankondiging, schakel een andere hub in of probeer het later opnieuw — het knooppunt is mogelijk offline."
     },
     "fitWidth": "In venster passen",
     "openWidth": "Paginabreedte",
@@ -3026,7 +3027,19 @@
     "pageLoadingRetryOverdue": "Pad verversen en opnieuw proberen... werkt nog steeds",
     "enterUrlHint": "Plak een Nomad-adres of selecteer een knooppunt in de lijst.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
-    "goToUrl": "Ga"
+    "goToUrl": "Ga",
+    "pageLoadingTimeLeft": "{{time}} over bij deze poging",
+    "pageLoadingStillWorking": "Nog bezig",
+    "pageProgressLinking": "Verbinding maken via {{iface}} ({{hops}} hops)...",
+    "pageProgressLinkingIface": "Verbinden via {{iface}}…",
+    "pageProgressLinkingGeneric": "Koppeling met het knooppunt tot stand brengen...",
+    "pageProgressDeadRoute": "Geen antwoord via {{iface}} — op zoek naar een andere route...",
+    "pageProgressDeadRouteGeneric": "Time-out van link — op zoek naar een andere route...",
+    "pageProgressSearchingRoute": "Op zoek naar een andere volgende hop...",
+    "pageProgressFailover": "Een andere route proberen via {{iface}} ({{hops}} hops)...",
+    "pageProgressFailoverIface": "Een andere route proberen via {{iface}}…",
+    "pageProgressFailoverGeneric": "Probeer een andere route...",
+    "pageProgressNoAlternate": "Geen andere routes beschikbaar — deze poging afronden..."
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

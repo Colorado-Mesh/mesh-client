@@ -154,6 +154,7 @@ import {
 } from '../stores/messageStore';
 import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
+import { useNomadPageViewerStore } from '../stores/nomadPageViewerStore';
 import {
   normalizeRmapDiscoveryRows,
   useReticulumDiscoveryMapStore,
@@ -813,6 +814,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'nomadnetwork.node') {
         void useNomadNetworkStore.getState().refreshFromSidecar();
         recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
+      }
+      if (evt.type === 'nomad.page_progress' && evt.payload && typeof evt.payload === 'object') {
+        useNomadPageViewerStore.getState().applyPageProgress(evt.payload);
       }
       if (evt.type === 'rrc.hub' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as {

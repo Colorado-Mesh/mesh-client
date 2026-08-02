@@ -2973,7 +2973,8 @@
       "networkNotReady": "Čekání na připojení hubu nebo rádiového rozhraní. Zkuste to znovu, jakmile připojení zobrazí rozhraní.",
       "pathTimeoutStale": "Nelze obnovit trasu k tomuto uzlu (zastaralá cesta). Počkej na další oznámení a zkus to znovu. Trvalé poruchy často znamenají, že uzel je offline.",
       "linkTimeoutCachedPath": "Je uvedena cesta k tomuto uzlu, ale odkaz nebyl nikdy dokončen — trasa může být zastaralá. Počkej na další oznámení a zkus to znovu. Trvalé poruchy obvykle znamenají, že uzel je offline nebo není dosažitelný přes TCP.",
-      "linkTimeoutPathOk": "Trasa k tomuto uzlu byla potvrzena, ale stránka Nomad neodpověděla. Počkejte na čerstvější oznámení a zkuste to znovu. Pokud stále selhává, uzel může být offline nebo nemůže hostit tuto stránku."
+      "linkTimeoutPathOk": "Trasa k tomuto uzlu byla potvrzena, ale stránka Nomad neodpověděla. Počkejte na čerstvější oznámení a zkuste to znovu. Pokud stále selhává, uzel může být offline nebo nemůže hostit tuto stránku.",
+      "linkTimeoutRoutesTried": "Zkusil/a jsem více tras ({{ifaces}}), ale uzel neodpověděl. Počkejte na čerstvější oznámení, povolte jiný rozbočovač nebo to zkuste znovu později — uzel může být offline."
     },
     "fitWidth": "Přizpůsobit stránku oknu",
     "openWidth": "Šířka stránky",
@@ -3028,7 +3029,19 @@
     "pageLoadingRetryOverdue": "Obnovení cesty a opakování... stále funguje",
     "enterUrlHint": "Vložte adresu Nomad nebo vyberte uzel ze seznamu.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
-    "goToUrl": "Přejít"
+    "goToUrl": "Přejít",
+    "pageLoadingTimeLeft": "{{time}} při tomto pokusu zbývá",
+    "pageLoadingStillWorking": "Stále funguje...",
+    "pageProgressLinking": "Připojení přes {{iface}} ({{hops}} hops)…",
+    "pageProgressLinkingIface": "Připojení přes {{iface}}…",
+    "pageProgressLinkingGeneric": "Navazuje se spojení s uzlem...",
+    "pageProgressDeadRoute": "Žádná odpověď přes {{iface}} — hledám jinou trasu…",
+    "pageProgressDeadRouteGeneric": "Časový limit odkazu vypršel — hledám jinou trasu…",
+    "pageProgressSearchingRoute": "Hledá se jiný další hop…",
+    "pageProgressFailover": "Zkouším jinou trasu přes {{iface}} ({{hops}} hops)…",
+    "pageProgressFailoverIface": "Zkusit jinou trasu přes {{iface}}…",
+    "pageProgressFailoverGeneric": "Zkouším jinou trasu...",
+    "pageProgressNoAlternate": "Žádné jiné trasy nejsou k dispozici — dokončení tohoto pokusu..."
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

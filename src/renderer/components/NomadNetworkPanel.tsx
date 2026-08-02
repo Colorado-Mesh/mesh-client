@@ -254,6 +254,7 @@ export default function NomadNetworkPanel({
   const pageLoadingStartedAt = useNomadPageViewerStore((s) => s.pageLoadingStartedAt);
   const pageLoadingBudgetSec = useNomadPageViewerStore((s) => s.pageLoadingBudgetSec);
   const pageLoadingRetrying = useNomadPageViewerStore((s) => s.pageLoadingRetrying);
+  const pageLoadingProgress = useNomadPageViewerStore((s) => s.pageLoadingProgress);
   const pageErrorRaw = useNomadPageViewerStore((s) => s.pageErrorRaw);
   const pageErrorEgress = useNomadPageViewerStore((s) => s.pageErrorEgress);
   const pageErrorDiag = useNomadPageViewerStore((s) => s.pageErrorDiag);
@@ -1076,21 +1077,34 @@ export default function NomadNetworkPanel({
                     </p>
                   ) : null}
                   {pageLoading ? (
-                    <p className="text-muted text-sm">
-                      {pageLoadingStartedAt == null
-                        ? t('nomadNetwork.pageLoading')
-                        : pageLoadingRetrying
-                          ? pageLoadingRemainingSec > 0
-                            ? t('nomadNetwork.pageLoadingRetryCountdown', {
+                    <div className="space-y-1">
+                      <p className="text-muted text-sm">
+                        {pageLoadingProgress
+                          ? t(pageLoadingProgress.messageKey, pageLoadingProgress.messageParams)
+                          : pageLoadingStartedAt == null
+                            ? t('nomadNetwork.pageLoading')
+                            : pageLoadingRetrying
+                              ? pageLoadingRemainingSec > 0
+                                ? t('nomadNetwork.pageLoadingRetryCountdown', {
+                                    time: formatNomadPageCountdown(pageLoadingRemainingSec),
+                                  })
+                                : t('nomadNetwork.pageLoadingRetryOverdue')
+                              : pageLoadingRemainingSec > 0
+                                ? t('nomadNetwork.pageLoadingCountdown', {
+                                    time: formatNomadPageCountdown(pageLoadingRemainingSec),
+                                  })
+                                : t('nomadNetwork.pageLoadingCountdownOverdue')}
+                      </p>
+                      {pageLoadingProgress && pageLoadingStartedAt != null ? (
+                        <p className="text-muted text-xs">
+                          {pageLoadingRemainingSec > 0
+                            ? t('nomadNetwork.pageLoadingTimeLeft', {
                                 time: formatNomadPageCountdown(pageLoadingRemainingSec),
                               })
-                            : t('nomadNetwork.pageLoadingRetryOverdue')
-                          : pageLoadingRemainingSec > 0
-                            ? t('nomadNetwork.pageLoadingCountdown', {
-                                time: formatNomadPageCountdown(pageLoadingRemainingSec),
-                              })
-                            : t('nomadNetwork.pageLoadingCountdownOverdue')}
-                    </p>
+                            : t('nomadNetwork.pageLoadingStillWorking')}
+                        </p>
+                      ) : null}
+                    </div>
                   ) : pageError ? (
                     <div className="space-y-2">
                       <p className="text-sm text-red-300">

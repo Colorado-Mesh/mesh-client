@@ -2971,7 +2971,8 @@
       "networkNotReady": "Aguardando que um hub ou interface de rádio fique online. Tente novamente quando o Connection mostrar uma interface.",
       "pathTimeoutStale": "Não foi possível atualizar a rota para este nó (caminho obsoleto). Aguarde o próximo anúncio e tente novamente. Falhas persistentes geralmente significam que o nó está offline.",
       "linkTimeoutCachedPath": "Um caminho para este nó está listado, mas o link nunca foi concluído — a rota pode estar obsoleta. Aguarde o próximo anúncio e tente novamente. Falhas persistentes geralmente significam que o nó está offline ou não pode ser acessado pelo TCP.",
-      "linkTimeoutPathOk": "Uma rota para este nó foi confirmada, mas a página Nomad não respondeu. Aguarde um anúncio mais recente e tente novamente. Se continuar falhando, o nó pode estar offline ou não hospedar essa página."
+      "linkTimeoutPathOk": "Uma rota para este nó foi confirmada, mas a página Nomad não respondeu. Aguarde um anúncio mais recente e tente novamente. Se continuar falhando, o nó pode estar offline ou não hospedar essa página.",
+      "linkTimeoutRoutesTried": "Tentou várias rotas ({{ifaces}}), mas o nó nunca respondeu. Aguarde um anúncio mais recente, ative outro hub ou tente novamente mais tarde — o nó pode estar offline."
     },
     "fitWidth": "Encaixar na janela",
     "openWidth": "Largura da Página",
@@ -3026,7 +3027,19 @@
     "pageLoadingRetryOverdue": "Atualizando o caminho e tentando novamente... ainda funcionando",
     "enterUrlHint": "Cole um endereço Nomad ou selecione um nó da lista.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
-    "goToUrl": "Ir"
+    "goToUrl": "Ir",
+    "pageLoadingTimeLeft": "{{time}} restante nesta tentativa",
+    "pageLoadingStillWorking": "Ainda trabalhando?",
+    "pageProgressLinking": "Conectando-se via {{iface}} ({{hops}} hops)…",
+    "pageProgressLinkingIface": "Conectando-se via {{iface}}…",
+    "pageProgressLinkingGeneric": "Estabelecendo link para o nó...",
+    "pageProgressDeadRoute": "Sem resposta via {{iface}} — procurando outra rota...",
+    "pageProgressDeadRouteGeneric": "O link expirou — procurando outra rota...",
+    "pageProgressSearchingRoute": "Procurando um próximo salto diferente...",
+    "pageProgressFailover": "Tentando uma rota diferente via {{iface}} ({{hops}} saltos)…",
+    "pageProgressFailoverIface": "Tentando um trajeto diferente via {{iface}}…",
+    "pageProgressFailoverGeneric": "Tentando uma rota diferente...",
+    "pageProgressNoAlternate": "Não há outras rotas disponíveis — concluindo esta tentativa..."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

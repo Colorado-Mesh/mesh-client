@@ -195,7 +195,7 @@ describe('nomadNetworkStore', () => {
         egress: 'tcp',
         path_hops: 1,
         link_hops: 3,
-        proof_budget_secs: 30,
+        proof_budget_secs: 45,
         timeout_secs: 45,
         force_path_ok: true,
         path_ensure_kind: 'rediscovered',
@@ -216,7 +216,7 @@ describe('nomadNetworkStore', () => {
       expect(failed).toContain('error=link_timeout');
       expect(failed).toContain('hash=abcdef12');
       expect(failed).toContain('link_hops=3');
-      expect(failed).toContain('proof_budget_secs=30');
+      expect(failed).toContain('proof_budget_secs=45');
       expect(failed).toContain('timeout_secs=45');
       expect(failed).toContain('force_path_ok=true');
       expect(failed).toContain('path_ensure=rediscovered');

@@ -68,6 +68,22 @@ describe('nomadPageErrorHumanize', () => {
         pathEnsureKind: 'rediscovered',
       }),
     ).toBe('t:nomadNetwork.errors.linkTimeoutPathOk');
+    expect(
+      nomadPageErrorI18nKey('link_timeout', {
+        forcePathOk: true,
+        pathEnsureKind: 'rediscovered',
+        triedInterfaces: ['Ratspeak', 'RNS_Transport_US-East'],
+      }),
+    ).toBe('nomadNetwork.errors.linkTimeoutRoutesTried');
+    const tOpts = (key: string, options?: Record<string, unknown>) =>
+      options ? `t:${key}:${JSON.stringify(options)}` : `t:${key}`;
+    expect(
+      humanizeNomadPageError('link_timeout', tOpts, {
+        triedInterfaces: ['Ratspeak', 'RNS_Transport_US-East'],
+      }),
+    ).toBe(
+      't:nomadNetwork.errors.linkTimeoutRoutesTried:{"ifaces":"Ratspeak, RNS_Transport_US-East"}',
+    );
   });
 
   it('classifies announce-reload vs force-path-refresh errors', () => {
@@ -96,5 +112,20 @@ describe('nomadPageErrorHumanize', () => {
     expect(shouldForceNomadPathRefreshRetry('link_timeout', 'rf')).toBe(false);
     expect(shouldForceNomadPathRefreshRetry('link_timeout', 'ble')).toBe(false);
     expect(shouldForceNomadPathRefreshRetry('link_timeout', 'RF')).toBe(false);
+
+    // Sidecar already via-failovers / rediscovered — do not start a second HTTP attempt.
+    expect(
+      shouldForceNomadPathRefreshRetry('link_timeout', 'tcp', {
+        forcePathOk: true,
+        pathEnsureKind: 'rediscovered',
+      }),
+    ).toBe(false);
+    expect(
+      shouldForceNomadPathRefreshRetry('link_timeout', 'tcp', {
+        triedInterfaces: ['Ratspeak', 'RNS_Transport_US-East'],
+      }),
+    ).toBe(false);
+    // Omitting diag (announce reload) still allows force-path.
+    expect(shouldForceNomadPathRefreshRetry('link_timeout', 'tcp', null)).toBe(true);
   });
 });
