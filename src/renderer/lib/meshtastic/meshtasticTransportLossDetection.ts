@@ -100,9 +100,11 @@ export function createSerializedWritableStream(
 
   const abortInner = (reason?: unknown): Promise<void> => {
     try {
-      return inner.abort(reason);
+      return Promise.resolve(inner.abort(reason)).catch(() => {
+        // catch-no-log-ok async abort rejection during teardown
+      });
     } catch {
-      // catch-no-log-ok abort on closed/errored stream during teardown
+      // catch-no-log-ok sync abort throw on closed/errored stream during teardown
       return Promise.resolve();
     }
   };

@@ -185,4 +185,30 @@ describe('meshtasticTransportLossDetection', () => {
     const writer = serialized.getWriter();
     await expect(writer.close()).resolves.toBeUndefined();
   });
+
+  it('createSerializedWritableStream abort soft-fails when inner.abort rejects asynchronously', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+
+    try {
+      const inner = new WritableStream<Uint8Array>({
+        write: vi.fn(),
+        abort() {
+          return Promise.reject(new DOMException('already closed', 'InvalidStateError'));
+        },
+      });
+      const serialized = createSerializedWritableStream(inner);
+      const writer = serialized.getWriter();
+      await expect(writer.abort('teardown')).resolves.toBeUndefined();
+      // Allow any stray rejection to surface before asserting.
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
 });

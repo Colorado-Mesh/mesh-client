@@ -158,6 +158,8 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(lostBody).toContain('defer reconnect until in-flight open settles');
   });
 
+  // Source contract (not full runtime lifecycle): useMeshtasticRuntime reconnect wiring is
+  // covered by source contracts per AGENTS.md; full renderHook + BLE/driver mocks are out of scope.
   it('disconnects before cleanupSubscriptions so toDevice stays defined during safeDisconnect', () => {
     const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
     const driverIdentityIdx = lostBody.indexOf(
@@ -189,17 +191,18 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('Reconnect superseded during configure');
   });
 
-  it('BLE configure timeout routes through handleConnectionLost on initial connect only', () => {
+  it('wires isBleReconnectAttemptActive from reconnect refs (behavioral arming in wire-effects tests)', () => {
+    // DeviceConfiguring arm/skip is asserted in meshtasticRuntimeWireEffects.post-reboot.test.ts
+    expect(SOURCE).toMatch(
+      /isBleReconnectAttemptActive:\s*\(\)\s*=>\s*isReconnectingRef\.current \|\| reconnectConnectInFlightRef\.current/,
+    );
     const wireSource = readFileSync(
       join(TEST_DIR, '../lib/meshtastic/meshtasticRuntimeWireEffects.ts'),
       'utf-8',
     );
+    expect(wireSource).toContain('!isBleReconnectAttemptActive()');
     expect(wireSource).toMatch(
       /configure timeout \(BLE 30s\)[\s\S]*?handleConnectionLostRef\.current\(\)/,
-    );
-    expect(wireSource).toContain('!isBleReconnectAttemptActive()');
-    expect(SOURCE).toMatch(
-      /isBleReconnectAttemptActive:\s*\(\)\s*=>\s*isReconnectingRef\.current \|\| reconnectConnectInFlightRef\.current/,
     );
   });
 

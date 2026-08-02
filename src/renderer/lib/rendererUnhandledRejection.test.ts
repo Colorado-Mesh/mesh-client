@@ -33,13 +33,14 @@ describe('logRendererUnhandledRejection', () => {
 function dispatchUnhandledRejection(
   reason: unknown,
   opts?: { preventDefaultFirst?: boolean },
-): void {
+): Event {
   const event = new Event('unhandledrejection', { cancelable: true });
   Object.assign(event, { reason });
   if (opts?.preventDefaultFirst) {
     event.preventDefault();
   }
   window.dispatchEvent(event);
+  return event;
 }
 
 describe('installRendererUnhandledRejectionLogger', () => {
@@ -82,9 +83,10 @@ describe('installRendererUnhandledRejectionLogger', () => {
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const uninstall = installRendererUnhandledRejectionLogger();
 
-    dispatchUnhandledRejection(new Error('Packet does not exist'));
+    const event = dispatchUnhandledRejection(new Error('Packet does not exist'));
     uninstall();
 
+    expect(event.defaultPrevented).toBe(true);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(debugSpy).toHaveBeenCalledWith(
       '[renderer] Ignoring Meshtastic disconnect mid-send rejection:',
