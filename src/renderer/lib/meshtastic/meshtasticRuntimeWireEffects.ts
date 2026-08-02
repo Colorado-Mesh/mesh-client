@@ -173,6 +173,8 @@ export interface MeshtasticRuntimeWireEffectsDeps {
   isDuplicate: (senderId: number, packetId: number) => boolean;
   ensureNodeExists: (nodeNum: number, source: 'rf' | 'mqtt') => void;
   clearConfigureTimeout: () => void;
+  /** True while reconnect owns the BLE open+configure attempt (90s budget is the stall ceiling). */
+  isBleReconnectAttemptActive: () => boolean;
   applyMeshtasticForeignLoraFromLog: (message: string) => void;
   emptyNode: (nodeId: number) => MeshNode;
   setMeshtasticIdentityId: Dispatch<SetStateAction<string | null>>;
@@ -319,6 +321,7 @@ export function attachMeshtasticRuntimeWireEffects(
     isDuplicate,
     ensureNodeExists,
     clearConfigureTimeout,
+    isBleReconnectAttemptActive,
     applyMeshtasticForeignLoraFromLog,
     emptyNode,
     setMeshtasticIdentityId,
@@ -420,10 +423,12 @@ export function attachMeshtasticRuntimeWireEffects(
     ) {
       isConfiguringRef.current = true;
       meshtasticIngestSessionRef.current?.setConfiguring(true);
+      // Initial BLE connect only — during reconnect the 90s attempt budget owns stall detection.
       if (
         status === DeviceStatusEnum.DeviceConfiguring &&
         type === 'ble' &&
-        !configureTimeoutRef.current
+        !configureTimeoutRef.current &&
+        !isBleReconnectAttemptActive()
       ) {
         configureTimeoutRef.current = setTimeout(() => {
           console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');

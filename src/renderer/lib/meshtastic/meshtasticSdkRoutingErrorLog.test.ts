@@ -16,6 +16,10 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 import { updateMessageStatus } from '@/renderer/stores/messageStore';
 
 import {
+  resetMeshtasticLateConfigureRetryableSwallowForTests,
+  shouldSwallowLateMeshtasticConfigureRetryableRejection,
+} from './meshtasticConfigureRetry';
+import {
   beginMeshtasticNonChatOutbound,
   endMeshtasticNonChatOutbound,
   registerMeshtasticNonChatWirePacketId,
@@ -371,7 +375,9 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     expect(onQueueRejection).toHaveBeenCalledWith(reason);
     expect(preventDefault).toHaveBeenCalled();
     restore();
-    expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', handler);
+    expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', handler, {
+      capture: true,
+    });
   });
 
   it('does not preventDefault when handler returns false', () => {
@@ -417,5 +423,33 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     expect(onQueueRejection).not.toHaveBeenCalled();
     expect(preventDefault).toHaveBeenCalled();
     restore();
+  });
+
+  it('registers unhandledrejection listener in capture phase', () => {
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(vi.fn());
+    expect(window.addEventListener).toHaveBeenCalledWith(
+      'unhandledrejection',
+      expect.any(Function),
+      { capture: true },
+    );
+    restore();
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      'unhandledrejection',
+      expect.any(Function),
+      { capture: true },
+    );
+  });
+
+  it('arms late-swallow window when the capture handler is removed', () => {
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(vi.fn());
+    expect(
+      shouldSwallowLateMeshtasticConfigureRetryableRejection(new Error('Packet does not exist')),
+    ).toBe(false);
+    restore();
+    expect(
+      shouldSwallowLateMeshtasticConfigureRetryableRejection(new Error('Packet does not exist')),
+    ).toBe(true);
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
   });
 });

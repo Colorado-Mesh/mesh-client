@@ -2,8 +2,11 @@ import type { MeshDevice } from '@meshtastic/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  armMeshtasticLateConfigureRetryableSwallow,
   configureMeshtasticDeviceWithRetry,
   isMeshtasticConfigureRetryableError,
+  resetMeshtasticLateConfigureRetryableSwallowForTests,
+  shouldSwallowLateMeshtasticConfigureRetryableRejection,
 } from './meshtasticConfigureRetry';
 
 describe('configureMeshtasticDeviceWithRetry', () => {
@@ -36,5 +39,16 @@ describe('configureMeshtasticDeviceWithRetry', () => {
   it('isMeshtasticConfigureRetryableError matches SDK message', () => {
     expect(isMeshtasticConfigureRetryableError(new Error('Packet does not exist'))).toBe(true);
     expect(isMeshtasticConfigureRetryableError(new Error('other'))).toBe(false);
+  });
+
+  it('late-swallow window is off by default and active only after arm', () => {
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
+    const err = new Error('Packet does not exist');
+    expect(shouldSwallowLateMeshtasticConfigureRetryableRejection(err)).toBe(false);
+    armMeshtasticLateConfigureRetryableSwallow(60_000);
+    expect(shouldSwallowLateMeshtasticConfigureRetryableRejection(err)).toBe(true);
+    expect(shouldSwallowLateMeshtasticConfigureRetryableRejection(new Error('other'))).toBe(false);
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
+    expect(shouldSwallowLateMeshtasticConfigureRetryableRejection(err)).toBe(false);
   });
 });

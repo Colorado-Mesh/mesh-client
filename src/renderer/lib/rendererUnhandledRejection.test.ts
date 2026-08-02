@@ -2,6 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  armMeshtasticLateConfigureRetryableSwallow,
+  resetMeshtasticLateConfigureRetryableSwallowForTests,
+} from './meshtastic/meshtasticConfigureRetry';
+import {
   installRendererUnhandledRejectionLogger,
   logRendererUnhandledRejection,
 } from './rendererUnhandledRejection';
@@ -30,14 +34,22 @@ describe('logRendererUnhandledRejection', () => {
   });
 });
 
-function dispatchUnhandledRejection(reason: unknown): void {
-  const event = new Event('unhandledrejection');
+function dispatchUnhandledRejection(
+  reason: unknown,
+  opts?: { preventDefaultFirst?: boolean },
+): Event {
+  const event = new Event('unhandledrejection', { cancelable: true });
   Object.assign(event, { reason });
+  if (opts?.preventDefaultFirst) {
+    event.preventDefault();
+  }
   window.dispatchEvent(event);
+  return event;
 }
 
 describe('installRendererUnhandledRejectionLogger', () => {
   afterEach(() => {
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
     vi.restoreAllMocks();
   });
 
@@ -59,5 +71,46 @@ describe('installRendererUnhandledRejectionLogger', () => {
     dispatchUnhandledRejection('boom');
 
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('skips console.error when defaultPrevented (capture-phase Meshtastic handler)', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+
+    dispatchUnhandledRejection(new Error('queue rejected'), { preventDefaultFirst: true });
+    uninstall();
+
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('logs Packet does not exist when late-swallow window is not armed', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+
+    const event = dispatchUnhandledRejection(new Error('Packet does not exist'));
+    uninstall();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[renderer] Unhandled rejection:',
+      expect.stringContaining('Packet does not exist'),
+    );
+  });
+
+  it('does not log Packet does not exist during armed late-swallow window', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+    armMeshtasticLateConfigureRetryableSwallow();
+
+    const event = dispatchUnhandledRejection(new Error('Packet does not exist'));
+    uninstall();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[renderer] Ignoring Meshtastic disconnect mid-send rejection:',
+      'Packet does not exist',
+    );
   });
 });

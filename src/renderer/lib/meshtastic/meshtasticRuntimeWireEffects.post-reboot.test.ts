@@ -1,10 +1,14 @@
 import type { MeshDevice } from '@meshtastic/core';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS } from '../timeConstants';
 import type { ConnectionType, DeviceState } from '../types';
 import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffects';
 
-function makeDeps() {
+/** DeviceConfiguring — see Types.DeviceStatusEnum */
+const DEVICE_CONFIGURING = 6;
+
+function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
   const touchLastData = vi.fn();
   const schedulePostCommitRebootRecovery = vi.fn();
   const clearPostCommitRebootRecovery = vi.fn();
@@ -12,7 +16,6 @@ function makeDeps() {
   const stopWatchdog = vi.fn();
   const stopGpsInterval = vi.fn();
   const cleanupSubscriptions = vi.fn();
-  const clearConfigureTimeout = vi.fn();
   const startWatchdog = vi.fn();
   const startGpsInterval = vi.fn();
   const refreshOurPosition = vi.fn().mockResolvedValue(null);
@@ -24,6 +27,12 @@ function makeDeps() {
     current: { type: 'ble' as ConnectionType, blePeripheralId: 'p1' },
   };
   const configureTimeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+  const clearConfigureTimeout = vi.fn(() => {
+    if (configureTimeoutRef.current != null) {
+      clearTimeout(configureTimeoutRef.current);
+      configureTimeoutRef.current = null;
+    }
+  });
   const meshtasticIngestSessionRef = {
     current: {
       setConfiguring: vi.fn(),
@@ -88,6 +97,7 @@ function makeDeps() {
     isDuplicate: vi.fn().mockReturnValue(false),
     ensureNodeExists: vi.fn(),
     clearConfigureTimeout,
+    isBleReconnectAttemptActive: opts?.isBleReconnectAttemptActive ?? (() => false),
     applyMeshtasticForeignLoraFromLog: vi.fn(),
     emptyNode: vi.fn(),
     setMeshtasticIdentityId: noopSet,
@@ -131,6 +141,7 @@ function makeDeps() {
 
   return {
     deps,
+    configureTimeoutRef,
     touchLastData,
     schedulePostCommitRebootRecovery,
     clearPostCommitRebootRecovery,
@@ -138,6 +149,31 @@ function makeDeps() {
     isConfiguringRef,
     setState,
   };
+}
+
+function attachBleWithStatusSubscribers(
+  deps: ReturnType<typeof makeDeps>['deps'],
+): Set<(status: number) => void> {
+  const statusSubscribers = new Set<(status: number) => void>();
+  const noopSub = { subscribe: () => () => {} };
+  const device = {
+    events: new Proxy({} as MeshDevice['events'], {
+      get: (_target, prop) => {
+        if (prop === 'onDeviceStatus') {
+          return {
+            subscribe: (cb: (status: number) => void) => {
+              statusSubscribers.add(cb);
+              return () => statusSubscribers.delete(cb);
+            },
+          };
+        }
+        return noopSub;
+      },
+    }),
+    setHeartbeatInterval: vi.fn(),
+  } as unknown as MeshDevice;
+  attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+  return statusSubscribers;
 }
 
 describe('meshtasticRuntimeWireEffects DeviceRestarting', () => {
@@ -212,5 +248,52 @@ describe('meshtasticRuntimeWireEffects DeviceRestarting', () => {
     for (const cb of statusSubscribers) cb(7);
 
     expect(clearPostCommitRebootRecovery).toHaveBeenCalled();
+  });
+});
+
+describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('arms 30s timeout on DeviceConfiguring when reconnect is inactive', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+
+    expect(configureTimeoutRef.current).not.toBeNull();
+  });
+
+  it('does not arm timeout on DeviceConfiguring when reconnect owns the attempt', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => true,
+    });
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+
+  it('fires handleConnectionLost after BLE configure timeout when armed', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const onLost = vi.mocked(deps.handleConnectionLostRef.current);
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    expect(configureTimeoutRef.current).not.toBeNull();
+
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(configureTimeoutRef.current).toBeNull();
   });
 });
