@@ -32,7 +32,23 @@ const FRESH_LINK_CLIENT = `impl LinkClient {
 
 const UPSTREAM_EQUIVALENT = `impl LinkClient {
     async fn query(&self) -> Result<(), LinkClientError> {
-        // Cap proof wait at link establishment timeout (6s × hops).
+        // Cap proof wait at establishment (6s × hops), but floor at 30s.
+        let proof_budget = time_remaining(deadline)?.min(
+            link.establishment_timeout
+                .max(Duration::from_secs(30)),
+        );
+        let proof_data = wait_for_proof(&mut dest_rx, link_id, proof_budget).await?;
+        Ok(())
+    }
+}
+`;
+
+/** Older #756 establishment-only cap — apply script must migrate to the 30s floor. */
+const LEGACY_ESTABLISHMENT_ONLY = `impl LinkClient {
+    async fn query(&self) -> Result<(), LinkClientError> {
+        // Cap proof wait at link establishment timeout (6s × hops). Otherwise a
+        // cached path lets wait_for_proof burn the entire overall deadline
+        // (e.g. TCP 45s) even when MeshChat would fail the link stage in ~15s.
         let proof_budget = time_remaining(deadline)?.min(link.establishment_timeout);
         let proof_data = wait_for_proof(&mut dest_rx, link_id, proof_budget).await?;
         Ok(())
@@ -48,7 +64,7 @@ const INCOMPATIBLE = `impl LinkClient {
 }
 `;
 
-/** Has proof_budget but does not cap it with establishment_timeout. */
+/** Has proof_budget but does not cap/floor it. */
 const UNCAPPED_PROOF_BUDGET = `impl LinkClient {
     async fn query(&self) -> Result<(), LinkClientError> {
         let proof_budget = time_remaining(deadline)?;
@@ -61,7 +77,9 @@ const UNCAPPED_PROOF_BUDGET = `impl LinkClient {
 /** Caps proof_budget but wait_for_proof still uses the uncapped remaining deadline. */
 const CAPPED_PROOF_BUDGET_UNUSED = `impl LinkClient {
     async fn query(&self) -> Result<(), LinkClientError> {
-        let proof_budget = time_remaining(deadline)?.min(link.establishment_timeout);
+        let proof_budget = time_remaining(deadline)?.min(
+            link.establishment_timeout.max(Duration::from_secs(30)),
+        );
         let proof_data = wait_for_proof(&mut dest_rx, link_id, time_remaining(deadline)?).await?;
         Ok(())
     }
@@ -104,6 +122,7 @@ afterEach(() => {
 describe('apply-rsReticulum-link-client-proof-budget.sh', () => {
   it('applies the overlay on a fresh checkout', () => {
     expect(readFileSync(PATCH_FILE, 'utf8')).toContain('proof_budget');
+    expect(readFileSync(PATCH_FILE, 'utf8')).toContain('Duration::from_secs(30)');
     const rns = makeFakeRsReticulum(FRESH_LINK_CLIENT);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);
@@ -111,6 +130,7 @@ describe('apply-rsReticulum-link-client-proof-budget.sh', () => {
     const body = readFileSync(path.join(rns, 'crates/rns-runtime/src/link_client.rs'), 'utf8');
     expect(body).toContain('let proof_budget');
     expect(body).toContain('link.establishment_timeout');
+    expect(body).toContain('Duration::from_secs(30)');
   });
 
   it('is a no-op when the exact overlay is already applied (repeated run)', () => {
@@ -122,7 +142,19 @@ describe('apply-rsReticulum-link-client-proof-budget.sh', () => {
     expect(second.stdout).toMatch(/already present/);
   });
 
-  it('accepts an upstream-equivalent proof-budget cap when the patch does not apply', () => {
+  it('migrates the legacy establishment-only cap to the 30s floor', () => {
+    const rns = makeFakeRsReticulum(LEGACY_ESTABLISHMENT_ONLY);
+    const result = runApply(rns);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toMatch(/migrated .*30s floor/);
+    const body = readFileSync(path.join(rns, 'crates/rns-runtime/src/link_client.rs'), 'utf8');
+    expect(body).toContain('Duration::from_secs(30)');
+    expect(body).not.toMatch(
+      /let proof_budget = time_remaining\(deadline\)\?\.min\(link\.establishment_timeout\);/,
+    );
+  });
+
+  it('accepts an upstream-equivalent proof-budget floor when the patch does not apply', () => {
     const rns = makeFakeRsReticulum(UPSTREAM_EQUIVALENT);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);

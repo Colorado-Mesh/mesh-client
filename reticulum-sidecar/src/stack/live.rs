@@ -993,7 +993,7 @@ impl LiveBridge {
             });
         }
         let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
-        let proof_budget_secs = u64::from(link_hops).saturating_mul(6);
+        let proof_budget_secs = nomad_timeouts::nomad_link_proof_budget_secs(link_hops);
         // Announce destination (URL/path-table) vs LinkClient dest from identity+aspect.
         let link_dest_hex = hex::encode(Destination::hash_from_name_and_identity(
             NOMAD_NODE_ASPECT,
@@ -3809,10 +3809,10 @@ fn insert_nomad_link_budget_fields(
     }
     if let Some(link_hops) = link_hops {
         obj.insert("link_hops".into(), serde_json::json!(link_hops));
-        // Link::new_initiator uses ESTABLISHMENT_TIMEOUT_PER_HOP (6s) × hops.
+        // Matches LinkClient proof-budget overlay: max(hops×6, 30s floor).
         obj.insert(
             "proof_budget_secs".into(),
-            serde_json::json!(u64::from(link_hops).saturating_mul(6)),
+            serde_json::json!(nomad_timeouts::nomad_link_proof_budget_secs(link_hops)),
         );
     }
     if let Some(timeout_secs) = timeout_secs {
@@ -4245,7 +4245,7 @@ mod announce_display_name_tests {
         assert_eq!(with_diag["egress"], "tcp");
         assert_eq!(with_diag["path_hops"], 1);
         assert_eq!(with_diag["link_hops"], 3);
-        assert_eq!(with_diag["proof_budget_secs"], 18);
+        assert_eq!(with_diag["proof_budget_secs"], 30);
         assert_eq!(with_diag["timeout_secs"], 45);
         assert_eq!(with_diag["force_path_ok"], true);
         assert_eq!(with_diag["elapsed_ms"], 18250);
@@ -4287,7 +4287,7 @@ mod announce_display_name_tests {
         assert_eq!(out["egress"], "tcp");
         assert_eq!(out["path_hops"], 1);
         assert_eq!(out["link_hops"], 3);
-        assert_eq!(out["proof_budget_secs"], 18);
+        assert_eq!(out["proof_budget_secs"], 30);
         assert_eq!(out["timeout_secs"], 45);
         assert_eq!(out["elapsed_ms"], 4200);
         assert!(out.get("force_path_ok").is_none());
