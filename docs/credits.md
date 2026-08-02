@@ -36,6 +36,12 @@ We were inspired by features from these projects:
 | ----------------------- | -------- | ---------------------------------------------------------------------------------------- |
 | `mesh-client-reticulum` | AGPL-3.0 | Spawned Reticulum/LXMF sidecar (separate process; see [docs/reticulum.md](reticulum.md)) |
 
+### Bundled fonts
+
+| Font / file                                                         | License | Role                                                                                                                  |
+| ------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `MeshClientNomadMono.woff2` (JetBrains Mono Nerd Font Mono, subset) | OFL-1.1 | Nomad Micron viewer monospace + Nerd/FA PUA icons ([OFL](../src/renderer/assets/fonts/OFL-JetBrainsMonoNerdFont.txt)) |
+
 Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/mesh-client/blob/main/package.json) at the repository root; the tables below mirror them for attribution.
 
 ### Runtime dependencies

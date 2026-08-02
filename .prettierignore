@@ -38,3 +38,10 @@ reticulum-sidecar/
 *.gif
 *.svg
 *.webp
+
+# Fonts (binary; no Prettier parser)
+*.woff
+*.woff2
+*.ttf
+*.otf
+*.eot
