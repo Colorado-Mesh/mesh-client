@@ -644,7 +644,9 @@
     "notificationMessageTitle": "来自{{sender}}的消息",
     "reticulumSendStoredAtPn": "存储在传播节点",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "从射频路径更新"
+    "hopCountRefinedFromRf": "从射频路径更新",
+    "openPeerDetails": "对等方详情",
+    "openPeerDetailsAria": "打开 {{name}} 的对等方详情"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

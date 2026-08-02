@@ -313,9 +313,7 @@ impl LiveBridge {
         let inbound_lxmf_cb = inbound_lxmf.clone();
         let self_hash_cb = lxmf_hash_hex.clone();
         let self_name_cb = display_name.clone();
-        let inner_for_cb = inner.clone();
         let config_dir_for_cb = config_dir.clone();
-        let storage_dir_for_cb = storage_dir.clone();
         router.register_delivery_callback(move |msg| {
             if !msg.incoming {
                 return;
@@ -355,34 +353,7 @@ impl LiveBridge {
                 .unwrap_or("");
             // Rate-limited warn so developer bundles can prove sidecar receipt without spam.
             rate_limited_inbound_lxmf_warn(&sender_hex, message_hash);
-            let inner = inner_for_cb.clone();
-            let config_dir = config_dir_for_cb.clone();
-            let storage_dir = storage_dir_for_cb.clone();
-            let name_cache = name_cache_for_cb.clone();
-            let sender = sender_hex.clone();
-            tokio::spawn(async move {
-                let mut state = inner.write().await;
-                if let Some(name) = state
-                    .contacts
-                    .iter()
-                    .find(|c| c.destination_hash == sender)
-                    .and_then(|c| c.display_name.clone())
-                    .filter(|name| !name.trim().is_empty())
-                {
-                    if let Ok(mut cache) = name_cache.lock() {
-                        cache.insert(sender.clone(), name);
-                    }
-                }
-                let cache_snapshot = name_cache
-                    .lock()
-                    .ok()
-                    .map(|c| c.clone())
-                    .unwrap_or_default();
-                state.upsert_contact_with_name_cache(&sender, None, &cache_snapshot);
-                if let Err(e) = state.save(&config_dir, &storage_dir) {
-                    tracing::warn!("contact persist failed: {e}");
-                }
-            });
+            // Contacts are manual-only in mesh-client; do not upsert on inbound LXMF.
             emit_lxmf_event(&event_tx_cb, payload);
         });
 

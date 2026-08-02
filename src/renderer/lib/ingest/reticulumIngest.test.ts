@@ -5,6 +5,7 @@ import type { MessageRecord } from '@/renderer/stores/messageStore';
 
 import {
   ingestReticulumLxmfPayload,
+  ingestReticulumLxmfPayloadWithSideEffects,
   isReticulumHashPrefixAlias,
   persistReticulumContactFromPayload,
   reticulumContactDisplayNameFromPayload,
@@ -12,6 +13,7 @@ import {
 
 const upsertMessage = vi.fn();
 const upsertReticulumDestination = vi.fn();
+const saveReticulumMessage = vi.fn();
 let messagesState: Record<string, Record<string, MessageRecord>> = {};
 
 vi.mock('@/renderer/stores/messageStore', () => ({
@@ -33,12 +35,14 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
 beforeEach(() => {
   upsertReticulumDestination.mockReset();
   upsertReticulumDestination.mockResolvedValue(undefined);
+  saveReticulumMessage.mockReset();
+  saveReticulumMessage.mockResolvedValue(undefined);
   restoreDismissedContact.mockReset();
   getPeer.mockReset();
   getPeer.mockReturnValue(undefined);
   vi.stubGlobal('window', {
     electronAPI: {
-      db: { upsertReticulumDestination },
+      db: { upsertReticulumDestination, saveReticulumMessage },
     },
   });
 });
@@ -81,7 +85,7 @@ describe('reticulumIngest alias helpers', () => {
     ).toBeUndefined();
   });
 
-  it('persistReticulumContactFromPayload skips display_name for hash prefix', async () => {
+  it('persistReticulumContactFromPayload skips display_name for hash prefix (explicit save helper)', async () => {
     await persistReticulumContactFromPayload({
       sender_hash: hash,
       sender_name: 'deadbeefdead',
@@ -93,7 +97,7 @@ describe('reticulumIngest alias helpers', () => {
     });
   });
 
-  it('persistReticulumContactFromPayload keeps real display names', async () => {
+  it('persistReticulumContactFromPayload keeps real display names (explicit save helper)', async () => {
     await persistReticulumContactFromPayload({
       sender_hash: hash,
       sender_name: 'Alice',
@@ -106,7 +110,7 @@ describe('reticulumIngest alias helpers', () => {
     });
   });
 
-  it('persistReticulumContactFromPayload uses to_hash for outbound, not self sender', async () => {
+  it('persistReticulumContactFromPayload uses to_hash for outbound helper payloads', async () => {
     const peerHash = 'cafebabe'.repeat(4);
     getPeer.mockReturnValue({ display_name: 'Bob' });
     await persistReticulumContactFromPayload({
@@ -122,6 +126,54 @@ describe('reticulumIngest alias helpers', () => {
       display_name: 'Bob',
       last_heard: 1_700_000_000,
     });
+  });
+});
+
+describe('reticulumIngest side effects — no auto-contact', () => {
+  beforeEach(() => {
+    upsertMessage.mockClear();
+    messagesState = {};
+    useBlockStore.setState({
+      protocol: 'reticulum',
+      identityId: 'id-1',
+      blockedHashes: new Set(),
+      loaded: true,
+    });
+  });
+
+  it('inbound LXMF does not upsert contact or restore dismissed', () => {
+    const hash = 'allowedhash1234567890allowedhash12';
+    const ingested = ingestReticulumLxmfPayloadWithSideEffects('id-1', {
+      sender_hash: hash,
+      sender_name: 'Alice',
+      text: 'hello',
+      direction: 'inbound',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(ingested).toBe(true);
+    expect(upsertMessage).toHaveBeenCalled();
+    expect(saveReticulumMessage).toHaveBeenCalled();
+    expect(restoreDismissedContact).not.toHaveBeenCalled();
+    expect(upsertReticulumDestination).not.toHaveBeenCalled();
+  });
+
+  it('outbound LXMF does not upsert recipient as contact', () => {
+    const selfHash = 'deadbeef'.repeat(4);
+    const peerHash = 'cafebabe'.repeat(4);
+    getPeer.mockReturnValue({ display_name: 'Bob' });
+    const ingested = ingestReticulumLxmfPayloadWithSideEffects('id-1', {
+      sender_hash: selfHash,
+      sender_name: 'Me',
+      to_hash: peerHash,
+      text: 'hello',
+      direction: 'outbound',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(ingested).toBe(true);
+    expect(upsertMessage).toHaveBeenCalled();
+    expect(saveReticulumMessage).toHaveBeenCalled();
+    expect(restoreDismissedContact).not.toHaveBeenCalled();
+    expect(upsertReticulumDestination).not.toHaveBeenCalled();
   });
 });
 

@@ -646,7 +646,9 @@
     "notificationMessageTitle": "Повідомлення від {{sender}}",
     "reticulumSendStoredAtPn": "Зберігається на вузлі розповсюдження",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Оновлено з RF PATH"
+    "hopCountRefinedFromRf": "Оновлено з RF PATH",
+    "openPeerDetails": "Подробиці піра",
+    "openPeerDetailsAria": "Відкрити подробиці піра для {{name}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

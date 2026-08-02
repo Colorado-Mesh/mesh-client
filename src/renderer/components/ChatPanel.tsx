@@ -51,13 +51,10 @@ import {
   formatReticulumViaBadgeLabel,
   parseReticulumViaAtoms,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
-import {
-  normalizeReticulumNodeId,
-  registerReticulumDestinationHash,
-  resolveReticulumDestinationHash,
-} from '@/renderer/lib/reticulum/destHash';
+import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
+import { resolveReticulumDmFaceHash } from '@/renderer/lib/reticulum/reticulumChatFaceHash';
 import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
@@ -71,7 +68,6 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
-import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
@@ -144,7 +140,7 @@ import {
 } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
-import { reticulumHashForNodeId, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -159,6 +155,7 @@ import {
   ReticulumDmPathReachabilityBadge,
 } from './ReticulumDmPathReachabilityBadge';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
+import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { useToast } from './Toast';
 
@@ -1732,15 +1729,13 @@ function ChatPanel({
 
   const reticulumDmDestinationHash = useMemo(() => {
     if (protocol !== 'reticulum' || activeDmNode == null) return null;
-    const fromNode = nodes.get(activeDmNode)?.reticulum_destination_hash?.trim();
-    if (fromNode) {
-      registerReticulumDestinationHash(activeDmNode, fromNode);
-      return fromNode;
-    }
-    return (
-      reticulumHashForNodeId(activeDmNode) ?? resolveReticulumDestinationHash(activeDmNode) ?? null
+    return resolveReticulumDmFaceHash(
+      activeDmNode,
+      nodes.get(activeDmNode)?.reticulum_destination_hash,
     );
   }, [activeDmNode, nodes, protocol]);
+
+  const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
 
   const reticulumDmPeerHops = useReticulumPeerStore((s) => {
     if (!reticulumDmDestinationHash) return null;
@@ -1810,6 +1805,11 @@ function ChatPanel({
           const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
           const showDmUnreadBadge =
             dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
+          const faceHash =
+            protocol === 'reticulum'
+              ? resolveReticulumDmFaceHash(nodeNum, nodes.get(nodeNum)?.reticulum_destination_hash)
+              : null;
+          const appearance = faceHash ? peerAppearanceByHash.get(faceHash) : undefined;
           return (
             <div
               key={`dm-${protocol}-${nodeNum}`}
@@ -1822,7 +1822,7 @@ function ChatPanel({
               <button
                 type="button"
                 aria-label={getDmLabel(nodeNum)}
-                className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+                className={`inline-flex max-w-full min-w-0 items-center gap-1 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
                   viewMode === 'dm' && activeDmNode === nodeNum
                     ? 'text-white'
                     : 'text-muted hover:text-gray-200'
@@ -1831,7 +1831,16 @@ function ChatPanel({
                   openDmTo(nodeNum);
                 }}
               >
-                {getDmLabel(nodeNum)}
+                {protocol === 'reticulum' ? (
+                  <ReticulumProfileIconSlot
+                    iconName={appearance?.icon_name}
+                    iconColor={appearance?.icon_color}
+                    destinationHash={faceHash}
+                    size={14}
+                    className="shrink-0"
+                  />
+                ) : null}
+                <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
               </button>
               <button
                 type="button"
@@ -2268,11 +2277,35 @@ function ChatPanel({
                 dmShareCandidates={rncpShareCandidates}
               />
             ) : null;
-          if (!pathBadge && !dmNode && !rncpControl) return null;
+          const peerDetailsAppearance = reticulumDmDestinationHash
+            ? peerAppearanceByHash.get(reticulumDmDestinationHash)
+            : undefined;
+          const peerDetailsControl =
+            protocol === 'reticulum' && onPeerClick && reticulumDmDestinationHash != null ? (
+              <button
+                type="button"
+                className="bg-secondary-dark text-muted inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:text-gray-200"
+                aria-label={t('chatPanel.openPeerDetailsAria', { name: dmNodeName })}
+                onClick={() => {
+                  onPeerClick(reticulumDmDestinationHash);
+                }}
+              >
+                <ReticulumProfileIconSlot
+                  iconName={peerDetailsAppearance?.icon_name}
+                  iconColor={peerDetailsAppearance?.icon_color}
+                  destinationHash={reticulumDmDestinationHash}
+                  size={14}
+                  className="shrink-0"
+                />
+                <span className="min-w-0 truncate">{t('chatPanel.openPeerDetails')}</span>
+              </button>
+            ) : null;
+          if (!pathBadge && !dmNode && !rncpControl && !peerDetailsControl) return null;
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
               {pathActions}
+              {peerDetailsControl}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
               {rncpControl}
             </div>
@@ -2494,20 +2527,36 @@ function ChatPanel({
                             {/* Header: sender name (clickable) + DM indicator + time */}
                             {!isContinuation && (
                               <div className="mb-0.5 flex items-center gap-2">
+                                {protocol === 'reticulum'
+                                  ? (() => {
+                                      const senderFaceHash = resolveReticulumDmFaceHash(
+                                        msg.sender_id,
+                                        msg.reticulum_sender_hash ??
+                                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
+                                      );
+                                      if (!senderFaceHash) return null;
+                                      const senderAppearance =
+                                        peerAppearanceByHash.get(senderFaceHash);
+                                      return (
+                                        <ReticulumProfileIconSlot
+                                          iconName={senderAppearance?.icon_name}
+                                          iconColor={senderAppearance?.icon_color}
+                                          destinationHash={senderFaceHash}
+                                          size={14}
+                                          className="shrink-0"
+                                        />
+                                      );
+                                    })()
+                                  : null}
                                 <button
                                   type="button"
                                   onClick={() => {
                                     if (protocol === 'reticulum' && onPeerClick) {
-                                      const rawHash =
-                                        msg.reticulum_sender_hash?.trim() ||
-                                        nodes
-                                          .get(msg.sender_id)
-                                          ?.reticulum_destination_hash?.trim() ||
-                                        reticulumHashForNodeId(msg.sender_id) ||
-                                        resolveReticulumDestinationHash(msg.sender_id) ||
-                                        '';
-                                      const peerHash =
-                                        canonicalizeReticulumDestinationHash(rawHash);
+                                      const peerHash = resolveReticulumDmFaceHash(
+                                        msg.sender_id,
+                                        msg.reticulum_sender_hash ??
+                                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
+                                      );
                                       if (peerHash) {
                                         onPeerClick(peerHash);
                                         return;

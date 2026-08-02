@@ -643,6 +643,9 @@ impl PersistedState {
         }
     }
 
+    /// Explicit contact upsert (not called from LXMF send/receive). Kept for unit tests and
+    /// any future manual sidecar write path; messaging must not auto-promote contacts.
+    #[allow(dead_code)] // intentional: production messaging paths no longer call this
     pub fn upsert_contact(&mut self, hash: &str, name: Option<String>) {
         let hash = super::topology::canonicalize_destination_hash(hash)
             .unwrap_or_else(|| hash.trim().to_ascii_lowercase());
@@ -679,6 +682,7 @@ impl PersistedState {
     }
 
     /// Upsert a contact, filling a missing name from announce/peer cache when needed.
+    #[allow(dead_code)] // intentional: production messaging paths no longer call this
     pub fn upsert_contact_with_name_cache(
         &mut self,
         hash: &str,
@@ -714,12 +718,7 @@ impl PersistedState {
             return Err("identity not configured".into());
         }
         let ts = Self::now_secs();
-        let peer_names = super::topology::build_topology_name_map(
-            &self.peers,
-            &self.contacts,
-            &self.nomad_nodes,
-        );
-        self.upsert_contact_with_name_cache(&req.destination_hash, None, &peer_names);
+        // Contacts are manual-only; offline/mock send must not auto-add the recipient.
         let sent_via = resolve_outbound_sent_via(&self.interfaces);
         let mut payload = serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,
@@ -1002,6 +1001,35 @@ mod tests {
         assert_eq!(state.contacts.len(), 1);
         assert_eq!(state.contacts[0].destination_hash, lower);
         assert_eq!(state.contacts[0].display_name.as_deref(), Some("Named"));
+    }
+
+    #[test]
+    fn send_lxmf_local_does_not_auto_add_contact() {
+        let dest = "aabbccddeeff00112233445566778899";
+        let mut state = PersistedState::default_empty();
+        state.identity = StackIdentity {
+            configured: true,
+            identity_hash: "11".repeat(16),
+            lxmf_hash: "22".repeat(16),
+            display_name: Some("Self".into()),
+            mnemonic: None,
+        };
+        state.peers.push(peer(dest, "Hub Peer"));
+        let payload = state
+            .send_lxmf_local(&LxmfSendRequest {
+                destination_hash: dest.into(),
+                text: "hi".into(),
+                reply_to_hash: None,
+                reply_to_id: None,
+                reply_preview_text: None,
+            })
+            .expect("send");
+        assert_eq!(payload["to_hash"], dest);
+        assert_eq!(payload["direction"], "outbound");
+        assert!(
+            state.contacts.is_empty(),
+            "offline send must not promote recipient to contacts"
+        );
     }
 
     #[test]

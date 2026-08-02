@@ -235,6 +235,7 @@ pub fn overlay_contact_display_names(
 }
 
 /// Prefer a real stored name; else a non-hash-prefix cache label.
+#[allow(dead_code)] // used via upsert_contact_with_name_cache (test / future explicit API)
 pub fn resolve_contact_name_for_upsert(
     hash: &str,
     stored_name: Option<&str>,

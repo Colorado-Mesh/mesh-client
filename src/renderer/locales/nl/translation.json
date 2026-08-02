@@ -644,7 +644,9 @@
     "openDmByAddress": "Open",
     "reticulumSendStoredAtPn": "Opgeslagen op propagatieknooppunt",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Bijgewerkt vanaf RF-pad"
+    "hopCountRefinedFromRf": "Bijgewerkt vanaf RF-pad",
+    "openPeerDetails": "Peerdetails",
+    "openPeerDetailsAria": "Peerdetails openen voor {{name}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

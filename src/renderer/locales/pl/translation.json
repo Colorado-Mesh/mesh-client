@@ -648,7 +648,9 @@
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Przechowywane w węźle propagacji",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Zaktualizowano ze ścieżki RF"
+    "hopCountRefinedFromRf": "Zaktualizowano ze ścieżki RF",
+    "openPeerDetails": "Szczegóły peeru",
+    "openPeerDetailsAria": "Otwórz szczegóły peeru dla {{name}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

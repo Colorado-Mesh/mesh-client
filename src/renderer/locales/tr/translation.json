@@ -644,7 +644,9 @@
     "notificationMessageTitle": "{{sender}} adlı kişiden mesaj",
     "reticulumSendStoredAtPn": "Yayılma düğümünde depolanır",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "RF yolundan güncellendi"
+    "hopCountRefinedFromRf": "RF yolundan güncellendi",
+    "openPeerDetails": "Eş ayrıntıları",
+    "openPeerDetailsAria": "{{name}} için eş ayrıntılarını aç"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

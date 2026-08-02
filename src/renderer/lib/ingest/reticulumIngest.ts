@@ -218,8 +218,9 @@ export async function persistReticulumMessageToDb(
 }
 
 /**
- * Persist a messaged peer as a contact destination.
- * Inbound → sender; outbound → recipient (`to_hash`), never the local sender.
+ * Persist a peer as a contact destination (explicit Save as contact / helpers).
+ * Messaging must NOT call this — contacts are manual-only.
+ * Inbound-shaped payloads → sender; outbound → recipient (`to_hash`).
  */
 export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload): Promise<void> {
   const isOutbound = p.direction === 'outbound';
@@ -278,7 +279,7 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
   void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);
-  void persistReticulumContactFromPayload(p);
+  // Contacts are manual-only (peer detail Save as contact); do not upsert on LXMF.
   return true;
 }
 

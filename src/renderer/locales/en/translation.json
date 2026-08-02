@@ -554,6 +554,8 @@
     "emptySelectDm": "Reticulum chat is direct message only. Pick a contact above, enter an address, or open one from the Nodes tab.",
     "noDmConversations": "No conversations yet",
     "noDmConversationsReticulum": "No conversations yet — enter an address or open a contact from the Nodes tab.",
+    "openPeerDetails": "Peer details",
+    "openPeerDetailsAria": "Open peer details for {{name}}",
     "openDmByAddress": "Open",
     "dmAddressPlaceholder": "Hash or lxmf://…",
     "dmAddressAria": "Destination address",

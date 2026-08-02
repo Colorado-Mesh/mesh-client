@@ -646,7 +646,9 @@
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Uloženo v propagačním uzlu",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Aktualizováno z RF cesty"
+    "hopCountRefinedFromRf": "Aktualizováno z RF cesty",
+    "openPeerDetails": "Podrobnosti peeru",
+    "openPeerDetailsAria": "Otevřít podrobnosti peeru pro {{name}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

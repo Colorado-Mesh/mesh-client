@@ -644,7 +644,9 @@
     "notificationMessageTitle": "Pesan dari {{sender}}",
     "reticulumSendStoredAtPn": "Disimpan di simpul propagasi",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Diperbarui dari jalur RF"
+    "hopCountRefinedFromRf": "Diperbarui dari jalur RF",
+    "openPeerDetails": "Detail peer",
+    "openPeerDetailsAria": "Buka detail peer untuk {{name}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

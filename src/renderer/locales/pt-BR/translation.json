@@ -644,7 +644,9 @@
     "notificationMessageTitle": "Mensagem de {{sender}}",
     "reticulumSendStoredAtPn": "Armazenado no nó de propagação",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Atualizado a partir do caminho de RF"
+    "hopCountRefinedFromRf": "Atualizado a partir do caminho de RF",
+    "openPeerDetails": "Detalhes do peer",
+    "openPeerDetailsAria": "Abrir detalhes do peer para {{name}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

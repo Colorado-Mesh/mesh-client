@@ -644,7 +644,9 @@
     "notificationMessageTitle": "{{sender}}からのメッセージ",
     "reticulumSendStoredAtPn": "伝播ノードに格納されています",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "RFパスから更新されました"
+    "hopCountRefinedFromRf": "RFパスから更新されました",
+    "openPeerDetails": "ピアの詳細",
+    "openPeerDetailsAria": "{{name}} のピア詳細を開く"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

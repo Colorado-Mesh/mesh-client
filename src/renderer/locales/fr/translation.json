@@ -644,7 +644,9 @@
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Stocké au nœud de propagation",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Mise à jour à partir du chemin RF"
+    "hopCountRefinedFromRf": "Mise à jour à partir du chemin RF",
+    "openPeerDetails": "Détails du pair",
+    "openPeerDetailsAria": "Ouvrir les détails du pair pour {{name}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

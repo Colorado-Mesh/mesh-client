@@ -644,7 +644,9 @@
     "notificationMessageTitle": "{{sender}} 님의 메시지",
     "reticulumSendStoredAtPn": "전파 노드에 저장됨",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "RF 경로에서 업데이트됨"
+    "hopCountRefinedFromRf": "RF 경로에서 업데이트됨",
+    "openPeerDetails": "피어 세부정보",
+    "openPeerDetailsAria": "{{name}}의 피어 세부정보 열기"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

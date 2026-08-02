@@ -10,6 +10,7 @@ import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import type { MessageRecord } from '../stores/messageStore';
+import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -4208,6 +4209,134 @@ describe('ChatPanel reticulum dm-only chat', () => {
     await user.click(screen.getByRole('button', { name: '98046ee20235' }));
     expect(onPeerClick).toHaveBeenCalledExactlyOnceWith(peerHash);
     expect(onNodeClick).not.toHaveBeenCalled();
+  });
+
+  it('shows LXMFace on DM tab and sender row when destination hash is known', () => {
+    const peerHash = 'a7b3c9d1e5f20681943ab2de77fc8e01';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: peerHash,
+          long_name: 'Face Peer',
+          short_name: 'FP',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'Face Peer',
+        payload: 'with face',
+        channel: 0,
+        to: 1,
+        reticulum_sender_hash: peerHash,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          nodes={nodes}
+          messages={messages}
+          ownNodeIds={[1]}
+          initialDmTarget={peerId}
+          onPeerClick={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    const faceImgs = container.querySelectorAll('img[src^="data:image/svg+xml"]');
+    expect(faceImgs.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole('button', { name: 'Face Peer' }).length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByRole('button', { name: /Open peer details for Face Peer/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens peer detail from DM header Peer details control', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'a7b3c9d1e5f20681943ab2de77fc8e01';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const onPeerClick = vi.fn();
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: peerHash,
+          long_name: 'Detail Peer',
+          short_name: 'DP',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          nodes={nodes}
+          initialDmTarget={peerId}
+          onPeerClick={onPeerClick}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: /Open peer details for Detail Peer/i }));
+    expect(onPeerClick).toHaveBeenCalledExactlyOnceWith(peerHash);
+  });
+
+  it('prefers custom Lucide appearance over LXMFace on DM tab', () => {
+    const peerHash = 'ffffffffffffffffffffffffffffffff';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    useReticulumPeerStore.setState({
+      peerAppearanceByHash: new Map([[peerHash, { icon_name: 'star', icon_color: 'cyan' }]]),
+    });
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: peerHash,
+          long_name: 'Star Peer',
+          short_name: 'SP',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} nodes={nodes} initialDmTarget={peerId} />
+      </ToastProvider>,
+    );
+    const tabBtn = screen.getByRole('button', { name: 'Star Peer' });
+    expect(tabBtn.querySelector('img')).toBeNull();
+    expect(tabBtn.querySelector('svg')).toBeTruthy();
+    expect(container.querySelector('img[src^="data:image/svg+xml"]')).toBeNull();
   });
 
   it('does not call onNodeClick or onPeerClick when Reticulum sender hash cannot be resolved', async () => {

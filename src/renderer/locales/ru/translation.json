@@ -646,7 +646,9 @@
     "notificationMessageTitle": "Сообщение от {{sender}}",
     "reticulumSendStoredAtPn": "Сохранено в узле распространения",
     "reticulumPnAbbrev": "КН",
-    "hopCountRefinedFromRf": "Обновлено из радиочастотного тракта"
+    "hopCountRefinedFromRf": "Обновлено из радиочастотного тракта",
+    "openPeerDetails": "Сведения о пире",
+    "openPeerDetailsAria": "Открыть сведения о пире для {{name}}"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
