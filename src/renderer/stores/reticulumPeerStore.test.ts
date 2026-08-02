@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ReticulumContact } from '@/shared/reticulum-types';
 
+import { reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import {
   applyReticulumAnnounceReceivedOptimistic,
   applyReticulumPeerPatchesNow,
@@ -14,6 +15,7 @@ import {
   resetReticulumPeerRefreshSingleFlightForTests,
   resolveReticulumPeerLabel,
   reticulumContactToNodeRecordPreservingLabel,
+  reticulumHashForNodeId,
   reticulumPeerDisplayName,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
@@ -56,7 +58,7 @@ describe('resolveReticulumPeerLabel', () => {
 });
 
 describe('capReticulumPeerMaps', () => {
-  it('keeps newest peers by last_seen and drops orphaned contacts', () => {
+  it('caps path-table peers but retains Contacts/History rows', () => {
     const peers = new Map([
       ['old', { destination_hash: 'old', last_seen: 1 }],
       ['mid', { destination_hash: 'mid', last_seen: 50 }],
@@ -67,22 +69,25 @@ describe('capReticulumPeerMaps', () => {
       ['mid', { destination_hash: 'mid', last_heard: 50 }],
       ['orphan', { destination_hash: 'orphan', last_heard: 200 }],
     ]);
-    const { peers: cappedPeers, contacts: cappedContacts } = capReticulumPeerMaps(
-      peers,
-      contacts,
-      2,
-    );
-    expect(cappedPeers.size).toBe(2);
+    const history = new Map([['hist-only', { destination_hash: 'hist-only', last_heard: 300 }]]);
+    const {
+      peers: cappedPeers,
+      contacts: cappedContacts,
+      history: cappedHistory,
+    } = capReticulumPeerMaps(peers, contacts, history, 2);
     expect(cappedPeers.has('new')).toBe(true);
     expect(cappedPeers.has('mid')).toBe(true);
-    expect(cappedContacts.has('mid')).toBe(true);
-    expect(cappedContacts.has('orphan')).toBe(false);
+    // Contacts/History survive path-table eviction and get peer stubs.
+    expect(cappedContacts.has('orphan')).toBe(true);
+    expect(cappedPeers.has('orphan')).toBe(true);
+    expect(cappedHistory.has('hist-only')).toBe(true);
+    expect(cappedPeers.has('hist-only')).toBe(true);
   });
 });
 
 describe('mergeReticulumPeerMaps', () => {
   it('merges peers and contacts with SQLite overlay', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [
         {
           destination_hash: 'abc123',
@@ -110,12 +115,14 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peers.get('abc123')?.favorited).toBe(true);
     expect(peers.get('abc123')?.custom_display_name).toBe('Custom A');
     expect(contacts.has('abc123')).toBe(false);
-    expect(contacts.get('def456')?.last_heard).toBe(1000);
+    // Wire LXMF contacts alone are History hints — Contacts require SQLite is_contact.
+    expect(contacts.has('def456')).toBe(false);
+    expect(history.get('def456')?.last_heard).toBe(1000);
     expect(peers.has('def456')).toBe(true);
   });
 
   it('does not promote favorited path peers without last_heard into contacts', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [
         {
           destination_hash: 'aabb01',
@@ -136,10 +143,38 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peers.get('aabb01')?.favorited).toBe(true);
     expect(peers.get('aabb01')?.custom_display_name).toBe('Renamed Peer');
     expect(contacts.has('aabb01')).toBe(false);
+    expect(history.has('aabb01')).toBe(false);
   });
 
-  it('promotes SQLite rows with last_heard into contacts (Save Contact)', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+  it('promotes SQLite last_heard into History without is_contact', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
+      [
+        {
+          destination_hash: 'aabb02',
+          display_name: 'Announce Name',
+          hops: 3,
+        },
+      ],
+      [],
+      [
+        {
+          destination_hash: 'aabb02',
+          display_name: 'Messaged Label',
+          last_heard: 1_700_000_000,
+          favorited: 0,
+        },
+      ],
+    );
+
+    expect(contacts.has('aabb02')).toBe(false);
+    expect(history.get('aabb02')?.last_heard).toBe(1_700_000_000);
+    expect(history.get('aabb02')?.custom_display_name).toBe('Messaged Label');
+    expect(history.get('aabb02')?.hops).toBe(3);
+    expect(peers.has('aabb02')).toBe(true);
+  });
+
+  it('promotes SQLite is_contact into Contacts (Save Contact)', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [
         {
           destination_hash: 'aabb02',
@@ -153,33 +188,36 @@ describe('mergeReticulumPeerMaps', () => {
           destination_hash: 'aabb02',
           display_name: 'Saved Label',
           last_heard: 1_700_000_000,
+          is_contact: 1,
           favorited: 0,
         },
       ],
     );
 
     expect(contacts.get('aabb02')?.last_heard).toBe(1_700_000_000);
+    expect(contacts.get('aabb02')?.is_contact).toBe(true);
     expect(contacts.get('aabb02')?.custom_display_name).toBe('Saved Label');
-    expect(contacts.get('aabb02')?.hops).toBe(3);
+    expect(history.get('aabb02')?.last_heard).toBe(1_700_000_000);
     expect(peers.has('aabb02')).toBe(true);
   });
 
-  it('promotes DB-only last_heard rows into contacts when peer is absent', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+  it('promotes DB-only last_heard rows into History when peer is absent', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [],
       [],
       [
         {
           destination_hash: 'aabb03',
-          display_name: 'Offline Contact',
+          display_name: 'Offline History',
           last_heard: 1_700_000_100,
           favorited: 1,
         },
       ],
     );
 
-    expect(contacts.get('aabb03')?.last_heard).toBe(1_700_000_100);
-    expect(contacts.get('aabb03')?.favorited).toBe(true);
+    expect(contacts.has('aabb03')).toBe(false);
+    expect(history.get('aabb03')?.last_heard).toBe(1_700_000_100);
+    expect(history.get('aabb03')?.favorited).toBe(true);
     expect(peers.has('aabb03')).toBe(true);
   });
 
@@ -201,8 +239,8 @@ describe('mergeReticulumPeerMaps', () => {
     expect(contacts.has('aabb04')).toBe(false);
   });
 
-  it('reflects contact fields on the merged peer entry and applies SQLite overlay to contacts', () => {
-    const { peers, contacts } = mergeReticulumPeerMaps(
+  it('reflects wire fields on peers/history; SQLite is_contact promotes Contacts', () => {
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [],
       [
         {
@@ -217,6 +255,8 @@ describe('mergeReticulumPeerMaps', () => {
           destination_hash: 'def456',
           display_name: 'Saved Contact',
           favorited: 1,
+          is_contact: 1,
+          last_heard: 1000,
         },
       ],
     );
@@ -226,6 +266,7 @@ describe('mergeReticulumPeerMaps', () => {
     expect(contact?.hops).toBe(1);
     expect(contact?.favorited).toBe(true);
     expect(contact?.custom_display_name).toBe('Saved Contact');
+    expect(history.get('def456')?.last_heard).toBe(1000);
 
     const peer = peers.get('def456') as ReticulumContact | undefined;
     expect(peer?.last_heard).toBe(1000);
@@ -235,9 +276,27 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peer?.display_name).toBe('Contact B');
   });
 
-  it('preserves peer announce alias when nameless contact overwrites the peer row', () => {
+  it('does not promote sidecar wire contacts into Contacts without SQLite is_contact', () => {
+    const hash = 'ee'.repeat(16);
+    const { contacts, history } = mergeReticulumPeerMaps(
+      [],
+      [
+        {
+          destination_hash: hash,
+          display_name: 'Legacy Wire',
+          last_heard: 2000,
+          hops: 1,
+        },
+      ],
+      [],
+    );
+    expect(contacts.has(hash)).toBe(false);
+    expect(history.get(hash)?.last_heard).toBe(2000);
+  });
+
+  it('preserves peer announce alias when nameless wire contact overlays the peer row', () => {
     const hash = 'aabbccddeeff00112233445566778899';
-    const { peers, contacts } = mergeReticulumPeerMaps(
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [
         {
           destination_hash: hash,
@@ -257,16 +316,17 @@ describe('mergeReticulumPeerMaps', () => {
       [],
     );
 
-    expect(contacts.get(hash)?.display_name).toBe('Hub Peer');
-    expect(contacts.get(hash)?.hops).toBe(1);
-    expect(contacts.get(hash)?.last_heard).toBe(1_700_000_000);
+    expect(contacts.has(hash)).toBe(false);
+    expect(history.get(hash)?.display_name).toBe('Hub Peer');
+    expect(history.get(hash)?.hops).toBe(1);
+    expect(history.get(hash)?.last_heard).toBe(1_700_000_000);
     expect(peers.get(hash)?.display_name).toBe('Hub Peer');
     expect(peers.get(hash)?.hops).toBe(1);
   });
 
-  it('does not let hash-prefix contact alias wipe peer announce name', () => {
+  it('does not let hash-prefix wire alias wipe peer announce name', () => {
     const hash = 'deadbeefcafebabe0123456789abcdef';
-    const { peers, contacts } = mergeReticulumPeerMaps(
+    const { peers, contacts, history } = mergeReticulumPeerMaps(
       [{ destination_hash: hash, display_name: 'Real Alias', hops: 3 }],
       [
         {
@@ -279,7 +339,8 @@ describe('mergeReticulumPeerMaps', () => {
       [],
     );
 
-    expect(contacts.get(hash)?.display_name).toBe('Real Alias');
+    expect(contacts.has(hash)).toBe(false);
+    expect(history.get(hash)?.display_name).toBe('Real Alias');
     expect(peers.get(hash)?.display_name).toBe('Real Alias');
   });
 });
@@ -291,6 +352,8 @@ describe('reticulumPeerStore', () => {
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),
+      history: new Map(),
+      dismissedContactHashes: new Set(),
       peerAppearanceByHash: new Map(),
       lastRefreshAt: null,
       peersRevision: 0,
@@ -366,6 +429,51 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().isContact('NONEXISTENT')).toBe(false);
   });
 
+  it('removeContact demotes Contacts, keeps History, and dismisses re-import', async () => {
+    const hash = 'aa'.repeat(16);
+    const upsert = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('window', {
+      electronAPI: {
+        db: { upsertReticulumDestination: upsert },
+      },
+    });
+    useReticulumPeerStore.setState({
+      contacts: new Map([
+        [hash, { destination_hash: hash, last_heard: 50, display_name: 'Saved', is_contact: true }],
+      ]),
+      history: new Map([[hash, { destination_hash: hash, last_heard: 50, display_name: 'Saved' }]]),
+      dismissedContactHashes: new Set(),
+    });
+
+    await useReticulumPeerStore.getState().removeContact(hash);
+
+    expect(useReticulumPeerStore.getState().contacts.has(hash)).toBe(false);
+    expect(useReticulumPeerStore.getState().history.get(hash)?.last_heard).toBe(50);
+    expect(useReticulumPeerStore.getState().dismissedContactHashes.has(hash)).toBe(true);
+    expect(upsert).toHaveBeenCalledWith({ destination_hash: hash, is_contact: false });
+
+    const { contacts, history } = mergeReticulumPeerMaps(
+      [],
+      [{ destination_hash: hash, last_heard: 50, display_name: 'Wire' }],
+      [{ destination_hash: hash, last_heard: 50, is_contact: 1 }],
+      useReticulumPeerStore.getState().dismissedContactHashes,
+    );
+    expect(contacts.has(hash)).toBe(false);
+    expect(history.get(hash)?.last_heard).toBe(50);
+  });
+
+  it('stampHistoryPeer updates history and reticulumHashForNodeId finds history-only peers', () => {
+    const hash = 'bb'.repeat(16);
+    useReticulumPeerStore.getState().stampHistoryPeer(hash, {
+      last_heard: 123,
+      display_name: 'HistPeer',
+    });
+    expect(useReticulumPeerStore.getState().history.get(hash)?.last_heard).toBe(123);
+    expect(useReticulumPeerStore.getState().contacts.has(hash)).toBe(false);
+    const nodeId = reticulumHashToNodeId(hash);
+    expect(reticulumHashForNodeId(nodeId)).toBe(hash);
+  });
+
   it('getPeer normalizes hash case like isContact', () => {
     useReticulumPeerStore
       .getState()
@@ -382,12 +490,17 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().getPeer('missing')).toBeUndefined();
   });
 
-  it('clearPeers empties peers and contacts', () => {
+  it('clearPeers empties peers, contacts, and history', () => {
     useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aa' }]);
     useReticulumPeerStore.getState().replaceContacts([{ destination_hash: 'bb', last_heard: 1 }]);
+    useReticulumPeerStore.getState().stampHistoryPeer('cc'.repeat(16), {
+      last_heard: 99,
+      display_name: 'Hist',
+    });
     useReticulumPeerStore.getState().clearPeers();
     expect(useReticulumPeerStore.getState().peers.size).toBe(0);
     expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
+    expect(useReticulumPeerStore.getState().history.size).toBe(0);
   });
 
   it('clearAllContacts clears sidecar, SQLite contact rows, and store contacts', async () => {
@@ -491,8 +604,9 @@ describe('reticulumPeerStore', () => {
     releaseFirst();
     await first;
 
-    expect(useReticulumPeerStore.getState().contacts.get('aa')?.display_name).toBe('Fresh');
-    expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(99);
+    expect(useReticulumPeerStore.getState().history.get('aa')?.display_name).toBe('Fresh');
+    expect(useReticulumPeerStore.getState().history.get('aa')?.last_heard).toBe(99);
+    expect(useReticulumPeerStore.getState().contacts.has('aa')).toBe(false);
   });
 
   it('soft refresh applies when hop counts change with the same peer membership', async () => {
@@ -593,6 +707,7 @@ describe('reticulumPeerStore', () => {
         destination_hash: 'aa',
         icon_name: 'star',
         icon_color: '#0f0',
+        last_heard: 5,
       },
     ]);
     vi.stubGlobal('window', {
@@ -624,10 +739,12 @@ describe('reticulumPeerStore', () => {
 
     const contacts = await refreshReticulumPeersFromSidecar();
 
-    expect(contacts).toHaveLength(1);
+    // Wire /contacts without SQLite is_contact → History only.
+    expect(contacts).toHaveLength(0);
     expect(getReticulumDestinations).toHaveBeenCalledTimes(1);
     expect(useReticulumPeerStore.getState().peers.get('bb')?.hops).toBe(3);
-    expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(5);
+    expect(useReticulumPeerStore.getState().contacts.has('aa')).toBe(false);
+    expect(useReticulumPeerStore.getState().history.get('aa')?.last_heard).toBe(5);
     expect(useReticulumPeerStore.getState().peerAppearanceByHash.get('aa')).toEqual({
       icon_name: 'star',
       icon_color: '#0f0',
@@ -790,9 +907,10 @@ describe('reticulumPeerStore', () => {
 
     await refreshReticulumPeersFromSidecar();
 
-    const contact = useReticulumPeerStore.getState().contacts.get(hash);
-    expect(reticulumPeerDisplayName(contact!)).toBe('Hub Peer');
-    expect(contact?.hops).toBe(2);
+    const hist = useReticulumPeerStore.getState().history.get(hash);
+    expect(reticulumPeerDisplayName(hist!)).toBe('Hub Peer');
+    expect(hist?.hops).toBe(2);
+    expect(useReticulumPeerStore.getState().contacts.has(hash)).toBe(false);
     expect(useReticulumPeerStore.getState().peerAppearanceByHash.get(hash)).toEqual({
       icon_name: 'star',
       icon_color: 'amber',

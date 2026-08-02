@@ -123,7 +123,11 @@ import {
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
-import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
+import type {
+  ReticulumContact,
+  ReticulumSidecarEvent,
+  ReticulumWirePacketRow,
+} from '@/shared/reticulum-types';
 import {
   lxmfBodyContainsRncpRequestEnable,
   parseRncpReceiveDestShare,
@@ -152,7 +156,12 @@ import {
   updateMessageStatus,
   useMessageStore,
 } from '../stores/messageStore';
-import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
+import {
+  type NodeRecord,
+  upsertNodeRecord,
+  upsertNodeRecordsForIdentity,
+  useNodeStore,
+} from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { useNomadPageViewerStore } from '../stores/nomadPageViewerStore';
 import {
@@ -304,21 +313,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const applyContactNodesFromStore = useCallback(() => {
     if (!identityId) return;
     const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
-    const contacts = useReticulumPeerStore.getState().contacts;
+    const { contacts, history } = useReticulumPeerStore.getState();
     const priorNodes = useNodeStore.getState().nodes[identityId] ?? {};
-    const records = [];
+    const records: NodeRecord[] = [];
     const keepNodeIds = new Set<number>();
+    const seenHashes = new Set<string>();
     if (selfNodeId != null) keepNodeIds.add(selfNodeId);
 
-    for (const contact of contacts.values()) {
+    const consider = (contact: ReticulumContact, skipIfDismissed: boolean) => {
       const hash = contact.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-      if (dismissed.has(hash)) continue;
+      if (seenHashes.has(hash)) return;
+      if (skipIfDismissed && dismissed.has(hash)) return;
+      seenHashes.add(hash);
       const nodeId = reticulumHashToNodeId(contact.destination_hash);
       records.push(reticulumContactToNodeRecordPreservingLabel(contact, priorNodes[nodeId]));
       keepNodeIds.add(nodeId);
-    }
+    };
 
-    // Drop path-table peers previously synced into nodeStore; keep self + LXMF contacts only.
+    // Contacts first (saved labels win), then History so messaged peers keep Chat/nodeStore rows.
+    for (const contact of contacts.values()) consider(contact, true);
+    for (const contact of history.values()) consider(contact, false);
+
+    // Drop path-table peers previously synced into nodeStore; keep self + History/Contacts.
     useNodeStore.setState((s) => {
       const prior = s.nodes[identityId] ?? {};
       const next = Object.fromEntries(

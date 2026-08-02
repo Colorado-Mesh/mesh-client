@@ -946,21 +946,23 @@ Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the 
 
 **Symptoms**: **Start stack** fails; logs show `RETICULUM_CARGO_BUILD_FAILED` or Rust errors such as `method not found in ReticulumHandle`, `register_packet_tap`, or `PacketTapEvent`. Electron may surface `RETICULUM_RNS_PATCH_MISSING` after upgrading mesh-client.
 
-**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies it automatically; a sibling `../rsReticulum` checkout without the overlay fails to compile.
+**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies overlays via `clone-ratspeak-stack.sh`; a sibling `../rsReticulum` checkout without the overlay fails to compile.
 
-**Fix**:
+**Fix** (canonical recover path):
 
-1. From mesh-client repo root (requires sibling `../rsReticulum` and `../rsLXMF`):
+1. From mesh-client repo root, re-float siblings and re-apply overlays:
    ```bash
+   ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
-   This runs `scripts/ensure-rsReticulum-patches.sh` before `cargo build`.
-2. **Manual apply** (when you prefer not to use the npm script):
+   `clone-ratspeak-stack.sh` floats `rsReticulum` / `rsLXMF` / `rsNomad` to `origin/main` (override with `RS_*_REF` for bisect) and fails if an overlay will not apply.
+2. If siblings already exist and you only need overlays: `./scripts/ensure-rsReticulum-patches.sh` then `pnpm run reticulum:sidecar:build`.
+3. **Manual apply** (single overlay):
    ```bash
    git -C ../rsReticulum apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
    pnpm run reticulum:sidecar:build
    ```
-3. On **newer rsReticulum** checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — `apply-rsReticulum-auto-beacon-utun.sh` is a no-op.
+4. On **newer rsReticulum** checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — `apply-rsReticulum-auto-beacon-utun.sh` is a no-op.
 
 Quit mesh-client fully, reopen, and click **Start stack** again.
 
@@ -973,13 +975,12 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
 **Fix**:
 
 1. **Update mesh-client** to a build that includes the rsReticulum overlay `rsReticulum-auto-beacon-utun.patch` (skips `utun*` during enumeration and backs off repeated TX failures).
-2. **Dev rebuild**: from repo root, apply overlays then rebuild:
+2. **Dev rebuild**: from repo root, prefer the canonical recover path, then rebuild:
    ```bash
-   ./scripts/apply-rsReticulum-packet-tap.sh
-   ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-   ./scripts/apply-rsReticulum-link-client-nomad.sh
+   ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
+   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-nomad.sh`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
 
@@ -1303,13 +1304,13 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 
 ### Reticulum Peers stale or slow with many hubs or testnets
 
-**Symptoms**: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on **Contacts** or **Favorites** because those tabs show a smaller LXMF contact set.
+**Symptoms**: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on **History**, **Contacts**, or **Favorites** because those tabs show a smaller set than the full path table.
 
 **Checks**:
 
 1. **Refresh model**: opening Peers uses the sidecar’s short-lived soft cache. Click **Refresh** to force a live path-table read (`?refresh=1`). mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured (60 s above 2,000 peers), plus announce/`peers_updated` debounced updates.
 2. **Reduce noise**: disable unused TCP/community hub interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients. Official Dublin / Amsterdam / BetweenTheBorders testnet hubs are decommissioned and auto-disabled on stack start and by **Add default hubs** — focus remaining noise on community hubs you enabled.
-3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
+3. **History vs Contacts**: messaging stamps **History** (`last_heard`) only. Peers you DM show under **History** until you open peer details and choose **Save as contact** (**Contacts** = `is_contact`). **Favorites** pins a short list. Removing a contact keeps History/chat messages.
 4. **Search**: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.
 5. **Topology**: automatic topology rebuilds pause above the large-mesh threshold; use its manual **Refresh** after a significant route change.
 

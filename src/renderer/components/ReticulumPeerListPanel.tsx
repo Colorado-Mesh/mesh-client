@@ -53,7 +53,7 @@ import { ReticulumPeerPathsDetail } from './reticulum/ReticulumPeerPathsDetail';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
 
-type PeerListTab = 'peers' | 'contacts' | 'favorites';
+type PeerListTab = 'peers' | 'history' | 'contacts' | 'favorites';
 type SortKey = ReticulumPeerSortKey;
 type SortDir = ReticulumPeerSortDir;
 
@@ -123,7 +123,12 @@ const PeerTableRow = memo(function PeerTableRow({
     >
       <td className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono" title={peer.destination_hash}>
         <span className="inline-flex items-center gap-1.5">
-          <ReticulumProfileIconSlot iconName={iconName} iconColor={iconColor} size={14} />
+          <ReticulumProfileIconSlot
+            iconName={iconName}
+            iconColor={iconColor}
+            size={14}
+            destinationHash={peer.destination_hash}
+          />
           <span className="truncate">{displayLabel}</span>
           {verified ? (
             <Check
@@ -184,6 +189,7 @@ function buildSourcePeerRows(
   activeTab: PeerListTab,
   peers: Map<string, ReticulumPeer>,
   contacts: Map<string, ReticulumPeer>,
+  history: Map<string, ReticulumPeer>,
   selectedGroupId: number | null,
   groupMemberIds: Set<number> | undefined,
 ): ReticulumPeer[] {
@@ -195,7 +201,13 @@ function buildSourcePeerRows(
     for (const contact of contacts.values()) {
       if (contact.favorited) all.set(contact.destination_hash, contact);
     }
+    for (const row of history.values()) {
+      if (row.favorited) all.set(row.destination_hash, row);
+    }
     return [...all.values()];
+  }
+  if (activeTab === 'history') {
+    return [...history.values()];
   }
   if (activeTab === 'contacts') {
     let rows = [...contacts.values()];
@@ -227,6 +239,7 @@ export default function ReticulumPeerListPanel({
   const peersRevision = useReticulumPeerStore((s) => s.peersRevision);
   const peersSize = useReticulumPeerStore((s) => s.peers.size);
   const contacts = useReticulumPeerStore((s) => s.contacts);
+  const history = useReticulumPeerStore((s) => s.history);
   const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
   const isContact = useReticulumPeerStore((s) => s.isContact);
   const nomadNodes = useNomadNetworkStore((s) => s.nodes);
@@ -291,7 +304,7 @@ export default function ReticulumPeerListPanel({
     return () => {
       cancelled = true;
     };
-  }, [peersRevision, contacts]);
+  }, [peersRevision, contacts, history]);
 
   const runForcedRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -357,6 +370,7 @@ export default function ReticulumPeerListPanel({
         activeTab,
         peers,
         contacts,
+        history,
         selectedGroupId,
         groupMemberIds,
       );
@@ -374,9 +388,11 @@ export default function ReticulumPeerListPanel({
     const approxCount =
       activeTab === 'peers'
         ? peersSize
-        : activeTab === 'contacts'
-          ? contacts.size
-          : peersSize + contacts.size;
+        : activeTab === 'history'
+          ? history.size
+          : activeTab === 'contacts'
+            ? contacts.size
+            : peersSize + contacts.size + history.size;
     // Debounce large-list rebuilds under patch storms; stretch further at mega-mesh.
     const debounceMs =
       approxCount > 10_000 ? 400 : approxCount > RETICULUM_PEER_VIRTUALIZE_THRESHOLD ? 250 : 0;
@@ -395,6 +411,7 @@ export default function ReticulumPeerListPanel({
   }, [
     activeTab,
     contacts,
+    history,
     debouncedSearchQuery,
     groupMemberIds,
     peersRevision,
@@ -527,9 +544,11 @@ export default function ReticulumPeerListPanel({
   const emptyKey =
     activeTab === 'contacts'
       ? 'peerListPanel.emptyContacts'
-      : activeTab === 'favorites'
-        ? 'peerListPanel.emptyFavorites'
-        : 'peerListPanel.emptyPeers';
+      : activeTab === 'history'
+        ? 'peerListPanel.emptyHistory'
+        : activeTab === 'favorites'
+          ? 'peerListPanel.emptyFavorites'
+          : 'peerListPanel.emptyPeers';
 
   const tableColSpan = activeTab === 'peers' ? 6 : 5;
 
@@ -675,6 +694,19 @@ export default function ReticulumPeerListPanel({
           }}
         >
           {t('peerListPanel.tabPeers')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'history'}
+          className={`rounded px-3 py-1 text-sm ${activeTab === 'history' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
+          onClick={() => {
+            setActiveTab('history');
+            setSortKey('lastSeen');
+            setSortDir('desc');
+          }}
+        >
+          {t('peerListPanel.tabHistory')}
         </button>
         <button
           type="button"

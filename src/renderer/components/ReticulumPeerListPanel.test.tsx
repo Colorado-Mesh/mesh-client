@@ -142,6 +142,25 @@ describe('ReticulumPeerListPanel', () => {
             destination_hash: 'def',
             display_name: 'Contact Peer',
             last_heard: Date.now() / 1000,
+            is_contact: true,
+          },
+        ],
+      ]),
+      history: new Map([
+        [
+          'def',
+          {
+            destination_hash: 'def',
+            display_name: 'Contact Peer',
+            last_heard: Date.now() / 1000,
+          },
+        ],
+        [
+          'hist1',
+          {
+            destination_hash: 'hist1',
+            display_name: 'History Peer',
+            last_heard: Date.now() / 1000,
           },
         ],
       ]),
@@ -192,6 +211,53 @@ describe('ReticulumPeerListPanel', () => {
     await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.colLastHeard')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
+    expect(screen.queryByText('History Peer')).not.toBeInTheDocument();
+  });
+
+  it('renders favorited history-only peers on Favorites tab', async () => {
+    const user = userEvent.setup();
+    const favHash = 'favhist01'.padEnd(32, '0');
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map(),
+      history: new Map([
+        [
+          favHash,
+          {
+            destination_hash: favHash,
+            display_name: 'History Favorite',
+            last_heard: Date.now() / 1000,
+            favorited: true,
+          },
+        ],
+      ]),
+    });
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabFavorites' }));
+    expect(screen.getByText('History Favorite')).toBeInTheDocument();
+  });
+
+  it('renders history tab with messaged peers that are not saved contacts', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
+    expect(screen.getByRole('button', { name: 'peerListPanel.colLastHeard' })).toBeInTheDocument();
+    expect(screen.getByText('History Peer')).toBeInTheDocument();
+    expect(screen.getByText('Contact Peer')).toBeInTheDocument();
+  });
+
+  it('shows empty history state', async () => {
+    useReticulumPeerStore.setState({ history: new Map() });
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
+    expect(screen.getByText('peerListPanel.emptyHistory')).toBeInTheDocument();
   });
 
   it('shows empty contacts state', async () => {

@@ -11,6 +11,7 @@ const HAS_PENDING_PATCH = join(
   'reticulum-sidecar/patches/rsLXMF-link-delivery-has-pending-to.patch',
 );
 const APPLY_SCRIPT = join(REPO_ROOT, 'scripts/apply-rsLXMF-link-delivery-has-pending-to.sh');
+const OVERLAY_LIST = join(REPO_ROOT, 'scripts/lib/ratspeak-overlay-apply-list.sh');
 const CLONE_SCRIPT = join(REPO_ROOT, 'scripts/clone-ratspeak-stack.sh');
 const ENSURE_SCRIPT = join(REPO_ROOT, 'scripts/ensure-rsReticulum-patches.sh');
 
@@ -27,10 +28,14 @@ describe('reticulum LinkDeliveryManager has_pending_to contracts', () => {
     expect(patch).toContain('fn has_pending_to');
     const apply = readFileSync(APPLY_SCRIPT, 'utf8');
     expect(apply).toContain('rsLXMF-link-delivery-has-pending-to.patch');
+    // Float-to-main clone applies overlays via the shared list helper (not inline script names).
+    const overlayList = readFileSync(OVERLAY_LIST, 'utf8');
+    expect(overlayList).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
     const clone = readFileSync(CLONE_SCRIPT, 'utf8');
-    expect(clone).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
+    expect(clone).toContain('ratspeak-overlay-apply-list.sh');
+    expect(clone).toContain('apply_ratspeak_lxmf_overlays');
     const ensure = readFileSync(ENSURE_SCRIPT, 'utf8');
-    expect(ensure).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
+    expect(ensure).toMatch(/ratspeak-overlay-apply-list|apply-rsLXMF-link-delivery-has-pending-to/);
   });
 
   it.skipIf(!existsSync(LXMF_LINK))('sibling link_delivery.rs exposes has_pending_to', () => {

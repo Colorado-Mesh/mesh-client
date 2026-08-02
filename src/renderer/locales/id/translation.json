@@ -644,7 +644,9 @@
     "notificationMessageTitle": "Pesan dari {{sender}}",
     "reticulumSendStoredAtPn": "Disimpan di simpul propagasi",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Diperbarui dari jalur RF"
+    "hopCountRefinedFromRf": "Diperbarui dari jalur RF",
+    "openPeerDetails": "Detail peer",
+    "openPeerDetailsAria": "Buka detail peer untuk {{name}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2560,8 +2562,6 @@
       "announceAtStart": "Umumkan kapan hosting dimulai",
       "fromStaticOnly": "Hanya dari rekan statis",
       "authRequired": "Diperlukan autentikasi",
-      "enforceStamps": "Menerapkan stempel pesan",
-      "enforceRatchets": "Terapkan ratchet",
       "nodeName": "PN umumkan nama",
       "staticPeers": "Hash rekan statis (satu 32-hex per baris)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2589,8 @@
         "nodeNameTooLong": "Nama pengumuman PN terlalu panjang.",
         "nonFiniteNumber": "Satu atau beberapa kolom numerik tidak valid."
       },
-      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan."
+      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan.",
+      "enforceUnavailableTip": "Sakelar enforce stamps/ratchets tidak diterapkan pada stack rsLXMF saat ini (hanya disimpan untuk kompatibilitas)."
     }
   },
   "nodeDetailModal": {
@@ -2930,7 +2931,10 @@
     "hybridMqttPathAria": "Jalur RF dan MQTT",
     "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
     "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi"
+    "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi",
+    "tabAll": "Semua",
+    "tabHistory": "Riwayat",
+    "emptyHistory": "Belum ada pesan langsung — kirim atau terima DM untuk melihat peer di sini."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3085,7 +3089,6 @@
     "saveContact": "Simpan sebagai kontak",
     "removeContact": "Hapus kontak",
     "removeContactConfirmTitle": "Hapus kontak",
-    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar Anda. Riwayat obrolan disimpan; mengirim pesan lagi kepada mereka akan menambahkan kembali kontak.",
     "probeOk": "Probe OK — jalur dapat dijangkau.",
     "blockContact": "Blokir kontak",
     "unblockContact": "Buka blokir kontak",
@@ -3099,7 +3102,8 @@
     "shareContactQr": "Bagikan kontak QR",
     "shareContactQrAria": "Tampilkan kode QR untuk kontak ini",
     "verifiedRowAria": "Kontak terverifikasi",
-    "renameFailed": "Tidak dapat menyimpan nama tampilan."
+    "renameFailed": "Tidak dapat menyimpan nama tampilan.",
+    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar tersimpan Anda. Pesan obrolan tetap ada; pesan tersebut akan tetap ada di Riwayat jika Anda mengirimkannya melalui pesan."
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",
@@ -3139,7 +3143,6 @@
     "toggleFavorite": "Alihkan favorit",
     "openChat": "Buka obrolan",
     "emptyPeers": "Belum ada teman sebaya yang ditemukan. Kirim pengumuman atau tunggu lalu lintas jaringan.",
-    "emptyContacts": "Belum ada kontak — kirimkan pesan kepada rekan untuk menambahkannya di sini.",
     "groupFilterAria": "Filter kontak menurut grup",
     "allGroups": "Semua groups",
     "manageGroups": "Kelola Grup",
@@ -3173,7 +3176,10 @@
     "pathsExpired": "Kedaluwarsa",
     "pathsEmpty": "Belum ada slot jalur. Minta jalur atau tunggu pengumuman.",
     "pathsLoadFailed": "Gagal memuat slot jalur.",
-    "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini."
+    "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini.",
+    "tabHistory": "Riwayat",
+    "emptyHistory": "Belum ada riwayat pesan — kirim atau terima pesan LXMF untuk melihat peer di sini.",
+    "emptyContacts": "Belum ada kontak tersimpan — buka peer dan pilih Simpan sebagai kontak."
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",
@@ -4030,7 +4036,7 @@
     "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
-    "iconNone": "Tidak ada",
+    "iconNone": "Wajah bawaan",
     "iconSaveFailed": "Tidak dapat menyimpan ikon avatar.",
     "iconUser": "Rakyat"
   },

@@ -644,7 +644,9 @@
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Memorizzato al nodo di propagazione",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Aggiornato da percorso RF"
+    "hopCountRefinedFromRf": "Aggiornato da percorso RF",
+    "openPeerDetails": "Dettagli peer",
+    "openPeerDetailsAria": "Apri i dettagli del peer per {{name}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -2560,8 +2562,6 @@
       "announceAtStart": "Annuncia quando inizia l'attività di host",
       "fromStaticOnly": "Solo da peer statici",
       "authRequired": "Autenticazione richiesta",
-      "enforceStamps": "Applicare i timbri dei messaggi",
-      "enforceRatchets": "Imponi cricchetti",
       "nodeName": "Nome annuncio PN",
       "staticPeers": "Hash peer statici (uno da 32 hex per riga)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2589,8 @@
         "nodeNameTooLong": "Il nome dell'annuncio PN è troppo lungo.",
         "nonFiniteNumber": "Uno o più campi numerici non sono validi."
       },
-      "warning": "Queste impostazioni controllano l'hosting del nodo di propagazione locale, l'autopeer, i costi PoW e il rifiuto della sincronizzazione per i dispositivi remoti ad alto costo. Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer."
+      "warning": "Queste impostazioni controllano l'hosting del nodo di propagazione locale, l'autopeer, i costi PoW e il rifiuto della sincronizzazione per i dispositivi remoti ad alto costo. Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer.",
+      "enforceUnavailableTip": "Le opzioni di enforcement stamps/ratchets non sono applicate sullo stack rsLXMF attuale (persistono solo per compatibilità)."
     }
   },
   "nodeDetailModal": {
@@ -2930,7 +2931,10 @@
     "hybridMqttPathAria": "Percorso RF e MQTT",
     "connectedViaRfAndMqttTooltip": "Connesso via RF e MQTT",
     "connectedViaRfAndMqttAria": "Connesso via RF e MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% integrità della connessione"
+    "echoesConnectionHealthTooltip": "{{score}}% integrità della connessione",
+    "tabAll": "Tutte",
+    "tabHistory": "Cronologia",
+    "emptyHistory": "Ancora nessun messaggio diretto: invia o ricevi un DM per vedere i peer qui."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3085,7 +3089,6 @@
     "saveContact": "Salva come contatto",
     "removeContact": "Togliere le eventuali lenti a contatto,",
     "removeContactConfirmTitle": "Togliere le eventuali lenti a contatto,",
-    "removeContactConfirmBody": "In questo modo il contatto verrà rimosso dall'elenco. La cronologia chat viene mantenuta; inviando nuovamente un messaggio, si aggiungerà nuovamente il contatto.",
     "probeOk": "Sonda OK — percorso raggiungibile.",
     "blockContact": "Blocca contatto",
     "unblockContact": "Sblocca contatto",
@@ -3099,7 +3102,8 @@
     "shareContactQr": "Condividi QR contatto",
     "shareContactQrAria": "Mostra il codice QR per questo contatto",
     "verifiedRowAria": "Contatto verificato",
-    "renameFailed": "Impossibile salvare il nome visualizzato."
+    "renameFailed": "Impossibile salvare il nome visualizzato.",
+    "removeContactConfirmBody": "Questo rimuove il contatto dall'elenco salvato. I messaggi di chat rimangono; rimangono nella Cronologia se li hai inviati."
   },
   "peerGraph": {
     "title": "Grafico di comunicazione peer",
@@ -3139,7 +3143,6 @@
     "toggleFavorite": "Attiva/disattiva preferiti",
     "openChat": "Apri chat",
     "emptyPeers": "Nessun coetaneo ancora scoperto. Invia un annuncio o attendi il traffico di rete.",
-    "emptyContacts": "Ancora nessun contatto — invia un messaggio a un collega per aggiungerli qui.",
     "groupFilterAria": "Filtra contatti per gruppo",
     "allGroups": "Tutti i gruppi",
     "manageGroups": "Gestisci gruppi",
@@ -3173,7 +3176,10 @@
     "pathsExpired": "scaduta",
     "pathsEmpty": "Ancora nessuno slot di percorso. Richiedi un percorso o attendi un annuncio.",
     "pathsLoadFailed": "Impossibile caricare gli slot del percorso.",
-    "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer."
+    "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer.",
+    "tabHistory": "Cronologia",
+    "emptyHistory": "Ancora nessuna cronologia dei messaggi: invia o ricevi un messaggio LXMF per vedere i peer qui.",
+    "emptyContacts": "Ancora nessun contatto salvato — apri un peer e scegli Salva come contatto."
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",
@@ -4030,7 +4036,7 @@
     "iconStar": "Stella",
     "iconHeart": "Cuore",
     "iconShield": "Shield",
-    "iconNone": "Nessuno",
+    "iconNone": "Volto predefinito",
     "iconSaveFailed": "Impossibile salvare l'icona dell'avatar.",
     "iconUser": "Persone"
   },

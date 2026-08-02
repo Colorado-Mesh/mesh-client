@@ -646,7 +646,9 @@
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Uloženo v propagačním uzlu",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Aktualizováno z RF cesty"
+    "hopCountRefinedFromRf": "Aktualizováno z RF cesty",
+    "openPeerDetails": "Podrobnosti peeru",
+    "openPeerDetailsAria": "Otevřít podrobnosti peeru pro {{name}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2562,8 +2564,6 @@
       "announceAtStart": "Oznamte, kdy začíná hosting",
       "fromStaticOnly": "Pouze od statických vrstevníků",
       "authRequired": "Je vyžadováno ověření",
-      "enforceStamps": "Vynutit razítka zpráv",
-      "enforceRatchets": "Prosadit ráčny",
       "nodeName": "PN oznámit jméno",
       "staticPeers": "Statické partnerské hash (jeden 32hex na řádek)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2591,7 +2591,8 @@
         "nodeNameTooLong": "Název oznámení PN je příliš dlouhý.",
         "nonFiniteNumber": "Jedno nebo více číselných polí je neplatných."
       },
-      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů."
+      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů.",
+      "enforceUnavailableTip": "Přepínače vynucení stamps/ratchets se na aktuálním rsLXMF stacku neaplikují (ukládají se jen kvůli kompatibilitě)."
     }
   },
   "nodeDetailModal": {
@@ -2932,7 +2933,10 @@
     "hybridMqttPathAria": "Cesta RF a MQTT",
     "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
     "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% zdraví připojení"
+    "echoesConnectionHealthTooltip": "{{score}}% zdraví připojení",
+    "tabAll": "Vše",
+    "tabHistory": "Historie",
+    "emptyHistory": "Zatím žádné přímé zprávy — odešlete nebo přijměte DM, abyste zde viděli peery."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3087,7 +3091,6 @@
     "saveContact": "Uložit jako kontakt",
     "removeContact": "Odstraňte kontaktní",
     "removeContactConfirmTitle": "Odstraňte kontaktní",
-    "removeContactConfirmBody": "Tím se kontakt odstraní ze seznamu. Historie chatu je zachována; opětovné zaslání zprávy kontakt znovu přidá.",
     "probeOk": "Sonda OK — cesta dosažitelná.",
     "blockContact": "Zablokovat kontakt",
     "unblockContact": "Odblokovat kontakt",
@@ -3101,7 +3104,8 @@
     "shareContactQr": "Sdílet kontakt",
     "shareContactQrAria": "Zobrazit QR kód pro tento kontakt",
     "verifiedRowAria": "Kontakt ověřen",
-    "renameFailed": "Zobrazovaný název nelze uložit."
+    "renameFailed": "Zobrazovaný název nelze uložit.",
+    "removeContactConfirmBody": "Tím odeberete kontakt ze svého uloženého seznamu. Zprávy chatu zůstávají v Historii, pokud jsi jim poslal/a zprávu."
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",
@@ -3141,7 +3145,6 @@
     "toggleFavorite": "Přepnout oblíbené",
     "openChat": "Otevřít chat",
     "emptyPeers": "Zatím nebyly objeveny žádné protějšky. Odešlete oznámení nebo počkejte na síťový provoz.",
-    "emptyContacts": "Zatím žádné kontakty — pošlete zprávu kolegovi, aby je sem přidal.",
     "groupFilterAria": "Filtrovat kontakty podle skupiny",
     "allGroups": "Všechny skupiny",
     "manageGroups": "Spravovat skupiny",
@@ -3175,7 +3178,10 @@
     "pathsExpired": "Platnost vypršela",
     "pathsEmpty": "Zatím žádné sloty pro cestu. Požádejte o cestu nebo počkejte na oznámení.",
     "pathsLoadFailed": "Načtení slotů cesty se nezdařilo.",
-    "pathsPinFailed": "Aktualizace předvolby média pro tohoto protějšku se nezdařila."
+    "pathsPinFailed": "Aktualizace předvolby média pro tohoto protějšku se nezdařila.",
+    "tabHistory": "Historie",
+    "emptyHistory": "Zatím žádná historie zpráv — odešlete nebo přijměte zprávu LXMF, abyste zde viděli peery.",
+    "emptyContacts": "Zatím žádné uložené kontakty — otevřete peer a zvolte Uložit jako kontakt."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",
@@ -4032,7 +4038,7 @@
     "iconStar": "Hvězdička",
     "iconHeart": "Srdce",
     "iconShield": "Štít",
-    "iconNone": "Žádný",
+    "iconNone": "Výchozí tvář",
     "iconSaveFailed": "Ikonu avatara nelze uložit.",
     "iconUser": "Lidé"
   },

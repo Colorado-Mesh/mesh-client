@@ -117,6 +117,7 @@ import {
   formatBluetoothctlSpawnError,
   linuxWebBluetoothDeviceSelection,
 } from './linuxWebBluetoothDeviceSelection';
+import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import {
   clearLogFile,
   exportLogTo,
@@ -656,6 +657,18 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
     const rs = Number(m.room_server_id);
     if (!Number.isInteger(rs) || rs < 0)
       throw new Error('db:saveMeshcoreMessage: room_server_id must be a non-negative integer');
+  }
+  if (m.sender_id != null) {
+    const rawSender = Number(m.sender_id);
+    if (!Number.isFinite(rawSender))
+      throw new Error('db:saveMeshcoreMessage: sender_id must be a finite number');
+    m.sender_id = rawSender >>> 0;
+  }
+  if (m.to_node != null) {
+    const rawTo = Number(m.to_node);
+    if (!Number.isFinite(rawTo))
+      throw new Error('db:saveMeshcoreMessage: to_node must be a finite number');
+    m.to_node = rawTo >>> 0;
   }
 }
 
@@ -3839,6 +3852,30 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
   }
 });
 
+ipcMain.handle('db:listMeshtasticDmPeers', (event, ownNodeId: unknown, limit?: unknown) => {
+  try {
+    assertIpcSender(event, 'db:listMeshtasticDmPeers');
+    if (typeof ownNodeId !== 'number' || !Number.isFinite(ownNodeId)) return [];
+    const db = getDbForIpc('db:listMeshtasticDmPeers');
+    if (!db) return [];
+    return listMeshtasticDmPeersFromDb(db, ownNodeId, limit);
+  } catch (err) {
+    return finishDbIpcReadHandler('db:listMeshtasticDmPeers', err, []);
+  }
+});
+
+ipcMain.handle('db:listMeshcoreDmPeers', (event, ownNodeId: unknown, limit?: unknown) => {
+  try {
+    assertIpcSender(event, 'db:listMeshcoreDmPeers');
+    if (typeof ownNodeId !== 'number' || !Number.isFinite(ownNodeId)) return [];
+    const db = getDbForIpc('db:listMeshcoreDmPeers');
+    if (!db) return [];
+    return listMeshcoreDmPeersFromDb(db, ownNodeId, limit);
+  } catch (err) {
+    return finishDbIpcReadHandler('db:listMeshcoreDmPeers', err, []);
+  }
+});
+
 ipcMain.handle('db:saveNode', (event, node) => {
   if (!validateIpcSender(event)) throw new Error('db:saveNode: unauthorized sender');
   try {
@@ -5120,7 +5157,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
     const replyPreviewSender =
       typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null;
     const rowParams = {
-      sender_id: m.sender_id != null ? Number(m.sender_id) : null,
+      sender_id: m.sender_id != null ? Number(m.sender_id) >>> 0 : null,
       sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
       payload: m.payload as string,
       channel_idx: m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
@@ -5129,7 +5166,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
       packet_id: m.packet_id != null ? Number(m.packet_id) : null,
       emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
       reply_id: replyId,
-      to_node: m.to_node != null ? Number(m.to_node) : null,
+      to_node: m.to_node != null ? Number(m.to_node) >>> 0 : null,
       received_via,
       rx_packet_fingerprint: rxFp,
       reply_preview_text: replyPreviewText,

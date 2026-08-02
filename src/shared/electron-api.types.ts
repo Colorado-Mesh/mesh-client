@@ -81,6 +81,12 @@ export interface DbPruneResult {
   changes: number;
 }
 
+/** Distinct DM peer row from `db:list*DmPeers` (History tab). */
+export interface DmPeerRow {
+  node_id: number;
+  last_message_at: number;
+}
+
 export interface SavedMessage {
   id: number;
   sender_id: number;
@@ -263,6 +269,8 @@ export interface ElectronAPI {
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
+    /** Distinct Meshtastic DM peers for History (survives message hydrate cap). */
+    listMeshtasticDmPeers: (ownNodeId: number, limit?: number) => Promise<DmPeerRow[]>;
 
     saveNode: (node: MeshNode) => Promise<void>;
 
@@ -339,6 +347,8 @@ export interface ElectronAPI {
     ) => Promise<void>;
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
+    /** Distinct MeshCore DM peers (`channel_idx = -1`) for History. */
+    listMeshcoreDmPeers: (ownNodeId: number, limit?: number) => Promise<DmPeerRow[]>;
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;
     searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
     getMeshcoreContacts: () => Promise<unknown[]>;
@@ -388,6 +398,8 @@ export interface ElectronAPI {
       display_name?: string | null;
       last_heard?: number | null;
       favorited?: boolean | number | null;
+      /** Explicit saved contact (Contacts tab). Omitted patches must not clear. */
+      is_contact?: boolean | number | null;
       icon_name?: string | null;
       icon_color?: string | null;
     }) => Promise<void>;

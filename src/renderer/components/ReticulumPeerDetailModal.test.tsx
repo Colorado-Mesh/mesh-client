@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const addToast = vi.fn();
+const refreshReticulumPeersFromSidecarMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -24,6 +25,16 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   formatReticulumPeerPathToast: () => ({ message: 'peerDetailModal.pathOk', variant: 'success' }),
   formatReticulumPeerProbeToast: () => ({ message: 'peerDetailModal.probeOk', variant: 'success' }),
 }));
+
+vi.mock('../stores/reticulumPeerStore', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('../stores/reticulumPeerStore')>();
+  return {
+    ...actual,
+    refreshReticulumPeersFromSidecar: (...args: unknown[]) =>
+      refreshReticulumPeersFromSidecarMock(...args),
+  };
+});
 
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import ReticulumPeerDetailModal from './ReticulumPeerDetailModal';
@@ -64,6 +75,29 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
 
     await user.click(screen.getByRole('button', { name: 'peerDetailModal.copyHash' }));
     expect(writeText).toHaveBeenCalledWith(PEER_HASH);
+  });
+
+  it('Save as contact upserts last_heard and refreshes peers', async () => {
+    const user = userEvent.setup();
+    const upsert = vi.mocked(window.electronAPI.db.upsertReticulumDestination);
+    const refreshSpy = refreshReticulumPeersFromSidecarMock;
+
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'peerDetailModal.saveContact' }));
+    await waitFor(() => {
+      expect(upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          destination_hash: PEER_HASH,
+          display_name: 'Test Peer',
+          last_heard: expect.any(Number),
+          is_contact: true,
+        }),
+      );
+    });
+    expect(refreshSpy).toHaveBeenCalled();
   });
 });
 

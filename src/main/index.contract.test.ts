@@ -232,6 +232,15 @@ describe('IPC sender validation on high-value handlers (source contract)', () =>
     );
   });
 
+  it('db:listMeshtasticDmPeers and db:listMeshcoreDmPeers assert IPC sender', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('db:listMeshtasticDmPeers'[\s\S]*?assertIpcSender\(event, 'db:listMeshtasticDmPeers'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('db:listMeshcoreDmPeers'[\s\S]*?assertIpcSender\(event, 'db:listMeshcoreDmPeers'\)/,
+    );
+  });
+
   it('http:preflight and http:connect validate IPC sender before executing', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('http:preflight'[\s\S]*?validateIpcSender\(event\)/,

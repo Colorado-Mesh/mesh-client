@@ -648,7 +648,9 @@
     "emojiButton": "Emoji",
     "reticulumSendStoredAtPn": "Przechowywane w węźle propagacji",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Zaktualizowano ze ścieżki RF"
+    "hopCountRefinedFromRf": "Zaktualizowano ze ścieżki RF",
+    "openPeerDetails": "Szczegóły peeru",
+    "openPeerDetailsAria": "Otwórz szczegóły peeru dla {{name}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2564,8 +2566,6 @@
       "announceAtStart": "Ogłoś rozpoczęcie hostingu",
       "fromStaticOnly": "Tylko od statycznych peerów",
       "authRequired": "Wymagane uwierzytelnienie",
-      "enforceStamps": "Wymuszaj stemple wiadomości",
-      "enforceRatchets": "Wymuś zapadki",
       "nodeName": "PN ogłasza nazwę",
       "staticPeers": "Statyczne skróty równorzędne (jeden 32-szesnastkowy na linię)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2593,7 +2593,8 @@
         "nodeNameTooLong": "Nazwa ogłoszenia PN jest za długa.",
         "nonFiniteNumber": "Co najmniej jedno pole numeryczne jest nieprawidłowe."
       },
-      "warning": "Te ustawienia kontrolują hosting lokalnego węzła propagacyjnego, autopeer, koszty PoW i odmowę synchronizacji w przypadku drogich pilotów. Błędna konfiguracja może spalić procesor, zapełnić dysk lub zaakceptować wiele urządzeń równorzędnych."
+      "warning": "Te ustawienia kontrolują hosting lokalnego węzła propagacyjnego, autopeer, koszty PoW i odmowę synchronizacji w przypadku drogich pilotów. Błędna konfiguracja może spalić procesor, zapełnić dysk lub zaakceptować wiele urządzeń równorzędnych.",
+      "enforceUnavailableTip": "Przełączniki wymuszania stamps/ratchets nie są stosowane na bieżącym stacku rsLXMF (zapisywane tylko dla zgodności)."
     }
   },
   "nodeDetailModal": {
@@ -2934,7 +2935,10 @@
     "hybridMqttPathAria": "Ścieżka RF i MQTT",
     "connectedViaRfAndMqttTooltip": "Połączono przez RF i MQTT",
     "connectedViaRfAndMqttAria": "Połączono przez RF i MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% stan połączenia"
+    "echoesConnectionHealthTooltip": "{{score}}% stan połączenia",
+    "tabAll": "Wszystko",
+    "tabHistory": "Historia",
+    "emptyHistory": "Nie ma jeszcze bezpośrednich wiadomości — wyślij lub otrzymaj DM, aby zobaczyć peerów tutaj."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3089,7 +3093,6 @@
     "saveContact": "Zapisz jako kontakt",
     "removeContact": "Zdjąć soczewki kontaktowe,",
     "removeContactConfirmTitle": "Zdjąć soczewki kontaktowe,",
-    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z listy. Historia czatu jest zachowana; ponowne wysłanie wiadomości spowoduje ponowne dodanie kontaktu.",
     "probeOk": "Sonda OK — ścieżka osiągalna.",
     "blockContact": "Blokuj kontakt",
     "unblockContact": "Odblokuj kontakt",
@@ -3103,7 +3106,8 @@
     "shareContactQr": "Udostępnij kontaktowy QR",
     "shareContactQrAria": "Pokaż kod QR dla tego kontaktu",
     "verifiedRowAria": "Kontakt zweryfikowany",
-    "renameFailed": "Nie można zapisać nazwy wyświetlanej."
+    "renameFailed": "Nie można zapisać nazwy wyświetlanej.",
+    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z zapisanej listy. Wiadomości na czacie pozostają w Historii, jeśli zostały przez Ciebie wysłane."
   },
   "peerGraph": {
     "title": "Wykres komunikacji z partnerami",
@@ -3143,7 +3147,6 @@
     "toggleFavorite": "Przełącz ulubione",
     "openChat": "Otwórz czat",
     "emptyPeers": "Nie odkryto jeszcze żadnych partnerów. Wyślij ogłoszenie lub poczekaj na ruch sieciowy.",
-    "emptyContacts": "Brak kontaktów — wyślij wiadomość do partnera, aby dodać je tutaj.",
     "groupFilterAria": "Filtruj kontakty według grupy",
     "allGroups": "Wszystkie grupy",
     "manageGroups": "Zarządzaj grupami",
@@ -3177,7 +3180,10 @@
     "pathsExpired": "Wygasłe",
     "pathsEmpty": "Nie ma jeszcze slotów ścieżek. Poproś o ścieżkę lub poczekaj na ogłoszenie.",
     "pathsLoadFailed": "Nie udało się załadować slotów ścieżki.",
-    "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera."
+    "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera.",
+    "tabHistory": "Historia",
+    "emptyHistory": "Brak historii wiadomości — wyślij lub otrzymaj wiadomość LXMF, aby zobaczyć peerów tutaj.",
+    "emptyContacts": "Brak zapisanych kontaktów — otwórz peera i wybierz Zapisz jako kontakt."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",
@@ -4034,7 +4040,7 @@
     "iconStar": "Ocena",
     "iconHeart": "Serce",
     "iconShield": "Tarcza",
-    "iconNone": "Nic",
+    "iconNone": "Domyślna twarz",
     "iconSaveFailed": "Nie można zapisać ikony awatara.",
     "iconUser": "Ludzie"
   },

@@ -396,9 +396,11 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       if (!db) return { changes: 0 };
       const favoritedProvided = Object.prototype.hasOwnProperty.call(r, 'favorited');
       const favoritedForInsert = r.favorited === true || r.favorited === 1 ? 1 : 0;
+      const isContactProvided = Object.prototype.hasOwnProperty.call(r, 'is_contact');
+      const isContactForInsert = r.is_contact === true || r.is_contact === 1 ? 1 : 0;
       db.prepareOnce(
-        `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
-         VALUES (?, ?, ?, ?, ?, ?)
+        `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, is_contact, icon_name, icon_color)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(destination_hash) DO UPDATE SET
            display_name = CASE
              WHEN excluded.display_name IS NOT NULL
@@ -411,6 +413,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
            favorited = CASE
              WHEN ? = 1 THEN excluded.favorited
              ELSE reticulum_destinations.favorited
+           END,
+           is_contact = CASE
+             WHEN ? = 1 THEN excluded.is_contact
+             ELSE reticulum_destinations.is_contact
            END,
            icon_name = COALESCE(excluded.icon_name, reticulum_destinations.icon_name),
            icon_color = COALESCE(excluded.icon_color, reticulum_destinations.icon_color)`,
@@ -425,9 +431,11 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           ? Math.trunc(Number(r.last_heard))
           : null,
         favoritedForInsert,
+        isContactForInsert,
         typeof r.icon_name === 'string' ? r.icon_name.slice(0, 64) : null,
         typeof r.icon_color === 'string' ? r.icon_color.slice(0, 32) : null,
         favoritedProvided ? 1 : 0,
+        isContactProvided ? 1 : 0,
       );
       return { changes: 1 };
     } catch (err) {
@@ -480,7 +488,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  /** Clear LXMF contact marker (last_heard); keeps display_name / favorite / icon peer meta. */
+  /** Clear saved-contact flag; keeps History last_heard / display_name / favorite / icon. */
   ipcMain.handle('db:clearReticulumContactDestinations', (event) => {
     try {
       assertIpcSender(event, 'db:clearReticulumContactDestinations');
@@ -488,7 +496,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       if (!db) return { changes: 0 };
       const result = db
         .prepareOnce(
-          'UPDATE reticulum_destinations SET last_heard = NULL WHERE last_heard IS NOT NULL',
+          'UPDATE reticulum_destinations SET is_contact = 0 WHERE is_contact IS NOT NULL AND is_contact != 0',
         )
         .run();
       return { changes: result.changes ?? 0 };
@@ -537,7 +545,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const deletable = (
         db
           .prepareOnce(
-            'SELECT COUNT(*) as cnt FROM reticulum_destinations WHERE (favorited IS NULL OR favorited = 0) AND last_heard IS NOT NULL',
+            `SELECT COUNT(*) as cnt FROM reticulum_destinations
+             WHERE (favorited IS NULL OR favorited = 0)
+               AND (is_contact IS NULL OR is_contact = 0)
+               AND last_heard IS NOT NULL`,
           )
           .get() as { cnt: number }
       ).cnt;
@@ -547,7 +558,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         .prepareOnce(
           `DELETE FROM reticulum_destinations WHERE destination_hash IN (
             SELECT destination_hash FROM reticulum_destinations
-            WHERE (favorited IS NULL OR favorited = 0) AND last_heard IS NOT NULL
+            WHERE (favorited IS NULL OR favorited = 0)
+              AND (is_contact IS NULL OR is_contact = 0)
+              AND last_heard IS NOT NULL
             ORDER BY last_heard ASC LIMIT ?
           )`,
         )
@@ -569,13 +582,14 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:deleteReticulumDestinationsByAge');
       if (!db) return { changes: 0 };
       const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
-      // reticulum_destinations.last_heard is Unix seconds (see persistReticulumContactFromPayload).
+      // reticulum_destinations.last_heard is Unix seconds (history stamp / contact activity).
       const cutoff = Math.floor(Date.now() / 1000) - safeDays * 86_400;
       const result = db
         .prepareOnce(
           `DELETE FROM reticulum_destinations
            WHERE last_heard IS NOT NULL AND last_heard < ?
-             AND (favorited IS NULL OR favorited = 0)`,
+             AND (favorited IS NULL OR favorited = 0)
+             AND (is_contact IS NULL OR is_contact = 0)`,
         )
         .run(cutoff);
       if (result.changes > 0) {

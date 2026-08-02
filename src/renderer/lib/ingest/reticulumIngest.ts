@@ -1,4 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { truncateReplyPreviewText } from '@/renderer/lib/replyPreview';
 import { messageTransportFromWire } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
@@ -25,7 +27,12 @@ import type { IdentityId } from '@/renderer/lib/types';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
-import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { upsertNodeRecordsForIdentity, useNodeStore } from '@/renderer/stores/nodeStore';
+import {
+  reticulumContactToNodeRecordPreservingLabel,
+  useReticulumPeerStore,
+} from '@/renderer/stores/reticulumPeerStore';
+import { hasReticulumHistory } from '@/shared/reticulum-types';
 import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import {
   isReticulumHashPrefixAlias,
@@ -217,33 +224,85 @@ export async function persistReticulumMessageToDb(
   }
 }
 
+function reticulumHistoryPeerHash(p: ReticulumLxmfPayload): string | undefined {
+  return p.direction === 'outbound' ? p.to_hash : p.sender_hash;
+}
+
+function reticulumHistoryDisplayName(
+  p: ReticulumLxmfPayload,
+  peerHash: string,
+): string | undefined {
+  if (p.direction === 'outbound') {
+    const peer = useReticulumPeerStore.getState().getPeer(peerHash);
+    const candidate = peer?.custom_display_name?.trim() || peer?.display_name?.trim() || undefined;
+    if (candidate && !isReticulumHashPrefixAlias(peerHash, candidate)) {
+      return sanitizeReticulumDisplayName(candidate) ?? undefined;
+    }
+    return undefined;
+  }
+  return reticulumContactDisplayNameFromPayload(p);
+}
+
 /**
- * Persist a messaged peer as a contact destination.
- * Inbound → sender; outbound → recipient (`to_hash`), never the local sender.
+ * Stamp History (`last_heard`) for inbound sender / outbound recipient.
+ * Does NOT set `is_contact` — Contacts are Save-as-contact only.
+ */
+export async function persistReticulumHistoryFromPayload(
+  p: ReticulumLxmfPayload,
+  identityId?: IdentityId,
+): Promise<void> {
+  const peerHash = reticulumHistoryPeerHash(p);
+  if (!peerHash) return;
+  const displayName = reticulumHistoryDisplayName(p, peerHash);
+  const lastHeard = Math.floor((p.timestamp ?? Date.now()) / 1000);
+  try {
+    await window.electronAPI.db.upsertReticulumDestination({
+      destination_hash: peerHash,
+      ...(displayName ? { display_name: displayName } : {}),
+      last_heard: lastHeard,
+    });
+  } catch (e) {
+    console.warn('[reticulumIngest] upsert history ' + errLikeToLogString(e));
+    return;
+  }
+
+  useReticulumPeerStore.getState().stampHistoryPeer(peerHash, {
+    last_heard: lastHeard,
+    display_name: displayName ?? null,
+  });
+
+  const id =
+    identityId ??
+    getIdentityIdForProtocol('reticulum') ??
+    getOfflineIdentityIdForProtocol('reticulum');
+  const historyRow = useReticulumPeerStore.getState().getPeer(peerHash);
+  if (!hasReticulumHistory(historyRow)) return;
+  const nodeId = reticulumHashToNodeId(peerHash);
+  registerReticulumDestinationHash(nodeId, peerHash);
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const prior = useNodeStore.getState().nodes[id]?.[nodeId] ?? null;
+  upsertNodeRecordsForIdentity(id, [
+    reticulumContactToNodeRecordPreservingLabel(historyRow, prior),
+  ]);
+}
+
+/**
+ * Persist an explicit saved contact (`is_contact` + `last_heard`).
+ * Messaging must NOT call this — use {@link persistReticulumHistoryFromPayload}.
  */
 export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload): Promise<void> {
-  const isOutbound = p.direction === 'outbound';
-  const contactHash = isOutbound ? p.to_hash : p.sender_hash;
-  if (!contactHash) return;
+  const peerHash = reticulumHistoryPeerHash(p);
+  if (!peerHash) return;
 
-  useReticulumPeerStore.getState().restoreDismissedContact(contactHash);
-
-  let displayName: string | undefined;
-  if (isOutbound) {
-    const peer = useReticulumPeerStore.getState().getPeer(contactHash);
-    const candidate = peer?.custom_display_name?.trim() || peer?.display_name?.trim() || undefined;
-    if (candidate && !isReticulumHashPrefixAlias(contactHash, candidate)) {
-      displayName = sanitizeReticulumDisplayName(candidate) ?? undefined;
-    }
-  } else {
-    displayName = reticulumContactDisplayNameFromPayload(p);
-  }
+  useReticulumPeerStore.getState().restoreDismissedContact(peerHash);
+  const displayName = reticulumHistoryDisplayName(p, peerHash);
 
   try {
     await window.electronAPI.db.upsertReticulumDestination({
-      destination_hash: contactHash,
+      destination_hash: peerHash,
       ...(displayName ? { display_name: displayName } : {}),
       last_heard: Math.floor((p.timestamp ?? Date.now()) / 1000),
+      is_contact: true,
     });
   } catch (e) {
     console.warn('[reticulumIngest] upsert contact ' + errLikeToLogString(e));
@@ -278,7 +337,8 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
   void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);
-  void persistReticulumContactFromPayload(p);
+  // History stamp only — Contacts require explicit Save as contact.
+  void persistReticulumHistoryFromPayload(p, identityId);
   return true;
 }
 

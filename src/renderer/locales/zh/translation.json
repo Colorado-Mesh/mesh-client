@@ -644,7 +644,9 @@
     "notificationMessageTitle": "来自{{sender}}的消息",
     "reticulumSendStoredAtPn": "存储在传播节点",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "从射频路径更新"
+    "hopCountRefinedFromRf": "从射频路径更新",
+    "openPeerDetails": "对等方详情",
+    "openPeerDetailsAria": "打开 {{name}} 的对等方详情"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2560,8 +2562,6 @@
       "announceAtStart": "在开始出租时发布公告",
       "fromStaticOnly": "仅来自静态对等体",
       "authRequired": "需要身份验证",
-      "enforceStamps": "强制消息戳记",
-      "enforceRatchets": "强制棘轮",
       "nodeName": "PN公告名称",
       "staticPeers": "静态对等哈希（每行一个32十六进制）",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2589,8 @@
         "nodeNameTooLong": "PN 公告名称太长。",
         "nonFiniteNumber": "一个或多个数字字段无效。"
       },
-      "warning": "这些设置控制本地传播节点托管、自动对等、PoW 成本以及高成本远程的同步拒绝。配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。"
+      "warning": "这些设置控制本地传播节点托管、自动对等、PoW 成本以及高成本远程的同步拒绝。配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。",
+      "enforceUnavailableTip": "强制 stamps/ratchets 开关在当前 rsLXMF 协议栈上不会生效（仅为兼容性而保留）。"
     }
   },
   "nodeDetailModal": {
@@ -2930,7 +2931,10 @@
     "hybridMqttPathAria": "射频和MQTT路径",
     "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
     "connectedViaRfAndMqttAria": "通过射频和MQTT连接",
-    "echoesConnectionHealthTooltip": "{{score}} %连接健康"
+    "echoesConnectionHealthTooltip": "{{score}} %连接健康",
+    "tabAll": "所有食谱",
+    "tabHistory": "历史",
+    "emptyHistory": "还没有私信—发送或接收 DM 以在此处查看对等节点。"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3085,7 +3089,6 @@
     "saveContact": "另存为联系人",
     "removeContact": "移除联系人",
     "removeContactConfirmTitle": "移除联系人",
-    "removeContactConfirmBody": "这会将联系人从您的列表中删除。会保留聊天记录；再次向他们发送消息将重新添加工单。",
     "probeOk": "探测正常—路径可达。",
     "blockContact": "阻止联系人",
     "unblockContact": "取消阻止联系人",
@@ -3099,7 +3102,8 @@
     "shareContactQr": "分享联系人",
     "shareContactQrAria": "显示此联系人的二维码",
     "verifiedRowAria": "已验证联系人48",
-    "renameFailed": "无法保存显示名称。"
+    "renameFailed": "无法保存显示名称。",
+    "removeContactConfirmBody": "此操作会将联系人从保存的列表中删除。聊天消息会保留；如果您向其发送消息，它们将保留在历史记录中。"
   },
   "peerGraph": {
     "title": "同行沟通图表",
@@ -3139,7 +3143,6 @@
     "toggleFavorite": "切换收藏夹",
     "openChat": "打开聊天",
     "emptyPeers": "尚未发现同行。发送公告或等待网络流量。",
-    "emptyContacts": "还没有联系人—向同行发送消息以在此处添加他们。",
     "groupFilterAria": "按组筛选联系人",
     "allGroups": "所有群组",
     "manageGroups": "管理组",
@@ -3173,7 +3176,10 @@
     "pathsExpired": "已失效",
     "pathsEmpty": "还没有路径插槽。请求路径或等待公告。",
     "pathsLoadFailed": "加载路径插槽失败。",
-    "pathsPinFailed": "无法更新此对等方的媒体首选项。"
+    "pathsPinFailed": "无法更新此对等方的媒体首选项。",
+    "tabHistory": "历史",
+    "emptyHistory": "尚无消息历史记录—发送或接收 LXMF 消息以在此处查看对等节点。",
+    "emptyContacts": "还没有保存的联系人—打开对等点并选择“另存为联系人”。"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",
@@ -4030,7 +4036,7 @@
     "iconStar": "星",
     "iconHeart": "倾心点",
     "iconShield": "防护罩",
-    "iconNone": "没有任何",
+    "iconNone": "默认面孔",
     "iconSaveFailed": "无法保存头像图标。",
     "iconUser": "人们"
   },

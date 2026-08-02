@@ -51,13 +51,10 @@ import {
   formatReticulumViaBadgeLabel,
   parseReticulumViaAtoms,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
-import {
-  normalizeReticulumNodeId,
-  registerReticulumDestinationHash,
-  resolveReticulumDestinationHash,
-} from '@/renderer/lib/reticulum/destHash';
+import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
+import { resolveReticulumDmFaceHash } from '@/renderer/lib/reticulum/reticulumChatFaceHash';
 import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
@@ -71,7 +68,6 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
-import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
@@ -79,6 +75,7 @@ import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreambl
 import { useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
+import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
   dismissedDmTabsStorageKey,
@@ -144,7 +141,7 @@ import {
 } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
-import { reticulumHashForNodeId, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -159,6 +156,7 @@ import {
   ReticulumDmPathReachabilityBadge,
 } from './ReticulumDmPathReachabilityBadge';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
+import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { useToast } from './Toast';
 
@@ -830,15 +828,10 @@ function ChatPanel({
     return groupChatReactionsByParentKey(filtered);
   }, [displayMessages, protocol]);
 
-  const inferredDmTabs = useMemo(() => {
-    const peers = new Map<number, number>();
-    for (const msg of regularMessages) {
-      const peer = resolveDmPeer(msg);
-      if (peer == null) continue;
-      peers.set(peer, (peers.get(peer) ?? 0) + 1);
-    }
-    return peers;
-  }, [regularMessages, resolveDmPeer]);
+  const inferredDmTabs = useMemo(
+    () => chatDmPeerMessageCounts(regularMessages, ownNodeIdSet, protocol, chatUnreadDmOptions),
+    [chatUnreadDmOptions, ownNodeIdSet, protocol, regularMessages],
+  );
 
   /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
   const dmUnreadCounts = useMemo(
@@ -1732,20 +1725,18 @@ function ChatPanel({
 
   const reticulumDmDestinationHash = useMemo(() => {
     if (protocol !== 'reticulum' || activeDmNode == null) return null;
-    const fromNode = nodes.get(activeDmNode)?.reticulum_destination_hash?.trim();
-    if (fromNode) {
-      registerReticulumDestinationHash(activeDmNode, fromNode);
-      return fromNode;
-    }
-    return (
-      reticulumHashForNodeId(activeDmNode) ?? resolveReticulumDestinationHash(activeDmNode) ?? null
+    return resolveReticulumDmFaceHash(
+      activeDmNode,
+      nodes.get(activeDmNode)?.reticulum_destination_hash,
     );
   }, [activeDmNode, nodes, protocol]);
+
+  const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
 
   const reticulumDmPeerHops = useReticulumPeerStore((s) => {
     if (!reticulumDmDestinationHash) return null;
     const key = reticulumDmDestinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-    const peer = s.contacts.get(key) ?? s.peers.get(key);
+    const peer = s.contacts.get(key) ?? s.history.get(key) ?? s.peers.get(key);
     return peer?.hops ?? null;
   });
 
@@ -1810,6 +1801,11 @@ function ChatPanel({
           const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
           const showDmUnreadBadge =
             dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
+          const faceHash =
+            protocol === 'reticulum'
+              ? resolveReticulumDmFaceHash(nodeNum, nodes.get(nodeNum)?.reticulum_destination_hash)
+              : null;
+          const appearance = faceHash ? peerAppearanceByHash.get(faceHash) : undefined;
           return (
             <div
               key={`dm-${protocol}-${nodeNum}`}
@@ -1822,7 +1818,7 @@ function ChatPanel({
               <button
                 type="button"
                 aria-label={getDmLabel(nodeNum)}
-                className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+                className={`inline-flex max-w-full min-w-0 items-center gap-1 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
                   viewMode === 'dm' && activeDmNode === nodeNum
                     ? 'text-white'
                     : 'text-muted hover:text-gray-200'
@@ -1831,7 +1827,16 @@ function ChatPanel({
                   openDmTo(nodeNum);
                 }}
               >
-                {getDmLabel(nodeNum)}
+                {protocol === 'reticulum' ? (
+                  <ReticulumProfileIconSlot
+                    iconName={appearance?.icon_name}
+                    iconColor={appearance?.icon_color}
+                    destinationHash={faceHash}
+                    size={14}
+                    className="shrink-0"
+                  />
+                ) : null}
+                <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
               </button>
               <button
                 type="button"
@@ -2268,11 +2273,35 @@ function ChatPanel({
                 dmShareCandidates={rncpShareCandidates}
               />
             ) : null;
-          if (!pathBadge && !dmNode && !rncpControl) return null;
+          const peerDetailsAppearance = reticulumDmDestinationHash
+            ? peerAppearanceByHash.get(reticulumDmDestinationHash)
+            : undefined;
+          const peerDetailsControl =
+            protocol === 'reticulum' && onPeerClick && reticulumDmDestinationHash != null ? (
+              <button
+                type="button"
+                className="bg-secondary-dark text-muted inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:text-gray-200"
+                aria-label={t('chatPanel.openPeerDetailsAria', { name: dmNodeName })}
+                onClick={() => {
+                  onPeerClick(reticulumDmDestinationHash);
+                }}
+              >
+                <ReticulumProfileIconSlot
+                  iconName={peerDetailsAppearance?.icon_name}
+                  iconColor={peerDetailsAppearance?.icon_color}
+                  destinationHash={reticulumDmDestinationHash}
+                  size={14}
+                  className="shrink-0"
+                />
+                <span className="min-w-0 truncate">{t('chatPanel.openPeerDetails')}</span>
+              </button>
+            ) : null;
+          if (!pathBadge && !dmNode && !rncpControl && !peerDetailsControl) return null;
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
               {pathActions}
+              {peerDetailsControl}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
               {rncpControl}
             </div>
@@ -2492,86 +2521,101 @@ function ChatPanel({
                             }`}
                           >
                             {/* Header: sender name (clickable) + DM indicator + time */}
-                            {!isContinuation && (
-                              <div className="mb-0.5 flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (protocol === 'reticulum' && onPeerClick) {
-                                      const rawHash =
-                                        msg.reticulum_sender_hash?.trim() ||
-                                        nodes
-                                          .get(msg.sender_id)
-                                          ?.reticulum_destination_hash?.trim() ||
-                                        reticulumHashForNodeId(msg.sender_id) ||
-                                        resolveReticulumDestinationHash(msg.sender_id) ||
-                                        '';
-                                      const peerHash =
-                                        canonicalizeReticulumDestinationHash(rawHash);
-                                      if (peerHash) {
-                                        onPeerClick(peerHash);
-                                        return;
-                                      }
-                                      // No resolvable LXMF hash — avoid Meshtastic/MeshCore NodeDetailModal.
-                                      return;
-                                    }
-                                    onNodeClick(msg.sender_id);
-                                  }}
-                                  className={`cursor-pointer text-xs font-semibold hover:underline ${
-                                    isDm
-                                      ? 'text-purple-400'
-                                      : isOwn
-                                        ? 'text-blue-400'
-                                        : filterSender === msg.sender_id
-                                          ? 'text-blue-300 underline'
-                                          : 'text-bright-green'
-                                  }`}
-                                  title={t('chatPanel.filterBySender')}
-                                >
-                                  {displaySenderName}
-                                </button>
-                                {!isOwn && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setFilterSender((prev) =>
-                                        prev === msg.sender_id ? null : msg.sender_id,
-                                      );
-                                    }}
-                                    aria-label={t('chatPanel.filterBySender')}
-                                    aria-pressed={filterSender === msg.sender_id}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
-                                      filterSender === msg.sender_id
-                                        ? 'bg-blue-700/40 text-blue-300'
-                                        : 'text-gray-600 hover:text-blue-400'
-                                    }`}
-                                    title={t('chatPanel.filterBySender')}
-                                  >
-                                    <ListFilter
-                                      aria-hidden
-                                      className="h-2.5 w-2.5"
-                                      trigger={parentIconTrigger}
-                                      size={10}
-                                    />
-                                  </button>
-                                )}
-                                {isDm && (
-                                  <span className="text-[10px] font-medium text-purple-400/70">
-                                    DM
-                                  </span>
-                                )}
-                                <span
-                                  className="text-muted/70 text-[10px]"
-                                  title={formatFullTimestamp(msg.timestamp)}
-                                >
-                                  {formatTime(msg.timestamp)}
-                                </span>
-                                {channels.length > 1 && !isDm && (
-                                  <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
-                                )}
-                              </div>
-                            )}
+                            {!isContinuation &&
+                              (() => {
+                                const senderFaceHash =
+                                  protocol === 'reticulum'
+                                    ? resolveReticulumDmFaceHash(
+                                        msg.sender_id,
+                                        msg.reticulum_sender_hash ??
+                                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
+                                      )
+                                    : null;
+                                const senderAppearance = senderFaceHash
+                                  ? peerAppearanceByHash.get(senderFaceHash)
+                                  : undefined;
+                                return (
+                                  <div className="mb-0.5 flex items-center gap-2">
+                                    {senderFaceHash ? (
+                                      <ReticulumProfileIconSlot
+                                        iconName={senderAppearance?.icon_name}
+                                        iconColor={senderAppearance?.icon_color}
+                                        destinationHash={senderFaceHash}
+                                        size={14}
+                                        className="shrink-0"
+                                      />
+                                    ) : null}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (protocol === 'reticulum' && onPeerClick) {
+                                          if (senderFaceHash) {
+                                            onPeerClick(senderFaceHash);
+                                            return;
+                                          }
+                                          // No resolvable LXMF hash — avoid Meshtastic/MeshCore NodeDetailModal.
+                                          return;
+                                        }
+                                        onNodeClick(msg.sender_id);
+                                      }}
+                                      className={`cursor-pointer text-xs font-semibold hover:underline ${
+                                        isDm
+                                          ? 'text-purple-400'
+                                          : isOwn
+                                            ? 'text-blue-400'
+                                            : filterSender === msg.sender_id
+                                              ? 'text-blue-300 underline'
+                                              : 'text-bright-green'
+                                      }`}
+                                      title={t('chatPanel.filterBySender')}
+                                    >
+                                      {displaySenderName}
+                                    </button>
+                                    {!isOwn && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setFilterSender((prev) =>
+                                            prev === msg.sender_id ? null : msg.sender_id,
+                                          );
+                                        }}
+                                        aria-label={t('chatPanel.filterBySender')}
+                                        aria-pressed={filterSender === msg.sender_id}
+                                        {...{ [PARENT_HOVER_ATTR]: '' }}
+                                        className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
+                                          filterSender === msg.sender_id
+                                            ? 'bg-blue-700/40 text-blue-300'
+                                            : 'text-gray-600 hover:text-blue-400'
+                                        }`}
+                                        title={t('chatPanel.filterBySender')}
+                                      >
+                                        <ListFilter
+                                          aria-hidden
+                                          className="h-2.5 w-2.5"
+                                          trigger={parentIconTrigger}
+                                          size={10}
+                                        />
+                                      </button>
+                                    )}
+                                    {isDm && (
+                                      <span className="text-[10px] font-medium text-purple-400/70">
+                                        DM
+                                      </span>
+                                    )}
+                                    <span
+                                      className="text-muted/70 text-[10px]"
+                                      title={formatFullTimestamp(msg.timestamp)}
+                                    >
+                                      {formatTime(msg.timestamp)}
+                                    </span>
+                                    {channels.length > 1 && !isDm && (
+                                      <span className="text-[10px] text-gray-600">
+                                        ch{msg.channel}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
 
                             {showContinuationTime && (
                               <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>

@@ -644,7 +644,9 @@
     "openDmByAddress": "Open",
     "reticulumSendStoredAtPn": "Opgeslagen op propagatieknooppunt",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "Bijgewerkt vanaf RF-pad"
+    "hopCountRefinedFromRf": "Bijgewerkt vanaf RF-pad",
+    "openPeerDetails": "Peerdetails",
+    "openPeerDetailsAria": "Peerdetails openen voor {{name}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2560,8 +2562,6 @@
       "announceAtStart": "Kondig aan wanneer het hosten begint",
       "fromStaticOnly": "Alleen van statische peers",
       "authRequired": "Verificatie vereist",
-      "enforceStamps": "Berichtstempels afdwingen",
-      "enforceRatchets": "Ratels afdwingen",
       "nodeName": "PN kondigt naam aan",
       "staticPeers": "Statische peer-hashes (één 32-hexadecimaal per regel)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2589,8 @@
         "nodeNameTooLong": "Naam van PN-aankondiging is te lang.",
         "nonFiniteNumber": "Een of meer numerieke velden zijn ongeldig."
       },
-      "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren."
+      "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren.",
+      "enforceUnavailableTip": "De schakelaars voor enforce stamps/ratchets worden op de huidige rsLXMF-stack niet toegepast (alleen bewaard voor compatibiliteit)."
     }
   },
   "nodeDetailModal": {
@@ -2930,7 +2931,10 @@
     "hybridMqttPathAria": "RF- en MQTT-pad",
     "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
     "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% verbindingsstatus"
+    "echoesConnectionHealthTooltip": "{{score}}% verbindingsstatus",
+    "tabAll": "All",
+    "tabHistory": "Historie",
+    "emptyHistory": "Nog geen directe berichten — stuur of ontvang een DM om peers hier te zien."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3085,7 +3089,6 @@
     "saveContact": "Opslaan als contactpersoon",
     "removeContact": "Contact verwijderen",
     "removeContactConfirmTitle": "Contact verwijderen",
-    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit je lijst verwijderd. De chatgeschiedenis wordt bewaard; door ze opnieuw een bericht te sturen, wordt het contact opnieuw toegevoegd.",
     "probeOk": "Sonde OK — pad bereikbaar.",
     "blockContact": "Contactpersoon blokkeren",
     "unblockContact": "Contactpersoon deblokkeren",
@@ -3099,7 +3102,8 @@
     "shareContactQr": "Contact-QR delen",
     "shareContactQrAria": "Toon QR-code voor dit contact",
     "verifiedRowAria": "Contact geverifieerd",
-    "renameFailed": "Kan de weergavenaam niet opslaan."
+    "renameFailed": "Kan de weergavenaam niet opslaan.",
+    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit uw opgeslagen lijst verwijderd. Chatberichten blijven; ze blijven in de geschiedenis staan als je ze een bericht hebt gestuurd."
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
@@ -3139,7 +3143,6 @@
     "toggleFavorite": "Favoriet in-/uitschakelen",
     "openChat": "Open chat",
     "emptyPeers": "Nog geen collega's ontdekt. Stuur een aankondiging of wacht op netwerkverkeer.",
-    "emptyContacts": "Nog geen contacten — stuur een bericht naar een collega om ze hier toe te voegen.",
     "groupFilterAria": "Contacten filteren op groep",
     "allGroups": "Alle groepen",
     "manageGroups": "Groepen beheren",
@@ -3173,7 +3176,10 @@
     "pathsExpired": "Verlopen",
     "pathsEmpty": "Nog geen padvakken. Vraag een pad aan of wacht op een aankondiging.",
     "pathsLoadFailed": "Kan padvakken niet laden.",
-    "pathsPinFailed": "Kan mediumvoorkeur voor deze peer niet bijwerken."
+    "pathsPinFailed": "Kan mediumvoorkeur voor deze peer niet bijwerken.",
+    "tabHistory": "Historie",
+    "emptyHistory": "Nog geen berichtgeschiedenis — verzend of ontvang een LXMF-bericht om peers hier te zien.",
+    "emptyContacts": "Nog geen opgeslagen contacten — open een peer en kies Opslaan als contactpersoon."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",
@@ -4030,7 +4036,7 @@
     "iconStar": "Ster",
     "iconHeart": "Hart",
     "iconShield": "Afscherming",
-    "iconNone": "Geen",
+    "iconNone": "Standaardgezicht",
     "iconSaveFailed": "Kon het avatarpictogram niet opslaan.",
     "iconUser": "Mensen"
   },

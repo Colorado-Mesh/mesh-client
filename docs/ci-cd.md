@@ -76,6 +76,8 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
+CI clones Ratspeak siblings via `scripts/clone-ratspeak-stack.sh` and **no longer hardcodes `RS_RETICULUM_REF`** — rsReticulum / rsLXMF / rsNomad float to `origin/main` (overlays must apply). Override with `RS_*_REF` only for local bisect.
+
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 
 ---
@@ -150,7 +152,9 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
 - **GitHub Actions:** Grouped into one PR
 - **Open PRs:** `open-pull-requests-limit: 0` — Dependabot scans but does **not** open PRs.
   Dependency bumps are applied manually via `pnpm run update` (`scripts/update.sh`), which
-  also runs dedupe and Ratspeak/rsReticulum patch checks. See AGENTS.md §6.
+  also runs dedupe, Ratspeak overlay PR checks, and an upstream release / new-org-repo watch
+  (rsLXST, lrgp-rs, Ratspeak, LXMFace). Sibling **rsReticulum** / **rsLXMF** / **rsNomad**
+  float to `origin/main` via `clone-ratspeak-stack.sh` (overlays must apply). See AGENTS.md §6.
 
 ### Testing Dependabot PRs locally
 

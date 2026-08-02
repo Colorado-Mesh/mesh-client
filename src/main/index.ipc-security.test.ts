@@ -456,6 +456,8 @@ describe('privileged IPC sender validation (source contract)', () => {
     'db:getMessageChannels',
     'db:getNodeNote',
     'db:getMeshcoreMessages',
+    'db:listMeshtasticDmPeers',
+    'db:listMeshcoreDmPeers',
     'db:searchMessages',
     'db:searchMeshcoreMessages',
     'db:getMeshcoreContacts',
@@ -649,6 +651,8 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
   const dbReadChannels = [
     'db:getNodeNote',
     'db:getMeshcoreMessages',
+    'db:listMeshtasticDmPeers',
+    'db:listMeshcoreDmPeers',
     'db:searchMessages',
     'db:searchMeshcoreMessages',
     'db:getMeshcoreContacts',

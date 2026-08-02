@@ -22,6 +22,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     db: {
       saveMessage: noopAsync,
       getMessages: async () => [],
+      listMeshtasticDmPeers: async () => [],
       saveNode: noopAsync,
       saveNodePath: noopAsync,
       getNodes: async () => [],
@@ -60,6 +61,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       updateMessageReceivedVia: noopAsync,
       updateMessagePacketId: noopAsync,
       getMeshcoreMessages: async () => [],
+      listMeshcoreDmPeers: async () => [],
       getReticulumMessages: async () => [],
       clearReticulumMessages: async () => ({ changes: 0 }),
       clearReticulumContactDestinations: async () => ({ changes: 0 }),

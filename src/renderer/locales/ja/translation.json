@@ -644,7 +644,9 @@
     "notificationMessageTitle": "{{sender}}からのメッセージ",
     "reticulumSendStoredAtPn": "伝播ノードに格納されています",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "RFパスから更新されました"
+    "hopCountRefinedFromRf": "RFパスから更新されました",
+    "openPeerDetails": "ピアの詳細",
+    "openPeerDetailsAria": "{{name}} のピア詳細を開く"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2560,8 +2562,6 @@
       "announceAtStart": "ホスティング開始時にアナウンスする",
       "fromStaticOnly": "静的ピアからのみ",
       "authRequired": "認証が必要です",
-      "enforceStamps": "メッセージスタンプを強制する",
-      "enforceRatchets": "ラチェットを強制する",
       "nodeName": "PN アナウンス名",
       "staticPeers": "静的ピア ハッシュ (1 行あたり 1 つの 32 16 進数)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2589,8 @@
         "nodeNameTooLong": "PN アナウンス名が長すぎます。",
         "nonFiniteNumber": "1 つ以上の数値フィールドが無効です。"
       },
-      "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。"
+      "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。",
+      "enforceUnavailableTip": "スタンプ／ラチェット強制のトグルは現行の rsLXMF スタックでは適用されません（互換のため保存のみ）。"
     }
   },
   "nodeDetailModal": {
@@ -2930,7 +2931,10 @@
     "hybridMqttPathAria": "RFおよびMQTTパス",
     "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
     "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続",
-    "echoesConnectionHealthTooltip": "{{score}} %接続状態"
+    "echoesConnectionHealthTooltip": "{{score}} %接続状態",
+    "tabAll": "すべて",
+    "tabHistory": "履歴",
+    "emptyHistory": "ダイレクトメッセージはまだありません—ここでピアを見るためにDMを送受信します。"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3082,10 +3086,9 @@
     "probeFailed": "プローブが失敗しました： {{error}}",
     "iconColor": "アバターの色",
     "iconColorAria": "ピアアバターの色",
-    "saveContact": "連絡用として保存）",
+    "saveContact": "連絡先として保存",
     "removeContact": "連絡先を削除",
     "removeContactConfirmTitle": "連絡先を削除",
-    "removeContactConfirmBody": "これにより、連絡先がリストから削除されます。チャット履歴は保持されます。再度メッセージを送信すると、連絡先が再度追加されます。",
     "probeOk": "プローブOK —到達可能なパス。",
     "blockContact": "連絡先をブロックする",
     "unblockContact": "連絡先のブロックを解除する",
@@ -3099,7 +3102,8 @@
     "shareContactQr": "連絡先QRを共有",
     "shareContactQrAria": "この連絡先のQRコードを表示",
     "verifiedRowAria": "連絡先が認証されました",
-    "renameFailed": "表示名を保存できませんでした。"
+    "renameFailed": "表示名を保存できませんでした。",
+    "removeContactConfirmBody": "これにより、保存したリストから連絡先が削除されます。チャットメッセージは残ります。メッセージを送信した場合は履歴に残ります。"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",
@@ -3139,7 +3143,6 @@
     "toggleFavorite": "お気に入りを切り替える",
     "openChat": "チャットを開始",
     "emptyPeers": "まだピアが見つかりません。アナウンスを送信するか、ネットワークトラフィックを待ちます。",
-    "emptyContacts": "連絡先はまだありません。ここに追加するには、同僚にメッセージを送信してください。",
     "groupFilterAria": "グループで連絡先を絞り込む",
     "allGroups": "すべてのグループ",
     "manageGroups": "グループを管理",
@@ -3173,7 +3176,10 @@
     "pathsExpired": "有効期限切れ",
     "pathsEmpty": "パススロットはまだありません。パスをリクエストするか、アナウンスを待ちます。",
     "pathsLoadFailed": "パススロットの読み込みに失敗しました。",
-    "pathsPinFailed": "このピアのメディア設定を更新できませんでした。"
+    "pathsPinFailed": "このピアのメディア設定を更新できませんでした。",
+    "tabHistory": "履歴",
+    "emptyHistory": "メッセージ履歴はまだありません—ここでピアを見るためにLXMFメッセージを送受信します。",
+    "emptyContacts": "保存された連絡先はまだありません。ピアを開き、[連絡先として保存]を選択します。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",
@@ -4030,7 +4036,7 @@
     "iconStar": "スター",
     "iconHeart": "ハートマーク",
     "iconShield": "シールド",
-    "iconNone": "なし",
+    "iconNone": "デフォルトの顔",
     "iconSaveFailed": "アバターアイコンを保存できませんでした。",
     "iconUser": "人々"
   },

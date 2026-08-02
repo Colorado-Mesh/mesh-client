@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import { DEFAULT_PN_HOSTING_POLICY } from '@/shared/pnHostingPolicy';
 
@@ -67,6 +69,15 @@ describe('ReticulumPnHostingDangerZone', () => {
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('networkPanel.reticulumPnHosting.saveOk', 'success');
     });
+  });
+
+  it('enforceUnavailableTip yellow text has no axe contrast violations', async () => {
+    const { container } = render(<ReticulumPnHostingDangerZone />);
+    expect(
+      screen.getByText('networkPanel.reticulumPnHosting.enforceUnavailableTip'),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('toasts failure when save fails', async () => {

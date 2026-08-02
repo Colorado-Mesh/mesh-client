@@ -1,5 +1,7 @@
 import { Heart, Shield, Star, Users } from 'lucide-react-motion';
+import { useMemo } from 'react';
 
+import { lxmface, normalizeLxmfaceSeed } from '@/renderer/lib/reticulum/lxmface';
 import {
   hasCustomReticulumProfileIcon,
   resolveReticulumProfileIconName,
@@ -36,13 +38,34 @@ export { hasCustomReticulumProfileIcon };
 export interface ReticulumProfileIconUnsetProps {
   className?: string;
   size?: number;
+  /** When set to a valid 32-hex destination, render LXMFace instead of the dashed placeholder. */
+  destinationHash?: string | null;
 }
 
-/** Empty outline placeholder when no custom avatar is set (suggests click-to-set). */
+/** LXMFace (or dashed outline) when no custom Lucide avatar is set. */
 export function ReticulumProfileIconUnset({
   className = '',
   size = 16,
+  destinationHash,
 }: Readonly<ReticulumProfileIconUnsetProps>) {
+  const seed = normalizeLxmfaceSeed(destinationHash);
+  const src = useMemo(() => {
+    if (!seed) return null;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(lxmface(seed, size))}`;
+  }, [seed, size]);
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        className={`inline-block shrink-0 rounded-full ${className}`}
+        draggable={false}
+        aria-hidden
+      />
+    );
+  }
   return (
     <span
       className={`inline-block shrink-0 rounded-full border border-dashed border-gray-500 ${className}`}
@@ -57,6 +80,7 @@ export interface ReticulumProfileIconProps {
   iconColor?: string | null;
   className?: string;
   size?: number;
+  destinationHash?: string | null;
 }
 
 export function ReticulumProfileIcon({
@@ -64,10 +88,17 @@ export function ReticulumProfileIcon({
   iconColor,
   className = '',
   size = 16,
+  destinationHash,
 }: Readonly<ReticulumProfileIconProps>) {
   const name = resolveReticulumProfileIconName(iconName);
   if (name === 'circle') {
-    return <ReticulumProfileIconUnset className={className} size={size} />;
+    return (
+      <ReticulumProfileIconUnset
+        className={className}
+        size={size}
+        destinationHash={destinationHash}
+      />
+    );
   }
   const Icon = ICON_MAP[name];
   return (
@@ -80,15 +111,22 @@ export function ReticulumProfileIcon({
   );
 }
 
-/** Custom icon when set; otherwise empty outline placeholder. */
+/** Custom Lucide icon when set; otherwise LXMFace from destination hash (or dashed placeholder). */
 export function ReticulumProfileIconSlot({
   iconName,
   iconColor,
   className = '',
   size = 16,
+  destinationHash,
 }: Readonly<ReticulumProfileIconProps>) {
   if (!hasCustomReticulumProfileIcon(iconName, iconColor)) {
-    return <ReticulumProfileIconUnset className={className} size={size} />;
+    return (
+      <ReticulumProfileIconUnset
+        className={className}
+        size={size}
+        destinationHash={destinationHash}
+      />
+    );
   }
   return (
     <ReticulumProfileIcon
@@ -96,6 +134,7 @@ export function ReticulumProfileIconSlot({
       iconColor={iconColor}
       className={className}
       size={size}
+      destinationHash={destinationHash}
     />
   );
 }

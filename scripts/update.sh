@@ -203,7 +203,8 @@ process.stdin.on("end", () => {
 }
 
 # Warn when local Ratspeak overlays may be obsolete after upstream merges.
-# Keep in sync with reticulum-sidecar/patches/*.patch and patches/README.md.
+# Keep patch basenames in sync with scripts/lib/ratspeak-overlay-apply-list.sh
+# and reticulum-sidecar/patches/*.patch / patches/README.md.
 check_ratspeak_patches() {
   # Format: "patch-basename|github-owner/repo|pr-number-or-empty|display-label|review-url"
   local RATSPEAK_PATCH_ENTRIES=(
@@ -320,6 +321,220 @@ check_ratspeak_patches() {
   fi
 }
 
+# GET GitHub API path (gh preferred, curl fallback). Body on stdout.
+# Exit 0 = body (may be empty), exit 2 = rate-limit payload detected (empty body).
+# Callers must handle exit 2 in the parent shell (command substitution drops side effects).
+github_api_get() {
+  local api_path="$1"
+  local body=''
+  if command -v gh > /dev/null 2>&1; then
+    body="$(gh api "${api_path}" 2> /dev/null || true)"
+  elif command -v curl > /dev/null 2>&1; then
+    # Do not use curl -f: rate-limit JSON lives on non-2xx and must be inspectable.
+    local resp
+    resp="$(
+      curl -sSL \
+        -H 'Accept: application/vnd.github+json' \
+        -H 'User-Agent: mesh-client-update' \
+        -w $'\n%{http_code}' \
+        "https://api.github.com/${api_path}" 2> /dev/null || true
+    )"
+    # Strip trailing HTTP status line written by -w; keep error JSON body for detection.
+    body="${resp%$'\n'*}"
+  else
+    printf ''
+    return 0
+  fi
+  if [[ -n "${body}" ]] && printf '%s' "${body}" | grep -qiE 'rate limit exceeded|API rate limit|secondary rate limit'; then
+    printf ''
+    return 2
+  fi
+  printf '%s' "${body}"
+  return 0
+}
+
+warn_github_api_rate_limit_once() {
+  if [[ "${GITHUB_API_RATE_LIMIT_WARNED:-0}" != '1' ]]; then
+    echo -e "  ${YELLOW}GitHub API rate limit:${NC} further Ratspeak upstream checks may be incomplete (retry later or use authenticated gh)."
+    GITHUB_API_RATE_LIMIT_WARNED=1
+    HAS_WARNING=1
+  fi
+}
+
+# Latest release summary: "tag|published_at|first_body_line" or empty.
+github_latest_release_summary() {
+  local repo="$1"
+  local json=''
+  local api_rc=0
+  json="$(github_api_get "repos/${repo}/releases/latest")" || api_rc=$?
+  if [ "${api_rc}" -eq 2 ]; then
+    warn_github_api_rate_limit_once
+    echo ''
+    return 0
+  fi
+  if [ -z "${json}" ]; then
+    echo ''
+    return 0
+  fi
+  printf '%s' "${json}" | node -e '
+let s = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (c) => { s += c; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(s);
+    if (j.message === "Not Found" || (!j.tag_name && !j.name)) {
+      process.stdout.write("");
+      return;
+    }
+    const tag = String(j.tag_name || j.name || "").replace(/\|/g, "/");
+    const published = String(j.published_at || "").slice(0, 10);
+    const body = String(j.body || "").split(/\r?\n/).find((l) => l.trim()) || "";
+    const first = body
+      .replace(/[\u0000-\u001F\u007F]/g, "")
+      .replace(/\|/g, "/")
+      .slice(0, 120);
+    process.stdout.write(`${tag}|${published}|${first}`);
+  } catch {
+    process.stdout.write("");
+  }
+});
+' 2> /dev/null || echo ''
+}
+
+# Curated release watch + known org repos (keep in sync when adopting new ratspeak libs).
+# Format: "owner/repo|stub-kind-or-empty|display-label"
+# stub-kind: voice|games → warn while mesh-client still has sidecar stubs only.
+RATSPEAK_RELEASE_WATCH_ENTRIES=(
+  'ratspeak/rsLXST|voice|rsLXST voice (sidecar stub)'
+  'ratspeak/lrgp-rs|games|lrgp-rs games (sidecar stub)'
+  'ratspeak/Ratspeak||Ratspeak client (reference)'
+  'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)'
+)
+
+RATSPEAK_KNOWN_ORG_REPOS=(
+  '.github'
+  'C6-Reticulum-ASM'
+  'LXMFace'
+  'Ratspeak'
+  'lrgp-py'
+  'lrgp-rs'
+  'microReticulum'
+  'ratkey'
+  'rathole'
+  'ratspeak-docs'
+  'ratspeak-website'
+  'revanity-go'
+  'rsCardputer'
+  'rsDeck'
+  'rsLXMF'
+  'rsLXST'
+  'rsPager'
+  'rsReticulum'
+)
+
+print_ratspeak_upstream_catalog() {
+  local entry
+  echo 'RATSPEAK_RELEASE_WATCH_ENTRIES:'
+  for entry in "${RATSPEAK_RELEASE_WATCH_ENTRIES[@]}"; do
+    echo "  ${entry}"
+  done
+  echo 'RATSPEAK_KNOWN_ORG_REPOS:'
+  for entry in "${RATSPEAK_KNOWN_ORG_REPOS[@]}"; do
+    echo "  ${entry}"
+  done
+}
+
+# Surface new Ratspeak library releases and brand-new org repos (stack floats via clone).
+check_ratspeak_upstream() {
+  local has_upstream_warning=0
+  local entry repo stub label summary tag published first url
+
+  echo ''
+  echo 'Checking Ratspeak upstream releases and new org repos...'
+  echo '  (rsReticulum/rsLXMF float to origin/main via clone-ratspeak-stack.sh)'
+
+  for entry in "${RATSPEAK_RELEASE_WATCH_ENTRIES[@]}"; do
+    IFS='|' read -r repo stub label <<< "${entry}"
+    url="https://github.com/${repo}/releases"
+    summary="$(github_latest_release_summary "${repo}")"
+    if [ -z "${summary}" ]; then
+      echo "  ${label}: no GitHub release (or query failed) — ${url}"
+      continue
+    fi
+    IFS='|' read -r tag published first <<< "${summary}"
+    echo "  ${label}: ${tag} (${published}) — ${first}"
+    if [ "${stub}" = 'voice' ] || [ "${stub}" = 'games' ]; then
+      warn_box "${label}" "sidecar stub" "${tag} available" "${url}"
+      echo "  Reason tracked: mesh-client still stubs this feature; review integrating ${repo} @ ${tag}"
+      has_upstream_warning=1
+      HAS_WARNING=1
+    fi
+  done
+
+  local repos_json=''
+  local repos_rc=0
+  repos_json="$(github_api_get 'orgs/ratspeak/repos?per_page=100&sort=created&direction=desc')" || repos_rc=$?
+  if [ "${repos_rc}" -eq 2 ]; then
+    warn_github_api_rate_limit_once
+  fi
+  if [ -z "${repos_json}" ]; then
+    echo '  Could not list ratspeak org repos (install gh or check network) — skip new-repo scan.'
+  else
+    local new_repos
+    new_repos="$(
+      printf '%s' "${repos_json}" | node -e '
+const known = new Set(process.argv.slice(2));
+let s = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (c) => { s += c; });
+process.stdin.on("end", () => {
+  try {
+    const repos = JSON.parse(s);
+    if (!Array.isArray(repos)) return;
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    for (const r of repos) {
+      const name = String(r.name || "");
+      const created = Date.parse(r.created_at || "");
+      if (!name || !Number.isFinite(created) || created < cutoff) continue;
+      if (known.has(name)) continue;
+      process.stdout.write(`${name}\t${String(r.created_at || "").slice(0, 10)}\t${r.html_url || ""}\n`);
+    }
+  } catch {
+    // ignore parse errors
+  }
+});
+' "${RATSPEAK_KNOWN_ORG_REPOS[@]}"
+    )"
+    if [ -n "${new_repos}" ]; then
+      while IFS=$'\t' read -r name created url; do
+        [ -n "${name}" ] || continue
+        warn_box "ratspeak/${name} (new org repo)" "unknown" "created ${created}" "${url}"
+        echo "  Reason tracked: created within ~90 days and not in RATSPEAK_KNOWN_ORG_REPOS — review for mesh-client use"
+        has_upstream_warning=1
+        HAS_WARNING=1
+      done <<< "${new_repos}"
+    else
+      echo '  No unfamiliar ratspeak org repos created in the last ~90 days.'
+    fi
+  fi
+
+  if [ "${has_upstream_warning}" -eq 0 ]; then
+    echo '  Ratspeak upstream watch complete (no stub/new-repo warnings).'
+  fi
+}
+
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-catalog-only' ]; then
+  print_ratspeak_upstream_catalog
+  exit 0
+fi
+
+# Test hook: exercise check_ratspeak_upstream (fake gh/curl via PATH).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-check-only' ]; then
+  check_ratspeak_upstream
+  exit 0
+fi
+
 # --- Guard: must be project root ---
 if [ ! -f "${LOCKFILE}" ]; then
   echo "Error: ${LOCKFILE} not found. Run this script from the project root." >&2
@@ -411,6 +626,7 @@ for i in "${!KEYS[@]}"; do
 done
 
 check_ratspeak_patches
+check_ratspeak_upstream
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'

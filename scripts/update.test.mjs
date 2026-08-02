@@ -93,6 +93,133 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stderr).toContain('Usage: scripts/update.sh [--clean-target]');
   });
 
+  it('prints Ratspeak upstream catalog (upstream-catalog-only)', () => {
+    const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'upstream-catalog-only' });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
+    expect(result.stdout).toContain('ratspeak/rsLXST|voice|');
+    expect(result.stdout).toContain('ratspeak/lrgp-rs|games|');
+    expect(result.stdout).toContain('ratspeak/Ratspeak||');
+    expect(result.stdout).toContain('ratspeak/LXMFace||');
+    expect(result.stdout).toContain('RATSPEAK_KNOWN_ORG_REPOS:');
+    expect(result.stdout).toContain('  rsReticulum');
+    expect(result.stdout).toContain('  rsLXMF');
+    expect(result.stdout).toContain('  rsLXST');
+    expect(result.stdout).toContain('  lrgp-rs');
+  });
+
+  it('wires check_ratspeak_upstream after overlay PR checks', () => {
+    expect(updateScript).toContain('check_ratspeak_upstream()');
+    expect(updateScript).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES');
+    expect(updateScript).toContain('RATSPEAK_KNOWN_ORG_REPOS');
+    expect(updateScript).toContain('warn_github_api_rate_limit_once');
+    expect(updateScript).toContain('return 2');
+    expect(updateScript).toContain('\\u0000-\\u001F\\u007F');
+    const patchesCall = updateScript.lastIndexOf('\ncheck_ratspeak_patches\n');
+    const upstreamCall = updateScript.lastIndexOf('\ncheck_ratspeak_upstream\n');
+    expect(patchesCall).toBeGreaterThanOrEqual(0);
+    expect(upstreamCall).toBeGreaterThan(patchesCall);
+  });
+
+  /**
+   * @param {'release' | 'rate-limit' | 'malformed' | 'missing'} mode
+   */
+  function prepareUpstreamGhFixture(mode) {
+    const work = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-upstream-'));
+    tempDirs.push(work);
+    const binDir = path.join(work, 'bin');
+    mkdirSync(binDir, { recursive: true });
+    const releasePath = path.join(work, 'release.json');
+    const reposPath = path.join(work, 'repos.json');
+    if (mode === 'release') {
+      writeFileSync(
+        releasePath,
+        JSON.stringify({
+          tag_name: 'v9.9.9',
+          published_at: '2026-08-01T00:00:00Z',
+          body: 'First line\nSecond',
+        }),
+      );
+      writeFileSync(reposPath, '[]');
+    } else if (mode === 'rate-limit') {
+      writeFileSync(releasePath, JSON.stringify({ message: 'API rate limit exceeded for ...' }));
+      writeFileSync(reposPath, JSON.stringify({ message: 'API rate limit exceeded' }));
+    } else if (mode === 'malformed') {
+      writeFileSync(releasePath, '{not-json');
+      writeFileSync(reposPath, '[]');
+    } else {
+      writeFileSync(releasePath, JSON.stringify({ message: 'Not Found' }));
+      writeFileSync(reposPath, '[]');
+    }
+    const ghPath = path.join(binDir, 'gh');
+    writeFileSync(
+      ghPath,
+      `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" != "api" ]]; then
+  echo "unexpected gh args: $*" >&2
+  exit 1
+fi
+path="\${2:-}"
+if [[ "$path" == repos/*/releases/latest ]]; then
+  cat ${JSON.stringify(releasePath)}
+  exit 0
+fi
+if [[ "$path" == orgs/ratspeak/repos* ]]; then
+  cat ${JSON.stringify(reposPath)}
+  exit 0
+fi
+printf '%s' '{}'
+exit 0
+`,
+      'utf8',
+    );
+    chmodSync(ghPath, 0o755);
+    return { work, binDir };
+  }
+
+  it('upstream-check-only parses a valid release non-fatally', () => {
+    const fixture = prepareUpstreamGhFixture('release');
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('v9.9.9');
+    expect(result.stdout).toContain('First line');
+    expect(result.stdout).not.toContain('GitHub API rate limit:');
+  });
+
+  it('upstream-check-only warns on rate-limit without failing', () => {
+    const fixture = prepareUpstreamGhFixture('rate-limit');
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('GitHub API rate limit:');
+  });
+
+  it('upstream-check-only tolerates malformed repository JSON', () => {
+    const fixture = prepareUpstreamGhFixture('malformed');
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('no GitHub release (or query failed)');
+  });
+
+  it('upstream-check-only tolerates missing releases', () => {
+    const fixture = prepareUpstreamGhFixture('missing');
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('no GitHub release (or query failed)');
+  });
+
   it('runs cargo clean after a successful rebuild when CLEAN_SIDECAR_TARGET=1', () => {
     const fixture = prepareRebuildFixture({ buildExit: 0 });
     const result = runUpdate(

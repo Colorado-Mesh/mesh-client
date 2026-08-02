@@ -644,7 +644,9 @@
     "notificationMessageTitle": "{{sender}} adlı kişiden mesaj",
     "reticulumSendStoredAtPn": "Yayılma düğümünde depolanır",
     "reticulumPnAbbrev": "PN",
-    "hopCountRefinedFromRf": "RF yolundan güncellendi"
+    "hopCountRefinedFromRf": "RF yolundan güncellendi",
+    "openPeerDetails": "Eş ayrıntıları",
+    "openPeerDetailsAria": "{{name}} için eş ayrıntılarını aç"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2560,8 +2562,6 @@
       "announceAtStart": "Barındırma başladığında duyurun",
       "fromStaticOnly": "Yalnızca statik eşlerden",
       "authRequired": "Yetkilendirme gerekli",
-      "enforceStamps": "Mesaj damgalarını zorunlu kıl",
-      "enforceRatchets": "Cırcırları uygulayın",
       "nodeName": "PN duyuru adı",
       "staticPeers": "Statik eş karmaları (satır başına bir adet 32-hex)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2589,8 @@
         "nodeNameTooLong": "PN duyuru adı çok uzun.",
         "nonFiniteNumber": "Bir veya daha fazla sayısal alan geçersiz."
       },
-      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir."
+      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir.",
+      "enforceUnavailableTip": "Enforce stamps/ratchets anahtarları geçerli rsLXMF yığınında uygulanmaz (yalnızca uyumluluk için saklanır)."
     }
   },
   "nodeDetailModal": {
@@ -2930,7 +2931,10 @@
     "hybridMqttPathAria": "RF ve MQTT yolu",
     "connectedViaRfAndMqttTooltip": "RF ve MQTT aracılığıyla bağlanıldı",
     "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı",
-    "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı"
+    "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı",
+    "tabAll": "Tümü",
+    "tabHistory": "Geçmiş",
+    "emptyHistory": "Henüz doğrudan mesaj yok — buradaki eşleri görmek için bir DM gönderin veya alın."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3085,7 +3089,6 @@
     "saveContact": "Kişi olarak kaydet",
     "removeContact": "Yapılabiliyorsa",
     "removeContactConfirmTitle": "Yapılabiliyorsa",
-    "removeContactConfirmBody": "Bu, kişiyi listenizden kaldırır. Sohbet geçmişi tutulur; onlara tekrar mesaj göndermek kişiyi yeniden ekleyecektir.",
     "probeOk": "Prob tamam — yola ulaşılabilir.",
     "blockContact": "Kişiyi & Engelle",
     "unblockContact": "& Kişinin Engellemesini Kaldır",
@@ -3099,7 +3102,8 @@
     "shareContactQr": "Kişi QR'sini paylaşın",
     "shareContactQrAria": "Bu kişiye ait QR kodunu göster",
     "verifiedRowAria": "Kişi doğrulandı",
-    "renameFailed": "Görünen ad kaydedilemedi."
+    "renameFailed": "Görünen ad kaydedilemedi.",
+    "removeContactConfirmBody": "Bu, kişiyi kayıtlı listenizden kaldırır. Sohbet mesajları kalır; mesaj gönderdiyseniz Geçmiş'te kalır."
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",
@@ -3139,7 +3143,6 @@
     "toggleFavorite": "Favorileri aç/kapat",
     "openChat": "Sohbeti Açın",
     "emptyPeers": "Henüz hiçbir akran keşfedilmedi. Bir duyuru gönderin veya ağ trafiğini bekleyin.",
-    "emptyContacts": "Henüz kişi yok — buraya eklemek için bir arkadaşınıza mesaj gönderin.",
     "groupFilterAria": "Kişileri gruba göre filtrele",
     "allGroups": "Tüm gruplar",
     "manageGroups": "Grup Yönetimi",
@@ -3173,7 +3176,10 @@
     "pathsExpired": "Süresi doldu",
     "pathsEmpty": "Henüz yol aralığı yok. Bir yol isteyin veya bir duyuru bekleyin.",
     "pathsLoadFailed": "Yol yuvaları yüklenemedi.",
-    "pathsPinFailed": "Bu eş için ortam tercihi güncellenemedi."
+    "pathsPinFailed": "Bu eş için ortam tercihi güncellenemedi.",
+    "tabHistory": "Geçmiş",
+    "emptyHistory": "Henüz mesaj geçmişi yok — eşleri burada görmek için bir LXMF mesajı gönderin veya alın.",
+    "emptyContacts": "Henüz kayıtlı kişi yok — bir eş açın ve Kişi olarak kaydet'i seçin."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",
@@ -4030,7 +4036,7 @@
     "iconStar": "Yıldız",
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
-    "iconNone": "Hiçbiri",
+    "iconNone": "Varsayılan yüz",
     "iconSaveFailed": "Avatar simgesi kaydedilemedi.",
     "iconUser": "İnsanlar"
   },

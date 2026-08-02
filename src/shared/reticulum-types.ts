@@ -121,13 +121,31 @@ export interface ReticulumPeer {
   custom_display_name?: string | null;
 }
 
-/** Peer the user has messaged (LXMF contact). */
+/**
+ * Peer with LXMF history and/or explicit saved-contact membership.
+ * History = `last_heard` set; Contacts tab = `is_contact === true`.
+ */
 export interface ReticulumContact extends ReticulumPeer {
   last_heard: number;
+  /** Explicit Save as contact (not set by messaging alone). */
+  is_contact?: boolean;
 }
 
-export function isReticulumContact(peer: ReticulumPeer | undefined): peer is ReticulumContact {
-  return peer != null && 'last_heard' in peer;
+/** True when the peer has History (positive `last_heard`) — not the same as saved Contacts. */
+export function hasReticulumHistory(peer: ReticulumPeer | undefined): peer is ReticulumContact {
+  if (peer == null || !('last_heard' in peer)) return false;
+  const heard = (peer as ReticulumContact).last_heard;
+  return typeof heard === 'number' && Number.isFinite(heard) && heard > 0;
+}
+
+/**
+ * @deprecated Use {@link hasReticulumHistory}. Name historically meant “has last_heard”.
+ */
+export const isReticulumContact = hasReticulumHistory;
+
+/** Saved contact for Contacts tab (`is_contact === true`). */
+export function isReticulumSavedContact(peer: ReticulumPeer | undefined): boolean {
+  return peer != null && 'is_contact' in peer && (peer as ReticulumContact).is_contact === true;
 }
 
 /** Sidecar wire row for GET /api/v1/peers */
