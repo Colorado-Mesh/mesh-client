@@ -75,6 +75,8 @@
     "check:url-hostname-sanitization": "node scripts/check-url-hostname-sanitization.mjs",
     "check:xss-patterns": "node scripts/check-xss-patterns.mjs",
     "clean": "rm -rf dist-electron dist node_modules",
+    "clean:build": "node scripts/clean-build.mjs",
+    "clean:build:full": "node scripts/clean-build.mjs --full",
     "dedupe:dist": "node scripts/dedupe-dist.mjs",
     "dev": "node scripts/run-dev.mjs",
     "predist": "pnpm run dedupe:dist",

@@ -206,6 +206,8 @@ pnpm run check:i18n
 # Maintenance
 pnpm run update
 pnpm run clean
+pnpm run clean:build
+pnpm run clean:build:full
 
 # Reticulum sidecar (optional; requires Rust)
 pnpm run reticulum:sidecar:build
@@ -219,6 +221,13 @@ pnpm run docs:install
 pnpm run docs:build
 pnpm run docs:serve
 ```
+
+Both `clean:build` and `clean:build:full` (cross-platform; see [`scripts/clean-build.mjs`](../scripts/clean-build.mjs)) print the full list of what will be removed and always confirm with a `Proceed? [y/N]` prompt before deleting anything (default **N**; pass `-y`/`--yes` to skip, in which case the plan is still printed). They never run when stdin is not a TTY and `-y` is absent, so they cannot hang in CI.
+
+- **`clean:build` (shallow)** — removes build dists, test output, and caches (`dist`, `dist-electron`, `release`, `coverage`, `.vitest-reports`, `test-results`, `playwright-report`, `.eslintcache`). It **keeps `node_modules/` and the Reticulum sidecar**, so `pnpm run dev` / `pnpm start` and the sidecar keep working. Use it to force fresh rebuilds, clear stale or corrupt intermediate output, or free modest disk without re-installing.
+- **`clean:build:full`** — removes everything above **plus** `node_modules`, `reticulum-sidecar/target/`, and the bundled sidecar binary (`resources/reticulum-sidecar/`), then runs `pnpm install` and `pnpm run reticulum:sidecar:build` so the environment is left in a working state. Use it to fix a corrupt/drifted `node_modules`, clear stale Rust incremental state after toolchain or overlay-patch changes, or reclaim up to ~20G+ of disk while restoring a known-good environment. The reinstall is skipped if nothing in tier 2 was actually present.
+
+`clean:build` and `clean:build:full` are the cross-platform equivalents of `make clean`/deep clean; the repo's older Unix-only `clean` (`clean` above) remains for its narrower, `rm -rf`-style behaviour.
 
 ### All Scripts Reference
 
@@ -444,27 +453,29 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Setup / helpers
 
-| Script                          | Description                                                           |
-| ------------------------------- | --------------------------------------------------------------------- |
-| `clean`                         | Remove `dist-electron`, `dist`, and `node_modules`                    |
-| `dedupe:dist`                   | Retrying dist dedupe (`scripts/dedupe-dist.mjs`; `@jsr/_tmp_*` races) |
-| `i18n:auto-translate`           | Machine-translate missing locale keys (MyMemory default)              |
-| `i18n:prune-unused`             | Remove orphaned translation keys from locale files                    |
-| `rebuild`                       | Rebuild native Node modules for Electron                              |
-| `release`                       | Maintainer release script (`scripts/release.sh`)                      |
-| `reticulum:sidecar:build`       | Build debug `mesh-client-reticulum` (requires `cargo`)                |
-| `reticulum:sidecar:clippy`      | Clippy stub build (`-D warnings`)                                     |
-| `reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp`                         |
-| `reticulum:sidecar:coverage`    | Optional HTML coverage via `cargo llvm-cov` (no CI threshold)         |
-| `reticulum:sidecar:dev`         | Run sidecar standalone on `127.0.0.1:19437`                           |
-| `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                   |
-| `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                   |
-| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones Ratspeak siblings if needed)        |
-| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                                    |
-| `setup:actionlint`              | Install actionlint for GitHub workflow linting                        |
-| `setup:build-deps`              | Install native build dependencies                                     |
-| `setup:dialout`                 | Add user to dialout group for serial port access (Linux)              |
-| `update`                        | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar            |
+| Script                          | Description                                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `clean`                         | Remove `dist-electron`, `dist`, and `node_modules`                                                                              |
+| `clean:build`                   | Remove build dists, test output, and caches (keeps `node_modules` + sidecar); prompts `[y/N]` (default N)                       |
+| `clean:build:full`              | Also remove `node_modules` + Reticulum sidecar build output, then reinstall deps + rebuild sidecar; prompts `[y/N]` (default N) |
+| `dedupe:dist`                   | Retrying dist dedupe (`scripts/dedupe-dist.mjs`; `@jsr/_tmp_*` races)                                                           |
+| `i18n:auto-translate`           | Machine-translate missing locale keys (MyMemory default)                                                                        |
+| `i18n:prune-unused`             | Remove orphaned translation keys from locale files                                                                              |
+| `rebuild`                       | Rebuild native Node modules for Electron                                                                                        |
+| `release`                       | Maintainer release script (`scripts/release.sh`)                                                                                |
+| `reticulum:sidecar:build`       | Build debug `mesh-client-reticulum` (requires `cargo`)                                                                          |
+| `reticulum:sidecar:clippy`      | Clippy stub build (`-D warnings`)                                                                                               |
+| `reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp`                                                                                   |
+| `reticulum:sidecar:coverage`    | Optional HTML coverage via `cargo llvm-cov` (no CI threshold)                                                                   |
+| `reticulum:sidecar:dev`         | Run sidecar standalone on `127.0.0.1:19437`                                                                                     |
+| `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                                                                             |
+| `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                                                                             |
+| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones Ratspeak siblings if needed)                                                                  |
+| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                                                                                              |
+| `setup:actionlint`              | Install actionlint for GitHub workflow linting                                                                                  |
+| `setup:build-deps`              | Install native build dependencies                                                                                               |
+| `setup:dialout`                 | Add user to dialout group for serial port access (Linux)                                                                        |
+| `update`                        | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar                                                                      |
 
 #### Lifecycle (automatic)
 
