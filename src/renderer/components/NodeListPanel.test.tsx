@@ -805,6 +805,30 @@ describe('NodeListPanel History tab', () => {
     vi.mocked(window.electronAPI.db.listMeshcoreDmPeers).mockResolvedValue([]);
   });
 
+  it('has no axe violations on All and History list toggles', async () => {
+    const user = userEvent.setup();
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'OnlyNode', last_heard: Date.now() })],
+    ]);
+    const { container } = render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByRole('button', { name: 'History' })).toHaveAttribute('aria-pressed', 'true');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('shows empty History state when there are no DMs', async () => {
     const user = userEvent.setup();
     render(
@@ -818,7 +842,7 @@ describe('NodeListPanel History tab', () => {
       />,
     );
     expect(screen.getByText('OnlyNode')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     expect(
       screen.getByText('No direct messages yet — send or receive a DM to see peers here.'),
     ).toBeInTheDocument();
@@ -853,7 +877,7 @@ describe('NodeListPanel History tab', () => {
       />,
     );
     expect(screen.getByText('NeverMessaged')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeInTheDocument();
     });
@@ -879,7 +903,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('FromDb')).toBeInTheDocument();
     });
@@ -906,7 +930,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshcore"
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('DmPeer')).toBeInTheDocument();
     });
@@ -928,7 +952,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       // Stub uses hex id as both Node ID cell and display name.
       expect(screen.getAllByText('!00000009').length).toBeGreaterThanOrEqual(1);
@@ -958,7 +982,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('Newest')).toBeInTheDocument();
     });
@@ -1012,7 +1036,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeInTheDocument();
     });
@@ -1021,7 +1045,7 @@ describe('NodeListPanel History tab', () => {
     expect(screen.queryByText('Alice')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Search nodes'), { target: { value: '' } });
-    await user.click(screen.getByRole('tab', { name: 'All' }));
+    await user.click(screen.getByRole('button', { name: 'All' }));
     expect(screen.getByText('NeverMessaged')).toBeInTheDocument();
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
@@ -1087,7 +1111,7 @@ describe('NodeListPanel History tab', () => {
     expect(screen.queryByText('FarPeer')).not.toBeInTheDocument();
     expect(screen.getByText('NearNoDm')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('FarPeer')).toBeInTheDocument();
     });

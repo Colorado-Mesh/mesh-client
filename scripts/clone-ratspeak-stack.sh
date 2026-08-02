@@ -46,6 +46,15 @@ ensure_repo() {
     git -C "${dir}" fetch --quiet origin "${ref_or_empty}" 2> /dev/null || true
     target_sha="$(git -C "${dir}" rev-parse --verify "${ref_or_empty}^{commit}" 2> /dev/null || true)"
     if [[ -z "${target_sha}" ]]; then
+      # Branch/tag pins often resolve only as origin/<name> after fetch.
+      target_sha="$(
+        git -C "${dir}" rev-parse --verify "origin/${ref_or_empty}^{commit}" 2> /dev/null || true
+      )"
+      if [[ -n "${target_sha}" ]]; then
+        target_ref="origin/${ref_or_empty}"
+      fi
+    fi
+    if [[ -z "${target_sha}" ]]; then
       echo "error: ${label}: cannot resolve pin ${ref_or_empty:0:12}" >&2
       exit 1
     fi

@@ -17,6 +17,7 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     expect(cloneScript).toContain('refuse to float/pin');
     expect(cloneScript).toContain('already at');
     expect(cloneScript).toContain('skipping checkout');
+    expect(cloneScript).toContain('origin/${ref_or_empty}');
     expect(cloneScript).toContain('Ratspeak stack SHAs (full)');
     expect(cloneScript).toContain('ratspeak-overlay-apply-list.sh');
     expect(cloneScript).not.toMatch(/9928abed269a83ec5a7ef165ff1142d938cad706/);

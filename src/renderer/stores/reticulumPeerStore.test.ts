@@ -352,6 +352,8 @@ describe('reticulumPeerStore', () => {
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),
+      history: new Map(),
+      dismissedContactHashes: new Set(),
       peerAppearanceByHash: new Map(),
       lastRefreshAt: null,
       peersRevision: 0,
@@ -488,12 +490,17 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().getPeer('missing')).toBeUndefined();
   });
 
-  it('clearPeers empties peers and contacts', () => {
+  it('clearPeers empties peers, contacts, and history', () => {
     useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aa' }]);
     useReticulumPeerStore.getState().replaceContacts([{ destination_hash: 'bb', last_heard: 1 }]);
+    useReticulumPeerStore.getState().stampHistoryPeer('cc'.repeat(16), {
+      last_heard: 99,
+      display_name: 'Hist',
+    });
     useReticulumPeerStore.getState().clearPeers();
     expect(useReticulumPeerStore.getState().peers.size).toBe(0);
     expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
+    expect(useReticulumPeerStore.getState().history.size).toBe(0);
   });
 
   it('clearAllContacts clears sidecar, SQLite contact rows, and store contacts', async () => {

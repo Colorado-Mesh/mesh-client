@@ -214,6 +214,31 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.queryByText('History Peer')).not.toBeInTheDocument();
   });
 
+  it('renders favorited history-only peers on Favorites tab', async () => {
+    const user = userEvent.setup();
+    const favHash = 'favhist01'.padEnd(32, '0');
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map(),
+      history: new Map([
+        [
+          favHash,
+          {
+            destination_hash: favHash,
+            display_name: 'History Favorite',
+            last_heard: Date.now() / 1000,
+            favorited: true,
+          },
+        ],
+      ]),
+    });
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabFavorites' }));
+    expect(screen.getByText('History Favorite')).toBeInTheDocument();
+  });
+
   it('renders history tab with messaged peers that are not saved contacts', async () => {
     const user = userEvent.setup();
     render(

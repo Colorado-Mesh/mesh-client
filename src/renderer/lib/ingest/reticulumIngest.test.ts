@@ -28,6 +28,8 @@ const restoreDismissedContact = vi.fn();
 const getPeer = vi.fn();
 const stampHistoryPeer = vi.fn();
 const upsertNodeRecordsForIdentity = vi.fn();
+/** Identity → node map; missing keys simulate absent buckets (no Proxy auto-create). */
+let nodesState: Record<string, Record<number, unknown>> = {};
 
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   reticulumContactToNodeRecordPreservingLabel: (contact: { destination_hash: string }) => ({
@@ -42,14 +44,8 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
 vi.mock('@/renderer/stores/nodeStore', () => ({
   upsertNodeRecordsForIdentity: (...args: unknown[]) => upsertNodeRecordsForIdentity(...args),
   useNodeStore: {
-    // Proxy so any identityId resolves to an empty node map (lazy buckets in prod).
     getState: () => ({
-      nodes: new Proxy(
-        {},
-        {
-          get: () => ({}),
-        },
-      ),
+      nodes: nodesState,
     }),
   },
 }));
@@ -64,6 +60,7 @@ beforeEach(() => {
   upsertNodeRecordsForIdentity.mockReset();
   getPeer.mockReset();
   getPeer.mockReturnValue(undefined);
+  nodesState = {};
   vi.stubGlobal('window', {
     electronAPI: {
       db: { upsertReticulumDestination, saveReticulumMessage },
@@ -217,7 +214,11 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
         last_heard: 1_700_000_000,
       });
     });
-    expect(upsertReticulumDestination.mock.calls[0]?.[0]).not.toHaveProperty('is_contact');
+    const historyUpsert = upsertReticulumDestination.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((row) => row.destination_hash === hash && row.last_heard != null);
+    expect(historyUpsert).toBeDefined();
+    expect(historyUpsert).not.toHaveProperty('is_contact');
     expect(stampHistoryPeer).toHaveBeenCalled();
   });
 
@@ -248,11 +249,36 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
         last_heard: 1_700_000_000,
       });
     });
-    expect(upsertReticulumDestination.mock.calls[0]?.[0]).not.toHaveProperty('is_contact');
+    const historyUpsert = upsertReticulumDestination.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((row) => row.destination_hash === peerHash && row.last_heard != null);
+    expect(historyUpsert).toBeDefined();
+    expect(historyUpsert).not.toHaveProperty('is_contact');
     expect(stampHistoryPeer).toHaveBeenCalledWith(peerHash, {
       last_heard: 1_700_000_000,
       display_name: 'Bob',
     });
+  });
+
+  it('history persist tolerates missing identity node bucket', async () => {
+    const hash = 'allowedhash1234567890allowedhash12';
+    getPeer.mockReturnValue({
+      destination_hash: hash,
+      display_name: 'Alice',
+      last_heard: 1_700_000_000,
+    });
+    nodesState = {};
+    await persistReticulumHistoryFromPayload(
+      {
+        sender_hash: hash,
+        sender_name: 'Alice',
+        text: 'hello',
+        direction: 'inbound',
+        timestamp: 1_700_000_000_000,
+      },
+      'id-no-bucket',
+    );
+    expect(upsertNodeRecordsForIdentity).toHaveBeenCalledWith('id-no-bucket', expect.any(Array));
   });
 });
 

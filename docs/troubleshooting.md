@@ -980,7 +980,7 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
-   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `auto-beacon-utun`, `link-client-nomad`, …) then `pnpm run reticulum:sidecar:build`.
+   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-nomad.sh`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
 

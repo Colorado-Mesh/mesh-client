@@ -131,9 +131,11 @@ export interface ReticulumContact extends ReticulumPeer {
   is_contact?: boolean;
 }
 
-/** True when the peer has History (`last_heard`) — not the same as saved Contacts. */
+/** True when the peer has History (positive `last_heard`) — not the same as saved Contacts. */
 export function hasReticulumHistory(peer: ReticulumPeer | undefined): peer is ReticulumContact {
-  return peer != null && 'last_heard' in peer;
+  if (peer == null || !('last_heard' in peer)) return false;
+  const heard = (peer as ReticulumContact).last_heard;
+  return typeof heard === 'number' && Number.isFinite(heard) && heard > 0;
 }
 
 /**

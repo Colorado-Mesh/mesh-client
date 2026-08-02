@@ -1,10 +1,8 @@
+import type { DmPeerRow } from '../shared/electron-api.types';
 import { MESHTASTIC_BROADCAST_NODE_NUM } from '../shared/nodeNameUtils';
 import type { NodeSqliteDB } from './db-compat';
 
-export interface DmPeerRow {
-  node_id: number;
-  last_message_at: number;
-}
+export type { DmPeerRow };
 
 const DEFAULT_LIMIT = 2000;
 const MAX_LIMIT = 5000;

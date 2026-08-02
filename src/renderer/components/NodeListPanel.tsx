@@ -263,9 +263,17 @@ export default function NodeListPanel({
   const identityId = getIdentityIdForProtocol(mode) ?? getOfflineIdentityIdForProtocol(mode);
   const identityMessages = useMessages(identityId);
   const ownNodeIdSet = useMemo(() => new Set([myNodeNum >>> 0]), [myNodeNum]);
+  const meshcoreRoomPeerIds = useMemo(() => {
+    if (mode !== 'meshcore') return null;
+    const roomIds = new Set<number>();
+    for (const [peerId, node] of nodes) {
+      if (node.hw_model === 'Room') roomIds.add(peerId);
+    }
+    return roomIds;
+  }, [mode, nodes]);
   const excludeDmPeer = useCallback(
-    (peer: number) => mode === 'meshcore' && nodes.get(peer)?.hw_model === 'Room',
-    [mode, nodes],
+    (peer: number) => meshcoreRoomPeerIds?.has(peer) === true,
+    [meshcoreRoomPeerIds],
   );
   const chatUnreadDmOptions = useMemo(
     () => (mode === 'meshcore' ? { excludeDmPeer } : undefined),
@@ -300,13 +308,13 @@ export default function NodeListPanel({
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
     const merged = mergeChatDmPeerDbRows(fromMemory, dbDmPeers);
-    if (mode !== 'meshcore') return merged;
+    if (mode !== 'meshcore' || !meshcoreRoomPeerIds) return merged;
     // Drop Room servers even if SQLite still has DM-shaped rows.
     for (const peer of [...merged.keys()]) {
-      if (excludeDmPeer(peer)) merged.delete(peer);
+      if (meshcoreRoomPeerIds.has(peer)) merged.delete(peer);
     }
     return merged;
-  }, [chatUnreadDmOptions, dbDmPeers, excludeDmPeer, identityMessages, mode, ownNodeIdSet]);
+  }, [chatUnreadDmOptions, dbDmPeers, identityMessages, meshcoreRoomPeerIds, mode, ownNodeIdSet]);
   const {
     contactCount,
     loading: offloadLoading,
@@ -675,7 +683,6 @@ export default function NodeListPanel({
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div
         className="flex flex-wrap items-center gap-2"
-        role="tablist"
         aria-label={
           mode === 'meshcore'
             ? t('nodeListPanel.headingContacts')
@@ -684,8 +691,7 @@ export default function NodeListPanel({
       >
         <button
           type="button"
-          role="tab"
-          aria-selected={listTab === 'all'}
+          aria-pressed={listTab === 'all'}
           className={`rounded px-3 py-1 text-sm ${listTab === 'all' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
           onClick={() => {
             setListTab('all');
@@ -695,8 +701,7 @@ export default function NodeListPanel({
         </button>
         <button
           type="button"
-          role="tab"
-          aria-selected={listTab === 'history'}
+          aria-pressed={listTab === 'history'}
           className={`rounded px-3 py-1 text-sm ${listTab === 'history' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
           onClick={() => {
             setListTab('history');

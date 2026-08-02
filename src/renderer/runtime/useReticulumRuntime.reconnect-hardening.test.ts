@@ -214,7 +214,7 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
 
   it('applyContactNodesFromStore keeps History peers in nodeStore', () => {
     expect(SOURCE).toMatch(/for \(const contact of history\.values\(\)\)/);
-    expect(SOURCE).toMatch(/keep self \+ History\/Contacts/);
+    expect(SOURCE).toMatch(/keepNodeIds\.has\(nodeId\)/);
   });
 });
 

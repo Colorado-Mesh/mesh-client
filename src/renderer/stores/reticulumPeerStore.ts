@@ -228,10 +228,14 @@ function wireContactToHistoryHint(
   ifaceByHash: Map<string, string>,
 ): ReticulumContact {
   const hash = normalizeHash(row.destination_hash);
+  const lastHeard =
+    typeof row.last_heard === 'number' && Number.isFinite(row.last_heard) && row.last_heard > 0
+      ? Math.floor(row.last_heard)
+      : 0;
   return {
     destination_hash: hash,
     display_name: row.display_name ?? null,
-    last_heard: row.last_heard ?? 0,
+    last_heard: lastHeard,
     hops: hopsByHash.get(hash) ?? null,
     interface: ifaceByHash.get(hash) ?? null,
     favorited: Boolean(row.favorited),
@@ -303,7 +307,8 @@ export function mergeReticulumPeerMaps(
       is_contact: dbSaved,
     };
     peerMap.set(hash, merged);
-    if (withFlags.last_heard != null) {
+    // Default 0 from wire hints must not create History membership.
+    if (typeof withFlags.last_heard === 'number' && withFlags.last_heard > 0) {
       historyMap.set(hash, withFlags);
     }
     if (dbSaved && !dismissedContactHashes.has(hash)) {
@@ -324,13 +329,13 @@ export function mergeReticulumPeerMaps(
     }
 
     const fromPeer = peerMap.get(hash);
-    const hasHistory = row.last_heard != null;
+    const hasHistory = typeof row.last_heard === 'number' && row.last_heard > 0;
     const saved = dbRowIsContact(row);
     if (!hasHistory && !saved) continue;
 
     const built = contactRowFromDb(hash, row, fromPeer, dbByHash);
-    if (hasHistory) {
-      historyMap.set(hash, { ...historyMap.get(hash), ...built, last_heard: row.last_heard! });
+    if (hasHistory && row.last_heard != null) {
+      historyMap.set(hash, { ...historyMap.get(hash), ...built, last_heard: row.last_heard });
     }
     if (saved && !dismissedContactHashes.has(hash)) {
       const heard = built.last_heard || historyMap.get(hash)?.last_heard || 0;
@@ -499,10 +504,11 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         ? Math.max(0, Math.floor(patch.last_heard))
         : 0;
     set((s) => {
+      const livePeer = s.peers.get(key);
       const prior =
         s.history.get(key) ??
         s.contacts.get(key) ??
-        (s.peers.get(key) as ReticulumContact | undefined);
+        (hasReticulumHistory(livePeer) ? livePeer : undefined);
       const displayName =
         patch.display_name !== undefined
           ? patch.display_name
@@ -511,17 +517,28 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         destination_hash: key,
         display_name: displayName,
         custom_display_name: prior?.custom_display_name,
-        hops: prior?.hops ?? null,
-        interface: prior?.interface ?? null,
-        favorited: Boolean(prior?.favorited),
-        last_seen: prior?.last_seen,
+        hops: livePeer?.hops ?? null,
+        interface: livePeer?.interface ?? null,
+        favorited: Boolean(prior?.favorited ?? livePeer?.favorited),
+        last_seen: livePeer?.last_seen ?? prior?.last_seen,
         last_heard: Math.max(prior?.last_heard ?? 0, lastHeard),
         is_contact: s.contacts.has(key) ? true : prior?.is_contact,
       };
       const history = new Map(s.history);
       history.set(key, row);
       const peers = new Map(s.peers);
-      peers.set(key, { ...peers.get(key), ...row, destination_hash: key });
+      // Preserve live path metadata; stamp history-owned fields via contact spread.
+      peers.set(key, {
+        ...(livePeer ?? {}),
+        ...row,
+        destination_hash: key,
+        hops: livePeer?.hops ?? row.hops,
+        interface: livePeer?.interface ?? row.interface,
+        last_seen: livePeer?.last_seen ?? row.last_seen,
+        path_hash: livePeer?.path_hash,
+        via_hash: livePeer?.via_hash,
+        path_hops: livePeer?.path_hops,
+      });
       const contacts = new Map(s.contacts);
       const saved = contacts.get(key);
       if (saved) {

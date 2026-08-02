@@ -267,7 +267,7 @@ export default function ReticulumPnHostingDangerZone({
             {t('networkPanel.reticulumPnHosting.authRequired')}
           </label>
         </div>
-        <p className="mt-2 text-xs text-yellow-200/70">
+        <p className="mt-2 text-xs text-yellow-200">
           {t('networkPanel.reticulumPnHosting.enforceUnavailableTip')}
         </p>
         <label htmlFor="pn-node-name" className="mt-3 block text-xs text-yellow-200/90">

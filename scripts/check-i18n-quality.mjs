@@ -917,9 +917,19 @@ export const HISTORY_EMPTY_PEER_COLLEAGUE_RES = [
   { re: /\bcompañer/i, hint: 'use networking "peers", not Spanish office "compañero"' },
   { re: /\bcollegh/i, hint: 'use networking "peers", not Italian office "colleghi"' },
   { re: /\bcollega'?s?\b/i, hint: 'use networking "peers", not Dutch office "collega"' },
-  { re: /\brównieśnik/i, hint: 'use networking "peer", not Polish schoolmate "rówieśnik"' },
-  { re: /\bколлег/i, hint: 'use networking "peers/пиры", not Russian office "коллега"' },
-  { re: /\bколег/i, hint: 'use networking "peers/вузли", not Ukrainian office "колега"' },
+  // Unicode-aware left boundary: ASCII \b is false between non-ASCII letters.
+  {
+    re: /(?:^|\P{L})równieśnik/iu,
+    hint: 'use networking "peer", not Polish schoolmate "rówieśnik"',
+  },
+  {
+    re: /(?:^|\P{L})коллег/iu,
+    hint: 'use networking "peers/пиры", not Russian office "коллега"',
+  },
+  {
+    re: /(?:^|\P{L})колег/iu,
+    hint: 'use networking "peers/вузли", not Ukrainian office "колега"',
+  },
   { re: /同僚/, hint: 'use networking ピア, not office colleague 同僚' },
   { re: /동료/, hint: 'use networking 피어, not office colleague 동료' },
   { re: /\brekan\b/i, hint: 'use networking "peer", not Indonesian coworker "rekan"' },

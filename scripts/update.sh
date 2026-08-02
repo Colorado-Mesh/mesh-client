@@ -321,41 +321,57 @@ check_ratspeak_patches() {
   fi
 }
 
-# GET GitHub API path (gh preferred, curl fallback). Empty on failure.
-# Warns once per update run when the response is a rate-limit / abuse payload.
+# GET GitHub API path (gh preferred, curl fallback). Body on stdout.
+# Exit 0 = body (may be empty), exit 2 = rate-limit payload detected (empty body).
+# Callers must handle exit 2 in the parent shell (command substitution drops side effects).
 github_api_get() {
   local api_path="$1"
   local body=''
   if command -v gh > /dev/null 2>&1; then
     body="$(gh api "${api_path}" 2> /dev/null || true)"
   elif command -v curl > /dev/null 2>&1; then
-    body="$(
-      curl -fsSL \
+    # Do not use curl -f: rate-limit JSON lives on non-2xx and must be inspectable.
+    local resp
+    resp="$(
+      curl -sSL \
         -H 'Accept: application/vnd.github+json' \
         -H 'User-Agent: mesh-client-update' \
+        -w $'\n%{http_code}' \
         "https://api.github.com/${api_path}" 2> /dev/null || true
     )"
+    # Strip trailing HTTP status line written by -w; keep error JSON body for detection.
+    body="${resp%$'\n'*}"
   else
-    echo ''
+    printf ''
     return 0
   fi
   if [[ -n "${body}" ]] && printf '%s' "${body}" | grep -qiE 'rate limit exceeded|API rate limit|secondary rate limit'; then
-    if [[ "${GITHUB_API_RATE_LIMIT_WARNED:-0}" != "1" ]]; then
-      echo -e "  ${YELLOW}GitHub API rate limit:${NC} further Ratspeak upstream checks may be incomplete (retry later or use authenticated gh)."
-      GITHUB_API_RATE_LIMIT_WARNED=1
-      HAS_WARNING=1
-    fi
-    echo ''
-    return 0
+    printf ''
+    return 2
   fi
   printf '%s' "${body}"
+  return 0
+}
+
+warn_github_api_rate_limit_once() {
+  if [[ "${GITHUB_API_RATE_LIMIT_WARNED:-0}" != '1' ]]; then
+    echo -e "  ${YELLOW}GitHub API rate limit:${NC} further Ratspeak upstream checks may be incomplete (retry later or use authenticated gh)."
+    GITHUB_API_RATE_LIMIT_WARNED=1
+    HAS_WARNING=1
+  fi
 }
 
 # Latest release summary: "tag|published_at|first_body_line" or empty.
 github_latest_release_summary() {
   local repo="$1"
-  local json
-  json="$(github_api_get "repos/${repo}/releases/latest")"
+  local json=''
+  local api_rc=0
+  json="$(github_api_get "repos/${repo}/releases/latest")" || api_rc=$?
+  if [ "${api_rc}" -eq 2 ]; then
+    warn_github_api_rate_limit_once
+    echo ''
+    return 0
+  fi
   if [ -z "${json}" ]; then
     echo ''
     return 0
@@ -374,7 +390,10 @@ process.stdin.on("end", () => {
     const tag = String(j.tag_name || j.name || "").replace(/\|/g, "/");
     const published = String(j.published_at || "").slice(0, 10);
     const body = String(j.body || "").split(/\r?\n/).find((l) => l.trim()) || "";
-    const first = body.replace(/\|/g, "/").slice(0, 120);
+    const first = body
+      .replace(/[\u0000-\u001F\u007F]/g, "")
+      .replace(/\|/g, "/")
+      .slice(0, 120);
     process.stdout.write(`${tag}|${published}|${first}`);
   } catch {
     process.stdout.write("");
@@ -453,8 +472,12 @@ check_ratspeak_upstream() {
     fi
   done
 
-  local repos_json
-  repos_json="$(github_api_get 'orgs/ratspeak/repos?per_page=100&sort=created&direction=desc')"
+  local repos_json=''
+  local repos_rc=0
+  repos_json="$(github_api_get 'orgs/ratspeak/repos?per_page=100&sort=created&direction=desc')" || repos_rc=$?
+  if [ "${repos_rc}" -eq 2 ]; then
+    warn_github_api_rate_limit_once
+  fi
   if [ -z "${repos_json}" ]; then
     echo '  Could not list ratspeak org repos (install gh or check network) — skip new-repo scan.'
   else
@@ -503,6 +526,12 @@ process.stdin.on("end", () => {
 
 if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-catalog-only' ]; then
   print_ratspeak_upstream_catalog
+  exit 0
+fi
+
+# Test hook: exercise check_ratspeak_upstream (fake gh/curl via PATH).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-check-only' ]; then
+  check_ratspeak_upstream
   exit 0
 fi
 

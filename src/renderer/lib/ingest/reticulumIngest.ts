@@ -279,7 +279,8 @@ export async function persistReticulumHistoryFromPayload(
   if (!hasReticulumHistory(historyRow)) return;
   const nodeId = reticulumHashToNodeId(peerHash);
   registerReticulumDestinationHash(nodeId, peerHash);
-  const prior = useNodeStore.getState().nodes[id][nodeId] ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const prior = useNodeStore.getState().nodes[id]?.[nodeId] ?? null;
   upsertNodeRecordsForIdentity(id, [
     reticulumContactToNodeRecordPreservingLabel(historyRow, prior),
   ]);
