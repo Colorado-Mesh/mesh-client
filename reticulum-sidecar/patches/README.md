@@ -164,7 +164,7 @@ When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) 
 
 ## rsReticulum-link-client-proof-budget.patch
 
-Cap `LinkClient::query` proof wait at `link.establishment_timeout` so a cached path cannot burn the entire overall Nomad deadline (MeshChat TCP link stage ~15s). Apply **after** the LinkClient Nomad overlay.
+Keep `LinkClient::query` proof wait on the **remaining overall deadline** (v5.25.0 / release parity). Earlier overlays capped at `establishment_timeout` (hops×6) or `max(establishment, 30s)` and false-failed multi-hop TCP hub Nomad pages (e.g. Northern Ireland) that need the rest of the MeshChat 45s window. Apply **after** the LinkClient Nomad overlay; the apply script migrates those older caps to remaining-deadline.
 
 | Field | Value |
 | ----- | ----- |

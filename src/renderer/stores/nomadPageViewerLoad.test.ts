@@ -110,9 +110,12 @@ describe('nomadPageViewerStore loadPage cache', () => {
       await loadPromise;
 
       expect(fetchNomadPage).toHaveBeenCalledTimes(1);
-      expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/index.mu', undefined, {
-        forcePathRefresh: true,
-      });
+      expect(fetchNomadPage).toHaveBeenCalledWith(
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
+      );
       expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
       expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(false);
     } finally {
@@ -176,10 +179,46 @@ describe('nomadPageViewerStore loadPage cache', () => {
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
       expect(useNomadPageViewerStore.getState().pageContent).toBe('hello after tcp retry');
       expect(useNomadPageViewerStore.getState().pageErrorEgress).toBeNull();
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not auto-retry TCP link_timeout after sidecar via failover rediscovered', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockConsoleWarn();
+    try {
+      const fetchNomadPage = vi.fn().mockResolvedValue({
+        ok: false,
+        error: 'link_timeout',
+        egress: 'tcp',
+        force_path_ok: true,
+        path_ensure_kind: 'rediscovered',
+        tried_interfaces: ['Ratspeak', 'RNS_Transport_US-East'],
+        link_hops: 7,
+        proof_budget_secs: 45,
+      });
+      useNomadNetworkStore.setState({ fetchNomadPage });
+
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('e7d84cefc1f9a8f9a80336f3fa2d2309', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      await loadPromise;
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+
+      expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+      expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(false);
+      expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
+      expect(useNomadPageViewerStore.getState().pageErrorDiag?.triedInterfaces).toEqual([
+        'Ratspeak',
+        'RNS_Transport_US-East',
+      ]);
     } finally {
       restore();
       vi.useRealTimers();
@@ -344,5 +383,126 @@ describe('nomadPageViewerStore loadPage cache', () => {
     expect(state.pageLoadingStartedAt).toBeNull();
     expect(state.pageLoadingRetrying).toBe(false);
     expect(state.pageLoadingBudgetSec).toBe(0);
+  });
+
+  it('starts a distinct fetch when a second load has a different requestId', async () => {
+    vi.useFakeTimers();
+    const hash = 'e7d84cefc1f9a8f9a80336f3fa2d2309';
+    const path = '/page/index.mu';
+    let resolveFirst: ((value: unknown) => void) | undefined;
+    let resolveSecond: ((value: unknown) => void) | undefined;
+    const fetchNomadPage = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'N',
+            favorited: false,
+            last_seen: 1,
+            hops: 1,
+          },
+        ],
+      ]),
+      fetchNomadPage,
+    });
+
+    const firstLoad = useNomadPageViewerStore
+      .getState()
+      .loadPage(hash, path, { forceReload: true });
+    await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+    const firstRequestId = useNomadPageViewerStore.getState().pageProgressRequestId;
+    expect(firstRequestId).toBeTruthy();
+    expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+
+    const secondLoad = useNomadPageViewerStore
+      .getState()
+      .loadPage(hash, path, { forceReload: true });
+    await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+    const secondRequestId = useNomadPageViewerStore.getState().pageProgressRequestId;
+    expect(secondRequestId).toBeTruthy();
+    expect(secondRequestId).not.toBe(firstRequestId);
+    // Different requestId must not reuse the first in-flight promise.
+    expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+    expect(fetchNomadPage).toHaveBeenNthCalledWith(
+      1,
+      hash,
+      path,
+      undefined,
+      expect.objectContaining({ requestId: firstRequestId }),
+    );
+    expect(fetchNomadPage).toHaveBeenNthCalledWith(
+      2,
+      hash,
+      path,
+      undefined,
+      expect.objectContaining({ requestId: secondRequestId }),
+    );
+
+    resolveFirst?.({ ok: false, error: 'link_timeout', egress: 'tcp' });
+    resolveSecond?.({ ok: true, content: 'second wins', content_type: 'micron' });
+    await Promise.all([firstLoad, secondLoad]);
+    expect(useNomadPageViewerStore.getState().pageContent).toBe('second wins');
+    vi.useRealTimers();
+  });
+
+  it('ignores late page_progress from a prior load of the same hash/path', () => {
+    const hash = 'e7d84cefc1f9a8f9a80336f3fa2d2309';
+    const path = '/page/index.mu';
+    // Active load owns request_id "2"; late events from load "1" must not apply.
+    useNomadPageViewerStore.setState({
+      selectedHash: hash,
+      pagePath: path,
+      pageLoading: true,
+      pageLoadingStartedAt: Date.now(),
+      pageProgressRequestId: '2',
+      pageLoadingProgress: null,
+      pageLoadingTriedIfaces: [],
+      pageLoadingBudgetSec: 45,
+      loadGeneration: 2,
+    });
+
+    useNomadPageViewerStore.getState().applyPageProgress({
+      destination_hash: hash,
+      path,
+      phase: 'failover',
+      request_id: '1',
+      iface: 'Ratspeak',
+      hops: 4,
+      timeout_secs: 45,
+    });
+    expect(useNomadPageViewerStore.getState().pageLoadingProgress).toBeNull();
+    expect(useNomadPageViewerStore.getState().pageLoadingTriedIfaces).toEqual([]);
+    expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(45);
+
+    useNomadPageViewerStore.getState().applyPageProgress({
+      destination_hash: hash,
+      path,
+      phase: 'link_attempt',
+      request_id: '2',
+      iface: 'RNS_Transport_US-East',
+      hops: 3,
+    });
+    expect(useNomadPageViewerStore.getState().pageLoadingProgress).toEqual({
+      messageKey: 'nomadNetwork.pageProgressLinking',
+      messageParams: { iface: 'RNS_Transport_US-East', hops: 3 },
+    });
+    expect(useNomadPageViewerStore.getState().pageLoadingTriedIfaces).toEqual([
+      'RNS_Transport_US-East',
+    ]);
   });
 });

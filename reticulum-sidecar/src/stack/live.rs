@@ -844,6 +844,7 @@ impl LiveBridge {
     /// destination on our side.
     /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
     /// Remote errors after egress is known include that atom so the UI countdown can update.
+    #[allow(clippy::too_many_arguments)] // path ensure + progress correlation travel with Link args
     async fn query_nomad_node(
         &self,
         hash_hex: &str,
@@ -852,6 +853,7 @@ impl LiveBridge {
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
+        progress_request_id: Option<&str>,
     ) -> Result<(Vec<u8>, NomadRemoteQueryOk), NomadRemoteQueryError> {
         let query_started = tokio::time::Instant::now();
         let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| NomadRemoteQueryError {
@@ -864,6 +866,7 @@ impl LiveBridge {
             path_ensure_kind: None,
             raw_error: None,
             elapsed_ms: None,
+            tried_interfaces: None,
         })?;
         // Prefer path-peer cache (maintenance refreshes every ~2s). Avoid a synchronous
         // GetPathTable here — that control query alone can stall TCP page loads for seconds.
@@ -886,8 +889,8 @@ impl LiveBridge {
         // Release-like: do not DropPath on every first TCP load (causes storms and
         // did not predict LRPROOF). Force refresh only on retry; on first attempt
         // only RequestPath when the path table has no row yet.
-        let force_path_ok: Option<bool>;
-        let path_ensure_kind: Option<&'static str>;
+        let mut force_path_ok: Option<bool>;
+        let mut path_ensure_kind: Option<&'static str>;
         if force_path_refresh {
             let report = self
                 .ensure_path_for_direct_with_opts(
@@ -965,15 +968,16 @@ impl LiveBridge {
                         path_ensure_kind,
                         raw_error: Some(format!("path ensure kind={kind} (no cached path)")),
                         elapsed_ms: Some(elapsed_ms_since(query_started)),
+                        tried_interfaces: None,
                     });
                 }
             }
         }
-        let hops = match cached_hops {
+        let mut hops = match cached_hops {
             Some(h) => h,
             None => self.hops_to_destination(hash_hex).await.unwrap_or(8),
         };
-        let (timeout_secs, egress) = nomad_timeouts::resolve_nomad_page_timeout_secs(
+        let (mut timeout_secs, mut egress) = nomad_timeouts::resolve_nomad_page_timeout_secs(
             interfaces,
             hops,
             path_iface.as_deref(),
@@ -990,10 +994,11 @@ impl LiveBridge {
                 path_ensure_kind,
                 raw_error: None,
                 elapsed_ms: Some(elapsed_ms_since(query_started)),
+                tried_interfaces: None,
             });
         }
-        let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
-        let proof_budget_secs = u64::from(link_hops).saturating_mul(6);
+        let mut link_hops = nomad_timeouts::nomad_link_initiator_hops(egress, hops);
+        let mut proof_budget_secs = nomad_timeouts::nomad_link_proof_budget_secs(timeout_secs);
         // Announce destination (URL/path-table) vs LinkClient dest from identity+aspect.
         let link_dest_hex = hex::encode(Destination::hash_from_name_and_identity(
             NOMAD_NODE_ASPECT,
@@ -1018,21 +1023,248 @@ impl LiveBridge {
             path_ensure_kind = ?path_ensure_kind,
             "Nomad Link query start"
         );
-        // Preempt the prior Link query so switching Nomad nodes does not wait
-        // for the full TCP/RF deadline (or crash the HTTP client mid-query).
-        let my_gen = self
+        let path_slots_snapshot = self
+            .path_slots(hash_hex)
+            .await
+            .map(|(slots, _)| slots)
+            .unwrap_or_default();
+
+        let mut current_iface = path_iface.clone();
+        let mut current_via = active_via_hash_from_slots(&path_slots_snapshot);
+        // One generation for this page request + all via failovers. Bumping per
+        // Link attempt would cancel a newer request when the older one retries.
+        let link_gen = self
             .nomad_link_generation
             .fetch_add(1, Ordering::SeqCst)
             .wrapping_add(1);
+        self.emit_nomad_page_progress(
+            hash_hex,
+            path,
+            "link_attempt",
+            progress_request_id,
+            serde_json::json!({
+                "round": 0,
+                "iface": current_iface,
+                "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                "hops": hops,
+                "timeout_secs": timeout_secs,
+            }),
+        );
+
+        let mut result = self
+            .nomad_link_client_query(
+                remote_hash,
+                path,
+                payload.clone(),
+                hops,
+                link_hops,
+                timeout_secs,
+                egress,
+                force_path_ok,
+                path_ensure_kind,
+                link_gen,
+            )
+            .await;
+
+        // Dead next-hops often reappear on another local iface (same via_hash).
+        // Suppress the failed iface, DropAllVia that hop, and retry on a truly
+        // different via — up to two failovers inside one page fetch.
+        let mut failover_round: u8 = 0;
+        let mut blocked_ifaces: Vec<String> = Vec::new();
+        let mut blocked_vias: Vec<String> = Vec::new();
+        if let Some(iface) = current_iface.clone() {
+            blocked_ifaces.push(iface);
+        }
+        if let Some(via) = current_via.clone() {
+            blocked_vias.push(via);
+        }
+        while result
+            .as_ref()
+            .err()
+            .is_some_and(|e| e.code == "link_timeout")
+            && failover_round < NOMAD_MAX_VIA_FAILOVERS
+        {
+            if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
+                break;
+            }
+            failover_round = failover_round.saturating_add(1);
+            self.emit_nomad_page_progress(
+                hash_hex,
+                path,
+                "link_timeout",
+                progress_request_id,
+                serde_json::json!({
+                    "round": failover_round,
+                    "iface": current_iface,
+                    "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                    "hops": hops,
+                }),
+            );
+            self.emit_nomad_page_progress(
+                hash_hex,
+                path,
+                "searching_route",
+                progress_request_id,
+                serde_json::json!({
+                    "round": failover_round,
+                    "iface": current_iface,
+                    "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                }),
+            );
+            let Some((failover_hops, failover_iface, failover_via)) = self
+                .nomad_suppress_via_and_rediscover(hash_hex, &blocked_ifaces, &blocked_vias)
+                .await
+            else {
+                self.emit_nomad_page_progress(
+                    hash_hex,
+                    path,
+                    "no_alternate_route",
+                    progress_request_id,
+                    serde_json::json!({
+                        "round": failover_round,
+                        "iface": current_iface,
+                        "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                    }),
+                );
+                break;
+            };
+            if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
+                break;
+            }
+            if let Some(iface) = failover_iface.clone() {
+                blocked_ifaces.push(iface);
+            }
+            if let Some(via) = failover_via.clone() {
+                blocked_vias.push(via);
+            }
+            let (failover_timeout, failover_egress) =
+                nomad_timeouts::resolve_nomad_page_timeout_secs(
+                    interfaces,
+                    failover_hops,
+                    failover_iface.as_deref(),
+                    self.primary_local_serial_id().as_deref(),
+                );
+            let failover_link_hops =
+                nomad_timeouts::nomad_link_initiator_hops(failover_egress, failover_hops);
+            let failover_proof = nomad_timeouts::nomad_link_proof_budget_secs(failover_timeout);
+            current_iface = failover_iface.clone();
+            current_via = failover_via.clone();
+            self.emit_nomad_page_progress(
+                hash_hex,
+                path,
+                "failover",
+                progress_request_id,
+                serde_json::json!({
+                    "round": failover_round,
+                    "iface": current_iface,
+                    "via_prefix": nomad_via_prefix(current_via.as_deref()),
+                    "hops": failover_hops,
+                    "timeout_secs": failover_timeout,
+                }),
+            );
+            let rediscovered = PathEnsureKind::Rediscovered.as_str();
+            result = self
+                .nomad_link_client_query(
+                    remote_hash,
+                    path,
+                    payload.clone(),
+                    failover_hops,
+                    failover_link_hops,
+                    failover_timeout,
+                    failover_egress,
+                    Some(true),
+                    Some(rediscovered),
+                    link_gen,
+                )
+                .await;
+            hops = failover_hops;
+            link_hops = failover_link_hops;
+            timeout_secs = failover_timeout;
+            egress = failover_egress;
+            force_path_ok = Some(true);
+            path_ensure_kind = Some(rediscovered);
+            proof_budget_secs = failover_proof;
+        }
+
+        if let Err(ref mut err) = result {
+            if !blocked_ifaces.is_empty() {
+                err.tried_interfaces = Some(blocked_ifaces.clone());
+            }
+        }
+
+        let elapsed_ms = elapsed_ms_since(query_started);
+        finish_nomad_link_result(
+            result,
+            hash_hex,
+            identity_hash_hex,
+            hops,
+            link_hops,
+            proof_budget_secs,
+            timeout_secs,
+            egress,
+            force_path_ok,
+            path_ensure_kind,
+            elapsed_ms,
+        )
+    }
+
+    /// One LinkClient Nomad query under the shared Nomad link lock / cancel slot.
+    ///
+    /// `my_gen` is owned by the outer page request (see [`Self::query_nomad_node`]) so
+    /// via-failover retries do not bump generation or cancel a newer page load.
+    #[allow(clippy::too_many_arguments)] // hops / budgets / path-ensure diagnostics travel together
+    async fn nomad_link_client_query(
+        &self,
+        remote_hash: [u8; 16],
+        path: &str,
+        payload: Vec<u8>,
+        hops: u8,
+        link_hops: u8,
+        timeout_secs: u64,
+        egress: &'static str,
+        force_path_ok: Option<bool>,
+        path_ensure_kind: Option<&'static str>,
+        my_gen: u64,
+    ) -> Result<Vec<u8>, NomadRemoteQueryError> {
+        // Abort before touching the cancel slot so a superseded failover cannot
+        // cancel the newer request that already owns last-request-wins.
+        if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+            return Err(NomadRemoteQueryError {
+                code: "nomad_busy".into(),
+                egress: Some(egress),
+                path_hops: Some(hops),
+                link_hops: Some(link_hops),
+                timeout_secs: Some(timeout_secs),
+                force_path_ok,
+                path_ensure_kind,
+                raw_error: None,
+                elapsed_ms: None,
+                tried_interfaces: None,
+            });
+        }
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
         {
             let mut slot = self.nomad_link_cancel.lock().await;
+            if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+                return Err(NomadRemoteQueryError {
+                    code: "nomad_busy".into(),
+                    egress: Some(egress),
+                    path_hops: Some(hops),
+                    link_hops: Some(link_hops),
+                    timeout_secs: Some(timeout_secs),
+                    force_path_ok,
+                    path_ensure_kind,
+                    raw_error: None,
+                    elapsed_ms: None,
+                    tried_interfaces: None,
+                });
+            }
             if let Some(prev) = slot.take() {
                 let _ = prev.send(());
             }
             *slot = Some(cancel_tx);
         }
-        let Ok(_guard) =
+        let Ok(guard) =
             tokio::time::timeout(NOMAD_LINK_LOCK_WAIT, self.nomad_link_lock.lock()).await
         else {
             if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
@@ -1047,7 +1279,8 @@ impl LiveBridge {
                 force_path_ok,
                 path_ensure_kind,
                 raw_error: None,
-                elapsed_ms: Some(elapsed_ms_since(query_started)),
+                elapsed_ms: None,
+                tried_interfaces: None,
             });
         };
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
@@ -1060,7 +1293,8 @@ impl LiveBridge {
                 force_path_ok,
                 path_ensure_kind,
                 raw_error: None,
-                elapsed_ms: Some(elapsed_ms_since(query_started)),
+                elapsed_ms: None,
+                tried_interfaces: None,
             });
         }
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
@@ -1081,9 +1315,10 @@ impl LiveBridge {
                 link_hops: Some(link_hops),
                 timeout_secs: Some(timeout_secs),
                 force_path_ok,
-                        path_ensure_kind,
+                path_ensure_kind,
                 raw_error: None,
                 elapsed_ms: None,
+                tried_interfaces: None,
             }),
             query_result = query_fut => {
                 query_result.map_err(|e| {
@@ -1099,6 +1334,7 @@ impl LiveBridge {
                         path_ensure_kind,
                         raw_error: Some(raw),
                         elapsed_ms: None,
+                        tried_interfaces: None,
                     }
                 })
             }
@@ -1106,57 +1342,110 @@ impl LiveBridge {
         if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
             *self.nomad_link_cancel.lock().await = None;
         }
-        let elapsed_ms = elapsed_ms_since(query_started);
-        match result {
-            Ok(bytes) => {
-                tracing::debug!(
-                    target: "nomad",
-                    dest = %hash_hex,
-                    identity = %identity_hash_hex,
-                    path_hops = hops,
-                    link_hops,
-                    proof_budget_secs,
-                    timeout_secs,
-                    egress,
-                    force_path_ok = ?force_path_ok,
-                    path_ensure_kind = ?path_ensure_kind,
-                    elapsed_ms,
-                    "Nomad Link query ok"
-                );
-                Ok((
-                    bytes,
-                    NomadRemoteQueryOk {
-                        egress,
-                        timeout_secs,
-                        path_hops: hops,
-                        link_hops,
-                        force_path_ok,
-                        path_ensure_kind,
-                        elapsed_ms,
-                    },
-                ))
-            }
-            Err(mut err) => {
-                err.elapsed_ms = Some(elapsed_ms);
-                tracing::warn!(
-                    target: "nomad",
-                    dest = %hash_hex,
-                    identity = %identity_hash_hex,
-                    path_hops = ?err.path_hops,
-                    link_hops = ?err.link_hops,
-                    proof_budget_secs,
-                    egress = ?err.egress,
-                    force_path_ok = ?err.force_path_ok,
-                    path_ensure_kind = ?err.path_ensure_kind,
-                    timeout_secs = ?err.timeout_secs,
-                    elapsed_ms,
-                    error = %err.code,
-                    raw_error = err.raw_error.as_deref().unwrap_or(""),
-                    "Nomad Link query failed"
-                );
-                Err(err)
+        drop(guard);
+        result
+    }
+
+    /// After LRPROOF timeout, suppress the active iface and drop the failed
+    /// next-hop so rediscovery cannot reinstall the same blackhole via a
+    /// different local interface name (Ratspeak vs RMAP World sharing a via).
+    async fn nomad_suppress_via_and_rediscover(
+        &self,
+        hash_hex: &str,
+        blocked_ifaces: &[String],
+        blocked_vias: &[String],
+    ) -> Option<(u8, Option<String>, Option<String>)> {
+        let dest = parse_hash16(hash_hex).ok()?;
+        let slots_before = self
+            .path_slots(hash_hex)
+            .await
+            .map(|(slots, _)| slots)
+            .unwrap_or_default();
+        let failed_via = active_via_hash_from_slots(&slots_before);
+        let _ = self
+            .query_control_timed(TransportQuery::SuppressCurrentPathInterface {
+                dest,
+                duration: NOMAD_IFACE_SUPPRESS_SECS,
+            })
+            .await;
+        // Drop every known-bad next hop (not only the currently active slot —
+        // after a timeout the table may flip to another iface sharing an older via).
+        let mut vias_to_drop: Vec<String> = blocked_vias.to_vec();
+        if let Some(via) = failed_via.clone() {
+            if !vias_to_drop.iter().any(|b| b.eq_ignore_ascii_case(&via)) {
+                vias_to_drop.push(via);
             }
         }
+        for via_hex in &vias_to_drop {
+            if let Ok(next_hop) = parse_hash16(via_hex) {
+                let _ = self
+                    .query_control_timed(TransportQuery::DropAllVia { next_hop })
+                    .await;
+            }
+        }
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_path_to(hash_hex);
+        }
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.remove(&hash_hex.to_lowercase());
+        }
+        let _ = self
+            .handle
+            .transport_tx
+            .send(TransportMessage::RequestPath {
+                destination_hash: dest,
+            })
+            .await;
+        // Longer wait: alternate hubs may be slower to answer path requests.
+        let deadline = tokio::time::Instant::now() + NOMAD_VIA_FAILOVER_PROBE_WAIT;
+        let mut found: Option<(u8, Option<String>, Option<String>)> = None;
+        while tokio::time::Instant::now() < deadline {
+            let _ = self.refresh_outbound_path_table().await;
+            let slots = self
+                .path_slots(hash_hex)
+                .await
+                .map(|(slots, _)| slots)
+                .unwrap_or_default();
+            // Prefer any live slot that is not on a blocked iface/via.
+            for slot in &slots {
+                let iface = slot
+                    .get("interface")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string);
+                let via = slot
+                    .get("via_hash")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string);
+                let hops = slot
+                    .get("hops")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|h| h as u8);
+                let Some(h) = hops else { continue };
+                let iface_blocked = iface
+                    .as_ref()
+                    .is_some_and(|i| blocked_ifaces.iter().any(|b| b.eq_ignore_ascii_case(i)));
+                let via_blocked = via
+                    .as_ref()
+                    .is_some_and(|v| blocked_vias.iter().any(|b| b.eq_ignore_ascii_case(v)));
+                if iface_blocked || via_blocked {
+                    continue;
+                }
+                // Also reject the via we just failed on this round.
+                if failed_via
+                    .as_ref()
+                    .is_some_and(|fv| via.as_ref().is_some_and(|v| v.eq_ignore_ascii_case(fv)))
+                {
+                    continue;
+                }
+                found = Some((h, iface, via));
+                break;
+            }
+            if found.is_some() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+        found
     }
 
     pub async fn fetch_nomad_file(
@@ -1199,6 +1488,7 @@ impl LiveBridge {
                 Vec::new(),
                 interfaces,
                 force_path_refresh,
+                None,
             )
             .await
         {
@@ -1222,6 +1512,7 @@ impl LiveBridge {
     }
 
     /// See `fetch_nomad_file` for `hash_hex` / `identity_hash_hex` semantics.
+    #[allow(clippy::too_many_arguments)] // page fetch + progress correlation id
     pub async fn fetch_nomad_page(
         &self,
         hash_hex: &str,
@@ -1230,6 +1521,7 @@ impl LiveBridge {
         data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
+        progress_request_id: Option<&str>,
     ) -> serde_json::Value {
         // Self-preview: read hosted content without a Link query to ourselves.
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
@@ -1273,6 +1565,7 @@ impl LiveBridge {
                 payload,
                 interfaces,
                 force_path_refresh,
+                progress_request_id,
             )
             .await
         {
@@ -3368,6 +3661,33 @@ impl LiveBridge {
         let msg = serde_json::json!({ "type": event_type, "payload": payload });
         let _ = self.event_tx.send(msg.to_string());
     }
+
+    /// Progress for Nomad page/file Link attempts (renderer loading status).
+    fn emit_nomad_page_progress(
+        &self,
+        dest_hash: &str,
+        path: &str,
+        phase: &str,
+        request_id: Option<&str>,
+        mut payload: serde_json::Value,
+    ) {
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert(
+                "destination_hash".into(),
+                serde_json::json!(dest_hash.to_lowercase()),
+            );
+            obj.insert("path".into(), serde_json::json!(path));
+            obj.insert("phase".into(), serde_json::json!(phase));
+            if let Some(id) = request_id.map(str::trim).filter(|s| !s.is_empty()) {
+                obj.insert("request_id".into(), serde_json::json!(id));
+            }
+        }
+        self.emit_event("nomad.page_progress", payload);
+    }
+}
+
+fn nomad_via_prefix(via: Option<&str>) -> Option<String> {
+    via.map(|v| v.chars().take(8).collect())
 }
 
 pub(super) fn lxmf_payload_from_message(
@@ -3789,6 +4109,8 @@ struct NomadRemoteQueryError {
     path_ensure_kind: Option<&'static str>,
     raw_error: Option<String>,
     elapsed_ms: Option<u64>,
+    /// Local interface names attempted (including via-aware failovers).
+    tried_interfaces: Option<Vec<String>>,
 }
 
 fn elapsed_ms_since(started: tokio::time::Instant) -> u64 {
@@ -3809,14 +4131,14 @@ fn insert_nomad_link_budget_fields(
     }
     if let Some(link_hops) = link_hops {
         obj.insert("link_hops".into(), serde_json::json!(link_hops));
-        // Link::new_initiator uses ESTABLISHMENT_TIMEOUT_PER_HOP (6s) × hops.
-        obj.insert(
-            "proof_budget_secs".into(),
-            serde_json::json!(u64::from(link_hops).saturating_mul(6)),
-        );
     }
     if let Some(timeout_secs) = timeout_secs {
         obj.insert("timeout_secs".into(), serde_json::json!(timeout_secs));
+        // Matches LinkClient proof-budget overlay: remaining overall deadline.
+        obj.insert(
+            "proof_budget_secs".into(),
+            serde_json::json!(nomad_timeouts::nomad_link_proof_budget_secs(timeout_secs)),
+        );
     }
     if let Some(force_path_ok) = force_path_ok {
         obj.insert("force_path_ok".into(), serde_json::json!(force_path_ok));
@@ -3868,6 +4190,9 @@ fn nomad_remote_error_json(err: &NomadRemoteQueryError) -> serde_json::Value {
     );
     if let Some(raw) = err.raw_error.as_deref().filter(|s| !s.is_empty()) {
         obj.insert("raw_error".into(), serde_json::json!(raw));
+    }
+    if let Some(ifaces) = err.tried_interfaces.as_ref().filter(|v| !v.is_empty()) {
+        obj.insert("tried_interfaces".into(), serde_json::json!(ifaces));
     }
     out
 }
@@ -4025,6 +4350,98 @@ const NOMAD_FORCE_PATH_REFRESH_WAIT: Duration = Duration::from_secs(4);
 /// Strict TCP/network DropPath→RequestPath wait before Link (no stale-accept fall-through).
 const NOMAD_TCP_PATH_PROBE_WAIT: Duration = Duration::from_secs(5);
 
+/// How long to reject the failed Nomad path interface after LRPROOF timeout so
+/// an alternate hub slot (e.g. TTP_TCP vs Ratspeak) can become active.
+const NOMAD_IFACE_SUPPRESS_SECS: f64 = 120.0;
+
+/// Wait for a path with a different via_hash after DropAllVia + suppress.
+const NOMAD_VIA_FAILOVER_PROBE_WAIT: Duration = Duration::from_secs(8);
+
+/// Max in-request via failovers after the first link_timeout (total Link tries = 1 + this).
+const NOMAD_MAX_VIA_FAILOVERS: u8 = 2;
+
+fn active_via_hash_from_slots(slots: &[serde_json::Value]) -> Option<String> {
+    slots.iter().find_map(|slot| {
+        let active = slot
+            .get("active")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+        if !active {
+            return None;
+        }
+        slot.get("via_hash")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+    })
+}
+
+#[allow(clippy::too_many_arguments, clippy::result_large_err)] // Nomad Link diagnostics bundle
+fn finish_nomad_link_result(
+    result: Result<Vec<u8>, NomadRemoteQueryError>,
+    hash_hex: &str,
+    identity_hash_hex: &str,
+    hops: u8,
+    link_hops: u8,
+    proof_budget_secs: u64,
+    timeout_secs: u64,
+    egress: &'static str,
+    force_path_ok: Option<bool>,
+    path_ensure_kind: Option<&'static str>,
+    elapsed_ms: u64,
+) -> Result<(Vec<u8>, NomadRemoteQueryOk), NomadRemoteQueryError> {
+    match result {
+        Ok(bytes) => {
+            tracing::debug!(
+                target: "nomad",
+                dest = %hash_hex,
+                identity = %identity_hash_hex,
+                path_hops = hops,
+                link_hops,
+                proof_budget_secs,
+                timeout_secs,
+                egress,
+                force_path_ok = ?force_path_ok,
+                path_ensure_kind = ?path_ensure_kind,
+                elapsed_ms,
+                "Nomad Link query ok"
+            );
+            Ok((
+                bytes,
+                NomadRemoteQueryOk {
+                    egress,
+                    timeout_secs,
+                    path_hops: hops,
+                    link_hops,
+                    force_path_ok,
+                    path_ensure_kind,
+                    elapsed_ms,
+                },
+            ))
+        }
+        Err(mut err) => {
+            err.elapsed_ms = Some(elapsed_ms);
+            tracing::warn!(
+                target: "nomad",
+                dest = %hash_hex,
+                identity = %identity_hash_hex,
+                path_hops = ?err.path_hops,
+                link_hops = ?err.link_hops,
+                proof_budget_secs,
+                egress = ?err.egress,
+                force_path_ok = ?err.force_path_ok,
+                path_ensure_kind = ?err.path_ensure_kind,
+                timeout_secs = ?err.timeout_secs,
+                elapsed_ms,
+                error = %err.code,
+                raw_error = err.raw_error.as_deref().unwrap_or(""),
+                "Nomad Link query failed"
+            );
+            Err(err)
+        }
+    }
+}
+
 /// Outcome of [`LiveStack::ensure_path_for_direct_with_opts`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PathEnsureKind {
@@ -4161,6 +4578,41 @@ mod announce_display_name_tests {
     }
 
     #[test]
+    fn active_via_hash_from_slots_skips_inactive_and_empty() {
+        assert_eq!(active_via_hash_from_slots(&[]), None);
+        assert_eq!(
+            active_via_hash_from_slots(&[serde_json::json!({
+                "active": true,
+                "via_hash": "",
+            })]),
+            None
+        );
+        assert_eq!(
+            active_via_hash_from_slots(&[
+                serde_json::json!({
+                    "active": false,
+                    "via_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                }),
+                serde_json::json!({
+                    "active": true,
+                    "via_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                }),
+            ]),
+            Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into())
+        );
+    }
+
+    #[test]
+    fn nomad_via_prefix_handles_none_and_truncates() {
+        assert_eq!(nomad_via_prefix(None), None);
+        assert_eq!(
+            nomad_via_prefix(Some("abcdefghijklmnop")),
+            Some("abcdefgh".into())
+        );
+        assert_eq!(nomad_via_prefix(Some("abcd")), Some("abcd".into()));
+    }
+
+    #[test]
     fn force_path_refresh_rejects_stale_route_until_absent_then_accepts_refresh() {
         // Existing stale route still installed — must not accept yet.
         assert!(!force_path_refresh_accepts_current_path(true, true, false));
@@ -4239,17 +4691,22 @@ mod announce_display_name_tests {
             path_ensure_kind: None,
             raw_error: Some("timed out waiting for link proof".into()),
             elapsed_ms: Some(18_250),
+            tried_interfaces: Some(vec!["Ratspeak".into(), "RNS_Transport_US-East".into()]),
         });
         assert_eq!(with_diag["ok"], false);
         assert_eq!(with_diag["error"], "link_timeout");
         assert_eq!(with_diag["egress"], "tcp");
         assert_eq!(with_diag["path_hops"], 1);
         assert_eq!(with_diag["link_hops"], 3);
-        assert_eq!(with_diag["proof_budget_secs"], 18);
+        assert_eq!(with_diag["proof_budget_secs"], 45);
         assert_eq!(with_diag["timeout_secs"], 45);
         assert_eq!(with_diag["force_path_ok"], true);
         assert_eq!(with_diag["elapsed_ms"], 18250);
         assert_eq!(with_diag["raw_error"], "timed out waiting for link proof");
+        assert_eq!(
+            with_diag["tried_interfaces"],
+            serde_json::json!(["Ratspeak", "RNS_Transport_US-East"])
+        );
 
         let without = nomad_remote_error_json(&NomadRemoteQueryError {
             code: "missing_identity_hash".into(),
@@ -4261,6 +4718,7 @@ mod announce_display_name_tests {
             path_ensure_kind: None,
             raw_error: None,
             elapsed_ms: None,
+            tried_interfaces: None,
         });
         assert_eq!(without["ok"], false);
         assert_eq!(without["error"], "missing_identity_hash");
@@ -4287,7 +4745,7 @@ mod announce_display_name_tests {
         assert_eq!(out["egress"], "tcp");
         assert_eq!(out["path_hops"], 1);
         assert_eq!(out["link_hops"], 3);
-        assert_eq!(out["proof_budget_secs"], 18);
+        assert_eq!(out["proof_budget_secs"], 45);
         assert_eq!(out["timeout_secs"], 45);
         assert_eq!(out["elapsed_ms"], 4200);
         assert!(out.get("force_path_ok").is_none());
@@ -4311,7 +4769,7 @@ mod announce_display_name_tests {
         assert_eq!(out["egress"], "tcp");
         assert_eq!(out["path_hops"], 5);
         assert_eq!(out["link_hops"], 5);
-        assert_eq!(out["proof_budget_secs"], 30);
+        assert_eq!(out["proof_budget_secs"], 45);
         assert_eq!(out["timeout_secs"], 45);
         assert_eq!(out["force_path_ok"], false);
         assert_eq!(out["path_ensure_kind"], "cached_hit");

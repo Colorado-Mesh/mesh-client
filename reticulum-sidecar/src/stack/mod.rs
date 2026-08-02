@@ -2211,6 +2211,7 @@ impl StackHandle {
         path: &str,
         data_b64: Option<&str>,
         force_path_refresh: bool,
+        request_id: Option<&str>,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
@@ -2224,10 +2225,11 @@ impl StackHandle {
                     data_b64,
                     &interfaces,
                     force_path_refresh,
+                    request_id,
                 )
                 .await;
         }
-        let _ = (hash, path, data_b64, force_path_refresh);
+        let _ = (hash, path, data_b64, force_path_refresh, request_id);
         serde_json::json!({
             "ok": false,
             "error": "nomad page fetch requires live rns-stack sidecar"

@@ -6,10 +6,10 @@ diff --git a/crates/rns-runtime/src/link_client.rs b/crates/rns-runtime/src/link
          .await?;
  
 -        let proof_data = wait_for_proof(&mut dest_rx, link_id, time_remaining(deadline)?).await?;
-+        // Cap proof wait at link establishment timeout (6s × hops). Otherwise a
-+        // cached path lets wait_for_proof burn the entire overall deadline
-+        // (e.g. TCP 45s) even when MeshChat would fail the link stage in ~15s.
-+        let proof_budget = time_remaining(deadline)?.min(link.establishment_timeout);
++        // Release / v5.25.0 parity: use remaining overall deadline for LRPROOF.
++        // Do not cap at establishment (hops×6) or a 30s floor — that false-failed
++        // multi-hop TCP hub Nomad pages that need the rest of the MeshChat 45s window.
++        let proof_budget = time_remaining(deadline)?;
 +        let proof_data = wait_for_proof(&mut dest_rx, link_id, proof_budget).await?;
  
          let identity_ed25519_pub: [u8; 32] = pubkey[32..64].try_into().map_err(|_| {

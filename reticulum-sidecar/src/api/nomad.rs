@@ -37,6 +37,8 @@ pub struct NomadPageQuery {
     /// When true, RequestPath even if a cached path exists (stale-route retry).
     #[serde(default)]
     pub force_path_refresh: bool,
+    /// Client correlation id echoed on `nomad.page_progress` WS events.
+    pub request_id: Option<String>,
 }
 
 pub async fn get_nomad_page(
@@ -51,6 +53,7 @@ pub async fn get_nomad_page(
                 &query.path,
                 query.data.as_deref(),
                 query.force_path_refresh,
+                query.request_id.as_deref(),
             )
             .await,
     )
@@ -218,6 +221,7 @@ mod force_path_refresh_query_tests {
         let q: NomadPageQuery =
             serde_urlencoded::from_str("path=%2Fpage%2Findex.mu").expect("query");
         assert!(!q.force_path_refresh);
+        assert!(q.request_id.is_none());
         assert_eq!(q.path, "/page/index.mu");
     }
 
@@ -227,6 +231,14 @@ mod force_path_refresh_query_tests {
             serde_urlencoded::from_str("path=%2Fpage%2Findex.mu&force_path_refresh=true")
                 .expect("query");
         assert!(q.force_path_refresh);
+    }
+
+    #[test]
+    fn nomad_page_query_parses_request_id() {
+        let q: NomadPageQuery =
+            serde_urlencoded::from_str("path=%2Fpage%2Findex.mu&request_id=load-42")
+                .expect("query");
+        assert_eq!(q.request_id.as_deref(), Some("load-42"));
     }
 
     #[test]

@@ -2933,7 +2933,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "No announced Nomad Network nodes yet.",
     "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
-    "selectNode": "Wählen Sie einen Knoten aus der Liste aus, um seine Seiten zu durchsuchen.",
     "lastSeen": "Zuletzt gehört {{time}}",
     "hopsAway_one": "{{count}} Hop entfernt",
     "hopsAway_other": "{{count}} Hops entfernt",
@@ -2972,7 +2971,8 @@
       "networkNotReady": "Warten darauf, dass ein Hub oder eine Funkschnittstelle online geht. Versuchen Sie es erneut, sobald Connection eine Schnittstelle anzeigt.",
       "pathTimeoutStale": "Die Route zu diesem Knoten (veralteter Pfad) konnte nicht aktualisiert werden. Warten Sie auf die nächste Ankündigung und versuchen Sie es dann erneut. Anhaltende Fehler bedeuten oft, dass der Knoten offline ist.",
       "linkTimeoutCachedPath": "Ein Pfad zu diesem Knoten wird aufgelistet, aber die Verbindung wurde nie abgeschlossen — die Route kann veraltet sein. Warten Sie auf die nächste Ankündigung und versuchen Sie es dann erneut. Anhaltende Ausfälle bedeuten in der Regel, dass der Knoten offline oder nicht über TCP erreichbar ist.",
-      "linkTimeoutPathOk": "Eine Route zu diesem Knoten wurde bestätigt, aber die Nomad-Seite antwortete nicht. Warten Sie auf eine frischere Ankündigung und versuchen Sie es erneut. Wenn es weiterhin fehlschlägt, ist der Knoten möglicherweise offline oder hostet diese Seite nicht."
+      "linkTimeoutPathOk": "Eine Route zu diesem Knoten wurde bestätigt, aber die Nomad-Seite antwortete nicht. Warten Sie auf eine frischere Ankündigung und versuchen Sie es erneut. Wenn es weiterhin fehlschlägt, ist der Knoten möglicherweise offline oder hostet diese Seite nicht.",
+      "linkTimeoutRoutesTried": "Mehrere Routen versucht ({{ifaces}}), aber der Knoten hat nicht geantwortet. Warten Sie auf eine aktuellere Ankündigung, aktivieren Sie einen anderen Hub oder versuchen Sie es später erneut — der Knoten ist möglicherweise offline."
     },
     "fitWidth": "An Fenster anpassen",
     "openWidth": "Seitenbreite",
@@ -3024,7 +3024,22 @@
     "pageReadyToast": "Nomad-Seite bereit: {{name}}",
     "staleLastSeenHint": "Zuletzt gehört {{time}} – dieser Knoten ist möglicherweise offline, auch wenn er als online aufgeführt ist.",
     "pageLoadingRetryCountdown": "Zeitüberschreitung beim ersten Versuch — Pfad wird aktualisiert und es wird erneut versucht… noch {{time}}",
-    "pageLoadingRetryOverdue": "Erfrischungspfad und erneuter Versuch… funktioniert noch"
+    "pageLoadingRetryOverdue": "Erfrischungspfad und erneuter Versuch… funktioniert noch",
+    "enterUrlHint": "Fügen Sie eine Nomad-Adresse ein oder wählen Sie einen Knoten aus der Liste aus.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Los",
+    "pageLoadingTimeLeft": "{{time}} bei diesem Versuch übrig",
+    "pageLoadingStillWorking": "Immer noch am arbeiten",
+    "pageProgressLinking": "Verbindung über {{iface}} ({{hops}} Hops)...",
+    "pageProgressLinkingIface": "Verbindung über {{iface}}...",
+    "pageProgressLinkingGeneric": "Verbindung zum Knoten wird hergestellt...",
+    "pageProgressDeadRoute": "Keine Antwort über {{iface}} — Suche nach einer anderen Route...",
+    "pageProgressDeadRouteGeneric": "Zeitüberschreitung beim Link — Suche nach einer anderen Route...",
+    "pageProgressSearchingRoute": "Suche nach einem anderen nächsten Hop…",
+    "pageProgressFailover": "Versuche eine andere Route über {{iface}} ({{hops}} Hops)…",
+    "pageProgressFailoverIface": "Versuche eine andere Route über {{iface}}…",
+    "pageProgressFailoverGeneric": "Eine andere Route wird versucht...",
+    "pageProgressNoAlternate": "Keine anderen Routen verfügbar — Beenden dieses Versuchs..."
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

@@ -2933,7 +2933,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "Nomad Networkノードはまだ発表されていません。",
     "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。",
-    "selectNode": "リストからノードを選択して、そのページを参照します。",
     "lastSeen": "最後に聞いたのは{{time}}",
     "hopsAway_one": "{{count}} ホップ先",
     "hopsAway_other": "{{count}} ホップ先",
@@ -2972,7 +2971,8 @@
       "networkNotReady": "ハブまたは無線インターフェイスがオンラインになるのを待っています。接続にインターフェイスが表示されたら、もう一度試してください。",
       "pathTimeoutStale": "このノードへのルートを更新できませんでした（古いパス）。次のアナウンスを待ってから、もう一度お試しください。継続的な障害は、多くの場合、ノードがオフラインであることを意味します。",
       "linkTimeoutCachedPath": "このノードへのパスがリストされていますが、リンクは完了していません。ルートが古くなっている可能性があります。次のアナウンスを待ってから、もう一度お試しください。永続的な障害は、通常、ノードがオフラインであるか、TCP経由で到達できないことを意味します。",
-      "linkTimeoutPathOk": "このノードへのルートが確認されましたが、Nomad ページは応答しませんでした。新鮮なお知らせを待って、もう一度お試しください。失敗し続けると、ノードがオフラインになっているか、そのページをホストしていない可能性があります。"
+      "linkTimeoutPathOk": "このノードへのルートが確認されましたが、Nomad ページは応答しませんでした。新鮮なお知らせを待って、もう一度お試しください。失敗し続けると、ノードがオフラインになっているか、そのページをホストしていない可能性があります。",
+      "linkTimeoutRoutesTried": "複数のルート（ {{ifaces}} ）を試みましたが、ノードが応答しませんでした。新しいアナウンスを待つか、別のハブを有効にするか、しばらくしてからもう一度お試しください。ノードがオフラインになっている可能性があります。"
     },
     "fitWidth": "ウィンドウに適合",
     "openWidth": "ページ幅",
@@ -3024,7 +3024,22 @@
     "pageReadyToast": "Nomadページの準備ができました: {{name}}",
     "staleLastSeenHint": "最後に受信したのは {{time}} — このノードはオンラインとしてリストされている場合でもオフラインである可能性があります。",
     "pageLoadingRetryCountdown": "最初の試行がタイムアウトしました—パスを更新して再試行しています… {{time}}残り",
-    "pageLoadingRetryOverdue": "パスを更新して再試行しています...まだ機能しています"
+    "pageLoadingRetryOverdue": "パスを更新して再試行しています...まだ機能しています",
+    "enterUrlHint": "Nomadアドレスを貼り付けるか、リストからノードを選択します。",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "行く",
+    "pageLoadingTimeLeft": "この試行の残り時間は{{time}}です",
+    "pageLoadingStillWorking": "現在作動中",
+    "pageProgressLinking": "{{iface}} （ {{hops}}ホップ）経由で接続しています…",
+    "pageProgressLinkingIface": "{{iface}}経由で接続しています…",
+    "pageProgressLinkingGeneric": "ノードへのリンクを確立しています...",
+    "pageProgressDeadRoute": "{{iface}}経由で応答がありません—別のルートを探しています…",
+    "pageProgressDeadRouteGeneric": "リンクがタイムアウトしました—別のルートを探しています...",
+    "pageProgressSearchingRoute": "別のネクストホップを検索しています…",
+    "pageProgressFailover": "{{iface}} （ {{hops}}ホップ）経由で別のルートを試しています…",
+    "pageProgressFailoverIface": "{{iface}}経由で別のルートを試しています…",
+    "pageProgressFailoverGeneric": "別のルートを試しています…",
+    "pageProgressNoAlternate": "他に利用可能なルートはありません—この試みを終了しています…"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

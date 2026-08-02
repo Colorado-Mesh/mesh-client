@@ -2937,7 +2937,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "No announced Nomad Network nodes yet.",
     "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
-    "selectNode": "Wybierz węzeł z listy, aby przeglądać jego strony.",
     "lastSeen": "Ostatnio słyszałem {{time}}",
     "hopsAway_one": "{{count}} przeskok dalej",
     "hopsAway_other": "{{count}} przeskoków dalej",
@@ -2976,7 +2975,8 @@
       "networkNotReady": "Oczekiwanie na połączenie koncentratora lub interfejsu radiowego z Internetem. Spróbuj ponownie, gdy połączenie wyświetli interfejs.",
       "pathTimeoutStale": "Nie można odświeżyć trasy do tego węzła (nieaktualna ścieżka). Poczekaj na następne ogłoszenie, a następnie spróbuj ponownie. Trwałe awarie często oznaczają, że węzeł jest offline.",
       "linkTimeoutCachedPath": "Podana jest ścieżka do tego węzła, ale link nigdy nie został ukończony — trasa może być nieświeża. Poczekaj na następne ogłoszenie, a następnie spróbuj ponownie. Trwałe awarie zwykle oznaczają, że węzeł jest offline lub nieosiągalny przez TCP.",
-      "linkTimeoutPathOk": "Trasa do tego węzła została potwierdzona, ale strona Nomad nie odpowiedziała. Poczekaj na świeższe ogłoszenie i spróbuj ponownie. Jeśli to się nie powiedzie, węzeł może być w trybie offline lub nie hostować tej strony."
+      "linkTimeoutPathOk": "Trasa do tego węzła została potwierdzona, ale strona Nomad nie odpowiedziała. Poczekaj na świeższe ogłoszenie i spróbuj ponownie. Jeśli to się nie powiedzie, węzeł może być w trybie offline lub nie hostować tej strony.",
+      "linkTimeoutRoutesTried": "Wypróbowano wiele tras ({{ifaces}}), ale węzeł nie odebrał. Poczekaj na świeższe ogłoszenie, włącz inne centrum lub spróbuj ponownie później — węzeł może być w trybie offline."
     },
     "fitWidth": "Dopasuj do okna",
     "openWidth": "Szerokość strony",
@@ -3028,7 +3028,22 @@
     "pageReadyToast": "Strona Nomad gotowa: {{name}}",
     "staleLastSeenHint": "Ostatnio słuchano {{time}} — ten węzeł może być w trybie offline, nawet jeśli jest wymieniony jako online.",
     "pageLoadingRetryCountdown": "Upłynął limit czasu pierwszej próby — odświeżanie ścieżki i ponowna próba… pozostało: {{time}}",
-    "pageLoadingRetryOverdue": "Odświeżanie ścieżki i ponawianie próby… nadal działa"
+    "pageLoadingRetryOverdue": "Odświeżanie ścieżki i ponawianie próby… nadal działa",
+    "enterUrlHint": "Wklej adres Nomad lub wybierz węzeł z listy.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "OK",
+    "pageLoadingTimeLeft": "{{time}} pozostało do zakończenia tej próby",
+    "pageLoadingStillWorking": "nadal działa",
+    "pageProgressLinking": "Łączenie przez {{iface}} ({{hops}} przeskoków)…",
+    "pageProgressLinkingIface": "Łączenie przez {{iface}}…",
+    "pageProgressLinkingGeneric": "Ustalanie połączenia z węzłem…",
+    "pageProgressDeadRoute": "Brak odpowiedzi przez {{iface}} — szukam innej trasy…",
+    "pageProgressDeadRouteGeneric": "Przekroczono limit czasu linku — szukanie innej trasy…",
+    "pageProgressSearchingRoute": "Szukam innego następnego skoku…",
+    "pageProgressFailover": "Próbuję innej trasy przez {{iface}} ({{hops}} przeskoków)…",
+    "pageProgressFailoverIface": "Próbuję innej trasy przez {{iface}}…",
+    "pageProgressFailoverGeneric": "Próbuję wybrać inną trasę…",
+    "pageProgressNoAlternate": "Brak innych dostępnych tras — kończenie tej próby…"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

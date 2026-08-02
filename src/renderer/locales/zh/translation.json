@@ -2933,7 +2933,6 @@
     "emptyFavourites": "还没有最喜欢的Nomad Network节点。",
     "emptyAnnounces": "尚未宣布Nomad Network节点。",
     "unavailable": "Nomad Network API不可用。重建Reticulum侧车并重新启动堆栈。",
-    "selectNode": "从列表中选择一个节点以浏览其页面。",
     "lastSeen": "最后一次听到 {{time}}",
     "hopsAway_one": "{{count}} 跳之外",
     "hopsAway_other": "{{count}} 跳之外",
@@ -2972,7 +2971,8 @@
       "networkNotReady": "等待集线器或无线电接口上线。连接显示界面后重试。",
       "pathTimeoutStale": "无法刷新到此节点的路由（过时的路径）。等待下一个公告，然后重试。持续故障通常意味着节点处于离线状态。",
       "linkTimeoutCachedPath": "列出了指向此节点的路径，但链接从未完成—路由可能已过时。等待下一个公告，然后重试。持续故障通常意味着节点处于离线状态或无法通过TCP访问。",
-      "linkTimeoutPathOk": "已确认到此节点的路由，但 Nomad 页面未应答。请等待更新的公告，然后重试。如果持续出现故障，则节点可能处于脱机状态或未托管该页面。"
+      "linkTimeoutPathOk": "已确认到此节点的路由，但 Nomad 页面未应答。请等待更新的公告，然后重试。如果持续出现故障，则节点可能处于脱机状态或未托管该页面。",
+      "linkTimeoutRoutesTried": "尝试了多条路由（ {{ifaces}} ） ，但节点从未应答。等待更新的公告，启用另一个集线器，或稍后重试—节点可能处于离线状态。"
     },
     "fitWidth": "适合窗口",
     "openWidth": "图框宽度",
@@ -3024,7 +3024,22 @@
     "pageReadyToast": "Nomad 页面就绪：{{name}}",
     "staleLastSeenHint": "最后听说 {{time}} — 即使列为在线，该节点也可能处于离线状态。",
     "pageLoadingRetryCountdown": "首次尝试超时—刷新路径并重试……剩余{{time}}",
-    "pageLoadingRetryOverdue": "正在刷新路径并重试……仍在工作"
+    "pageLoadingRetryOverdue": "正在刷新路径并重试……仍在工作",
+    "enterUrlHint": "粘贴 Nomad 地址，或从列表中选择一个节点。",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "前往",
+    "pageLoadingTimeLeft": "本次尝试剩余{{time}}",
+    "pageLoadingStillWorking": "仍在工作",
+    "pageProgressLinking": "正在通过{{iface}} （ {{hops}}跳）连接……",
+    "pageProgressLinkingIface": "正在通过{{iface}}连接……",
+    "pageProgressLinkingGeneric": "正在建立到节点的链接…",
+    "pageProgressDeadRoute": "未通过{{iface}}应答—正在寻找其他路线……",
+    "pageProgressDeadRouteGeneric": "链接超时—正在寻找其他路线…",
+    "pageProgressSearchingRoute": "正在搜索其他下一跳……",
+    "pageProgressFailover": "正在尝试通过{{iface}} （ {{hops}}跳）选择其他路线……",
+    "pageProgressFailoverIface": "尝试通过{{iface}}选择其他路线…",
+    "pageProgressFailoverGeneric": "正在尝试其他路线…",
+    "pageProgressNoAlternate": "没有其他路线可用—正在完成此尝试…"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

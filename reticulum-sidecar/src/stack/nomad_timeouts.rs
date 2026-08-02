@@ -87,6 +87,15 @@ pub fn nomad_link_initiator_hops(egress_via: &str, path_hops: u8) -> u8 {
     }
 }
 
+/// Effective LRPROOF budget reported to the UI / failure logs.
+///
+/// Matches `rsReticulum-link-client-proof-budget.patch` (release parity):
+/// LinkClient waits for proof until the overall deadline remaining after
+/// pubkey/path discovery. With a cached key that is ~`timeout_secs`.
+pub fn nomad_link_proof_budget_secs(timeout_secs: u64) -> u64 {
+    timeout_secs
+}
+
 fn interface_status_live(status: &str) -> bool {
     matches!(
         status.to_ascii_lowercase().as_str(),
@@ -197,7 +206,8 @@ mod tests {
 
     #[test]
     fn tcp_link_initiator_hops_floored_and_capped_for_release_parity() {
-        // Floor 3 (~18s); scale with path; cap 7 (~42s) under 45s overall.
+        // Floor 3; scale with path; cap 7 under 45s overall. Proof wait itself
+        // uses remaining overall deadline (see nomad_link_proof_budget_secs).
         assert_eq!(nomad_link_initiator_hops("tcp", 1), 3);
         assert_eq!(nomad_link_initiator_hops("tcp", 2), 3);
         assert_eq!(nomad_link_initiator_hops("network", 1), 3);
@@ -209,6 +219,12 @@ mod tests {
         assert_eq!(nomad_link_initiator_hops("rf", 8), 8);
         assert_eq!(nomad_link_initiator_hops("ble", 6), 6);
         assert_eq!(nomad_link_initiator_hops("rf", 1), 1);
+    }
+
+    #[test]
+    fn link_proof_budget_matches_overall_timeout_release_parity() {
+        assert_eq!(nomad_link_proof_budget_secs(45), 45);
+        assert_eq!(nomad_link_proof_budget_secs(99), 99);
     }
 
     #[test]

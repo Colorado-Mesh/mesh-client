@@ -2933,7 +2933,6 @@
     "emptyFavourites": "Henüz favori Nomad Network düğümü yok.",
     "emptyAnnounces": "Henüz duyurulmuş Nomad Network düğümü yok.",
     "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat.",
-    "selectNode": "Sayfalarına göz atmak için listeden bir düğüm seçin.",
     "lastSeen": "Son duyulan {{time}}",
     "hopsAway_one": "{{count}} atlama uzakta",
     "hopsAway_other": "{{count}} atlama uzakta",
@@ -2972,7 +2971,8 @@
       "networkNotReady": "Bir hub veya radyo arayüzünün çevrimiçi olması bekleniyor. Bağlantı bir arayüz gösterdiğinde tekrar deneyin.",
       "pathTimeoutStale": "Bu düğüme giden yol yenilenemedi (eski yol). Bir sonraki duyuruyu bekleyin, ardından yeniden deneyin. Kalıcı arızalar genellikle düğümün çevrimdışı olduğu anlamına gelir.",
       "linkTimeoutCachedPath": "Bu düğüme giden bir yol listelenir, ancak bağlantı asla tamamlanmaz — rota eski olabilir. Bir sonraki duyuruyu bekleyin, ardından yeniden deneyin. Kalıcı arızalar genellikle düğümün çevrimdışı olduğu veya TCP üzerinden erişilemediği anlamına gelir.",
-      "linkTimeoutPathOk": "Bu düğüme giden bir rota onaylandı, ancak Nomad sayfası yanıt vermedi. Daha yeni bir duyuru bekleyin ve tekrar deneyin. Başarısız olmaya devam ederse, düğüm çevrimdışı olabilir veya o sayfayı barındırmıyor olabilir."
+      "linkTimeoutPathOk": "Bu düğüme giden bir rota onaylandı, ancak Nomad sayfası yanıt vermedi. Daha yeni bir duyuru bekleyin ve tekrar deneyin. Başarısız olmaya devam ederse, düğüm çevrimdışı olabilir veya o sayfayı barındırmıyor olabilir.",
+      "linkTimeoutRoutesTried": "Birden fazla rotayı ({{ifaces}}) denedim ancak düğüm hiçbir zaman yanıt vermedi. Daha yeni bir duyuru bekleyin, başka bir hub'ı etkinleştirin veya daha sonra tekrar deneyin — düğüm çevrimdışı olabilir."
     },
     "fitWidth": "Pencereye sığdır",
     "openWidth": "Sayfa Genişliği",
@@ -3024,7 +3024,22 @@
     "pageReadyToast": "Nomad sayfası hazır: {{name}}",
     "staleLastSeenHint": "Son duyulan {{time}} — bu düğüm çevrimiçi olarak listelense bile çevrimdışı olabilir.",
     "pageLoadingRetryCountdown": "İlk deneme zaman aşımına uğradı — yol yenileniyor ve yeniden deneniyor… {{time}} kaldı",
-    "pageLoadingRetryOverdue": "Yol yenileniyor ve yeniden deneniyor... hala çalışıyor"
+    "pageLoadingRetryOverdue": "Yol yenileniyor ve yeniden deneniyor... hala çalışıyor",
+    "enterUrlHint": "Bir Nomad adresi yapıştırın veya listeden bir düğüm seçin.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Git",
+    "pageLoadingTimeLeft": "{{time}} bu denemede kaldı",
+    "pageLoadingStillWorking": "Hala çalışıyorum",
+    "pageProgressLinking": "{{iface}} ({{hops}} atlama) üzerinden bağlanılıyor…",
+    "pageProgressLinkingIface": "{{iface}} ile bağlanılıyor…",
+    "pageProgressLinkingGeneric": "Düğüme bağlantı kuruluyor…",
+    "pageProgressDeadRoute": "{{iface}} üzerinden cevap yok — başka bir rota aranıyor…",
+    "pageProgressDeadRouteGeneric": "Bağlantı zaman aşımına uğradı — başka bir rota aranıyor…",
+    "pageProgressSearchingRoute": "Farklı bir sonraki atlama aranıyor…",
+    "pageProgressFailover": "{{iface}} ({{hops}} atlama) üzerinden farklı bir rota deniyor…",
+    "pageProgressFailoverIface": "{{iface}} üzerinden farklı bir rota deniyor…",
+    "pageProgressFailoverGeneric": "Farklı bir rota deniyor...",
+    "pageProgressNoAlternate": "Başka rota yok — bu girişim tamamlanıyor…"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

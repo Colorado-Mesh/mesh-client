@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,15 +23,42 @@ import {
   splitNomadLinkDestination,
 } from './micronParser';
 
-const stylesCss = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), '../../styles.css'),
-  'utf8',
-);
+const rendererDir = join(dirname(fileURLToPath(import.meta.url)), '../..');
+const stylesCss = readFileSync(join(rendererDir, 'styles.css'), 'utf8');
+const nomadFontWoff2Path = join(rendererDir, 'assets/fonts/MeshClientNomadMono.woff2');
 
 describe('nomad-micron-page whitespace CSS contract', () => {
   it('preserves spaces in open-width and wraps with pre-wrap in fit-width', () => {
     expect(stylesCss).toMatch(/\.nomad-micron-page\s*\{[^}]*white-space:\s*pre;/s);
     expect(stylesCss).toMatch(/\.nomad-micron-page--fit-width\s*\{[^}]*white-space:\s*pre-wrap;/s);
+  });
+});
+
+describe('nomad-micron-page bundled Nerd Mono font contract', () => {
+  it('declares @font-face MeshClientNomadMono pointing at the bundled woff2', () => {
+    expect(stylesCss).toMatch(
+      /@font-face\s*\{[^}]*font-family:\s*MeshClientNomadMono;[^}]*url\(['"]\.\/assets\/fonts\/MeshClientNomadMono\.woff2['"]\)/s,
+    );
+    expect(existsSync(nomadFontWoff2Path)).toBe(true);
+    // Non-empty woff2 (subset includes Latin + Nerd PUA).
+    expect(readFileSync(nomadFontWoff2Path).byteLength).toBeGreaterThan(10_000);
+  });
+
+  it('lists MeshClientNomadMono first on .nomad-micron-page font-family', () => {
+    expect(stylesCss).toMatch(
+      /\.nomad-micron-page\s*\{[^}]*font-family:\s*MeshClientNomadMono\s*,/s,
+    );
+  });
+
+  it('keeps FA/Nerd PUA glyphs in mounted Micron link labels', () => {
+    const userIcon = '\uf007';
+    const markup = `\`FT86efac\`[${userIcon} About me\`:/page/about.mu]\`f`;
+    const html = renderNomadMicronPage(markup);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    expect(container.textContent).toContain(userIcon);
+    expect(container.textContent).toContain('About me');
+    expect(container.querySelector('[data-action="openNode"]')).not.toBeNull();
   });
 });
 

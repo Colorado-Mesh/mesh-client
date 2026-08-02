@@ -31,6 +31,8 @@ export interface NomadLinkFailureDiagnostics {
   elapsed_ms?: number;
   /** Unmapped LinkClient error string before sidecar code mapping. */
   raw_error?: string;
+  /** Local interface names tried across via-aware failovers (errors only). */
+  tried_interfaces?: string[];
 }
 
 export interface NomadPageResponse extends NomadLinkFailureDiagnostics {

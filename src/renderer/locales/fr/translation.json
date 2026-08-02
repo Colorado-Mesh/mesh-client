@@ -2933,7 +2933,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "No announced Nomad Network nodes yet.",
     "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile.",
-    "selectNode": "Sélectionnez un nœud dans la liste pour parcourir ses pages.",
     "lastSeen": "Dernière écoute {{time}}",
     "hopsAway_one": "à {{count}} saut",
     "hopsAway_other": "à {{count}} sauts",
@@ -2972,7 +2971,8 @@
       "networkNotReady": "En attente de la mise en ligne d'un hub ou d'une interface radio. Réessayez une fois que Connection affiche une interface.",
       "pathTimeoutStale": "Impossible d'actualiser l'itinéraire vers ce nœud (chemin obsolète). Attendez la prochaine annonce, puis réessayez. Les défaillances persistantes signifient souvent que le nœud est hors ligne.",
       "linkTimeoutCachedPath": "Un chemin d'accès à ce nœud est répertorié, mais le lien n'est jamais terminé — l'itinéraire peut être obsolète. Attendez la prochaine annonce, puis réessayez. Les défaillances persistantes signifient généralement que le nœud est hors ligne ou inaccessible via TCP.",
-      "linkTimeoutPathOk": "Un itinéraire vers ce nœud a été confirmé, mais la page Nomad n'a pas répondu. Attendez une annonce plus fraîche et réessayez. S'il continue à échouer, le nœud peut être hors ligne ou ne pas héberger cette page."
+      "linkTimeoutPathOk": "Un itinéraire vers ce nœud a été confirmé, mais la page Nomad n'a pas répondu. Attendez une annonce plus fraîche et réessayez. S'il continue à échouer, le nœud peut être hors ligne ou ne pas héberger cette page.",
+      "linkTimeoutRoutesTried": "J'ai essayé plusieurs itinéraires ({{ifaces}}) mais le nœud n'a jamais répondu. Attendez une annonce plus fraîche, activez un autre concentrateur ou réessayez plus tard — le nœud peut être hors ligne."
     },
     "fitWidth": "Ajuster la page à la fenêtre",
     "openWidth": "Largeur de la page",
@@ -3024,7 +3024,22 @@
     "pageReadyToast": "Nomad — Page nomade prête : {{name}}",
     "staleLastSeenHint": "Dernière écoute {{time}} — ce nœud peut être hors ligne même s'il est répertorié comme en ligne.",
     "pageLoadingRetryCountdown": "Première tentative expirée — actualisation du chemin et nouvelle tentative… {{time}} restante",
-    "pageLoadingRetryOverdue": "Actualiser le chemin et réessayer… toujours en cours"
+    "pageLoadingRetryOverdue": "Actualiser le chemin et réessayer… toujours en cours",
+    "enterUrlHint": "Collez une adresse Nomad ou sélectionnez un nœud dans la liste.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "OK",
+    "pageLoadingTimeLeft": "{{time}} restante lors de cette tentative",
+    "pageLoadingStillWorking": "Travail en cours...",
+    "pageProgressLinking": "Connexion via {{iface}} ({{hops}} hops)…",
+    "pageProgressLinkingIface": "Connexion via {{iface}}…",
+    "pageProgressLinkingGeneric": "Établissement du lien avec le nœud…",
+    "pageProgressDeadRoute": "Pas de réponse via {{iface}} — recherche d'un autre itinéraire…",
+    "pageProgressDeadRouteGeneric": "Le lien a expiré — recherche d'un autre itinéraire…",
+    "pageProgressSearchingRoute": "À la recherche d'un prochain saut différent...",
+    "pageProgressFailover": "Essayer un autre itinéraire via {{iface}} ({{hops}} sauts)…",
+    "pageProgressFailoverIface": "Essayer un autre itinéraire via {{iface}}…",
+    "pageProgressFailoverGeneric": "Essayer un autre itinéraire...",
+    "pageProgressNoAlternate": "Aucun autre itinéraire disponible — terminer cette tentative…"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

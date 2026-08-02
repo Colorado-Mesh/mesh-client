@@ -2933,7 +2933,6 @@
     "emptyFavourites": "Todavía no hay nodos favoritos de Nomad Network.",
     "emptyAnnounces": "Aún no se han anunciado nodos de Nomad Network.",
     "unavailable": "La API de Nomad Network no está disponible. Reconstruya el sidecar Reticulum y reinicie la pila.",
-    "selectNode": "Seleccione un nodo de la lista para explorar sus páginas.",
     "lastSeen": "Escuchado por última vez {{time}}",
     "hopsAway_one": "{{count}} salto de distancia",
     "hopsAway_other": "{{count}} saltos de distancia",
@@ -2972,7 +2971,8 @@
       "networkNotReady": "Esperando a que se conecte un concentrador o una interfaz de radio. Inténtelo de nuevo una vez que Connection muestre una interfaz.",
       "pathTimeoutStale": "No se ha podido actualizar la ruta a este nodo (ruta obsoleta). Espere el próximo anuncio y vuelva a intentarlo. Las fallas persistentes a menudo significan que el nodo está desconectado.",
       "linkTimeoutCachedPath": "Se muestra una ruta a este nodo, pero el enlace nunca se completó; la ruta puede estar obsoleta. Espere el próximo anuncio y vuelva a intentarlo. Las fallas persistentes generalmente significan que el nodo está desconectado o no es accesible a través de TCP.",
-      "linkTimeoutPathOk": "Se confirmó una ruta a este nodo, pero la página Nomad no respondió. Espere un anuncio más reciente e inténtelo de nuevo. Si sigue fallando, el nodo puede estar desconectado o no alojar esa página."
+      "linkTimeoutPathOk": "Se confirmó una ruta a este nodo, pero la página Nomad no respondió. Espere un anuncio más reciente e inténtelo de nuevo. Si sigue fallando, el nodo puede estar desconectado o no alojar esa página.",
+      "linkTimeoutRoutesTried": "Intenté varias rutas ({{ifaces}}), pero el nodo nunca respondió. Espere un anuncio más reciente, habilite otro concentrador o inténtelo de nuevo más tarde: el nodo puede estar desconectado."
     },
     "fitWidth": "Ajustar a la ventana",
     "openWidth": "Anchura de la página",
@@ -3024,7 +3024,22 @@
     "pageReadyToast": "Nomad — Página nómada lista: {{name}}",
     "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea.",
     "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… quedan {{time}}",
-    "pageLoadingRetryOverdue": "Actualizando ruta y reintentando... sigue funcionando"
+    "pageLoadingRetryOverdue": "Actualizando ruta y reintentando... sigue funcionando",
+    "enterUrlHint": "Pegue una dirección Nomad o seleccione un nodo de la lista.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Avanzar",
+    "pageLoadingTimeLeft": "{{time}} se fue en este intento",
+    "pageLoadingStillWorking": "Aún trabajando",
+    "pageProgressLinking": "Conectando a través de {{iface}} ({{hops}} hops)…",
+    "pageProgressLinkingIface": "Conectando a través de {{iface}}...",
+    "pageProgressLinkingGeneric": "Estableciendo enlace al nodo...",
+    "pageProgressDeadRoute": "No hay respuesta a través de {{iface}} — buscando otra ruta...",
+    "pageProgressDeadRouteGeneric": "Enlace agotado — buscando otra ruta...",
+    "pageProgressSearchingRoute": "Buscando un próximo salto diferente...",
+    "pageProgressFailover": "Intentando una ruta diferente a través de {{iface}} ({{hops}} hops)...",
+    "pageProgressFailoverIface": "Intentando una ruta diferente a través de {{iface}}...",
+    "pageProgressFailoverGeneric": "Probando una ruta diferente...",
+    "pageProgressNoAlternate": "No hay otras rutas disponibles — finalizando este intento..."
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
