@@ -36,6 +36,7 @@ import {
   normalizeMeshcoreGifOutboundWire,
   parseMeshcoreGifId,
 } from '../lib/meshcoreGifWire';
+import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
 import { useToast } from './Toast';
@@ -460,17 +461,25 @@ export function ChatComposer({
     setChatActionError(null);
     try {
       for (let i = 0; i < textsToSend.length; i++) {
-        await onSendChunk(textsToSend[i], {
-          replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
-          replyHash: i === 0 ? reticulumReplyHash : undefined,
-          chunkIndex: i,
-          floodScopeOverride:
-            floodScopeOverride === '__unscoped__'
-              ? ''
-              : floodScopeOverride
-                ? floodScopeOverride
-                : undefined,
-        });
+        const sendChunk = () =>
+          onSendChunk(textsToSend[i], {
+            replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
+            replyHash: i === 0 ? reticulumReplyHash : undefined,
+            chunkIndex: i,
+            floodScopeOverride:
+              floodScopeOverride === '__unscoped__'
+                ? ''
+                : floodScopeOverride
+                  ? floodScopeOverride
+                  : undefined,
+          });
+        // Shared Meshtastic TEXT_MESSAGE_APP pacing (with outbox drain) — firmware rejects
+        // a second locally-originated text within ~2s (RATE_LIMIT_EXCEEDED).
+        if (protocol === 'meshtastic') {
+          await withMeshtasticTextSendPacing(sendChunk);
+        } else {
+          await sendChunk();
+        }
       }
       rememberFloodScopeIfNeeded(floodScopeOverride);
       clearSentDraft(draftSnapshot);

@@ -4,6 +4,7 @@ import {
   computeComposerLimitStatus,
   computeComposerTotalMaxChars,
   countMessageChars,
+  countMessageWireBytes,
   getChatPayloadLimit,
   getComposerWireOverhead,
   getMeshcoreChannelPayloadLimit,
@@ -11,6 +12,7 @@ import {
   MAX_CHUNKS,
   MESHCORE_PAYLOAD_LIMIT,
   MESHTASTIC_PAYLOAD_LIMIT,
+  MESHTASTIC_REPLY_ID_WIRE_BYTES,
   RETICULUM_LXMF_PAYLOAD_LIMIT,
   splitChatMessage,
 } from './chatComposerLimits';
@@ -41,6 +43,11 @@ describe('getMeshcoreChannelPayloadLimit', () => {
   it('caps name length at 32 characters', () => {
     expect(getMeshcoreChannelPayloadLimit('x'.repeat(40))).toBe(126);
   });
+
+  it('reserves UTF-8 wire bytes for multi-byte display names', () => {
+    // Cyrillic 'п' is 2 UTF-8 bytes; 10 codepoints → 20 wire bytes + ": " (2) → body 138.
+    expect(getMeshcoreChannelPayloadLimit('п'.repeat(10))).toBe(160 - 20 - 2);
+  });
 });
 
 describe('getMeshcoreRoomPayloadLimit', () => {
@@ -50,8 +57,24 @@ describe('getMeshcoreRoomPayloadLimit', () => {
 });
 
 describe('getComposerWireOverhead', () => {
-  it('returns 0 for meshtastic replies', () => {
+  it('returns 0 for meshtastic when no reply is pending', () => {
     expect(getComposerWireOverhead({ protocol: 'meshtastic', replyToSenderName: 'Bob' })).toBe(0);
+  });
+
+  it('reserves 5 wire bytes for meshtastic replies (fixed32 reply_id field)', () => {
+    expect(
+      getComposerWireOverhead({
+        protocol: 'meshtastic',
+        replyToSenderName: 'Bob',
+        replyKey: 2_113_407_456,
+      }),
+    ).toBe(MESHTASTIC_REPLY_ID_WIRE_BYTES);
+  });
+
+  it('returns 0 for meshtastic when replyKey is 0', () => {
+    expect(
+      getComposerWireOverhead({ protocol: 'meshtastic', replyToSenderName: 'Bob', replyKey: 0 }),
+    ).toBe(0);
   });
 
   it('counts MeshCore reply prefix on first chunk', () => {
@@ -77,6 +100,44 @@ describe('getComposerWireOverhead', () => {
         useKeyedReplies: true,
       }),
     ).toBe(countMessageChars('@[Bob#1780235760847] '));
+  });
+
+  it('reserves the "Unknown" fallback length for an all-emoji sender name (keyless)', () => {
+    // Regression: sanitizeMeshcoreWireName strips an all-pictographic name to '', and the real
+    // wire builder falls back to the literal "Unknown" — a naive estimate from the raw name
+    // ("@[😀] ", 5 chars) under-reserves by 6 bytes versus the true "@[Unknown] " (11 bytes).
+    expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: '😀' })).toBe(
+      countMessageWireBytes('@[Unknown] '),
+    );
+  });
+
+  it('reserves the "Unknown" fallback length for an all-emoji sender name (keyed)', () => {
+    expect(
+      getComposerWireOverhead({
+        protocol: 'meshcore',
+        replyToSenderName: '🔥🔥',
+        replyKey: 1_780_235_760_847,
+        useKeyedReplies: true,
+      }),
+    ).toBe(countMessageWireBytes('@[Unknown#1780235760847] '));
+  });
+});
+
+describe('countMessageWireBytes', () => {
+  it('matches countMessageChars for ASCII text', () => {
+    expect(countMessageWireBytes('hello')).toBe(countMessageChars('hello'));
+  });
+
+  it('counts multi-byte UTF-8 characters by their real byte cost, not codepoint count', () => {
+    // Cyrillic characters are 2 bytes each in UTF-8, but 1 codepoint each.
+    const text = 'привет';
+    expect(countMessageChars(text)).toBe(6);
+    expect(countMessageWireBytes(text)).toBe(12);
+  });
+
+  it('counts an emoji as 4 bytes despite being 1 codepoint', () => {
+    expect(countMessageChars('🦊')).toBe(1);
+    expect(countMessageWireBytes('🦊')).toBe(4);
   });
 });
 
@@ -195,6 +256,36 @@ describe('splitChatMessage', () => {
     const fitsWithout = 'a'.repeat(limit);
     expect(splitChatMessage(fitsWithout, 'meshcore', limit, 0)).toEqual([]);
     expect(splitChatMessage(fitsWithout, 'meshcore', limit, overhead)).not.toEqual([]);
+  });
+
+  it('splits a max-length meshtastic reply instead of overflowing the radio payload', () => {
+    // Regression: a 228-char reply previously fit in one chunk (overhead was ignored),
+    // silently overflowing the true wire payload once the 5-byte fixed32 reply_id field
+    // was added by the SDK/radio, which the firmware NAKed as TOO_LARGE.
+    const text = 'a'.repeat(MESHTASTIC_PAYLOAD_LIMIT);
+    const overhead = getComposerWireOverhead({ protocol: 'meshtastic', replyKey: 2_113_407_456 });
+    expect(overhead).toBe(MESHTASTIC_REPLY_ID_WIRE_BYTES);
+    expect(splitChatMessage(text, 'meshtastic', MESHTASTIC_PAYLOAD_LIMIT, 0)).toEqual([]);
+    const chunks = splitChatMessage(text, 'meshtastic', MESHTASTIC_PAYLOAD_LIMIT, overhead);
+    expect(chunks).not.toEqual([]);
+    expect(chunks).not.toBeNull();
+  });
+
+  it('splits multi-byte text that fits the codepoint limit but not the real byte limit', () => {
+    // Regression: Cyrillic 'п' is 1 codepoint but 2 UTF-8 bytes. 200 codepoints is under the
+    // 228-codepoint limit (previously judged "fits in one message"), but 400 real wire bytes —
+    // nearly double the true 228-byte Meshtastic payload — which the radio would NAK as TOO_LARGE.
+    const text = 'п'.repeat(200);
+    expect(countMessageChars(text)).toBeLessThanOrEqual(MESHTASTIC_PAYLOAD_LIMIT);
+    expect(countMessageWireBytes(text)).toBeGreaterThan(MESHTASTIC_PAYLOAD_LIMIT);
+    const chunks = splitChatMessage(text, 'meshtastic');
+    expect(chunks).not.toBeNull();
+    expect(chunks!.length).toBeGreaterThan(1);
+    for (const chunk of chunks!) {
+      expect(countMessageWireBytes(chunk)).toBeLessThanOrEqual(MESHTASTIC_PAYLOAD_LIMIT);
+    }
+    const bodies = chunks!.map((c) => c.replace(/^\[\d+\/\d+\] /, ''));
+    expect(bodies.join('')).toBe(text);
   });
 
   it('returns null when text requires more than MAX_CHUNKS chunks', () => {
