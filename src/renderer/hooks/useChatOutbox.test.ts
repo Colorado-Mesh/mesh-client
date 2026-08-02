@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
@@ -32,6 +33,7 @@ describe('useChatOutbox', () => {
   const mockOutbox = window.electronAPI.chat.outbox;
 
   beforeEach(() => {
+    resetMeshtasticTextSendPacingForTests();
     vi.mocked(mockOutbox.list).mockClear();
     vi.mocked(mockOutbox.add).mockClear();
     vi.mocked(mockOutbox.updateStatus).mockClear();

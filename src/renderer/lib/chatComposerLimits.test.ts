@@ -43,6 +43,11 @@ describe('getMeshcoreChannelPayloadLimit', () => {
   it('caps name length at 32 characters', () => {
     expect(getMeshcoreChannelPayloadLimit('x'.repeat(40))).toBe(126);
   });
+
+  it('reserves UTF-8 wire bytes for multi-byte display names', () => {
+    // Cyrillic 'п' is 2 UTF-8 bytes; 10 codepoints → 20 wire bytes + ": " (2) → body 138.
+    expect(getMeshcoreChannelPayloadLimit('п'.repeat(10))).toBe(160 - 20 - 2);
+  });
 });
 
 describe('getMeshcoreRoomPayloadLimit', () => {

@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { MESHTASTIC_PAYLOAD_LIMIT } from '@/renderer/lib/chatComposerLimits';
 import { draftsStorageKey } from '@/renderer/lib/chatPanelProtocolStorage';
+import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 
 import { ChatComposer } from './ChatComposer';
@@ -60,6 +61,7 @@ vi.mock('react-i18next', () => ({
 describe('ChatComposer', () => {
   beforeEach(() => {
     localStorage.clear();
+    resetMeshtasticTextSendPacingForTests();
   });
 
   it('has no axe violations when connected', async () => {

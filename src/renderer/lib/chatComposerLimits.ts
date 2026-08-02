@@ -45,7 +45,10 @@ export function getChatPayloadLimit(protocol: MeshProtocol, override?: number): 
 }
 
 export function getMeshcoreChannelPayloadLimit(displayName: string): number {
-  const nameLen = Math.min(countMessageChars(displayName.trim()), MESHCORE_MAX_NAME_LEN);
+  // Cap by codepoints (companion name length), then charge real UTF-8 bytes for `Name: `
+  // against the 160-byte wire max — multi-byte names previously under-reserved the body.
+  const cappedName = Array.from(displayName.trim()).slice(0, MESHCORE_MAX_NAME_LEN).join('');
+  const nameLen = countMessageWireBytes(cappedName);
   return Math.max(1, MESHCORE_WIRE_MAX - nameLen - MESHCORE_NAME_SUFFIX_LEN);
 }
 

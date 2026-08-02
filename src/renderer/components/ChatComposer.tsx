@@ -36,7 +36,7 @@ import {
   normalizeMeshcoreGifOutboundWire,
   parseMeshcoreGifId,
 } from '../lib/meshcoreGifWire';
-import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '../lib/timeConstants';
+import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
 import { useToast } from './Toast';
@@ -461,24 +461,25 @@ export function ChatComposer({
     setChatActionError(null);
     try {
       for (let i = 0; i < textsToSend.length; i++) {
-        if (i > 0 && protocol === 'meshtastic') {
-          // Firmware rate-limits locally-originated TEXT_MESSAGE_APP packets to one per 2s
-          // (RATE_LIMIT_EXCEEDED) — chunks fired back-to-back would trip this on chunk 2+.
-          await new Promise((resolve) => {
-            setTimeout(resolve, MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS);
+        const sendChunk = () =>
+          onSendChunk(textsToSend[i], {
+            replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
+            replyHash: i === 0 ? reticulumReplyHash : undefined,
+            chunkIndex: i,
+            floodScopeOverride:
+              floodScopeOverride === '__unscoped__'
+                ? ''
+                : floodScopeOverride
+                  ? floodScopeOverride
+                  : undefined,
           });
+        // Shared Meshtastic TEXT_MESSAGE_APP pacing (with outbox drain) — firmware rejects
+        // a second locally-originated text within ~2s (RATE_LIMIT_EXCEEDED).
+        if (protocol === 'meshtastic') {
+          await withMeshtasticTextSendPacing(sendChunk);
+        } else {
+          await sendChunk();
         }
-        await onSendChunk(textsToSend[i], {
-          replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
-          replyHash: i === 0 ? reticulumReplyHash : undefined,
-          chunkIndex: i,
-          floodScopeOverride:
-            floodScopeOverride === '__unscoped__'
-              ? ''
-              : floodScopeOverride
-                ? floodScopeOverride
-                : undefined,
-        });
       }
       rememberFloodScopeIfNeeded(floodScopeOverride);
       clearSentDraft(draftSnapshot);
