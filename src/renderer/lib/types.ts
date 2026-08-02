@@ -484,6 +484,8 @@ export interface DeviceState {
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
+  /** Advertised / last-seen BLE RSSI in dBm; null/undefined when unknown. */
+  rssi?: number | null;
 }
 export type NobleBleSessionId = MeshProtocol;
 export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };

@@ -1122,7 +1122,8 @@
       "advanced": "Advanced",
       "advancedHint": "추가 키 = 이 인터페이스에 대한 값 쌍, 한 줄에 하나씩. 알려진 필드 (호스트, 모드, 네트워크 이름 등) 는 위의 형태로 유지됩니다.",
       "advancedAria": "고급 인터페이스 키-값 옵션",
-      "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오."
+      "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1270,7 +1271,9 @@
     "letsMeshRequiresWebSocket": "LetsMesh는 WebSocket 전송이 필요합니다.",
     "letsMeshRequiresPort": "LetsMesh에는 {{port}} 포트가 필요합니다.",
     "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper 사전 설정은 알려진 장치 서명 브로커만 지원합니다. 다른 브로커에 대해 사용자 정의를 사용하십시오.",
-    "letsMeshUsernameV1Hex": "사용자 이름은 v1_뒤에 64 16진수 문자 (공개 키) 이어야 합니다."
+    "letsMeshUsernameV1Hex": "사용자 이름은 v1_뒤에 64 16진수 문자 (공개 키) 이어야 합니다.",
+    "bleWeakSignalWarning": "블루투스 신호가 약합니다 ({{rssi}} dBm). 안정적인 연결을 위해 더 가까이 이동하세요.",
+    "bleRssiDbm": "{{rssi}} dBm"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

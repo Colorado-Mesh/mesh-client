@@ -1124,7 +1124,8 @@
       "advanced": "Дополнительно",
       "advancedHint": "Дополнительный ключ= пары значений для этого интерфейса, по одному на строку. Известные поля (хост, режим, имя сети и т. д.) остаются в форме выше.",
       "advancedAria": "Расширенные параметры ключ-значение интерфейса",
-      "advancedKeyReserved": "Ключ \"{{key}}\" является известным полем и был проигнорирован — используйте форму выше."
+      "advancedKeyReserved": "Ключ \"{{key}}\" является известным полем и был проигнорирован — используйте форму выше.",
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1272,7 +1273,9 @@
     "letsMeshRequiresWebSocket": "Для LetsMesh требуется транспорт WebSocket.",
     "letsMeshRequiresPort": "LetsMesh требует порт {{port}}.",
     "letsMeshKnownBrokersOnly": "Предустановка LetsMesh /MeshMapper поддерживает только известные брокеры подписи устройств. Используйте Custom для других брокеров.",
-    "letsMeshUsernameV1Hex": "Имя пользователя должно быть v1_, за которым должны следовать 64 шестнадцатеричных символа (открытый ключ)."
+    "letsMeshUsernameV1Hex": "Имя пользователя должно быть v1_, за которым должны следовать 64 шестнадцатеричных символа (открытый ключ).",
+    "bleWeakSignalWarning": "Сигнал Bluetooth слабый ({{rssi}} dBm). Переместитесь ближе для стабильного соединения.",
+    "bleRssiDbm": "{{rssi}} дБм"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

@@ -2603,9 +2603,12 @@ ipcMain.on('device-disconnected', () => {
 nobleBleManager.on('adapterState', (state: string) => {
   mainWindow?.webContents.send('noble-ble-adapter-state', state);
 });
-nobleBleManager.on('deviceDiscovered', (device: { deviceId: string; deviceName: string }) => {
-  mainWindow?.webContents.send('noble-ble-device-discovered', device);
-});
+nobleBleManager.on(
+  'deviceDiscovered',
+  (device: { deviceId: string; deviceName: string; rssi: number | null }) => {
+    mainWindow?.webContents.send('noble-ble-device-discovered', device);
+  },
+);
 nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) => {
   mainWindow?.webContents.send('noble-ble-connected', { sessionId });
 });

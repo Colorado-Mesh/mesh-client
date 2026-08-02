@@ -99,6 +99,37 @@ describe('ConnectionPanel hardware event wiring', () => {
     //  at runtime — this test catches the wiring; TypeScript catches the shape.)
   });
 
+  it('updates BLE RSSI on rediscovery and shows weak-signal banner', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+
+    render(<ConnectionPanel {...DEFAULT_PROPS} />);
+
+    const connectionField = screen
+      .getByRole('radiogroup', { name: 'Connection Type' })
+      .closest('fieldset')?.parentElement;
+    expect(connectionField).toBeTruthy();
+    await user.click(within(connectionField!).getByRole('radio', { name: /Bluetooth/i }));
+    await user.click(within(connectionField!).getByRole('button', { name: /^Connect$/i }));
+    expect(capturedCb).toBeDefined();
+
+    act(() => {
+      capturedCb!({ deviceId: 'ble-weak', deviceName: 'Far Radio', rssi: -55 });
+    });
+    expect(screen.getByText('Select Bluetooth Device')).toBeInTheDocument();
+    expect(screen.queryByText(/Bluetooth signal is weak/i)).not.toBeInTheDocument();
+
+    act(() => {
+      capturedCb!({ deviceId: 'ble-weak', deviceName: 'Far Radio', rssi: -92 });
+    });
+    expect(screen.getByText(/Bluetooth signal is weak \(-92 dBm\)/i)).toBeInTheDocument();
+  });
+
   it('unsubscribes onNobleBleDeviceDiscovered listener on unmount', () => {
     const unsub = vi.fn();
     vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockReturnValueOnce(unsub);

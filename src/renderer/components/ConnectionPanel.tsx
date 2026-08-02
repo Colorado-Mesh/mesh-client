@@ -104,6 +104,7 @@ import { tryAutoLaunchMqtt } from '../lib/mqttAutoLaunch';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
+import { isWeakBleRssi } from '../lib/signal';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '../lib/timeConstants';
 import type {
@@ -117,11 +118,13 @@ import type {
 } from '../lib/types';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { BleWeakSignalBanner } from './BleWeakSignalBanner';
 import { ConfirmModal } from './ConfirmModal';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
+import SignalBars from './SignalBars';
 // ─── Last Connection (localStorage) ───────────────────────────────
 interface LastConnection {
   type: ConnectionType;
@@ -829,7 +832,18 @@ export default function ConnectionPanel({
   useEffect(() => {
     return window.electronAPI.onNobleBleDeviceDiscovered((device) => {
       setBleDevices((prev) => {
-        if (prev.find((d) => d.deviceId === device.deviceId)) return prev;
+        const idx = prev.findIndex((d) => d.deviceId === device.deviceId);
+        if (idx >= 0) {
+          const existing = prev[idx];
+          if (!existing) return prev;
+          const nextRssi = device.rssi !== undefined ? device.rssi : existing.rssi;
+          if (existing.deviceName === device.deviceName && existing.rssi === nextRssi) {
+            return prev;
+          }
+          const next = [...prev];
+          next[idx] = { ...existing, deviceName: device.deviceName, rssi: nextRssi };
+          return next;
+        }
         return [...prev, device];
       });
       if (isAutoConnectingRef.current) {
@@ -1935,6 +1949,20 @@ export default function ConnectionPanel({
               {resolveConnectionStageText(connectionStage, autoConnectBleTarget, t)}
             </p>
             <p className="text-muted/80 mt-1 text-xs">{t('connectionPanel.stayOnTab')}</p>
+            {(() => {
+              const targetId =
+                lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol) ?? undefined;
+              const targetRssi =
+                (targetId ? bleDevices.find((d) => d.deviceId === targetId)?.rssi : undefined) ??
+                bleDevices.find((d) => d.deviceName === autoConnectBleTarget)?.rssi ??
+                null;
+              return isWeakBleRssi(targetRssi) ? (
+                <BleWeakSignalBanner
+                  rssi={targetRssi}
+                  className="mt-2 rounded-lg border border-amber-800/60 bg-amber-900/40 px-3 py-2 text-xs text-amber-200"
+                />
+              ) : null;
+            })()}
           </div>
         </div>
 
@@ -1976,7 +2004,10 @@ export default function ConnectionPanel({
                         ? `${cached} (${advertisedName})`
                         : cached
                       : (advertisedName ?? device.deviceId);
-                    const bleAriaLabel = `${displayName} ${device.deviceId}`;
+                    const hasRssi = device.rssi != null && Number.isFinite(device.rssi);
+                    const bleAriaLabel = hasRssi
+                      ? `${displayName} ${device.deviceId} ${Math.round(device.rssi!)} dBm`
+                      : `${displayName} ${device.deviceId}`;
                     return (
                       <button
                         key={device.deviceId}
@@ -1990,7 +2021,15 @@ export default function ConnectionPanel({
                       >
                         <div className="flex items-center gap-2 text-sm text-gray-200">
                           <ConnectionIcon type="ble" trigger={parentIconTrigger} />
-                          {displayName}
+                          <span className="min-w-0 flex-1 truncate">{displayName}</span>
+                          {hasRssi ? (
+                            <span className="text-muted flex shrink-0 items-center gap-1 text-xs">
+                              <SignalBars rssi={device.rssi} className="h-3 w-4" />
+                              {t('connectionPanel.bleRssiDbm', {
+                                rssi: Math.round(device.rssi!),
+                              })}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-muted ml-7 font-mono text-xs">{device.deviceId}</div>
                       </button>
@@ -1999,6 +2038,13 @@ export default function ConnectionPanel({
                 })()
               )}
             </div>
+            {(() => {
+              const weakListed = bleDevices
+                .map((d) => d.rssi)
+                .filter((r): r is number => r != null && Number.isFinite(r) && isWeakBleRssi(r));
+              const weakest = weakListed.length > 0 ? Math.min(...weakListed) : null;
+              return <BleWeakSignalBanner rssi={weakest} />;
+            })()}
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
               <p className="text-muted border-t border-gray-700 px-4 py-2 text-xs">
                 {t('connectionPanel.hintAdaDfuBle')}

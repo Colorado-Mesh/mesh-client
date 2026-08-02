@@ -175,6 +175,8 @@ function formatBleDisconnectReason(reason: unknown): string {
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
+  /** Advertised / last-seen BLE RSSI in dBm; null when unknown. */
+  rssi: number | null;
 }
 
 import type { MeshProtocol } from '../shared/meshProtocol';
@@ -311,11 +313,13 @@ export class NobleBleManager extends EventEmitter {
       }
       const id: string = peripheral.id;
       const name: string = peripheral.advertisement?.localName || peripheral.address || id;
-      const isNew = !this.knownPeripherals.has(id);
+      const rssi =
+        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
+          ? peripheral.rssi
+          : null;
       this.knownPeripherals.set(id, peripheral);
-      if (isNew) {
-        this.emit('deviceDiscovered', { deviceId: id, deviceName: name });
-      }
+      // Re-emit on rediscover so Connection pickers can refresh RSSI (not first-seen only).
+      this.emit('deviceDiscovered', { deviceId: id, deviceName: name, rssi });
     });
   }
 
@@ -669,7 +673,11 @@ export class NobleBleManager extends EventEmitter {
     for (const [id, peripheral] of stillConnected) {
       this.knownPeripherals.set(id, peripheral);
       const name: string = peripheral.advertisement?.localName || peripheral.address || id;
-      this.emit('deviceDiscovered', { deviceId: id, deviceName: name });
+      const rssi =
+        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
+          ? peripheral.rssi
+          : null;
+      this.emit('deviceDiscovered', { deviceId: id, deviceName: name, rssi });
     }
     this.scanRequesters.add(sessionId);
     if (!this.adapterReady) {
@@ -1078,9 +1086,19 @@ export class NobleBleManager extends EventEmitter {
           NOBLE_PERIPHERAL_SCAN_WAIT_MS,
         );
       }
+      const connectRssi =
+        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
+          ? peripheral.rssi
+          : null;
       console.debug(
-        `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${peripheral.rssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
+        `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${connectRssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
       );
+      // Refresh picker / connecting banner with connect-time RSSI (scan may have been empty).
+      this.emit('deviceDiscovered', {
+        deviceId: peripheralId,
+        deviceName: peripheral.advertisement?.localName || peripheral.address || peripheralId,
+        rssi: connectRssi,
+      });
       bleCoexistenceCoordinator.assertCanConnect(
         peripheralOwner,
         peripheral.address ?? peripheralId,
@@ -1475,13 +1493,22 @@ export class NobleBleManager extends EventEmitter {
         }
       }
       this.clearSessionState(session);
-      if (connected && peripheral) {
-        await peripheral.disconnectAsync().catch((e: unknown) => {
+      // Mid-GATT OS drops often leave state=disconnected; skip cleanup disconnect.
+      // When still "connected", bound disconnectAsync — NobleMac can hang forever and
+      // block IPC / the renderer Noble connect mutex (90s reconnect budget burn).
+      if (connected && peripheral && peripheral.state !== 'disconnected') {
+        try {
+          await withTimeout(
+            peripheral.disconnectAsync(),
+            5000,
+            'BLE connect-error disconnectAsync',
+          );
+        } catch (e: unknown) {
           console.debug(
             '[noble-ble] connect error cleanup disconnect ' +
               sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
-        });
+        }
       }
       throw err;
     } finally {
