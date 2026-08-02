@@ -164,60 +164,56 @@ describe('useChatOutbox', () => {
   });
 
   it('retry resets status to queued and triggers drain', async () => {
-    const entry = makeEntry({ id: 4, status: 'failed' });
-    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
-    const sendFn = vi.fn().mockResolvedValue(undefined);
-    const { result } = renderHook(() =>
-      useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }),
-    );
-    await waitFor(() => {
+    vi.useFakeTimers();
+    try {
+      const entry = makeEntry({ id: 4, status: 'failed' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn().mockResolvedValue(undefined);
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
       expect(result.current.rows).toHaveLength(0);
-    }); // initially drains the failed row and fails again
-    // Now manually call retry
-    vi.mocked(mockOutbox.updateStatus).mockResolvedValue(undefined);
-    vi.mocked(mockOutbox.list).mockResolvedValue([{ ...entry, status: 'queued' }]);
-    result.current.retry(4);
-    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+
+      vi.mocked(mockOutbox.updateStatus).mockResolvedValue(undefined);
+      vi.mocked(mockOutbox.list).mockResolvedValue([{ ...entry, status: 'queued' }]);
+      result.current.retry(4);
+      await vi.advanceTimersByTimeAsync(0);
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(4, 'queued', undefined, undefined);
-    });
-    // This is the second meshtastic send in the hook's lifetime, so it is paced behind the
-    // first (see 'paces successive meshtastic sends' below) — wait for it to fully settle so
-    // no timer is left dangling into later tests.
-    await waitFor(
-      () => {
-        expect(sendFn).toHaveBeenCalledTimes(2);
-      },
-      { timeout: MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS + 2_000 },
-    );
+      // Second send is paced behind the first — advance past the interval so no timer dangles.
+      expect(sendFn).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS);
+      expect(sendFn).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('paces successive meshtastic sends within one drain to avoid RATE_LIMIT_EXCEEDED', async () => {
     // Regression: firmware rejects a second TEXT_MESSAGE_APP within 2s of the first
     // (Routing_Error.RATE_LIMIT_EXCEEDED). Rows draining back-to-back must be paced.
-    const rowA = makeEntry({ id: 30, payload: 'first' });
-    const rowB = makeEntry({ id: 31, payload: 'second' });
-    vi.mocked(mockOutbox.list).mockResolvedValue([rowA, rowB]);
-    const sendFn = vi.fn().mockResolvedValue(undefined);
-    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    vi.useFakeTimers();
+    try {
+      const rowA = makeEntry({ id: 30, payload: 'first' });
+      const rowB = makeEntry({ id: 31, payload: 'second' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([rowA, rowB]);
+      const sendFn = vi.fn().mockResolvedValue(undefined);
+      renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
 
-    await waitFor(() => {
+      await vi.advanceTimersByTimeAsync(0);
       expect(sendFn).toHaveBeenCalledTimes(1);
-    });
-    expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
+      expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
 
-    // The second row must not send immediately after the first.
-    await new Promise((resolve) => {
-      setTimeout(resolve, MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS - 500);
-    });
-    expect(sendFn).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS - 100);
+      expect(sendFn).toHaveBeenCalledTimes(1);
 
-    await waitFor(
-      () => {
-        expect(sendFn).toHaveBeenCalledTimes(2);
-      },
-      { timeout: 2_000 },
-    );
-    expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
+      await vi.advanceTimersByTimeAsync(200);
+      expect(sendFn).toHaveBeenCalledTimes(2);
+      expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not drain when isSendAvailable is false', async () => {

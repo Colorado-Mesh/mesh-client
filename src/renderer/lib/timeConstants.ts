@@ -293,4 +293,4 @@ export const NOMAD_PAGE_FETCH_DEBOUNCE_MS = 300;
  * multi-chunk split message sent back-to-back trips this on chunk 2+. Padded above the
  * firmware's exact 2000ms boundary for serial/BLE/TCP write and timer-granularity slack.
  */
-export const MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS = 2_500;
+export const MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS = 2.5 * MS_PER_SECOND;
