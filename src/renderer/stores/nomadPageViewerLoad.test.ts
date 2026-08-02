@@ -110,9 +110,12 @@ describe('nomadPageViewerStore loadPage cache', () => {
       await loadPromise;
 
       expect(fetchNomadPage).toHaveBeenCalledTimes(1);
-      expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/index.mu', undefined, {
-        forcePathRefresh: true,
-      });
+      expect(fetchNomadPage).toHaveBeenCalledWith(
+        'abc1234567890',
+        '/page/index.mu',
+        undefined,
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
+      );
       expect(useNomadPageViewerStore.getState().pageErrorRaw).toBe('link_timeout');
       expect(useNomadPageViewerStore.getState().pageLoadingRetrying).toBe(false);
     } finally {
@@ -176,7 +179,7 @@ describe('nomadPageViewerStore loadPage cache', () => {
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
       expect(useNomadPageViewerStore.getState().pageContent).toBe('hello after tcp retry');
       expect(useNomadPageViewerStore.getState().pageErrorEgress).toBeNull();
@@ -380,5 +383,51 @@ describe('nomadPageViewerStore loadPage cache', () => {
     expect(state.pageLoadingStartedAt).toBeNull();
     expect(state.pageLoadingRetrying).toBe(false);
     expect(state.pageLoadingBudgetSec).toBe(0);
+  });
+
+  it('ignores late page_progress from a prior load of the same hash/path', () => {
+    const hash = 'e7d84cefc1f9a8f9a80336f3fa2d2309';
+    const path = '/page/index.mu';
+    // Active load owns request_id "2"; late events from load "1" must not apply.
+    useNomadPageViewerStore.setState({
+      selectedHash: hash,
+      pagePath: path,
+      pageLoading: true,
+      pageLoadingStartedAt: Date.now(),
+      pageProgressRequestId: '2',
+      pageLoadingProgress: null,
+      pageLoadingTriedIfaces: [],
+      pageLoadingBudgetSec: 45,
+      loadGeneration: 2,
+    });
+
+    useNomadPageViewerStore.getState().applyPageProgress({
+      destination_hash: hash,
+      path,
+      phase: 'failover',
+      request_id: '1',
+      iface: 'Ratspeak',
+      hops: 4,
+      timeout_secs: 45,
+    });
+    expect(useNomadPageViewerStore.getState().pageLoadingProgress).toBeNull();
+    expect(useNomadPageViewerStore.getState().pageLoadingTriedIfaces).toEqual([]);
+    expect(useNomadPageViewerStore.getState().pageLoadingBudgetSec).toBe(45);
+
+    useNomadPageViewerStore.getState().applyPageProgress({
+      destination_hash: hash,
+      path,
+      phase: 'link_attempt',
+      request_id: '2',
+      iface: 'RNS_Transport_US-East',
+      hops: 3,
+    });
+    expect(useNomadPageViewerStore.getState().pageLoadingProgress).toEqual({
+      messageKey: 'nomadNetwork.pageProgressLinking',
+      messageParams: { iface: 'RNS_Transport_US-East', hops: 3 },
+    });
+    expect(useNomadPageViewerStore.getState().pageLoadingTriedIfaces).toEqual([
+      'RNS_Transport_US-East',
+    ]);
   });
 });

@@ -155,6 +155,8 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     nodes: Map<string, NomadNodeRow>;
     requestData?: NomadPageRequestData;
     forcePathRefresh?: boolean;
+    /** Echoed on sidecar `nomad.page_progress` for load correlation. */
+    requestId?: string;
   },
 ): Promise<T> {
   const hops = hopsForNomadHash(opts.nodes, opts.hash);
@@ -181,6 +183,10 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     }
     if (opts.forcePathRefresh) {
       qs.set('force_path_refresh', 'true');
+    }
+    const requestId = opts.requestId?.trim();
+    if (requestId) {
+      qs.set('request_id', requestId);
     }
     const cleanHash = opts.hash.replace(/[^a-fA-F0-9]/g, '');
     const apiPath = `/api/v1/nomadnetwork/${kind}/${cleanHash}?${qs.toString()}`;
@@ -215,6 +221,7 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
 
 export interface FetchNomadPageOpts {
   forcePathRefresh?: boolean;
+  requestId?: string;
 }
 
 interface NomadNetworkStoreState {
@@ -273,6 +280,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       nodes: get().nodes,
       requestData,
       forcePathRefresh: opts?.forcePathRefresh,
+      requestId: opts?.requestId,
     }),
 
   fetchNomadFile: async (hash, path, opts) =>
@@ -281,6 +289,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       path,
       nodes: get().nodes,
       forcePathRefresh: opts?.forcePathRefresh,
+      requestId: opts?.requestId,
     }),
 
   toggleFavorite: async (hash, favorited) => {

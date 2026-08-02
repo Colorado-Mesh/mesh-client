@@ -120,15 +120,22 @@ describe('NomadNetworkPanel', () => {
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
   });
 
-  it('shows empty-state URL entry before a node is selected', () => {
+  it('shows empty-state URL entry before a node is selected', async () => {
     render(<NomadNetworkPanel />);
 
-    expect(screen.getByText('nomadNetwork.enterUrlHint')).toBeInTheDocument();
+    const hint = screen.getByText('nomadNetwork.enterUrlHint');
+    expect(hint).toBeInTheDocument();
     expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' })).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'nomadNetwork.closeViewer' }),
     ).not.toBeInTheDocument();
+
+    // Scope to the empty-state paste UI (panel chrome tabs are outside a tablist).
+    const emptyState = hint.closest('div');
+    expect(emptyState).toBeTruthy();
+    hydrateAxeThemeColors(emptyState!);
+    expect(await axe(emptyState!)).toHaveNoViolations();
   });
 
   it('opens a pasted absolute Nomad URL without a listed node', async () => {
@@ -151,7 +158,12 @@ describe('NomadNetworkPanel', () => {
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
 
     await waitFor(() => {
-      expect(fetchNomadPage).toHaveBeenCalledWith(hash, '/page/index.mu', undefined, undefined);
+      expect(fetchNomadPage).toHaveBeenCalledWith(
+        hash,
+        '/page/index.mu',
+        undefined,
+        expect.objectContaining({ requestId: expect.any(String) }),
+      );
     });
     expect(screen.getByText(hash.slice(0, 16))).toBeInTheDocument();
     expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(`${hash}:/page/index.mu`);
@@ -504,7 +516,7 @@ describe('NomadNetworkPanel', () => {
       {
         var_thread_id: 'aaa',
       },
-      undefined,
+      expect.objectContaining({ requestId: expect.any(String) }),
     );
 
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.homePage' }));
@@ -525,7 +537,7 @@ describe('NomadNetworkPanel', () => {
       {
         var_thread_id: 'bbb',
       },
-      undefined,
+      expect.objectContaining({ requestId: expect.any(String) }),
     );
 
     const threadFetches = fetchNomadPage.mock.calls.filter(
@@ -930,14 +942,14 @@ describe('NomadNetworkPanel', () => {
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        undefined,
+        expect.objectContaining({ requestId: expect.any(String) }),
       );
       expect(fetchNomadPage).toHaveBeenNthCalledWith(
         2,
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
       expect(screen.queryByText(/nomadNetwork.pageFailed/)).not.toBeInTheDocument();
     } finally {
@@ -1041,7 +1053,7 @@ describe('NomadNetworkPanel', () => {
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
     } finally {
       restore();
@@ -1123,7 +1135,7 @@ describe('NomadNetworkPanel', () => {
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
     } finally {
       restore();
@@ -1251,14 +1263,14 @@ describe('NomadNetworkPanel', () => {
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
       expect(fetchNomadPage).toHaveBeenNthCalledWith(
         3,
         'abc1234567890',
         '/page/index.mu',
         undefined,
-        { forcePathRefresh: true },
+        expect.objectContaining({ forcePathRefresh: true, requestId: expect.any(String) }),
       );
 
       act(() => {

@@ -4,6 +4,8 @@ export interface NomadPageProgressPayload {
   destination_hash?: string;
   path?: string;
   phase?: string;
+  /** Client correlation id from the page fetch (`request_id` query param). */
+  request_id?: string;
   round?: number;
   iface?: string | null;
   via_prefix?: string | null;
@@ -27,10 +29,54 @@ function cleanHops(hops: number | null | undefined): number | null {
   return typeof hops === 'number' && Number.isFinite(hops) && hops >= 0 ? hops : null;
 }
 
-/** Narrow unknown WS payloads into optional Nomad progress fields. */
+function optionalFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalNullableString(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === 'string') return value;
+  return undefined;
+}
+
+/**
+ * Narrow unknown WS payloads into Nomad progress fields.
+ * Requires `destination_hash` and `phase` strings; other fields must match types when present.
+ */
 export function asNomadPageProgressPayload(payload: unknown): NomadPageProgressPayload | null {
   if (!payload || typeof payload !== 'object') return null;
-  return payload;
+  const o = payload as Record<string, unknown>;
+  if (typeof o.destination_hash !== 'string' || typeof o.phase !== 'string') return null;
+  if (o.path !== undefined && typeof o.path !== 'string') return null;
+  if (o.request_id !== undefined && typeof o.request_id !== 'string') return null;
+  if (o.round !== undefined && (typeof o.round !== 'number' || !Number.isFinite(o.round))) {
+    return null;
+  }
+  if (o.iface !== undefined && o.iface !== null && typeof o.iface !== 'string') return null;
+  if (o.via_prefix !== undefined && o.via_prefix !== null && typeof o.via_prefix !== 'string') {
+    return null;
+  }
+  if (o.hops !== undefined && (typeof o.hops !== 'number' || !Number.isFinite(o.hops))) {
+    return null;
+  }
+  if (
+    o.timeout_secs !== undefined &&
+    (typeof o.timeout_secs !== 'number' || !Number.isFinite(o.timeout_secs))
+  ) {
+    return null;
+  }
+  return {
+    destination_hash: o.destination_hash,
+    phase: o.phase,
+    path: typeof o.path === 'string' ? o.path : undefined,
+    request_id: typeof o.request_id === 'string' ? o.request_id : undefined,
+    round: optionalFiniteNumber(o.round),
+    iface: optionalNullableString(o.iface),
+    via_prefix: optionalNullableString(o.via_prefix),
+    hops: optionalFiniteNumber(o.hops),
+    timeout_secs: optionalFiniteNumber(o.timeout_secs),
+  };
 }
 
 /**
@@ -122,7 +168,11 @@ export function nomadPageProgressMatchesLoad(
   payload: NomadPageProgressPayload,
   selectedHash: string | null,
   pagePath: string | null,
+  requestId?: string | null,
 ): boolean {
+  if (requestId != null && requestId !== '') {
+    if ((payload.request_id ?? '') !== requestId) return false;
+  }
   const dest = payload.destination_hash?.replace(/[^a-fA-F0-9]/g, '').toLowerCase() ?? '';
   const selected = selectedHash?.replace(/[^a-fA-F0-9]/g, '').toLowerCase() ?? '';
   if (!dest || !selected || dest !== selected) return false;

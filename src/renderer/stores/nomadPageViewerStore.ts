@@ -72,6 +72,8 @@ interface NomadPageViewerState {
   pageLoadingProgress: NomadPageLoadingProgress | null;
   /** Interface names observed via progress events during this load (incl. auto-retry). */
   pageLoadingTriedIfaces: string[];
+  /** Correlation id for sidecar `nomad.page_progress` (matches loadGeneration). */
+  pageProgressRequestId: string | null;
   /** Raw sidecar/proxy error code or message (humanize in UI). */
   pageErrorRaw: string | null;
   /** Sidecar egress atom from the failed fetch (`tcp` / `rf` / …) for retry policy. */
@@ -112,19 +114,20 @@ async function fetchNomadPageDeduped(
   path: string,
   requestData: NomadPageRequestData | undefined,
   forcePathRefresh: boolean,
+  requestId: string | undefined,
 ): Promise<NomadPageResponse> {
   const key = pageFetchDedupeKey(hash, path, requestData, forcePathRefresh);
   const existing = inFlightPageFetches.get(key);
   if (existing) return existing;
   const fetchNomadPage = useNomadNetworkStore.getState().fetchNomadPage;
-  const pending = Promise.resolve(
-    fetchNomadPage(
-      hash,
-      path,
-      requestData,
-      forcePathRefresh ? { forcePathRefresh: true } : undefined,
-    ),
-  ).finally(() => {
+  const opts =
+    forcePathRefresh || requestId
+      ? {
+          ...(forcePathRefresh ? { forcePathRefresh: true as const } : {}),
+          ...(requestId ? { requestId } : {}),
+        }
+      : undefined;
+  const pending = Promise.resolve(fetchNomadPage(hash, path, requestData, opts)).finally(() => {
     if (inFlightPageFetches.get(key) === pending) {
       inFlightPageFetches.delete(key);
     }
@@ -204,6 +207,7 @@ const initialViewerState = {
   pageLoadingRetrying: false,
   pageLoadingProgress: null as NomadPageLoadingProgress | null,
   pageLoadingTriedIfaces: [] as string[],
+  pageProgressRequestId: null as string | null,
   pageErrorRaw: null as string | null,
   pageErrorEgress: null as string | null,
   pageErrorDiag: null as NomadPageErrorDiag | null,
@@ -270,7 +274,16 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     if (!progress) return;
     const state = get();
     if (!state.pageLoading) return;
-    if (!nomadPageProgressMatchesLoad(progress, state.selectedHash, state.pagePath)) return;
+    if (
+      !nomadPageProgressMatchesLoad(
+        progress,
+        state.selectedHash,
+        state.pagePath,
+        state.pageProgressRequestId,
+      )
+    ) {
+      return;
+    }
     const mapped = mapNomadPageProgress(progress);
     if (!mapped) return;
     const add = mapped.addBudgetSecs ?? 0;
@@ -317,6 +330,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingBudgetSec: 0,
       pageLoadingProgress: null,
       pageLoadingTriedIfaces: [],
+      pageProgressRequestId: null,
     });
   },
 
@@ -333,6 +347,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     const normalizedPath = normalizeNomadPagePath(path);
     const normalizedRequest = normalizeNomadPageRequestData(options.requestData);
     const generation = get().loadGeneration + 1;
+    const progressRequestId = String(generation);
     const nodes = useNomadNetworkStore.getState().nodes;
     const node = nodes.get(hash.toLowerCase());
     // Default TCP/MeshChat until the sidecar reports this request's egress — do not
@@ -351,6 +366,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingRetrying: false,
       pageLoadingProgress: null,
       pageLoadingTriedIfaces: [],
+      pageProgressRequestId: progressRequestId,
       pageErrorRaw: null,
       pageErrorEgress: null,
       pageErrorDiag: null,
@@ -377,6 +393,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           pageLoadingRetrying: false,
           pageLoadingProgress: null,
           pageLoadingTriedIfaces: [],
+          pageProgressRequestId: null,
           pageContent: cached.content,
           pageContentType: cached.content_type,
           pageContentTruncated: false,
@@ -407,6 +424,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         normalizedPath,
         normalizedRequest,
         !!options.forcePathRefresh,
+        progressRequestId,
       );
       if (get().loadGeneration !== generation) {
         return;
@@ -443,7 +461,13 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           // Keep pageLoadingTriedIfaces — progress events continue accumulating.
           pageLoadingProgress: null,
         });
-        res = await fetchNomadPageDeduped(hash, normalizedPath, normalizedRequest, true);
+        res = await fetchNomadPageDeduped(
+          hash,
+          normalizedPath,
+          normalizedRequest,
+          true,
+          progressRequestId,
+        );
         if (get().loadGeneration !== generation) return;
         if (typeof res.egress === 'string' && res.egress.trim()) {
           budgetSec = nomadPageLoadingBudgetSec(node?.hops ?? undefined, res.egress);
@@ -461,6 +485,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         pageLoadingRetrying: false,
         pageLoadingProgress: null,
         pageLoadingTriedIfaces: [],
+        pageProgressRequestId: null,
         pageErrorRaw: 'unknown',
         pageErrorEgress: null,
         pageErrorDiag: null,
@@ -483,6 +508,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         pageLoadingRetrying: false,
         pageLoadingProgress: null,
         pageLoadingTriedIfaces: [],
+        pageProgressRequestId: null,
         pageErrorRaw: rawCode,
         pageErrorEgress: egressFromNomadPageResponse(res),
         pageErrorDiag: { ...fromRes, triedInterfaces: mergedTried },
@@ -511,6 +537,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       pageLoadingRetrying: false,
       pageLoadingProgress: null,
       pageLoadingTriedIfaces: [],
+      pageProgressRequestId: null,
       pageContent: text,
       pageContentType: res.content_type,
       pageContentTruncated: truncated,

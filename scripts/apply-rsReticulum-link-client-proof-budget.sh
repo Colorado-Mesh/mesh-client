@@ -26,7 +26,7 @@ short_head() {
 
 has_remaining_proof_budget() {
   [[ -f "${LINK_CLIENT_RS}" ]] \
-    && grep -qE 'let proof_budget\s*=\s*time_remaining\(deadline\)\s*\?;' "${LINK_CLIENT_RS}" \
+    && grep -qE 'let proof_budget[[:space:]]*=[[:space:]]*time_remaining\(deadline\)[[:space:]]*\?;' "${LINK_CLIENT_RS}" \
     && grep -qE 'wait_for_proof\([^;]*proof_budget' "${LINK_CLIENT_RS}" \
     && ! grep -qE 'proof_budget = time_remaining\(deadline\)\?\.min\(link\.establishment_timeout\)' "${LINK_CLIENT_RS}" \
     && ! grep -qE 'establishment_timeout[[:space:]]*\.max\(Duration::from_secs\(30\)\)' "${LINK_CLIENT_RS}"
@@ -55,7 +55,7 @@ fi
 
 # Migrate older establishment / 30s-floor caps → remaining-deadline budget.
 if [[ -f "${LINK_CLIENT_RS}" ]] \
-  && grep -qE 'let proof_budget\s*=' "${LINK_CLIENT_RS}" \
+  && grep -qE 'let proof_budget[[:space:]]*=' "${LINK_CLIENT_RS}" \
   && grep -qE 'wait_for_proof\([^;]*proof_budget' "${LINK_CLIENT_RS}"; then
   python3 - "${LINK_CLIENT_RS}" << 'PY'
 import pathlib

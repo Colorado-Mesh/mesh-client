@@ -844,6 +844,7 @@ impl LiveBridge {
     /// destination on our side.
     /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
     /// Remote errors after egress is known include that atom so the UI countdown can update.
+    #[allow(clippy::too_many_arguments)] // path ensure + progress correlation travel with Link args
     async fn query_nomad_node(
         &self,
         hash_hex: &str,
@@ -852,6 +853,7 @@ impl LiveBridge {
         payload: Vec<u8>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
+        progress_request_id: Option<&str>,
     ) -> Result<(Vec<u8>, NomadRemoteQueryOk), NomadRemoteQueryError> {
         let query_started = tokio::time::Instant::now();
         let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| NomadRemoteQueryError {
@@ -1029,10 +1031,17 @@ impl LiveBridge {
 
         let mut current_iface = path_iface.clone();
         let mut current_via = active_via_hash_from_slots(&path_slots_snapshot);
+        // One generation for this page request + all via failovers. Bumping per
+        // Link attempt would cancel a newer request when the older one retries.
+        let link_gen = self
+            .nomad_link_generation
+            .fetch_add(1, Ordering::SeqCst)
+            .wrapping_add(1);
         self.emit_nomad_page_progress(
             hash_hex,
             path,
             "link_attempt",
+            progress_request_id,
             serde_json::json!({
                 "round": 0,
                 "iface": current_iface,
@@ -1053,6 +1062,7 @@ impl LiveBridge {
                 egress,
                 force_path_ok,
                 path_ensure_kind,
+                link_gen,
             )
             .await;
 
@@ -1074,11 +1084,15 @@ impl LiveBridge {
             .is_some_and(|e| e.code == "link_timeout")
             && failover_round < NOMAD_MAX_VIA_FAILOVERS
         {
+            if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
+                break;
+            }
             failover_round = failover_round.saturating_add(1);
             self.emit_nomad_page_progress(
                 hash_hex,
                 path,
                 "link_timeout",
+                progress_request_id,
                 serde_json::json!({
                     "round": failover_round,
                     "iface": current_iface,
@@ -1090,6 +1104,7 @@ impl LiveBridge {
                 hash_hex,
                 path,
                 "searching_route",
+                progress_request_id,
                 serde_json::json!({
                     "round": failover_round,
                     "iface": current_iface,
@@ -1104,6 +1119,7 @@ impl LiveBridge {
                     hash_hex,
                     path,
                     "no_alternate_route",
+                    progress_request_id,
                     serde_json::json!({
                         "round": failover_round,
                         "iface": current_iface,
@@ -1112,6 +1128,9 @@ impl LiveBridge {
                 );
                 break;
             };
+            if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
+                break;
+            }
             if let Some(iface) = failover_iface.clone() {
                 blocked_ifaces.push(iface);
             }
@@ -1134,6 +1153,7 @@ impl LiveBridge {
                 hash_hex,
                 path,
                 "failover",
+                progress_request_id,
                 serde_json::json!({
                     "round": failover_round,
                     "iface": current_iface,
@@ -1142,6 +1162,7 @@ impl LiveBridge {
                     "timeout_secs": failover_timeout,
                 }),
             );
+            let rediscovered = PathEnsureKind::Rediscovered.as_str();
             result = self
                 .nomad_link_client_query(
                     remote_hash,
@@ -1152,7 +1173,8 @@ impl LiveBridge {
                     failover_timeout,
                     failover_egress,
                     Some(true),
-                    Some("rediscovered"),
+                    Some(rediscovered),
+                    link_gen,
                 )
                 .await;
             hops = failover_hops;
@@ -1160,7 +1182,7 @@ impl LiveBridge {
             timeout_secs = failover_timeout;
             egress = failover_egress;
             force_path_ok = Some(true);
-            path_ensure_kind = Some("rediscovered");
+            path_ensure_kind = Some(rediscovered);
             proof_budget_secs = failover_proof;
         }
 
@@ -1187,6 +1209,9 @@ impl LiveBridge {
     }
 
     /// One LinkClient Nomad query under the shared Nomad link lock / cancel slot.
+    ///
+    /// `my_gen` is owned by the outer page request (see [`Self::query_nomad_node`]) so
+    /// via-failover retries do not bump generation or cancel a newer page load.
     #[allow(clippy::too_many_arguments)] // hops / budgets / path-ensure diagnostics travel together
     async fn nomad_link_client_query(
         &self,
@@ -1199,14 +1224,41 @@ impl LiveBridge {
         egress: &'static str,
         force_path_ok: Option<bool>,
         path_ensure_kind: Option<&'static str>,
+        my_gen: u64,
     ) -> Result<Vec<u8>, NomadRemoteQueryError> {
-        let my_gen = self
-            .nomad_link_generation
-            .fetch_add(1, Ordering::SeqCst)
-            .wrapping_add(1);
+        // Abort before touching the cancel slot so a superseded failover cannot
+        // cancel the newer request that already owns last-request-wins.
+        if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+            return Err(NomadRemoteQueryError {
+                code: "nomad_busy".into(),
+                egress: Some(egress),
+                path_hops: Some(hops),
+                link_hops: Some(link_hops),
+                timeout_secs: Some(timeout_secs),
+                force_path_ok,
+                path_ensure_kind,
+                raw_error: None,
+                elapsed_ms: None,
+                tried_interfaces: None,
+            });
+        }
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
         {
             let mut slot = self.nomad_link_cancel.lock().await;
+            if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+                return Err(NomadRemoteQueryError {
+                    code: "nomad_busy".into(),
+                    egress: Some(egress),
+                    path_hops: Some(hops),
+                    link_hops: Some(link_hops),
+                    timeout_secs: Some(timeout_secs),
+                    force_path_ok,
+                    path_ensure_kind,
+                    raw_error: None,
+                    elapsed_ms: None,
+                    tried_interfaces: None,
+                });
+            }
             if let Some(prev) = slot.take() {
                 let _ = prev.send(());
             }
@@ -1436,6 +1488,7 @@ impl LiveBridge {
                 Vec::new(),
                 interfaces,
                 force_path_refresh,
+                None,
             )
             .await
         {
@@ -1459,6 +1512,7 @@ impl LiveBridge {
     }
 
     /// See `fetch_nomad_file` for `hash_hex` / `identity_hash_hex` semantics.
+    #[allow(clippy::too_many_arguments)] // page fetch + progress correlation id
     pub async fn fetch_nomad_page(
         &self,
         hash_hex: &str,
@@ -1467,6 +1521,7 @@ impl LiveBridge {
         data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
+        progress_request_id: Option<&str>,
     ) -> serde_json::Value {
         // Self-preview: read hosted content without a Link query to ourselves.
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
@@ -1510,6 +1565,7 @@ impl LiveBridge {
                 payload,
                 interfaces,
                 force_path_refresh,
+                progress_request_id,
             )
             .await
         {
@@ -3612,6 +3668,7 @@ impl LiveBridge {
         dest_hash: &str,
         path: &str,
         phase: &str,
+        request_id: Option<&str>,
         mut payload: serde_json::Value,
     ) {
         if let Some(obj) = payload.as_object_mut() {
@@ -3621,6 +3678,9 @@ impl LiveBridge {
             );
             obj.insert("path".into(), serde_json::json!(path));
             obj.insert("phase".into(), serde_json::json!(phase));
+            if let Some(id) = request_id.map(str::trim).filter(|s| !s.is_empty()) {
+                obj.insert("request_id".into(), serde_json::json!(id));
+            }
         }
         self.emit_event("nomad.page_progress", payload);
     }
@@ -4515,6 +4575,41 @@ mod announce_display_name_tests {
         let mut added = path_table_added_hashes(&prev, &next);
         added.sort();
         assert_eq!(added, vec!["cc".to_string()]);
+    }
+
+    #[test]
+    fn active_via_hash_from_slots_skips_inactive_and_empty() {
+        assert_eq!(active_via_hash_from_slots(&[]), None);
+        assert_eq!(
+            active_via_hash_from_slots(&[serde_json::json!({
+                "active": true,
+                "via_hash": "",
+            })]),
+            None
+        );
+        assert_eq!(
+            active_via_hash_from_slots(&[
+                serde_json::json!({
+                    "active": false,
+                    "via_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                }),
+                serde_json::json!({
+                    "active": true,
+                    "via_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                }),
+            ]),
+            Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".into())
+        );
+    }
+
+    #[test]
+    fn nomad_via_prefix_handles_none_and_truncates() {
+        assert_eq!(nomad_via_prefix(None), None);
+        assert_eq!(
+            nomad_via_prefix(Some("abcdefghijklmnop")),
+            Some("abcdefgh".into())
+        );
+        assert_eq!(nomad_via_prefix(Some("abcd")), Some("abcd".into()));
     }
 
     #[test]
