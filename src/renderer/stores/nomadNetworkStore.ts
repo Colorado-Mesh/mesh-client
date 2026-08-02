@@ -65,6 +65,9 @@ interface NomadFetchLogDiag {
   pathEnsureKind?: string;
   elapsedMs?: number;
   rawError?: string;
+  triedInterfaces?: string[];
+  failoverRounds?: number;
+  iface?: string;
 }
 
 function optionalFiniteNumber(value: unknown): number | undefined {
@@ -85,12 +88,29 @@ function diagFieldsFromResponse(res: unknown): NomadFetchLogDiag {
     path_ensure_kind?: unknown;
     elapsed_ms?: unknown;
     raw_error?: unknown;
+    tried_interfaces?: unknown;
+    failover_rounds?: unknown;
+    iface?: unknown;
   };
   const rawError = typeof r.raw_error === 'string' ? r.raw_error.trim() : undefined;
   const pathEnsureKind =
     typeof r.path_ensure_kind === 'string' && r.path_ensure_kind.trim()
       ? r.path_ensure_kind.trim()
       : undefined;
+  const sanitizeIfaceName = (value: string): string =>
+    value
+      .replace(/[\r\n]+/g, ' ')
+      .trim()
+      .slice(0, 200);
+  const triedInterfaces = Array.isArray(r.tried_interfaces)
+    ? r.tried_interfaces
+        .filter((n): n is string => typeof n === 'string')
+        .map(sanitizeIfaceName)
+        .filter((n) => n.length > 0)
+    : undefined;
+  const iface =
+    typeof r.iface === 'string' && r.iface.trim() ? sanitizeIfaceName(r.iface) : undefined;
+  const ifaceOrUndefined = iface && iface.length > 0 ? iface : undefined;
   return {
     pathHops: optionalFiniteNumber(r.path_hops),
     linkHops: optionalFiniteNumber(r.link_hops),
@@ -100,6 +120,9 @@ function diagFieldsFromResponse(res: unknown): NomadFetchLogDiag {
     pathEnsureKind,
     elapsedMs: optionalFiniteNumber(r.elapsed_ms),
     rawError: rawError || undefined,
+    triedInterfaces: triedInterfaces?.length ? triedInterfaces : undefined,
+    failoverRounds: optionalFiniteNumber(r.failover_rounds),
+    iface: ifaceOrUndefined,
   };
 }
 
@@ -111,6 +134,11 @@ function appendNomadDiagParts(parts: string[], diag: NomadFetchLogDiag): void {
   if (diag.forcePathOk != null) parts.push(`force_path_ok=${diag.forcePathOk}`);
   if (diag.pathEnsureKind) parts.push(`path_ensure=${diag.pathEnsureKind}`);
   if (diag.elapsedMs != null) parts.push(`elapsed_ms=${diag.elapsedMs}`);
+  if (diag.triedInterfaces?.length) {
+    parts.push(`tried_interfaces=${diag.triedInterfaces.join(',')}`);
+  }
+  if (diag.failoverRounds != null) parts.push(`failover_rounds=${diag.failoverRounds}`);
+  if (diag.iface) parts.push(`iface=${diag.iface}`);
   if (diag.rawError) {
     parts.push(`raw=${diag.rawError.replace(/[\r\n]+/g, ' ').slice(0, 200)}`);
   }

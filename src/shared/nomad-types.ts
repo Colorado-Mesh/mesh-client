@@ -33,6 +33,10 @@ export interface NomadLinkFailureDiagnostics {
   raw_error?: string;
   /** Local interface names tried across via-aware failovers (errors only). */
   tried_interfaces?: string[];
+  /** In-request via/iface failover rounds completed (errors only). */
+  failover_rounds?: number;
+  /** Last local interface used for the Link attempt (errors only). */
+  iface?: string;
 }
 
 export interface NomadPageResponse extends NomadLinkFailureDiagnostics {
