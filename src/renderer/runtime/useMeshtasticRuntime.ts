@@ -2191,6 +2191,7 @@ export function useMeshtasticRuntime() {
         throw new Error('Reconnect superseded during configure');
       }
       if (!(await verifyNobleBleRfLink(params.type, 'meshtastic'))) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('RF link lost after reconnect configure');
       }
       if (!attemptActive || reconnectGenerationRef.current !== generation) {

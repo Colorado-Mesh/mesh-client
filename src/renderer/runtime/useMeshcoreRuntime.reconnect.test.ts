@@ -89,10 +89,22 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS');
   });
 
-  it('defers Noble disconnect while connect or reconnect open is in flight (Meshtastic parity)', () => {
+  it('defers Noble disconnect while connect or reconnect open is in flight before configure', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreReconnectConnectInFlightRef');
+    expect(RUNTIME_SOURCE).toContain('meshcoreDeviceConfiguredRef');
     expect(RUNTIME_SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?bleConnectInProgressRef\.current \|\|[\s\S]*?meshcoreReconnectConnectInFlightRef\.current[\s\S]*?defer reconnect until connect settles/,
+      /onNobleBleDisconnected[\s\S]*?bleConnectInProgressRef\.current \|\|[\s\S]*?meshcoreReconnectConnectInFlightRef\.current[\s\S]*?!meshcoreDeviceConfiguredRef\.current[\s\S]*?defer reconnect until connect settles/,
+    );
+  });
+
+  it('does not defer Noble disconnect after active configure during remaining initConn', () => {
+    expect(RUNTIME_SOURCE).toMatch(/meshcoreDeviceConfiguredRef\.current = true/);
+    // Guard must use active configured ref, not everConfigured (stays true across sessions).
+    expect(RUNTIME_SOURCE).toMatch(
+      /!meshcoreDeviceConfiguredRef\.current[\s\S]*?defer reconnect until connect settles/,
+    );
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /!meshcoreEverConfiguredRef\.current[\s\S]{0,80}defer reconnect until connect settles/,
     );
   });
 
@@ -117,6 +129,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
     expect(reconnectBody).toMatch(
       /catch \(err\) \{[\s\S]*?isBleReconnect[\s\S]*?meshcoreSetupGenerationRef\.current \+= 1/,
+    );
+  });
+
+  it('cleans up transport when RF link is lost after reconnect attach', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('RF link lost after MeshCore reconnect attach'\)/,
     );
   });
 

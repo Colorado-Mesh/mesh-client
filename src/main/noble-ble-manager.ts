@@ -976,7 +976,6 @@ export class NobleBleManager extends EventEmitter {
     const session = this.getSession(sessionId);
     const knownPeripheral = this.knownPeripherals.get(peripheralId);
     if (
-      sessionId === 'meshcore' &&
       knownPeripheral &&
       session.connectedPeripheral?.id === knownPeripheral.id &&
       session.toRadioChar &&
@@ -984,7 +983,7 @@ export class NobleBleManager extends EventEmitter {
       !session.closing
     ) {
       console.debug(
-        `[BLE:meshcore] connect idempotent skip — already connected to ${peripheralId} (duplicate IPC would disconnect and break handshake)`,
+        `[BLE:${sessionId}] connect idempotent skip — already connected to ${peripheralId} (duplicate IPC would disconnect and break handshake)`,
       );
       return true;
     }

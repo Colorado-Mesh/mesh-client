@@ -145,6 +145,13 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('cleans up transport when RF link is lost after reconnect configure', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('RF link lost after reconnect configure'\)/,
+    );
+  });
+
   it('defers starting reconnect while open+configure is already in flight', () => {
     const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
     expect(lostBody).toContain('reconnectConnectInFlightRef.current');

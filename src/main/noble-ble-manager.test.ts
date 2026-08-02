@@ -53,9 +53,11 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     expect(SOURCE).toContain('6ba1b21815a8461f9fa85dcae273eafd');
   });
 
-  it('meshcore skips duplicate connect IPC when already connected (WinRT handshake race)', () => {
+  it('skips duplicate connect IPC when already connected (Meshtastic + MeshCore)', () => {
     expect(SOURCE).toContain('connect idempotent skip');
     expect(SOURCE).toContain('duplicate IPC would disconnect and break handshake');
+    // Must not be meshcore-only — Meshtastic duplicate connectAutomatic must retain the session.
+    expect(SOURCE).not.toMatch(/sessionId === 'meshcore' &&[\s\S]{0,120}connect idempotent skip/);
   });
 
   it('coalesces duplicate connect while GATT is still in progress (Meshtastic + MeshCore)', () => {

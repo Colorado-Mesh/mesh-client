@@ -565,6 +565,12 @@ export function useMeshcoreRuntime() {
   const meshcoreExplicitDisconnectRef = useRef(false);
   /** True after at least one successful configure; blocks reconnect loop on first-connect failures. */
   const meshcoreEverConfiguredRef = useRef(false);
+  /**
+   * Active session configured (Meshtastic `deviceConfiguredRef` parity). Cleared on disconnect /
+   * new connect; set when initConn reaches configured so post-configure Noble drops during
+   * remaining init work are not deferred behind reconnect/connect in-flight flags.
+   */
+  const meshcoreDeviceConfiguredRef = useRef(false);
   const meshcoreReconnectAttemptRef = useRef(0);
   const meshcoreReconnectGenerationRef = useRef(0);
   const meshcoreIsReconnectingRef = useRef(false);
@@ -1837,9 +1843,13 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
+      // Defer only before active configure (not meshcoreEverConfiguredRef). Once initConn has
+      // marked the session configured, Noble drops must reach handleMeshcoreConnectionLost even
+      // if bleConnectInProgress / reconnect open is still true for remaining init work.
       if (
-        bleConnectInProgressRef.current ||
-        (meshcoreIsReconnectingRef.current && meshcoreReconnectConnectInFlightRef.current)
+        (bleConnectInProgressRef.current ||
+          (meshcoreIsReconnectingRef.current && meshcoreReconnectConnectInFlightRef.current)) &&
+        !meshcoreDeviceConfiguredRef.current
       ) {
         meshcoreDeferredReconnectRef.current = true;
         console.debug(
@@ -2113,6 +2123,7 @@ export function useMeshcoreRuntime() {
         connectionLoss: false,
         serialNeedsReselect: false,
       }));
+      meshcoreDeviceConfiguredRef.current = true;
       if (getStoredMeshProtocol() === 'meshcore') {
         useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
       }
@@ -2494,6 +2505,7 @@ export function useMeshcoreRuntime() {
         connectionLoss: false,
         serialNeedsReselect: false,
       });
+      meshcoreDeviceConfiguredRef.current = false;
       if (type === 'ble') bleConnectInProgressRef.current = true;
       meshcoreExplicitDisconnectRef.current = false;
       if (!opts?.preserveReconnectState) {
@@ -2564,6 +2576,7 @@ export function useMeshcoreRuntime() {
   const handleRfConnectFailure = useCallback(
     (type: 'ble' | 'serial' | 'tcp', driverIdentityId?: string): Promise<void> => {
       setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
+      meshcoreDeviceConfiguredRef.current = false;
       teardownMeshcoreConnEventListeners({
         driverDisconnect: true,
         driverIdentityId,
@@ -2582,6 +2595,7 @@ export function useMeshcoreRuntime() {
       const disconnectDriver = opts?.disconnectDriver !== false;
       meshcoreExplicitDisconnectRef.current = true;
       meshcoreEverConfiguredRef.current = false;
+      meshcoreDeviceConfiguredRef.current = false;
       meshcoreConnectionParamsRef.current = null;
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
@@ -2811,6 +2825,7 @@ export function useMeshcoreRuntime() {
         throw new Error('MeshCore reconnect superseded during attach');
       }
       if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('RF link lost after MeshCore reconnect attach');
       }
       if (!attemptActive || meshcoreReconnectGenerationRef.current !== generation) {
@@ -2919,6 +2934,7 @@ export function useMeshcoreRuntime() {
       meshcoreConnectionParamsRef.current = rehydrated;
     }
     meshcoreReconnectGenerationRef.current += 1;
+    meshcoreDeviceConfiguredRef.current = false;
     if (!meshcoreIsReconnectingRef.current) {
       console.warn('[useMeshcoreRuntime] Connection lost — initiating reconnect');
       meshcoreIsReconnectingRef.current = true;
