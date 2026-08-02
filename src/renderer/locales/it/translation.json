@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "Percorso RF e MQTT",
     "connectedViaRfAndMqttTooltip": "Connesso via RF e MQTT",
     "connectedViaRfAndMqttAria": "Connesso via RF e MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% integrità della connessione"
+    "echoesConnectionHealthTooltip": "{{score}}% integrità della connessione",
+    "tabAll": "Tutte",
+    "tabHistory": "Cronologia",
+    "emptyHistory": "Ancora nessun messaggio diretto: invia o ricevi un DM per vedere i peer qui."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3174,8 +3177,8 @@
     "pathsEmpty": "Ancora nessuno slot di percorso. Richiedi un percorso o attendi un annuncio.",
     "pathsLoadFailed": "Impossibile caricare gli slot del percorso.",
     "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer.",
-    "tabHistory": "Storia",
-    "emptyHistory": "Ancora nessuna cronologia dei messaggi: invia o ricevi un messaggio LXMF per vedere i colleghi qui.",
+    "tabHistory": "Cronologia",
+    "emptyHistory": "Ancora nessuna cronologia dei messaggi: invia o ricevi un messaggio LXMF per vedere i peer qui.",
     "emptyContacts": "Ancora nessun contatto salvato — apri un peer e scegli Salva come contatto."
   },
   "radioPanel": {

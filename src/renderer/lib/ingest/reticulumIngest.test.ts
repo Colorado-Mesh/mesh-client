@@ -26,10 +26,31 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 
 const restoreDismissedContact = vi.fn();
 const getPeer = vi.fn();
+const stampHistoryPeer = vi.fn();
+const upsertNodeRecordsForIdentity = vi.fn();
 
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
+  reticulumContactToNodeRecordPreservingLabel: (contact: { destination_hash: string }) => ({
+    nodeId: 1,
+    reticulumDestinationHash: contact.destination_hash,
+  }),
   useReticulumPeerStore: {
-    getState: () => ({ restoreDismissedContact, getPeer }),
+    getState: () => ({ restoreDismissedContact, getPeer, stampHistoryPeer }),
+  },
+}));
+
+vi.mock('@/renderer/stores/nodeStore', () => ({
+  upsertNodeRecordsForIdentity: (...args: unknown[]) => upsertNodeRecordsForIdentity(...args),
+  useNodeStore: {
+    // Proxy so any identityId resolves to an empty node map (lazy buckets in prod).
+    getState: () => ({
+      nodes: new Proxy(
+        {},
+        {
+          get: () => ({}),
+        },
+      ),
+    }),
   },
 }));
 
@@ -39,6 +60,8 @@ beforeEach(() => {
   saveReticulumMessage.mockReset();
   saveReticulumMessage.mockResolvedValue(undefined);
   restoreDismissedContact.mockReset();
+  stampHistoryPeer.mockReset();
+  upsertNodeRecordsForIdentity.mockReset();
   getPeer.mockReset();
   getPeer.mockReturnValue(undefined);
   vi.stubGlobal('window', {
@@ -133,6 +156,11 @@ describe('reticulumIngest alias helpers', () => {
   });
 
   it('persistReticulumHistoryFromPayload stamps last_heard without is_contact', async () => {
+    getPeer.mockReturnValue({
+      destination_hash: hash,
+      last_heard: 1_700_000_000,
+      display_name: 'Alice',
+    });
     await persistReticulumHistoryFromPayload({
       sender_hash: hash,
       sender_name: 'Alice',
@@ -144,6 +172,11 @@ describe('reticulumIngest alias helpers', () => {
       display_name: 'Alice',
       last_heard: 1_700_000_000,
     });
+    expect(stampHistoryPeer).toHaveBeenCalledWith(hash, {
+      last_heard: 1_700_000_000,
+      display_name: 'Alice',
+    });
+    expect(upsertNodeRecordsForIdentity).toHaveBeenCalled();
   });
 });
 
@@ -151,6 +184,11 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
   beforeEach(() => {
     upsertMessage.mockClear();
     messagesState = {};
+    getPeer.mockImplementation((hash: string) => ({
+      destination_hash: hash,
+      last_heard: 1_700_000_000,
+      display_name: 'Peer',
+    }));
     useBlockStore.setState({
       protocol: 'reticulum',
       identityId: 'id-1',
@@ -180,12 +218,17 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
       });
     });
     expect(upsertReticulumDestination.mock.calls[0]?.[0]).not.toHaveProperty('is_contact');
+    expect(stampHistoryPeer).toHaveBeenCalled();
   });
 
   it('outbound LXMF stamps recipient history without is_contact', async () => {
     const selfHash = 'deadbeef'.repeat(4);
     const peerHash = 'cafebabe'.repeat(4);
-    getPeer.mockReturnValue({ display_name: 'Bob' });
+    getPeer.mockReturnValue({
+      destination_hash: peerHash,
+      display_name: 'Bob',
+      last_heard: 1_700_000_000,
+    });
     const ingested = ingestReticulumLxmfPayloadWithSideEffects('id-1', {
       sender_hash: selfHash,
       sender_name: 'Me',
@@ -206,6 +249,10 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
       });
     });
     expect(upsertReticulumDestination.mock.calls[0]?.[0]).not.toHaveProperty('is_contact');
+    expect(stampHistoryPeer).toHaveBeenCalledWith(peerHash, {
+      last_heard: 1_700_000_000,
+      display_name: 'Bob',
+    });
   });
 });
 

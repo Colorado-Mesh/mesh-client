@@ -2935,7 +2935,10 @@
     "hybridMqttPathAria": "Ścieżka RF i MQTT",
     "connectedViaRfAndMqttTooltip": "Połączono przez RF i MQTT",
     "connectedViaRfAndMqttAria": "Połączono przez RF i MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% stan połączenia"
+    "echoesConnectionHealthTooltip": "{{score}}% stan połączenia",
+    "tabAll": "Wszystko",
+    "tabHistory": "Historia",
+    "emptyHistory": "Nie ma jeszcze bezpośrednich wiadomości — wyślij lub otrzymaj DM, aby zobaczyć peerów tutaj."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3179,8 +3182,8 @@
     "pathsLoadFailed": "Nie udało się załadować slotów ścieżki.",
     "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera.",
     "tabHistory": "Historia",
-    "emptyHistory": "Brak historii wiadomości — wyślij lub otrzymaj wiadomość LXMF, aby zobaczyć rówieśników tutaj.",
-    "emptyContacts": "Brak zapisanych kontaktów — otwórz partnera i wybierz Zapisz jako kontakt."
+    "emptyHistory": "Brak historii wiadomości — wyślij lub otrzymaj wiadomość LXMF, aby zobaczyć peerów tutaj.",
+    "emptyContacts": "Brak zapisanych kontaktów — otwórz peera i wybierz Zapisz jako kontakt."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",

@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "RF ve MQTT yolu",
     "connectedViaRfAndMqttTooltip": "RF ve MQTT aracılığıyla bağlanıldı",
     "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı",
-    "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı"
+    "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı",
+    "tabAll": "Tümü",
+    "tabHistory": "Geçmiş",
+    "emptyHistory": "Henüz doğrudan mesaj yok — buradaki eşleri görmek için bir DM gönderin veya alın."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3174,8 +3177,8 @@
     "pathsEmpty": "Henüz yol aralığı yok. Bir yol isteyin veya bir duyuru bekleyin.",
     "pathsLoadFailed": "Yol yuvaları yüklenemedi.",
     "pathsPinFailed": "Bu eş için ortam tercihi güncellenemedi.",
-    "tabHistory": "Tarih",
-    "emptyHistory": "Henüz mesaj geçmişi yok — akranları burada görmek için bir LXMF mesajı gönderin veya alın.",
+    "tabHistory": "Geçmiş",
+    "emptyHistory": "Henüz mesaj geçmişi yok — eşleri burada görmek için bir LXMF mesajı gönderin veya alın.",
     "emptyContacts": "Henüz kayıtlı kişi yok — bir eş açın ve Kişi olarak kaydet'i seçin."
   },
   "radioPanel": {

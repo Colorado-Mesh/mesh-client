@@ -2933,7 +2933,10 @@
     "hybridMqttPathAria": "Шлях RF та MQTT",
     "connectedViaRfAndMqttTooltip": "Підключено через RF та MQTT",
     "connectedViaRfAndMqttAria": "Підключено через RF та MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% здоров'я з'єднання"
+    "echoesConnectionHealthTooltip": "{{score}}% здоров'я з'єднання",
+    "tabAll": "Всі",
+    "tabHistory": "Історія",
+    "emptyHistory": "Поки немає прямих повідомлень — надішліть або отримайте DM, щоб побачити вузли тут."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

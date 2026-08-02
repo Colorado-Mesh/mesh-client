@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "Caminho de RF e MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado via RF e MQTT",
     "connectedViaRfAndMqttAria": "Conectado via RF e MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% integridade da ligação"
+    "echoesConnectionHealthTooltip": "{{score}}% integridade da ligação",
+    "tabAll": "Todos",
+    "tabHistory": "Histórico",
+    "emptyHistory": "Ainda não há mensagens diretas — envie ou receba um DM para ver os peers aqui."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3175,8 +3178,8 @@
     "pathsLoadFailed": "Falha ao carregar slots de caminho.",
     "pathsPinFailed": "Falha ao atualizar a preferência do meio para este par.",
     "tabHistory": "Histórico",
-    "emptyHistory": "Ainda não há histórico de mensagens — envie ou receba uma mensagem LXMF para ver os colegas aqui.",
-    "emptyContacts": "Ainda não há contatos salvos — abra um ponto e escolha Salvar como contato."
+    "emptyHistory": "Ainda não há histórico de mensagens — envie ou receba uma mensagem LXMF para ver os peers aqui.",
+    "emptyContacts": "Ainda não há contatos salvos — abra um peer e escolha Salvar como contato."
   },
   "radioPanel": {
     "offloadedContacts": "Transferiu contatos {{count}} para o banco de dados.",

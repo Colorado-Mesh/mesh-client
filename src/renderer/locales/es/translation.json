@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "Ruta RF y MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
     "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión"
+    "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión",
+    "tabAll": "Todos",
+    "tabHistory": "Historia",
+    "emptyHistory": "Aún no hay mensajes directos: envíe o reciba un DM para ver a los peers aquí."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3175,8 +3178,8 @@
     "pathsLoadFailed": "No se han podido cargar las ranuras de ruta.",
     "pathsPinFailed": "Error al actualizar la preferencia del medio para este compañero.",
     "tabHistory": "Historia",
-    "emptyHistory": "Aún no hay historial de mensajes: envíe o reciba un mensaje LXMF para ver a sus compañeros aquí.",
-    "emptyContacts": "Aún no hay contactos guardados: abra un compañero y elija Guardar como contacto."
+    "emptyHistory": "Aún no hay historial de mensajes: envíe o reciba un mensaje LXMF para ver a los peers aquí.",
+    "emptyContacts": "Aún no hay contactos guardados: abra un peer y elija Guardar como contacto."
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",

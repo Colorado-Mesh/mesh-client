@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "RF- und MQTT-Pfad",
     "connectedViaRfAndMqttTooltip": "Verbunden über RF und MQTT",
     "connectedViaRfAndMqttAria": "Verbunden über RF und MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% Verbindungszustand"
+    "echoesConnectionHealthTooltip": "{{score}}% Verbindungszustand",
+    "tabAll": "Alle",
+    "tabHistory": "Verlauf",
+    "emptyHistory": "Noch keine Direktnachrichten — senden oder empfangen Sie einen DM, um Peers hier zu sehen."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3084,8 +3087,8 @@
     "iconColor": "Avatar-Farbe",
     "iconColorAria": "Peer-Avatar-Farbe",
     "saveContact": "Als Kontakt speichern",
-    "removeContact": "Vorhandene Kontaktlinsen entfernen,",
-    "removeContactConfirmTitle": "Vorhandene Kontaktlinsen entfernen,",
+    "removeContact": "Kontakt entfernen",
+    "removeContactConfirmTitle": "Kontakt entfernen?",
     "probeOk": "Sonde OK — Weg erreichbar.",
     "serviceBadge": "{{service}}",
     "blockContact": "Kontakt blockieren",
@@ -3174,8 +3177,8 @@
     "pathsEmpty": "Noch keine Pfad-Slots. Fordern Sie einen Pfad an oder warten Sie auf eine Ankündigung.",
     "pathsLoadFailed": "Pfad-Slots konnten nicht geladen werden.",
     "pathsPinFailed": "Die Medieneinstellung für diesen Peer konnte nicht aktualisiert werden.",
-    "tabHistory": "Geschichte",
-    "emptyHistory": "Noch kein Nachrichtenverlauf — senden oder empfangen Sie eine LXMF-Nachricht, um Kollegen hier zu sehen.",
+    "tabHistory": "Verlauf",
+    "emptyHistory": "Noch kein Nachrichtenverlauf — senden oder empfangen Sie eine LXMF-Nachricht, um Peers hier zu sehen.",
     "emptyContacts": "Noch keine gespeicherten Kontakte — öffnen Sie einen Peer und wählen Sie Als Kontakt speichern."
   },
   "radioPanel": {

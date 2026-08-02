@@ -131,11 +131,17 @@ export interface ReticulumContact extends ReticulumPeer {
   is_contact?: boolean;
 }
 
-export function isReticulumContact(peer: ReticulumPeer | undefined): peer is ReticulumContact {
+/** True when the peer has History (`last_heard`) — not the same as saved Contacts. */
+export function hasReticulumHistory(peer: ReticulumPeer | undefined): peer is ReticulumContact {
   return peer != null && 'last_heard' in peer;
 }
 
-/** Saved contact for Contacts tab (explicit flag or legacy wire contact). */
+/**
+ * @deprecated Use {@link hasReticulumHistory}. Name historically meant “has last_heard”.
+ */
+export const isReticulumContact = hasReticulumHistory;
+
+/** Saved contact for Contacts tab (`is_contact === true`). */
 export function isReticulumSavedContact(peer: ReticulumPeer | undefined): boolean {
   return peer != null && 'is_contact' in peer && (peer as ReticulumContact).is_contact === true;
 }

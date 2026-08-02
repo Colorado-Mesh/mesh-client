@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     getMessages: (channel?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMessages', channel, limit),
+    listMeshtasticDmPeers: (ownNodeId: number, limit?: number) =>
+      ipcRenderer.invoke('db:listMeshtasticDmPeers', ownNodeId, limit),
 
     saveNode: (node: MeshNode) => ipcRenderer.invoke('db:saveNode', node),
 
@@ -116,6 +118,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMeshcoreMessages', channelIdx, limit),
+    listMeshcoreDmPeers: (ownNodeId: number, limit?: number) =>
+      ipcRenderer.invoke('db:listMeshcoreDmPeers', ownNodeId, limit),
     searchMessages: (query: string, limit?: number) =>
       ipcRenderer.invoke('db:searchMessages', query, limit),
     searchMeshcoreMessages: (query: string, limit?: number) =>

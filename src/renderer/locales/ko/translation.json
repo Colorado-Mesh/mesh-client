@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "RF 및 MQTT 경로",
     "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
     "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨",
-    "echoesConnectionHealthTooltip": "{{score}} % 연결 상태"
+    "echoesConnectionHealthTooltip": "{{score}} % 연결 상태",
+    "tabAll": "All",
+    "tabHistory": "기록",
+    "emptyHistory": "아직 다이렉트 메시지가 없습니다. DM을 보내거나 받아 피어를 확인하세요."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3175,8 +3178,8 @@
     "pathsLoadFailed": "경로 슬롯을 로드하지 못했습니다.",
     "pathsPinFailed": "이 피어의 중간 환경 설정을 업데이트하지 못했습니다.",
     "tabHistory": "기록",
-    "emptyHistory": "아직 메시지 기록이 없습니다. 여기에서 동료들을 보려면 LXMF 메시지를 보내거나 받으세요.",
-    "emptyContacts": "아직 저장된 연락처가 없습니다. 피어를 열고 연락처로 저장 을 선택합니다."
+    "emptyHistory": "아직 메시지 기록이 없습니다. 여기에서 피어를 보려면 LXMF 메시지를 보내거나 받으세요.",
+    "emptyContacts": "아직 저장된 연락처가 없습니다. 피어를 열고 연락처로 저장을 선택합니다."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 연락처를 데이터베이스로 오프로드했습니다.",

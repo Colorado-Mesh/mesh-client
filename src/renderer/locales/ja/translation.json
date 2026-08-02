@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "RFおよびMQTTパス",
     "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
     "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続",
-    "echoesConnectionHealthTooltip": "{{score}} %接続状態"
+    "echoesConnectionHealthTooltip": "{{score}} %接続状態",
+    "tabAll": "すべて",
+    "tabHistory": "履歴",
+    "emptyHistory": "ダイレクトメッセージはまだありません—ここでピアを見るためにDMを送受信します。"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3083,7 +3086,7 @@
     "probeFailed": "プローブが失敗しました： {{error}}",
     "iconColor": "アバターの色",
     "iconColorAria": "ピアアバターの色",
-    "saveContact": "連絡用として保存）",
+    "saveContact": "連絡先として保存",
     "removeContact": "連絡先を削除",
     "removeContactConfirmTitle": "連絡先を削除",
     "probeOk": "プローブOK —到達可能なパス。",
@@ -3174,7 +3177,7 @@
     "pathsEmpty": "パススロットはまだありません。パスをリクエストするか、アナウンスを待ちます。",
     "pathsLoadFailed": "パススロットの読み込みに失敗しました。",
     "pathsPinFailed": "このピアのメディア設定を更新できませんでした。",
-    "tabHistory": "歴史",
+    "tabHistory": "履歴",
     "emptyHistory": "メッセージ履歴はまだありません—ここでピアを見るためにLXMFメッセージを送受信します。",
     "emptyContacts": "保存された連絡先はまだありません。ピアを開き、[連絡先として保存]を選択します。"
   },

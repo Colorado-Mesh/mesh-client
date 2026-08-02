@@ -282,6 +282,42 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     db.close();
   });
 
+  it('v48 backfill promotes last_heard rows to is_contact when upgrading from <48', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-v48-backfill-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const hash = 'ab'.repeat(16);
+    db.prepareOnce(
+      `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, is_contact, favorited)
+       VALUES (?, 'Legacy', 1700000000, 0, 0)`,
+    ).run(hash);
+    db.pragma('user_version = 47');
+
+    runSchemaUpgrade(db);
+
+    const row = db
+      .prepareOnce(
+        'SELECT is_contact, last_heard FROM reticulum_destinations WHERE destination_hash = ?',
+      )
+      .get(hash) as { is_contact: number; last_heard: number };
+    expect(row.is_contact).toBe(1);
+    expect(row.last_heard).toBe(1700000000);
+    expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
+
+    // Already at v48: clearing is_contact must not be re-promoted on startup.
+    db.prepareOnce(
+      `UPDATE reticulum_destinations SET is_contact = 0 WHERE destination_hash = ?`,
+    ).run(hash);
+    runSchemaUpgrade(db);
+    const after = db
+      .prepareOnce('SELECT is_contact FROM reticulum_destinations WHERE destination_hash = ?')
+      .get(hash) as { is_contact: number };
+    expect(after.is_contact).toBe(0);
+    db.close();
+  });
+
   it('rejects database newer than CURRENT_SCHEMA_VERSION without mutating schema', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-too-new-'));
     const db = new NodeSqliteDB(join(dir, 'too-new.db'));

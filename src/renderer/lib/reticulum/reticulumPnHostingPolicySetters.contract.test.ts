@@ -11,6 +11,7 @@ const POLICY_SETTERS_PATCH = join(
   'reticulum-sidecar/patches/rsLXMF-propagation-node-policy-setters.patch',
 );
 const APPLY_SCRIPT = join(REPO_ROOT, 'scripts/apply-rsLXMF-propagation-node-policy-setters.sh');
+const OVERLAY_LIST = join(REPO_ROOT, 'scripts/lib/ratspeak-overlay-apply-list.sh');
 const CLONE_SCRIPT = join(REPO_ROOT, 'scripts/clone-ratspeak-stack.sh');
 const ENSURE_SCRIPT = join(REPO_ROOT, 'scripts/ensure-rsReticulum-patches.sh');
 
@@ -31,10 +32,16 @@ describe('reticulum PropagationNode policy setter contracts', () => {
     expect(patch).toContain('fn set_max_message_size');
     const apply = readFileSync(APPLY_SCRIPT, 'utf8');
     expect(apply).toContain('rsLXMF-propagation-node-policy-setters.patch');
+    // Float-to-main clone applies overlays via the shared list helper (not inline script names).
+    const overlayList = readFileSync(OVERLAY_LIST, 'utf8');
+    expect(overlayList).toContain('apply-rsLXMF-propagation-node-policy-setters.sh');
     const clone = readFileSync(CLONE_SCRIPT, 'utf8');
-    expect(clone).toContain('apply-rsLXMF-propagation-node-policy-setters.sh');
+    expect(clone).toContain('ratspeak-overlay-apply-list.sh');
+    expect(clone).toContain('apply_ratspeak_lxmf_overlays');
     const ensure = readFileSync(ENSURE_SCRIPT, 'utf8');
-    expect(ensure).toContain('apply-rsLXMF-propagation-node-policy-setters.sh');
+    expect(ensure).toMatch(
+      /ratspeak-overlay-apply-list|apply-rsLXMF-propagation-node-policy-setters/,
+    );
   });
 
   it.skipIf(!existsSync(LXMF_NODE))(

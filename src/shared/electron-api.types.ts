@@ -263,6 +263,11 @@ export interface ElectronAPI {
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
+    /** Distinct Meshtastic DM peers for History (survives message hydrate cap). */
+    listMeshtasticDmPeers: (
+      ownNodeId: number,
+      limit?: number,
+    ) => Promise<{ node_id: number; last_message_at: number }[]>;
 
     saveNode: (node: MeshNode) => Promise<void>;
 
@@ -339,6 +344,11 @@ export interface ElectronAPI {
     ) => Promise<void>;
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
+    /** Distinct MeshCore DM peers (`channel_idx = -1`) for History. */
+    listMeshcoreDmPeers: (
+      ownNodeId: number,
+      limit?: number,
+    ) => Promise<{ node_id: number; last_message_at: number }[]>;
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;
     searchMeshcoreMessages: (query: string, limit?: number) => Promise<unknown[]>;
     getMeshcoreContacts: () => Promise<unknown[]>;

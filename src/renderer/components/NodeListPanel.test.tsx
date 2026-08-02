@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -10,7 +10,9 @@ import {
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
 } from '../lib/meshtasticContactGroupUtils';
+import { OFFLINE_MESHTASTIC_IDENTITY_ID } from '../lib/offlineProtocolIdentities';
 import type { MeshNode } from '../lib/types';
+import { addMessage, useMessageStore } from '../stores/messageStore';
 import NodeListPanel from './NodeListPanel';
 
 const HYBRID_MQTT_PATH_ARIA = 'RF and MQTT path';
@@ -793,5 +795,302 @@ describe('NodeListPanel virtualization', () => {
     expect(source).toContain('useVirtualizer');
     expect(source).toContain('shouldVirtualizeNodeRows');
     expect(source).toMatch(/nodeList\.length\s*>\s*100/);
+  });
+});
+
+describe('NodeListPanel History tab', () => {
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+    vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.listMeshcoreDmPeers).mockResolvedValue([]);
+  });
+
+  it('shows empty History state when there are no DMs', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeListPanel
+        nodes={new Map([[1, makeNode({ node_id: 1, long_name: 'OnlyNode' })]])}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.getByText('OnlyNode')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    expect(
+      screen.getByText('No direct messages yet — send or receive a DM to see peers here.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('OnlyNode')).not.toBeInTheDocument();
+  });
+
+  it('lists DM peers on History and keeps non-DM nodes on All', async () => {
+    const user = userEvent.setup();
+    addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+      id: 'dm-1',
+      from: 2,
+      senderName: 'Alice',
+      to: 1,
+      payload: 'hello',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+    });
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me' })],
+      [2, makeNode({ node_id: 2, long_name: 'Alice' })],
+      [3, makeNode({ node_id: 3, long_name: 'NeverMessaged' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.getByText('NeverMessaged')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('NeverMessaged')).not.toBeInTheDocument();
+  });
+
+  it('merges SQLite DM peers into History when not in the message window', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([
+      { node_id: 9, last_message_at: 1_700_000_100_000 },
+    ]);
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me' })],
+      [9, makeNode({ node_id: 9, long_name: 'FromDb' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('FromDb')).toBeInTheDocument();
+    });
+  });
+
+  it('excludes MeshCore Room nodes from History even if listed by SQLite', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.db.listMeshcoreDmPeers).mockResolvedValue([
+      { node_id: 11, last_message_at: 1_700_000_100_000 },
+      { node_id: 12, last_message_at: 1_700_000_200_000 },
+    ]);
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', hw_model: 'Chat' })],
+      [11, makeNode({ node_id: 11, long_name: 'RoomServer', hw_model: 'Room' })],
+      [12, makeNode({ node_id: 12, long_name: 'DmPeer', hw_model: 'Chat' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('DmPeer')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('RoomServer')).not.toBeInTheDocument();
+  });
+
+  it('shows a stub History row when the DM peer is missing from NodeDB', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([
+      { node_id: 9, last_message_at: 1_700_000_100_000 },
+    ]);
+    render(
+      <NodeListPanel
+        nodes={new Map([[1, makeNode({ node_id: 1, long_name: 'Me' })]])}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      // Stub uses hex id as both Node ID cell and display name.
+      expect(screen.getAllByText('!00000009').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('sorts History peers by latest DM activity descending', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([
+      { node_id: 2, last_message_at: 1_000 },
+      { node_id: 3, last_message_at: 3_000 },
+      { node_id: 4, last_message_at: 2_000 },
+    ]);
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me' })],
+      [2, makeNode({ node_id: 2, long_name: 'Oldest' })],
+      [3, makeNode({ node_id: 3, long_name: 'Newest' })],
+      [4, makeNode({ node_id: 4, long_name: 'Middle' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('Newest')).toBeInTheDocument();
+    });
+    const names = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => row.textContent ?? '');
+    const newestIdx = names.findIndex((t) => t.includes('Newest'));
+    const middleIdx = names.findIndex((t) => t.includes('Middle'));
+    const oldestIdx = names.findIndex((t) => t.includes('Oldest'));
+    expect(newestIdx).toBeGreaterThanOrEqual(0);
+    expect(newestIdx).toBeLessThan(middleIdx);
+    expect(middleIdx).toBeLessThan(oldestIdx);
+  });
+
+  it('filters History peers with search and restores All after switching back', async () => {
+    const user = userEvent.setup();
+    addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+      id: 'dm-search-1',
+      from: 2,
+      senderName: 'Alice',
+      to: 1,
+      payload: 'hello',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+    });
+    addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+      id: 'dm-search-2',
+      from: 3,
+      senderName: 'Bob',
+      to: 1,
+      payload: 'hi',
+      channelIndex: 0,
+      timestamp: 1_700_000_100_000,
+      status: 'acked',
+    });
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me' })],
+      [2, makeNode({ node_id: 2, long_name: 'Alice' })],
+      [3, makeNode({ node_id: 3, long_name: 'Bob' })],
+      [4, makeNode({ node_id: 4, long_name: 'NeverMessaged' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText('Search nodes'), { target: { value: 'bob' } });
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Search nodes'), { target: { value: '' } });
+    await user.click(screen.getByRole('tab', { name: 'All' }));
+    expect(screen.getByText('NeverMessaged')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+  });
+
+  it('does not apply distance filter on History (All-only)', async () => {
+    const user = userEvent.setup();
+    addMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+      id: 'dm-far-1',
+      from: 2,
+      senderName: 'FarPeer',
+      to: 1,
+      payload: 'hello',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+    });
+    const nodes = new Map<number, MeshNode>([
+      [
+        1,
+        makeNode({
+          node_id: 1,
+          long_name: 'Me',
+          latitude: 40,
+          longitude: -105,
+        }),
+      ],
+      [
+        2,
+        makeNode({
+          node_id: 2,
+          long_name: 'FarPeer',
+          latitude: 0,
+          longitude: 0,
+        }),
+      ],
+      [
+        3,
+        makeNode({
+          node_id: 3,
+          long_name: 'NearNoDm',
+          latitude: 40.01,
+          longitude: -105.01,
+        }),
+      ],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={{
+          enabled: true,
+          maxDistance: 1,
+          unit: 'miles',
+          hideMqttOnly: false,
+        }}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    // FarPeer has coords at 0,0 — filtered out of All when distance filter is on
+    // (nodes without GPS stay; FarPeer has GPS far away).
+    expect(screen.queryByText('FarPeer')).not.toBeInTheDocument();
+    expect(screen.getByText('NearNoDm')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('FarPeer')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('NearNoDm')).not.toBeInTheDocument();
   });
 });

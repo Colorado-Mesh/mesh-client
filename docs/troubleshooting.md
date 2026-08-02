@@ -1304,13 +1304,13 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 
 ### Reticulum Peers stale or slow with many hubs or testnets
 
-**Symptoms**: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on **Contacts** or **Favorites** because those tabs show a smaller LXMF contact set.
+**Symptoms**: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on **History**, **Contacts**, or **Favorites** because those tabs show a smaller set than the full path table.
 
 **Checks**:
 
 1. **Refresh model**: opening Peers uses the sidecar’s short-lived soft cache. Click **Refresh** to force a live path-table read (`?refresh=1`). mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured (60 s above 2,000 peers), plus announce/`peers_updated` debounced updates.
 2. **Reduce noise**: disable unused TCP/community hub interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients. Official Dublin / Amsterdam / BetweenTheBorders testnet hubs are decommissioned and auto-disabled on stack start and by **Add default hubs** — focus remaining noise on community hubs you enabled.
-3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
+3. **History vs Contacts**: messaging stamps **History** (`last_heard`) only. Peers you DM show under **History** until you open peer details and choose **Save as contact** (**Contacts** = `is_contact`). **Favorites** pins a short list. Removing a contact keeps History/chat messages.
 4. **Search**: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.
 5. **Topology**: automatic topology rebuilds pause above the large-mesh threshold; use its manual **Refresh** after a significant route change.
 

@@ -907,6 +907,34 @@ export const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
   { re: /\bcolleagues\b/i, hint: 'use networking "peers", not office "colleagues"' },
 ];
 
+/**
+ * Broader office-colleague false friends for History/Contacts empty copy only
+ * (too noisy for stack transport strings that legitimately reuse some lemmas).
+ */
+export const HISTORY_EMPTY_PEER_COLLEAGUE_RES = [
+  ...RETICULUM_OTHER_PEERS_COLLEAGUE_RES,
+  { re: /\bkoleg/i, hint: 'use networking "peers", not Czech/Slovak office colleague "kolega"' },
+  { re: /\bcompañer/i, hint: 'use networking "peers", not Spanish office "compañero"' },
+  { re: /\bcollegh/i, hint: 'use networking "peers", not Italian office "colleghi"' },
+  { re: /\bcollega'?s?\b/i, hint: 'use networking "peers", not Dutch office "collega"' },
+  { re: /\brównieśnik/i, hint: 'use networking "peer", not Polish schoolmate "rówieśnik"' },
+  { re: /\bколлег/i, hint: 'use networking "peers/пиры", not Russian office "коллега"' },
+  { re: /\bколег/i, hint: 'use networking "peers/вузли", not Ukrainian office "колега"' },
+  { re: /同僚/, hint: 'use networking ピア, not office colleague 同僚' },
+  { re: /동료/, hint: 'use networking 피어, not office colleague 동료' },
+  { re: /\brekan\b/i, hint: 'use networking "peer", not Indonesian coworker "rekan"' },
+  { re: /同行/, hint: 'use networking 对等节点, not office 同行' },
+];
+
+/** UI History tab must mean message history, not school historiography / calendar date. */
+export const HISTORY_TAB_FALSE_FRIEND_RES = [
+  { re: /^Dějepis$/i, hint: 'use UI "Historie", not school subject "Dějepis"' },
+  { re: /^Geschichte$/i, hint: 'use message history "Verlauf", not general "Geschichte"' },
+  { re: /^歴史$/, hint: 'use message history 履歴, not general history 歴史' },
+  { re: /^Tarih$/i, hint: 'use message history "Geçmiş", not calendar date "Tarih"' },
+  { re: /^Storia$/i, hint: 'use message history "Cronologia", not general "Storia"' },
+];
+
 /** Leaf keys allowed to stay identical to English in Reticulum UI copy. */
 export const RETICULUM_IDENTICAL_OK_LEAF_KEYS = new Set([
   'reticulumNetworkUnknown',
@@ -1193,6 +1221,36 @@ function checkReticulumConnectionPanelIssues(ctx) {
         issues.push(`reticulum transport peers false friend: ${hint}`);
       }
     }
+  }
+
+  if (
+    flatKey === 'peerListPanel.emptyHistory' ||
+    flatKey === 'peerListPanel.emptyContacts' ||
+    flatKey === 'nodeListPanel.emptyHistory'
+  ) {
+    for (const { re, hint } of HISTORY_EMPTY_PEER_COLLEAGUE_RES) {
+      if (re.test(val)) {
+        issues.push(`History/Contacts peers false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === 'peerListPanel.tabHistory' || flatKey === 'nodeListPanel.tabHistory') {
+    for (const { re, hint } of HISTORY_TAB_FALSE_FRIEND_RES) {
+      if (re.test(val.trim())) {
+        issues.push(`History tab false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    (flatKey === 'peerDetailModal.removeContact' ||
+      flatKey === 'peerDetailModal.removeContactConfirmTitle') &&
+    /Kontaktlinsen|lentilles de contact/i.test(val)
+  ) {
+    issues.push(
+      'peerDetailModal remove-contact false friend: contact lens wording instead of saved contact',
+    );
   }
 
   for (const issue of reticulumConnectionPanelLiteralIssues(enVal, val)) {

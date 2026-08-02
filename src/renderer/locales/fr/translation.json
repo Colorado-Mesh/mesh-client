@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "Chemin RF et MQTT",
     "connectedViaRfAndMqttTooltip": "Connecté via RF et MQTT",
     "connectedViaRfAndMqttAria": "Connecté via RF et MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% santé de la connexion"
+    "echoesConnectionHealthTooltip": "{{score}}% santé de la connexion",
+    "tabAll": "Tous",
+    "tabHistory": "Historique",
+    "emptyHistory": "Pas encore de messages directs — envoyez ou recevez un DM pour voir vos pairs ici."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3084,8 +3087,8 @@
     "iconColor": "Couleur de l’avatar",
     "iconColorAria": "Couleur de l’avatar",
     "saveContact": "Enregistrer comme contact",
-    "removeContact": "Enlever les lentilles de contact",
-    "removeContactConfirmTitle": "Enlever les lentilles de contact",
+    "removeContact": "Supprimer le contact",
+    "removeContactConfirmTitle": "Supprimer le contact ?",
     "probeOk": "Sonde OK — chemin accessible.",
     "blockContact": "Bloquer contact",
     "unblockContact": "Débloquer contact",
@@ -3176,7 +3179,7 @@
     "pathsPinFailed": "Échec de la mise à jour de la préférence moyenne pour cet homologue.",
     "tabHistory": "Historique",
     "emptyHistory": "Pas encore d'historique des messages — envoyez ou recevez un message LXMF pour voir les pairs ici.",
-    "emptyContacts": "Aucun contact enregistré pour le moment — ouvrez un homologue et choisissez Enregistrer en tant que contact."
+    "emptyContacts": "Aucun contact enregistré pour le moment — ouvrez un pair et choisissez Enregistrer en tant que contact."
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",

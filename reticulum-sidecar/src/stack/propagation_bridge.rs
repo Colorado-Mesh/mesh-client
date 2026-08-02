@@ -125,6 +125,11 @@ impl PropagationBridge {
         }
     }
 
+    #[cfg(test)]
+    pub fn force_peak_progress_for_test(&self, progress: f64) {
+        self.note_peak_progress(progress);
+    }
+
     fn note_peak_progress(&self, progress: f64) {
         if progress <= 0.0 {
             return;
@@ -186,8 +191,11 @@ impl PropagationBridge {
                 task.state = SyncTaskState::Idle;
             }
         }
+        // Offer-probe (and other mid-progress cancels after Offering) should not look
+        // like sticky failure — peak ≥ 25 means /offer was accepted enough to proceed.
+        let peak = self.last_peak_progress();
         if let Ok(mut slot) = self.last_finished_ok.lock() {
-            *slot = Some(false);
+            *slot = Some(peak >= 25.0);
         }
     }
 
@@ -500,6 +508,30 @@ mod tests {
             bridge.sync_task.lock().expect("lock").state,
             SyncTaskState::Idle
         ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn cancel_sync_after_offer_peak_stamps_success() {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-bridge-cancel-peak-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        bridge.force_peak_progress_for_test(25.0);
+        bridge.cancel_sync();
+        assert_eq!(bridge.last_finished_ok(), Some(true));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

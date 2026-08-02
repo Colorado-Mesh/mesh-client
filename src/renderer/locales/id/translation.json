@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "Jalur RF dan MQTT",
     "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
     "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi"
+    "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi",
+    "tabAll": "Semua",
+    "tabHistory": "Riwayat",
+    "emptyHistory": "Belum ada pesan langsung — kirim atau terima DM untuk melihat peer di sini."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3175,8 +3178,8 @@
     "pathsLoadFailed": "Gagal memuat slot jalur.",
     "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini.",
     "tabHistory": "Riwayat",
-    "emptyHistory": "Belum ada riwayat pesan — kirim atau terima pesan LXMF untuk melihat rekan - rekan di sini.",
-    "emptyContacts": "Belum ada kontak tersimpan — buka rekan dan pilih Simpan sebagai kontak."
+    "emptyHistory": "Belum ada riwayat pesan — kirim atau terima pesan LXMF untuk melihat peer di sini.",
+    "emptyContacts": "Belum ada kontak tersimpan — buka peer dan pilih Simpan sebagai kontak."
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

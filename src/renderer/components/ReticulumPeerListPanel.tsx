@@ -702,6 +702,8 @@ export default function ReticulumPeerListPanel({
           className={`rounded px-3 py-1 text-sm ${activeTab === 'history' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
           onClick={() => {
             setActiveTab('history');
+            setSortKey('lastSeen');
+            setSortDir('desc');
           }}
         >
           {t('peerListPanel.tabHistory')}

@@ -211,6 +211,11 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
     );
     expect(SOURCE).not.toMatch(/records\.push\(reticulumContactToNodeRecord\(contact\)\)/);
   });
+
+  it('applyContactNodesFromStore keeps History peers in nodeStore', () => {
+    expect(SOURCE).toMatch(/for \(const contact of history\.values\(\)\)/);
+    expect(SOURCE).toMatch(/keep self \+ History\/Contacts/);
+  });
 });
 
 describe('useReticulumRuntime outbound delivery persistence', () => {

@@ -13,7 +13,7 @@ import {
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import {
-  isReticulumContact,
+  hasReticulumHistory,
   type ReticulumContact,
   type ReticulumContactWireRow,
   type ReticulumPeer,
@@ -65,11 +65,15 @@ interface ReticulumPeerStoreState {
   dismissedContactHashes: Set<string>;
   replacePeers: (peers: ReticulumPeer[]) => void;
   replaceContacts: (contacts: ReticulumContact[]) => void;
-  replaceHistory: (history: ReticulumContact[]) => void;
+  /** Optimistic History stamp after LXMF ingest (keeps UI in sync before full refresh). */
+  stampHistoryPeer: (
+    hash: string,
+    patch: { last_heard: number; display_name?: string | null },
+  ) => void;
   updatePeer: (hash: string, partial: Partial<ReticulumPeer>) => void;
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   setCustomDisplayName: (hash: string, name: string | null) => Promise<void>;
-  removeContact: (hash: string, identityId?: string | null) => Promise<void>;
+  removeContact: (hash: string) => Promise<void>;
   /** Danger Zone: wipe sidecar + SQLite saved contacts; keeps History last_heard. */
   clearAllContacts: () => Promise<{ clearedSidecar: number; clearedDb: number }>;
   restoreDismissedContact: (hash: string) => void;
@@ -217,7 +221,8 @@ function wirePeerToPeer(row: ReticulumPeerWireRow): ReticulumPeer {
   };
 }
 
-function wireContactToContact(
+/** Sidecar wire contact → History hint. Contacts tab membership comes from SQLite `is_contact` only. */
+function wireContactToHistoryHint(
   row: ReticulumContactWireRow,
   hopsByHash: Map<string, number>,
   ifaceByHash: Map<string, string>,
@@ -230,7 +235,7 @@ function wireContactToContact(
     hops: hopsByHash.get(hash) ?? null,
     interface: ifaceByHash.get(hash) ?? null,
     favorited: Boolean(row.favorited),
-    is_contact: true,
+    is_contact: false,
   };
 }
 
@@ -281,6 +286,7 @@ export function mergeReticulumPeerMaps(
   const contactMap = new Map<string, ReticulumContact>();
   const historyMap = new Map<string, ReticulumContact>();
 
+  // Sidecar /contacts rows enrich peers + History; Contacts tab requires SQLite is_contact.
   for (const contact of contacts) {
     const hash = normalizeHash(contact.destination_hash);
     const existingPeer = peerMap.get(hash);
@@ -289,17 +295,19 @@ export function mergeReticulumPeerMaps(
       overlayDbMeta({ ...contact, destination_hash: hash }, dbByHash),
       existingPeer,
     );
+    const dbRow = dbByHash.get(hash);
+    const dbSaved = dbRow != null && dbRowIsContact(dbRow);
     const withFlags: ReticulumContact = {
       ...merged,
       last_heard: contact.last_heard,
-      is_contact: true,
+      is_contact: dbSaved,
     };
     peerMap.set(hash, merged);
     if (withFlags.last_heard != null) {
       historyMap.set(hash, withFlags);
     }
-    if (!dismissedContactHashes.has(hash)) {
-      contactMap.set(hash, withFlags);
+    if (dbSaved && !dismissedContactHashes.has(hash)) {
+      contactMap.set(hash, { ...withFlags, is_contact: true });
     }
   }
 
@@ -353,24 +361,19 @@ export function capReticulumPeerMaps(
     return { peers, contacts, history };
   }
   const sorted = [...peers.entries()].sort(([, a], [, b]) => {
-    const aSeen = a.last_seen ?? (isReticulumContact(a) ? a.last_heard : 0) ?? 0;
-    const bSeen = b.last_seen ?? (isReticulumContact(b) ? b.last_heard : 0) ?? 0;
+    const aSeen = a.last_seen ?? (hasReticulumHistory(a) ? a.last_heard : 0) ?? 0;
+    const bSeen = b.last_seen ?? (hasReticulumHistory(b) ? b.last_heard : 0) ?? 0;
     return bSeen - aSeen;
   });
   const cappedPeers = new Map(sorted.slice(0, max));
-  const cappedContacts = new Map<string, ReticulumContact>();
+  // History/Contacts are independent of path-table cap — keep them (and ensure peer stubs).
   for (const [hash, contact] of contacts) {
-    if (cappedPeers.has(hash)) {
-      cappedContacts.set(hash, contact);
-    }
+    if (!cappedPeers.has(hash)) cappedPeers.set(hash, contact);
   }
-  const cappedHistory = new Map<string, ReticulumContact>();
   for (const [hash, row] of history) {
-    if (cappedPeers.has(hash)) {
-      cappedHistory.set(hash, row);
-    }
+    if (!cappedPeers.has(hash)) cappedPeers.set(hash, row);
   }
-  return { peers: cappedPeers, contacts: cappedContacts, history: cappedHistory };
+  return { peers: cappedPeers, contacts, history };
 }
 
 export function reticulumContactToMeshNode(contact: ReticulumContact): MeshNode {
@@ -489,19 +492,45 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
     });
   },
 
-  replaceHistory: (history) => {
+  stampHistoryPeer: (hash, patch) => {
+    const key = normalizeHash(hash);
+    const lastHeard =
+      typeof patch.last_heard === 'number' && Number.isFinite(patch.last_heard)
+        ? Math.max(0, Math.floor(patch.last_heard))
+        : 0;
     set((s) => {
-      const historyMap = new Map<string, ReticulumContact>();
-      const peerMap = new Map(s.peers);
-      for (const row of history) {
-        const hash = normalizeHash(row.destination_hash);
-        historyMap.set(hash, { ...row, destination_hash: hash });
-        peerMap.set(hash, { ...peerMap.get(hash), ...row, destination_hash: hash });
+      const prior =
+        s.history.get(key) ??
+        s.contacts.get(key) ??
+        (s.peers.get(key) as ReticulumContact | undefined);
+      const displayName =
+        patch.display_name !== undefined
+          ? patch.display_name
+          : (prior?.custom_display_name ?? prior?.display_name ?? null);
+      const row: ReticulumContact = {
+        destination_hash: key,
+        display_name: displayName,
+        custom_display_name: prior?.custom_display_name,
+        hops: prior?.hops ?? null,
+        interface: prior?.interface ?? null,
+        favorited: Boolean(prior?.favorited),
+        last_seen: prior?.last_seen,
+        last_heard: Math.max(prior?.last_heard ?? 0, lastHeard),
+        is_contact: s.contacts.has(key) ? true : prior?.is_contact,
+      };
+      const history = new Map(s.history);
+      history.set(key, row);
+      const peers = new Map(s.peers);
+      peers.set(key, { ...peers.get(key), ...row, destination_hash: key });
+      const contacts = new Map(s.contacts);
+      const saved = contacts.get(key);
+      if (saved) {
+        contacts.set(key, { ...saved, ...row, is_contact: true });
       }
       return {
-        history: historyMap,
-        peers: peerMap,
-        lastRefreshAt: Date.now(),
+        history,
+        peers,
+        contacts,
         peersRevision: s.peersRevision + 1,
       };
     });
@@ -560,7 +589,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         destination_hash: key,
         display_name: trimmed,
         favorited: peer?.favorited ?? false,
-        last_heard: isReticulumContact(peer) ? peer.last_heard : undefined,
+        last_heard: hasReticulumHistory(peer) ? peer.last_heard : undefined,
       });
     } catch (e) {
       console.warn('[reticulumPeerStore] setCustomDisplayName ' + errLikeToLogString(e));
@@ -843,7 +872,7 @@ export function applyReticulumPeersUpdatedPatches(payload: unknown): void {
 function fingerprintPeerSnapshot(
   peers: ReticulumPeer[],
   contactsLen: number,
-  historyLen = 0,
+  history: Iterable<ReticulumContact>,
 ): string {
   const n = peers.length;
   let sample = '';
@@ -862,10 +891,21 @@ function fingerprintPeerSnapshot(
     }
     pushSample(peers[n - 1]);
   }
-  return `${n}:${contactsLen}:${historyLen}:${sample}`;
+  let historyLen = 0;
+  let historyMax = 0;
+  let historySample = '';
+  for (const row of history) {
+    historyLen += 1;
+    const heard = row.last_heard ?? 0;
+    if (heard > historyMax) historyMax = heard;
+    if (historyLen <= 8 || historyLen === 1) {
+      historySample += `${row.destination_hash.slice(0, 8)}:${heard};`;
+    }
+  }
+  return `${n}:${contactsLen}:${historyLen}:${historyMax}:${sample}:${historySample}`;
 }
 
-/** Resolve LXMF destination hash for a numeric node id (registry, node store, peer/contact store). */
+/** Resolve LXMF destination hash for a numeric node id (registry, node store, contacts/history/peers). */
 export function reticulumHashForNodeId(nodeId: number): string | null {
   const registered = resolveReticulumDestinationHash(nodeId);
   if (registered) return registered;
@@ -876,12 +916,15 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
     registerReticulumDestinationHash(nodeId, nodeRecord.reticulumDestinationHash);
     return nodeRecord.reticulumDestinationHash;
   }
-  const { peers } = useReticulumPeerStore.getState();
-  for (const row of peers.values()) {
-    const hash = row.destination_hash;
-    if (reticulumHashToNodeId(hash) === nodeId) {
-      registerReticulumDestinationHash(nodeId, hash);
-      return hash;
+  const { contacts, history, peers } = useReticulumPeerStore.getState();
+  // Same precedence as getPeer: contacts → history → peers.
+  for (const map of [contacts, history, peers] as const) {
+    for (const row of map.values()) {
+      const hash = row.destination_hash;
+      if (reticulumHashToNodeId(hash) === nodeId) {
+        registerReticulumDestinationHash(nodeId, hash);
+        return hash;
+      }
     }
   }
   return null;
@@ -1033,7 +1076,7 @@ async function refreshReticulumPeersFromSidecarOnce(
   }
   const priorContacts = useReticulumPeerStore.getState().contacts;
   const wireContacts = (contactsBody.contacts ?? []).map((row) => {
-    const contact = wireContactToContact(row, hopsByHash, ifaceByHash);
+    const contact = wireContactToHistoryHint(row, hopsByHash, ifaceByHash);
     const hash = normalizeHash(contact.destination_hash);
     const prior = priorContacts.get(hash) ?? priorPeers.get(hash);
     const display_name = resolveEnrichedDisplayName(hash, [
@@ -1060,7 +1103,7 @@ async function refreshReticulumPeersFromSidecarOnce(
     useReticulumPeerStore.getState().peerAppearanceByHash,
   );
 
-  const fingerprint = fingerprintPeerSnapshot([...peers.values()], contacts.size, history.size);
+  const fingerprint = fingerprintPeerSnapshot([...peers.values()], contacts.size, history.values());
   if (fingerprint === lastFullSnapshotFingerprint && !opts.forceRefresh) {
     const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started;
     if (elapsed > 2000) {

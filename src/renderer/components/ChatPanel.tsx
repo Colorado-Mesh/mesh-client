@@ -75,6 +75,7 @@ import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreambl
 import { useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
+import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
   dismissedDmTabsStorageKey,
@@ -827,15 +828,10 @@ function ChatPanel({
     return groupChatReactionsByParentKey(filtered);
   }, [displayMessages, protocol]);
 
-  const inferredDmTabs = useMemo(() => {
-    const peers = new Map<number, number>();
-    for (const msg of regularMessages) {
-      const peer = resolveDmPeer(msg);
-      if (peer == null) continue;
-      peers.set(peer, (peers.get(peer) ?? 0) + 1);
-    }
-    return peers;
-  }, [regularMessages, resolveDmPeer]);
+  const inferredDmTabs = useMemo(
+    () => chatDmPeerMessageCounts(regularMessages, ownNodeIdSet, protocol, chatUnreadDmOptions),
+    [chatUnreadDmOptions, ownNodeIdSet, protocol, regularMessages],
+  );
 
   /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
   const dmUnreadCounts = useMemo(

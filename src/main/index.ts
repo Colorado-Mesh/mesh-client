@@ -117,6 +117,7 @@ import {
   formatBluetoothctlSpawnError,
   linuxWebBluetoothDeviceSelection,
 } from './linuxWebBluetoothDeviceSelection';
+import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import {
   clearLogFile,
   exportLogTo,
@@ -3836,6 +3837,30 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
     });
   } catch (err) {
     finishDbIpcHandler('db:getMessages', err);
+  }
+});
+
+ipcMain.handle('db:listMeshtasticDmPeers', (event, ownNodeId: unknown, limit?: unknown) => {
+  try {
+    assertIpcSender(event, 'db:listMeshtasticDmPeers');
+    if (typeof ownNodeId !== 'number' || !Number.isFinite(ownNodeId)) return [];
+    const db = getDbForIpc('db:listMeshtasticDmPeers');
+    if (!db) return [];
+    return listMeshtasticDmPeersFromDb(db, ownNodeId, limit);
+  } catch (err) {
+    finishDbIpcHandler('db:listMeshtasticDmPeers', err);
+  }
+});
+
+ipcMain.handle('db:listMeshcoreDmPeers', (event, ownNodeId: unknown, limit?: unknown) => {
+  try {
+    assertIpcSender(event, 'db:listMeshcoreDmPeers');
+    if (typeof ownNodeId !== 'number' || !Number.isFinite(ownNodeId)) return [];
+    const db = getDbForIpc('db:listMeshcoreDmPeers');
+    if (!db) return [];
+    return listMeshcoreDmPeersFromDb(db, ownNodeId, limit);
+  } catch (err) {
+    finishDbIpcHandler('db:listMeshcoreDmPeers', err);
   }
 });
 

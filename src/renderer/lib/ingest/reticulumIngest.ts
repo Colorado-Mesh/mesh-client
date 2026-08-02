@@ -1,4 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { truncateReplyPreviewText } from '@/renderer/lib/replyPreview';
 import { messageTransportFromWire } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
@@ -25,7 +27,12 @@ import type { IdentityId } from '@/renderer/lib/types';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
-import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { upsertNodeRecordsForIdentity, useNodeStore } from '@/renderer/stores/nodeStore';
+import {
+  reticulumContactToNodeRecordPreservingLabel,
+  useReticulumPeerStore,
+} from '@/renderer/stores/reticulumPeerStore';
+import { hasReticulumHistory } from '@/shared/reticulum-types';
 import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import {
   isReticulumHashPrefixAlias,
@@ -240,19 +247,42 @@ function reticulumHistoryDisplayName(
  * Stamp History (`last_heard`) for inbound sender / outbound recipient.
  * Does NOT set `is_contact` — Contacts are Save-as-contact only.
  */
-export async function persistReticulumHistoryFromPayload(p: ReticulumLxmfPayload): Promise<void> {
+export async function persistReticulumHistoryFromPayload(
+  p: ReticulumLxmfPayload,
+  identityId?: IdentityId,
+): Promise<void> {
   const peerHash = reticulumHistoryPeerHash(p);
   if (!peerHash) return;
   const displayName = reticulumHistoryDisplayName(p, peerHash);
+  const lastHeard = Math.floor((p.timestamp ?? Date.now()) / 1000);
   try {
     await window.electronAPI.db.upsertReticulumDestination({
       destination_hash: peerHash,
       ...(displayName ? { display_name: displayName } : {}),
-      last_heard: Math.floor((p.timestamp ?? Date.now()) / 1000),
+      last_heard: lastHeard,
     });
   } catch (e) {
     console.warn('[reticulumIngest] upsert history ' + errLikeToLogString(e));
+    return;
   }
+
+  useReticulumPeerStore.getState().stampHistoryPeer(peerHash, {
+    last_heard: lastHeard,
+    display_name: displayName ?? null,
+  });
+
+  const id =
+    identityId ??
+    getIdentityIdForProtocol('reticulum') ??
+    getOfflineIdentityIdForProtocol('reticulum');
+  const historyRow = useReticulumPeerStore.getState().getPeer(peerHash);
+  if (!hasReticulumHistory(historyRow)) return;
+  const nodeId = reticulumHashToNodeId(peerHash);
+  registerReticulumDestinationHash(nodeId, peerHash);
+  const prior = useNodeStore.getState().nodes[id][nodeId] ?? null;
+  upsertNodeRecordsForIdentity(id, [
+    reticulumContactToNodeRecordPreservingLabel(historyRow, prior),
+  ]);
 }
 
 /**
@@ -307,7 +337,7 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   if (!ingested) return false;
   void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);
   // History stamp only — Contacts require explicit Save as contact.
-  void persistReticulumHistoryFromPayload(p);
+  void persistReticulumHistoryFromPayload(p, identityId);
   return true;
 }
 

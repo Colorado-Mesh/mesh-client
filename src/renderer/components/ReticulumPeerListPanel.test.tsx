@@ -220,7 +220,7 @@ describe('ReticulumPeerListPanel', () => {
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
     await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
-    expect(screen.getByText('peerListPanel.colLastHeard')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'peerListPanel.colLastHeard' })).toBeInTheDocument();
     expect(screen.getByText('History Peer')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
   });

@@ -28,6 +28,7 @@ export function createElectronAPIMock(): ElectronAPI {
     db: {
       saveMessage: vi.fn().mockResolvedValue(undefined),
       getMessages: vi.fn().mockResolvedValue([]),
+      listMeshtasticDmPeers: vi.fn().mockResolvedValue([]),
       saveNode: vi.fn().mockResolvedValue(undefined),
       saveNodePath: vi.fn().mockResolvedValue(undefined),
       getNodes: vi.fn().mockResolvedValue([]),
@@ -66,6 +67,7 @@ export function createElectronAPIMock(): ElectronAPI {
       updateMessageReceivedVia: vi.fn().mockResolvedValue(undefined),
       updateMessagePacketId: vi.fn().mockResolvedValue(undefined),
       getMeshcoreMessages: vi.fn().mockResolvedValue([]),
+      listMeshcoreDmPeers: vi.fn().mockResolvedValue([]),
       getReticulumMessages: vi.fn().mockResolvedValue([]),
       searchReticulumMessages: vi.fn().mockResolvedValue([]),
       deleteReticulumMessage: vi.fn().mockResolvedValue({ changes: 1 }),

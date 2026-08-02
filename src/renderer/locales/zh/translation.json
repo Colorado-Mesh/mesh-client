@@ -2931,7 +2931,10 @@
     "hybridMqttPathAria": "射频和MQTT路径",
     "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
     "connectedViaRfAndMqttAria": "通过射频和MQTT连接",
-    "echoesConnectionHealthTooltip": "{{score}} %连接健康"
+    "echoesConnectionHealthTooltip": "{{score}} %连接健康",
+    "tabAll": "所有食谱",
+    "tabHistory": "历史",
+    "emptyHistory": "还没有私信—发送或接收 DM 以在此处查看对等节点。"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3175,7 +3178,7 @@
     "pathsLoadFailed": "加载路径插槽失败。",
     "pathsPinFailed": "无法更新此对等方的媒体首选项。",
     "tabHistory": "历史",
-    "emptyHistory": "尚无消息历史记录—发送或接收LXMF消息以在此处查看同行。",
+    "emptyHistory": "尚无消息历史记录—发送或接收 LXMF 消息以在此处查看对等节点。",
     "emptyContacts": "还没有保存的联系人—打开对等点并选择“另存为联系人”。"
   },
   "radioPanel": {
