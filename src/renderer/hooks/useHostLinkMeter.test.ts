@@ -14,6 +14,7 @@ describe('useHostLinkMeter', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -215,5 +216,56 @@ describe('useHostLinkMeter', () => {
     });
     expect(result.current.rttMs).toBeNull();
     expect(result.current.level).toBeNull();
+  });
+
+  it('ignores stale HTTP probe results when a newer probe finishes first', async () => {
+    vi.useFakeTimers();
+    let resolveSlow: ((value: number | null) => void) | null = null;
+    let resolveFast: ((value: number | null) => void) | null = null;
+    vi.mocked(window.electronAPI.hostLink.probeHttpRtt)
+      .mockImplementationOnce(
+        () =>
+          new Promise<number | null>((resolve) => {
+            resolveSlow = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<number | null>((resolve) => {
+            resolveFast = resolve;
+          }),
+      );
+
+    const { result } = renderHook(() =>
+      useHostLinkMeter({
+        protocol: 'meshtastic',
+        connectionType: 'http',
+        status: 'configured',
+        hostAddress: 'meshtastic.local',
+        platform: 'darwin',
+      }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(resolveSlow).not.toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    expect(resolveFast).not.toBeNull();
+
+    await act(async () => {
+      resolveFast?.(25);
+      await Promise.resolve();
+    });
+    expect(result.current.rttMs).toBe(25);
+
+    await act(async () => {
+      resolveSlow?.(900);
+      await Promise.resolve();
+    });
+    expect(result.current.rttMs).toBe(25);
   });
 });

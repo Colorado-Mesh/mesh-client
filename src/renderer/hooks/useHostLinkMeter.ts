@@ -89,9 +89,12 @@ export function useHostLinkMeter(opts: {
     }
 
     let cancelled = false;
+    let probeGeneration = 0;
     let timer: ReturnType<typeof setInterval> | null = null;
 
     const run = async () => {
+      probeGeneration += 1;
+      const generation = probeGeneration;
       let next: number | null = null;
       if (protocol === 'meshtastic' && connectionType === 'http') {
         next = await probeHttpLinkRttMs(address);
@@ -101,7 +104,7 @@ export function useHostLinkMeter(opts: {
         // MeshCore "http" transport is TCP/IP host:port
         next = await probeTcpLinkRttMs(address, 'meshcore');
       }
-      if (!cancelled) setRttMs(next);
+      if (!cancelled && generation === probeGeneration) setRttMs(next);
     };
 
     void run();
