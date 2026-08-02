@@ -43,6 +43,8 @@ interface NoblePeripheral {
   removeAllListeners(event?: 'mtu'): this;
   connectAsync(): Promise<void>;
   disconnectAsync(): Promise<void>;
+  /** Refresh connected-peripheral RSSI (macOS/Windows Noble). */
+  updateRssiAsync(): Promise<number>;
   discoverAllServicesAndCharacteristicsAsync(): Promise<NobleDiscoveryResult>;
   discoverSomeServicesAndCharacteristicsAsync(
     serviceUuids: string[],
@@ -123,6 +125,10 @@ const BLE_START_SCAN_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
 const BLE_MTU_POST_GATT_WAIT_MS = 1500;
 /** Poll interval while waiting for first `peripheral.mtu` value. */
 const BLE_MTU_POLL_MS = 50;
+/** Host↔radio BLE RSSI poll while GATT is connected (Connection panel meter). */
+export const NOBLE_LINK_RSSI_POLL_MS = 4_000;
+/** Bound a single updateRssiAsync so a hung stack cannot stall the poll loop. */
+const NOBLE_LINK_RSSI_UPDATE_TIMEOUT_MS = 5_000;
 
 function normalizeUuid(uuid: string): string {
   return uuid.toLowerCase().replace(/-/g, '');
@@ -236,6 +242,10 @@ interface NobleBleSession {
    * operation; concurrent writes accumulate past Noble's 10-listener limit.
    */
   writeQueue: Promise<void>;
+  /** Interval timer for connected-link RSSI polls; cleared on disconnect. */
+  linkRssiPollTimer: ReturnType<typeof setInterval> | null;
+  /** True while updateRssiAsync is in flight (skip overlapping polls). */
+  linkRssiPollInflight: boolean;
   /** Sanitized ATT MTU (23–517) from Noble `peripheral.mtu` / `mtu` events; drives write chunking. */
   attMtuSanitized: number;
   /** True after first `console.debug` for Noble-reported MTU below 23 (binding quirks, e.g. raw 20 on Darwin). */
@@ -347,12 +357,76 @@ export class NobleBleManager extends EventEmitter {
       registeredMac: null,
       gattSetupInflight: null,
       writeQueue: Promise.resolve(),
+      linkRssiPollTimer: null,
+      linkRssiPollInflight: false,
       attMtuSanitized: attMtuOrDefault(null),
       attMtuSuspiciousLogged: false,
       peripheralMtuHandler: null,
       sessionEstablishedAtMs: null,
       lastConnectedPeripheralId: null,
     };
+  }
+
+  private stopLinkRssiPolling(session: NobleBleSession): void {
+    if (session.linkRssiPollTimer !== null) {
+      clearInterval(session.linkRssiPollTimer);
+      session.linkRssiPollTimer = null;
+    }
+    session.linkRssiPollInflight = false;
+  }
+
+  private emitLinkRssi(sessionId: NobleSessionId, rssi: number | null): void {
+    this.emit('linkRssi', { sessionId, rssi });
+  }
+
+  /**
+   * Seed + periodic host BLE RSSI while GATT is up (Connection panel strength meter).
+   * Uses Noble updateRssiAsync; no-op when the method is missing.
+   */
+  private startLinkRssiPolling(
+    sessionId: NobleSessionId,
+    session: NobleBleSession,
+    peripheral: NoblePeripheral,
+    seedRssi: number | null,
+  ): void {
+    this.stopLinkRssiPolling(session);
+    if (seedRssi != null && Number.isFinite(seedRssi)) {
+      this.emitLinkRssi(sessionId, seedRssi);
+    } else if (typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)) {
+      this.emitLinkRssi(sessionId, peripheral.rssi);
+    }
+
+    const pollOnce = (): void => {
+      if (session.closing || session.connectedPeripheral !== peripheral) return;
+      if (session.linkRssiPollInflight) return;
+      if (typeof peripheral.updateRssiAsync !== 'function') return;
+      if (peripheral.state !== 'connected') return;
+      session.linkRssiPollInflight = true;
+      void withTimeout(
+        peripheral.updateRssiAsync(),
+        NOBLE_LINK_RSSI_UPDATE_TIMEOUT_MS,
+        'BLE updateRssiAsync',
+      )
+        .then((rssi) => {
+          if (session.closing || session.connectedPeripheral !== peripheral) return;
+          if (typeof rssi === 'number' && Number.isFinite(rssi)) {
+            this.emitLinkRssi(sessionId, rssi);
+          }
+        })
+        .catch((err: unknown) => {
+          console.debug(
+            `[BLE:${sessionId}] link RSSI poll failed:`,
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+        })
+        .finally(() => {
+          session.linkRssiPollInflight = false;
+        });
+    };
+
+    // First refresh soon after connect; then steady interval.
+    session.linkRssiPollTimer = setInterval(pollOnce, NOBLE_LINK_RSSI_POLL_MS);
+    pollOnce();
   }
 
   private getSession(sessionId: NobleSessionId): NobleBleSession {
@@ -390,6 +464,7 @@ export class NobleBleManager extends EventEmitter {
       clearTimeout(session.notifyWatchdogTimer);
       session.notifyWatchdogTimer = null;
     }
+    this.stopLinkRssiPolling(session);
     session.connectedPeripheral = null;
     session.connectedPeripheralDisconnectHandler = null;
     session.toRadioChar = null;
@@ -1453,6 +1528,7 @@ export class NobleBleManager extends EventEmitter {
       session.registeredMac = registeredMac;
       session.lastConnectedPeripheralId = peripheralId;
       session.sessionEstablishedAtMs = Date.now();
+      this.startLinkRssiPolling(sessionId, session, peripheral, connectRssi);
       this.emit('connected', { sessionId });
     } catch (err) {
       console.warn(`[BLE:${sessionId}] connect failed:`, err instanceof Error ? err.message : err); // log-injection-ok noble internal error

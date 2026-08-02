@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "Preset LetsMesh/ MeshMapper hanya mendukung broker penandatanganan perangkat yang dikenal. Gunakan Custom untuk broker lain.",
     "letsMeshUsernameV1Hex": "Nama pengguna harus v1_disusul oleh 64 karakter hex (kunci publik).",
     "bleWeakSignalWarning": "Sinyal Bluetooth lemah ({{rssi}} dBm). Bergerak lebih dekat untuk koneksi yang stabil.",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "Sinyal",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Kualitas tautan",
+    "linkQualityMs": "{{ms}} ms",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Tidak tersedia (Bluetooth Web)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

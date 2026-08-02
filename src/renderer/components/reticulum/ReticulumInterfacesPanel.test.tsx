@@ -79,6 +79,9 @@ describe('ReticulumInterfacesPanel', () => {
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.hostLink.probeTcpRtt = vi.fn().mockResolvedValue(42);
+    window.electronAPI.bleCoexistence.acquireScan = vi.fn().mockResolvedValue({});
+    window.electronAPI.bleCoexistence.releaseScan = vi.fn().mockResolvedValue({});
     hydrateAxeThemeColors(document.documentElement);
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/serial/ports') {
@@ -172,6 +175,176 @@ describe('ReticulumInterfacesPanel', () => {
     expect(
       screen.getByText('connectionPanel.reticulumInterfaces.localOfflineRowBle'),
     ).toBeInTheDocument();
+  });
+
+  it('always shows Signal UI on enabled BLE RNode rows even when RSSI is unknown', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ]}
+      />,
+    );
+
+    const meter = screen.getByTestId('reticulum-ble-signal-rnode-ble');
+    expect(meter).toBeInTheDocument();
+    expect(within(meter).getByText('connectionPanel.hostSignalUnavailable')).toBeInTheDocument();
+    expect(screen.queryByTestId('reticulum-tcp-link-rnode-ble')).not.toBeInTheDocument();
+  });
+
+  it('shows BLE RSSI dBm on enabled BLE RNode rows when scan provides RSSI', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (typeof path === 'string' && path.startsWith('/api/v1/ble/scan')) {
+        return Promise.resolve({
+          devices: [{ address: 'AA:BB:CC:DD:EE:FF', rssi: -63, kind: 'rnode' }],
+        });
+      }
+      if (path === '/api/v1/serial/ports') return Promise.resolve({ ports: [] });
+      if (path === '/api/v1/rnode/presets') return Promise.resolve({ presets: [] });
+      if (path === '/api/v1/config/audit') return Promise.resolve({ issues: [] });
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('reticulum-ble-signal-rnode-ble')).getByText(
+          'connectionPanel.bleRssiDbm',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('shows Link quality on enabled TCP Client rows', async () => {
+    render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
+
+    const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
+    expect(meter).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(meter).getByText('connectionPanel.linkQualityMs')).toBeInTheDocument();
+    });
+    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalledWith('rmap.world', 4242);
+  });
+
+  it('does not show host-link meters on serial RNode rows', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'heltec',
+            name: 'Heltec V3',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: '/dev/cu.usbserial-7',
+          },
+        ]}
+        serialPortPaths={['/dev/cu.usbserial-7']}
+      />,
+    );
+
+    expect(screen.queryByTestId('reticulum-ble-signal-heltec')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reticulum-tcp-link-heltec')).not.toBeInTheDocument();
+  });
+
+  it('hides Signal UI when BLE RNode interface is disabled', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: false,
+            status: 'down',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ]}
+      />,
+    );
+    expect(screen.queryByTestId('reticulum-ble-signal-rnode-ble')).not.toBeInTheDocument();
+  });
+
+  it('shows Link quality unavailable when TCP probe fails', async () => {
+    window.electronAPI.hostLink.probeTcpRtt = vi.fn().mockResolvedValue(null);
+    render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
+    const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
+    await waitFor(() => {
+      expect(within(meter).getByText('connectionPanel.linkQualityUnavailable')).toBeInTheDocument();
+    });
+  });
+
+  it('hides Link quality when TCP Client interface is disabled', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[{ ...rmapWorldHub, enabled: false }]}
+      />,
+    );
+    expect(screen.queryByTestId('reticulum-tcp-link-rmap-world')).not.toBeInTheDocument();
+  });
+
+  it('shows both BLE Signal and TCP Link quality when both interface types are enabled', async () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+          rmapWorldHub,
+        ]}
+      />,
+    );
+    expect(screen.getByTestId('reticulum-ble-signal-rnode-ble')).toBeInTheDocument();
+    expect(screen.getByTestId('reticulum-tcp-link-rmap-world')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('reticulum-tcp-link-rmap-world')).getByText(
+          'connectionPanel.linkQualityMs',
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   it('edit BLE RNode shows Bluetooth address instead of serial stale hint', async () => {

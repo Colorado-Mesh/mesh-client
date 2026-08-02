@@ -1275,7 +1275,13 @@
     "letsMeshKnownBrokersOnly": "Предустановка LetsMesh /MeshMapper поддерживает только известные брокеры подписи устройств. Используйте Custom для других брокеров.",
     "letsMeshUsernameV1Hex": "Имя пользователя должно быть v1_, за которым должны следовать 64 шестнадцатеричных символа (открытый ключ).",
     "bleWeakSignalWarning": "Сигнал Bluetooth слабый ({{rssi}} dBm). Переместитесь ближе для стабильного соединения.",
-    "bleRssiDbm": "{{rssi}} дБм"
+    "bleRssiDbm": "{{rssi}} дБм",
+    "hostSignal": "Сигнал",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Качество связи:",
+    "linkQualityMs": "{{ms}} мс",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Недоступно (веб-Bluetooth)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

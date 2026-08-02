@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "Le préréglage LetsMesh/ MeshMapper ne prend en charge que les courtiers de signature d'appareils connus. Utilisez Personnalisé pour les autres courtiers.",
     "letsMeshUsernameV1Hex": "Le nom d'utilisateur doit être v1_ suivi de 64 caractères hexadécimaux (clé publique).",
     "bleWeakSignalWarning": "Le signal Bluetooth est faible ({{rssi}} dBm). Rapprochez-vous pour une connexion stable.",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "Signal",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Qualité du lien",
+    "linkQualityMs": "{{ms}} ms",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Non disponible (Web Bluetooth)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

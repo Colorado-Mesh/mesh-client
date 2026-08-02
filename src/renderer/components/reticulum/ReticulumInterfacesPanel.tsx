@@ -4,12 +4,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
+import {
+  rssiForReticulumBleRnodeRow,
+  useReticulumBleRnodeRssiMap,
+} from '@/renderer/hooks/useReticulumBleRnodeRssiMap';
 import type { ReticulumDevicePickerSelection } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
+import {
+  isReticulumTcpClientLinkQualityRow,
+  rttForReticulumTcpRow,
+  useReticulumTcpLinkQualityMap,
+} from '@/renderer/hooks/useReticulumTcpLinkQualityMap';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { rttToSignalLevel } from '@/renderer/lib/hostLinkQuality';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
+import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   fetchReticulumConfigAudit,
   repairReticulumConfig,
@@ -87,6 +98,7 @@ import { clampTcpPort } from '@/shared/tcpPort';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { HelpTooltip } from '../HelpTooltip';
+import SignalBars from '../SignalBars';
 import { ReticulumInterfaceDevicePickerModal } from './ReticulumInterfaceDevicePickerModal';
 import {
   hzToKhzFieldValue,
@@ -1757,6 +1769,8 @@ function InterfacesSection({
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
+  const bleRnodeRssiByAddress = useReticulumBleRnodeRssiMap(interfaces, sidecarReady);
+  const tcpRttById = useReticulumTcpLinkQualityMap(interfaces, sidecarReady);
   const enabledLocalSerialCount = countEnabledLocallyConnectedSerialInterfaces(interfaces);
   const showPrimaryControls = enabledLocalSerialCount >= 2;
   const primaryInterfaceName =
@@ -2152,6 +2166,12 @@ function InterfacesSection({
                 showPrimaryControls &&
                 effectivePrimaryLocalSerialInterfaceId != null &&
                 iface.id === effectivePrimaryLocalSerialInterfaceId;
+              const showBleRnodeSignal = iface.enabled && isReticulumBleRnodeInterfaceRow(iface);
+              const bleRnodeRssi = showBleRnodeSignal
+                ? rssiForReticulumBleRnodeRow(iface, bleRnodeRssiByAddress)
+                : null;
+              const showTcpLinkQuality = isReticulumTcpClientLinkQualityRow(iface);
+              const tcpRttMs = showTcpLinkQuality ? rttForReticulumTcpRow(iface, tcpRttById) : null;
               return (
                 <li
                   key={iface.id}
@@ -2162,6 +2182,48 @@ function InterfacesSection({
                       <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
                         {formatReticulumInterfaceRowSummary(t, iface)}
                       </span>
+                      {showBleRnodeSignal ? (
+                        <span
+                          className="text-muted flex shrink-0 items-center gap-1 text-xs"
+                          aria-label={t('connectionPanel.hostSignal')}
+                          data-testid={`reticulum-ble-signal-${iface.id}`}
+                        >
+                          {bleRnodeRssi != null ? (
+                            <>
+                              <SignalBars rssi={bleRnodeRssi} className="h-3 w-4" />
+                              {t('connectionPanel.bleRssiDbm', {
+                                rssi: Math.round(bleRnodeRssi),
+                              })}
+                            </>
+                          ) : (
+                            <>
+                              <SignalBars noData className="h-3 w-4" />
+                              {t('connectionPanel.hostSignalUnavailable')}
+                            </>
+                          )}
+                        </span>
+                      ) : null}
+                      {showTcpLinkQuality ? (
+                        <span
+                          className="text-muted flex shrink-0 items-center gap-1 text-xs"
+                          aria-label={t('connectionPanel.linkQuality')}
+                          data-testid={`reticulum-tcp-link-${iface.id}`}
+                        >
+                          {tcpRttMs != null ? (
+                            <>
+                              <SignalBars level={rttToSignalLevel(tcpRttMs)} className="h-3 w-4" />
+                              {t('connectionPanel.linkQualityMs', {
+                                ms: Math.round(tcpRttMs),
+                              })}
+                            </>
+                          ) : (
+                            <>
+                              <SignalBars noData className="h-3 w-4" />
+                              {t('connectionPanel.linkQualityUnavailable')}
+                            </>
+                          )}
+                        </span>
+                      ) : null}
                       <HelpTooltip
                         text={t(help.purposeKey)}
                         ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {

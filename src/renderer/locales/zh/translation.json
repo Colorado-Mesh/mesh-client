@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper预设仅支持已知的设备签名代理。对其他经纪商使用自定义。",
     "letsMeshUsernameV1Hex": "用户名必须为v1_后跟64个十六进制字符（公钥）。",
     "bleWeakSignalWarning": "蓝牙信号弱（ {{rssi}} dBm ）。靠近一点，以获得稳定的连接。",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "信号源",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "连接质量",
+    "linkQualityMs": "{{ms}}毫秒",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "不可用（网页蓝牙）"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

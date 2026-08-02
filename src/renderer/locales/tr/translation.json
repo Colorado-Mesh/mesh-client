@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "LetsMesh /MeshMapper ön ayarı yalnızca bilinen cihaz imzalama aracılarını destekler. Diğer brokerler için Özel'i kullanın.",
     "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır.",
     "bleWeakSignalWarning": "Bluetooth sinyali zayıf ({{rssi}} dBm). Sabit bir bağlantı için yaklaşın.",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "Sinyal",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Hat kalitesi",
+    "linkQualityMs": "{{ms}} ms",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Kullanılamıyor (Web Bluetooth)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -175,6 +175,7 @@ export function createElectronAPIMock(): ElectronAPI {
     },
     onNobleBleAdapterState: vi.fn().mockReturnValue(() => {}),
     onNobleBleDeviceDiscovered: vi.fn().mockReturnValue(() => {}),
+    onNobleBleLinkRssi: vi.fn().mockReturnValue(() => {}),
     onNobleBleConnected: vi.fn().mockReturnValue(() => {}),
     onNobleBleDisconnected: vi.fn().mockReturnValue(() => {}),
     onNobleBleConnectAborted: vi.fn().mockReturnValue(() => {}),
@@ -264,6 +265,10 @@ export function createElectronAPIMock(): ElectronAPI {
       write: vi.fn().mockResolvedValue(undefined),
       disconnect: vi.fn().mockResolvedValue(undefined),
       onData: vi.fn().mockReturnValue(() => {}),
+    },
+    hostLink: {
+      probeHttpRtt: vi.fn().mockResolvedValue(null),
+      probeTcpRtt: vi.fn().mockResolvedValue(null),
     },
     meshtastic: {
       tcp: {

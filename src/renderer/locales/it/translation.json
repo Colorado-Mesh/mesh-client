@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "Il preset LetsMesh / MeshMapper supporta solo broker noti per la firma del dispositivo. Usa Custom per altri broker.",
     "letsMeshUsernameV1Hex": "Il nome utente deve essere v1_ seguito da 64 caratteri esadecimali (chiave pubblica).",
     "bleWeakSignalWarning": "Il segnale Bluetooth è debole ({{rssi}} dBm). Avvicinati per una connessione stabile.",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "Segnale",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Qualità del collegamento",
+    "linkQualityMs": "{{ms}} ms",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Non disponibile (Web Bluetooth)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

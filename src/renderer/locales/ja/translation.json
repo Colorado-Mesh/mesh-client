@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapperプリセットは、既知のデバイス署名ブローカーのみをサポートします。他のブローカーにはカスタムを使用します。",
     "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。",
     "bleWeakSignalWarning": "Bluetooth信号が弱い（ {{rssi}} dBm ）。安定した接続のために近づいてください。",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "シグナル",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "リンクの品質",
+    "linkQualityMs": "{{ms}}ミリ秒",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "利用できません（ Web Bluetooth ）"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
