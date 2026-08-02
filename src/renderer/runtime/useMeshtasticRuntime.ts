@@ -75,7 +75,8 @@ import {
   mergeAppSetting,
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
-import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { createBleReconnectTransportCleanup } from '../lib/bleReconnectLateTransport';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { getSerialPortFromMeshTransport, safeDisconnect } from '../lib/connection';
 import { validateCoords } from '../lib/coordUtils';
@@ -214,6 +215,7 @@ import {
   MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
   MESHTASTIC_PACKET_DEDUP_TTL_MS,
   MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
+  NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
@@ -2144,8 +2146,14 @@ export function useMeshtasticRuntime() {
     const isBleReconnect = params.type === 'ble';
     reconnectConnectInFlightRef.current = true;
     if (isBleReconnect) bleConnectInProgressRef.current = true;
-    try {
-      if (reconnectGenerationRef.current !== generation) {
+    /** Cleared synchronously on settle so a late Promise.race loser cannot apply success. */
+    let attemptActive = true;
+    const lateTransport = createBleReconnectTransportCleanup(
+      (identityId) => connectionDriver.disconnect(identityId),
+      'useMeshtasticRuntime',
+    );
+    const runReconnectAttempt = async () => {
+      if (reconnectGenerationRef.current !== generation || !attemptActive) {
         throw new Error('Reconnect superseded before open');
       }
       opened =
@@ -2162,25 +2170,33 @@ export function useMeshtasticRuntime() {
               blePeripheralId: params.blePeripheralId,
               lastSerialPortId: params.lastSerialPortId,
             });
-      if (reconnectGenerationRef.current !== generation) {
+      if (reconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded after open');
       }
       deviceRef.current = opened.device;
       wireSubscriptions(opened.device, params.type, {
         driverIdentityId: opened.driverIdentityId,
       });
-      if (reconnectGenerationRef.current !== generation) {
+      if (reconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded before configure');
       }
       await configureMeshtasticDeviceWithRetry(opened.device, {
         logTag: 'useMeshtasticRuntime reconnect',
       });
 
-      if (reconnectGenerationRef.current !== generation) {
+      if (reconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded during configure');
       }
       if (!(await verifyNobleBleRfLink(params.type, 'meshtastic'))) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('RF link lost after reconnect configure');
+      }
+      if (!attemptActive || reconnectGenerationRef.current !== generation) {
+        await lateTransport.cleanup(opened.driverIdentityId);
+        throw new Error('Reconnect superseded after configure');
       }
 
       // Success
@@ -2201,7 +2217,22 @@ export function useMeshtasticRuntime() {
         connectionLoss: false,
       }));
       requestChatOutboxDrain('meshtastic');
+    };
+    const reconnectWork = runReconnectAttempt();
+    // Late loser after budget timeout — avoid unhandledRejection; cleanup is in catch / late path.
+    void reconnectWork.catch(() => {});
+    try {
+      if (isBleReconnect) {
+        await raceWithDeadline(
+          reconnectWork,
+          NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+          `BLE reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
+        );
+      } else {
+        await reconnectWork;
+      }
     } catch (err) {
+      attemptActive = false;
       const failedDriverIdentity =
         opened?.driverIdentityId ??
         meshtasticIdentityIdRef.current ??
@@ -2209,13 +2240,7 @@ export function useMeshtasticRuntime() {
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
-      if (failedDriverIdentity) {
-        await connectionDriver.disconnect(failedDriverIdentity).catch((e: unknown) => {
-          console.debug(
-            '[useMeshtasticRuntime] reconnect failure driver disconnect ' + errLikeToLogString(e),
-          );
-        });
-      }
+      await lateTransport.cleanup(failedDriverIdentity);
       console.warn(
         `[useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
           ' ' +
@@ -2232,6 +2257,7 @@ export function useMeshtasticRuntime() {
         });
       }
     } finally {
+      attemptActive = false;
       reconnectConnectInFlightRef.current = false;
       if (isBleReconnect) bleConnectInProgressRef.current = false;
       if (meshtasticDeferredReconnectRef.current) {

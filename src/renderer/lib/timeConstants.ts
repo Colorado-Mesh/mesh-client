@@ -211,6 +211,14 @@ export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 8_000;
 export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 30 * MS_PER_SECOND;
 
 /**
+ * Hard ceiling for one LoRa BLE reconnect open+handshake attempt (Meshtastic + MeshCore).
+ * Covers darwin dual createBleConnection attempts (~45–50s) + configure/attach margin so
+ * deferred Noble disconnect flush always runs instead of stalling retries at edge of range.
+ */
+export const NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS =
+  60 * MS_PER_SECOND + MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS;
+
+/**
  * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's
  * FLOOD ADVERT within seconds; coalesce so the sniffer shows one row (newest wins).
  */

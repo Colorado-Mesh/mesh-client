@@ -53,14 +53,37 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     expect(SOURCE).toContain('6ba1b21815a8461f9fa85dcae273eafd');
   });
 
-  it('meshcore skips duplicate connect IPC when already connected (WinRT handshake race)', () => {
+  it('skips duplicate connect IPC when already connected (Meshtastic + MeshCore)', () => {
     expect(SOURCE).toContain('connect idempotent skip');
     expect(SOURCE).toContain('duplicate IPC would disconnect and break handshake');
+    // Must not be meshcore-only — Meshtastic duplicate connectAutomatic must retain the session.
+    expect(SOURCE).not.toMatch(/sessionId === 'meshcore' &&[\s\S]{0,120}connect idempotent skip/);
   });
 
-  it('meshcore coalesces duplicate connect while GATT is still in progress', () => {
+  it('coalesces duplicate connect while GATT is still in progress (Meshtastic + MeshCore)', () => {
     expect(SOURCE).toContain('connect coalesce');
-    expect(SOURCE).toContain('meshcoreGattInflight');
+    expect(SOURCE).toContain('gattSetupInflight');
+    expect(SOURCE).toContain('tryCoalesceInflightGattConnect');
+    expect(SOURCE).not.toContain('meshcoreGattInflight');
+  });
+
+  it('awaits GATT coalesce before joining connectQueue', () => {
+    expect(SOURCE).toMatch(
+      /tryCoalesceInflightGattConnect[\s\S]*?const prevQueue = this\.connectQueue/,
+    );
+  });
+
+  it('installs gattSetupInflight after connectAsync for both LoRa sessions', () => {
+    expect(SOURCE).toMatch(
+      /connectAsync done[\s\S]*?session\.gattSetupInflight = \{[\s\S]*?discoverSomeServicesAndCharacteristicsAsync|discoverAllServicesAndCharacteristicsAsync/,
+    );
+    // Must not be gated on meshcore-only anymore.
+    expect(SOURCE).not.toMatch(
+      /if \(isMeshcore\) \{\s*let resolveGatt[\s\S]*?session\.gattSetupInflight/,
+    );
+    expect(SOURCE).toMatch(
+      /clearSessionState[\s\S]*?session\.gattSetupInflight\.reject\(new Error\('BLE session cleared'\)\)/,
+    );
   });
 
   it('branches on sessionId to pick the correct service UUID for discovery', () => {

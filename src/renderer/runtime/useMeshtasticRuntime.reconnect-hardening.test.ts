@@ -124,6 +124,34 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('skip overlapping open');
   });
 
+  it('bounds BLE reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    expect(SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(SOURCE).toContain('raceWithDeadline');
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('raceWithDeadline');
+    expect(reconnectBody).toContain('BLE reconnect attempt timed out after');
+    expect(reconnectBody).toContain('attemptActive');
+  });
+
+  it('disconnects late-opened transport when reconnect attempt is inactive or superseded', () => {
+    expect(SOURCE).toContain('createBleReconnectTransportCleanup');
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('lateTransport.cleanup(opened.driverIdentityId)');
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('Reconnect superseded after open'\)/,
+    );
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('Reconnect superseded before configure'\)/,
+    );
+  });
+
+  it('cleans up transport when RF link is lost after reconnect configure', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('RF link lost after reconnect configure'\)/,
+    );
+  });
+
   it('defers starting reconnect while open+configure is already in flight', () => {
     const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
     expect(lostBody).toContain('reconnectConnectInFlightRef.current');

@@ -312,4 +312,79 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     expect(disconnectSpy).toHaveBeenCalledTimes(1);
     expect(peripheral.state).toBe('connected');
   });
+
+  it('duplicate Meshtastic connect while already connected is idempotent', async () => {
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHTASTIC_TORADIO_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHTASTIC_FROMRADIO_UUID, {
+      properties: ['read', 'notify'],
+      readResults: [Buffer.alloc(0)],
+    });
+    const fromNum = new FakeCharacteristic(MESHTASTIC_FROMNUM_UUID, { properties: ['notify'] });
+    const peripheral = new FakePeripheral('idempotent-meshtastic', [toRadio, fromRadio, fromNum]);
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    await manager.connect('meshtastic', peripheral.id);
+    const connectAsyncSpy = vi.spyOn(peripheral, 'connectAsync');
+    const disconnectSpy = vi.spyOn(peripheral, 'disconnectAsync');
+
+    await manager.connect('meshtastic', peripheral.id);
+
+    expect(connectAsyncSpy).not.toHaveBeenCalled();
+    expect(disconnectSpy).not.toHaveBeenCalled();
+    expect(manager.isConnected('meshtastic')).toBe(true);
+  });
+
+  it('second concurrent connect awaits in-flight GATT setup instead of disconnecting', async () => {
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHTASTIC_TORADIO_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHTASTIC_FROMRADIO_UUID, {
+      properties: ['read', 'notify'],
+      readResults: [Buffer.alloc(0)],
+    });
+    const fromNum = new FakeCharacteristic(MESHTASTIC_FROMNUM_UUID, { properties: ['notify'] });
+    const peripheral = new FakePeripheral('coalesce-peripheral', [toRadio, fromRadio, fromNum]);
+    let releaseDiscover!: () => void;
+    const discoverGate = new Promise<void>((resolve) => {
+      releaseDiscover = resolve;
+    });
+    const originalDiscover =
+      peripheral.discoverSomeServicesAndCharacteristicsAsync.bind(peripheral);
+    peripheral.discoverSomeServicesAndCharacteristicsAsync = async () => {
+      await discoverGate;
+      return originalDiscover();
+    };
+    const connectAsyncSpy = vi.spyOn(peripheral, 'connectAsync');
+    const disconnectSpy = vi.spyOn(peripheral, 'disconnectAsync');
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    const first = manager.connect('meshtastic', peripheral.id);
+    // Wait until first connect has link-up + gattSetupInflight (past connectAsync).
+    await vi.waitFor(() => {
+      expect(connectAsyncSpy).toHaveBeenCalledTimes(1);
+      const session = (manager as any).sessions.get('meshtastic');
+      expect(session.gattSetupInflight).not.toBeNull();
+    });
+
+    const second = manager.connect('meshtastic', peripheral.id);
+    releaseDiscover();
+    await Promise.all([first, second]);
+
+    expect(connectAsyncSpy).toHaveBeenCalledTimes(1);
+    // Coalesce path must not tear down the in-flight / completed session.
+    expect(disconnectSpy).not.toHaveBeenCalled();
+    expect(manager.isConnected('meshtastic')).toBe(true);
+  });
 });

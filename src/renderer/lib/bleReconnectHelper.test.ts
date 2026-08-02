@@ -6,10 +6,32 @@ import {
   BLE_SCAN_BUSY_MAX_WAIT_MS,
   BLE_SCAN_BUSY_RETRY_INTERVAL_MS,
   connectNobleBleWithScanBusyRetry,
+  raceWithDeadline,
   reconnectBleWithScan,
   startNobleBleScanningWithRetry,
   verifyNobleBleRfLink,
 } from './bleReconnectHelper';
+
+describe('raceWithDeadline', () => {
+  it('resolves when work finishes before the budget', async () => {
+    await expect(raceWithDeadline(Promise.resolve(42), 1_000, 'timed out')).resolves.toBe(42);
+  });
+
+  it('rejects when the budget elapses first', async () => {
+    vi.useFakeTimers();
+    const pending = raceWithDeadline(
+      new Promise<number>(() => {
+        /* never settles */
+      }),
+      90_000,
+      'BLE reconnect attempt timed out',
+    );
+    const rejection = expect(pending).rejects.toThrow(/BLE reconnect attempt timed out/);
+    await vi.advanceTimersByTimeAsync(90_000);
+    await rejection;
+    vi.useRealTimers();
+  });
+});
 
 describe('verifyNobleBleRfLink', () => {
   beforeEach(() => {
