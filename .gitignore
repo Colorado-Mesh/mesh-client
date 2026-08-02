@@ -35,3 +35,7 @@ reticulum-sidecar/target/
 resources/reticulum-sidecar/staged/
 resources/reticulum-sidecar/mesh-client-reticulum
 resources/reticulum-sidecar/mesh-client-reticulum.exe
+
+# Local runtime state (identities, path tables, caches) from running the sidecar
+# directly (e.g. `pnpm run reticulum:sidecar:dev`) with no --reticulum-config-dir override
+reticulum-sidecar/reticulum-config/
