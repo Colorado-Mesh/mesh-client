@@ -26,7 +26,8 @@ use rns_runtime::lifecycle::ShutdownSignal;
 use rns_runtime::link_client::LinkClient;
 use rns_runtime::reticulum;
 use rns_transport::messages::{
-    AnnounceHandlerEvent, TransportMessage, TransportQuery, TransportQueryResponse,
+    AnnounceHandlerEvent, PathTableRpcEntry, TransportMessage, TransportQuery,
+    TransportQueryResponse,
 };
 use tokio::sync::{RwLock, broadcast};
 
@@ -1408,12 +1409,20 @@ impl LiveBridge {
             &prefer,
         );
 
-        let _ = self
+        if self
             .query_control_timed(TransportQuery::SuppressCurrentPathInterface {
                 dest,
                 duration: path_failover::IFACE_SUPPRESS_SECS,
             })
-            .await;
+            .await
+            .is_none()
+        {
+            tracing::debug!(
+                target: "nomad",
+                dest = %hash_hex,
+                "path failover: SuppressCurrentPathInterface timed out or failed"
+            );
+        }
         // Drop every known-bad next hop (not only the currently active slot —
         // after a timeout the table may flip to another iface sharing an older via).
         let mut vias_to_drop: Vec<String> = blocked_vias.to_vec();
@@ -1424,9 +1433,18 @@ impl LiveBridge {
         }
         for via_hex in &vias_to_drop {
             if let Ok(next_hop) = parse_hash16(via_hex) {
-                let _ = self
+                if self
                     .query_control_timed(TransportQuery::DropAllVia { next_hop })
-                    .await;
+                    .await
+                    .is_none()
+                {
+                    tracing::debug!(
+                        target: "nomad",
+                        dest = %hash_hex,
+                        via = %via_hex,
+                        "path failover: DropAllVia timed out or failed"
+                    );
+                }
             }
         }
         if let Ok(mut driver) = self.outbound.lock() {
@@ -1448,7 +1466,6 @@ impl LiveBridge {
             let settle_deadline =
                 tokio::time::Instant::now() + path_failover::VIA_FAILOVER_POLL_INTERVAL * 10;
             while tokio::time::Instant::now() < settle_deadline {
-                let _ = self.refresh_outbound_path_table().await;
                 let slots = self
                     .path_slots(hash_hex)
                     .await
@@ -1461,11 +1478,13 @@ impl LiveBridge {
                     failed_via.as_deref(),
                     &prefer,
                 ) {
+                    let _ = self.refresh_outbound_path_table().await;
                     return Some(found);
                 }
                 tokio::time::sleep(path_failover::VIA_FAILOVER_POLL_INTERVAL).await;
             }
             // Backup was known before suppress; return it even if the table is slow.
+            let _ = self.refresh_outbound_path_table().await;
             return Some(backup);
         }
 
@@ -1529,7 +1548,6 @@ impl LiveBridge {
     ) -> Option<PathSlotCandidate> {
         let deadline = tokio::time::Instant::now() + wait;
         while tokio::time::Instant::now() < deadline {
-            let _ = self.refresh_outbound_path_table().await;
             let slots = self
                 .path_slots(hash_hex)
                 .await
@@ -1542,6 +1560,8 @@ impl LiveBridge {
                 failed_via,
                 prefer_ifaces,
             ) {
+                // Keep LXMF outbound / peer-via caches aligned after path_slots finds a route.
+                let _ = self.refresh_outbound_path_table().await;
                 return Some(found);
             }
             tokio::time::sleep(path_failover::VIA_FAILOVER_POLL_INTERVAL).await;
@@ -2385,13 +2405,7 @@ impl LiveBridge {
                     Some(
                         entries
                             .iter()
-                            .map(|e| PathTableRoute {
-                                hash: e.hash,
-                                hops: e.hops,
-                                hex_key: hex::encode(e.hash),
-                                interface: Some(e.interface.clone()).filter(|s| !s.is_empty()),
-                                via: e.via.map(hex::encode),
-                            })
+                            .map(path_table_route_from_entry)
                             .collect::<Vec<_>>(),
                     )
                 } else {
@@ -2544,16 +2558,8 @@ impl LiveBridge {
                 cache.insert(hex::encode(entry.hash), entry.interface.clone());
             }
         }
-        let path_entries = entries
-            .iter()
-            .map(|e| PathTableRoute {
-                hash: e.hash,
-                hops: e.hops,
-                hex_key: hex::encode(e.hash),
-                interface: Some(e.interface.clone()).filter(|s| !s.is_empty()),
-                via: e.via.map(hex::encode),
-            })
-            .collect::<Vec<_>>();
+        let path_entries: Vec<PathTableRoute> =
+            entries.iter().map(path_table_route_from_entry).collect();
         if let Ok(mut driver) = self.outbound.lock() {
             driver.update_path_table(&path_entries);
         }
@@ -4474,6 +4480,16 @@ const NOMAD_FORCE_PATH_REFRESH_WAIT: Duration = Duration::from_secs(4);
 /// Strict TCP/network DropPath→RequestPath wait before Link (no stale-accept fall-through).
 const NOMAD_TCP_PATH_PROBE_WAIT: Duration = Duration::from_secs(5);
 
+fn path_table_route_from_entry(e: &PathTableRpcEntry) -> PathTableRoute {
+    PathTableRoute {
+        hash: e.hash,
+        hops: e.hops,
+        hex_key: hex::encode(e.hash),
+        interface: Some(e.interface.clone()).filter(|s| !s.is_empty()),
+        via: e.via.map(hex::encode),
+    }
+}
+
 #[allow(clippy::too_many_arguments, clippy::result_large_err)] // Nomad Link diagnostics bundle
 fn finish_nomad_link_result(
     result: Result<Vec<u8>, NomadRemoteQueryError>,
@@ -4794,6 +4810,8 @@ mod announce_display_name_tests {
         assert!(without.get("egress").is_none());
         assert!(without.get("link_hops").is_none());
         assert!(without.get("timeout_secs").is_none());
+        assert!(without.get("failover_rounds").is_none());
+        assert!(without.get("iface").is_none());
     }
 
     #[test]

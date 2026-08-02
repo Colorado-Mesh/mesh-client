@@ -22,6 +22,7 @@ use tokio::sync::mpsc;
 use super::super::path_failover::{
     IFACE_SUPPRESS_SECS, push_tried_iface, should_retry_direct_path_failover,
 };
+use super::super::via::classify_interface;
 use super::{lxmf_payload_from_message, parse_hash16};
 
 const PATH_REQUEST_BACKOFF_SECS: f64 = 20.0;
@@ -31,7 +32,6 @@ const PATH_REQUEST_MAX_ATTEMPTS: u32 = 12;
 #[derive(Debug, Clone, Default)]
 struct DirectPathFailoverState {
     rounds: u8,
-    blocked_ifaces: Vec<String>,
     blocked_vias: Vec<String>,
     tried_interfaces: Vec<String>,
 }
@@ -624,6 +624,7 @@ impl LxmfOutboundDriver {
         );
         if let Some(hash) = message.hash.or(message.message_id) {
             self.pn_fallback_attempted.remove(&hash);
+            self.direct_path_failovers.remove(&hash);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_by_hash(event_tx, &hash, "failed", Some(method));
         }
@@ -835,15 +836,6 @@ impl LxmfOutboundDriver {
             let state = self.direct_path_failovers.entry(msg_hash).or_default();
             if should_retry_direct_path_failover(state.rounds) {
                 push_tried_iface(&mut state.tried_interfaces, iface.as_deref());
-                if let Some(name) = iface.clone() {
-                    if !state
-                        .blocked_ifaces
-                        .iter()
-                        .any(|b| b.eq_ignore_ascii_case(&name))
-                    {
-                        state.blocked_ifaces.push(name);
-                    }
-                }
                 if let Some(via_hex) = via.clone() {
                     if !state
                         .blocked_vias
@@ -893,13 +885,14 @@ impl LxmfOutboundDriver {
             reason,
             "Direct path failover: suppress/drop via + RequestPath; re-queuing Direct"
         );
+        let sent_via = iface.as_deref().map(classify_interface).map(str::to_string);
         emit_outbound_status_detailed(
             event_tx,
             Some(serde_json::Value::String(hex::encode(msg_hash))),
             Some(serde_json::Value::String(hex::encode(dest_hash))),
             "sending",
             Some("direct"),
-            iface,
+            sent_via,
             Some(tried),
             Some(rounds),
         );
@@ -1214,20 +1207,35 @@ fn queue_path_failover_queries(
     reason: &str,
 ) {
     let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
-    let _ = transport_tx.try_send(TransportMessage::Rpc {
+    if let Err(e) = transport_tx.try_send(TransportMessage::Rpc {
         query: TransportQuery::SuppressCurrentPathInterface {
             dest,
             duration: IFACE_SUPPRESS_SECS,
         },
         response_tx,
-    });
+    }) {
+        tracing::debug!(
+            dest = %hex::encode(dest),
+            error = %e,
+            reason,
+            "path failover SuppressCurrentPathInterface try_send rejected"
+        );
+    }
     for via_hex in vias_to_drop {
         if let Ok(next_hop) = parse_hash16(via_hex) {
             let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
-            let _ = transport_tx.try_send(TransportMessage::Rpc {
+            if let Err(e) = transport_tx.try_send(TransportMessage::Rpc {
                 query: TransportQuery::DropAllVia { next_hop },
                 response_tx,
-            });
+            }) {
+                tracing::debug!(
+                    dest = %hex::encode(dest),
+                    via = %via_hex,
+                    error = %e,
+                    reason,
+                    "path failover DropAllVia try_send rejected"
+                );
+            }
         }
     }
     let _ = try_queue_path_request(transport_tx, dest, true, reason);
@@ -1314,11 +1322,16 @@ mod tests {
             driver.path_interfaces.get(&dest_hash).map(String::as_str),
             Some("TTP_TCP")
         );
+        assert_eq!(
+            driver.path_vias.get(&dest_hash).map(String::as_str),
+            Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        );
 
         // Force refresh: drop local cache (transport DropPath happens in live.rs).
         driver.clear_path_to(&dest_hex);
         assert!(!driver.has_path_to(&dest_hex));
         assert!(!driver.path_interfaces.contains_key(&dest_hash));
+        assert!(!driver.path_vias.contains_key(&dest_hash));
 
         // Fresh route response reinstalls with updated hops.
         driver.update_path_table(&[PathTableRoute {
@@ -1333,6 +1346,82 @@ mod tests {
         assert_eq!(
             driver.path_interfaces.get(&dest_hash).map(String::as_str),
             Some("Local Transport Pi")
+        );
+        assert_eq!(
+            driver.path_vias.get(&dest_hash).map(String::as_str),
+            Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+        );
+    }
+
+    #[test]
+    fn requeue_direct_after_path_failover_exhausts_then_clears_state() {
+        use crate::stack::path_failover::MAX_VIA_FAILOVERS;
+        use lxmf_core::constants::DeliveryMethod;
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig};
+        use tokio::sync::broadcast;
+
+        let identity = Identity::new();
+        let (tx, mut rx) = mpsc::channel(32);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xcd);
+        let msg_hash = [0x42u8; 32];
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 4,
+            hex_key: hex::encode(dest_hash),
+            interface: Some("TTP_TCP".into()),
+            via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+        }]);
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, _event_rx) = broadcast::channel(8);
+
+        let make_msg = || {
+            let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
+            msg.hash = Some(msg_hash);
+            msg
+        };
+
+        for round in 1..=MAX_VIA_FAILOVERS {
+            // Drain queued control messages so the channel stays open.
+            while rx.try_recv().is_ok() {}
+            // Reinstall a path so each round has an iface/via to record.
+            driver.update_path_table(&[PathTableRoute {
+                hash: dest_hash,
+                hops: 4,
+                hex_key: hex::encode(dest_hash),
+                interface: Some(format!("Hub{round}")),
+                via: Some(format!("{round:032x}")),
+            }]);
+            let result = driver.requeue_direct_after_path_failover(
+                &mut router,
+                &event_tx,
+                make_msg(),
+                dest_hash,
+                "timed out waiting for link proof",
+            );
+            assert!(result.is_ok(), "round {round} should re-queue");
+            let state = driver
+                .direct_path_failovers
+                .get(&msg_hash)
+                .expect("failover state retained");
+            assert_eq!(state.rounds, round);
+            assert_eq!(state.tried_interfaces.len(), round as usize);
+        }
+
+        while rx.try_recv().is_ok() {}
+        let exhausted = driver.requeue_direct_after_path_failover(
+            &mut router,
+            &event_tx,
+            make_msg(),
+            dest_hash,
+            "timed out waiting for link proof",
+        );
+        assert!(exhausted.is_err(), "round after MAX should exhaust");
+        assert!(
+            !driver.direct_path_failovers.contains_key(&msg_hash),
+            "exhausted state must be removed"
         );
     }
 

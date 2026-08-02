@@ -1044,7 +1044,7 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
-5. For TCP `link_timeout`, check log fields `path_hops` / `link_hops` / `proof_budget_secs` / `raw=` — UI hop counts can lag the path table; trust `path_hops`. Persistent fails after the full proof budget usually mean the peer/hub did not return LRPROOF.
+5. For TCP `link_timeout`, check log fields `tried_interfaces` / `failover_rounds` / `iface` first (primary signal after path failover), then `path_hops` / `link_hops` / `proof_budget_secs` / `raw=` — UI hop counts can lag the path table; trust `path_hops`. Persistent fails after the full proof budget usually mean the peer/hub did not return LRPROOF.
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 

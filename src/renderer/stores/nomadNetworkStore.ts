@@ -97,13 +97,20 @@ function diagFieldsFromResponse(res: unknown): NomadFetchLogDiag {
     typeof r.path_ensure_kind === 'string' && r.path_ensure_kind.trim()
       ? r.path_ensure_kind.trim()
       : undefined;
+  const sanitizeIfaceName = (value: string): string =>
+    value
+      .replace(/[\r\n]+/g, ' ')
+      .trim()
+      .slice(0, 200);
   const triedInterfaces = Array.isArray(r.tried_interfaces)
     ? r.tried_interfaces
         .filter((n): n is string => typeof n === 'string')
-        .map((n) => n.trim())
+        .map(sanitizeIfaceName)
         .filter((n) => n.length > 0)
     : undefined;
-  const iface = typeof r.iface === 'string' && r.iface.trim() ? r.iface.trim() : undefined;
+  const iface =
+    typeof r.iface === 'string' && r.iface.trim() ? sanitizeIfaceName(r.iface) : undefined;
+  const ifaceOrUndefined = iface && iface.length > 0 ? iface : undefined;
   return {
     pathHops: optionalFiniteNumber(r.path_hops),
     linkHops: optionalFiniteNumber(r.link_hops),
@@ -115,7 +122,7 @@ function diagFieldsFromResponse(res: unknown): NomadFetchLogDiag {
     rawError: rawError || undefined,
     triedInterfaces: triedInterfaces?.length ? triedInterfaces : undefined,
     failoverRounds: optionalFiniteNumber(r.failover_rounds),
-    iface,
+    iface: ifaceOrUndefined,
   };
 }
 

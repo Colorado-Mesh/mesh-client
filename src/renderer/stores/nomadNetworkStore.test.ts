@@ -233,6 +233,32 @@ describe('nomadNetworkStore', () => {
     }
   });
 
+  it('sanitizes newlines in tried_interfaces and iface before logging', async () => {
+    const { spy, restore } = mockConsoleWarn();
+    try {
+      getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+      fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+      proxyGet.mockResolvedValue({
+        ok: false,
+        error: 'link_timeout',
+        tried_interfaces: ['TTP\nTCP', 'Local\r\nPi'],
+        iface: 'Local\nPi',
+      });
+
+      await useNomadNetworkStore.getState().fetchNomadPage('abcdef12', '/page/index.mu');
+      const messages = spy.mock.calls
+        .map((c) => c[0])
+        .filter((m): m is string => typeof m === 'string');
+      const failed = messages.find((m) => m.includes('[nomadNetworkStore] page fetch failed'));
+      expect(failed).toBeTruthy();
+      expect(failed).toContain('tried_interfaces=TTP TCP,Local Pi');
+      expect(failed).toContain('iface=Local Pi');
+      expect(failed).not.toMatch(/tried_interfaces=[^\s]*\n/);
+    } finally {
+      restore();
+    }
+  });
+
   it('logs a warning when file fetch returns ok:false', async () => {
     const { spy, restore } = mockConsoleWarn();
     try {
