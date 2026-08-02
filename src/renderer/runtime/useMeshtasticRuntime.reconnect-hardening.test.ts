@@ -124,6 +124,15 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('skip overlapping open');
   });
 
+  it('bounds BLE reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    expect(SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(SOURCE).toContain('raceWithDeadline');
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('raceWithDeadline');
+    expect(reconnectBody).toContain('BLE reconnect attempt timed out after');
+    expect(reconnectBody).toContain('attemptActive');
+  });
+
   it('defers starting reconnect while open+configure is already in flight', () => {
     const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
     expect(lostBody).toContain('reconnectConnectInFlightRef.current');

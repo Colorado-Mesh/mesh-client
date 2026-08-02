@@ -58,9 +58,23 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     expect(SOURCE).toContain('duplicate IPC would disconnect and break handshake');
   });
 
-  it('meshcore coalesces duplicate connect while GATT is still in progress', () => {
+  it('coalesces duplicate connect while GATT is still in progress (Meshtastic + MeshCore)', () => {
     expect(SOURCE).toContain('connect coalesce');
-    expect(SOURCE).toContain('meshcoreGattInflight');
+    expect(SOURCE).toContain('gattSetupInflight');
+    expect(SOURCE).not.toContain('meshcoreGattInflight');
+  });
+
+  it('installs gattSetupInflight after connectAsync for both LoRa sessions', () => {
+    expect(SOURCE).toMatch(
+      /connectAsync done[\s\S]*?session\.gattSetupInflight = \{[\s\S]*?discoverSomeServicesAndCharacteristicsAsync|discoverAllServicesAndCharacteristicsAsync/,
+    );
+    // Must not be gated on meshcore-only anymore.
+    expect(SOURCE).not.toMatch(
+      /if \(isMeshcore\) \{\s*let resolveGatt[\s\S]*?session\.gattSetupInflight/,
+    );
+    expect(SOURCE).toMatch(
+      /clearSessionState[\s\S]*?session\.gattSetupInflight\.reject\(new Error\('BLE session cleared'\)\)/,
+    );
   });
 
   it('branches on sessionId to pick the correct service UUID for discovery', () => {

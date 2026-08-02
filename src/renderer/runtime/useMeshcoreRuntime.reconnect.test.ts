@@ -89,9 +89,36 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS');
   });
 
-  it('defers Noble disconnect only before a live session exists', () => {
+  it('defers Noble disconnect while connect or reconnect open is in flight (Meshtastic parity)', () => {
+    expect(RUNTIME_SOURCE).toContain('meshcoreReconnectConnectInFlightRef');
     expect(RUNTIME_SOURCE).toMatch(
-      /bleConnectInProgressRef\.current &&[\s\S]*?!meshcoreDriverConnectedRef\.current &&[\s\S]*?!connRef\.current/,
+      /onNobleBleDisconnected[\s\S]*?bleConnectInProgressRef\.current \|\|[\s\S]*?meshcoreReconnectConnectInFlightRef\.current[\s\S]*?defer reconnect until connect settles/,
+    );
+  });
+
+  it('bounds BLE reconnect open+attach with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    expect(RUNTIME_SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(RUNTIME_SOURCE).toContain('raceWithDeadline');
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('raceWithDeadline');
+    expect(reconnectBody).toContain('BLE reconnect attempt timed out after');
+    expect(reconnectBody).toContain('attemptActive');
+    expect(reconnectBody).toContain('meshcoreReconnectConnectInFlightRef.current = true');
+  });
+
+  it('defers starting reconnect while open+attach is already in flight', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    expect(lostBody).toContain('meshcoreReconnectConnectInFlightRef.current');
+    expect(lostBody).toContain('defer reconnect until in-flight open settles');
+  });
+
+  it('flushes deferred reconnects after reconnect attempts settle', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
+    expect(finallyBody).toContain('meshcoreReconnectConnectInFlightRef.current = false');
+    expect(finallyBody).toContain('if (meshcoreDeferredReconnectRef.current)');
+    expect(finallyBody).toContain(
+      'queueMicrotask(() => handleMeshcoreConnectionLostRef.current())',
     );
   });
 

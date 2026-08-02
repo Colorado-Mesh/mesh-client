@@ -78,7 +78,7 @@ import {
   isMeshcoreSetupAbortError,
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
-import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -387,6 +387,7 @@ import {
   MESHCORE_STATS_POLL_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
+  NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
@@ -548,6 +549,8 @@ export function useMeshcoreRuntime() {
   const meshcoreDriverConnectedRef = useRef(false);
   const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
   const bleConnectInProgressRef = useRef(false);
+  /** True while reconnect open/attach is in flight (single-flight + deferred Noble flush). */
+  const meshcoreReconnectConnectInFlightRef = useRef(false);
   /** Set when Noble drops during an in-flight connect; reconnect runs after connect() settles. */
   const meshcoreDeferredReconnectRef = useRef(false);
   const meshcoreConnectionParamsRef = useRef<{
@@ -1834,9 +1837,8 @@ export function useMeshcoreRuntime() {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
       if (
-        bleConnectInProgressRef.current &&
-        !meshcoreDriverConnectedRef.current &&
-        !connRef.current
+        bleConnectInProgressRef.current ||
+        (meshcoreIsReconnectingRef.current && meshcoreReconnectConnectInFlightRef.current)
       ) {
         meshcoreDeferredReconnectRef.current = true;
         console.debug(
@@ -2763,8 +2765,21 @@ export function useMeshcoreRuntime() {
 
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
     const isBleReconnect = params.rfType === 'ble';
-    const runReconnect = async () => {
+    if (meshcoreReconnectConnectInFlightRef.current) {
+      console.debug(
+        '[useMeshcoreRuntime] reconnect: skip overlapping open (connect already in flight)',
+      );
+      meshcoreDeferredReconnectRef.current = true;
+      return;
+    }
+    meshcoreReconnectConnectInFlightRef.current = true;
+    if (isBleReconnect) bleConnectInProgressRef.current = true;
+    let attemptActive = true;
+    const runReconnectAttempt = async () => {
       await prepareRfConnect(params.rfType, { preserveReconnectState: true });
+      if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
+        throw new Error('MeshCore reconnect superseded before open');
+      }
       opened =
         isBleReconnect && isRendererNobleBlePlatform()
           ? await withNobleBleConnectMutex('meshcore', () =>
@@ -2781,28 +2796,46 @@ export function useMeshcoreRuntime() {
               portSignature:
                 params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
             });
+      if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
+        throw new Error('MeshCore reconnect superseded after open');
+      }
       await attachRfSession(opened.driverIdentityId, params.rfType);
-    };
-    try {
-      await runReconnect();
-      if (meshcoreReconnectGenerationRef.current !== generation) {
+      if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
         throw new Error('MeshCore reconnect superseded during attach');
       }
       if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
         throw new Error('RF link lost after MeshCore reconnect attach');
+      }
+      if (!attemptActive || meshcoreReconnectGenerationRef.current !== generation) {
+        throw new Error('MeshCore reconnect superseded after attach');
       }
       console.debug(
         `[useMeshcoreRuntime] Reconnect succeeded on attempt ${meshcoreReconnectAttemptRef.current}`,
       );
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
+      meshcoreDeferredReconnectRef.current = false;
       setState((s) => ({
         ...s,
         serialNeedsReselect: false,
         connectionLoss: false,
       }));
       requestChatOutboxDrain('meshcore');
+    };
+    const reconnectWork = runReconnectAttempt();
+    void reconnectWork.catch(() => {});
+    try {
+      if (isBleReconnect) {
+        await raceWithDeadline(
+          reconnectWork,
+          NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+          `BLE reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
+        );
+      } else {
+        await reconnectWork;
+      }
     } catch (err) {
+      attemptActive = false;
       if (isMeshcoreSetupAbortError(err)) {
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
         meshcoreIsReconnectingRef.current = false;
@@ -2819,11 +2852,30 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] Reconnect attempt ${meshcoreReconnectAttemptRef.current} failed: ` +
           errLikeToLogString(err),
       );
-      meshcoreIsReconnectingRef.current = true;
-      void attemptMeshcoreReconnectRef.current();
+      // Retry only if this generation is still current. Deferred Noble drops are flushed in finally.
+      if (
+        !meshcoreDeferredReconnectRef.current &&
+        meshcoreIsReconnectingRef.current &&
+        meshcoreReconnectGenerationRef.current === generation
+      ) {
+        queueMicrotask(() => {
+          void attemptMeshcoreReconnectRef.current();
+        });
+      }
     } finally {
+      attemptActive = false;
+      meshcoreReconnectConnectInFlightRef.current = false;
       if (isBleReconnect) {
         bleConnectInProgressRef.current = false;
+      }
+      if (meshcoreDeferredReconnectRef.current) {
+        meshcoreDeferredReconnectRef.current = false;
+        if (meshcoreIsReconnectingRef.current) {
+          console.debug(
+            '[useMeshcoreRuntime] reconnect settled — running deferred reconnect after transport drop',
+          );
+          queueMicrotask(() => handleMeshcoreConnectionLostRef.current());
+        }
       }
     }
   }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
@@ -2885,6 +2937,15 @@ export function useMeshcoreRuntime() {
               errLikeToLogString(e),
           );
         });
+      }
+      // Single-flight: if open+attach is still running, generation bump invalidates it;
+      // that attempt's failure path (or finally deferred flush) schedules the next cycle.
+      if (meshcoreReconnectConnectInFlightRef.current) {
+        console.debug(
+          '[useMeshcoreRuntime] Connection lost — defer reconnect until in-flight open settles',
+        );
+        meshcoreDeferredReconnectRef.current = true;
+        return;
       }
       void attemptMeshcoreReconnectRef.current();
     })();
