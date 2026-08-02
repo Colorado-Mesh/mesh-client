@@ -50,8 +50,9 @@ use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, wire_packet_from_tap,
 };
 use super::path_failover::{
-    self, MAX_VIA_FAILOVERS, PathSlotCandidate, active_via_hash_from_slots, live_interface_names,
-    push_tried_iface, remaining_live_ifaces, select_unblocked_slot, via_prefix,
+    self, PathSlotCandidate, active_via_hash_from_slots, live_interface_names,
+    record_path_failover_attempt, remaining_live_ifaces, select_unblocked_slot,
+    should_attempt_nomad_via_failover, via_prefix,
 };
 use super::path_medium::{self, PathMediumPreferenceSetting, PathMediumSetting};
 use super::path_speed;
@@ -1083,20 +1084,19 @@ impl LiveBridge {
         // / other live hubs, and retry — up to MAX_VIA_FAILOVERS inside one fetch.
         let mut failover_round: u8 = 0;
         let mut tried_interfaces: Vec<String> = Vec::new();
-        push_tried_iface(&mut tried_interfaces, current_iface.as_deref());
         let mut blocked_ifaces: Vec<String> = Vec::new();
         let mut blocked_vias: Vec<String> = Vec::new();
-        if let Some(iface) = current_iface.clone() {
-            blocked_ifaces.push(iface);
-        }
-        if let Some(via) = current_via.clone() {
-            blocked_vias.push(via);
-        }
+        record_path_failover_attempt(
+            &mut tried_interfaces,
+            &mut blocked_ifaces,
+            &mut blocked_vias,
+            current_iface.as_deref(),
+            current_via.as_deref(),
+        );
         while result
             .as_ref()
             .err()
-            .is_some_and(|e| e.code == "link_timeout")
-            && failover_round < MAX_VIA_FAILOVERS
+            .is_some_and(|e| should_attempt_nomad_via_failover(&e.code, failover_round))
         {
             if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
                 break;
@@ -1149,13 +1149,13 @@ impl LiveBridge {
             if self.nomad_link_generation.load(Ordering::SeqCst) != link_gen {
                 break;
             }
-            push_tried_iface(&mut tried_interfaces, failover_iface.as_deref());
-            if let Some(iface) = failover_iface.clone() {
-                blocked_ifaces.push(iface);
-            }
-            if let Some(via) = failover_via.clone() {
-                blocked_vias.push(via);
-            }
+            record_path_failover_attempt(
+                &mut tried_interfaces,
+                &mut blocked_ifaces,
+                &mut blocked_vias,
+                failover_iface.as_deref(),
+                failover_via.as_deref(),
+            );
             let (failover_timeout, failover_egress) =
                 nomad_timeouts::resolve_nomad_page_timeout_secs(
                     interfaces,

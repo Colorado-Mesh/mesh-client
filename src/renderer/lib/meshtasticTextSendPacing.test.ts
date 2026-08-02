@@ -66,4 +66,41 @@ describe('withMeshtasticTextSendPacing', () => {
     await secondPending;
     expect(next).toHaveBeenCalledTimes(1);
   });
+
+  it('serializes concurrent callers so overlapping waits cannot both send early', async () => {
+    // Without a queue, Composer + outbox could both pass the gap check and stamp after
+    // overlapping sends — shrinking the radio-visible interval under firmware's 2s window.
+    const order: string[] = [];
+    const makeSend = (label: string, durationMs: number) =>
+      vi.fn().mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            order.push(`start:${label}`);
+            setTimeout(() => {
+              order.push(`end:${label}`);
+              resolve();
+            }, durationMs);
+          }),
+      );
+
+    const first = makeSend('a', 100);
+    const second = makeSend('b', 50);
+
+    const firstPending = withMeshtasticTextSendPacing(first);
+    const secondPending = withMeshtasticTextSendPacing(second);
+
+    await vi.advanceTimersByTimeAsync(100);
+    await firstPending;
+    expect(second).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS - 100);
+    expect(second).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(200);
+    await secondPending;
+
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['start:a', 'end:a', 'start:b', 'end:b']);
+  });
 });

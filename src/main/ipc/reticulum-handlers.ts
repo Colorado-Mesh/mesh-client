@@ -377,6 +377,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
    */
   ipcMain.handle('reticulum:rncpSend', async (event, opts: unknown) => {
     assertIpcSender(event, 'reticulum:rncpSend');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     if (!opts || typeof opts !== 'object') {
       throw new TypeError('rncpSend: opts must be an object');
     }
@@ -415,6 +416,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
    */
   ipcMain.handle('reticulum:rncpFetch', async (event, opts: unknown) => {
     assertIpcSender(event, 'reticulum:rncpFetch');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     if (!opts || typeof opts !== 'object') {
       throw new TypeError('rncpFetch: opts must be an object');
     }
@@ -459,6 +461,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
    */
   ipcMain.handle('reticulum:setRncpListener', async (event, opts: unknown) => {
     assertIpcSender(event, 'reticulum:setRncpListener');
+    reticulumProxyIpcRateLimit.checkOrThrow();
     if (!opts || typeof opts !== 'object') {
       throw new TypeError('setRncpListener: opts must be an object');
     }
