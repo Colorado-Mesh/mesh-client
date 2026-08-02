@@ -14,7 +14,7 @@
  * Safety: only a fixed allowlist of paths is removed, always resolved under the repo root
  * and asserted to stay inside it. Symlinks are removed as links, never followed.
  */
-import { existsSync, rmSync } from 'fs';
+import { lstatSync, rmSync } from 'fs';
 import { createInterface } from 'readline';
 import { spawnSync } from 'child_process';
 import { dirname, relative, resolve, sep } from 'path';
@@ -46,8 +46,37 @@ const TIER2_PATHS = [
 const ALL_PATHS = [...TIER1_PATHS, ...TIER2_PATHS];
 
 /**
+ * True when `p` exists as a real file/dir or symlink (including a dangling link); false only
+ * for ENOENT. Uses lstat so symlinks are never followed for the existence decision — this is
+ * important both for cleanup checks (a left-over dangling symlink is still present and should
+ * be removed) and for reinstall detection on tier-2 paths.
+ * @param {string} p
+ */
+export function pathExists(p) {
+  try {
+    lstatSync(p);
+    return true;
+  } catch (err) {
+    return !(err && err.code === 'ENOENT');
+  }
+}
+
+/** @param {string} p @returns {boolean} */
+function lstatIsSymbolicLink(p) {
+  try {
+    return lstatSync(p).isSymbolicLink();
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return false;
+    throw err;
+  }
+}
+
+/**
  * Resolve allowlist paths under rootDir, asserting each stays inside it. Throws on escape so
- * an allowlist mistake can never delete outside the repo.
+ * an allowlist mistake can never delete outside the repo. It also rejects any symbolic-link
+ * *ancestor* between rootDir and the leaf: removing a path whose parent is a symlink would
+ * follow that link and delete outside the repo, so such entries are refused up front. The
+ * leaf itself may be a symlink, since `rm` removes a link without following it.
  * @param {string} rootDir
  * @param {Array<{name: string, tier: 1 | 2}>} entries
  * @returns {Array<{name: string, abs: string, tier: 1 | 2}>}
@@ -66,6 +95,16 @@ export function resolvePaths(rootDir, entries) {
         `clean-build: refusing to touch '${entry.name}' (resolves to '${entry.abs}', outside repo root '${rootDir}')`,
       );
     }
+    const parts = entry.name.split('/');
+    let current = rootDir;
+    for (let i = 0; i < parts.length - 1; i++) {
+      current = resolve(current, parts[i]);
+      if (lstatIsSymbolicLink(current)) {
+        throw new Error(
+          `clean-build: refusing to follow symlink ancestor '${current}' (entry '${entry.name}')`,
+        );
+      }
+    }
   }
   return resolved;
 }
@@ -80,22 +119,22 @@ export function filterPaths(full, resolved) {
  * path was actually present (so an already-clean tree skips the slow rebuild).
  * @param {boolean} full @param {ReturnType<typeof resolvePaths>} resolved */
 export function planReinstall(full, resolved) {
-  const tier2Present = resolved.some((e) => e.tier === 2 && existsSync(e.abs));
+  const tier2Present = resolved.some((e) => e.tier === 2 && pathExists(e.abs));
   return { install: full && tier2Present, sidecar: full && tier2Present };
 }
 
-/** @param {boolean} full @param {Array<{name: string}>} removals @param {{install: boolean; sidecar: boolean}} reinstall */
-export function printPlan(full, removals, reinstall) {
-  console.log(
+/** @param {NodeJS.WriteStream} out @param {boolean} full @param {Array<{name: string}>} removals @param {{install: boolean; sidecar: boolean}} reinstall */
+export function printPlan(out, full, removals, reinstall) {
+  out.write(
     full
-      ? 'This will remove:'
-      : 'This will remove (node_modules and the Reticulum sidecar are kept):',
+      ? 'This will remove:\n'
+      : 'This will remove (node_modules and the Reticulum sidecar are kept):\n',
   );
-  for (const r of removals) console.log(`  - ${r.name}`);
+  for (const r of removals) out.write(`  - ${r.name}\n`);
   if (reinstall.install) {
-    console.log('After removal, a working environment will be restored:');
-    if (reinstall.sidecar) console.log('  - pnpm install');
-    if (reinstall.sidecar) console.log('  - pnpm run reticulum:sidecar:build');
+    out.write('After removal, a working environment will be restored:\n');
+    if (reinstall.sidecar) out.write('  - pnpm install\n');
+    if (reinstall.sidecar) out.write('  - pnpm run reticulum:sidecar:build\n');
   }
 }
 
@@ -130,29 +169,29 @@ export function confirmProceed(inStream, outStream, yes) {
   });
 }
 
-/** @param {string[]} cmd @param {string} cwd */
-export function runCmd(cmd, cwd) {
-  const res = spawnSync(cmd[0], cmd.slice(1), { stdio: 'inherit', cwd, shell: false });
+/**
+ * Run a command. On win32 the command is routed through the shell so `.cmd`/`.bat` shims such
+ * as `pnpm.cmd` are resolvable (Node spawnSync with shell:false cannot execute them); all other
+ * platforms use shell:false to avoid shell interpolation.
+ * @param {string[]} cmd @param {string} cwd @param {string} platform @param {(cmd: string, args: string[], opts: object) => {status?: number|null; error?: Error}} spawnFn
+ */
+export function runCmd(cmd, cwd, platform = process.platform, spawnFn = spawnSync) {
+  const res = spawnFn(cmd[0], cmd.slice(1), { stdio: 'inherit', cwd, shell: platform === 'win32' });
   return res.status ?? (res.error ? 1 : 0);
 }
 
 /** @param {Array<{name: string, abs: string, tier: 1 | 2}>} resolved */
 export function existingPaths(resolved) {
-  return resolved.filter((e) => existsSync(e.abs));
+  return resolved.filter((e) => pathExists(e.abs));
 }
 
 /**
  * @param {string} rootDir @param {string[]} argv
- * @param {{stdin?: NodeJS.ReadStream; stdout?: NodeJS.WriteStream; stderr?: NodeJS.WriteStream; run?: (cmd: string[], cwd: string) => number}} io
+ * @param {{stdin?: NodeJS.ReadStream; stdout?: NodeJS.WriteStream; run?: (cmd: string[], cwd: string) => number}} io
  * @returns {Promise<{removed: string[], reinstalled: boolean}>}
  */
 export async function runClean(rootDir = repoRoot, argv = process.argv.slice(2), io = {}) {
-  const {
-    stdin = process.stdin,
-    stdout = process.stdout,
-    stderr = process.stderr,
-    run = runCmd,
-  } = io;
+  const { stdin = process.stdin, stdout = process.stdout, run = runCmd } = io;
   const flags = parseFlags(argv);
 
   const paths = resolvePaths(rootDir, ALL_PATHS);
@@ -160,7 +199,7 @@ export async function runClean(rootDir = repoRoot, argv = process.argv.slice(2),
   const existing = existingPaths(paths);
   const reinstall = planReinstall(flags.full, existing);
 
-  printPlan(flags.full, candidates, reinstall);
+  printPlan(stdout, flags.full, candidates, reinstall);
 
   if (!(await confirmProceed(stdin, stdout, flags.yes))) {
     stdout.write('Aborted — nothing removed.\n');
@@ -169,7 +208,7 @@ export async function runClean(rootDir = repoRoot, argv = process.argv.slice(2),
 
   const removed = [];
   for (const entry of candidates) {
-    if (!existsSync(entry.abs)) continue;
+    if (!pathExists(entry.abs)) continue;
     rmSync(entry.abs, { recursive: true, force: true });
     removed.push(entry.name);
     stdout.write(`removed ${entry.name}\n`);
@@ -178,21 +217,38 @@ export async function runClean(rootDir = repoRoot, argv = process.argv.slice(2),
   if (reinstall.install && removed.length > 0) {
     stdout.write('Restoring working environment…\n');
     const installOk = run(['pnpm', 'install'], rootDir) === 0;
-    let sidecarOk = true;
-    if (installOk && reinstall.sidecar) {
-      sidecarOk = run(['pnpm', 'run', 'reticulum:sidecar:build'], rootDir) === 0;
-    }
     if (!installOk) {
-      stderr.write('clean-build: `pnpm install` failed — dependencies not restored.\n');
-    } else if (!sidecarOk) {
-      stderr.write(
-        'clean-build: sidecar rebuild failed (is cargo installed?) — Reticulum may be unavailable.\n',
+      throw restorationError(
+        'clean-build: `pnpm install` failed — dependencies not restored.',
+        removed,
       );
     }
-    return { removed, reinstalled: installOk && sidecarOk };
+    let sidecarOk = true;
+    if (reinstall.sidecar) {
+      sidecarOk = run(['pnpm', 'run', 'reticulum:sidecar:build'], rootDir) === 0;
+      if (!sidecarOk) {
+        throw restorationError(
+          'clean-build: sidecar rebuild failed (is cargo installed?) — Reticulum may be unavailable.',
+          removed,
+        );
+      }
+    }
+    return { removed, reinstalled: sidecarOk };
   }
 
   return { removed, reinstalled: false };
+}
+
+/**
+ * Build the error thrown when a `--full` restoration fails. Carries the already-removed paths
+ * so a caller can report what was cleaned even though the restore did not complete.
+ * @param {string} message @param {string[]} removed @returns {Error & {code: string, removed: string[]}}
+ */
+export function restorationError(message, removed) {
+  const err = new Error(message);
+  err.code = 'RESTORE_FAILED';
+  err.removed = removed;
+  return err;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
