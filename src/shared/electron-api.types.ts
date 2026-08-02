@@ -145,6 +145,13 @@ export interface NobleBleDevice {
 export type NobleBleSessionId = MeshProtocol;
 export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
 
+/** Host↔radio BLE RSSI while GATT is connected (Noble updateRssiAsync). */
+export interface NobleBleLinkRssiPayload {
+  sessionId: NobleBleSessionId;
+  /** RSSI in dBm; null when the last poll failed or returned non-finite. */
+  rssi: number | null;
+}
+
 export interface SerialPort {
   portId: string;
   displayName: string;
@@ -789,6 +796,7 @@ export interface ElectronAPI {
   // ─── Noble BLE ───────────────────────────────────────────────────────────────
   onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
   onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
+  onNobleBleLinkRssi: (cb: (payload: NobleBleLinkRssiPayload) => void) => () => void;
   onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
   onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
   onNobleBleConnectAborted: (
@@ -950,6 +958,15 @@ export interface ElectronAPI {
     write: (bytes: number[]) => Promise<void>;
     disconnect: () => Promise<void>;
     onData: (cb: (bytes: Uint8Array) => void) => () => void;
+  };
+
+  /**
+   * Host↔radio link-quality probes (Connection panel meter).
+   * Returns RTT in ms, or null when the probe fails / times out.
+   */
+  hostLink: {
+    probeHttpRtt: (host: string, tls: boolean) => Promise<number | null>;
+    probeTcpRtt: (host: string, port: number) => Promise<number | null>;
   };
 
   // ─── Meshtastic TCP bridge ────────────────────────────────────────────────────

@@ -460,6 +460,7 @@ vi.mock('../preload', () => ({
       disconnectNobleBle: vi.fn(),
       onNobleBleDisconnected: vi.fn(),
       onNobleBleDeviceDiscovered: vi.fn(),
+      onNobleBleLinkRssi: vi.fn(),
       startNobleBleScanning: vi.fn(),
       onSerialPortsDiscovered: vi.fn(),
     },

@@ -4,6 +4,7 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
+const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
 
 describe('IPC payload size limits (source contract)', () => {
   it('defines meshcore tcp-write, http:write, and noble-ble limits and uses them in handlers', () => {
@@ -292,8 +293,6 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     join(__dirname, 'ipc/reticulum-db-handlers.ts'),
     'utf8',
   );
-  const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf8');
-
   it('registers reticulum lifecycle and proxy handlers', () => {
     expect(INDEX_SOURCE).toContain('registerReticulumIpcHandlers');
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:start'");
@@ -359,6 +358,24 @@ describe('HTTP bridge IPC handlers (source contract)', () => {
   it('http:connect uses an in-flight guard to prevent concurrent fetches', () => {
     expect(INDEX_SOURCE).toContain('fetchInFlight');
     expect(INDEX_SOURCE).toMatch(/fetchInFlight.*return/);
+  });
+});
+
+describe('Host link quality IPC (source contract)', () => {
+  it('forwards Noble link RSSI and registers HTTP/TCP RTT probes', () => {
+    expect(INDEX_SOURCE).toContain("webContents.send('noble-ble-link-rssi'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeHttpRtt'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeTcpRtt'");
+  });
+});
+
+describe('Host link quality preload surface (source contract)', () => {
+  it('exposes onNobleBleLinkRssi and hostLink probe APIs', () => {
+    expect(PRELOAD_SOURCE).toContain('onNobleBleLinkRssi:');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.on('noble-ble-link-rssi'");
+    expect(PRELOAD_SOURCE).toContain('hostLink:');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeHttpRtt'");
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeTcpRtt'");
   });
 });
 

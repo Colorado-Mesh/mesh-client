@@ -1273,7 +1273,13 @@
     "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper 사전 설정은 알려진 장치 서명 브로커만 지원합니다. 다른 브로커에 대해 사용자 정의를 사용하십시오.",
     "letsMeshUsernameV1Hex": "사용자 이름은 v1_뒤에 64 16진수 문자 (공개 키) 이어야 합니다.",
     "bleWeakSignalWarning": "블루투스 신호가 약합니다 ({{rssi}} dBm). 안정적인 연결을 위해 더 가까이 이동하세요.",
-    "bleRssiDbm": "{{rssi}} dBm"
+    "bleRssiDbm": "{{rssi}} dBm",
+    "hostSignal": "신호",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "연결 품질",
+    "linkQualityMs": "{{ms}} ms",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "사용할 수 없음 (웹 블루투스)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

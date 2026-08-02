@@ -1275,7 +1275,13 @@
     "letsMeshKnownBrokersOnly": "Попереднє налаштування LetsMesh /MeshMapper підтримує лише відомих брокерів, які підписують пристрої. Використовуйте Custom для інших брокерів.",
     "letsMeshUsernameV1Hex": "Ім'я користувача має бути v1_ з 64 шістнадцятковими символами (відкритий ключ).",
     "bleWeakSignalWarning": "Сигнал Bluetooth слабкий ({{rssi}} dBm). Підійдіть ближче для стабільного з'єднання.",
-    "bleRssiDbm": "{{rssi}} дБм"
+    "bleRssiDbm": "{{rssi}} дБм",
+    "hostSignal": "Сигнал",
+    "hostSignalUnavailable": "—",
+    "linkQuality": "Якість зв'язку",
+    "linkQualityMs": "{{ms}} мс",
+    "linkQualityUnavailable": "—",
+    "signalUnavailableWebBluetooth": "Недоступно (веб Bluetooth)"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
