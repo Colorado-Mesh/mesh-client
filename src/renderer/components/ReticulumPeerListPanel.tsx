@@ -123,7 +123,12 @@ const PeerTableRow = memo(function PeerTableRow({
     >
       <td className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono" title={peer.destination_hash}>
         <span className="inline-flex items-center gap-1.5">
-          <ReticulumProfileIconSlot iconName={iconName} iconColor={iconColor} size={14} />
+          <ReticulumProfileIconSlot
+            iconName={iconName}
+            iconColor={iconColor}
+            size={14}
+            destinationHash={peer.destination_hash}
+          />
           <span className="truncate">{displayLabel}</span>
           {verified ? (
             <Check

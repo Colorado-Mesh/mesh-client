@@ -6,8 +6,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
+use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
-use lxmf_core::propagation_sync::{PropagationSyncTask, SyncTaskState};
+use lxmf_core::propagation_sync::{PeerSyncTerminalState, PropagationSyncTask, SyncTaskState};
 use lxmf_core::router::LxmRouter;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
@@ -20,6 +21,14 @@ pub struct PropagationBridge {
     local_serving: AtomicBool,
     /// Serializes sync-run generation changes with emitter cancel / pin / event side effects.
     sync_lifecycle: Mutex<()>,
+    /// Sticky offer failure label (rsLXMF tip keeps terminal state on the task, not these fields).
+    last_offer_error: Mutex<Option<&'static str>>,
+    /// Sticky establish failure label for UI / offer-probe.
+    last_establish_error: Mutex<Option<&'static str>>,
+    /// Sticky success/failure after Complete/Failed collapses to Idle.
+    last_finished_ok: Mutex<Option<bool>>,
+    /// Peak sync progress seen before tip collapses Complete/Failed → Idle.
+    peak_progress: Mutex<f64>,
 }
 
 impl PropagationBridge {
@@ -37,6 +46,7 @@ impl PropagationBridge {
             min_stamp_cost: policy.min_stamp_cost(),
             peering_cost: policy.peering_cost,
             max_message_size: policy.propagation_limit_kb.saturating_mul(1024),
+            max_offer_size: policy.sync_limit_kb.saturating_mul(1000),
         };
         let local_node = Arc::new(Mutex::new(
             PropagationNode::with_storage(node_config, local_dest_hash, storage_dir)
@@ -46,14 +56,30 @@ impl PropagationBridge {
         let signing_key = identity
             .get_signing_key()
             .ok_or_else(|| "propagation sync: identity has no signing key".to_string())?;
-        sync_task.set_local_identity(identity.get_public_key(), signing_key);
+        sync_task.set_identity(identity.get_public_key(), signing_key);
         Ok(Self {
             local_dest_hash,
             local_node,
             sync_task: Mutex::new(sync_task),
             local_serving: AtomicBool::new(false),
             sync_lifecycle: Mutex::new(()),
+            last_offer_error: Mutex::new(None),
+            last_establish_error: Mutex::new(None),
+            last_finished_ok: Mutex::new(None),
+            peak_progress: Mutex::new(0.0),
         })
+    }
+
+    /// Map rsLXMF sync-task state to UI / probe progress (single source of truth).
+    pub fn progress_for_state(state: SyncTaskState) -> f64 {
+        match state {
+            SyncTaskState::Establishing => 10.0,
+            SyncTaskState::Offering => 25.0,
+            SyncTaskState::AwaitingResponse => 40.0,
+            SyncTaskState::Transferring => 70.0,
+            SyncTaskState::Complete => 100.0,
+            SyncTaskState::Idle | SyncTaskState::Failed => 0.0,
+        }
     }
 
     pub fn local_node(&self) -> Arc<Mutex<PropagationNode>> {
@@ -84,7 +110,53 @@ impl PropagationBridge {
             .unwrap_or((0, 0))
     }
 
-    #[allow(clippy::type_complexity)] // peering tuple mirrors RNS PropagationSyncTask::configure_peering
+    fn clear_sticky_errors(&self) {
+        if let Ok(mut slot) = self.last_offer_error.lock() {
+            *slot = None;
+        }
+        if let Ok(mut slot) = self.last_establish_error.lock() {
+            *slot = None;
+        }
+        if let Ok(mut slot) = self.last_finished_ok.lock() {
+            *slot = None;
+        }
+        if let Ok(mut slot) = self.peak_progress.lock() {
+            *slot = 0.0;
+        }
+    }
+
+    fn note_peak_progress(&self, progress: f64) {
+        if progress <= 0.0 {
+            return;
+        }
+        if let Ok(mut peak) = self.peak_progress.lock() {
+            if progress > *peak {
+                *peak = progress;
+            }
+        }
+    }
+
+    /// Peak progress observed for the current/last sync run (survives Idle collapse).
+    pub fn last_peak_progress(&self) -> f64 {
+        self.peak_progress.lock().map(|p| *p).unwrap_or(0.0)
+    }
+
+    fn stamp_terminal_failure_from_peak(&self, peak: f64) {
+        // Tip collapses Complete/Failed → Idle in the same tick, so task.state after
+        // take_terminal is always Idle (progress 0). Classify from peak instead.
+        // Never invent "Unknown" (probe maps that to PROPAGATION_OFFER_UNSUPPORTED).
+        // peak >= 25 (Offering+): leave offer_error unset so probe can treat it as OK.
+        if peak >= 25.0 {
+            return;
+        }
+        if let Ok(mut slot) = self.last_establish_error.lock() {
+            if slot.is_none() {
+                *slot = Some("NoLinkProof");
+            }
+        }
+    }
+
+    #[allow(clippy::type_complexity)] // peering tuple: local_id, peer_id, cost, optional key
     pub fn start_sync(
         &self,
         remote_hash: [u8; 16],
@@ -93,18 +165,29 @@ impl PropagationBridge {
         let Ok(mut task) = self.sync_task.lock() else {
             return false;
         };
-        if let Some((local_id, peer_id, cost, key)) = peering {
-            task.configure_peering(local_id, peer_id, cost, key);
+        self.clear_sticky_errors();
+        let mut policy = OutboundOfferPolicy::unrestricted(remote_hash);
+        if let Some((_local_id, _peer_id, cost, key)) = peering {
+            policy.peering_cost = cost;
+            if let Some(k) = key {
+                policy.peering_key = k;
+            }
         }
-        task.request_sync_now(remote_hash);
-        true
+        task.request_sync_now_with_policy(policy)
     }
 
     pub fn cancel_sync(&self) {
+        // Tip `cancel_peer_sync` leaves Idle + clears terminal_result. Do not force
+        // Failed afterward — that blocks the next `request_sync_now_*` (Idle required).
         if let Ok(mut task) = self.sync_task.lock() {
-            task.state = SyncTaskState::Failed;
-            // Sticky fail so the progress emitter does not emit a terminal progress=100.
-            task.last_finished_ok = Some(false);
+            if let Some(hash) = task.node_dest_hash() {
+                let _ = task.cancel_peer_sync(&hash);
+            } else {
+                task.state = SyncTaskState::Idle;
+            }
+        }
+        if let Ok(mut slot) = self.last_finished_ok.lock() {
+            *slot = Some(false);
         }
     }
 
@@ -157,43 +240,43 @@ impl PropagationBridge {
     pub fn sync_progress(&self) -> f64 {
         self.sync_task
             .lock()
-            .map(|task| match task.state {
-                SyncTaskState::Establishing => 10.0,
-                SyncTaskState::Offering => 25.0,
-                SyncTaskState::AwaitingResponse => 40.0,
-                SyncTaskState::Transferring => 70.0,
-                SyncTaskState::Complete => 100.0,
-                SyncTaskState::Idle | SyncTaskState::Failed => 0.0,
-            })
+            .map(|task| Self::progress_for_state(task.state))
             .unwrap_or(0.0)
     }
 
     pub fn last_offer_error(&self) -> Option<&'static str> {
-        self.sync_task
-            .lock()
-            .ok()
-            .and_then(|task| task.last_offer_error)
+        self.last_offer_error.lock().ok().and_then(|slot| *slot)
     }
 
     pub fn last_establish_error(&self) -> Option<&'static str> {
-        self.sync_task
-            .lock()
-            .ok()
-            .and_then(|task| task.last_establish_error)
+        self.last_establish_error.lock().ok().and_then(|slot| *slot)
     }
 
     /// Sticky success/failure after Complete/Failed collapses to Idle.
     pub fn last_finished_ok(&self) -> Option<bool> {
-        self.sync_task
-            .lock()
-            .ok()
-            .and_then(|task| task.last_finished_ok)
+        self.last_finished_ok.lock().ok().and_then(|slot| *slot)
     }
 
     pub fn tick(&self, known_identities: &HashMap<String, [u8; 64]>) {
-        if let Ok(mut task) = self.sync_task.lock() {
+        let terminal = if let Ok(mut task) = self.sync_task.lock() {
+            // Sample before drain/tick: tip collapses Complete|Failed → Idle in tick().
+            self.note_peak_progress(Self::progress_for_state(task.state));
             task.drain_events(known_identities);
+            self.note_peak_progress(Self::progress_for_state(task.state));
             task.tick();
+            task.take_terminal_peer_result()
+                .map(|result| matches!(result.state, PeerSyncTerminalState::Complete))
+        } else {
+            None
+        };
+        if let Some(ok) = terminal {
+            if let Ok(mut slot) = self.last_finished_ok.lock() {
+                *slot = Some(ok);
+            }
+            if !ok {
+                let peak = self.last_peak_progress();
+                self.stamp_terminal_failure_from_peak(peak);
+            }
         }
     }
 
@@ -248,8 +331,15 @@ impl PropagationBridge {
                 };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
                     bridge.run_if_current(&active_run_id, run_id, || {
+                        if let Ok(mut slot) = bridge.last_establish_error.lock() {
+                            if slot.is_none() {
+                                *slot = Some("NoLinkProof");
+                            }
+                        }
                         bridge.cancel_sync();
-                        let message = establish_error
+                        let message = bridge
+                            .last_establish_error()
+                            .or(establish_error)
                             .map(|e| format!("propagation establish failed: {e}"))
                             .unwrap_or_else(|| {
                                 "propagation establish failed: NoLinkProof".to_string()
@@ -405,6 +495,50 @@ mod tests {
         bridge.cancel_sync();
         assert_eq!(bridge.last_finished_ok(), Some(false));
         assert!(!bridge.sync_active());
+        // Tip requires Idle for the next request_sync_now_*; cancel must not leave Failed.
+        assert!(matches!(
+            bridge.sync_task.lock().expect("lock").state,
+            SyncTaskState::Idle
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn progress_for_state_maps_offer_threshold() {
+        assert!(
+            (PropagationBridge::progress_for_state(SyncTaskState::Establishing) - 10.0).abs()
+                < f64::EPSILON
+        );
+        assert!(
+            (PropagationBridge::progress_for_state(SyncTaskState::Offering) - 25.0).abs()
+                < f64::EPSILON
+        );
+        assert!(PropagationBridge::progress_for_state(SyncTaskState::Failed).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn early_terminal_failure_stamps_establish_not_unknown() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-bridge-stamp-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        bridge.stamp_terminal_failure_from_peak(10.0);
+        assert_eq!(bridge.last_establish_error(), Some("NoLinkProof"));
+        assert_eq!(bridge.last_offer_error(), None);
+        bridge.clear_sticky_errors();
+        bridge.stamp_terminal_failure_from_peak(40.0);
+        assert_eq!(bridge.last_establish_error(), None);
+        assert_eq!(bridge.last_offer_error(), None);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

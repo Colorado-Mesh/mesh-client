@@ -2560,8 +2560,6 @@
       "announceAtStart": "Annuncia quando inizia l'attività di host",
       "fromStaticOnly": "Solo da peer statici",
       "authRequired": "Autenticazione richiesta",
-      "enforceStamps": "Applicare i timbri dei messaggi",
-      "enforceRatchets": "Imponi cricchetti",
       "nodeName": "Nome annuncio PN",
       "staticPeers": "Hash peer statici (uno da 32 hex per riga)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "Il nome dell'annuncio PN è troppo lungo.",
         "nonFiniteNumber": "Uno o più campi numerici non sono validi."
       },
-      "warning": "Queste impostazioni controllano l'hosting del nodo di propagazione locale, l'autopeer, i costi PoW e il rifiuto della sincronizzazione per i dispositivi remoti ad alto costo. Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer."
+      "warning": "Queste impostazioni controllano l'hosting del nodo di propagazione locale, l'autopeer, i costi PoW e il rifiuto della sincronizzazione per i dispositivi remoti ad alto costo. Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer.",
+      "enforceUnavailableTip": "Le opzioni di enforcement stamps/ratchets non sono applicate sullo stack rsLXMF attuale (persistono solo per compatibilità)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Stella",
     "iconHeart": "Cuore",
     "iconShield": "Shield",
-    "iconNone": "Nessuno",
+    "iconNone": "Volto predefinito",
     "iconSaveFailed": "Impossibile salvare l'icona dell'avatar.",
     "iconUser": "Persone"
   },

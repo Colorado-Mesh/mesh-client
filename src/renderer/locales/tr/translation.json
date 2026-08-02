@@ -2560,8 +2560,6 @@
       "announceAtStart": "Barındırma başladığında duyurun",
       "fromStaticOnly": "Yalnızca statik eşlerden",
       "authRequired": "Yetkilendirme gerekli",
-      "enforceStamps": "Mesaj damgalarını zorunlu kıl",
-      "enforceRatchets": "Cırcırları uygulayın",
       "nodeName": "PN duyuru adı",
       "staticPeers": "Statik eş karmaları (satır başına bir adet 32-hex)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "PN duyuru adı çok uzun.",
         "nonFiniteNumber": "Bir veya daha fazla sayısal alan geçersiz."
       },
-      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir."
+      "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir.",
+      "enforceUnavailableTip": "Enforce stamps/ratchets anahtarları geçerli rsLXMF yığınında uygulanmaz (yalnızca uyumluluk için saklanır)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Yıldız",
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
-    "iconNone": "Hiçbiri",
+    "iconNone": "Varsayılan yüz",
     "iconSaveFailed": "Avatar simgesi kaydedilemedi.",
     "iconUser": "İnsanlar"
   },

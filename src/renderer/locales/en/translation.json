@@ -2540,8 +2540,7 @@
       "announceAtStart": "Announce when hosting starts",
       "fromStaticOnly": "From static peers only",
       "authRequired": "Auth required",
-      "enforceStamps": "Enforce message stamps",
-      "enforceRatchets": "Enforce ratchets",
+      "enforceUnavailableTip": "Enforce stamps/ratchets toggles are not applied on the current rsLXMF stack (persisted for compatibility only).",
       "nodeName": "PN announce name",
       "staticPeers": "Static peer hashes (one 32-hex per line)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -4205,7 +4204,7 @@
   "reticulumProfileIcon": {
     "iconName": "Avatar icon",
     "iconNameAria": "Peer avatar icon",
-    "iconNone": "None",
+    "iconNone": "Default face",
     "iconStar": "Star",
     "iconHeart": "Heart",
     "iconShield": "Shield",

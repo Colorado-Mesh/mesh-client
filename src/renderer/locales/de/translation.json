@@ -2560,8 +2560,6 @@
       "announceAtStart": "Ankündigen, wenn das Gastgeben beginnt",
       "fromStaticOnly": "Nur von statischen Peers",
       "authRequired": "Authentifizierung erforderlich",
-      "enforceStamps": "Nachrichtenstempel erzwingen",
-      "enforceRatchets": "Ratschen erzwingen",
       "nodeName": "PN-Ankündigungsname",
       "staticPeers": "Statische Peer-Hashes (ein 32-Hex pro Zeile)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "PN-Ankündigungsname ist zu lang.",
         "nonFiniteNumber": "Ein oder mehrere numerische Felder sind ungültig."
       },
-      "warning": "Diese Einstellungen steuern das Hosting lokaler Ausbreitungsknoten, Autopeer, PoW-Kosten und die Synchronisierungsverweigerung für kostenintensive Remote-Remotes. Eine Fehlkonfiguration kann die CPU belasten, die Festplatte füllen oder viele Peers akzeptieren."
+      "warning": "Diese Einstellungen steuern das Hosting lokaler Ausbreitungsknoten, Autopeer, PoW-Kosten und die Synchronisierungsverweigerung für kostenintensive Remote-Remotes. Eine Fehlkonfiguration kann die CPU belasten, die Festplatte füllen oder viele Peers akzeptieren.",
+      "enforceUnavailableTip": "Die Schalter „Stempel/Ratchets erzwingen“ werden auf dem aktuellen rsLXMF-Stack nicht angewendet (nur zur Kompatibilität gespeichert)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Stern",
     "iconHeart": "Herz",
     "iconShield": "Schild",
-    "iconNone": "Keiner",
+    "iconNone": "Standardgesicht",
     "iconSaveFailed": "Avatar-Symbol konnte nicht gespeichert werden.",
     "iconUser": "Menschen"
   },

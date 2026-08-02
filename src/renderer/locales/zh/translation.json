@@ -2560,8 +2560,6 @@
       "announceAtStart": "在开始出租时发布公告",
       "fromStaticOnly": "仅来自静态对等体",
       "authRequired": "需要身份验证",
-      "enforceStamps": "强制消息戳记",
-      "enforceRatchets": "强制棘轮",
       "nodeName": "PN公告名称",
       "staticPeers": "静态对等哈希（每行一个32十六进制）",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "PN 公告名称太长。",
         "nonFiniteNumber": "一个或多个数字字段无效。"
       },
-      "warning": "这些设置控制本地传播节点托管、自动对等、PoW 成本以及高成本远程的同步拒绝。配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。"
+      "warning": "这些设置控制本地传播节点托管、自动对等、PoW 成本以及高成本远程的同步拒绝。配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。",
+      "enforceUnavailableTip": "强制 stamps/ratchets 开关在当前 rsLXMF 协议栈上不会生效（仅为兼容性而保留）。"
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "星",
     "iconHeart": "倾心点",
     "iconShield": "防护罩",
-    "iconNone": "没有任何",
+    "iconNone": "默认面孔",
     "iconSaveFailed": "无法保存头像图标。",
     "iconUser": "人们"
   },

@@ -13,11 +13,14 @@ pub fn apply_pn_hosting_policy_to_router(router: &mut LxmRouter, policy: &PnHost
     router.set_stamp_requirements(policy.propagation_stamp_cost, policy.propagation_stamp_flex);
     router.set_message_storage_limit(Some(policy.message_storage_limit_bytes()));
     router.set_authentication(policy.auth_required);
-    router.set_enforce_stamps(policy.enforce_stamps);
-    router.set_enforce_ratchets(policy.enforce_ratchets);
+    // rsLXMF tip dropped set_enforce_stamps/ratchets (stamp gating via set_stamp_requirements).
+    let _ = (policy.enforce_stamps, policy.enforce_ratchets);
 
     router.config.sync_limit_kb = policy.sync_limit_kb;
-    router.config.delivery_limit_kb = policy.delivery_limit_kb;
+    #[allow(clippy::cast_precision_loss)] // KB policy is integer; router tip uses f64
+    {
+        router.config.delivery_limit_kb = policy.delivery_limit_kb as f64;
+    }
     router.config.ext.peering_cost = policy.peering_cost;
     router.config.ext.max_peering_cost = policy.max_peering_cost;
     router.config.ext.autopeer_maxdepth = policy.autopeer_maxdepth;

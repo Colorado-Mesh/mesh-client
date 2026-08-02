@@ -93,6 +93,31 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stderr).toContain('Usage: scripts/update.sh [--clean-target]');
   });
 
+  it('prints Ratspeak upstream catalog (upstream-catalog-only)', () => {
+    const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'upstream-catalog-only' });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
+    expect(result.stdout).toContain('ratspeak/rsLXST|voice|');
+    expect(result.stdout).toContain('ratspeak/lrgp-rs|games|');
+    expect(result.stdout).toContain('ratspeak/Ratspeak||');
+    expect(result.stdout).toContain('ratspeak/LXMFace||');
+    expect(result.stdout).toContain('RATSPEAK_KNOWN_ORG_REPOS:');
+    expect(result.stdout).toContain('  rsReticulum');
+    expect(result.stdout).toContain('  rsLXMF');
+    expect(result.stdout).toContain('  rsLXST');
+    expect(result.stdout).toContain('  lrgp-rs');
+  });
+
+  it('wires check_ratspeak_upstream after overlay PR checks', () => {
+    expect(updateScript).toContain('check_ratspeak_upstream()');
+    expect(updateScript).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES');
+    expect(updateScript).toContain('RATSPEAK_KNOWN_ORG_REPOS');
+    const patchesCall = updateScript.lastIndexOf('\ncheck_ratspeak_patches\n');
+    const upstreamCall = updateScript.lastIndexOf('\ncheck_ratspeak_upstream\n');
+    expect(patchesCall).toBeGreaterThanOrEqual(0);
+    expect(upstreamCall).toBeGreaterThan(patchesCall);
+  });
+
   it('runs cargo clean after a successful rebuild when CLEAN_SIDECAR_TARGET=1', () => {
     const fixture = prepareRebuildFixture({ buildExit: 0 });
     const result = runUpdate(

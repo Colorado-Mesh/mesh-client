@@ -2560,8 +2560,6 @@
       "announceAtStart": "Annoncer le début de l'activité d'hôte",
       "fromStaticOnly": "De pairs statiques uniquement",
       "authRequired": "Auth requis",
-      "enforceStamps": "Appliquer les timbres de message",
-      "enforceRatchets": "Appliquer les cliquets",
       "nodeName": "Nom de l'annonce PN",
       "staticPeers": "Hachages pairs statiques (un 32-hex par ligne)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "Le nom de l'annonce PN est trop long.",
         "nonFiniteNumber": "Un ou plusieurs champs numériques ne sont pas valides."
       },
-      "warning": "Ces paramètres contrôlent l'hébergement du nœud de propagation local, l'autopeer, les coûts PoW et le refus de synchronisation pour les télécommandes coûteuses. Une mauvaise configuration peut brûler le processeur, remplir le disque ou accepter de nombreux pairs."
+      "warning": "Ces paramètres contrôlent l'hébergement du nœud de propagation local, l'autopeer, les coûts PoW et le refus de synchronisation pour les télécommandes coûteuses. Une mauvaise configuration peut brûler le processeur, remplir le disque ou accepter de nombreux pairs.",
+      "enforceUnavailableTip": "Les options d’application des stamps/ratchets ne sont pas appliquées sur le stack rsLXMF actuel (conservées uniquement pour compatibilité)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Étoile",
     "iconHeart": "Cœur",
     "iconShield": "Bouclier",
-    "iconNone": "Aucun",
+    "iconNone": "Visage par défaut",
     "iconSaveFailed": "Impossible d'enregistrer l'icône de l'avatar.",
     "iconUser": "Personnes"
   },

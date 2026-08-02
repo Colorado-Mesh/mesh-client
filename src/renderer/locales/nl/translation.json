@@ -2560,8 +2560,6 @@
       "announceAtStart": "Kondig aan wanneer het hosten begint",
       "fromStaticOnly": "Alleen van statische peers",
       "authRequired": "Verificatie vereist",
-      "enforceStamps": "Berichtstempels afdwingen",
-      "enforceRatchets": "Ratels afdwingen",
       "nodeName": "PN kondigt naam aan",
       "staticPeers": "Statische peer-hashes (één 32-hexadecimaal per regel)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "Naam van PN-aankondiging is te lang.",
         "nonFiniteNumber": "Een of meer numerieke velden zijn ongeldig."
       },
-      "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren."
+      "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren.",
+      "enforceUnavailableTip": "De schakelaars voor enforce stamps/ratchets worden op de huidige rsLXMF-stack niet toegepast (alleen bewaard voor compatibiliteit)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Ster",
     "iconHeart": "Hart",
     "iconShield": "Afscherming",
-    "iconNone": "Geen",
+    "iconNone": "Standaardgezicht",
     "iconSaveFailed": "Kon het avatarpictogram niet opslaan.",
     "iconUser": "Mensen"
   },

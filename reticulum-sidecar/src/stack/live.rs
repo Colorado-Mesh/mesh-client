@@ -1986,6 +1986,7 @@ impl LiveBridge {
                             stamp_cost: Some(parsed.stamp_cost),
                             stamp_flexibility: Some(parsed.stamp_flex),
                             peering_cost: Some(parsed.peering_cost),
+                            metadata: Some(parsed.metadata.clone()),
                             hops: Some(evt.hops),
                         });
                         if !peered {
@@ -3011,8 +3012,10 @@ impl LiveBridge {
                 return Err(format!("propagation establish failed: {err}"));
             }
             let progress = self.propagation.sync_progress();
+            let peak = self.propagation.last_peak_progress();
             // Offering / later stages prove /offer was accepted enough to proceed.
-            if progress >= 25.0 {
+            // Peak survives tip's Complete/Failed → Idle collapse (live progress drops to 0).
+            if progress >= 25.0 || peak >= 25.0 {
                 self.cancel_propagation_sync().await;
                 return Ok(());
             }

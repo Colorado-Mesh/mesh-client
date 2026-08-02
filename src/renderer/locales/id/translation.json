@@ -2560,8 +2560,6 @@
       "announceAtStart": "Umumkan kapan hosting dimulai",
       "fromStaticOnly": "Hanya dari rekan statis",
       "authRequired": "Diperlukan autentikasi",
-      "enforceStamps": "Menerapkan stempel pesan",
-      "enforceRatchets": "Terapkan ratchet",
       "nodeName": "PN umumkan nama",
       "staticPeers": "Hash rekan statis (satu 32-hex per baris)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "Nama pengumuman PN terlalu panjang.",
         "nonFiniteNumber": "Satu atau beberapa kolom numerik tidak valid."
       },
-      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan."
+      "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan.",
+      "enforceUnavailableTip": "Sakelar enforce stamps/ratchets tidak diterapkan pada stack rsLXMF saat ini (hanya disimpan untuk kompatibilitas)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
-    "iconNone": "Tidak ada",
+    "iconNone": "Wajah bawaan",
     "iconSaveFailed": "Tidak dapat menyimpan ikon avatar.",
     "iconUser": "Rakyat"
   },

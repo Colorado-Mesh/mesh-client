@@ -266,31 +266,10 @@ export default function ReticulumPnHostingDangerZone({
             />
             {t('networkPanel.reticulumPnHosting.authRequired')}
           </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={draft.enforce_stamps}
-              disabled={disabled || saving}
-              onChange={(e) => {
-                patch('enforce_stamps', e.target.checked);
-              }}
-              aria-label={t('networkPanel.reticulumPnHosting.enforceStamps')}
-            />
-            {t('networkPanel.reticulumPnHosting.enforceStamps')}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={draft.enforce_ratchets}
-              disabled={disabled || saving}
-              onChange={(e) => {
-                patch('enforce_ratchets', e.target.checked);
-              }}
-              aria-label={t('networkPanel.reticulumPnHosting.enforceRatchets')}
-            />
-            {t('networkPanel.reticulumPnHosting.enforceRatchets')}
-          </label>
         </div>
+        <p className="mt-2 text-xs text-yellow-200/70">
+          {t('networkPanel.reticulumPnHosting.enforceUnavailableTip')}
+        </p>
         <label htmlFor="pn-node-name" className="mt-3 block text-xs text-yellow-200/90">
           {t('networkPanel.reticulumPnHosting.nodeName')}
           <input

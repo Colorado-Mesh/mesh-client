@@ -2562,8 +2562,6 @@
       "announceAtStart": "Oznamte, kdy začíná hosting",
       "fromStaticOnly": "Pouze od statických vrstevníků",
       "authRequired": "Je vyžadováno ověření",
-      "enforceStamps": "Vynutit razítka zpráv",
-      "enforceRatchets": "Prosadit ráčny",
       "nodeName": "PN oznámit jméno",
       "staticPeers": "Statické partnerské hash (jeden 32hex na řádek)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2591,7 +2589,8 @@
         "nodeNameTooLong": "Název oznámení PN je příliš dlouhý.",
         "nonFiniteNumber": "Jedno nebo více číselných polí je neplatných."
       },
-      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů."
+      "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů.",
+      "enforceUnavailableTip": "Přepínače vynucení razítek/západů se na aktuálním rsLXMF stacku neaplikují (ukládají se jen kvůli kompatibilitě)."
     }
   },
   "nodeDetailModal": {
@@ -4032,7 +4031,7 @@
     "iconStar": "Hvězdička",
     "iconHeart": "Srdce",
     "iconShield": "Štít",
-    "iconNone": "Žádný",
+    "iconNone": "Výchozí tvář",
     "iconSaveFailed": "Ikonu avatara nelze uložit.",
     "iconUser": "Lidé"
   },

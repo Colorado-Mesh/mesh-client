@@ -1,8 +1,8 @@
 diff --git a/crates/lxmf-core/src/propagation_node.rs b/crates/lxmf-core/src/propagation_node.rs
-index 5032269..33772f0 100644
+index d3d58da..6f9dd33 100644
 --- a/crates/lxmf-core/src/propagation_node.rs
 +++ b/crates/lxmf-core/src/propagation_node.rs
-@@ -172,6 +172,18 @@ impl PropagationNode {
+@@ -307,6 +307,18 @@ impl PropagationNode {
          self.config.min_stamp_cost = cost;
      }
  
@@ -10,14 +10,14 @@ index 5032269..33772f0 100644
 +        self.config.peering_cost = cost;
 +    }
 +
-+    pub fn set_max_storage(&mut self, max: usize) {
-+        self.config.max_storage = max;
++    pub fn set_max_storage(&mut self, max_storage: usize) {
++        self.config.max_storage = max_storage;
 +    }
 +
-+    pub fn set_max_message_size(&mut self, max: usize) {
-+        self.config.max_message_size = max;
++    pub fn set_max_message_size(&mut self, max_message_size: usize) {
++        self.config.max_message_size = max_message_size;
 +    }
 +
-     /// Disk-backed node. Loads existing messages from `storage_path` on startup.
-     pub fn with_storage(
-         config: PropagationNodeConfig,
+     pub fn offer_generation(&self) -> u64 {
+         self.offer_generation
+     }

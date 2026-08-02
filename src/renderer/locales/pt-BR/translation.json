@@ -2560,8 +2560,6 @@
       "announceAtStart": "Anuncie quando a hospedagem começar",
       "fromStaticOnly": "Apenas a partir de pares estáticos",
       "authRequired": "Autenticação necessária",
-      "enforceStamps": "Aplicar carimbos de mensagem",
-      "enforceRatchets": "Aplicar catracas",
       "nodeName": "PN anunciar nome",
       "staticPeers": "Hashes de pares estáticos (um 32 hexadecimal por linha)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "O nome do anúncio do PN é muito longo.",
         "nonFiniteNumber": "Um ou mais campos numéricos são inválidos."
       },
-      "warning": "Essas configurações controlam hospedagem de nó de propagação local, autopeer, custos de PoW e recusa de sincronização para controles remotos de alto custo. A configuração incorreta pode queimar a CPU, encher o disco ou aceitar muitos pares."
+      "warning": "Essas configurações controlam hospedagem de nó de propagação local, autopeer, custos de PoW e recusa de sincronização para controles remotos de alto custo. A configuração incorreta pode queimar a CPU, encher o disco ou aceitar muitos pares.",
+      "enforceUnavailableTip": "Os interruptores de forçar stamps/ratchets não são aplicados no stack rsLXMF atual (persistidos só por compatibilidade)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "Estrela",
     "iconHeart": "Coração",
     "iconShield": "Blindagem",
-    "iconNone": "Nenhum",
+    "iconNone": "Rosto padrão",
     "iconSaveFailed": "Não foi possível salvar o ícone do avatar.",
     "iconUser": "Pessoas"
   },

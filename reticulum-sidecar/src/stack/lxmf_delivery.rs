@@ -181,7 +181,9 @@ pub fn spawn_lxmf_inbound_receiver(
     router: Arc<TokioMutex<LxmRouter>>,
 ) {
     let delivery_rx = register_destination(&transport_tx, lxmf_dest_hash, LXMF_APP);
-    let (link_packet_tx, mut link_packet_rx) = mpsc::channel::<(Vec<u8>, [u8; 16])>(256);
+    // Unbounded: rsReticulum LinkManager::set_link_packet_channel requires UnboundedSender.
+    // Bound only if upstream grows a bounded setter; do not buffer-copy into a second queue.
+    let (link_packet_tx, mut link_packet_rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
     let (resource_tx, mut resource_rx) = mpsc::channel::<(Vec<u8>, [u8; 16])>(256);
 
     let mut link_mgr = LinkManager::with_destination(

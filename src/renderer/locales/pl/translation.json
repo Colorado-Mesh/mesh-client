@@ -2564,8 +2564,6 @@
       "announceAtStart": "Ogłoś rozpoczęcie hostingu",
       "fromStaticOnly": "Tylko od statycznych peerów",
       "authRequired": "Wymagane uwierzytelnienie",
-      "enforceStamps": "Wymuszaj stemple wiadomości",
-      "enforceRatchets": "Wymuś zapadki",
       "nodeName": "PN ogłasza nazwę",
       "staticPeers": "Statyczne skróty równorzędne (jeden 32-szesnastkowy na linię)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2593,7 +2591,8 @@
         "nodeNameTooLong": "Nazwa ogłoszenia PN jest za długa.",
         "nonFiniteNumber": "Co najmniej jedno pole numeryczne jest nieprawidłowe."
       },
-      "warning": "Te ustawienia kontrolują hosting lokalnego węzła propagacyjnego, autopeer, koszty PoW i odmowę synchronizacji w przypadku drogich pilotów. Błędna konfiguracja może spalić procesor, zapełnić dysk lub zaakceptować wiele urządzeń równorzędnych."
+      "warning": "Te ustawienia kontrolują hosting lokalnego węzła propagacyjnego, autopeer, koszty PoW i odmowę synchronizacji w przypadku drogich pilotów. Błędna konfiguracja może spalić procesor, zapełnić dysk lub zaakceptować wiele urządzeń równorzędnych.",
+      "enforceUnavailableTip": "Przełączniki wymuszania stamps/ratchets nie są stosowane na bieżącym stacku rsLXMF (zapisywane tylko dla zgodności)."
     }
   },
   "nodeDetailModal": {
@@ -4034,7 +4033,7 @@
     "iconStar": "Ocena",
     "iconHeart": "Serce",
     "iconShield": "Tarcza",
-    "iconNone": "Nic",
+    "iconNone": "Domyślna twarz",
     "iconSaveFailed": "Nie można zapisać ikony awatara.",
     "iconUser": "Ludzie"
   },

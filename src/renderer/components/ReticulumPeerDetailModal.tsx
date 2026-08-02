@@ -400,7 +400,12 @@ export default function ReticulumPeerDetailModal({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <ReticulumProfileIconSlot iconName={iconName} iconColor={iconColor} size={20} />
+                <ReticulumProfileIconSlot
+                  iconName={iconName}
+                  iconColor={iconColor}
+                  size={20}
+                  destinationHash={peerHash}
+                />
                 <h2
                   id="reticulum-peer-detail-title"
                   className="text-bright-green truncate text-lg font-semibold"

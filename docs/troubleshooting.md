@@ -946,21 +946,23 @@ Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the 
 
 **Symptoms**: **Start stack** fails; logs show `RETICULUM_CARGO_BUILD_FAILED` or Rust errors such as `method not found in ReticulumHandle`, `register_packet_tap`, or `PacketTapEvent`. Electron may surface `RETICULUM_RNS_PATCH_MISSING` after upgrading mesh-client.
 
-**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies it automatically; a sibling `../rsReticulum` checkout without the overlay fails to compile.
+**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies overlays via `clone-ratspeak-stack.sh`; a sibling `../rsReticulum` checkout without the overlay fails to compile.
 
-**Fix**:
+**Fix** (canonical recover path):
 
-1. From mesh-client repo root (requires sibling `../rsReticulum` and `../rsLXMF`):
+1. From mesh-client repo root, re-float siblings and re-apply overlays:
    ```bash
+   ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
-   This runs `scripts/ensure-rsReticulum-patches.sh` before `cargo build`.
-2. **Manual apply** (when you prefer not to use the npm script):
+   `clone-ratspeak-stack.sh` floats `rsReticulum` / `rsLXMF` / `rsNomad` to `origin/main` (override with `RS_*_REF` for bisect) and fails if an overlay will not apply.
+2. If siblings already exist and you only need overlays: `./scripts/ensure-rsReticulum-patches.sh` then `pnpm run reticulum:sidecar:build`.
+3. **Manual apply** (single overlay):
    ```bash
    git -C ../rsReticulum apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
    pnpm run reticulum:sidecar:build
    ```
-3. On **newer rsReticulum** checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — `apply-rsReticulum-auto-beacon-utun.sh` is a no-op.
+4. On **newer rsReticulum** checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — `apply-rsReticulum-auto-beacon-utun.sh` is a no-op.
 
 Quit mesh-client fully, reopen, and click **Start stack** again.
 
@@ -973,13 +975,12 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
 **Fix**:
 
 1. **Update mesh-client** to a build that includes the rsReticulum overlay `rsReticulum-auto-beacon-utun.patch` (skips `utun*` during enumeration and backs off repeated TX failures).
-2. **Dev rebuild**: from repo root, apply overlays then rebuild:
+2. **Dev rebuild**: from repo root, prefer the canonical recover path, then rebuild:
    ```bash
-   ./scripts/apply-rsReticulum-packet-tap.sh
-   ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-   ./scripts/apply-rsReticulum-link-client-nomad.sh
+   ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
+   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `auto-beacon-utun`, `link-client-nomad`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
 

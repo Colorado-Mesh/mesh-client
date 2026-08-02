@@ -2560,8 +2560,6 @@
       "announceAtStart": "ホスティング開始時にアナウンスする",
       "fromStaticOnly": "静的ピアからのみ",
       "authRequired": "認証が必要です",
-      "enforceStamps": "メッセージスタンプを強制する",
-      "enforceRatchets": "ラチェットを強制する",
       "nodeName": "PN アナウンス名",
       "staticPeers": "静的ピア ハッシュ (1 行あたり 1 つの 32 16 進数)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "PN アナウンス名が長すぎます。",
         "nonFiniteNumber": "1 つ以上の数値フィールドが無効です。"
       },
-      "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。"
+      "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。",
+      "enforceUnavailableTip": "スタンプ／ラチェット強制のトグルは現行の rsLXMF スタックでは適用されません（互換のため保存のみ）。"
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "スター",
     "iconHeart": "ハートマーク",
     "iconShield": "シールド",
-    "iconNone": "なし",
+    "iconNone": "デフォルトの顔",
     "iconSaveFailed": "アバターアイコンを保存できませんでした。",
     "iconUser": "人々"
   },

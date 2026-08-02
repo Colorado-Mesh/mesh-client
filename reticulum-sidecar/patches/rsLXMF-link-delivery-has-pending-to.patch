@@ -1,15 +1,19 @@
 diff --git a/crates/lxmf-core/src/link_delivery.rs b/crates/lxmf-core/src/link_delivery.rs
-index fc12604..30c84ae 100644
+index 778c30a..b684d72 100644
 --- a/crates/lxmf-core/src/link_delivery.rs
 +++ b/crates/lxmf-core/src/link_delivery.rs
-@@ -2301,6 +2301,12 @@ impl LinkDeliveryManager {
+@@ -2303,6 +2303,16 @@ impl LinkDeliveryManager {
              || self.backchannel_links.contains_key(dest_hash)
      }
  
-+    /// True when any in-flight (one-shot or Direct) session targets `dest_hash`.
-+    /// Used to serialize packed Propagated deposits vs a second LinkRequest to the same PN.
++    /// True when any non-closed delivery link is pending to `dest_hash` (in-flight or queued).
++    /// Unlike `delivery_link_available`, this includes non-reusable one-shot links.
 +    pub fn has_pending_to(&self, dest_hash: &[u8; 16]) -> bool {
-+        self.pending.values().any(|d| d.dest_hash == *dest_hash)
++        self.direct_links
++            .get(dest_hash)
++            .and_then(|link_id| self.pending.get(link_id))
++            .is_some_and(|delivery| delivery.link.state != LinkState::Closed)
++            || self.backchannel_links.contains_key(dest_hash)
 +    }
 +
      pub fn direct_link_snapshot(&self, dest_hash: [u8; 16]) -> Option<DirectLinkSnapshot> {

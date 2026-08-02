@@ -2560,8 +2560,6 @@
       "announceAtStart": "호스팅 시작 시 알림",
       "fromStaticOnly": "정적 피어에서만",
       "authRequired": "인증이 필요합니다",
-      "enforceStamps": "메시지 스탬프 시행",
-      "enforceRatchets": "래칫 시행",
       "nodeName": "PN 발표 이름",
       "staticPeers": "정적 피어 해시(한 줄에 32헥스 1개)",
       "staticPeersPlaceholder": "e17f833c4ddf8890dd3a79a6fea8161d",
@@ -2589,7 +2587,8 @@
         "nodeNameTooLong": "PN 공지 이름이 너무 깁니다.",
         "nonFiniteNumber": "하나 이상의 숫자 필드가 잘못되었습니다."
       },
-      "warning": "이러한 설정은 로컬 전파 노드 호스팅, 자동 피어, PoW 비용 및 고비용 원격에 대한 동기화 거부를 제어합니다. 잘못된 구성으로 인해 CPU가 소모되거나, 디스크가 채워지거나, 많은 피어가 허용될 수 있습니다."
+      "warning": "이러한 설정은 로컬 전파 노드 호스팅, 자동 피어, PoW 비용 및 고비용 원격에 대한 동기화 거부를 제어합니다. 잘못된 구성으로 인해 CPU가 소모되거나, 디스크가 채워지거나, 많은 피어가 허용될 수 있습니다.",
+      "enforceUnavailableTip": "스탬프/래칫 강제 토글은 현재 rsLXMF 스택에 적용되지 않습니다(호환을 위해만 저장)."
     }
   },
   "nodeDetailModal": {
@@ -4030,7 +4029,7 @@
     "iconStar": "스타",
     "iconHeart": "심장",
     "iconShield": "실드",
-    "iconNone": "없음",
+    "iconNone": "기본 얼굴",
     "iconSaveFailed": "아바타 아이콘을 저장할 수 없습니다.",
     "iconUser": "사람들"
   },
