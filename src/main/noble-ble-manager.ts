@@ -963,10 +963,73 @@ export class NobleBleManager extends EventEmitter {
     }
   }
 
+  /**
+   * Await in-flight GATT setup for the same session+peripheral without joining connectQueue.
+   * Concurrent duplicate connects coalesce here instead of serializing behind the first open
+   * and then disconnecting mid-handshake.
+   * @returns true when the caller should return (ready or already connected).
+   */
+  private async tryCoalesceInflightGattConnect(
+    sessionId: NobleSessionId,
+    peripheralId: string,
+  ): Promise<boolean> {
+    const session = this.getSession(sessionId);
+    const knownPeripheral = this.knownPeripherals.get(peripheralId);
+    if (
+      sessionId === 'meshcore' &&
+      knownPeripheral &&
+      session.connectedPeripheral?.id === knownPeripheral.id &&
+      session.toRadioChar &&
+      session.fromRadioChar &&
+      !session.closing
+    ) {
+      console.debug(
+        `[BLE:meshcore] connect idempotent skip — already connected to ${peripheralId} (duplicate IPC would disconnect and break handshake)`,
+      );
+      return true;
+    }
+    if (
+      peripheralId !== knownPeripheral?.id ||
+      session.connectedPeripheral?.id !== knownPeripheral.id ||
+      !session.gattSetupInflight ||
+      session.closing
+    ) {
+      return false;
+    }
+    console.debug(
+      `[BLE:${sessionId}] connect coalesce — awaiting in-flight GATT setup for ${peripheralId} (avoid disconnect during discovery)`,
+    );
+    try {
+      await session.gattSetupInflight.promise;
+    } catch (err) {
+      console.debug(
+        `[BLE:${sessionId}] connect coalesce await failed — ${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      );
+      // First attempt failed or session cleared; fall through to full reconnect.
+      return false;
+    }
+    if (
+      session.toRadioChar &&
+      session.fromRadioChar &&
+      session.connectedPeripheral?.id === knownPeripheral.id &&
+      !session.closing
+    ) {
+      console.debug(`[BLE:${sessionId}] connect coalesce done — session ready for ${peripheralId}`);
+      return true;
+    }
+    return false;
+  }
+
   async connect(sessionId: NobleSessionId, peripheralId: string): Promise<void> {
     // Do not reject solely because `noble` is null: Linux production skips the native
     // binding, and Linux CI behavior tests seed knownPeripherals + sessions without it.
     // Scan paths still require noble (checked where startScanning/scanStop is used).
+    // Coalesce before the queue so a duplicate connect awaits GATT setup instead of
+    // waiting for the first holder to finish and then tearing the session down.
+    if (await this.tryCoalesceInflightGattConnect(sessionId, peripheralId)) {
+      return;
+    }
+
     // Serialize across all sessions — noble's native CBCentralManager crashes (SIGSEGV/SIGBUS)
     // if a second peripheral's discoverServices/subscribe races with the first.
     const prevQueue = this.connectQueue;
@@ -996,48 +1059,10 @@ export class NobleBleManager extends EventEmitter {
       if (process.platform === 'darwin' && this.scanningActive) {
         await this.doStopScanning();
       }
-      const knownPeripheral = this.knownPeripherals.get(peripheralId);
-      if (
-        sessionId === 'meshcore' &&
-        knownPeripheral &&
-        session.connectedPeripheral?.id === knownPeripheral.id &&
-        session.toRadioChar &&
-        session.fromRadioChar &&
-        !session.closing
-      ) {
-        console.debug(
-          `[BLE:meshcore] connect idempotent skip — already connected to ${peripheralId} (duplicate IPC would disconnect and break handshake)`,
-        );
+      // Re-check after queue wait — first connect may have finished (or still be setting up
+      // only if another session held the queue; same-session GATT is usually done by then).
+      if (await this.tryCoalesceInflightGattConnect(sessionId, peripheralId)) {
         return;
-      }
-      if (
-        peripheralId === knownPeripheral?.id &&
-        session.connectedPeripheral?.id === knownPeripheral.id &&
-        session.gattSetupInflight &&
-        !session.closing
-      ) {
-        console.debug(
-          `[BLE:${sessionId}] connect coalesce — awaiting in-flight GATT setup for ${peripheralId} (avoid disconnect during discovery)`,
-        );
-        try {
-          await session.gattSetupInflight.promise;
-        } catch (err) {
-          console.debug(
-            `[BLE:${sessionId}] connect coalesce await failed — ${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
-          );
-          // First attempt failed or session cleared; fall through to full reconnect.
-        }
-        if (
-          session.toRadioChar &&
-          session.fromRadioChar &&
-          session.connectedPeripheral?.id === knownPeripheral.id &&
-          !session.closing
-        ) {
-          console.debug(
-            `[BLE:${sessionId}] connect coalesce done — session ready for ${peripheralId}`,
-          );
-          return;
-        }
       }
       await this.disconnect(sessionId, { notify: false });
       // Re-open a fresh session (disconnect sets closing=true; reset it for the new connection).

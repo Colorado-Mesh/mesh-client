@@ -106,6 +106,20 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toContain('meshcoreReconnectConnectInFlightRef.current = true');
   });
 
+  it('on BLE reconnect timeout invalidates setup generation and cleans late transports', () => {
+    expect(RUNTIME_SOURCE).toContain('createBleReconnectTransportCleanup');
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('MeshCore reconnect superseded after open'\)/,
+    );
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('MeshCore reconnect superseded during attach'\)/,
+    );
+    expect(reconnectBody).toMatch(
+      /catch \(err\) \{[\s\S]*?isBleReconnect[\s\S]*?meshcoreSetupGenerationRef\.current \+= 1/,
+    );
+  });
+
   it('defers starting reconnect while open+attach is already in flight', () => {
     const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
     expect(lostBody).toContain('meshcoreReconnectConnectInFlightRef.current');

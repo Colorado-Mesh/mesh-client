@@ -61,7 +61,14 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
   it('coalesces duplicate connect while GATT is still in progress (Meshtastic + MeshCore)', () => {
     expect(SOURCE).toContain('connect coalesce');
     expect(SOURCE).toContain('gattSetupInflight');
+    expect(SOURCE).toContain('tryCoalesceInflightGattConnect');
     expect(SOURCE).not.toContain('meshcoreGattInflight');
+  });
+
+  it('awaits GATT coalesce before joining connectQueue', () => {
+    expect(SOURCE).toMatch(
+      /tryCoalesceInflightGattConnect[\s\S]*?const prevQueue = this\.connectQueue/,
+    );
   });
 
   it('installs gattSetupInflight after connectAsync for both LoRa sessions', () => {

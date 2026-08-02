@@ -76,6 +76,7 @@ import {
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { createBleReconnectTransportCleanup } from '../lib/bleReconnectLateTransport';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { getSerialPortFromMeshTransport, safeDisconnect } from '../lib/connection';
 import { validateCoords } from '../lib/coordUtils';
@@ -2147,6 +2148,10 @@ export function useMeshtasticRuntime() {
     if (isBleReconnect) bleConnectInProgressRef.current = true;
     /** Cleared synchronously on settle so a late Promise.race loser cannot apply success. */
     let attemptActive = true;
+    const lateTransport = createBleReconnectTransportCleanup(
+      (identityId) => connectionDriver.disconnect(identityId),
+      'useMeshtasticRuntime',
+    );
     const runReconnectAttempt = async () => {
       if (reconnectGenerationRef.current !== generation || !attemptActive) {
         throw new Error('Reconnect superseded before open');
@@ -2166,6 +2171,7 @@ export function useMeshtasticRuntime() {
               lastSerialPortId: params.lastSerialPortId,
             });
       if (reconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded after open');
       }
       deviceRef.current = opened.device;
@@ -2173,6 +2179,7 @@ export function useMeshtasticRuntime() {
         driverIdentityId: opened.driverIdentityId,
       });
       if (reconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded before configure');
       }
       await configureMeshtasticDeviceWithRetry(opened.device, {
@@ -2180,12 +2187,14 @@ export function useMeshtasticRuntime() {
       });
 
       if (reconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded during configure');
       }
       if (!(await verifyNobleBleRfLink(params.type, 'meshtastic'))) {
         throw new Error('RF link lost after reconnect configure');
       }
       if (!attemptActive || reconnectGenerationRef.current !== generation) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('Reconnect superseded after configure');
       }
 
@@ -2209,7 +2218,7 @@ export function useMeshtasticRuntime() {
       requestChatOutboxDrain('meshtastic');
     };
     const reconnectWork = runReconnectAttempt();
-    // Late loser after budget timeout — avoid unhandledRejection; cleanup is in catch.
+    // Late loser after budget timeout — avoid unhandledRejection; cleanup is in catch / late path.
     void reconnectWork.catch(() => {});
     try {
       if (isBleReconnect) {
@@ -2230,13 +2239,7 @@ export function useMeshtasticRuntime() {
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
-      if (failedDriverIdentity) {
-        await connectionDriver.disconnect(failedDriverIdentity).catch((e: unknown) => {
-          console.debug(
-            '[useMeshtasticRuntime] reconnect failure driver disconnect ' + errLikeToLogString(e),
-          );
-        });
-      }
+      await lateTransport.cleanup(failedDriverIdentity);
       console.warn(
         `[useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
           ' ' +

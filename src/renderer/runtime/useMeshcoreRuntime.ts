@@ -79,6 +79,7 @@ import {
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
 import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { createBleReconnectTransportCleanup } from '../lib/bleReconnectLateTransport';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -2775,6 +2776,10 @@ export function useMeshcoreRuntime() {
     meshcoreReconnectConnectInFlightRef.current = true;
     if (isBleReconnect) bleConnectInProgressRef.current = true;
     let attemptActive = true;
+    const lateTransport = createBleReconnectTransportCleanup(
+      (identityId) => connectionDriver.disconnect(identityId),
+      'useMeshcoreRuntime',
+    );
     const runReconnectAttempt = async () => {
       await prepareRfConnect(params.rfType, { preserveReconnectState: true });
       if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
@@ -2797,16 +2802,19 @@ export function useMeshcoreRuntime() {
                 params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
             });
       if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('MeshCore reconnect superseded after open');
       }
       await attachRfSession(opened.driverIdentityId, params.rfType);
       if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('MeshCore reconnect superseded during attach');
       }
       if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
         throw new Error('RF link lost after MeshCore reconnect attach');
       }
       if (!attemptActive || meshcoreReconnectGenerationRef.current !== generation) {
+        await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('MeshCore reconnect superseded after attach');
       }
       console.debug(
@@ -2836,18 +2844,16 @@ export function useMeshcoreRuntime() {
       }
     } catch (err) {
       attemptActive = false;
+      if (isBleReconnect) {
+        // Stop background initConn RPCs if open resolved into attach after the budget fired.
+        meshcoreSetupGenerationRef.current += 1;
+      }
       if (isMeshcoreSetupAbortError(err)) {
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
         meshcoreIsReconnectingRef.current = false;
         return;
       }
-      if (opened?.driverIdentityId) {
-        await connectionDriver.disconnect(opened.driverIdentityId).catch((e: unknown) => {
-          console.debug(
-            '[useMeshcoreRuntime] reconnect failure driver disconnect ' + errLikeToLogString(e),
-          );
-        });
-      }
+      await lateTransport.cleanup(opened?.driverIdentityId);
       console.warn(
         `[useMeshcoreRuntime] Reconnect attempt ${meshcoreReconnectAttemptRef.current} failed: ` +
           errLikeToLogString(err),

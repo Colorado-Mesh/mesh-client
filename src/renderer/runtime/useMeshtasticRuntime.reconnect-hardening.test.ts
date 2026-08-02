@@ -133,6 +133,18 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('attemptActive');
   });
 
+  it('disconnects late-opened transport when reconnect attempt is inactive or superseded', () => {
+    expect(SOURCE).toContain('createBleReconnectTransportCleanup');
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('lateTransport.cleanup(opened.driverIdentityId)');
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('Reconnect superseded after open'\)/,
+    );
+    expect(reconnectBody).toMatch(
+      /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('Reconnect superseded before configure'\)/,
+    );
+  });
+
   it('defers starting reconnect while open+configure is already in flight', () => {
     const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
     expect(lostBody).toContain('reconnectConnectInFlightRef.current');
