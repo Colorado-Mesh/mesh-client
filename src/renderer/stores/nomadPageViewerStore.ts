@@ -103,10 +103,12 @@ function pageFetchDedupeKey(
   path: string,
   requestData: NomadPageRequestData | undefined,
   forcePathRefresh: boolean,
+  requestId: string | undefined,
 ): string {
   const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
   const dataKey = JSON.stringify(requestData ?? {});
-  return `${cleanHash}|${path}|${dataKey}|${forcePathRefresh ? '1' : '0'}`;
+  const idKey = requestId?.trim() || '';
+  return `${cleanHash}|${path}|${dataKey}|${forcePathRefresh ? '1' : '0'}|${idKey}`;
 }
 
 async function fetchNomadPageDeduped(
@@ -116,7 +118,7 @@ async function fetchNomadPageDeduped(
   forcePathRefresh: boolean,
   requestId: string | undefined,
 ): Promise<NomadPageResponse> {
-  const key = pageFetchDedupeKey(hash, path, requestData, forcePathRefresh);
+  const key = pageFetchDedupeKey(hash, path, requestData, forcePathRefresh, requestId);
   const existing = inFlightPageFetches.get(key);
   if (existing) return existing;
   const fetchNomadPage = useNomadNetworkStore.getState().fetchNomadPage;
