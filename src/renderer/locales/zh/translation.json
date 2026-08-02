@@ -2933,7 +2933,6 @@
     "emptyFavourites": "还没有最喜欢的Nomad Network节点。",
     "emptyAnnounces": "尚未宣布Nomad Network节点。",
     "unavailable": "Nomad Network API不可用。重建Reticulum侧车并重新启动堆栈。",
-    "selectNode": "从列表中选择一个节点以浏览其页面。",
     "lastSeen": "最后一次听到 {{time}}",
     "hopsAway_one": "{{count}} 跳之外",
     "hopsAway_other": "{{count}} 跳之外",
@@ -3024,7 +3023,10 @@
     "pageReadyToast": "Nomad 页面就绪：{{name}}",
     "staleLastSeenHint": "最后听说 {{time}} — 即使列为在线，该节点也可能处于离线状态。",
     "pageLoadingRetryCountdown": "首次尝试超时—刷新路径并重试……剩余{{time}}",
-    "pageLoadingRetryOverdue": "正在刷新路径并重试……仍在工作"
+    "pageLoadingRetryOverdue": "正在刷新路径并重试……仍在工作",
+    "enterUrlHint": "粘贴 Nomad 地址，或从列表中选择一个节点。",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "前往"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

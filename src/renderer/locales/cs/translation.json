@@ -2935,7 +2935,6 @@
     "emptyFavourites": "Zatím žádné oblíbené uzly Nomad Network.",
     "emptyAnnounces": "Zatím nebyly oznámeny žádné uzly Nomad Network.",
     "unavailable": "Nomad Network API není k dispozici. Znovu sestavte postranní vozík Reticulum a restartujte zásobník.",
-    "selectNode": "Vyberte uzel ze seznamu pro procházení jeho stránek.",
     "lastSeen": "Naposledy slyšet {{time}}",
     "hopsAway_one": "{{count}} skok daleko",
     "hopsAway_other": "{{count}} skoků daleko",
@@ -3026,7 +3025,10 @@
     "pageReadyToast": "Nomad — Nomádská stránka připravena: {{name}}",
     "staleLastSeenHint": "Naposledy slyšet {{time}} – tento uzel může být offline, i když je uveden jako online.",
     "pageLoadingRetryCountdown": "Vypršel časový limit prvního pokusu — osvěžující cesta a opakování… zbývá {{time}}",
-    "pageLoadingRetryOverdue": "Obnovení cesty a opakování... stále funguje"
+    "pageLoadingRetryOverdue": "Obnovení cesty a opakování... stále funguje",
+    "enterUrlHint": "Vložte adresu Nomad nebo vyberte uzel ze seznamu.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Přejít"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

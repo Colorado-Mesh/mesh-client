@@ -2933,7 +2933,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "No announced Nomad Network nodes yet.",
     "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile.",
-    "selectNode": "Sélectionnez un nœud dans la liste pour parcourir ses pages.",
     "lastSeen": "Dernière écoute {{time}}",
     "hopsAway_one": "à {{count}} saut",
     "hopsAway_other": "à {{count}} sauts",
@@ -3024,7 +3023,10 @@
     "pageReadyToast": "Nomad — Page nomade prête : {{name}}",
     "staleLastSeenHint": "Dernière écoute {{time}} — ce nœud peut être hors ligne même s'il est répertorié comme en ligne.",
     "pageLoadingRetryCountdown": "Première tentative expirée — actualisation du chemin et nouvelle tentative… {{time}} restante",
-    "pageLoadingRetryOverdue": "Actualiser le chemin et réessayer… toujours en cours"
+    "pageLoadingRetryOverdue": "Actualiser le chemin et réessayer… toujours en cours",
+    "enterUrlHint": "Collez une adresse Nomad ou sélectionnez un nœud dans la liste.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "OK"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

@@ -2933,7 +2933,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "No announced Nomad Network nodes yet.",
     "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw.",
-    "selectNode": "Selecteer een knooppunt uit de lijst om door de pagina's ervan te bladeren.",
     "lastSeen": "Laatst gehoord {{time}}",
     "hopsAway_one": "{{count}} hop verderop",
     "hopsAway_other": "{{count}} hops verderop",
@@ -3024,7 +3023,10 @@
     "pageReadyToast": "Nomad-pagina klaar: {{name}}",
     "staleLastSeenHint": "Laatst gehoord {{time}}: dit knooppunt is mogelijk offline, zelfs als het als online wordt vermeld.",
     "pageLoadingRetryCountdown": "Time-out voor eerste poging — pad verversen en opnieuw proberen… {{time}} over",
-    "pageLoadingRetryOverdue": "Pad verversen en opnieuw proberen... werkt nog steeds"
+    "pageLoadingRetryOverdue": "Pad verversen en opnieuw proberen... werkt nog steeds",
+    "enterUrlHint": "Plak een Nomad-adres of selecteer een knooppunt in de lijst.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Ga"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

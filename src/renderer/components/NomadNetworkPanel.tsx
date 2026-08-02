@@ -525,14 +525,19 @@ export default function NomadNetworkPanel({
     [historyIndex, historyStack, loadNodePage],
   );
 
+  const activeDestinationHash = selectedNode?.destination_hash ?? selectedHash;
+
   const submitUrlBar = useCallback(() => {
-    if (!selectedNode) return;
     const trimmed = urlBarValue.trim();
     if (!trimmed) return;
 
     let target = trimmed;
     if (target.startsWith(':')) {
-      target = `${selectedNode.destination_hash}${target}`;
+      if (!activeDestinationHash) {
+        setInvalidUrlError();
+        return;
+      }
+      target = `${activeDestinationHash}${target}`;
     }
 
     const { destination: baseDestination, requestData } = buildNomadLinkRequest(target, null, null);
@@ -542,12 +547,16 @@ export default function NomadNetworkPanel({
       return;
     }
 
-    const hash = parsed.destination_hash ?? selectedNode.destination_hash;
+    const hash = parsed.destination_hash ?? activeDestinationHash;
+    if (!hash) {
+      setInvalidUrlError();
+      return;
+    }
     const normalizedRequest = normalizeNomadPageRequestData(requestData);
     void loadNodePage(hash, parsed.path, {
       requestData: normalizedRequest,
     });
-  }, [loadNodePage, selectedNode, setInvalidUrlError, urlBarValue]);
+  }, [activeDestinationHash, loadNodePage, setInvalidUrlError, urlBarValue]);
 
   const closeViewer = useCallback(() => {
     closeViewerStore();
@@ -854,24 +863,54 @@ export default function NomadNetworkPanel({
               onPreviewHostedSite={handlePreviewHostedSite}
             />
           ) : null}
-          {activeTab !== 'myPages' && !selectedNode ? (
-            <p className="text-muted m-auto max-w-sm p-6 text-center text-sm">
-              {t('nomadNetwork.selectNode')}
-            </p>
+          {activeTab !== 'myPages' && !selectedHash ? (
+            <div className="m-auto flex w-full max-w-lg flex-col items-stretch gap-3 p-6">
+              <p className="text-muted text-center text-sm">{t('nomadNetwork.enterUrlHint')}</p>
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitUrlBar();
+                }}
+              >
+                <input
+                  type="text"
+                  value={urlBarValue}
+                  onChange={(e) => {
+                    setUrlBarValue(e.target.value);
+                  }}
+                  aria-label={t('nomadNetwork.urlBarAria')}
+                  placeholder={t('nomadNetwork.enterUrlPlaceholder')}
+                  className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs text-gray-200"
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800"
+                  aria-label={t('nomadNetwork.goToUrl')}
+                >
+                  {t('nomadNetwork.goToUrl')}
+                </button>
+              </form>
+              {pageError ? (
+                <p className="text-center text-sm text-red-300">
+                  {t('nomadNetwork.pageFailed', { error: pageError })}
+                </p>
+              ) : null}
+            </div>
           ) : null}
-          {activeTab !== 'myPages' && selectedNode ? (
+          {activeTab !== 'myPages' && selectedHash ? (
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
                 <span className="truncate font-medium text-gray-100">
-                  {selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16)}
+                  {selectedNode?.display_name ?? selectedHash.slice(0, 16)}
                 </span>
-                {selectedNode.hops != null ? (
+                {selectedNode?.hops != null ? (
                   <span className="text-muted text-xs">
                     {t('nomadNetwork.hopsAway', { count: selectedNode.hops })}
                   </span>
                 ) : null}
                 <div className="ml-auto flex flex-wrap gap-1">
-                  {onOpenDm ? (
+                  {onOpenDm && selectedNode ? (
                     <button
                       type="button"
                       disabled={!sidecarRunning}
@@ -921,10 +960,7 @@ export default function NomadNetworkPanel({
                     aria-label={t('nomadNetwork.homePage')}
                     title={t('nomadNetwork.homePage')}
                     onClick={() => {
-                      void loadNodePage(
-                        selectedNode.destination_hash,
-                        DEFAULT_NOMAD_NODE_PAGE_PATH,
-                      );
+                      void loadNodePage(selectedHash, DEFAULT_NOMAD_NODE_PAGE_PATH);
                     }}
                   >
                     ⌂
@@ -983,7 +1019,7 @@ export default function NomadNetworkPanel({
                     aria-label={t('nomadNetwork.reloadPage')}
                     title={t('nomadNetwork.reloadPage')}
                     onClick={() => {
-                      void loadNodePage(selectedNode.destination_hash, pagePath, {
+                      void loadNodePage(selectedHash, pagePath, {
                         forceReload: true,
                         forcePathRefresh: shouldForceNomadPathRefreshRetry(
                           pageErrorCode,
@@ -1077,7 +1113,7 @@ export default function NomadNetworkPanel({
                             : pageContent
                         }
                         defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
-                        selectedHash={selectedNode.destination_hash}
+                        selectedHash={selectedHash}
                         fitWidth={pageFitWidth}
                         onNavigate={handleMicronNavigate}
                         onDownloadFile={handleMicronDownload}

@@ -120,6 +120,78 @@ describe('NomadNetworkPanel', () => {
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
   });
 
+  it('shows empty-state URL entry before a node is selected', () => {
+    render(<NomadNetworkPanel />);
+
+    expect(screen.getByText('nomadNetwork.enterUrlHint')).toBeInTheDocument();
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.closeViewer' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens a pasted absolute Nomad URL without a listed node', async () => {
+    const user = userEvent.setup();
+    const hash = '53819f99223ed8a5676b5900d285eb3f';
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: 'pasted page',
+      content_type: 'text/plain',
+    });
+    useNomadNetworkStore.setState({
+      nodes: new Map(),
+      fetchNomadPage,
+    });
+
+    render(<NomadNetworkPanel />);
+    const urlBar = screen.getByLabelText('nomadNetwork.urlBarAria');
+    await user.clear(urlBar);
+    await user.type(urlBar, `${hash}:/page/index.mu`);
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
+
+    await waitFor(() => {
+      expect(fetchNomadPage).toHaveBeenCalledWith(hash, '/page/index.mu', undefined, undefined);
+    });
+    expect(screen.getByText(hash.slice(0, 16))).toBeInTheDocument();
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(`${hash}:/page/index.mu`);
+    expect(screen.getByText('pasted page')).toBeInTheDocument();
+  });
+
+  it('shows invalid URL error from empty-state paste without opening viewer', async () => {
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn();
+    useNomadNetworkStore.setState({ fetchNomadPage });
+
+    render(<NomadNetworkPanel />);
+    const urlBar = screen.getByLabelText('nomadNetwork.urlBarAria');
+    await user.type(urlBar, 'not-a-nomad-url');
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
+
+    expect(fetchNomadPage).not.toHaveBeenCalled();
+    expect(screen.getByText('nomadNetwork.pageFailed')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.closeViewer' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('rejects relative path paste when no page is open', async () => {
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn();
+    useNomadNetworkStore.setState({ fetchNomadPage });
+
+    render(<NomadNetworkPanel />);
+    const urlBar = screen.getByLabelText('nomadNetwork.urlBarAria');
+    await user.type(urlBar, ':/page/other.mu');
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
+
+    expect(fetchNomadPage).not.toHaveBeenCalled();
+    expect(screen.getByText('nomadNetwork.pageFailed')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.closeViewer' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('sorts announces by last heard by default and by hops when selected', async () => {
     const user = userEvent.setup();
     useNomadNetworkStore.setState({

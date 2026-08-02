@@ -2935,7 +2935,6 @@
     "emptyFavourites": "Избранных узлов Nomad Network пока нет.",
     "emptyAnnounces": "Анонсированных узлов Nomad Network пока нет.",
     "unavailable": "Nomad Network API недоступен. Восстановите коляску Reticulum и перезапустите стек.",
-    "selectNode": "Выберите узел из списка, чтобы просмотреть его страницы.",
     "lastSeen": "Последний раз слышали {{time}}",
     "hopsAway_one": "На расстоянии {{count}} хопа",
     "hopsAway_other": "На расстоянии {{count}} хопов",
@@ -3026,7 +3025,10 @@
     "pageReadyToast": "Страница Nomad готова: {{name}}",
     "staleLastSeenHint": "Последний раз слышал {{time}} — этот узел может быть отключен, даже если он указан как подключенный.",
     "pageLoadingRetryCountdown": "Время первой попытки истекло. Обновление пути и повторная попытка… Осталось {{time}}",
-    "pageLoadingRetryOverdue": "Освежающий путь и повторная попытка... все еще работает"
+    "pageLoadingRetryOverdue": "Освежающий путь и повторная попытка... все еще работает",
+    "enterUrlHint": "Вставьте адрес Nomad или выберите узел из списка.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Перейти"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

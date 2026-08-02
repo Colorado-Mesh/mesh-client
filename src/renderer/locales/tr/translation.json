@@ -2933,7 +2933,6 @@
     "emptyFavourites": "Henüz favori Nomad Network düğümü yok.",
     "emptyAnnounces": "Henüz duyurulmuş Nomad Network düğümü yok.",
     "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat.",
-    "selectNode": "Sayfalarına göz atmak için listeden bir düğüm seçin.",
     "lastSeen": "Son duyulan {{time}}",
     "hopsAway_one": "{{count}} atlama uzakta",
     "hopsAway_other": "{{count}} atlama uzakta",
@@ -3024,7 +3023,10 @@
     "pageReadyToast": "Nomad sayfası hazır: {{name}}",
     "staleLastSeenHint": "Son duyulan {{time}} — bu düğüm çevrimiçi olarak listelense bile çevrimdışı olabilir.",
     "pageLoadingRetryCountdown": "İlk deneme zaman aşımına uğradı — yol yenileniyor ve yeniden deneniyor… {{time}} kaldı",
-    "pageLoadingRetryOverdue": "Yol yenileniyor ve yeniden deneniyor... hala çalışıyor"
+    "pageLoadingRetryOverdue": "Yol yenileniyor ve yeniden deneniyor... hala çalışıyor",
+    "enterUrlHint": "Bir Nomad adresi yapıştırın veya listeden bir düğüm seçin.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Git"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

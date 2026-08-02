@@ -2935,7 +2935,6 @@
     "emptyFavourites": "Улюблених вузлів Nomad Network поки немає.",
     "emptyAnnounces": "Ще немає анонсованих вузлів Nomad Network.",
     "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
-    "selectNode": "Виберіть вузол зі списку, щоб переглянути його сторінки.",
     "lastSeen": "Востаннє почуто {{time}}",
     "hopsAway_one": "за {{count}} хоп",
     "hopsAway_other": "за {{count}} хопи",
@@ -3026,7 +3025,10 @@
     "pageReadyToast": "Сторінка Nomad готова: {{name}}",
     "staleLastSeenHint": "Востаннє почуто {{time}} — цей вузол може бути офлайн, навіть якщо вказано як онлайн.",
     "pageLoadingRetryCountdown": "Тайм-аут першої спроби — оновлення шляху та повторна спроба… {{time}} ліворуч",
-    "pageLoadingRetryOverdue": "Освіження шляху та повторні спроби… все ще працюють"
+    "pageLoadingRetryOverdue": "Освіження шляху та повторні спроби… все ще працюють",
+    "enterUrlHint": "Вставте адресу Nomad або виберіть вузол зі списку.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "Пересування"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

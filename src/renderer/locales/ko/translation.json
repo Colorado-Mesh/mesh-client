@@ -2933,7 +2933,6 @@
     "emptyFavourites": "아직 즐겨찾는 Nomad Network 노드가 없습니다.",
     "emptyAnnounces": "아직 발표된 Nomad Network 노드가 없습니다.",
     "unavailable": "Nomad Network API를 사용할 수 없습니다. Reticulum 사이드카를 재구축하고 스택을 다시 시작하십시오.",
-    "selectNode": "목록에서 노드를 선택하여 해당 페이지를 찾아보세요.",
     "lastSeen": "마지막으로 들어본 날짜: {{time}}",
     "hopsAway_one": "{{count}}홉 거리",
     "hopsAway_other": "{{count}}홉 거리",
@@ -3024,7 +3023,10 @@
     "pageReadyToast": "Nomad 페이지 준비됨: {{name}}",
     "staleLastSeenHint": "마지막으로 청취된 {{time}} — 이 노드는 온라인으로 나열되어 있어도 오프라인일 수 있습니다.",
     "pageLoadingRetryCountdown": "첫 번째 시도 시간 초과 — 경로 새로 고침 및 재시도 중… {{time}} 남음",
-    "pageLoadingRetryOverdue": "경로 새로 고침 및 재시도 중... 여전히 작동 중"
+    "pageLoadingRetryOverdue": "경로 새로 고침 및 재시도 중... 여전히 작동 중",
+    "enterUrlHint": "Nomad 주소를 붙여넣거나 목록에서 노드를 선택합니다.",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "시작"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

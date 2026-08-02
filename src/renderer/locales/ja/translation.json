@@ -2933,7 +2933,6 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "Nomad Networkノードはまだ発表されていません。",
     "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。",
-    "selectNode": "リストからノードを選択して、そのページを参照します。",
     "lastSeen": "最後に聞いたのは{{time}}",
     "hopsAway_one": "{{count}} ホップ先",
     "hopsAway_other": "{{count}} ホップ先",
@@ -3024,7 +3023,10 @@
     "pageReadyToast": "Nomadページの準備ができました: {{name}}",
     "staleLastSeenHint": "最後に受信したのは {{time}} — このノードはオンラインとしてリストされている場合でもオフラインである可能性があります。",
     "pageLoadingRetryCountdown": "最初の試行がタイムアウトしました—パスを更新して再試行しています… {{time}}残り",
-    "pageLoadingRetryOverdue": "パスを更新して再試行しています...まだ機能しています"
+    "pageLoadingRetryOverdue": "パスを更新して再試行しています...まだ機能しています",
+    "enterUrlHint": "Nomadアドレスを貼り付けるか、リストからノードを選択します。",
+    "enterUrlPlaceholder": "hash:/page/index.mu",
+    "goToUrl": "行く"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
