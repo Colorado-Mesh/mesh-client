@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
 import { useChatOutbox } from './useChatOutbox';
@@ -177,6 +178,44 @@ describe('useChatOutbox', () => {
     await waitFor(() => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(4, 'queued', undefined, undefined);
     });
+    // This is the second meshtastic send in the hook's lifetime, so it is paced behind the
+    // first (see 'paces successive meshtastic sends' below) — wait for it to fully settle so
+    // no timer is left dangling into later tests.
+    await waitFor(
+      () => {
+        expect(sendFn).toHaveBeenCalledTimes(2);
+      },
+      { timeout: MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS + 2_000 },
+    );
+  });
+
+  it('paces successive meshtastic sends within one drain to avoid RATE_LIMIT_EXCEEDED', async () => {
+    // Regression: firmware rejects a second TEXT_MESSAGE_APP within 2s of the first
+    // (Routing_Error.RATE_LIMIT_EXCEEDED). Rows draining back-to-back must be paced.
+    const rowA = makeEntry({ id: 30, payload: 'first' });
+    const rowB = makeEntry({ id: 31, payload: 'second' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([rowA, rowB]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
+
+    // The second row must not send immediately after the first.
+    await new Promise((resolve) => {
+      setTimeout(resolve, MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS - 500);
+    });
+    expect(sendFn).toHaveBeenCalledTimes(1);
+
+    await waitFor(
+      () => {
+        expect(sendFn).toHaveBeenCalledTimes(2);
+      },
+      { timeout: 2_000 },
+    );
+    expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
   });
 
   it('does not drain when isSendAvailable is false', async () => {

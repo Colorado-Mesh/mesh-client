@@ -284,3 +284,13 @@ export const NOMAD_PAGE_FETCH_RETRY_SETTLE_MS = 750;
  * the latest selection after this debounce.
  */
 export const NOMAD_PAGE_FETCH_DEBOUNCE_MS = 300;
+
+/**
+ * Minimum gap between successive TEXT_MESSAGE_APP sends to the connected Meshtastic radio.
+ * Firmware's PhoneAPI rate-limits locally-originated text packets to one per 2s
+ * (`Throttle::isWithinTimespanMs(lastPortNumToRadio[TEXT_MESSAGE_APP], TWO_SECONDS_MS)` in
+ * `PhoneAPI.cpp`) and rejects a closer one with `Routing_Error.RATE_LIMIT_EXCEEDED` — a
+ * multi-chunk split message sent back-to-back trips this on chunk 2+. Padded above the
+ * firmware's exact 2000ms boundary for serial/BLE/TCP write and timer-granularity slack.
+ */
+export const MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS = 2_500;

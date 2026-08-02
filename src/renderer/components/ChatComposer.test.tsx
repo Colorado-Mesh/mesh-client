@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { MESHTASTIC_PAYLOAD_LIMIT } from '@/renderer/lib/chatComposerLimits';
 import { draftsStorageKey } from '@/renderer/lib/chatPanelProtocolStorage';
+import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 
 import { ChatComposer } from './ChatComposer';
 
@@ -335,6 +336,72 @@ describe('ChatComposer', () => {
     fireEvent.change(textarea, { target: { value: 'a'.repeat(250) } });
     expect(screen.getAllByText('250 characters · 2 messages').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Send 2 parts' })).toBeInTheDocument();
+  });
+
+  it('paces meshtastic multi-chunk sends to avoid firmware RATE_LIMIT_EXCEEDED', async () => {
+    // Regression: firmware rejects a second TEXT_MESSAGE_APP within 2s of the first
+    // (Routing_Error.RATE_LIMIT_EXCEEDED). Chunks must not fire back-to-back.
+    vi.useFakeTimers();
+    try {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      render(
+        <ChatComposer
+          protocol="meshtastic"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={onSendChunk}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      fireEvent.change(textarea, { target: { value: 'a'.repeat(250) } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send 2 parts' }));
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+      expect(onSendChunk).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('[1/2]'),
+        expect.objectContaining({ chunkIndex: 0 }),
+      );
+
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS - 100);
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(200);
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+      expect(onSendChunk).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('[2/2]'),
+        expect.objectContaining({ chunkIndex: 1 }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not delay single-chunk meshtastic sends', async () => {
+    vi.useFakeTimers();
+    try {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      render(
+        <ChatComposer
+          protocol="meshtastic"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={onSendChunk}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      fireEvent.change(textarea, { target: { value: 'hello' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('hides GIF button when MeshCore Open wire compat is disabled', () => {

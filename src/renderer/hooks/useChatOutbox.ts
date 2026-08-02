@@ -4,6 +4,7 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 
 import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
+import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '../lib/timeConstants';
 
 export type { OutboxEntry };
 
@@ -147,6 +148,8 @@ export function useChatOutbox({
   const drainingRef = useRef(false);
   const isSendAvailableRef = useRef(isSendAvailable);
   const sendFnRef = useRef(sendFn);
+  /** Persists across drainOnce() calls so pacing holds even when drain is re-triggered mid-backoff. */
+  const lastMeshtasticSendAtRef = useRef(0);
   useEffect(() => {
     isSendAvailableRef.current = isSendAvailable;
     sendFnRef.current = sendFn;
@@ -192,6 +195,17 @@ export function useChatOutbox({
       const now = Date.now();
       for (const row of freshRows.filter((r) => isEligibleForDrain(r, now))) {
         if (!isSendAvailableRef.current) break;
+        if (protocol === 'meshtastic') {
+          // Firmware rejects a second TEXT_MESSAGE_APP within 2s of the last one
+          // (Routing_Error.RATE_LIMIT_EXCEEDED) — pace queued Meshtastic rows the same
+          // way ChatComposer paces multi-chunk sends, across drainOnce() calls too.
+          const wait =
+            MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS - (Date.now() - lastMeshtasticSendAtRef.current);
+          if (wait > 0) {
+            await new Promise((resolve) => setTimeout(resolve, wait));
+          }
+          lastMeshtasticSendAtRef.current = Date.now();
+        }
         await sendOneOutboxRow(row, sendFnRef.current, updateRow, removeRow);
       }
     } catch (err: unknown) {

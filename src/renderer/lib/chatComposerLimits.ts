@@ -1,3 +1,7 @@
+import {
+  formatMeshcoreWireReplyPrefix,
+  formatMeshcoreWireTapbackPrefix,
+} from './meshcoreChannelText';
 import type { MeshProtocol } from './types';
 
 export const MESHTASTIC_PAYLOAD_LIMIT = 228;
@@ -11,6 +15,15 @@ export const MESHCORE_WIRE_MAX = 160;
 export const MESHCORE_MAX_NAME_LEN = 32;
 export const MESHCORE_NAME_SUFFIX_LEN = 2; // ": "
 export const MESHCORE_ROOM_PUBKEY_PREFIX_LEN = 4;
+
+/**
+ * Meshtastic `Data.reply_id` (field 7) is `fixed32`: 1 tag byte + 4 fixed value bytes = 5 bytes,
+ * always, whenever a reply is sent — regardless of the referenced packet id's value. Unlike
+ * MeshCore's reply prefix, this overhead is invisible wire bytes, not visible text, but it still
+ * has to come out of the same payload budget or a near-limit reply overflows the radio's true
+ * packet size and gets NAKed as TOO_LARGE.
+ */
+export const MESHTASTIC_REPLY_ID_WIRE_BYTES = 5;
 
 export type ComposerWireContext = 'channel' | 'dm' | 'room';
 export type ComposerLimitPhase = 'ok' | 'warn' | 'split' | 'overMax';
@@ -59,7 +72,7 @@ export function getComposerPayloadLimit(opts: {
   return getMeshcoreChannelPayloadLimit(opts.senderDisplayName ?? '');
 }
 
-/** MeshCore reply wire prefix on the first chunk only (keyless companion or keyed Open). */
+/** Reply wire overhead on the first chunk only (MeshCore visible prefix; Meshtastic reply_id field). */
 export function getComposerWireOverhead(opts: {
   protocol: MeshProtocol;
   replyToSenderName?: string;
@@ -67,17 +80,53 @@ export function getComposerWireOverhead(opts: {
   /** When true, count keyed `@[Name#key] ` overhead (MeshCore Open compat). */
   useKeyedReplies?: boolean;
 }): number {
-  if (opts.protocol !== 'meshcore' || !opts.replyToSenderName?.trim()) return 0;
-  const cleanName = opts.replyToSenderName.trim();
-  const key = opts.replyKey;
-  if (opts.useKeyedReplies && key != null && Number.isFinite(key) && key > 0) {
-    return countMessageChars(`@[${cleanName}#${Math.trunc(key)}] `);
+  if (opts.protocol === 'meshtastic') {
+    return opts.replyKey != null && Number.isFinite(opts.replyKey) && opts.replyKey !== 0
+      ? MESHTASTIC_REPLY_ID_WIRE_BYTES
+      : 0;
   }
-  return countMessageChars(`@[${cleanName}] `);
+  if (opts.protocol !== 'meshcore' || !opts.replyToSenderName?.trim()) return 0;
+  const key = opts.replyKey;
+  // Reuse the exact wire-format builders (incl. sanitize + "Unknown" fallback for all-emoji
+  // names) so this estimate can never drift from what actually goes out on the wire.
+  const prefix =
+    opts.useKeyedReplies && key != null && Number.isFinite(key) && key > 0
+      ? formatMeshcoreWireReplyPrefix(opts.replyToSenderName, key)
+      : formatMeshcoreWireTapbackPrefix(opts.replyToSenderName);
+  return countMessageWireBytes(`${prefix} `);
 }
 
 export function countMessageChars(text: string): number {
   return Array.from(text).length;
+}
+
+const wireTextEncoder = new TextEncoder();
+
+/**
+ * Real transport wire byte length (UTF-8), as opposed to `countMessageChars`' codepoint count.
+ * Meshtastic and MeshCore both encode outbound text with `TextEncoder` before transmission, so
+ * a codepoint count alone understates cost for any non-ASCII text (non-Latin scripts, emoji) —
+ * this is what must be checked against real byte-based wire limits like `MESHTASTIC_PAYLOAD_LIMIT`.
+ */
+export function countMessageWireBytes(text: string): number {
+  return wireTextEncoder.encode(text).length;
+}
+
+/**
+ * Number of leading codepoints from `chars` whose combined UTF-8 byte length fits `byteBudget`.
+ * Always takes at least one codepoint to guarantee forward progress, even when a single
+ * multi-byte codepoint alone exceeds the budget (only possible with a pathologically tiny limit).
+ */
+function takeCharsWithinByteBudget(chars: readonly string[], byteBudget: number): number {
+  let bytes = 0;
+  let count = 0;
+  for (const ch of chars) {
+    const chBytes = countMessageWireBytes(ch);
+    if (count > 0 && bytes + chBytes > byteBudget) break;
+    bytes += chBytes;
+    count++;
+  }
+  return count;
 }
 
 /** Max user-typed characters across MAX_CHUNKS split messages. */
@@ -180,13 +229,16 @@ export function splitChatMessage(
       if (bodyLimit <= 0) return bodies;
 
       const remaining = chars.slice(pos);
-      if (remaining.length <= bodyLimit) {
+      if (countMessageWireBytes(remaining.join('')) <= bodyLimit) {
         bodies.push(remaining.join(''));
         break;
       }
-      const window = remaining.slice(0, bodyLimit);
-      let breakAt = bodyLimit;
-      for (let i = bodyLimit - 1; i > 0; i--) {
+      // bodyLimit is a byte budget (real wire limits are byte limits), so the window must be
+      // sized by accumulated UTF-8 byte length, not codepoint count.
+      const windowLen = takeCharsWithinByteBudget(remaining, bodyLimit);
+      const window = remaining.slice(0, windowLen);
+      let breakAt = windowLen;
+      for (let i = windowLen - 1; i > 0; i--) {
         if (window[i] === ' ' || window[i] === '\n') {
           breakAt = i;
           break;
@@ -194,13 +246,13 @@ export function splitChatMessage(
       }
       const body = window.slice(0, breakAt).join('').trimEnd();
       bodies.push(body);
-      pos += breakAt === bodyLimit ? bodyLimit : breakAt + 1;
+      pos += breakAt === windowLen ? windowLen : breakAt + 1;
       isFirst = false;
     }
     return bodies;
   }
 
-  if (countMessageChars(trimmed) + overhead <= limit) return [];
+  if (countMessageWireBytes(trimmed) + overhead <= limit) return [];
 
   const estimatedPrefixLen = `[${MAX_CHUNKS}/${MAX_CHUNKS}] `.length;
   const bodies = chunkBodies(estimatedPrefixLen);
