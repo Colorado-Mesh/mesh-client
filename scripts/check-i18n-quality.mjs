@@ -2340,6 +2340,26 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
+/** Statistical "average" / font-weight false friends for transport path medium. */
+export const PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES = [
+  { re: /^Moyenne$/i, hint: 'fr: use transport "Support"/"médium", not statistical "Moyenne"' },
+  { re: /^Gemiddeld$/i, hint: 'nl: use transport "Medium", not statistical "Gemiddeld"' },
+  { re: /^Średnia$/i, hint: 'pl: use transport "Medium", not statistical "Średnia"' },
+  { re: /^Střední$/i, hint: 'cs: use transport "Médium", not statistical "Střední"' },
+  { re: /^Средний$/i, hint: 'ru: use transport "Среда", not statistical "Средний"' },
+  { re: /^Середній$/i, hint: 'uk: use transport "Носій", not statistical "Середній"' },
+  { re: /^Orta$/i, hint: 'tr: use transport "Ortam", not statistical "Orta"' },
+  { re: /^중간$/, hint: 'ko: use transport "매체", not middle "중간"' },
+  { re: /^中程度$/, hint: 'ja: use transport "媒体", not degree "中程度"' },
+  { re: /^中粗线$/, hint: 'zh: use transport "介质", not font-weight "中粗线"' },
+];
+
+/**
+ * Reticulum peer detail, ping, and related UI outside connectionPanel.* nesting.
+ *
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
 function checkReticulumPeerAndPingIssues(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
@@ -2361,6 +2381,36 @@ function checkReticulumPeerAndPingIssues(ctx) {
       issues.push(
         'reticulumPing.failed must mention ping/probe, not generic connection "зв\'язку/связи"',
       );
+    }
+  }
+
+  if (locale !== 'en' && flatKey.startsWith('peerListPanel.paths')) {
+    if (flatKey === 'peerListPanel.pathsMedium') {
+      for (const { re, hint } of PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES) {
+        if (re.test(val)) {
+          issues.push(`peerListPanel.pathsMedium false friend: ${hint}`);
+        }
+      }
+    }
+    if (
+      (flatKey === 'peerListPanel.paths' ||
+        flatKey === 'peerListPanel.pathsActiveBadge' ||
+        flatKey === 'peerListPanel.pathsBackupBadge') &&
+      val === enVal
+    ) {
+      issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
+    }
+    if (flatKey === 'peerListPanel.pathsPreferRf' && enVal === 'RF' && locale !== 'en') {
+      // RF is a protocol token; MT must not expand the acronym alone into unrelated words
+      // (e.g. cs "regionální facilitátor"). Localized glosses that still keep "RF" are OK
+      // (e.g. pt-BR "Frequência de rádio (RF)").
+      const keepsRfToken = /\bRF\b/.test(val) || /射频|無線|무선/.test(val);
+      if (!keepsRfToken) {
+        issues.push('peerListPanel.pathsPreferRf must keep the RF protocol token');
+      }
+    }
+    if (flatKey === 'peerListPanel.pathsBackupBadge' && /Заднім ходом/i.test(val)) {
+      issues.push('peerListPanel.pathsBackupBadge must mean spare path, not reverse gear');
     }
   }
 

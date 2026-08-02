@@ -20,6 +20,21 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     expect(HANDLERS_SOURCE).toContain("lower.includes('rate limit exceeded')");
   });
 
+  it('applies the shared proxy rate limit to picker-gated RNCP handlers', () => {
+    // Dedicated rncpSend/Fetch/setRncpListener bypass generic proxyPost gating but must
+    // still share the 300/min ceiling so a compromised renderer cannot storm the sidecar.
+    for (const channel of [
+      'reticulum:rncpSend',
+      'reticulum:rncpFetch',
+      'reticulum:setRncpListener',
+    ] as const) {
+      const handleIdx = HANDLERS_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+      expect(handleIdx, channel).toBeGreaterThanOrEqual(0);
+      const afterHandle = HANDLERS_SOURCE.slice(handleIdx, handleIdx + 500);
+      expect(afterHandle).toContain('reticulumProxyIpcRateLimit.checkOrThrow()');
+    }
+  });
+
   it('aligns sidecar peer cache and WS added batch with ~100k scale', () => {
     expect(SIDECAR_STACK_SOURCE).toMatch(/const MAX_PEER_CACHE: usize = 100_000;/);
     expect(SIDECAR_LIVE_SOURCE).toMatch(/const MAX_PEERS_UPDATED_ADDED: usize = 4096;/);

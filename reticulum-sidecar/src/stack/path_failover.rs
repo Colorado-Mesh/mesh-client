@@ -175,6 +175,14 @@ pub fn should_retry_direct_path_failover(rounds_already: u8) -> bool {
     rounds_already < MAX_VIA_FAILOVERS
 }
 
+/// True when Nomad should enter another via-failover round after a link result.
+///
+/// Only `link_timeout` triggers in-request failover; other errors surface immediately.
+/// `failover_round` is the count of failovers already completed (0 before the first).
+pub fn should_attempt_nomad_via_failover(err_code: &str, failover_round: u8) -> bool {
+    err_code == "link_timeout" && failover_round < MAX_VIA_FAILOVERS
+}
+
 /// Merge a newly tried interface name into the diagnostics list (case-insensitive dedupe).
 pub fn push_tried_iface(tried: &mut Vec<String>, iface: Option<&str>) {
     let Some(name) = iface.map(str::trim).filter(|s| !s.is_empty()) else {
@@ -184,6 +192,30 @@ pub fn push_tried_iface(tried: &mut Vec<String>, iface: Option<&str>) {
         return;
     }
     tried.push(name.to_string());
+}
+
+/// Record a failed (or initial) path attempt into tried + blocked diagnostics sets.
+///
+/// Used by the Nomad in-request failover loop so each round suppresses the dead
+/// iface/via before `select_unblocked_slot` / rediscovery.
+pub fn record_path_failover_attempt(
+    tried: &mut Vec<String>,
+    blocked_ifaces: &mut Vec<String>,
+    blocked_vias: &mut Vec<String>,
+    iface: Option<&str>,
+    via: Option<&str>,
+) {
+    push_tried_iface(tried, iface);
+    if let Some(name) = iface.map(str::trim).filter(|s| !s.is_empty()) {
+        if !blocked_ifaces.iter().any(|b| b.eq_ignore_ascii_case(name)) {
+            blocked_ifaces.push(name.to_string());
+        }
+    }
+    if let Some(v) = via.map(str::trim).filter(|s| !s.is_empty()) {
+        if !blocked_vias.iter().any(|b| b.eq_ignore_ascii_case(v)) {
+            blocked_vias.push(v.to_string());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -381,5 +413,65 @@ mod tests {
             tried,
             vec!["TTP_TCP".to_string(), "Local Transport Pi".to_string()]
         );
+    }
+
+    #[test]
+    fn should_attempt_nomad_via_failover_only_on_link_timeout_within_cap() {
+        assert!(should_attempt_nomad_via_failover("link_timeout", 0));
+        assert!(should_attempt_nomad_via_failover("link_timeout", 1));
+        assert!(!should_attempt_nomad_via_failover("link_timeout", 2));
+        assert!(!should_attempt_nomad_via_failover(
+            "link_timeout",
+            MAX_VIA_FAILOVERS
+        ));
+        assert!(!should_attempt_nomad_via_failover("path_not_found", 0));
+        assert!(!should_attempt_nomad_via_failover("nomad_busy", 0));
+    }
+
+    #[test]
+    fn record_path_failover_attempt_tracks_tried_and_blocked_sets() {
+        let mut tried = Vec::new();
+        let mut blocked_ifaces = Vec::new();
+        let mut blocked_vias = Vec::new();
+        record_path_failover_attempt(
+            &mut tried,
+            &mut blocked_ifaces,
+            &mut blocked_vias,
+            Some("TTP_TCP"),
+            Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+        );
+        // Second attempt on another hub; case-insensitive dedupe on re-record.
+        record_path_failover_attempt(
+            &mut tried,
+            &mut blocked_ifaces,
+            &mut blocked_vias,
+            Some("Local Transport Pi"),
+            Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+        );
+        record_path_failover_attempt(
+            &mut tried,
+            &mut blocked_ifaces,
+            &mut blocked_vias,
+            Some("ttp_tcp"),
+            Some("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+        );
+        assert_eq!(
+            tried,
+            vec!["TTP_TCP".to_string(), "Local Transport Pi".to_string()]
+        );
+        assert_eq!(
+            blocked_ifaces,
+            vec!["TTP_TCP".to_string(), "Local Transport Pi".to_string()]
+        );
+        assert_eq!(
+            blocked_vias,
+            vec![
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+                "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()
+            ]
+        );
+        // Initial + one failover recorded → round 1 still allows one more; round 2 stops.
+        assert!(should_attempt_nomad_via_failover("link_timeout", 1));
+        assert!(!should_attempt_nomad_via_failover("link_timeout", 2));
     }
 }

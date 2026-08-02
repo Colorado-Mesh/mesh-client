@@ -56,8 +56,8 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Remote          | rnsh shell + rncp transfer (`ReticulumRemotePanel`): multi-session terminals, send/fetch/receive, saved addresses, inbound policy                                                                                                                                             |
 | RRC             | Multi-hub relay chat (`RrcPanel`): favourites/discovered hubs, rooms, nicklist, slash commands, reconnect                                                                                                                                                                     |
 | Nomad Network   | Favourites, announces, **My Pages** (watched-folder static host via rsNomad; auto-restore when stack starts), Micron page browser (dual-axis scroll shell, fit-width default + open-width toggle, navigation, cache, file downloads); lazy-mount keep-alive after first visit |
-| Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                                                                                                                                                               |
-| Network         | Identity, stack settings, announces, propagation (preferred, sync, rename/delete remote nodes), config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**)                                                                                     |
+| Peers           | Path-table peers and LXMF contacts; ranked multi-path slots + per-peer medium pin in peer path detail (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                                                                                            |
+| Network         | Identity, stack settings (including global **path medium** preference), announces, propagation (preferred, sync, rename/delete remote nodes), config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**)                                       |
 | Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                                                                                                                                                           |
 | Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                                                                                                                                                      |
 | Topology        | Path-table graph (force layout; `via_hash` next-hop edges)                                                                                                                                                                                                                    |
@@ -286,9 +286,27 @@ IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`):
 
 ---
 
+## Path routing
+
+When a destination is reachable over more than one next hop, the sidecar keeps up to **three ranked path slots** (one active + backups). Failover promotes a backup (or rediscovers via another live interface) before giving up — Nomad page loads exhaust alternate paths inside one request; LXMF Direct does the same before preferred-PN fallback. See [troubleshooting](troubleshooting.md#nomad-network-pages-hang-or-almost-never-load) for triage.
+
+**Network → stack settings → Prefer path medium** sets the global bias:
+
+| Preference              | Behavior                                                        |
+| ----------------------- | --------------------------------------------------------------- |
+| Lowest path (hop count) | No RF/network bias; rank by hops only (`lowest`)                |
+| Network (non-RF)        | Prefer TCP/UDP/I2P/gateway/shared-instance slots when available |
+| RF (RNode)              | Prefer LoRa / RNode slots when available                        |
+
+`network` / `rf` are “prefer if possible”: if the preferred medium has no live slot, another medium stays active without clearing the preference, so the preferred medium can reclaim the route later.
+
+**Peers → path detail** (Paths control on a peer row) shows the ranked slots (active vs backup, hops, interface, medium) and optional **per-peer pin** (Auto / RF / Network) that overrides the global preference for that destination. API contract: [reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md#path-medium-preference-and-pins).
+
+---
+
 ## Peers and topology
 
-- **`GET /api/v1/peers`:** live RNS path table when the sidecar is built with the full stack; may serve a short-TTL maintenance cache unless `?refresh=1` (manual Refresh); falls back to last cache on live query failure
+- **`GET /api/v1/peers`:** live RNS path table when the sidecar is built with the full stack; may serve a short-TTL maintenance cache unless `?refresh=1` (manual Refresh); falls back to last cache on live query failure. Active-route only — fetch ranked slots per destination via `GET /api/v1/peers/{hash}/paths` (see **Path routing** above)
 - **Peers tab UX:** keep-alive after first visit; opening the tab uses soft/cached path-table data (skips refresh when peers are already in the store). Manual **Refresh** forces a live dump (`?refresh=1`). Row prepare/sort for large lists is deferred so chrome paints immediately.
 - **After a DB wipe:** peer rows refill only as destinations announce again (or path responses arrive). Connecting to the same hub does **not** dump every known destination instantly. mesh-client applies announces / `peers_updated` patches incrementally (batched), with a full peer dump on connect, manual Refresh, stack restart, and a 30s safety poll (60s when the path table is large).
 - **Your node** does not appear as a peer row; identity hash is under **Network → Identity**; topology uses a synthetic **You** center node

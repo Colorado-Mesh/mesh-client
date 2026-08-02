@@ -1837,6 +1837,36 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'peerDetailModal probe false friend');
   });
 
+  it('flags statistical average false friend on peerListPanel.pathsMedium', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'peerListPanel.pathsMedium',
+      val: 'Moyenne',
+      enVal: 'Medium',
+    });
+    expectIssue(issues, 'peerListPanel.pathsMedium false friend');
+  });
+
+  it('flags English leak on peerListPanel.pathsActiveBadge', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'peerListPanel.pathsActiveBadge',
+      val: 'Active',
+      enVal: 'Active',
+    });
+    expectIssue(issues, 'still identical to English');
+  });
+
+  it('flags RF token expansion on peerListPanel.pathsPreferRf', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'peerListPanel.pathsPreferRf',
+      val: 'regionální facilitátor',
+      enVal: 'RF',
+    });
+    expectIssue(issues, 'pathsPreferRf must keep the RF protocol token');
+  });
+
   it('flags Ukrainian connection false friend on reticulumPing.failed', () => {
     const issues = localeStringQualityIssues({
       locale: 'uk',

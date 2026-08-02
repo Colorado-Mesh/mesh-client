@@ -16,8 +16,12 @@ import {
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { useReticulumRuntime } from '@/renderer/runtime/useReticulumRuntime';
 import { useMessageStore } from '@/renderer/stores/messageStore';
+import { useRncpEnableRequestStore } from '@/renderer/stores/rncpEnableRequestStore';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
-import { RNCP_RECEIVE_DEST_SHARE_PREFIX } from '@/shared/rncpRequestEnable';
+import {
+  RNCP_RECEIVE_DEST_SHARE_PREFIX,
+  RNCP_REQUEST_ENABLE_SENTINEL,
+} from '@/shared/rncpRequestEnable';
 
 vi.mock('@/renderer/lib/applyRncpReceiveDestShare', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -68,6 +72,8 @@ describe('useReticulumRuntime RNCP receive-dest share reservation', () => {
 
   beforeEach(() => {
     useMessageStore.setState({ messages: {} });
+    useRncpEnableRequestStore.getState().clear();
+    useRncpEnableRequestStore.setState({ dismissedPeers: new Set() });
     resetReticulumManualStackStopSuppressForTests();
     resetRncpLxmfControlSideEffectDedupForTests();
     eventHandler = null;
@@ -196,6 +202,93 @@ describe('useReticulumRuntime RNCP receive-dest share reservation', () => {
       await Promise.resolve();
     });
     expect(applyRncpReceiveDestShareFromLxmf).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('catch-up redelivery of a committed receive-dest share does not re-apply', async () => {
+    const hash = `${'d'.repeat(62)}04`;
+    const payload = shareInbound(hash);
+    vi.mocked(applyRncpReceiveDestShareFromLxmf).mockResolvedValue({
+      ok: true,
+      receiveHash: RECEIVE,
+      lxmfPeerHash: SENDER,
+    });
+
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(eventHandler).toBeTruthy();
+    const onEvent = eventHandler!;
+
+    act(() => {
+      onEvent({ type: 'lxmf_message', payload });
+    });
+    await waitFor(() => {
+      expect(applyRncpReceiveDestShareFromLxmf).toHaveBeenCalledTimes(1);
+    });
+
+    // Same control message reappears via catch-up after WS lag — side effect must not fire again.
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
+      messages: [payload],
+      ringLen: 1,
+    });
+    act(() => {
+      onEvent({ type: 'events_lagged', payload: { skipped: 3 } });
+    });
+    await waitFor(() => {
+      expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalled();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(applyRncpReceiveDestShareFromLxmf).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('catch-up redelivery of a committed enable-request does not re-enqueue the modal', async () => {
+    const hash = `${'e'.repeat(62)}05`;
+    const enableText = `Please enable rncp.\n\n${RNCP_REQUEST_ENABLE_SENTINEL}`;
+    const payload = {
+      sender_hash: SENDER,
+      sender_name: 'Alice',
+      text: enableText,
+      timestamp: 1_000,
+      direction: 'inbound' as const,
+      message_hash: hash,
+      received_via: 'tcp',
+    };
+
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(eventHandler).toBeTruthy();
+    const onEvent = eventHandler!;
+
+    act(() => {
+      onEvent({ type: 'lxmf_message', payload });
+    });
+    await waitFor(() => {
+      expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(1);
+    });
+
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
+      messages: [payload],
+      ringLen: 1,
+    });
+    act(() => {
+      onEvent({ type: 'ws_connected', payload: { reconnect: true } });
+    });
+    await waitFor(() => {
+      expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalled();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(useRncpEnableRequestStore.getState().prompts).toHaveLength(1);
     unmount();
   });
 });
