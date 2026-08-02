@@ -1608,22 +1608,28 @@ export function useMeshtasticRuntime() {
     pushMqttChannelKeys,
   ]);
 
-  // Cleanup on unmount — stop all intervals and subscriptions
+  // Cleanup on unmount — disconnect before unsubscribing so toDevice stays defined for SDK close.
   useEffect(() => {
     return () => {
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
-      cleanupSubscriptions();
       clearConfigureTimeout();
       stopWatchdog();
       stopGpsInterval();
       isReconnectingRef.current = false;
+      reconnectConnectInFlightRef.current = false;
       const device = deviceRef.current;
       deviceRef.current = null;
       if (device) {
-        safeDisconnect(device).catch((e: unknown) => {
-          console.debug('[useMeshtasticRuntime] unmount safeDisconnect ' + errLikeToLogString(e));
-        });
+        void safeDisconnect(device)
+          .catch((e: unknown) => {
+            console.debug('[useMeshtasticRuntime] unmount safeDisconnect ' + errLikeToLogString(e));
+          })
+          .finally(() => {
+            cleanupSubscriptions();
+          });
+      } else {
+        cleanupSubscriptions();
       }
     };
   }, [cleanupSubscriptions, clearConfigureTimeout, stopWatchdog, stopGpsInterval]);
@@ -1887,8 +1893,10 @@ export function useMeshtasticRuntime() {
       isDuplicate,
       ensureNodeExists,
       clearConfigureTimeout,
-      isBleReconnectAttemptActive: () =>
-        isReconnectingRef.current || reconnectConnectInFlightRef.current,
+      // isReconnectingRef only — not reconnectConnectInFlightRef. Manual prepareRfConnect clears
+      // reconnecting while a superseded attempt may still hold in-flight; OR-ing would skip the
+      // 30s configure watchdog on the new connect (which has no 90s reconnect budget).
+      isBleReconnectAttemptActive: () => isReconnectingRef.current,
       applyMeshtasticForeignLoraFromLog,
       emptyNode,
       setMeshtasticIdentityId,
@@ -2419,6 +2427,8 @@ export function useMeshtasticRuntime() {
       meshtasticExplicitDisconnectRef.current = false;
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
+      // Supersede any in-flight reconnect open so configure-timeout gating does not stick.
+      reconnectConnectInFlightRef.current = false;
       reconnectGenerationRef.current++;
       if (type === 'ble') {
         bleConnectInProgressRef.current = true;
@@ -2561,11 +2571,11 @@ export function useMeshtasticRuntime() {
         (meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current)
           ? (meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current)
           : null;
-      cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
       meshtasticExplicitDisconnectRef.current = true;
       isReconnectingRef.current = false;
+      reconnectConnectInFlightRef.current = false;
       reconnectAttemptRef.current = 0;
       reconnectGenerationRef.current++;
       connectionParamsRef.current = null;
@@ -2583,6 +2593,8 @@ export function useMeshtasticRuntime() {
       } else if (disconnectDriver && device && !driverIdentity) {
         await safeDisconnect(device);
       }
+      // After disconnect: detach wire effects / loss-watch (restores toDevice; never deletes).
+      cleanupSubscriptions();
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       setState({

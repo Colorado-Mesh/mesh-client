@@ -2,6 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  armMeshtasticLateConfigureRetryableSwallow,
+  resetMeshtasticLateConfigureRetryableSwallowForTests,
+} from './meshtastic/meshtasticConfigureRetry';
+import {
   installRendererUnhandledRejectionLogger,
   logRendererUnhandledRejection,
 } from './rendererUnhandledRejection';
@@ -45,6 +49,7 @@ function dispatchUnhandledRejection(
 
 describe('installRendererUnhandledRejectionLogger', () => {
   afterEach(() => {
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
     vi.restoreAllMocks();
   });
 
@@ -78,10 +83,25 @@ describe('installRendererUnhandledRejectionLogger', () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  it('does not log Packet does not exist as Unhandled rejection', () => {
+  it('logs Packet does not exist when late-swallow window is not armed', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+
+    const event = dispatchUnhandledRejection(new Error('Packet does not exist'));
+    uninstall();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[renderer] Unhandled rejection:',
+      expect.stringContaining('Packet does not exist'),
+    );
+  });
+
+  it('does not log Packet does not exist during armed late-swallow window', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const uninstall = installRendererUnhandledRejectionLogger();
+    armMeshtasticLateConfigureRetryableSwallow();
 
     const event = dispatchUnhandledRejection(new Error('Packet does not exist'));
     uninstall();

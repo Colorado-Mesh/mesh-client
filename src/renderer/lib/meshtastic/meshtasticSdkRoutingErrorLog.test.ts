@@ -16,6 +16,10 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 import { updateMessageStatus } from '@/renderer/stores/messageStore';
 
 import {
+  resetMeshtasticLateConfigureRetryableSwallowForTests,
+  shouldSwallowLateMeshtasticConfigureRetryableRejection,
+} from './meshtasticConfigureRetry';
+import {
   beginMeshtasticNonChatOutbound,
   endMeshtasticNonChatOutbound,
   registerMeshtasticNonChatWirePacketId,
@@ -434,5 +438,18 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
       expect.any(Function),
       { capture: true },
     );
+  });
+
+  it('arms late-swallow window when the capture handler is removed', () => {
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(vi.fn());
+    expect(
+      shouldSwallowLateMeshtasticConfigureRetryableRejection(new Error('Packet does not exist')),
+    ).toBe(false);
+    restore();
+    expect(
+      shouldSwallowLateMeshtasticConfigureRetryableRejection(new Error('Packet does not exist')),
+    ).toBe(true);
+    resetMeshtasticLateConfigureRetryableSwallowForTests();
   });
 });

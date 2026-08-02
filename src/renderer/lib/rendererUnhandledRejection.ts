@@ -1,4 +1,4 @@
-import { isMeshtasticConfigureRetryableError } from './meshtastic/meshtasticConfigureRetry';
+import { shouldSwallowLateMeshtasticConfigureRetryableRejection } from './meshtastic/meshtasticConfigureRetry';
 
 /** Log renderer-wide unhandled promise rejections without throwing a second error. */
 export function logRendererUnhandledRejection(reason: unknown): void {
@@ -13,8 +13,8 @@ export function installRendererUnhandledRejectionLogger(target: Window = window)
   const handler = (event: PromiseRejectionEvent) => {
     // Capture-phase Meshtastic handler may have already preventDefault'd queue rejections.
     if (event.defaultPrevented) return;
-    // Durable swallow: session teardown removes the Meshtastic handler before late SDK rejects.
-    if (isMeshtasticConfigureRetryableError(event.reason)) {
+    // Only during a short post-teardown window (armed when Meshtastic session handler unsubscribes).
+    if (shouldSwallowLateMeshtasticConfigureRetryableRejection(event.reason)) {
       console.debug(
         '[renderer] Ignoring Meshtastic disconnect mid-send rejection:',
         event.reason instanceof Error ? event.reason.message : String(event.reason),

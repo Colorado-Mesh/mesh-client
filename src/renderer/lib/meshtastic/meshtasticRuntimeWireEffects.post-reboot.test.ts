@@ -1,6 +1,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS } from '../timeConstants';
 import type { ConnectionType, DeviceState } from '../types';
 import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffects';
 
@@ -15,7 +16,6 @@ function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
   const stopWatchdog = vi.fn();
   const stopGpsInterval = vi.fn();
   const cleanupSubscriptions = vi.fn();
-  const clearConfigureTimeout = vi.fn();
   const startWatchdog = vi.fn();
   const startGpsInterval = vi.fn();
   const refreshOurPosition = vi.fn().mockResolvedValue(null);
@@ -27,6 +27,12 @@ function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
     current: { type: 'ble' as ConnectionType, blePeripheralId: 'p1' },
   };
   const configureTimeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+  const clearConfigureTimeout = vi.fn(() => {
+    if (configureTimeoutRef.current != null) {
+      clearTimeout(configureTimeoutRef.current);
+      configureTimeoutRef.current = null;
+    }
+  });
   const meshtasticIngestSessionRef = {
     current: {
       setConfiguring: vi.fn(),
@@ -272,6 +278,22 @@ describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
 
     for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
 
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+
+  it('fires handleConnectionLost after BLE configure timeout when armed', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const onLost = vi.mocked(deps.handleConnectionLostRef.current);
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    expect(configureTimeoutRef.current).not.toBeNull();
+
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+
+    expect(onLost).toHaveBeenCalledTimes(1);
     expect(configureTimeoutRef.current).toBeNull();
   });
 });

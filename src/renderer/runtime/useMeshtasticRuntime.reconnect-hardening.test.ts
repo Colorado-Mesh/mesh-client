@@ -191,11 +191,15 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('Reconnect superseded during configure');
   });
 
-  it('wires isBleReconnectAttemptActive from reconnect refs (behavioral arming in wire-effects tests)', () => {
+  it('wires isBleReconnectAttemptActive from isReconnectingRef only (not in-flight alone)', () => {
     // DeviceConfiguring arm/skip is asserted in meshtasticRuntimeWireEffects.post-reboot.test.ts
-    expect(SOURCE).toMatch(
-      /isBleReconnectAttemptActive:\s*\(\)\s*=>\s*isReconnectingRef\.current \|\| reconnectConnectInFlightRef\.current/,
+    expect(SOURCE).toMatch(/isBleReconnectAttemptActive:\s*\(\)\s*=>\s*isReconnectingRef\.current/);
+    expect(SOURCE).not.toMatch(
+      /isBleReconnectAttemptActive:\s*\(\)\s*=>\s*isReconnectingRef\.current \|\| reconnectConnectInFlightRef/,
     );
+    expect(SOURCE).toContain('reconnectConnectInFlightRef.current = false');
+    const prepareBody = extractUseCallbackBody(SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('reconnectConnectInFlightRef.current = false');
     const wireSource = readFileSync(
       join(TEST_DIR, '../lib/meshtastic/meshtasticRuntimeWireEffects.ts'),
       'utf-8',
@@ -229,13 +233,16 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
     expect(finalizeBody).toContain('meshtasticExplicitDisconnectRef.current = true');
     expect(finalizeBody).toContain('connectionParamsRef.current = null');
     expect(finalizeBody).toContain('isReconnectingRef.current = false');
+    expect(finalizeBody).toContain('reconnectConnectInFlightRef.current = false');
     expect(finalizeBody).toContain('reconnectAttemptRef.current = 0');
     expect(finalizeBody).toContain('reconnectGenerationRef.current++');
     const driverIndex = finalizeBody.indexOf('connectionDriver.disconnect');
     const explicitIndex = finalizeBody.indexOf('meshtasticExplicitDisconnectRef.current = true');
+    const cleanupIdx = finalizeBody.lastIndexOf('cleanupSubscriptions()');
     expect(explicitIndex).toBeGreaterThanOrEqual(0);
     if (driverIndex >= 0) {
       expect(driverIndex).toBeGreaterThan(explicitIndex);
+      expect(cleanupIdx).toBeGreaterThan(driverIndex);
     }
   });
 

@@ -1,5 +1,8 @@
 import { errLikeToLogString } from '../errLikeToLogString';
-import { isMeshtasticConfigureRetryableError } from './meshtasticConfigureRetry';
+import {
+  armMeshtasticLateConfigureRetryableSwallow,
+  isMeshtasticConfigureRetryableError,
+} from './meshtasticConfigureRetry';
 import {
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
@@ -78,5 +81,7 @@ export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
   window.addEventListener('unhandledrejection', handler, { capture: true });
   return () => {
     window.removeEventListener('unhandledrejection', handler, { capture: true });
+    // Late SDK queue rejects can settle after wire-effects teardown removes this handler.
+    armMeshtasticLateConfigureRetryableSwallow();
   };
 }
