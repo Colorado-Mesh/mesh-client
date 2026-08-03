@@ -309,16 +309,20 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
 
   it('probe applies hops and refreshes path slots', async () => {
     const user = userEvent.setup();
+    const seededLastSeen = 9_001;
+    useReticulumPeerStore.setState((s) => {
+      const contacts = new Map(s.contacts);
+      const prev = contacts.get(PEER_HASH);
+      if (prev) {
+        contacts.set(PEER_HASH, { ...prev, last_seen: seededLastSeen });
+      }
+      return { contacts };
+    });
     probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 3 });
+    const { applyReticulumPeerActivePathSlot } = await import('../stores/reticulumPeerStore');
     refreshReticulumPeerRouteFromPathsMock.mockImplementation((hash: string) => {
-      useReticulumPeerStore.getState().updatePeer(hash, {
-        hops: 3,
-        interface: 'RMAP World',
-        path_hash: '11'.repeat(16),
-        via_hash: '11'.repeat(16),
-      });
-      return Promise.resolve({
-        ok: true,
+      const result = {
+        ok: true as const,
         paths: [
           {
             active: true,
@@ -332,7 +336,9 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
             expired: false,
           },
         ],
-      });
+      };
+      applyReticulumPeerActivePathSlot(hash, result);
+      return Promise.resolve(result);
     });
 
     render(
@@ -349,6 +355,7 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
       expect(peer?.hops).toBe(3);
       expect(peer?.interface).toBe('RMAP World');
       expect(peer?.path_hash).toBe('11'.repeat(16));
+      expect(peer?.last_seen).toBe(seededLastSeen);
     });
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('RMAP World')).toBeInTheDocument();

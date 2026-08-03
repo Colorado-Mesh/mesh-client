@@ -816,12 +816,24 @@ export function applyReticulumPeerActivePathSlot(
   const slot = activeReticulumPathSlot(pathsResult.paths);
   if (!slot) return false;
   const via = slot.via_hash?.trim() ? slot.via_hash.trim().toLowerCase() : null;
-  useReticulumPeerStore.getState().updatePeer(hash, {
+  const store = useReticulumPeerStore.getState();
+  const existing = store.getPeer(hash);
+  const base = existing ?? { destination_hash: hash };
+  // Null/missing slot fields must not wipe known-good route data (same as peer patches).
+  const merged = mergeReticulumPeerRouteFields(base, {
+    destination_hash: hash,
     hops: slot.hops,
     interface: slot.interface,
     path_hash: via,
     via_hash: via,
     last_seen: slot.timestamp ?? undefined,
+  });
+  store.updatePeer(hash, {
+    hops: merged.hops,
+    interface: merged.interface,
+    path_hash: merged.path_hash,
+    via_hash: merged.via_hash,
+    last_seen: merged.last_seen,
   });
   return true;
 }

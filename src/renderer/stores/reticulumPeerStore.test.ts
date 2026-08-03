@@ -632,6 +632,53 @@ describe('reticulumPeerStore', () => {
     });
   });
 
+  it('applyReticulumPeerActivePathSlot preserves last_seen when slot timestamp is null', async () => {
+    const { applyReticulumPeerActivePathSlot } = await import('./reticulumPeerStore');
+    const hash = 'ee'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'KeepSeen',
+            last_heard: 1,
+            is_contact: true,
+            last_seen: 4242,
+            hops: 1,
+            interface: 'OldIface',
+          },
+        ],
+      ]),
+      history: new Map(),
+    });
+    const applied = applyReticulumPeerActivePathSlot(hash, {
+      ok: true,
+      paths: [
+        {
+          active: true,
+          expired: false,
+          hops: 3,
+          via_hash: '22'.repeat(16),
+          interface: 'NewIface',
+          interface_id: 2,
+          medium: 'rf',
+          timestamp: null,
+          expires: null,
+        },
+      ],
+    });
+    expect(applied).toBe(true);
+    expect(useReticulumPeerStore.getState().getPeer(hash)).toMatchObject({
+      hops: 3,
+      interface: 'NewIface',
+      path_hash: '22'.repeat(16),
+      via_hash: '22'.repeat(16),
+      last_seen: 4242,
+    });
+  });
+
   it('clearPeers empties peers, contacts, and history', () => {
     useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aa' }]);
     useReticulumPeerStore.getState().replaceContacts([{ destination_hash: 'bb', last_heard: 1 }]);
