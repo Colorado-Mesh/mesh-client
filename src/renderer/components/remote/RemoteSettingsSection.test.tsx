@@ -8,11 +8,18 @@ import { DEFAULT_REMOTE_SETTINGS } from '@/renderer/lib/remoteSettingsStorage';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 
+const addToast = vi.fn();
+
+vi.mock('@/renderer/components/Toast', () => ({
+  useToast: () => ({ addToast }),
+}));
+
 describe('RemoteSettingsSection inbound apply', () => {
   const onSettingsChange = vi.fn();
 
   beforeEach(() => {
     onSettingsChange.mockReset();
+    addToast.mockReset();
     useRncpTransferStore.getState().clearAll();
     useReticulumInboundPolicyStore.setState({ policies: new Map(), loading: false });
     vi.mocked(window.electronAPI.reticulum.rncp.setListener).mockReset();
@@ -29,6 +36,100 @@ describe('RemoteSettingsSection inbound apply', () => {
       identity_hash: null,
       rncp_receive_hash: null,
     });
+  });
+
+  it('treats Off success when setListener returns status without ok (legacy shape)', async () => {
+    const user = userEvent.setup();
+    // Pre-#fix sidecar disable returned listener_status with no `ok` field.
+    vi.mocked(window.electronAPI.reticulum.rncp.setListener).mockResolvedValue({
+      enabled: false,
+      inbound_mode: 'off',
+      allowed: [],
+      blocked: [],
+    } as unknown as { ok: boolean; error?: string });
+    useRncpTransferStore.getState().setListener({
+      enabled: true,
+      inbound_mode: 'ask',
+      destination_hash: 'a'.repeat(32),
+      allowed: [],
+      blocked: [],
+    });
+
+    render(
+      <RemoteSettingsSection
+        sidecarRunning
+        settings={{
+          ...DEFAULT_REMOTE_SETTINGS,
+          inboundMode: 'ask',
+          lastSaveDir: '/tmp/rncp-inbox',
+        }}
+        onSettingsChange={onSettingsChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Off' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rncp.setListener).toHaveBeenCalledWith({
+        enabled: false,
+      });
+    });
+    await waitFor(() => {
+      expect(onSettingsChange).toHaveBeenCalledWith({ inboundMode: 'off' });
+    });
+    expect(addToast).not.toHaveBeenCalledWith(
+      expect.stringMatching(/Failed to apply setting/i),
+      'error',
+    );
+  });
+
+  it('toasts applyFailed when Off setListener returns ok: false', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.reticulum.rncp.setListener).mockResolvedValue({
+      ok: false,
+      error: 'rncp requires live rns-stack sidecar',
+    });
+    // Sidecar still Ask — sync after failure must not look like a successful Off.
+    vi.mocked(window.electronAPI.reticulum.rncp.getListener).mockResolvedValue({
+      enabled: true,
+      inbound_mode: 'ask',
+      destination_hash: 'a'.repeat(32),
+      allowed: [],
+      blocked: [],
+    });
+    useRncpTransferStore.getState().setListener({
+      enabled: true,
+      inbound_mode: 'ask',
+      destination_hash: 'a'.repeat(32),
+      allowed: [],
+      blocked: [],
+    });
+
+    render(
+      <RemoteSettingsSection
+        sidecarRunning
+        settings={{
+          ...DEFAULT_REMOTE_SETTINGS,
+          inboundMode: 'ask',
+          lastSaveDir: '/tmp/rncp-inbox',
+        }}
+        onSettingsChange={onSettingsChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Off' }));
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to apply setting'),
+        'error',
+      );
+    });
+    expect(
+      onSettingsChange.mock.calls.some(
+        (c) => (c[0] as { inboundMode?: string }).inboundMode === 'off',
+      ),
+    ).toBe(false);
   });
 
   it('re-picks save dir when persisted path is rejected, then enables without optimistic Ask', async () => {

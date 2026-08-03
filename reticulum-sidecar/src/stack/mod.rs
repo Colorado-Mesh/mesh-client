@@ -2098,7 +2098,9 @@ impl StackHandle {
                         tracing::warn!("rncp listener persist failed: {e}");
                     }
                 }
-                return live.rncp_listener_status().await;
+                // Match enable's RemoteOkResponse shape — status alone has no `ok`,
+                // and UI clients treat missing `ok` as failure (`!res.ok`).
+                return with_rncp_listener_ok(live.rncp_listener_status().await);
             }
             let mode = if allowed.is_empty() {
                 "ask"
@@ -2829,6 +2831,15 @@ fn merge_live_peer_fetch(
     }
 }
 
+/// Stamp `ok: true` onto an rncp listener status object so disable matches enable's
+/// `RemoteOkResponse` contract (UI treats missing `ok` as failure).
+fn with_rncp_listener_ok(mut status: serde_json::Value) -> serde_json::Value {
+    if let Some(map) = status.as_object_mut() {
+        map.insert("ok".into(), serde_json::Value::Bool(true));
+    }
+    status
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2842,6 +2853,29 @@ mod tests {
         std::fs::create_dir_all(&config).expect("config dir");
         std::fs::create_dir_all(&storage).expect("storage dir");
         (config, storage)
+    }
+
+    #[test]
+    fn with_rncp_listener_ok_stamps_ok_true_on_status() {
+        let status = serde_json::json!({
+            "enabled": false,
+            "inbound_mode": "off",
+            "allowed": [],
+            "blocked": [],
+        });
+        let out = with_rncp_listener_ok(status);
+        assert_eq!(
+            out.get("ok").and_then(serde_json::Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            out.get("enabled").and_then(serde_json::Value::as_bool),
+            Some(false)
+        );
+        assert_eq!(
+            out.get("inbound_mode").and_then(|v| v.as_str()),
+            Some("off")
+        );
     }
 
     #[test]

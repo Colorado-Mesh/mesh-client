@@ -7,7 +7,7 @@ import {
 import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
-import type { RncpListenerRequest } from '@/shared/remote-types';
+import { isRemoteOkFailure, type RncpListenerRequest } from '@/shared/remote-types';
 
 /**
  * Rebuild sidecar allow/block lists from SQLite policy and re-apply the listener
@@ -41,10 +41,8 @@ export async function pushRncpListenerPolicy(
   };
   try {
     const res = await window.electronAPI.reticulum.rncp.setListener(body);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-    if (res && typeof res === 'object' && 'ok' in res && !res.ok) {
-      const err =
-        'error' in res && typeof res.error === 'string' ? res.error : 'setListener_failed';
+    if (isRemoteOkFailure(res)) {
+      const err = typeof res.error === 'string' ? res.error : 'setListener_failed';
       // Sync store from live status so optimistic Ask cannot stick after reject.
       try {
         const status = await window.electronAPI.reticulum.rncp.getListener();

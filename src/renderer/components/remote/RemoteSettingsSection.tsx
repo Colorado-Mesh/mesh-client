@@ -12,7 +12,7 @@ import {
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
-import type { RncpInboundMode } from '@/shared/remote-types';
+import { isRemoteOkFailure, type RncpInboundMode } from '@/shared/remote-types';
 
 /** Sidecar outbound + inbound hard cap (see `MAX_RNCP_FILE_BYTES` in rncp_transfer.rs). */
 export const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
@@ -106,7 +106,7 @@ export function RemoteSettingsSection({
           const res = await window.electronAPI.reticulum.rncp.setListener({
             enabled: false,
           });
-          if (!res.ok) {
+          if (isRemoteOkFailure(res)) {
             addToast(
               t('reticulumRemote.settings.applyFailed', { error: res.error ?? '' }),
               'error',
@@ -157,7 +157,7 @@ export function RemoteSettingsSection({
 
       try {
         let res = await trySet(dir, jail);
-        if (!res.ok && isRncpPickerAllowlistError(res.error)) {
+        if (isRemoteOkFailure(res) && isRncpPickerAllowlistError(res.error)) {
           addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'info');
           // Re-authorize dirs from this session's picker — persisted paths are rejected after restart.
           const rePicked = await pickSaveDir();
@@ -178,7 +178,7 @@ export function RemoteSettingsSection({
           res = await trySet(dir, jail);
         }
 
-        if (!res.ok) {
+        if (isRemoteOkFailure(res)) {
           const err = res.error ?? '';
           addToast(
             isRncpPickerAllowlistError(err)
@@ -239,7 +239,7 @@ export function RemoteSettingsSection({
         allowed,
         blocked,
       });
-      if (!res.ok && isRncpPickerAllowlistError(res.error)) {
+      if (isRemoteOkFailure(res) && isRncpPickerAllowlistError(res.error)) {
         addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'info');
         const rePicked = await pickSaveDir();
         if (!rePicked) {
@@ -266,7 +266,7 @@ export function RemoteSettingsSection({
           blocked,
         });
       }
-      if (!res.ok) {
+      if (isRemoteOkFailure(res)) {
         console.warn('[RemoteSettingsSection] pushPolicy ' + (res.error ?? ''));
         if (isRncpPickerAllowlistError(res.error)) {
           addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'error');
