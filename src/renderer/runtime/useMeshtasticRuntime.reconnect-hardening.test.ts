@@ -261,3 +261,25 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
     assertPowerResumeSkipsOnExplicitDisconnect(SOURCE, 'meshtasticExplicitDisconnectRef.current');
   });
 });
+
+describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () => {
+  it('attachRfSession backfills blePeripheralId after a gesture-based Linux connect', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    expect(attachBody.length).toBeGreaterThan(0);
+    // Guarded by `!connectionParamsRef.current.blePeripheralId` so an already-known
+    // peripheralId (picker flow, Noble) is never clobbered.
+    expect(attachBody).toMatch(
+      /type === 'ble' &&\s*connectionParamsRef\.current &&\s*!connectionParamsRef\.current\.blePeripheralId/,
+    );
+    expect(attachBody).toContain('getBlePeripheralIdFromMeshTransport(activeDevice.transport)');
+    expect(attachBody).toContain(
+      'connectionParamsRef.current.blePeripheralId = resolvedPeripheralId',
+    );
+  });
+
+  it('imports the backfill helper from lib/connection', () => {
+    expect(SOURCE).toMatch(
+      /import \{[\s\S]*?getBlePeripheralIdFromMeshTransport[\s\S]*?\} from '\.\.\/lib\/connection'/,
+    );
+  });
+});

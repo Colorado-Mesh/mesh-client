@@ -425,6 +425,21 @@ export function getSerialPortFromMeshTransport(transport: unknown): SerialPort |
   return null;
 }
 
+/**
+ * Resolve the Linux Web Bluetooth device id a gesture-based connect actually landed on.
+ * `createBleConnection`'s Linux picker flow may run without a caller-supplied peripheralId
+ * (e.g. ConnectionPanel's Reconnect button), so this backfills reconnect state afterward —
+ * otherwise a later automatic reconnect has no id and falls back to `requestDevice()`, which
+ * Chromium refuses to run without a live user gesture.
+ */
+export function getBlePeripheralIdFromMeshTransport(transport: unknown): string | null {
+  const candidate = transport as { getConnectedDeviceId?: () => string | null } | null | undefined;
+  if (typeof candidate?.getConnectedDeviceId === 'function') {
+    return candidate.getConnectedDeviceId();
+  }
+  return null;
+}
+
 /** Best-effort close of an open Web Serial port before reconnect. */
 export async function closeSerialPortIfOpen(port: SerialPort): Promise<void> {
   if (!port.readable && !port.writable) return;

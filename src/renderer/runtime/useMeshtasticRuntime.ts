@@ -78,7 +78,11 @@ import {
 import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { createBleReconnectTransportCleanup } from '../lib/bleReconnectLateTransport';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
-import { getSerialPortFromMeshTransport, safeDisconnect } from '../lib/connection';
+import {
+  getBlePeripheralIdFromMeshTransport,
+  getSerialPortFromMeshTransport,
+  safeDisconnect,
+} from '../lib/connection';
 import { validateCoords } from '../lib/coordUtils';
 import {
   getMergedNodesForForeignLoraDiagnostics,
@@ -2474,6 +2478,19 @@ export function useMeshtasticRuntime() {
         connectionParamsRef.current.serialPort = getSerialPortFromMeshTransport(
           activeDevice.transport,
         );
+      }
+      // Gesture-based Linux connects (e.g. ConnectionPanel's Reconnect button) may call
+      // prepareRfConnect without a peripheralId; backfill it here so a later automatic
+      // reconnect does not fall back to a gesture-requiring requestDevice() call.
+      if (
+        type === 'ble' &&
+        connectionParamsRef.current &&
+        !connectionParamsRef.current.blePeripheralId
+      ) {
+        const resolvedPeripheralId = getBlePeripheralIdFromMeshTransport(activeDevice.transport);
+        if (resolvedPeripheralId) {
+          connectionParamsRef.current.blePeripheralId = resolvedPeripheralId;
+        }
       }
       wireSubscriptions(activeDevice, type, { driverIdentityId });
 

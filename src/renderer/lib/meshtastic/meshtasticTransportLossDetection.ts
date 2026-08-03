@@ -5,7 +5,7 @@ import { errLikeToLogString } from '../errLikeToLogString';
 import type { ConnectionType } from '../types';
 
 const TRANSPORT_LOST_MESSAGE =
-  /device has been lost|device was lost|port is (?:not )?open|stream is closed|broken pipe|connection.*lost/i;
+  /device has been lost|device was lost|port is (?:not )?open|stream is closed|broken pipe|connection.*lost|not connected|gatt server is disconnected/i;
 
 /** True when a serial/BLE transport write or read failed because the link is gone. */
 export function isMeshtasticTransportLostError(err: unknown): boolean {
