@@ -31,7 +31,9 @@ import {
   upsertWaypoint,
   useNodeStore,
 } from '../../stores/nodeStore';
+import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import { shouldSuppressMeshtasticLocalConfigWrite } from '../meshtastic/meshtasticConfigIngressGuard';
 import { meshtasticTracerouteLastHeardNodeIds } from '../meshtasticLastHeard';
@@ -42,6 +44,15 @@ import {
   MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS,
 } from '../timeConstants';
 import type { IdentityId } from '../types';
+
+function shouldSuppressMeshtasticGhostNodeHear(
+  identityId: IdentityId,
+  nodeId: number | undefined,
+): boolean {
+  if (nodeId == null || nodeId === 0) return false;
+  if (getIdentity(identityId)?.protocol.type !== 'meshtastic') return false;
+  return shouldSuppressMeshtasticNodeHear(nodeId, getConnectedMeshcoreBleMac());
+}
 
 function resolveMeshtasticSenderName(identityId: IdentityId, from: number): string | undefined {
   if (from <= 0) return undefined;
@@ -277,12 +288,24 @@ class PacketRouter {
         break;
       }
       case 'node_info':
+        if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) {
+          skipListeners = true;
+          break;
+        }
         upsertNode(identityId, event.payload);
         break;
       case 'position':
+        if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) {
+          skipListeners = true;
+          break;
+        }
         updatePosition(identityId, event.payload);
         break;
       case 'telemetry':
+        if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) {
+          skipListeners = true;
+          break;
+        }
         updateTelemetry(identityId, event.payload);
         break;
       case 'trace_route': {

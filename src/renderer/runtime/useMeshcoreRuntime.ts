@@ -9,6 +9,7 @@ import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import {
   readMeshcoreWebBluetoothDeviceId,
   resolveConnectedMeshcoreBleIdentity,
+  resolveConnectedMeshcoreBleMacForSuppression,
   setConnectedMeshcoreBleMac,
 } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -2848,15 +2849,16 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] Reconnect succeeded on attempt ${meshcoreReconnectAttemptRef.current}`,
       );
       if (params.rfType === 'ble') {
-        const bleId = resolveConnectedMeshcoreBleIdentity({
+        const bleIdentityOpts = {
           blePeripheralId: params.blePeripheralId,
           webBluetoothDeviceId: readMeshcoreWebBluetoothDeviceId(opened.conn),
           fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore') ?? null,
-        });
+        };
+        const bleId = resolveConnectedMeshcoreBleIdentity(bleIdentityOpts);
         if (bleId) {
           params.blePeripheralId = bleId;
         }
-        setConnectedMeshcoreBleMac(bleId);
+        setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts));
       } else {
         setConnectedMeshcoreBleMac(null);
       }
@@ -3084,14 +3086,15 @@ export function useMeshcoreRuntime() {
             ? await withNobleBleConnectMutex('meshcore', openTransport)
             : await openTransport();
         await attachRfSession(opened.driverIdentityId, type);
-        const bleId =
+        const bleIdentityOpts =
           type === 'ble'
-            ? resolveConnectedMeshcoreBleIdentity({
+            ? {
                 blePeripheralId,
                 webBluetoothDeviceId: readMeshcoreWebBluetoothDeviceId(opened.conn),
                 fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore') ?? null,
-              })
+              }
             : null;
+        const bleId = bleIdentityOpts ? resolveConnectedMeshcoreBleIdentity(bleIdentityOpts) : null;
         meshcoreConnectionParamsRef.current = {
           rfType: type,
           httpAddress: type === 'tcp' ? tcpHost : undefined,
@@ -3099,7 +3102,9 @@ export function useMeshcoreRuntime() {
           serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
           serialPort: null,
         };
-        setConnectedMeshcoreBleMac(type === 'ble' ? bleId : null);
+        setConnectedMeshcoreBleMac(
+          bleIdentityOpts ? resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts) : null,
+        );
         meshcoreExplicitDisconnectRef.current = false;
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
