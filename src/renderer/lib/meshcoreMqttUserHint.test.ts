@@ -35,6 +35,13 @@ describe('meshcoreMqttUserFacingHint', () => {
     expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.keepalive');
   });
 
+  it('returns tlsHandshake hint for EPROTO / TLSV1_ALERT_INTERNAL_ERROR', () => {
+    const out = meshcoreMqttUserFacingHint(
+      'write EPROTO 30458176:error:10000438:SSL routines:OPENSSL_internal:TLSV1_ALERT_INTERNAL_ERROR:../../third_party/boringssl/src/ssl/tls_record.cc:486:SSL alert number 80',
+    );
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.tlsHandshake');
+  });
+
   it('passes through unrelated messages unchanged', () => {
     expect(meshcoreMqttUserFacingHint('Something else')).toBe('Something else');
   });

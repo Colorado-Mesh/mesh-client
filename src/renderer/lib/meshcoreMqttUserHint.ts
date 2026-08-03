@@ -27,5 +27,12 @@ export function meshcoreMqttUserFacingHint(rawMessage: string): MeshcoreUserMess
   if (/keepalive/i.test(m)) {
     return mqttPrefixedHint(m, 'meshcore.mqttHints.keepalive');
   }
+  if (
+    /\bEPROTO\b/i.test(m) ||
+    /TLSV1_ALERT_INTERNAL_ERROR/i.test(m) ||
+    /OPENSSL_internal:TLSV1_ALERT/i.test(m)
+  ) {
+    return mqttPrefixedHint(m, 'meshcore.mqttHints.tlsHandshake');
+  }
   return m;
 }

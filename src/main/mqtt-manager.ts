@@ -360,9 +360,9 @@ export class MQTTManager extends EventEmitter {
         const idx = entry.index >>> 0;
         if (idx <= 7) {
           radioTopicIndices.set(name, idx);
-          if (!this.manualChannelKeyNames.has(name)) {
-            this.channelNameToIndex.set(name, idx);
-          }
+          // Radio local slot is source of truth for topic→index attribution (even when a
+          // manual LongFast@0= line exists — Colorado / non-primary public layouts).
+          this.channelNameToIndex.set(name, idx);
         }
       }
       if (this.manualChannelKeyNames.has(name)) continue;
@@ -378,15 +378,10 @@ export class MQTTManager extends EventEmitter {
       this.radioChannelKeyNames.add(name);
     }
     this.applyManualChannelPskLines(this.manualChannelPskLines);
+    // Manual lines may reset LongFast→0 (bare LongFast= or LongFast@0=). Re-apply radio
+    // topic indices so local RF layout wins for inbound MQTT channel attribution.
     for (const [name, idx] of radioTopicIndices) {
-      if (!this.manualChannelKeyNames.has(name)) continue;
-      const manualHasExplicitIndex = this.manualChannelPskLines.some((line) => {
-        const parsed = parseChannelPskLine(line);
-        return parsed?.name === name && parsed.index !== undefined;
-      });
-      if (!manualHasExplicitIndex) {
-        this.channelNameToIndex.set(name, idx);
-      }
+      this.channelNameToIndex.set(name, idx);
     }
     this.rebuildAllDecryptKeys();
   }
@@ -1186,6 +1181,15 @@ export class MQTTManager extends EventEmitter {
 
   getStatus(): MQTTStatus {
     return this.status;
+  }
+
+  /** Sanitized topic channel name → local slot (0–7) for debug triage — no PSKs. */
+  getChannelNameToIndex(): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const [name, idx] of this.channelNameToIndex) {
+      out[name] = idx;
+    }
+    return out;
   }
 
   getClientId(): string {

@@ -6,6 +6,7 @@ import { flushSync } from 'react-dom';
 import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
+import { setConnectedMeshcoreBleMac } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   isMeshcoreOffloadAbortError,
@@ -2597,6 +2598,7 @@ export function useMeshcoreRuntime() {
       meshcoreEverConfiguredRef.current = false;
       meshcoreDeviceConfiguredRef.current = false;
       meshcoreConnectionParamsRef.current = null;
+      setConnectedMeshcoreBleMac(null);
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreReconnectGenerationRef.current += 1;
@@ -3064,6 +3066,7 @@ export function useMeshcoreRuntime() {
           serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
           serialPort: null,
         };
+        setConnectedMeshcoreBleMac(type === 'ble' ? (blePeripheralId ?? null) : null);
         meshcoreExplicitDisconnectRef.current = false;
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
@@ -3185,6 +3188,7 @@ export function useMeshcoreRuntime() {
             serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
             serialPort: null,
           };
+          setConnectedMeshcoreBleMac(null);
           meshcoreExplicitDisconnectRef.current = false;
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;

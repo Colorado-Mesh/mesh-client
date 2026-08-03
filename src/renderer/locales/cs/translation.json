@@ -1235,7 +1235,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh potřebuje WebSocket na portu 443 a server mqtt-us-v1.letsmesh.net nebo mqtt-eu-v1.letsmesh.net. Použijte Region (US/EU), nebo přepněte na Custom pro ostatní brokery.",
       "coloradomesh": "Colorado Mesh potřebuje WebSocket na portu 443 s povoleným TLS, server mqtt.meshcore.coloradomesh.org, cestu /ws. Resetujte předvolbu nebo přepněte na Vlastní pro ostatní brokery.",
-      "meshmapper": "MeshMapper potřebuje WebSocket na portu 443 a server mqtt.meshmapper.cc. Resetujte předvolbu nebo přepněte na Vlastní pro ostatní brokery."
+      "meshmapper": "MeshMapper potřebuje WebSocket na portu 443 a server mqtt.meshmapper.net. Resetujte předvolbu nebo přepněte na Vlastní pro ostatní brokery."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth token (formát meshcore-decoder) bude vygenerován, když se připojíte. Uživatelské jméno je v1_ plus váš 64místný veřejný klíč (hex). Publikum JWT odpovídá názvu hostitele serveru.",
@@ -2066,7 +2066,8 @@
       "network": "Zkontrolujte síť, DNS, firewall a VPN.",
       "connackTimeout": "Pokud nevidíte žádný předchozí řádek „chyba klienta“, může se stát, že se navázání spojení TLS/WebSocket zasekává (zkuste jinou síť; aplikace preferuje IPv4 pro WSS).",
       "subscribeFailed": "Makléř může odmítnout odběr zástupných znaků na toto téma; zprávy mohou stále docházet, pokud to broker dovolí.",
-      "keepalive": "Server přestal reagovat na pingy MQTT (časový limit nečinnosti, výpadek sítě nebo zprostředkovatel ukončil relaci). Znovu se připojte nebo zkontrolujte svůj odkaz."
+      "keepalive": "Server přestal reagovat na pingy MQTT (časový limit nečinnosti, výpadek sítě nebo zprostředkovatel ukončil relaci). Znovu se připojte nebo zkontrolujte svůj odkaz.",
+      "tlsHandshake": "TLS handshake se nezdařil (certifikát makléře, sni nebo hostitele). Pro MeshMapper použijte mqtt.meshmapper.net (ne .cc). Zkuste jinou síť nebo resetujte předvolbu MeshMapper."
     }
   },
   "meshcoreContactSettings": {

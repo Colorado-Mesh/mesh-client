@@ -1234,7 +1234,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh には、ポート 443 とサーバー mqtt-us-v1.letsmesh.net または mqtt-eu-v1.letsmesh.net 上の WebSocket が必要です。地域 (US/EU) を使用するか、他のブローカーの場合はカスタムに切り替えてください。",
       "coloradomesh": "Colorado Mesh には、TLS が有効になっているポート 443、サーバー mqtt.meshcore.coloradomesh.org、パス /ws の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
-      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.cc 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
+      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.net 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "接続時に認証トークン(meshcore-decoder形式)が生成されます。ユーザー名は v1_ に 64 文字の公開キー (16 進数) を加えたものです。 JWT オーディエンスはサーバーのホスト名と一致します。",
@@ -2064,7 +2064,8 @@
       "network": "ネットワーク、DNS、ファイアウォール、VPN を確認してください。",
       "connackTimeout": "前に「クライアント エラー」行が表示されない場合は、TLS/WebSocket ハンドシェイクが停止している可能性があります (別のネットワークを試してください。アプリは WSS に IPv4 を優先します)。",
       "subscribeFailed": "ブローカーは、このトピックに対するワイルドカード サブスクライブを拒否する場合があります。ブローカーが許可している場合、メッセージは引き続き到着する可能性があります。",
-      "keepalive": "サーバーが MQTT ping に応答しなくなりました (アイドル タイムアウト、ネットワーク ドロップ、またはブローカーがセッションを閉じた)。再接続するか、リンクを確認してください。"
+      "keepalive": "サーバーが MQTT ping に応答しなくなりました (アイドル タイムアウト、ネットワーク ドロップ、またはブローカーがセッションを閉じた)。再接続するか、リンクを確認してください。",
+      "tlsHandshake": "TLSハンドシェイクに失敗しました（ブローカー証明書、SNI、またはホスト）。MeshMapperの場合は、mqtt.meshmapper.net （.ccではありません）を使用します。別のネットワークを試すか、MeshMapperプリセットをリセットしてください。"
     }
   },
   "meshcoreContactSettings": {

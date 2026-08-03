@@ -1234,7 +1234,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh에는 포트 443 및 서버 mqtt-us-v1.letsmesh.net 또는 mqtt-eu-v1.letsmesh.net에 WebSocket이 필요합니다. 지역(US/EU)을 사용하거나 다른 브로커의 경우 사용자 정의로 전환하세요.",
       "coloradomesh": "Colorado Mesh는 TLS가 활성화된 포트 443, 서버 mqtt.meshcore.coloradomesh.org, 경로 /ws에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
-      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.cc에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요."
+      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.net에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "연결 시 인증 토큰(meshcore-decoder 형식)이 생성됩니다. 사용자 이름은 v1_에 64자 공개 키(16진수)를 더한 것입니다. JWT 대상은 서버 호스트 이름과 일치합니다.",
@@ -2064,7 +2064,8 @@
       "network": "네트워크, DNS, 방화벽, VPN을 확인하세요.",
       "connackTimeout": "이전의 \"클라이언트 오류\" 줄이 표시되지 않으면 TLS/WebSocket 핸드셰이크가 중단된 것일 수 있습니다(다른 네트워크를 사용해 보십시오. 앱은 WSS에 대해 IPv4를 선호합니다).",
       "subscribeFailed": "브로커는 이 주제에 대한 와일드카드 구독을 거부할 수 있습니다. 브로커가 허용하는 경우 메시지가 계속 도착할 수 있습니다.",
-      "keepalive": "서버가 MQTT 핑(유휴 시간 초과, 네트워크 중단 또는 브로커가 세션을 닫음)에 대한 응답을 중지했습니다. 링크를 다시 연결하거나 확인하세요."
+      "keepalive": "서버가 MQTT 핑(유휴 시간 초과, 네트워크 중단 또는 브로커가 세션을 닫음)에 대한 응답을 중지했습니다. 링크를 다시 연결하거나 확인하세요.",
+      "tlsHandshake": "TLS 핸드셰이크 실패 (브로커 인증서, SNI 또는 호스트). MeshMapper의 경우 mqtt.meshmapper.net (.cc 아님) 을 사용하십시오. 다른 네트워크를 시도하거나 MeshMapper 프리셋을 재설정하십시오."
     }
   },
   "meshcoreContactSettings": {

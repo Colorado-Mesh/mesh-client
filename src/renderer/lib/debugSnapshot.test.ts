@@ -83,6 +83,7 @@ function makeMeshtasticBucketOverrides(
     channelPills: overrides.channelPills ?? [],
     channelConfigsSummary: overrides.channelConfigsSummary ?? [],
     mqttChannelKeyEntryCount: overrides.mqttChannelKeyEntryCount ?? null,
+    mqttChannelNameToIndex: overrides.mqttChannelNameToIndex ?? null,
   };
 }
 
@@ -214,6 +215,7 @@ describe('buildDebugSnapshot', () => {
     expect(snap.meshtastic.channelPills).toEqual([]);
     expect(snap.meshtastic.channelConfigsSummary).toEqual([]);
     expect(snap.meshtastic.mqttChannelKeyEntryCount).toBeNull();
+    expect(snap.meshtastic.mqttChannelNameToIndex).toBeNull();
     expect(snap.warnings).toEqual([]);
   });
 
@@ -241,6 +243,7 @@ describe('buildDebugSnapshot', () => {
         },
       ],
       mqttChannelKeyEntryCount: 2,
+      mqttChannelNameToIndex: { LongFast: 1, Private: 0 },
     });
 
     const snap = buildDebugSnapshot();
@@ -252,6 +255,7 @@ describe('buildDebugSnapshot', () => {
     expect(snap.meshtastic.channelConfigsSummary).toHaveLength(2);
     expect(snap.meshtastic.channelConfigsSummary[1]?.isDefaultPublicPsk).toBe(true);
     expect(snap.meshtastic.mqttChannelKeyEntryCount).toBe(2);
+    expect(snap.meshtastic.mqttChannelNameToIndex).toEqual({ LongFast: 1, Private: 0 });
   });
 
   it('uses activeProtocol from ui context for activeTab including reticulum', () => {

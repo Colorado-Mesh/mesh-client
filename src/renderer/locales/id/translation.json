@@ -1234,7 +1234,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh memerlukan WebSocket pada port 443 dan server mqtt-us-v1.letsmesh.net atau mqtt-eu-v1.letsmesh.net. Gunakan Wilayah (AS/UE), atau beralih ke Kustom untuk broker lain.",
       "coloradomesh": "Colorado Mesh memerlukan WebSocket pada port 443 dengan TLS diaktifkan, server mqtt.meshcore.coloradomesh.org, jalur /ws. Reset preset atau alihkan ke Custom untuk broker lain.",
-      "meshmapper": "MeshMapper membutuhkan WebSocket pada port 443 dan server mqtt.meshmapper.cc. Reset preset atau alihkan ke Custom untuk broker lain."
+      "meshmapper": "MeshMapper membutuhkan WebSocket pada port 443 dan server mqtt.meshmapper.net. Reset preset atau alihkan ke Custom untuk broker lain."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Token autentikasi (format meshcore-decoder) akan dibuat saat Anda terhubung. Nama pengguna adalah v1_ ditambah kunci publik 64 karakter Anda (hex). Audiens JWT cocok dengan nama host Server.",
@@ -2064,7 +2064,8 @@
       "network": "Periksa jaringan, DNS, firewall, dan VPN.",
       "connackTimeout": "Jika Anda tidak melihat baris “kesalahan klien” sebelumnya, jabat tangan TLS/WebSocket mungkin terhenti (coba jaringan lain; aplikasi lebih memilih IPv4 untuk WSS).",
       "subscribeFailed": "Broker mungkin menolak berlangganan wildcard pada topik ini; pesan mungkin masih sampai jika broker mengizinkannya.",
-      "keepalive": "Server berhenti merespons ping MQTT (waktu tunggu habis, jaringan terputus, atau broker menutup sesi). Hubungkan kembali atau periksa tautan Anda."
+      "keepalive": "Server berhenti merespons ping MQTT (waktu tunggu habis, jaringan terputus, atau broker menutup sesi). Hubungkan kembali atau periksa tautan Anda.",
+      "tlsHandshake": "Jabat tangan TLS gagal (sertifikat broker, SNI, atau host). Untuk MeshMapper gunakan mqtt.meshmapper.net (bukan .cc). Coba jaringan lain atau atur ulang preset MeshMapper."
     }
   },
   "meshcoreContactSettings": {

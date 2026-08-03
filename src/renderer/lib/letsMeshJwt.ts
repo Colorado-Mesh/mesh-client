@@ -17,8 +17,13 @@ export const MESHCORE_ENC_PK_KEY = 'mesh-client:meshcoreIdentityEncPK';
 export const LETSMESH_HOST_US = 'mqtt-us-v1.letsmesh.net';
 /** EU LetsMesh broker (WebSocket TLS on 443). */
 export const LETSMESH_HOST_EU = 'mqtt-eu-v1.letsmesh.net';
-/** MeshMapper broker (WebSocket TLS on 443). */
-export const MESHMAPPER_HOST = 'mqtt.meshmapper.cc';
+/** MeshMapper broker (WebSocket TLS on 443). Canonical host is `.net` (wiki / working TLS). */
+export const MESHMAPPER_HOST = 'mqtt.meshmapper.net';
+/**
+ * Legacy MeshMapper hostname (TLS alert on `.cc` SNI). Migrated to {@link MESHMAPPER_HOST} on load.
+ * Still treated as a device-signing host so mid-session JWT paths do not break before rewrite.
+ */
+export const MESHMAPPER_HOST_LEGACY_CC = 'mqtt.meshmapper.cc';
 /** Colorado Mesh broker (WebSocket TLS on 443). */
 export const COLORADO_MESH_HOST = 'mqtt.meshcore.coloradomesh.org';
 
@@ -30,11 +35,17 @@ const DEVICE_SIGNING_HOSTS = new Set([
   LETSMESH_HOST_US,
   LETSMESH_HOST_EU,
   MESHMAPPER_HOST,
+  MESHMAPPER_HOST_LEGACY_CC,
   COLORADO_MESH_HOST,
 ]);
 
 export function isLetsMeshSettings(server: string): boolean {
   return DEVICE_SIGNING_HOSTS.has(server.trim());
+}
+
+/** Rewrite legacy MeshMapper `.cc` host to the canonical `.net` broker. */
+export function migrateMeshmapperServerHost(server: string): string {
+  return server.trim() === MESHMAPPER_HOST_LEGACY_CC ? MESHMAPPER_HOST : server;
 }
 
 /**

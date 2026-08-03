@@ -1361,6 +1361,119 @@ describe('updateChannelKeys', () => {
 
     const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
     expect(nameToIndex.get('LongFast')).toBe(1);
+    expect(manager.getChannelNameToIndex()).toEqual({ LongFast: 1 });
+  });
+
+  it('Nathan/Colorado: radio LongFast@1 overrides manual LongFast@0 for topic attribution', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+      channelPsks: ['LongFast@0=AQ=='],
+    });
+
+    expect((manager as any).channelNameToIndex.get('LongFast')).toBe(0);
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
+    // Manual default-public PSK preserved when radio also pushes AQ==
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('LongFast')?.equals(DEFAULT_PSK)).toBe(true);
+  });
+
+  it('Nathan/Colorado: inbound LongFast topic + packet channel 0 attributes to slot 1 after radio sync overrides @0', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+      channelPsks: ['LongFast@0=AQ=='],
+    });
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nodeId = 0x095cf12b;
+    const packetId = 0x00000099;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('Good morning everyone!'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: DEFAULT_PSK,
+      channelName: 'LongFast',
+      channel: 0,
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/CO/2/e/LongFast/!095cf12b', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('Nathan/Colorado: JSON LongFast with manual @0 then radio @1 attributes to slot 1', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+      channelPsks: ['LongFast@0=AQ=='],
+    });
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nodeId = 0xaabbccdd;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: 0,
+      text: 'json public chat',
+    };
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage(
+      'msh/US/CO/2/json/LongFast/!aabbccdd',
+      Buffer.from(JSON.stringify(json)),
+    );
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('keeps LongFast@1 when manual and radio both say slot 1', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: ['LongFast@1=AQ=='],
+    });
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
   });
 
   it('preserves manual Garber PSK when radio sync pushes a different key', () => {

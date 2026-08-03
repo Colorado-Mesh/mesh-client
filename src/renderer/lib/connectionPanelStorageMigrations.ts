@@ -1,4 +1,10 @@
-import { COLORADO_MESH_HOST, isLetsMeshSettings } from './letsMeshJwt';
+import {
+  COLORADO_MESH_HOST,
+  isLetsMeshSettings,
+  MESHMAPPER_HOST,
+  MESHMAPPER_HOST_LEGACY_CC,
+  migrateMeshmapperServerHost,
+} from './letsMeshJwt';
 import {
   applyMeshcoreMqttPreset,
   MESHCORE_MQTT_PRESET_STORAGE_KEY,
@@ -17,6 +23,7 @@ const MESHCORE_TOPIC_IATA_MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-i
 const COLORADO_MESH_PORT_MIGRATION_KEY = 'mesh-client:migrated:colorado-mesh-port-443-v1';
 const MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY = 'mesh-client:migrated:meshcore-letsmesh-default-v1';
 const MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-iata-shape-v1';
+const MESHMAPPER_HOST_NET_MIGRATION_KEY = 'mesh-client:migrated:meshmapper-host-net-v1';
 /** Set after the one-time Colorado-region ConfirmModal (or Colorado preset confirm). */
 export const COLORADO_MQTT_REGION_ACK_KEY = 'mesh-client:coloradoMqttRegionAck-v1';
 
@@ -143,6 +150,29 @@ function migrateMeshcoreTopicIataShapeOnce(): void {
   localStorage.setItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY, '1');
 }
 
+/**
+ * Rewrite mqtt.meshmapper.cc → mqtt.meshmapper.net (TLS on `.cc` fails with alert 80).
+ * Also runs when migration marker is set if the legacy host is still present (idempotent rewrite).
+ */
+function migrateMeshmapperHostToNetOnce(): void {
+  const raw = localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY);
+  if (raw) {
+    const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMeshmapperHostToNetOnce');
+    if (parsed && typeof parsed.server === 'string') {
+      const nextServer = migrateMeshmapperServerHost(parsed.server);
+      if (nextServer !== parsed.server) {
+        localStorage.setItem(
+          MESHCORE_MQTT_SETTINGS_KEY,
+          JSON.stringify({ ...parsed, server: nextServer }),
+        );
+      }
+    }
+  }
+  if (localStorage.getItem(MESHMAPPER_HOST_NET_MIGRATION_KEY) === null) {
+    localStorage.setItem(MESHMAPPER_HOST_NET_MIGRATION_KEY, '1');
+  }
+}
+
 /** Re-apply saved MeshCore network preset defaults when stored fields are stale. */
 function reconcileMeshcoreMqttPresetSettings(): void {
   const preset = readStoredMeshcoreMqttPreset();
@@ -166,6 +196,7 @@ export function runConnectionPanelStorageMigrations(): void {
   migrateColoradoMeshPortOnce();
   seedMeshcoreLetsMeshDefaultOnce();
   migrateMeshcoreTopicIataShapeOnce();
+  migrateMeshmapperHostToNetOnce();
   reconcileMeshcoreMqttPresetSettings();
 }
 
@@ -176,4 +207,7 @@ export {
   MESHCORE_MQTT_SETTINGS_KEY,
   MESHCORE_TOPIC_IATA_MIGRATION_KEY,
   MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY,
+  MESHMAPPER_HOST,
+  MESHMAPPER_HOST_LEGACY_CC,
+  MESHMAPPER_HOST_NET_MIGRATION_KEY,
 };

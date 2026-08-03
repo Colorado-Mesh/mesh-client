@@ -8,9 +8,11 @@ import {
   MESHCORE_MQTT_SETTINGS_KEY,
   MESHCORE_TOPIC_IATA_MIGRATION_KEY,
   MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY,
+  MESHMAPPER_HOST_LEGACY_CC,
+  MESHMAPPER_HOST_NET_MIGRATION_KEY,
   runConnectionPanelStorageMigrations,
 } from './connectionPanelStorageMigrations';
-import { COLORADO_MESH_HOST, LETSMESH_HOST_US } from './letsMeshJwt';
+import { COLORADO_MESH_HOST, LETSMESH_HOST_US, MESHMAPPER_HOST } from './letsMeshJwt';
 
 const store = new Map<string, string>();
 
@@ -247,5 +249,58 @@ describe('runConnectionPanelStorageMigrations', () => {
     };
     // Preset reconcile stamps DEN; shape migration also uppercases den → DEN.
     expect(parsed.topicPrefix).toBe('meshcore/DEN');
+  });
+
+  it('migrates MeshMapper mqtt.meshmapper.cc to mqtt.meshmapper.net', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'meshmapper');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({
+        server: MESHMAPPER_HOST_LEGACY_CC,
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+        password: '',
+      }),
+    );
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+    localStorage.setItem(COLORADO_MESH_PORT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      server?: string;
+    };
+    expect(parsed.server).toBe(MESHMAPPER_HOST);
+    expect(localStorage.getItem(MESHMAPPER_HOST_NET_MIGRATION_KEY)).toBe('1');
+  });
+
+  it('rewrites MeshMapper .cc even when migration marker is already set', () => {
+    localStorage.setItem(MESHMAPPER_HOST_NET_MIGRATION_KEY, '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({
+        server: MESHMAPPER_HOST_LEGACY_CC,
+        topicPrefix: 'meshcore/test',
+        port: 443,
+      }),
+    );
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+    localStorage.setItem(COLORADO_MESH_PORT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      server?: string;
+    };
+    expect(parsed.server).toBe(MESHMAPPER_HOST);
   });
 });

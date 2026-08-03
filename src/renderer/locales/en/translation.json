@@ -1210,7 +1210,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.",
       "coloradomesh": "Colorado Mesh needs WebSocket on port 443 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.",
-      "meshmapper": "MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers."
+      "meshmapper": "MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.net. Reset the preset or switch to Custom for other brokers."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.",
@@ -2070,7 +2070,8 @@
       "network": "Check network, DNS, firewall, and VPN.",
       "connackTimeout": "If you see no prior “client error” line, the TLS/WebSocket handshake may be stalling (try another network; the app prefers IPv4 for WSS).",
       "subscribeFailed": "The broker may deny wildcard subscribe on this topic; messages may still arrive if the broker allows it.",
-      "keepalive": "The server stopped responding to MQTT pings (idle timeout, network drop, or broker closed the session). Reconnect or check your link."
+      "keepalive": "The server stopped responding to MQTT pings (idle timeout, network drop, or broker closed the session). Reconnect or check your link.",
+      "tlsHandshake": "TLS handshake failed (broker certificate, SNI, or host). For MeshMapper use mqtt.meshmapper.net (not .cc). Try another network or reset the MeshMapper preset."
     }
   },
   "meshcoreContactSettings": {

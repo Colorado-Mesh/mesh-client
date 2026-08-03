@@ -3261,6 +3261,18 @@ ipcMain.handle('mqtt:getCachedNodes', (event) => {
     throw err;
   }
 });
+ipcMain.handle('mqtt:getChannelNameToIndex', (event) => {
+  assertIpcSender(event, 'mqtt:getChannelNameToIndex');
+  try {
+    return mqttManager.getChannelNameToIndex();
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:getChannelNameToIndex failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
 ipcMain.handle('mqtt:publishNodeInfo', (event, args) => {
   assertIpcSender(event, 'mqtt:publishNodeInfo');
   try {

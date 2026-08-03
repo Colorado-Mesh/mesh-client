@@ -13,6 +13,8 @@ import {
   MESHCORE_PUBLIC_KEY_LENGTH,
   meshcoreIdentityHasPrivateKey,
   MESHMAPPER_HOST,
+  MESHMAPPER_HOST_LEGACY_CC,
+  migrateMeshmapperServerHost,
   readMeshcoreIdentity,
   tryPersistMeshcoreIdentityFromRadioExport,
   tryPersistMeshcorePublicKeyFromRadio,
@@ -47,6 +49,18 @@ describe('letsMeshJwt', () => {
 
   it('isLetsMeshSettings matches MeshMapper host', () => {
     expect(isLetsMeshSettings(MESHMAPPER_HOST)).toBe(true);
+    expect(MESHMAPPER_HOST).toBe('mqtt.meshmapper.net');
+  });
+
+  it('isLetsMeshSettings still matches legacy MeshMapper .cc host', () => {
+    expect(isLetsMeshSettings(MESHMAPPER_HOST_LEGACY_CC)).toBe(true);
+  });
+
+  it('migrateMeshmapperServerHost rewrites .cc to .net', () => {
+    expect(migrateMeshmapperServerHost('mqtt.meshmapper.cc')).toBe(MESHMAPPER_HOST);
+    expect(migrateMeshmapperServerHost(' mqtt.meshmapper.cc ')).toBe(MESHMAPPER_HOST);
+    expect(migrateMeshmapperServerHost(MESHMAPPER_HOST)).toBe(MESHMAPPER_HOST);
+    expect(migrateMeshmapperServerHost(LETSMESH_HOST_US)).toBe(LETSMESH_HOST_US);
   });
 
   it('letsMeshJwtAudience uses trimmed MQTT server hostname as aud', () => {

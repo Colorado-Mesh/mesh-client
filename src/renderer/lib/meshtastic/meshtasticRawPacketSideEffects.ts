@@ -13,10 +13,12 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNodeRecord } from '../../stores/nodeStore';
+import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityNode } from '../identityStoreReads';
+import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { mergeMeshtasticLivePacketLastHeard } from '../meshtasticLastHeard';
 import type { RawPacketEntry } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -77,6 +79,9 @@ function applySignalAndHops(
   from: number,
   deps: MeshtasticRawPacketSideEffectsDeps,
 ): void {
+  if (shouldSuppressMeshtasticNodeHear(from, getConnectedMeshcoreBleMac())) {
+    return;
+  }
   const myNodeNum = deps.getMyNodeNum();
   const hasSignal = Boolean(payload.snr || payload.rssi);
   const hasHopUpdate = payload.hopsAway !== undefined && from !== myNodeNum;
