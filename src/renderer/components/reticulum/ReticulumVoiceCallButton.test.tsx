@@ -31,13 +31,14 @@ describe('ReticulumVoiceCallButton', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('uses cyan text-link action class and keeps interop only in aria/title', () => {
+  it('uses outlined cyan chip action class and keeps interop only in aria/title', () => {
     render(
       <ReticulumVoiceCallButton lxmfPeerHash={'a'.repeat(32)} identityHash={'b'.repeat(32)} />,
     );
     const btn = screen.getByRole('button', { name: /start lxst voice call/i });
-    expect(btn.className).toContain('text-cyan-400');
-    expect(btn.className).toContain('hover:underline');
+    expect(btn.className).toContain('border-cyan-500/35');
+    expect(btn.className).toMatch(/text-cyan-/);
+    expect(btn.className).not.toContain('hover:underline');
     const interop = i18n.t('reticulumVoice.help.interop');
     expect(btn.getAttribute('aria-label')).toContain(interop);
     expect(btn.getAttribute('title')).toContain(interop);

@@ -162,7 +162,7 @@ export function ReticulumDmPathActions({
   };
 
   // Probe first (active reachability), then Path (discovery request) — both use the
-  // shared DM header text-link style so they match Call / Send file / Peer details.
+  // shared DM header outlined chip style so they match Call / Send file / Peer details.
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
       <button

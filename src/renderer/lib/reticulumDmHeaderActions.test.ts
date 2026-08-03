@@ -6,10 +6,13 @@ import {
 } from './reticulumDmHeaderActions';
 
 describe('reticulumDmHeaderActions', () => {
-  it('exports cyan text-link action class without boxed/pill chrome', () => {
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('text-cyan-400');
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('hover:underline');
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).not.toMatch(/\bborder\b/);
+  it('exports outlined cyan chip action class with hover fill', () => {
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('border');
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('border-cyan-500/35');
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('rounded-lg');
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toMatch(/text-cyan-/);
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('hover:bg-slate-800/70');
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).not.toContain('hover:underline');
     expect(RETICULUM_DM_HEADER_ACTION_CLASS).not.toContain('rounded-full');
   });
 

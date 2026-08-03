@@ -37,7 +37,7 @@ describe('ReticulumDmPathReachabilityBadge', () => {
 });
 
 describe('ReticulumDmPathActions', () => {
-  it('renders Probe before Path with shared cyan action class', () => {
+  it('renders Probe before Path with shared outlined cyan chip class', () => {
     render(
       <ToastProvider>
         <ReticulumDmPathActions
@@ -57,7 +57,8 @@ describe('ReticulumDmPathActions', () => {
     expect(precedes(probe, path)).toBe(true);
     expect(probe.className).toBe(RETICULUM_DM_HEADER_ACTION_CLASS);
     expect(path.className).toBe(RETICULUM_DM_HEADER_ACTION_CLASS);
-    expect(probe.className).toContain('text-cyan-400');
+    expect(probe.className).toContain('border-cyan-500/35');
+    expect(probe.className).toMatch(/text-cyan-/);
     expect(probe.className).not.toMatch(/border-gray-600/);
     expect(path.className).not.toMatch(/border-gray-600/);
   });
