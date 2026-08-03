@@ -8,6 +8,7 @@ import {
   isLinkLocalIpv6,
   isLocalConnectHost,
   isLoopbackHost,
+  isMdnsConnectHost,
   isPrivateNetworkHost,
   isUniqueLocalIpv6,
   isValidConnectHost,
@@ -77,7 +78,7 @@ describe('local network classification', () => {
     expect(isLoopbackHost('192.168.1.1')).toBe(false);
   });
 
-  it('classifies local connect hosts for error hints', () => {
+  it('classifies local connect hosts for SSRF / RNode locality', () => {
     expect(isLocalConnectHost('192.168.1.10')).toBe(true);
     expect(isLocalConnectHost('fd00::1')).toBe(true);
     expect(isLocalConnectHost('fe80::1')).toBe(true);
@@ -87,6 +88,17 @@ describe('local network classification', () => {
     expect(isLocalConnectHost('radio.local')).toBe(true);
     expect(isLocalConnectHost('8.8.8.8')).toBe(false);
     expect(isLocalConnectHost('2001:db8::1')).toBe(false);
+  });
+
+  it('classifies mDNS connect hosts without treating private IPs as mDNS', () => {
+    expect(isMdnsConnectHost('meshtastic.local')).toBe(true);
+    expect(isMdnsConnectHost('node.meshtastic.local')).toBe(true);
+    expect(isMdnsConnectHost('radio.local')).toBe(true);
+    expect(isMdnsConnectHost('192.168.1.10')).toBe(false);
+    expect(isMdnsConnectHost('10.0.0.1')).toBe(false);
+    expect(isMdnsConnectHost('8.8.8.8')).toBe(false);
+    expect(isMdnsConnectHost('fd00::1')).toBe(false);
+    expect(isMdnsConnectHost('')).toBe(false);
   });
 });
 
