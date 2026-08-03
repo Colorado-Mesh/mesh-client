@@ -1434,6 +1434,18 @@ mod tests {
     }
 
     #[test]
+    fn register_identity_key_is_retrievable() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest = "0123456789abcdef0123456789abcdef";
+        let key = [0x7au8; 64];
+        driver.register_identity_key(dest, key);
+        assert_eq!(driver.public_key_for(dest), Some(key));
+        assert_eq!(driver.public_key_for(&dest.to_uppercase()), Some(key));
+    }
+
+    #[test]
     fn pin_identity_survives_eviction_flood() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);

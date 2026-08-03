@@ -453,6 +453,58 @@ impl StackHandle {
         }
     }
 
+    /// Local identity public key as 128 lowercase hex when identity is configured.
+    pub async fn identity_public_key_hex(&self) -> Option<String> {
+        let configured = self.inner.read().await.identity.configured;
+        if !configured {
+            return None;
+        }
+        #[cfg(feature = "rns-stack")]
+        {
+            if let Some(live) = &self.live {
+                return Some(live.identity_public_key_hex());
+            }
+            identity_apply::load_identity_from_file(&self.config_dir)
+                .ok()
+                .map(|id| hex::encode(id.get_public_key()))
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            None
+        }
+    }
+
+    /// Register a destination hash + 64-byte public key for Direct LXMF (Columba QR).
+    pub fn register_known_identity(
+        &self,
+        destination_hash: &str,
+        public_key_hex: &str,
+    ) -> Result<(), String> {
+        let dest = destination_hash.trim().to_lowercase();
+        if dest.len() != 32 || !dest.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("invalid_destination_hash".into());
+        }
+        let key_hex = public_key_hex.trim().to_lowercase();
+        if key_hex.len() != 128 || !key_hex.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("invalid_public_key".into());
+        }
+        let bytes = hex::decode(&key_hex).map_err(|_| "invalid_public_key".to_string())?;
+        let key: [u8; 64] = bytes
+            .try_into()
+            .map_err(|_| "invalid_public_key".to_string())?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let live = self.require_live()?;
+            live.register_known_identity(&dest, key)?;
+            Ok(())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (dest, key);
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
+    }
+
     async fn ensure_identity_replace_allowed(&self, replace: bool) -> Result<(), String> {
         let configured = self.inner.read().await.identity.configured;
         if configured && !replace {
@@ -2888,6 +2940,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let empty = merge_live_peer_fetch(&mut cache, Ok(vec![]));
         assert_eq!(empty.len(), 1);
@@ -2909,6 +2962,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let fetched = merge_live_peer_fetch(&mut cache, Ok(vec![row.clone()]));
         assert_eq!(fetched.len(), 1);
@@ -2926,6 +2980,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let fetched = sync_live_peer_cache(&mut cache, vec![]);
         assert!(fetched.is_empty());
@@ -2942,6 +2997,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let fetched = sync_live_peer_cache(
             &mut cache,
@@ -2953,6 +3009,7 @@ mod tests {
                 interface: Some("tcp".into()),
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             }],
         );
         assert_eq!(fetched.len(), 1);
@@ -2971,6 +3028,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let fetched = sync_live_peer_cache(&mut cache, vec![row.clone()]);
         assert_eq!(fetched.len(), 1);
@@ -3022,6 +3080,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let live = PeerRow {
             destination_hash: "ccdd02".into(),
@@ -3031,6 +3090,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let merged = sync_live_peer_cache(&mut cache, vec![live]);
         assert_eq!(merged.len(), 2);
@@ -3050,6 +3110,7 @@ mod tests {
                 interface: None,
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             })
             .collect();
         // One orphan older than TTL must be dropped even if under the count cap.
@@ -3061,6 +3122,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         });
         let live = PeerRow {
             destination_hash: "aa".repeat(16),
@@ -3070,6 +3132,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let merged = sync_live_peer_cache(&mut cache, vec![live]);
         assert!(merged.iter().any(|p| p.destination_hash == "aa".repeat(16)));

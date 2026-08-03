@@ -2809,7 +2809,9 @@
       "packetLogAria": "範囲テストパケットログ"
     },
     "currentRouteHeading": "現在のルート",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "連絡先QRを共有",
+    "shareContactQrAria": "公式アプリインポートのためにMeshCore連絡先QRコードを表示する"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3704,7 +3706,9 @@
       "indexLabel": "インデックス (0–{{max}})",
       "invalidHex": "正確に 32 個の 16 進文字である必要があります。",
       "addButton": "+ チャンネルを追加",
-      "footerHelp": "キーは 128 ビット (16 バイト) で、32 個の 16 進文字として表示されます。チャネル名は最大 {{nameMax}} 文字です。最大 {{channelCount}} チャネル (インデックス 0 ～ {{indexMax}})。 #channels の場合は、「名前から派生」(先頭に # が付いている名前の SHA-256) を使用します。"
+      "footerHelp": "キーは 128 ビット (16 バイト) で、32 個の 16 進文字として表示されます。チャネル名は最大 {{nameMax}} 文字です。最大 {{channelCount}} チャネル (インデックス 0 ～ {{indexMax}})。 #channels の場合は、「名前から派生」(先頭に # が付いている名前の SHA-256) を使用します。",
+      "shareQr": "QR",
+      "shareQrAria": "{{name}}のMeshCoreチャンネルQRを表示"
     },
     "regions": {
       "0": {
@@ -4855,7 +4859,18 @@
     "cameraUnavailable": "このデバイスではカメラが利用できません",
     "confirmContactImportTitle": "連絡先をインポートしますか?",
     "confirmContactImportBody": "外部リンクから {{name}} を Reticulum の連絡先に追加しますか?",
-    "confirmContactImportAction": "連絡先をインポートする"
+    "confirmContactImportAction": "連絡先をインポートする",
+    "confirmMeshcoreContactImportTitle": "MeshCoreの連絡先をインポートしますか？",
+    "confirmMeshcoreContactImportBody": "MeshCoreの連絡先QRから{{name}}を連絡先に追加しますか？",
+    "confirmMeshcoreChannelImportTitle": "MeshCoreチャンネルをインポートしますか？",
+    "confirmMeshcoreChannelImportBody": "ラジオタブのMeshCoreチャンネルQRからチャンネル{{name}}を適用しますか？",
+    "confirmMeshcoreChannelImportAction": "チャンネルをインポート",
+    "lxmaRegisterFailed": "連絡先公開鍵を登録できませんでした（ Reticulumスタックは実行されていますか？ ）",
+    "meshcoreContactImported": "QRから追加されたMeshCore連絡先",
+    "meshcoreContactImportFailed": "QRからMeshCoreの連絡先をインポートできませんでした",
+    "meshcoreChannelImported": "MeshCoreチャンネルリンクを受信しました—ラジオタブで確認してください",
+    "meshcoreChannelImportFailed": "QRからMeshCoreチャンネルをインポートできませんでした",
+    "meshcoreChannelPrefill": "QRから入力されたチャンネルの詳細—保存して適用"
   },
   "reticulumRemote": {
     "navAria": "リモートセクション",

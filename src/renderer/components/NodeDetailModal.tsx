@@ -13,6 +13,7 @@ import {
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
+import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
@@ -44,6 +45,7 @@ import {
   MESHCORE_CHAT_STUB_ID_MIN,
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
+  meshcoreContactTypeFromHwModel,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
 import {
@@ -71,6 +73,7 @@ import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
+import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
 
 const TRACE_ROUTE_UI_TIMEOUT_MS = 120_000;
@@ -330,6 +333,7 @@ export default function NodeDetailModal({
   meshcoreNeighborsRef.current = meshcoreNeighbors;
   const [exportContactPending, setExportContactPending] = useState(false);
   const [shareContactPending, setShareContactPending] = useState(false);
+  const [showMeshcoreContactQr, setShowMeshcoreContactQr] = useState(false);
   const [radioContactCount, setRadioContactCount] = useState<number | null>(null);
   const [contactOnRadio, setContactOnRadio] = useState<boolean | null>(null);
   const [addRemoveLoading, setAddRemoveLoading] = useState(false);
@@ -466,6 +470,22 @@ export default function NodeDetailModal({
 
   // Fetch on_radio status and contact count for MeshCore
   const [contactPubkey, setContactPubkey] = useState<string | null>(null);
+
+  const meshcoreContactQrUri = useMemo(() => {
+    if (protocol !== 'meshcore' || !contactPubkey || !node) return null;
+    const typeRaw = meshcoreContactTypeFromHwModel(node.hw_model ?? 'Chat') ?? 1;
+    const type = (typeRaw >= 1 && typeRaw <= 4 ? typeRaw : 1) as MeshcoreContactType;
+    try {
+      return buildMeshcoreContactAddUri({
+        name: node.long_name || node.short_name || `Node-${node.node_id.toString(16)}`,
+        publicKeyHex: contactPubkey,
+        type,
+      });
+    } catch {
+      // catch-no-log-ok Invalid pubkey simply hides the share QR.
+      return null;
+    }
+  }, [protocol, contactPubkey, node]);
 
   const ensureRemoteRpcAccess = useCallback(
     async (
@@ -2095,6 +2115,27 @@ export default function NodeDetailModal({
                       : t('nodeDetailModal.shareContact')}
                   </button>
                 )}
+                {protocol === 'meshcore' && meshcoreContactQrUri ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMeshcoreContactQr((v) => !v);
+                    }}
+                    aria-label={t('nodeDetailModal.shareContactQrAria')}
+                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600"
+                  >
+                    {t('nodeDetailModal.shareContactQr')}
+                  </button>
+                ) : null}
+                {protocol === 'meshcore' && showMeshcoreContactQr && meshcoreContactQrUri ? (
+                  <div className="w-full pt-2">
+                    <QrCodeImage
+                      value={meshcoreContactQrUri}
+                      size={160}
+                      ariaLabel={t('nodeDetailModal.shareContactQrAria')}
+                    />
+                  </div>
+                ) : null}
                 {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
                   <button
                     type="button"

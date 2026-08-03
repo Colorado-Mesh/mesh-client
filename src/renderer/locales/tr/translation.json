@@ -2809,7 +2809,9 @@
       "packetLogAria": "Aralık testi paket günlüğü"
     },
     "currentRouteHeading": "Mevcut rota",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "Kişi Paylaş",
+    "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3704,7 +3706,9 @@
       "indexLabel": "Dizin (0–{{max}})",
       "invalidHex": "Tam olarak 32 onaltılık karakter olmalıdır.",
       "addButton": "+ Kanal Ekle",
-      "footerHelp": "Anahtarlar 128 bittir (16 bayt), 32 onaltılık karakter olarak gösterilir. {{nameMax}} karaktere kadar kanal adları. {{channelCount}} kanala kadar (0–{{indexMax}} indeksleri). #Kanallar için \"Addan türet\" seçeneğini kullanın (önde # ile ismin SHA-256'sı)."
+      "footerHelp": "Anahtarlar 128 bittir (16 bayt), 32 onaltılık karakter olarak gösterilir. {{nameMax}} karaktere kadar kanal adları. {{channelCount}} kanala kadar (0–{{indexMax}} indeksleri). #Kanallar için \"Addan türet\" seçeneğini kullanın (önde # ile ismin SHA-256'sı).",
+      "shareQr": "QR",
+      "shareQrAria": "{{name}} için MeshCore kanal QR'sini göster"
     },
     "regions": {
       "0": {
@@ -4855,7 +4859,18 @@
     "cameraUnavailable": "Bu cihazda kamera kullanılamıyor",
     "confirmContactImportTitle": "Kişi içe aktarılsın mı?",
     "confirmContactImportBody": "{{name}} harici bir bağlantıdan Reticulum kişilerinize eklensin mi?",
-    "confirmContactImportAction": "Kişiyi içe aktar"
+    "confirmContactImportAction": "Kişiyi içe aktar",
+    "confirmMeshcoreContactImportTitle": "MeshCore kişisi içe aktarılsın mı?",
+    "confirmMeshcoreContactImportBody": "MeshCore kişi QR'sinden {{name}} kişilerinize eklensin mi?",
+    "confirmMeshcoreChannelImportTitle": "MeshCore kanalı içe aktarılsın mı?",
+    "confirmMeshcoreChannelImportBody": "Radyo sekmesindeki MeshCore kanal QR'sından {{name}} kanalı uygulansın mı?",
+    "confirmMeshcoreChannelImportAction": "Kanalı içe aktar",
+    "lxmaRegisterFailed": "Kişi genel anahtarı kaydedilemedi (Reticulum yığını çalışıyor mu?)",
+    "meshcoreContactImported": "QR'dan MeshCore kişisi eklendi",
+    "meshcoreContactImportFailed": "MeshCore kişisi QR'dan içe aktarılamadı",
+    "meshcoreChannelImported": "MeshCore kanal bağlantısı alındı — Radyo sekmesinde inceleme",
+    "meshcoreChannelImportFailed": "MeshCore kanalı QR'dan içe aktarılamadı",
+    "meshcoreChannelPrefill": "QR'dan doldurulan kanal ayrıntıları — uygulamak için kaydedin"
   },
   "reticulumRemote": {
     "navAria": "Uzak bölümler",

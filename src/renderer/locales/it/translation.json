@@ -2809,7 +2809,9 @@
       "packetLogAria": "Registro dei pacchetti di test di intervallo"
     },
     "currentRouteHeading": "Percorso attuale",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "Condividi QR contatto",
+    "shareContactQrAria": "Mostra il codice QR del contatto MeshCore per l'importazione ufficiale dell'app"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -3704,7 +3706,9 @@
       "indexLabel": "Indice (0–{{max}})",
       "invalidHex": "Deve contenere esattamente 32 caratteri esadecimali.",
       "addButton": "+ Aggiungi canale",
-      "footerHelp": "Le chiavi sono a 128 bit (16 byte), visualizzate come 32 caratteri esadecimali. Nomi dei canali fino a {{nameMax}} caratteri. Fino a {{channelCount}} canali (indici 0–{{indexMax}}). Per i canali #, utilizzare \"Deriva dal nome\" (SHA-256 del nome con un # iniziale)."
+      "footerHelp": "Le chiavi sono a 128 bit (16 byte), visualizzate come 32 caratteri esadecimali. Nomi dei canali fino a {{nameMax}} caratteri. Fino a {{channelCount}} canali (indici 0–{{indexMax}}). Per i canali #, utilizzare \"Deriva dal nome\" (SHA-256 del nome con un # iniziale).",
+      "shareQr": "QR",
+      "shareQrAria": "Mostra QR del canale MeshCore per {{name}}"
     },
     "regions": {
       "0": {
@@ -4855,7 +4859,18 @@
     "cameraUnavailable": "La fotocamera non è disponibile su questo dispositivo",
     "confirmContactImportTitle": "Importare il contatto?",
     "confirmContactImportBody": "Aggiungere {{name}} da un link esterno ai tuoi contatti Reticulum?",
-    "confirmContactImportAction": "Importa contatto"
+    "confirmContactImportAction": "Importa contatto",
+    "confirmMeshcoreContactImportTitle": "Importare il contatto MeshCore?",
+    "confirmMeshcoreContactImportBody": "Aggiungi {{name}} da un QR di contatto MeshCore ai tuoi contatti?",
+    "confirmMeshcoreChannelImportTitle": "Importare il canale MeshCore?",
+    "confirmMeshcoreChannelImportBody": "Vuoi applicare il canale {{name}} da un QR del canale MeshCore nella scheda Radio?",
+    "confirmMeshcoreChannelImportAction": "Importa canale",
+    "lxmaRegisterFailed": "Impossibile registrare la chiave pubblica di contatto (lo stack Reticulum è in esecuzione?)",
+    "meshcoreContactImported": "Contatto MeshCore aggiunto da QR",
+    "meshcoreContactImportFailed": "Impossibile importare il contatto MeshCore da QR",
+    "meshcoreChannelImported": "Link al canale MeshCore ricevuto — recensione nella scheda Radio",
+    "meshcoreChannelImportFailed": "Impossibile importare il canale MeshCore da QR",
+    "meshcoreChannelPrefill": "Dettagli del canale compilati da QR — salva per applicare"
   },
   "reticulumRemote": {
     "navAria": "Sezioni remote",

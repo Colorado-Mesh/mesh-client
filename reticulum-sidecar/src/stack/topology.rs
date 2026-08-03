@@ -70,6 +70,7 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
                     interface: peer.interface.clone(),
                     path_hash: None,
                     via_hash: None,
+                    public_key: None,
                 });
             }
         }
@@ -265,6 +266,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: via.map(str::to_string),
             via_hash: via.map(str::to_string),
+            public_key: None,
         }
     }
 
@@ -355,6 +357,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let mut names = HashMap::new();
         names.insert("abc".into(), "Alice".into());
@@ -373,6 +376,7 @@ mod tests {
                 interface: Some("tcp".into()),
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             },
             PeerRow {
                 destination_hash: "ccdd".into(),
@@ -382,6 +386,7 @@ mod tests {
                 interface: Some("tcp".into()),
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             },
         ];
         let mut name_by_hash = build_topology_name_map(

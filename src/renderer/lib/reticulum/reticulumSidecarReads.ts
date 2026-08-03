@@ -13,6 +13,8 @@ export interface ReticulumIdentityStatus {
   lxmfHash: string | null;
   displayName: string | null;
   identityHash?: string | null;
+  /** 128-hex X25519∥Ed25519 public key when sidecar reports it (Columba lxma://). */
+  publicKey?: string | null;
 }
 
 export interface ReticulumPeerPathResult {
@@ -239,7 +241,13 @@ export async function fetchReticulumRmapDiscovered(): Promise<ReticulumRmapDisco
 /** Fetch sidecar identity status. Panels use `reticulumIdentityStore` via `useReticulumSidecarApi`; runtime uses this helper directly. */
 export async function fetchReticulumIdentityStatus(): Promise<ReticulumIdentityStatus> {
   if (!(await isReticulumSidecarRunning())) {
-    return { configured: false, lxmfHash: null, displayName: null, identityHash: null };
+    return {
+      configured: false,
+      lxmfHash: null,
+      displayName: null,
+      identityHash: null,
+      publicKey: null,
+    };
   }
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/identity/status')) as {
@@ -247,10 +255,15 @@ export async function fetchReticulumIdentityStatus(): Promise<ReticulumIdentityS
       lxmf_hash?: string;
       identity_hash?: string;
       display_name?: string | null;
+      public_key?: string | null;
     };
     const lxmfHash = body.configured && body.lxmf_hash ? body.lxmf_hash : null;
     const displayName = body.display_name?.trim() ? body.display_name.trim() : null;
     const identityHash = body.identity_hash?.trim() ? body.identity_hash.trim() : null;
+    const publicKey =
+      typeof body.public_key === 'string' && /^[0-9a-fA-F]{128}$/.test(body.public_key.trim())
+        ? body.public_key.trim().toLowerCase()
+        : null;
     if (lxmfHash) {
       registerReticulumDestinationHash(reticulumHashToNodeId(lxmfHash), lxmfHash);
     }
@@ -259,12 +272,39 @@ export async function fetchReticulumIdentityStatus(): Promise<ReticulumIdentityS
       lxmfHash,
       displayName,
       identityHash,
+      publicKey,
     };
   } catch (e) {
     if (!isReticulumSidecarExpectedProxyError(e)) {
       console.debug('[reticulumSidecarReads] identity status ' + errLikeToLogString(e));
     }
-    return { configured: false, lxmfHash: null, displayName: null, identityHash: null };
+    return {
+      configured: false,
+      lxmfHash: null,
+      displayName: null,
+      identityHash: null,
+      publicKey: null,
+    };
+  }
+}
+
+/** Register a peer destination public key for Direct LXMF (Columba lxma:// import). */
+export async function registerReticulumKnownIdentity(
+  destinationHash: string,
+  publicKeyHex: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isReticulumSidecarRunning())) {
+    return { ok: false, error: 'sidecar_not_running' };
+  }
+  try {
+    const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/register-known', {
+      destination_hash: destinationHash,
+      public_key: publicKeyHex,
+    })) as { ok?: boolean; error?: string };
+    return { ok: Boolean(res.ok), error: res.error };
+  } catch (e) {
+    // catch-no-log-ok error returned to caller for toast/UI
+    return { ok: false, error: errLikeToLogString(e) };
   }
 }
 

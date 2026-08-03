@@ -2760,6 +2760,8 @@
     "exportFailed": "Export failed",
     "sharingContact": "Sharing contact...",
     "shareContact": "📨 Share Contact",
+    "shareContactQr": "Share contact QR",
+    "shareContactQrAria": "Show MeshCore contact QR code for official app import",
     "sharingEllipsis": "Sharing...",
     "shareFailed": "Share failed",
     "shareContactSent": "Contact share sent over the radio.",
@@ -3659,6 +3661,8 @@
       "indexLabel": "Index (0–{{max}})",
       "invalidHex": "Must be exactly 32 hex characters.",
       "addButton": "+ Add Channel",
+      "shareQr": "QR",
+      "shareQrAria": "Show MeshCore channel QR for {{name}}",
       "footerHelp": "Keys are 128-bit (16 bytes), shown as 32 hex characters. Channel names up to {{nameMax}} characters. Up to {{channelCount}} channels (indices 0–{{indexMax}}). For #channels, use \"Derive from name\" (SHA-256 of the name with a leading #)."
     },
     "roleFieldLabel": "Role",
@@ -5058,7 +5062,18 @@
     "cameraUnavailable": "Camera is not available on this device",
     "confirmContactImportTitle": "Import contact?",
     "confirmContactImportBody": "Add {{name}} from an external link to your Reticulum contacts?",
-    "confirmContactImportAction": "Import contact"
+    "confirmContactImportAction": "Import contact",
+    "confirmMeshcoreContactImportTitle": "Import MeshCore contact?",
+    "confirmMeshcoreContactImportBody": "Add {{name}} from a MeshCore contact QR to your contacts?",
+    "confirmMeshcoreChannelImportTitle": "Import MeshCore channel?",
+    "confirmMeshcoreChannelImportBody": "Apply channel {{name}} from a MeshCore channel QR on the Radio tab?",
+    "confirmMeshcoreChannelImportAction": "Import channel",
+    "lxmaRegisterFailed": "Could not register contact public key (is the Reticulum stack running?)",
+    "meshcoreContactImported": "MeshCore contact added from QR",
+    "meshcoreContactImportFailed": "Could not import MeshCore contact from QR",
+    "meshcoreChannelImported": "MeshCore channel link received — review on the Radio tab",
+    "meshcoreChannelImportFailed": "Could not import MeshCore channel from QR",
+    "meshcoreChannelPrefill": "Channel details filled from QR — save to apply"
   },
   "toasts": {
     "firmwareAvailable": "Firmware update available: v{{version}}",

@@ -33,6 +33,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/app/info", get(status::app_info))
         .route("/api/v1/identity/status", get(identity::identity_status))
         .route(
+            "/api/v1/identity/register-known",
+            post(identity::identity_register_known),
+        )
+        .route(
             "/api/v1/identity/generate",
             post(identity::identity_generate),
         )

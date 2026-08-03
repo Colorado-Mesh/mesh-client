@@ -114,6 +114,8 @@ export interface ReticulumPeer {
   path_hash?: string | null;
   via_hash?: string | null;
   identity_hash?: string;
+  /** 128-hex public key when known from announces (Columba lxma://). */
+  public_key?: string | null;
   /** Populated after a path request when sidecar returns hop data. */
   path_hops?: number;
   favorited?: boolean;
@@ -157,6 +159,7 @@ export interface ReticulumPeerWireRow {
   interface?: string | null;
   path_hash?: string | null;
   via_hash?: string | null;
+  public_key?: string | null;
 }
 
 export interface ReticulumTopologyEdge {

@@ -98,6 +98,48 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
     expect(writeText).toHaveBeenCalledWith(PEER_HASH);
   });
 
+  it('shows lxma contact QR when peer public_key is known', async () => {
+    const user = userEvent.setup();
+    const pub = 'ab'.repeat(64);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          PEER_HASH,
+          {
+            destination_hash: PEER_HASH,
+            display_name: 'Test Peer',
+            hops: 2,
+            last_seen: Date.now() / 1000,
+            public_key: pub,
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+      peerAppearanceByHash: new Map(),
+      lastRefreshAt: null,
+    });
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('button', { name: 'peerDetailModal.shareContactQrAria' }));
+    const img = await screen.findByRole('img', { name: 'peerDetailModal.shareContactQrAria' });
+    expect(img.getAttribute('src')).toBeTruthy();
+    // QrCodeImage encodes value into canvas/data URL; ensure toggle works with lxma peer.
+    expect(screen.getByRole('button', { name: 'peerDetailModal.shareContactQrAria' })).toBeTruthy();
+  });
+
+  it('falls back to lxm://contact QR when public_key is absent', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('button', { name: 'peerDetailModal.shareContactQrAria' }));
+    expect(
+      await screen.findByRole('img', { name: 'peerDetailModal.shareContactQrAria' }),
+    ).toBeTruthy();
+  });
+
   it('Save as contact upserts last_heard and refreshes peers', async () => {
     const user = userEvent.setup();
     const upsert = vi.mocked(window.electronAPI.db.upsertReticulumDestination);

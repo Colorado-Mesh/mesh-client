@@ -131,6 +131,7 @@ describe('useReticulumSidecarApi', () => {
       identity_hash: 'identity-hash',
       lxmf_hash: 'lxmf-hash',
       display_name: 'Mesh User',
+      public_key: null,
     });
   });
 

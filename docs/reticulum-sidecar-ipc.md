@@ -17,15 +17,16 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 ### Identity
 
-| Method | Path                              | Body / notes                                       | Response                                                  |
-| ------ | --------------------------------- | -------------------------------------------------- | --------------------------------------------------------- |
-| GET    | `/api/v1/identity/status`         |                                                    | `{ configured, identity_hash, lxmf_hash, display_name? }` |
-| POST   | `/api/v1/identity/generate`       | `{ display_name?, replace? }`                      | `{ ok, mnemonic?, identity_hash, lxmf_hash }`             |
-| POST   | `/api/v1/identity/import`         | `{ mnemonic, display_name?, replace? }`            | `{ ok, identity_hash, lxmf_hash }`                        |
-| POST   | `/api/v1/identity/import-backup`  | `{ backup, passphrase?, display_name?, replace? }` | `{ ok, identity_hash, lxmf_hash, metadata_only? }`        |
-| POST   | `/api/v1/identity/import-private` | `{ private_key, display_name?, replace? }`         | `{ ok, identity_hash, lxmf_hash }`                        |
-| POST   | `/api/v1/identity/export`         | `{ passphrase }`                                   | `{ ok, backup? }`                                         |
-| POST   | `/api/v1/identity/display-name`   | `{ display_name }`                                 | `{ ok }`                                                  |
+| Method | Path                              | Body / notes                                       | Response                                                               |
+| ------ | --------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------- |
+| GET    | `/api/v1/identity/status`         |                                                    | `{ configured, identity_hash, lxmf_hash, display_name?, public_key? }` |
+| POST   | `/api/v1/identity/register-known` | `{ destination_hash, public_key }`                 | `{ ok }` (registers 64-byte pubkey for Direct LXMF / Columba QR)       |
+| POST   | `/api/v1/identity/generate`       | `{ display_name?, replace? }`                      | `{ ok, mnemonic?, identity_hash, lxmf_hash }`                          |
+| POST   | `/api/v1/identity/import`         | `{ mnemonic, display_name?, replace? }`            | `{ ok, identity_hash, lxmf_hash }`                                     |
+| POST   | `/api/v1/identity/import-backup`  | `{ backup, passphrase?, display_name?, replace? }` | `{ ok, identity_hash, lxmf_hash, metadata_only? }`                     |
+| POST   | `/api/v1/identity/import-private` | `{ private_key, display_name?, replace? }`         | `{ ok, identity_hash, lxmf_hash }`                                     |
+| POST   | `/api/v1/identity/export`         | `{ passphrase }`                                   | `{ ok, backup? }`                                                      |
+| POST   | `/api/v1/identity/display-name`   | `{ display_name }`                                 | `{ ok }`                                                               |
 
 ### Interfaces
 
@@ -97,14 +98,14 @@ Routing bias between **RF** (LoRa / RNode) and **network** (TCP/UDP/I2P/gateway/
 
 ### Peers, topology, and propagation
 
-| Method | Path                         | Body / notes           | Response                                                                                                                                                                                                                                                   |
-| ------ | ---------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/peers`              | `?refresh=1` optional  | `{ peers: [] }` — live path table when `rns-stack` enabled; without `refresh=1` may serve a short-TTL maintenance cache; `refresh=1`/`true` forces live `GetPathTable` (manual Refresh). `display_name` overlayed from contacts/Nomad/announce label cache |
-| POST   | `/api/v1/peers/{hash}/path`  |                        | `{ ok }` — emits `peers_updated` WS on success                                                                                                                                                                                                             |
-| POST   | `/api/v1/peers/{hash}/probe` |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                                                                                                                                                         |
-| POST   | `/api/v1/ping`               | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                                                                                                                                                          |
-| GET    | `/api/v1/topology`           |                        | `{ nodes, edges, total?, shown?, truncated? }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed                                                                                                        |
-| GET    | `/api/v1/rmap/discovered`    |                        | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore)                                                                                                                              |
+| Method | Path                         | Body / notes           | Response                                                                                                                                                                                                                                                                                                              |
+| ------ | ---------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`              | `?refresh=1` optional  | `{ peers: [] }` — live path table when `rns-stack` enabled; without `refresh=1` may serve a short-TTL maintenance cache; `refresh=1`/`true` forces live `GetPathTable` (manual Refresh). `display_name` overlayed from contacts/Nomad/announce label cache; optional `public_key` (128 hex) when known from announces |
+| POST   | `/api/v1/peers/{hash}/path`  |                        | `{ ok }` — emits `peers_updated` WS on success                                                                                                                                                                                                                                                                        |
+| POST   | `/api/v1/peers/{hash}/probe` |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                                                                                                                                                                                                                    |
+| POST   | `/api/v1/ping`               | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                                                                                                                                                                                                                     |
+| GET    | `/api/v1/topology`           |                        | `{ nodes, edges, total?, shown?, truncated? }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed                                                                                                                                                                   |
+| GET    | `/api/v1/rmap/discovered`    |                        | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore)                                                                                                                                                                                         |
 
 **`RmapDiscoveredWireRow` fields** (see `src/shared/reticulum-types.ts`): `discovery_hash`, `transport_id`, `discovery_name`, `interface_type`, `latitude`, `longitude`, `height`, `transport_enabled`, `reachable_on`, LoRa RF fields (`frequency`, `bandwidth`, `spreading_factor`, …), `hops`, `stamp_value`, `discovered`, `last_heard`, `heard_count`, `status` (`available`/`stale`/`unknown`), `has_coordinates`. Renderer caps at 2,000 newest rows with client-side TTL eviction.
 

@@ -51,12 +51,34 @@ pub struct DisplayNameBody {
 
 pub async fn identity_status(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     let id = stack.identity_status().await;
-    Json(serde_json::json!({
+    let public_key = stack.identity_public_key_hex().await;
+    let mut body = serde_json::json!({
         "configured": id.configured,
         "identity_hash": id.identity_hash,
         "lxmf_hash": id.lxmf_hash,
         "display_name": id.display_name,
-    }))
+    });
+    if let Some(pk) = public_key {
+        body["public_key"] = serde_json::Value::String(pk);
+    }
+    Json(body)
+}
+
+#[derive(Deserialize)]
+pub struct RegisterKnownBody {
+    pub destination_hash: String,
+    pub public_key: String,
+}
+
+/// Register a peer LXMF destination public key (Columba `lxma://` import).
+pub async fn identity_register_known(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<RegisterKnownBody>,
+) -> Json<serde_json::Value> {
+    match stack.register_known_identity(&body.destination_hash, &body.public_key) {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
 }
 
 /// Generate a new identity. The response includes the mnemonic **once** so the

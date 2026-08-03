@@ -2809,7 +2809,9 @@
       "packetLogAria": "Log paket uji jangkauan"
     },
     "currentRouteHeading": "Rute saat ini",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "Bagikan QR kontak",
+    "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3704,7 +3706,9 @@
       "indexLabel": "Indeks (0–{{max}})",
       "invalidHex": "Harus tepat 32 karakter hex.",
       "addButton": "+ Tambahkan Saluran",
-      "footerHelp": "Kunci berukuran 128-bit (16 byte), ditampilkan sebagai 32 karakter hex. Nama saluran maksimal {{nameMax}} karakter. Hingga {{channelCount}} saluran (indeks 0–{{indexMax}}). Untuk #saluran, gunakan \"Berasal dari nama\" (SHA-256 dari nama dengan # di depannya)."
+      "footerHelp": "Kunci berukuran 128-bit (16 byte), ditampilkan sebagai 32 karakter hex. Nama saluran maksimal {{nameMax}} karakter. Hingga {{channelCount}} saluran (indeks 0–{{indexMax}}). Untuk #saluran, gunakan \"Berasal dari nama\" (SHA-256 dari nama dengan # di depannya).",
+      "shareQr": "QR",
+      "shareQrAria": "Tampilkan QR saluran MeshCore untuk {{name}}"
     },
     "regions": {
       "0": {
@@ -4855,7 +4859,18 @@
     "cameraUnavailable": "Kamera tidak tersedia di perangkat ini",
     "confirmContactImportTitle": "Impor kontak?",
     "confirmContactImportBody": "Tambahkan {{name}} dari tautan eksternal ke kontak Reticulum Anda?",
-    "confirmContactImportAction": "Impor kontak"
+    "confirmContactImportAction": "Impor kontak",
+    "confirmMeshcoreContactImportTitle": "Impor kontak MeshCore?",
+    "confirmMeshcoreContactImportBody": "Tambahkan {{name}} dari QR kontak MeshCore ke kontak Anda?",
+    "confirmMeshcoreChannelImportTitle": "Impor saluran MeshCore?",
+    "confirmMeshcoreChannelImportBody": "Terapkan saluran {{name}} dari QR saluran MeshCore di tab Radio?",
+    "confirmMeshcoreChannelImportAction": "Impor saluran",
+    "lxmaRegisterFailed": "Tidak dapat mendaftarkan kunci publik kontak (apakah tumpukan Reticulum berjalan?)",
+    "meshcoreContactImported": "Kontak MeshCore ditambahkan dari QR",
+    "meshcoreContactImportFailed": "Tidak dapat mengimpor kontak MeshCore dari QR",
+    "meshcoreChannelImported": "Tautan saluran MeshCore diterima — tinjau di tab Radio",
+    "meshcoreChannelImportFailed": "Tidak dapat mengimpor saluran MeshCore dari QR",
+    "meshcoreChannelPrefill": "Detail saluran diisi dari QR — simpan untuk diterapkan"
   },
   "reticulumRemote": {
     "navAria": "Bagian terpencil",

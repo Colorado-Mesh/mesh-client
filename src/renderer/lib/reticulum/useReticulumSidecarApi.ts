@@ -132,6 +132,7 @@ export function useReticulumSidecarApi({
             identity_hash: '',
             lxmf_hash: '',
             display_name: null,
+            public_key: null,
           };
         }
         return {
@@ -139,6 +140,7 @@ export function useReticulumSidecarApi({
           identity_hash: status.identityHash?.trim() || '',
           lxmf_hash: status.lxmfHash,
           display_name: status.displayName,
+          public_key: status.publicKey ?? null,
         };
       }, generation);
     } catch (e) {
