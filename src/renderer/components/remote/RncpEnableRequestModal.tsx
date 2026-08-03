@@ -16,6 +16,7 @@ import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInbou
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpEnableRequestStore } from '@/renderer/stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
+import { isRemoteOkFailure } from '@/shared/remote-types';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 import { buildRncpReceiveDestShareBody } from '@/shared/rncpRequestEnable';
 
@@ -194,7 +195,7 @@ export function RncpEnableRequestModal() {
           allowed,
           blocked,
         });
-        if (!res.ok) {
+        if (isRemoteOkFailure(res)) {
           addToast(
             t('reticulumRemote.enableRequest.enableFailed', {
               error: res.error ?? t('common.error'),

@@ -126,6 +126,17 @@ export interface RemoteOkResponse {
   error?: string;
 }
 
+/**
+ * True only when a Remote-style IPC payload explicitly reports failure.
+ * Missing `ok` (e.g. legacy listener status JSON) is not a failure — callers
+ * that used `!res.ok` treated `undefined` as failed after a successful Off.
+ */
+export function isRemoteOkFailure(
+  res: unknown,
+): res is RemoteOkResponse & { ok: false; error?: string } {
+  return res != null && typeof res === 'object' && 'ok' in res && res.ok === false;
+}
+
 /** `rnsh.stdout` / `rnsh.stderr` WS event payload (base64-encoded chunk). */
 export interface RnshStreamEventPayload {
   session_id: string;
