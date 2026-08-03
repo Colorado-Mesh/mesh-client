@@ -1263,6 +1263,22 @@ describe('connect — channelPsks parsing', () => {
 });
 
 describe('updateChannelKeys', () => {
+  /** Test-only surface for private MQTTManager members used by channel-map regressions. */
+  interface MqttManagerChannelTestAccess {
+    _doConnect: () => void;
+    channelNameToIndex: Map<string, number>;
+    channelKeysByName: Map<string, Buffer>;
+    onMessage: (topic: string, payload: Buffer) => void;
+  }
+
+  function mqttChannelTestAccess(manager: MQTTManager): MqttManagerChannelTestAccess {
+    return manager as unknown as MqttManagerChannelTestAccess;
+  }
+
+  function stubMqttConnect(manager: MQTTManager): void {
+    mqttChannelTestAccess(manager)._doConnect = () => {};
+  }
+
   it('registers radio channel keys for decrypt and publish', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
@@ -1347,7 +1363,7 @@ describe('updateChannelKeys', () => {
 
   it('stores LongFast index mapping from default public radio sync', () => {
     const manager = new MQTTManager();
-    (manager as any)._doConnect = () => {};
+    stubMqttConnect(manager);
     manager.connect({
       server: 'localhost',
       port: 1883,
@@ -1359,14 +1375,14 @@ describe('updateChannelKeys', () => {
 
     manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
 
-    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
-    expect(nameToIndex.get('LongFast')).toBe(1);
+    expect(mqttChannelTestAccess(manager).channelNameToIndex.get('LongFast')).toBe(1);
     expect(manager.getChannelNameToIndex()).toEqual({ LongFast: 1 });
   });
 
   it('Nathan/Colorado: radio LongFast@1 overrides manual LongFast@0 for topic attribution', () => {
     const manager = new MQTTManager();
-    (manager as any)._doConnect = () => {};
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
     manager.connect({
       server: 'localhost',
       port: 1883,
@@ -1377,19 +1393,19 @@ describe('updateChannelKeys', () => {
       channelPsks: ['LongFast@0=AQ=='],
     });
 
-    expect((manager as any).channelNameToIndex.get('LongFast')).toBe(0);
+    expect(access.channelNameToIndex.get('LongFast')).toBe(0);
 
     manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
 
     expect(manager.getChannelNameToIndex().LongFast).toBe(1);
     // Manual default-public PSK preserved when radio also pushes AQ==
-    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
-    expect(byName.get('LongFast')?.equals(DEFAULT_PSK)).toBe(true);
+    expect(access.channelKeysByName.get('LongFast')?.equals(DEFAULT_PSK)).toBe(true);
   });
 
   it('Nathan/Colorado: inbound LongFast topic + packet channel 0 attributes to slot 1 after radio sync overrides @0', () => {
     const manager = new MQTTManager();
-    (manager as any)._doConnect = () => {};
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
     manager.connect({
       server: 'localhost',
       port: 1883,
@@ -1421,7 +1437,7 @@ describe('updateChannelKeys', () => {
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));
-    (manager as any).onMessage('msh/US/CO/2/e/LongFast/!095cf12b', payload);
+    access.onMessage('msh/US/CO/2/e/LongFast/!095cf12b', payload);
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as { channel: number }).channel).toBe(1);
@@ -1429,7 +1445,8 @@ describe('updateChannelKeys', () => {
 
   it('Nathan/Colorado: JSON LongFast with manual @0 then radio @1 attributes to slot 1', () => {
     const manager = new MQTTManager();
-    (manager as any)._doConnect = () => {};
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
     manager.connect({
       server: 'localhost',
       port: 1883,
@@ -1451,10 +1468,7 @@ describe('updateChannelKeys', () => {
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));
-    (manager as any).onMessage(
-      'msh/US/CO/2/json/LongFast/!aabbccdd',
-      Buffer.from(JSON.stringify(json)),
-    );
+    access.onMessage('msh/US/CO/2/json/LongFast/!aabbccdd', Buffer.from(JSON.stringify(json)));
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as { channel: number }).channel).toBe(1);
@@ -1462,7 +1476,7 @@ describe('updateChannelKeys', () => {
 
   it('keeps LongFast@1 when manual and radio both say slot 1', () => {
     const manager = new MQTTManager();
-    (manager as any)._doConnect = () => {};
+    stubMqttConnect(manager);
     manager.connect({
       server: 'localhost',
       port: 1883,
@@ -1478,7 +1492,8 @@ describe('updateChannelKeys', () => {
 
   it('preserves manual Garber PSK when radio sync pushes a different key', () => {
     const manager = new MQTTManager();
-    (manager as any)._doConnect = () => {};
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
     const customGarber = Buffer.alloc(32, 0x11);
     const radioGarber = Buffer.alloc(32, 0x22);
 
@@ -1496,9 +1511,8 @@ describe('updateChannelKeys', () => {
       { name: 'Garber', pskBase64: radioGarber.toString('base64'), index: 2 },
     ]);
 
-    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
-    expect(byName.get('Garber')?.equals(customGarber)).toBe(true);
-    expect(byName.get('Garber')?.equals(radioGarber)).toBe(false);
+    expect(access.channelKeysByName.get('Garber')?.equals(customGarber)).toBe(true);
+    expect(access.channelKeysByName.get('Garber')?.equals(radioGarber)).toBe(false);
 
     const nodeId = 0x11223344;
     const packetId = 0x00000041;
@@ -1519,7 +1533,7 @@ describe('updateChannelKeys', () => {
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));
-    (manager as any).onMessage('msh/US/2/e/Garber/!11223344', payload);
+    access.onMessage('msh/US/2/e/Garber/!11223344', payload);
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as { payload: string }).payload).toBe('manual garber key');

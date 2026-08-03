@@ -79,9 +79,6 @@ function applySignalAndHops(
   from: number,
   deps: MeshtasticRawPacketSideEffectsDeps,
 ): void {
-  if (shouldSuppressMeshtasticNodeHear(from, getConnectedMeshcoreBleMac())) {
-    return;
-  }
   const myNodeNum = deps.getMyNodeNum();
   const hasSignal = Boolean(payload.snr || payload.rssi);
   const hasHopUpdate = payload.hopsAway !== undefined && from !== myNodeNum;
@@ -124,6 +121,11 @@ function handleRawPacket(
   deps.touchLastData();
   const from = payload.fromNodeId;
   if (!from) return;
+
+  // Connected MeshCore BLE MAC → skip all packet-wide side effects (diagnostics, SNR, hops).
+  if (shouldSuppressMeshtasticNodeHear(from, getConnectedMeshcoreBleMac())) {
+    return;
+  }
 
   if (getStoredMeshProtocol() === 'meshtastic') {
     appendRawPacketLog(payload, deps);

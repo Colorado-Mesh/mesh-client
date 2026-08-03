@@ -205,6 +205,8 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
       setSignalTelemetry: vi.fn(),
       touchLastData: vi.fn(),
     };
+    const recordNoisePort = vi.spyOn(useDiagnosticsStore.getState(), 'recordNoisePort');
+    const recordPacketPath = vi.spyOn(useDiagnosticsStore.getState(), 'recordPacketPath');
     const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
       {
@@ -219,14 +221,24 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
           viaMqtt: false,
           hopsAway: 0,
           packetId: 42,
+          portnum: 1,
         },
       },
       IDENTITY,
     );
     const node = getIdentityNode(IDENTITY, BLUE_NODE);
+    expect(deps.touchLastData).toHaveBeenCalled();
     expect(node?.last_heard).toBe(staleHeard);
     expect(node?.snr).toBe(1);
     expect(window.electronAPI.db.saveNode).not.toHaveBeenCalled();
+    expect(deps.setRawPackets).not.toHaveBeenCalled();
+    expect(deps.setSignalTelemetry).not.toHaveBeenCalled();
+    expect(recordNoisePort).not.toHaveBeenCalledWith(BLUE_NODE, expect.anything());
+    expect(recordPacketPath).not.toHaveBeenCalledWith(
+      expect.anything(),
+      BLUE_NODE,
+      expect.anything(),
+    );
     detach();
   });
 

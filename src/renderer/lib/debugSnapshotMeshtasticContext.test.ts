@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from '@/shared/meshtasticDefaultPublicPsk';
@@ -26,6 +27,13 @@ describe('buildDebugSnapshotMeshtasticContextFromRuntime', () => {
     setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: { LongFast: 1 } });
     const ctx = buildDebugSnapshotMeshtasticContextFromRuntime([], []);
     expect(ctx.mqttChannelNameToIndex).toEqual({ LongFast: 1 });
+  });
+
+  it('preserves an empty mqttChannelNameToIndex map instead of falling back to null', () => {
+    setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: {} });
+    const ctx = buildDebugSnapshotMeshtasticContextFromRuntime([], []);
+    expect(ctx.mqttChannelNameToIndex).toEqual({});
+    expect(ctx.mqttChannelNameToIndex).not.toBeNull();
   });
 
   it('maps channel pills and config summary including default-public PSK detection', () => {
