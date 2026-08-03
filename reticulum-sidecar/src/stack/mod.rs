@@ -307,6 +307,18 @@ impl StackHandle {
         self.event_tx.subscribe()
     }
 
+    /// High-rate `voice.audio` PCM frames (dedicated `/ws/voice` bus, not shared `/ws`).
+    pub fn subscribe_voice_audio(&self) -> broadcast::Receiver<String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.subscribe_voice_audio();
+        }
+        // No live stack: closed channel so `/ws/voice` clients exit cleanly.
+        let (tx, rx) = broadcast::channel(1);
+        drop(tx);
+        rx
+    }
+
     pub fn list_packets(&self, limit: usize) -> Vec<WirePacketRow> {
         self.packet_log.snapshot(limit)
     }

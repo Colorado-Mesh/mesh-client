@@ -87,6 +87,51 @@ describe('ReticulumVoiceOverlay', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('closes incoming dialog after answer progresses to connecting/established', async () => {
+    const user = userEvent.setup();
+    act(() => {
+      useReticulumVoiceStore.getState().applyIncoming({
+        link_id: 'a'.repeat(32),
+        remote_identity: 'b'.repeat(32),
+        role: 'incoming',
+        status: 'ringing',
+      });
+    });
+    render(<ReticulumVoiceOverlay />);
+    expect(screen.getByRole('dialog', { name: /incoming voice call/i })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /answer voice call/i }));
+    expect(answer).toHaveBeenCalled();
+    act(() => {
+      useReticulumVoiceStore.getState().applyUpdate({
+        type: 'snapshot',
+        active_call: {
+          link_id: 'a'.repeat(32),
+          remote_identity: 'b'.repeat(32),
+          role: 'incoming',
+          status: 'connecting',
+          answered: true,
+        },
+      });
+    });
+    expect(screen.queryByRole('dialog', { name: /incoming voice call/i })).toBeNull();
+    expect(screen.getByRole('status', { name: /connecting|in call/i })).toBeTruthy();
+
+    act(() => {
+      useReticulumVoiceStore.getState().applyUpdate({
+        type: 'snapshot',
+        active_call: {
+          link_id: 'a'.repeat(32),
+          remote_identity: 'b'.repeat(32),
+          role: 'incoming',
+          status: 'established',
+          answered: true,
+        },
+      });
+    });
+    expect(screen.queryByRole('dialog', { name: /incoming voice call/i })).toBeNull();
+    expect(screen.getByRole('status', { name: /in call/i })).toBeTruthy();
+  });
+
   it('shows hangup while optimistic calling with TX/RX counters', async () => {
     const user = userEvent.setup();
     act(() => {

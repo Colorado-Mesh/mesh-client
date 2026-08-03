@@ -2133,6 +2133,10 @@ impl LiveBridge {
         self.voice_session.status().await
     }
 
+    pub fn subscribe_voice_audio(&self) -> broadcast::Receiver<String> {
+        self.voice_session.subscribe_voice_audio()
+    }
+
     pub async fn voice_call(&self, identity_hash: &str) -> serde_json::Value {
         self.voice_session.call(identity_hash).await
     }

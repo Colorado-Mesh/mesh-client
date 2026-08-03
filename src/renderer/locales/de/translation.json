@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Kann nicht aufrufen: Peer-Identität noch nicht bekannt. Warten Sie auf eine Ankündigung oder fragen Sie den Kollegen.",
       "callFailed": "Sprachanruf fehlgeschlagen.",
-      "notRunning": "Stimme ist erst verfügbar, wenn der Reticulum-Stapel läuft."
+      "notRunning": "Stimme ist erst verfügbar, wenn der Reticulum-Stapel läuft.",
+      "micFailed": "Konnte nicht auf das Mikrofon für Sprache zugreifen.",
+      "muteFailed": "Mikrofon-Stummschaltung in der Sprachsitzung konnte nicht aktualisiert werden."
     },
     "connecting": "verbinden …",
     "elapsedAria": "Verstrichene Zeit",

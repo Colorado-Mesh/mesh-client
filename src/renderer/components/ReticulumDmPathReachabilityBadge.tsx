@@ -11,6 +11,10 @@ import {
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
+  RETICULUM_DM_HEADER_ACTION_CLASS,
+  RETICULUM_DM_HEADER_STATUS_CLASS,
+} from '@/renderer/lib/reticulumDmHeaderActions';
+import {
   refreshReticulumPeersFromSidecar,
   useReticulumPeerStore,
 } from '@/renderer/stores/reticulumPeerStore';
@@ -63,7 +67,7 @@ export function ReticulumDmPathReachabilityBadge({
       <span
         role="status"
         aria-label={ariaLabel}
-        className={`inline-flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs ${textClass}`}
+        className={`${RETICULUM_DM_HEADER_STATUS_CLASS} ${textClass}`}
       >
         {status === 'probing' ? (
           <span
@@ -157,29 +161,31 @@ export function ReticulumDmPathActions({
     }
   };
 
+  // Probe first (active reachability), then Path (discovery request) — both use the
+  // shared DM header text-link style so they match Call / Send file / Peer details.
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          void runPath();
-        }}
-        className="rounded border border-gray-600 px-2 py-1 text-[11px] text-gray-200 hover:bg-gray-800 disabled:opacity-40"
-        aria-label={t('chatPanel.dmPathRequestPathAria')}
-      >
-        {t('connectionPanel.reticulumPeers.path')}
-      </button>
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
       <button
         type="button"
         disabled={busy}
         onClick={() => {
           void runProbe();
         }}
-        className="rounded border border-gray-600 px-2 py-1 text-[11px] text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+        className={RETICULUM_DM_HEADER_ACTION_CLASS}
         aria-label={t('chatPanel.dmPathProbeAria')}
       >
         {t('connectionPanel.reticulumPeers.probe')}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          void runPath();
+        }}
+        className={RETICULUM_DM_HEADER_ACTION_CLASS}
+        aria-label={t('chatPanel.dmPathRequestPathAria')}
+      >
+        {t('connectionPanel.reticulumPeers.path')}
       </button>
     </div>
   );

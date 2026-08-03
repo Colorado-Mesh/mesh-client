@@ -92,6 +92,17 @@ export interface VoiceAudioPayload {
   samples_b64: string;
 }
 
+const VOICE_CALL_ROLES: ReadonlySet<string> = new Set(['incoming', 'outgoing']);
+const VOICE_SIGNALLING_STATUSES: ReadonlySet<string> = new Set([
+  'busy',
+  'rejected',
+  'calling',
+  'available',
+  'ringing',
+  'connecting',
+  'established',
+]);
+
 export function isVoiceActiveCall(value: unknown): value is VoiceActiveCall {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
@@ -99,7 +110,9 @@ export function isVoiceActiveCall(value: unknown): value is VoiceActiveCall {
     typeof v.link_id === 'string' &&
     typeof v.remote_identity === 'string' &&
     typeof v.role === 'string' &&
-    typeof v.status === 'string'
+    VOICE_CALL_ROLES.has(v.role) &&
+    typeof v.status === 'string' &&
+    VOICE_SIGNALLING_STATUSES.has(v.status)
   );
 }
 

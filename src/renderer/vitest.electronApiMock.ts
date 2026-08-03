@@ -387,6 +387,7 @@ export function createElectronAPIMock(): ElectronAPI {
       setNomadContentSource: vi.fn().mockResolvedValue({ ok: true }),
       validateConfig: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
       onEvent: vi.fn().mockReturnValue(() => {}),
+      onVoiceAudio: vi.fn().mockReturnValue(() => {}),
       onStatus: vi.fn().mockReturnValue(() => {}),
       rrc: {
         listHubs: vi.fn().mockResolvedValue({ hubs: [] }),

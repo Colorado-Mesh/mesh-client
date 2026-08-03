@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "呼び出すことができません：ピアIDはまだわかりません。アナウンスを待つか、ピアをプローブします。",
       "callFailed": "音声通話に失敗しました。",
-      "notRunning": "Reticulumスタックが実行されるまで、音声は使用できません。"
+      "notRunning": "Reticulumスタックが実行されるまで、音声は使用できません。",
+      "micFailed": "音声用のマイクにアクセスできませんでした。",
+      "muteFailed": "音声セッションでマイクのミュートを更新できませんでした。"
     },
     "connecting": "連携中…",
     "elapsedAria": "経過時間",

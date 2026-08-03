@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Kan niet aanroepen: peer-identiteit nog niet bekend. Wacht op een aankondiging of onderzoek de peer.",
       "callFailed": "Spraakoproep mislukt.",
-      "notRunning": "Stem is niet beschikbaar totdat de Reticulum-stack actief is."
+      "notRunning": "Stem is niet beschikbaar totdat de Reticulum-stack actief is.",
+      "micFailed": "Kon geen toegang krijgen tot de microfoon voor spraak.",
+      "muteFailed": "Kan microfoondemping niet bijwerken tijdens de spraaksessie."
     },
     "connecting": "Verbinden…",
     "elapsedAria": "Verstreken tijd",

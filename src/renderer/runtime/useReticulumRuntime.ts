@@ -261,6 +261,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     MAX_RAW_PACKET_LOG_ENTRIES,
   );
   const unsubEventRef = useRef<(() => void) | null>(null);
+  const unsubVoiceAudioRef = useRef<(() => void) | null>(null);
   const connectRef = useRef<(() => Promise<void>) | null>(null);
   const restartStackRef = useRef<(() => Promise<void>) | null>(null);
   const connectInFlightRef = useRef(false);
@@ -1192,14 +1193,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
           errorMessage: p.message ?? 'voice error',
         });
       }
-      if (evt.type === 'voice.audio' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { channels?: number; samples_b64?: string };
-        if (typeof p.samples_b64 === 'string') {
-          const samples = decodeF32LeBase64(p.samples_b64);
-          const channels = typeof p.channels === 'number' && p.channels > 0 ? p.channels : 1;
-          useReticulumVoiceStore.getState().emitAudio(channels, samples);
-        }
-      }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { transfer_id?: string; progress?: number };
         if (p.transfer_id && typeof p.progress === 'number') {
@@ -1332,9 +1325,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
     ],
   );
 
+  const subscribeSidecarEventBridges = useCallback(() => {
+    unsubEventRef.current?.();
+    unsubVoiceAudioRef.current?.();
+    unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+    unsubVoiceAudioRef.current = window.electronAPI.reticulum.onVoiceAudio((evt) => {
+      if (evt.type !== 'voice.audio' || !evt.payload || typeof evt.payload !== 'object') return;
+      const p = evt.payload as { channels?: number; samples_b64?: string };
+      if (typeof p.samples_b64 !== 'string') return;
+      const samples = decodeF32LeBase64(p.samples_b64);
+      const channels =
+        typeof p.channels === 'number' && Number.isInteger(p.channels) && p.channels > 0
+          ? p.channels
+          : 1;
+      useReticulumVoiceStore.getState().emitAudio(channels, samples);
+    });
+  }, [handleSidecarEvent]);
+
   const tearDownFromSidecarStop = useCallback(() => {
     unsubEventRef.current?.();
     unsubEventRef.current = null;
+    unsubVoiceAudioRef.current?.();
+    unsubVoiceAudioRef.current = null;
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
@@ -1407,6 +1419,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       unsubEventRef.current?.();
       unsubEventRef.current = null;
+      unsubVoiceAudioRef.current?.();
+      unsubVoiceAudioRef.current = null;
       // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
       if (!import.meta.env.DEV) {
         void window.electronAPI.reticulum.stop().catch((e: unknown) => {
@@ -1444,8 +1458,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
       await window.electronAPI.reticulum.start({ reuseIfRunning: true });
-      unsubEventRef.current?.();
-      unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+      subscribeSidecarEventBridges();
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       if (connectedNodeId > 0) {
@@ -1496,7 +1509,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectInFlightDoneRef.current = null;
     }
   }, [
-    handleSidecarEvent,
+    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
@@ -1523,6 +1536,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     unsubEventRef.current?.();
     unsubEventRef.current = null;
+    unsubVoiceAudioRef.current?.();
+    unsubVoiceAudioRef.current = null;
     try {
       await window.electronAPI.reticulum.stop();
     } catch (e) {
@@ -1563,9 +1578,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
       syncConnectionStore({ status: 'connecting', connectionType: null });
       unsubEventRef.current?.();
       unsubEventRef.current = null;
+      unsubVoiceAudioRef.current?.();
+      unsubVoiceAudioRef.current = null;
       await window.electronAPI.reticulum.stop();
       await window.electronAPI.reticulum.start({ reuseIfRunning: false });
-      unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+      subscribeSidecarEventBridges();
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
@@ -1602,7 +1619,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectInFlightDoneRef.current = null;
     }
   }, [
-    handleSidecarEvent,
+    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,

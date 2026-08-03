@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Impossible d'appeler : l'identité de l'homologue n'est pas encore connue. Attendez une annonce ou sondez le pair.",
       "callFailed": "Échec de l'appel vocal.",
-      "notRunning": "La voix n'est pas disponible tant que la pile Reticulum n'est pas en cours d'exécution."
+      "notRunning": "La voix n'est pas disponible tant que la pile Reticulum n'est pas en cours d'exécution.",
+      "micFailed": "Impossible d'accéder au microphone pour la voix.",
+      "muteFailed": "Impossible de mettre à jour le microphone muet sur la session vocale."
     },
     "connecting": "Connexion…",
     "elapsedAria": "Temps écoulé",

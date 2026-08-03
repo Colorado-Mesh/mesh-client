@@ -653,6 +653,22 @@ describe('wireReticulumSidecarBridge', () => {
     });
   });
 
+  it('forwards manager "voiceAudio" emissions to reticulum:voiceAudio', () => {
+    const manager = createManagerStub();
+    const win = createWinStub();
+    wireReticulumSidecarBridge(manager as never, () => win as unknown as BrowserWindow);
+
+    const voiceHandler = manager.on.mock.calls.find((call) => call[0] === 'voiceAudio')?.[1] as (
+      evt: unknown,
+    ) => void;
+    expect(voiceHandler).toBeTypeOf('function');
+    voiceHandler({ type: 'voice.audio', payload: { channels: 1, samples_b64: 'AAAA' } });
+    expect(win.webContents.send).toHaveBeenCalledWith('reticulum:voiceAudio', {
+      type: 'voice.audio',
+      payload: { channels: 1, samples_b64: 'AAAA' },
+    });
+  });
+
   it('forwards manager "status" emissions to the main window', () => {
     const manager = createManagerStub();
     const win = createWinStub();

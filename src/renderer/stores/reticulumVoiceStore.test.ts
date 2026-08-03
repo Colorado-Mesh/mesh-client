@@ -40,12 +40,33 @@ describe('reticulumVoiceStore', () => {
       active_call: { ...CALL, status: 'established', answered: true },
     });
     expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('established');
+    expect(useReticulumVoiceStore.getState().incomingCall).toBeNull();
     expect(useReticulumVoiceStore.getState().callEstablishedAtMs).toBeTypeOf('number');
 
     store.applyTerminated(CALL.link_id);
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
     expect(useReticulumVoiceStore.getState().incomingCall).toBeNull();
     expect(useReticulumVoiceStore.getState().callStartedAtMs).toBeNull();
+  });
+
+  it('applyStatus clears incomingCall once call leaves ringing/available', () => {
+    useReticulumVoiceStore.getState().applyIncoming(CALL);
+    useReticulumVoiceStore.getState().applyStatus({
+      enabled: true,
+      running: true,
+      active_call: { ...CALL, status: 'connecting', answered: true },
+    });
+    expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('connecting');
+    expect(useReticulumVoiceStore.getState().incomingCall).toBeNull();
+  });
+
+  it('applyTerminated without link id leaves current call unchanged', () => {
+    useReticulumVoiceStore.getState().applyIncoming(CALL);
+    useReticulumVoiceStore.getState().applyTerminated(null, 'busy');
+    useReticulumVoiceStore.getState().applyTerminated('', 'busy');
+    useReticulumVoiceStore.getState().applyTerminated('   ', 'busy');
+    expect(useReticulumVoiceStore.getState().activeCall?.link_id).toBe(CALL.link_id);
+    expect(useReticulumVoiceStore.getState().incomingCall?.status).toBe('ringing');
   });
 
   it('beginOutgoing sets calling before WS and hangup clears stats', () => {

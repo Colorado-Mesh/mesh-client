@@ -9,17 +9,25 @@ export const LXST_QUALITY_HIGH_CHANNELS = 1;
 export const LXST_QUALITY_HIGH_SAMPLE_RATE_HZ = 48_000;
 export const LXST_QUALITY_HIGH_FRAME_SAMPLES = 2_880;
 
+/** Chunk size keeps String.fromCharCode under engine argument limits. */
+const FROM_CHAR_CODE_CHUNK = 0x8000;
+
+function bytesToBinaryString(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += FROM_CHAR_CODE_CHUNK) {
+    const slice = bytes.subarray(i, Math.min(i + FROM_CHAR_CODE_CHUNK, bytes.length));
+    binary += String.fromCharCode(...slice);
+  }
+  return binary;
+}
+
 export function encodeF32LeBase64(samples: Float32Array | number[]): string {
   const bytes = new Uint8Array(samples.length * 4);
   const view = new DataView(bytes.buffer);
   for (let i = 0; i < samples.length; i += 1) {
     view.setFloat32(i * 4, samples[i] ?? 0, true);
   }
-  let binary = '';
-  for (const b of bytes) {
-    binary += String.fromCodePoint(b);
-  }
-  return btoa(binary);
+  return btoa(bytesToBinaryString(bytes));
 }
 
 export function decodeF32LeBase64(samplesB64: string): Float32Array {
@@ -35,7 +43,7 @@ export function decodeF32LeBase64(samplesB64: string): Float32Array {
   const out = new Float32Array(binary.length / 4);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.codePointAt(i) ?? 0;
+    bytes[i] = binary.charCodeAt(i);
   }
   const view = new DataView(bytes.buffer);
   for (let i = 0; i < out.length; i += 1) {

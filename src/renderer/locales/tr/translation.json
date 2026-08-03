@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Aranamıyor: akran kimliği henüz bilinmiyor. Bir duyuru bekleyin veya akranınızı sorgulayın.",
       "callFailed": "Sesli arama başarısız.",
-      "notRunning": "Reticulum yığını çalışana kadar ses kullanılamaz."
+      "notRunning": "Reticulum yığını çalışana kadar ses kullanılamaz.",
+      "micFailed": "Ses için mikrofona erişilemedi.",
+      "muteFailed": "Sesli oturumda mikrofon sessize alınamadı."
     },
     "connecting": "Bağlanıyor…",
     "elapsedAria": "Geçen zaman",

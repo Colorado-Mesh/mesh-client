@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Não é possível chamar: identidade de par ainda não conhecida. Aguarde um anúncio ou investigue o colega.",
       "callFailed": "Falha na chamada de voz.",
-      "notRunning": "A voz não está disponível até que a pilha Reticulum esteja em execução."
+      "notRunning": "A voz não está disponível até que a pilha Reticulum esteja em execução.",
+      "micFailed": "Não foi possível acessar o microfone para voz.",
+      "muteFailed": "Não foi possível atualizar o mudo do microfone na sessão de voz."
     },
     "connecting": "Conectando…",
     "elapsedAria": "Tempo corrido:",

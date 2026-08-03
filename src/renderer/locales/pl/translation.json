@@ -5123,7 +5123,9 @@
     "errors": {
       "noIdentity": "Nie można wywołać: tożsamość rówieśnika nie jest jeszcze znana. Poczekaj na ogłoszenie lub zbadaj rówieśnika.",
       "callFailed": "Połączenie głosowe nie powiodło się.",
-      "notRunning": "Głos nie jest dostępny, dopóki stos Reticulum nie zostanie uruchomiony."
+      "notRunning": "Głos nie jest dostępny, dopóki stos Reticulum nie zostanie uruchomiony.",
+      "micFailed": "Nie można uzyskać dostępu do mikrofonu dla głosu.",
+      "muteFailed": "Nie można zaktualizować wyciszenia mikrofonu w sesji głosowej."
     },
     "connecting": "Łączenie…",
     "elapsedAria": "Czas, jaki upłynął",

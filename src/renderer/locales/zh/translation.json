@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "无法调用：对等身份尚不清楚。等待通知或探查对等项。",
       "callFailed": "语音通话失败。",
-      "notRunning": "在 Reticulum 堆栈运行之前，语音不可用。"
+      "notRunning": "在 Reticulum 堆栈运行之前，语音不可用。",
+      "micFailed": "无法访问麦克风进行语音通话。",
+      "muteFailed": "无法更新语音会话上的麦克风静音。"
     },
     "connecting": "连接中…",
     "elapsedAria": "运行时间",

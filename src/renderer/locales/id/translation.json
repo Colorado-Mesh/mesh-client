@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Tidak dapat menelepon: identitas teman sebaya belum diketahui. Tunggu pengumuman atau selidiki rekan sejawat.",
       "callFailed": "Panggilan suara gagal.",
-      "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan."
+      "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan.",
+      "micFailed": "Tidak dapat mengakses mikrofon untuk suara.",
+      "muteFailed": "Tidak dapat memperbarui mikrofon bisu pada sesi suara."
     },
     "connecting": "Menyambung…",
     "elapsedAria": "Waktu berlalu",

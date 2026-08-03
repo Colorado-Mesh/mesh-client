@@ -555,6 +555,11 @@ export function wireReticulumSidecarBridge(
     if (!win || win.isDestroyed()) return;
     win.webContents.send('reticulum:event', evt);
   });
+  manager.on('voiceAudio', (evt) => {
+    const win = getMainWindow();
+    if (!win || win.isDestroyed()) return;
+    win.webContents.send('reticulum:voiceAudio', evt);
+  });
   manager.on('status', (status) => {
     const win = getMainWindow();
     if (!win || win.isDestroyed()) return;

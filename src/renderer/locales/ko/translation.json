@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "호출할 수 없음: 피어 ID를 아직 알 수 없습니다. 피어 발표 또는 조사를 기다립니다.",
       "callFailed": "음성 통화에 실패했습니다.",
-      "notRunning": "Reticulum 스택이 실행될 때까지 음성을 사용할 수 없습니다."
+      "notRunning": "Reticulum 스택이 실행될 때까지 음성을 사용할 수 없습니다.",
+      "micFailed": "음성을 위해 마이크에 액세스할 수 없습니다.",
+      "muteFailed": "음성 세션에서 마이크 음소거를 업데이트할 수 없습니다."
     },
     "connecting": "Connecting",
     "elapsedAria": "경과 시간",

@@ -260,6 +260,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/identities/switch", post(system::switch_identity))
         .route("/api/v1/identities/delete", post(system::delete_identity))
         .route("/ws", get(ws::ws_handler))
+        .route("/ws/voice", get(ws::ws_voice_handler))
         .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
         .layer(localhost_cors_layer())
         .with_state(stack)

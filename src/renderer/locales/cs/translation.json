@@ -5121,7 +5121,9 @@
     "errors": {
       "noIdentity": "Nelze volat: identita protějšku zatím není známa. Počkejte na oznámení nebo sondujte kolegu.",
       "callFailed": "Hlasový hovor se nezdařil.",
-      "notRunning": "Hlas není k dispozici, dokud není spuštěn zásobník Reticulum."
+      "notRunning": "Hlas není k dispozici, dokud není spuštěn zásobník Reticulum.",
+      "micFailed": "Nelze získat přístup k mikrofonu pro hlas.",
+      "muteFailed": "Nelze aktualizovat ztlumení mikrofonu v relaci hlasu."
     },
     "connecting": "Připojování…",
     "elapsedAria": "Uplynulý čas hovoru",

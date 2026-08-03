@@ -30,6 +30,27 @@ describe('reticulumVoiceAudio', () => {
     expect(packed!.length).toBe(LXST_QUALITY_HIGH_FRAME_SAMPLES);
   });
 
+  it('resamples non-48kHz mono into QualityHigh frame size', () => {
+    const input = new Float32Array(1_440).fill(0.2); // 30 ms @ 48 kHz-equivalent length @ 24 kHz
+    const packed = packQualityHighFrame(input, 24_000, 1);
+    expect(packed).not.toBeNull();
+    expect(packed!.length).toBe(LXST_QUALITY_HIGH_FRAME_SAMPLES);
+    expect(packed![0]).toBeCloseTo(0.2, 5);
+  });
+
+  it('mixes multichannel input down to mono before packing', () => {
+    const frames = 1_000;
+    const stereo = new Float32Array(frames * 2);
+    for (let i = 0; i < frames; i += 1) {
+      stereo[i * 2] = 0.5;
+      stereo[i * 2 + 1] = -0.5;
+    }
+    const packed = packQualityHighFrame(stereo, 48_000, 2);
+    expect(packed).not.toBeNull();
+    expect(packed!.length).toBe(LXST_QUALITY_HIGH_FRAME_SAMPLES);
+    expect(packed![0]).toBeCloseTo(0, 5);
+  });
+
   it('returns null for empty input', () => {
     expect(packQualityHighFrame(new Float32Array(0), 48_000)).toBeNull();
   });
@@ -43,6 +64,21 @@ describe('reticulumVoiceAudio', () => {
         destinationHash: 'c'.repeat(32),
       }),
     ).toEqual({ dialHash: id, source: 'identity' });
+  });
+
+  it('normalizes uppercase identity hashes and rejects invalid lengths', () => {
+    const upper = 'A'.repeat(32);
+    expect(
+      resolveVoiceDialIdentityHash({
+        identityHash: upper,
+      }),
+    ).toEqual({ dialHash: 'a'.repeat(32), source: 'identity' });
+    expect(
+      resolveVoiceDialIdentityHash({
+        identityHash: 'abc',
+        destinationHash: 'not-32-chars',
+      }),
+    ).toEqual({ errorKey: 'reticulumVoice.errors.noIdentity' });
   });
 
   it('falls back to candidates then destination hash', () => {

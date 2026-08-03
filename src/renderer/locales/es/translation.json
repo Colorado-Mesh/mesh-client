@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "No se puede llamar: la identidad del compañero aún no se conoce. Espere un anuncio o sondee al compañero.",
       "callFailed": "La llamada de voz ha fallado.",
-      "notRunning": "La voz no está disponible hasta que la pila de Reticulum esté en ejecución."
+      "notRunning": "La voz no está disponible hasta que la pila de Reticulum esté en ejecución.",
+      "micFailed": "No se ha podido acceder al micrófono para voz.",
+      "muteFailed": "No se ha podido actualizar el silencio del micrófono en la sesión de voz."
     },
     "connecting": "Conectando…",
     "elapsedAria": "Tiempo transcurrido",

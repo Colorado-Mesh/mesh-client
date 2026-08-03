@@ -24,10 +24,25 @@ RS_LXMF_REF="${RS_LXMF_REF:-}"
 RS_NOMAD_REF="${RS_NOMAD_REF:-}"
 RS_LXST_REF="${RS_LXST_REF:-}"
 
+# Last selected ref from ensure_repo (origin/main, origin/master, or pin).
+ENSURE_REPO_SELECTED_REF=''
+
+# Format status mode from the ref ensure_repo actually selected.
+format_repo_mode() {
+  local selected_ref="$1" pin_ref="$2"
+  if [[ -n "${pin_ref}" ]]; then
+    echo "pinned ${pin_ref:0:12}"
+  else
+    echo "floated ${selected_ref}"
+  fi
+}
+
 # Ensure an existing checkout has the correct origin remote and is on the
 # requested ref (or floated origin/main). If the directory does not exist, clone it first.
+# Sets ENSURE_REPO_SELECTED_REF to the ref that was (or would be) checked out.
 ensure_repo() {
   local dir="$1" expected_origin="$2" ref_or_empty="$3" label="$4"
+  ENSURE_REPO_SELECTED_REF=''
   if [[ ! -d "${dir}/.git" ]]; then
     git clone "${expected_origin}" "${dir}"
   fi
@@ -73,6 +88,8 @@ ensure_repo() {
     target_sha="$(git -C "${dir}" rev-parse --verify "${target_ref}^{commit}")"
   fi
 
+  ENSURE_REPO_SELECTED_REF="${target_ref}"
+
   if [[ -n "$(git -C "${dir}" status --porcelain)" ]]; then
     # Overlays leave siblings dirty after a successful float — allow that when already
     # on the target tip. Refuse only when checkout would rewrite a dirty tree.
@@ -94,39 +111,31 @@ ensure_repo() {
   fi
 }
 
+# Allow tests to `source` this script and call ensure_repo without cloning remotes.
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  return 0
+fi
+
 echo "Preparing Ratspeak stack (rsReticulum/rsLXMF/rsNomad/rsLXST float origin/main unless RS_*_REF set)..."
 ensure_repo "${RNS_DIR}" 'https://github.com/ratspeak/rsReticulum.git' \
   "${RS_RETICULUM_REF}" 'rsReticulum'
+rns_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_RETICULUM_REF}")"
 
 apply_ratspeak_rns_overlays "${SCRIPT_DIR}"
 
 ensure_repo "${LXMF_DIR}" 'https://github.com/ratspeak/rsLXMF.git' \
   "${RS_LXMF_REF}" 'rsLXMF'
+lxmf_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_LXMF_REF}")"
 
 apply_ratspeak_lxmf_overlays "${SCRIPT_DIR}"
 
 # Float Colorado-Mesh/rsNomad to origin/main (override via RS_NOMAD_REF above).
 ensure_repo "${NOMAD_DIR}" 'https://github.com/Colorado-Mesh/rsNomad.git' "${RS_NOMAD_REF}" 'rsNomad'
+nomad_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_NOMAD_REF}")"
 
 # rsLXST (LXST telephony) — required for rns-stack voice; float origin/main unless RS_LXST_REF set.
 ensure_repo "${LXST_DIR}" 'https://github.com/ratspeak/rsLXST.git' "${RS_LXST_REF}" 'rsLXST'
-
-rns_mode='floated origin/main'
-lxmf_mode='floated origin/main'
-nomad_mode='floated origin/main'
-lxst_mode='floated origin/main'
-if [[ -n "${RS_RETICULUM_REF}" ]]; then
-  rns_mode="pinned ${RS_RETICULUM_REF:0:12}"
-fi
-if [[ -n "${RS_LXMF_REF}" ]]; then
-  lxmf_mode="pinned ${RS_LXMF_REF:0:12}"
-fi
-if [[ -n "${RS_NOMAD_REF}" ]]; then
-  nomad_mode="pinned ${RS_NOMAD_REF:0:12}"
-fi
-if [[ -n "${RS_LXST_REF}" ]]; then
-  lxst_mode="pinned ${RS_LXST_REF:0:12}"
-fi
+lxst_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_LXST_REF}")"
 
 rns_sha="$(git -C "${RNS_DIR}" rev-parse HEAD)"
 lxmf_sha="$(git -C "${LXMF_DIR}" rev-parse HEAD)"

@@ -63,6 +63,17 @@ function asActiveCall(value: unknown): VoiceActiveCall | null {
   return isVoiceActiveCall(value) ? value : null;
 }
 
+/** Keep incomingCall only while the call is still ringing / available. */
+function incomingFromActive(active: VoiceActiveCall | null): VoiceActiveCall | null {
+  if (
+    active?.role === 'incoming' &&
+    (active.status === 'ringing' || active.status === 'available')
+  ) {
+    return active;
+  }
+  return null;
+}
+
 function resetSessionFields(): Pick<
   ReticulumVoiceStoreState,
   | 'activeCall'
@@ -102,11 +113,14 @@ export const useReticulumVoiceStore = create<ReticulumVoiceStoreState>((set, get
     set((s) => {
       const nextActive =
         status.active_call === undefined ? s.activeCall : asActiveCall(status.active_call);
+      const nextIncoming =
+        status.active_call === undefined ? s.incomingCall : incomingFromActive(nextActive);
       return {
         enabled: status.enabled ?? s.enabled,
         running: status.running ?? s.running,
         microphoneMuted: status.microphone_muted ?? s.microphoneMuted,
         activeCall: nextActive,
+        incomingCall: nextIncoming,
         lastError: status.last_error === undefined ? s.lastError : (status.last_error ?? null),
         callEstablishedAtMs:
           nextActive?.status === 'established' && s.callEstablishedAtMs == null
@@ -159,8 +173,7 @@ export const useReticulumVoiceStore = create<ReticulumVoiceStoreState>((set, get
       const active = asActiveCall(p.active_call);
       set((s) => ({
         activeCall: active,
-        incomingCall:
-          active?.role === 'incoming' && active.status === 'ringing' ? active : s.incomingCall,
+        incomingCall: incomingFromActive(active),
         lastError: null,
         callStartedAtMs: active && s.callStartedAtMs == null ? Date.now() : s.callStartedAtMs,
         callEstablishedAtMs:
@@ -234,11 +247,11 @@ export const useReticulumVoiceStore = create<ReticulumVoiceStoreState>((set, get
 
   applyTerminated: (linkId, reason) => {
     set((s) => {
-      if (
-        linkId &&
-        s.activeCall?.link_id &&
-        s.activeCall.link_id.toLowerCase() !== linkId.toLowerCase()
-      ) {
+      if (!linkId?.trim()) {
+        // Missing/empty link id — ignore (do not blind-clear the current call).
+        return s;
+      }
+      if (s.activeCall?.link_id && s.activeCall.link_id.toLowerCase() !== linkId.toLowerCase()) {
         // Stale terminate for a previous call.
         return s;
       }

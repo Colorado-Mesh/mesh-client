@@ -66,9 +66,27 @@ struct VoiceState {
     audit: Option<VoiceAuditSession>,
 }
 
+/// Bound dest→identity cache independently of the live path table (same cap as display names).
+const MAX_DEST_TO_IDENTITY_CACHE: usize = 100_000;
+
+/// High-rate PCM frames — keep off the shared `/ws` event bus (same intent as packet tap).
+const VOICE_AUDIO_BROADCAST_CAP: usize = 256;
+
+/// Insert or refresh a dest→identity mapping; evict an arbitrary entry when full.
+fn insert_dest_identity_bounded(cache: &mut HashMap<String, String>, dest: String, id: String) {
+    if cache.len() >= MAX_DEST_TO_IDENTITY_CACHE && !cache.contains_key(&dest) {
+        if let Some(evict) = cache.keys().next().cloned() {
+            cache.remove(&evict);
+        }
+    }
+    cache.insert(dest, id);
+}
+
 struct ManagerShared {
     control_tx: Option<mpsc::Sender<TelephonyControl>>,
     event_tx: broadcast::Sender<String>,
+    /// Dedicated bus for `voice.audio` PCM frames (not shared `event_tx` / `/ws`).
+    voice_audio_tx: broadcast::Sender<String>,
     state: RwLock<VoiceState>,
     /// When true, PCM ingest is dropped (renderer mute).
     muted: AtomicBool,
@@ -94,9 +112,11 @@ impl VoiceSessionManager {
                 control_tx,
                 mut event_rx,
             }) => {
+                let (voice_audio_tx, _) = broadcast::channel::<String>(VOICE_AUDIO_BROADCAST_CAP);
                 let shared = Arc::new(ManagerShared {
                     control_tx: Some(control_tx),
                     event_tx: event_tx.clone(),
+                    voice_audio_tx,
                     state: RwLock::new(VoiceState {
                         running: true,
                         ..VoiceState::default()
@@ -122,10 +142,12 @@ impl VoiceSessionManager {
             Err(e) => {
                 let msg = format!("lxst telephony register: {e}");
                 tracing::error!(target: "voice", "{msg}");
+                let (voice_audio_tx, _) = broadcast::channel::<String>(VOICE_AUDIO_BROADCAST_CAP);
                 Self {
                     shared: Arc::new(ManagerShared {
                         control_tx: None,
                         event_tx,
+                        voice_audio_tx,
                         state: RwLock::new(VoiceState::default()),
                         muted: AtomicBool::new(false),
                         register_error: Some(msg),
@@ -133,6 +155,11 @@ impl VoiceSessionManager {
                 }
             }
         }
+    }
+
+    /// Subscribe to high-rate `voice.audio` frames (dedicated bus, not shared `/ws`).
+    pub fn subscribe_voice_audio(&self) -> broadcast::Receiver<String> {
+        self.shared.voice_audio_tx.subscribe()
     }
 
     pub async fn status(&self) -> serde_json::Value {
@@ -254,12 +281,8 @@ impl VoiceSessionManager {
         let dest = destination_hash.trim().to_lowercase();
         let id = identity_hash.trim().to_lowercase();
         if dest.len() == 32 && id.len() == 32 {
-            self.shared
-                .state
-                .write()
-                .await
-                .dest_to_identity
-                .insert(dest, id);
+            let mut st = self.shared.state.write().await;
+            insert_dest_identity_bounded(&mut st.dest_to_identity, dest, id);
         }
     }
 
@@ -474,8 +497,9 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
         } => {
             for frame in frames {
                 let samples_b64 = encode_f32_le_b64(&frame.samples);
+                // Dedicated high-rate bus — do not use shared event_tx / `/ws`.
                 emit(
-                    &shared.event_tx,
+                    &shared.voice_audio_tx,
                     "voice.audio",
                     &json!({
                         "link_id": hex::encode(link_id),
@@ -915,10 +939,12 @@ mod tests {
     }
 
     fn disabled_manager(event_tx: broadcast::Sender<String>) -> VoiceSessionManager {
+        let (voice_audio_tx, _) = broadcast::channel::<String>(4);
         VoiceSessionManager {
             shared: Arc::new(ManagerShared {
                 control_tx: None,
                 event_tx,
+                voice_audio_tx,
                 state: RwLock::new(VoiceState::default()),
                 muted: AtomicBool::new(false),
                 register_error: Some("voice disabled for test".into()),
@@ -950,9 +976,11 @@ mod tests {
     #[tokio::test]
     async fn bridge_emits_incoming_update_terminated_and_error() {
         let (event_tx, mut event_rx) = broadcast::channel::<String>(16);
+        let (voice_audio_tx, mut voice_audio_rx) = broadcast::channel::<String>(16);
         let shared = Arc::new(ManagerShared {
             control_tx: None,
             event_tx,
+            voice_audio_tx,
             state: RwLock::new(VoiceState::default()),
             muted: AtomicBool::new(false),
             register_error: None,
@@ -999,6 +1027,26 @@ mod tests {
         assert!(stats.contains("\"type\":\"voice.stats\""));
         assert!(stats.contains("\"tx_frames\":2"));
 
+        let pcm = RawAudioFrame::new(1, vec![0.0f32; 48]).expect("pcm");
+        bridge_service_event(
+            &shared,
+            TelephonyServiceEvent::OpusFramesReceived {
+                link_id: link,
+                profile: Profile::QualityHigh,
+                frames: vec![pcm],
+            },
+        )
+        .await;
+        assert!(
+            event_rx.try_recv().is_err(),
+            "voice.audio must not use shared event bus"
+        );
+        let audio = voice_audio_rx
+            .try_recv()
+            .expect("voice.audio on dedicated bus");
+        assert!(audio.contains("\"type\":\"voice.audio\""));
+        assert!(audio.contains("samples_b64"));
+
         bridge_service_event(
             &shared,
             TelephonyServiceEvent::CallTerminated {
@@ -1027,14 +1075,35 @@ mod tests {
         );
     }
 
+    #[test]
+    fn dest_identity_cache_evicts_when_full() {
+        let mut cache = HashMap::new();
+        for i in 0..MAX_DEST_TO_IDENTITY_CACHE {
+            let dest = format!("{i:032x}");
+            let id = format!("{:032x}", i + 1);
+            insert_dest_identity_bounded(&mut cache, dest, id);
+        }
+        assert_eq!(cache.len(), MAX_DEST_TO_IDENTITY_CACHE);
+        let overflow_dest = "f".repeat(32);
+        let overflow_id = "e".repeat(32);
+        insert_dest_identity_bounded(&mut cache, overflow_dest.clone(), overflow_id.clone());
+        assert_eq!(cache.len(), MAX_DEST_TO_IDENTITY_CACHE);
+        assert_eq!(
+            cache.get(&overflow_dest).map(String::as_str),
+            Some(overflow_id.as_str())
+        );
+    }
+
     #[tokio::test]
     async fn send_audio_accepts_quality_high_frame_size() {
         let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
         let (event_tx, _) = broadcast::channel::<String>(4);
+        let (voice_audio_tx, _) = broadcast::channel::<String>(4);
         let mgr = VoiceSessionManager {
             shared: Arc::new(ManagerShared {
                 control_tx: Some(control_tx),
                 event_tx,
+                voice_audio_tx,
                 state: RwLock::new(VoiceState {
                     running: true,
                     ..VoiceState::default()

@@ -162,9 +162,12 @@ async function pollSidecarHealth(port: number): Promise<ReticulumStatusResponse>
 export class ReticulumSidecarManager extends EventEmitter {
   private proc: ChildProcess | null = null;
   private ws: { close: () => void } | null = null;
+  private voiceWs: { close: () => void } | null = null;
   private wsPort = 0;
   private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private voiceWsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private wsReconnectAttempt = 0;
+  private voiceWsReconnectAttempt = 0;
   /** True after the first successful WS open for this sidecar process (reconnects set reconnect=true). */
   private wsEverConnected = false;
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
@@ -637,6 +640,8 @@ export class ReticulumSidecarManager extends EventEmitter {
         const text = data.toString('utf8');
         try {
           const parsed = JSON.parse(text) as { type?: string; payload?: unknown };
+          // voice.audio must arrive on /ws/voice → voiceAudio (not shared event bus).
+          if (parsed.type === 'voice.audio') return;
           this.emit('event', {
             type: parsed.type ?? 'message',
             payload: parsed.payload ?? parsed,
@@ -676,12 +681,83 @@ export class ReticulumSidecarManager extends EventEmitter {
       );
       this.scheduleWsReconnect();
     }
+    this.connectVoiceWs(port);
+  }
+
+  /** Dedicated high-rate PCM stream (`/ws/voice` → `voiceAudio` IPC). */
+  private connectVoiceWs(port: number): void {
+    this.clearVoiceWsReconnectTimer();
+    const prev = this.voiceWs;
+    this.voiceWs = null;
+    prev?.close();
+    try {
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/ws/voice`, {
+        maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
+      });
+      socket.on('open', () => {
+        this.voiceWsReconnectAttempt = 0;
+      });
+      socket.on('message', (data: Buffer) => {
+        if (data.length > RETICULUM_WS_MAX_MESSAGE_BYTES) {
+          console.warn(
+            `[ReticulumSidecar] voice ws message exceeded ${RETICULUM_WS_MAX_MESSAGE_BYTES} byte cap, dropping`,
+          );
+          return;
+        }
+        const text = data.toString('utf8');
+        try {
+          const parsed = JSON.parse(text) as { type?: string; payload?: unknown };
+          if (parsed.type !== 'voice.audio') return;
+          this.emit('voiceAudio', {
+            type: 'voice.audio',
+            payload: parsed.payload ?? parsed,
+          });
+        } catch {
+          // catch-no-log-ok: ignore non-JSON on the voice audio socket
+        }
+      });
+      socket.on('error', (err: Error) => {
+        console.warn('[ReticulumSidecar] voice ws error:', sanitizeLogMessage(err.message));
+      });
+      socket.on('close', () => {
+        if (this.wsPort === port) {
+          this.voiceWs = null;
+          this.scheduleVoiceWsReconnect();
+        }
+      });
+      this.voiceWs = {
+        close: () => {
+          try {
+            socket.removeAllListeners();
+            socket.on('error', () => {
+              // catch-no-log-ok: intentional teardown; CONNECTING abort is expected
+            });
+            socket.close();
+          } catch {
+            // catch-no-log-ok: socket may already be closed
+          }
+        },
+      };
+    } catch (err) {
+      console.warn(
+        '[ReticulumSidecar] voice ws bridge unavailable:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      this.scheduleVoiceWsReconnect();
+    }
   }
 
   private clearWsReconnectTimer(): void {
     if (this.wsReconnectTimer) {
       clearTimeout(this.wsReconnectTimer);
       this.wsReconnectTimer = null;
+    }
+  }
+
+  private clearVoiceWsReconnectTimer(): void {
+    if (this.voiceWsReconnectTimer) {
+      clearTimeout(this.voiceWsReconnectTimer);
+      this.voiceWsReconnectTimer = null;
     }
   }
 
@@ -702,14 +778,35 @@ export class ReticulumSidecarManager extends EventEmitter {
     }, delayMs);
   }
 
+  private scheduleVoiceWsReconnect(): void {
+    this.clearVoiceWsReconnectTimer();
+    if (!this._status.running || this.wsPort <= 0) return;
+    const attempt = this.voiceWsReconnectAttempt;
+    this.voiceWsReconnectAttempt = Math.min(attempt + 1, 8);
+    const delayMs = Math.min(30_000, 500 * 2 ** attempt);
+    this.voiceWsReconnectTimer = setTimeout(() => {
+      this.voiceWsReconnectTimer = null;
+      if (!this._status.running || this.wsPort <= 0) return;
+      console.debug(
+        `[ReticulumSidecar] voice ws reconnect attempt=${this.voiceWsReconnectAttempt} port=${this.wsPort}`,
+      );
+      this.connectVoiceWs(this.wsPort);
+    }, delayMs);
+  }
+
   /** Tear down the WS bridge and cancel reconnect (used on sidecar stop). */
   private teardownWs(): void {
     this.clearWsReconnectTimer();
+    this.clearVoiceWsReconnectTimer();
     this.wsPort = 0;
     this.wsReconnectAttempt = 0;
+    this.voiceWsReconnectAttempt = 0;
     this.wsEverConnected = false;
     const prev = this.ws;
     this.ws = null;
     prev?.close();
+    const prevVoice = this.voiceWs;
+    this.voiceWs = null;
+    prevVoice?.close();
   }
 }

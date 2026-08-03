@@ -586,7 +586,7 @@ export default function ReticulumPeerListPanel({
         <ReticulumVoiceCallButton
           lxmfPeerHash={peer.destination_hash}
           identityHash={peer.identity_hash}
-          disabled={busy}
+          disabled={busy || !isConnected}
         />
       ) : null}
       <button

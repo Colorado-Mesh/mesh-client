@@ -23,6 +23,7 @@ describe('voice-types guards', () => {
   it('rejects garbage status', () => {
     expect(isVoiceStatusResponse(null)).toBe(false);
     expect(isVoiceStatusResponse({ available: true })).toBe(false);
+    expect(isVoiceStatusResponse({ available: 'yes', enabled: true })).toBe(false);
   });
 
   it('accepts active_call shape', () => {
@@ -36,8 +37,24 @@ describe('voice-types guards', () => {
     ).toBe(true);
   });
 
-  it('rejects incomplete active_call', () => {
+  it('rejects incomplete or unsupported active_call enums', () => {
     expect(isVoiceActiveCall({ link_id: 'x' })).toBe(false);
+    expect(
+      isVoiceActiveCall({
+        link_id: 'a'.repeat(32),
+        remote_identity: 'b'.repeat(32),
+        role: 'peer',
+        status: 'ringing',
+      }),
+    ).toBe(false);
+    expect(
+      isVoiceActiveCall({
+        link_id: 'a'.repeat(32),
+        remote_identity: 'b'.repeat(32),
+        role: 'incoming',
+        status: 'unknown',
+      }),
+    ).toBe(false);
   });
 
   it('parseVoiceAudioRequest accepts a QualityHigh-shaped frame', () => {

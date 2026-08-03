@@ -13,6 +13,7 @@ import {
 import { ensureRncpDestinationReachable } from '@/renderer/lib/ensureRncpDestinationReachable';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { rncpOfferMatchesLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
 import {
   acceptRncpOffer,
@@ -334,13 +335,13 @@ export function ChatDmRncpControl({
         onClick={() => {
           setOpen((v) => !v);
         }}
-        className="relative inline-flex items-center gap-1 rounded-lg border border-gray-700/60 bg-gray-800/40 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700/60 disabled:opacity-50"
+        className={`relative ${RETICULUM_DM_HEADER_ACTION_CLASS}`}
       >
-        <Upload size={13} aria-hidden="true" />
-        {t('chatPanel.rncp.sendFile')}
+        <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span>{t('chatPanel.rncp.sendFile')}</span>
         {(relevantOffers.length > 0 || activeTransferCount > 0) && (
           <span
-            className={`absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white ${
+            className={`ml-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white ${
               relevantOffers.length > 0 ? 'bg-amber-600' : 'bg-blue-600'
             }`}
             aria-label={

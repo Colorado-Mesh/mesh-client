@@ -1084,6 +1084,11 @@ export interface ElectronAPI {
     setNomadContentSource: (path: string) => Promise<unknown>;
     validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
+    /**
+     * High-rate LXST PCM receive frames (`voice.audio` via `/ws/voice`).
+     * Not delivered on {@link onEvent} / shared `/ws`.
+     */
+    onVoiceAudio: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
     /** Thin typed wrappers over proxyGet/proxyPost for RRC. */
     rrc: {

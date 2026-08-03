@@ -765,7 +765,9 @@
     "errors": {
       "noIdentity": "Cannot call: peer identity not known yet. Wait for an announce or probe the peer.",
       "callFailed": "Voice call failed.",
-      "notRunning": "Voice is not available until the Reticulum stack is running."
+      "notRunning": "Voice is not available until the Reticulum stack is running.",
+      "micFailed": "Could not access the microphone for voice.",
+      "muteFailed": "Could not update microphone mute on the voice session."
     }
   },
   "connectionPanel": {

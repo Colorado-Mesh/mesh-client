@@ -5119,7 +5119,9 @@
     "errors": {
       "noIdentity": "Impossibile chiamare: identità peer non ancora nota. Attendere un annuncio o sondare il peer.",
       "callFailed": "Chiamata vocale non riuscita.",
-      "notRunning": "La voce non è disponibile fino a quando lo stack Reticulum non è in esecuzione."
+      "notRunning": "La voce non è disponibile fino a quando lo stack Reticulum non è in esecuzione.",
+      "micFailed": "Impossibile accedere al microfono per la voce.",
+      "muteFailed": "Impossibile aggiornare il silenziamento del microfono nella sessione vocale."
     },
     "connecting": "Collegamento in corso…",
     "elapsedAria": "Tempo trascorso",

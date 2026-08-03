@@ -1104,6 +1104,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('reticulum:event', handler);
       return () => ipcRenderer.off('reticulum:event', handler);
     },
+    onVoiceAudio: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
+      const handler = (_: unknown, event: ReticulumSidecarEvent) => {
+        cb(event);
+      };
+      ipcRenderer.on('reticulum:voiceAudio', handler);
+      return () => ipcRenderer.off('reticulum:voiceAudio', handler);
+    },
     onStatus: (cb: (status: ReticulumSidecarStatus) => void): (() => void) => {
       const handler = (_: unknown, status: ReticulumSidecarStatus) => {
         cb(status);

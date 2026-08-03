@@ -59,6 +59,10 @@ import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import {
+  RETICULUM_DM_HEADER_ACTION_CLASS,
+  RETICULUM_DM_HEADER_STATUS_CLASS,
+} from '@/renderer/lib/reticulumDmHeaderActions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -230,7 +234,7 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
   if (parts.length === 0) return null;
   return (
     <div
-      className="flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
+      className={`${RETICULUM_DM_HEADER_STATUS_CLASS} text-gray-400`}
       role="status"
       aria-label={t('chatPanel.dmPeerInfoAria')}
     >
@@ -2289,8 +2293,7 @@ function ChatPanel({
                 lxmfPeerHash={reticulumDmDestinationHash}
                 identityHash={reticulumDmIdentityHash}
                 disabled={!reticulumStackLive}
-                className="text-cyan-400 hover:underline disabled:opacity-40"
-                showHelp
+                className={RETICULUM_DM_HEADER_ACTION_CLASS}
               />
             ) : null;
           const peerDetailsAppearance = reticulumDmDestinationHash
@@ -2300,7 +2303,7 @@ function ChatPanel({
             protocol === 'reticulum' && onPeerClick && reticulumDmDestinationHash != null ? (
               <button
                 type="button"
-                className="bg-secondary-dark text-muted inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:text-gray-200"
+                className={`${RETICULUM_DM_HEADER_ACTION_CLASS} max-w-full`}
                 aria-label={t('chatPanel.openPeerDetailsAria', { name: dmNodeName })}
                 onClick={() => {
                   onPeerClick(reticulumDmDestinationHash);
@@ -2319,12 +2322,13 @@ function ChatPanel({
           if (!pathBadge && !dmNode && !rncpControl && !voiceCallControl && !peerDetailsControl) {
             return null;
           }
+          // Order: path status → last heard → peer details → Probe/Path → Call → Send file.
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
-              {pathActions}
-              {peerDetailsControl}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+              {peerDetailsControl}
+              {pathActions}
               {voiceCallControl}
               {rncpControl}
             </div>
