@@ -322,6 +322,53 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(count).toBe(250);
   });
 
+  it('named identity-activity upsert clears sibling unknown aspect rows', () => {
+    const dest = 'aa'.repeat(16);
+    db!
+      .prepareOnce(
+        `INSERT INTO reticulum_identity_activity (destination_hash, aspect, identity_hash, last_seen, hops)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(dest, 'unknown', null, Date.now() - 1000, 2);
+    const upsert = handlers.get('db:upsertReticulumIdentityActivity');
+    upsert?.(event, {
+      destination_hash: dest,
+      aspect: 'lxmf.delivery',
+      identity_hash: 'bb'.repeat(16),
+      last_seen: Date.now(),
+      hops: 1,
+    });
+    const rows = db!
+      .prepareOnce(
+        'SELECT aspect, identity_hash FROM reticulum_identity_activity WHERE destination_hash = ? ORDER BY aspect',
+      )
+      .all(dest) as { aspect: string; identity_hash: string | null }[];
+    expect(rows).toEqual([{ aspect: 'lxmf.delivery', identity_hash: 'bb'.repeat(16) }]);
+  });
+
+  it('named identity-activity batch upsert clears sibling unknown aspect rows', () => {
+    const dest = 'cc'.repeat(16);
+    db!
+      .prepareOnce(
+        `INSERT INTO reticulum_identity_activity (destination_hash, aspect, identity_hash, last_seen, hops)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(dest, 'unknown', null, Date.now() - 1000, 3);
+    const result = handlers.get('db:upsertReticulumIdentityActivityBatch')?.(event, [
+      {
+        destination_hash: dest,
+        aspect: 'nomadnetwork.node',
+        last_seen: Date.now(),
+        hops: 1,
+      },
+    ]) as { changes: number };
+    expect(result.changes).toBe(1);
+    const rows = db!
+      .prepareOnce('SELECT aspect FROM reticulum_identity_activity WHERE destination_hash = ?')
+      .all(dest) as { aspect: string }[];
+    expect(rows.map((r) => r.aspect)).toEqual(['nomadnetwork.node']);
+  });
+
   it('upsertReticulumDestination normalizes hash casing into one row', () => {
     const upsert = handlers.get('db:upsertReticulumDestination');
     const mixed = 'AABBCCDDEEFF00112233445566778899';

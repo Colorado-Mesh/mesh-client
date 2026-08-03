@@ -721,6 +721,18 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
            last_seen = excluded.last_seen,
            hops = COALESCE(excluded.hops, reticulum_identity_activity.hops)`;
 
+  const IDENTITY_ACTIVITY_DELETE_UNKNOWN_SQL = `DELETE FROM reticulum_identity_activity
+         WHERE destination_hash = ? AND aspect = 'unknown'`;
+
+  function clearUnknownIdentityActivity(
+    db: NonNullable<ReturnType<typeof getDbForIpc>>,
+    destinationHash: string,
+    aspect: string,
+  ): void {
+    if (aspect === 'unknown') return;
+    db.prepareOnce(IDENTITY_ACTIVITY_DELETE_UNKNOWN_SQL).run(destinationHash);
+  }
+
   function parseIdentityActivityRow(row: unknown): {
     destinationHash: string;
     aspect: string;
@@ -762,6 +774,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         parsed.lastSeen,
         parsed.hops,
       );
+      clearUnknownIdentityActivity(db, parsed.destinationHash, parsed.aspect);
       return { changes: 1 };
     } catch (err) {
       finishDbIpcHandler('db:upsertReticulumIdentityActivity', err);
@@ -781,9 +794,13 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       }
       if (parsed.length === 0) return { changes: 0 };
       const stmt = db.prepareOnce(IDENTITY_ACTIVITY_UPSERT_SQL);
+      const clearUnknown = db.prepareOnce(IDENTITY_ACTIVITY_DELETE_UNKNOWN_SQL);
       const run = db.transaction(() => {
         for (const p of parsed) {
           stmt.run(p.destinationHash, p.aspect, p.identityHash, p.lastSeen, p.hops);
+          if (p.aspect !== 'unknown') {
+            clearUnknown.run(p.destinationHash);
+          }
         }
       });
       run();
