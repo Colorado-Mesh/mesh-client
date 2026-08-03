@@ -49,6 +49,10 @@ export { normalizeBleMac };
 export class BleCoexistenceCoordinator {
   private connections = new Map<string, BlePeripheralOwner>();
   private scanOwner: BleScanOwner | null = null;
+  /** Nested same-owner acquires (e.g. Noble yield + RSSI poll) — release only at 0. */
+  private scanOwnerDepth = 0;
+  /** Serializes first-time acquire (Noble pause + ownership) across concurrent callers. */
+  private scanAcquireInFlight: Promise<void> | null = null;
   private nobleManager: NobleBleManager | null = null;
   private nobleScanPausedForExternal = false;
 
@@ -98,19 +102,43 @@ export class BleCoexistenceCoordinator {
   }
 
   async acquireScan(owner: BleScanOwner): Promise<void> {
-    if (this.scanOwner === owner) return;
+    if (this.scanAcquireInFlight) {
+      await this.scanAcquireInFlight;
+      return this.acquireScan(owner);
+    }
+
+    if (this.scanOwner === owner) {
+      this.scanOwnerDepth += 1;
+      return;
+    }
     if (this.scanOwner !== null) {
       throw new BleScanBusyError(this.scanOwner);
     }
-    if (owner === 'reticulum' && this.nobleManager) {
-      await this.nobleManager.pauseScanningForExternalScan();
-      this.nobleScanPausedForExternal = true;
+
+    let releaseInFlight!: () => void;
+    this.scanAcquireInFlight = new Promise<void>((resolve) => {
+      releaseInFlight = resolve;
+    });
+    try {
+      if (owner === 'reticulum' && this.nobleManager) {
+        await this.nobleManager.pauseScanningForExternalScan();
+        this.nobleScanPausedForExternal = true;
+      }
+      this.scanOwner = owner;
+      this.scanOwnerDepth = 1;
+    } finally {
+      this.scanAcquireInFlight = null;
+      releaseInFlight();
     }
-    this.scanOwner = owner;
   }
 
   releaseScan(owner: BleScanOwner): void {
     if (this.scanOwner !== owner) return;
+    if (this.scanOwnerDepth > 1) {
+      this.scanOwnerDepth -= 1;
+      return;
+    }
+    this.scanOwnerDepth = 0;
     this.scanOwner = null;
     if (owner === 'reticulum' && this.nobleScanPausedForExternal && this.nobleManager) {
       this.nobleScanPausedForExternal = false;

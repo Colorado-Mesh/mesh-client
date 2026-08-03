@@ -15,19 +15,9 @@ export interface ReticulumDecommissionedHubEndpoint {
 export const RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS: readonly ReticulumDecommissionedHubEndpoint[] =
   [
     {
-      id: 'decommissioned-dublin',
-      hosts: ['dublin.connect.reticulum.network'],
-      port: 4965,
-    },
-    {
       id: 'decommissioned-amsterdam',
       hosts: ['amsterdam.connect.reticulum.network'],
       port: 4965,
-    },
-    {
-      id: 'decommissioned-betweentheborders',
-      hosts: ['reticulum.betweentheborders.com', 'betweentheborders.com'],
-      port: 4242,
     },
   ];
 
@@ -46,4 +36,15 @@ export function isDecommissionedReticulumTcpHub(host: string, port: number): boo
       endpoint.port === port &&
       endpoint.hosts.some((h) => normalizeReticulumTcpHubHost(h) === normalized),
   );
+}
+
+/** True when an interface row is a TCP client pointed at a decommissioned hub endpoint. */
+export function isDecommissionedReticulumTcpInterfaceRow(iface: {
+  type: string;
+  host?: string | null;
+  port?: number | null;
+}): boolean {
+  if (iface.type.toLowerCase() !== 'tcp') return false;
+  if (typeof iface.host !== 'string' || typeof iface.port !== 'number') return false;
+  return isDecommissionedReticulumTcpHub(iface.host, iface.port);
 }

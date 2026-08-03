@@ -62,9 +62,9 @@ describe('useReticulumInterfaceSnapshot', () => {
     });
   });
 
-  it('clears state when sidecar API is not ready', () => {
+  it('clears state when sidecar is not running', () => {
     const { result } = renderHook(() =>
-      useReticulumInterfaceSnapshot({ sidecarApiReady: false, pollActive: true }),
+      useReticulumInterfaceSnapshot({ sidecarRunning: false, pollActive: true }),
     );
     expect(result.current.interfaces).toEqual([]);
     expect(result.current.serialPorts).toEqual([]);
@@ -73,7 +73,7 @@ describe('useReticulumInterfaceSnapshot', () => {
 
   it('loads interfaces and serial ports when sidecar becomes ready', async () => {
     const { result } = renderHook(() =>
-      useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }),
+      useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }),
     );
 
     await waitFor(() => {
@@ -89,7 +89,7 @@ describe('useReticulumInterfaceSnapshot', () => {
 
   it('refresh returns snapshot data', async () => {
     const { result } = renderHook(() =>
-      useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }),
+      useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }),
     );
 
     await waitFor(() => {
@@ -105,9 +105,27 @@ describe('useReticulumInterfaceSnapshot', () => {
     expect(snapshot?.paths).toEqual(['/dev/ttyUSB0']);
   });
 
+  it('retains interfaces while sidecar stays running (connecting gap)', async () => {
+    const { result, rerender } = renderHook(
+      ({ running }: { running: boolean }) =>
+        useReticulumInterfaceSnapshot({ sidecarRunning: running, pollActive: running }),
+      { initialProps: { running: true } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.interfaces).toHaveLength(1);
+    });
+
+    // Connecting clears sidecarApiReady historically, but sidecarRunning stays true —
+    // do not wipe rows so BLE RNode RSSI can seed during first-start settle.
+    rerender({ running: true });
+    expect(result.current.interfaces).toHaveLength(1);
+    expect(result.current.interfaces[0]?.id).toBe('if-1');
+  });
+
   it('handleSidecarEvent triggers refresh on stack_restart_requested', async () => {
     const { result } = renderHook(() =>
-      useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }),
+      useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }),
     );
 
     await waitFor(() => {
@@ -160,7 +178,7 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
   });
 
   it('does not own Noble yield sync (watcher owns lifecycle)', async () => {
-    renderHook(() => useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }));
+    renderHook(() => useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }));
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
@@ -168,11 +186,11 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
     expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
   });
 
-  it('does not release Noble yield when sidecarApiReady flips false (connecting gap)', async () => {
-    const { rerender } = renderHook(
-      ({ ready }: { ready: boolean }) =>
-        useReticulumInterfaceSnapshot({ sidecarApiReady: ready, pollActive: false }),
-      { initialProps: { ready: true } },
+  it('does not release Noble yield when sidecar stops running', async () => {
+    const { result, rerender } = renderHook(
+      ({ running }: { running: boolean }) =>
+        useReticulumInterfaceSnapshot({ sidecarRunning: running, pollActive: false }),
+      { initialProps: { running: true } },
     );
 
     await waitFor(() => {
@@ -183,12 +201,13 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
     expect(graceBefore).toBeGreaterThan(Date.now());
 
     vi.mocked(syncReticulumNobleBleYield).mockClear();
-    rerender({ ready: false });
+    rerender({ running: false });
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalled();
+      expect(result.current.interfaces).toEqual([]);
     });
     expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
+    // Grace clock is owned by the watcher — snapshot must not clear it on stop.
     expect(getReticulumBleConnectGraceExpiresAt()).toBe(graceBefore);
   });
 });

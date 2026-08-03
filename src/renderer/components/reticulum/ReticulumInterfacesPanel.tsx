@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Info } from 'lucide-react-motion';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ReticulumDefaultHubsPickerModal } from '@/renderer/components/reticulum/ReticulumDefaultHubsPickerModal';
 import { useToast } from '@/renderer/components/Toast';
 import {
   rssiForReticulumBleRnodeRow,
@@ -29,7 +30,11 @@ import {
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
   applyDefaultHubPresetsSync,
+  countEnabledDefaultHubPresets,
+  groupReticulumInterfacesByHubRegion,
   planDefaultHubPresetsSync,
+  type ReticulumInterfaceListGroupId,
+  reticulumInterfaceListGroupLabelKey,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import {
   RETICULUM_I2P_PEERS_MAX_LENGTH,
@@ -88,7 +93,10 @@ import {
   isValidConnectHost,
   stripConnectHostBrackets,
 } from '@/shared/connectHost';
-import { RETICULUM_BACKBONE_DIRECTORY_URL } from '@/shared/reticulumDecommissionedHubs';
+import {
+  isDecommissionedReticulumTcpInterfaceRow,
+  RETICULUM_BACKBONE_DIRECTORY_URL,
+} from '@/shared/reticulumDecommissionedHubs';
 import {
   countEnabledLocallyConnectedSerialInterfaces,
   isReticulumLocallyConnectedSerialInterface,
@@ -153,6 +161,8 @@ type ReticulumIfaceUiType =
 
 export interface ReticulumInterfacesPanelProps {
   sidecarApiReady: boolean;
+  /** Sidecar process up — BLE RNode RSSI polls during connect, not only when API-ready. */
+  sidecarRunning?: boolean;
   connecting: boolean;
   identityConfigured?: boolean;
   identityDisplayName?: string | null;
@@ -170,6 +180,7 @@ export interface ReticulumInterfacesPanelProps {
 /** Connection tab: Reticulum interface list, add/edit/delete, device picker. */
 export function ReticulumInterfacesPanel({
   sidecarApiReady,
+  sidecarRunning,
   connecting,
   identityConfigured = true,
   identityDisplayName = null,
@@ -182,6 +193,7 @@ export function ReticulumInterfacesPanel({
   onRefresh,
   onBeginBleConnectGrace,
 }: ReticulumInterfacesPanelProps) {
+  const sidecarRunningForRssi = sidecarRunning ?? sidecarApiReady;
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
@@ -215,15 +227,17 @@ export function ReticulumInterfacesPanel({
   const [seedAddresses, setSeedAddresses] = useState('');
   const devicePicker = useReticulumInterfaceDevicePicker();
   const [interfaceError, setInterfaceError] = useState<string | null>(null);
-  const [pendingDeleteInterface, setPendingDeleteInterface] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [pendingDeleteInterface, setPendingDeleteInterface] = useState<
+    { mode: 'single'; id: string; name: string } | { mode: 'bulk'; ids: string[] } | null
+  >(null);
+  const [selectedInterfaceIds, setSelectedInterfaceIds] = useState<Set<string>>(() => new Set());
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
   const [restartStackHint, setRestartStackHint] = useState(false);
   const [showRmapRestartConfirm, setShowRmapRestartConfirm] = useState(false);
   const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
+  const [showDefaultHubsPicker, setShowDefaultHubsPicker] = useState(false);
   const [rmapToggleBusyId, setRmapToggleBusyId] = useState<string | null>(null);
+  const [deletingBulk, setDeletingBulk] = useState(false);
 
   useEffect(() => {
     if (!sidecarApiReady) {
@@ -522,20 +536,26 @@ export function ReticulumInterfacesPanel({
     }
   };
 
-  const handleAddDefaultHubPresets = async () => {
+  const handleAddDefaultHubPresets = async (presetIds: ReadonlySet<string>) => {
     setInterfaceError(null);
-    const plan = planDefaultHubPresetsSync(interfaces);
+    const syncOpts = { presetIds };
+    const plan = planDefaultHubPresetsSync(interfaces, syncOpts);
     if (
       plan.add.length === 0 &&
       plan.repair.length === 0 &&
       plan.disableDecommissioned.length === 0
     ) {
+      setShowDefaultHubsPicker(false);
       addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
       return;
     }
     setAddingDefaultHubs(true);
     try {
-      const { result } = await applyDefaultHubPresetsSync(interfaces, window.electronAPI.reticulum);
+      const { result } = await applyDefaultHubPresetsSync(
+        interfaces,
+        window.electronAPI.reticulum,
+        syncOpts,
+      );
       const changed = result.added + result.repaired + result.disabledDecommissioned;
       if (changed > 0) {
         await onRefresh();
@@ -560,6 +580,8 @@ export function ReticulumInterfacesPanel({
             ),
           );
         }
+      } else {
+        setShowDefaultHubsPicker(false);
       }
     } catch (e) {
       setInterfaceError(
@@ -577,6 +599,13 @@ export function ReticulumInterfacesPanel({
 
   const toggleInterface = async (id: string, enabled: boolean, ifaceTypeName?: string) => {
     setInterfaceError(null);
+    const row = interfaces.find((iface) => iface.id === id);
+    if (enabled && row && isDecommissionedReticulumTcpInterfaceRow(row)) {
+      const blockedMsg = t('connectionPanel.reticulumInterfaces.decommissionedHubEnableBlocked');
+      setInterfaceError(blockedMsg);
+      addToast(blockedMsg, 'error');
+      return;
+    }
     try {
       const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
       const res = (await window.electronAPI.reticulum.proxyPost(path, {})) as {
@@ -612,6 +641,23 @@ export function ReticulumInterfacesPanel({
     }
   };
 
+  useEffect(() => {
+    setSelectedInterfaceIds((prev) => {
+      if (prev.size === 0) return prev;
+      const valid = new Set(interfaces.map((iface) => iface.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [interfaces]);
+
   const deleteInterface = async (id: string) => {
     setInterfaceError(null);
     try {
@@ -630,6 +676,12 @@ export function ReticulumInterfacesPanel({
         return;
       }
       setPendingDeleteInterface(null);
+      setSelectedInterfaceIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       if (editingInterface?.id === id) {
         setEditingInterface(null);
       }
@@ -644,6 +696,78 @@ export function ReticulumInterfacesPanel({
           'connectionPanel.reticulumInterfaces.deleteFailed',
         ),
       );
+    }
+  };
+
+  const deleteSelectedInterfaces = async (ids: string[]) => {
+    setInterfaceError(null);
+    const deletableIds = new Set(
+      interfaces
+        .filter((iface) => !getReticulumInterfaceHelp(iface).isSystemManaged)
+        .map((iface) => iface.id),
+    );
+    const uniqueIds = [...new Set(ids)].filter((id) => deletableIds.has(id));
+    if (uniqueIds.length === 0) {
+      setPendingDeleteInterface(null);
+      return;
+    }
+    setDeletingBulk(true);
+    const succeeded: string[] = [];
+    let failed = 0;
+    try {
+      for (const id of uniqueIds) {
+        try {
+          const res = (await window.electronAPI.reticulum.proxyDelete(
+            `/api/v1/interfaces/${id}`,
+          )) as {
+            ok?: boolean;
+            error?: string;
+          };
+          if (res?.ok === false) {
+            failed += 1;
+            continue;
+          }
+          succeeded.push(id);
+          if (editingInterface?.id === id) {
+            setEditingInterface(null);
+          }
+        } catch {
+          // catch-no-log-ok: bulk delete partial failure shown via interfaceError
+          failed += 1;
+        }
+      }
+      setPendingDeleteInterface(null);
+      if (succeeded.length > 0) {
+        setSelectedInterfaceIds((prev) => {
+          if (prev.size === 0) return prev;
+          const next = new Set(prev);
+          for (const id of succeeded) next.delete(id);
+          return next;
+        });
+        try {
+          await onRefresh();
+          await restartStackForInterfaceChange();
+        } catch (e) {
+          // catch-no-log-ok: post-delete refresh/restart failure shown via interfaceError
+          setInterfaceError(
+            humanizeReticulumInterfaceApiError(
+              errLikeToLogString(e),
+              t,
+              'connectionPanel.reticulumInterfaces.deleteFailed',
+            ),
+          );
+        }
+      }
+      if (failed > 0) {
+        setInterfaceError(
+          t('connectionPanel.reticulumInterfaces.deleteSelectedPartialFailed', {
+            failed,
+            total: uniqueIds.length,
+          }),
+        );
+      }
+    } finally {
+      setDeletingBulk(false);
     }
   };
 
@@ -703,7 +827,7 @@ export function ReticulumInterfacesPanel({
     }
   };
 
-  const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured;
+  const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured || deletingBulk;
   const defaultHubsDisabled = actionsDisabled || addingDefaultHubs;
 
   const syncRmapAfterInterfaceChange = useCallback(
@@ -810,6 +934,7 @@ export function ReticulumInterfacesPanel({
         bleBondRemovedNames={bleBondRemovedNames}
         effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
         sidecarReady={sidecarApiReady}
+        sidecarRunning={sidecarRunningForRssi}
         actionsDisabled={actionsDisabled}
         ifaceType={ifaceType}
         ifaceMode={ifaceMode}
@@ -861,7 +986,27 @@ export function ReticulumInterfacesPanel({
           void toggleInterface(id, enabled, typeName);
         }}
         onDelete={(id, name) => {
-          setPendingDeleteInterface({ id, name });
+          setPendingDeleteInterface({ mode: 'single', id, name });
+        }}
+        selectedInterfaceIds={selectedInterfaceIds}
+        onToggleInterfaceSelected={(id, selected) => {
+          setSelectedInterfaceIds((prev) => {
+            const has = prev.has(id);
+            if (selected === has) return prev;
+            const next = new Set(prev);
+            if (selected) next.add(id);
+            else next.delete(id);
+            return next;
+          });
+        }}
+        onSelectAllDeletableInterfaces={(ids) => {
+          setSelectedInterfaceIds(new Set(ids));
+        }}
+        onClearInterfaceSelection={() => {
+          setSelectedInterfaceIds(new Set());
+        }}
+        onDeleteSelected={(ids) => {
+          setPendingDeleteInterface({ mode: 'bulk', ids });
         }}
         editingInterface={editingInterface}
         onStartEdit={setEditingInterface}
@@ -886,25 +1031,56 @@ export function ReticulumInterfacesPanel({
         addingDefaultHubs={addingDefaultHubs}
         defaultHubsDisabled={defaultHubsDisabled}
         onAddDefaultHubs={() => {
-          void handleAddDefaultHubPresets();
+          setShowDefaultHubsPicker(true);
         }}
         rmapToggleBusyId={rmapToggleBusyId}
         onToggleRmapDiscoverable={(iface) => {
           void handleToggleRmapDiscoverable(iface);
         }}
       />
+      {showDefaultHubsPicker ? (
+        <ReticulumDefaultHubsPickerModal
+          interfaces={interfaces}
+          confirming={addingDefaultHubs}
+          onCancel={() => {
+            if (!addingDefaultHubs) setShowDefaultHubsPicker(false);
+          }}
+          onConfirm={(presetIds) => {
+            void handleAddDefaultHubPresets(presetIds);
+          }}
+        />
+      ) : null}
       {pendingDeleteInterface ? (
         <ConfirmModal
-          title={t('connectionPanel.reticulumInterfaces.deleteConfirmTitle')}
-          message={t('connectionPanel.reticulumInterfaces.deleteConfirmBody', {
-            name: pendingDeleteInterface.name,
-          })}
-          confirmLabel={t('connectionPanel.reticulumInterfaces.deleteConfirm')}
+          title={
+            pendingDeleteInterface.mode === 'bulk'
+              ? t('connectionPanel.reticulumInterfaces.deleteSelectedConfirmTitle')
+              : t('connectionPanel.reticulumInterfaces.deleteConfirmTitle')
+          }
+          message={
+            pendingDeleteInterface.mode === 'bulk'
+              ? t('connectionPanel.reticulumInterfaces.deleteSelectedConfirmBody', {
+                  count: pendingDeleteInterface.ids.length,
+                })
+              : t('connectionPanel.reticulumInterfaces.deleteConfirmBody', {
+                  name: pendingDeleteInterface.name,
+                })
+          }
+          confirmLabel={
+            pendingDeleteInterface.mode === 'bulk'
+              ? t('connectionPanel.reticulumInterfaces.deleteSelectedConfirm')
+              : t('connectionPanel.reticulumInterfaces.deleteConfirm')
+          }
+          confirmDisabled={deletingBulk}
           onConfirm={() => {
-            void deleteInterface(pendingDeleteInterface.id);
+            if (pendingDeleteInterface.mode === 'bulk') {
+              void deleteSelectedInterfaces(pendingDeleteInterface.ids);
+            } else {
+              void deleteInterface(pendingDeleteInterface.id);
+            }
           }}
           onCancel={() => {
-            setPendingDeleteInterface(null);
+            if (!deletingBulk) setPendingDeleteInterface(null);
           }}
         />
       ) : null}
@@ -1645,12 +1821,20 @@ function InterfaceEditPanel({
   );
 }
 
+function interfaceListGroupLabel(
+  t: (key: string) => string,
+  groupId: ReticulumInterfaceListGroupId,
+): string {
+  return t(reticulumInterfaceListGroupLabelKey(groupId));
+}
+
 function InterfacesSection({
   interfaces,
   osSerialPortPaths,
   bleBondRemovedNames,
   effectivePrimaryLocalSerialInterfaceId,
   sidecarReady,
+  sidecarRunning,
   actionsDisabled,
   ifaceType,
   ifaceMode,
@@ -1690,6 +1874,11 @@ function InterfacesSection({
   onAdd,
   onToggle,
   onDelete,
+  selectedInterfaceIds,
+  onToggleInterfaceSelected,
+  onSelectAllDeletableInterfaces,
+  onClearInterfaceSelection,
+  onDeleteSelected,
   editingInterface,
   onStartEdit,
   onCancelEdit,
@@ -1710,6 +1899,7 @@ function InterfacesSection({
   bleBondRemovedNames?: readonly string[];
   effectivePrimaryLocalSerialInterfaceId: string | null;
   sidecarReady: boolean;
+  sidecarRunning: boolean;
   actionsDisabled: boolean;
   ifaceType: ReticulumIfaceUiType;
   ifaceMode: string;
@@ -1752,6 +1942,11 @@ function InterfacesSection({
   onAdd: () => void;
   onToggle: (id: string, enabled: boolean, ifaceType: string) => void;
   onDelete: (id: string, name: string) => void;
+  selectedInterfaceIds: ReadonlySet<string>;
+  onToggleInterfaceSelected: (id: string, selected: boolean) => void;
+  onSelectAllDeletableInterfaces: (ids: string[]) => void;
+  onClearInterfaceSelection: () => void;
+  onDeleteSelected: (ids: string[]) => void;
   editingInterface: ReticulumInterfaceRow | null;
   onStartEdit: (iface: ReticulumInterfaceRow) => void;
   onCancelEdit: () => void;
@@ -1769,9 +1964,24 @@ function InterfacesSection({
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
-  const bleRnodeRssiByAddress = useReticulumBleRnodeRssiMap(interfaces, sidecarReady);
+  const bleRnodeRssiByAddress = useReticulumBleRnodeRssiMap(interfaces, sidecarRunning);
   const tcpRttById = useReticulumTcpLinkQualityMap(interfaces, sidecarReady);
   const enabledLocalSerialCount = countEnabledLocallyConnectedSerialInterfaces(interfaces);
+  const enabledDefaultBackboneCount = countEnabledDefaultHubPresets(interfaces);
+  const interfaceGroups = groupReticulumInterfacesByHubRegion(interfaces);
+  const deletableInterfaceIds = useMemo(
+    () =>
+      interfaces
+        .filter((iface) => !getReticulumInterfaceHelp(iface).isSystemManaged)
+        .map((iface) => iface.id),
+    [interfaces],
+  );
+  const allDeletableSelected =
+    deletableInterfaceIds.length > 0 &&
+    deletableInterfaceIds.every((id) => selectedInterfaceIds.has(id));
+  const selectedDeletableCount = deletableInterfaceIds.filter((id) =>
+    selectedInterfaceIds.has(id),
+  ).length;
   const showPrimaryControls = enabledLocalSerialCount >= 2;
   const primaryInterfaceName =
     interfaces.find((row) => row.id === effectivePrimaryLocalSerialInterfaceId)?.name ?? '';
@@ -1824,6 +2034,19 @@ function InterfacesSection({
           <p id="reticulum-default-hubs" className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
           </p>
+          <p className="text-sm font-medium text-amber-200" role="status">
+            <strong className="font-semibold text-amber-50">
+              {t('connectionPanel.reticulumInterfaces.backboneEnableGuidanceLead')}
+            </strong>
+            {t('connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody')}
+          </p>
+          {enabledDefaultBackboneCount > 3 ? (
+            <p className="text-xs text-amber-300" role="status">
+              {t('connectionPanel.reticulumInterfaces.backboneEnableTooMany', {
+                count: enabledDefaultBackboneCount,
+              })}
+            </p>
+          ) : null}
           <p className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.backboneDirectoryHint')}{' '}
             <a
@@ -2143,244 +2366,366 @@ function InterfacesSection({
             })}
           </p>
         ) : null}
-        <ul className="mt-3 space-y-2 text-sm">
+        <div className="mt-3 space-y-4 text-sm">
           {interfaces.length === 0 ? (
-            <li className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</li>
+            <p className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</p>
           ) : (
-            interfaces.map((iface) => {
-              const rowReason = localRowReason(iface);
-              const help = getReticulumInterfaceHelp(iface);
-              const auditIssues = auditByInterfaceId.get(iface.id) ?? [];
-              const primaryAudit =
-                auditIssues.find((issue) => issue.severity !== 'info') ?? auditIssues[0];
-              const rowBorder =
-                rowReason != null || primaryAudit?.severity === 'error'
-                  ? 'border-red-800/60'
-                  : primaryAudit?.severity === 'warning'
-                    ? 'border-amber-700/50'
-                    : 'border-gray-700/60';
-              const repairKind = primaryAudit?.repair_kind as ReticulumConfigRepairKind | undefined;
-              const isLocalSerialRow =
-                iface.enabled && isReticulumLocallyConnectedSerialInterface(iface);
-              const isPrimaryRow =
-                showPrimaryControls &&
-                effectivePrimaryLocalSerialInterfaceId != null &&
-                iface.id === effectivePrimaryLocalSerialInterfaceId;
-              const showBleRnodeSignal = iface.enabled && isReticulumBleRnodeInterfaceRow(iface);
-              const bleRnodeRssi = showBleRnodeSignal
-                ? rssiForReticulumBleRnodeRow(iface, bleRnodeRssiByAddress)
-                : null;
-              const showTcpLinkQuality = isReticulumTcpClientLinkQualityRow(iface);
-              const tcpRttMs = showTcpLinkQuality ? rttForReticulumTcpRow(iface, tcpRttById) : null;
-              return (
-                <li
-                  key={iface.id}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
+            <>
+              {deletableInterfaceIds.length > 0 ? (
+                <div
+                  className="flex flex-wrap items-center gap-3"
+                  data-testid="reticulum-iface-selection-toolbar"
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="inline-flex flex-wrap items-center gap-1.5">
-                      <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
-                        {formatReticulumInterfaceRowSummary(t, iface)}
-                      </span>
-                      {showBleRnodeSignal ? (
-                        <span
-                          className="text-muted flex shrink-0 items-center gap-1 text-xs"
-                          aria-label={t('connectionPanel.hostSignal')}
-                          data-testid={`reticulum-ble-signal-${iface.id}`}
+                  <button
+                    type="button"
+                    disabled={actionsDisabled}
+                    onClick={() => {
+                      if (allDeletableSelected) {
+                        onClearInterfaceSelection();
+                      } else {
+                        onSelectAllDeletableInterfaces(deletableInterfaceIds);
+                      }
+                    }}
+                    className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                    aria-label={
+                      allDeletableSelected
+                        ? t('connectionPanel.reticulumInterfaces.clearSelectionAria')
+                        : t('connectionPanel.reticulumInterfaces.selectAllAria')
+                    }
+                  >
+                    {allDeletableSelected
+                      ? t('connectionPanel.reticulumInterfaces.clearSelection')
+                      : t('connectionPanel.reticulumInterfaces.selectAll')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionsDisabled || selectedDeletableCount === 0}
+                    onClick={() => {
+                      const ids = deletableInterfaceIds.filter((id) =>
+                        selectedInterfaceIds.has(id),
+                      );
+                      if (ids.length > 0) onDeleteSelected(ids);
+                    }}
+                    className="text-xs text-red-400 hover:underline disabled:opacity-40"
+                    aria-label={t('connectionPanel.reticulumInterfaces.deleteSelectedAria', {
+                      count: selectedDeletableCount,
+                    })}
+                  >
+                    {t('connectionPanel.reticulumInterfaces.deleteSelected', {
+                      count: selectedDeletableCount,
+                    })}
+                  </button>
+                </div>
+              ) : null}
+              {interfaceGroups.map((group) => (
+                <section
+                  key={group.id}
+                  aria-labelledby={`reticulum-iface-group-${group.id}`}
+                  data-testid={`reticulum-iface-group-${group.id}`}
+                >
+                  <h4
+                    id={`reticulum-iface-group-${group.id}`}
+                    className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase"
+                  >
+                    {interfaceListGroupLabel(t, group.id)}
+                  </h4>
+                  <ul className="space-y-2">
+                    {group.interfaces.map((iface) => {
+                      const rowReason = localRowReason(iface);
+                      const help = getReticulumInterfaceHelp(iface);
+                      const auditIssues = auditByInterfaceId.get(iface.id) ?? [];
+                      const primaryAudit =
+                        auditIssues.find((issue) => issue.severity !== 'info') ?? auditIssues[0];
+                      const rowBorder =
+                        rowReason != null || primaryAudit?.severity === 'error'
+                          ? 'border-red-800/60'
+                          : primaryAudit?.severity === 'warning'
+                            ? 'border-amber-700/50'
+                            : 'border-gray-700/60';
+                      const repairKind = primaryAudit?.repair_kind as
+                        ReticulumConfigRepairKind | undefined;
+                      const isLocalSerialRow =
+                        iface.enabled && isReticulumLocallyConnectedSerialInterface(iface);
+                      const isPrimaryRow =
+                        showPrimaryControls &&
+                        effectivePrimaryLocalSerialInterfaceId != null &&
+                        iface.id === effectivePrimaryLocalSerialInterfaceId;
+                      const showBleRnodeSignal =
+                        iface.enabled && isReticulumBleRnodeInterfaceRow(iface);
+                      const bleRnodeRssi = showBleRnodeSignal
+                        ? rssiForReticulumBleRnodeRow(iface, bleRnodeRssiByAddress)
+                        : null;
+                      const showTcpLinkQuality = isReticulumTcpClientLinkQualityRow(iface);
+                      const tcpRttMs = showTcpLinkQuality
+                        ? rttForReticulumTcpRow(iface, tcpRttById)
+                        : null;
+                      const decommissioned = isDecommissionedReticulumTcpInterfaceRow(iface);
+                      const canDelete = !help.isSystemManaged;
+                      return (
+                        <li
+                          key={iface.id}
+                          data-testid={`reticulum-iface-row-${iface.id}`}
+                          data-enabled={iface.enabled ? 'true' : 'false'}
+                          className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
                         >
-                          {bleRnodeRssi != null ? (
-                            <>
-                              <SignalBars rssi={bleRnodeRssi} className="h-3 w-4" />
-                              {t('connectionPanel.bleRssiDbm', {
-                                rssi: Math.round(bleRnodeRssi),
-                              })}
-                            </>
-                          ) : (
-                            <>
-                              <SignalBars noData className="h-3 w-4" />
-                              {t('connectionPanel.hostSignalUnavailable')}
-                            </>
-                          )}
-                        </span>
-                      ) : null}
-                      {showTcpLinkQuality ? (
-                        <span
-                          className="text-muted flex shrink-0 items-center gap-1 text-xs"
-                          aria-label={t('connectionPanel.linkQuality')}
-                          data-testid={`reticulum-tcp-link-${iface.id}`}
-                        >
-                          {tcpRttMs != null ? (
-                            <>
-                              <SignalBars level={rttToSignalLevel(tcpRttMs)} className="h-3 w-4" />
-                              {t('connectionPanel.linkQualityMs', {
-                                ms: Math.round(tcpRttMs),
-                              })}
-                            </>
-                          ) : (
-                            <>
-                              <SignalBars noData className="h-3 w-4" />
-                              {t('connectionPanel.linkQualityUnavailable')}
-                            </>
-                          )}
-                        </span>
-                      ) : null}
-                      <HelpTooltip
-                        text={t(help.purposeKey)}
-                        ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {
-                          name: iface.name,
-                        })}
-                        className="text-muted hover:text-gray-200"
-                      >
-                        <Info
-                          aria-hidden
-                          className="h-3.5 w-3.5"
-                          trigger={purposeIconTrigger}
-                          size={14}
-                        />
-                      </HelpTooltip>
-                      {help.isRuntimeOnly ? (
-                        <span className="text-muted text-[10px] tracking-wide uppercase">
-                          {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
-                        </span>
-                      ) : null}
-                      {isPrimaryRow ? (
-                        <span className="text-readable-green text-[10px] tracking-wide uppercase">
-                          {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
-                        </span>
-                      ) : null}
-                    </span>
-                    {rowReason ? (
-                      <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
-                    ) : null}
-                    {primaryAudit ? (
-                      <span
-                        className={`mt-0.5 block text-xs ${
-                          primaryAudit.severity === 'error'
-                            ? 'text-red-300/90'
-                            : primaryAudit.severity === 'warning'
-                              ? 'text-amber-300/90'
-                              : 'text-blue-300/80'
-                        }`}
-                      >
-                        {t(`diagnosticsPanel.reticulum.audit.${primaryAudit.kind}`, {
-                          name: primaryAudit.interface_name ?? iface.name,
-                          message: primaryAudit.message,
-                        })}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="flex flex-wrap items-center gap-3">
-                    {showPrimaryControls && isLocalSerialRow && !isPrimaryRow ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onSetPrimaryLocalSerial(iface.id);
-                        }}
-                        className="text-xs text-emerald-400 hover:underline disabled:opacity-40"
-                        aria-label={t('connectionPanel.reticulumInterfaces.setPrimaryLocalAria', {
-                          name: iface.name,
-                        })}
-                      >
-                        {t('connectionPanel.reticulumInterfaces.setPrimaryLocal')}
-                      </button>
-                    ) : null}
-                    {repairKind === 'repair_config' ||
-                    repairKind === 'apply_preset' ||
-                    repairKind === 'add_auto' ||
-                    repairKind === 'disable_share_instance' ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onAuditRepair(repairKind);
-                        }}
-                        className="text-xs text-sky-400 hover:underline disabled:opacity-40"
-                      >
-                        {repairKind === 'disable_share_instance'
-                          ? t('diagnosticsPanel.reticulum.action.disable_share_instance')
-                          : t('connectionPanel.reticulumInterfaces.auditRepair')}
-                      </button>
-                    ) : null}
-                    {repairKind === 'disable' && help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          void onAuditDisable(iface.id);
-                        }}
-                        className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                      >
-                        {t('connectionPanel.reticulumInterfaces.auditDisable')}
-                      </button>
-                    ) : null}
-                    {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
-                      <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
-                        <input
-                          type="checkbox"
-                          checked={iface.discoverable === true}
-                          disabled={actionsDisabled || rmapToggleBusyId === iface.id}
-                          aria-label={t(
-                            'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
-                            { name: iface.name },
-                          )}
-                          onChange={() => {
-                            onToggleRmapDiscoverable(iface);
-                          }}
-                        />
-                        {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
-                      </label>
-                    ) : null}
-                    {!help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onStartEdit(iface);
-                        }}
-                        className="text-xs text-sky-400 hover:underline disabled:opacity-40"
-                        aria-label={t('connectionPanel.reticulumInterfaces.edit', {
-                          name: iface.name,
-                        })}
-                      >
-                        {t('connectionPanel.reticulumInterfaces.edit')}
-                      </button>
-                    ) : null}
-                    {!help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onToggle(iface.id, !iface.enabled, iface.type);
-                        }}
-                        className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                      >
-                        {iface.enabled
-                          ? t('connectionPanel.reticulumInterfaces.disable')
-                          : t('connectionPanel.reticulumInterfaces.enable')}
-                      </button>
-                    ) : null}
-                    {!help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onDelete(iface.id, iface.name);
-                        }}
-                        className="text-xs text-red-400 hover:underline disabled:opacity-40"
-                        aria-label={t('connectionPanel.reticulumInterfaces.delete', {
-                          name: iface.name,
-                        })}
-                      >
-                        {t('connectionPanel.reticulumInterfaces.delete')}
-                      </button>
-                    ) : null}
-                  </span>
-                </li>
-              );
-            })
+                          <span className="flex min-w-0 flex-1 items-start gap-2">
+                            {canDelete ? (
+                              <input
+                                type="checkbox"
+                                className="mt-1 shrink-0"
+                                checked={selectedInterfaceIds.has(iface.id)}
+                                disabled={actionsDisabled}
+                                aria-label={t('connectionPanel.reticulumInterfaces.selectAria', {
+                                  name: iface.name,
+                                })}
+                                data-testid={`reticulum-iface-select-${iface.id}`}
+                                onChange={(e) => {
+                                  onToggleInterfaceSelected(iface.id, e.target.checked);
+                                }}
+                              />
+                            ) : null}
+                            <span className="min-w-0 flex-1">
+                              <span className="inline-flex flex-wrap items-center gap-1.5">
+                                <span
+                                  className={
+                                    iface.enabled
+                                      ? reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)
+                                      : 'text-gray-500'
+                                  }
+                                >
+                                  {formatReticulumInterfaceRowSummary(t, iface)}
+                                </span>
+                                {decommissioned ? (
+                                  <span
+                                    className="text-xs font-medium text-red-400"
+                                    data-testid={`reticulum-decommissioned-${iface.id}`}
+                                  >
+                                    {t('connectionPanel.reticulumInterfaces.decommissionedBadge')}
+                                  </span>
+                                ) : null}
+                                {showBleRnodeSignal ? (
+                                  <span
+                                    className="text-muted flex shrink-0 items-center gap-1 text-xs"
+                                    aria-label={t('connectionPanel.hostSignal')}
+                                    data-testid={`reticulum-ble-signal-${iface.id}`}
+                                  >
+                                    {bleRnodeRssi != null ? (
+                                      <>
+                                        <SignalBars rssi={bleRnodeRssi} className="h-3 w-4" />
+                                        {t('connectionPanel.bleRssiDbm', {
+                                          rssi: Math.round(bleRnodeRssi),
+                                        })}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <SignalBars noData className="h-3 w-4" />
+                                        {t('connectionPanel.hostSignalUnavailable')}
+                                      </>
+                                    )}
+                                  </span>
+                                ) : null}
+                                {showTcpLinkQuality ? (
+                                  <span
+                                    className="text-muted flex shrink-0 items-center gap-1 text-xs"
+                                    aria-label={t('connectionPanel.linkQuality')}
+                                    data-testid={`reticulum-tcp-link-${iface.id}`}
+                                  >
+                                    {tcpRttMs != null ? (
+                                      <>
+                                        <SignalBars
+                                          level={rttToSignalLevel(tcpRttMs)}
+                                          className="h-3 w-4"
+                                        />
+                                        {t('connectionPanel.linkQualityMs', {
+                                          ms: Math.round(tcpRttMs),
+                                        })}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <SignalBars noData className="h-3 w-4" />
+                                        {t('connectionPanel.linkQualityUnavailable')}
+                                      </>
+                                    )}
+                                  </span>
+                                ) : null}
+                                <HelpTooltip
+                                  text={t(help.purposeKey)}
+                                  ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {
+                                    name: iface.name,
+                                  })}
+                                  className="text-muted hover:text-gray-200"
+                                >
+                                  <Info
+                                    aria-hidden
+                                    className="h-3.5 w-3.5"
+                                    trigger={purposeIconTrigger}
+                                    size={14}
+                                  />
+                                </HelpTooltip>
+                                {help.isRuntimeOnly ? (
+                                  <span className="text-muted text-[10px] tracking-wide uppercase">
+                                    {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
+                                  </span>
+                                ) : null}
+                                {isPrimaryRow ? (
+                                  <span className="text-readable-green text-[10px] tracking-wide uppercase">
+                                    {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
+                                  </span>
+                                ) : null}
+                              </span>
+                              {rowReason ? (
+                                <span className="mt-0.5 block text-xs text-red-300/90">
+                                  {rowReason}
+                                </span>
+                              ) : null}
+                              {primaryAudit ? (
+                                <span
+                                  className={`mt-0.5 block text-xs ${
+                                    primaryAudit.severity === 'error'
+                                      ? 'text-red-300/90'
+                                      : primaryAudit.severity === 'warning'
+                                        ? 'text-amber-300/90'
+                                        : 'text-blue-300/80'
+                                  }`}
+                                >
+                                  {t(`diagnosticsPanel.reticulum.audit.${primaryAudit.kind}`, {
+                                    name: primaryAudit.interface_name ?? iface.name,
+                                    message: primaryAudit.message,
+                                  })}
+                                </span>
+                              ) : null}
+                            </span>
+                          </span>
+                          <span className="flex flex-wrap items-center gap-3">
+                            {showPrimaryControls && isLocalSerialRow && !isPrimaryRow ? (
+                              <button
+                                type="button"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  onSetPrimaryLocalSerial(iface.id);
+                                }}
+                                className="text-xs text-emerald-400 hover:underline disabled:opacity-40"
+                                aria-label={t(
+                                  'connectionPanel.reticulumInterfaces.setPrimaryLocalAria',
+                                  {
+                                    name: iface.name,
+                                  },
+                                )}
+                              >
+                                {t('connectionPanel.reticulumInterfaces.setPrimaryLocal')}
+                              </button>
+                            ) : null}
+                            {repairKind === 'repair_config' ||
+                            repairKind === 'apply_preset' ||
+                            repairKind === 'add_auto' ||
+                            repairKind === 'disable_share_instance' ? (
+                              <button
+                                type="button"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  onAuditRepair(repairKind);
+                                }}
+                                className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                              >
+                                {repairKind === 'disable_share_instance'
+                                  ? t('diagnosticsPanel.reticulum.action.disable_share_instance')
+                                  : t('connectionPanel.reticulumInterfaces.auditRepair')}
+                              </button>
+                            ) : null}
+                            {repairKind === 'disable' && help.isSystemManaged ? (
+                              <button
+                                type="button"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  void onAuditDisable(iface.id);
+                                }}
+                                className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                              >
+                                {t('connectionPanel.reticulumInterfaces.auditDisable')}
+                              </button>
+                            ) : null}
+                            {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
+                              <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
+                                <input
+                                  type="checkbox"
+                                  checked={iface.discoverable === true}
+                                  disabled={actionsDisabled || rmapToggleBusyId === iface.id}
+                                  aria-label={t(
+                                    'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+                                    { name: iface.name },
+                                  )}
+                                  onChange={() => {
+                                    onToggleRmapDiscoverable(iface);
+                                  }}
+                                />
+                                {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
+                              </label>
+                            ) : null}
+                            {!help.isSystemManaged ? (
+                              <button
+                                type="button"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  onStartEdit(iface);
+                                }}
+                                className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                                aria-label={t('connectionPanel.reticulumInterfaces.edit', {
+                                  name: iface.name,
+                                })}
+                              >
+                                {t('connectionPanel.reticulumInterfaces.edit')}
+                              </button>
+                            ) : null}
+                            {!help.isSystemManaged ? (
+                              <button
+                                type="button"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  onToggle(iface.id, !iface.enabled, iface.type);
+                                }}
+                                className={`text-xs hover:underline disabled:opacity-40 ${
+                                  iface.enabled ? 'text-amber-400' : 'text-green-400'
+                                }`}
+                                aria-label={
+                                  iface.enabled
+                                    ? t('connectionPanel.reticulumInterfaces.disableAria', {
+                                        name: iface.name,
+                                      })
+                                    : t('connectionPanel.reticulumInterfaces.enableAria', {
+                                        name: iface.name,
+                                      })
+                                }
+                              >
+                                {iface.enabled
+                                  ? t('connectionPanel.reticulumInterfaces.disable')
+                                  : t('connectionPanel.reticulumInterfaces.enable')}
+                              </button>
+                            ) : null}
+                            {!help.isSystemManaged ? (
+                              <button
+                                type="button"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  onDelete(iface.id, iface.name);
+                                }}
+                                className="text-xs text-red-400 hover:underline disabled:opacity-40"
+                                aria-label={t('connectionPanel.reticulumInterfaces.delete', {
+                                  name: iface.name,
+                                })}
+                              >
+                                {t('connectionPanel.reticulumInterfaces.delete')}
+                              </button>
+                            ) : null}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </>
           )}
-        </ul>
+        </div>
         {editingInterface ? (
           <InterfaceEditPanel
             key={editingInterface.id}

@@ -1448,14 +1448,8 @@ pub fn ensure_share_instance_defaults(config_dir: &Path) -> Result<bool, String>
 
 /// Official public-testnet TCP hubs that were decommissioned (DNS gone / port closed).
 /// Keep host/port pairs in sync with `src/shared/reticulumDecommissionedHubs.ts`.
-const DECOMMISSIONED_TCP_HUBS: &[(&[&str], u16)] = &[
-    (&["dublin.connect.reticulum.network"], 4965),
-    (&["amsterdam.connect.reticulum.network"], 4965),
-    (
-        &["reticulum.betweentheborders.com", "betweentheborders.com"],
-        4242,
-    ),
-];
+const DECOMMISSIONED_TCP_HUBS: &[(&[&str], u16)] =
+    &[(&["amsterdam.connect.reticulum.network"], 4965)];
 
 fn normalize_tcp_hub_host(host: &str) -> String {
     let trimmed = host.trim();
@@ -1879,7 +1873,7 @@ loglevel = 4
     }
 
     #[test]
-    fn ensure_decommissioned_hubs_disabled_turns_off_dublin_and_btb() {
+    fn ensure_decommissioned_hubs_disabled_turns_off_amsterdam() {
         let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).unwrap();
         write_config(
@@ -1892,17 +1886,17 @@ loglevel = 4
 
 [interfaces]
 
-[[RNS Testnet Dublin]]
+[[RNS Testnet Amsterdam]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = amsterdam.connect.reticulum.network
+target_port = 4965
+
+[[RNS Dublin Mainnet]]
 type = TCPClientInterface
 interface_enabled = Yes
 target_host = dublin.connect.reticulum.network
 target_port = 4965
-
-[[RNS Testnet BetweenTheBorders]]
-type = TCPClientInterface
-interface_enabled = Yes
-target_host = betweentheborders.com
-target_port = 4242
 
 [[RNS_Transport_US-East]]
 type = TCPClientInterface
@@ -1913,12 +1907,15 @@ target_port = 4965
         )
         .unwrap();
         let disabled = ensure_decommissioned_hubs_disabled(&dir).unwrap();
-        assert_eq!(disabled.len(), 2);
-        assert!(disabled.contains(&"RNS Testnet Dublin".to_string()));
-        assert!(disabled.contains(&"RNS Testnet BetweenTheBorders".to_string()));
+        assert_eq!(disabled.len(), 1);
+        assert!(disabled.contains(&"RNS Testnet Amsterdam".to_string()));
         let content = read_config(&dir).unwrap();
-        assert!(content.contains("dublin.connect.reticulum.network"));
+        assert!(content.contains("amsterdam.connect.reticulum.network"));
         assert!(content.contains("interface_enabled = No"));
+        // Live Dublin preset must not be force-disabled.
+        assert!(content.contains(
+            "[[RNS Dublin Mainnet]]\ntype = TCPClientInterface\ninterface_enabled = Yes"
+        ));
         assert!(content.contains("45.77.109.86"));
         // Second pass is a no-op.
         assert!(
