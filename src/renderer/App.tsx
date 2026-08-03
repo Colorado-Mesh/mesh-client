@@ -263,6 +263,7 @@ import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
+import { useTimeFormatStore } from './stores/timeFormatStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
@@ -498,6 +499,27 @@ function AppContent() {
       window.removeEventListener('mesh-client:rncp-offer', onOffer);
     };
   }, [addToast, t]);
+
+  // Reconcile 24h clock from SQLite early — AppPanel is lazy and Chat reads the store first.
+  useEffect(() => {
+    let cancelled = false;
+    void window.electronAPI.appSettings
+      .getAll()
+      .then((raw) => {
+        if (cancelled) return;
+        const use24 = raw?.use24HourTime;
+        if (use24 === 'true' || use24 === 'false') {
+          useTimeFormatStore.getState().hydrateFromSqlite(use24 === 'true');
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn('[App] use24HourTime hydrate failed ' + errLikeToLogString(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const runtimes = useAllRuntimes();
   const meshtasticRuntime = runtimes.meshtastic as unknown as MeshtasticRuntime;
   const meshcoreRuntime = runtimes.meshcore as unknown as MeshcoreRuntime;
