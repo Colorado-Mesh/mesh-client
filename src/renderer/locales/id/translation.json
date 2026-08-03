@@ -1121,16 +1121,16 @@
       "advancedAria": "Opsi nilai kunci antarmuka tingkat lanjut",
       "advancedKeyReserved": "Kunci \"{{key}}\" adalah bidang yang diketahui dan diabaikan — gunakan formulir di atas.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Hub ini dinonaktifkan dan tidak dapat tetap diaktifkan — mesh-client mematikannya pada setiap awal stack. Gunakan Tambahkan hub jaringan default atau direktori backbone untuk endpoint langsung.",
+      "decommissionedHubEnableBlocked": "Hub ini sudah dinonaktifkan dan tidak dapat tetap diaktifkan — mesh-client mematikannya setiap kali stack dimulai. Gunakan «Tambahkan backbone default» atau direktori backbone untuk endpoint aktif.",
       "decommissionedBadge": "dinonaktifkan",
-      "defaultHubsPickerTitle": "Tambahkan hub jaringan default",
+      "defaultHubsPickerTitle": "Tambahkan backbone default",
       "defaultHubsPickerConfirm": "Tambahkan hub {{count}}",
       "defaultHubsPickerConfirmSync": "Sinkronkan Dipilih",
       "defaultHubsPickerConfirmAria": "Tambahkan atau sinkronkan {{count}} hub default yang dipilih",
       "defaultHubAlreadyAdded": "Item sudah ditambahkan",
       "defaultHubPresetAria": "{{name}}, {{endpoint}}",
       "defaultHubRegion": {
-        "primary_global": "Tulang Punggung Utama & Global",
+        "primary_global": "Backbone Utama & Global",
         "north_america": "Amerika Utara",
         "europe": "Eropa",
         "asia_oceania": "Asia & Oseania",
@@ -1154,13 +1154,13 @@
       "enableAria": "Aktifkan antarmuka {{name}}",
       "disableAria": "Nonaktifkan antarmuka {{name}}",
       "defaultHubsLabel": "Tulang punggung default",
-      "addDefaultHubs": "Tambahkan tulang punggung default",
+      "addDefaultHubs": "Tambahkan backbone default",
       "addDefaultHubsAria": "Pilih tulang punggung Reticulum regional untuk ditambahkan, lalu sinkronkan preset yang dipilih",
       "addDefaultHubsAllPresent": "Tulang punggung yang dipilih sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan.",
       "addDefaultHubsFailed": "Gagal menambahkan tulang punggung default.",
       "backboneEnableGuidanceLead": "Aktifkan 1 hingga 3 gateway backbone paling banyak",
-      "backboneEnableGuidanceBody": "—2 adalah sweet spot untuk redundansi tanpa mengasapi bandwidth yang tidak perlu. Bidik 1 hub global dan 1 gateway regional, dan aktifkan antarmuka khusus (seperti I2P atau Yggdrasil) secara ketat sesuai kebutuhan. RNode yang terhubung secara lokal dan antarmuka Lan lokal tidak dihitung dalam batas tulang punggung ini.",
-      "defaultHubsPickerHint": "Mulailah dengan Primary & Global plus wilayah Anda. Aktifkan 1 hingga 3 gerbang backbone paling banyak (2 adalah sweet spot). Antarmuka RNode dan Lan lokal tidak dihitung. Entri baru ditambahkan dinonaktifkan sehingga Anda dapat meninjau sebelum mengaktifkan. Sinkronisasi juga menonaktifkan sisa hub testnet resmi yang dinonaktifkan (Amsterdam)."
+      "backboneEnableGuidanceBody": "—2 adalah titik ideal untuk redundansi tanpa pemborosan bandwidth. Bidik 1 hub global dan 1 gateway regional, dan aktifkan antarmuka khusus (seperti I2P atau Yggdrasil) hanya jika diperlukan. RNode yang terhubung lokal dan antarmuka LAN lokal tidak dihitung dalam batas backbone ini.",
+      "defaultHubsPickerHint": "Mulai dengan Utama & Global plus wilayah Anda. Aktifkan paling banyak 1 hingga 3 gateway backbone (2 adalah titik ideal). RNode lokal dan antarmuka LAN tidak dihitung. Entri baru ditambahkan dalam keadaan nonaktif agar bisa ditinjau. Sync juga menonaktifkan sisa hub testnet resmi yang sudah dinonaktifkan (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Mengaktifkan hub batas / tulang punggung: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "Antrean TX turun pada: {{names}} — antarmuka itu mungkin jenuh.",
         "tooManyDefaultBackbones": "Anda telah mengaktifkan {{count}} tulang punggung default. Pertimbangkan untuk menonaktifkan ekstra dan menyimpan sekitar 2 untuk redundansi.",
-        "decommissionedHubEnabled": "Hub yang dinonaktifkan \"{{name}}\" masih diaktifkan — mesh-client mematikannya di setiap awal tumpukan. Gunakan Tambahkan tulang punggung default atau direktori tulang punggung untuk titik akhir langsung."
+        "decommissionedHubEnabled": "Hub yang dinonaktifkan «{{name}}» masih aktif — mesh-client mematikannya setiap kali stack dimulai. Gunakan «Tambahkan backbone default» atau direktori backbone untuk endpoint aktif."
       }
     },
     "routingPort": {

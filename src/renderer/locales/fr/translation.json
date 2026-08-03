@@ -1120,16 +1120,16 @@
       "advancedAria": "Options avancées de valeur de clé d'interface",
       "advancedKeyReserved": "La clé « {{key}} » est un champ connu et a été ignoré — utilisez le formulaire ci-dessus.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Ce hub est hors service et ne peut pas rester activé — mesh-client l’éteint à chaque démarrage de la pile. Utilisez Ajouter des hubs réseau par défaut ou le répertoire backbone pour les points de terminaison actifs.",
+      "decommissionedHubEnableBlocked": "Ce hub est hors service et ne peut pas rester activé — mesh-client le désactive à chaque démarrage de la pile. Utilisez « Ajouter des backbones par défaut » ou le répertoire des backbones pour des points de terminaison actifs.",
       "decommissionedBadge": "inactif",
-      "defaultHubsPickerTitle": "Ajouter des concentrateurs réseau par défaut",
+      "defaultHubsPickerTitle": "Ajouter des backbones par défaut",
       "defaultHubsPickerConfirm": "Ajouter des concentrateurs {{count}}",
       "defaultHubsPickerConfirmSync": "Synchroniser la sélection",
       "defaultHubsPickerConfirmAria": "Ajouter ou synchroniser {{count}} concentrateurs par défaut sélectionnés",
       "defaultHubAlreadyAdded": "déjà ajouté",
       "defaultHubPresetAria": "{{name}}, {{endpoint}}",
       "defaultHubRegion": {
-        "primary_global": "Colonne vertébrale principale et mondiale",
+        "primary_global": "Backbone primaire et mondial",
         "north_america": "Amérique du Nord",
         "europe": "Europe",
         "asia_oceania": "Asie & Océanie",
@@ -1158,8 +1158,8 @@
       "addDefaultHubsAllPresent": "Les backbones sélectionnés sont déjà configurés ; aucun hub de testnet désactivé n'est activé.",
       "addDefaultHubsFailed": "Échec de l'ajout des backbones par défaut.",
       "backboneEnableGuidanceLead": "Activer 1 à 3 passerelles dorsales au maximum",
-      "backboneEnableGuidanceBody": "—2 est le point idéal pour la redondance sans gonflement inutile de la bande passante. Visez 1 hub mondial et 1 passerelle régionale, et activez les interfaces spécialisées (comme I2P ou Yggdrasil) strictement selon les besoins. Les nœuds RNodes connectés localement et les interfaces LAN locales ne sont pas pris en compte dans cette limite dorsale.",
-      "defaultHubsPickerHint": "Commencez avec Primary & Global et votre région. Activez 1 à 3 passerelles dorsales au maximum (2 est le point idéal). Les RNodes locaux et les interfaces LAN ne comptent pas. Les nouvelles entrées sont ajoutées et désactivées afin que vous puissiez les consulter avant de les activer. Sync désactive également les hubs de testnet officiels déclassés restants (Amsterdam)."
+      "backboneEnableGuidanceBody": "—2 est l’optimum pour la redondance sans gaspiller la bande passante. Visez 1 hub mondial et 1 passerelle régionale, et activez les interfaces spécialisées (comme I2P ou Yggdrasil) seulement si besoin. Les RNodes connectés localement et les interfaces LAN locales ne comptent pas dans cette limite de backbone.",
+      "defaultHubsPickerHint": "Commencez par Primaire et mondial plus votre région. Activez au plus 1 à 3 passerelles backbone (2 est l’optimum). Les RNodes locaux et les interfaces LAN ne comptent pas. Les nouvelles entrées sont ajoutées désactivées pour révision. Sync désactive aussi les hubs de testnet officiels hors service restants (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Hubs de frontière / dorsale activés : {{hubs}}.",
         "announceBusPressureTipTxSaturated": "La file d'attente TX tombe sur : {{names}} — cette interface peut être saturée.",
         "tooManyDefaultBackbones": "Vous avez activé les backbones par défaut {{count}}. Envisagez de désactiver les extras et de conserver environ 2 pour la redondance.",
-        "decommissionedHubEnabled": "Le hub « {{name}} » mis hors service est toujours activé — mesh-client l'éteint à chaque démarrage de la pile. Utilisez Ajouter des backbones par défaut ou le répertoire de backbone pour les points de terminaison en direct."
+        "decommissionedHubEnabled": "Le hub hors service « {{name}} » est encore activé — mesh-client le désactive à chaque démarrage de la pile. Utilisez « Ajouter des backbones par défaut » ou le répertoire des backbones pour des points de terminaison actifs."
       }
     },
     "routingPort": {
@@ -3074,16 +3074,16 @@
     "sortByHopsDesc": "Trier par sauts, le plus éloigné en premier",
     "sortByNameAsc": "Tri par nom : A à Z",
     "sortByNameDesc": "Tri par nom : Z à A",
-    "pageLoadingCountdown": "Chargement de la page… {{time}} gauche",
+    "pageLoadingCountdown": "Chargement de la page… {{time}} restantes",
     "pageLoadingCountdownOverdue": "Chargement de la page… fonctionne toujours",
     "pageReadyToast": "Nomad — Page nomade prête : {{name}}",
     "staleLastSeenHint": "Dernière écoute {{time}} — ce nœud peut être hors ligne même s'il est répertorié comme en ligne.",
-    "pageLoadingRetryCountdown": "Première tentative expirée — actualisation du chemin et nouvelle tentative… {{time}} restante",
+    "pageLoadingRetryCountdown": "Premier essai expiré — actualisation du chemin et nouvel essai… {{time}} restantes",
     "pageLoadingRetryOverdue": "Actualiser le chemin et réessayer… toujours en cours",
     "enterUrlHint": "Collez une adresse Nomad ou sélectionnez un nœud dans la liste.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
     "goToUrl": "OK",
-    "pageLoadingTimeLeft": "{{time}} restante lors de cette tentative",
+    "pageLoadingTimeLeft": "{{time}} restantes pour cette tentative",
     "pageLoadingStillWorking": "Travail en cours...",
     "pageProgressLinking": "Connexion via {{iface}} ({{hops}} hops)…",
     "pageProgressLinkingIface": "Connexion via {{iface}}…",
@@ -3213,7 +3213,7 @@
     "pathsGlobalPreference": "Global : {{preference}}",
     "pathsListAria": "Emplacements de chemin classés",
     "pathsActiveBadge": "Actif",
-    "pathsBackupBadge": "Sauvegarde",
+    "pathsBackupBadge": "Secours",
     "pathsMedium": "Support",
     "pathsExpired": "Expiré",
     "pathsEmpty": "Aucun emplacement de chemin pour le moment. Demandez un chemin ou attendez une annonce.",

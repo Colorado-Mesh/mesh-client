@@ -24,11 +24,13 @@ import {
 } from '../../../shared/nodeNameUtils';
 import { upsertNodeRecord } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
+import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { validateCoords } from '../coordUtils';
 import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListeners } from '../drivers/attachTypedPacketListener';
 import { shouldPreserveStaticGpsForSelfNode } from '../gpsSource';
 import { getIdentityNode } from '../identityStoreReads';
+import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import {
   computeNodeInfoLastHeardMs,
   mergeMeshtasticLivePacketLastHeard,
@@ -48,6 +50,11 @@ import type {
 } from '../types';
 import { processMeshtasticNodeDiagnostics } from './meshtasticProcessNodeDiagnostics';
 import { cacheTransportDisplayName } from './transportDisplayNameCache';
+
+/** Skip hear bumps for MeshCore BLE MAC-derived Meshtastic ghost nodes. */
+function shouldSuppressGhostNodeHear(nodeNum: number): boolean {
+  return shouldSuppressMeshtasticNodeHear(nodeNum, getConnectedMeshcoreBleMac());
+}
 
 const ROLE_CLIENT_MUTE = 1;
 const BLE_DEVICE_NAMES_KEY = 'mesh-client:bleDeviceNames';
@@ -140,6 +147,7 @@ function handleUserPacketNodeInfo(
   deps: MeshtasticNodeSideEffectsDeps,
 ): void {
   const nodeNum = info.nodeId;
+  if (shouldSuppressGhostNodeHear(nodeNum)) return;
   deps.rfHeardNodeIds.current.add(nodeNum);
   const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
   const long_name = preferNonEmptyTrimmedString(info.longName, existing.long_name, {
@@ -210,6 +218,7 @@ function handleNodeDbNodeInfo(
   deps: MeshtasticNodeSideEffectsDeps,
 ): void {
   const nodeNum = info.nodeId;
+  if (shouldSuppressGhostNodeHear(nodeNum)) return;
   const myNodeNum = deps.getMyNodeNum();
   const isSelf = nodeNum === myNodeNum;
   deps.rfHeardNodeIds.current.add(nodeNum);
@@ -316,6 +325,7 @@ function handlePosition(
   const nodeNum = position.nodeId;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (position.latitude == null || position.longitude == null) return;
+  if (shouldSuppressGhostNodeHear(nodeNum)) return;
   const myNodeNum = deps.getMyNodeNum();
   if (nodeNum !== 0) {
     deps.rfHeardNodeIds.current.add(nodeNum);
@@ -370,6 +380,7 @@ function handleEnvironmentTelemetry(
   deps: MeshtasticNodeSideEffectsDeps,
 ): void {
   const nodeNum = telemetry.nodeId;
+  if (shouldSuppressGhostNodeHear(nodeNum)) return;
   const point: EnvironmentTelemetryPoint = {
     timestamp: Date.now(),
     nodeNum,
@@ -442,6 +453,7 @@ function handleDeviceMetricsTelemetry(
   deps: MeshtasticNodeSideEffectsDeps,
 ): void {
   const nodeNum = telemetry.nodeId;
+  if (shouldSuppressGhostNodeHear(nodeNum)) return;
   const myNodeNum = deps.getMyNodeNum();
   const point: TelemetryPoint = {
     timestamp: Date.now(),

@@ -1121,9 +1121,9 @@
       "advancedAria": "고급 인터페이스 키-값 옵션",
       "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "이 허브는 서비스 종료되어 활성 상태를 유지할 수 없습니다 — mesh-client는 스택을 시작할 때마다 끕니다. 라이브 엔드포인트에는 기본 네트워크 허브 추가 또는 백본 디렉터리를 사용하세요.",
+      "decommissionedHubEnableBlocked": "이 허브는 폐기되어 계속 사용할 수 없습니다 — mesh-client는 스택을 시작할 때마다 끕니다. 활성 엔드포인트는 «기본 백본 추가» 또는 백본 목록을 사용하세요.",
       "decommissionedBadge": "해체됨",
-      "defaultHubsPickerTitle": "기본 네트워크 허브 추가",
+      "defaultHubsPickerTitle": "기본 백본 추가",
       "defaultHubsPickerConfirm": "{{count}} 허브 추가",
       "defaultHubsPickerConfirmSync": "동기화 선택됨",
       "defaultHubsPickerConfirmAria": "선택한 기본 허브 {{count}} 개 추가 또는 동기화",
@@ -1160,7 +1160,7 @@
       "addDefaultHubsFailed": "기본 백본을 추가하지 못했습니다.",
       "backboneEnableGuidanceLead": "최대 1 ~ 3개의 백본 게이트웨이 활성화",
       "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
-      "defaultHubsPickerHint": "Primary & Global + 지역으로 시작하세요. 최대 1 ~ 3 개의 백본 게이트웨이를 활성화하십시오 (2 개가 가장 좋은 지점입니다). 로컬 RNode 및 LAN 인터페이스는 포함되지 않습니다. 새 항목이 비활성화되어 활성화하기 전에 검토할 수 있습니다. 또한 SYNC는 해체된 나머지 공식 테스트넷 허브 (암스테르담) 를 비활성화합니다."
+      "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "활성화된 경계/백본 허브: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX 대기열 드롭: {{names}} — 해당 인터페이스가 포화 상태일 수 있습니다.",
         "tooManyDefaultBackbones": "기본 백본이 {{count}} 개 활성화되어 있습니다. 엑스트라를 비활성화하고 이중화를 위해 약 2 개를 유지하는 것이 좋습니다.",
-        "decommissionedHubEnabled": "해체된 허브 \"{{name}}\" 가 여전히 활성화되어 있습니다 — mesh-client는 모든 스택 시작 시 이를 끕니다. 라이브 엔드포인트에 기본 백본 추가 또는 백본 디렉토리를 사용합니다."
+        "decommissionedHubEnabled": "폐기된 허브 «{{name}}»가 아직 사용 중입니다 — mesh-client는 스택을 시작할 때마다 끕니다. 활성 엔드포인트는 «기본 백본 추가» 또는 백본 목록을 사용하세요."
       }
     },
     "routingPort": {
@@ -2974,7 +2974,7 @@
     "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
     "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨",
     "echoesConnectionHealthTooltip": "{{score}} % 연결 상태",
-    "tabAll": "All",
+    "tabAll": "전체",
     "tabHistory": "기록",
     "emptyHistory": "아직 다이렉트 메시지가 없습니다. DM을 보내거나 받아 피어를 확인하세요."
   },
@@ -3213,7 +3213,7 @@
     "pathsGlobalPreference": "전역: {{preference}}",
     "pathsListAria": "순위가 지정된 경로 슬롯",
     "pathsActiveBadge": "활성화",
-    "pathsBackupBadge": "백업",
+    "pathsBackupBadge": "예비",
     "pathsMedium": "매체",
     "pathsExpired": "만료됨",
     "pathsEmpty": "아직 경로 슬롯이 없습니다. 경로를 요청하거나 발표를 기다리세요.",

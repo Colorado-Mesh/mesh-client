@@ -3755,6 +3755,87 @@ function checkReticulumMapIssues(ctx) {
   return issues;
 }
 
+/**
+ * Post-v5.25.0 false friends: backbone anatomy, Nomad “left”, hub→backbone picker,
+ * zh recipes tabAll, ja spaced I2P.
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkPreReleaseLocaleAccuracyIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en') return issues;
+
+  const BACKBONE_ANATOMY = [
+    { re: /colonne vertébrale/i, hint: 'use network backbone, not spine/anatomy' },
+    { re: /spina dorsale/i, hint: 'use network backbone (dorsale), not spine anatomy' },
+    { re: /tulang punggung/i, hint: 'use backbone (network), not spine anatomy' },
+    { re: /\bkręgosłup/i, hint: 'use magistrala/sieć szkieletowa, not kręgosłup' },
+  ];
+
+  if (
+    flatKey === 'connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global' ||
+    flatKey === 'connectionPanel.reticulumInterfaces.addDefaultHubs' ||
+    flatKey === 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle'
+  ) {
+    for (const { re, hint } of BACKBONE_ANATOMY) {
+      if (re.test(val)) {
+        issues.push(`${flatKey} false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey === 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle' &&
+    /network hub|netzwerk-hub|concentrator|集线器|ネットワークハブ|hub jaringan|ağ hub/i.test(val)
+  ) {
+    issues.push(
+      'defaultHubsPickerTitle must use backbone wording aligned with addDefaultHubs, not network hubs',
+    );
+  }
+
+  if (
+    (flatKey === 'nomadNetwork.pageLoadingCountdown' ||
+      flatKey === 'nomadNetwork.pageLoadingRetryCountdown' ||
+      flatKey === 'nomadNetwork.pageLoadingTimeLeft') &&
+    enVal.includes('left')
+  ) {
+    if (
+      /\bgauche\b|\bizquierda\b|\bsinistra\b|\besquerda\b|(?:^|[^\p{L}])左(?:$|[^\p{L}])|\bліворуч\b/iu.test(
+        val,
+      )
+    ) {
+      issues.push(
+        `${flatKey}: translate "left" as time remaining, not direction (gauche/izquierda/左/…)`,
+      );
+    }
+  }
+
+  if (flatKey === 'nodeListPanel.tabAll' && locale === 'zh' && /食谱/.test(val)) {
+    issues.push('nodeListPanel.tabAll must mean all nodes, not recipes (食谱)');
+  }
+
+  if (
+    (flatKey === 'connectionPanel.reticulumInterfaces.purpose.i2p' ||
+      flatKey === 'connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody' ||
+      flatKey === 'networkPanel.reticulumStackSettings.pathMediumPreferenceHint') &&
+    locale === 'ja' &&
+    /I\s+2\s+P/.test(val)
+  ) {
+    issues.push(`${flatKey}: keep I2P as contiguous token (not "I 2 P")`);
+  }
+
+  if (
+    flatKey === 'networkPanel.reticulumStackSettings.pathMediumPreference' &&
+    locale === 'es' &&
+    /\bPath\b/.test(val)
+  ) {
+    issues.push('pathMediumPreference must not leave English "Path" in Spanish');
+  }
+
+  return issues;
+}
+
 /** RRC chat rooms — not hotel rooms; slash commands must stay wire tokens. */
 export const RRC_PREFIX = 'rrc.';
 
@@ -3929,6 +4010,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkReticulumDefaultHubKeyIssues,
   checkRepeatersCliIssues,
   checkReticulumMapIssues,
+  checkPreReleaseLocaleAccuracyIssues,
   checkHopAwayVerbFalseFriendIssues,
   checkAirTimeFalseFriendIssues,
   checkWireTokenLiteralPreservedIssues,

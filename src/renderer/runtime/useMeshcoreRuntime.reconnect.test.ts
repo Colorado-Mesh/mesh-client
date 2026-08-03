@@ -150,8 +150,11 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(lostBody).toContain('setConnectedMeshcoreBleMac(null)');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toContain('resolveConnectedMeshcoreBleIdentity');
+    expect(reconnectBody).toContain('resolveConnectedMeshcoreBleMacForSuppression');
     expect(reconnectBody).toContain('readMeshcoreWebBluetoothDeviceId');
-    expect(reconnectBody).toMatch(/Reconnect succeeded[\s\S]*?setConnectedMeshcoreBleMac\(bleId\)/);
+    expect(reconnectBody).toMatch(
+      /Reconnect succeeded[\s\S]*?setConnectedMeshcoreBleMac\(resolveConnectedMeshcoreBleMacForSuppression\(bleIdentityOpts\)\)/,
+    );
   });
 
   it('clears MeshCore BLE MAC on prepareRfConnect replacement and BLE connect failure', () => {
@@ -166,11 +169,12 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('sets MeshCore BLE identity after connect attach including Linux Web Bluetooth without blePeripheralId', () => {
     const connectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'connect');
     expect(connectBody).toContain('resolveConnectedMeshcoreBleIdentity');
+    expect(connectBody).toContain('resolveConnectedMeshcoreBleMacForSuppression');
     expect(connectBody).toContain('readMeshcoreWebBluetoothDeviceId(opened.conn)');
     expect(connectBody).toContain(
       "fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore')",
     );
-    expect(connectBody).toContain("setConnectedMeshcoreBleMac(type === 'ble' ? bleId : null)");
+    expect(connectBody).toContain('bleIdentityOpts ? resolveConnectedMeshcoreBleMacForSuppression');
   });
 
   it('flushes deferred reconnects after reconnect attempts settle', () => {

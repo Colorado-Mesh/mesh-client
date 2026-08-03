@@ -1121,9 +1121,9 @@
       "advancedAria": "高级界面键值选项",
       "advancedKeyReserved": "键“{{key}}”是已知字段，已被忽略—请使用上面的表单。",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "此集线器已停用且无法保持启用 — mesh-client 会在每次堆栈启动时将其关闭。请使用“添加默认网络集线器”或骨干目录获取可用端点。",
+      "decommissionedHubEnableBlocked": "此枢纽已停用，无法保持启用 — mesh-client 会在每次启动协议栈时关闭它。请使用“添加默认骨干网”或骨干网目录获取可用端点。",
       "decommissionedBadge": "退役",
-      "defaultHubsPickerTitle": "添加默认网络集线器",
+      "defaultHubsPickerTitle": "添加默认骨干网",
       "defaultHubsPickerConfirm": "添加{{count}}集线器",
       "defaultHubsPickerConfirmSync": "同步所选",
       "defaultHubsPickerConfirmAria": "添加或同步{{count}}所选默认集线器",
@@ -1160,7 +1160,7 @@
       "addDefaultHubsFailed": "添加默认骨干网失败。",
       "backboneEnableGuidanceLead": "最多启用1至3个骨干网关",
       "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
-      "defaultHubsPickerHint": "从主要和全球以及您所在的地区开始。最多启用1至3个骨干网关（ 2个是最佳选择）。本地RNode和LAN接口不计算在内。新条目被禁用，因此您可以在启用前查看。SYNC还会禁用剩余的退役官方测试网中心（阿姆斯特丹）。"
+      "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "已启用边界/骨干集线器： {{hubs}}。",
         "announceBusPressureTipTxSaturated": "TX队列丢弃时间： {{names}} —该接口可能已饱和。",
         "tooManyDefaultBackbones": "您已启用{{count}}默认骨干网。请考虑禁用额外功能，并保留约2个以备不时之需。",
-        "decommissionedHubEnabled": "停用的集线器“{{name}}”仍处于启用状态—mesh-client在每次堆栈启动时将其关闭。使用添加默认主干或实时终结点的主干目录。"
+        "decommissionedHubEnabled": "已停用的枢纽“{{name}}”仍处于启用状态 — mesh-client 会在每次启动协议栈时关闭它。请使用“添加默认骨干网”或骨干网目录获取可用端点。"
       }
     },
     "routingPort": {
@@ -2552,7 +2552,7 @@
       "save": "保存堆栈设置",
       "saveFailed": "无法保存堆栈设置。",
       "pathMediumPreference": "首选路径介质",
-      "pathMediumPreferenceHint": "当可以通过射频和网络（ TCP/I2P等）访问对等节点时，默认情况下选择哪种介质获胜。最低路径仅按跳数排名。“同行”选项卡上的每点引脚可以覆盖此设置。",
+      "pathMediumPreferenceHint": "当对等节点可通过射频和网络（TCP/I2P 等）到达时，选择默认优先使用哪种介质。最低路径仅按跳数排序。对等节点选项卡上的按节点固定设置可覆盖此项。",
       "pathMediumLowest": "最低路径（跳数）",
       "pathMediumNetwork": "网络（非RF ）",
       "pathMediumRf": "RF (RNode)",
@@ -2974,7 +2974,7 @@
     "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
     "connectedViaRfAndMqttAria": "通过射频和MQTT连接",
     "echoesConnectionHealthTooltip": "{{score}} %连接健康",
-    "tabAll": "所有食谱",
+    "tabAll": "全部",
     "tabHistory": "历史",
     "emptyHistory": "还没有私信—发送或接收 DM 以在此处查看对等节点。"
   },
@@ -3074,16 +3074,16 @@
     "sortByHopsDesc": "按跃点排序，最远的在前",
     "sortByNameAsc": "按名称排序 - A 到 Z",
     "sortByNameDesc": "按名称排序 - Z 到 A",
-    "pageLoadingCountdown": "正在加载页面... {{time}} 左",
+    "pageLoadingCountdown": "正在加载页面… 剩余 {{time}}",
     "pageLoadingCountdownOverdue": "正在加载页面...仍在工作",
     "pageReadyToast": "Nomad 页面就绪：{{name}}",
     "staleLastSeenHint": "最后听说 {{time}} — 即使列为在线，该节点也可能处于离线状态。",
-    "pageLoadingRetryCountdown": "首次尝试超时—刷新路径并重试……剩余{{time}}",
+    "pageLoadingRetryCountdown": "首次尝试超时 — 正在刷新路径并重试… 剩余 {{time}}",
     "pageLoadingRetryOverdue": "正在刷新路径并重试……仍在工作",
     "enterUrlHint": "粘贴 Nomad 地址，或从列表中选择一个节点。",
     "enterUrlPlaceholder": "hash:/page/index.mu",
     "goToUrl": "前往",
-    "pageLoadingTimeLeft": "本次尝试剩余{{time}}",
+    "pageLoadingTimeLeft": "本次尝试剩余 {{time}}",
     "pageLoadingStillWorking": "仍在工作",
     "pageProgressLinking": "正在通过{{iface}} （ {{hops}}跳）连接……",
     "pageProgressLinkingIface": "正在通过{{iface}}连接……",

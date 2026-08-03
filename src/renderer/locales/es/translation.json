@@ -1121,16 +1121,16 @@
       "advancedAria": "Opciones avanzadas de interfaz clave-valor",
       "advancedKeyReserved": "La clave «{{key}}» es un campo conocido y se ignoró. Utilice el formulario anterior.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Este hub está fuera de servicio y no puede permanecer habilitado — mesh-client lo apaga en cada inicio de la pila. Use Agregar hubs de red predeterminados o el directorio backbone para endpoints en vivo.",
+      "decommissionedHubEnableBlocked": "Este hub está fuera de servicio y no puede permanecer habilitado: mesh-client lo desactiva en cada arranque del stack. Use «Añadir backbones predeterminados» o el directorio de backbones para endpoints activos.",
       "decommissionedBadge": "fuera de servicio",
-      "defaultHubsPickerTitle": "Añadir concentradores de red predeterminados",
+      "defaultHubsPickerTitle": "Añadir backbones predeterminados",
       "defaultHubsPickerConfirm": "Añadir {{count}} hubs",
       "defaultHubsPickerConfirmSync": "Sincronización seleccionada",
       "defaultHubsPickerConfirmAria": "Añadir o sincronizar {{count}} concentradores predeterminados seleccionados",
       "defaultHubAlreadyAdded": "ya añadido(s)",
       "defaultHubPresetAria": "{{name}}, {{endpoint}}",
       "defaultHubRegion": {
-        "primary_global": "Red troncal primaria y global",
+        "primary_global": "Backbone primario y global",
         "north_america": "Norteamérica",
         "europe": "Europa",
         "asia_oceania": "Asia Oceanía",
@@ -1160,7 +1160,7 @@
       "addDefaultHubsFailed": "No se han podido añadir los backbones predeterminados.",
       "backboneEnableGuidanceLead": "Habilite de 1 a 3 puertas de enlace troncales como máximo",
       "backboneEnableGuidanceBody": "—2 es el punto óptimo para la redundancia sin una saturación innecesaria del ancho de banda. Apunte a 1 centro global y 1 puerta de enlace regional, y habilite interfaces especializadas (como I2P o Yggdrasil) estrictamente según sea necesario. Los RNodes conectados localmente y las interfaces LAN locales no cuentan para este límite de red troncal.",
-      "defaultHubsPickerHint": "Comience con Primary & Global más su región. Habilite de 1 a 3 puertas de enlace troncales como máximo (2 es el punto óptimo). Los RNodes locales y las interfaces LAN no cuentan. Se han añadido nuevas entradas deshabilitadas para que puedas revisarlas antes de habilitarlas. Sync también desactiva los hubs de testnet oficiales desmantelados restantes (Ámsterdam)."
+      "defaultHubsPickerHint": "Empiece con Primario y global más su región. Active como máximo 1 a 3 puertas de enlace de backbone (2 es el punto óptimo). Los RNodes locales y las interfaces LAN no cuentan. Las entradas nuevas se añaden desactivadas para que pueda revisarlas. Sync también desactiva hubs de testnet oficiales fuera de servicio restantes (Ámsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Hubs de límite / backbone habilitados: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "La cola TX cae en: {{names}} — esa interfaz puede estar saturada.",
         "tooManyDefaultBackbones": "Tienes {{count}} backbones predeterminados habilitados. Considere deshabilitar los extras y mantener alrededor de 2 por redundancia.",
-        "decommissionedHubEnabled": "El concentrador desmantelado \"{{name}}\" todavía está habilitado: mesh-client lo apaga en cada inicio de pila. Utilice Agregar backbones predeterminados o el directorio de backbone para puntos finales en vivo."
+        "decommissionedHubEnabled": "El hub fuera de servicio «{{name}}» sigue habilitado: mesh-client lo desactiva en cada arranque del stack. Use «Añadir backbones predeterminados» o el directorio de backbones para endpoints activos."
       }
     },
     "routingPort": {
@@ -2551,12 +2551,12 @@
       "logLevel": "Nivel de registro",
       "save": "Guardar configuración de pila",
       "saveFailed": "No se pudo guardar la configuración de la pila.",
-      "pathMediumPreference": "Medio Path preferido",
-      "pathMediumPreferenceHint": "Cuando se puede acceder a un par a través de RF y red (TCP/I2P/etc.), elija qué medio gana de forma predeterminada. La ruta más baja se clasifica solo por recuento de saltos. Los pines Per-peer en la pestaña Peers pueden anular esto.",
+      "pathMediumPreference": "Medio de ruta preferido",
+      "pathMediumPreferenceHint": "Cuando un par es alcanzable por RF y red (TCP/I2P/etc.), elija qué medio gana por defecto. La ruta más baja se ordena solo por saltos. Los anclajes por par en la pestaña Pares pueden anular esto.",
       "pathMediumLowest": "Ruta más baja (conteo de saltos)",
       "pathMediumNetwork": "Red (no RF)",
       "pathMediumRf": "RF (RNode)",
-      "pathMediumPreferenceAria": "Medio Path preferido global",
+      "pathMediumPreferenceAria": "Medio de ruta preferido global",
       "pathMediumPreferenceSaved": "Ruta de preferencia media guardada.",
       "pathMediumPreferenceSaveFailed": "Error al guardar la preferencia del medio de ruta."
     },
@@ -2975,7 +2975,7 @@
     "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT",
     "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión",
     "tabAll": "Todos",
-    "tabHistory": "Historia",
+    "tabHistory": "Historial",
     "emptyHistory": "Aún no hay mensajes directos: envíe o reciba un DM para ver a los peers aquí."
   },
   "nomadNetwork": {
@@ -3074,16 +3074,16 @@
     "sortByHopsDesc": "Ordenar por saltos, el más lejano primero",
     "sortByNameAsc": "Ordenar por nombre A->Z",
     "sortByNameDesc": "Ordenar por nombre Z->A",
-    "pageLoadingCountdown": "Cargando página... {{time}} izquierda",
+    "pageLoadingCountdown": "Cargando página… Quedan {{time}}",
     "pageLoadingCountdownOverdue": "Cargando página… sigue funcionando",
     "pageReadyToast": "Nomad — Página nómada lista: {{name}}",
     "staleLastSeenHint": "Escuchado por última vez {{time}}: este nodo puede estar fuera de línea incluso si figura como en línea.",
-    "pageLoadingRetryCountdown": "Se agotó el tiempo de espera del primer intento: actualizar la ruta y volver a intentarlo… quedan {{time}}",
+    "pageLoadingRetryCountdown": "El primer intento agotó el tiempo — actualizando ruta y reintentando… Quedan {{time}}",
     "pageLoadingRetryOverdue": "Actualizando ruta y reintentando... sigue funcionando",
     "enterUrlHint": "Pegue una dirección Nomad o seleccione un nodo de la lista.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
     "goToUrl": "Avanzar",
-    "pageLoadingTimeLeft": "{{time}} se fue en este intento",
+    "pageLoadingTimeLeft": "Quedan {{time}} en este intento",
     "pageLoadingStillWorking": "Aún trabajando",
     "pageProgressLinking": "Conectando a través de {{iface}} ({{hops}} hops)…",
     "pageProgressLinkingIface": "Conectando a través de {{iface}}...",
@@ -3213,13 +3213,13 @@
     "pathsGlobalPreference": "Preferencia global: {{preference}}",
     "pathsListAria": "Ranuras de ruta clasificadas",
     "pathsActiveBadge": "Activo",
-    "pathsBackupBadge": "Respaldo",
+    "pathsBackupBadge": "Reserva",
     "pathsMedium": "Medio",
     "pathsExpired": "Caducada",
     "pathsEmpty": "Aún no hay ranuras de ruta. Solicita una ruta o espera un anuncio.",
     "pathsLoadFailed": "No se han podido cargar las ranuras de ruta.",
     "pathsPinFailed": "Error al actualizar la preferencia del medio para este compañero.",
-    "tabHistory": "Historia",
+    "tabHistory": "Historial",
     "emptyHistory": "Aún no hay historial de mensajes: envíe o reciba un mensaje LXMF para ver a los peers aquí.",
     "emptyContacts": "Aún no hay contactos guardados: abra un peer y elija Guardar como contacto."
   },

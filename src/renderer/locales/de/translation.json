@@ -1119,9 +1119,9 @@
       "advancedAria": "Erweiterte Schnittstellen-Key-Value-Optionen",
       "advancedKeyReserved": "Der Schlüssel „{{key}}“ ist ein bekanntes Feld und wurde ignoriert — verwende das obige Formular.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Dieser Hub ist außer Betrieb genommen und kann nicht aktiviert bleiben — der Mesh-Client schaltet ihn bei jedem Stapelstart aus. Verwenden Sie Standard-Netzwerk-Hubs oder das Backbone-Verzeichnis für Live-Endpunkte hinzufügen.",
+      "decommissionedHubEnableBlocked": "Dieser Hub ist außer Betrieb und kann nicht aktiviert bleiben — mesh-client schaltet ihn bei jedem Stack-Start aus. Nutzen Sie „Standard-Backbones hinzufügen“ oder das Backbone-Verzeichnis für aktuelle Endpunkte.",
       "decommissionedBadge": "stillgelegt",
-      "defaultHubsPickerTitle": "Standard-Netzwerk-Hubs hinzufügen",
+      "defaultHubsPickerTitle": "Standard-Backbones hinzufügen",
       "defaultHubsPickerConfirm": "{{count}} Hubs hinzufügen",
       "defaultHubsPickerConfirmSync": "Ausgewählte synchronisieren",
       "defaultHubsPickerConfirmAria": "Hinzufügen oder Synchronisieren von {{count}} ausgewählten Standard-Hubs",
@@ -1157,8 +1157,8 @@
       "addDefaultHubsAllPresent": "Ausgewählte Backbones sind bereits konfiguriert; keine außer Betrieb genommenen Testnet-Hubs aktiviert.",
       "addDefaultHubsFailed": "Standard-Backbones konnten nicht hinzugefügt werden.",
       "backboneEnableGuidanceLead": "Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways",
-      "backboneEnableGuidanceBody": "—2 ist der Sweet Spot für Redundanz ohne unnötige Bandbreitenaufblähung. Zielen Sie auf 1 globalen Hub und 1 regionalen Gateway ab und aktivieren Sie spezielle Schnittstellen (wie I2P oder Yggdrasil) streng nach Bedarf. Lokal angeschlossene RNodes und lokale LAN-Schnittstellen zählen nicht zu diesem Backbone-Limit.",
-      "defaultHubsPickerHint": "Beginnen Sie mit Primary & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist der Sweet Spot). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie überprüfen können, bevor Sie sie aktivieren. Sync deaktiviert auch die verbleibenden außer Betrieb genommenen offiziellen Testnet-Hubs (Amsterdam)."
+      "backboneEnableGuidanceBody": "—2 ist optimal für Redundanz ohne unnötigen Bandbreitenverbrauch. Streben Sie 1 globalen Hub und 1 regionales Gateway an, und aktivieren Sie Spezialschnittstellen (wie I2P oder Yggdrasil) nur bei Bedarf. Lokal verbundene RNodes und lokale LAN-Schnittstellen zählen nicht zu diesem Backbone-Limit.",
+      "defaultHubsPickerHint": "Beginnen Sie mit Primär & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist optimal). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie prüfen können. Sync deaktiviert außerdem verbleibende außer Betrieb genommene offizielle Testnet-Hubs (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Aktivierte Grenz- / Backbone-Hubs: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX-Warteschlange fällt auf: {{names}} — diese Schnittstelle kann gesättigt sein.",
         "tooManyDefaultBackbones": "Du hast {{count}} Standard-Backbones aktiviert. Erwägen Sie, Extras zu deaktivieren und etwa 2 für die Redundanz aufzubewahren.",
-        "decommissionedHubEnabled": "Der stillgelegte Hub „{{name}}“ ist immer noch aktiviert — der Mesh-Client schaltet ihn bei jedem Stapelstart aus. Verwenden Sie Standard-Backbones oder das Backbone-Verzeichnis für Live-Endpunkte hinzufügen."
+        "decommissionedHubEnabled": "Außer Betrieb genommener Hub „{{name}}“ ist noch aktiviert — mesh-client schaltet ihn bei jedem Stack-Start aus. Nutzen Sie „Standard-Backbones hinzufügen“ oder das Backbone-Verzeichnis für aktuelle Endpunkte."
       }
     },
     "routingPort": {

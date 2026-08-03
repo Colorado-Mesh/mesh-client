@@ -24,4 +24,26 @@ describe('timeFormatStore', () => {
       'timeFormatStore setUse24HourTime',
     );
   });
+
+  it('hydrateFromSqlite wins over stale localStorage-backed state', () => {
+    useTimeFormatStore.setState({ use24HourTime: false });
+    useTimeFormatStore.getState().hydrateFromSqlite(true);
+    expect(useTimeFormatStore.getState().use24HourTime).toBe(true);
+    expect(mergeAppSetting).toHaveBeenCalledWith(
+      'use24HourTime',
+      true,
+      'timeFormatStore hydrateFromSqlite',
+    );
+  });
+
+  it('hydrateFromSqlite can clear a stale true from localStorage', () => {
+    useTimeFormatStore.setState({ use24HourTime: true });
+    useTimeFormatStore.getState().hydrateFromSqlite(false);
+    expect(useTimeFormatStore.getState().use24HourTime).toBe(false);
+    expect(mergeAppSetting).toHaveBeenCalledWith(
+      'use24HourTime',
+      false,
+      'timeFormatStore hydrateFromSqlite',
+    );
+  });
 });
