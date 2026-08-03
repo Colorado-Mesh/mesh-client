@@ -261,3 +261,42 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
     assertPowerResumeSkipsOnExplicitDisconnect(SOURCE, 'meshtasticExplicitDisconnectRef.current');
   });
 });
+
+describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () => {
+  it('attachRfSession backfills blePeripheralId after a gesture-based Linux connect', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    expect(attachBody.length).toBeGreaterThan(0);
+    // Guarded by `!connectionParamsRef.current.blePeripheralId` so an already-known
+    // peripheralId (picker flow, Noble) is never clobbered.
+    expect(attachBody).toMatch(
+      /type === 'ble' &&\s*reconnectGenerationRef\.current === generation &&\s*connectionParamsRef\.current &&\s*!connectionParamsRef\.current\.blePeripheralId/,
+    );
+    expect(attachBody).toContain('getBlePeripheralIdFromMeshTransport(activeDevice.transport)');
+    expect(attachBody).toContain(
+      'connectionParamsRef.current.blePeripheralId = resolvedPeripheralId',
+    );
+  });
+
+  it('gates the backfill on the generation captured at attachRfSession start (no cross-session stamping)', () => {
+    // A superseded attachRfSession (newer prepareRfConnect already bumped
+    // reconnectGenerationRef and replaced connectionParamsRef.current) must not write
+    // its resolved device id onto a different, newer session's connectionParamsRef.
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    const generationCaptureIdx = attachBody.indexOf(
+      'const generation = reconnectGenerationRef.current',
+    );
+    const guardIdx = attachBody.indexOf('reconnectGenerationRef.current === generation');
+    const backfillIdx = attachBody.indexOf(
+      'connectionParamsRef.current.blePeripheralId = resolvedPeripheralId',
+    );
+    expect(generationCaptureIdx).toBeGreaterThanOrEqual(0);
+    expect(guardIdx).toBeGreaterThan(generationCaptureIdx);
+    expect(backfillIdx).toBeGreaterThan(guardIdx);
+  });
+
+  it('imports the backfill helper from lib/connection', () => {
+    expect(SOURCE).toMatch(
+      /import \{[\s\S]*?getBlePeripheralIdFromMeshTransport[\s\S]*?\} from '\.\.\/lib\/connection'/,
+    );
+  });
+});

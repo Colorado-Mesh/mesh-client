@@ -70,6 +70,11 @@ export class TransportWebBluetoothIpc implements Types.Transport {
     };
   }
 
+  /** Device id resolved by `requestDevice()`/`requestGrantedDevice()` (Linux reconnect state backfill). */
+  getConnectedDeviceId(): string | null {
+    return this._lastGrantedDeviceId;
+  }
+
   static getManager(sessionId: NobleBleSessionId): WebBluetoothManager | undefined {
     return webBluetoothManagerBySession.get(sessionId);
   }
