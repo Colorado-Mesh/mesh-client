@@ -17,6 +17,11 @@ import {
   resolveReticulumProfileIconName,
 } from '@/renderer/lib/reticulum/reticulumIconAppearance';
 import {
+  refreshReticulumPeerRouteFromPaths,
+  RETICULUM_PATH_RETRY_MS,
+  RETICULUM_PATH_SETTLE_MS,
+} from '@/renderer/lib/reticulum/reticulumPathMedium';
+import {
   formatReticulumPeerPathToast,
   formatReticulumPeerProbeToast,
   probeReticulumPeer,
@@ -57,6 +62,7 @@ export default function ReticulumPeerDetailModal({
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
   const setCustomDisplayName = useReticulumPeerStore((s) => s.setCustomDisplayName);
   const removeContact = useReticulumPeerStore((s) => s.removeContact);
+  const updatePeer = useReticulumPeerStore((s) => s.updatePeer);
 
   const identityId =
     getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
@@ -70,6 +76,23 @@ export default function ReticulumPeerDetailModal({
   useEffect(() => {
     void loadActivity(peerHash);
   }, [loadActivity, peerHash]);
+
+  // Hydrate Network fields from sidecar path slots (path may already exist for Chat).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        await refreshReticulumPeerRouteFromPaths(peerHash);
+      } catch (e) {
+        if (!cancelled) {
+          console.debug('[ReticulumPeerDetailModal] path hydrate ' + errLikeToLogString(e));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [peerHash]);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -262,6 +285,12 @@ export default function ReticulumPeerDetailModal({
       const result = await requestReticulumPeerPath(peerHash);
       const toast = formatReticulumPeerPathToast(t, result);
       setPathStatus(toast.message);
+      if (result.ok) {
+        await refreshReticulumPeerRouteFromPaths(peerHash, {
+          settleMs: RETICULUM_PATH_SETTLE_MS,
+          retryMs: RETICULUM_PATH_RETRY_MS,
+        });
+      }
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] path ' + errLikeToLogString(e));
       setPathStatus(t('peerDetailModal.pathFailed', { error: errLikeToLogString(e) }));
@@ -277,6 +306,12 @@ export default function ReticulumPeerDetailModal({
       const result = await probeReticulumPeer(peerHash);
       const toast = formatReticulumPeerProbeToast(t, result);
       setProbeStatus(toast.message);
+      if (result.ok && result.hops != null) {
+        updatePeer(peerHash, { hops: result.hops });
+      }
+      if (result.ok) {
+        await refreshReticulumPeerRouteFromPaths(peerHash);
+      }
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] probe ' + errLikeToLogString(e));
       setProbeStatus(t('peerDetailModal.probeFailed', { error: errLikeToLogString(e) }));

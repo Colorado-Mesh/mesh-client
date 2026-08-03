@@ -490,6 +490,145 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().getPeer('missing')).toBeUndefined();
   });
 
+  it('getPeer overlays live peer route fields onto a saved contact', () => {
+    const hash = 'aa'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            hops: 2,
+            interface: 'RMAP World',
+            path_hash: 'bb'.repeat(16),
+            via_hash: 'bb'.repeat(16),
+          },
+        ],
+      ]),
+      contacts: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'Saved',
+            last_heard: 100,
+            is_contact: true,
+            hops: null,
+            interface: null,
+          },
+        ],
+      ]),
+      history: new Map(),
+    });
+    const peer = useReticulumPeerStore.getState().getPeer(hash);
+    expect(peer?.display_name).toBe('Saved');
+    expect(peer?.hops).toBe(2);
+    expect(peer?.interface).toBe('RMAP World');
+    expect(peer?.path_hash).toBe('bb'.repeat(16));
+  });
+
+  it('updatePeer seeds peers from contact-only rows', () => {
+    const hash = 'cc'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'ContactOnly',
+            last_heard: 50,
+            is_contact: true,
+          },
+        ],
+      ]),
+      history: new Map(),
+    });
+    useReticulumPeerStore.getState().updatePeer(hash, { hops: 3, interface: 'tcp' });
+    expect(useReticulumPeerStore.getState().peers.get(hash)?.hops).toBe(3);
+    expect(useReticulumPeerStore.getState().contacts.get(hash)?.hops).toBe(3);
+    expect(useReticulumPeerStore.getState().contacts.get(hash)?.interface).toBe('tcp');
+  });
+
+  it('peer patches flush route fields onto matching contacts', () => {
+    vi.useFakeTimers();
+    const hash = 'dd'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'Patched',
+            last_heard: 1,
+            is_contact: true,
+          },
+        ],
+      ]),
+      history: new Map(),
+      peersRevision: 0,
+    });
+    applyReticulumPeersUpdatedPatches({
+      patches: [
+        {
+          destination_hash: hash,
+          hops: 4,
+          interface: 'Aurora',
+          path_hash: 'ee'.repeat(16),
+          via_hash: 'ee'.repeat(16),
+          last_seen: 99,
+        },
+      ],
+    });
+    applyReticulumPeerPatchesNow([]);
+    expect(useReticulumPeerStore.getState().contacts.get(hash)?.hops).toBe(4);
+    expect(useReticulumPeerStore.getState().contacts.get(hash)?.interface).toBe('Aurora');
+    expect(useReticulumPeerStore.getState().contacts.get(hash)?.via_hash).toBe('ee'.repeat(16));
+    expect(useReticulumPeerStore.getState().getPeer(hash)?.path_hash).toBe('ee'.repeat(16));
+    vi.useRealTimers();
+  });
+
+  it('applyReticulumPeerActivePathSlot updates contact route from paths result', async () => {
+    const { applyReticulumPeerActivePathSlot } = await import('./reticulumPeerStore');
+    const hash = 'ff'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'SlotPeer',
+            last_heard: 1,
+            is_contact: true,
+          },
+        ],
+      ]),
+      history: new Map(),
+    });
+    const applied = applyReticulumPeerActivePathSlot(hash, {
+      ok: true,
+      paths: [
+        {
+          active: true,
+          expired: false,
+          hops: 2,
+          via_hash: '11'.repeat(16),
+          interface: 'RMAP World',
+          timestamp: 1234,
+        },
+      ],
+    });
+    expect(applied).toBe(true);
+    expect(useReticulumPeerStore.getState().getPeer(hash)).toMatchObject({
+      hops: 2,
+      interface: 'RMAP World',
+      path_hash: '11'.repeat(16),
+      via_hash: '11'.repeat(16),
+    });
+  });
+
   it('clearPeers empties peers, contacts, and history', () => {
     useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aa' }]);
     useReticulumPeerStore.getState().replaceContacts([{ destination_hash: 'bb', last_heard: 1 }]);

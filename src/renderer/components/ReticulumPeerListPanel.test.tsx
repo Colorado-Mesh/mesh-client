@@ -32,6 +32,7 @@ const reticulumSidecarMocks = vi.hoisted(() => ({
   requestReticulumPeerPath: vi.fn(),
   probeReticulumPeer: vi.fn(),
   refreshReticulumPeersFromSidecar: vi.fn(),
+  refreshReticulumPeerRouteFromPaths: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -70,9 +71,17 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   },
 }));
 
+vi.mock('@/renderer/lib/reticulum/reticulumPathMedium', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    refreshReticulumPeerRouteFromPaths: (...args: unknown[]) =>
+      reticulumSidecarMocks.refreshReticulumPeerRouteFromPaths(...args),
+  };
+});
+
 vi.mock('../stores/reticulumPeerStore', async (importOriginal) => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
-  const actual = await importOriginal<typeof import('../stores/reticulumPeerStore')>();
+  const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     refreshReticulumPeersFromSidecar: reticulumSidecarMocks.refreshReticulumPeersFromSidecar,
@@ -113,6 +122,8 @@ describe('ReticulumPeerListPanel', () => {
     reticulumSidecarMocks.probeReticulumPeer.mockReset();
     reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockReset();
     reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockResolvedValue([]);
+    reticulumSidecarMocks.refreshReticulumPeerRouteFromPaths.mockReset();
+    reticulumSidecarMocks.refreshReticulumPeerRouteFromPaths.mockResolvedValue(false);
     useNomadNetworkStore.setState({ nodes: new Map() });
     useReticulumPeerStore.setState({
       peers: new Map([
