@@ -48,8 +48,12 @@ impl LxmfInboundBuffer {
         self.inner.lock().map(|buf| buf.len()).unwrap_or(0)
     }
 
-    /// Snapshot newest-first filtered by optional `since_ts` (inclusive, ms), then reverse to
-    /// chronological order for ingest catch-up.
+    /// Snapshot newest-first filtered by optional `since_ts` (exclusive lower bound, ms),
+    /// then reverse to chronological order for ingest catch-up.
+    ///
+    /// Exclusive (`ts > since_ts`) so a watermark equal to the newest ingested timestamp
+    /// does not re-return that boundary row on every periodic catch-up.
+    /// Same-ms twins at exactly `since_ts` are skipped (accepted tradeoff vs inclusive loop).
     pub fn snapshot(&self, since_ts: Option<i64>, limit: usize) -> Vec<serde_json::Value> {
         let limit = limit.max(1);
         let Ok(buf) = self.inner.lock() else {
@@ -62,7 +66,7 @@ impl LxmfInboundBuffer {
                 Some(min_ts) => row
                     .get("timestamp")
                     .and_then(serde_json::Value::as_i64)
-                    .is_some_and(|ts| ts >= min_ts),
+                    .is_some_and(|ts| ts > min_ts),
             })
             .cloned()
             .collect();
@@ -101,14 +105,45 @@ mod tests {
     }
 
     #[test]
-    fn since_ts_filters_and_limit_keeps_newest() {
+    fn since_ts_filters_exclusive_and_limit_keeps_newest() {
         let buf = LxmfInboundBuffer::new(10);
         buf.push(msg("h1", 100, "a"));
         buf.push(msg("h2", 200, "b"));
         buf.push(msg("h3", 300, "c"));
         let rows = buf.snapshot(Some(200), 2);
-        assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0]["message_hash"], "h2");
-        assert_eq!(rows[1]["message_hash"], "h3");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["message_hash"], "h3");
+    }
+
+    #[test]
+    fn since_ts_at_boundary_returns_empty() {
+        let buf = LxmfInboundBuffer::new(10);
+        buf.push(msg("h2", 200, "b"));
+        let rows = buf.snapshot(Some(200), 10);
+        assert!(rows.is_empty());
+    }
+
+    #[test]
+    fn since_ts_none_returns_full_chronological_buffer() {
+        let buf = LxmfInboundBuffer::new(10);
+        buf.push(msg("h1", 100, "a"));
+        buf.push(msg("h2", 200, "b"));
+        buf.push(msg("h3", 300, "c"));
+        let rows = buf.snapshot(None, 10);
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0]["message_hash"], "h1");
+        assert_eq!(rows[1]["message_hash"], "h2");
+        assert_eq!(rows[2]["message_hash"], "h3");
+    }
+
+    #[test]
+    fn same_ms_twins_excluded_at_exact_since_ts() {
+        let buf = LxmfInboundBuffer::new(10);
+        buf.push(msg("h_a", 200, "a"));
+        buf.push(msg("h_b", 200, "b"));
+        let below = buf.snapshot(Some(199), 10);
+        assert_eq!(below.len(), 2);
+        let at = buf.snapshot(Some(200), 10);
+        assert!(at.is_empty());
     }
 }

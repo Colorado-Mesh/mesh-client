@@ -128,7 +128,7 @@ pub async fn lxmf_delete_message(
 
 #[derive(Debug, Deserialize)]
 pub struct RecentLxmfQuery {
-    /// Inclusive lower bound on payload `timestamp` (ms). Omit to return the full ring.
+    /// Exclusive lower bound on payload `timestamp` (ms). Omit to return the full ring.
     #[serde(default)]
     pub since_ts: Option<i64>,
     /// Max rows (default 200, capped at 500).

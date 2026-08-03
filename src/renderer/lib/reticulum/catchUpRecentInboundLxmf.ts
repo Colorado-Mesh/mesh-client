@@ -1,5 +1,6 @@
 import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
+import { useMessageStore } from '@/renderer/stores/messageStore';
 
 export interface CatchUpRecentInboundLxmfOpts {
   identityId: string;
@@ -14,9 +15,21 @@ export interface CatchUpRecentInboundLxmfOutcome {
   watermarkTs: number | null;
 }
 
+function rowAlreadyInMessageStore(identityId: string, p: ReticulumLxmfPayload): boolean {
+  const hash = typeof p.message_hash === 'string' ? p.message_hash.trim() : '';
+  if (!hash) return false;
+  // Identity buckets are sparse at runtime despite Record typing.
+  const bucket = useMessageStore.getState().messages[identityId] as
+    Record<string, unknown> | undefined;
+  return Boolean(bucket && Object.hasOwn(bucket, hash));
+}
+
 /**
  * Fetch recent inbound LXMF, ingest rows, and compute the catch-up watermark.
  * Caller applies diagnostics (`noteReticulumInboundCatchUp` / watermark advance).
+ *
+ * Sidecar `since_ts` is exclusive; returned `watermarkTs` is the max seen timestamp and is
+ * safe to pass as the next periodic `sinceTs`.
  */
 export async function catchUpRecentInboundLxmf(
   opts: CatchUpRecentInboundLxmfOpts,
@@ -30,9 +43,13 @@ export async function catchUpRecentInboundLxmf(
   if (rows.length === 0) return null;
 
   const reason = opts.reason ?? 'catch-up';
-  console.warn(
-    `[catchUpRecentInboundLxmf] inbound LXMF catch-up count=${rows.length} reason=${reason}`,
-  );
+  const allKnown = rows.every((p) => rowAlreadyInMessageStore(opts.identityId, p));
+  const logLine = `[catchUpRecentInboundLxmf] inbound LXMF catch-up count=${rows.length} reason=${reason}`;
+  if (allKnown) {
+    console.debug(logLine);
+  } else {
+    console.warn(logLine);
+  }
 
   let maxTs = opts.sinceTs ?? 0;
   for (const p of rows) {

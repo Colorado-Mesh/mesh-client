@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ingestReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { OFFLINE_RETICULUM_IDENTITY_ID } from '@/renderer/lib/offlineProtocolIdentities';
+import { catchUpRecentInboundLxmf } from '@/renderer/lib/reticulum/catchUpRecentInboundLxmf';
 import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
 import {
   getReticulumInboundLxmfDiagnostics,
@@ -200,5 +201,97 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     const bucket = useMessageStore.getState().messages[identityId];
     expect(bucket['live-hash'].payload).toBe('from WS');
     expect(bucket['db-hash'].payload).toBe('from DB');
+  });
+
+  it('live inbound lxmf_message advances the catch-up watermark', async () => {
+    const hash = '11'.repeat(32);
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(eventHandler).toBeTruthy();
+    const onEvent = eventHandler!;
+    resetReticulumInboundLxmfDiagnosticsForTests();
+
+    act(() => {
+      onEvent({
+        type: 'lxmf_message',
+        payload: sampleInbound(hash, 'live inbound', 5_000),
+      });
+    });
+
+    await waitFor(() => {
+      expect(useMessageStore.getState().messages[identityId][hash].payload).toBe('live inbound');
+    });
+    expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs).toBe(5_000);
+    unmount();
+  });
+
+  it('outbound lxmf_message does not advance the catch-up watermark', async () => {
+    const hash = '22'.repeat(32);
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(eventHandler).toBeTruthy();
+    const onEvent = eventHandler!;
+    resetReticulumInboundLxmfDiagnosticsForTests();
+
+    act(() => {
+      onEvent({
+        type: 'lxmf_message',
+        payload: {
+          ...sampleInbound(hash, 'outbound echo', 9_000),
+          direction: 'outbound',
+          to_hash: 'bb'.repeat(16),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(useMessageStore.getState().messages[identityId][hash].payload).toBe('outbound echo');
+    });
+    expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs).toBeNull();
+    unmount();
+  });
+
+  it('periodic catch-up after watermark does not re-warn the same boundary row', async () => {
+    const hash = '33'.repeat(32);
+    const atT = sampleInbound(hash, 'boundary', 4_000);
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
+      messages: [atT],
+      ringLen: 1,
+    });
+
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+
+    await waitFor(() => {
+      expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs).toBe(4_000);
+    });
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('count=1 reason=connect'));
+    warnSpy.mockClear();
+
+    // Exclusive since_ts=T → empty ring slice (Runr stuck-loop regression).
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({ messages: [], ringLen: 1 });
+    const sinceTs = getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs ?? undefined;
+    await expect(
+      catchUpRecentInboundLxmf({
+        identityId,
+        ingest: () => {},
+        sinceTs,
+        reason: 'periodic',
+      }),
+    ).resolves.toBeNull();
+
+    expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalledWith({
+      limit: 200,
+      sinceTs: 4_000,
+    });
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('count=1 reason=periodic'));
+    expect(getReticulumInboundLxmfDiagnostics().lastInboundCatchUpCount).toBe(1);
+    unmount();
   });
 });

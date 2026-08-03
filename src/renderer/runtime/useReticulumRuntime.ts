@@ -613,6 +613,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
         });
+        // Keep periodic catch-up cursor ahead of live traffic so older ring rows do not loop.
+        if (
+          p.direction !== 'outbound' &&
+          typeof p.timestamp === 'number' &&
+          Number.isFinite(p.timestamp)
+        ) {
+          advanceReticulumInboundCatchUpWatermark(p.timestamp);
+        }
         if (
           p.direction !== 'outbound' &&
           p.sender_hash &&

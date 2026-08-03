@@ -40,4 +40,10 @@ describe('useReticulumRuntime inbound LXMF catch-up wiring (source contract)', (
     expect(SOURCE).toMatch(/void catchUpRecentInboundLxmf\(\{ sinceTs, reason: 'periodic' \}\)/);
     expect(SOURCE).toMatch(/RETICULUM_INBOUND_LXMF_CATCHUP_MS/);
   });
+
+  it('advances the catch-up watermark on live inbound ingest', () => {
+    const ingestBody = extractUseCallbackBody(SOURCE, 'ingestLxmfPayload');
+    expect(ingestBody).toContain('advanceReticulumInboundCatchUpWatermark(p.timestamp)');
+    expect(ingestBody).toMatch(/p\.direction !== 'outbound'/);
+  });
 });

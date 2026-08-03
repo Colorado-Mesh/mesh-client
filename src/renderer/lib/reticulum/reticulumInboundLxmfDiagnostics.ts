@@ -8,7 +8,10 @@ export interface ReticulumInboundLxmfDiagnosticsSnapshot {
   lastEventsLaggedSkipped: number | null;
   lastInboundCatchUpAt: number | null;
   lastInboundCatchUpCount: number | null;
-  /** Inclusive watermark (ms) for periodic `since_ts` catch-up. */
+  /**
+   * Exclusive lower-bound watermark (ms) for periodic `since_ts` catch-up.
+   * Next fetch uses this as `since_ts` so the boundary row is not re-returned.
+   */
   inboundCatchUpWatermarkTs: number | null;
   lastInboundRingLen: number | null;
 }

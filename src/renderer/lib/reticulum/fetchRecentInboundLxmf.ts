@@ -3,7 +3,7 @@ import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest
 import { noteReticulumInboundRingLen } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 
 export interface FetchRecentInboundLxmfOpts {
-  /** Inclusive lower bound on payload timestamp (ms). */
+  /** Exclusive lower bound on payload timestamp (ms); sidecar returns `timestamp > since_ts`. */
   sinceTs?: number;
   limit?: number;
 }
