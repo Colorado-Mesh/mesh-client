@@ -32,6 +32,13 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     expect(cloneScript).not.toContain('RS_NOMAD_SKIP_PIN');
   });
 
+  it('floats rsLXST to origin/main with optional RS_LXST_REF pin', () => {
+    expect(cloneScript).toMatch(/RS_LXST_REF="\$\{RS_LXST_REF:-\}"/);
+    expect(cloneScript).toContain('ratspeak/rsLXST.git');
+    expect(cloneScript).toContain("lxst_mode='floated origin/main'");
+    expect(cloneScript).toContain('rsLXST @');
+  });
+
   it('applies rsReticulum and rsLXMF overlays after checkout via shared list', () => {
     expect(cloneScript).toContain('apply_ratspeak_rns_overlays');
     expect(cloneScript).toContain('apply_ratspeak_lxmf_overlays');

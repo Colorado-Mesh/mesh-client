@@ -140,6 +140,7 @@ import {
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { decodeF32LeBase64 } from '../lib/reticulumVoiceAudio';
 import { resolveRrcInvoluntaryPartBannerKey } from '../lib/rrcInvoluntaryPartBanner';
 import {
   isRrcJoinInfoNotice,
@@ -189,6 +190,7 @@ import {
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useReticulumVoiceStore } from '../stores/reticulumVoiceStore';
 import { useRncpEnableRequestStore } from '../stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '../stores/rncpTransferStore';
 import { useRnshSessionStore } from '../stores/rnshSessionStore';
@@ -1165,6 +1167,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
           useRnshSessionStore
             .getState()
             .applyError(p.session_id, p.reason_key ?? 'error', p.message ?? '');
+        }
+      }
+      if (evt.type === 'voice.update' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumVoiceStore.getState().applyUpdate(evt.payload);
+      }
+      if (evt.type === 'voice.incoming' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumVoiceStore.getState().applyIncoming(evt.payload);
+      }
+      if (evt.type === 'voice.terminated' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { link_id?: string };
+        useReticulumVoiceStore.getState().applyTerminated(p.link_id ?? null);
+      }
+      if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { message?: string };
+        useReticulumVoiceStore.getState().applyError(p.message ?? 'voice error');
+      }
+      if (evt.type === 'voice.audio' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { channels?: number; samples_b64?: string };
+        if (typeof p.samples_b64 === 'string') {
+          const samples = decodeF32LeBase64(p.samples_b64);
+          const channels = typeof p.channels === 'number' && p.channels > 0 ? p.channels : 1;
+          useReticulumVoiceStore.getState().emitAudio(channels, samples);
         }
       }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {

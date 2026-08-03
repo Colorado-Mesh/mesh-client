@@ -404,9 +404,10 @@ process.stdin.on("end", () => {
 
 # Curated release watch + known org repos (keep in sync when adopting new ratspeak libs).
 # Format: "owner/repo|stub-kind-or-empty|display-label"
-# stub-kind: voice|games → warn while mesh-client still has sidecar stubs only.
+# stub-kind: games → warn while mesh-client still has sidecar stubs only.
+# (voice cleared after lxst-telephony integration; empty stub field = informational.)
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
-  'ratspeak/rsLXST|voice|rsLXST voice (sidecar stub)'
+  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)'
   'ratspeak/lrgp-rs|games|lrgp-rs games (sidecar stub)'
   'ratspeak/Ratspeak||Ratspeak client (reference)'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)'

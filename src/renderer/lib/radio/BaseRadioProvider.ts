@@ -147,6 +147,8 @@ export interface ProtocolCapabilities {
   hasReticulumRemotePanel: boolean;
   /** Reticulum: rncp file transfer available from Chat DM header */
   hasRncpTransfer: boolean;
+  /** Reticulum: LXST voice calls (Peers / Chat DM) */
+  hasLxstVoice: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
   lxmfPayloadLimit?: number;
 }
@@ -222,6 +224,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumAdminPanel: false,
   hasReticulumRemotePanel: false,
   hasRncpTransfer: false,
+  hasLxstVoice: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -296,6 +299,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumAdminPanel: false,
   hasReticulumRemotePanel: false,
   hasRncpTransfer: false,
+  hasLxstVoice: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -369,5 +373,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumAdminPanel: true,
   hasReticulumRemotePanel: true,
   hasRncpTransfer: true,
+  hasLxstVoice: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

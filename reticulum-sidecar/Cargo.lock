@@ -1353,6 +1353,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "lxst-core"
+version = "0.1.2"
+dependencies = [
+ "half",
+ "opus-rs",
+ "rmpv",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "lxst-rns"
+version = "0.1.2"
+dependencies = [
+ "bytes",
+ "lxst-core",
+ "rns-link",
+ "rns-transport",
+ "rns-wire",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "lxst-telephony"
+version = "0.1.2"
+dependencies = [
+ "bytes",
+ "lxst-core",
+ "lxst-rns",
+ "rns-crypto",
+ "rns-identity",
+ "rns-link",
+ "rns-runtime",
+ "rns-transport",
+ "rns-wire",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "macaddr"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1411,6 +1451,8 @@ dependencies = [
  "hex",
  "http",
  "lxmf-core",
+ "lxst-core",
+ "lxst-telephony",
  "nomad-core",
  "notify",
  "rand 0.8.6",
@@ -1646,6 +1688,10 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "opus-rs"
+version = "0.1.19"
 
 [[package]]
 name = "parking_lot"

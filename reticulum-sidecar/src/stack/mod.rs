@@ -53,6 +53,8 @@ mod rnsh_session;
 mod rrc_link;
 #[cfg(feature = "rns-stack")]
 mod rrc_session;
+#[cfg(feature = "rns-stack")]
+mod voice_session;
 
 use std::fs;
 use std::path::PathBuf;
@@ -2498,14 +2500,80 @@ impl StackHandle {
         config_audit::repair_config(&self.config_dir, &request)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle feature-status API awaited by HTTP handlers
     pub async fn voice_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_status().await;
+        }
         serde_json::json!({
             "available": cfg!(feature = "rns-stack"),
             "enabled": false,
+            "running": false,
+            "microphone_muted": false,
             "codec": "opus",
-            "reason": "LXST voice pipeline pending rsLXST integration"
+            "reason": if cfg!(feature = "rns-stack") {
+                "stack not running"
+            } else {
+                "rns-stack feature required"
+            },
+            "active_call": null,
         })
+    }
+
+    pub async fn voice_call(&self, identity_hash: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_call(identity_hash).await;
+        }
+        let _ = identity_hash;
+        serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub async fn voice_answer(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_answer().await;
+        }
+        serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub async fn voice_reject(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_reject().await;
+        }
+        serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub async fn voice_hangup(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_hangup().await;
+        }
+        serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub async fn voice_mute(&self, muted: bool) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_mute(muted).await;
+        }
+        let _ = muted;
+        serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub async fn voice_audio(
+        &self,
+        profile: Option<u32>,
+        channels: u8,
+        samples_b64: &str,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.voice_audio(profile, channels, samples_b64).await;
+        }
+        let _ = (profile, channels, samples_b64);
+        serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
     }
 
     #[allow(clippy::unused_async)] // async matches StackHandle feature-status API awaited by HTTP handlers

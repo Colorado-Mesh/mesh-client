@@ -397,7 +397,7 @@ Firmware `.zip` files are selected locally (no in-app GitHub download). Disconne
 
 ## Building the sidecar (development)
 
-`rns-stack` builds need siblings `rsReticulum`, `rsLXMF`, and `rsNomad` (see `scripts/clone-ratspeak-stack.sh`). That script floats **rsReticulum** / **rsLXMF** / **rsNomad** to `origin/main` by default (bisect with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF`) and applies mesh-client overlays (fails if a patch will not apply). Peer list / detail default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) (`src/renderer/lib/reticulum/lxmface.ts`) when no custom Lucide icon is set.
+`rns-stack` builds need siblings `rsReticulum`, `rsLXMF`, `rsNomad`, and `rsLXST` (see `scripts/clone-ratspeak-stack.sh`). That script floats **rsReticulum** / **rsLXMF** / **rsNomad** / **rsLXST** to `origin/main` by default (bisect with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF`) and applies mesh-client overlays (fails if a patch will not apply). Peer list / detail default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) (`src/renderer/lib/reticulum/lxmface.ts`) when no custom Lucide icon is set.
 
 End users of **GitHub Releases** or **Flatpak** do not need Rust. Developers and contributors do.
 
@@ -407,7 +407,7 @@ End users of **GitHub Releases** or **Flatpak** do not need Rust. Developers and
 pnpm run reticulum:sidecar:build
 ```
 
-When sibling checkouts `../rsReticulum`, `../rsLXMF`, and `../rsNomad` exist, the build script applies required patches and compiles with **`rns-stack,rns-ble,rns-rnode-tcp`** (live path table, BLE, RNode USB/Wi‑Fi, Nomad hosting). Without siblings, Cargo builds the **stub** stack (file-backed API for UI/tests — not for real mesh I/O).
+When sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, and `../rsLXST` exist, the build script applies required patches and compiles with **`rns-stack,rns-ble,rns-rnode-tcp`** (live path table, BLE, RNode USB/Wi‑Fi, Nomad hosting, LXST voice). Without siblings, Cargo builds the **stub** stack (file-backed API for UI/tests — not for real mesh I/O).
 
 **Electron dev:** **Start stack** auto-runs `cargo build` when the debug binary is missing, when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the binary, or when a stub binary is present but full-stack siblings exist. First compile can take several minutes — pre-build with the command above.
 
@@ -468,7 +468,8 @@ Transfers require a **high-speed** path (TCP/network); LoRa/BLE-only destination
 - **Clear announces** — path table may refill from the live network on the next refresh
 - **Topology** — next-hop only; not a full end-to-end trace
 - **AGPL sidecar** — separate process and license from the MIT Electron shell
-- **LXST voice calls** and **LRGP games** — not integrated (status endpoints may exist in sidecar; no UI)
+- **LRGP games** — not integrated (status endpoint may exist in sidecar; no UI)
+- **LXST voice calls** — integrated via rsLXST `TelephonyService` in the sidecar (`/api/v1/voice/*` + WS `voice.*`). Renderer owns mic/speaker (`getUserMedia` / Web Audio); Call controls live on Peers rows and Chat DM (no separate Voice tab). Live interop with Ratspeak / Python LXST should be verified manually on a real mesh.
 - **Hardware identity (YubiKey/PIV)** — not wired
 - **In-app firmware download** — local `.zip` pick only
 

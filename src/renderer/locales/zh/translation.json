@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} 离线",
     "offlineBody": "最后一次听到：{{time}}",
     "unknown": "未知"
+  },
+  "reticulumVoice": {
+    "call": "电话",
+    "answer": "答案",
+    "reject": "不同意",
+    "incomingTitle": "传入语音呼叫",
+    "inCall": "通话中",
+    "calling": "呼叫中",
+    "callAria": "开始LXST语音通话",
+    "answerAria": "应答语音呼叫",
+    "rejectAria": "拒绝语音通话",
+    "hangupAria": "挂断语音通话",
+    "muteAria": "静音麦克风",
+    "unmuteAria": "取消麦克风静音",
+    "errors": {
+      "noIdentity": "无法调用：对等身份尚不清楚。等待通知或探查对等项。",
+      "callFailed": "语音通话失败。",
+      "notRunning": "在 Reticulum 堆栈运行之前，语音不可用。"
+    }
   }
 }

@@ -729,6 +729,25 @@
     "serialReselectAction": "Select serial port",
     "statusRegion": "Connection status"
   },
+  "reticulumVoice": {
+    "call": "Call",
+    "answer": "Answer",
+    "reject": "Reject",
+    "incomingTitle": "Incoming voice call",
+    "inCall": "In call",
+    "calling": "Calling…",
+    "callAria": "Start LXST voice call",
+    "answerAria": "Answer voice call",
+    "rejectAria": "Reject voice call",
+    "hangupAria": "Hang up voice call",
+    "muteAria": "Mute microphone",
+    "unmuteAria": "Unmute microphone",
+    "errors": {
+      "noIdentity": "Cannot call: peer identity not known yet. Wait for an announce or probe the peer.",
+      "callFailed": "Voice call failed.",
+      "notRunning": "Voice is not available until the Reticulum stack is running."
+    }
+  },
   "connectionPanel": {
     "maxReconnectAttempts": "Max MQTT reconnect attempts",
     "letsMeshRegion": "LetsMesh region",

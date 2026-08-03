@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} offline",
     "offlineBody": "Terakhir didengar: {{time}}",
     "unknown": "tidak dikenal"
+  },
+  "reticulumVoice": {
+    "call": "Panggil",
+    "answer": "Jawaban",
+    "reject": "Tolak",
+    "incomingTitle": "Panggilan suara masuk",
+    "inCall": "Dalam panggilan",
+    "calling": "Memanggil…",
+    "callAria": "Mulai panggilan suara LXST",
+    "answerAria": "Jawab panggilan suara",
+    "rejectAria": "Tolak panggilan suara",
+    "hangupAria": "Menutup panggilan suara",
+    "muteAria": "Bisukan mikrofon",
+    "unmuteAria": "Unmute microphone",
+    "errors": {
+      "noIdentity": "Tidak dapat menelepon: identitas teman sebaya belum diketahui. Tunggu pengumuman atau selidiki rekan sejawat.",
+      "callFailed": "Panggilan suara gagal.",
+      "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan."
+    }
   }
 }

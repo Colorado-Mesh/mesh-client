@@ -40,24 +40,30 @@ overrides:
   # Security floors (Dependabot GHSA-52cp-r559-cp3m / GHSA-395f-4hp3-45gv /
   # GHSA-w8wr-v893-vjvp / GHSA-3jxr-9vmj-r5cp / GHSA-r28c-9q8g-f849 /
   # GHSA-p2f4-r6v6-j797 / GHSA-7g7r-gx96-252g / GHSA-mh99-v99m-4gvg /
-  # GHSA-rgw5-rvv9-x895).
+  # GHSA-rgw5-rvv9-x895 / GHSA-4cwx-7wf7-3272 / GHSA-8xcm-r25x-g524 /
+  # GHSA-v3r7-h72x-cjcm / GHSA-jr45-8vmc-qm54 / GHSA-m8rv-5g2x-5cg5 /
+  # GHSA-fxqj-rqcc-2cmp / GHSA-mwp4-54f8-5fhr).
   # brace-expansion: keep a single 5.0.9 floor. GHSA-rgw5-rvv9-x895 is a
   # bypass of the CVE-2026-14257 mitigation and marks >=4.0.0 <5.0.9 vulnerable
   # (only >=5.0.9 counts as patched). CI audit is blocking.
   # fast-uri: GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority);
   # electron-builder → app-builder-lib → ajv still pulls 3.1.4.
+  # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0.
+  # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
+  # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
   app-builder-lib: ^26.15.0
   brace-expansion: 5.0.9
   builder-util-runtime: 9.7.0
   fast-uri: ^3.1.5
+  ip-address: ^10.3.1
   js-yaml: ^4.3.0
   markdown-it@<=14.1.1: '>=14.2.0 <15'
-  postcss: ^8.5.18
+  postcss: ^8.5.25
   shell-quote: ^1.9.0
   tar: ^7.5.18
   tmp: ^0.2.6
-  undici: ^7.28.0
-  undici-types: ^7.28.0
+  undici: ^7.29.0
+  undici-types: ^7.29.0
   ws: ^8.21.0
 patchedDependencies:
   '@jsr/meshtastic__core@2.6.6': patches/@jsr__meshtastic__core@2.6.6.patch

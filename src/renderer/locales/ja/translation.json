@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} がオフラインになりました",
     "offlineBody": "最後に聞いた音: {{time}}",
     "unknown": "未知"
+  },
+  "reticulumVoice": {
+    "call": "通話する",
+    "answer": "返信",
+    "reject": "許可しない",
+    "incomingTitle": "着信ボイス",
+    "inCall": "通話中",
+    "calling": "呼び出す",
+    "callAria": "LXST音声通話を開始する",
+    "answerAria": "音声通話に応答する",
+    "rejectAria": "音声通話を拒否する",
+    "hangupAria": "音声通話を切る",
+    "muteAria": "マイクをミュートする",
+    "unmuteAria": "マイクのミュートを解除",
+    "errors": {
+      "noIdentity": "呼び出すことができません：ピアIDはまだわかりません。アナウンスを待つか、ピアをプローブします。",
+      "callFailed": "音声通話に失敗しました。",
+      "notRunning": "Reticulumスタックが実行されるまで、音声は使用できません。"
+    }
   }
 }

@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} ist offline gegangen",
     "offlineBody": "Zuletzt gehört: {{time}}",
     "unknown": "unbekannt"
+  },
+  "reticulumVoice": {
+    "call": "Anrufen",
+    "answer": "Antwort",
+    "reject": "Ablehnen",
+    "incomingTitle": "Eingehender Anruf",
+    "inCall": "Im Gespräch",
+    "calling": "Anruf ...",
+    "callAria": "LXST-Sprachanruf starten",
+    "answerAria": "Sprachanruf annehmen",
+    "rejectAria": "Sprachanruf ablehnen",
+    "hangupAria": "Sprachanruf auflegen",
+    "muteAria": "Mikrofon stummschalten",
+    "unmuteAria": "Mikrofon Stummschaltung aufheben",
+    "errors": {
+      "noIdentity": "Kann nicht aufrufen: Peer-Identität noch nicht bekannt. Warten Sie auf eine Ankündigung oder fragen Sie den Kollegen.",
+      "callFailed": "Sprachanruf fehlgeschlagen.",
+      "notRunning": "Stimme ist erst verfügbar, wenn der Reticulum-Stapel läuft."
+    }
   }
 }

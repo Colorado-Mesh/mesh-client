@@ -5106,5 +5106,24 @@
     "offlineTitle": "{{name}} przeszedł w tryb offline",
     "offlineBody": "Ostatnio słyszano: {{time}}",
     "unknown": "nieznany"
+  },
+  "reticulumVoice": {
+    "call": "Zadzwoń",
+    "answer": "Odpowiedź",
+    "reject": "Odrzuć",
+    "incomingTitle": "przychodzące połączenie głosowe...",
+    "inCall": "W trakcie połączenia",
+    "calling": "Dzwoni",
+    "callAria": "Rozpocznij połączenie głosowe LXST",
+    "answerAria": "Odbierz połączenie głosowe",
+    "rejectAria": "Odrzuć połączenie głosowe",
+    "hangupAria": "Odłóż połączenie głosowe",
+    "muteAria": "Wycisz mikrofon",
+    "unmuteAria": "wycisz/wyłącz wyciszenie mikrofonu",
+    "errors": {
+      "noIdentity": "Nie można wywołać: tożsamość rówieśnika nie jest jeszcze znana. Poczekaj na ogłoszenie lub zbadaj rówieśnika.",
+      "callFailed": "Połączenie głosowe nie powiodło się.",
+      "notRunning": "Głos nie jest dostępny, dopóki stos Reticulum nie zostanie uruchomiony."
+    }
   }
 }

@@ -23,10 +23,6 @@ pub async fn diagnostics(State(stack): State<Arc<StackHandle>>) -> Json<serde_js
     Json(stack.diagnostics_snapshot().await)
 }
 
-pub async fn voice_status(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    Json(stack.voice_status().await)
-}
-
 pub async fn games_status(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     Json(stack.games_status().await)
 }

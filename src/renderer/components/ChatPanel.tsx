@@ -150,6 +150,7 @@ import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
+import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import {
   ReticulumDmPathActions,
@@ -508,6 +509,8 @@ export interface ChatPanelProps {
   reticulumStackLive?: boolean;
   /** Reticulum: rncp file transfer available — shows the DM header "Send file" control. */
   hasRncpTransfer?: boolean;
+  /** Reticulum: LXST voice Call control in the DM header. */
+  hasLxstVoice?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
@@ -562,6 +565,7 @@ function ChatPanel({
   onOpenPropagationSettings,
   reticulumStackLive = false,
   hasRncpTransfer = false,
+  hasLxstVoice = false,
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
@@ -2273,6 +2277,15 @@ function ChatPanel({
                 dmShareCandidates={rncpShareCandidates}
               />
             ) : null;
+          const voiceCallControl =
+            protocol === 'reticulum' && hasLxstVoice && reticulumDmDestinationHash != null ? (
+              <ReticulumVoiceCallButton
+                key={`dm-voice-${reticulumDmDestinationHash}`}
+                lxmfPeerHash={reticulumDmDestinationHash}
+                disabled={!reticulumStackLive}
+                className="text-cyan-400 hover:underline disabled:opacity-40"
+              />
+            ) : null;
           const peerDetailsAppearance = reticulumDmDestinationHash
             ? peerAppearanceByHash.get(reticulumDmDestinationHash)
             : undefined;
@@ -2296,13 +2309,16 @@ function ChatPanel({
                 <span className="min-w-0 truncate">{t('chatPanel.openPeerDetails')}</span>
               </button>
             ) : null;
-          if (!pathBadge && !dmNode && !rncpControl && !peerDetailsControl) return null;
+          if (!pathBadge && !dmNode && !rncpControl && !voiceCallControl && !peerDetailsControl) {
+            return null;
+          }
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
               {pathActions}
               {peerDetailsControl}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+              {voiceCallControl}
               {rncpControl}
             </div>
           );

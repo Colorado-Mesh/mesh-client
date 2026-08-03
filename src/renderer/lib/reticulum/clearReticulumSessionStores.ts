@@ -1,6 +1,8 @@
 import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import { stopReticulumVoiceMedia } from '@/renderer/lib/reticulumVoiceSession';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import { useRnshSessionStore } from '@/renderer/stores/rnshSessionStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
@@ -15,5 +17,7 @@ export function clearReticulumSessionStores(): void {
   useRrcHubStore.getState().clear();
   useRnshSessionStore.getState().clearAll();
   useRncpTransferStore.getState().clearAll();
+  stopReticulumVoiceMedia();
+  useReticulumVoiceStore.getState().clearCall();
   void releaseReticulumBleRnodeConnect();
 }

@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} çevrimdışı oldu",
     "offlineBody": "Son duyulma tarihi: {{time}}",
     "unknown": "bilinmiyor"
+  },
+  "reticulumVoice": {
+    "call": "Ara",
+    "answer": "Yanıt",
+    "reject": "Reddet",
+    "incomingTitle": "Gelen sesli arama",
+    "inCall": "Aramada",
+    "calling": "Aranıyor",
+    "callAria": "LXST sesli aramasını başlat",
+    "answerAria": "Sesli aramayı yanıtla",
+    "rejectAria": "Sesli aramayı reddet",
+    "hangupAria": "Sesli aramayı kapat",
+    "muteAria": "Mikrofonu kapat",
+    "unmuteAria": "Mikrofonu aç",
+    "errors": {
+      "noIdentity": "Aranamıyor: akran kimliği henüz bilinmiyor. Bir duyuru bekleyin veya akranınızı sorgulayın.",
+      "callFailed": "Sesli arama başarısız.",
+      "notRunning": "Reticulum yığını çalışana kadar ses kullanılamaz."
+    }
   }
 }

@@ -36,6 +36,7 @@ const reticulumSidecarMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, string | number>) => {
       if (opts && 'count' in opts) return `${key}:${String(opts.count)}`;

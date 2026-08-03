@@ -5104,5 +5104,24 @@
     "offlineTitle": "{{name}} přešel do režimu offline",
     "offlineBody": "Naposledy slyšet: {{time}}",
     "unknown": "neznámý"
+  },
+  "reticulumVoice": {
+    "call": "Výzva",
+    "answer": "Odpověď",
+    "reject": "Zamítnout",
+    "incomingTitle": "Příchozí hlasový hovor",
+    "inCall": "Při hovoru",
+    "calling": "Volání",
+    "callAria": "Zahájit hlasový hovor LXST",
+    "answerAria": "Přijetí hlasového hovoru",
+    "rejectAria": "Odmítnout hlasový hovor",
+    "hangupAria": "Zavěsit hlasový hovor",
+    "muteAria": "Ztlumení mikrofonu",
+    "unmuteAria": "Zrušit ztlumení mikrofonu",
+    "errors": {
+      "noIdentity": "Nelze volat: identita protějšku zatím není známa. Počkejte na oznámení nebo sondujte kolegu.",
+      "callFailed": "Hlasový hovor se nezdařil.",
+      "notRunning": "Hlas není k dispozici, dokud není spuštěn zásobník Reticulum."
+    }
   }
 }

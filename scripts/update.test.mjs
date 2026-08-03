@@ -97,7 +97,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'upstream-catalog-only' });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('ratspeak/rsLXST|voice|');
+    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)');
     expect(result.stdout).toContain('ratspeak/lrgp-rs|games|');
     expect(result.stdout).toContain('ratspeak/Ratspeak||');
     expect(result.stdout).toContain('ratspeak/LXMFace||');

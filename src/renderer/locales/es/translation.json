@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} se desconectó",
     "offlineBody": "Última escucha: {{time}}",
     "unknown": "desconocido"
+  },
+  "reticulumVoice": {
+    "call": "Convocatoria",
+    "answer": "Respuesta",
+    "reject": "Rechazar",
+    "incomingTitle": "Llamada de voz entrante",
+    "inCall": "En llamada",
+    "calling": "Llamando...",
+    "callAria": "Iniciar llamada de voz LXST",
+    "answerAria": "Responder llamada de voz",
+    "rejectAria": "Rechazar llamada de voz",
+    "hangupAria": "Colgar voz",
+    "muteAria": "Silencie el micrófono",
+    "unmuteAria": "Reactivar micrófono",
+    "errors": {
+      "noIdentity": "No se puede llamar: la identidad del compañero aún no se conoce. Espere un anuncio o sondee al compañero.",
+      "callFailed": "La llamada de voz ha fallado.",
+      "notRunning": "La voz no está disponible hasta que la pila de Reticulum esté en ejecución."
+    }
   }
 }

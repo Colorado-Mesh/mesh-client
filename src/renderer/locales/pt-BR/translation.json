@@ -5102,5 +5102,24 @@
     "offlineTitle": "{{name}} ficou off-line",
     "offlineBody": "Última audição: {{time}}",
     "unknown": "desconhecido"
+  },
+  "reticulumVoice": {
+    "call": "Ligue para",
+    "answer": "Respostas",
+    "reject": "Rejeitar",
+    "incomingTitle": "Chamada de voz recebida",
+    "inCall": "Em chamada",
+    "calling": "A chamar…",
+    "callAria": "Iniciar chamada de voz LXST",
+    "answerAria": "Atender chamada de voz",
+    "rejectAria": "Rejeitar chamada de voz",
+    "hangupAria": "Desligar chamada de voz",
+    "muteAria": "Silenciar Microfone",
+    "unmuteAria": "Microfone ligado",
+    "errors": {
+      "noIdentity": "Não é possível chamar: identidade de par ainda não conhecida. Aguarde um anúncio ou investigue o colega.",
+      "callFailed": "Falha na chamada de voz.",
+      "notRunning": "A voz não está disponível até que a pilha Reticulum esteja em execução."
+    }
   }
 }

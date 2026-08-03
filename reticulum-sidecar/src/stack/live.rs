@@ -72,6 +72,7 @@ use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
     resolve_lxmf_sent_via,
 };
+use super::voice_session::VoiceSessionManager;
 use lxmf_outbound::{LxmfOutboundDriver, PathTableRoute};
 
 /// Settle window for PacketTap Tx correlation after LXMF enqueue.
@@ -133,6 +134,7 @@ pub struct LiveBridge {
     rrc_session: Arc<RrcSessionManager>,
     rnsh_session: Arc<RnshSessionManager>,
     rncp_transfer: Arc<RncpTransferManager>,
+    voice_session: Arc<VoiceSessionManager>,
     /// Local Nomad page/file host (rsNomad / nomad-core).
     nomad_server: Arc<NomadServerHandle>,
     /// Shared persisted stack state (Nomad node list, prefs).
@@ -445,6 +447,11 @@ impl LiveBridge {
                 event_tx.clone(),
                 storage_dir.clone(),
                 config_dir.clone(),
+            )),
+            voice_session: Arc::new(VoiceSessionManager::spawn(
+                handle.transport_tx.clone(),
+                &identity,
+                event_tx.clone(),
             )),
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
@@ -2122,6 +2129,41 @@ impl LiveBridge {
         self.rnsh_session.status_snapshot().await
     }
 
+    pub async fn voice_status(&self) -> serde_json::Value {
+        self.voice_session.status().await
+    }
+
+    pub async fn voice_call(&self, identity_hash: &str) -> serde_json::Value {
+        self.voice_session.call(identity_hash).await
+    }
+
+    pub async fn voice_answer(&self) -> serde_json::Value {
+        self.voice_session.answer().await
+    }
+
+    pub async fn voice_reject(&self) -> serde_json::Value {
+        self.voice_session.reject().await
+    }
+
+    pub async fn voice_hangup(&self) -> serde_json::Value {
+        self.voice_session.hangup().await
+    }
+
+    pub async fn voice_mute(&self, muted: bool) -> serde_json::Value {
+        self.voice_session.set_mute(muted).await
+    }
+
+    pub async fn voice_audio(
+        &self,
+        profile: Option<u32>,
+        channels: u8,
+        samples_b64: &str,
+    ) -> serde_json::Value {
+        self.voice_session
+            .send_audio(profile, channels, samples_b64)
+            .await
+    }
+
     pub async fn rncp_send(&self, destination_hash_hex: &str, path: &str) -> serde_json::Value {
         match self.rncp_transfer.send(destination_hash_hex, path).await {
             Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
@@ -2427,6 +2469,7 @@ impl LiveBridge {
         let outbound = self.outbound.clone();
         let event_tx = self.event_tx.clone();
         let display_name_cache = self.display_name_cache.clone();
+        let voice_session = self.voice_session.clone();
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(256);
@@ -2472,12 +2515,18 @@ impl LiveBridge {
                         if coalescer.is_empty() {
                             window_start = Some(tokio::time::Instant::now());
                         }
+                        let identity_hash_hex = evt.identity_hash.map(hex::encode);
+                        if let Some(ref id_hex) = identity_hash_hex {
+                            voice_session
+                                .remember_identity_for_dest(&dest_hex, id_hex)
+                                .await;
+                        }
                         coalescer.push(AnnounceWsRow {
                             destination_hash: dest_hex,
                             display_name,
                             hops: evt.hops,
                             aspect: resolve_announce_aspect(&evt.name_hash).map(str::to_string),
-                            identity_hash: evt.identity_hash.map(hex::encode),
+                            identity_hash: identity_hash_hex,
                         });
                     }
                     () = async {

@@ -82,6 +82,7 @@ import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnect
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import { RncpEnableRequestModal } from './components/remote/RncpEnableRequestModal';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
+import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOverlay';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
@@ -479,6 +480,7 @@ export default function App() {
       <ToastProvider>
         <AppContent />
         <RncpEnableRequestModal />
+        <ReticulumVoiceOverlay />
       </ToastProvider>
     </ProtocolRuntimeProvider>
   );
@@ -3056,6 +3058,7 @@ function AppContent() {
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             hasRncpTransfer={capabilities.hasRncpTransfer}
+                            hasLxstVoice={capabilities.hasLxstVoice}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
                             showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
@@ -3269,6 +3272,7 @@ function AppContent() {
                                 }
                                 groupMemberIds={contactGroups.groupMemberIds}
                                 contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                                hasLxstVoice={capabilities.hasLxstVoice}
                               />
                             ) : (
                               <NodeListPanel
