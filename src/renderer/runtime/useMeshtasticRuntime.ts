@@ -13,7 +13,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getStoreForwardHistoryProfile } from '@/renderer/lib/appSettingsStorage';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
+import { getConnectedMeshcoreBleMac } from '@/renderer/lib/connectedMeshcoreBleMac';
+import { setDebugSnapshotMeshtasticContext } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
 import {
   buildStoreForwardHistoryToRadioBytes,
   getLastSfHistoryFetchMs,
@@ -653,6 +656,9 @@ export function useMeshtasticRuntime() {
     if (!identityId || nodeNum === 0 || getIdentityNode(identityId, nodeNum) != null) {
       return;
     }
+    if (shouldSuppressMeshtasticNodeHear(nodeNum, getConnectedMeshcoreBleMac())) {
+      return;
+    }
     const created = createChatStubNode(nodeNum, source);
     upsertNodeRecord(identityId, meshNodeToNodeRecord(created));
     persistMeshtasticNode(created);
@@ -665,9 +671,17 @@ export function useMeshtasticRuntime() {
       entries = meshtasticMqttChannelKeyEntriesFromManual();
     }
     if (entries.length === 0) return;
-    void window.electronAPI.mqtt.updateChannelKeys({ entries }).catch((e: unknown) => {
-      console.warn('[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e));
-    });
+    void window.electronAPI.mqtt
+      .updateChannelKeys({ entries })
+      .then(() => window.electronAPI.mqtt.getChannelNameToIndex())
+      .then((map) => {
+        setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
+      })
+      .catch((e: unknown) => {
+        console.warn(
+          '[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e),
+        );
+      });
   }, []);
 
   useEffect(() => {
@@ -1291,6 +1305,10 @@ export function useMeshtasticRuntime() {
         portnum?: number;
       };
       if (!nodeUpdate.node_id) return;
+
+      if (shouldSuppressMeshtasticNodeHear(nodeUpdate.node_id, getConnectedMeshcoreBleMac())) {
+        return;
+      }
 
       // Record noisy portnums from MQTT for diagnostics
       if (nodeUpdate.portnum != null) {

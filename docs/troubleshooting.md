@@ -1399,8 +1399,25 @@ Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: 
 1. Update to a build that prefers the **topic channel name** for MQTT text ingest (sampled log `mqtt-channel-topic-mismatch:*` when topic index disagrees with packet channel).
 2. Connect the radio so channel keys and slot indexes sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
 3. **MQTT-only (no radio):** add `ChannelName@index=base64` lines in Connection → Channel PSKs (e.g. `LongFast@1=AQ==` for Colorado-mesh slot-1 public). The Connection panel shows an inline hint when no radio is configured and no `@index` lines are present.
-4. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
+4. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, `meshtastic.mqttChannelKeyEntryCount`, and `meshtastic.mqttChannelNameToIndex` (main-process topic→slot map; e.g. `{ "LongFast": 1 }` for Colorado-style public on slot 1). Slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
 5. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
+
+### MeshCore-flashed radio still “Just now” on Meshtastic Nodes
+
+**Symptoms**
+
+- After flashing a radio from Meshtastic to MeshCore, the old Meshtastic NodeDB row (often short name / MAC-derived `!xxxxxxxx`) stays **online** / **Just now** on the Meshtastic tab while that hardware is the connected MeshCore BLE radio.
+- Hops often show **0**; MQTT column may be `-` (RF-style refresh).
+
+**Cause**
+
+Meshtastic node numbers are frequently the lower 32 bits of the BLE MAC. With both a Meshtastic radio and that MeshCore radio on the same band, Blck (Meshtastic) can still “hear” MeshCore TX and bump `last_heard` on the **existing** stale NodeDB row (raw packet SNR path / MQTT minimal updates) without a real Meshtastic NodeInfo.
+
+**Fix**
+
+1. Update to a build that suppresses Meshtastic `last_heard` bumps for node IDs matching the **connected MeshCore BLE MAC**.
+2. Until then: delete the ghost node on Meshtastic Nodes (it may return while both radios are on-air on older builds).
+3. Confirm MeshCore Connection is BLE to that peripheral; Diagnostics foreign-LoRa is separate from the Nodes list.
 
 ### Phantom chat unread on channels not on the radio
 

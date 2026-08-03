@@ -161,6 +161,7 @@ export function createElectronAPIMock(): ElectronAPI {
       onClientId: vi.fn().mockReturnValue(() => {}),
       getClientId: vi.fn().mockResolvedValue(''),
       getCachedNodes: vi.fn().mockResolvedValue([]),
+      getChannelNameToIndex: vi.fn().mockResolvedValue({}),
       updateChannelKeys: vi.fn().mockResolvedValue(undefined),
       updateTopicPrefix: vi.fn().mockResolvedValue(undefined),
       publish: vi.fn().mockResolvedValue(1),

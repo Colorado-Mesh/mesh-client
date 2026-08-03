@@ -1234,7 +1234,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh 需要端口 443 上的 WebSocket 和服务器 mqtt-us-v1.letsmesh.net 或 mqtt-eu-v1.letsmesh.net。使用区域（美国/欧盟），或切换到其他经纪商的自定义。",
       "coloradomesh": "Colorado Mesh 需要端口 443 上的 WebSocket 且启用了 TLS，服务器 mqtt.meshcore.coloradomesh.org，路径 /ws。重置预设或切换到其他经纪商的自定义。",
-      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.cc。重置预设或切换到其他经纪商的自定义。"
+      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.net。重置预设或切换到其他经纪商的自定义。"
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "连接时将生成身份验证令牌（meshcore-decoder 格式）。用户名是 v1_ 加上您的 64 字符公钥（十六进制）。 JWT 受众与服务器主机名匹配。",
@@ -2064,7 +2064,8 @@
       "network": "检查网络、DNS、防火墙和 VPN。",
       "connackTimeout": "如果您之前没有看到“客户端错误”行，则 TLS/WebSocket 握手可能会停止（尝试另一个网络；应用程序更喜欢使用 IPv4 作为 WSS）。",
       "subscribeFailed": "经纪商可能会拒绝通配符订阅该主题；如果代理允许，消息仍然可能到达。",
-      "keepalive": "服务器停止响应 MQTT ping（空闲超时、网络中断或代理关闭会话）。重新连接或检查您的链接。"
+      "keepalive": "服务器停止响应 MQTT ping（空闲超时、网络中断或代理关闭会话）。重新连接或检查您的链接。",
+      "tlsHandshake": "TLS握手失败（ Broker证书、SNI或主机）。对于MeshMapper ，使用mqtt.meshmapper.net （而不是.cc ）。尝试其他网络或重置MeshMapper预设。"
     }
   },
   "meshcoreContactSettings": {

@@ -13,10 +13,12 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNodeRecord } from '../../stores/nodeStore';
+import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityNode } from '../identityStoreReads';
+import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { mergeMeshtasticLivePacketLastHeard } from '../meshtasticLastHeard';
 import type { RawPacketEntry } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -119,6 +121,11 @@ function handleRawPacket(
   deps.touchLastData();
   const from = payload.fromNodeId;
   if (!from) return;
+
+  // Connected MeshCore BLE MAC → skip all packet-wide side effects (diagnostics, SNR, hops).
+  if (shouldSuppressMeshtasticNodeHear(from, getConnectedMeshcoreBleMac())) {
+    return;
+  }
 
   if (getStoredMeshProtocol() === 'meshtastic') {
     appendRawPacketLog(payload, deps);

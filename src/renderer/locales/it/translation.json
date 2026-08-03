@@ -1232,7 +1232,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh necessita di WebSocket sulla porta 443 e del server mqtt-us-v1.letsmesh.net o mqtt-eu-v1.letsmesh.net. Utilizza la regione (USA/UE) o passa a Personalizzato per altri broker.",
       "coloradomesh": "Colorado Mesh necessita di WebSocket sulla porta 443 con TLS abilitato, server mqtt.meshcore.coloradomesh.org, percorso /ws. Ripristina la preimpostazione o passa a Personalizzato per altri broker.",
-      "meshmapper": "MeshMapper necessita di WebSocket sulla porta 443 e sul server mqtt.meshmapper.cc. Ripristina la preimpostazione o passa a Personalizzato per altri broker."
+      "meshmapper": "MeshMapper necessita di WebSocket sulla porta 443 e sul server mqtt.meshmapper.net. Ripristina la preimpostazione o passa a Personalizzato per altri broker."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Il token di autenticazione (formato decodificatore meshcore) verrà generato quando ti connetti. Il nome utente è v1_ più la chiave pubblica di 64 caratteri (esadecimale). Il pubblico JWT corrisponde al nome host del server.",
@@ -2064,7 +2064,8 @@
       "network": "Controlla rete, DNS, firewall e VPN.",
       "connackTimeout": "Se non vedi la riga \"errore client\" precedente, l'handshake TLS/WebSocket potrebbe essere in fase di stallo (prova un'altra rete; l'app preferisce IPv4 per WSS).",
       "subscribeFailed": "Il broker può negare l'iscrizione con caratteri jolly su questo argomento; i messaggi potrebbero comunque arrivare se il broker lo consente.",
-      "keepalive": "Il server ha smesso di rispondere ai ping MQTT (timeout di inattività, interruzione della rete o broker che ha chiuso la sessione). Riconnettiti o controlla il tuo collegamento."
+      "keepalive": "Il server ha smesso di rispondere ai ping MQTT (timeout di inattività, interruzione della rete o broker che ha chiuso la sessione). Riconnettiti o controlla il tuo collegamento.",
+      "tlsHandshake": "Handshake TLS non riuscito (certificato broker, SNI o host). Per MeshMapper utilizzare mqtt.meshmapper.net (non .cc). Provare un'altra rete o reimpostare il preset MeshMapper."
     }
   },
   "meshcoreContactSettings": {

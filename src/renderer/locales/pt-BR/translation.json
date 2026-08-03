@@ -1234,7 +1234,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh precisa de WebSocket na porta 443 e servidor mqtt-us-v1.letsmesh.net ou mqtt-eu-v1.letsmesh.net. Use Região (EUA/UE) ou mude para Personalizado para outros corretores.",
       "coloradomesh": "Colorado Mesh precisa de WebSocket na porta 443 com TLS habilitado, servidor mqtt.meshcore.coloradomesh.org, caminho /ws. Redefina a predefinição ou mude para Personalizado para outros corretores.",
-      "meshmapper": "MeshMapper precisa de WebSocket na porta 443 e servidor mqtt.meshmapper.cc. Redefina a predefinição ou mude para Personalizado para outros corretores."
+      "meshmapper": "MeshMapper precisa de WebSocket na porta 443 e servidor mqtt.meshmapper.net. Redefina a predefinição ou mude para Personalizado para outros corretores."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "O token de autenticação (formato de decodificador meshcore) será gerado quando você se conectar. O nome de usuário é v1_ mais sua chave pública de 64 caracteres (hex). O público JWT corresponde ao nome do host do servidor.",
@@ -2064,7 +2064,8 @@
       "network": "Verifique rede, DNS, firewall e VPN.",
       "connackTimeout": "Se você não vir nenhuma linha anterior de “erro do cliente”, o handshake TLS/WebSocket pode estar paralisado (tente outra rede; o aplicativo prefere IPv4 para WSS).",
       "subscribeFailed": "O corretor pode negar assinatura curinga neste tópico; as mensagens ainda podem chegar se o corretor permitir.",
-      "keepalive": "O servidor parou de responder aos pings MQTT (tempo limite de inatividade, queda de rede ou corretor fechou a sessão). Reconecte ou verifique seu link."
+      "keepalive": "O servidor parou de responder aos pings MQTT (tempo limite de inatividade, queda de rede ou corretor fechou a sessão). Reconecte ou verifique seu link.",
+      "tlsHandshake": "O handshake TLS falhou (certificado de corretor, SNI ou host). Para MeshMapper use mqtt.meshmapper.net (não .cc). Tente outra rede ou redefina a predefinição do MeshMapper."
     }
   },
   "meshcoreContactSettings": {

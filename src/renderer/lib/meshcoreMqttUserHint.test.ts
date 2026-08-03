@@ -35,6 +35,23 @@ describe('meshcoreMqttUserFacingHint', () => {
     expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.keepalive');
   });
 
+  it('returns tlsHandshake hint for EPROTO alone', () => {
+    const out = meshcoreMqttUserFacingHint('write EPROTO');
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.tlsHandshake');
+  });
+
+  it('returns tlsHandshake hint for TLSV1_ALERT_INTERNAL_ERROR alone', () => {
+    const out = meshcoreMqttUserFacingHint('SSL alert: TLSV1_ALERT_INTERNAL_ERROR');
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.tlsHandshake');
+  });
+
+  it('returns tlsHandshake hint for OPENSSL_internal:TLSV1_ALERT alone', () => {
+    const out = meshcoreMqttUserFacingHint(
+      'error:10000438:SSL routines:OPENSSL_internal:TLSV1_ALERT_PROTOCOL_VERSION',
+    );
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.tlsHandshake');
+  });
+
   it('passes through unrelated messages unchanged', () => {
     expect(meshcoreMqttUserFacingHint('Something else')).toBe('Something else');
   });

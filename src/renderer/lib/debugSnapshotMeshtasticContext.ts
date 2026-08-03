@@ -21,6 +21,11 @@ export interface DebugSnapshotMeshtasticContext {
   channelConfigsSummary: DebugSnapshotMeshtasticChannelConfigSummary[];
   /** Count from meshtasticMqttChannelKeyEntries when configs are known; null when empty. */
   mqttChannelKeyEntryCount: number | null;
+  /**
+   * Main-process topic channel name → local slot (from mqtt.getChannelNameToIndex).
+   * Null when unknown / not yet fetched; empty object when MQTT map is empty.
+   */
+  mqttChannelNameToIndex: Record<string, number> | null;
 }
 
 export interface MeshtasticRuntimeChannelPillInput {
@@ -40,6 +45,7 @@ const defaultMeshtasticContext: DebugSnapshotMeshtasticContext = {
   channelPills: [],
   channelConfigsSummary: [],
   mqttChannelKeyEntryCount: null,
+  mqttChannelNameToIndex: null,
 };
 
 let meshtasticContext: DebugSnapshotMeshtasticContext = { ...defaultMeshtasticContext };
@@ -60,6 +66,8 @@ export function buildDebugSnapshotMeshtasticContextFromRuntime(
       isDefaultPublicPsk: isMeshtasticDefaultPublicPsk(c.psk),
     })),
     mqttChannelKeyEntryCount: keyEntries.length > 0 ? keyEntries.length : null,
+    // Preserved via setDebugSnapshotMeshtasticContext merge from MQTT push / async snapshot fetch.
+    mqttChannelNameToIndex: meshtasticContext.mqttChannelNameToIndex,
   };
 }
 

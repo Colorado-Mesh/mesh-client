@@ -475,6 +475,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'log:getPath',
     'log:getRecentLines',
     'mqtt:getCachedNodes',
+    'mqtt:getChannelNameToIndex',
     'mqtt:getClientId',
     'storage:isAvailable',
     'support:exportBundle',

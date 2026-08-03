@@ -708,6 +708,7 @@ export interface ElectronAPI {
     onClientId: (cb: (payload: { clientId: string; protocol: MeshProtocol }) => void) => () => void;
     getClientId: (protocol?: MeshProtocol) => Promise<string>;
     getCachedNodes: () => Promise<unknown>;
+    getChannelNameToIndex: () => Promise<Record<string, number>>;
     updateChannelKeys: (args: {
       entries: { name: string; pskBase64: string; index?: number }[];
     }) => Promise<void>;

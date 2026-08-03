@@ -13,8 +13,10 @@ import {
   type DebugSnapshotMeshtasticChannelConfigSummary,
   type DebugSnapshotMeshtasticChannelPill,
   getDebugSnapshotMeshtasticContext,
+  setDebugSnapshotMeshtasticContext,
 } from './debugSnapshotMeshtasticContext';
 import { getDebugSnapshotUiContext } from './debugSnapshotUiContext';
+import { errLikeToLogString } from './errLikeToLogString';
 import {
   resolveIdentityIdForProtocol,
   resolvePrimaryIdentityIdForProtocol,
@@ -105,6 +107,8 @@ export interface DebugMeshtasticBucketSnapshot extends DebugIdentityBucketSnapsh
   channelPills: DebugSnapshotMeshtasticChannelPill[];
   channelConfigsSummary: DebugSnapshotMeshtasticChannelConfigSummary[];
   mqttChannelKeyEntryCount: number | null;
+  /** Main MQTTManager topic→slot map (no PSKs). */
+  mqttChannelNameToIndex: Record<string, number> | null;
 }
 
 export interface DebugChannelLastReadTriageRow {
@@ -509,6 +513,7 @@ function buildMeshtasticBucketSnapshot(): DebugMeshtasticBucketSnapshot {
     channelPills: channelCtx.channelPills,
     channelConfigsSummary: channelCtx.channelConfigsSummary,
     mqttChannelKeyEntryCount: channelCtx.mqttChannelKeyEntryCount,
+    mqttChannelNameToIndex: channelCtx.mqttChannelNameToIndex,
   };
 }
 
@@ -587,6 +592,12 @@ export function buildDebugSnapshot(): DebugSnapshot {
 /** Full support snapshot including live Reticulum sidecar state for GitHub/developer bundles. */
 export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   const reticulumSidecar = await fetchReticulumDiagnosticSnapshot();
+  try {
+    const map = await window.electronAPI.mqtt.getChannelNameToIndex();
+    setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
+  } catch (e: unknown) {
+    console.warn('[debugSnapshot] mqtt.getChannelNameToIndex failed ' + errLikeToLogString(e));
+  }
   const base = buildDebugSnapshotBase(reticulumSidecar);
   const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();
   return {

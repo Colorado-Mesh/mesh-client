@@ -1233,7 +1233,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh heeft WebSocket op poort 443 en server mqtt-us-v1.letsmesh.net of mqtt-eu-v1.letsmesh.net nodig. Gebruik Regio (VS/EU) of schakel over naar Aangepast voor andere makelaars.",
       "coloradomesh": "Colorado Mesh heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt.meshcore.coloradomesh.org, pad /ws. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
-      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.cc nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars."
+      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.net nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth-token (meshcore-decoder-indeling) wordt gegenereerd wanneer u verbinding maakt. De gebruikersnaam is v1_ plus uw openbare sleutel van 64 tekens (hexadecimaal). JWT-doelgroep komt overeen met de hostnaam van de server.",
@@ -2064,7 +2064,8 @@
       "network": "Controleer netwerk, DNS, firewall en VPN.",
       "connackTimeout": "Als u geen eerdere regel 'clientfout' ziet, loopt de TLS/WebSocket-handshake mogelijk vast (probeer een ander netwerk; de app geeft de voorkeur aan IPv4 voor WSS).",
       "subscribeFailed": "De makelaar kan een wildcard-abonnement op dit onderwerp weigeren; berichten kunnen nog steeds binnenkomen als de makelaar dit toestaat.",
-      "keepalive": "De server reageert niet meer op MQTT-pings (time-out bij inactiviteit, netwerkuitval of makelaar heeft de sessie gesloten). Maak opnieuw verbinding of controleer uw link."
+      "keepalive": "De server reageert niet meer op MQTT-pings (time-out bij inactiviteit, netwerkuitval of makelaar heeft de sessie gesloten). Maak opnieuw verbinding of controleer uw link.",
+      "tlsHandshake": "TLS-handshake mislukt (makelaarscertificaat, SNI of host). Gebruik voor MeshMapper mqtt.meshmapper.net (niet .cc). Probeer een ander netwerk of reset de MeshMapper-voorinstelling."
     }
   },
   "meshcoreContactSettings": {

@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { COLORADO_MESH_HOST, LETSMESH_HOST_EU, LETSMESH_HOST_US } from './letsMeshJwt';
+import {
+  COLORADO_MESH_HOST,
+  LETSMESH_HOST_EU,
+  LETSMESH_HOST_US,
+  MESHMAPPER_HOST,
+} from './letsMeshJwt';
 import { applyMeshcoreMqttPreset, readStoredMeshcoreMqttPreset } from './meshcoreMqttPresets';
 import type { MQTTSettings } from './types';
 
@@ -55,6 +60,18 @@ describe('applyMeshcoreMqttPreset', () => {
   it('defaults LetsMesh to US when server is stale', () => {
     const next = applyMeshcoreMqttPreset('letsmesh', { ...base, server: COLORADO_MESH_HOST });
     expect(next.server).toBe(LETSMESH_HOST_US);
+  });
+
+  it('applies MeshMapper .net host with WSS on 443', () => {
+    const next = applyMeshcoreMqttPreset('meshmapper', base);
+    expect(next.server).toBe(MESHMAPPER_HOST);
+    expect(MESHMAPPER_HOST).toBe('mqtt.meshmapper.net');
+    expect(next.port).toBe(443);
+    expect(next.useWebSocket).toBe(true);
+    expect(next.tlsEnabled).toBe(true);
+    expect(next.wsPath).toBe('/ws');
+    expect(next.topicPrefix).toBe('meshcore/test');
+    expect(next.password).toBe('');
   });
 });
 

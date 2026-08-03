@@ -1,17 +1,39 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from '@/shared/meshtasticDefaultPublicPsk';
 
-import { buildDebugSnapshotMeshtasticContextFromRuntime } from './debugSnapshotMeshtasticContext';
+import {
+  buildDebugSnapshotMeshtasticContextFromRuntime,
+  resetDebugSnapshotMeshtasticContext,
+  setDebugSnapshotMeshtasticContext,
+} from './debugSnapshotMeshtasticContext';
 
 describe('buildDebugSnapshotMeshtasticContextFromRuntime', () => {
+  beforeEach(() => {
+    resetDebugSnapshotMeshtasticContext();
+  });
+
   it('returns empty channel fields and null mqttChannelKeyEntryCount when configs are empty', () => {
     expect(buildDebugSnapshotMeshtasticContextFromRuntime([], [])).toEqual({
       channelPills: [],
       channelConfigsSummary: [],
       mqttChannelKeyEntryCount: null,
+      mqttChannelNameToIndex: null,
     });
+  });
+
+  it('preserves mqttChannelNameToIndex from prior setDebugSnapshotMeshtasticContext', () => {
+    setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: { LongFast: 1 } });
+    const ctx = buildDebugSnapshotMeshtasticContextFromRuntime([], []);
+    expect(ctx.mqttChannelNameToIndex).toEqual({ LongFast: 1 });
+  });
+
+  it('preserves an empty mqttChannelNameToIndex map instead of falling back to null', () => {
+    setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: {} });
+    const ctx = buildDebugSnapshotMeshtasticContextFromRuntime([], []);
+    expect(ctx.mqttChannelNameToIndex).toEqual({});
+    expect(ctx.mqttChannelNameToIndex).not.toBeNull();
   });
 
   it('maps channel pills and config summary including default-public PSK detection', () => {
@@ -53,5 +75,6 @@ describe('buildDebugSnapshotMeshtasticContextFromRuntime', () => {
       isDefaultPublicPsk: true,
     });
     expect(ctx.mqttChannelKeyEntryCount).toBeGreaterThan(0);
+    expect(ctx.mqttChannelNameToIndex).toBeNull();
   });
 });

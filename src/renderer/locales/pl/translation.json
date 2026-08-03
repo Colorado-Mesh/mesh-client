@@ -1236,7 +1236,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh potrzebuje WebSocket na porcie 443 i serwerze mqtt-us-v1.letsmesh.net lub mqtt-eu-v1.letsmesh.net. Użyj regionu (USA/UE) lub przejdź na opcję Niestandardowy dla innych brokerów.",
       "coloradomesh": "Colorado Mesh potrzebuje protokołu WebSocket na porcie 443 z włączoną obsługą TLS, serwer mqtt.meshcore.coloradomesh.org, ścieżka /ws. Zresetuj ustawienie wstępne lub przejdź na opcję Niestandardową dla innych brokerów.",
-      "meshmapper": "MeshMapper potrzebuje protokołu WebSocket na porcie 443 i serwerze mqtt.meshmapper.cc. Zresetuj ustawienie wstępne lub przejdź na opcję Niestandardową dla innych brokerów."
+      "meshmapper": "MeshMapper potrzebuje protokołu WebSocket na porcie 443 i serwerze mqtt.meshmapper.net. Zresetuj ustawienie wstępne lub przejdź na opcję Niestandardową dla innych brokerów."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Token autoryzacji (format dekodera meshcore) zostanie wygenerowany po połączeniu. Nazwa użytkownika to v1_ plus Twój 64-znakowy klucz publiczny (szesnastkowo). Lista odbiorców JWT odpowiada nazwie hosta serwera.",
@@ -2068,7 +2068,8 @@
       "network": "Sprawdź sieć, DNS, zaporę sieciową i VPN.",
       "connackTimeout": "Jeśli nie widzisz wcześniej wiersza „błąd klienta”, uzgadnianie TLS/WebSocket może się zawieszać (spróbuj innej sieci; aplikacja preferuje protokół IPv4 dla WSS).",
       "subscribeFailed": "Broker może odmówić subskrypcji symboli wieloznacznych w tym temacie; wiadomości mogą nadal przychodzić, jeśli broker na to pozwala.",
-      "keepalive": "Serwer przestał odpowiadać na pingi MQTT (przekroczenie limitu czasu bezczynności, przerwa w działaniu sieci lub zamknięcie sesji przez brokera). Połącz się ponownie lub sprawdź łącze."
+      "keepalive": "Serwer przestał odpowiadać na pingi MQTT (przekroczenie limitu czasu bezczynności, przerwa w działaniu sieci lub zamknięcie sesji przez brokera). Połącz się ponownie lub sprawdź łącze.",
+      "tlsHandshake": "Uzgadnianie TLS nie powiodło się (certyfikat brokera, sni lub host). W przypadku aplikacji MeshMapper użyj pliku mqtt.meshmapper.net (nie .cc). Wypróbuj inną sieć lub zresetuj ustawienie wstępne MeshMapper."
     }
   },
   "meshcoreContactSettings": {

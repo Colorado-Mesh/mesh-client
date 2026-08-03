@@ -1232,7 +1232,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh benötigt WebSocket auf Port 443 und den Server mqtt-us-v1.letsmesh.net oder mqtt-eu-v1.letsmesh.net. Verwenden Sie die Region (USA/EU) oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
       "coloradomesh": "Colorado Mesh benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server mqtt.meshcore.coloradomesh.org, Pfad /ws. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
-      "meshmapper": "MeshMapper benötigt WebSocket auf Port 443 und den Server mqtt.meshmapper.cc. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“."
+      "meshmapper": "MeshMapper benötigt WebSocket auf Port 443 und den Server mqtt.meshmapper.net. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth-Token (Meshcore-Decoder-Format) wird generiert, wenn Sie eine Verbindung herstellen. Der Benutzername ist v1_ plus Ihr 64-stelliger öffentlicher Schlüssel (hex). Die JWT-Zielgruppe entspricht dem Server-Hostnamen.",
@@ -2064,7 +2064,8 @@
       "network": "Überprüfen Sie Netzwerk, DNS, Firewall und VPN.",
       "connackTimeout": "Wenn Sie keine vorherige „Client-Fehler“-Zeile sehen, verzögert sich möglicherweise der TLS/WebSocket-Handshake (versuchen Sie es mit einem anderen Netzwerk; die App bevorzugt IPv4 für WSS).",
       "subscribeFailed": "Der Broker kann das Wildcard-Abonnement zu diesem Thema verweigern. Es können weiterhin Nachrichten eingehen, wenn der Broker dies zulässt.",
-      "keepalive": "Der Server reagiert nicht mehr auf MQTT-Pings (Leerlaufzeitüberschreitung, Netzwerkausfall oder Broker hat die Sitzung geschlossen). Stellen Sie die Verbindung erneut her oder überprüfen Sie Ihren Link."
+      "keepalive": "Der Server reagiert nicht mehr auf MQTT-Pings (Leerlaufzeitüberschreitung, Netzwerkausfall oder Broker hat die Sitzung geschlossen). Stellen Sie die Verbindung erneut her oder überprüfen Sie Ihren Link.",
+      "tlsHandshake": "TLS-Handshake fehlgeschlagen (Broker-Zertifikat, SNI oder Host). Verwenden Sie für MeshMapper mqtt.meshmapper.net (nicht .cc). Versuchen Sie es mit einem anderen Netzwerk oder setzen Sie die MeshMapper-Voreinstellung zurück."
     }
   },
   "meshcoreContactSettings": {

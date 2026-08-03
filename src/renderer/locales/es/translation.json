@@ -1234,7 +1234,7 @@
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh necesita WebSocket en el puerto 443 y el servidor mqtt-us-v1.letsmesh.net o mqtt-eu-v1.letsmesh.net. Utilice Región (EE. UU./UE) o cambie a Personalizado para otros corredores.",
       "coloradomesh": "Colorado Mesh necesita WebSocket en el puerto 443 con TLS habilitado, servidor mqtt.meshcore.coloradomesh.org, ruta /ws. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores.",
-      "meshmapper": "MeshMapper necesita WebSocket en el puerto 443 y el servidor mqtt.meshmapper.cc. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores."
+      "meshmapper": "MeshMapper necesita WebSocket en el puerto 443 y el servidor mqtt.meshmapper.net. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "El token de autenticación (formato meshcore-decoder) se generará cuando se conecte. El nombre de usuario es v1_ más su clave pública de 64 caracteres (hexadecimal). La audiencia de JWT coincide con el nombre de host del servidor.",
@@ -2064,7 +2064,8 @@
       "network": "Verifique la red, DNS, firewall y VPN.",
       "connackTimeout": "Si no ve ninguna línea anterior de \"error del cliente\", es posible que el protocolo de enlace TLS/WebSocket se esté deteniendo (pruebe con otra red; la aplicación prefiere IPv4 para WSS).",
       "subscribeFailed": "El corredor puede denegar la suscripción comodín sobre este tema; Es posible que aún lleguen mensajes si el corredor lo permite.",
-      "keepalive": "El servidor dejó de responder a los pings de MQTT (tiempo de espera de inactividad, caída de la red o el agente cerró la sesión). Vuelva a conectarse o verifique su enlace."
+      "keepalive": "El servidor dejó de responder a los pings de MQTT (tiempo de espera de inactividad, caída de la red o el agente cerró la sesión). Vuelva a conectarse o verifique su enlace.",
+      "tlsHandshake": "Error en el apretón de manos TLS (certificado de bróker, SNI o host). Para MeshMapper use mqtt.meshmapper.net (no .cc). Pruebe con otra red o restablezca el ajuste preestablecido de MeshMapper."
     }
   },
   "meshcoreContactSettings": {
