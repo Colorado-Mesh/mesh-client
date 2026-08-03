@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "連絡先をインポートする",
     "confirmMeshcoreContactImportTitle": "MeshCoreの連絡先をインポートしますか？",
     "confirmMeshcoreContactImportBody": "MeshCoreの連絡先QRから{{name}}を連絡先に追加しますか？",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "MeshCoreチャンネルをインポートしますか？",
     "confirmMeshcoreChannelImportBody": "ラジオタブのMeshCoreチャンネルQRからチャンネル{{name}}を適用しますか？",
     "confirmMeshcoreChannelImportAction": "チャンネルをインポート",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "QRからMeshCoreの連絡先をインポートできませんでした",
     "meshcoreChannelImported": "MeshCoreチャンネルリンクを受信しました—ラジオタブで確認してください",
     "meshcoreChannelImportFailed": "QRからMeshCoreチャンネルをインポートできませんでした",
-    "meshcoreChannelPrefill": "QRから入力されたチャンネルの詳細—保存して適用"
+    "meshcoreChannelPrefill": "QRから入力されたチャンネルの詳細—保存して適用",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "リモートセクション",

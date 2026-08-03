@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "Impor kontak",
     "confirmMeshcoreContactImportTitle": "Impor kontak MeshCore?",
     "confirmMeshcoreContactImportBody": "Tambahkan {{name}} dari QR kontak MeshCore ke kontak Anda?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "Impor saluran MeshCore?",
     "confirmMeshcoreChannelImportBody": "Terapkan saluran {{name}} dari QR saluran MeshCore di tab Radio?",
     "confirmMeshcoreChannelImportAction": "Impor saluran",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "Tidak dapat mengimpor kontak MeshCore dari QR",
     "meshcoreChannelImported": "Tautan saluran MeshCore diterima — tinjau di tab Radio",
     "meshcoreChannelImportFailed": "Tidak dapat mengimpor saluran MeshCore dari QR",
-    "meshcoreChannelPrefill": "Detail saluran diisi dari QR — simpan untuk diterapkan"
+    "meshcoreChannelPrefill": "Detail saluran diisi dari QR — simpan untuk diterapkan",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Bagian terpencil",

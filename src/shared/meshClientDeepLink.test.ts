@@ -210,6 +210,13 @@ describe('meshClientDeepLink', () => {
       );
       expect(() =>
         buildMeshcoreContactAddUri({
+          name: '   ',
+          publicKeyHex: MESHCORE_PUBKEY,
+          type: 1,
+        }),
+      ).toThrow(/name/);
+      expect(() =>
+        buildMeshcoreContactAddUri({
           name: 'A',
           publicKeyHex: MESHCORE_PUBKEY,
           type: 9 as 1,
@@ -237,10 +244,11 @@ describe('meshClientDeepLink', () => {
     });
 
     it('accepts official docs fixture', () => {
+      const secretHex = new URL(MESHCORE_DOC_CHANNEL).searchParams.get('secret') ?? '';
       expect(classifyMeshClientDeepLink(MESHCORE_DOC_CHANNEL)).toEqual({
         kind: 'meshcoreChannelAdd',
         name: 'Public',
-        secretHex: '8b3387e9c5cdea6ac9e5edbaa115cd72',
+        secretHex,
       });
       expect(isForwardableMeshClientOpenUrl(MESHCORE_DOC_CHANNEL)).toBe(true);
     });
@@ -254,6 +262,9 @@ describe('meshClientDeepLink', () => {
     });
 
     it('throws on invalid build secret', () => {
+      expect(() => buildMeshcoreChannelAddUri({ name: '  ', secretHex: CHANNEL_SECRET })).toThrow(
+        /name/,
+      );
       expect(() => buildMeshcoreChannelAddUri({ name: 'P', secretHex: 'aa' })).toThrow(
         /channel secret/,
       );

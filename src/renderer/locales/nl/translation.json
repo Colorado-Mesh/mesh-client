@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "Contactpersoon importeren",
     "confirmMeshcoreContactImportTitle": "MeshCore-contact importeren?",
     "confirmMeshcoreContactImportBody": "{{name}} van een MeshCore-contact QR toevoegen aan je contacten?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "MeshCore-kanaal importeren?",
     "confirmMeshcoreChannelImportBody": "Kanaal {{name}} toepassen vanaf een MeshCore-kanaal QR op het tabblad Radio?",
     "confirmMeshcoreChannelImportAction": "Importeer kanaal",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "Kan MeshCore-contactpersoon niet importeren uit QR",
     "meshcoreChannelImported": "MeshCore-kanaallink ontvangen — bekijk op het tabblad Radio",
     "meshcoreChannelImportFailed": "Kan MeshCore-kanaal niet importeren uit QR",
-    "meshcoreChannelPrefill": "Kanaalgegevens ingevuld vanuit QR — opslaan om toe te passen"
+    "meshcoreChannelPrefill": "Kanaalgegevens ingevuld vanuit QR — opslaan om toe te passen",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Secties op afstand",

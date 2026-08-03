@@ -5065,6 +5065,7 @@
     "confirmContactImportAction": "Import contact",
     "confirmMeshcoreContactImportTitle": "Import MeshCore contact?",
     "confirmMeshcoreContactImportBody": "Add {{name}} from a MeshCore contact QR to your contacts?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "Import MeshCore channel?",
     "confirmMeshcoreChannelImportBody": "Apply channel {{name}} from a MeshCore channel QR on the Radio tab?",
     "confirmMeshcoreChannelImportAction": "Import channel",
@@ -5073,7 +5074,8 @@
     "meshcoreContactImportFailed": "Could not import MeshCore contact from QR",
     "meshcoreChannelImported": "MeshCore channel link received — review on the Radio tab",
     "meshcoreChannelImportFailed": "Could not import MeshCore channel from QR",
-    "meshcoreChannelPrefill": "Channel details filled from QR — save to apply"
+    "meshcoreChannelPrefill": "Channel details filled from QR — save to apply",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "toasts": {
     "firmwareAvailable": "Firmware update available: v{{version}}",

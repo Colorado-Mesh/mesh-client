@@ -380,6 +380,69 @@ describe('reticulumPeerStore', () => {
     expect(peer?.hops).toBe(2);
   });
 
+  it('normalizes mixed-case peer public_key on incremental patches and omits malformed', () => {
+    const good = 'aa'.repeat(16);
+    const bad = 'bb'.repeat(16);
+    applyReticulumPeersUpdatedPatches({
+      patches: [
+        {
+          destination_hash: good,
+          public_key: 'AB'.repeat(64),
+          hops: 1,
+        },
+        {
+          destination_hash: bad,
+          public_key: 'not-a-key',
+          hops: 2,
+        },
+      ],
+    });
+    applyReticulumPeerPatchesNow([]);
+    expect(useReticulumPeerStore.getState().peers.get(good)?.public_key).toBe('ab'.repeat(64));
+    expect(useReticulumPeerStore.getState().peers.get(bad)?.public_key).toBeUndefined();
+  });
+
+  it('normalizes mixed-case peer public_key on full peer refresh and omits malformed', async () => {
+    const goodHash = 'aa'.repeat(16);
+    const badHash = 'bb'.repeat(16);
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+            if (path === '/api/v1/peers' || path.startsWith('/api/v1/peers?')) {
+              return Promise.resolve({
+                peers: [
+                  {
+                    destination_hash: goodHash,
+                    hops: 1,
+                    public_key: 'CD'.repeat(64),
+                  },
+                  {
+                    destination_hash: badHash,
+                    hops: 2,
+                    public_key: 'short',
+                  },
+                ],
+              });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') {
+              return Promise.resolve({ nodes: [] });
+            }
+            return Promise.resolve({});
+          }),
+        },
+        db: {
+          getReticulumDestinations: vi.fn().mockResolvedValue([]),
+        },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar({ forceRefresh: true });
+    expect(useReticulumPeerStore.getState().peers.get(goodHash)?.public_key).toBe('cd'.repeat(64));
+    expect(useReticulumPeerStore.getState().peers.get(badHash)?.public_key).toBeUndefined();
+  });
+
   it('batches announce optimistic updates via patch buffer', () => {
     vi.useFakeTimers();
     applyReticulumAnnounceReceivedOptimistic({

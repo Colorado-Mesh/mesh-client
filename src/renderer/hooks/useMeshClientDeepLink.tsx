@@ -164,15 +164,36 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
       }
       if (pending.kind === 'meshcoreChannelAdd') {
         const result = await applyMeshcoreChannelAdd(pending, {
-          applyChannel: (opts) => {
-            window.dispatchEvent(
-              new CustomEvent('mesh-client:meshcoreChannelFromQr', { detail: opts }),
-            );
-            return Promise.resolve(true);
-          },
+          applyChannel: (opts) =>
+            new Promise((resolve) => {
+              let settled = false;
+              const settle = (outcome: 'accepted' | 'rejected' | 'deferred') => {
+                if (settled) return;
+                settled = true;
+                resolve(outcome);
+              };
+              window.dispatchEvent(
+                new CustomEvent('mesh-client:meshcoreChannelFromQr', {
+                  detail: {
+                    ...opts,
+                    settle: (outcome: 'accepted' | 'rejected') => {
+                      settle(outcome);
+                    },
+                  },
+                }),
+              );
+              // No MeshcoreChannelSection listener → keep pending for Radio review.
+              queueMicrotask(() => {
+                settle('deferred');
+              });
+            }),
         });
-        if (result.ok) {
+        if (result.ok && result.deferred) {
           addToast(t('qrIngest.meshcoreChannelImported'), 'success');
+          return;
+        }
+        if (result.ok) {
+          // MeshcoreChannelSection owns the prefill success toast.
           setPending(null);
         } else {
           addToast(t(result.errorKey), 'error');
@@ -207,7 +228,9 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
   const actionKey =
     pending.kind === 'meshcoreChannelAdd'
       ? 'qrIngest.confirmMeshcoreChannelImportAction'
-      : 'qrIngest.confirmContactImportAction';
+      : pending.kind === 'meshcoreContactAdd'
+        ? 'qrIngest.confirmMeshcoreContactImportAction'
+        : 'qrIngest.confirmContactImportAction';
 
   return (
     <ConfirmModal

@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "Contacto de importación",
     "confirmMeshcoreContactImportTitle": "¿Importar contacto MeshCore?",
     "confirmMeshcoreContactImportBody": "¿Añadir {{name}} de un QR de contacto de MeshCore a tus contactos?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "¿Importar canal MeshCore?",
     "confirmMeshcoreChannelImportBody": "¿Aplicar el canal {{name}} desde un QR de canal MeshCore en la pestaña Radio?",
     "confirmMeshcoreChannelImportAction": "Importar canal",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "No se ha podido importar el contacto de MeshCore desde QR",
     "meshcoreChannelImported": "Enlace de canal de MeshCore recibido — revisión en la pestaña Radio",
     "meshcoreChannelImportFailed": "No se ha podido importar el canal MeshCore desde QR",
-    "meshcoreChannelPrefill": "Detalles del canal rellenados desde QR — guardar para aplicar"
+    "meshcoreChannelPrefill": "Detalles del canal rellenados desde QR — guardar para aplicar",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Secciones remotas",

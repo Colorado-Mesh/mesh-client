@@ -184,6 +184,14 @@ describe('reticulumSidecarReads', () => {
     });
   });
 
+  it('registerReticulumKnownIdentity rejects malformed ok field', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValue({ ok: 'false' });
+    await expect(registerReticulumKnownIdentity('a'.repeat(32), 'b'.repeat(128))).resolves.toEqual({
+      ok: false,
+    });
+  });
+
   it('fetchReticulumInterfaces caches results for a short interval', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyGet.mockResolvedValue({

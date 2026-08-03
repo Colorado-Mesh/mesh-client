@@ -52,6 +52,12 @@ vi.mock('../stores/reticulumPeerStore', async (importOriginal) => {
   };
 });
 
+vi.mock('./QrCodeImage', () => ({
+  default: ({ value, ariaLabel }: { value: string; ariaLabel?: string }) => (
+    <img alt={ariaLabel} data-testid="peer-qr" data-value={value} />
+  ),
+}));
+
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import ReticulumPeerDetailModal from './ReticulumPeerDetailModal';
 
@@ -123,10 +129,8 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
       <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
     );
     await user.click(screen.getByRole('button', { name: 'peerDetailModal.shareContactQrAria' }));
-    const img = await screen.findByRole('img', { name: 'peerDetailModal.shareContactQrAria' });
-    expect(img.getAttribute('src')).toBeTruthy();
-    // QrCodeImage encodes value into canvas/data URL; ensure toggle works with lxma peer.
-    expect(screen.getByRole('button', { name: 'peerDetailModal.shareContactQrAria' })).toBeTruthy();
+    const img = await screen.findByTestId('peer-qr');
+    expect(img.getAttribute('data-value') ?? '').toMatch(/^lxma:\/\//);
   });
 
   it('falls back to lxm://contact QR when public_key is absent', async () => {
@@ -135,9 +139,8 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
       <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
     );
     await user.click(screen.getByRole('button', { name: 'peerDetailModal.shareContactQrAria' }));
-    expect(
-      await screen.findByRole('img', { name: 'peerDetailModal.shareContactQrAria' }),
-    ).toBeTruthy();
+    const img = await screen.findByTestId('peer-qr');
+    expect(img.getAttribute('data-value') ?? '').toMatch(/^lxm:\/\/contact\//);
   });
 
   it('Save as contact upserts last_heard and refreshes peers', async () => {

@@ -103,8 +103,18 @@ describe('meshClientDeepLinkApply', () => {
     );
   });
 
+  it('applyMeshcoreContactAdd rejects short or non-hex publicKeyHex', async () => {
+    const saveContact = vi.fn().mockResolvedValue(true);
+    const result = await applyMeshcoreContactAdd(
+      { name: 'N', publicKeyHex: 'zz', type: 1 },
+      { saveContact },
+    );
+    expect(result).toEqual({ ok: false, errorKey: 'qrIngest.meshcoreContactImportFailed' });
+    expect(saveContact).not.toHaveBeenCalled();
+  });
+
   it('applyMeshcoreChannelAdd calls applyChannel dep', async () => {
-    const applyChannel = vi.fn().mockResolvedValue(true);
+    const applyChannel = vi.fn().mockResolvedValue('accepted');
     const result = await applyMeshcoreChannelAdd(
       { name: 'Pub', secretHex: 'cd'.repeat(16) },
       { applyChannel },

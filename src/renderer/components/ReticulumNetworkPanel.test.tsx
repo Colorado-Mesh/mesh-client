@@ -11,19 +11,28 @@ vi.mock('react-i18next', () => ({
 
 const refreshIdentity = vi.fn();
 
+const identityState = vi.hoisted(() => ({
+  configured: true,
+  identity_hash: 'abc',
+  lxmf_hash: 'def0123456789abcdef0123456789abc',
+  display_name: 'Existing Name',
+  public_key: null as string | null,
+}));
+
 vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
   useReticulumSidecarApi: () => ({
     sidecarApiReady: true,
-    identity: {
-      configured: true,
-      identity_hash: 'abc',
-      lxmf_hash: 'def0123456789abcdef0123456789abc',
-      display_name: 'Existing Name',
-    },
+    identity: identityState,
     statsSummary: null,
     appInfo: null,
     refreshIdentity,
   }),
+}));
+
+vi.mock('./QrCodeImage', () => ({
+  default: ({ value, ariaLabel }: { value: string; ariaLabel?: string }) => (
+    <img alt={ariaLabel} data-testid="identity-qr" data-value={value} />
+  ),
 }));
 
 vi.mock('../stores/reticulumPeerStore', () => ({
@@ -32,11 +41,17 @@ vi.mock('../stores/reticulumPeerStore', () => ({
     selector({ peers: new Map([['a', {}]]) }),
 }));
 
+import { buildLxmaContactUri } from '@/shared/meshClientDeepLink';
+
 import { ReticulumNetworkPanel } from './ReticulumNetworkPanel';
 
 describe('ReticulumNetworkPanel', () => {
   beforeEach(() => {
     refreshIdentity.mockReset();
+    identityState.public_key = null;
+    identityState.lxmf_hash = 'def0123456789abcdef0123456789abc';
+    identityState.identity_hash = 'abc';
+    identityState.display_name = 'Existing Name';
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/stack/settings') {
         return Promise.resolve({
@@ -131,6 +146,17 @@ describe('ReticulumNetworkPanel', () => {
     expect(
       screen.getByText('connectionPanel.reticulumIdentity.replaceIdentitySection'),
     ).toBeInTheDocument();
+  });
+
+  it('renders lxma identity QR when public_key is 128 hex', async () => {
+    const user = userEvent.setup();
+    const pub = 'ab'.repeat(64);
+    identityState.public_key = pub;
+    const expected = buildLxmaContactUri(identityState.lxmf_hash, pub);
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    await user.click(await screen.findByRole('button', { name: 'qrIngest.showIdentityQrAria' }));
+    const img = await screen.findByTestId('identity-qr');
+    expect(img.getAttribute('data-value')).toBe(expected);
   });
 
   it('writes full LXMF hash to clipboard via electronAPI', async () => {

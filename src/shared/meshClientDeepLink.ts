@@ -73,11 +73,13 @@ export function buildMeshcoreContactAddUri(opts: {
   publicKeyHex: string;
   type: MeshcoreContactType;
 }): string {
+  const name = opts.name.trim();
+  if (!name) throw new Error('invalid name');
   const key = opts.publicKeyHex.trim().toLowerCase();
   if (!MESHCORE_PUBKEY_RE.test(key)) throw new Error('invalid public key');
   if (!isMeshcoreContactType(opts.type)) throw new Error('invalid contact type');
   const params = new URLSearchParams();
-  params.set('name', opts.name.trim());
+  params.set('name', name);
   params.set('public_key', key);
   params.set('type', String(opts.type));
   return `meshcore://contact/add?${params.toString()}`;
@@ -88,10 +90,12 @@ export function buildMeshcoreChannelAddUri(opts: {
   secretHex: string;
   regionScope?: string | null;
 }): string {
+  const name = opts.name.trim();
+  if (!name) throw new Error('invalid name');
   const secret = opts.secretHex.trim().toLowerCase();
   if (!MESHCORE_CHANNEL_SECRET_RE.test(secret)) throw new Error('invalid channel secret');
   const params = new URLSearchParams();
-  params.set('name', opts.name.trim());
+  params.set('name', name);
   params.set('secret', secret);
   if (opts.regionScope?.trim()) params.set('region_scope', opts.regionScope.trim());
   return `meshcore://channel/add?${params.toString()}`;

@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "Kişiyi içe aktar",
     "confirmMeshcoreContactImportTitle": "MeshCore kişisi içe aktarılsın mı?",
     "confirmMeshcoreContactImportBody": "MeshCore kişi QR'sinden {{name}} kişilerinize eklensin mi?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "MeshCore kanalı içe aktarılsın mı?",
     "confirmMeshcoreChannelImportBody": "Radyo sekmesindeki MeshCore kanal QR'sından {{name}} kanalı uygulansın mı?",
     "confirmMeshcoreChannelImportAction": "Kanalı içe aktar",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "MeshCore kişisi QR'dan içe aktarılamadı",
     "meshcoreChannelImported": "MeshCore kanal bağlantısı alındı — Radyo sekmesinde inceleme",
     "meshcoreChannelImportFailed": "MeshCore kanalı QR'dan içe aktarılamadı",
-    "meshcoreChannelPrefill": "QR'dan doldurulan kanal ayrıntıları — uygulamak için kaydedin"
+    "meshcoreChannelPrefill": "QR'dan doldurulan kanal ayrıntıları — uygulamak için kaydedin",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Uzak bölümler",

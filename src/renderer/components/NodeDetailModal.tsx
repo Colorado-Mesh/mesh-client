@@ -423,6 +423,7 @@ export default function NodeDetailModal({
     setShowMeshcoreNeighbors(false);
     setExportContactPending(false);
     setShareContactPending(false);
+    setShowMeshcoreContactQr(false);
   }, [node?.node_id]);
 
   // Detect position update after a request was sent (gate on state, not ref — avoids flash on open)
@@ -471,8 +472,15 @@ export default function NodeDetailModal({
   // Fetch on_radio status and contact count for MeshCore
   const [contactPubkey, setContactPubkey] = useState<string | null>(null);
 
+  const {
+    nodeStaleThresholdMs,
+    nodeOfflineThresholdMs,
+    protocol: activeProtocol,
+  } = useRadioProvider(protocol ?? 'meshtastic');
+  const isMeshcoreProtocol = activeProtocol === 'meshcore';
+
   const meshcoreContactQrUri = useMemo(() => {
-    if (protocol !== 'meshcore' || !contactPubkey || !node) return null;
+    if (!isMeshcoreProtocol || !contactPubkey || !node) return null;
     const typeRaw = meshcoreContactTypeFromHwModel(node.hw_model ?? 'Chat') ?? 1;
     const type = (typeRaw >= 1 && typeRaw <= 4 ? typeRaw : 1) as MeshcoreContactType;
     try {
@@ -485,7 +493,7 @@ export default function NodeDetailModal({
       // catch-no-log-ok Invalid pubkey simply hides the share QR.
       return null;
     }
-  }, [protocol, contactPubkey, node]);
+  }, [isMeshcoreProtocol, contactPubkey, node]);
 
   const ensureRemoteRpcAccess = useCallback(
     async (
@@ -590,10 +598,6 @@ export default function NodeDetailModal({
       clearTimeout(timer);
     };
   }, [traceRoutePending, t]);
-
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(
-    protocol ?? 'meshtastic',
-  );
 
   if (!node) return null;
 
@@ -2115,7 +2119,7 @@ export default function NodeDetailModal({
                       : t('nodeDetailModal.shareContact')}
                   </button>
                 )}
-                {protocol === 'meshcore' && meshcoreContactQrUri ? (
+                {isMeshcoreProtocol && meshcoreContactQrUri ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -2127,7 +2131,7 @@ export default function NodeDetailModal({
                     {t('nodeDetailModal.shareContactQr')}
                   </button>
                 ) : null}
-                {protocol === 'meshcore' && showMeshcoreContactQr && meshcoreContactQrUri ? (
+                {isMeshcoreProtocol && showMeshcoreContactQr && meshcoreContactQrUri ? (
                   <div className="w-full pt-2">
                     <QrCodeImage
                       value={meshcoreContactQrUri}

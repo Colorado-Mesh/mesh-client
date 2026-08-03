@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "연락처 가져오기",
     "confirmMeshcoreContactImportTitle": "MeshCore 연락처를 가져올까요?",
     "confirmMeshcoreContactImportBody": "MeshCore 연락처 QR에서 {{name}} 을 (를) 연락처에 추가하시겠습니까?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "MeshCore 채널을 가져올까요?",
     "confirmMeshcoreChannelImportBody": "라디오 탭의 MeshCore 채널 QR에서 채널 {{name}} 을 (를) 적용하시겠습니까?",
     "confirmMeshcoreChannelImportAction": "채널 가져오기",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "QR에서 MeshCore 연락처를 가져올 수 없습니다",
     "meshcoreChannelImported": "MeshCore 채널 링크 수신 — 라디오 탭에서 검토",
     "meshcoreChannelImportFailed": "QR에서 MeshCore 채널을 가져올 수 없습니다",
-    "meshcoreChannelPrefill": "QR에서 채운 채널 세부 정보 — 적용하려면 저장"
+    "meshcoreChannelPrefill": "QR에서 채운 채널 세부 정보 — 적용하려면 저장",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "원격 섹션",

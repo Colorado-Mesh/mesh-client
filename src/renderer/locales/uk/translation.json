@@ -4864,6 +4864,7 @@
     "confirmContactImportAction": "Імпортувати контакт",
     "confirmMeshcoreContactImportTitle": "Імпортувати контакт MeshCore?",
     "confirmMeshcoreContactImportBody": "Додати {{name}} з QR-коду контакту MeshCore до ваших контактів?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "Імпортувати канал MeshCore?",
     "confirmMeshcoreChannelImportBody": "Застосувати канал {{name}} з QR-каналу MeshCore на вкладці «Радіо»?",
     "confirmMeshcoreChannelImportAction": "Імпортувати канал",
@@ -4872,7 +4873,8 @@
     "meshcoreContactImportFailed": "Не вдалося імпортувати контакт MeshCore з QR",
     "meshcoreChannelImported": "Отримано посилання на канал MeshCore — відгук на вкладці \"Радіо\"",
     "meshcoreChannelImportFailed": "Не вдалося імпортувати канал MeshCore з QR",
-    "meshcoreChannelPrefill": "Відомості про канал заповнено з QR — збережіть, щоб застосувати"
+    "meshcoreChannelPrefill": "Відомості про канал заповнено з QR — збережіть, щоб застосувати",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Віддалені ділянки",

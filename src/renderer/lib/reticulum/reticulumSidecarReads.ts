@@ -297,11 +297,20 @@ export async function registerReticulumKnownIdentity(
     return { ok: false, error: 'sidecar_not_running' };
   }
   try {
-    const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/register-known', {
-      destination_hash: destinationHash,
-      public_key: publicKeyHex,
-    })) as { ok?: boolean; error?: string };
-    return { ok: Boolean(res.ok), error: res.error };
+    const res: unknown = await window.electronAPI.reticulum.proxyPost(
+      '/api/v1/identity/register-known',
+      {
+        destination_hash: destinationHash,
+        public_key: publicKeyHex,
+      },
+    );
+    if (!res || typeof res !== 'object') {
+      return { ok: false, error: 'invalid_response' };
+    }
+    const body = res as { ok?: unknown; error?: unknown };
+    const ok = body.ok === true;
+    const error = typeof body.error === 'string' ? body.error : undefined;
+    return ok ? { ok: true } : { ok: false, ...(error ? { error } : {}) };
   } catch (e) {
     // catch-no-log-ok error returned to caller for toast/UI
     return { ok: false, error: errLikeToLogString(e) };

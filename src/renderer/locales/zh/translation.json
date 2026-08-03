@@ -4862,6 +4862,7 @@
     "confirmContactImportAction": "导入联系人",
     "confirmMeshcoreContactImportTitle": "导入MeshCore联系人？",
     "confirmMeshcoreContactImportBody": "将MeshCore联系人QR中的{{name}}添加到您的联系人？",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "导入MeshCore频道？",
     "confirmMeshcoreChannelImportBody": "在“广播”选项卡上应用来自MeshCore频道QR的频道{{name}} ？",
     "confirmMeshcoreChannelImportAction": "导入频道",
@@ -4870,7 +4871,8 @@
     "meshcoreContactImportFailed": "无法从二维码导入MeshCore联系人",
     "meshcoreChannelImported": "已收到MeshCore频道链接—在“广播”选项卡上查看",
     "meshcoreChannelImportFailed": "无法从二维码导入MeshCore频道",
-    "meshcoreChannelPrefill": "从QR填写的频道详细信息—保存以应用"
+    "meshcoreChannelPrefill": "从QR填写的频道详细信息—保存以应用",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "远程部分",

@@ -4633,6 +4633,7 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.interface == b.interface
         && a.path_hash == b.path_hash
         && a.via_hash == b.via_hash
+        && a.public_key == b.public_key
 }
 
 /// Pure announce classification for propagation sync targets.
@@ -4719,6 +4720,28 @@ mod announce_display_name_tests {
         let mut added = path_table_added_hashes(&prev, &next);
         added.sort();
         assert_eq!(added, vec!["cc".to_string()]);
+    }
+
+    #[test]
+    fn peer_route_fields_equal_includes_public_key() {
+        let base = PeerRow {
+            destination_hash: "aa".into(),
+            display_name: Some("Alice".into()),
+            hops: Some(1),
+            last_seen: Some(1),
+            interface: Some("tcp".into()),
+            path_hash: Some("bb".into()),
+            via_hash: Some("cc".into()),
+            public_key: Some("dd".repeat(64)),
+        };
+        let mut other = base.clone();
+        other.last_seen = Some(99);
+        other.display_name = Some("Bob".into());
+        assert!(peer_route_fields_equal(&base, &other));
+        other.public_key = Some("ee".repeat(64));
+        assert!(!peer_route_fields_equal(&base, &other));
+        other.public_key = None;
+        assert!(!peer_route_fields_equal(&base, &other));
     }
 
     #[test]

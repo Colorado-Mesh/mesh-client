@@ -7,10 +7,12 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { pubkeyToNodeId } from '@/renderer/lib/meshcoreUtils';
 import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { refreshReticulumPeersFromSidecar } from '@/renderer/stores/reticulumPeerStore';
+import { hexToBytesExact } from '@/shared/hexBytes';
 import type { MeshClientDeepLink } from '@/shared/meshClientDeepLink';
 
 export type DeepLinkApplyResult =
-  { ok: true; kind: MeshClientDeepLink['kind'] } | { ok: false; errorKey: string; detail?: string };
+  | { ok: true; kind: MeshClientDeepLink['kind']; deferred?: boolean }
+  | { ok: false; errorKey: string; detail?: string };
 
 /** Import Columba lxma:// contact: register pubkey then SQLite saved contact. */
 export async function applyLxmaContactImport(opts: {
@@ -86,14 +88,18 @@ export async function applyMeshcoreContactAdd(
   deps: MeshcoreContactApplyDeps,
 ): Promise<DeepLinkApplyResult> {
   try {
-    const bytes = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) {
-      bytes[i] = Number.parseInt(opts.publicKeyHex.slice(i * 2, i * 2 + 2), 16);
+    const key = opts.publicKeyHex.trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(key)) {
+      return { ok: false, errorKey: 'qrIngest.meshcoreContactImportFailed' };
+    }
+    const bytes = hexToBytesExact(key, 32);
+    if (!bytes) {
+      return { ok: false, errorKey: 'qrIngest.meshcoreContactImportFailed' };
     }
     const nodeId = pubkeyToNodeId(bytes);
     const ok = await deps.saveContact({
       nodeId,
-      publicKeyHex: opts.publicKeyHex,
+      publicKeyHex: key,
       name: opts.name,
       contactType: opts.type,
     });
@@ -105,12 +111,15 @@ export async function applyMeshcoreContactAdd(
   }
 }
 
+/** Channel prefill settle from MeshcoreChannelSection (or deferred when unmounted). */
+export type MeshcoreChannelApplyOutcome = 'accepted' | 'deferred' | 'rejected';
+
 export interface MeshcoreChannelApplyDeps {
   applyChannel: (opts: {
     name: string;
     secretHex: string;
     regionScope?: string;
-  }) => Promise<boolean>;
+  }) => Promise<MeshcoreChannelApplyOutcome>;
 }
 
 export async function applyMeshcoreChannelAdd(
@@ -118,8 +127,13 @@ export async function applyMeshcoreChannelAdd(
   deps: MeshcoreChannelApplyDeps,
 ): Promise<DeepLinkApplyResult> {
   try {
-    const ok = await deps.applyChannel(opts);
-    if (!ok) return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
+    const outcome = await deps.applyChannel(opts);
+    if (outcome === 'rejected') {
+      return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
+    }
+    if (outcome === 'deferred') {
+      return { ok: true, kind: 'meshcoreChannelAdd', deferred: true };
+    }
     return { ok: true, kind: 'meshcoreChannelAdd' };
   } catch (err) {
     console.error('[applyMeshcoreChannelAdd] failed: ' + errLikeToLogString(err));
