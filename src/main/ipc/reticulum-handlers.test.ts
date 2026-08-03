@@ -310,6 +310,40 @@ describe('registerReticulumIpcHandlers', () => {
       ).rejects.toThrow('EACCES permission denied');
     });
 
+    it.each([
+      ['proxyPost', '/api/v1/lxmf/send', { text: 'hi' }] as const,
+      ['proxyPut', '/api/v1/interfaces/tcp', { enabled: true }] as const,
+      ['proxyDelete', '/api/v1/interfaces/tcp', undefined] as const,
+    ])(
+      '%s returns a soft-failure envelope for expected sidecar-down races',
+      async (method, path, body) => {
+        manager[method].mockRejectedValueOnce(new Error('Reticulum sidecar is not running'));
+        const channel = `reticulum:${method}` as const;
+        const result =
+          body === undefined
+            ? await handlers.get(channel)?.(event, path)
+            : await handlers.get(channel)?.(event, path, body);
+        expect(result).toEqual({
+          __reticulumProxyError: true,
+          message: 'Reticulum sidecar is not running',
+        });
+      },
+    );
+
+    it.each([
+      ['proxyPost', '/api/v1/lxmf/send', { text: 'hi' }] as const,
+      ['proxyPut', '/api/v1/interfaces/tcp', { enabled: true }] as const,
+      ['proxyDelete', '/api/v1/interfaces/tcp', undefined] as const,
+    ])('%s rethrows unexpected manager failures', async (method, path, body) => {
+      manager[method].mockRejectedValueOnce(new Error('EACCES permission denied'));
+      const channel = `reticulum:${method}` as const;
+      const invoke =
+        body === undefined
+          ? handlers.get(channel)?.(event, path)
+          : handlers.get(channel)?.(event, path, body);
+      await expect(invoke).rejects.toThrow('EACCES permission denied');
+    });
+
     it('proxyPost forwards path and body to manager.proxyPost', async () => {
       const body = { destination_hash: 'aa'.repeat(16), text: 'hi' };
       await handlers.get('reticulum:proxyPost')?.(event, '/api/v1/lxmf/send', body);

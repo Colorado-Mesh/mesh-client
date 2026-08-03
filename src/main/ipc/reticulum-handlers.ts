@@ -7,7 +7,7 @@ import type {
 } from '../../shared/reticulum-types';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import {
-  isExpectedReticulumProxyErrorMessage,
+  isExpectedReticulumProxyError,
   type ReticulumProxyIpcErrorEnvelope,
   reticulumProxyIpcErrorEnvelope,
 } from '../../shared/reticulumProxyIpcError';
@@ -64,7 +64,7 @@ function parseReticulumStartOptions(opts: unknown): ReticulumSidecarStartOptions
 
 function logReticulumProxyFailure(method: string, err: unknown, apiPath?: string): void {
   const message = err instanceof Error ? err.message : String(err);
-  const log = isExpectedReticulumProxyErrorMessage(message) ? console.debug : console.error;
+  const log = isExpectedReticulumProxyError(err) ? console.debug : console.error;
   const pathSuffix = apiPath ? ` path=${apiPath}` : '';
   log(`[ReticulumIPC] ${method} failed${pathSuffix}:`, sanitizeLogMessage(message));
 }
@@ -81,7 +81,7 @@ function settleReticulumProxyFailure(
 ): ReticulumProxyIpcErrorEnvelope {
   logReticulumProxyFailure(method, err, apiPath);
   const message = err instanceof Error ? err.message : String(err);
-  if (isExpectedReticulumProxyErrorMessage(message)) {
+  if (isExpectedReticulumProxyError(err)) {
     return reticulumProxyIpcErrorEnvelope(sanitizeLogMessage(message));
   }
   throw err;

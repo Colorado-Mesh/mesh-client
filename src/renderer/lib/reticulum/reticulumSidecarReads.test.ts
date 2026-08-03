@@ -58,6 +58,8 @@ describe('reticulumSidecarReads', () => {
     expect(isReticulumSidecar404Error(new Error('sidecar GET /api/v1/topology failed: 404'))).toBe(
       true,
     );
+    expect(isReticulumSidecar404Error({ status: 404, message: 'missing route' })).toBe(true);
+    expect(isReticulumSidecar404Error(new Error('payload size 4048 bytes'))).toBe(false);
     expect(
       isReticulumSidecarRateLimitError(new Error('reticulum:proxy: rate limit exceeded')),
     ).toBe(true);
