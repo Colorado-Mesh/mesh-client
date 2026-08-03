@@ -88,7 +88,10 @@ import {
   isValidConnectHost,
   stripConnectHostBrackets,
 } from '@/shared/connectHost';
-import { RETICULUM_BACKBONE_DIRECTORY_URL } from '@/shared/reticulumDecommissionedHubs';
+import {
+  isDecommissionedReticulumTcpHub,
+  RETICULUM_BACKBONE_DIRECTORY_URL,
+} from '@/shared/reticulumDecommissionedHubs';
 import {
   countEnabledLocallyConnectedSerialInterfaces,
   isReticulumLocallyConnectedSerialInterface,
@@ -98,6 +101,16 @@ import { clampTcpPort } from '@/shared/tcpPort';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { HelpTooltip } from '../HelpTooltip';
+
+function isDecommissionedTcpInterfaceRow(iface: {
+  type: string;
+  host?: string | null;
+  port?: number | null;
+}): boolean {
+  if (iface.type.toLowerCase() !== 'tcp') return false;
+  if (typeof iface.host !== 'string' || typeof iface.port !== 'number') return false;
+  return isDecommissionedReticulumTcpHub(iface.host, iface.port);
+}
 import SignalBars from '../SignalBars';
 import { ReticulumInterfaceDevicePickerModal } from './ReticulumInterfaceDevicePickerModal';
 import {
@@ -581,6 +594,19 @@ export function ReticulumInterfacesPanel({
 
   const toggleInterface = async (id: string, enabled: boolean, ifaceTypeName?: string) => {
     setInterfaceError(null);
+    const row = interfaces.find((iface) => iface.id === id);
+    if (
+      enabled &&
+      row &&
+      typeof row.host === 'string' &&
+      typeof row.port === 'number' &&
+      isDecommissionedReticulumTcpHub(row.host, row.port)
+    ) {
+      const blockedMsg = t('connectionPanel.reticulumInterfaces.decommissionedHubEnableBlocked');
+      setInterfaceError(blockedMsg);
+      addToast(blockedMsg, 'error');
+      return;
+    }
     try {
       const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
       const res = (await window.electronAPI.reticulum.proxyPost(path, {})) as {
@@ -2179,6 +2205,7 @@ function InterfacesSection({
                 : null;
               const showTcpLinkQuality = isReticulumTcpClientLinkQualityRow(iface);
               const tcpRttMs = showTcpLinkQuality ? rttForReticulumTcpRow(iface, tcpRttById) : null;
+              const decommissioned = isDecommissionedTcpInterfaceRow(iface);
               return (
                 <li
                   key={iface.id}
@@ -2189,6 +2216,14 @@ function InterfacesSection({
                       <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
                         {formatReticulumInterfaceRowSummary(t, iface)}
                       </span>
+                      {decommissioned ? (
+                        <span
+                          className="text-xs font-medium text-red-400"
+                          data-testid={`reticulum-decommissioned-${iface.id}`}
+                        >
+                          {t('connectionPanel.reticulumInterfaces.decommissionedBadge')}
+                        </span>
+                      ) : null}
                       {showBleRnodeSignal ? (
                         <span
                           className="text-muted flex shrink-0 items-center gap-1 text-xs"

@@ -1040,6 +1040,8 @@
       "addFailed": "Failed to add interface.",
       "invalidHost": "Enter a valid hostname or IP address (use [brackets] for IPv6).",
       "toggleFailed": "Failed to change interface state.",
+      "decommissionedHubEnableBlocked": "This hub is decommissioned and cannot stay enabled — mesh-client turns it off on every stack start. Use Add default network hubs or the backbone directory for live endpoints.",
+      "decommissionedBadge": "decommissioned",
       "edit": "Edit",
       "editTitle": "Edit interface",
       "saveEdit": "Save changes",

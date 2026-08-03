@@ -1124,7 +1124,9 @@
       "advancedHint": "Touche supplémentaire = paires de valeurs pour cette interface, une par ligne. Les champs connus (hôte, mode, nom de réseau, …) restent dans le formulaire ci-dessus.",
       "advancedAria": "Options avancées de valeur de clé d'interface",
       "advancedKeyReserved": "La clé « {{key}} » est un champ connu et a été ignoré — utilisez le formulaire ci-dessus.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Ce hub est hors service et ne peut pas rester activé — mesh-client l’éteint à chaque démarrage de la pile. Utilisez Ajouter des hubs réseau par défaut ou le répertoire backbone pour les points de terminaison actifs.",
+      "decommissionedBadge": "inactif"
     },
     "reticulumPeers": {
       "hops": "Hops",

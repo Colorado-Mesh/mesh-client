@@ -1125,7 +1125,9 @@
       "advancedHint": "Chave adicional = pares de valores para esta interface, um por linha. Campos conhecidos (host, modo, nome da rede,...) permanecem no formulário acima.",
       "advancedAria": "Opções avançadas de chave-valor da interface",
       "advancedKeyReserved": "A chave \"{{key}}\" é um campo conhecido e foi ignorado — use o formulário acima.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Este hub está desativado e não pode permanecer ativado — o mesh-client o desliga em todas as partidas de pilha. Use Adicionar hubs de rede padrão ou o diretório de backbone para pontos de extremidade ativos.",
+      "decommissionedBadge": "DESCOMISSIONADO"
     },
     "reticulumPeers": {
       "hops": "Hops",

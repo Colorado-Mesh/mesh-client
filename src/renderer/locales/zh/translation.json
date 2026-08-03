@@ -1125,7 +1125,9 @@
       "advancedHint": "附加键=此接口的值对，每行一个。已知字段（主机、模式、网络名称等）保持在上面的表单中。",
       "advancedAria": "高级界面键值选项",
       "advancedKeyReserved": "键“{{key}}”是已知字段，已被忽略—请使用上面的表单。",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "此集线器已停用且无法保持启用 — mesh-client 会在每次堆栈启动时将其关闭。请使用“添加默认网络集线器”或骨干目录获取可用端点。",
+      "decommissionedBadge": "退役"
     },
     "reticulumPeers": {
       "hops": "Hops",

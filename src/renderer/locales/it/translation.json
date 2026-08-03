@@ -1123,7 +1123,9 @@
       "advancedHint": "Chiave aggiuntiva = coppie di valori per questa interfaccia, una per riga. I campi noti (host, modalità, nome della rete,...) rimangono nel modulo sopra.",
       "advancedAria": "Opzioni chiave-valore interfaccia avanzata",
       "advancedKeyReserved": "Il tasto \"{{key}}\" è un campo noto ed è stato ignorato. Utilizza il modulo qui sopra.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Questo hub è disattivato e non può rimanere abilitato — mesh-client lo disattiva a ogni avvio dello stack. Utilizzare Aggiungi hub di rete predefiniti o la directory backbone per gli endpoint live.",
+      "decommissionedBadge": "Dismesso"
     },
     "reticulumPeers": {
       "hops": "Hops",

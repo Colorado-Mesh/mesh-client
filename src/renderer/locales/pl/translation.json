@@ -1127,7 +1127,9 @@
       "advancedHint": "Dodatkowy klucz= pary wartości dla tego interfejsu, jedna na wiersz. Znane pola (host, tryb, nazwa sieci,...) pozostają w powyższym formularzu.",
       "advancedAria": "Zaawansowane opcje wartości klawiszy interfejsu",
       "advancedKeyReserved": "Klucz „{{key}}” jest znanym polem i został zignorowany — użyj powyższego formularza.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Ten hub jest wycofany z eksploatacji i nie może pozostać włączony — mesh-client wyłącza go przy każdym uruchomieniu stosu. Użyj Dodaj domyślne huby sieciowe lub katalogu backbone dla aktywnych punktów końcowych.",
+      "decommissionedBadge": "wycofany z eksploatacji"
     },
     "reticulumPeers": {
       "hops": "Hops",

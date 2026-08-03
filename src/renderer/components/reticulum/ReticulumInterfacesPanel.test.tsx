@@ -1165,6 +1165,66 @@ describe('ReticulumInterfacesPanel', () => {
     expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
   });
 
+  it('shows a red decommissioned badge on decommissioned TCP hub rows', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rns-testnet-betweentheborders',
+            name: 'RNS Testnet BetweenTheBorders',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'betweentheborders.com',
+            port: 4242,
+            mode: 'boundary',
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByTestId('reticulum-decommissioned-rns-testnet-betweentheborders'),
+    ).toHaveTextContent('connectionPanel.reticulumInterfaces.decommissionedBadge');
+  });
+
+  it('blocks enabling a decommissioned hub without calling enable or restarting', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rns-testnet-betweentheborders',
+            name: 'RNS Testnet BetweenTheBorders',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'betweentheborders.com',
+            port: 4242,
+            mode: 'boundary',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.enable' }),
+    );
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumInterfaces.decommissionedHubEnableBlocked'),
+    ).toBeInTheDocument();
+    expect(proxyPost).not.toHaveBeenCalledWith(
+      '/api/v1/interfaces/rns-testnet-betweentheborders/enable',
+      expect.anything(),
+    );
+  });
+
   it('disables decommissioned hubs and adds missing backbone presets', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });

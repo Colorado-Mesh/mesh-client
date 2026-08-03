@@ -1123,7 +1123,9 @@
       "advancedHint": "Zusätzlicher Schlüssel=Wertepaare für diese Schnittstelle, eines pro Zeile. Bekannte Felder (Host, Modus, Netzwerkname, …) bleiben im obigen Formular.",
       "advancedAria": "Erweiterte Schnittstellen-Key-Value-Optionen",
       "advancedKeyReserved": "Der Schlüssel „{{key}}“ ist ein bekanntes Feld und wurde ignoriert — verwende das obige Formular.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Dieser Hub ist außer Betrieb genommen und kann nicht aktiviert bleiben — der Mesh-Client schaltet ihn bei jedem Stapelstart aus. Verwenden Sie Standard-Netzwerk-Hubs oder das Backbone-Verzeichnis für Live-Endpunkte hinzufügen.",
+      "decommissionedBadge": "außer Betrieb zu nehmen,"
     },
     "reticulumPeers": {
       "hops": "Hops",

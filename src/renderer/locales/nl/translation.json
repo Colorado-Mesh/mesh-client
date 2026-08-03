@@ -1124,7 +1124,9 @@
       "advancedHint": "Extra sleutel=waardeparen voor deze interface, één per regel. Bekende velden (host, modus, netwerknaam,...) blijven in het bovenstaande formulier staan.",
       "advancedAria": "Geavanceerde interface key-value opties",
       "advancedKeyReserved": "Sleutel \"{{key}}\" is een bekend veld en werd genegeerd — gebruik het bovenstaande formulier.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Deze hub wordt buiten gebruik gesteld en kan niet ingeschakeld blijven — mesh-client schakelt het uit bij elke start van de stapel. Gebruik Add default network hubs of de backbone directory for live endpoints.",
+      "decommissionedBadge": "ontmanteld"
     },
     "reticulumPeers": {
       "hops": "Hops",

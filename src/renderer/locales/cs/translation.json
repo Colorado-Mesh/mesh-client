@@ -1126,7 +1126,9 @@
       "advancedHint": "Další klíč= páry hodnot pro toto rozhraní, jeden na řádek. Známá pole (hostitel, režim, název sítě, …) zůstávají ve formuláři výše.",
       "advancedAria": "Pokročilé možnosti klíč-hodnota rozhraní",
       "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Tento hub je vyřazen z provozu a nemůže zůstat zapnutý — mesh-client jej vypne při každém spuštění zásobníku. Použijte Přidat výchozí síťové huby nebo páteřní adresář pro živé koncové body.",
+      "decommissionedBadge": "vyřazeno z provozu"
     },
     "reticulumPeers": {
       "hops": "Hops",

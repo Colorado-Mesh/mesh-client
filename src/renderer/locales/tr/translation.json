@@ -1125,7 +1125,9 @@
       "advancedHint": "Ek anahtar= bu arayüz için değer çiftleri, satır başına bir tane. Bilinen alanlar (ana bilgisayar, mod, ağ adı,...) yukarıdaki formda kalır.",
       "advancedAria": "Gelişmiş arayüz anahtar - değer seçenekleri",
       "advancedKeyReserved": "\"{{key}}\" anahtarı bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Bu hub kullanımdan kaldırılmıştır ve etkin kalamaz — mesh-client her yığın başlangıcında onu kapatır. Canlı uç noktalar için varsayılan ağ hub’ları ekle veya omurga dizinini kullanın.",
+      "decommissionedBadge": "Kullanımdan kaldırılmış"
     },
     "reticulumPeers": {
       "hops": "Hops",

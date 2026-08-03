@@ -1125,7 +1125,9 @@
       "advancedHint": "追加のキー=このインターフェイスの値ペア、1行に1つ。既知のフィールド（ホスト、モード、ネットワーク名など）は上記のフォームのままです。",
       "advancedAria": "高度なインターフェースキーバリューオプション",
       "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "このハブは廃止されており有効のままにできません — mesh-client はスタック開始のたびにオフにします。ライブエンドポイントには「デフォルトネットワークハブを追加」またはバックボーンディレクトリを使用してください。",
+      "decommissionedBadge": "使用を中止された？"
     },
     "reticulumPeers": {
       "hops": "Hops",

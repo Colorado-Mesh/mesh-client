@@ -1125,7 +1125,9 @@
       "advancedHint": "Pasangan kunci=nilai tambahan untuk antarmuka ini, satu per baris. Bidang yang diketahui (host, mode, nama jaringan,...) tetap dalam formulir di atas.",
       "advancedAria": "Opsi nilai kunci antarmuka tingkat lanjut",
       "advancedKeyReserved": "Kunci \"{{key}}\" adalah bidang yang diketahui dan diabaikan — gunakan formulir di atas.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "Hub ini dinonaktifkan dan tidak dapat tetap diaktifkan — mesh-client mematikannya pada setiap awal stack. Gunakan Tambahkan hub jaringan default atau direktori backbone untuk endpoint langsung.",
+      "decommissionedBadge": "dinonaktifkan"
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -1125,7 +1125,9 @@
       "advancedHint": "추가 키 = 이 인터페이스에 대한 값 쌍, 한 줄에 하나씩. 알려진 필드 (호스트, 모드, 네트워크 이름 등) 는 위의 형태로 유지됩니다.",
       "advancedAria": "고급 인터페이스 키-값 옵션",
       "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오.",
-      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm"
+      "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+      "decommissionedHubEnableBlocked": "이 허브는 서비스 종료되어 활성 상태를 유지할 수 없습니다 — mesh-client는 스택을 시작할 때마다 끕니다. 라이브 엔드포인트에는 기본 네트워크 허브 추가 또는 백본 디렉터리를 사용하세요.",
+      "decommissionedBadge": "해체됨"
     },
     "reticulumPeers": {
       "hops": "Hops",
