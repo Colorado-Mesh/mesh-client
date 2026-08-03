@@ -3119,7 +3119,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Síť",
-    "pathHash": "Hash cesty",
     "copyHash": "Kopírovat cílový hash",
     "editNameAria": "Vlastní zobrazované jméno",
     "sendMessage": "Odeslat zprávu",
@@ -3136,8 +3135,6 @@
     "probeOk": "Sonda OK — cesta dosažitelná.",
     "blockContact": "Zablokovat kontakt",
     "unblockContact": "Odblokovat kontakt",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — naposledy viděn/a {{seen}}",
     "verifyMark": "Označit jako ověřené",
     "verifyRevoke": "Odvolat žádost o ověření",
     "verifyFingerprint": "Otisk prstu totožnosti",
@@ -3147,7 +3144,8 @@
     "shareContactQrAria": "Zobrazit QR kód pro tento kontakt",
     "verifiedRowAria": "Kontakt ověřen",
     "renameFailed": "Zobrazovaný název nelze uložit.",
-    "removeContactConfirmBody": "Tím odeberete kontakt ze svého uloženého seznamu. Zprávy chatu zůstávají v Historii, pokud jsi jim poslal/a zprávu."
+    "removeContactConfirmBody": "Tím odeberete kontakt ze svého uloženého seznamu. Zprávy chatu zůstávají v Historii, pokud jsi jim poslal/a zprávu.",
+    "backupPaths": "Cesty zálohování"
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",

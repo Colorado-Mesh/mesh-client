@@ -3262,7 +3262,7 @@
   },
   "peerDetailModal": {
     "networkSection": "Network",
-    "pathHash": "Path hash",
+    "backupPaths": "Backup paths",
     "copyHash": "Copy destination hash",
     "editNameAria": "Custom display name",
     "sendMessage": "Send message",
@@ -3280,8 +3280,6 @@
     "probeFailed": "Probe failed: {{error}}",
     "blockContact": "Block contact",
     "unblockContact": "Unblock contact",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — last seen {{seen}}",
     "verifyMark": "Mark verified",
     "verifyRevoke": "Revoke verification",
     "verifyFingerprint": "Identity fingerprint",

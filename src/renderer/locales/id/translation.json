@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Jaringan",
-    "pathHash": "Hash jalur",
     "copyHash": "Salin hash tujuan",
     "editNameAria": "Nama tampilan khusus",
     "sendMessage": "Kirim pesan",
@@ -3134,8 +3133,6 @@
     "probeOk": "Probe OK — jalur dapat dijangkau.",
     "blockContact": "Blokir kontak",
     "unblockContact": "Buka blokir kontak",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — terakhir terlihat {{seen}}",
     "verifyMark": "Tandai terverifikasi",
     "verifyRevoke": "Cabut verifikasi",
     "verifyFingerprint": "Sidik jari identitas",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "Tampilkan kode QR untuk kontak ini",
     "verifiedRowAria": "Kontak terverifikasi",
     "renameFailed": "Tidak dapat menyimpan nama tampilan.",
-    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar tersimpan Anda. Pesan obrolan tetap ada; pesan tersebut akan tetap ada di Riwayat jika Anda mengirimkannya melalui pesan."
+    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar tersimpan Anda. Pesan obrolan tetap ada; pesan tersebut akan tetap ada di Riwayat jika Anda mengirimkannya melalui pesan.",
+    "backupPaths": "Jalur cadangan"
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",

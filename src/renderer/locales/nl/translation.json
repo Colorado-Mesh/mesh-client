@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Netwerk",
-    "pathHash": "Pad hash",
     "copyHash": "Bestemmingshash kopiëren",
     "editNameAria": "Aangepaste weergavenaam",
     "sendMessage": "Verstuur bericht",
@@ -3134,8 +3133,6 @@
     "probeOk": "Sonde OK — pad bereikbaar.",
     "blockContact": "Contactpersoon blokkeren",
     "unblockContact": "Contactpersoon deblokkeren",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — laatst gezien {{seen}}",
     "verifyMark": "Markeer geverifieerd",
     "verifyRevoke": "Verificatie intrekken",
     "verifyFingerprint": "Identiteit vingerafdruk",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "Toon QR-code voor dit contact",
     "verifiedRowAria": "Contact geverifieerd",
     "renameFailed": "Kan de weergavenaam niet opslaan.",
-    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit uw opgeslagen lijst verwijderd. Chatberichten blijven; ze blijven in de geschiedenis staan als je ze een bericht hebt gestuurd."
+    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit uw opgeslagen lijst verwijderd. Chatberichten blijven; ze blijven in de geschiedenis staan als je ze een bericht hebt gestuurd.",
+    "backupPaths": "Back-uppaden"
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",

@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Ağ",
-    "pathHash": "Yol karması",
     "copyHash": "Hedef karmasını kopyala",
     "editNameAria": "Özel görüntü adı",
     "sendMessage": "Mesaj gönder",
@@ -3134,8 +3133,6 @@
     "probeOk": "Prob tamam — yola ulaşılabilir.",
     "blockContact": "Kişiyi & Engelle",
     "unblockContact": "& Kişinin Engellemesini Kaldır",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — son görülme {{seen}}",
     "verifyMark": "Doğrulandı olarak işaretle",
     "verifyRevoke": "Doğrulamayı iptal et",
     "verifyFingerprint": "Kimlik parmak izi",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "Bu kişiye ait QR kodunu göster",
     "verifiedRowAria": "Kişi doğrulandı",
     "renameFailed": "Görünen ad kaydedilemedi.",
-    "removeContactConfirmBody": "Bu, kişiyi kayıtlı listenizden kaldırır. Sohbet mesajları kalır; mesaj gönderdiyseniz Geçmiş'te kalır."
+    "removeContactConfirmBody": "Bu, kişiyi kayıtlı listenizden kaldırır. Sohbet mesajları kalır; mesaj gönderdiyseniz Geçmiş'te kalır.",
+    "backupPaths": "Yedekleme yolları"
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",

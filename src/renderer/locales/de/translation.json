@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Netzwerk-",
-    "pathHash": "Pfad-Hash",
     "copyHash": "Ziel-Hash kopieren",
     "editNameAria": "Ben.def. Display",
     "sendMessage": "Nachricht senden",
@@ -3132,10 +3131,8 @@
     "removeContact": "Kontakt entfernen",
     "removeContactConfirmTitle": "Kontakt entfernen?",
     "probeOk": "Sonde OK — Weg erreichbar.",
-    "serviceBadge": "{{service}}",
     "blockContact": "Kontakt blockieren",
     "unblockContact": "Kontakt entsperren",
-    "serviceBadgeTitle": "{{aspect}} — zuletzt gesehen {{seen}}",
     "verifyMark": "Verifizierte markieren",
     "verifyRevoke": "Verifizierung widerrufen",
     "verifyFingerprint": "Identitäts-Fingerabdruck",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "QR-Code für diesen Kontakt anzeigen",
     "verifiedRowAria": "Kontakt verifiziert",
     "renameFailed": "Der Anzeigename konnte nicht gespeichert werden.",
-    "removeContactConfirmBody": "Dadurch wird der Kontakt aus Ihrer gespeicherten Liste entfernt. Chat-Nachrichten bleiben bestehen; sie bleiben im Verlauf, wenn Sie ihnen eine Nachricht gesendet haben."
+    "removeContactConfirmBody": "Dadurch wird der Kontakt aus Ihrer gespeicherten Liste entfernt. Chat-Nachrichten bleiben bestehen; sie bleiben im Verlauf, wenn Sie ihnen eine Nachricht gesendet haben.",
+    "backupPaths": "Backup-Pfade"
   },
   "peerGraph": {
     "title": "Peer-Kommunikationsgrafik",

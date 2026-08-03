@@ -10,6 +10,10 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import {
+  activeReticulumPathSlot,
+  type ReticulumPathSlot,
+} from '@/renderer/lib/reticulum/reticulumPathMedium';
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import {
@@ -805,21 +809,11 @@ export function applyReticulumPeerActivePathSlot(
   hash: string,
   pathsResult: {
     ok: boolean;
-    paths: {
-      active: boolean;
-      expired: boolean;
-      hops: number | null;
-      via_hash: string | null;
-      interface: string | null;
-      timestamp: number | null;
-    }[];
+    paths: ReticulumPathSlot[];
   },
 ): boolean {
   if (!pathsResult.ok || pathsResult.paths.length === 0) return false;
-  const slot =
-    pathsResult.paths.find((s) => s.active && !s.expired) ??
-    pathsResult.paths.find((s) => !s.expired) ??
-    pathsResult.paths[0];
+  const slot = activeReticulumPathSlot(pathsResult.paths);
   if (!slot) return false;
   const via = slot.via_hash?.trim() ? slot.via_hash.trim().toLowerCase() : null;
   useReticulumPeerStore.getState().updatePeer(hash, {

@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Réseau",
-    "pathHash": "Hachage du chemin",
     "copyHash": "Hash de Destination",
     "editNameAria": "Affichage Personnalisé",
     "sendMessage": "Envoyer un message",
@@ -3134,8 +3133,6 @@
     "probeOk": "Sonde OK — chemin accessible.",
     "blockContact": "Bloquer contact",
     "unblockContact": "Débloquer contact",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — dernière vue {{seen}}",
     "verifyMark": "Marquer comme vérifié",
     "verifyRevoke": "Révoquer la vérification",
     "verifyFingerprint": "Empreinte digitale d'identité",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "Afficher le code QR pour ce contact",
     "verifiedRowAria": "Contact vérifié",
     "renameFailed": "Impossible d'enregistrer le nom d'affichage.",
-    "removeContactConfirmBody": "Cela supprime le contact de votre liste enregistrée. Les messages de chat restent ; ils restent dans l'historique si vous leur avez envoyé un message."
+    "removeContactConfirmBody": "Cela supprime le contact de votre liste enregistrée. Les messages de chat restent ; ils restent dans l'historique si vous leur avez envoyé un message.",
+    "backupPaths": "Chemins de sauvegarde"
   },
   "peerGraph": {
     "title": "Graphique de communication par les pairs",

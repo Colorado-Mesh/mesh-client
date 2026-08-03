@@ -17,9 +17,12 @@ import {
   resolveReticulumProfileIconName,
 } from '@/renderer/lib/reticulum/reticulumIconAppearance';
 import {
+  activeReticulumPathSlot,
+  backupReticulumPathSlots,
   refreshReticulumPeerRouteFromPaths,
   RETICULUM_PATH_RETRY_MS,
   RETICULUM_PATH_SETTLE_MS,
+  type ReticulumPeerPathsResult,
 } from '@/renderer/lib/reticulum/reticulumPathMedium';
 import {
   formatReticulumPeerPathToast,
@@ -73,6 +76,28 @@ export default function ReticulumPeerDetailModal({
   const activityRows = useReticulumIdentityActivityStore((s) => s.byDestination.get(activityKey));
   const loadActivity = useReticulumIdentityActivityStore((s) => s.loadForDestination);
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showContactQr, setShowContactQr] = useState(false);
+  const [pathStatus, setPathStatus] = useState<string | null>(null);
+  const [probeStatus, setProbeStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pathsResult, setPathsResult] = useState<ReticulumPeerPathsResult | null>(null);
+  const [iconColor, setIconColor] = useState('green');
+  const [iconName, setIconName] = useState<ReticulumProfileIconName>('circle');
+  const [verified, setVerified] = useState(false);
+  const [verifiedIdentityHash, setVerifiedIdentityHash] = useState<string | null>(null);
+
+  const hydratePaths = useCallback(
+    async (opts?: { settleMs?: number; retryMs?: number }) => {
+      const result = await refreshReticulumPeerRouteFromPaths(peerHash, opts);
+      setPathsResult(result);
+      return result;
+    },
+    [peerHash],
+  );
+
   useEffect(() => {
     void loadActivity(peerHash);
   }, [loadActivity, peerHash]);
@@ -82,7 +107,8 @@ export default function ReticulumPeerDetailModal({
     let cancelled = false;
     void (async () => {
       try {
-        await refreshReticulumPeerRouteFromPaths(peerHash);
+        const result = await refreshReticulumPeerRouteFromPaths(peerHash);
+        if (!cancelled) setPathsResult(result);
       } catch (e) {
         if (!cancelled) {
           console.debug('[ReticulumPeerDetailModal] path hydrate ' + errLikeToLogString(e));
@@ -93,18 +119,6 @@ export default function ReticulumPeerDetailModal({
       cancelled = true;
     };
   }, [peerHash]);
-
-  const [editingName, setEditingName] = useState(false);
-  const [nameDraft, setNameDraft] = useState('');
-  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-  const [showContactQr, setShowContactQr] = useState(false);
-  const [pathStatus, setPathStatus] = useState<string | null>(null);
-  const [probeStatus, setProbeStatus] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [iconColor, setIconColor] = useState('green');
-  const [iconName, setIconName] = useState<ReticulumProfileIconName>('circle');
-  const [verified, setVerified] = useState(false);
-  const [verifiedIdentityHash, setVerifiedIdentityHash] = useState<string | null>(null);
 
   const liveIdentityHash = useMemo(() => {
     const rows = activityRows ?? [];
@@ -286,7 +300,7 @@ export default function ReticulumPeerDetailModal({
       const toast = formatReticulumPeerPathToast(t, result);
       setPathStatus(toast.message);
       if (result.ok) {
-        await refreshReticulumPeerRouteFromPaths(peerHash, {
+        await hydratePaths({
           settleMs: RETICULUM_PATH_SETTLE_MS,
           retryMs: RETICULUM_PATH_RETRY_MS,
         });
@@ -310,7 +324,7 @@ export default function ReticulumPeerDetailModal({
         updatePeer(peerHash, { hops: result.hops });
       }
       if (result.ok) {
-        await refreshReticulumPeerRouteFromPaths(peerHash);
+        await hydratePaths();
       }
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] probe ' + errLikeToLogString(e));
@@ -336,6 +350,21 @@ export default function ReticulumPeerDetailModal({
         'last_heard' in peer ? (peer.last_heard ?? peer.last_seen ?? 0) : (peer.last_seen ?? 0),
       )
     : 0;
+
+  const activePathSlot = useMemo(
+    () => (pathsResult?.ok ? activeReticulumPathSlot(pathsResult.paths) : null),
+    [pathsResult],
+  );
+  const backupPathSlots = useMemo(
+    () => (pathsResult?.ok ? backupReticulumPathSlots(pathsResult.paths) : []),
+    [pathsResult],
+  );
+  const mediumLabel =
+    activePathSlot?.medium === 'rf'
+      ? t('peerListPanel.pathsPreferRf')
+      : activePathSlot?.medium === 'network'
+        ? t('peerListPanel.pathsPreferNetwork')
+        : '—';
 
   const openChat = () => {
     const nodeId = reticulumHashToNodeId(peerHash);
@@ -645,36 +674,43 @@ export default function ReticulumPeerDetailModal({
           <h3 className="text-sm font-medium text-gray-200">
             {t('peerDetailModal.networkSection')}
           </h3>
-          {(activityRows ?? []).length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {(activityRows ?? []).map((row) => (
-                <span
-                  key={row.aspect}
-                  className="rounded border border-cyan-600/40 bg-cyan-600/20 px-1.5 py-0.5 text-[10px] font-medium text-cyan-300"
-                  title={t('peerDetailModal.serviceBadgeTitle', {
-                    aspect: row.aspect,
-                    seen: formatRelativeOrIsoDate(row.last_seen, t, normalizeLastHeardMs),
-                  })}
-                >
-                  {t('peerDetailModal.serviceBadge', {
-                    service: row.aspect.includes('.')
-                      ? (row.aspect.split('.').pop() ?? row.aspect)
-                      : row.aspect,
-                  })}
-                </span>
-              ))}
-            </div>
-          ) : null}
           <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt className="text-muted">{t('peerListPanel.colInterface')}</dt>
             <dd>{peer?.interface ?? '—'}</dd>
             <dt className="text-muted">{t('connectionPanel.reticulumPeers.hops')}</dt>
             <dd>{peer?.hops ?? '—'}</dd>
-            <dt className="text-muted">{t('peerDetailModal.pathHash')}</dt>
-            <dd className="truncate font-mono">{peer?.path_hash ?? '—'}</dd>
+            <dt className="text-muted">{t('peerListPanel.pathsMedium')}</dt>
+            <dd>{mediumLabel}</dd>
             <dt className="text-muted">{t('peerListPanel.colLastSeen')}</dt>
             <dd>
               {lastSeenMs ? formatRelativeOrIsoDate(lastSeenMs, t, normalizeLastHeardMs) : '—'}
+            </dd>
+            <dt className="text-muted">{t('peerDetailModal.backupPaths')}</dt>
+            <dd>
+              {backupPathSlots.length === 0 ? (
+                '—'
+              ) : (
+                <ul className="space-y-1" aria-label={t('peerDetailModal.backupPaths')}>
+                  {backupPathSlots.map((slot, index) => (
+                    <li
+                      key={`${slot.interface_id ?? 'x'}-${slot.via_hash ?? index}-${slot.hops ?? 'h'}`}
+                      className="text-gray-300"
+                    >
+                      <span className="text-gray-400">{t('peerListPanel.pathsBackupBadge')}</span>
+                      {' · '}
+                      {t('connectionPanel.reticulumPeers.hops')}: {slot.hops ?? '—'}
+                      {' · '}
+                      {slot.interface ?? '—'}
+                      {' · '}
+                      {slot.medium === 'rf'
+                        ? t('peerListPanel.pathsPreferRf')
+                        : slot.medium === 'network'
+                          ? t('peerListPanel.pathsPreferNetwork')
+                          : '—'}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </dd>
           </dl>
         </section>

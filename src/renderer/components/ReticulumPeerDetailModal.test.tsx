@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const addToast = vi.fn();
 const refreshReticulumPeersFromSidecarMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-const refreshReticulumPeerRouteFromPathsMock = vi.hoisted(() => vi.fn().mockResolvedValue(false));
+const refreshReticulumPeerRouteFromPathsMock = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ ok: false, paths: [] }),
+);
 const requestReticulumPeerPathMock = vi.hoisted(() => vi.fn());
 const probeReticulumPeerMock = vi.hoisted(() => vi.fn());
 
@@ -59,7 +61,7 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
   beforeEach(() => {
     addToast.mockClear();
     refreshReticulumPeerRouteFromPathsMock.mockClear();
-    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue(false);
+    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue({ ok: false, paths: [] });
     requestReticulumPeerPathMock.mockReset();
     probeReticulumPeerMock.mockReset();
     vi.mocked(window.electronAPI.db.getReticulumIdentityActivity).mockResolvedValue([]);
@@ -124,7 +126,7 @@ describe('ReticulumPeerDetailModal — avatar icon', () => {
   beforeEach(() => {
     addToast.mockClear();
     refreshReticulumPeerRouteFromPathsMock.mockClear();
-    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue(false);
+    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue({ ok: false, paths: [] });
     vi.mocked(window.electronAPI.db.getReticulumIdentityActivity).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getReticulumDestinations).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.upsertReticulumDestination).mockResolvedValue(undefined);
@@ -220,7 +222,7 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
   beforeEach(() => {
     addToast.mockClear();
     refreshReticulumPeerRouteFromPathsMock.mockClear();
-    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue(false);
+    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue({ ok: false, paths: [] });
     requestReticulumPeerPathMock.mockReset();
     probeReticulumPeerMock.mockReset();
     vi.mocked(window.electronAPI.db.getReticulumIdentityActivity).mockResolvedValue([]);
@@ -256,6 +258,55 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
     });
   });
 
+  it('shows medium and backup paths from hydrated slots', async () => {
+    refreshReticulumPeerRouteFromPathsMock.mockImplementation((hash: string) => {
+      useReticulumPeerStore.getState().updatePeer(hash, {
+        hops: 1,
+        interface: 'RNode',
+      });
+      return Promise.resolve({
+        ok: true,
+        paths: [
+          {
+            active: true,
+            hops: 1,
+            via_hash: null,
+            interface: 'RNode',
+            interface_id: 1,
+            medium: 'rf' as const,
+            timestamp: null,
+            expires: null,
+            expired: false,
+          },
+          {
+            active: false,
+            hops: 4,
+            via_hash: null,
+            interface: 'Ratspeak',
+            interface_id: 2,
+            medium: 'network' as const,
+            timestamp: null,
+            expires: null,
+            expired: false,
+          },
+        ],
+      });
+    });
+
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('peerListPanel.pathsPreferRf')).toBeInTheDocument();
+    });
+    expect(screen.getByText('peerDetailModal.backupPaths')).toBeInTheDocument();
+    expect(screen.getByText(/Ratspeak/)).toBeInTheDocument();
+    expect(screen.getByText(/peerListPanel.pathsPreferNetwork/)).toBeInTheDocument();
+    expect(screen.queryByText('peerDetailModal.pathHash')).not.toBeInTheDocument();
+    expect(screen.queryByText('peerDetailModal.serviceBadge')).not.toBeInTheDocument();
+  });
+
   it('probe applies hops and refreshes path slots', async () => {
     const user = userEvent.setup();
     probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 3 });
@@ -266,7 +317,22 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
         path_hash: '11'.repeat(16),
         via_hash: '11'.repeat(16),
       });
-      return Promise.resolve(true);
+      return Promise.resolve({
+        ok: true,
+        paths: [
+          {
+            active: true,
+            hops: 3,
+            via_hash: '11'.repeat(16),
+            interface: 'RMAP World',
+            interface_id: 1,
+            medium: 'network' as const,
+            timestamp: null,
+            expires: null,
+            expired: false,
+          },
+        ],
+      });
     });
 
     render(

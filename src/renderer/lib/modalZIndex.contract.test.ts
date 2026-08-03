@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from './modalZIndex';
+import { Z_INSTANT_TOOLTIP, Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from './modalZIndex';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -38,7 +38,15 @@ describe('modal z-index layering contract', () => {
     }
   });
 
-  it('constants remain ordered so auth can cover node detail', () => {
+  it('InstantTooltipBubble uses Z_INSTANT_TOOLTIP above modals', () => {
+    const src = readRenderer('components/InstantTooltipBubble.tsx');
+    expect(src).toContain('Z_INSTANT_TOOLTIP');
+    expect(src).toMatch(/zIndex:\s*Z_INSTANT_TOOLTIP/);
+    expect(src).not.toMatch(/zIndex:\s*9999/);
+  });
+
+  it('constants remain ordered so auth can cover node detail and tooltips cover both', () => {
     expect(Z_NESTED_AUTH_OVERLAY).toBeGreaterThan(Z_NODE_DETAIL_MODAL);
+    expect(Z_INSTANT_TOOLTIP).toBeGreaterThan(Z_NESTED_AUTH_OVERLAY);
   });
 });

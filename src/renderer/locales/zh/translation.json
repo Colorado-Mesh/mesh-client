@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "网络",
-    "pathHash": "哈希路径",
     "copyHash": "复制目标哈希",
     "editNameAria": "自定义显示名称",
     "sendMessage": "发讯",
@@ -3134,8 +3133,6 @@
     "probeOk": "探测正常—路径可达。",
     "blockContact": "阻止联系人",
     "unblockContact": "取消阻止联系人",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} —最后一次出现{{seen}}",
     "verifyMark": "标记已验证",
     "verifyRevoke": "撤销验证",
     "verifyFingerprint": "身份指纹",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "显示此联系人的二维码",
     "verifiedRowAria": "已验证联系人48",
     "renameFailed": "无法保存显示名称。",
-    "removeContactConfirmBody": "此操作会将联系人从保存的列表中删除。聊天消息会保留；如果您向其发送消息，它们将保留在历史记录中。"
+    "removeContactConfirmBody": "此操作会将联系人从保存的列表中删除。聊天消息会保留；如果您向其发送消息，它们将保留在历史记录中。",
+    "backupPaths": "设置备份路径"
   },
   "peerGraph": {
     "title": "同行沟通图表",
