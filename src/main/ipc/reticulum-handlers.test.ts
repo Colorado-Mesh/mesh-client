@@ -294,11 +294,20 @@ describe('registerReticulumIpcHandlers', () => {
       expect(ensureManager).not.toHaveBeenCalled();
     });
 
-    it('proxyGet rethrows failures from the manager', async () => {
-      manager.proxyGet.mockRejectedValueOnce(new Error('sidecar not running'));
+    it('proxyGet returns a soft-failure envelope for expected sidecar-down races', async () => {
+      manager.proxyGet.mockRejectedValueOnce(new Error('Reticulum sidecar is not running'));
+      const result = await handlers.get('reticulum:proxyGet')?.(event, '/api/v1/diagnostics');
+      expect(result).toEqual({
+        __reticulumProxyError: true,
+        message: 'Reticulum sidecar is not running',
+      });
+    });
+
+    it('proxyGet rethrows unexpected manager failures', async () => {
+      manager.proxyGet.mockRejectedValueOnce(new Error('EACCES permission denied'));
       await expect(
         handlers.get('reticulum:proxyGet')?.(event, '/api/v1/diagnostics'),
-      ).rejects.toThrow('sidecar not running');
+      ).rejects.toThrow('EACCES permission denied');
     });
 
     it('proxyPost forwards path and body to manager.proxyPost', async () => {

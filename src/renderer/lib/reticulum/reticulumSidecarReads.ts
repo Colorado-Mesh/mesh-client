@@ -6,6 +6,7 @@ import {
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
 import type { ReticulumRmapDiscoveredWireRow } from '@/shared/reticulum-types';
+import { isExpectedReticulumProxyErrorMessage } from '@/shared/reticulumProxyIpcError';
 
 export interface ReticulumIdentityStatus {
   configured: boolean;
@@ -57,14 +58,7 @@ export function isReticulumSidecarRateLimitError(err: unknown): boolean {
 }
 
 export function isReticulumSidecarExpectedProxyError(err: unknown): boolean {
-  const msg = errLikeToLogString(err).toLowerCase();
-  return (
-    isReticulumSidecarNotRunningError(err) ||
-    isReticulumSidecar404Error(err) ||
-    isReticulumSidecarRateLimitError(err) ||
-    msg.includes('fetch failed') ||
-    msg.includes('aborted')
-  );
+  return isExpectedReticulumProxyErrorMessage(errLikeToLogString(err));
 }
 
 export interface ReticulumSidecarInterfaceRow {

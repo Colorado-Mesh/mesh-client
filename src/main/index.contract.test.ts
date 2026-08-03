@@ -149,6 +149,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(/key not allowed/);
     expect(INDEX_SOURCE).toContain("'meshtasticLastRfSelfNodeId'");
     expect(INDEX_SOURCE).toContain("'meshcoreLastSelfNodeId'");
+    expect(INDEX_SOURCE).toContain("'use24HourTime'");
     expect(INDEX_SOURCE).toContain('meshtasticRemoteAdminKey:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
@@ -309,6 +310,10 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:syncInterfaceIssueScope'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain('settleReticulumProxyFailure');
+    expect(RETICULUM_HANDLERS_SOURCE).toContain('reticulumProxyIpcErrorEnvelope');
+    expect(PRELOAD_SOURCE).toContain('unwrapReticulumProxy');
+    expect(PRELOAD_SOURCE).toContain('throwIfReticulumProxyIpcError');
     expect(PRELOAD_SOURCE).toContain("'/api/v1/rrc/hubs'");
     expect(PRELOAD_SOURCE).toContain('rrc:');
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPost'");

@@ -3524,6 +3524,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
   'reduceMotion',
+  'use24HourTime',
   'alwaysShowMessageActions',
   'reticulumAutostart',
   'reticulumRmapAnnounceIntervalMin',

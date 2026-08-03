@@ -27,9 +27,15 @@ import type {
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
 } from '../shared/reticulum-types';
+import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
 
 export type { NobleBleDevice, NobleBleSessionId, SerialPort };
+
+/** Unwrap reticulum proxy soft-failure envelopes so renderer catch paths stay the same. */
+async function unwrapReticulumProxy<T = unknown>(result: Promise<unknown>): Promise<T> {
+  return throwIfReticulumProxyIpcError(await result) as T;
+}
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // ─── Database operations ────────────────────────────────────────
@@ -1071,13 +1077,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     syncInterfaceIssueScope: (enabledInterfaceNames: string[]): Promise<ReticulumSidecarStatus> =>
       ipcRenderer.invoke('reticulum:syncInterfaceIssueScope', enabledInterfaceNames),
     proxyGet: (apiPath: string): Promise<unknown> =>
-      ipcRenderer.invoke('reticulum:proxyGet', apiPath),
+      unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', apiPath)),
     proxyPost: (apiPath: string, body: unknown): Promise<unknown> =>
-      ipcRenderer.invoke('reticulum:proxyPost', apiPath, body),
+      unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', apiPath, body)),
     proxyPut: (apiPath: string, body: unknown): Promise<unknown> =>
-      ipcRenderer.invoke('reticulum:proxyPut', apiPath, body),
+      unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPut', apiPath, body)),
     proxyDelete: (apiPath: string): Promise<unknown> =>
-      ipcRenderer.invoke('reticulum:proxyDelete', apiPath),
+      unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyDelete', apiPath)),
     factoryReset: (): Promise<unknown> => ipcRenderer.invoke('reticulum:factoryReset'),
     readDefaultConfigFile: (): Promise<{ path: string | null; content: string | null }> =>
       ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
@@ -1105,49 +1111,67 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.off('reticulum:status', handler);
     },
     rrc: {
-      listHubs: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/hubs'),
+      listHubs: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/hubs')),
       upsertHub: (opts: { dest_hash: string; label?: string; favorited?: boolean }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/hubs', opts),
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/hubs', opts)),
       setFavorite: (destHash: string, favorited: boolean) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/hubs/favorite', {
-          dest_hash: destHash,
-          favorited,
-        }),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/hubs/favorite', {
+            dest_hash: destHash,
+            favorited,
+          }),
+        ),
       connect: (opts: { dest_hash: string; nickname?: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/connect', opts),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/connect', opts),
+        ),
       disconnect: (opts?: { dest_hash?: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/disconnect', opts ?? {}),
-      getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/status'),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/disconnect', opts ?? {}),
+        ),
+      getStatus: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/status')),
       join: (opts: { hub_dest_hash: string; room: string; key?: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/join', opts),
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/join', opts)),
       part: (opts: { hub_dest_hash: string; room: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/part', opts),
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/part', opts)),
       send: (opts: {
         hub_dest_hash: string;
         room?: string;
         body: string;
         type?: string;
         dst_hash?: string;
-      }) => ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts),
+      }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts)),
       setNickname: (opts: { nickname: string; hub_dest_hash?: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/nick', opts),
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/nick', opts)),
       getRooms: (hubDestHash?: string) => {
         const q = hubDestHash?.trim()
           ? `?hub_dest_hash=${encodeURIComponent(hubDestHash.trim().toLowerCase())}`
           : '';
-        return ipcRenderer.invoke('reticulum:proxyGet', `/api/v1/rrc/rooms${q}`);
+        return unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyGet', `/api/v1/rrc/rooms${q}`),
+        );
       },
     },
     rnsh: {
       connect: (opts: { destination_hash: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/connect', opts),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/connect', opts),
+        ),
       input: (opts: { session_id: string; data: string; encoding?: 'base64' }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/input', opts),
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/input', opts)),
       resize: (opts: { session_id: string; rows?: number; cols?: number }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/resize', opts),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/resize', opts),
+        ),
       disconnect: (opts: { session_id: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/disconnect', opts),
-      getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rnsh/status'),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/disconnect', opts),
+        ),
+      getStatus: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rnsh/status')),
     },
     rncp: {
       send: (opts: { destination_hash: string; path: string }) =>
@@ -1155,13 +1179,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
       fetch: (opts: { destination_hash: string; remote_path: string; save_path?: string }) =>
         ipcRenderer.invoke('reticulum:rncpFetch', opts),
       cancel: (opts: { transfer_id: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/cancel', opts),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/cancel', opts),
+        ),
       accept: (opts: { transfer_id: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/accept', opts),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/accept', opts),
+        ),
       reject: (opts: { transfer_id: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/reject', opts),
-      getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rncp/status'),
-      getListener: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rncp/listener'),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/reject', opts),
+        ),
+      getStatus: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rncp/status')),
+      getListener: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rncp/listener')),
       setListener: (opts: {
         enabled: boolean;
         save_dir?: string;
@@ -1172,7 +1204,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
         blocked?: string[];
       }) => ipcRenderer.invoke('reticulum:setRncpListener', opts),
       announce: (): Promise<{ ok: boolean; error?: string }> =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/announce', {}),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/announce', {}),
+        ),
       showOpenFileDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
         ipcRenderer.invoke('reticulum:showRncpOpenFileDialog'),
       showSaveDirectoryDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
@@ -1182,8 +1216,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     remote: {
       pathCapability: (opts: { destination_hash: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/remote/path-capability', opts),
-      getIdentity: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/remote/identity'),
+        unwrapReticulumProxy(
+          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/remote/path-capability', opts),
+        ),
+      getIdentity: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/remote/identity')),
     },
   },
 
