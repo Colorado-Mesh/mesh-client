@@ -2067,4 +2067,44 @@ describe('sniffer tab and MQTT channel PSK i18n quality', () => {
     });
     expectIssue(issues, 'rrc false friend');
   });
+
+  it('flags Nomad countdown "left" translated as direction', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'nomadNetwork.pageLoadingCountdown',
+      enVal: 'Loading page… {{time}} left',
+      val: 'Cargando página... {{time}} izquierda',
+    });
+    expectIssue(issues, 'time remaining');
+  });
+
+  it('flags zh nodeListPanel.tabAll recipes false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'nodeListPanel.tabAll',
+      enVal: 'All',
+      val: '所有食谱',
+    });
+    expectIssue(issues, 'recipes');
+  });
+
+  it('flags anatomy backbone on primary_global', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global',
+      enVal: 'Primary & Global Backbone',
+      val: 'Colonne vertébrale principale et mondiale',
+    });
+    expectIssue(issues, 'spine/anatomy');
+  });
+
+  it('flags ja spaced I2P token', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'connectionPanel.reticulumInterfaces.purpose.i2p',
+      enVal: 'I2P backbone via a router on this machine.',
+      val: 'I 2 P バックボーン',
+    });
+    expectIssue(issues, 'I2P');
+  });
 });

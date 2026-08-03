@@ -1121,9 +1121,9 @@
       "advancedAria": "Opções avançadas de chave-valor da interface",
       "advancedKeyReserved": "A chave \"{{key}}\" é um campo conhecido e foi ignorado — use o formulário acima.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Este hub está desativado e não pode permanecer ativado — o mesh-client o desliga em todas as partidas de pilha. Use Adicionar hubs de rede padrão ou o diretório de backbone para pontos de extremidade ativos.",
+      "decommissionedHubEnableBlocked": "Este hub está desativado e não pode permanecer habilitado — o mesh-client o desliga a cada início do stack. Use «Adicionar backbones padrão» ou o diretório de backbones para endpoints ativos.",
       "decommissionedBadge": "DESCOMISSIONADO",
-      "defaultHubsPickerTitle": "Adicionar hubs de rede padrão",
+      "defaultHubsPickerTitle": "Adicionar backbones padrão",
       "defaultHubsPickerConfirm": "Adicionar centros {{count}}",
       "defaultHubsPickerConfirmSync": "Sincronizar selecionados",
       "defaultHubsPickerConfirmAria": "Adicionar ou sincronizar {{count}} hubs padrão selecionados",
@@ -1160,7 +1160,7 @@
       "addDefaultHubsFailed": "Falha ao adicionar backbones padrão.",
       "backboneEnableGuidanceLead": "Habilite de 1 a 3 gateways de backbone no máximo",
       "backboneEnableGuidanceBody": "—2 é o ponto ideal para redundância sem inchaço desnecessário da largura de banda. Aponte para 1 hub global e 1 gateway regional e habilite interfaces especializadas (como I2P ou Yggdrasil) estritamente conforme necessário. Os RNodes conectados localmente e as interfaces de LAN locais não contam para esse limite de backbone.",
-      "defaultHubsPickerHint": "Comece com Primário e Global mais sua região. Ative de 1 a 3 gateways de backbone no máximo (2 é o ponto ideal). Os RNodes locais e as interfaces LAN não contam. Novas entradas são adicionadas desativadas para que você possa revisar antes de ativar. O SYNC também desativa os hubs de rede de teste oficiais desativados restantes (Amsterdã)."
+      "defaultHubsPickerHint": "Comece com Primário e global mais sua região. Ative no máximo 1 a 3 gateways de backbone (2 é o ponto ideal). RNodes locais e interfaces LAN não contam. Novas entradas são adicionadas desativadas para revisão. Sync também desativa hubs de testnet oficiais desativados restantes (Amsterdã)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Hubs de limite / backbone ativados: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "A fila TX cai em: {{names}} — essa interface pode estar saturada.",
         "tooManyDefaultBackbones": "Você tem {{count}} backbones padrão ativados. Considere desativar extras e manter cerca de 2 para redundância.",
-        "decommissionedHubEnabled": "O hub desativado \"{{name}}\" ainda está ativado — o mesh-client o desliga em todas as partidas de pilha. Use Adicionar backbones padrão ou o diretório de backbone para pontos de extremidade ativos."
+        "decommissionedHubEnabled": "O hub desativado «{{name}}» ainda está habilitado — o mesh-client o desliga a cada início do stack. Use «Adicionar backbones padrão» ou o diretório de backbones para endpoints ativos."
       }
     },
     "routingPort": {
@@ -3074,16 +3074,16 @@
     "sortByHopsDesc": "Ordenar por saltos, o mais distante primeiro",
     "sortByNameAsc": "Ordenar por nome de A a Z",
     "sortByNameDesc": "Ordenar por nome: z à a",
-    "pageLoadingCountdown": "Carregando página… {{time}} esquerda",
+    "pageLoadingCountdown": "Carregando página… {{time}} restantes",
     "pageLoadingCountdownOverdue": "Carregando página… ainda funcionando",
     "pageReadyToast": "Página Nomad pronta: {{name}}",
     "staleLastSeenHint": "Ouvido pela última vez em {{time}} — este nó pode estar offline mesmo se estiver listado como online.",
-    "pageLoadingRetryCountdown": "A primeira tentativa expirou — atualizando o caminho e tentando novamente… {{time}} restante",
+    "pageLoadingRetryCountdown": "Primeira tentativa expirou — atualizando caminho e tentando de novo… {{time}} restantes",
     "pageLoadingRetryOverdue": "Atualizando o caminho e tentando novamente... ainda funcionando",
     "enterUrlHint": "Cole um endereço Nomad ou selecione um nó da lista.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
     "goToUrl": "Ir",
-    "pageLoadingTimeLeft": "{{time}} restante nesta tentativa",
+    "pageLoadingTimeLeft": "{{time}} restantes nesta tentativa",
     "pageLoadingStillWorking": "Ainda trabalhando?",
     "pageProgressLinking": "Conectando-se via {{iface}} ({{hops}} hops)…",
     "pageProgressLinkingIface": "Conectando-se via {{iface}}…",

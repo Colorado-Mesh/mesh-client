@@ -1122,9 +1122,9 @@
       "advancedAria": "Pokročilé možnosti klíč-hodnota rozhraní",
       "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Tento hub je vyřazen z provozu a nemůže zůstat zapnutý — mesh-client jej vypne při každém spuštění zásobníku. Použijte Přidat výchozí síťové huby nebo páteřní adresář pro živé koncové body.",
+      "decommissionedHubEnableBlocked": "Tento hub je vyřazen a nemůže zůstat zapnutý — mesh-client ho při každém startu zásobníku vypne. Použijte «Přidat výchozí páteř» nebo adresář páteří pro živé koncové body.",
       "decommissionedBadge": "vyřazeno z provozu",
-      "defaultHubsPickerTitle": "Přidat výchozí síťová rozbočovače",
+      "defaultHubsPickerTitle": "Přidat výchozí páteř",
       "defaultHubsPickerConfirm": "Přidat {{count}} rozbočovače",
       "defaultHubsPickerConfirmSync": "Synchronizace vybrána",
       "defaultHubsPickerConfirmAria": "Přidat nebo synchronizovat {{count}} vybraná výchozí rozbočovače",
@@ -1161,7 +1161,7 @@
       "addDefaultHubsFailed": "Přidání výchozích páteří se nezdařilo.",
       "backboneEnableGuidanceLead": "Povolit maximálně 1 až 3 páteřní brány",
       "backboneEnableGuidanceBody": "—2 je ideální místo pro redundanci bez zbytečného nafukování šířky pásma. Zaměřte se na 1 globální rozbočovač a 1 regionální bránu a povolte speciální rozhraní (jako je I2P nebo Yggdrasil) přesně podle potřeby. Lokálně připojené RNodes a místní LAN rozhraní se do tohoto limitu páteřní sítě nezapočítávají.",
-      "defaultHubsPickerHint": "Začněte s Primárním a Globálním plus vaším regionem. Povolte maximálně 1 až 3 páteřní brány (2 jsou sladké místo). Místní RNode a LAN rozhraní se nepočítají. Nové položky jsou přidány zakázány, takže je můžete před povolením zkontrolovat. Synchronizace také deaktivuje zbývající vyřazené oficiální rozbočovače testnetu (Amsterdam)."
+      "defaultHubsPickerHint": "Začněte primární a globální páteří plus svým regionem. Zapněte nejvýše 1 až 3 páteřní brány (2 je optimum). Místní RNode a LAN rozhraní se nepočítají. Nové položky se přidávají vypnuté ke kontrole. Sync také vypne zbývající vyřazené oficiální testnet huby (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1650,7 +1650,7 @@
         "announceBusPressureTipBoundaryHubs": "Povolené hraniční / páteřní rozbočovače: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "Fronta TX klesá na: {{names}} — toto rozhraní může být nasycené.",
         "tooManyDefaultBackbones": "Máte zapnutou výchozí páteř {{count}}. Zvažte vypnutí doplňků a ponechání asi 2 pro nadbytečnost.",
-        "decommissionedHubEnabled": "Vyřazený rozbočovač „{{name}}“ je stále povolen — mesh-client jej vypne při každém spuštění zásobníku. Použijte Přidat výchozí páteř nebo páteřní adresář pro živé koncové body."
+        "decommissionedHubEnabled": "Vyřazený hub „{{name}}“ je stále zapnutý — mesh-client ho při každém startu zásobníku vypne. Použijte «Přidat výchozí páteř» nebo adresář páteří pro živé koncové body."
       }
     },
     "routingPort": {
@@ -3215,7 +3215,7 @@
     "pathsGlobalPreference": "Globální: {{preference}}",
     "pathsListAria": "Hodnocené sloty cesty",
     "pathsActiveBadge": "Aktivní",
-    "pathsBackupBadge": "Záloha",
+    "pathsBackupBadge": "Záložní",
     "pathsMedium": "Médium",
     "pathsExpired": "Platnost vypršela",
     "pathsEmpty": "Zatím žádné sloty pro cestu. Požádejte o cestu nebo počkejte na oznámení.",

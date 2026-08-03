@@ -1119,16 +1119,16 @@
       "advancedAria": "Opzioni chiave-valore interfaccia avanzata",
       "advancedKeyReserved": "Il tasto \"{{key}}\" è un campo noto ed è stato ignorato. Utilizza il modulo qui sopra.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Questo hub è disattivato e non può rimanere abilitato — mesh-client lo disattiva a ogni avvio dello stack. Utilizzare Aggiungi hub di rete predefiniti o la directory backbone per gli endpoint live.",
+      "decommissionedHubEnableBlocked": "Questo hub è fuori servizio e non può restare abilitato — mesh-client lo spegne a ogni avvio dello stack. Usa «Aggiungi dorsali predefinite» o la directory delle dorsali per endpoint attivi.",
       "decommissionedBadge": "Dismesso",
-      "defaultHubsPickerTitle": "Aggiungi hub di rete predefiniti",
+      "defaultHubsPickerTitle": "Aggiungi dorsali predefinite",
       "defaultHubsPickerConfirm": "Aggiungi hub {{count}}",
       "defaultHubsPickerConfirmSync": "Sincronizza selezionati",
       "defaultHubsPickerConfirmAria": "Aggiungi o sincronizza {{count}} hub predefiniti selezionati",
       "defaultHubAlreadyAdded": "Già aggiunto",
       "defaultHubPresetAria": "{{name}}, {{endpoint}}",
       "defaultHubRegion": {
-        "primary_global": "Spina dorsale primaria e globale",
+        "primary_global": "Dorsale primaria e globale",
         "north_america": "America del Nord",
         "europe": "Europa",
         "asia_oceania": "Asia + Oceania",
@@ -1157,8 +1157,8 @@
       "addDefaultHubsAllPresent": "Le dorsali selezionate sono già configurate; nessun hub testnet disattivato abilitato.",
       "addDefaultHubsFailed": "Impossibile aggiungere dorsali predefinite.",
       "backboneEnableGuidanceLead": "Abilita da 1 a 3 gateway backbone al massimo",
-      "backboneEnableGuidanceBody": "—2 è il punto ideale per la ridondanza senza inutili ingrossamenti della larghezza di banda. Mira a 1 hub globale e 1 gateway regionale e abilita le interfacce speciali (come I2P o Yggdrasil) rigorosamente secondo necessità. Gli RNode connessi localmente e le interfacce LAN locali non contano ai fini di questo limite di backbone.",
-      "defaultHubsPickerHint": "Inizia con Primary & Global più la tua regione. Abilita da 1 a 3 gateway backbone al massimo (2 è il punto debole). I RNode locali e le interfacce LAN non contano. Le nuove voci vengono aggiunte disabilitate in modo da poterle rivedere prima dell'abilitazione. Sync disabilita anche i restanti hub testnet ufficiali disattivati (Amsterdam)."
+      "backboneEnableGuidanceBody": "—2 è l’optimum per la ridondanza senza spreco di banda. Punta a 1 hub globale e 1 gateway regionale, e abilita interfacce speciali (come I2P o Yggdrasil) solo se necessario. Gli RNode collegati in locale e le interfacce LAN locali non contano verso questo limite di dorsale.",
+      "defaultHubsPickerHint": "Inizia con Primaria e globale più la tua regione. Abilita al massimo da 1 a 3 gateway di dorsale (2 è l’optimum). Gli RNode locali e le interfacce LAN non contano. Le nuove voci vengono aggiunte disabilitate per la revisione. Sync disabilita anche gli hub testnet ufficiali fuori servizio rimanenti (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Hub di confine / backbone abilitati: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "La coda TX cade su: {{names}} — l'interfaccia potrebbe essere satura.",
         "tooManyDefaultBackbones": "Hai {{count}} dorsali predefinite abilitate. Prendi in considerazione la possibilità di disabilitare gli extra e di tenerne circa 2 per ridondanza.",
-        "decommissionedHubEnabled": "L'hub dismesso \"{{name}}\" è ancora abilitato: mesh-client lo disattiva a ogni avvio dello stack. Utilizzare Aggiungi backbone predefiniti o la directory backbone per gli endpoint live."
+        "decommissionedHubEnabled": "L’hub fuori servizio «{{name}}» è ancora abilitato — mesh-client lo spegne a ogni avvio dello stack. Usa «Aggiungi dorsali predefinite» o la directory delle dorsali per endpoint attivi."
       }
     },
     "routingPort": {
@@ -2974,7 +2974,7 @@
     "connectedViaRfAndMqttTooltip": "Connesso via RF e MQTT",
     "connectedViaRfAndMqttAria": "Connesso via RF e MQTT",
     "echoesConnectionHealthTooltip": "{{score}}% integrità della connessione",
-    "tabAll": "Tutte",
+    "tabAll": "Tutti",
     "tabHistory": "Cronologia",
     "emptyHistory": "Ancora nessun messaggio diretto: invia o ricevi un DM per vedere i peer qui."
   },
@@ -3074,16 +3074,16 @@
     "sortByHopsDesc": "Ordina per salti, prima il più lontano",
     "sortByNameAsc": "Ordina per nome - dalla A alla Z",
     "sortByNameDesc": "Ordina per nome - dalla Z alla A",
-    "pageLoadingCountdown": "Caricamento pagina… {{time}} sinistra",
+    "pageLoadingCountdown": "Caricamento pagina… {{time}} rimanenti",
     "pageLoadingCountdownOverdue": "Caricamento della pagina... ancora funzionante",
     "pageReadyToast": "Pagina Nomad pronta: {{name}}",
     "staleLastSeenHint": "Ultimo ascolto {{time}}: questo nodo potrebbe essere offline anche se elencato come online.",
-    "pageLoadingRetryCountdown": "Timeout del primo tentativo: aggiornamento del percorso e nuovo tentativo... {{time}} rimasti",
+    "pageLoadingRetryCountdown": "Primo tentativo scaduto — aggiornamento percorso e nuovo tentativo… {{time}} rimanenti",
     "pageLoadingRetryOverdue": "Aggiornamento del percorso e nuovo tentativo... ancora in corso",
     "enterUrlHint": "Incolla un indirizzo Nomad o seleziona un nodo dall'elenco.",
     "enterUrlPlaceholder": "hash:/page/index.mu",
     "goToUrl": "Vai",
-    "pageLoadingTimeLeft": "{{time}} rimasti in questo tentativo",
+    "pageLoadingTimeLeft": "{{time}} rimanenti in questo tentativo",
     "pageLoadingStillWorking": "Funziona ancora...",
     "pageProgressLinking": "Connessione tramite {{iface}} ({{hops}} Hops)...",
     "pageProgressLinkingIface": "Connessione tramite {{iface}}...",

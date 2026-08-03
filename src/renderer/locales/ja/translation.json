@@ -1043,7 +1043,7 @@
         "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
         "generic": "Reticulumネットワークインターフェース。",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "このマシンのルーターを介したI 2 Pバックボーン。HTTP/HTTPS I 2 PTunnelプロキシ（ 4444/4445 ）ではなく、SAMアプリケーションブリッジ（ 127.0.0.1 ： 7656 ）を有効にします。ブリッジがリッスンするようにSAMを有効にした後、I 2 Pを再起動し、このインターフェースがダウンしたままになっている場合は、Reticulumスタックを再起動します。"
+        "i2p": "このマシン上のルーター経由の I2P バックボーン。SAM アプリケーションブリッジ（127.0.0.1:7656）を有効にしてください — HTTP/HTTPS の I2PTunnel プロキシ（4444/4445）ではありません。SAM を有効にしたあと I2P を再起動してブリッジが待ち受けるようにし、このインターフェースがダウンのままなら Reticulum スタックも再起動してください。"
       },
       "rfProfile": {
         "coordinated": "地域連携",
@@ -1121,9 +1121,9 @@
       "advancedAria": "高度なインターフェースキーバリューオプション",
       "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "このハブは廃止されており有効のままにできません — mesh-client はスタック開始のたびにオフにします。ライブエンドポイントには「デフォルトネットワークハブを追加」またはバックボーンディレクトリを使用してください。",
+      "decommissionedHubEnableBlocked": "このハブは廃止されており、有効のままにできません — mesh-client はスタック起動のたびにオフにします。稼働中のエンドポイントには「デフォルトのバックボーンを追加」またはバックボーン一覧を使ってください。",
       "decommissionedBadge": "廃止済み",
-      "defaultHubsPickerTitle": "デフォルトのネットワークハブを追加する",
+      "defaultHubsPickerTitle": "デフォルトのバックボーンを追加",
       "defaultHubsPickerConfirm": "{{count}}ハブを追加",
       "defaultHubsPickerConfirmSync": "同期が選択されました",
       "defaultHubsPickerConfirmAria": "選択したデフォルトハブを{{count}}追加または同期",
@@ -1159,8 +1159,8 @@
       "addDefaultHubsAllPresent": "選択したバックボーンはすでに設定されています。無効化されたテストネットハブは有効化されていません。",
       "addDefaultHubsFailed": "デフォルトのバックボーンを追加できませんでした。",
       "backboneEnableGuidanceLead": "最大1〜3つのバックボーンゲートウェイを有効にする",
-      "backboneEnableGuidanceBody": "—2は、不要な帯域幅の膨張なしに冗長性を確保するためのスイートスポットです。1つのグローバルハブと1つのリージョナルゲートウェイを目指し、必要に応じて特別なインターフェース（ I 2 PやYggdrasilなど）を厳密に有効にします。ローカルに接続されたRNodeとローカルLANインターフェイスは、このバックボーン制限にはカウントされません。",
-      "defaultHubsPickerHint": "プライマリ、グローバル、お住まいの地域から始めましょう。最大1〜3つのバックボーンゲートウェイを有効にします（ 2がスイートスポットです）。ローカルRNodeとLANインターフェイスはカウントされません。新しいエントリは無効に追加されているため、有効にする前に確認できます。同期はまた、残りの廃止された公式テストネットハブ（アムステルダム）を無効にします。"
+      "backboneEnableGuidanceBody": "—冗長性を保ちつつ不要な帯域を増やさない最適は 2 です。グローバルハブ 1 つと地域ゲートウェイ 1 つを目安にし、I2P や Yggdrasil などの特殊インターフェースは必要なときだけ有効にしてください。ローカル接続の RNode とローカル LAN インターフェースはこのバックボーン上限に数えません。",
+      "defaultHubsPickerHint": "プライマリおよびグローバルに加え、自分の地域から始めてください。バックボーンゲートウェイは最大 1〜3（最適は 2）まで有効にします。ローカル RNode と LAN インターフェースは数えません。新規エントリは確認しやすいよう無効で追加されます。Sync は残っている廃止済み公式テストネットハブ（アムステルダム）も無効化します。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "境界/バックボーンハブを有効にしました： {{hubs}}。",
         "announceBusPressureTipTxSaturated": "TXキューは次の日付にドロップします： {{names}} —そのインターフェイスが飽和している可能性があります。",
         "tooManyDefaultBackbones": "{{count}}デフォルトのバックボーンが有効になっています。余分なものを無効にし、冗長性を保つために約2つを保管することを検討してください。",
-        "decommissionedHubEnabled": "廃止されたハブ「{{name}}」は引き続き有効です—mesh-clientはスタックの開始ごとにオフにします。ライブエンドポイントのデフォルトのバックボーンまたはバックボーンディレクトリの追加を使用します。"
+        "decommissionedHubEnabled": "廃止されたハブ「{{name}}」がまだ有効です — mesh-client はスタック起動のたびにオフにします。稼働中のエンドポイントには「デフォルトのバックボーンを追加」またはバックボーン一覧を使ってください。"
       }
     },
     "routingPort": {
@@ -2552,7 +2552,7 @@
       "save": "スタック設定の保存",
       "saveFailed": "スタック設定の保存に失敗しました。",
       "pathMediumPreference": "好ましいパス媒体",
-      "pathMediumPreferenceHint": "ピアがRFおよびネットワーク（ TCP/I 2 Pなど）を介して到達可能な場合は、デフォルトでどのメディアが勝つかを選択します。最低パスはホップカウントのみでランク付けされます。[ピア]タブのピアごとのピンは、これを上書きできます。",
+      "pathMediumPreferenceHint": "ピアが RF とネットワーク（TCP/I2P など）の両方で到達可能なとき、既定でどちらを優先するか選びます。最短パスはホップ数のみで順位付けします。Peers タブのピアごとの固定設定で上書きできます。",
       "pathMediumLowest": "最低パス（ホップカウント）",
       "pathMediumNetwork": "ネットワーク（非RF ）",
       "pathMediumRf": "RF (RNode)",
@@ -3213,7 +3213,7 @@
     "pathsGlobalPreference": "グローバル： {{preference}}",
     "pathsListAria": "ランクパススロット",
     "pathsActiveBadge": "アクティブ",
-    "pathsBackupBadge": "バックアップ",
+    "pathsBackupBadge": "予備",
     "pathsMedium": "媒体",
     "pathsExpired": "有効期限切れ",
     "pathsEmpty": "パススロットはまだありません。パスをリクエストするか、アナウンスを待ちます。",

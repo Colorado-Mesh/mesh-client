@@ -1120,9 +1120,9 @@
       "advancedAria": "Geavanceerde interface key-value opties",
       "advancedKeyReserved": "Sleutel \"{{key}}\" is een bekend veld en werd genegeerd — gebruik het bovenstaande formulier.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
-      "decommissionedHubEnableBlocked": "Deze hub wordt buiten gebruik gesteld en kan niet ingeschakeld blijven — mesh-client schakelt het uit bij elke start van de stapel. Gebruik Add default network hubs of de backbone directory for live endpoints.",
+      "decommissionedHubEnableBlocked": "Deze hub is buiten gebruik en kan niet ingeschakeld blijven — mesh-client zet hem bij elke stackstart uit. Gebruik «Standaard backbones toevoegen» of de backbone-directory voor actieve eindpunten.",
       "decommissionedBadge": "ontmanteld",
-      "defaultHubsPickerTitle": "Standaard netwerkhubs toevoegen",
+      "defaultHubsPickerTitle": "Standaard backbones toevoegen",
       "defaultHubsPickerConfirm": "Voeg {{count}} hubs toe",
       "defaultHubsPickerConfirmSync": "Geselecteerde synchronisatie",
       "defaultHubsPickerConfirmAria": "{{count}} geselecteerde standaard hubs toevoegen of synchroniseren",
@@ -1158,8 +1158,8 @@
       "addDefaultHubsAllPresent": "Geselecteerde backbones zijn al geconfigureerd; er zijn geen ontmantelde testnet-hubs ingeschakeld.",
       "addDefaultHubsFailed": "Kan standaard backbones niet toevoegen.",
       "backboneEnableGuidanceLead": "Maximaal 1 tot 3 backbone-gateways inschakelen",
-      "backboneEnableGuidanceBody": "—2 is de sweet spot voor redundantie zonder onnodig opzwellen van bandbreedte. Streef naar 1 wereldwijde hub en 1 regionale gateway en schakel zo nodig strikt speciale interfaces in (zoals I2P of Yggdrasil). Lokaal verbonden RNodes en lokale LAN-interfaces tellen niet mee voor deze backbone-limiet.",
-      "defaultHubsPickerHint": "Begin met Primair & Globaal plus uw regio. Schakel maximaal 1 tot 3 backbone-gateways in (2 is de sweet spot). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe vermeldingen zijn uitgeschakeld toegevoegd, zodat u ze kunt bekijken voordat u ze inschakelt. Sync schakelt ook de resterende buiten gebruik gestelde officiële testnet-hubs (Amsterdam) uit."
+      "backboneEnableGuidanceBody": "—2 is ideaal voor redundantie zonder onnodige bandbreedte. Streef naar 1 globale hub en 1 regionale gateway, en schakel speciale interfaces (zoals I2P of Yggdrasil) alleen in als nodig. Lokaal verbonden RNodes en lokale LAN-interfaces tellen niet mee voor deze backbone-limiet.",
+      "defaultHubsPickerHint": "Begin met Primair & globaal plus uw regio. Schakel hoogstens 1 tot 3 backbone-gateways in (2 is ideaal). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe items worden uitgeschakeld toegevoegd zodat u ze kunt beoordelen. Sync schakelt ook resterende buiten gebruik gestelde officiële testnet-hubs uit (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1648,7 +1648,7 @@
         "announceBusPressureTipBoundaryHubs": "Ingeschakelde grens- / ruggengraathubs: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX-wachtrij valt op: {{names}} — die interface kan verzadigd zijn.",
         "tooManyDefaultBackbones": "Je hebt {{count}} standaard backbones ingeschakeld. Overweeg om extra's uit te schakelen en er ongeveer 2 te houden voor redundantie.",
-        "decommissionedHubEnabled": "De ontmantelde hub \"{{name}}\" is nog steeds ingeschakeld — mesh-client schakelt deze uit bij elke start van de stapel. Gebruik Standaard backbones toevoegen of de backbone-directory voor live eindpunten."
+        "decommissionedHubEnabled": "Buiten gebruik gestelde hub „{{name}}” staat nog aan — mesh-client zet hem bij elke stackstart uit. Gebruik «Standaard backbones toevoegen» of de backbone-directory voor actieve eindpunten."
       }
     },
     "routingPort": {
@@ -2552,7 +2552,7 @@
       "save": "Bewaar stapelinstellingen",
       "saveFailed": "Kan stapelinstellingen niet opslaan.",
       "pathMediumPreference": "Voorkeurspad medium",
-      "pathMediumPreferenceHint": "Wanneer een peer bereikbaar is via RF en netwerk (TCP/I2P/etc.), kies dan standaard welk medium wint. Het laagste pad wordt alleen gerangschikt op hoptelling. Per-peer pins op het tabblad Peers kunnen dit overschrijven.",
+      "pathMediumPreferenceHint": "Als een peer bereikbaar is via RF en netwerk (TCP/I2P/enz.), kies welk medium standaard wint. Laagste pad rangschikt alleen op hop-aantal. Per-peer vastzettingen op het tabblad Peers kunnen dit overschrijven.",
       "pathMediumLowest": "Laagste pad (hoptelling)",
       "pathMediumNetwork": "Netwerk (niet-RF)",
       "pathMediumRf": "RF (RNode)",
@@ -2974,7 +2974,7 @@
     "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
     "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT",
     "echoesConnectionHealthTooltip": "{{score}}% verbindingsstatus",
-    "tabAll": "All",
+    "tabAll": "Alles",
     "tabHistory": "Historie",
     "emptyHistory": "Nog geen directe berichten — stuur of ontvang een DM om peers hier te zien."
   },
@@ -3213,7 +3213,7 @@
     "pathsGlobalPreference": "Globaal: {{preference}}",
     "pathsListAria": "Gerangschikte pad-sleuven",
     "pathsActiveBadge": "Actief",
-    "pathsBackupBadge": "Back-up",
+    "pathsBackupBadge": "Reserve",
     "pathsMedium": "Medium",
     "pathsExpired": "Verlopen",
     "pathsEmpty": "Nog geen padvakken. Vraag een pad aan of wacht op een aankondiging.",
