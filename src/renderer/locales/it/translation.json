@@ -1125,7 +1125,26 @@
       "advancedKeyReserved": "Il tasto \"{{key}}\" è un campo noto ed è stato ignorato. Utilizza il modulo qui sopra.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Questo hub è disattivato e non può rimanere abilitato — mesh-client lo disattiva a ogni avvio dello stack. Utilizzare Aggiungi hub di rete predefiniti o la directory backbone per gli endpoint live.",
-      "decommissionedBadge": "Dismesso"
+      "decommissionedBadge": "Dismesso",
+      "defaultHubsPickerTitle": "Aggiungi hub di rete predefiniti",
+      "defaultHubsPickerHint": "La maggior parte delle persone aggiunge Primary & Global Backbone e hub nella propria regione. I nuovi hub vengono aggiunti disabilitati in modo da poterli controllare prima di abilitarli.",
+      "defaultHubsPickerConfirm": "Aggiungi hub {{count}}",
+      "defaultHubsPickerConfirmSync": "Sincronizza selezionati",
+      "defaultHubsPickerConfirmAria": "Aggiungi o sincronizza {{count}} hub predefiniti selezionati",
+      "defaultHubAlreadyAdded": "Già aggiunto",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Spina dorsale primaria e globale",
+        "north_america": "America del Nord",
+        "europe": "Europa",
+        "asia_oceania": "Asia + Oceania",
+        "specialty": "Specializzazione"
+      },
+      "backboneEnableGuidance": "Dovresti abilitare da 1 a 3 gateway backbone al massimo (2 è generalmente il punto debole per la ridondanza). Punta a 1 globale, 1–2 regionali e Specialità solo se necessario.",
+      "backboneEnableTooMany": "Hai {{count}} dorsali predefinite abilitate. Prendi in considerazione la possibilità di disabilitare gli extra e di tenerne circa 2 per ridondanza.",
+      "interfaceListGroup": {
+        "user_defined": "Utente definito"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

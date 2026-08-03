@@ -1127,7 +1127,26 @@
       "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "이 허브는 서비스 종료되어 활성 상태를 유지할 수 없습니다 — mesh-client는 스택을 시작할 때마다 끕니다. 라이브 엔드포인트에는 기본 네트워크 허브 추가 또는 백본 디렉터리를 사용하세요.",
-      "decommissionedBadge": "해체됨"
+      "decommissionedBadge": "해체됨",
+      "defaultHubsPickerTitle": "기본 네트워크 허브 추가",
+      "defaultHubsPickerHint": "대부분의 사람들은 해당 지역에 Primary & Global Backbone PLUS 허브를 추가합니다. 새 허브가 비활성화되어 활성화하기 전에 검토할 수 있습니다.",
+      "defaultHubsPickerConfirm": "{{count}} 허브 추가",
+      "defaultHubsPickerConfirmSync": "동기화 선택됨",
+      "defaultHubsPickerConfirmAria": "선택한 기본 허브 {{count}} 개 추가 또는 동기화",
+      "defaultHubAlreadyAdded": "이미 추가되어 있습니다",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "기본 및 글로벌 백본",
+        "north_america": "북미",
+        "europe": "유럽",
+        "asia_oceania": "아시아주,대양주",
+        "specialty": "특별"
+      },
+      "backboneEnableGuidance": "최대 1 ~ 3개의 백본 게이트웨이를 활성화해야 합니다 (2는 일반적으로 이중화를 위한 최적의 지점입니다). 필요에 따라 전 세계 1곳, 지역 1 ~ 2곳, 특산품 1곳을 목표로 하세요.",
+      "backboneEnableTooMany": "기본 백본이 {{count}} 개 활성화되어 있습니다. 엑스트라를 비활성화하고 이중화를 위해 약 2 개를 유지하는 것이 좋습니다.",
+      "interfaceListGroup": {
+        "user_defined": "사용자 정의"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

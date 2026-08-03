@@ -1127,7 +1127,26 @@
       "advancedKeyReserved": "\"{{key}}\" anahtarı bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Bu hub kullanımdan kaldırılmıştır ve etkin kalamaz — mesh-client her yığın başlangıcında onu kapatır. Canlı uç noktalar için varsayılan ağ hub’ları ekle veya omurga dizinini kullanın.",
-      "decommissionedBadge": "Kullanımdan kaldırılmış"
+      "decommissionedBadge": "Kullanımdan kaldırılmış",
+      "defaultHubsPickerTitle": "Varsayılan ağ hub'ları ekle",
+      "defaultHubsPickerHint": "Çoğu kişi kendi bölgelerinde Birincil ve Küresel Omurga artı merkezlerini ekler. Etkinleştirmeden önce inceleyebilmeniz için yeni hub'lar devre dışı bırakıldı.",
+      "defaultHubsPickerConfirm": "{{count}} hub ekleyin",
+      "defaultHubsPickerConfirmSync": "Seçilenleri senkronize et",
+      "defaultHubsPickerConfirmAria": "Seçilen varsayılan hub'ları {{count}} ekleyin veya senkronize edin",
+      "defaultHubAlreadyAdded": "ÇOKTAN EKLENMİŞ",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Birincil ve Küresel Omurga",
+        "north_america": "Kuzey Amerika",
+        "europe": "Avrupa",
+        "asia_oceania": "Asya ve Okyanusya",
+        "specialty": "Özel"
+      },
+      "backboneEnableGuidance": "En fazla 1 ila 3 omurga ağ geçidini etkinleştirmelisiniz (2 genellikle fazlalık için en uygun noktadır). Yalnızca gerektiğinde 1 küresel, 1 -2 bölgesel ve Uzmanlık alanını hedefleyin.",
+      "backboneEnableTooMany": "{{count}} varsayılan omurganız etkin. Ekstraları devre dışı bırakmayı ve fazlalık için yaklaşık 2 tane tutmayı düşünün.",
+      "interfaceListGroup": {
+        "user_defined": "Kullanıcı tanımlı"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

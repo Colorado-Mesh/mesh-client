@@ -1126,7 +1126,26 @@
       "advancedKeyReserved": "La clé « {{key}} » est un champ connu et a été ignoré — utilisez le formulaire ci-dessus.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Ce hub est hors service et ne peut pas rester activé — mesh-client l’éteint à chaque démarrage de la pile. Utilisez Ajouter des hubs réseau par défaut ou le répertoire backbone pour les points de terminaison actifs.",
-      "decommissionedBadge": "inactif"
+      "decommissionedBadge": "inactif",
+      "defaultHubsPickerTitle": "Ajouter des concentrateurs réseau par défaut",
+      "defaultHubsPickerHint": "La plupart des gens ajoutent l'épine dorsale primaire et mondiale ainsi que des hubs dans leur région. Les nouveaux hubs sont ajoutés et désactivés afin que vous puissiez les consulter avant de les activer.",
+      "defaultHubsPickerConfirm": "Ajouter des concentrateurs {{count}}",
+      "defaultHubsPickerConfirmSync": "Synchroniser la sélection",
+      "defaultHubsPickerConfirmAria": "Ajouter ou synchroniser {{count}} concentrateurs par défaut sélectionnés",
+      "defaultHubAlreadyAdded": "déjà ajouté",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Colonne vertébrale principale et mondiale",
+        "north_america": "Amérique du Nord",
+        "europe": "Europe",
+        "asia_oceania": "Asie & Océanie",
+        "specialty": "Spécialités"
+      },
+      "backboneEnableGuidance": "Vous devez activer 1 à 3 passerelles dorsales au maximum (2 est généralement le point idéal pour la redondance). Visez 1 mondial, 1–2 régional et Spécialité uniquement au besoin.",
+      "backboneEnableTooMany": "Vous avez activé les backbones par défaut {{count}}. Envisagez de désactiver les extras et de conserver environ 2 pour la redondance.",
+      "interfaceListGroup": {
+        "user_defined": "Défini par l’utilisateur"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

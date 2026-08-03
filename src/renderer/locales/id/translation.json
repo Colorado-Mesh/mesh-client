@@ -1127,7 +1127,26 @@
       "advancedKeyReserved": "Kunci \"{{key}}\" adalah bidang yang diketahui dan diabaikan — gunakan formulir di atas.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Hub ini dinonaktifkan dan tidak dapat tetap diaktifkan — mesh-client mematikannya pada setiap awal stack. Gunakan Tambahkan hub jaringan default atau direktori backbone untuk endpoint langsung.",
-      "decommissionedBadge": "dinonaktifkan"
+      "decommissionedBadge": "dinonaktifkan",
+      "defaultHubsPickerTitle": "Tambahkan hub jaringan default",
+      "defaultHubsPickerHint": "Kebanyakan orang menambahkan hub Primary & Global Backbone plus di wilayah mereka. Hub baru ditambahkan dinonaktifkan sehingga Anda dapat meninjau sebelum mengaktifkan.",
+      "defaultHubsPickerConfirm": "Tambahkan hub {{count}}",
+      "defaultHubsPickerConfirmSync": "Sinkronkan Dipilih",
+      "defaultHubsPickerConfirmAria": "Tambahkan atau sinkronkan {{count}} hub default yang dipilih",
+      "defaultHubAlreadyAdded": "Item sudah ditambahkan",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Tulang Punggung Utama & Global",
+        "north_america": "Amerika Utara",
+        "europe": "Eropa",
+        "asia_oceania": "Asia & Oseania",
+        "specialty": "Spesialisasi"
+      },
+      "backboneEnableGuidance": "Anda harus mengaktifkan 1 hingga 3 gerbang backbone paling banyak (2 umumnya merupakan sweet spot untuk redundansi). Bertujuan untuk 1 global, 1 -2 regional, dan Spesialisasi hanya sesuai kebutuhan.",
+      "backboneEnableTooMany": "Anda telah mengaktifkan {{count}} tulang punggung default. Pertimbangkan untuk menonaktifkan ekstra dan menyimpan sekitar 2 untuk redundansi.",
+      "interfaceListGroup": {
+        "user_defined": "Pilihan Pengguna"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -1127,7 +1127,26 @@
       "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
       "decommissionedHubEnableBlocked": "このハブは廃止されており有効のままにできません — mesh-client はスタック開始のたびにオフにします。ライブエンドポイントには「デフォルトネットワークハブを追加」またはバックボーンディレクトリを使用してください。",
-      "decommissionedBadge": "使用を中止された？"
+      "decommissionedBadge": "使用を中止された？",
+      "defaultHubsPickerTitle": "デフォルトのネットワークハブを追加する",
+      "defaultHubsPickerHint": "ほとんどの人は、自分の地域にプライマリおよびグローバルバックボーンプラスハブを追加します。新しいハブは無効になっているため、有効にする前に確認できます。",
+      "defaultHubsPickerConfirm": "{{count}}ハブを追加",
+      "defaultHubsPickerConfirmSync": "同期が選択されました",
+      "defaultHubsPickerConfirmAria": "選択したデフォルトハブを{{count}}追加または同期",
+      "defaultHubAlreadyAdded": "すでに追加済み",
+      "defaultHubPresetAria": "{{name}}、{{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "プライマリおよびグローバルバックボーン",
+        "north_america": "北米",
+        "europe": "ヨーロッパ",
+        "asia_oceania": "アジア・オセアニア",
+        "specialty": "専門"
+      },
+      "backboneEnableGuidance": "最大で1〜3つのバックボーンゲートウェイを有効にする必要があります（通常、2つは冗長性のスイートスポットです）。必要に応じて、1つのグローバル、1〜2つの地域、および専門分野のみを目指してください。",
+      "backboneEnableTooMany": "{{count}}デフォルトのバックボーンが有効になっています。余分なものを無効にし、冗長性を保つために約2つを保管することを検討してください。",
+      "interfaceListGroup": {
+        "user_defined": "ユーザー定義"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

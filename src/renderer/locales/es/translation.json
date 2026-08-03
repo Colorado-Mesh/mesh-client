@@ -1127,7 +1127,26 @@
       "advancedKeyReserved": "La clave «{{key}}» es un campo conocido y se ignoró. Utilice el formulario anterior.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Este hub está fuera de servicio y no puede permanecer habilitado — mesh-client lo apaga en cada inicio de la pila. Use Agregar hubs de red predeterminados o el directorio backbone para endpoints en vivo.",
-      "decommissionedBadge": "fuera de servicio"
+      "decommissionedBadge": "fuera de servicio",
+      "defaultHubsPickerTitle": "Añadir concentradores de red predeterminados",
+      "defaultHubsPickerHint": "La mayoría de las personas añaden centros de red troncal primaria y global plus en su región. Se añaden nuevos hubs deshabilitados para que puedas revisarlos antes de habilitarlos.",
+      "defaultHubsPickerConfirm": "Añadir {{count}} hubs",
+      "defaultHubsPickerConfirmSync": "Sincronización seleccionada",
+      "defaultHubsPickerConfirmAria": "Añadir o sincronizar {{count}} concentradores predeterminados seleccionados",
+      "defaultHubAlreadyAdded": "ya añadido(s)",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Red troncal primaria y global",
+        "north_america": "Norteamérica",
+        "europe": "Europa",
+        "asia_oceania": "Asia Oceanía",
+        "specialty": "Especialidad"
+      },
+      "backboneEnableGuidance": "Debe habilitar de 1 a 3 puertas de enlace troncales como máximo (2 es generalmente el punto óptimo para la redundancia). Apunte a 1 global, 1–2 regional y Especialidad solo según sea necesario.",
+      "backboneEnableTooMany": "Tienes {{count}} backbones predeterminados habilitados. Considere deshabilitar los extras y mantener alrededor de 2 por redundancia.",
+      "interfaceListGroup": {
+        "user_defined": "Definido por el usuario"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

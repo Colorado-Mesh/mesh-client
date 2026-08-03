@@ -3,6 +3,7 @@ import { Info } from 'lucide-react-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ReticulumDefaultHubsPickerModal } from '@/renderer/components/reticulum/ReticulumDefaultHubsPickerModal';
 import { useToast } from '@/renderer/components/Toast';
 import {
   rssiForReticulumBleRnodeRow,
@@ -29,7 +30,10 @@ import {
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
   applyDefaultHubPresetsSync,
+  countEnabledDefaultHubPresets,
+  groupReticulumInterfacesByHubRegion,
   planDefaultHubPresetsSync,
+  type ReticulumInterfaceListGroupId,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import {
   RETICULUM_I2P_PEERS_MAX_LENGTH,
@@ -240,6 +244,7 @@ export function ReticulumInterfacesPanel({
   const [restartStackHint, setRestartStackHint] = useState(false);
   const [showRmapRestartConfirm, setShowRmapRestartConfirm] = useState(false);
   const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
+  const [showDefaultHubsPicker, setShowDefaultHubsPicker] = useState(false);
   const [rmapToggleBusyId, setRmapToggleBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -539,20 +544,26 @@ export function ReticulumInterfacesPanel({
     }
   };
 
-  const handleAddDefaultHubPresets = async () => {
+  const handleAddDefaultHubPresets = async (presetIds: ReadonlySet<string>) => {
     setInterfaceError(null);
-    const plan = planDefaultHubPresetsSync(interfaces);
+    const syncOpts = { presetIds };
+    const plan = planDefaultHubPresetsSync(interfaces, syncOpts);
     if (
       plan.add.length === 0 &&
       plan.repair.length === 0 &&
       plan.disableDecommissioned.length === 0
     ) {
+      setShowDefaultHubsPicker(false);
       addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
       return;
     }
     setAddingDefaultHubs(true);
     try {
-      const { result } = await applyDefaultHubPresetsSync(interfaces, window.electronAPI.reticulum);
+      const { result } = await applyDefaultHubPresetsSync(
+        interfaces,
+        window.electronAPI.reticulum,
+        syncOpts,
+      );
       const changed = result.added + result.repaired + result.disabledDecommissioned;
       if (changed > 0) {
         await onRefresh();
@@ -577,6 +588,8 @@ export function ReticulumInterfacesPanel({
             ),
           );
         }
+      } else {
+        setShowDefaultHubsPicker(false);
       }
     } catch (e) {
       setInterfaceError(
@@ -917,13 +930,25 @@ export function ReticulumInterfacesPanel({
         addingDefaultHubs={addingDefaultHubs}
         defaultHubsDisabled={defaultHubsDisabled}
         onAddDefaultHubs={() => {
-          void handleAddDefaultHubPresets();
+          setShowDefaultHubsPicker(true);
         }}
         rmapToggleBusyId={rmapToggleBusyId}
         onToggleRmapDiscoverable={(iface) => {
           void handleToggleRmapDiscoverable(iface);
         }}
       />
+      {showDefaultHubsPicker ? (
+        <ReticulumDefaultHubsPickerModal
+          interfaces={interfaces}
+          confirming={addingDefaultHubs}
+          onCancel={() => {
+            if (!addingDefaultHubs) setShowDefaultHubsPicker(false);
+          }}
+          onConfirm={(presetIds) => {
+            void handleAddDefaultHubPresets(presetIds);
+          }}
+        />
+      ) : null}
       {pendingDeleteInterface ? (
         <ConfirmModal
           title={t('connectionPanel.reticulumInterfaces.deleteConfirmTitle')}
@@ -1676,6 +1701,26 @@ function InterfaceEditPanel({
   );
 }
 
+function interfaceListGroupLabel(
+  t: (key: string) => string,
+  groupId: ReticulumInterfaceListGroupId,
+): string {
+  switch (groupId) {
+    case 'primary_global':
+      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global');
+    case 'north_america':
+      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.north_america');
+    case 'europe':
+      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.europe');
+    case 'asia_oceania':
+      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.asia_oceania');
+    case 'specialty':
+      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.specialty');
+    case 'user_defined':
+      return t('connectionPanel.reticulumInterfaces.interfaceListGroup.user_defined');
+  }
+}
+
 function InterfacesSection({
   interfaces,
   osSerialPortPaths,
@@ -1805,6 +1850,8 @@ function InterfacesSection({
   const bleRnodeRssiByAddress = useReticulumBleRnodeRssiMap(interfaces, sidecarRunning);
   const tcpRttById = useReticulumTcpLinkQualityMap(interfaces, sidecarReady);
   const enabledLocalSerialCount = countEnabledLocallyConnectedSerialInterfaces(interfaces);
+  const enabledDefaultBackboneCount = countEnabledDefaultHubPresets(interfaces);
+  const interfaceGroups = groupReticulumInterfacesByHubRegion(interfaces);
   const showPrimaryControls = enabledLocalSerialCount >= 2;
   const primaryInterfaceName =
     interfaces.find((row) => row.id === effectivePrimaryLocalSerialInterfaceId)?.name ?? '';
@@ -1857,6 +1904,16 @@ function InterfacesSection({
           <p id="reticulum-default-hubs" className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
           </p>
+          <p className="text-sm font-medium text-amber-200" role="status">
+            {t('connectionPanel.reticulumInterfaces.backboneEnableGuidance')}
+          </p>
+          {enabledDefaultBackboneCount > 3 ? (
+            <p className="text-xs text-amber-300" role="status">
+              {t('connectionPanel.reticulumInterfaces.backboneEnableTooMany', {
+                count: enabledDefaultBackboneCount,
+              })}
+            </p>
+          ) : null}
           <p className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.backboneDirectoryHint')}{' '}
             <a
@@ -2176,253 +2233,283 @@ function InterfacesSection({
             })}
           </p>
         ) : null}
-        <ul className="mt-3 space-y-2 text-sm">
+        <div className="mt-3 space-y-4 text-sm">
           {interfaces.length === 0 ? (
-            <li className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</li>
+            <p className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</p>
           ) : (
-            interfaces.map((iface) => {
-              const rowReason = localRowReason(iface);
-              const help = getReticulumInterfaceHelp(iface);
-              const auditIssues = auditByInterfaceId.get(iface.id) ?? [];
-              const primaryAudit =
-                auditIssues.find((issue) => issue.severity !== 'info') ?? auditIssues[0];
-              const rowBorder =
-                rowReason != null || primaryAudit?.severity === 'error'
-                  ? 'border-red-800/60'
-                  : primaryAudit?.severity === 'warning'
-                    ? 'border-amber-700/50'
-                    : 'border-gray-700/60';
-              const repairKind = primaryAudit?.repair_kind as ReticulumConfigRepairKind | undefined;
-              const isLocalSerialRow =
-                iface.enabled && isReticulumLocallyConnectedSerialInterface(iface);
-              const isPrimaryRow =
-                showPrimaryControls &&
-                effectivePrimaryLocalSerialInterfaceId != null &&
-                iface.id === effectivePrimaryLocalSerialInterfaceId;
-              const showBleRnodeSignal = iface.enabled && isReticulumBleRnodeInterfaceRow(iface);
-              const bleRnodeRssi = showBleRnodeSignal
-                ? rssiForReticulumBleRnodeRow(iface, bleRnodeRssiByAddress)
-                : null;
-              const showTcpLinkQuality = isReticulumTcpClientLinkQualityRow(iface);
-              const tcpRttMs = showTcpLinkQuality ? rttForReticulumTcpRow(iface, tcpRttById) : null;
-              const decommissioned = isDecommissionedTcpInterfaceRow(iface);
-              return (
-                <li
-                  key={iface.id}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
+            interfaceGroups.map((group) => (
+              <section
+                key={group.id}
+                aria-labelledby={`reticulum-iface-group-${group.id}`}
+                data-testid={`reticulum-iface-group-${group.id}`}
+              >
+                <h4
+                  id={`reticulum-iface-group-${group.id}`}
+                  className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase"
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="inline-flex flex-wrap items-center gap-1.5">
-                      <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
-                        {formatReticulumInterfaceRowSummary(t, iface)}
-                      </span>
-                      {decommissioned ? (
-                        <span
-                          className="text-xs font-medium text-red-400"
-                          data-testid={`reticulum-decommissioned-${iface.id}`}
-                        >
-                          {t('connectionPanel.reticulumInterfaces.decommissionedBadge')}
-                        </span>
-                      ) : null}
-                      {showBleRnodeSignal ? (
-                        <span
-                          className="text-muted flex shrink-0 items-center gap-1 text-xs"
-                          aria-label={t('connectionPanel.hostSignal')}
-                          data-testid={`reticulum-ble-signal-${iface.id}`}
-                        >
-                          {bleRnodeRssi != null ? (
-                            <>
-                              <SignalBars rssi={bleRnodeRssi} className="h-3 w-4" />
-                              {t('connectionPanel.bleRssiDbm', {
-                                rssi: Math.round(bleRnodeRssi),
+                  {interfaceListGroupLabel(t, group.id)}
+                </h4>
+                <ul className="space-y-2">
+                  {group.interfaces.map((iface) => {
+                    const rowReason = localRowReason(iface);
+                    const help = getReticulumInterfaceHelp(iface);
+                    const auditIssues = auditByInterfaceId.get(iface.id) ?? [];
+                    const primaryAudit =
+                      auditIssues.find((issue) => issue.severity !== 'info') ?? auditIssues[0];
+                    const rowBorder =
+                      rowReason != null || primaryAudit?.severity === 'error'
+                        ? 'border-red-800/60'
+                        : primaryAudit?.severity === 'warning'
+                          ? 'border-amber-700/50'
+                          : 'border-gray-700/60';
+                    const repairKind = primaryAudit?.repair_kind as
+                      ReticulumConfigRepairKind | undefined;
+                    const isLocalSerialRow =
+                      iface.enabled && isReticulumLocallyConnectedSerialInterface(iface);
+                    const isPrimaryRow =
+                      showPrimaryControls &&
+                      effectivePrimaryLocalSerialInterfaceId != null &&
+                      iface.id === effectivePrimaryLocalSerialInterfaceId;
+                    const showBleRnodeSignal =
+                      iface.enabled && isReticulumBleRnodeInterfaceRow(iface);
+                    const bleRnodeRssi = showBleRnodeSignal
+                      ? rssiForReticulumBleRnodeRow(iface, bleRnodeRssiByAddress)
+                      : null;
+                    const showTcpLinkQuality = isReticulumTcpClientLinkQualityRow(iface);
+                    const tcpRttMs = showTcpLinkQuality
+                      ? rttForReticulumTcpRow(iface, tcpRttById)
+                      : null;
+                    const decommissioned = isDecommissionedTcpInterfaceRow(iface);
+                    return (
+                      <li
+                        key={iface.id}
+                        className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="inline-flex flex-wrap items-center gap-1.5">
+                            <span
+                              className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}
+                            >
+                              {formatReticulumInterfaceRowSummary(t, iface)}
+                            </span>
+                            {decommissioned ? (
+                              <span
+                                className="text-xs font-medium text-red-400"
+                                data-testid={`reticulum-decommissioned-${iface.id}`}
+                              >
+                                {t('connectionPanel.reticulumInterfaces.decommissionedBadge')}
+                              </span>
+                            ) : null}
+                            {showBleRnodeSignal ? (
+                              <span
+                                className="text-muted flex shrink-0 items-center gap-1 text-xs"
+                                aria-label={t('connectionPanel.hostSignal')}
+                                data-testid={`reticulum-ble-signal-${iface.id}`}
+                              >
+                                {bleRnodeRssi != null ? (
+                                  <>
+                                    <SignalBars rssi={bleRnodeRssi} className="h-3 w-4" />
+                                    {t('connectionPanel.bleRssiDbm', {
+                                      rssi: Math.round(bleRnodeRssi),
+                                    })}
+                                  </>
+                                ) : (
+                                  <>
+                                    <SignalBars noData className="h-3 w-4" />
+                                    {t('connectionPanel.hostSignalUnavailable')}
+                                  </>
+                                )}
+                              </span>
+                            ) : null}
+                            {showTcpLinkQuality ? (
+                              <span
+                                className="text-muted flex shrink-0 items-center gap-1 text-xs"
+                                aria-label={t('connectionPanel.linkQuality')}
+                                data-testid={`reticulum-tcp-link-${iface.id}`}
+                              >
+                                {tcpRttMs != null ? (
+                                  <>
+                                    <SignalBars
+                                      level={rttToSignalLevel(tcpRttMs)}
+                                      className="h-3 w-4"
+                                    />
+                                    {t('connectionPanel.linkQualityMs', {
+                                      ms: Math.round(tcpRttMs),
+                                    })}
+                                  </>
+                                ) : (
+                                  <>
+                                    <SignalBars noData className="h-3 w-4" />
+                                    {t('connectionPanel.linkQualityUnavailable')}
+                                  </>
+                                )}
+                              </span>
+                            ) : null}
+                            <HelpTooltip
+                              text={t(help.purposeKey)}
+                              ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {
+                                name: iface.name,
                               })}
-                            </>
-                          ) : (
-                            <>
-                              <SignalBars noData className="h-3 w-4" />
-                              {t('connectionPanel.hostSignalUnavailable')}
-                            </>
-                          )}
-                        </span>
-                      ) : null}
-                      {showTcpLinkQuality ? (
-                        <span
-                          className="text-muted flex shrink-0 items-center gap-1 text-xs"
-                          aria-label={t('connectionPanel.linkQuality')}
-                          data-testid={`reticulum-tcp-link-${iface.id}`}
-                        >
-                          {tcpRttMs != null ? (
-                            <>
-                              <SignalBars level={rttToSignalLevel(tcpRttMs)} className="h-3 w-4" />
-                              {t('connectionPanel.linkQualityMs', {
-                                ms: Math.round(tcpRttMs),
+                              className="text-muted hover:text-gray-200"
+                            >
+                              <Info
+                                aria-hidden
+                                className="h-3.5 w-3.5"
+                                trigger={purposeIconTrigger}
+                                size={14}
+                              />
+                            </HelpTooltip>
+                            {help.isRuntimeOnly ? (
+                              <span className="text-muted text-[10px] tracking-wide uppercase">
+                                {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
+                              </span>
+                            ) : null}
+                            {isPrimaryRow ? (
+                              <span className="text-readable-green text-[10px] tracking-wide uppercase">
+                                {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
+                              </span>
+                            ) : null}
+                          </span>
+                          {rowReason ? (
+                            <span className="mt-0.5 block text-xs text-red-300/90">
+                              {rowReason}
+                            </span>
+                          ) : null}
+                          {primaryAudit ? (
+                            <span
+                              className={`mt-0.5 block text-xs ${
+                                primaryAudit.severity === 'error'
+                                  ? 'text-red-300/90'
+                                  : primaryAudit.severity === 'warning'
+                                    ? 'text-amber-300/90'
+                                    : 'text-blue-300/80'
+                              }`}
+                            >
+                              {t(`diagnosticsPanel.reticulum.audit.${primaryAudit.kind}`, {
+                                name: primaryAudit.interface_name ?? iface.name,
+                                message: primaryAudit.message,
                               })}
-                            </>
-                          ) : (
-                            <>
-                              <SignalBars noData className="h-3 w-4" />
-                              {t('connectionPanel.linkQualityUnavailable')}
-                            </>
-                          )}
+                            </span>
+                          ) : null}
                         </span>
-                      ) : null}
-                      <HelpTooltip
-                        text={t(help.purposeKey)}
-                        ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {
-                          name: iface.name,
-                        })}
-                        className="text-muted hover:text-gray-200"
-                      >
-                        <Info
-                          aria-hidden
-                          className="h-3.5 w-3.5"
-                          trigger={purposeIconTrigger}
-                          size={14}
-                        />
-                      </HelpTooltip>
-                      {help.isRuntimeOnly ? (
-                        <span className="text-muted text-[10px] tracking-wide uppercase">
-                          {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
+                        <span className="flex flex-wrap items-center gap-3">
+                          {showPrimaryControls && isLocalSerialRow && !isPrimaryRow ? (
+                            <button
+                              type="button"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                onSetPrimaryLocalSerial(iface.id);
+                              }}
+                              className="text-xs text-emerald-400 hover:underline disabled:opacity-40"
+                              aria-label={t(
+                                'connectionPanel.reticulumInterfaces.setPrimaryLocalAria',
+                                {
+                                  name: iface.name,
+                                },
+                              )}
+                            >
+                              {t('connectionPanel.reticulumInterfaces.setPrimaryLocal')}
+                            </button>
+                          ) : null}
+                          {repairKind === 'repair_config' ||
+                          repairKind === 'apply_preset' ||
+                          repairKind === 'add_auto' ||
+                          repairKind === 'disable_share_instance' ? (
+                            <button
+                              type="button"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                onAuditRepair(repairKind);
+                              }}
+                              className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                            >
+                              {repairKind === 'disable_share_instance'
+                                ? t('diagnosticsPanel.reticulum.action.disable_share_instance')
+                                : t('connectionPanel.reticulumInterfaces.auditRepair')}
+                            </button>
+                          ) : null}
+                          {repairKind === 'disable' && help.isSystemManaged ? (
+                            <button
+                              type="button"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                void onAuditDisable(iface.id);
+                              }}
+                              className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                            >
+                              {t('connectionPanel.reticulumInterfaces.auditDisable')}
+                            </button>
+                          ) : null}
+                          {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
+                            <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
+                              <input
+                                type="checkbox"
+                                checked={iface.discoverable === true}
+                                disabled={actionsDisabled || rmapToggleBusyId === iface.id}
+                                aria-label={t(
+                                  'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+                                  { name: iface.name },
+                                )}
+                                onChange={() => {
+                                  onToggleRmapDiscoverable(iface);
+                                }}
+                              />
+                              {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
+                            </label>
+                          ) : null}
+                          {!help.isSystemManaged ? (
+                            <button
+                              type="button"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                onStartEdit(iface);
+                              }}
+                              className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                              aria-label={t('connectionPanel.reticulumInterfaces.edit', {
+                                name: iface.name,
+                              })}
+                            >
+                              {t('connectionPanel.reticulumInterfaces.edit')}
+                            </button>
+                          ) : null}
+                          {!help.isSystemManaged ? (
+                            <button
+                              type="button"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                onToggle(iface.id, !iface.enabled, iface.type);
+                              }}
+                              className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                            >
+                              {iface.enabled
+                                ? t('connectionPanel.reticulumInterfaces.disable')
+                                : t('connectionPanel.reticulumInterfaces.enable')}
+                            </button>
+                          ) : null}
+                          {!help.isSystemManaged ? (
+                            <button
+                              type="button"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                onDelete(iface.id, iface.name);
+                              }}
+                              className="text-xs text-red-400 hover:underline disabled:opacity-40"
+                              aria-label={t('connectionPanel.reticulumInterfaces.delete', {
+                                name: iface.name,
+                              })}
+                            >
+                              {t('connectionPanel.reticulumInterfaces.delete')}
+                            </button>
+                          ) : null}
                         </span>
-                      ) : null}
-                      {isPrimaryRow ? (
-                        <span className="text-readable-green text-[10px] tracking-wide uppercase">
-                          {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
-                        </span>
-                      ) : null}
-                    </span>
-                    {rowReason ? (
-                      <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
-                    ) : null}
-                    {primaryAudit ? (
-                      <span
-                        className={`mt-0.5 block text-xs ${
-                          primaryAudit.severity === 'error'
-                            ? 'text-red-300/90'
-                            : primaryAudit.severity === 'warning'
-                              ? 'text-amber-300/90'
-                              : 'text-blue-300/80'
-                        }`}
-                      >
-                        {t(`diagnosticsPanel.reticulum.audit.${primaryAudit.kind}`, {
-                          name: primaryAudit.interface_name ?? iface.name,
-                          message: primaryAudit.message,
-                        })}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="flex flex-wrap items-center gap-3">
-                    {showPrimaryControls && isLocalSerialRow && !isPrimaryRow ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onSetPrimaryLocalSerial(iface.id);
-                        }}
-                        className="text-xs text-emerald-400 hover:underline disabled:opacity-40"
-                        aria-label={t('connectionPanel.reticulumInterfaces.setPrimaryLocalAria', {
-                          name: iface.name,
-                        })}
-                      >
-                        {t('connectionPanel.reticulumInterfaces.setPrimaryLocal')}
-                      </button>
-                    ) : null}
-                    {repairKind === 'repair_config' ||
-                    repairKind === 'apply_preset' ||
-                    repairKind === 'add_auto' ||
-                    repairKind === 'disable_share_instance' ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onAuditRepair(repairKind);
-                        }}
-                        className="text-xs text-sky-400 hover:underline disabled:opacity-40"
-                      >
-                        {repairKind === 'disable_share_instance'
-                          ? t('diagnosticsPanel.reticulum.action.disable_share_instance')
-                          : t('connectionPanel.reticulumInterfaces.auditRepair')}
-                      </button>
-                    ) : null}
-                    {repairKind === 'disable' && help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          void onAuditDisable(iface.id);
-                        }}
-                        className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                      >
-                        {t('connectionPanel.reticulumInterfaces.auditDisable')}
-                      </button>
-                    ) : null}
-                    {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
-                      <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
-                        <input
-                          type="checkbox"
-                          checked={iface.discoverable === true}
-                          disabled={actionsDisabled || rmapToggleBusyId === iface.id}
-                          aria-label={t(
-                            'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
-                            { name: iface.name },
-                          )}
-                          onChange={() => {
-                            onToggleRmapDiscoverable(iface);
-                          }}
-                        />
-                        {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
-                      </label>
-                    ) : null}
-                    {!help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onStartEdit(iface);
-                        }}
-                        className="text-xs text-sky-400 hover:underline disabled:opacity-40"
-                        aria-label={t('connectionPanel.reticulumInterfaces.edit', {
-                          name: iface.name,
-                        })}
-                      >
-                        {t('connectionPanel.reticulumInterfaces.edit')}
-                      </button>
-                    ) : null}
-                    {!help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onToggle(iface.id, !iface.enabled, iface.type);
-                        }}
-                        className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                      >
-                        {iface.enabled
-                          ? t('connectionPanel.reticulumInterfaces.disable')
-                          : t('connectionPanel.reticulumInterfaces.enable')}
-                      </button>
-                    ) : null}
-                    {!help.isSystemManaged ? (
-                      <button
-                        type="button"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          onDelete(iface.id, iface.name);
-                        }}
-                        className="text-xs text-red-400 hover:underline disabled:opacity-40"
-                        aria-label={t('connectionPanel.reticulumInterfaces.delete', {
-                          name: iface.name,
-                        })}
-                      >
-                        {t('connectionPanel.reticulumInterfaces.delete')}
-                      </button>
-                    ) : null}
-                  </span>
-                </li>
-              );
-            })
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))
           )}
-        </ul>
+        </div>
         {editingInterface ? (
           <InterfaceEditPanel
             key={editingInterface.id}

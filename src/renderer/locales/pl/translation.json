@@ -1129,7 +1129,26 @@
       "advancedKeyReserved": "Klucz „{{key}}” jest znanym polem i został zignorowany — użyj powyższego formularza.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Ten hub jest wycofany z eksploatacji i nie może pozostać włączony — mesh-client wyłącza go przy każdym uruchomieniu stosu. Użyj Dodaj domyślne huby sieciowe lub katalogu backbone dla aktywnych punktów końcowych.",
-      "decommissionedBadge": "wycofany z eksploatacji"
+      "decommissionedBadge": "wycofany z eksploatacji",
+      "defaultHubsPickerTitle": "Dodaj domyślne koncentratory sieciowe",
+      "defaultHubsPickerHint": "Większość ludzi dodaje koncentratory Primary & Global Backbone plus w swoim regionie. Nowe centra są wyłączone, więc możesz je sprawdzić przed włączeniem.",
+      "defaultHubsPickerConfirm": "Dodaj koncentratory {{count}}",
+      "defaultHubsPickerConfirmSync": "Wybrano synchronizację",
+      "defaultHubsPickerConfirmAria": "Dodaj lub zsynchronizuj wybrane domyślne koncentratory {{count}}",
+      "defaultHubAlreadyAdded": "już dodane",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Podstawowa i globalna sieć szkieletowa",
+        "north_america": "Ameryka Północna",
+        "europe": "Europa",
+        "asia_oceania": "Azja i Oceania",
+        "specialty": "Specjalnościowy"
+      },
+      "backboneEnableGuidance": "Powinieneś włączyć maksymalnie od 1 do 3 bramek szkieletowych (2 to na ogół słodki punkt dla redundancji). Staraj się o 1 globalną, 1–2 regionalną i specjalistyczną tylko w razie potrzeby.",
+      "backboneEnableTooMany": "Masz włączone {{count}} domyślne kręgosłupy. Rozważ wyłączenie dodatków i zachowanie około 2 na potrzeby redundancji.",
+      "interfaceListGroup": {
+        "user_defined": "Zdefiniowane przez użytkownika"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

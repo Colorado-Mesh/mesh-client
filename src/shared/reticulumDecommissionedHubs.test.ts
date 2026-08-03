@@ -8,31 +8,29 @@ import {
 
 describe('reticulumDecommissionedHubs', () => {
   it('normalizes bracketed IPv6-style hosts and case', () => {
-    expect(normalizeReticulumTcpHubHost(' Dublin.CONNECT.reticulum.network ')).toBe(
-      'dublin.connect.reticulum.network',
+    expect(normalizeReticulumTcpHubHost(' Amsterdam.CONNECT.reticulum.network ')).toBe(
+      'amsterdam.connect.reticulum.network',
     );
-    expect(normalizeReticulumTcpHubHost('[dublin.connect.reticulum.network]')).toBe(
-      'dublin.connect.reticulum.network',
+    expect(normalizeReticulumTcpHubHost('[amsterdam.connect.reticulum.network]')).toBe(
+      'amsterdam.connect.reticulum.network',
     );
   });
 
-  it('matches decommissioned hubs by host alias and port', () => {
-    expect(isDecommissionedReticulumTcpHub('dublin.connect.reticulum.network', 4965)).toBe(true);
+  it('matches decommissioned amsterdam by host and port', () => {
     expect(isDecommissionedReticulumTcpHub('Amsterdam.connect.reticulum.network', 4965)).toBe(true);
-    expect(isDecommissionedReticulumTcpHub('reticulum.betweentheborders.com', 4242)).toBe(true);
-    expect(isDecommissionedReticulumTcpHub('betweentheborders.com', 4242)).toBe(true);
   });
 
-  it('rejects wrong ports and unknown hosts', () => {
-    expect(isDecommissionedReticulumTcpHub('dublin.connect.reticulum.network', 443)).toBe(false);
+  it('rejects live official gateways, wrong ports, and unknown hosts', () => {
+    expect(isDecommissionedReticulumTcpHub('dublin.connect.reticulum.network', 4965)).toBe(false);
+    expect(isDecommissionedReticulumTcpHub('reticulum.betweentheborders.com', 4242)).toBe(false);
+    expect(isDecommissionedReticulumTcpHub('betweentheborders.com', 4242)).toBe(false);
+    expect(isDecommissionedReticulumTcpHub('amsterdam.connect.reticulum.network', 443)).toBe(false);
     expect(isDecommissionedReticulumTcpHub('us-east.connect.reticulum.network', 4965)).toBe(false);
   });
 
-  it('lists the three retired official endpoints', () => {
+  it('lists only retired amsterdam endpoint', () => {
     expect(RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS.map((e) => e.id)).toEqual([
-      'decommissioned-dublin',
       'decommissioned-amsterdam',
-      'decommissioned-betweentheborders',
     ]);
   });
 });

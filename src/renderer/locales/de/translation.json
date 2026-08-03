@@ -1125,7 +1125,26 @@
       "advancedKeyReserved": "Der Schlüssel „{{key}}“ ist ein bekanntes Feld und wurde ignoriert — verwende das obige Formular.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Dieser Hub ist außer Betrieb genommen und kann nicht aktiviert bleiben — der Mesh-Client schaltet ihn bei jedem Stapelstart aus. Verwenden Sie Standard-Netzwerk-Hubs oder das Backbone-Verzeichnis für Live-Endpunkte hinzufügen.",
-      "decommissionedBadge": "außer Betrieb zu nehmen,"
+      "decommissionedBadge": "außer Betrieb zu nehmen,",
+      "defaultHubsPickerTitle": "Standard-Netzwerk-Hubs hinzufügen",
+      "defaultHubsPickerHint": "Die meisten Menschen fügen Primary & Global Backbone Plus-Hubs in ihrer Region hinzu. Neue Hubs werden deaktiviert hinzugefügt, damit du sie überprüfen kannst, bevor du sie aktivierst.",
+      "defaultHubsPickerConfirm": "{{count}} Hubs hinzufügen",
+      "defaultHubsPickerConfirmSync": "Ausgewählte synchronisieren",
+      "defaultHubsPickerConfirmAria": "Hinzufügen oder Synchronisieren von {{count}} ausgewählten Standard-Hubs",
+      "defaultHubAlreadyAdded": "Schon hinzugefügt.",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Primärer & globaler Backbone",
+        "north_america": "Nord Amerika",
+        "europe": "Europe",
+        "asia_oceania": "Asien & Ozeanien",
+        "specialty": "Besonderes"
+      },
+      "backboneEnableGuidance": "Sie sollten höchstens 1 bis 3 Backbone-Gateways aktivieren (2 ist in der Regel der Sweet Spot für Redundanz). Streben Sie nach Bedarf 1 globales, 1–2 regionales und Spezialgebiet an.",
+      "backboneEnableTooMany": "Du hast {{count}} Standard-Backbones aktiviert. Erwägen Sie, Extras zu deaktivieren und etwa 2 für die Redundanz aufzubewahren.",
+      "interfaceListGroup": {
+        "user_defined": "Benutzerdefiniert"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

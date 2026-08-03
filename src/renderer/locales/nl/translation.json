@@ -1126,7 +1126,26 @@
       "advancedKeyReserved": "Sleutel \"{{key}}\" is een bekend veld en werd genegeerd — gebruik het bovenstaande formulier.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Deze hub wordt buiten gebruik gesteld en kan niet ingeschakeld blijven — mesh-client schakelt het uit bij elke start van de stapel. Gebruik Add default network hubs of de backbone directory for live endpoints.",
-      "decommissionedBadge": "ontmanteld"
+      "decommissionedBadge": "ontmanteld",
+      "defaultHubsPickerTitle": "Standaard netwerkhubs toevoegen",
+      "defaultHubsPickerHint": "De meeste mensen voegen primaire en wereldwijde backbone plus-hubs toe in hun regio. Nieuwe hubs zijn uitgeschakeld toegevoegd, zodat je ze kunt bekijken voordat je ze inschakelt.",
+      "defaultHubsPickerConfirm": "Voeg {{count}} hubs toe",
+      "defaultHubsPickerConfirmSync": "Geselecteerde synchronisatie",
+      "defaultHubsPickerConfirmAria": "{{count}} geselecteerde standaard hubs toevoegen of synchroniseren",
+      "defaultHubAlreadyAdded": "Al toegevoegd",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Primaire en wereldwijde backbone",
+        "north_america": "Noord-Amerika",
+        "europe": "Europa",
+        "asia_oceania": "Azië/ Oceanië",
+        "specialty": "Specialiteit"
+      },
+      "backboneEnableGuidance": "U moet maximaal 1 tot 3 backbone-gateways inschakelen (2 is over het algemeen de sweet spot voor redundantie). Streef alleen naar 1 wereldwijde, 1–2 regionale en Specialiteit als dat nodig is.",
+      "backboneEnableTooMany": "Je hebt {{count}} standaard backbones ingeschakeld. Overweeg om extra's uit te schakelen en er ongeveer 2 te houden voor redundantie.",
+      "interfaceListGroup": {
+        "user_defined": "Gebruiker-gedefinieerd"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

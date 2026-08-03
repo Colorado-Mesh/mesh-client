@@ -142,11 +142,79 @@ describe('ReticulumInterfacesPanel', () => {
     expect(link).toHaveAttribute('href', RETICULUM_BACKBONE_DIRECTORY_URL);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link.closest('summary')).toBeNull();
-    expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('dublin'))).toBe(false);
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.backboneEnableGuidance'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.addDefaultHubs'),
+    ).toBeInTheDocument();
+    expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('dublin'))).toBe(true);
     expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('betweentheborders'))).toBe(
-      false,
+      true,
     );
+    expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('amsterdam'))).toBe(false);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('groups interface rows by backbone region and User Defined', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'dublin',
+            name: 'RNS Dublin Mainnet',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'dublin.connect.reticulum.network',
+            port: 4965,
+            mode: 'boundary',
+          },
+          {
+            id: 'rnode-1',
+            name: 'My RNode',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: '/dev/ttyUSB0',
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId('reticulum-iface-group-primary_global')).toBeInTheDocument();
+    expect(screen.getByTestId('reticulum-iface-group-user_defined')).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.interfaceListGroup.user_defined'),
+    ).toBeInTheDocument();
+  });
+
+  it('warns when more than three default backbones are enabled', () => {
+    const enabledPresets = RETICULUM_DEFAULT_HUB_PRESETS.filter((p) => p.type === 'tcp').slice(
+      0,
+      4,
+    );
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={enabledPresets.map((preset, index) => ({
+          id: `hub-${index}`,
+          name: preset.name,
+          type: preset.type,
+          enabled: true,
+          status: 'down',
+          host: preset.host,
+          port: preset.port,
+          mode: 'boundary',
+        }))}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.backboneEnableTooMany'),
+    ).toBeInTheDocument();
   });
 
   it('does not flag BLE RNode interface rows as stale USB serial ports', () => {
@@ -1082,7 +1150,54 @@ describe('ReticulumInterfacesPanel', () => {
       screen.queryByText('connectionPanel.reticulumInterfaces.primaryLocalSummary'),
     ).not.toBeInTheDocument();
   });
-  it('adds all default hub presets disabled when none are configured', async () => {
+  it('opens hub picker and adds Primary & Global presets by default', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    const primary = RETICULUM_DEFAULT_HUB_PRESETS.filter((p) => p.region === 'primary_global');
+
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+    expect(
+      screen.getByRole('dialog', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global',
+      }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubRegion.specialty',
+      }),
+    ).not.toBeChecked();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPost).toHaveBeenCalledTimes(primary.length);
+    });
+    for (const preset of primary) {
+      expect(proxyPost).toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        buildDefaultHubAddRequest(preset),
+      );
+    }
+    expect(defaultProps.onRefresh).toHaveBeenCalled();
+  });
+
+  it('cancels hub picker without calling the API', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPost = proxyPost;
@@ -1094,74 +1209,53 @@ describe('ReticulumInterfacesPanel', () => {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
       }),
     );
-
-    await waitFor(() => {
-      expect(proxyPost).toHaveBeenCalledTimes(RETICULUM_DEFAULT_HUB_PRESETS.length);
+    const dialog = screen.getByRole('dialog', {
+      name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle',
     });
-    for (const preset of RETICULUM_DEFAULT_HUB_PRESETS) {
-      expect(proxyPost).toHaveBeenCalledWith(
-        '/api/v1/interfaces',
-        buildDefaultHubAddRequest(preset),
-      );
-    }
-    expect(defaultProps.onRefresh).toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'common.cancel' }));
+    expect(proxyPost).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('dialog', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle',
+      }),
+    ).not.toBeInTheDocument();
   });
 
-  it('skips configured presets and adds only missing hubs', async () => {
+  it('adds Primary & Global plus North America when both regions are selected', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPost = proxyPost;
-
-    render(
-      <ReticulumInterfacesPanel
-        {...defaultProps}
-        interfaces={[
-          {
-            id: 'us-east',
-            name: 'RNS_Transport_US-East',
-            type: 'tcp',
-            enabled: false,
-            status: 'down',
-            host: '45.77.109.86',
-            port: 4965,
-            mode: 'boundary',
-          },
-          {
-            id: 'i2p',
-            name: 'RNS I2P Hub A',
-            type: 'i2p',
-            enabled: false,
-            status: 'down',
-            host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
-            mode: 'boundary',
-          },
-        ]}
-      />,
+    const expected = RETICULUM_DEFAULT_HUB_PRESETS.filter(
+      (p) => p.region === 'primary_global' || p.region === 'north_america',
     );
+
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
 
     await user.click(
       screen.getByRole('button', {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
       }),
     );
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubRegion.north_america',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
+      }),
+    );
 
     await waitFor(() => {
-      expect(proxyPost).toHaveBeenCalledTimes(3);
+      expect(proxyPost).toHaveBeenCalledTimes(expected.length);
     });
-    expect(proxyPost).toHaveBeenCalledWith(
-      '/api/v1/interfaces',
-      buildDefaultHubAddRequest(
-        RETICULUM_DEFAULT_HUB_PRESETS.find((p) => p.id === 'yggdrasil-ashburn-va')!,
-      ),
-    );
-    expect(proxyPost).toHaveBeenCalledWith(
-      '/api/v1/interfaces',
-      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS.find((p) => p.id === 'ratspeak')!),
-    );
-    expect(proxyPost).toHaveBeenCalledWith(
-      '/api/v1/interfaces',
-      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS.find((p) => p.id === 'rmap-world')!),
-    );
+    for (const preset of expected) {
+      expect(proxyPost).toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        buildDefaultHubAddRequest(preset),
+      );
+    }
     expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
   });
 
@@ -1171,22 +1265,22 @@ describe('ReticulumInterfacesPanel', () => {
         {...defaultProps}
         interfaces={[
           {
-            id: 'rns-testnet-betweentheborders',
-            name: 'RNS Testnet BetweenTheBorders',
+            id: 'rns-testnet-amsterdam',
+            name: 'RNS Testnet Amsterdam',
             type: 'tcp',
             enabled: false,
             status: 'down',
-            host: 'betweentheborders.com',
-            port: 4242,
+            host: 'amsterdam.connect.reticulum.network',
+            port: 4965,
             mode: 'boundary',
           },
         ]}
       />,
     );
 
-    expect(
-      screen.getByTestId('reticulum-decommissioned-rns-testnet-betweentheborders'),
-    ).toHaveTextContent('connectionPanel.reticulumInterfaces.decommissionedBadge');
+    expect(screen.getByTestId('reticulum-decommissioned-rns-testnet-amsterdam')).toHaveTextContent(
+      'connectionPanel.reticulumInterfaces.decommissionedBadge',
+    );
   });
 
   it('blocks enabling a decommissioned hub without calling enable or restarting', async () => {
@@ -1199,13 +1293,13 @@ describe('ReticulumInterfacesPanel', () => {
         {...defaultProps}
         interfaces={[
           {
-            id: 'rns-testnet-betweentheborders',
-            name: 'RNS Testnet BetweenTheBorders',
+            id: 'rns-testnet-amsterdam',
+            name: 'RNS Testnet Amsterdam',
             type: 'tcp',
             enabled: false,
             status: 'down',
-            host: 'betweentheborders.com',
-            port: 4242,
+            host: 'amsterdam.connect.reticulum.network',
+            port: 4965,
             mode: 'boundary',
           },
         ]}
@@ -1220,40 +1314,31 @@ describe('ReticulumInterfacesPanel', () => {
       await screen.findByText('connectionPanel.reticulumInterfaces.decommissionedHubEnableBlocked'),
     ).toBeInTheDocument();
     expect(proxyPost).not.toHaveBeenCalledWith(
-      '/api/v1/interfaces/rns-testnet-betweentheborders/enable',
+      '/api/v1/interfaces/rns-testnet-amsterdam/enable',
       expect.anything(),
     );
   });
 
-  it('disables decommissioned hubs and adds missing backbone presets', async () => {
+  it('disables decommissioned hubs and adds selected Primary & Global presets', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });
     const proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPost = proxyPost;
     window.electronAPI.reticulum.proxyPut = proxyPut;
+    const primary = RETICULUM_DEFAULT_HUB_PRESETS.filter((p) => p.region === 'primary_global');
 
     render(
       <ReticulumInterfacesPanel
         {...defaultProps}
         interfaces={[
           {
-            id: 'dublin',
-            name: 'Custom Dublin',
+            id: 'ams',
+            name: 'RNS Testnet Amsterdam',
             type: 'tcp',
             enabled: true,
             status: 'down',
-            host: 'dublin.connect.reticulum.network',
+            host: 'amsterdam.connect.reticulum.network',
             port: 4965,
-            mode: 'boundary',
-          },
-          {
-            id: 'btb',
-            name: 'RNS Testnet BetweenTheBorders',
-            type: 'tcp',
-            enabled: true,
-            status: 'down',
-            host: 'reticulum.betweentheborders.com',
-            port: 4242,
             mode: 'boundary',
           },
           {
@@ -1266,15 +1351,6 @@ describe('ReticulumInterfacesPanel', () => {
             port: 4965,
             mode: 'boundary',
           },
-          {
-            id: 'i2p',
-            name: 'RNS I2P Hub A',
-            type: 'i2p',
-            enabled: false,
-            status: 'down',
-            host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
-            mode: 'boundary',
-          },
         ]}
       />,
     );
@@ -1284,13 +1360,17 @@ describe('ReticulumInterfacesPanel', () => {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
       }),
     );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
+      }),
+    );
 
     await waitFor(() => {
-      expect(proxyPut).toHaveBeenCalledTimes(2);
-      expect(proxyPost).toHaveBeenCalledTimes(3);
+      expect(proxyPut).toHaveBeenCalledTimes(1);
+      expect(proxyPost).toHaveBeenCalledTimes(primary.length);
     });
-    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/dublin', { enabled: false });
-    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/btb', { enabled: false });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/ams', { enabled: false });
     expect(defaultProps.onRefresh).toHaveBeenCalled();
   });
 
@@ -1308,7 +1388,7 @@ describe('ReticulumInterfacesPanel', () => {
         onRefresh={onRefresh}
         interfaces={RETICULUM_DEFAULT_HUB_PRESETS.map((preset, index) => ({
           id: `hub-${index}`,
-          name: index === 0 ? 'Wrong US East Name' : preset.name,
+          name: preset.id === 'dublin-mainnet' ? 'Wrong Dublin Name' : preset.name,
           type: preset.type,
           enabled: false,
           status: 'down',
@@ -1324,6 +1404,11 @@ describe('ReticulumInterfacesPanel', () => {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
       }),
     );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
+      }),
+    );
 
     await waitFor(() => {
       expect(proxyPut).toHaveBeenCalledTimes(1);
@@ -1332,7 +1417,7 @@ describe('ReticulumInterfacesPanel', () => {
     expect(onRefresh).toHaveBeenCalled();
   });
 
-  it('does nothing when all default hubs are fully configured', async () => {
+  it('does nothing when selected default hubs are fully configured', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });
     const proxyPut = vi.fn().mockResolvedValue({ ok: true });
@@ -1362,6 +1447,11 @@ describe('ReticulumInterfacesPanel', () => {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
       }),
     );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
+      }),
+    );
 
     expect(proxyPost).not.toHaveBeenCalled();
     expect(proxyPut).not.toHaveBeenCalled();
@@ -1380,12 +1470,12 @@ describe('ReticulumInterfacesPanel', () => {
         {...defaultProps}
         interfaces={[
           {
-            id: 'us-east',
-            name: 'Custom US East',
+            id: 'dublin',
+            name: 'Custom Dublin',
             type: 'tcp',
             enabled: false,
             status: 'down',
-            host: '45.77.109.86',
+            host: 'dublin.connect.reticulum.network',
             port: 4965,
           },
         ]}
@@ -1395,6 +1485,11 @@ describe('ReticulumInterfacesPanel', () => {
     await user.click(
       screen.getByRole('button', {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
       }),
     );
 
@@ -1428,6 +1523,11 @@ describe('ReticulumInterfacesPanel', () => {
     await user.click(
       screen.getByRole('button', {
         name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria',
       }),
     );
 

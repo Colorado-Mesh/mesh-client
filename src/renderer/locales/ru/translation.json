@@ -1129,7 +1129,26 @@
       "advancedKeyReserved": "Ключ \"{{key}}\" является известным полем и был проигнорирован — используйте форму выше.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм",
       "decommissionedHubEnableBlocked": "Этот концентратор выведен из эксплуатации и не может оставаться включенным — mesh-client отключает его при каждом запуске стека. Используйте Add default network hubs (Добавить сетевые концентраторы по умолчанию) или backbone directory (Магистральный каталог) для активных конечных точек.",
-      "decommissionedBadge": "выведена из эксплуатации"
+      "decommissionedBadge": "выведена из эксплуатации",
+      "defaultHubsPickerTitle": "Добавить сетевые концентраторы по умолчанию",
+      "defaultHubsPickerHint": "Большинство людей добавляют Primary & Global Backbone plus hubs в своем регионе. Новые концентраторы отключены, поэтому вы можете проверить их перед включением.",
+      "defaultHubsPickerConfirm": "Добавить {{count}} концентраторов",
+      "defaultHubsPickerConfirmSync": "Синхронизация выбрана",
+      "defaultHubsPickerConfirmAria": "Добавление или синхронизация {{count}} выбранных концентраторов по умолчанию",
+      "defaultHubAlreadyAdded": "Уже добавлено",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Первичная и глобальная магистраль",
+        "north_america": "Северной Америки",
+        "europe": "Страны Европы",
+        "asia_oceania": "Азия и Океания",
+        "specialty": "Специализированные продукты"
+      },
+      "backboneEnableGuidance": "Вы должны включить не более 1-3 магистральных шлюзов (2, как правило, является предпочтительным местом для резервирования). Стремитесь к 1 глобальной, 1–2 региональным и специальности только по мере необходимости.",
+      "backboneEnableTooMany": "У вас включена {{count}} магистраль по умолчанию. Подумайте о том, чтобы отключить дополнительные услуги и оставить около 2 для резервирования.",
+      "interfaceListGroup": {
+        "user_defined": "Пользовательское"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

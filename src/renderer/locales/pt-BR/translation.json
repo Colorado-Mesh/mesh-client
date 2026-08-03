@@ -1127,7 +1127,26 @@
       "advancedKeyReserved": "A chave \"{{key}}\" é um campo conhecido e foi ignorado — use o formulário acima.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Este hub está desativado e não pode permanecer ativado — o mesh-client o desliga em todas as partidas de pilha. Use Adicionar hubs de rede padrão ou o diretório de backbone para pontos de extremidade ativos.",
-      "decommissionedBadge": "DESCOMISSIONADO"
+      "decommissionedBadge": "DESCOMISSIONADO",
+      "defaultHubsPickerTitle": "Adicionar hubs de rede padrão",
+      "defaultHubsPickerHint": "A maioria das pessoas adiciona o Backbone Primário e Global mais hubs em sua região. Novos hubs são adicionados desativados para que você possa revisar antes de ativar.",
+      "defaultHubsPickerConfirm": "Adicionar centros {{count}}",
+      "defaultHubsPickerConfirmSync": "Sincronizar selecionados",
+      "defaultHubsPickerConfirmAria": "Adicionar ou sincronizar {{count}} hubs padrão selecionados",
+      "defaultHubAlreadyAdded": "já adicionado.",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Backbone Primário e Global",
+        "north_america": "América do Norte",
+        "europe": "Europa",
+        "asia_oceania": "Ásia e Oceania",
+        "specialty": "Especialidade"
+      },
+      "backboneEnableGuidance": "Você deve habilitar de 1 a 3 gateways de backbone no máximo (2 geralmente é o ponto ideal para redundância). Apontar para 1 global, 1–2 regional e Especialidade apenas conforme necessário.",
+      "backboneEnableTooMany": "Você tem {{count}} backbones padrão ativados. Considere desativar extras e manter cerca de 2 para redundância.",
+      "interfaceListGroup": {
+        "user_defined": "Usuário definido"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

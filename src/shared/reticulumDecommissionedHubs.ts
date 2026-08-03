@@ -15,19 +15,9 @@ export interface ReticulumDecommissionedHubEndpoint {
 export const RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS: readonly ReticulumDecommissionedHubEndpoint[] =
   [
     {
-      id: 'decommissioned-dublin',
-      hosts: ['dublin.connect.reticulum.network'],
-      port: 4965,
-    },
-    {
       id: 'decommissioned-amsterdam',
       hosts: ['amsterdam.connect.reticulum.network'],
       port: 4965,
-    },
-    {
-      id: 'decommissioned-betweentheborders',
-      hosts: ['reticulum.betweentheborders.com', 'betweentheborders.com'],
-      port: 4242,
     },
   ];
 

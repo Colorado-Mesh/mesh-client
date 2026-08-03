@@ -1128,7 +1128,26 @@
       "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář.",
       "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
       "decommissionedHubEnableBlocked": "Tento hub je vyřazen z provozu a nemůže zůstat zapnutý — mesh-client jej vypne při každém spuštění zásobníku. Použijte Přidat výchozí síťové huby nebo páteřní adresář pro živé koncové body.",
-      "decommissionedBadge": "vyřazeno z provozu"
+      "decommissionedBadge": "vyřazeno z provozu",
+      "defaultHubsPickerTitle": "Přidat výchozí síťová rozbočovače",
+      "defaultHubsPickerHint": "Většina lidí ve svém regionu přidává primární a globální páteřní centra plus. Nová centra jsou přidána deaktivována, takže si je můžete před povolením prohlédnout.",
+      "defaultHubsPickerConfirm": "Přidat {{count}} rozbočovače",
+      "defaultHubsPickerConfirmSync": "Synchronizace vybrána",
+      "defaultHubsPickerConfirmAria": "Přidat nebo synchronizovat {{count}} vybraná výchozí rozbočovače",
+      "defaultHubAlreadyAdded": "(je již přidán)",
+      "defaultHubPresetAria": "{{name}}, {{endpoint}}",
+      "defaultHubRegion": {
+        "primary_global": "Primární a globální páteř",
+        "north_america": "Severní Amerika",
+        "europe": "Evropa",
+        "asia_oceania": "Asie/ Oceánie",
+        "specialty": "obory lékařské"
+      },
+      "backboneEnableGuidance": "Měli byste povolit maximálně 1 až 3 páteřní brány (2 jsou obecně vhodným místem pro redundanci). Zaměřte se na 1 globální, 1–2 regionální a specializaci pouze podle potřeby.",
+      "backboneEnableTooMany": "Máte zapnutou výchozí páteř {{count}}. Zvažte vypnutí doplňků a ponechání asi 2 pro nadbytečnost.",
+      "interfaceListGroup": {
+        "user_defined": "Definováno uživatelem"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
