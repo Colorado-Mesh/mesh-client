@@ -2482,8 +2482,12 @@ export function useMeshtasticRuntime() {
       // Gesture-based Linux connects (e.g. ConnectionPanel's Reconnect button) may call
       // prepareRfConnect without a peripheralId; backfill it here so a later automatic
       // reconnect does not fall back to a gesture-requiring requestDevice() call.
+      // Generation-gated: a superseded attempt (newer prepareRfConnect already bumped
+      // reconnectGenerationRef and replaced connectionParamsRef.current) must not stamp
+      // its resolved device id onto a different, newer session's params.
       if (
         type === 'ble' &&
+        reconnectGenerationRef.current === generation &&
         connectionParamsRef.current &&
         !connectionParamsRef.current.blePeripheralId
       ) {

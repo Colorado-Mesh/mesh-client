@@ -22,6 +22,10 @@ describe('meshtasticTransportLossDetection', () => {
     expect(isMeshtasticTransportLostError(new Error('Not connected'))).toBe(true);
   });
 
+  it('does not treat an already-open port as transport loss', () => {
+    expect(isMeshtasticTransportLostError(new Error('Port is open'))).toBe(false);
+  });
+
   it('detects native Chromium GATT server disconnected NetworkError', () => {
     const err = new DOMException(
       "GATT Server is disconnected. Cannot perform GATT operations. (Re)connect first with 'device.gatt.connect'.",
