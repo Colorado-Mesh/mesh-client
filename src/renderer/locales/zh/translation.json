@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "禁用未使用的TCP集线器（连接→接口） —路径表流失的最大杠杆。",
         "announceBusPressureTipShareInstance": "如果其他本地Reticulum应用程序正在与此堆栈竞争，请关闭共享实例。",
         "announceBusPressureTipAnnounceInterval": "网络通告间隔仅控制此节点的出站通告—它不会停止入站路径响应泛洪。",
-        "announceBusPressureTipWait": "追赶已激活；此警告在大约5分钟后清除，没有滞后、暴风雨或溢出。"
+        "announceBusPressureTipWait": "追赶已激活；此警告在大约5分钟后清除，没有滞后、暴风雨或溢出。",
+        "announceBusPressureHot": "高公告/路径响应率可能会延迟入站LXMF聊天的交付—最近的路径更新是通过“{{hotInterface}}”",
+        "announceBusPressureTipHotInterface": "路径表流失集中在接口“{{name}}”上。",
+        "announceBusPressureTipBoundaryHubs": "已启用边界/骨干集线器： {{hubs}}。",
+        "announceBusPressureTipTxSaturated": "TX队列丢弃时间： {{names}} —该接口可能已饱和。",
+        "tooManyDefaultBackbones": "您已启用{{count}}默认骨干网。请考虑禁用额外功能，并保留约2个以备不时之需。",
+        "decommissionedHubEnabled": "停用的集线器“{{name}}”仍处于启用状态—mesh-client在每次堆栈启动时将其关闭。使用添加默认主干或实时终结点的主干目录。"
       }
     },
     "routingPort": {

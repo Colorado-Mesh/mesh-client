@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "未使用のTCPハブ（接続→インターフェース）を無効にします。これは、パステーブルチャーンの最大のレバーです。",
         "announceBusPressureTipShareInstance": "他のローカルReticulumアプリがこのスタックと競合している場合は、共有インスタンスをオフにします。",
         "announceBusPressureTipAnnounceInterval": "ネットワークアナウンス間隔は、このノードのアウトバウンドアナウンスのみを制御します。インバウンドパス応答フラッドは停止しません。",
-        "announceBusPressureTipWait": "キャッチアップはすでに有効になっています。この警告は、約5分後にラグ、嵐、またはオーバーフローなしでクリアされます。"
+        "announceBusPressureTipWait": "キャッチアップはすでに有効になっています。この警告は、約5分後にラグ、嵐、またはオーバーフローなしでクリアされます。",
+        "announceBusPressureHot": "アナウンス率/パス応答率が高いと、着信LXMFチャットの配信が遅れる可能性があります。最新のパスの更新は「{{hotInterface}}」を介して行われます",
+        "announceBusPressureTipHotInterface": "パステーブルチャーンは、インターフェース「{{name}}」に集中しています。",
+        "announceBusPressureTipBoundaryHubs": "境界/バックボーンハブを有効にしました： {{hubs}}。",
+        "announceBusPressureTipTxSaturated": "TXキューは次の日付にドロップします： {{names}} —そのインターフェイスが飽和している可能性があります。",
+        "tooManyDefaultBackbones": "{{count}}デフォルトのバックボーンが有効になっています。余分なものを無効にし、冗長性を保つために約2つを保管することを検討してください。",
+        "decommissionedHubEnabled": "廃止されたハブ「{{name}}」は引き続き有効です—mesh-clientはスタックの開始ごとにオフにします。ライブエンドポイントのデフォルトのバックボーンまたはバックボーンディレクトリの追加を使用します。"
       }
     },
     "routingPort": {

@@ -1644,7 +1644,13 @@
         "announceBusPressureTipDisableHubs": "Zakázat nepoužívané rozbočovače TCP (Connection → Interfaces) — největší páka pro otočení traťového stolu.",
         "announceBusPressureTipShareInstance": "Vypněte možnost Sdílet instanci, pokud s tímto zásobníkem bojují jiné místní aplikace Reticulum.",
         "announceBusPressureTipAnnounceInterval": "Interval oznamování sítě řídí pouze odchozí oznámení tohoto uzlu — nezastaví příchozí zaplavení cesty a odezvy.",
-        "announceBusPressureTipWait": "Dohánění je již aktivní; toto varování se po asi 5 minutách vymaže, aniž by došlo ke zpoždění, bouři nebo přetečení."
+        "announceBusPressureTipWait": "Dohánění je již aktivní; toto varování se po asi 5 minutách vymaže, aniž by došlo ke zpoždění, bouři nebo přetečení.",
+        "announceBusPressureHot": "Vysoká míra odezvy na oznámení/cestu může zpozdit příchozí doručení chatu LXMF — nejnovější aktualizace cesty jsou prostřednictvím „{{hotInterface}}“",
+        "announceBusPressureTipHotInterface": "Cesta-tabulka churn je soustředěna na rozhraní \"{{name}}\".",
+        "announceBusPressureTipBoundaryHubs": "Povolené hraniční / páteřní rozbočovače: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "Fronta TX klesá na: {{names}} — toto rozhraní může být nasycené.",
+        "tooManyDefaultBackbones": "Máte zapnutou výchozí páteř {{count}}. Zvažte vypnutí doplňků a ponechání asi 2 pro nadbytečnost.",
+        "decommissionedHubEnabled": "Vyřazený rozbočovač „{{name}}“ je stále povolen — mesh-client jej vypne při každém spuštění zásobníku. Použijte Přidat výchozí páteř nebo páteřní adresář pro živé koncové body."
       }
     },
     "routingPort": {

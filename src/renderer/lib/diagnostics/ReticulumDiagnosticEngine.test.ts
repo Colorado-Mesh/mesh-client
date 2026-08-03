@@ -640,6 +640,214 @@ describe('ReticulumDiagnosticEngine', () => {
     }
   });
 
+  it('flags too-many-default-backbones when more than 3 default presets are enabled', () => {
+    const hubs = [
+      {
+        id: '1',
+        name: 'Dublin',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'dublin.connect.reticulum.network',
+        port: 4965,
+        mode: 'boundary',
+      },
+      {
+        id: '2',
+        name: 'BTB',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'reticulum.betweentheborders.com',
+        port: 4242,
+        mode: 'boundary',
+      },
+      {
+        id: '3',
+        name: 'RMAP',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'rmap.world',
+        port: 4242,
+        mode: 'boundary',
+      },
+      {
+        id: '4',
+        name: 'Simply',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'rns.simplyequipped.com',
+        port: 4242,
+        mode: 'boundary',
+      },
+    ];
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 4, peer_count: 10 },
+      { interfaces: hubs },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/too-many-default-backbones',
+    );
+    expect(row).toBeDefined();
+    expect(row?.severity).toBe('warning');
+    expect(row?.causeI18n?.params?.count).toBe('4');
+    expect(row?.reticulumRepairKind).toBe('open_interfaces');
+  });
+
+  it('does not flag too-many-default-backbones at 3 or fewer', () => {
+    const hubs = [
+      {
+        id: '1',
+        name: 'Dublin',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'dublin.connect.reticulum.network',
+        port: 4965,
+      },
+      {
+        id: '2',
+        name: 'BTB',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'reticulum.betweentheborders.com',
+        port: 4242,
+      },
+      {
+        id: '3',
+        name: 'RMAP',
+        type: 'tcp',
+        enabled: true,
+        status: 'up',
+        host: 'rmap.world',
+        port: 4242,
+      },
+    ];
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 3, peer_count: 10 },
+      { interfaces: hubs },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/too-many-default-backbones'),
+    ).toBe(false);
+  });
+
+  it('flags enabled decommissioned hub', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        interfaces: [
+          {
+            id: 'ams',
+            name: 'Amsterdam',
+            type: 'tcp',
+            enabled: true,
+            status: 'down',
+            host: 'amsterdam.connect.reticulum.network',
+            port: 4965,
+          },
+        ],
+      },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/decommissioned-hub-enabled',
+    );
+    expect(row).toBeDefined();
+    expect(row?.reticulumInterfaceId).toBe('ams');
+    expect(row?.reticulumRepairKind).toBe('disable');
+    expect(row?.causeI18n?.params?.name).toBe('Amsterdam');
+  });
+
+  it('does not flag disabled decommissioned hub', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        interfaces: [
+          {
+            id: 'ams',
+            name: 'Amsterdam',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'amsterdam.connect.reticulum.network',
+            port: 4965,
+          },
+        ],
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/decommissioned-hub-enabled'),
+    ).toBe(false);
+  });
+
+  it('attributes announce-bus-pressure with hot interface and boundary hubs', () => {
+    const now = 1_700_000_000_000;
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(now);
+      const rows = buildReticulumDiagnosticRows(
+        { rns_ready: true, lxmf_ready: true, interface_count: 2, peer_count: 100 },
+        {
+          inboundLxmf: {
+            lastEventsLaggedAt: now - 10_000,
+            lastEventsLaggedSkipped: 12,
+            lastInboundCatchUpAt: null,
+            lastInboundCatchUpCount: null,
+            inboundCatchUpWatermarkTs: null,
+            lastInboundRingLen: null,
+          },
+          hotPeerInterface: 'RNS Dublin Mainnet',
+          interfaces: [
+            {
+              id: '1',
+              name: 'RNS Dublin Mainnet',
+              type: 'tcp',
+              enabled: true,
+              status: 'up',
+              host: 'dublin.connect.reticulum.network',
+              port: 4965,
+              mode: 'boundary',
+            },
+            {
+              id: '2',
+              name: 'Local RNode',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              mode: 'access_point',
+            },
+          ],
+          interfaceIssueAlert: {
+            lastAtMs: now,
+            tcpConnectFailed: [],
+            txQueueDrops: [{ name: 'RNS Dublin Mainnet', dropCount: 3 }],
+            bleBondRemoved: [],
+            blePairingTimedOut: [],
+            linkDeliveryTimeouts: [],
+            transportSaturatedCount: 0,
+            slowTransportQueryCount: 0,
+            suppressedCount: 0,
+          },
+        },
+      );
+      const row = rows.find(
+        (r): r is RfDiagnosticRow =>
+          r.kind === 'rf' && r.condition === 'reticulum/announce-bus-pressure',
+      );
+      expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.announceBusPressureHot');
+      expect(row?.causeI18n?.params?.hotInterface).toBe('RNS Dublin Mainnet');
+      expect(row?.causeI18n?.params?.boundaryHubs).toBe('RNS Dublin Mainnet');
+      expect(row?.causeI18n?.params?.txSaturatedIfaces).toBe('RNS Dublin Mainnet');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('mergeReticulumDiagnosticRows replaces prior reticulum rows', () => {
     const merged = mergeReticulumDiagnosticRows(
       [

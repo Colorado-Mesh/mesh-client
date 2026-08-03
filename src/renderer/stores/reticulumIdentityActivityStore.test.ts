@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { parseAnnounceActivityRows } from './reticulumIdentityActivityStore';
+import {
+  parseAnnounceActivityRows,
+  resetReticulumIdentityActivityBatchForTests,
+  setReticulumAnnounceBusPressureActive,
+  useReticulumIdentityActivityStore,
+} from './reticulumIdentityActivityStore';
 
 describe('parseAnnounceActivityRows', () => {
   it('parses single aspect announce payload', () => {
@@ -38,5 +43,65 @@ describe('parseAnnounceActivityRows', () => {
     });
     expect(rows).toHaveLength(2);
     expect(rows.map((r) => r.destination_hash)).toEqual(['aaa', 'bbb']);
+  });
+});
+
+describe('announce-bus pressure activity gate', () => {
+  afterEach(() => {
+    resetReticulumIdentityActivityBatchForTests();
+    vi.unstubAllGlobals();
+  });
+
+  it('skips unknown-aspect SQLite upsert while pressure is active', async () => {
+    vi.useFakeTimers();
+    const upsertBatch = vi.fn().mockResolvedValue(undefined);
+    const upsertOne = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('window', {
+      electronAPI: {
+        db: {
+          upsertReticulumIdentityActivityBatch: upsertBatch,
+          upsertReticulumIdentityActivity: upsertOne,
+        },
+      },
+    });
+    try {
+      setReticulumAnnounceBusPressureActive(true);
+      await useReticulumIdentityActivityStore.getState().upsertActivity({
+        destination_hash: 'deadbeef',
+        aspect: 'unknown',
+        last_seen: Date.now(),
+      });
+      await vi.advanceTimersByTimeAsync(600);
+      expect(upsertBatch).not.toHaveBeenCalled();
+      expect(upsertOne).not.toHaveBeenCalled();
+      expect(useReticulumIdentityActivityStore.getState().getActivity('deadbeef')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('still queues named-aspect activity while pressure is active', async () => {
+    vi.useFakeTimers();
+    const upsertBatch = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('window', {
+      electronAPI: {
+        db: {
+          upsertReticulumIdentityActivityBatch: upsertBatch,
+          upsertReticulumIdentityActivity: vi.fn(),
+        },
+      },
+    });
+    try {
+      setReticulumAnnounceBusPressureActive(true);
+      await useReticulumIdentityActivityStore.getState().upsertActivity({
+        destination_hash: 'cafebabe',
+        aspect: 'lxmf.delivery',
+        last_seen: Date.now(),
+      });
+      await vi.advanceTimersByTimeAsync(600);
+      expect(upsertBatch).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

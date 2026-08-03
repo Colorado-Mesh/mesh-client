@@ -262,6 +262,30 @@ export function ReticulumDiagnosticsSection({
                             {row.causeI18n ? translateReticulumDiagnosticCause(t, row) : row.cause}
                             {row.condition === 'reticulum/announce-bus-pressure' ? (
                               <ul className="text-muted mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] font-normal text-gray-400">
+                                {typeof row.causeI18n?.params?.hotInterface === 'string' ? (
+                                  <li>
+                                    {t(
+                                      'diagnosticsPanel.reticulum.runtime.announceBusPressureTipHotInterface',
+                                      { name: row.causeI18n.params.hotInterface },
+                                    )}
+                                  </li>
+                                ) : null}
+                                {typeof row.causeI18n?.params?.boundaryHubs === 'string' ? (
+                                  <li>
+                                    {t(
+                                      'diagnosticsPanel.reticulum.runtime.announceBusPressureTipBoundaryHubs',
+                                      { hubs: row.causeI18n.params.boundaryHubs },
+                                    )}
+                                  </li>
+                                ) : null}
+                                {typeof row.causeI18n?.params?.txSaturatedIfaces === 'string' ? (
+                                  <li>
+                                    {t(
+                                      'diagnosticsPanel.reticulum.runtime.announceBusPressureTipTxSaturated',
+                                      { names: row.causeI18n.params.txSaturatedIfaces },
+                                    )}
+                                  </li>
+                                ) : null}
                                 {RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS.map((key) => (
                                   <li key={key}>{t(key)}</li>
                                 ))}

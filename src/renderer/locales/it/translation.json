@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Disabilita gli hub TCP (→interfacce di connessione) inutilizzati, la più grande leva per l'abbandono della tabella di percorso.",
         "announceBusPressureTipShareInstance": "Disattiva l'istanza di condivisione se altre app Reticulum locali sono in conflitto con questo stack.",
         "announceBusPressureTipAnnounceInterval": "L'intervallo di annuncio della rete controlla solo gli annunci in uscita di questo nodo: non arresta le inondazioni di risposta al percorso in entrata.",
-        "announceBusPressureTipWait": "Il recupero è già attivo; questo avviso scompare dopo circa 5 minuti senza ritardi, tempeste o traboccamenti."
+        "announceBusPressureTipWait": "Il recupero è già attivo; questo avviso scompare dopo circa 5 minuti senza ritardi, tempeste o traboccamenti.",
+        "announceBusPressureHot": "Un alto tasso di annuncio/risposta al percorso può ritardare la consegna della chat LXMF in entrata — gli aggiornamenti del percorso più recenti sono tramite \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "L'abbandono della tabella dei percorsi si concentra sull'interfaccia \"{{name}}\".",
+        "announceBusPressureTipBoundaryHubs": "Hub di confine / backbone abilitati: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "La coda TX cade su: {{names}} — l'interfaccia potrebbe essere satura.",
+        "tooManyDefaultBackbones": "Hai {{count}} dorsali predefinite abilitate. Prendi in considerazione la possibilità di disabilitare gli extra e di tenerne circa 2 per ridondanza.",
+        "decommissionedHubEnabled": "L'hub dismesso \"{{name}}\" è ancora abilitato: mesh-client lo disattiva a ogni avvio dello stack. Utilizzare Aggiungi backbone predefiniti o la directory backbone per gli endpoint live."
       }
     },
     "routingPort": {

@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Schakel ongebruikte TCP-hubs (Connection → Interfaces) uit — de grootste hendel voor het churn van de path-table.",
         "announceBusPressureTipShareInstance": "Schakel instantie delen uit als andere lokale Reticulum-apps met deze stapel te maken hebben.",
         "announceBusPressureTipAnnounceInterval": "Netwerkaankondigingsinterval regelt alleen de uitgaande aankondigingen van dit knooppunt — het stopt inkomende padresponsoverstromingen niet.",
-        "announceBusPressureTipWait": "Inhalen is al actief; deze waarschuwing verdwijnt na ongeveer 5 minuten zonder vertraging, storm of overloop."
+        "announceBusPressureTipWait": "Inhalen is al actief; deze waarschuwing verdwijnt na ongeveer 5 minuten zonder vertraging, storm of overloop.",
+        "announceBusPressureHot": "Hoog aankondigings-/padresponspercentage kan inkomende LXMF-chatbezorging vertragen — de meest recente padupdates zijn via \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "Path-table churn is geconcentreerd op interface \"{{name}}\".",
+        "announceBusPressureTipBoundaryHubs": "Ingeschakelde grens- / ruggengraathubs: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "TX-wachtrij valt op: {{names}} — die interface kan verzadigd zijn.",
+        "tooManyDefaultBackbones": "Je hebt {{count}} standaard backbones ingeschakeld. Overweeg om extra's uit te schakelen en er ongeveer 2 te houden voor redundantie.",
+        "decommissionedHubEnabled": "De ontmantelde hub \"{{name}}\" is nog steeds ingeschakeld — mesh-client schakelt deze uit bij elke start van de stapel. Gebruik Standaard backbones toevoegen of de backbone-directory voor live eindpunten."
       }
     },
     "routingPort": {

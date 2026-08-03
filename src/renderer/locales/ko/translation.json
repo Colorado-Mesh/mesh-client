@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "사용되지 않는 TCP 허브 (연결 → 인터페이스) 를 비활성화합니다. 이는 경로 테이블 이탈을 위한 가장 큰 레버입니다.",
         "announceBusPressureTipShareInstance": "다른 로컬 Reticulum 앱이 이 스택과 경쟁하는 경우 인스턴스 공유를 끄십시오.",
         "announceBusPressureTipAnnounceInterval": "네트워크 알림 간격은 이 노드의 아웃바운드 알림만 제어하며 인바운드 경로 응답 플러드를 중지하지 않습니다.",
-        "announceBusPressureTipWait": "따라잡기가 이미 활성화되어 있습니다. 이 경고는 지연, 폭풍 또는 오버플로 없이 약 5분 후에 지워집니다."
+        "announceBusPressureTipWait": "따라잡기가 이미 활성화되어 있습니다. 이 경고는 지연, 폭풍 또는 오버플로 없이 약 5분 후에 지워집니다.",
+        "announceBusPressureHot": "높은 발표/경로 응답률로 인해 인바운드 LXMF 채팅 전송이 지연될 수 있습니다. 최근 경로 업데이트는 \"{{hotInterface}}\" 을 (를) 통해 이루어집니다.",
+        "announceBusPressureTipHotInterface": "경로 테이블 이탈은 인터페이스 \"{{name}}\" 에 집중되어 있습니다.",
+        "announceBusPressureTipBoundaryHubs": "활성화된 경계/백본 허브: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "TX 대기열 드롭: {{names}} — 해당 인터페이스가 포화 상태일 수 있습니다.",
+        "tooManyDefaultBackbones": "기본 백본이 {{count}} 개 활성화되어 있습니다. 엑스트라를 비활성화하고 이중화를 위해 약 2 개를 유지하는 것이 좋습니다.",
+        "decommissionedHubEnabled": "해체된 허브 \"{{name}}\" 가 여전히 활성화되어 있습니다 — mesh-client는 모든 스택 시작 시 이를 끕니다. 라이브 엔드포인트에 기본 백본 추가 또는 백본 디렉토리를 사용합니다."
       }
     },
     "routingPort": {
