@@ -1123,7 +1123,6 @@
       "decommissionedHubEnableBlocked": "Deze hub wordt buiten gebruik gesteld en kan niet ingeschakeld blijven — mesh-client schakelt het uit bij elke start van de stapel. Gebruik Add default network hubs of de backbone directory for live endpoints.",
       "decommissionedBadge": "ontmanteld",
       "defaultHubsPickerTitle": "Standaard netwerkhubs toevoegen",
-      "defaultHubsPickerHint": "De meeste mensen voegen primaire en wereldwijde backbone plus-hubs toe in hun regio. Nieuwe hubs zijn uitgeschakeld toegevoegd, zodat je ze kunt bekijken voordat je ze inschakelt.",
       "defaultHubsPickerConfirm": "Voeg {{count}} hubs toe",
       "defaultHubsPickerConfirmSync": "Geselecteerde synchronisatie",
       "defaultHubsPickerConfirmAria": "{{count}} geselecteerde standaard hubs toevoegen of synchroniseren",
@@ -1136,7 +1135,6 @@
         "asia_oceania": "Azië/ Oceanië",
         "specialty": "Specialiteit"
       },
-      "backboneEnableGuidance": "U moet maximaal 1 tot 3 backbone-gateways inschakelen (2 is over het algemeen de sweet spot voor redundantie). Streef alleen naar 1 wereldwijde, 1–2 regionale en Specialiteit als dat nodig is.",
       "backboneEnableTooMany": "Je hebt {{count}} standaard backbones ingeschakeld. Overweeg om extra's uit te schakelen en er ongeveer 2 te houden voor redundantie.",
       "interfaceListGroup": {
         "user_defined": "Gebruiker-gedefinieerd"
@@ -1158,7 +1156,10 @@
       "addDefaultHubs": "Standaard backbones toevoegen",
       "addDefaultHubsAria": "Kies regionale Reticulum-backbones om toe te voegen en synchroniseer vervolgens geselecteerde voorinstellingen",
       "addDefaultHubsAllPresent": "Geselecteerde backbones zijn al geconfigureerd; er zijn geen ontmantelde testnet-hubs ingeschakeld.",
-      "addDefaultHubsFailed": "Kan standaard backbones niet toevoegen."
+      "addDefaultHubsFailed": "Kan standaard backbones niet toevoegen.",
+      "backboneEnableGuidanceLead": "Maximaal 1 tot 3 backbone-gateways inschakelen",
+      "backboneEnableGuidanceBody": "—2 is de sweet spot voor redundantie zonder onnodig opzwellen van bandbreedte. Streef naar 1 wereldwijde hub en 1 regionale gateway en schakel zo nodig strikt speciale interfaces in (zoals I2P of Yggdrasil). Lokaal verbonden RNodes en lokale LAN-interfaces tellen niet mee voor deze backbone-limiet.",
+      "defaultHubsPickerHint": "Begin met Primair & Globaal plus uw regio. Schakel maximaal 1 tot 3 backbone-gateways in (2 is de sweet spot). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe vermeldingen zijn uitgeschakeld toegevoegd, zodat u ze kunt bekijken voordat u ze inschakelt. Sync schakelt ook de resterende buiten gebruik gestelde officiële testnet-hubs (Amsterdam) uit."
     },
     "reticulumPeers": {
       "hops": "Hops",

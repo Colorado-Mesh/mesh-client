@@ -1124,7 +1124,6 @@
       "decommissionedHubEnableBlocked": "Hub ini dinonaktifkan dan tidak dapat tetap diaktifkan — mesh-client mematikannya pada setiap awal stack. Gunakan Tambahkan hub jaringan default atau direktori backbone untuk endpoint langsung.",
       "decommissionedBadge": "dinonaktifkan",
       "defaultHubsPickerTitle": "Tambahkan hub jaringan default",
-      "defaultHubsPickerHint": "Kebanyakan orang menambahkan hub Primary & Global Backbone plus di wilayah mereka. Hub baru ditambahkan dinonaktifkan sehingga Anda dapat meninjau sebelum mengaktifkan.",
       "defaultHubsPickerConfirm": "Tambahkan hub {{count}}",
       "defaultHubsPickerConfirmSync": "Sinkronkan Dipilih",
       "defaultHubsPickerConfirmAria": "Tambahkan atau sinkronkan {{count}} hub default yang dipilih",
@@ -1137,7 +1136,6 @@
         "asia_oceania": "Asia & Oseania",
         "specialty": "Spesialisasi"
       },
-      "backboneEnableGuidance": "Anda harus mengaktifkan 1 hingga 3 gerbang backbone paling banyak (2 umumnya merupakan sweet spot untuk redundansi). Bertujuan untuk 1 global, 1 -2 regional, dan Spesialisasi hanya sesuai kebutuhan.",
       "backboneEnableTooMany": "Anda telah mengaktifkan {{count}} tulang punggung default. Pertimbangkan untuk menonaktifkan ekstra dan menyimpan sekitar 2 untuk redundansi.",
       "interfaceListGroup": {
         "user_defined": "Pilihan Pengguna"
@@ -1159,7 +1157,10 @@
       "addDefaultHubs": "Tambahkan tulang punggung default",
       "addDefaultHubsAria": "Pilih tulang punggung Reticulum regional untuk ditambahkan, lalu sinkronkan preset yang dipilih",
       "addDefaultHubsAllPresent": "Tulang punggung yang dipilih sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan.",
-      "addDefaultHubsFailed": "Gagal menambahkan tulang punggung default."
+      "addDefaultHubsFailed": "Gagal menambahkan tulang punggung default.",
+      "backboneEnableGuidanceLead": "Aktifkan 1 hingga 3 gateway backbone paling banyak",
+      "backboneEnableGuidanceBody": "—2 adalah sweet spot untuk redundansi tanpa mengasapi bandwidth yang tidak perlu. Bidik 1 hub global dan 1 gateway regional, dan aktifkan antarmuka khusus (seperti I2P atau Yggdrasil) secara ketat sesuai kebutuhan. RNode yang terhubung secara lokal dan antarmuka Lan lokal tidak dihitung dalam batas tulang punggung ini.",
+      "defaultHubsPickerHint": "Mulailah dengan Primary & Global plus wilayah Anda. Aktifkan 1 hingga 3 gerbang backbone paling banyak (2 adalah sweet spot). Antarmuka RNode dan Lan lokal tidak dihitung. Entri baru ditambahkan dinonaktifkan sehingga Anda dapat meninjau sebelum mengaktifkan. Sinkronisasi juga menonaktifkan sisa hub testnet resmi yang dinonaktifkan (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",

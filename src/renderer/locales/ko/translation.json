@@ -1124,7 +1124,6 @@
       "decommissionedHubEnableBlocked": "이 허브는 서비스 종료되어 활성 상태를 유지할 수 없습니다 — mesh-client는 스택을 시작할 때마다 끕니다. 라이브 엔드포인트에는 기본 네트워크 허브 추가 또는 백본 디렉터리를 사용하세요.",
       "decommissionedBadge": "해체됨",
       "defaultHubsPickerTitle": "기본 네트워크 허브 추가",
-      "defaultHubsPickerHint": "대부분의 사람들은 해당 지역에 Primary & Global Backbone PLUS 허브를 추가합니다. 새 허브가 비활성화되어 활성화하기 전에 검토할 수 있습니다.",
       "defaultHubsPickerConfirm": "{{count}} 허브 추가",
       "defaultHubsPickerConfirmSync": "동기화 선택됨",
       "defaultHubsPickerConfirmAria": "선택한 기본 허브 {{count}} 개 추가 또는 동기화",
@@ -1137,7 +1136,6 @@
         "asia_oceania": "아시아주,대양주",
         "specialty": "특별"
       },
-      "backboneEnableGuidance": "최대 1 ~ 3개의 백본 게이트웨이를 활성화해야 합니다 (2는 일반적으로 이중화를 위한 최적의 지점입니다). 필요에 따라 전 세계 1곳, 지역 1 ~ 2곳, 특산품 1곳을 목표로 하세요.",
       "backboneEnableTooMany": "기본 백본이 {{count}} 개 활성화되어 있습니다. 엑스트라를 비활성화하고 이중화를 위해 약 2 개를 유지하는 것이 좋습니다.",
       "interfaceListGroup": {
         "user_defined": "사용자 정의"
@@ -1159,7 +1157,10 @@
       "addDefaultHubs": "기본 백본 추가",
       "addDefaultHubsAria": "추가할 지역 Reticulum 백본을 선택한 다음 선택한 사전 설정을 동기화합니다",
       "addDefaultHubsAllPresent": "선택된 백본이 이미 구성되었습니다. 중단된 테스트넷 허브가 활성화되지 않았습니다.",
-      "addDefaultHubsFailed": "기본 백본을 추가하지 못했습니다."
+      "addDefaultHubsFailed": "기본 백본을 추가하지 못했습니다.",
+      "backboneEnableGuidanceLead": "최대 1 ~ 3개의 백본 게이트웨이 활성화",
+      "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
+      "defaultHubsPickerHint": "Primary & Global + 지역으로 시작하세요. 최대 1 ~ 3 개의 백본 게이트웨이를 활성화하십시오 (2 개가 가장 좋은 지점입니다). 로컬 RNode 및 LAN 인터페이스는 포함되지 않습니다. 새 항목이 비활성화되어 활성화하기 전에 검토할 수 있습니다. 또한 SYNC는 해체된 나머지 공식 테스트넷 허브 (암스테르담) 를 비활성화합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",

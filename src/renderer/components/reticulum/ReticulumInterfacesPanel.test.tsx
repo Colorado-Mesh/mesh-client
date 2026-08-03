@@ -143,7 +143,10 @@ describe('ReticulumInterfacesPanel', () => {
     expect(link).toHaveAttribute('target', '_blank');
     expect(link.closest('summary')).toBeNull();
     expect(
-      screen.getByText('connectionPanel.reticulumInterfaces.backboneEnableGuidance'),
+      screen.getByText('connectionPanel.reticulumInterfaces.backboneEnableGuidanceLead'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('connectionPanel.reticulumInterfaces.addDefaultHubs'),

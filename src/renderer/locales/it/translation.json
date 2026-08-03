@@ -1122,7 +1122,6 @@
       "decommissionedHubEnableBlocked": "Questo hub è disattivato e non può rimanere abilitato — mesh-client lo disattiva a ogni avvio dello stack. Utilizzare Aggiungi hub di rete predefiniti o la directory backbone per gli endpoint live.",
       "decommissionedBadge": "Dismesso",
       "defaultHubsPickerTitle": "Aggiungi hub di rete predefiniti",
-      "defaultHubsPickerHint": "La maggior parte delle persone aggiunge Primary & Global Backbone e hub nella propria regione. I nuovi hub vengono aggiunti disabilitati in modo da poterli controllare prima di abilitarli.",
       "defaultHubsPickerConfirm": "Aggiungi hub {{count}}",
       "defaultHubsPickerConfirmSync": "Sincronizza selezionati",
       "defaultHubsPickerConfirmAria": "Aggiungi o sincronizza {{count}} hub predefiniti selezionati",
@@ -1135,7 +1134,6 @@
         "asia_oceania": "Asia + Oceania",
         "specialty": "Specializzazione"
       },
-      "backboneEnableGuidance": "Dovresti abilitare da 1 a 3 gateway backbone al massimo (2 è generalmente il punto debole per la ridondanza). Punta a 1 globale, 1–2 regionali e Specialità solo se necessario.",
       "backboneEnableTooMany": "Hai {{count}} dorsali predefinite abilitate. Prendi in considerazione la possibilità di disabilitare gli extra e di tenerne circa 2 per ridondanza.",
       "interfaceListGroup": {
         "user_defined": "Utente definito"
@@ -1157,7 +1155,10 @@
       "addDefaultHubs": "Aggiungi dorsali predefinite",
       "addDefaultHubsAria": "Scegli i backbone Reticulum regionali da aggiungere, quindi sincronizza i preset selezionati",
       "addDefaultHubsAllPresent": "Le dorsali selezionate sono già configurate; nessun hub testnet disattivato abilitato.",
-      "addDefaultHubsFailed": "Impossibile aggiungere dorsali predefinite."
+      "addDefaultHubsFailed": "Impossibile aggiungere dorsali predefinite.",
+      "backboneEnableGuidanceLead": "Abilita da 1 a 3 gateway backbone al massimo",
+      "backboneEnableGuidanceBody": "—2 è il punto ideale per la ridondanza senza inutili ingrossamenti della larghezza di banda. Mira a 1 hub globale e 1 gateway regionale e abilita le interfacce speciali (come I2P o Yggdrasil) rigorosamente secondo necessità. Gli RNode connessi localmente e le interfacce LAN locali non contano ai fini di questo limite di backbone.",
+      "defaultHubsPickerHint": "Inizia con Primary & Global più la tua regione. Abilita da 1 a 3 gateway backbone al massimo (2 è il punto debole). I RNode locali e le interfacce LAN non contano. Le nuove voci vengono aggiunte disabilitate in modo da poterle rivedere prima dell'abilitazione. Sync disabilita anche i restanti hub testnet ufficiali disattivati (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1600,7 +1601,7 @@
         "tcp_missing_name": "Nell'interfaccia TCP \"{{name}}\" manca un campo nome nella configurazione.",
         "tcp_unreachable": "L'interfaccia TCP \"{{name}}\" non è raggiungibile.",
         "rf_preset_deviation": "RNode \"{{name}}\" RF params differ from its preset.",
-        "rf_cross_mismatch": "Più RNodi abilitati utilizzano parametri RF diversi.",
+        "rf_cross_mismatch": "Più RNodes abilitati utilizzano parametri RF diversi.",
         "rf_using_fallback": "RNode \"{{name}}\" uses a global fallback RF profile.",
         "rf_unknown_params": "RNode \"{{name}}\" RF params match no known profile.",
         "rf_legacy_preset_id": "RNode \"{{name}}\" uses a legacy preset id — consider migrating.",

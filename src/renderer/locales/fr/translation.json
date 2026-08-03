@@ -1123,7 +1123,6 @@
       "decommissionedHubEnableBlocked": "Ce hub est hors service et ne peut pas rester activé — mesh-client l’éteint à chaque démarrage de la pile. Utilisez Ajouter des hubs réseau par défaut ou le répertoire backbone pour les points de terminaison actifs.",
       "decommissionedBadge": "inactif",
       "defaultHubsPickerTitle": "Ajouter des concentrateurs réseau par défaut",
-      "defaultHubsPickerHint": "La plupart des gens ajoutent l'épine dorsale primaire et mondiale ainsi que des hubs dans leur région. Les nouveaux hubs sont ajoutés et désactivés afin que vous puissiez les consulter avant de les activer.",
       "defaultHubsPickerConfirm": "Ajouter des concentrateurs {{count}}",
       "defaultHubsPickerConfirmSync": "Synchroniser la sélection",
       "defaultHubsPickerConfirmAria": "Ajouter ou synchroniser {{count}} concentrateurs par défaut sélectionnés",
@@ -1136,7 +1135,6 @@
         "asia_oceania": "Asie & Océanie",
         "specialty": "Spécialités"
       },
-      "backboneEnableGuidance": "Vous devez activer 1 à 3 passerelles dorsales au maximum (2 est généralement le point idéal pour la redondance). Visez 1 mondial, 1–2 régional et Spécialité uniquement au besoin.",
       "backboneEnableTooMany": "Vous avez activé les backbones par défaut {{count}}. Envisagez de désactiver les extras et de conserver environ 2 pour la redondance.",
       "interfaceListGroup": {
         "user_defined": "Défini par l’utilisateur"
@@ -1158,7 +1156,10 @@
       "addDefaultHubs": "Ajouter des backbones par défaut",
       "addDefaultHubsAria": "Choisissez les backbones Reticulum régionaux à ajouter, puis synchronisez les préréglages sélectionnés",
       "addDefaultHubsAllPresent": "Les backbones sélectionnés sont déjà configurés ; aucun hub de testnet désactivé n'est activé.",
-      "addDefaultHubsFailed": "Échec de l'ajout des backbones par défaut."
+      "addDefaultHubsFailed": "Échec de l'ajout des backbones par défaut.",
+      "backboneEnableGuidanceLead": "Activer 1 à 3 passerelles dorsales au maximum",
+      "backboneEnableGuidanceBody": "—2 est le point idéal pour la redondance sans gonflement inutile de la bande passante. Visez 1 hub mondial et 1 passerelle régionale, et activez les interfaces spécialisées (comme I2P ou Yggdrasil) strictement selon les besoins. Les nœuds RNodes connectés localement et les interfaces LAN locales ne sont pas pris en compte dans cette limite dorsale.",
+      "defaultHubsPickerHint": "Commencez avec Primary & Global et votre région. Activez 1 à 3 passerelles dorsales au maximum (2 est le point idéal). Les RNodes locaux et les interfaces LAN ne comptent pas. Les nouvelles entrées sont ajoutées et désactivées afin que vous puissiez les consulter avant de les activer. Sync désactive également les hubs de testnet officiels déclassés restants (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",

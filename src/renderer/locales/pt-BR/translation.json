@@ -1124,7 +1124,6 @@
       "decommissionedHubEnableBlocked": "Este hub está desativado e não pode permanecer ativado — o mesh-client o desliga em todas as partidas de pilha. Use Adicionar hubs de rede padrão ou o diretório de backbone para pontos de extremidade ativos.",
       "decommissionedBadge": "DESCOMISSIONADO",
       "defaultHubsPickerTitle": "Adicionar hubs de rede padrão",
-      "defaultHubsPickerHint": "A maioria das pessoas adiciona o Backbone Primário e Global mais hubs em sua região. Novos hubs são adicionados desativados para que você possa revisar antes de ativar.",
       "defaultHubsPickerConfirm": "Adicionar centros {{count}}",
       "defaultHubsPickerConfirmSync": "Sincronizar selecionados",
       "defaultHubsPickerConfirmAria": "Adicionar ou sincronizar {{count}} hubs padrão selecionados",
@@ -1137,7 +1136,6 @@
         "asia_oceania": "Ásia e Oceania",
         "specialty": "Especialidade"
       },
-      "backboneEnableGuidance": "Você deve habilitar de 1 a 3 gateways de backbone no máximo (2 geralmente é o ponto ideal para redundância). Apontar para 1 global, 1–2 regional e Especialidade apenas conforme necessário.",
       "backboneEnableTooMany": "Você tem {{count}} backbones padrão ativados. Considere desativar extras e manter cerca de 2 para redundância.",
       "interfaceListGroup": {
         "user_defined": "Usuário definido"
@@ -1159,7 +1157,10 @@
       "addDefaultHubs": "Adicionar backbones padrão",
       "addDefaultHubsAria": "Escolha os backbones regionais Reticulum para adicionar e, em seguida, sincronize as predefinições selecionadas",
       "addDefaultHubsAllPresent": "Os backbones selecionados já estão configurados; nenhum hub de rede de teste desativado ativado.",
-      "addDefaultHubsFailed": "Falha ao adicionar backbones padrão."
+      "addDefaultHubsFailed": "Falha ao adicionar backbones padrão.",
+      "backboneEnableGuidanceLead": "Habilite de 1 a 3 gateways de backbone no máximo",
+      "backboneEnableGuidanceBody": "—2 é o ponto ideal para redundância sem inchaço desnecessário da largura de banda. Aponte para 1 hub global e 1 gateway regional e habilite interfaces especializadas (como I2P ou Yggdrasil) estritamente conforme necessário. Os RNodes conectados localmente e as interfaces de LAN locais não contam para esse limite de backbone.",
+      "defaultHubsPickerHint": "Comece com Primário e Global mais sua região. Ative de 1 a 3 gateways de backbone no máximo (2 é o ponto ideal). Os RNodes locais e as interfaces LAN não contam. Novas entradas são adicionadas desativadas para que você possa revisar antes de ativar. O SYNC também desativa os hubs de rede de teste oficiais desativados restantes (Amsterdã)."
     },
     "reticulumPeers": {
       "hops": "Hops",

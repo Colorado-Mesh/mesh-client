@@ -2035,7 +2035,10 @@ function InterfacesSection({
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
           </p>
           <p className="text-sm font-medium text-amber-200" role="status">
-            {t('connectionPanel.reticulumInterfaces.backboneEnableGuidance')}
+            <strong className="font-semibold text-amber-50">
+              {t('connectionPanel.reticulumInterfaces.backboneEnableGuidanceLead')}
+            </strong>
+            {t('connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody')}
           </p>
           {enabledDefaultBackboneCount > 3 ? (
             <p className="text-xs text-amber-300" role="status">

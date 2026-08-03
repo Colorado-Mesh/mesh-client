@@ -1124,7 +1124,6 @@
       "decommissionedHubEnableBlocked": "このハブは廃止されており有効のままにできません — mesh-client はスタック開始のたびにオフにします。ライブエンドポイントには「デフォルトネットワークハブを追加」またはバックボーンディレクトリを使用してください。",
       "decommissionedBadge": "廃止済み",
       "defaultHubsPickerTitle": "デフォルトのネットワークハブを追加する",
-      "defaultHubsPickerHint": "ほとんどの人は、自分の地域にプライマリおよびグローバルバックボーンプラスハブを追加します。新しいハブは無効になっているため、有効にする前に確認できます。",
       "defaultHubsPickerConfirm": "{{count}}ハブを追加",
       "defaultHubsPickerConfirmSync": "同期が選択されました",
       "defaultHubsPickerConfirmAria": "選択したデフォルトハブを{{count}}追加または同期",
@@ -1137,7 +1136,6 @@
         "asia_oceania": "アジア・オセアニア",
         "specialty": "専門"
       },
-      "backboneEnableGuidance": "最大で1〜3つのバックボーンゲートウェイを有効にする必要があります（通常、2つは冗長性のスイートスポットです）。必要に応じて、1つのグローバル、1〜2つの地域、および専門分野のみを目指してください。",
       "backboneEnableTooMany": "{{count}}デフォルトのバックボーンが有効になっています。余分なものを無効にし、冗長性を保つために約2つを保管することを検討してください。",
       "interfaceListGroup": {
         "user_defined": "ユーザー定義"
@@ -1159,7 +1157,10 @@
       "addDefaultHubs": "デフォルトのバックボーンを追加",
       "addDefaultHubsAria": "追加する地域のReticulumバックボーンを選択し、選択したプリセットを同期します",
       "addDefaultHubsAllPresent": "選択したバックボーンはすでに設定されています。無効化されたテストネットハブは有効化されていません。",
-      "addDefaultHubsFailed": "デフォルトのバックボーンを追加できませんでした。"
+      "addDefaultHubsFailed": "デフォルトのバックボーンを追加できませんでした。",
+      "backboneEnableGuidanceLead": "最大1〜3つのバックボーンゲートウェイを有効にする",
+      "backboneEnableGuidanceBody": "—2は、不要な帯域幅の膨張なしに冗長性を確保するためのスイートスポットです。1つのグローバルハブと1つのリージョナルゲートウェイを目指し、必要に応じて特別なインターフェース（ I 2 PやYggdrasilなど）を厳密に有効にします。ローカルに接続されたRNodeとローカルLANインターフェイスは、このバックボーン制限にはカウントされません。",
+      "defaultHubsPickerHint": "プライマリ、グローバル、お住まいの地域から始めましょう。最大1〜3つのバックボーンゲートウェイを有効にします（ 2がスイートスポットです）。ローカルRNodeとLANインターフェイスはカウントされません。新しいエントリは無効に追加されているため、有効にする前に確認できます。同期はまた、残りの廃止された公式テストネットハブ（アムステルダム）を無効にします。"
     },
     "reticulumPeers": {
       "hops": "Hops",

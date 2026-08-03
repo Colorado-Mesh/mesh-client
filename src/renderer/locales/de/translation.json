@@ -1122,7 +1122,6 @@
       "decommissionedHubEnableBlocked": "Dieser Hub ist außer Betrieb genommen und kann nicht aktiviert bleiben — der Mesh-Client schaltet ihn bei jedem Stapelstart aus. Verwenden Sie Standard-Netzwerk-Hubs oder das Backbone-Verzeichnis für Live-Endpunkte hinzufügen.",
       "decommissionedBadge": "stillgelegt",
       "defaultHubsPickerTitle": "Standard-Netzwerk-Hubs hinzufügen",
-      "defaultHubsPickerHint": "Die meisten Menschen fügen Primary & Global Backbone Plus-Hubs in ihrer Region hinzu. Neue Hubs werden deaktiviert hinzugefügt, damit du sie überprüfen kannst, bevor du sie aktivierst.",
       "defaultHubsPickerConfirm": "{{count}} Hubs hinzufügen",
       "defaultHubsPickerConfirmSync": "Ausgewählte synchronisieren",
       "defaultHubsPickerConfirmAria": "Hinzufügen oder Synchronisieren von {{count}} ausgewählten Standard-Hubs",
@@ -1135,7 +1134,6 @@
         "asia_oceania": "Asien & Ozeanien",
         "specialty": "Besonderes"
       },
-      "backboneEnableGuidance": "Sie sollten höchstens 1 bis 3 Backbone-Gateways aktivieren (2 ist in der Regel der Sweet Spot für Redundanz). Streben Sie nach Bedarf 1 globales, 1–2 regionales und Spezialgebiet an.",
       "backboneEnableTooMany": "Du hast {{count}} Standard-Backbones aktiviert. Erwägen Sie, Extras zu deaktivieren und etwa 2 für die Redundanz aufzubewahren.",
       "interfaceListGroup": {
         "user_defined": "Benutzerdefiniert"
@@ -1157,7 +1155,10 @@
       "addDefaultHubs": "Standard-Backbones hinzufügen",
       "addDefaultHubsAria": "Wählen Sie regionale Reticulum-Backbones aus, die hinzugefügt werden sollen, und synchronisieren Sie dann ausgewählte Voreinstellungen",
       "addDefaultHubsAllPresent": "Ausgewählte Backbones sind bereits konfiguriert; keine außer Betrieb genommenen Testnet-Hubs aktiviert.",
-      "addDefaultHubsFailed": "Standard-Backbones konnten nicht hinzugefügt werden."
+      "addDefaultHubsFailed": "Standard-Backbones konnten nicht hinzugefügt werden.",
+      "backboneEnableGuidanceLead": "Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways",
+      "backboneEnableGuidanceBody": "—2 ist der Sweet Spot für Redundanz ohne unnötige Bandbreitenaufblähung. Zielen Sie auf 1 globalen Hub und 1 regionalen Gateway ab und aktivieren Sie spezielle Schnittstellen (wie I2P oder Yggdrasil) streng nach Bedarf. Lokal angeschlossene RNodes und lokale LAN-Schnittstellen zählen nicht zu diesem Backbone-Limit.",
+      "defaultHubsPickerHint": "Beginnen Sie mit Primary & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist der Sweet Spot). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie überprüfen können, bevor Sie sie aktivieren. Sync deaktiviert auch die verbleibenden außer Betrieb genommenen offiziellen Testnet-Hubs (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",

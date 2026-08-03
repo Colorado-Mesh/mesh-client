@@ -1124,7 +1124,6 @@
       "decommissionedHubEnableBlocked": "Bu hub kullanımdan kaldırılmıştır ve etkin kalamaz — mesh-client her yığın başlangıcında onu kapatır. Canlı uç noktalar için varsayılan ağ hub’ları ekle veya omurga dizinini kullanın.",
       "decommissionedBadge": "Kullanımdan kaldırılmış",
       "defaultHubsPickerTitle": "Varsayılan ağ hub'ları ekle",
-      "defaultHubsPickerHint": "Çoğu kişi kendi bölgelerinde Birincil ve Küresel Omurga artı merkezlerini ekler. Etkinleştirmeden önce inceleyebilmeniz için yeni hub'lar devre dışı bırakıldı.",
       "defaultHubsPickerConfirm": "{{count}} hub ekleyin",
       "defaultHubsPickerConfirmSync": "Seçilenleri senkronize et",
       "defaultHubsPickerConfirmAria": "Seçilen varsayılan hub'ları {{count}} ekleyin veya senkronize edin",
@@ -1137,7 +1136,6 @@
         "asia_oceania": "Asya ve Okyanusya",
         "specialty": "Özel"
       },
-      "backboneEnableGuidance": "En fazla 1 ila 3 omurga ağ geçidini etkinleştirmelisiniz (2 genellikle fazlalık için en uygun noktadır). Yalnızca gerektiğinde 1 küresel, 1 -2 bölgesel ve Uzmanlık alanını hedefleyin.",
       "backboneEnableTooMany": "{{count}} varsayılan omurganız etkin. Ekstraları devre dışı bırakmayı ve fazlalık için yaklaşık 2 tane tutmayı düşünün.",
       "interfaceListGroup": {
         "user_defined": "Kullanıcı tanımlı"
@@ -1159,7 +1157,10 @@
       "addDefaultHubs": "Varsayılan omurgaları ekle",
       "addDefaultHubsAria": "Eklenecek bölgesel Reticulum omurgalarını seçin, ardından seçilen ön ayarları senkronize edin",
       "addDefaultHubsAllPresent": "Seçilen omurgalar zaten yapılandırılmış; devre dışı bırakılmış testnet hub'ları etkin değil.",
-      "addDefaultHubsFailed": "Varsayılan omurgalar eklenemedi."
+      "addDefaultHubsFailed": "Varsayılan omurgalar eklenemedi.",
+      "backboneEnableGuidanceLead": "En fazla 1 ila 3 omurga ağ geçidini etkinleştirin",
+      "backboneEnableGuidanceBody": "—2 gereksiz bant genişliği şişmesi olmadan fazlalık için en uygun noktadır. 1 küresel merkez ve 1 bölgesel ağ geçidini hedefleyin ve kesinlikle gerektiğinde özel arayüzleri (I2P veya Yggdrasil gibi) etkinleştirin. Yerel olarak bağlı RNode'lar ve yerel lan arayüzleri bu omurga sınırına dahil edilmez.",
+      "defaultHubsPickerHint": "Birincil ve Küresel artı bölgenizle başlayın. En fazla 1 ila 3 omurga ağ geçidini etkinleştirin (2 tatlı noktadır). Yerel RNode'lar ve lan arayüzleri sayılmaz. Etkinleştirmeden önce gözden geçirebilmeniz için yeni girişler devre dışı bırakıldı. SYNC ayrıca hizmet dışı kalan resmi testnet hub'larını (Amsterdam) devre dışı bırakır."
     },
     "reticulumPeers": {
       "hops": "Hops",

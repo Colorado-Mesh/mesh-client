@@ -1124,7 +1124,6 @@
       "decommissionedHubEnableBlocked": "此集线器已停用且无法保持启用 — mesh-client 会在每次堆栈启动时将其关闭。请使用“添加默认网络集线器”或骨干目录获取可用端点。",
       "decommissionedBadge": "退役",
       "defaultHubsPickerTitle": "添加默认网络集线器",
-      "defaultHubsPickerHint": "大多数人会在他们所在的地区添加主干网和全球骨干网以及枢纽。已禁用新集线器，因此您可以在启用前查看。",
       "defaultHubsPickerConfirm": "添加{{count}}集线器",
       "defaultHubsPickerConfirmSync": "同步所选",
       "defaultHubsPickerConfirmAria": "添加或同步{{count}}所选默认集线器",
@@ -1137,7 +1136,6 @@
         "asia_oceania": "亚太地区",
         "specialty": "专业"
       },
-      "backboneEnableGuidance": "您最多应启用1至3个骨干网关（ 2个通常是冗余的最佳位置）。仅在需要时针对1个全球、1–2个地区和专业。",
       "backboneEnableTooMany": "您已启用{{count}}默认骨干网。请考虑禁用额外功能，并保留约2个以备不时之需。",
       "interfaceListGroup": {
         "user_defined": "用户定义"
@@ -1159,7 +1157,10 @@
       "addDefaultHubs": "添加默认骨干网",
       "addDefaultHubsAria": "选择要添加的区域 Reticulum 骨干，然后同步所选预设",
       "addDefaultHubsAllPresent": "所选主干已配置；未启用停用的测试网集线器。",
-      "addDefaultHubsFailed": "添加默认骨干网失败。"
+      "addDefaultHubsFailed": "添加默认骨干网失败。",
+      "backboneEnableGuidanceLead": "最多启用1至3个骨干网关",
+      "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
+      "defaultHubsPickerHint": "从主要和全球以及您所在的地区开始。最多启用1至3个骨干网关（ 2个是最佳选择）。本地RNode和LAN接口不计算在内。新条目被禁用，因此您可以在启用前查看。SYNC还会禁用剩余的退役官方测试网中心（阿姆斯特丹）。"
     },
     "reticulumPeers": {
       "hops": "Hops",

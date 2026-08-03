@@ -1105,7 +1105,7 @@
       "modeDescriptions": {
         "full": "Pełne uczestnictwo w siatce. Trasuje ruch i automatycznie rozgłasza ogłoszenia. Użyj dla głównych węzłów i repeaterów.",
         "access_point": "Cisza do zapytania. Wygaśnięcie krótkiej ścieżki. Idealny do radiotelefonów wielkopowierzchniowych obsługujących użytkowników nieregularnych.",
-        "roaming": "Interfejsy mobilne. Krótkie limity czasu ścieżki i aktywne odkrywanie. Używaj do przenośnych lub samochodowych RNodów.",
+        "roaming": "Interfejsy mobilne. Krótkie limity czasu ścieżki i aktywne odkrywanie. Używaj do przenośnych lub samochodowych RNodes.",
         "boundary": "Granica sieci. Łączy różne segmenty, izolując ruch lokalny. Użyj dla łączy internetowych/LoRa.",
         "gateway": "Poszukiwanie ścieżki dla klientów. Rozwiązuje nieznane miejsca docelowe w imieniu połączonych węzłów.",
         "point_to_point": "Bezpośrednie połączenie między dwoma węzłami. Brak trasowania lub ogłaszania propagacji."
@@ -1126,7 +1126,6 @@
       "decommissionedHubEnableBlocked": "Ten hub jest wycofany z eksploatacji i nie może pozostać włączony — mesh-client wyłącza go przy każdym uruchomieniu stosu. Użyj Dodaj domyślne huby sieciowe lub katalogu backbone dla aktywnych punktów końcowych.",
       "decommissionedBadge": "wycofany z eksploatacji",
       "defaultHubsPickerTitle": "Dodaj domyślne koncentratory sieciowe",
-      "defaultHubsPickerHint": "Większość ludzi dodaje koncentratory Primary & Global Backbone plus w swoim regionie. Nowe centra są wyłączone, więc możesz je sprawdzić przed włączeniem.",
       "defaultHubsPickerConfirm": "Dodaj koncentratory {{count}}",
       "defaultHubsPickerConfirmSync": "Wybrano synchronizację",
       "defaultHubsPickerConfirmAria": "Dodaj lub zsynchronizuj wybrane domyślne koncentratory {{count}}",
@@ -1139,7 +1138,6 @@
         "asia_oceania": "Azja i Oceania",
         "specialty": "Specjalnościowy"
       },
-      "backboneEnableGuidance": "Powinieneś włączyć maksymalnie od 1 do 3 bramek szkieletowych (2 to na ogół słodki punkt dla redundancji). Staraj się o 1 globalną, 1–2 regionalną i specjalistyczną tylko w razie potrzeby.",
       "backboneEnableTooMany": "Masz włączone {{count}} domyślne kręgosłupy. Rozważ wyłączenie dodatków i zachowanie około 2 na potrzeby redundancji.",
       "interfaceListGroup": {
         "user_defined": "Zdefiniowane przez użytkownika"
@@ -1161,7 +1159,10 @@
       "addDefaultHubs": "Dodaj domyślne kręgosłupy",
       "addDefaultHubsAria": "Wybierz regionalne backbone’y Reticulum do dodania, a następnie zsynchronizuj wybrane ustawienia wstępne",
       "addDefaultHubsAllPresent": "Wybrane kręgosłupy są już skonfigurowane; nie włączono wycofanych koncentratorów sieci testowej.",
-      "addDefaultHubsFailed": "Nie udało się dodać domyślnych kości kręgosłupa."
+      "addDefaultHubsFailed": "Nie udało się dodać domyślnych kości kręgosłupa.",
+      "backboneEnableGuidanceLead": "Włącz maksymalnie 1 do 3 bramek szkieletowych",
+      "backboneEnableGuidanceBody": "—2 to słodkie miejsce na redundancję bez zbędnego wzdęcia przepustowości. Celuj w 1 globalny hub i 1 bramę regionalną oraz włączaj specjalistyczne interfejsy (takie jak I2P lub Yggdrasil) ściśle w razie potrzeby. Lokalnie podłączone RNodes i lokalne interfejsy LAN nie wliczają się do tego limitu sieci szkieletowej.",
+      "defaultHubsPickerHint": "Zacznij od Primary & Global plus Twój region. Włącz maksymalnie od 1 do 3 bramek szkieletowych (2 to słodki punkt). Lokalne interfejsy RNodes i LAN nie są uwzględniane. Nowe wpisy są dodawane wyłączone, więc możesz je przejrzeć przed włączeniem. SYNC wyłącza również pozostałe zlikwidowane oficjalne węzły testowe (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",

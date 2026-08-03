@@ -1010,7 +1010,7 @@
       "rnodeTransportBle": "Bluetooth",
       "seedAddresses": "Seed peers (volitelné)",
       "pickerBlePeerEmpty": "V okolí nebyli nalezeni žádní kolegové Reticulum BLE. Peers musí inzerovat; zkuste znovu naskenovat nebo ručně zadejte adresu zdroje.",
-      "pickerBleRnodeEmpty": "V okolí nebyly nalezeny žádné BLE RNody. Ujistěte se, že je RNode zapnutý a v dosahu, pak zkuste znovu prohledat.",
+      "pickerBleRnodeEmpty": "V okolí nebyly nalezeny žádné BLE RNodes. Ujistěte se, že je RNode zapnutý a v dosahu, pak zkuste znovu prohledat.",
       "bleUnavailable": "Bluetooth není k dispozici pro skenování Reticulum. Zkontrolujte systém Bluetooth a sestavení sidecar (rns-ble).",
       "restartStackFailed": "Restartování zásobníku se nezdařilo: {{message}}",
       "restartStackUnavailable": "Restart zásobníku není dostupný, dokud nebude připraveno běhové prostředí Reticulum.",
@@ -1085,7 +1085,7 @@
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Režim",
       "modeAria": "Režim rozhraní Reticulum",
-      "modeHint": "Řídí, jak se toto rozhraní připojuje k širší síti (hledání cesty, oznamování šíření). Při přidání je výchozí typ u TCP/UDP/I2P hubů Boundary a u RNodů Access point. Při úpravě Default (clear) režim vynechá (RNS Full).",
+      "modeHint": "Řídí, jak se toto rozhraní připojuje k širší síti (hledání cesty, oznamování šíření). Při přidání je výchozí typ u TCP/UDP/I2P hubů Boundary a u RNodes Access point. Při úpravě Default (clear) režim vynechá (RNS Full).",
       "modeOption": {
         "full": "Full",
         "point_to_point": "Bod k bodu",
@@ -1125,7 +1125,6 @@
       "decommissionedHubEnableBlocked": "Tento hub je vyřazen z provozu a nemůže zůstat zapnutý — mesh-client jej vypne při každém spuštění zásobníku. Použijte Přidat výchozí síťové huby nebo páteřní adresář pro živé koncové body.",
       "decommissionedBadge": "vyřazeno z provozu",
       "defaultHubsPickerTitle": "Přidat výchozí síťová rozbočovače",
-      "defaultHubsPickerHint": "Většina lidí ve svém regionu přidává primární a globální páteřní centra plus. Nová centra jsou přidána deaktivována, takže si je můžete před povolením prohlédnout.",
       "defaultHubsPickerConfirm": "Přidat {{count}} rozbočovače",
       "defaultHubsPickerConfirmSync": "Synchronizace vybrána",
       "defaultHubsPickerConfirmAria": "Přidat nebo synchronizovat {{count}} vybraná výchozí rozbočovače",
@@ -1138,7 +1137,6 @@
         "asia_oceania": "Asie/ Oceánie",
         "specialty": "obory lékařské"
       },
-      "backboneEnableGuidance": "Měli byste povolit maximálně 1 až 3 páteřní brány (2 jsou obecně vhodným místem pro redundanci). Zaměřte se na 1 globální, 1–2 regionální a specializaci pouze podle potřeby.",
       "backboneEnableTooMany": "Máte zapnutou výchozí páteř {{count}}. Zvažte vypnutí doplňků a ponechání asi 2 pro nadbytečnost.",
       "interfaceListGroup": {
         "user_defined": "Definováno uživatelem"
@@ -1160,7 +1158,10 @@
       "addDefaultHubs": "Přidat výchozí páteř",
       "addDefaultHubsAria": "Vyberte regionální Reticulum páteře k přidání a poté synchronizujte vybrané předvolby",
       "addDefaultHubsAllPresent": "Vybrané páteře jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testovací sítě.",
-      "addDefaultHubsFailed": "Přidání výchozích páteří se nezdařilo."
+      "addDefaultHubsFailed": "Přidání výchozích páteří se nezdařilo.",
+      "backboneEnableGuidanceLead": "Povolit maximálně 1 až 3 páteřní brány",
+      "backboneEnableGuidanceBody": "—2 je ideální místo pro redundanci bez zbytečného nafukování šířky pásma. Zaměřte se na 1 globální rozbočovač a 1 regionální bránu a povolte speciální rozhraní (jako je I2P nebo Yggdrasil) přesně podle potřeby. Lokálně připojené RNodes a místní LAN rozhraní se do tohoto limitu páteřní sítě nezapočítávají.",
+      "defaultHubsPickerHint": "Začněte s Primárním a Globálním plus vaším regionem. Povolte maximálně 1 až 3 páteřní brány (2 jsou sladké místo). Místní RNode a LAN rozhraní se nepočítají. Nové položky jsou přidány zakázány, takže je můžete před povolením zkontrolovat. Synchronizace také deaktivuje zbývající vyřazené oficiální rozbočovače testnetu (Amsterdam)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1602,7 +1603,7 @@
         "tcp_missing_name": "Rozhraní TCP „{{name}}“ v konfiguraci chybí pole názvu.",
         "tcp_unreachable": "Rozhraní TCP \"{{name}}\" je nedostupné.",
         "rf_preset_deviation": "RNode \"{{name}}\" RF params differ from its preset.",
-        "rf_cross_mismatch": "Více povolených RNodů používá různé RF parametry.",
+        "rf_cross_mismatch": "Více povolených RNodes používá různé RF parametry.",
         "rf_using_fallback": "RNode \"{{name}}\" používá globální záložní RF profil.",
         "rf_unknown_params": "RNode \"{{name}}\" RF parametry neodpovídají žádnému známému profilu.",
         "rf_legacy_preset_id": "RNode \"{{name}}\" používá starší přednastavené ID – zvažte migraci.",
