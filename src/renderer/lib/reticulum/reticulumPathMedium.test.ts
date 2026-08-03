@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  activeReticulumPathSlot,
+  backupReticulumPathSlots,
   fetchReticulumPeerPaths,
   parsePathMedium,
   parsePathMediumPreference,
@@ -8,8 +10,25 @@ import {
   pathMediumFromInterfaceNameOrType,
   peerMediumPinApiFromChoice,
   peerMediumPinChoiceFromApi,
+  type ReticulumPathSlot,
   setReticulumPeerMediumPin,
 } from './reticulumPathMedium';
+
+function slot(
+  partial: Partial<ReticulumPathSlot> & Pick<ReticulumPathSlot, 'active'>,
+): ReticulumPathSlot {
+  return {
+    hops: null,
+    via_hash: null,
+    interface: null,
+    interface_id: null,
+    medium: null,
+    timestamp: null,
+    expires: null,
+    expired: false,
+    ...partial,
+  };
+}
 
 describe('reticulumPathMedium', () => {
   beforeEach(() => {
@@ -48,6 +67,32 @@ describe('reticulumPathMedium', () => {
     expect(peerMediumPinChoiceFromApi('rf')).toBe('rf');
     expect(peerMediumPinApiFromChoice('auto')).toBeNull();
     expect(peerMediumPinApiFromChoice('network')).toBe('network');
+  });
+
+  it('activeReticulumPathSlot prefers active live, then first live, then first', () => {
+    const active = slot({ active: true, medium: 'rf', interface: 'RNode' });
+    const backup = slot({ active: false, medium: 'network', interface: 'TCP' });
+    expect(activeReticulumPathSlot([active, backup])).toBe(active);
+
+    const expiredActive = slot({ active: true, expired: true, medium: 'rf' });
+    const liveBackup = slot({ active: false, medium: 'network', interface: 'Hub' });
+    expect(activeReticulumPathSlot([expiredActive, liveBackup])).toBe(liveBackup);
+
+    expect(activeReticulumPathSlot([])).toBeNull();
+    expect(activeReticulumPathSlot([expiredActive])).toBe(expiredActive);
+  });
+
+  it('backupReticulumPathSlots excludes active and expired slots', () => {
+    const active = slot({ active: true, medium: 'rf', interface: 'RNode' });
+    const backup = slot({
+      active: false,
+      medium: 'network',
+      interface: 'Ratspeak',
+      hops: 3,
+    });
+    const expired = slot({ active: false, expired: true, medium: 'network', interface: 'Old' });
+    expect(backupReticulumPathSlots([active, backup, expired])).toEqual([backup]);
+    expect(backupReticulumPathSlots([active])).toEqual([]);
   });
 
   it('parsePeerPathsResponse keeps at most 3 slots and marks pin null', () => {

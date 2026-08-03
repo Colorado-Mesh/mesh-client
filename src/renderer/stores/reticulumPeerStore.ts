@@ -10,6 +10,10 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import {
+  activeReticulumPathSlot,
+  type ReticulumPathSlot,
+} from '@/renderer/lib/reticulum/reticulumPathMedium';
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import {
@@ -112,6 +116,39 @@ function peerDisplayName(peer: ReticulumPeer): string {
   const wire = sanitizeReticulumDisplayName(peer.display_name);
   if (wire) return wire;
   return peer.destination_hash.slice(0, 12);
+}
+
+/** Overlay live path-table route fields onto contact/history (or peer) rows. */
+export function mergeReticulumPeerRouteFields<T extends ReticulumPeer>(
+  base: T,
+  live: ReticulumPeer | undefined | null,
+): T {
+  if (!live) return base;
+  const hops = live.hops ?? base.hops;
+  const iface = live.interface ?? base.interface;
+  const path_hash = live.path_hash ?? base.path_hash;
+  const via_hash = live.via_hash ?? base.via_hash;
+  const last_seen = live.last_seen ?? base.last_seen;
+  const path_hops = live.path_hops ?? base.path_hops;
+  if (
+    hops === base.hops &&
+    iface === base.interface &&
+    path_hash === base.path_hash &&
+    via_hash === base.via_hash &&
+    last_seen === base.last_seen &&
+    path_hops === base.path_hops
+  ) {
+    return base;
+  }
+  return {
+    ...base,
+    hops,
+    interface: iface,
+    path_hash,
+    via_hash,
+    last_seen,
+    path_hops,
+  };
 }
 
 /** Prefer wire/LXMF names from node store when path-table peers only have hashes. */
@@ -555,22 +592,24 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
 
   updatePeer: (hash, partial) => {
     const key = normalizeHash(hash);
+    if (!key) return;
     set((s) => {
+      const contact = s.contacts.get(key);
+      const hist = s.history.get(key);
+      const existing = s.peers.get(key);
+      // Seed from contact/history so probe/path can patch contact-only hashes.
+      const seed = existing ?? contact ?? hist ?? { destination_hash: key };
       const peers = new Map(s.peers);
-      const existing = peers.get(key);
-      if (!existing) return s;
-      peers.set(key, { ...existing, ...partial, destination_hash: key });
+      peers.set(key, { ...seed, ...partial, destination_hash: key });
       const contacts = new Map(s.contacts);
-      const contact = contacts.get(key);
       if (contact) {
         contacts.set(key, { ...contact, ...partial, destination_hash: key });
       }
       const history = new Map(s.history);
-      const hist = history.get(key);
       if (hist) {
         history.set(key, { ...hist, ...partial, destination_hash: key });
       }
-      return { peers, contacts, history };
+      return { peers, contacts, history, peersRevision: s.peersRevision + 1 };
     });
   },
 
@@ -742,7 +781,11 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
 
   getPeer: (hash) => {
     const key = normalizeHash(hash);
-    return get().contacts.get(key) ?? get().history.get(key) ?? get().peers.get(key);
+    const live = get().peers.get(key);
+    const base = get().contacts.get(key) ?? get().history.get(key) ?? live;
+    if (!base) return undefined;
+    if (base === live) return base;
+    return mergeReticulumPeerRouteFields(base, live);
   },
 
   getDisplayName: (peer) => peerDisplayName(peer),
@@ -760,6 +803,40 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
     });
   },
 }));
+
+/** Route fields from an active (or first usable) `/paths` slot onto the peer store. */
+export function applyReticulumPeerActivePathSlot(
+  hash: string,
+  pathsResult: {
+    ok: boolean;
+    paths: ReticulumPathSlot[];
+  },
+): boolean {
+  if (!pathsResult.ok || pathsResult.paths.length === 0) return false;
+  const slot = activeReticulumPathSlot(pathsResult.paths);
+  if (!slot) return false;
+  const via = slot.via_hash?.trim() ? slot.via_hash.trim().toLowerCase() : null;
+  const store = useReticulumPeerStore.getState();
+  const existing = store.getPeer(hash);
+  const base = existing ?? { destination_hash: hash };
+  // Null/missing slot fields must not wipe known-good route data (same as peer patches).
+  const merged = mergeReticulumPeerRouteFields(base, {
+    destination_hash: hash,
+    hops: slot.hops,
+    interface: slot.interface,
+    path_hash: via,
+    via_hash: via,
+    last_seen: slot.timestamp ?? undefined,
+  });
+  store.updatePeer(hash, {
+    hops: merged.hops,
+    interface: merged.interface,
+    path_hash: merged.path_hash,
+    via_hash: merged.via_hash,
+    last_seen: merged.last_seen,
+  });
+  return true;
+}
 
 let pendingPeerPatches = new Map<string, ReticulumPeer>();
 let peerPatchFlushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -783,14 +860,27 @@ function flushPendingPeerPatches(): void {
   const max = readReticulumDestinationCap();
   useReticulumPeerStore.setState((s) => {
     const next = new Map(s.peers);
+    const contacts = new Map(s.contacts);
+    const history = new Map(s.history);
     for (const [hash, peer] of batch) {
       const existing = next.get(hash);
-      next.set(hash, { ...existing, ...peer, destination_hash: hash });
+      const merged = { ...existing, ...peer, destination_hash: hash };
+      next.set(hash, merged);
+      const contact = contacts.get(hash);
+      if (contact) {
+        contacts.set(hash, mergeReticulumPeerRouteFields(contact, merged));
+      }
+      const hist = history.get(hash);
+      if (hist) {
+        history.set(hash, mergeReticulumPeerRouteFields(hist, merged));
+      }
     }
     const capped =
-      next.size > max ? capReticulumPeerMaps(next, s.contacts, s.history, max).peers : next;
+      next.size > max ? capReticulumPeerMaps(next, contacts, history, max).peers : next;
     return {
       peers: capped,
+      contacts,
+      history,
       lastRefreshAt: Date.now(),
       peersRevision: s.peersRevision + 1,
     };

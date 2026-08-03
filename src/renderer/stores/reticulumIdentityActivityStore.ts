@@ -154,7 +154,11 @@ export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivit
       set((s) => {
         const next = new Map(s.byDestination);
         const prev = next.get(key) ?? [];
-        const filtered = prev.filter((r) => r.aspect !== normalized.aspect);
+        // Named aspects replace the legacy "unknown" placeholder for this destination.
+        const dropUnknown = normalized.aspect !== 'unknown';
+        const filtered = prev.filter(
+          (r) => r.aspect !== normalized.aspect && !(dropUnknown && r.aspect === 'unknown'),
+        );
         next.set(key, [normalized, ...filtered]);
         return { byDestination: trimMapToMaxSize(next, MAX_RETICULUM_IDENTITY_DESTINATIONS) };
       });
@@ -192,7 +196,8 @@ function parseOneAnnounceActivityRow(p: Record<string, unknown>): ReticulumIdent
       if (typeof a === 'string' && a.trim()) aspects.push(a.trim());
     }
   }
-  if (aspects.length === 0) aspects.push('unknown');
+  // No aspect → no identity-activity rows (do not invent "unknown").
+  if (aspects.length === 0) return [];
   return aspects.map((aspect) => ({
     destination_hash: destinationHash,
     aspect,

@@ -19,6 +19,10 @@ pub struct AnnounceWsRow {
     pub destination_hash: String,
     pub display_name: Option<String>,
     pub hops: u8,
+    /// Known destination aspect string when `name_hash` maps (e.g. `lxmf.delivery`).
+    pub aspect: Option<String>,
+    /// Identity hash recovered from the announce payload (hex), when present.
+    pub identity_hash: Option<String>,
 }
 
 /// Snapshot published for `GET /api/v1/diagnostics` (`announce_ws`).
@@ -38,6 +42,10 @@ static LAST_WINDOW_UNIQUE: AtomicU64 = AtomicU64::new(0);
 static LAST_WINDOW_OVERFLOW: AtomicU64 = AtomicU64::new(0);
 static LAST_STORM_AT_MS: AtomicU64 = AtomicU64::new(0);
 static LAST_FLUSH_AT_MS: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(feature = "rns-stack")]
+static KNOWN_ANNOUNCE_ASPECTS: std::sync::OnceLock<Vec<([u8; 10], &'static str)>> =
+    std::sync::OnceLock::new();
 
 fn now_unix_ms() -> u64 {
     SystemTime::now()
@@ -140,29 +148,72 @@ impl AnnounceWsCoalescer {
     }
 }
 
+/// Map announce `name_hash` (`SHA-256(app_name)[:10]`) to a known aspect string.
+///
+/// Unknown / zero hashes return `None` — callers must not invent `"unknown"`.
+#[cfg(feature = "rns-stack")]
+pub fn resolve_announce_aspect(name_hash: &[u8; 10]) -> Option<&'static str> {
+    if name_hash.iter().all(|&b| b == 0) {
+        return None;
+    }
+    let table = KNOWN_ANNOUNCE_ASPECTS.get_or_init(|| {
+        [
+            "lxmf.delivery",
+            "lxmf.propagation",
+            "nomadnetwork.node",
+            "rrc.hub",
+        ]
+        .into_iter()
+        .map(|aspect| (rns_identity::name_hash::name_hash(aspect), aspect))
+        .collect()
+    });
+    table
+        .iter()
+        .find(|(nh, _)| nh == name_hash)
+        .map(|(_, aspect)| *aspect)
+}
+
+fn announce_row_payload(r: &AnnounceWsRow) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "destination_hash".to_string(),
+        serde_json::Value::String(r.destination_hash.clone()),
+    );
+    map.insert(
+        "display_name".to_string(),
+        match &r.display_name {
+            Some(n) => serde_json::Value::String(n.clone()),
+            None => serde_json::Value::Null,
+        },
+    );
+    map.insert(
+        "hops".to_string(),
+        serde_json::Value::Number(serde_json::Number::from(r.hops)),
+    );
+    if let Some(ref aspect) = r.aspect {
+        map.insert(
+            "aspect".to_string(),
+            serde_json::Value::String(aspect.clone()),
+        );
+    }
+    if let Some(ref identity_hash) = r.identity_hash {
+        map.insert(
+            "identity_hash".to_string(),
+            serde_json::Value::String(identity_hash.clone()),
+        );
+    }
+    serde_json::Value::Object(map)
+}
+
 /// Build the WS text frame for one flush. Single-row keeps the legacy payload shape.
 pub fn build_announce_received_frame(rows: &[AnnounceWsRow]) -> Option<String> {
     if rows.is_empty() {
         return None;
     }
     let payload = if rows.len() == 1 {
-        let r = &rows[0];
-        serde_json::json!({
-            "destination_hash": r.destination_hash,
-            "display_name": r.display_name,
-            "hops": r.hops,
-        })
+        announce_row_payload(&rows[0])
     } else {
-        let announces: Vec<serde_json::Value> = rows
-            .iter()
-            .map(|r| {
-                serde_json::json!({
-                    "destination_hash": r.destination_hash,
-                    "display_name": r.display_name,
-                    "hops": r.hops,
-                })
-            })
-            .collect();
+        let announces: Vec<serde_json::Value> = rows.iter().map(announce_row_payload).collect();
         serde_json::json!({ "announces": announces })
     };
     Some(
@@ -192,6 +243,23 @@ mod tests {
             destination_hash: hash.to_string(),
             display_name: name.map(str::to_string),
             hops: 1,
+            aspect: None,
+            identity_hash: None,
+        }
+    }
+
+    fn row_full(
+        hash: &str,
+        name: Option<&str>,
+        aspect: Option<&str>,
+        identity_hash: Option<&str>,
+    ) -> AnnounceWsRow {
+        AnnounceWsRow {
+            destination_hash: hash.to_string(),
+            display_name: name.map(str::to_string),
+            hops: 2,
+            aspect: aspect.map(str::to_string),
+            identity_hash: identity_hash.map(str::to_string),
         }
     }
 
@@ -215,6 +283,31 @@ mod tests {
         assert_eq!(snap.last_window_unique, 2);
         assert_eq!(snap.last_window_overflow, 0);
         assert!(snap.last_flush_at_ms > 0);
+    }
+
+    #[test]
+    fn last_write_wins_preserves_latest_aspect_and_identity_hash() {
+        let _guard = pressure_metrics_lock();
+        let mut c = AnnounceWsCoalescer::new();
+        c.push(row_full(
+            "aa",
+            Some("Old"),
+            Some("lxmf.propagation"),
+            Some("id_old"),
+        ));
+        c.push(row_full(
+            "aa",
+            Some("New"),
+            Some("lxmf.delivery"),
+            Some("id_new"),
+        ));
+        let flushed = c.take_flush_rows();
+        let aa = flushed
+            .iter()
+            .find(|r| r.destination_hash == "aa")
+            .expect("aa");
+        assert_eq!(aa.aspect.as_deref(), Some("lxmf.delivery"));
+        assert_eq!(aa.identity_hash.as_deref(), Some("id_new"));
     }
 
     #[test]
@@ -272,6 +365,24 @@ mod tests {
         assert_eq!(v["type"], "announce.received");
         assert_eq!(v["payload"]["destination_hash"], "aa");
         assert!(v["payload"].get("announces").is_none());
+        assert!(v["payload"].get("aspect").is_none());
+        assert!(v["payload"].get("identity_hash").is_none());
+    }
+
+    #[test]
+    fn build_frame_single_includes_aspect_and_identity_hash_when_present() {
+        let id = "aabbccddeeff00112233445566778899";
+        let frame = build_announce_received_frame(&[row_full(
+            "aa",
+            Some("Alice"),
+            Some("lxmf.delivery"),
+            Some(id),
+        )])
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&frame).unwrap();
+        assert_eq!(v["payload"]["aspect"], "lxmf.delivery");
+        assert_eq!(v["payload"]["identity_hash"], id);
+        assert_eq!(v["payload"]["hops"], 2);
     }
 
     #[test]
@@ -280,6 +391,37 @@ mod tests {
             build_announce_received_frame(&[row("aa", Some("A")), row("bb", None)]).unwrap();
         let v: serde_json::Value = serde_json::from_str(&frame).unwrap();
         assert_eq!(v["payload"]["announces"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn build_frame_batch_carries_per_row_aspect_and_identity_hash() {
+        let frame = build_announce_received_frame(&[
+            row_full("aa", Some("A"), Some("lxmf.delivery"), Some("id_a")),
+            row_full("bb", None, Some("nomadnetwork.node"), None),
+            row("cc", Some("C")),
+        ])
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&frame).unwrap();
+        let announces = v["payload"]["announces"].as_array().unwrap();
+        assert_eq!(announces.len(), 3);
+        let aa = announces
+            .iter()
+            .find(|a| a["destination_hash"] == "aa")
+            .expect("aa");
+        assert_eq!(aa["aspect"], "lxmf.delivery");
+        assert_eq!(aa["identity_hash"], "id_a");
+        let bb = announces
+            .iter()
+            .find(|a| a["destination_hash"] == "bb")
+            .expect("bb");
+        assert_eq!(bb["aspect"], "nomadnetwork.node");
+        assert!(bb.get("identity_hash").is_none());
+        let cc = announces
+            .iter()
+            .find(|a| a["destination_hash"] == "cc")
+            .expect("cc");
+        assert!(cc.get("aspect").is_none());
+        assert!(cc.get("identity_hash").is_none());
     }
 
     #[test]
@@ -294,5 +436,28 @@ mod tests {
         assert_eq!(flushed.len(), ANNOUNCE_WS_FLUSH_MAX);
         assert!(c.is_empty());
         assert!(build_announce_received_frame(&flushed).is_some());
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[test]
+    fn resolve_announce_aspect_maps_known_aspects() {
+        assert_eq!(
+            resolve_announce_aspect(&rns_identity::name_hash::name_hash("lxmf.delivery")),
+            Some("lxmf.delivery")
+        );
+        assert_eq!(
+            resolve_announce_aspect(&rns_identity::name_hash::name_hash("lxmf.propagation")),
+            Some("lxmf.propagation")
+        );
+        assert_eq!(
+            resolve_announce_aspect(&rns_identity::name_hash::name_hash("nomadnetwork.node")),
+            Some("nomadnetwork.node")
+        );
+        assert_eq!(
+            resolve_announce_aspect(&rns_identity::name_hash::name_hash("rrc.hub")),
+            Some("rrc.hub")
+        );
+        assert_eq!(resolve_announce_aspect(&[0u8; 10]), None);
+        assert_eq!(resolve_announce_aspect(&[1u8; 10]), None);
     }
 }

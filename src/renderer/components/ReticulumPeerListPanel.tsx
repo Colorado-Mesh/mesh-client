@@ -21,6 +21,11 @@ import {
 } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import {
+  refreshReticulumPeerRouteFromPaths,
+  RETICULUM_PATH_RETRY_MS,
+  RETICULUM_PATH_SETTLE_MS,
+} from '@/renderer/lib/reticulum/reticulumPathMedium';
+import {
   cheapReticulumPeerLabel,
   filterPreparedReticulumPeerRows,
   type PreparedReticulumPeerRow,
@@ -468,7 +473,12 @@ export default function ReticulumPeerListPanel({
       const result = await requestReticulumPeerPath(hash);
       const toast = formatReticulumPeerPathToast(t, result);
       addToast(toast.message, toast.variant);
-      // Path results arrive via WS peers_updated patches — avoid a full dump.
+      if (result.ok) {
+        await refreshReticulumPeerRouteFromPaths(hash, {
+          settleMs: RETICULUM_PATH_SETTLE_MS,
+          retryMs: RETICULUM_PATH_RETRY_MS,
+        });
+      }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] path ' + errLikeToLogString(e));
     } finally {
@@ -489,7 +499,9 @@ export default function ReticulumPeerListPanel({
       if (result.ok && result.hops != null) {
         useReticulumPeerStore.getState().updatePeer(hash, { hops: result.hops });
       }
-      // Probe hops applied locally; skip full path-table refresh.
+      if (result.ok) {
+        await refreshReticulumPeerRouteFromPaths(hash);
+      }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
     } finally {

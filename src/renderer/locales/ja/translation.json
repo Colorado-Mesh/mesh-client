@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "ネットワーク",
-    "pathHash": "パスハッシュ",
     "copyHash": "コピー先ハッシュ",
     "editNameAria": "手動インストール",
     "sendMessage": "メッセージを送信",
@@ -3134,8 +3133,6 @@
     "probeOk": "プローブOK —到達可能なパス。",
     "blockContact": "連絡先をブロックする",
     "unblockContact": "連絡先のブロックを解除する",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} —最終閲覧{{seen}}",
     "verifyMark": "承認としてマーク",
     "verifyRevoke": "認証の取り消し",
     "verifyFingerprint": "IDフィンガープリント",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "この連絡先のQRコードを表示",
     "verifiedRowAria": "連絡先が認証されました",
     "renameFailed": "表示名を保存できませんでした。",
-    "removeContactConfirmBody": "これにより、保存したリストから連絡先が削除されます。チャットメッセージは残ります。メッセージを送信した場合は履歴に残ります。"
+    "removeContactConfirmBody": "これにより、保存したリストから連絡先が削除されます。チャットメッセージは残ります。メッセージを送信した場合は履歴に残ります。",
+    "backupPaths": "バックアップパス"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",

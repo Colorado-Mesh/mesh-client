@@ -3121,7 +3121,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Sieć",
-    "pathHash": "Skrót ścieżki",
     "copyHash": "Skopiuj skrót miejsca docelowego",
     "editNameAria": "Niestandardowa nazwa wyświetlana",
     "sendMessage": "Wyślij wiadomość",
@@ -3138,8 +3137,6 @@
     "probeOk": "Sonda OK — ścieżka osiągalna.",
     "blockContact": "Blokuj kontakt",
     "unblockContact": "Odblokuj kontakt",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — ostatnio widziany {{seen}}",
     "verifyMark": "Oznacz jako zweryfikowane",
     "verifyRevoke": "Cofnij weryfikację",
     "verifyFingerprint": "Tożsamość odcisku palca",
@@ -3149,7 +3146,8 @@
     "shareContactQrAria": "Pokaż kod QR dla tego kontaktu",
     "verifiedRowAria": "Kontakt zweryfikowany",
     "renameFailed": "Nie można zapisać nazwy wyświetlanej.",
-    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z zapisanej listy. Wiadomości na czacie pozostają w Historii, jeśli zostały przez Ciebie wysłane."
+    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z zapisanej listy. Wiadomości na czacie pozostają w Historii, jeśli zostały przez Ciebie wysłane.",
+    "backupPaths": "Ścieżki tworzenia kopii zapasowych"
   },
   "peerGraph": {
     "title": "Wykres komunikacji z partnerami",

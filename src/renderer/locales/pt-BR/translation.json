@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Rede",
-    "pathHash": "Hash do caminho",
     "copyHash": "Hash de destino",
     "editNameAria": "Exibição de nome personalizado",
     "sendMessage": "Enviar Mensagem",
@@ -3134,8 +3133,6 @@
     "probeOk": "Sonda OK — caminho alcançável.",
     "blockContact": "Bloquear contacto",
     "unblockContact": "Desbloquear contacto",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — visto pela última vez {{seen}}",
     "verifyMark": "Marcar Verificado",
     "verifyRevoke": "Anular verificação",
     "verifyFingerprint": "Impressão digital de identidade",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "Mostrar código QR para este contato",
     "verifiedRowAria": "Contato verificado",
     "renameFailed": "Não foi possível salvar o nome de exibição.",
-    "removeContactConfirmBody": "Isso remove o contato da sua lista salva. As mensagens de bate-papo permanecem; elas permanecem no Histórico se você as enviou."
+    "removeContactConfirmBody": "Isso remove o contato da sua lista salva. As mensagens de bate-papo permanecem; elas permanecem no Histórico se você as enviou.",
+    "backupPaths": "Caminhos de backup"
   },
   "peerGraph": {
     "title": "Gráfico de Comunicação entre Pares",

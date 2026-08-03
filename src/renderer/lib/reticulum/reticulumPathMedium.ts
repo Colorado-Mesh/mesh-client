@@ -169,6 +169,53 @@ export async function fetchReticulumPeerPaths(hash: string): Promise<ReticulumPe
   }
 }
 
+/** Settle after fire-and-forget path request before reading slots. */
+export const RETICULUM_PATH_SETTLE_MS = 800;
+/** Second attempt when the first `/paths` read is still empty. */
+export const RETICULUM_PATH_RETRY_MS = 1200;
+
+/** Active path: marked active + live, else first live slot, else first slot. */
+export function activeReticulumPathSlot(
+  paths: readonly ReticulumPathSlot[],
+): ReticulumPathSlot | null {
+  if (paths.length === 0) return null;
+  return paths.find((s) => s.active && !s.expired) ?? paths.find((s) => !s.expired) ?? paths[0];
+}
+
+/** Non-expired slots excluding the chosen active slot (transport caps at 3 total). */
+export function backupReticulumPathSlots(paths: readonly ReticulumPathSlot[]): ReticulumPathSlot[] {
+  const active = activeReticulumPathSlot(paths);
+  return paths.filter((s) => !s.expired && s !== active);
+}
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
+ * Fetch ranked path slots and apply the active route onto the peer store
+ * (peers + contacts + history). Optional settle/retry for post-RequestPath timing.
+ * Returns the last `/paths` payload (for Medium / backup UI).
+ */
+export async function refreshReticulumPeerRouteFromPaths(
+  hash: string,
+  opts?: { settleMs?: number; retryMs?: number },
+): Promise<ReticulumPeerPathsResult> {
+  const { applyReticulumPeerActivePathSlot } = await import('@/renderer/stores/reticulumPeerStore');
+  const settleMs = opts?.settleMs ?? 0;
+  if (settleMs > 0) await sleepMs(settleMs);
+  const first = await fetchReticulumPeerPaths(hash);
+  if (applyReticulumPeerActivePathSlot(hash, first)) return first;
+  const retryMs = opts?.retryMs ?? 0;
+  if (retryMs <= 0) return first;
+  await sleepMs(retryMs);
+  const second = await fetchReticulumPeerPaths(hash);
+  applyReticulumPeerActivePathSlot(hash, second);
+  return second;
+}
+
 export async function setReticulumPeerMediumPin(
   hash: string,
   pin: PathMedium | null,

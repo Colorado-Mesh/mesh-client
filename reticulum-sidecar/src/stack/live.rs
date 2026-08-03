@@ -33,7 +33,7 @@ use tokio::sync::{RwLock, broadcast};
 
 use super::StackHandle;
 use super::announce_ws_coalesce::{
-    AnnounceWsCoalescer, AnnounceWsRow, build_announce_received_frame,
+    AnnounceWsCoalescer, AnnounceWsRow, build_announce_received_frame, resolve_announce_aspect,
 };
 use super::config;
 use super::local_rnode_primary;
@@ -2459,6 +2459,8 @@ impl LiveBridge {
                             destination_hash: dest_hex,
                             display_name,
                             hops: evt.hops,
+                            aspect: resolve_announce_aspect(&evt.name_hash).map(str::to_string),
+                            identity_hash: evt.identity_hash.map(hex::encode),
                         });
                     }
                     () = async {

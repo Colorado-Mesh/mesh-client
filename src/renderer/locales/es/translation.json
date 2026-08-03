@@ -3117,7 +3117,6 @@
   },
   "peerDetailModal": {
     "networkSection": "Red",
-    "pathHash": "Hash de ruta",
     "copyHash": "Copiar hash de destino",
     "editNameAria": "Establecer nombre para mostrar personalizado",
     "sendMessage": "Enviar mensaje",
@@ -3134,8 +3133,6 @@
     "probeOk": "Sonda OK — ruta accesible.",
     "blockContact": "Bloquear contacto",
     "unblockContact": "Desbloquear contacto",
-    "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — visto por última vez {{seen}}",
     "verifyMark": "Marcar como verificado",
     "verifyRevoke": "Revocar verificación",
     "verifyFingerprint": "Huella dactilar de identidad",
@@ -3145,7 +3142,8 @@
     "shareContactQrAria": "Mostrar código QR para este contacto",
     "verifiedRowAria": "Contacto no verificado",
     "renameFailed": "No se pudo guardar el nombre para mostrar.",
-    "removeContactConfirmBody": "Esto elimina el contacto de su lista guardada. Los mensajes de chat permanecen; permanecen en el historial si los has enviado."
+    "removeContactConfirmBody": "Esto elimina el contacto de su lista guardada. Los mensajes de chat permanecen; permanecen en el historial si los has enviado.",
+    "backupPaths": "Rutas Respaldo"
   },
   "peerGraph": {
     "title": "Gráfico de comunicación con los compañeros",
