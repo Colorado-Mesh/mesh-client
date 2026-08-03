@@ -2098,8 +2098,8 @@ impl StackHandle {
                         tracing::warn!("rncp listener persist failed: {e}");
                     }
                 }
-                // Match enable's RemoteOkResponse shape — status alone has no `ok`,
-                // and UI clients treat missing `ok` as failure (`!res.ok`).
+                // Stamp explicit `ok: true` success marker (same RemoteOkResponse
+                // contract as enable) onto the post-disable listener status.
                 return with_rncp_listener_ok(live.rncp_listener_status().await);
             }
             let mode = if allowed.is_empty() {
@@ -2831,8 +2831,8 @@ fn merge_live_peer_fetch(
     }
 }
 
-/// Stamp `ok: true` onto an rncp listener status object so disable matches enable's
-/// `RemoteOkResponse` contract (UI treats missing `ok` as failure).
+/// Stamp `ok: true` onto an rncp listener status object so disable returns the
+/// same explicit RNCP success marker as enable (`RemoteOkResponse`).
 fn with_rncp_listener_ok(mut status: serde_json::Value) -> serde_json::Value {
     if let Some(map) = status.as_object_mut() {
         map.insert("ok".into(), serde_json::Value::Bool(true));
