@@ -616,7 +616,10 @@ describe('reticulumPeerStore', () => {
           hops: 2,
           via_hash: '11'.repeat(16),
           interface: 'RMAP World',
+          interface_id: 1,
+          medium: 'network',
           timestamp: 1234,
+          expires: null,
         },
       ],
     });
