@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Yol tablosu dalgalanması için en büyük kaldıraç olan kullanılmayan TCP hub'larını (Bağlantı → Arabirimleri) devre dışı bırakın.",
         "announceBusPressureTipShareInstance": "Diğer yerel Reticulum uygulamaları bu yığınla mücadele ediyorsa Paylaşım örneğini kapat.",
         "announceBusPressureTipAnnounceInterval": "Ağ duyuru aralığı yalnızca bu düğümün giden duyurularını kontrol eder — gelen yol - yanıt sellerini durdurmaz.",
-        "announceBusPressureTipWait": "Yetişme zaten aktif; bu uyarı yaklaşık 5 dakika sonra gecikme, fırtına veya taşma olmadan silinir."
+        "announceBusPressureTipWait": "Yetişme zaten aktif; bu uyarı yaklaşık 5 dakika sonra gecikme, fırtına veya taşma olmadan silinir.",
+        "announceBusPressureHot": "Yüksek anons/yol yanıt oranı, gelen LXMF Sohbet teslimatını geciktirebilir — en son yol güncellemeleri \"{{hotInterface}}\" üzerinden yapılır",
+        "announceBusPressureTipHotInterface": "Yol tablosu dalgalanması \"{{name}}\" arayüzünde yoğunlaşmıştır.",
+        "announceBusPressureTipBoundaryHubs": "Etkin sınır / omurga göbekleri: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "TX kuyruğu şu tarihte düşer: {{names}} — bu arayüz doymuş olabilir.",
+        "tooManyDefaultBackbones": "{{count}} varsayılan omurganız etkin. Ekstraları devre dışı bırakmayı ve fazlalık için yaklaşık 2 tane tutmayı düşünün.",
+        "decommissionedHubEnabled": "Devre dışı bırakılan hub \"{{name}}\" hala etkindir — mesh-client her yığın başlangıcında onu kapatır. Canlı uç noktalar için Varsayılan omurga ekle veya omurga dizinini kullanın."
       }
     },
     "routingPort": {

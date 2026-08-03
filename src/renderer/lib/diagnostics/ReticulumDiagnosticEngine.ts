@@ -1,7 +1,12 @@
 import {
+  listEnabledBoundaryInterfaceNames,
+  listEnabledDefaultHubInterfaceNames,
+} from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
+import {
   auditIssuesToDiagnosticRows,
   type ReticulumConfigAuditIssue,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import { countEnabledDefaultHubPresets } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import type { ReticulumInboundLxmfDiagnosticsSnapshot } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 import {
   collectReticulumLocalInterfaceAlerts,
@@ -21,7 +26,11 @@ import type {
   ReticulumAutoBeaconAlert,
   ReticulumInterfaceIssueAlert,
 } from '@/shared/reticulum-types';
+import { isDecommissionedReticulumTcpInterfaceRow } from '@/shared/reticulumDecommissionedHubs';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
+
+/** Enabled default backbone presets above this count emit a Diagnostics warning. */
+export const RETICULUM_TOO_MANY_DEFAULT_BACKBONES_THRESHOLD = 3;
 
 export interface ReticulumDiagnosticsSnapshot {
   rns_ready?: boolean;
@@ -74,6 +83,11 @@ export interface ReticulumDiagnosticsBuildOptions {
   propagation?: ReticulumPropagationDiagnosticsInput;
   /** Renderer-local WS lag / inbound catch-up counters. */
   inboundLxmf?: ReticulumInboundLxmfDiagnosticsSnapshot;
+  /**
+   * peers_updated path-churn majority interface (from reticulumAnnounceIfaceAttribution).
+   * When set and announce-bus pressure fires, named in the pressure row.
+   */
+  hotPeerInterface?: string | null;
 }
 
 function runtimeCauseI18n(
@@ -106,13 +120,19 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.propagationSyncStuck',
   'diagnosticsPanel.reticulum.runtime.propagationSyncFailing',
   'diagnosticsPanel.reticulum.runtime.announceBusPressure',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureHot',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipHotInterface',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipBoundaryHubs',
+  'diagnosticsPanel.reticulum.runtime.announceBusPressureTipTxSaturated',
   'diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs',
   'diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance',
   'diagnosticsPanel.reticulum.runtime.announceBusPressureTipAnnounceInterval',
   'diagnosticsPanel.reticulum.runtime.announceBusPressureTipWait',
+  'diagnosticsPanel.reticulum.runtime.tooManyDefaultBackbones',
+  'diagnosticsPanel.reticulum.runtime.decommissionedHubEnabled',
 ] as const;
 
-/** Tip keys shown under reticulum/announce-bus-pressure in Diagnostics. */
+/** Tip keys shown under reticulum/announce-bus-pressure in Diagnostics (static tips). */
 export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs',
   'diagnosticsPanel.reticulum.runtime.announceBusPressureTipShareInstance',
@@ -247,6 +267,40 @@ export function buildReticulumDiagnosticRows(
         reticulumRepairKind: 'edit',
       });
     }
+  }
+
+  const enabledDefaultBackboneCount = countEnabledDefaultHubPresets(healthInterfaces);
+  if (enabledDefaultBackboneCount > RETICULUM_TOO_MANY_DEFAULT_BACKBONES_THRESHOLD) {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/too-many-default-backbones'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/too-many-default-backbones',
+      cause: `Too many default backbone hubs enabled (${enabledDefaultBackboneCount})`,
+      causeI18n: runtimeCauseI18n('tooManyDefaultBackbones', {
+        count: String(enabledDefaultBackboneCount),
+      }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumRepairKind: 'open_interfaces',
+    });
+  }
+
+  for (const iface of healthInterfaces) {
+    if (!iface.enabled) continue;
+    if (!isDecommissionedReticulumTcpInterfaceRow(iface)) continue;
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, `reticulum/decommissioned-hub-enabled/${iface.id}`),
+      nodeId: homeNodeId,
+      condition: 'reticulum/decommissioned-hub-enabled',
+      cause: `Decommissioned hub "${iface.name}" is still enabled`,
+      causeI18n: runtimeCauseI18n('decommissionedHubEnabled', { name: iface.name }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumInterfaceId: iface.id,
+      reticulumRepairKind: 'disable',
+    });
   }
 
   const interfaceIssueAlert = options?.interfaceIssueAlert;
@@ -438,14 +492,35 @@ export function buildReticulumDiagnosticRows(
   }
 
   if (shouldEmitAnnounceBusPressure(snapshot.announce_ws, options?.inboundLxmf, now)) {
+    const hotInterface =
+      typeof options?.hotPeerInterface === 'string' && options.hotPeerInterface.trim()
+        ? options.hotPeerInterface.trim()
+        : null;
+    const boundaryNames = listEnabledBoundaryInterfaceNames(healthInterfaces);
+    const defaultHubNames = listEnabledDefaultHubInterfaceNames(healthInterfaces);
+    // Prefer boundary-mode names; fall back to enabled default-preset hub names.
+    const hubContextNames = boundaryNames.length > 0 ? boundaryNames : defaultHubNames;
+    const txSaturatedNames =
+      options?.interfaceIssueAlert?.txQueueDrops
+        .map((d) => d.name.trim())
+        .filter((n) => n.length > 0) ?? [];
+    const params: Record<string, string> = {};
+    if (hotInterface) params.hotInterface = hotInterface;
+    if (hubContextNames.length > 0) params.boundaryHubs = hubContextNames.join(', ');
+    if (txSaturatedNames.length > 0) params.txSaturatedIfaces = txSaturatedNames.join(', ');
+
     rows.push({
       kind: 'rf',
       id: rfRowId(homeNodeId, 'reticulum/announce-bus-pressure'),
       nodeId: homeNodeId,
       condition: 'reticulum/announce-bus-pressure',
-      cause:
-        'High announce/path-response rate may delay inbound LXMF Chat delivery (WS catch-up active)',
-      causeI18n: runtimeCauseI18n('announceBusPressure'),
+      cause: hotInterface
+        ? `High announce/path-response rate may delay inbound LXMF Chat delivery (hot interface: ${hotInterface})`
+        : 'High announce/path-response rate may delay inbound LXMF Chat delivery (WS catch-up active)',
+      causeI18n: runtimeCauseI18n(
+        hotInterface ? 'announceBusPressureHot' : 'announceBusPressure',
+        Object.keys(params).length > 0 ? params : undefined,
+      ),
       severity: 'warning',
       detectedAt: now,
       reticulumRepairKind: 'open_interfaces',

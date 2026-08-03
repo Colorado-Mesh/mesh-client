@@ -13,6 +13,7 @@ import { loadMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
+  shouldEmitAnnounceBusPressure,
 } from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import i18n from '@/renderer/lib/i18n';
@@ -44,6 +45,10 @@ import {
   markStaleReticulumOutboundMessages,
   RETICULUM_STALE_OUTBOUND_MS,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import {
+  getHotReticulumPeerInterface,
+  recordReticulumPeerInterfaceSamplesFromPeersUpdated,
+} from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
@@ -170,6 +175,7 @@ import {
 } from '../stores/reticulumDiscoveryMapStore';
 import {
   parseAnnounceActivityRows,
+  setReticulumAnnounceBusPressureActive,
   useReticulumIdentityActivityStore,
 } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPacketStore } from '../stores/reticulumPacketStore';
@@ -464,6 +470,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const shareInstanceEnabled =
           stackRaw != null ? parseReticulumStackSettingsPayload(stackRaw).share_instance : false;
         const propState = useReticulumPropagationStore.getState();
+        const inboundLxmf = getReticulumInboundLxmfDiagnostics();
+        const announcePressure = shouldEmitAnnounceBusPressure(snapshot.announce_ws, inboundLxmf);
+        setReticulumAnnounceBusPressureActive(announcePressure);
         const rows = buildReticulumDiagnosticRows(snapshot, {
           selfNodeId,
           interfaces,
@@ -475,7 +484,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           sidecarRunning: sidecarStatus.running,
           sidecarHealthy: sidecarStatus.healthy,
           sidecarUnhealthySince: sidecarStatus.unhealthySince,
-          inboundLxmf: getReticulumInboundLxmfDiagnostics(),
+          inboundLxmf,
+          hotPeerInterface: getHotReticulumPeerInterface(),
           propagation: {
             syncActive: propState.sync.active,
             syncProgress: propState.sync.progress,
@@ -752,6 +762,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
             ? (evt.payload as { skipped?: number }).skipped
             : undefined;
         noteReticulumEventsLagged(skipped);
+        // Gate unknown identity-activity SQLite writes as soon as lag indicates pressure.
+        if (shouldEmitAnnounceBusPressure(undefined, getReticulumInboundLxmfDiagnostics())) {
+          setReticulumAnnounceBusPressureActive(true);
+        }
         console.warn(
           `[useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
         );
@@ -1260,6 +1274,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         requestChatOutboxDrain('reticulum');
       }
       if (evt.type === 'peers_updated' && refreshActions.peerPatches) {
+        recordReticulumPeerInterfaceSamplesFromPeersUpdated(evt.payload);
         if (peersUpdatedRequiresFullRefresh(evt.payload)) {
           scheduleFullPeerRefresh();
         } else {
@@ -1293,6 +1308,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setRawPackets([]);
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
+    setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -1485,6 +1501,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setRawPackets([]);
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
+    setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);

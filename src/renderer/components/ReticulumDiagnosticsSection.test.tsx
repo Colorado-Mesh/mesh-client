@@ -80,7 +80,14 @@ describe('ReticulumDiagnosticsSection', () => {
       cause: 'announce pressure',
       severity: 'warning',
       detectedAt: Date.now(),
-      causeI18n: { key: 'diagnosticsPanel.reticulum.runtime.announceBusPressure' },
+      causeI18n: {
+        key: 'diagnosticsPanel.reticulum.runtime.announceBusPressureHot',
+        params: {
+          hotInterface: 'Dublin',
+          boundaryHubs: 'Dublin, BTB',
+          txSaturatedIfaces: 'Dublin',
+        },
+      },
       reticulumRepairKind: 'open_interfaces',
     };
     render(
@@ -90,7 +97,24 @@ describe('ReticulumDiagnosticsSection', () => {
       />,
     );
     expect(
-      screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressure'),
+      screen.getByText(
+        'diagnosticsPanel.reticulum.runtime.announceBusPressureHot:{"hotInterface":"Dublin","boundaryHubs":"Dublin, BTB","txSaturatedIfaces":"Dublin"}',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'diagnosticsPanel.reticulum.runtime.announceBusPressureTipHotInterface:{"name":"Dublin"}',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'diagnosticsPanel.reticulum.runtime.announceBusPressureTipBoundaryHubs:{"hubs":"Dublin, BTB"}',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'diagnosticsPanel.reticulum.runtime.announceBusPressureTipTxSaturated:{"names":"Dublin"}',
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText('diagnosticsPanel.reticulum.runtime.announceBusPressureTipDisableHubs'),

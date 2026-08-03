@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Deaktivieren Sie unbenutzte TCP-Hubs (→Verbindungsschnittstellen) — der größte Hebel für Pfad-Tabellen-Abwanderung.",
         "announceBusPressureTipShareInstance": "Deaktivieren Sie die Share-Instanz, wenn andere lokale Reticulum-Apps mit diesem Stack konkurrieren.",
         "announceBusPressureTipAnnounceInterval": "Das Netzwerk-Ankündigungsintervall steuert nur die ausgehenden Ansagen dieses Knotens — es stoppt keine eingehenden Pfad-Antwort-Überschwemmungen.",
-        "announceBusPressureTipWait": "Catch-up ist bereits aktiv; diese Warnung löscht sich nach ca. 5 Minuten ohne Verzögerung, Sturm oder Überlauf."
+        "announceBusPressureTipWait": "Catch-up ist bereits aktiv; diese Warnung löscht sich nach ca. 5 Minuten ohne Verzögerung, Sturm oder Überlauf.",
+        "announceBusPressureHot": "Eine hohe Ankündigungs-/Pfadantwortrate kann die eingehende LXMF-Chat-Zustellung verzögern — die neuesten Pfadaktualisierungen erfolgen über „{{hotInterface}}“",
+        "announceBusPressureTipHotInterface": "Die Streckentabellenabwanderung konzentriert sich auf die Schnittstelle „{{name}}“.",
+        "announceBusPressureTipBoundaryHubs": "Aktivierte Grenz- / Backbone-Hubs: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "TX-Warteschlange fällt auf: {{names}} — diese Schnittstelle kann gesättigt sein.",
+        "tooManyDefaultBackbones": "Du hast {{count}} Standard-Backbones aktiviert. Erwägen Sie, Extras zu deaktivieren und etwa 2 für die Redundanz aufzubewahren.",
+        "decommissionedHubEnabled": "Der stillgelegte Hub „{{name}}“ ist immer noch aktiviert — der Mesh-Client schaltet ihn bei jedem Stapelstart aus. Verwenden Sie Standard-Backbones oder das Backbone-Verzeichnis für Live-Endpunkte hinzufügen."
       }
     },
     "routingPort": {

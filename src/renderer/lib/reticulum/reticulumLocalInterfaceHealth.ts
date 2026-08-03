@@ -20,6 +20,8 @@ export interface ReticulumLocalInterfaceInput {
   serial_port?: string | null;
   host?: string | null;
   port?: number | null;
+  /** rnsd interface mode (`full`, `boundary`, `access_point`, …). */
+  mode?: string | null;
 }
 
 export interface ReticulumLocalInterfaceAlert {

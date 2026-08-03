@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Desative os hubs TCP (→Interfaces de Conexão) não utilizados — a maior alavanca para rotatividade de mesa de caminho.",
         "announceBusPressureTipShareInstance": "Desative a instância Compartilhar se outros aplicativos Reticulum locais estiverem em conflito com esta pilha.",
         "announceBusPressureTipAnnounceInterval": "O intervalo de anúncio de rede controla apenas os anúncios de saída deste nó — ele não interrompe as inundações de resposta ao caminho de entrada.",
-        "announceBusPressureTipWait": "A recuperação já está ativa; este aviso desaparece após cerca de 5 minutos sem atraso, tempestade ou transbordamento."
+        "announceBusPressureTipWait": "A recuperação já está ativa; este aviso desaparece após cerca de 5 minutos sem atraso, tempestade ou transbordamento.",
+        "announceBusPressureHot": "A alta taxa de anúncio/resposta ao caminho pode atrasar a entrega do chat LXMF de entrada — as atualizações mais recentes do caminho são feitas por meio de \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "A rotatividade da tabela de caminho está concentrada na interface \"{{name}}\".",
+        "announceBusPressureTipBoundaryHubs": "Hubs de limite / backbone ativados: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "A fila TX cai em: {{names}} — essa interface pode estar saturada.",
+        "tooManyDefaultBackbones": "Você tem {{count}} backbones padrão ativados. Considere desativar extras e manter cerca de 2 para redundância.",
+        "decommissionedHubEnabled": "O hub desativado \"{{name}}\" ainda está ativado — o mesh-client o desliga em todas as partidas de pilha. Use Adicionar backbones padrão ou o diretório de backbone para pontos de extremidade ativos."
       }
     },
     "routingPort": {

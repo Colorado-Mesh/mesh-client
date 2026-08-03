@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Nonaktifkan hub TCP yang tidak digunakan (→Antarmuka Koneksi) — tuas terbesar untuk churn tabel jalur.",
         "announceBusPressureTipShareInstance": "Nonaktifkan Bagikan instance jika aplikasi Reticulum lokal lainnya bersaing dengan tumpukan ini.",
         "announceBusPressureTipAnnounceInterval": "Interval pengumuman jaringan hanya mengontrol pengumuman keluar simpul ini — tidak menghentikan banjir respons jalur masuk.",
-        "announceBusPressureTipWait": "Penangkapan sudah aktif; peringatan ini hilang setelah sekitar 5 menit tanpa lag, badai, atau luapan."
+        "announceBusPressureTipWait": "Penangkapan sudah aktif; peringatan ini hilang setelah sekitar 5 menit tanpa lag, badai, atau luapan.",
+        "announceBusPressureHot": "Tingkat pengumuman/respons jalur yang tinggi dapat menunda pengiriman Obrolan LXMF masuk — pembaruan jalur terbaru melalui \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "Path - table churn terkonsentrasi pada antarmuka \"{{name}} \".",
+        "announceBusPressureTipBoundaryHubs": "Mengaktifkan hub batas / tulang punggung: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "Antrean TX turun pada: {{names}} — antarmuka itu mungkin jenuh.",
+        "tooManyDefaultBackbones": "Anda telah mengaktifkan {{count}} tulang punggung default. Pertimbangkan untuk menonaktifkan ekstra dan menyimpan sekitar 2 untuk redundansi.",
+        "decommissionedHubEnabled": "Hub yang dinonaktifkan \"{{name}}\" masih diaktifkan — mesh-client mematikannya di setiap awal tumpukan. Gunakan Tambahkan tulang punggung default atau direktori tulang punggung untuk titik akhir langsung."
       }
     },
     "routingPort": {

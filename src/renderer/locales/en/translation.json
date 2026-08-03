@@ -1640,10 +1640,16 @@
         "propagationSyncStuck": "Propagation node sync is stuck establishing a link",
         "propagationSyncFailing": "Propagation node sync failed",
         "announceBusPressure": "High announce/path-response rate may delay inbound LXMF Chat delivery — catch-up is active; large path tables are expected",
+        "announceBusPressureHot": "High announce/path-response rate may delay inbound LXMF Chat delivery — most recent path updates are via \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "Path-table churn is concentrated on interface \"{{name}}\".",
+        "announceBusPressureTipBoundaryHubs": "Enabled boundary / backbone hubs: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "TX queue drops on: {{names}} — that interface may be saturated.",
         "announceBusPressureTipDisableHubs": "Disable unused TCP hubs (Connection → Interfaces) — the biggest lever for path-table churn.",
         "announceBusPressureTipShareInstance": "Turn off Share instance if other local Reticulum apps are contending with this stack.",
         "announceBusPressureTipAnnounceInterval": "Network announce interval only controls this node’s outbound announces — it does not stop inbound path-response floods.",
-        "announceBusPressureTipWait": "Catch-up is already active; this warning clears after about 5 minutes without lag, storm, or overflow."
+        "announceBusPressureTipWait": "Catch-up is already active; this warning clears after about 5 minutes without lag, storm, or overflow.",
+        "tooManyDefaultBackbones": "You have {{count}} default backbones enabled. Consider disabling extras and keeping about 2 for redundancy.",
+        "decommissionedHubEnabled": "Decommissioned hub \"{{name}}\" is still enabled — mesh-client turns it off on every stack start. Use Add default backbones or the backbone directory for live endpoints."
       },
       "audit": {
         "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",

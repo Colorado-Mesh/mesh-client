@@ -1646,7 +1646,13 @@
         "announceBusPressureTipDisableHubs": "Wyłącz nieużywane koncentratory TCP (→interfejsy połączeń) — największa dźwignia do migracji tabeli ścieżek.",
         "announceBusPressureTipShareInstance": "Wyłącz opcję Udostępnij instancję, jeśli inne lokalne aplikacje Reticulum walczą z tym stosem.",
         "announceBusPressureTipAnnounceInterval": "Interwał ogłaszania sieci kontroluje tylko komunikaty wychodzące tego węzła — nie zatrzymuje powodzi odpowiedzi na trasę przychodzącą.",
-        "announceBusPressureTipWait": "Nadrabianie zaległości jest już aktywne; to ostrzeżenie zostaje usunięte po około 5 minutach bez opóźnień, burzy lub przepełnienia."
+        "announceBusPressureTipWait": "Nadrabianie zaległości jest już aktywne; to ostrzeżenie zostaje usunięte po około 5 minutach bez opóźnień, burzy lub przepełnienia.",
+        "announceBusPressureHot": "Wysoki wskaźnik zapowiedzi/odpowiedzi na ścieżkę może opóźnić dostawę przychodzącego czatu LXMF — najnowsze aktualizacje ścieżek są dokonywane za pośrednictwem \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "Migracja tabeli ścieżek jest skoncentrowana na interfejsie „{{name}}”.",
+        "announceBusPressureTipBoundaryHubs": "Włączone koncentratory brzegowe / szkieletowe: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "Kolejka TX spada w dniu: {{names}} — ten interfejs może być nasycony.",
+        "tooManyDefaultBackbones": "Masz włączone {{count}} domyślne kręgosłupy. Rozważ wyłączenie dodatków i zachowanie około 2 na potrzeby redundancji.",
+        "decommissionedHubEnabled": "Wycofany koncentrator „{{name}}” jest nadal włączony — mesh-client wyłącza go przy każdym uruchomieniu stosu. Użyj opcji Dodaj domyślne kręgosłupy lub katalogu kręgosłupa dla punktów końcowych na żywo."
       }
     },
     "routingPort": {

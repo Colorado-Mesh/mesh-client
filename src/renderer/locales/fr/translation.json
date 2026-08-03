@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Désactivez les concentrateurs TCP inutilisés (→interfaces de connexion) — le plus grand levier pour le désabonnement des tables de cheminement.",
         "announceBusPressureTipShareInstance": "Désactivez Partager l'instance si d'autres applications Reticulum locales sont en conflit avec cette pile.",
         "announceBusPressureTipAnnounceInterval": "L'intervalle d'annonce du réseau contrôle uniquement les annonces sortantes de ce nœud — il n'arrête pas les inondations de chemin-réponse entrantes.",
-        "announceBusPressureTipWait": "Le rattrapage est déjà actif ; cet avertissement disparaît après environ 5 minutes sans décalage, tempête ou débordement."
+        "announceBusPressureTipWait": "Le rattrapage est déjà actif ; cet avertissement disparaît après environ 5 minutes sans décalage, tempête ou débordement.",
+        "announceBusPressureHot": "Un taux élevé d'annonce/de réponse au chemin peut retarder la livraison du chat LXMF entrant — les mises à jour les plus récentes du chemin se font via « {{hotInterface}} »",
+        "announceBusPressureTipHotInterface": "Path-table churn est concentré sur l'interface « {{name}} ».",
+        "announceBusPressureTipBoundaryHubs": "Hubs de frontière / dorsale activés : {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "La file d'attente TX tombe sur : {{names}} — cette interface peut être saturée.",
+        "tooManyDefaultBackbones": "Vous avez activé les backbones par défaut {{count}}. Envisagez de désactiver les extras et de conserver environ 2 pour la redondance.",
+        "decommissionedHubEnabled": "Le hub « {{name}} » mis hors service est toujours activé — mesh-client l'éteint à chaque démarrage de la pile. Utilisez Ajouter des backbones par défaut ou le répertoire de backbone pour les points de terminaison en direct."
       }
     },
     "routingPort": {

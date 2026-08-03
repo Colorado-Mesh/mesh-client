@@ -1642,7 +1642,13 @@
         "announceBusPressureTipDisableHubs": "Deshabilite los concentradores TCP (→interfaces de conexión) no utilizados: la palanca más grande para la rotación de la mesa de ruta.",
         "announceBusPressureTipShareInstance": "Desactive la instancia Compartir si otras aplicaciones locales de Reticulum están compitiendo con esta pila.",
         "announceBusPressureTipAnnounceInterval": "El intervalo de anuncio de red solo controla los anuncios salientes de este nodo: no detiene las inundaciones de respuesta de ruta entrante.",
-        "announceBusPressureTipWait": "La recuperación ya está activa; esta advertencia se borra después de unos 5 minutos sin retraso, tormenta o desbordamiento."
+        "announceBusPressureTipWait": "La recuperación ya está activa; esta advertencia se borra después de unos 5 minutos sin retraso, tormenta o desbordamiento.",
+        "announceBusPressureHot": "La alta tasa de anuncio/respuesta de ruta puede retrasar la entrega entrante de LXMF Chat: las actualizaciones de ruta más recientes se realizan a través de \"{{hotInterface}}\"",
+        "announceBusPressureTipHotInterface": "La rotación de la mesa de ruta se concentra en la interfaz \"{{name}}\".",
+        "announceBusPressureTipBoundaryHubs": "Hubs de límite / backbone habilitados: {{hubs}}.",
+        "announceBusPressureTipTxSaturated": "La cola TX cae en: {{names}} — esa interfaz puede estar saturada.",
+        "tooManyDefaultBackbones": "Tienes {{count}} backbones predeterminados habilitados. Considere deshabilitar los extras y mantener alrededor de 2 por redundancia.",
+        "decommissionedHubEnabled": "El concentrador desmantelado \"{{name}}\" todavía está habilitado: mesh-client lo apaga en cada inicio de pila. Utilice Agregar backbones predeterminados o el directorio de backbone para puntos finales en vivo."
       }
     },
     "routingPort": {
