@@ -2107,4 +2107,14 @@ describe('sniffer tab and MQTT channel PSK i18n quality', () => {
     });
     expectIssue(issues, 'I2P');
   });
+
+  it('flags Spanish pathMediumPreference leaving English Path', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'networkPanel.reticulumStackSettings.pathMediumPreference',
+      enVal: 'Preferred path medium',
+      val: 'Medio Path preferido',
+    });
+    expectIssue(issues, 'English "Path"');
+  });
 });

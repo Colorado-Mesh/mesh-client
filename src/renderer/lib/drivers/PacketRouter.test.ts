@@ -6,6 +6,10 @@ import { addIdentity, useIdentityStore } from '../../stores/identityStore';
 import { useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import {
+  resetConnectedMeshcoreBleMacForTests,
+  setConnectedMeshcoreBleMac,
+} from '../connectedMeshcoreBleMac';
+import {
   clearMeshtasticConfigIngressGuardsForTests,
   setMeshtasticRemoteConfigTarget,
 } from '../meshtastic/meshtasticConfigIngressGuard';
@@ -29,6 +33,7 @@ describe('PacketRouter', () => {
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useDeviceStore.setState({ devices: {} });
     clearMeshtasticConfigIngressGuardsForTests();
+    resetConnectedMeshcoreBleMacForTests();
   });
 
   const cases: { event: DomainEvent; assert: () => void }[] = [
@@ -408,9 +413,7 @@ describe('PacketRouter', () => {
     }).not.toThrow();
   });
 
-  it('skips Meshtastic node_info store writes for MeshCore BLE MAC ghost nodes', async () => {
-    const { setConnectedMeshcoreBleMac, resetConnectedMeshcoreBleMacForTests } =
-      await import('../connectedMeshcoreBleMac');
+  it('skips Meshtastic node_info store writes for MeshCore BLE MAC ghost nodes', () => {
     addIdentity({
       id: ID_MT,
       protocol: meshtasticProtocol,
@@ -451,6 +454,5 @@ describe('PacketRouter', () => {
     expect(useNodeStore.getState().nodes[ID_MT][ghostId].lastHeardAt).toBe(priorHeard);
     expect(listener).not.toHaveBeenCalled();
     detach();
-    resetConnectedMeshcoreBleMacForTests();
   });
 });
