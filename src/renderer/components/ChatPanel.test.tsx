@@ -4303,6 +4303,81 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(onPeerClick).toHaveBeenCalledExactlyOnceWith(peerHash);
   });
 
+  it('orders DM header as status → last heard → peer details → Probe → Path → Call → Send file', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    const peerId = parseInt(hash.slice(0, 12), 16) >>> 0;
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 2 });
+    const onPeerClick = vi.fn();
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: hash,
+          long_name: 'Order Peer',
+          short_name: 'OP',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          hops_away: 2,
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    const precedes = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          nodes={nodes}
+          initialDmTarget={peerId}
+          reticulumStackLive
+          onPeerClick={onPeerClick}
+          hasLxstVoice
+          hasRncpTransfer
+        />
+      </ToastProvider>,
+    );
+
+    const pathStatus = await screen.findByRole('status', {
+      name: 'Destination path is reachable',
+    });
+    const peerInfo = screen.getByRole('status', { name: 'DM peer info' });
+    const peerDetails = screen.getByRole('button', {
+      name: /Open peer details for Order Peer/i,
+    });
+    const probe = screen.getByRole('button', {
+      name: 'Probe Reticulum path reachability for this destination',
+    });
+    const path = screen.getByRole('button', {
+      name: 'Request Reticulum path to this destination',
+    });
+    const call = screen.getByRole('button', { name: /start lxst voice call/i });
+    const sendFile = screen.getByRole('button', { name: /Send file to Order Peer via rncp/i });
+
+    expect(precedes(pathStatus, peerInfo)).toBe(true);
+    expect(precedes(peerInfo, peerDetails)).toBe(true);
+    expect(precedes(peerDetails, probe)).toBe(true);
+    expect(precedes(probe, path)).toBe(true);
+    expect(precedes(path, call)).toBe(true);
+    expect(precedes(call, sendFile)).toBe(true);
+
+    expect(peerDetails.className).toContain('text-cyan-400');
+    expect(peerDetails.className).not.toContain('bg-secondary-dark');
+    expect(peerDetails.className).not.toContain('rounded-full');
+    expect(call.className).toContain('text-cyan-400');
+    expect(call.className).not.toContain('ml-2');
+    expect(
+      screen.queryByText(/LXST voice needs a peer running LXST telephony/i),
+    ).not.toBeInTheDocument();
+  });
+
   it('prefers custom Lucide appearance over LXMFace on DM tab', () => {
     const peerHash = 'ffffffffffffffffffffffffffffffff';
     const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;

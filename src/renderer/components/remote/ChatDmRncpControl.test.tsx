@@ -93,6 +93,15 @@ describe('ChatDmRncpControl', () => {
     expect(screen.getByRole('button', { name: 'Send file to Alice via rncp' })).toBeInTheDocument();
   });
 
+  it('styles Send file as a cyan text-link, not a bordered box', () => {
+    render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
+    const trigger = screen.getByRole('button', { name: 'Send file to Alice via rncp' });
+    expect(trigger.className).toContain('text-cyan-400');
+    expect(trigger.className).toContain('hover:underline');
+    expect(trigger.className).not.toMatch(/border-gray-700\/60/);
+    expect(trigger.className).not.toMatch(/bg-gray-800\/40/);
+  });
+
   it('shows a pending-offer badge only for offers from this peer', () => {
     useRncpTransferStore.getState().applyOffer({
       transfer_id: 't1',

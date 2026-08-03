@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import i18n from '@/renderer/lib/i18n';
 
 import { ReticulumVoiceCallButton } from './ReticulumVoiceCallButton';
 
@@ -28,5 +29,18 @@ describe('ReticulumVoiceCallButton', () => {
     expect(callPeer).toHaveBeenCalledWith('a'.repeat(32), { identityHash: 'b'.repeat(32) });
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('uses cyan text-link action class and keeps interop only in aria/title', () => {
+    render(
+      <ReticulumVoiceCallButton lxmfPeerHash={'a'.repeat(32)} identityHash={'b'.repeat(32)} />,
+    );
+    const btn = screen.getByRole('button', { name: /start lxst voice call/i });
+    expect(btn.className).toContain('text-cyan-400');
+    expect(btn.className).toContain('hover:underline');
+    const interop = i18n.t('reticulumVoice.help.interop');
+    expect(btn.getAttribute('aria-label')).toContain(interop);
+    expect(btn.getAttribute('title')).toContain(interop);
+    expect(screen.queryByText(interop)).not.toBeInTheDocument();
   });
 });
