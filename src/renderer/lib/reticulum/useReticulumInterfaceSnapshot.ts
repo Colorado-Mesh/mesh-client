@@ -66,13 +66,18 @@ export interface ReticulumSerialPortOption {
 }
 
 export interface UseReticulumInterfaceSnapshotOptions {
-  sidecarApiReady: boolean;
+  /**
+   * Sidecar process is up (may still be `connecting` in the UI).
+   * Read/refresh while running so BLE RNode rows exist during first-start settle;
+   * mutations stay gated by `sidecarApiReady` in the panel.
+   */
+  sidecarRunning: boolean;
   /** When false, adaptive polling pauses (stack stopped). */
   pollActive: boolean;
 }
 
 export function useReticulumInterfaceSnapshot({
-  sidecarApiReady,
+  sidecarRunning,
   pollActive,
 }: UseReticulumInterfaceSnapshotOptions) {
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
@@ -108,7 +113,7 @@ export function useReticulumInterfaceSnapshot({
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!sidecarApiReady) return undefined;
+    if (!sidecarRunning) return undefined;
     try {
       const [rows, ports] = await Promise.all([
         fetchReticulumInterfaces({ propagateRateLimit: true }),
@@ -131,7 +136,7 @@ export function useReticulumInterfaceSnapshot({
       }
       return undefined;
     }
-  }, [sidecarApiReady]);
+  }, [sidecarRunning]);
 
   useEffect(() => {
     refreshRef.current = refresh;
@@ -158,7 +163,7 @@ export function useReticulumInterfaceSnapshot({
   );
 
   useEffect(() => {
-    if (!sidecarApiReady) {
+    if (!sidecarRunning) {
       setInterfaces([]);
       setSerialPorts([]);
       setEffectivePrimaryLocalSerialInterfaceId(null);
@@ -166,8 +171,9 @@ export function useReticulumInterfaceSnapshot({
       burstCancelRef.current?.();
       burstCancelRef.current = null;
       // Noble BLE yield + shared grace clock are owned by useReticulumNobleBleYieldWatcher.
-      // Do not clear grace or release yield here: sidecarApiReady is false while connecting,
-      // and a mid-pair clear leaves release/renew stuck (CoreBluetooth Event receiver died).
+      // Do not clear grace or release yield here while the sidecar is still up during
+      // connecting — a mid-pair clear leaves release/renew stuck (CoreBluetooth Event
+      // receiver died).
       return;
     }
     beginBleConnectGrace();
@@ -181,10 +187,10 @@ export function useReticulumInterfaceSnapshot({
       burstCancelRef.current?.();
       burstCancelRef.current = null;
     };
-  }, [sidecarApiReady, refresh, beginBleConnectGrace]);
+  }, [sidecarRunning, refresh, beginBleConnectGrace]);
 
   useEffect(() => {
-    if (!sidecarApiReady || !pollActive) {
+    if (!sidecarRunning || !pollActive) {
       if (pollTimeoutRef.current) {
         clearTimeout(pollTimeoutRef.current);
         pollTimeoutRef.current = null;
@@ -222,7 +228,7 @@ export function useReticulumInterfaceSnapshot({
         pollTimeoutRef.current = null;
       }
     };
-  }, [sidecarApiReady, pollActive, healthOptions]);
+  }, [sidecarRunning, pollActive, healthOptions]);
 
   return {
     interfaces,

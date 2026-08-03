@@ -66,6 +66,7 @@ describe('rssiForReticulumBleRnodeRow', () => {
 
 describe('useReticulumBleRnodeRssiMap', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     window.electronAPI.bleCoexistence.acquireScan = vi.fn().mockResolvedValue({});
     window.electronAPI.bleCoexistence.releaseScan = vi.fn().mockResolvedValue({});
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
@@ -82,6 +83,7 @@ describe('useReticulumBleRnodeRssiMap', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -107,7 +109,7 @@ describe('useReticulumBleRnodeRssiMap', () => {
     expect(window.electronAPI.bleCoexistence.releaseScan).toHaveBeenCalledWith('reticulum');
   });
 
-  it('stays empty when sidecar is not ready', () => {
+  it('stays empty when sidecar is not running', () => {
     const { result } = renderHook(() =>
       useReticulumBleRnodeRssiMap(
         [
@@ -171,5 +173,126 @@ describe('useReticulumBleRnodeRssiMap', () => {
       await Promise.resolve();
     });
     expect(scanCalls()).toBe(afterFirst);
+  });
+
+  it('preserves last RSSI when a later scan omits the address', async () => {
+    let scanCount = 0;
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (path.startsWith('/api/v1/ble/scan')) {
+        scanCount += 1;
+        if (scanCount === 1) {
+          return Promise.resolve({
+            devices: [{ address: 'AA:BB:CC:DD:EE:FF', rssi: -62, kind: 'rnode' }],
+          });
+        }
+        return Promise.resolve({ devices: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumBleRnodeRssiMap(
+        [
+          {
+            id: '1',
+            enabled: true,
+            type: 'rnode',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ],
+        true,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-62);
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15_000);
+    });
+
+    await waitFor(() => {
+      expect(scanCount).toBeGreaterThanOrEqual(2);
+    });
+    expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-62);
+  });
+
+  it('does not clear RSSI map on brief empty interface hydrate while sidecar is running', async () => {
+    const { result, rerender } = renderHook(
+      ({ ifaces }: { ifaces: Parameters<typeof useReticulumBleRnodeRssiMap>[0] }) =>
+        useReticulumBleRnodeRssiMap(ifaces, true),
+      {
+        initialProps: {
+          ifaces: [
+            {
+              id: '1',
+              enabled: true,
+              type: 'rnode',
+              serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+            },
+          ],
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+    });
+
+    act(() => {
+      rerender({ ifaces: [] });
+    });
+    expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+  });
+
+  it('bursts until first sample then steadies', async () => {
+    let scanCount = 0;
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (path.startsWith('/api/v1/ble/scan')) {
+        scanCount += 1;
+        if (scanCount < 3) {
+          return Promise.resolve({ devices: [] });
+        }
+        return Promise.resolve({
+          devices: [{ address: 'AA:BB:CC:DD:EE:FF', rssi: -55, kind: 'rnode' }],
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumBleRnodeRssiMap(
+        [
+          {
+            id: '1',
+            enabled: true,
+            type: 'rnode',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ],
+        true,
+      ),
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBeUndefined();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+
+    await waitFor(() => {
+      expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-55);
+    });
+    expect(scanCount).toBeGreaterThanOrEqual(3);
   });
 });

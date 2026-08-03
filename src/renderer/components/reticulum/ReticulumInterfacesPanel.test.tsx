@@ -248,6 +248,60 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  it('seeds BLE RSSI while sidecar is running during connecting (api not ready)', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (typeof path === 'string' && path.startsWith('/api/v1/ble/scan')) {
+        return Promise.resolve({
+          devices: [{ address: 'AA:BB:CC:DD:EE:FF', rssi: -59, kind: 'rnode' }],
+        });
+      }
+      if (path === '/api/v1/serial/ports') return Promise.resolve({ ports: [] });
+      if (path === '/api/v1/rnode/presets') return Promise.resolve({ presets: [] });
+      if (path === '/api/v1/config/audit') return Promise.resolve({ issues: [] });
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        sidecarApiReady={false}
+        sidecarRunning
+        connecting
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('reticulum-ble-signal-rnode-ble')).getByText(
+          'connectionPanel.bleRssiDbm',
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/ble/scan'),
+    );
+  });
+
   it('shows Link quality on enabled TCP Client rows', async () => {
     render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
 

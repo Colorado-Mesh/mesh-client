@@ -153,6 +153,8 @@ type ReticulumIfaceUiType =
 
 export interface ReticulumInterfacesPanelProps {
   sidecarApiReady: boolean;
+  /** Sidecar process up — BLE RNode RSSI polls during connect, not only when API-ready. */
+  sidecarRunning?: boolean;
   connecting: boolean;
   identityConfigured?: boolean;
   identityDisplayName?: string | null;
@@ -170,6 +172,7 @@ export interface ReticulumInterfacesPanelProps {
 /** Connection tab: Reticulum interface list, add/edit/delete, device picker. */
 export function ReticulumInterfacesPanel({
   sidecarApiReady,
+  sidecarRunning,
   connecting,
   identityConfigured = true,
   identityDisplayName = null,
@@ -182,6 +185,7 @@ export function ReticulumInterfacesPanel({
   onRefresh,
   onBeginBleConnectGrace,
 }: ReticulumInterfacesPanelProps) {
+  const sidecarRunningForRssi = sidecarRunning ?? sidecarApiReady;
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
@@ -810,6 +814,7 @@ export function ReticulumInterfacesPanel({
         bleBondRemovedNames={bleBondRemovedNames}
         effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
         sidecarReady={sidecarApiReady}
+        sidecarRunning={sidecarRunningForRssi}
         actionsDisabled={actionsDisabled}
         ifaceType={ifaceType}
         ifaceMode={ifaceMode}
@@ -1651,6 +1656,7 @@ function InterfacesSection({
   bleBondRemovedNames,
   effectivePrimaryLocalSerialInterfaceId,
   sidecarReady,
+  sidecarRunning,
   actionsDisabled,
   ifaceType,
   ifaceMode,
@@ -1710,6 +1716,7 @@ function InterfacesSection({
   bleBondRemovedNames?: readonly string[];
   effectivePrimaryLocalSerialInterfaceId: string | null;
   sidecarReady: boolean;
+  sidecarRunning: boolean;
   actionsDisabled: boolean;
   ifaceType: ReticulumIfaceUiType;
   ifaceMode: string;
@@ -1769,7 +1776,7 @@ function InterfacesSection({
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
-  const bleRnodeRssiByAddress = useReticulumBleRnodeRssiMap(interfaces, sidecarReady);
+  const bleRnodeRssiByAddress = useReticulumBleRnodeRssiMap(interfaces, sidecarRunning);
   const tcpRttById = useReticulumTcpLinkQualityMap(interfaces, sidecarReady);
   const enabledLocalSerialCount = countEnabledLocallyConnectedSerialInterfaces(interfaces);
   const showPrimaryControls = enabledLocalSerialCount >= 2;

@@ -49,6 +49,8 @@ export { normalizeBleMac };
 export class BleCoexistenceCoordinator {
   private connections = new Map<string, BlePeripheralOwner>();
   private scanOwner: BleScanOwner | null = null;
+  /** Nested same-owner acquires (e.g. Noble yield + RSSI poll) — release only at 0. */
+  private scanOwnerDepth = 0;
   private nobleManager: NobleBleManager | null = null;
   private nobleScanPausedForExternal = false;
 
@@ -98,7 +100,10 @@ export class BleCoexistenceCoordinator {
   }
 
   async acquireScan(owner: BleScanOwner): Promise<void> {
-    if (this.scanOwner === owner) return;
+    if (this.scanOwner === owner) {
+      this.scanOwnerDepth += 1;
+      return;
+    }
     if (this.scanOwner !== null) {
       throw new BleScanBusyError(this.scanOwner);
     }
@@ -107,10 +112,16 @@ export class BleCoexistenceCoordinator {
       this.nobleScanPausedForExternal = true;
     }
     this.scanOwner = owner;
+    this.scanOwnerDepth = 1;
   }
 
   releaseScan(owner: BleScanOwner): void {
     if (this.scanOwner !== owner) return;
+    if (this.scanOwnerDepth > 1) {
+      this.scanOwnerDepth -= 1;
+      return;
+    }
+    this.scanOwnerDepth = 0;
     this.scanOwner = null;
     if (owner === 'reticulum' && this.nobleScanPausedForExternal && this.nobleManager) {
       this.nobleScanPausedForExternal = false;

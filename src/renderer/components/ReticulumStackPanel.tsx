@@ -80,8 +80,8 @@ export function ReticulumStackPanel({
     beginBleConnectGrace,
     handleSidecarEvent,
   } = useReticulumInterfaceSnapshot({
-    sidecarApiReady,
-    pollActive: sidecarApiReady && sidecarUiRunning,
+    sidecarRunning: sidecarUiRunning,
+    pollActive: sidecarUiRunning,
   });
 
   useEffect(() => {
@@ -284,6 +284,7 @@ export function ReticulumStackPanel({
             />
             <ReticulumInterfacesPanel
               sidecarApiReady={sidecarApiReady}
+              sidecarRunning={sidecarUiRunning}
               connecting={connecting}
               identityConfigured={identity?.configured === true}
               identityDisplayName={identity?.display_name ?? null}
