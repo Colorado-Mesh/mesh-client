@@ -6,6 +6,11 @@ import type {
   ReticulumSidecarStatus,
 } from '../../shared/reticulum-types';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
+import {
+  isExpectedReticulumProxyError,
+  type ReticulumProxyIpcErrorEnvelope,
+  reticulumProxyIpcErrorEnvelope,
+} from '../../shared/reticulumProxyIpcError';
 import { MS_PER_MINUTE } from '../../shared/timeConstants';
 import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
@@ -45,18 +50,6 @@ export interface ReticulumIpcDeps {
   getMainWindow: () => BrowserWindow | null;
 }
 
-function isExpectedReticulumProxyError(message: string): boolean {
-  const lower = message.toLowerCase();
-  return (
-    lower.includes('not running') ||
-    message.includes('404') ||
-    lower.includes('fetch failed') ||
-    lower.includes('aborted') ||
-    lower.includes('timeout') ||
-    lower.includes('rate limit exceeded')
-  );
-}
-
 function parseReticulumStartOptions(opts: unknown): ReticulumSidecarStartOptions {
   if (opts == null) return {};
   if (typeof opts !== 'object' || Array.isArray(opts)) {
@@ -71,9 +64,27 @@ function parseReticulumStartOptions(opts: unknown): ReticulumSidecarStartOptions
 
 function logReticulumProxyFailure(method: string, err: unknown, apiPath?: string): void {
   const message = err instanceof Error ? err.message : String(err);
-  const log = isExpectedReticulumProxyError(message) ? console.debug : console.error;
+  const log = isExpectedReticulumProxyError(err) ? console.debug : console.error;
   const pathSuffix = apiPath ? ` path=${apiPath}` : '';
   log(`[ReticulumIPC] ${method} failed${pathSuffix}:`, sanitizeLogMessage(message));
+}
+
+/**
+ * Expected restart/transient failures: return an envelope (preload rethrows) so
+ * Electron does not emit `[error] Error occurred in handler for 'reticulum:proxy*'`.
+ * Unexpected failures still throw.
+ */
+function settleReticulumProxyFailure(
+  method: string,
+  err: unknown,
+  apiPath?: string,
+): ReticulumProxyIpcErrorEnvelope {
+  logReticulumProxyFailure(method, err, apiPath);
+  const message = err instanceof Error ? err.message : String(err);
+  if (isExpectedReticulumProxyError(err)) {
+    return reticulumProxyIpcErrorEnvelope(sanitizeLogMessage(message));
+  }
+  throw err;
 }
 
 function assertProxyApiPath(apiPath: unknown): string {
@@ -175,8 +186,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyGet(pathArg);
     } catch (err) {
-      logReticulumProxyFailure('proxyGet', err, pathArg);
-      throw err;
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('proxyGet', err, pathArg);
     }
   });
 
@@ -193,8 +204,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPost(pathArg, body);
     } catch (err) {
-      logReticulumProxyFailure('proxyPost', err, pathArg);
-      throw err;
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('proxyPost', err, pathArg);
     }
   });
 
@@ -223,8 +234,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPut(pathArg, body);
     } catch (err) {
-      logReticulumProxyFailure('proxyPut', err, pathArg);
-      throw err;
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('proxyPut', err, pathArg);
     }
   });
 
@@ -236,8 +247,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyDelete(pathArg);
     } catch (err) {
-      logReticulumProxyFailure('proxyDelete', err, pathArg);
-      throw err;
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('proxyDelete', err, pathArg);
     }
   });
 

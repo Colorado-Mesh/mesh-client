@@ -410,6 +410,7 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionEnabled');
     expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionCount');
     expect(INDEX_SOURCE).toContain('reduceMotion');
+    expect(INDEX_SOURCE).toContain('use24HourTime');
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');

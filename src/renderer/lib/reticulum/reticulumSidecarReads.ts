@@ -6,6 +6,7 @@ import {
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
 import type { ReticulumRmapDiscoveredWireRow } from '@/shared/reticulum-types';
+import { isExpectedReticulumProxyError } from '@/shared/reticulumProxyIpcError';
 
 export interface ReticulumIdentityStatus {
   configured: boolean;
@@ -49,7 +50,15 @@ export function isReticulumSidecarNotRunningError(err: unknown): boolean {
 }
 
 export function isReticulumSidecar404Error(err: unknown): boolean {
-  return errLikeToLogString(err).includes('404');
+  if (err != null && typeof err === 'object') {
+    const rec = err as Record<string, unknown>;
+    for (const key of ['status', 'statusCode'] as const) {
+      const raw = rec[key];
+      if (raw === 404 || raw === '404') return true;
+    }
+  }
+  // Sidecar manager: `sidecar GET … failed: 404`
+  return /failed:\s*404\b/i.test(errLikeToLogString(err));
 }
 
 export function isReticulumSidecarRateLimitError(err: unknown): boolean {
@@ -57,14 +66,7 @@ export function isReticulumSidecarRateLimitError(err: unknown): boolean {
 }
 
 export function isReticulumSidecarExpectedProxyError(err: unknown): boolean {
-  const msg = errLikeToLogString(err).toLowerCase();
-  return (
-    isReticulumSidecarNotRunningError(err) ||
-    isReticulumSidecar404Error(err) ||
-    isReticulumSidecarRateLimitError(err) ||
-    msg.includes('fetch failed') ||
-    msg.includes('aborted')
-  );
+  return isExpectedReticulumProxyError(err);
 }
 
 export interface ReticulumSidecarInterfaceRow {

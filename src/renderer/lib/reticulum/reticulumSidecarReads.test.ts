@@ -58,6 +58,8 @@ describe('reticulumSidecarReads', () => {
     expect(isReticulumSidecar404Error(new Error('sidecar GET /api/v1/topology failed: 404'))).toBe(
       true,
     );
+    expect(isReticulumSidecar404Error({ status: 404, message: 'missing route' })).toBe(true);
+    expect(isReticulumSidecar404Error(new Error('payload size 4048 bytes'))).toBe(false);
     expect(
       isReticulumSidecarRateLimitError(new Error('reticulum:proxy: rate limit exceeded')),
     ).toBe(true);
@@ -175,13 +177,15 @@ describe('reticulumSidecarReads', () => {
 
   it('fetchReticulumRmapDiscovered throws on unexpected proxy errors', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
-    proxyGet.mockRejectedValue(new Error('sidecar timeout'));
-    await expect(fetchReticulumRmapDiscovered()).rejects.toThrow('sidecar timeout');
+    proxyGet.mockRejectedValue(new Error('EACCES permission denied'));
+    await expect(fetchReticulumRmapDiscovered()).rejects.toThrow('EACCES permission denied');
   });
 
   it('fetchReticulumRmapDiscovered returns empty on expected proxy errors', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
-    proxyGet.mockRejectedValue(new Error('Reticulum sidecar is not running'));
+    proxyGet.mockRejectedValueOnce(new Error('Reticulum sidecar is not running'));
+    await expect(fetchReticulumRmapDiscovered()).resolves.toEqual([]);
+    proxyGet.mockRejectedValueOnce(new Error('sidecar timeout'));
     await expect(fetchReticulumRmapDiscovered()).resolves.toEqual([]);
   });
 

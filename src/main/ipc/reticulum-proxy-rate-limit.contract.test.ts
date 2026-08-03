@@ -17,7 +17,13 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
   it('caps shared proxy IPC at 300/min and treats rate-limit as expected', () => {
     expect(HANDLERS_SOURCE).toMatch(/max:\s*300/);
     expect(HANDLERS_SOURCE).toContain("label: 'reticulum:proxy'");
-    expect(HANDLERS_SOURCE).toContain("lower.includes('rate limit exceeded')");
+    expect(HANDLERS_SOURCE).toContain('isExpectedReticulumProxyError');
+    expect(HANDLERS_SOURCE).toContain("from '../../shared/reticulumProxyIpcError'");
+    const sharedSource = readFileSync(
+      join(__dirname, '../../shared/reticulumProxyIpcError.ts'),
+      'utf-8',
+    );
+    expect(sharedSource).toContain("lower.includes('rate limit exceeded')");
   });
 
   it('applies the shared proxy rate limit to picker-gated RNCP handlers', () => {
