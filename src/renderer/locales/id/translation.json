@@ -1067,10 +1067,7 @@
       "setPrimaryLocalAria": "Tetapkan {{name}} sebagai RNode lokal utama",
       "setPrimarySuccess": "RNode lokal utama diperbarui.",
       "setPrimaryFailed": "Gagal mengatur RNode lokal utama.",
-      "defaultHubsLabel": "Hub default",
-      "addDefaultHubs": "Tambahkan hub jaringan default",
       "addDefaultHubsSuccess": "Menambahkan {{added}}, memperbaiki {{repaired}}. {{skipped}} sudah dikonfigurasi.",
-      "addDefaultHubsFailed": "Gagal menambahkan hub default.",
       "identityNotConfigured": "Siapkan identitas Reticulum di tab Jaringan terlebih dahulu — buat atau impor frasa pemulihan.",
       "identityRequiredHint": "Konfigurasikan identitas Reticulum pada tab Jaringan sebelum menambahkan antarmuka.",
       "i2pPeersRequired": "Masukkan setidaknya satu alamat rekan I2P.",
@@ -1103,8 +1100,6 @@
       "backboneDirectoryLinkAria": "Buka direktori tulang punggung Reticulum untuk menemukan hub yang akan ditambahkan sebagai antarmuka",
       "backboneDirectoryHint": "Temukan lebih banyak hub tulang punggung komunitas di directory.rns.recipes. Hub Yggdrasil (misalnya Yggdrasil_Ashburn_VA) memerlukan terowongan Yggdrasil lokal yang berjalan — manual Reticulum merekomendasikan pengikatan ke antarmuka terowongan Anda (seringkali tun0).",
       "localOfflineRowBleBondStale": "Ikatan Bluetooth sudah basi — Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu pasangkan kembali dengan PIN baru (OS mungkin masih menampilkan Dipasangkan).",
-      "addDefaultHubsAria": "Sinkronkan hub tulang punggung Reticulum default (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); nonaktifkan titik akhir testnet yang dinonaktifkan",
-      "addDefaultHubsAllPresent": "Hub tulang punggung default sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan.",
       "modeDescriptions": {
         "full": "Partisipasi mesh penuh. Lalu lintas rute dan penyebaran otomatis diumumkan. Gunakan untuk node dan repeater utama.",
         "access_point": "Tenang sampai ada pertanyaan. Kedaluwarsa jalur pendek. Ideal untuk radio area luas yang melayani pengguna intermiten.",
@@ -1156,8 +1151,15 @@
       "deleteSelectedAria": "Hapus {{count}} antarmuka terpilih",
       "deleteSelectedConfirmTitle": "Hapus antarmuka yang dipilih?",
       "deleteSelectedConfirmBody": "Hapus {{count}} antarmuka dari konfigurasi tumpukan? Ini tidak dapat diurungkan.",
-      "deleteSelectedConfirm": "Git: Tag yang dipilih dihapus.",
-      "deleteSelectedPartialFailed": "Menghapus beberapa antarmuka, tetapi {{failed}} dari {{total}} gagal."
+      "deleteSelectedConfirm": "Hapus yang dipilih",
+      "deleteSelectedPartialFailed": "Menghapus beberapa antarmuka, tetapi {{failed}} dari {{total}} gagal.",
+      "enableAria": "Aktifkan antarmuka {{name}}",
+      "disableAria": "Nonaktifkan antarmuka {{name}}",
+      "defaultHubsLabel": "Tulang punggung default",
+      "addDefaultHubs": "Tambahkan tulang punggung default",
+      "addDefaultHubsAria": "Pilih tulang punggung Reticulum regional untuk ditambahkan, lalu sinkronkan preset yang dipilih",
+      "addDefaultHubsAllPresent": "Tulang punggung yang dipilih sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan.",
+      "addDefaultHubsFailed": "Gagal menambahkan tulang punggung default."
     },
     "reticulumPeers": {
       "hops": "Hops",

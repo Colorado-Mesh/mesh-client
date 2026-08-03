@@ -1068,10 +1068,7 @@
       "setPrimaryLocalAria": "Nastavit {{name}} jako primární místní RNode",
       "setPrimarySuccess": "Primární místní RNode aktualizován.",
       "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo.",
-      "defaultHubsLabel": "Výchozí rozbočovače",
-      "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
       "addDefaultHubsSuccess": "Přidáno {{added}}, opraveno {{repaired}}. {{skipped}} je již nakonfigurováno.",
-      "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
       "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť.",
       "i2pPeersRequired": "Zadejte alespoň jednu I2P peer adresu.",
@@ -1104,8 +1101,6 @@
       "backboneDirectoryLinkAria": "Otevřete páteřní adresář Reticulum a vyhledejte centra, která chcete přidat jako rozhraní",
       "backboneDirectoryHint": "Další páteřní centra komunity naleznete na adrese directory.rns.recipes. Huby Yggdrasil (například Yggdrasil_Ashburn_VA) potřebují spuštěný místní tunel Yggdrasil — příručka Reticulum doporučuje vazbu na rozhraní vašeho tunelu (často tun0).",
       "localOfflineRowBleBondStale": "Vazba Bluetooth je zastaralá – zapomeňte na tento RNode v Nastavení systému → Bluetooth a poté znovu spárujte s novým kódem PIN (OS může stále zobrazovat Spárováno).",
-      "addDefaultHubsAria": "Synchronizovat výchozí páteřní uzly Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); zakázat vyřazené koncové body testnetu",
-      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet.",
       "modeDescriptions": {
         "full": "Účast na plné síti. Oznamuje trasy a automatické propagace. Používá se pro primární uzly a opakovače.",
         "access_point": "Ticho, dokud nebudete dotázáni. Krátká cesta vyprší. Ideální pro širokopásmová rádia sloužící občasným uživatelům.",
@@ -1158,7 +1153,14 @@
       "deleteSelectedConfirmTitle": "Smazat vybraná rozhraní?",
       "deleteSelectedConfirmBody": "Odebrat rozhraní {{count}} z konfigurace zásobníku? Tuto akci nelze vrátit zpět.",
       "deleteSelectedConfirm": "Odstranit vybrané",
-      "deleteSelectedPartialFailed": "Některá rozhraní byla odstraněna, ale {{failed}} z {{total}} selhalo."
+      "deleteSelectedPartialFailed": "Některá rozhraní byla odstraněna, ale {{failed}} z {{total}} selhalo.",
+      "enableAria": "Povolit rozhraní {{name}}",
+      "disableAria": "Zakázat rozhraní {{name}}",
+      "defaultHubsLabel": "Výchozí páteř",
+      "addDefaultHubs": "Přidat výchozí páteř",
+      "addDefaultHubsAria": "Vyberte regionální Reticulum páteře k přidání a poté synchronizujte vybrané předvolby",
+      "addDefaultHubsAllPresent": "Vybrané páteře jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testovací sítě.",
+      "addDefaultHubsFailed": "Přidání výchozích páteří se nezdařilo."
     },
     "reticulumPeers": {
       "hops": "Hops",

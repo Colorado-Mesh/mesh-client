@@ -1065,10 +1065,7 @@
       "setPrimaryLocalAria": "Imposta {{name}} come RNode locale principale",
       "setPrimarySuccess": "RNode locale primario aggiornato.",
       "setPrimaryFailed": "Impossibile impostare l'RNode locale primario.",
-      "defaultHubsLabel": "Hub predefiniti",
-      "addDefaultHubs": "Aggiungi hub testnet e Ratspeak",
       "addDefaultHubsSuccess": "Aggiunti {{added}}, corretti {{repaired}}. {{skipped}} già configurati.",
-      "addDefaultHubsFailed": "Impossibile aggiungere hub predefiniti.",
       "identityNotConfigured": "Imposta prima un'identità Reticulum nella scheda Rete — genera o importa una frase di ripristino.",
       "identityRequiredHint": "Configura un'identità Reticulum nella scheda Rete prima di aggiungere interfacce.",
       "i2pPeersRequired": "Inserisci almeno un indirizzo peer I2P.",
@@ -1101,8 +1098,6 @@
       "backboneDirectoryLinkAria": "Apri la directory backbone Reticulum per trovare gli hub da aggiungere come interfacce",
       "backboneDirectoryHint": "Trova altri hub backbone della comunità su directory.rns.recipes. Gli hub Yggdrasil (ad esempio Yggdrasil_Ashburn_VA) necessitano di un tunnel Yggdrasil locale in esecuzione: il manuale di Reticulum consiglia di collegarsi all'interfaccia del tunnel (spesso tun0).",
       "localOfflineRowBleBondStale": "Il legame Bluetooth è obsoleto: dimentica questo RNode in Impostazioni di sistema → Bluetooth, quindi associalo nuovamente con un nuovo PIN (il sistema operativo potrebbe ancora mostrare Accoppiato).",
-      "addDefaultHubsAria": "Sincronizzare gli hub backbone Reticulum predefiniti (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); disabilitare gli endpoint testnet disattivati",
-      "addDefaultHubsAllPresent": "Gli hub backbone predefiniti sono già configurati; nessun hub testnet disattivato abilitato.",
       "modeDescriptions": {
         "full": "Partecipazione mesh completa. Annuncia il traffico dei percorsi e la propagazione automatica. Utilizzare per nodi primari e ripetitori.",
         "access_point": "Silenzioso fino a quando non viene interrogato. Scadenza del percorso breve. Ideale per radio ad ampio raggio che servono utenti intermittenti.",
@@ -1155,7 +1150,14 @@
       "deleteSelectedConfirmTitle": "Eliminare le interfacce selezionate?",
       "deleteSelectedConfirmBody": "Rimuovere le interfacce {{count}} dalla configurazione dello stack? Questa operazione non può essere annullata.",
       "deleteSelectedConfirm": "Elimina elemento selezionato",
-      "deleteSelectedPartialFailed": "Alcune interfacce sono state eliminate, ma {{failed}} di {{total}} non sono riuscite."
+      "deleteSelectedPartialFailed": "Alcune interfacce sono state eliminate, ma {{failed}} di {{total}} non sono riuscite.",
+      "enableAria": "Abilita interfaccia {{name}}",
+      "disableAria": "Disabilita l'interfaccia {{name}}",
+      "defaultHubsLabel": "Dorsali predefinite",
+      "addDefaultHubs": "Aggiungi dorsali predefinite",
+      "addDefaultHubsAria": "Scegli i backbone Reticulum regionali da aggiungere, quindi sincronizza i preset selezionati",
+      "addDefaultHubsAllPresent": "Le dorsali selezionate sono già configurate; nessun hub testnet disattivato abilitato.",
+      "addDefaultHubsFailed": "Impossibile aggiungere dorsali predefinite."
     },
     "reticulumPeers": {
       "hops": "Hops",

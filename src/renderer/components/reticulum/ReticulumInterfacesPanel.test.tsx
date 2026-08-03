@@ -1055,7 +1055,7 @@ describe('ReticulumInterfacesPanel', () => {
       ).toBeInTheDocument();
     });
     expect(
-      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.disable' }),
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.disableAria' }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'connectionPanel.reticulumInterfaces.auditDisable' }),
@@ -1211,6 +1211,113 @@ describe('ReticulumInterfacesPanel', () => {
 
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('surfaces partial bulk-delete failure and still refreshes after successes', async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const proxyDelete = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: false, error: 'busy' });
+    window.electronAPI.reticulum.proxyDelete = proxyDelete;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        onRefresh={onRefresh}
+        interfaces={[
+          {
+            id: 'hub-a',
+            name: 'RNS Beleth',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'rns.beleth.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+          {
+            id: 'hub-b',
+            name: 'RNS AceHoss',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'rns.acehoss.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByTestId('reticulum-iface-select-hub-a'));
+    await user.click(screen.getByTestId('reticulum-iface-select-hub-b'));
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.deleteSelectedAria',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.deleteSelectedConfirm',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyDelete).toHaveBeenCalledTimes(2);
+    });
+    expect(onRefresh).toHaveBeenCalled();
+    expect(
+      await screen.findByText('connectionPanel.reticulumInterfaces.deleteSelectedPartialFailed'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('reticulum-iface-select-hub-b')).toBeChecked();
+  });
+
+  it('does not refresh when every bulk delete fails', async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: false });
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        onRefresh={onRefresh}
+        interfaces={[
+          {
+            id: 'hub-a',
+            name: 'RNS Beleth',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'rns.beleth.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByTestId('reticulum-iface-select-hub-a'));
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.deleteSelectedAria',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.deleteSelectedConfirm',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyDelete).toHaveBeenCalled();
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(restartStackMock).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText('connectionPanel.reticulumInterfaces.deleteSelectedPartialFailed'),
+    ).toBeInTheDocument();
   });
 
   it('shows primary controls when two enabled local serial interfaces exist', () => {
@@ -1431,7 +1538,7 @@ describe('ReticulumInterfacesPanel', () => {
     );
 
     await user.click(
-      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.enable' }),
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.enableAria' }),
     );
 
     expect(

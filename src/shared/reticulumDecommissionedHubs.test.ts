@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   isDecommissionedReticulumTcpHub,
+  isDecommissionedReticulumTcpInterfaceRow,
   normalizeReticulumTcpHubHost,
   RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS,
 } from './reticulumDecommissionedHubs';
@@ -32,5 +33,29 @@ describe('reticulumDecommissionedHubs', () => {
     expect(RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS.map((e) => e.id)).toEqual([
       'decommissioned-amsterdam',
     ]);
+  });
+
+  it('matches decommissioned TCP interface rows and rejects non-tcp', () => {
+    expect(
+      isDecommissionedReticulumTcpInterfaceRow({
+        type: 'TCP',
+        host: 'amsterdam.connect.reticulum.network',
+        port: 4965,
+      }),
+    ).toBe(true);
+    expect(
+      isDecommissionedReticulumTcpInterfaceRow({
+        type: 'udp',
+        host: 'amsterdam.connect.reticulum.network',
+        port: 4965,
+      }),
+    ).toBe(false);
+    expect(
+      isDecommissionedReticulumTcpInterfaceRow({
+        type: 'tcp',
+        host: null,
+        port: 4965,
+      }),
+    ).toBe(false);
   });
 });

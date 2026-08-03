@@ -34,6 +34,7 @@ import {
   groupReticulumInterfacesByHubRegion,
   planDefaultHubPresetsSync,
   type ReticulumInterfaceListGroupId,
+  reticulumInterfaceListGroupLabelKey,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import {
   RETICULUM_I2P_PEERS_MAX_LENGTH,
@@ -93,7 +94,7 @@ import {
   stripConnectHostBrackets,
 } from '@/shared/connectHost';
 import {
-  isDecommissionedReticulumTcpHub,
+  isDecommissionedReticulumTcpInterfaceRow,
   RETICULUM_BACKBONE_DIRECTORY_URL,
 } from '@/shared/reticulumDecommissionedHubs';
 import {
@@ -105,16 +106,6 @@ import { clampTcpPort } from '@/shared/tcpPort';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { HelpTooltip } from '../HelpTooltip';
-
-function isDecommissionedTcpInterfaceRow(iface: {
-  type: string;
-  host?: string | null;
-  port?: number | null;
-}): boolean {
-  if (iface.type.toLowerCase() !== 'tcp') return false;
-  if (typeof iface.host !== 'string' || typeof iface.port !== 'number') return false;
-  return isDecommissionedReticulumTcpHub(iface.host, iface.port);
-}
 import SignalBars from '../SignalBars';
 import { ReticulumInterfaceDevicePickerModal } from './ReticulumInterfaceDevicePickerModal';
 import {
@@ -246,6 +237,7 @@ export function ReticulumInterfacesPanel({
   const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
   const [showDefaultHubsPicker, setShowDefaultHubsPicker] = useState(false);
   const [rmapToggleBusyId, setRmapToggleBusyId] = useState<string | null>(null);
+  const [deletingBulk, setDeletingBulk] = useState(false);
 
   useEffect(() => {
     if (!sidecarApiReady) {
@@ -608,13 +600,7 @@ export function ReticulumInterfacesPanel({
   const toggleInterface = async (id: string, enabled: boolean, ifaceTypeName?: string) => {
     setInterfaceError(null);
     const row = interfaces.find((iface) => iface.id === id);
-    if (
-      enabled &&
-      row &&
-      typeof row.host === 'string' &&
-      typeof row.port === 'number' &&
-      isDecommissionedReticulumTcpHub(row.host, row.port)
-    ) {
+    if (enabled && row && isDecommissionedReticulumTcpInterfaceRow(row)) {
       const blockedMsg = t('connectionPanel.reticulumInterfaces.decommissionedHubEnableBlocked');
       setInterfaceError(blockedMsg);
       addToast(blockedMsg, 'error');
@@ -715,52 +701,73 @@ export function ReticulumInterfacesPanel({
 
   const deleteSelectedInterfaces = async (ids: string[]) => {
     setInterfaceError(null);
-    const uniqueIds = [...new Set(ids)];
+    const deletableIds = new Set(
+      interfaces
+        .filter((iface) => !getReticulumInterfaceHelp(iface).isSystemManaged)
+        .map((iface) => iface.id),
+    );
+    const uniqueIds = [...new Set(ids)].filter((id) => deletableIds.has(id));
     if (uniqueIds.length === 0) {
       setPendingDeleteInterface(null);
       return;
     }
+    setDeletingBulk(true);
     const succeeded: string[] = [];
     let failed = 0;
-    for (const id of uniqueIds) {
-      try {
-        const res = (await window.electronAPI.reticulum.proxyDelete(
-          `/api/v1/interfaces/${id}`,
-        )) as {
-          ok?: boolean;
-          error?: string;
-        };
-        if (res?.ok === false) {
+    try {
+      for (const id of uniqueIds) {
+        try {
+          const res = (await window.electronAPI.reticulum.proxyDelete(
+            `/api/v1/interfaces/${id}`,
+          )) as {
+            ok?: boolean;
+            error?: string;
+          };
+          if (res?.ok === false) {
+            failed += 1;
+            continue;
+          }
+          succeeded.push(id);
+          if (editingInterface?.id === id) {
+            setEditingInterface(null);
+          }
+        } catch {
+          // catch-no-log-ok: bulk delete partial failure shown via interfaceError
           failed += 1;
-          continue;
         }
-        succeeded.push(id);
-        if (editingInterface?.id === id) {
-          setEditingInterface(null);
-        }
-      } catch {
-        // catch-no-log-ok: bulk delete partial failure shown via interfaceError
-        failed += 1;
       }
-    }
-    setPendingDeleteInterface(null);
-    if (succeeded.length > 0) {
-      setSelectedInterfaceIds((prev) => {
-        if (prev.size === 0) return prev;
-        const next = new Set(prev);
-        for (const id of succeeded) next.delete(id);
-        return next;
-      });
-      await onRefresh();
-      await restartStackForInterfaceChange();
-    }
-    if (failed > 0) {
-      setInterfaceError(
-        t('connectionPanel.reticulumInterfaces.deleteSelectedPartialFailed', {
-          failed,
-          total: uniqueIds.length,
-        }),
-      );
+      setPendingDeleteInterface(null);
+      if (succeeded.length > 0) {
+        setSelectedInterfaceIds((prev) => {
+          if (prev.size === 0) return prev;
+          const next = new Set(prev);
+          for (const id of succeeded) next.delete(id);
+          return next;
+        });
+        try {
+          await onRefresh();
+          await restartStackForInterfaceChange();
+        } catch (e) {
+          // catch-no-log-ok: post-delete refresh/restart failure shown via interfaceError
+          setInterfaceError(
+            humanizeReticulumInterfaceApiError(
+              errLikeToLogString(e),
+              t,
+              'connectionPanel.reticulumInterfaces.deleteFailed',
+            ),
+          );
+        }
+      }
+      if (failed > 0) {
+        setInterfaceError(
+          t('connectionPanel.reticulumInterfaces.deleteSelectedPartialFailed', {
+            failed,
+            total: uniqueIds.length,
+          }),
+        );
+      }
+    } finally {
+      setDeletingBulk(false);
     }
   };
 
@@ -820,7 +827,7 @@ export function ReticulumInterfacesPanel({
     }
   };
 
-  const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured;
+  const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured || deletingBulk;
   const defaultHubsDisabled = actionsDisabled || addingDefaultHubs;
 
   const syncRmapAfterInterfaceChange = useCallback(
@@ -1064,6 +1071,7 @@ export function ReticulumInterfacesPanel({
               ? t('connectionPanel.reticulumInterfaces.deleteSelectedConfirm')
               : t('connectionPanel.reticulumInterfaces.deleteConfirm')
           }
+          confirmDisabled={deletingBulk}
           onConfirm={() => {
             if (pendingDeleteInterface.mode === 'bulk') {
               void deleteSelectedInterfaces(pendingDeleteInterface.ids);
@@ -1072,7 +1080,7 @@ export function ReticulumInterfacesPanel({
             }
           }}
           onCancel={() => {
-            setPendingDeleteInterface(null);
+            if (!deletingBulk) setPendingDeleteInterface(null);
           }}
         />
       ) : null}
@@ -1817,20 +1825,7 @@ function interfaceListGroupLabel(
   t: (key: string) => string,
   groupId: ReticulumInterfaceListGroupId,
 ): string {
-  switch (groupId) {
-    case 'primary_global':
-      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global');
-    case 'north_america':
-      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.north_america');
-    case 'europe':
-      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.europe');
-    case 'asia_oceania':
-      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.asia_oceania');
-    case 'specialty':
-      return t('connectionPanel.reticulumInterfaces.defaultHubRegion.specialty');
-    case 'user_defined':
-      return t('connectionPanel.reticulumInterfaces.interfaceListGroup.user_defined');
-  }
+  return t(reticulumInterfaceListGroupLabelKey(groupId));
 }
 
 function InterfacesSection({
@@ -2461,7 +2456,7 @@ function InterfacesSection({
                       const tcpRttMs = showTcpLinkQuality
                         ? rttForReticulumTcpRow(iface, tcpRttById)
                         : null;
-                      const decommissioned = isDecommissionedTcpInterfaceRow(iface);
+                      const decommissioned = isDecommissionedReticulumTcpInterfaceRow(iface);
                       const canDelete = !help.isSystemManaged;
                       return (
                         <li
@@ -2688,6 +2683,15 @@ function InterfacesSection({
                                 className={`text-xs hover:underline disabled:opacity-40 ${
                                   iface.enabled ? 'text-amber-400' : 'text-green-400'
                                 }`}
+                                aria-label={
+                                  iface.enabled
+                                    ? t('connectionPanel.reticulumInterfaces.disableAria', {
+                                        name: iface.name,
+                                      })
+                                    : t('connectionPanel.reticulumInterfaces.enableAria', {
+                                        name: iface.name,
+                                      })
+                                }
                               >
                                 {iface.enabled
                                   ? t('connectionPanel.reticulumInterfaces.disable')

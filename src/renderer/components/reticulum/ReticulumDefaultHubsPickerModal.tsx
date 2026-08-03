@@ -9,6 +9,7 @@ import {
   RETICULUM_DEFAULT_HUB_PRESETS,
   RETICULUM_DEFAULT_HUB_REGIONS,
   type ReticulumDefaultHubRegion,
+  reticulumDefaultHubRegionLabelKey,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 
@@ -20,10 +21,6 @@ export interface ReticulumDefaultHubsPickerModalProps {
   confirming: boolean;
   onCancel: () => void;
   onConfirm: (presetIds: ReadonlySet<string>) => void;
-}
-
-function regionLabelKey(region: ReticulumDefaultHubRegion): string {
-  return `connectionPanel.reticulumInterfaces.defaultHubRegion.${region}`;
 }
 
 export function ReticulumDefaultHubsPickerModal({
@@ -248,7 +245,7 @@ function RegionSection({
 
   return (
     <fieldset className="space-y-2">
-      <legend className="sr-only">{t(regionLabelKey(region))}</legend>
+      <legend className="sr-only">{t(reticulumDefaultHubRegionLabelKey(region))}</legend>
       <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-200">
         <input
           ref={regionCheckboxRef}
@@ -258,9 +255,9 @@ function RegionSection({
             onToggleRegion(region, e.target.checked);
           }}
           className="accent-brand-green"
-          aria-label={t(regionLabelKey(region))}
+          aria-label={t(reticulumDefaultHubRegionLabelKey(region))}
         />
-        <span>{t(regionLabelKey(region))}</span>
+        <span>{t(reticulumDefaultHubRegionLabelKey(region))}</span>
       </label>
       <ul className="ml-6 space-y-1.5">
         {presets.map((preset) => {

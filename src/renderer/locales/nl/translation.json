@@ -1066,10 +1066,7 @@
       "setPrimaryLocalAria": "Stel {{name}} in als primaire lokale RNode",
       "setPrimarySuccess": "Primaire lokale RNode bijgewerkt.",
       "setPrimaryFailed": "Kan primaire lokale RNode niet instellen.",
-      "defaultHubsLabel": "Standaardhubs",
-      "addDefaultHubs": "Voeg testnet en Ratspeak hubs toe",
       "addDefaultHubsSuccess": "{{added}} toegevoegd, {{repaired}} gecorrigeerd. {{skipped}} al geconfigureerd.",
-      "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
       "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
       "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt.",
       "i2pPeersRequired": "Voer ten minste één I2P-peeradres in.",
@@ -1102,8 +1099,6 @@
       "backboneDirectoryLinkAria": "Open de Reticulum-backbone-map om hubs te vinden die u als interfaces kunt toevoegen",
       "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0).",
       "localOfflineRowBleBondStale": "Bluetooth-verbinding is verouderd: vergeet deze RNode in Systeeminstellingen → Bluetooth en koppel opnieuw met een nieuwe pincode (het besturingssysteem kan nog steeds Gekoppeld weergeven).",
-      "addDefaultHubsAria": "Synchroniseer standaard Reticulum-backbone-hubs (US-Oost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); buiten gebruik gestelde testnet-eindpunten uitschakelen",
-      "addDefaultHubsAllPresent": "Standaard backbone-hubs zijn al geconfigureerd; geen buiten gebruik gestelde testnet-hubs ingeschakeld.",
       "modeDescriptions": {
         "full": "Volledige mesh-deelname. Routeert verkeer en verspreidt aankondigingen automatisch. Gebruik voor primaire knooppunten en repeaters.",
         "access_point": "Stil tot bevraagd. Kort pad vervalt. Ideaal voor radio's met een groot bereik die intermitterende gebruikers bedienen.",
@@ -1156,7 +1151,14 @@
       "deleteSelectedConfirmTitle": "Geselecteerde interfaces verwijderen?",
       "deleteSelectedConfirmBody": "{{count}} interfaces uit de stapelconfiguratie verwijderen? Dit kan niet ongedaan worden gemaakt.",
       "deleteSelectedConfirm": "De selectie verwijderen",
-      "deleteSelectedPartialFailed": "Sommige interfaces zijn verwijderd, maar {{failed}} van {{total}} is mislukt."
+      "deleteSelectedPartialFailed": "Sommige interfaces zijn verwijderd, maar {{failed}} van {{total}} is mislukt.",
+      "enableAria": "Schakel interface {{name}} in",
+      "disableAria": "Schakel interface {{name}} uit",
+      "defaultHubsLabel": "Standaard backbones",
+      "addDefaultHubs": "Standaard backbones toevoegen",
+      "addDefaultHubsAria": "Kies regionale Reticulum-backbones om toe te voegen en synchroniseer vervolgens geselecteerde voorinstellingen",
+      "addDefaultHubsAllPresent": "Geselecteerde backbones zijn al geconfigureerd; er zijn geen ontmantelde testnet-hubs ingeschakeld.",
+      "addDefaultHubsFailed": "Kan standaard backbones niet toevoegen."
     },
     "reticulumPeers": {
       "hops": "Hops",

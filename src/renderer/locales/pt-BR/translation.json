@@ -1067,10 +1067,7 @@
       "setPrimaryLocalAria": "Definir {{name}} como RNode local principal",
       "setPrimarySuccess": "RNode local primário atualizado.",
       "setPrimaryFailed": "Falha ao definir o RNode local primário.",
-      "defaultHubsLabel": "Hubs padrão",
-      "addDefaultHubs": "Adicionar hubs testnet e Ratspeak",
       "addDefaultHubsSuccess": "Adicionados {{added}}, corrigidos {{repaired}}. {{skipped}} já configurados.",
-      "addDefaultHubsFailed": "Falha ao adicionar hubs padrão.",
       "identityNotConfigured": "Configure uma identidade Reticulum na guia Rede primeiro — gere ou importe uma frase de recuperação.",
       "identityRequiredHint": "Configure uma identidade Reticulum na guia Rede antes de adicionar interfaces.",
       "i2pPeersRequired": "Insira pelo menos um endereço de par I2P.",
@@ -1103,8 +1100,6 @@
       "backboneDirectoryLinkAria": "Abra o diretório backbone do Reticulum para encontrar hubs para adicionar como interfaces",
       "backboneDirectoryHint": "Encontre mais centros de backbone da comunidade em directory.rns.recipes. Os hubs Yggdrasil (por exemplo Yggdrasil_Ashburn_VA) precisam de um túnel Yggdrasil local em execução - o manual do Reticulum recomenda a ligação à interface do seu túnel (geralmente tun0).",
       "localOfflineRowBleBondStale": "A ligação Bluetooth está obsoleta - Esqueça este RNode em Configurações do sistema → Bluetooth e, em seguida, emparelhe novamente com um novo PIN (o sistema operacional ainda pode mostrar Emparelhado).",
-      "addDefaultHubsAria": "Sincronizar hubs de backbone Reticulum padrão (Leste dos EUA, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); desabilitar endpoints testnet desativados",
-      "addDefaultHubsAllPresent": "Os hubs de backbone padrão já estão configurados; nenhum hub testnet desativado habilitado.",
       "modeDescriptions": {
         "full": "Participação total na mesh. Roteia o tráfego e propaga anúncios automaticamente. Use para nós primários e repetidores.",
         "access_point": "Silencioso até ser consultado. Expiração de caminho curto. Ideal para rádios de área ampla que atendem usuários intermitentes.",
@@ -1157,7 +1152,14 @@
       "deleteSelectedConfirmTitle": "Excluir interfaces selecionadas?",
       "deleteSelectedConfirmBody": "Remover interfaces {{count}} da configuração da pilha? Isso não pode ser desfeito.",
       "deleteSelectedConfirm": "Apagar os selecionados",
-      "deleteSelectedPartialFailed": "Excluídas algumas interfaces, mas {{failed}} de {{total}} falhou."
+      "deleteSelectedPartialFailed": "Excluídas algumas interfaces, mas {{failed}} de {{total}} falhou.",
+      "enableAria": "Ativar interface {{name}}",
+      "disableAria": "Desativar interface {{name}}",
+      "defaultHubsLabel": "Backbones padrão",
+      "addDefaultHubs": "Adicionar backbones padrão",
+      "addDefaultHubsAria": "Escolha os backbones regionais Reticulum para adicionar e, em seguida, sincronize as predefinições selecionadas",
+      "addDefaultHubsAllPresent": "Os backbones selecionados já estão configurados; nenhum hub de rede de teste desativado ativado.",
+      "addDefaultHubsFailed": "Falha ao adicionar backbones padrão."
     },
     "reticulumPeers": {
       "hops": "Hops",

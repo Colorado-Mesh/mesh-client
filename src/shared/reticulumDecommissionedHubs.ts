@@ -37,3 +37,14 @@ export function isDecommissionedReticulumTcpHub(host: string, port: number): boo
       endpoint.hosts.some((h) => normalizeReticulumTcpHubHost(h) === normalized),
   );
 }
+
+/** True when an interface row is a TCP client pointed at a decommissioned hub endpoint. */
+export function isDecommissionedReticulumTcpInterfaceRow(iface: {
+  type: string;
+  host?: string | null;
+  port?: number | null;
+}): boolean {
+  if (iface.type.toLowerCase() !== 'tcp') return false;
+  if (typeof iface.host !== 'string' || typeof iface.port !== 'number') return false;
+  return isDecommissionedReticulumTcpHub(iface.host, iface.port);
+}

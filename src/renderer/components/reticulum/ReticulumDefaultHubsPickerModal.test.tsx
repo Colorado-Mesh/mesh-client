@@ -26,6 +26,11 @@ describe('ReticulumDefaultHubsPickerModal', () => {
     const europe = screen.getByRole('checkbox', {
       name: 'connectionPanel.reticulumInterfaces.defaultHubRegion.europe',
     });
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'connectionPanel.reticulumInterfaces.defaultHubRegion.asia_oceania',
+      }),
+    ).toBeInTheDocument();
     europe.focus();
     expect(document.activeElement).toBe(europe);
 

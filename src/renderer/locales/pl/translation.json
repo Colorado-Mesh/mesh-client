@@ -1069,10 +1069,7 @@
       "setPrimaryLocalAria": "Ustaw {{name}} jako główny lokalny RNode",
       "setPrimarySuccess": "Zaktualizowano główny lokalny RNode.",
       "setPrimaryFailed": "Nie udało się ustawić głównego lokalnego RNode.",
-      "defaultHubsLabel": "Domyślne huby",
-      "addDefaultHubs": "Dodaj domyślne huby sieciowe",
       "addDefaultHubsSuccess": "Dodano {{added}}, poprawiono {{repaired}}. {{skipped}} już skonfigurowane.",
-      "addDefaultHubsFailed": "Nie udało się dodać domyślnych hubów.",
       "identityNotConfigured": "Skonfiguruj najpierw tożsamość Reticulum na karcie Sieć — wygeneruj lub zaimportuj frazę odzyskiwania.",
       "identityRequiredHint": "Skonfiguruj tożsamość Reticulum na karcie Sieć przed dodaniem interfejsów.",
       "i2pPeersRequired": "Wprowadź co najmniej jeden adres równorzędny I2P.",
@@ -1105,8 +1102,6 @@
       "backboneDirectoryLinkAria": "Otwórz katalog szkieletowy Reticulum, aby znaleźć koncentratory, które możesz dodać jako interfejsy",
       "backboneDirectoryHint": "Więcej centrów szkieletowych społeczności znajdziesz na stronie directory.rns.recipes. Koncentratory Yggdrasil (na przykład Yggdrasil_Ashburn_VA) wymagają działającego lokalnego tunelu Yggdrasil — podręcznik Reticulum zaleca powiązanie z interfejsem tunelu (często tun0).",
       "localOfflineRowBleBondStale": "Połączenie Bluetooth jest nieaktualne — Zapomnij o tym węźle RNode w Ustawieniach systemu → Bluetooth, a następnie sparuj ponownie, używając nowego kodu PIN (system operacyjny może nadal wyświetlać komunikat Sparowano).",
-      "addDefaultHubsAria": "Synchronizuj domyślne huby szkieletowe Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); wyłącz wycofane punkty końcowe sieci testowej",
-      "addDefaultHubsAllPresent": "Domyślne huby szkieletowe są już skonfigurowane; nie włączono żadnych wycofanych z eksploatacji hubów sieci testowej.",
       "modeDescriptions": {
         "full": "Pełne uczestnictwo w siatce. Trasuje ruch i automatycznie rozgłasza ogłoszenia. Użyj dla głównych węzłów i repeaterów.",
         "access_point": "Cisza do zapytania. Wygaśnięcie krótkiej ścieżki. Idealny do radiotelefonów wielkopowierzchniowych obsługujących użytkowników nieregularnych.",
@@ -1159,7 +1154,14 @@
       "deleteSelectedConfirmTitle": "Usunąć wybrane interfejsy?",
       "deleteSelectedConfirmBody": "Usunąć interfejsy {{count}} z konfiguracji stosu? Tej czynności nie można cofnąć.",
       "deleteSelectedConfirm": "Usuń wybrane",
-      "deleteSelectedPartialFailed": "Usunięto niektóre interfejsy, ale {{failed}} z {{total}} nie powiodło się."
+      "deleteSelectedPartialFailed": "Usunięto niektóre interfejsy, ale {{failed}} z {{total}} nie powiodło się.",
+      "enableAria": "Włącz interfejs {{name}}",
+      "disableAria": "Wyłącz interfejs {{name}}",
+      "defaultHubsLabel": "Domyślne kręgosłupy",
+      "addDefaultHubs": "Dodaj domyślne kręgosłupy",
+      "addDefaultHubsAria": "Wybierz regionalne backbone’y Reticulum do dodania, a następnie zsynchronizuj wybrane ustawienia wstępne",
+      "addDefaultHubsAllPresent": "Wybrane kręgosłupy są już skonfigurowane; nie włączono wycofanych koncentratorów sieci testowej.",
+      "addDefaultHubsFailed": "Nie udało się dodać domyślnych kości kręgosłupa."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -43,6 +43,10 @@ function allTargetsHaveRssi(
   return targets.every((addr) => rssiByAddress.has(addr));
 }
 
+function hasBleRnodeRows(interfaces: readonly ReticulumBleRssiInterfaceRow[]): boolean {
+  return interfaces.some((iface) => isReticulumBleRnodeInterfaceRow(iface));
+}
+
 /**
  * Map of normalized BLE address → last scan RSSI for enabled Reticulum BLE RNode rows.
  * Uses sidecar `/api/v1/ble/scan` without disabling interfaces (picker pause is skipped).
@@ -70,6 +74,7 @@ export function useReticulumBleRnodeRssiMap(
     () => enabledBleRnodeAddresses(interfaces).slice().sort().join('|'),
     [interfaces],
   );
+  const hasAnyBleRnodeKey = useMemo(() => (hasBleRnodeRows(interfaces) ? '1' : '0'), [interfaces]);
 
   useEffect(() => {
     if (!sidecarRunning) {
@@ -86,6 +91,15 @@ export function useReticulumBleRnodeRssiMap(
       // Targets present — cancel any idle expiry (brief empty hydrate can restart it).
       stickyIdleExpiresAtRef.current = 0;
     } else if (stickyTargetsRef.current.length > 0) {
+      // User disabled all BLE RNodes (rows still present) — stop scanning immediately.
+      // Brief empty hydrate (no BLE rows in list) keeps sticky targets through grace.
+      if (hasAnyBleRnodeKey === '1') {
+        stickyTargetsRef.current = [];
+        stickyIdleExpiresAtRef.current = 0;
+        rssiByAddressRef.current = new Map();
+        setRssiByAddress(new Map());
+        return;
+      }
       if (stickyIdleExpiresAtRef.current === 0) {
         stickyIdleExpiresAtRef.current = Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS;
       }
@@ -196,7 +210,7 @@ export function useReticulumBleRnodeRssiMap(
       if (timer) clearTimeout(timer);
       if (idleClearTimer) clearTimeout(idleClearTimer);
     };
-  }, [sidecarRunning, enabledKey]);
+  }, [sidecarRunning, enabledKey, hasAnyBleRnodeKey]);
 
   return rssiByAddress;
 }

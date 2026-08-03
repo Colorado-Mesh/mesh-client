@@ -1067,10 +1067,7 @@
       "setPrimaryLocalAria": "{{name}} öğesini birincil yerel RNode olarak ayarlayın",
       "setPrimarySuccess": "Birincil yerel RNode güncellendi.",
       "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı.",
-      "defaultHubsLabel": "Varsayılan hub'lar",
-      "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
       "addDefaultHubsSuccess": "{{added}} eklendi, {{repaired}} düzeltildi. {{skipped}} zaten yapılandırılmış.",
-      "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
       "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",
       "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın.",
       "i2pPeersRequired": "En az bir I2P eş adresi girin.",
@@ -1103,8 +1100,6 @@
       "backboneDirectoryLinkAria": "Arayüz olarak eklenecek hub'ları bulmak için Reticulum omurga dizinini açın",
       "backboneDirectoryHint": "directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
       "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir).",
-      "addDefaultHubsAria": "Varsayılan Reticulum omurga merkezlerini senkronize edin (ABD-Doğu, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); hizmet dışı bırakılan test ağı uç noktalarını devre dışı bırak",
-      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil.",
       "modeDescriptions": {
         "full": "Tam mesh katılımı. Trafiği yönlendirir ve duyuruları otomatik olarak yayar. Birincil düğümler ve tekrarlayıcılar için kullanın.",
         "access_point": "Sorgulanana kadar sessiz. Kısa yol süresi doldu. Aralıklı kullanıcılara hizmet veren geniş alan radyoları için idealdir.",
@@ -1157,7 +1152,14 @@
       "deleteSelectedConfirmTitle": "Seçilen arayüzler silinsin mi?",
       "deleteSelectedConfirmBody": "{{count}} arabirimleri yığın yapılandırmasından kaldırılsın mı? Bu işlem geri alınamaz.",
       "deleteSelectedConfirm": "Seçilen silindi",
-      "deleteSelectedPartialFailed": "Bazı arayüzler silindi, ancak {{failed}}/{{total}} başarısız oldu."
+      "deleteSelectedPartialFailed": "Bazı arayüzler silindi, ancak {{failed}}/{{total}} başarısız oldu.",
+      "enableAria": "Arabirimi etkinleştir {{name}}",
+      "disableAria": "Arabirimi devre dışı bırak {{name}}",
+      "defaultHubsLabel": "Varsayılan omurgalar",
+      "addDefaultHubs": "Varsayılan omurgaları ekle",
+      "addDefaultHubsAria": "Eklenecek bölgesel Reticulum omurgalarını seçin, ardından seçilen ön ayarları senkronize edin",
+      "addDefaultHubsAllPresent": "Seçilen omurgalar zaten yapılandırılmış; devre dışı bırakılmış testnet hub'ları etkin değil.",
+      "addDefaultHubsFailed": "Varsayılan omurgalar eklenemedi."
     },
     "reticulumPeers": {
       "hops": "Hops",

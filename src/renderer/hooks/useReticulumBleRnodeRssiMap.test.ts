@@ -249,6 +249,54 @@ describe('useReticulumBleRnodeRssiMap', () => {
     expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
   });
 
+  it('clears sticky RSSI immediately when all BLE RNodes are disabled', async () => {
+    const acquireScan = vi.fn().mockResolvedValue({});
+    window.electronAPI.bleCoexistence.acquireScan = acquireScan;
+
+    const { result, rerender } = renderHook(
+      ({ ifaces }: { ifaces: Parameters<typeof useReticulumBleRnodeRssiMap>[0] }) =>
+        useReticulumBleRnodeRssiMap(ifaces, true),
+      {
+        initialProps: {
+          ifaces: [
+            {
+              id: '1',
+              enabled: true,
+              type: 'rnode',
+              serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+            },
+          ],
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+    });
+    const acquiresAfterEnable = acquireScan.mock.calls.length;
+    expect(acquiresAfterEnable).toBeGreaterThan(0);
+
+    act(() => {
+      rerender({
+        ifaces: [
+          {
+            id: '1',
+            enabled: false,
+            type: 'rnode',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ],
+      });
+    });
+
+    expect(result.current.size).toBe(0);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(acquireScan.mock.calls.length).toBe(acquiresAfterEnable);
+  });
+
   it('expires sticky BLE targets after the idle grace window when interfaces stay empty', async () => {
     const { result, rerender } = renderHook(
       ({ ifaces }: { ifaces: Parameters<typeof useReticulumBleRnodeRssiMap>[0] }) =>

@@ -1067,10 +1067,7 @@
       "setPrimaryLocalAria": "将{{name}}设置为主要本地RNode",
       "setPrimarySuccess": "主本地RNode已更新。",
       "setPrimaryFailed": "设置主本地RNode失败。",
-      "defaultHubsLabel": "默认集线器",
-      "addDefaultHubs": "添加测试网和Ratspeak集线器",
       "addDefaultHubsSuccess": "已添加 {{added}} 个，已修正 {{repaired}} 个。{{skipped}} 个已配置。",
-      "addDefaultHubsFailed": "添加默认集线器失败。",
       "identityNotConfigured": "请先在“网络”选项卡上设置 Reticulum 身份 — 生成或导入恢复短语。",
       "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。",
       "i2pPeersRequired": "输入至少一个I2P对等地址。",
@@ -1103,8 +1100,6 @@
       "backboneDirectoryLinkAria": "打开 Reticulum 主干目录以查找要添加为接口的集线器",
       "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。",
       "localOfflineRowBleBondStale": "蓝牙绑定已过时 - 在“系统设置”→“蓝牙”中忘记此 RNode，然后使用新的 PIN 重新配对（操作系统可能仍显示“已配对”）。",
-      "addDefaultHubsAria": "同步默认的 Reticulum 主干集线器（US-East、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World）；禁用已停用的测试网端点",
-      "addDefaultHubsAllPresent": "默认骨干集线器已配置；未启用已停用的测试网集线器。",
       "modeDescriptions": {
         "full": "全网格参与。路由流量和自动传播公告。用于主节点和中继器。",
         "access_point": "安静，直到被查询。短路径到期。非常适合为间歇性用户提供服务的广域无线电。",
@@ -1157,7 +1152,14 @@
       "deleteSelectedConfirmTitle": "删除所选接口？",
       "deleteSelectedConfirmBody": "从堆栈配置中删除{{count}}接口？此操作无法撤消。",
       "deleteSelectedConfirm": "删除所选",
-      "deleteSelectedPartialFailed": "删除了一些接口，但{{total}}的{{failed}}失败。"
+      "deleteSelectedPartialFailed": "删除了一些接口，但{{total}}的{{failed}}失败。",
+      "enableAria": "启用接口{{name}}",
+      "disableAria": "禁用接口{{name}}",
+      "defaultHubsLabel": "默认骨干网",
+      "addDefaultHubs": "添加默认骨干网",
+      "addDefaultHubsAria": "选择要添加的区域 Reticulum 骨干，然后同步所选预设",
+      "addDefaultHubsAllPresent": "所选主干已配置；未启用停用的测试网集线器。",
+      "addDefaultHubsFailed": "添加默认骨干网失败。"
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -5,7 +5,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import {
-  isDecommissionedReticulumTcpHub,
+  isDecommissionedReticulumTcpInterfaceRow,
   normalizeReticulumTcpHubHost,
   RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS,
   type ReticulumDecommissionedHubEndpoint,
@@ -302,6 +302,19 @@ export function formatDefaultHubPresetEndpoint(preset: ReticulumDefaultHubPreset
 
 export type ReticulumInterfaceListGroupId = ReticulumDefaultHubRegion | 'user_defined';
 
+export function reticulumDefaultHubRegionLabelKey(region: ReticulumDefaultHubRegion): string {
+  return `connectionPanel.reticulumInterfaces.defaultHubRegion.${region}`;
+}
+
+export function reticulumInterfaceListGroupLabelKey(
+  groupId: ReticulumInterfaceListGroupId,
+): string {
+  if (groupId === 'user_defined') {
+    return 'connectionPanel.reticulumInterfaces.interfaceListGroup.user_defined';
+  }
+  return reticulumDefaultHubRegionLabelKey(groupId);
+}
+
 export interface ReticulumInterfaceListGroup {
   id: ReticulumInterfaceListGroupId;
   interfaces: ReticulumInterfaceRow[];
@@ -463,15 +476,11 @@ export function reticulumInterfaceMatchesDecommissionedHub(
   iface: Pick<ReticulumInterfaceRow, 'type' | 'host' | 'port' | 'enabled'>,
   endpoint: ReticulumDecommissionedHubEndpoint,
 ): boolean {
-  if (iface.type !== 'tcp' || !iface.enabled) {
+  if (!iface.enabled || !isDecommissionedReticulumTcpInterfaceRow(iface)) {
     return false;
   }
   const ifaceHost = iface.host?.trim();
   if (!ifaceHost || iface.port == null) {
-    return false;
-  }
-  // Match by shared catalog; still require this endpoint id for plan grouping.
-  if (!isDecommissionedReticulumTcpHub(ifaceHost, iface.port)) {
     return false;
   }
   const normalized = normalizeTcpHubHost(ifaceHost);
