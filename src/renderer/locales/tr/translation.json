@@ -5120,6 +5120,26 @@
       "noIdentity": "Aranamıyor: akran kimliği henüz bilinmiyor. Bir duyuru bekleyin veya akranınızı sorgulayın.",
       "callFailed": "Sesli arama başarısız.",
       "notRunning": "Reticulum yığını çalışana kadar ses kullanılamaz."
+    },
+    "connecting": "Bağlanıyor…",
+    "elapsedAria": "Geçen zaman",
+    "txAria": "İletilen ses çerçeveleri",
+    "rxAria": "Alınan ses çerçeveleri",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Bu akran için LXST telefon anonsu duyuldu",
+    "capabilityUnknown": "LXST telefon anonsu henüz duyulmadı (arama hala çalışıyor olabilir)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "lehine propaganda yapıyordun?",
+    "help": {
+      "interop": "LXST sesi, LXST telefonunu çalıştıran bir eşe ihtiyaç duyar (Sideband, Ratspeak veya mesh-client). Sesli not klibi değil. Python LXST referans; rsLXST deneyseldir."
+    },
+    "toast": {
+      "busy": "Hat meşgul.",
+      "rejected": "Çağrı reddedildi.",
+      "noAnswer": "Cevap yok — çağrı zaman aşımına uğradı.",
+      "failed": "Sesli arama başarısız."
     }
   }
 }

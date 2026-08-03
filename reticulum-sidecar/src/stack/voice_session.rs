@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use base64::Engine as _;
 use lxst_core::{CallRole, Profile, RawAudioFrame, SignallingStatus};
@@ -24,6 +24,36 @@ use super::live::parse_hash16;
 const DEFAULT_CALL_PROFILE: Profile = Profile::QualityHigh;
 const DEFAULT_DISCOVERY_TIMEOUT: Duration = Duration::from_secs(15);
 
+/// QualityHigh frame duration in ms (2880 samples @ 48 kHz).
+const QUALITY_HIGH_FRAME_MS: u64 = 60;
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct VoiceMediaCounters {
+    pub tx_frames: u64,
+    pub tx_packets: u64,
+    pub rx_frames: u64,
+    pub local_tx_drops: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum VoiceAuditLogPhase {
+    None,
+    StartLogged,
+    OutcomeLogged,
+    EndLogged,
+}
+
+#[derive(Debug, Clone)]
+pub struct VoiceAuditSession {
+    pub role: &'static str,
+    pub remote_hex: String,
+    pub link_id_hex: Option<String>,
+    pub started_at: Instant,
+    pub established_at: Option<Instant>,
+    pub ever_established: bool,
+    log_phase: VoiceAuditLogPhase,
+}
+
 #[derive(Default)]
 struct VoiceState {
     running: bool,
@@ -32,6 +62,8 @@ struct VoiceState {
     last_error: Option<String>,
     /// Maps LXMF / peer destination hashes → identity hashes (from announce cache).
     dest_to_identity: HashMap<String, String>,
+    media: VoiceMediaCounters,
+    audit: Option<VoiceAuditSession>,
 }
 
 struct ManagerShared {
@@ -205,7 +237,15 @@ impl VoiceSessionManager {
             .await
         {
             Ok(()) => json!({ "ok": true }),
-            Err(e) => json!({ "ok": false, "error": format!("voice control closed: {e}") }),
+            Err(e) => {
+                {
+                    let mut st = self.shared.state.write().await;
+                    if st.active_call.is_some() {
+                        st.media.local_tx_drops = st.media.local_tx_drops.saturating_add(1);
+                    }
+                }
+                json!({ "ok": false, "error": format!("voice control closed: {e}") })
+            }
         }
     }
 
@@ -242,12 +282,27 @@ impl VoiceSessionManager {
 async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent) {
     match evt {
         TelephonyServiceEvent::OutgoingCallPending { remote_identity } => {
+            let remote_hex = hex::encode(remote_identity);
+            let call = json!({
+                "link_id": "",
+                "remote_identity": remote_hex,
+                "role": "outgoing",
+                "status": "calling",
+                "answered": false,
+            });
+            {
+                let mut st = shared.state.write().await;
+                st.active_call = Some(call.clone());
+                st.last_error = None;
+                st.media = VoiceMediaCounters::default();
+                begin_audit_session(&mut st, "outgoing", &remote_hex, None);
+            }
             emit(
                 &shared.event_tx,
                 "voice.update",
                 &json!({
                     "type": "outgoing_pending",
-                    "remote_identity": hex::encode(remote_identity),
+                    "remote_identity": remote_hex,
                 }),
             );
         }
@@ -255,13 +310,31 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             link_id,
             remote_identity,
         } => {
+            let link_hex = hex::encode(link_id);
+            let remote_hex = hex::encode(remote_identity);
+            let call = json!({
+                "link_id": link_hex,
+                "remote_identity": remote_hex,
+                "role": "outgoing",
+                "status": "connecting",
+                "answered": false,
+            });
+            {
+                let mut st = shared.state.write().await;
+                st.active_call = Some(call.clone());
+                if let Some(audit) = st.audit.as_mut() {
+                    audit.link_id_hex = Some(link_hex.clone());
+                } else {
+                    begin_audit_session(&mut st, "outgoing", &remote_hex, Some(link_hex.clone()));
+                }
+            }
             emit(
                 &shared.event_tx,
                 "voice.update",
                 &json!({
                     "type": "outgoing",
-                    "link_id": hex::encode(link_id),
-                    "remote_identity": hex::encode(remote_identity),
+                    "link_id": link_hex,
+                    "remote_identity": remote_hex,
                 }),
             );
         }
@@ -269,17 +342,19 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             remote_identity,
             message,
         } => {
+            let remote_hex = hex::encode(remote_identity);
             {
                 let mut st = shared.state.write().await;
                 st.active_call = None;
                 st.last_error = Some(message.clone());
+                log_audit_outcome_and_end(&mut st, "failed", Some(message.as_str()));
             }
             emit(
                 &shared.event_tx,
                 "voice.error",
                 &json!({
                     "type": "outgoing_failed",
-                    "remote_identity": hex::encode(remote_identity),
+                    "remote_identity": remote_hex,
                     "message": message,
                 }),
             );
@@ -288,9 +363,11 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             link_id,
             remote_identity,
         } => {
+            let link_hex = hex::encode(link_id);
+            let remote_hex = hex::encode(remote_identity);
             let call = json!({
-                "link_id": hex::encode(link_id),
-                "remote_identity": hex::encode(remote_identity),
+                "link_id": link_hex,
+                "remote_identity": remote_hex,
                 "role": "incoming",
                 "status": "ringing",
                 "answered": false,
@@ -299,20 +376,30 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
                 let mut st = shared.state.write().await;
                 st.active_call = Some(call.clone());
                 st.last_error = None;
+                st.media = VoiceMediaCounters::default();
+                begin_audit_session(&mut st, "incoming", &remote_hex, Some(link_hex));
             }
             emit(&shared.event_tx, "voice.incoming", &call);
         }
         TelephonyServiceEvent::CallTerminated { link_id, reason } => {
+            let reason_str = reason.map(signalling_status_str);
+            let outcome = match reason_str {
+                Some("busy") => "busy",
+                Some("rejected") => "rejected",
+                Some("established") => "completed",
+                Some(_) | None => "terminated",
+            };
             {
                 let mut st = shared.state.write().await;
                 st.active_call = None;
+                log_audit_outcome_and_end(&mut st, outcome, reason_str);
             }
             emit(
                 &shared.event_tx,
                 "voice.terminated",
                 &json!({
                     "link_id": hex::encode(link_id),
-                    "reason": reason.map(signalling_status_str),
+                    "reason": reason_str,
                 }),
             );
         }
@@ -330,6 +417,11 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             {
                 let mut st = shared.state.write().await;
                 st.active_call = active.clone();
+                if let Some(c) = snap.active_call.as_ref() {
+                    if c.status == SignallingStatus::Established {
+                        mark_audit_established(&mut st);
+                    }
+                }
             }
             emit(
                 &shared.event_tx,
@@ -341,6 +433,39 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
                     "active_call": active,
                 }),
             );
+        }
+        TelephonyServiceEvent::MediaSent {
+            link_id,
+            frames,
+            packets,
+        } => {
+            let link_hex = hex::encode(link_id);
+            let payload = {
+                let mut st = shared.state.write().await;
+                st.media.tx_frames = st.media.tx_frames.saturating_add(frames as u64);
+                st.media.tx_packets = st.media.tx_packets.saturating_add(packets as u64);
+                json!({
+                    "link_id": link_hex,
+                    "tx_frames": st.media.tx_frames,
+                    "tx_packets": st.media.tx_packets,
+                    "rx_frames": st.media.rx_frames,
+                })
+            };
+            emit(&shared.event_tx, "voice.stats", &payload);
+        }
+        TelephonyServiceEvent::MediaReceived { link_id, frames } => {
+            let link_hex = hex::encode(link_id);
+            let payload = {
+                let mut st = shared.state.write().await;
+                st.media.rx_frames = st.media.rx_frames.saturating_add(frames as u64);
+                json!({
+                    "link_id": link_hex,
+                    "tx_frames": st.media.tx_frames,
+                    "tx_packets": st.media.tx_packets,
+                    "rx_frames": st.media.rx_frames,
+                })
+            };
+            emit(&shared.event_tx, "voice.stats", &payload);
         }
         TelephonyServiceEvent::OpusFramesReceived {
             link_id,
@@ -365,6 +490,10 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             {
                 let mut st = shared.state.write().await;
                 st.last_error = Some(message.clone());
+                if st.active_call.is_some() {
+                    st.active_call = None;
+                    log_audit_outcome_and_end(&mut st, "error", Some(message.as_str()));
+                }
             }
             emit(
                 &shared.event_tx,
@@ -376,17 +505,181 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             let mut st = shared.state.write().await;
             st.running = false;
             st.active_call = None;
+            if st.audit.is_some() {
+                log_audit_outcome_and_end(&mut st, "stopped", None);
+            }
         }
-        // Media accounting / stream lifecycle — not required by the UI.
-        TelephonyServiceEvent::MediaSent { .. }
-        | TelephonyServiceEvent::MediaReceived { .. }
-        | TelephonyServiceEvent::OpusTransmitStreamStarted { .. }
+        TelephonyServiceEvent::OpusTransmitStreamStarted { .. }
         | TelephonyServiceEvent::OpusTransmitStreamStopped { .. }
         | TelephonyServiceEvent::OpusReceiveStreamStarted { .. }
         | TelephonyServiceEvent::OpusReceiveStreamStopped { .. }
         | TelephonyServiceEvent::OpusReceiveStreamFrames { .. }
         | TelephonyServiceEvent::Drive(_) => {}
     }
+}
+
+fn begin_audit_session(
+    st: &mut VoiceState,
+    role: &'static str,
+    remote_hex: &str,
+    link_id_hex: Option<String>,
+) {
+    st.audit = Some(VoiceAuditSession {
+        role,
+        remote_hex: remote_hex.to_string(),
+        link_id_hex,
+        started_at: Instant::now(),
+        established_at: None,
+        ever_established: false,
+        log_phase: VoiceAuditLogPhase::None,
+    });
+    log_audit_start(st);
+}
+
+fn log_audit_start(st: &mut VoiceState) {
+    let Some(audit) = st.audit.as_mut() else {
+        return;
+    };
+    if audit.log_phase != VoiceAuditLogPhase::None {
+        return;
+    }
+    audit.log_phase = VoiceAuditLogPhase::StartLogged;
+    let remote_prefix = remote_prefix(&audit.remote_hex);
+    let link = audit.link_id_hex.as_deref().unwrap_or("-");
+    tracing::info!(
+        target: "voice",
+        "call start role={} remote={} link_id={}",
+        audit.role,
+        remote_prefix,
+        link
+    );
+}
+
+fn mark_audit_established(st: &mut VoiceState) {
+    let Some(audit) = st.audit.as_mut() else {
+        return;
+    };
+    if audit.ever_established {
+        return;
+    }
+    audit.ever_established = true;
+    audit.established_at = Some(Instant::now());
+    if matches!(
+        audit.log_phase,
+        VoiceAuditLogPhase::None | VoiceAuditLogPhase::StartLogged
+    ) {
+        audit.log_phase = VoiceAuditLogPhase::OutcomeLogged;
+        let remote_prefix = remote_prefix(&audit.remote_hex);
+        tracing::info!(
+            target: "voice",
+            "call connected role={} remote={}",
+            audit.role,
+            remote_prefix
+        );
+    }
+}
+
+fn log_audit_outcome_and_end(st: &mut VoiceState, outcome: &str, reason: Option<&str>) {
+    let Some(mut audit) = st.audit.take() else {
+        return;
+    };
+    if matches!(
+        audit.log_phase,
+        VoiceAuditLogPhase::None | VoiceAuditLogPhase::StartLogged
+    ) {
+        audit.log_phase = VoiceAuditLogPhase::OutcomeLogged;
+        let remote_prefix = remote_prefix(&audit.remote_hex);
+        let reason_s = reason.unwrap_or(outcome);
+        let successful =
+            outcome == "completed" || (audit.ever_established && outcome == "terminated");
+        if successful && audit.ever_established && outcome == "terminated" {
+            tracing::info!(
+                target: "voice",
+                "call ended role={} remote={} reason={}",
+                audit.role,
+                remote_prefix,
+                reason_s
+            );
+        } else if outcome == "completed" {
+            tracing::info!(
+                target: "voice",
+                "call connected role={} remote={}",
+                audit.role,
+                remote_prefix
+            );
+        } else {
+            tracing::warn!(
+                target: "voice",
+                "call {} role={} remote={} reason={}",
+                outcome,
+                audit.role,
+                remote_prefix,
+                reason_s
+            );
+        }
+    }
+    if audit.log_phase != VoiceAuditLogPhase::EndLogged {
+        audit.log_phase = VoiceAuditLogPhase::EndLogged;
+        let summary = format_voice_audit_end_summary(&audit, outcome, &st.media, Instant::now());
+        tracing::info!(target: "voice", "{summary}");
+    }
+    st.media = VoiceMediaCounters::default();
+}
+
+fn remote_prefix(remote_hex: &str) -> &str {
+    let len = remote_hex.len().min(16);
+    &remote_hex[..len]
+}
+
+/// Estimated RX gap percent from established duration vs received frames (QualityHigh).
+pub fn estimate_rx_gap_pct(established_ms: u64, rx_frames: u64) -> u32 {
+    if established_ms == 0 {
+        return 0;
+    }
+    let expected = established_ms.saturating_add(QUALITY_HIGH_FRAME_MS.saturating_sub(1))
+        / QUALITY_HIGH_FRAME_MS;
+    if expected == 0 {
+        return 0;
+    }
+    if rx_frames >= expected {
+        return 0;
+    }
+    let missing = expected - rx_frames;
+    ((missing.saturating_mul(100)) / expected) as u32
+}
+
+/// Lifecycle end summary line (no per-packet logs). Pure for unit tests.
+pub fn format_voice_audit_end_summary(
+    audit: &VoiceAuditSession,
+    outcome: &str,
+    media: &VoiceMediaCounters,
+    now: Instant,
+) -> String {
+    let duration_ms = now.duration_since(audit.started_at).as_millis();
+    let loss_field = if audit.ever_established {
+        let established_ms = audit
+            .established_at
+            .map(|t| now.duration_since(t).as_millis() as u64)
+            .unwrap_or(0);
+        format!(
+            "est_rx_gap_pct={}",
+            estimate_rx_gap_pct(established_ms, media.rx_frames)
+        )
+    } else {
+        "packet_loss=n/a".to_string()
+    };
+    format!(
+        "call end outcome={} role={} remote={} duration_ms={} tx_frames={} tx_packets={} rx_frames={} local_tx_drops={} {}",
+        outcome,
+        audit.role,
+        remote_prefix(&audit.remote_hex),
+        duration_ms,
+        media.tx_frames,
+        media.tx_packets,
+        media.rx_frames,
+        media.local_tx_drops,
+        loss_field
+    )
 }
 
 fn emit(event_tx: &broadcast::Sender<String>, event_type: &str, payload: &serde_json::Value) {
@@ -508,6 +801,70 @@ mod tests {
         assert_eq!(Profile::QualityHigh.sample_frames_per_packet(), 2_880);
     }
 
+    #[test]
+    fn estimate_rx_gap_pct_zero_when_full() {
+        // 600 ms ≈ 10 QualityHigh frames.
+        assert_eq!(estimate_rx_gap_pct(600, 10), 0);
+        assert_eq!(estimate_rx_gap_pct(600, 5), 50);
+        assert_eq!(estimate_rx_gap_pct(600, 0), 100);
+    }
+
+    #[test]
+    fn audit_end_summary_marks_packet_loss_na_when_never_established() {
+        let started = Instant::now();
+        let audit = VoiceAuditSession {
+            role: "outgoing",
+            remote_hex: "aabbccddeeff00112233445566778899".into(),
+            link_id_hex: None,
+            started_at: started,
+            established_at: None,
+            ever_established: false,
+            log_phase: VoiceAuditLogPhase::OutcomeLogged,
+        };
+        let summary = format_voice_audit_end_summary(
+            &audit,
+            "failed",
+            &VoiceMediaCounters::default(),
+            started + Duration::from_secs(2),
+        );
+        assert!(summary.contains("outcome=failed"));
+        assert!(summary.contains("packet_loss=n/a"));
+        assert!(summary.contains("tx_frames=0"));
+        assert!(summary.contains("tx_packets=0"));
+        assert!(summary.contains("rx_frames=0"));
+    }
+
+    #[test]
+    fn audit_end_summary_includes_est_rx_gap_after_established() {
+        let started = Instant::now();
+        let established = started + Duration::from_secs(1);
+        let audit = VoiceAuditSession {
+            role: "outgoing",
+            remote_hex: "aabbccddeeff00112233445566778899".into(),
+            link_id_hex: Some("11".repeat(16)),
+            started_at: started,
+            established_at: Some(established),
+            ever_established: true,
+            log_phase: VoiceAuditLogPhase::OutcomeLogged,
+        };
+        let media = VoiceMediaCounters {
+            tx_frames: 20,
+            tx_packets: 20,
+            rx_frames: 5,
+            local_tx_drops: 1,
+        };
+        let summary = format_voice_audit_end_summary(
+            &audit,
+            "completed",
+            &media,
+            established + Duration::from_millis(600),
+        );
+        assert!(summary.contains("tx_packets=20"));
+        assert!(summary.contains("local_tx_drops=1"));
+        assert!(summary.contains("est_rx_gap_pct="));
+        assert!(!summary.contains("packet_loss=n/a"));
+    }
+
     #[tokio::test]
     async fn status_shape_when_manager_spawns() {
         let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(4);
@@ -624,6 +981,23 @@ mod tests {
         .await;
         let update = event_rx.try_recv().expect("voice.update");
         assert!(update.contains("\"type\":\"voice.update\""));
+        assert!(
+            shared.state.read().await.active_call.is_some(),
+            "outgoing pending must set active_call"
+        );
+
+        bridge_service_event(
+            &shared,
+            TelephonyServiceEvent::MediaSent {
+                link_id: link,
+                frames: 2,
+                packets: 2,
+            },
+        )
+        .await;
+        let stats = event_rx.try_recv().expect("voice.stats");
+        assert!(stats.contains("\"type\":\"voice.stats\""));
+        assert!(stats.contains("\"tx_frames\":2"));
 
         bridge_service_event(
             &shared,
@@ -636,6 +1010,7 @@ mod tests {
         let terminated = event_rx.try_recv().expect("voice.terminated");
         assert!(terminated.contains("\"type\":\"voice.terminated\""));
         assert!(shared.state.read().await.active_call.is_none());
+        assert!(shared.state.read().await.audit.is_none());
 
         bridge_service_event(
             &shared,

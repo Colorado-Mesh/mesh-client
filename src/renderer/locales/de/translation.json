@@ -5120,6 +5120,26 @@
       "noIdentity": "Kann nicht aufrufen: Peer-Identität noch nicht bekannt. Warten Sie auf eine Ankündigung oder fragen Sie den Kollegen.",
       "callFailed": "Sprachanruf fehlgeschlagen.",
       "notRunning": "Stimme ist erst verfügbar, wenn der Reticulum-Stapel läuft."
+    },
+    "connecting": "verbinden …",
+    "elapsedAria": "Verstrichene Zeit",
+    "txAria": "Gesendete Sprachrahmen",
+    "rxAria": "Empfangene Sprachbilder",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST-Telefonie für diesen Peer ankündigen",
+    "capabilityUnknown": "LXST-Telefonansage noch nicht gehört (Anruf kann noch funktionieren)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": ".?",
+    "help": {
+      "interop": "LXST Voice benötigt einen Peer, der LXST-Telefonie ausführt (Sideband, Ratspeak oder mesh-client). Kein Sprachnotizclip. Python LXST ist die Referenz; rsLXST ist experimentell."
+    },
+    "toast": {
+      "busy": "Leitung besetzt",
+      "rejected": "Anruf abgelehnt",
+      "noAnswer": "Keine Antwort — Anruf abgelaufen.",
+      "failed": "Sprachanruf fehlgeschlagen."
     }
   }
 }

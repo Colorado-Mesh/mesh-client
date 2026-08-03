@@ -583,7 +583,11 @@ export default function ReticulumPeerListPanel({
         <MessageCircle className="inline h-3.5 w-3.5" aria-hidden />
       </button>
       {hasLxstVoice ? (
-        <ReticulumVoiceCallButton lxmfPeerHash={peer.destination_hash} disabled={busy} />
+        <ReticulumVoiceCallButton
+          lxmfPeerHash={peer.destination_hash}
+          identityHash={peer.identity_hash}
+          disabled={busy}
+        />
       ) : null}
       <button
         type="button"

@@ -736,12 +736,32 @@
     "incomingTitle": "Incoming voice call",
     "inCall": "In call",
     "calling": "Calling…",
+    "connecting": "Connecting…",
     "callAria": "Start LXST voice call",
     "answerAria": "Answer voice call",
     "rejectAria": "Reject voice call",
     "hangupAria": "Hang up voice call",
     "muteAria": "Mute microphone",
     "unmuteAria": "Unmute microphone",
+    "elapsedAria": "Call elapsed time",
+    "txAria": "Transmitted voice frames",
+    "rxAria": "Received voice frames",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST telephony announce heard for this peer",
+    "capabilityUnknown": "LXST telephony announce not heard yet (call may still work)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "LXST voice needs a peer running LXST telephony (Sideband, Ratspeak, or mesh-client). Not a voice-note clip. Python LXST is the reference; rsLXST is experimental."
+    },
+    "toast": {
+      "busy": "Line busy.",
+      "rejected": "Call rejected.",
+      "noAnswer": "No answer — call timed out.",
+      "failed": "Voice call failed."
+    },
     "errors": {
       "noIdentity": "Cannot call: peer identity not known yet. Wait for an announce or probe the peer.",
       "callFailed": "Voice call failed.",

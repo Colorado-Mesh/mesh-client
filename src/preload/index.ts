@@ -1188,9 +1188,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       mute: (opts: { muted: boolean }) =>
         unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/mute', opts)),
       sendAudio: (opts: { profile?: number; channels: number; samples_b64: string }) =>
-        unwrapReticulumProxy(
-          ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/audio', opts),
-        ),
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceSendAudio', opts)),
     },
     rncp: {
       send: (opts: { destination_hash: string; path: string }) =>

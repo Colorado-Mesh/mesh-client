@@ -82,18 +82,34 @@ export function packQualityHighFrame(
   return out;
 }
 
-/** Resolve identity hash for dial: prefer identity_hash, else first from candidates. */
+export type VoiceDialResolution =
+  | { dialHash: string; source: 'identity' | 'candidate' | 'destination' }
+  | { errorKey: 'reticulumVoice.errors.noIdentity' };
+
+function asHash32(value: string | null | undefined): string | null {
+  const h = value?.trim().toLowerCase() ?? '';
+  return /^[0-9a-f]{32}$/.test(h) ? h : null;
+}
+
+/**
+ * Resolve dial target for `/voice/call`:
+ * 1) explicit identity_hash
+ * 2) candidate identities (activity / Remote)
+ * 3) LXMF destination hash (sidecar dest→identity cache)
+ */
 export function resolveVoiceDialIdentityHash(opts: {
   identityHash?: string | null;
   candidateIdentityHashes?: Iterable<string>;
-}): { identityHash: string } | { errorKey: 'reticulumVoice.errors.noIdentity' } {
-  const direct = opts.identityHash?.trim().toLowerCase();
-  if (direct && /^[0-9a-f]{32}$/.test(direct)) {
-    return { identityHash: direct };
-  }
+  /** LXMF peer destination — last-resort dial target for sidecar resolve. */
+  destinationHash?: string | null;
+}): VoiceDialResolution {
+  const direct = asHash32(opts.identityHash);
+  if (direct) return { dialHash: direct, source: 'identity' };
   for (const c of opts.candidateIdentityHashes ?? []) {
-    const h = c.trim().toLowerCase();
-    if (/^[0-9a-f]{32}$/.test(h)) return { identityHash: h };
+    const h = asHash32(c);
+    if (h) return { dialHash: h, source: 'candidate' };
   }
+  const dest = asHash32(opts.destinationHash);
+  if (dest) return { dialHash: dest, source: 'destination' };
   return { errorKey: 'reticulumVoice.errors.noIdentity' };
 }

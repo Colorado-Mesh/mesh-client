@@ -5122,6 +5122,26 @@
       "noIdentity": "Nelze volat: identita protějšku zatím není známa. Počkejte na oznámení nebo sondujte kolegu.",
       "callFailed": "Hlasový hovor se nezdařil.",
       "notRunning": "Hlas není k dispozici, dokud není spuštěn zásobník Reticulum."
+    },
+    "connecting": "Připojování…",
+    "elapsedAria": "Uplynulý čas hovoru",
+    "txAria": "Přenášené hlasové rámce",
+    "rxAria": "Přijaté hlasové rámce",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST telefonie oznamuje slyšení pro tohoto kolegu",
+    "capabilityUnknown": "Telefonní hlášení LXST ještě nebylo vyslyšeno (hovor může stále fungovat)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "Hlas LXST potřebuje kolegu, který používá telefonii LXST (Sideband, Ratspeak nebo mesh-client). Není to klip s hlasovou poznámkou. Python LXST je referenční; rsLXST je experimentální."
+    },
+    "toast": {
+      "busy": "Linka je obsazená.",
+      "rejected": "Hovor byl zamítnut.",
+      "noAnswer": "Žádná odpověď — vypršel časový limit hovoru.",
+      "failed": "Hlasový hovor se nezdařil."
     }
   }
 }

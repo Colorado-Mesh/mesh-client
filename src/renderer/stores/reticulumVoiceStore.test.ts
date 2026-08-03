@@ -18,7 +18,11 @@ describe('reticulumVoiceStore', () => {
       running: false,
       microphoneMuted: false,
       lastError: null,
+      lastTerminalReason: null,
       callGeneration: 0,
+      callStartedAtMs: null,
+      callEstablishedAtMs: null,
+      stats: { txFrames: 0, txPackets: 0, rxFrames: 0, localTxDrops: 0 },
     });
   });
 
@@ -29,19 +33,69 @@ describe('reticulumVoiceStore', () => {
     expect(useReticulumVoiceStore.getState().activeCall?.remote_identity).toBe(
       CALL.remote_identity,
     );
+    expect(useReticulumVoiceStore.getState().callStartedAtMs).toBeTypeOf('number');
 
     store.applyUpdate({
       type: 'snapshot',
       active_call: { ...CALL, status: 'established', answered: true },
     });
     expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('established');
+    expect(useReticulumVoiceStore.getState().callEstablishedAtMs).toBeTypeOf('number');
 
     store.applyTerminated(CALL.link_id);
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
     expect(useReticulumVoiceStore.getState().incomingCall).toBeNull();
+    expect(useReticulumVoiceStore.getState().callStartedAtMs).toBeNull();
   });
 
-  it('toggles mute and clears on error', () => {
+  it('beginOutgoing sets calling before WS and hangup clears stats', () => {
+    const id = 'c'.repeat(32);
+    useReticulumVoiceStore.getState().beginOutgoing(id);
+    const state = useReticulumVoiceStore.getState();
+    expect(state.activeCall?.status).toBe('calling');
+    expect(state.activeCall?.remote_identity).toBe(id);
+    expect(state.callStartedAtMs).toBeTypeOf('number');
+
+    useReticulumVoiceStore.getState().applyStats({
+      link_id: '',
+      tx_frames: 3,
+      tx_packets: 2,
+      rx_frames: 1,
+    });
+    expect(useReticulumVoiceStore.getState().stats.txFrames).toBe(3);
+
+    useReticulumVoiceStore.getState().clearCall();
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+    expect(useReticulumVoiceStore.getState().stats.txFrames).toBe(0);
+    expect(useReticulumVoiceStore.getState().callStartedAtMs).toBeNull();
+  });
+
+  it('accumulates stats and ignores stale link_id', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: 'a'.repeat(32),
+      remote_identity: 'b'.repeat(32),
+    });
+    useReticulumVoiceStore.getState().applyStats({
+      link_id: 'a'.repeat(32),
+      tx_frames: 5,
+      tx_packets: 4,
+      rx_frames: 2,
+    });
+    useReticulumVoiceStore.getState().applyStats({
+      link_id: 'f'.repeat(32),
+      tx_frames: 99,
+      rx_frames: 99,
+    });
+    expect(useReticulumVoiceStore.getState().stats).toEqual({
+      txFrames: 5,
+      txPackets: 4,
+      rxFrames: 2,
+      localTxDrops: 0,
+    });
+  });
+
+  it('toggles mute and clears on error with terminal reason', () => {
     const store = useReticulumVoiceStore.getState();
     store.applyIncoming(CALL);
     store.setMicrophoneMuted(true);
@@ -49,6 +103,7 @@ describe('reticulumVoiceStore', () => {
     store.applyError('boom');
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
     expect(useReticulumVoiceStore.getState().lastError).toBe('boom');
+    expect(useReticulumVoiceStore.getState().lastTerminalReason).toBe('boom');
   });
 
   it('ignores stale terminated after a new call generation', () => {
@@ -60,7 +115,26 @@ describe('reticulumVoiceStore', () => {
       link_id: 'c'.repeat(32),
       remote_identity: 'd'.repeat(32),
     });
-    store.applyTerminated(oldLink);
+    store.applyTerminated(oldLink, 'busy');
     expect(useReticulumVoiceStore.getState().activeCall?.link_id).toBe('c'.repeat(32));
+  });
+
+  it('stores busy terminal reason on terminate', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('e'.repeat(32));
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: 'a'.repeat(32),
+      remote_identity: 'e'.repeat(32),
+    });
+    useReticulumVoiceStore.getState().applyTerminated('a'.repeat(32), 'busy');
+    expect(useReticulumVoiceStore.getState().lastTerminalReason).toBe('busy');
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+  });
+
+  it('increments local TX drops', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('a'.repeat(32));
+    useReticulumVoiceStore.getState().incrementLocalTxDrops();
+    useReticulumVoiceStore.getState().incrementLocalTxDrops();
+    expect(useReticulumVoiceStore.getState().stats.localTxDrops).toBe(2);
   });
 });

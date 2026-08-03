@@ -41,6 +41,18 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     }
   });
 
+  it('routes LXST PCM through a dedicated higher-budget IPC channel', () => {
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceSendAudio'");
+    expect(HANDLERS_SOURCE).toMatch(/max:\s*2000/);
+    expect(HANDLERS_SOURCE).toContain("label: 'reticulum:voiceSendAudio'");
+    expect(HANDLERS_SOURCE).toContain('reticulumVoiceAudioIpcRateLimit.checkOrThrow()');
+    expect(HANDLERS_SOURCE).toContain('voice PCM ingest requires reticulum:voiceSendAudio');
+    expect(HANDLERS_SOURCE).toContain('VOICE_AUDIO_API_PATH');
+    const preload = readFileSync(join(__dirname, '../../preload/index.ts'), 'utf-8');
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceSendAudio'");
+    expect(preload).not.toMatch(/invoke\('reticulum:proxyPost',\s*'\/api\/v1\/voice\/audio'/);
+  });
+
   it('aligns sidecar peer cache and WS added batch with ~100k scale', () => {
     expect(SIDECAR_STACK_SOURCE).toMatch(/const MAX_PEER_CACHE: usize = 100_000;/);
     expect(SIDECAR_LIVE_SOURCE).toMatch(/const MAX_PEERS_UPDATED_ADDED: usize = 4096;/);

@@ -1744,6 +1744,11 @@ function ChatPanel({
     return peer?.hops ?? null;
   });
 
+  const reticulumDmIdentityHash = useReticulumPeerStore((s) => {
+    if (!reticulumDmDestinationHash) return null;
+    return s.getPeer(reticulumDmDestinationHash)?.identity_hash ?? null;
+  });
+
   const reticulumDmPassiveHops = useMemo(() => {
     if (reticulumDmPeerHops != null) return reticulumDmPeerHops;
     if (activeDmNode == null) return null;
@@ -2282,8 +2287,10 @@ function ChatPanel({
               <ReticulumVoiceCallButton
                 key={`dm-voice-${reticulumDmDestinationHash}`}
                 lxmfPeerHash={reticulumDmDestinationHash}
+                identityHash={reticulumDmIdentityHash}
                 disabled={!reticulumStackLive}
                 className="text-cyan-400 hover:underline disabled:opacity-40"
+                showHelp
               />
             ) : null;
           const peerDetailsAppearance = reticulumDmDestinationHash

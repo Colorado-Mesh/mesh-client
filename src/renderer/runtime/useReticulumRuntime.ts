@@ -141,6 +141,7 @@ import {
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { decodeF32LeBase64 } from '../lib/reticulumVoiceAudio';
+import { handleReticulumVoiceTerminal } from '../lib/reticulumVoiceSession';
 import { resolveRrcInvoluntaryPartBannerKey } from '../lib/rrcInvoluntaryPartBanner';
 import {
   isRrcJoinInfoNotice,
@@ -1175,13 +1176,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'voice.incoming' && evt.payload && typeof evt.payload === 'object') {
         useReticulumVoiceStore.getState().applyIncoming(evt.payload);
       }
+      if (evt.type === 'voice.stats' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumVoiceStore.getState().applyStats(evt.payload);
+      }
       if (evt.type === 'voice.terminated' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { link_id?: string };
-        useReticulumVoiceStore.getState().applyTerminated(p.link_id ?? null);
+        const p = evt.payload as { link_id?: string; reason?: string | null };
+        handleReticulumVoiceTerminal({
+          linkId: p.link_id ?? null,
+          reason: p.reason ?? null,
+        });
       }
       if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { message?: string };
-        useReticulumVoiceStore.getState().applyError(p.message ?? 'voice error');
+        handleReticulumVoiceTerminal({
+          errorMessage: p.message ?? 'voice error',
+        });
       }
       if (evt.type === 'voice.audio' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { channels?: number; samples_b64?: string };

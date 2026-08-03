@@ -12,6 +12,7 @@ import {
   reticulumProxyIpcErrorEnvelope,
 } from '../../shared/reticulumProxyIpcError';
 import { MS_PER_MINUTE } from '../../shared/timeConstants';
+import { parseVoiceAudioRequest, VOICE_AUDIO_API_PATH } from '../../shared/voice-types';
 import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
 import {
@@ -42,6 +43,20 @@ const reticulumProxyIpcRateLimit = createIpcRateLimiter({
   windowMs: MS_PER_MINUTE,
   label: 'reticulum:proxy',
 });
+
+/**
+ * Realtime LXST PCM ingest: QualityHigh is ~16.7 frames/s (~1000/min).
+ * Separate from the shared 300/min proxy bucket so calls do not starve mesh control IPC.
+ */
+const reticulumVoiceAudioIpcRateLimit = createIpcRateLimiter({
+  max: 2000,
+  windowMs: MS_PER_MINUTE,
+  label: 'reticulum:voiceSendAudio',
+});
+
+function isVoiceAudioApiPath(apiPath: string): boolean {
+  return apiPath === VOICE_AUDIO_API_PATH;
+}
 
 export interface ReticulumIpcDeps {
   idleStatus: ReticulumSidecarStatus;
@@ -200,12 +215,35 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         'rncp send/fetch/listener changes require reticulum:rncpSend/rncpFetch/setRncpListener (picker-backed)',
       );
     }
+    if (isVoiceAudioApiPath(pathArg)) {
+      throw new Error('voice PCM ingest requires reticulum:voiceSendAudio');
+    }
     try {
       const m = ensureManager();
       return await m.proxyPost(pathArg, body);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('proxyPost', err, pathArg);
+    }
+  });
+
+  /**
+   * Realtime LXST PCM frames. Uses a dedicated rate limit (not the shared 300/min
+   * proxy ceiling) so voice TX does not starve control-plane proxy IPC.
+   */
+  ipcMain.handle('reticulum:voiceSendAudio', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:voiceSendAudio');
+    reticulumVoiceAudioIpcRateLimit.checkOrThrow();
+    const parsed = parseVoiceAudioRequest(opts);
+    if ('error' in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPost(VOICE_AUDIO_API_PATH, parsed);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('voiceSendAudio', err, VOICE_AUDIO_API_PATH);
     }
   });
 

@@ -13,8 +13,21 @@ import {
   packQualityHighFrame,
   resolveVoiceDialIdentityHash,
 } from '@/renderer/lib/reticulumVoiceAudio';
+import {
+  playVoiceBusyTone,
+  playVoiceFailTone,
+  startVoiceRingback,
+  stopVoiceCallTones,
+} from '@/renderer/lib/reticulumVoiceCallTones';
+import {
+  classifyVoiceTerminalReason,
+  voiceToastKeyForTerminal,
+} from '@/renderer/lib/reticulumVoiceOutcome';
 import { collectIdentityHashesForLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
+import { RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS } from '@/renderer/lib/timeConstants';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 
 let captureCtx: AudioContext | null = null;
 let captureSource: MediaStreamAudioSourceNode | null = null;
@@ -27,6 +40,7 @@ let playbackCtx: AudioContext | null = null;
 let audioUnsub: (() => void) | null = null;
 let txTimer: ReturnType<typeof setInterval> | null = null;
 let pendingSamples: number[] = [];
+let safetyHangupTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function ensureMicAccess(): Promise<boolean> {
   try {
@@ -88,6 +102,31 @@ export function stopReticulumVoiceMedia(): void {
   stopPlayback();
 }
 
+function clearSafetyHangupTimer(): void {
+  if (safetyHangupTimer != null) {
+    clearTimeout(safetyHangupTimer);
+    safetyHangupTimer = null;
+  }
+}
+
+/** @internal Test helper */
+export function resetReticulumVoiceSessionTimersForTests(): void {
+  clearSafetyHangupTimer();
+}
+
+function scheduleOutgoingSafetyHangup(generation: number): void {
+  clearSafetyHangupTimer();
+  safetyHangupTimer = setTimeout(() => {
+    safetyHangupTimer = null;
+    const state = useReticulumVoiceStore.getState();
+    if (state.callGeneration !== generation) return;
+    const status = state.activeCall?.status;
+    if (!status || status === 'established') return;
+    console.warn('[reticulumVoice] safety hangup — outgoing never established');
+    void reticulumVoiceHangup({ terminalReason: 'safety_timeout' });
+  }, RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS);
+}
+
 async function startCaptureAndTx(): Promise<void> {
   stopCapture();
   if (!(await ensureMicAccess())) {
@@ -121,6 +160,8 @@ async function startCaptureAndTx(): Promise<void> {
   source.connect(processor);
   processor.connect(ctx.destination);
 
+  // One QualityHigh frame ≈ 60 ms @ 48 kHz; tick near frame duration (not 2×) so we
+  // stay around ~16–17 IPC posts/s under the dedicated voiceSendAudio rate limit.
   const frameMs = (LXST_QUALITY_HIGH_FRAME_SAMPLES / LXST_QUALITY_HIGH_SAMPLE_RATE_HZ) * 1000;
   txTimer = setInterval(
     () => {
@@ -136,13 +177,22 @@ async function startCaptureAndTx(): Promise<void> {
         1,
       );
       if (!packed) return;
-      void window.electronAPI.reticulum.voice.sendAudio({
-        profile: LXST_QUALITY_HIGH_PROFILE,
-        channels: LXST_QUALITY_HIGH_CHANNELS,
-        samples_b64: encodeF32LeBase64(packed),
-      });
+      void window.electronAPI.reticulum.voice
+        .sendAudio({
+          profile: LXST_QUALITY_HIGH_PROFILE,
+          channels: LXST_QUALITY_HIGH_CHANNELS,
+          samples_b64: encodeF32LeBase64(packed),
+        })
+        .then((resp) => {
+          if (!resp.ok) {
+            useReticulumVoiceStore.getState().incrementLocalTxDrops();
+          }
+        })
+        .catch(() => {
+          useReticulumVoiceStore.getState().incrementLocalTxDrops();
+        });
     },
-    Math.max(20, frameMs / 2),
+    Math.max(20, frameMs),
   );
 }
 
@@ -182,7 +232,17 @@ export async function startReticulumVoiceMediaForActiveCall(): Promise<void> {
   }
 }
 
-export async function reticulumVoiceCallPeer(lxmfPeerHash: string): Promise<void> {
+function peerIdentityForLxmfDest(lxmfPeerHash: string): string | null {
+  const dest = canonicalizeReticulumDestinationHash(lxmfPeerHash);
+  if (!dest) return null;
+  const peer = useReticulumPeerStore.getState().getPeer(dest);
+  return peer?.identity_hash ? canonicalizeReticulumDestinationHash(peer.identity_hash) : null;
+}
+
+export async function reticulumVoiceCallPeer(
+  lxmfPeerHash: string,
+  opts?: { identityHash?: string | null },
+): Promise<void> {
   const api = window.electronAPI.reticulum.voice;
   const status = await api.getStatus();
   useReticulumVoiceStore.getState().applyStatus(status);
@@ -190,20 +250,44 @@ export async function reticulumVoiceCallPeer(lxmfPeerHash: string): Promise<void
     pushAppToast(i18n.t('reticulumVoice.errors.notRunning'), 'error');
     return;
   }
-  const candidates = collectIdentityHashesForLxmfPeer(lxmfPeerHash);
+  const dest = canonicalizeReticulumDestinationHash(lxmfPeerHash);
+  const peerIdentity = opts?.identityHash
+    ? canonicalizeReticulumDestinationHash(opts.identityHash)
+    : peerIdentityForLxmfDest(lxmfPeerHash);
+  const candidates = dest ? collectIdentityHashesForLxmfPeer(dest) : new Set<string>();
   const resolved = resolveVoiceDialIdentityHash({
+    identityHash: peerIdentity,
     candidateIdentityHashes: candidates,
+    destinationHash: dest,
   });
   if ('errorKey' in resolved) {
+    console.warn('[reticulumVoice] dial aborted — no identity or destination hash');
     pushAppToast(i18n.t(resolved.errorKey), 'error');
     return;
   }
-  const resp = await api.call({ identity_hash: resolved.identityHash });
+
+  console.info(
+    `[reticulumVoice] call start role=outgoing remote=${resolved.dialHash.slice(0, 16)} source=${resolved.source}`,
+  );
+
+  // Optimistic UI so Hang up is available before WS voice.update.
+  useReticulumVoiceStore.getState().beginOutgoing(resolved.dialHash);
+  const generation = useReticulumVoiceStore.getState().callGeneration;
+  startVoiceRingback();
+  scheduleOutgoingSafetyHangup(generation);
+
+  const resp = await api.call({ identity_hash: resolved.dialHash });
   if (!resp.ok) {
-    pushAppToast(resp.error || i18n.t('reticulumVoice.errors.callFailed'), 'error');
-  } else {
-    await startReticulumVoiceMediaForActiveCall();
+    const msg = resp.error || i18n.t('reticulumVoice.errors.callFailed');
+    console.warn(`[reticulumVoice] call failed reason=${msg}`);
+    clearSafetyHangupTimer();
+    stopVoiceCallTones();
+    playVoiceFailTone();
+    useReticulumVoiceStore.getState().applyError(msg);
+    pushAppToast(msg, 'error');
+    return;
   }
+  // Mic deferred until connecting/established (overlay effect).
 }
 
 export async function reticulumVoiceAnswer(): Promise<void> {
@@ -212,22 +296,92 @@ export async function reticulumVoiceAnswer(): Promise<void> {
     pushAppToast(resp.error || i18n.t('reticulumVoice.errors.callFailed'), 'error');
     return;
   }
+  stopVoiceCallTones();
   await startReticulumVoiceMediaForActiveCall();
 }
 
 export async function reticulumVoiceReject(): Promise<void> {
+  clearSafetyHangupTimer();
   stopReticulumVoiceMedia();
+  stopVoiceCallTones();
   await window.electronAPI.reticulum.voice.reject();
   useReticulumVoiceStore.getState().clearCall();
 }
 
-export async function reticulumVoiceHangup(): Promise<void> {
+export async function reticulumVoiceHangup(opts?: {
+  terminalReason?: string | null;
+}): Promise<void> {
+  clearSafetyHangupTimer();
   stopReticulumVoiceMedia();
-  await window.electronAPI.reticulum.voice.hangup();
+  const reason = opts?.terminalReason ?? 'hangup';
+  const kind = classifyVoiceTerminalReason(reason);
+  stopVoiceCallTones();
+  if (kind === 'busy') playVoiceBusyTone();
+  else if (kind === 'noAnswer' || kind === 'failed' || kind === 'rejected') playVoiceFailTone();
+
+  const toastKey = voiceToastKeyForTerminal(kind);
+  if (toastKey && kind !== 'completed') {
+    pushAppToast(i18n.t(toastKey), 'error');
+  }
+
+  console.info(`[reticulumVoice] hangup reason=${reason}`);
+  try {
+    await window.electronAPI.reticulum.voice.hangup();
+  } catch (e) {
+    console.warn('[reticulumVoice] hangup IPC failed', e);
+  }
   useReticulumVoiceStore.getState().clearCall();
 }
 
 export async function reticulumVoiceSetMuted(muted: boolean): Promise<void> {
   await window.electronAPI.reticulum.voice.mute({ muted });
   useReticulumVoiceStore.getState().setMicrophoneMuted(muted);
+}
+
+/**
+ * Handle terminal signalling from WS (busy / rejected / timeout / completed).
+ * Clears media, tones, safety timer; toast for unsuccessful outcomes.
+ */
+export function handleReticulumVoiceTerminal(opts: {
+  linkId?: string | null;
+  reason?: string | null;
+  errorMessage?: string | null;
+}): void {
+  clearSafetyHangupTimer();
+  stopReticulumVoiceMedia();
+  const reason = opts.errorMessage ?? opts.reason ?? null;
+  const kind = classifyVoiceTerminalReason(reason);
+  stopVoiceCallTones();
+  if (kind === 'busy') playVoiceBusyTone();
+  else if (kind === 'rejected' || kind === 'noAnswer' || kind === 'failed') playVoiceFailTone();
+
+  const toastKey = voiceToastKeyForTerminal(kind);
+  if (toastKey) {
+    pushAppToast(i18n.t(toastKey), 'error');
+  }
+
+  if (opts.errorMessage) {
+    useReticulumVoiceStore.getState().applyError(opts.errorMessage);
+  } else {
+    useReticulumVoiceStore.getState().applyTerminated(opts.linkId ?? null, reason);
+  }
+}
+
+/** Sync ringback / stop tones from active call status (overlay / runtime). */
+export function syncReticulumVoiceProgressTones(status: string | null | undefined): void {
+  if (status === 'calling' || status === 'ringing') {
+    startVoiceRingback();
+    return;
+  }
+  if (status === 'established' || status === 'connecting') {
+    stopVoiceCallTones();
+    if (status === 'established') {
+      clearSafetyHangupTimer();
+    }
+    return;
+  }
+  if (!status) {
+    stopVoiceCallTones();
+    clearSafetyHangupTimer();
+  }
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { isVoiceActiveCall, isVoiceStatusResponse } from './voice-types';
+import {
+  isVoiceActiveCall,
+  isVoiceStatusResponse,
+  parseVoiceAudioRequest,
+  VOICE_AUDIO_SAMPLES_B64_MAX,
+} from './voice-types';
 
 describe('voice-types guards', () => {
   it('accepts a valid status snapshot', () => {
@@ -33,5 +38,27 @@ describe('voice-types guards', () => {
 
   it('rejects incomplete active_call', () => {
     expect(isVoiceActiveCall({ link_id: 'x' })).toBe(false);
+  });
+
+  it('parseVoiceAudioRequest accepts a QualityHigh-shaped frame', () => {
+    expect(
+      parseVoiceAudioRequest({
+        profile: 0x50,
+        channels: 1,
+        samples_b64: 'AAAA',
+      }),
+    ).toEqual({ profile: 0x50, channels: 1, samples_b64: 'AAAA' });
+  });
+
+  it('parseVoiceAudioRequest rejects empty or oversized samples', () => {
+    expect(parseVoiceAudioRequest({ channels: 1, samples_b64: '' })).toEqual({
+      error: 'empty_samples_b64',
+    });
+    expect(
+      parseVoiceAudioRequest({
+        channels: 1,
+        samples_b64: 'A'.repeat(VOICE_AUDIO_SAMPLES_B64_MAX + 1),
+      }),
+    ).toEqual({ error: 'samples_b64_too_large' });
   });
 });

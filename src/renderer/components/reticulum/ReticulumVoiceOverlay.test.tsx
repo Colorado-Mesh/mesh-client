@@ -21,6 +21,7 @@ vi.mock('@/renderer/lib/reticulumVoiceSession', () => ({
   reticulumVoiceSetMuted: (...args: unknown[]) => setMuted(...args),
   startReticulumVoiceMediaForActiveCall: vi.fn(),
   stopReticulumVoiceMedia: vi.fn(),
+  syncReticulumVoiceProgressTones: vi.fn(),
 }));
 
 describe('ReticulumVoiceOverlay', () => {
@@ -80,6 +81,26 @@ describe('ReticulumVoiceOverlay', () => {
     expect(screen.getByRole('status', { name: /in call/i })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /mute microphone/i }));
     expect(setMuted).toHaveBeenCalledWith(true);
+    await user.click(screen.getByRole('button', { name: /hang up voice call/i }));
+    expect(hangup).toHaveBeenCalled();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows hangup while optimistic calling with TX/RX counters', async () => {
+    const user = userEvent.setup();
+    act(() => {
+      useReticulumVoiceStore.getState().beginOutgoing('b'.repeat(32));
+      useReticulumVoiceStore.getState().applyStats({
+        tx_frames: 4,
+        tx_packets: 3,
+        rx_frames: 1,
+      });
+    });
+    const { container } = render(<ReticulumVoiceOverlay />);
+    expect(screen.getByRole('status', { name: /calling/i })).toBeTruthy();
+    expect(screen.getByText(/TX 4/i)).toBeTruthy();
+    expect(screen.getByText(/RX 1/i)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /hang up voice call/i }));
     expect(hangup).toHaveBeenCalled();
     hydrateAxeThemeColors(container);

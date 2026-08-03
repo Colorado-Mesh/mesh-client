@@ -5120,6 +5120,26 @@
       "noIdentity": "Kan niet aanroepen: peer-identiteit nog niet bekend. Wacht op een aankondiging of onderzoek de peer.",
       "callFailed": "Spraakoproep mislukt.",
       "notRunning": "Stem is niet beschikbaar totdat de Reticulum-stack actief is."
+    },
+    "connecting": "Verbinden…",
+    "elapsedAria": "Verstreken tijd",
+    "txAria": "Verzonden spraakframes",
+    "rxAria": "Ontvangen spraakframes",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST-telefonie-aankondiging gehoord voor deze collega",
+    "capabilityUnknown": "LXST-telefonie-aankondiging nog niet gehoord (oproep kan nog steeds werken)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "Welk model wordt dan gebruikt?",
+    "help": {
+      "interop": "LXST-spraak heeft een peer-running LXST-telefonie nodig (Sideband, Ratspeak of mesh-client). Geen voice-note clip. Python LXST is de referentie; rsLXST is experimenteel."
+    },
+    "toast": {
+      "busy": "Lijn bezet",
+      "rejected": "Oproep afgewezen",
+      "noAnswer": "Geen antwoord — er is een time-out opgetreden.",
+      "failed": "Spraakoproep mislukt."
     }
   }
 }

@@ -5124,6 +5124,26 @@
       "noIdentity": "Nie można wywołać: tożsamość rówieśnika nie jest jeszcze znana. Poczekaj na ogłoszenie lub zbadaj rówieśnika.",
       "callFailed": "Połączenie głosowe nie powiodło się.",
       "notRunning": "Głos nie jest dostępny, dopóki stos Reticulum nie zostanie uruchomiony."
+    },
+    "connecting": "Łączenie…",
+    "elapsedAria": "Czas, jaki upłynął",
+    "txAria": "Przesyłane ramki głosowe",
+    "rxAria": "Odebrane ramki głosowe",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Ogłoszenie telefoniczne LXST wysłuchane przez tego kolegę",
+    "capabilityUnknown": "Ogłoszenie telefoniczne LXST nie zostało jeszcze usłyszane (połączenie może nadal działać)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "Głos LXST potrzebuje telefonii LXST (Sideband, Ratspeak lub mesh-client). Nie klip z notatką głosową. Python LXST jest odniesieniem; rsLXST jest eksperymentalny."
+    },
+    "toast": {
+      "busy": "\"Linia jest zajęta\"",
+      "rejected": "Połączenie odrzucone",
+      "noAnswer": "Brak odpowiedzi — przekroczono limit czasu połączenia.",
+      "failed": "Połączenie głosowe nie powiodło się."
     }
   }
 }

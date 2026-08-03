@@ -5120,6 +5120,26 @@
       "noIdentity": "Tidak dapat menelepon: identitas teman sebaya belum diketahui. Tunggu pengumuman atau selidiki rekan sejawat.",
       "callFailed": "Panggilan suara gagal.",
       "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan."
+    },
+    "connecting": "Menyambung…",
+    "elapsedAria": "Waktu berlalu",
+    "txAria": "Bingkai suara yang ditransmisikan",
+    "rxAria": "Bingkai suara yang diterima",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Pengumuman telepon LXST terdengar untuk rekan ini",
+    "capabilityUnknown": "Pengumuman telepon LXST belum terdengar (panggilan mungkin masih berfungsi)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "Suara LXST membutuhkan rekan yang menjalankan telepon LXST (Sideband, Ratspeak, atau mesh-client). Bukan klip catatan suara. Python LXST adalah referensi; rsLXST adalah eksperimental."
+    },
+    "toast": {
+      "busy": "Line sedang sibuk",
+      "rejected": "Panggilan ditolak.",
+      "noAnswer": "Tidak ada jawaban — waktu panggilan habis.",
+      "failed": "Panggilan suara gagal."
     }
   }
 }

@@ -40,14 +40,21 @@ describe('reticulumVoiceAudio', () => {
       resolveVoiceDialIdentityHash({
         identityHash: id,
         candidateIdentityHashes: ['b'.repeat(32)],
+        destinationHash: 'c'.repeat(32),
       }),
-    ).toEqual({ identityHash: id });
+    ).toEqual({ dialHash: id, source: 'identity' });
   });
 
-  it('falls back to candidates and surfaces error key', () => {
+  it('falls back to candidates then destination hash', () => {
     const id = 'c'.repeat(32);
+    const dest = 'd'.repeat(32);
     expect(resolveVoiceDialIdentityHash({ candidateIdentityHashes: [id] })).toEqual({
-      identityHash: id,
+      dialHash: id,
+      source: 'candidate',
+    });
+    expect(resolveVoiceDialIdentityHash({ destinationHash: dest })).toEqual({
+      dialHash: dest,
+      source: 'destination',
     });
     expect(resolveVoiceDialIdentityHash({})).toEqual({
       errorKey: 'reticulumVoice.errors.noIdentity',

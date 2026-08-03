@@ -47,6 +47,44 @@ export interface VoiceAudioRequest {
   samples_b64: string;
 }
 
+/** Sidecar HTTP path for renderer PCM ingest (dedicated IPC; not generic proxyPost). */
+export const VOICE_AUDIO_API_PATH = '/api/v1/voice/audio';
+
+/**
+ * Cap for one PCM frame's base64 payload.
+ * QualityHigh is 2880 f32 samples (~15 KiB b64); allow ~2 frames of headroom.
+ */
+export const VOICE_AUDIO_SAMPLES_B64_MAX = 32_768;
+
+/** Parse/validate `reticulum:voiceSendAudio` / `/voice/audio` body. */
+export function parseVoiceAudioRequest(opts: unknown): VoiceAudioRequest | { error: string } {
+  if (!opts || typeof opts !== 'object' || Array.isArray(opts)) {
+    return { error: 'invalid_audio_request' };
+  }
+  const o = opts as Record<string, unknown>;
+  const channels = o.channels;
+  if (typeof channels !== 'number' || !Number.isInteger(channels) || channels < 1 || channels > 2) {
+    return { error: 'invalid_channels' };
+  }
+  const samplesB64 = o.samples_b64;
+  if (typeof samplesB64 !== 'string' || samplesB64.length === 0) {
+    return { error: 'empty_samples_b64' };
+  }
+  if (samplesB64.length > VOICE_AUDIO_SAMPLES_B64_MAX) {
+    return { error: 'samples_b64_too_large' };
+  }
+  let profile: number | undefined;
+  if (o.profile !== undefined) {
+    if (typeof o.profile !== 'number' || !Number.isFinite(o.profile)) {
+      return { error: 'invalid_profile' };
+    }
+    profile = o.profile;
+  }
+  return profile === undefined
+    ? { channels, samples_b64: samplesB64 }
+    : { profile, channels, samples_b64: samplesB64 };
+}
+
 export interface VoiceAudioPayload {
   link_id: string;
   profile: number;

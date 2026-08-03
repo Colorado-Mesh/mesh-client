@@ -5120,6 +5120,26 @@
       "noIdentity": "无法调用：对等身份尚不清楚。等待通知或探查对等项。",
       "callFailed": "语音通话失败。",
       "notRunning": "在 Reticulum 堆栈运行之前，语音不可用。"
+    },
+    "connecting": "连接中…",
+    "elapsedAria": "运行时间",
+    "txAria": "传输的语音帧",
+    "rxAria": "已接收语音帧",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "听到此同行的LXST电话公告",
+    "capabilityUnknown": "尚未听到LXST电话公告（通话可能仍然有效）",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "LXST语音需要运行LXST电话的对等端（边带、Ratspeak或mesh-client）。不是语音备注剪辑。Python LXST是参考； rsLXST是实验。"
+    },
+    "toast": {
+      "busy": "线路繁忙。",
+      "rejected": "呼叫被拒绝。",
+      "noAnswer": "无应答—呼叫超时。",
+      "failed": "语音通话失败。"
     }
   }
 }

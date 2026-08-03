@@ -5120,6 +5120,26 @@
       "noIdentity": "Impossibile chiamare: identità peer non ancora nota. Attendere un annuncio o sondare il peer.",
       "callFailed": "Chiamata vocale non riuscita.",
       "notRunning": "La voce non è disponibile fino a quando lo stack Reticulum non è in esecuzione."
+    },
+    "connecting": "Collegamento in corso…",
+    "elapsedAria": "Tempo trascorso",
+    "txAria": "Frame vocali trasmessi",
+    "rxAria": "Frame vocali ricevuti",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Annuncio telefonico LXST ascoltato per questo peer",
+    "capabilityUnknown": "Annuncio telefonico LXST non ancora sentito (la chiamata potrebbe ancora funzionare)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "dove...?",
+    "help": {
+      "interop": "La voce LXST ha bisogno di un peer che esegua la telefonia LXST (Sideband, Ratspeak o mesh-client). Non una clip di note vocali. Python LXST è il riferimento; rsLXST è sperimentale."
+    },
+    "toast": {
+      "busy": "Linea occupata.",
+      "rejected": "Chiamata respinta",
+      "noAnswer": "Nessuna risposta — chiamata scaduta.",
+      "failed": "Chiamata vocale non riuscita."
     }
   }
 }

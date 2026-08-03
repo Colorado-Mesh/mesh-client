@@ -21,9 +21,11 @@ describe('ReticulumVoiceCallButton', () => {
 
   it('invokes call helper with peer hash and has no axe violations', async () => {
     const user = userEvent.setup();
-    const { container } = render(<ReticulumVoiceCallButton lxmfPeerHash={'a'.repeat(32)} />);
+    const { container } = render(
+      <ReticulumVoiceCallButton lxmfPeerHash={'a'.repeat(32)} identityHash={'b'.repeat(32)} />,
+    );
     await user.click(screen.getByRole('button', { name: /start lxst voice call/i }));
-    expect(callPeer).toHaveBeenCalledWith('a'.repeat(32));
+    expect(callPeer).toHaveBeenCalledWith('a'.repeat(32), { identityHash: 'b'.repeat(32) });
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });

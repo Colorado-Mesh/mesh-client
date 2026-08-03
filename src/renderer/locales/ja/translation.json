@@ -5120,6 +5120,26 @@
       "noIdentity": "呼び出すことができません：ピアIDはまだわかりません。アナウンスを待つか、ピアをプローブします。",
       "callFailed": "音声通話に失敗しました。",
       "notRunning": "Reticulumスタックが実行されるまで、音声は使用できません。"
+    },
+    "connecting": "連携中…",
+    "elapsedAria": "経過時間",
+    "txAria": "送信された音声フレーム",
+    "rxAria": "受信したボイスフレーム",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "このピアのLXSTテレフォニーアナウンスが聞こえました",
+    "capabilityUnknown": "LXSTテレフォニーのアナウンスがまだ聞こえていません（通話がまだ機能する可能性があります）",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "LXST音声には、LXSTテレフォニー（サイドバンド、Ratspeak、またはmesh-client）を実行するピアが必要です。ボイスノートクリップではありません。Python LXSTがリファレンスです。rsLXSTは実験的です。"
+    },
+    "toast": {
+      "busy": "回線はビジー状態です。",
+      "rejected": "コールは拒否されました",
+      "noAnswer": "応答がありません—通話がタイムアウトしました。",
+      "failed": "音声通話に失敗しました。"
     }
   }
 }

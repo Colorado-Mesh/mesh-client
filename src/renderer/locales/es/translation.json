@@ -5120,6 +5120,26 @@
       "noIdentity": "No se puede llamar: la identidad del compañero aún no se conoce. Espere un anuncio o sondee al compañero.",
       "callFailed": "La llamada de voz ha fallado.",
       "notRunning": "La voz no está disponible hasta que la pila de Reticulum esté en ejecución."
+    },
+    "connecting": "Conectando…",
+    "elapsedAria": "Tiempo transcurrido",
+    "txAria": "Tramas de voz transmitidas",
+    "rxAria": "Tramas de voz recibidas",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pKT {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Anuncio de telefonía LXST escuchado para este compañero",
+    "capabilityUnknown": "Anuncio de telefonía LXST aún no escuchado (la llamada aún puede funcionar)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "¿?",
+    "help": {
+      "interop": "La voz LXST necesita una telefonía LXST entre pares (Sideband, Ratspeak o mesh-client). No es un clip de nota de voz. Python LXST es la referencia; rsLXST es experimental."
+    },
+    "toast": {
+      "busy": "Línea ocupada",
+      "rejected": "Llamada rechazada",
+      "noAnswer": "Sin respuesta: el tiempo de espera de la llamada ha expirado.",
+      "failed": "La llamada de voz ha fallado."
     }
   }
 }
