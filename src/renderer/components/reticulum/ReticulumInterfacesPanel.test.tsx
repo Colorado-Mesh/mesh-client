@@ -1129,10 +1129,10 @@ describe('ReticulumInterfacesPanel', () => {
       'false',
     );
     expect(
-      screen.getByTestId('reticulum-iface-row-hub-off').querySelector('.opacity-50'),
+      screen.getByTestId('reticulum-iface-row-hub-off').querySelector('.text-gray-500'),
     ).not.toBeNull();
     expect(
-      screen.getByTestId('reticulum-iface-row-hub-on').querySelector('.opacity-50'),
+      screen.getByTestId('reticulum-iface-row-hub-on').querySelector('.text-gray-500'),
     ).toBeNull();
   });
 

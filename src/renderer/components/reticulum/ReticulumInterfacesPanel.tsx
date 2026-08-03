@@ -2470,11 +2470,7 @@ function InterfacesSection({
                           data-enabled={iface.enabled ? 'true' : 'false'}
                           className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
                         >
-                          <span
-                            className={`flex min-w-0 flex-1 items-start gap-2 ${
-                              iface.enabled ? '' : 'opacity-50'
-                            }`}
-                          >
+                          <span className="flex min-w-0 flex-1 items-start gap-2">
                             {canDelete ? (
                               <input
                                 type="checkbox"
@@ -2689,7 +2685,9 @@ function InterfacesSection({
                                 onClick={() => {
                                   onToggle(iface.id, !iface.enabled, iface.type);
                                 }}
-                                className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                                className={`text-xs hover:underline disabled:opacity-40 ${
+                                  iface.enabled ? 'text-amber-400' : 'text-green-400'
+                                }`}
                               >
                                 {iface.enabled
                                   ? t('connectionPanel.reticulumInterfaces.disable')
