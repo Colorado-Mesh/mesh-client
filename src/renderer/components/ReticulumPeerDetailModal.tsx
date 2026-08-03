@@ -37,7 +37,7 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '@/renderer/stores/reticulumPeerStore';
-import { buildLxmContactUri } from '@/shared/meshClientDeepLink';
+import { buildLxmaContactUri, buildLxmContactUri } from '@/shared/meshClientDeepLink';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFingerprint';
 
@@ -140,6 +140,10 @@ export default function ReticulumPeerDetailModal({
   const contactQrUri = useMemo(() => {
     try {
       const label = peer ? resolveReticulumPeerLabel(peer) : peerHash.slice(0, 12);
+      const pub = peer?.public_key?.trim();
+      if (pub && /^[0-9a-f]{128}$/i.test(pub)) {
+        return buildLxmaContactUri(peerHash, pub);
+      }
       return buildLxmContactUri(peerHash, label);
     } catch {
       // catch-no-log-ok Invalid destination hashes simply hide the optional contact QR.

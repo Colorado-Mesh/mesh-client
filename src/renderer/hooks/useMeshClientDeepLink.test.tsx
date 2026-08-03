@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,13 +16,30 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
+  registerReticulumKnownIdentity: vi.fn(),
+}));
+
+vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
+  refreshReticulumPeersFromSidecar: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+
 import { MeshClientDeepLinkHost } from './useMeshClientDeepLink';
+
+const LXMA_DEST = 'a'.repeat(32);
+const LXMA_PUB = 'b'.repeat(128);
+const MC_PUB = 'c'.repeat(64);
+const MC_SECRET = 'd'.repeat(32);
 
 describe('MeshClientDeepLinkHost', () => {
   beforeEach(() => {
     addToast.mockReset();
     onOpenUrl.mockReset();
     openUrlHandler = null;
+    vi.mocked(registerReticulumKnownIdentity).mockReset();
+    vi.mocked(registerReticulumKnownIdentity).mockResolvedValue({ ok: true });
     window.electronAPI.deepLink = {
       onOpenUrl: (cb: (url: string) => void) => {
         openUrlHandler = cb;
@@ -33,6 +50,7 @@ describe('MeshClientDeepLinkHost', () => {
       },
     };
     window.electronAPI.db.upsertReticulumDestination = vi.fn().mockResolvedValue({ changes: 1 });
+    window.electronAPI.db.saveMeshcoreContact = vi.fn().mockResolvedValue(undefined);
   });
 
   it('requires confirmation before upserting lxm contact deep links', async () => {
@@ -60,6 +78,110 @@ describe('MeshClientDeepLinkHost', () => {
     };
     expect(call.last_heard).toBeLessThan(1e12);
     expect(addToast).toHaveBeenCalledWith('qrIngest.contactImported', 'success');
+  });
+
+  it('imports lxma contact after confirm (register-known + is_contact)', async () => {
+    const user = userEvent.setup();
+    render(<MeshClientDeepLinkHost />);
+    await act(async () => {
+      openUrlHandler?.(`lxma://${LXMA_DEST}:${LXMA_PUB}`);
+      await Promise.resolve();
+    });
+    expect(registerReticulumKnownIdentity).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'qrIngest.confirmContactImportAction' }));
+    await waitFor(() => {
+      expect(registerReticulumKnownIdentity).toHaveBeenCalledWith(LXMA_DEST, LXMA_PUB);
+      expect(window.electronAPI.db.upsertReticulumDestination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          destination_hash: LXMA_DEST,
+          is_contact: true,
+        }),
+      );
+    });
+    expect(addToast).toHaveBeenCalledWith('qrIngest.contactImported', 'success');
+  });
+
+  it('toasts when lxma register-known fails without upsert', async () => {
+    const user = userEvent.setup();
+    vi.mocked(registerReticulumKnownIdentity).mockResolvedValue({
+      ok: false,
+      error: 'sidecar_not_running',
+    });
+    render(<MeshClientDeepLinkHost />);
+    await act(async () => {
+      openUrlHandler?.(`lxma://${LXMA_DEST}:${LXMA_PUB}`);
+      await Promise.resolve();
+    });
+    await user.click(screen.getByRole('button', { name: 'qrIngest.confirmContactImportAction' }));
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('qrIngest.lxmaRegisterFailed', 'error');
+    });
+    expect(window.electronAPI.db.upsertReticulumDestination).not.toHaveBeenCalled();
+  });
+
+  it('imports meshcore contact after confirm', async () => {
+    const user = userEvent.setup();
+    render(<MeshClientDeepLinkHost />);
+    const uri = `meshcore://contact/add?name=Bob&public_key=${MC_PUB}&type=1`;
+    await act(async () => {
+      openUrlHandler?.(uri);
+      await Promise.resolve();
+    });
+    expect(window.electronAPI.db.saveMeshcoreContact).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreContactImportAction' }),
+    );
+    await waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+        expect.objectContaining({
+          public_key: MC_PUB,
+          adv_name: 'Bob',
+          contact_type: 1,
+          on_radio: 0,
+        }),
+      );
+    });
+    expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreContactImported', 'success');
+  });
+
+  it('dispatches meshcore channel import event after confirm', async () => {
+    const user = userEvent.setup();
+    const spy = vi.fn();
+    window.addEventListener('mesh-client:meshcoreChannelFromQr', spy as EventListener);
+    try {
+      render(<MeshClientDeepLinkHost />);
+      const uri = `meshcore://channel/add?name=Public&secret=${MC_SECRET}`;
+      await act(async () => {
+        openUrlHandler?.(uri);
+        await Promise.resolve();
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
+      );
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalled();
+      });
+      // No MeshcoreChannelSection consumer → deferred / queued-for-review toast; pending kept.
+      expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreChannelImported', 'success');
+      expect(
+        screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
+      ).toBeTruthy();
+    } finally {
+      window.removeEventListener('mesh-client:meshcoreChannelFromQr', spy as EventListener);
+    }
+  });
+
+  it('cancel does not import', async () => {
+    const user = userEvent.setup();
+    render(<MeshClientDeepLinkHost />);
+    await act(async () => {
+      openUrlHandler?.(`lxma://${LXMA_DEST}:${LXMA_PUB}`);
+      await Promise.resolve();
+    });
+    const dialog = screen.getByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'common.cancel' }));
+    expect(registerReticulumKnownIdentity).not.toHaveBeenCalled();
+    expect(window.electronAPI.db.upsertReticulumDestination).not.toHaveBeenCalled();
   });
 
   it('soft-fails encrypted paper links', async () => {

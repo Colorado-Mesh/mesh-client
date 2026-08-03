@@ -5,6 +5,10 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import {
+  applyLxmaContactImport,
+  applyLxmContactImport,
+} from '@/renderer/lib/meshClientDeepLinkApply';
 import { translateReticulumAuditIssue } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
   fetchPathMediumPreference,
@@ -26,7 +30,11 @@ import {
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
-import { buildLxmIdentityUri, classifyMeshClientDeepLink } from '@/shared/meshClientDeepLink';
+import {
+  buildLxmaContactUri,
+  buildLxmIdentityUri,
+  classifyMeshClientDeepLink,
+} from '@/shared/meshClientDeepLink';
 import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
@@ -612,24 +620,25 @@ export function ReticulumNetworkPanel({
                   return;
                 }
                 if (parsed.kind === 'lxmContact') {
-                  try {
-                    await window.electronAPI.db.upsertReticulumDestination({
-                      destination_hash: parsed.destinationHash,
-                      display_name: parsed.name ?? null,
-                      // reticulum_destinations.last_heard is Unix seconds (retention prune).
-                      last_heard: Math.floor(Date.now() / 1000),
-                    });
-                    addToast(t('qrIngest.contactImported'), 'success');
-                    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(() => {
-                      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
-                    });
-                  } catch (err) {
-                    console.error(
-                      '[ReticulumNetworkPanel] QR contact upsert failed: ' +
-                        errLikeToLogString(err),
-                    );
-                    addToast(t('qrIngest.contactImportFailed'), 'error');
-                  }
+                  const result = await applyLxmContactImport({
+                    destinationHash: parsed.destinationHash,
+                    name: parsed.name ?? null,
+                  });
+                  addToast(
+                    t(result.ok ? 'qrIngest.contactImported' : result.errorKey),
+                    result.ok ? 'success' : 'error',
+                  );
+                  return;
+                }
+                if (parsed.kind === 'lxmaContact') {
+                  const result = await applyLxmaContactImport({
+                    destinationHash: parsed.destinationHash,
+                    publicKeyHex: parsed.publicKeyHex,
+                  });
+                  addToast(
+                    t(result.ok ? 'qrIngest.contactImported' : result.errorKey),
+                    result.ok ? 'success' : 'error',
+                  );
                   return;
                 }
                 if (parsed.kind === 'lxmIdentity') {
@@ -1239,6 +1248,14 @@ function IdentityConfiguredView({
   const lxmfHash = identity?.lxmf_hash?.trim() ?? '';
   const [showIdentityQr, setShowIdentityQr] = useState(false);
   const identityQrUri = useMemo(() => {
+    const pub = identity?.public_key?.trim();
+    if (lxmfHash && pub && /^[0-9a-f]{128}$/i.test(pub)) {
+      try {
+        return buildLxmaContactUri(lxmfHash, pub);
+      } catch {
+        // catch-no-log-ok fall through to mesh-client identity URI
+      }
+    }
     const idHash = identity?.identity_hash?.trim();
     if (!idHash) return null;
     try {

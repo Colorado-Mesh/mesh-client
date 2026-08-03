@@ -259,6 +259,19 @@ mod tests {
     }
 
     #[test]
+    fn applied_identity_exposes_64_byte_public_key() {
+        let (_root, config_dir, storage_dir) = temp_dirs();
+        let (identity, _) = generate_identity_with_mnemonic().unwrap();
+        let expected = hex::encode(identity.get_public_key());
+        assert_eq!(expected.len(), 128);
+        let mut state = PersistedState::default_empty();
+        apply_unified_identity(&mut state, &config_dir, &storage_dir, &identity, None, None)
+            .unwrap();
+        let loaded = load_identity_from_file(&config_dir).unwrap();
+        assert_eq!(hex::encode(loaded.get_public_key()), expected);
+    }
+
+    #[test]
     fn reconcile_fixes_stale_json() {
         let (_root, config_dir, storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();

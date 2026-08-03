@@ -2811,7 +2811,9 @@
       "packetLogAria": "Protokol testovacího paketu rozsahu"
     },
     "currentRouteHeading": "Aktuální trasa",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "Sdílet kontakt",
+    "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3706,7 +3708,9 @@
       "indexLabel": "Index (0–{{max}})",
       "invalidHex": "Musí mít přesně 32 hexadecimálních znaků.",
       "addButton": "+ Přidat kanál",
-      "footerHelp": "Klíče jsou 128bitové (16 bajtů) a zobrazují se jako 32 hexadecimálních znaků. Názvy kanálů až {{nameMax}} znaků. Až {{channelCount}} kanálů (indexy 0–{{indexMax}}). Pro #channels použijte \"Derive from name\" (SHA-256 názvu s úvodním #)."
+      "footerHelp": "Klíče jsou 128bitové (16 bajtů) a zobrazují se jako 32 hexadecimálních znaků. Názvy kanálů až {{nameMax}} znaků. Až {{channelCount}} kanálů (indexy 0–{{indexMax}}). Pro #channels použijte \"Derive from name\" (SHA-256 názvu s úvodním #).",
+      "shareQr": "QR",
+      "shareQrAria": "Zobrazit QR kanál MeshCore pro {{name}}"
     },
     "regions": {
       "0": {
@@ -4857,7 +4861,20 @@
     "cameraUnavailable": "Fotoaparát není na tomto zařízení k dispozici",
     "confirmContactImportTitle": "Importovat kontakt?",
     "confirmContactImportBody": "Přidat {{name}} z externího odkazu do vašich kontaktů Reticulum?",
-    "confirmContactImportAction": "Import kontaktu"
+    "confirmContactImportAction": "Import kontaktu",
+    "confirmMeshcoreContactImportTitle": "Importovat kontakt MeshCore?",
+    "confirmMeshcoreContactImportBody": "Přidat {{name}} z QR kontaktu MeshCore ke svým kontaktům?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
+    "confirmMeshcoreChannelImportTitle": "Importovat kanál MeshCore?",
+    "confirmMeshcoreChannelImportBody": "Použít kanál {{name}} z QR kanálu MeshCore na kartě Rádio?",
+    "confirmMeshcoreChannelImportAction": "Importovat kanál",
+    "lxmaRegisterFailed": "Nelze zaregistrovat kontaktní veřejný klíč (je spuštěn zásobník Reticulum?)",
+    "meshcoreContactImported": "Kontakt MeshCore přidán z QR",
+    "meshcoreContactImportFailed": "Nelze importovat kontakt MeshCore z QR",
+    "meshcoreChannelImported": "Odkaz na kanál MeshCore přijat — kontrola na kartě Rádio",
+    "meshcoreChannelImportFailed": "Nelze importovat kanál MeshCore z QR",
+    "meshcoreChannelPrefill": "Podrobnosti kanálu vyplněny z QR — uložit pro použití",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Vzdálené úseky",

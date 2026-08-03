@@ -93,6 +93,9 @@ pub struct PeerRow {
     pub path_hash: Option<String>,
     #[serde(default)]
     pub via_hash: Option<String>,
+    /// 64-byte X25519+Ed25519 public key as 128 hex chars when known from announces.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

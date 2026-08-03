@@ -2809,7 +2809,9 @@
       "packetLogAria": "범위 테스트 패킷 로그"
     },
     "currentRouteHeading": "현재 경로",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "연락처 공유",
+    "shareContactQrAria": "공식 앱 가져오기를 위한 MeshCore 연락처 QR 코드 표시"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -3704,7 +3706,9 @@
       "indexLabel": "인덱스(0–{{max}})",
       "invalidHex": "정확히 32자의 16진수 문자여야 합니다.",
       "addButton": "+ 채널 추가",
-      "footerHelp": "키는 128비트(16바이트)이며 32개의 16진수 문자로 표시됩니다. 채널 이름은 최대 {{nameMax}}자입니다. 최대 {{channelCount}} 채널(인덱스 0~{{indexMax}}). #채널의 경우 \"이름에서 파생\"(#이 앞에 오는 이름의 SHA-256)을 사용합니다."
+      "footerHelp": "키는 128비트(16바이트)이며 32개의 16진수 문자로 표시됩니다. 채널 이름은 최대 {{nameMax}}자입니다. 최대 {{channelCount}} 채널(인덱스 0~{{indexMax}}). #채널의 경우 \"이름에서 파생\"(#이 앞에 오는 이름의 SHA-256)을 사용합니다.",
+      "shareQr": "QR",
+      "shareQrAria": "{{name}} 에 대한 MeshCore 채널 QR 표시"
     },
     "regions": {
       "0": {
@@ -4855,7 +4859,20 @@
     "cameraUnavailable": "이 기기에서는 카메라를 사용할 수 없습니다",
     "confirmContactImportTitle": "연락처를 가져오시겠습니까?",
     "confirmContactImportBody": "외부 링크의 {{name}}을(를) Reticulum 연락처에 추가하시겠습니까?",
-    "confirmContactImportAction": "연락처 가져오기"
+    "confirmContactImportAction": "연락처 가져오기",
+    "confirmMeshcoreContactImportTitle": "MeshCore 연락처를 가져올까요?",
+    "confirmMeshcoreContactImportBody": "MeshCore 연락처 QR에서 {{name}} 을 (를) 연락처에 추가하시겠습니까?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
+    "confirmMeshcoreChannelImportTitle": "MeshCore 채널을 가져올까요?",
+    "confirmMeshcoreChannelImportBody": "라디오 탭의 MeshCore 채널 QR에서 채널 {{name}} 을 (를) 적용하시겠습니까?",
+    "confirmMeshcoreChannelImportAction": "채널 가져오기",
+    "lxmaRegisterFailed": "연락처 공개 키를 등록할 수 없습니다 (Reticulum 스택이 실행 중입니까?)",
+    "meshcoreContactImported": "QR에서 추가된 MeshCore 문의",
+    "meshcoreContactImportFailed": "QR에서 MeshCore 연락처를 가져올 수 없습니다",
+    "meshcoreChannelImported": "MeshCore 채널 링크 수신 — 라디오 탭에서 검토",
+    "meshcoreChannelImportFailed": "QR에서 MeshCore 채널을 가져올 수 없습니다",
+    "meshcoreChannelPrefill": "QR에서 채운 채널 세부 정보 — 적용하려면 저장",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "원격 섹션",

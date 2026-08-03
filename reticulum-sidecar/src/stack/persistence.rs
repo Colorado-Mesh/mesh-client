@@ -639,6 +639,7 @@ impl PersistedState {
                 interface: None,
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             });
         }
     }
@@ -946,6 +947,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }
     }
 

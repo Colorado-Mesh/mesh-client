@@ -2811,7 +2811,9 @@
       "packetLogAria": "Журнал пакетов проверки дальности"
     },
     "currentRouteHeading": "Текущий маршрут",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "Обратная связь",
+    "shareContactQrAria": "Показать контактный QR-код MeshCore для официального импорта приложения"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3706,7 +3708,9 @@
       "indexLabel": "Индекс (0–{{max}})",
       "invalidHex": "Должно быть ровно 32 шестнадцатеричных символа.",
       "addButton": "+ Добавить канал",
-      "footerHelp": "Ключи имеют длину 128 бит (16 байт) и отображаются в виде 32 шестнадцатеричных символов. Названия каналов длиной до {{nameMax}} символов. До {{channelCount}} каналов (индексы 0–{{indexMax}}). Для #каналов используйте «Извлечение из имени» (SHA-256 имени с ведущим #)."
+      "footerHelp": "Ключи имеют длину 128 бит (16 байт) и отображаются в виде 32 шестнадцатеричных символов. Названия каналов длиной до {{nameMax}} символов. До {{channelCount}} каналов (индексы 0–{{indexMax}}). Для #каналов используйте «Извлечение из имени» (SHA-256 имени с ведущим #).",
+      "shareQr": "QR",
+      "shareQrAria": "Показать QR канала MeshCore для {{name}}"
     },
     "regions": {
       "0": {
@@ -4857,7 +4861,20 @@
     "cameraUnavailable": "Камера недоступна на этом устройстве",
     "confirmContactImportTitle": "Импортировать контакт?",
     "confirmContactImportBody": "Добавить {{name}} по внешней ссылке в контакты Reticulum?",
-    "confirmContactImportAction": "Импортировать контакт"
+    "confirmContactImportAction": "Импортировать контакт",
+    "confirmMeshcoreContactImportTitle": "Импортировать контакт MeshCore?",
+    "confirmMeshcoreContactImportBody": "Добавить {{name}} из QR-кода контакта MeshCore в свои контакты?",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
+    "confirmMeshcoreChannelImportTitle": "Импортировать канал MeshCore?",
+    "confirmMeshcoreChannelImportBody": "Применить канал {{name}} из QR канала MeshCore на вкладке «Радио»?",
+    "confirmMeshcoreChannelImportAction": "Импорт канала",
+    "lxmaRegisterFailed": "Не удалось зарегистрировать открытый ключ контакта (запущен ли стек Reticulum?)",
+    "meshcoreContactImported": "Контакт MeshCore добавлен из QR",
+    "meshcoreContactImportFailed": "Не удалось импортировать контакт MeshCore из QR",
+    "meshcoreChannelImported": "Получена ссылка на канал MeshCore — обзор на вкладке «Радио»",
+    "meshcoreChannelImportFailed": "Не удалось импортировать канал MeshCore из QR",
+    "meshcoreChannelPrefill": "Сведения о канале заполнены из QR. Сохраните, чтобы применить",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "Удаленные секции",

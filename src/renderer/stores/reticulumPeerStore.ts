@@ -247,6 +247,10 @@ function preservePeerNamesOntoContact(
 }
 
 function wirePeerToPeer(row: ReticulumPeerWireRow): ReticulumPeer {
+  const publicKey =
+    typeof row.public_key === 'string' && /^[0-9a-fA-F]{128}$/.test(row.public_key.trim())
+      ? row.public_key.trim().toLowerCase()
+      : null;
   return {
     destination_hash: row.destination_hash,
     display_name: row.display_name ?? null,
@@ -255,6 +259,7 @@ function wirePeerToPeer(row: ReticulumPeerWireRow): ReticulumPeer {
     interface: row.interface ?? null,
     path_hash: row.path_hash ?? null,
     via_hash: row.via_hash ?? null,
+    ...(publicKey ? { public_key: publicKey } : {}),
   };
 }
 
@@ -927,6 +932,9 @@ function peerFromWirePatch(row: unknown): ReticulumPeer | null {
   const hops = typeof p.hops === 'number' && Number.isFinite(p.hops) ? Math.trunc(p.hops) : null;
   const last_seen =
     typeof p.last_seen === 'number' && Number.isFinite(p.last_seen) ? p.last_seen : Date.now();
+  const publicKeyRaw = typeof p.public_key === 'string' ? p.public_key.trim() : '';
+  const public_key =
+    publicKeyRaw && /^[0-9a-fA-F]{128}$/.test(publicKeyRaw) ? publicKeyRaw.toLowerCase() : null;
   return {
     destination_hash: hash,
     display_name,
@@ -935,6 +943,7 @@ function peerFromWirePatch(row: unknown): ReticulumPeer | null {
     interface: typeof p.interface === 'string' ? p.interface : null,
     path_hash: typeof p.path_hash === 'string' ? p.path_hash : null,
     via_hash: typeof p.via_hash === 'string' ? p.via_hash : null,
+    ...(public_key ? { public_key } : {}),
   };
 }
 

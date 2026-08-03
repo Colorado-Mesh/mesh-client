@@ -74,6 +74,38 @@ pub use types::{
 const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
 const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
 
+/// Parse Columba register-known inputs and require dest == LXMF delivery hash of the key.
+#[cfg(feature = "rns-stack")]
+fn validated_known_identity_key(
+    destination_hash: &str,
+    public_key_hex: &str,
+) -> Result<(String, [u8; 64]), String> {
+    use rns_identity::destination::Destination;
+    use rns_identity::identity::Identity;
+
+    let dest = destination_hash.trim().to_lowercase();
+    if dest.len() != 32 || !dest.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("invalid_destination_hash".into());
+    }
+    let key_hex = public_key_hex.trim().to_lowercase();
+    if key_hex.len() != 128 || !key_hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("invalid_public_key".into());
+    }
+    let bytes = hex::decode(&key_hex).map_err(|_| "invalid_public_key".to_string())?;
+    let key: [u8; 64] = bytes
+        .try_into()
+        .map_err(|_| "invalid_public_key".to_string())?;
+    let identity = Identity::from_public_key(&key).map_err(|_| "invalid_public_key".to_string())?;
+    let expected = hex::encode(Destination::hash_from_name_and_identity(
+        identity_apply::LXMF_APP_NAME,
+        Some(&identity.hash),
+    ));
+    if expected != dest {
+        return Err("destination_mismatch".into());
+    }
+    Ok((dest, key))
+}
+
 /// Trim, reject control characters, and cap length for announce/UI display names.
 fn sanitize_nomad_display_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
@@ -450,6 +482,60 @@ impl StackHandle {
         #[cfg(not(feature = "rns-stack"))]
         {
             self.inner.read().await.identity.clone()
+        }
+    }
+
+    /// Local identity public key as 128 lowercase hex when identity is configured.
+    ///
+    /// Matches [`Self::identity_status`]: prefer the on-disk identity when its hash
+    /// matches status (covers replace-before-live-restart), else the live bridge
+    /// only when its hash matches status.
+    pub async fn identity_public_key_hex(&self) -> Option<String> {
+        let status = self.inner.read().await.identity.clone();
+        if !status.configured {
+            return None;
+        }
+        #[cfg(feature = "rns-stack")]
+        {
+            if let Ok(id) = identity_apply::load_identity_from_file(&self.config_dir) {
+                let file_hash = hex::encode(id.hash);
+                if file_hash.eq_ignore_ascii_case(&status.identity_hash) {
+                    return Some(hex::encode(id.get_public_key()));
+                }
+            }
+            if let Some(live) = &self.live {
+                if live
+                    .identity_hash_hex()
+                    .eq_ignore_ascii_case(&status.identity_hash)
+                {
+                    return Some(live.identity_public_key_hex());
+                }
+            }
+            None
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            None
+        }
+    }
+
+    /// Register a destination hash + 64-byte public key for Direct LXMF (Columba QR).
+    pub fn register_known_identity(
+        &self,
+        destination_hash: &str,
+        public_key_hex: &str,
+    ) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            let (dest, key) = validated_known_identity_key(destination_hash, public_key_hex)?;
+            let live = self.require_live()?;
+            live.register_known_identity(&dest, key)?;
+            Ok(())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (destination_hash, public_key_hex);
+            Err("identity operations require an rns-stack sidecar build".into())
         }
     }
 
@@ -2888,6 +2974,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let empty = merge_live_peer_fetch(&mut cache, Ok(vec![]));
         assert_eq!(empty.len(), 1);
@@ -2909,6 +2996,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let fetched = merge_live_peer_fetch(&mut cache, Ok(vec![row.clone()]));
         assert_eq!(fetched.len(), 1);
@@ -2926,6 +3014,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let fetched = sync_live_peer_cache(&mut cache, vec![]);
         assert!(fetched.is_empty());
@@ -2942,6 +3031,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let fetched = sync_live_peer_cache(
             &mut cache,
@@ -2953,6 +3043,7 @@ mod tests {
                 interface: Some("tcp".into()),
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             }],
         );
         assert_eq!(fetched.len(), 1);
@@ -2971,6 +3062,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let fetched = sync_live_peer_cache(&mut cache, vec![row.clone()]);
         assert_eq!(fetched.len(), 1);
@@ -3022,6 +3114,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         }];
         let live = PeerRow {
             destination_hash: "ccdd02".into(),
@@ -3031,6 +3124,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let merged = sync_live_peer_cache(&mut cache, vec![live]);
         assert_eq!(merged.len(), 2);
@@ -3050,6 +3144,7 @@ mod tests {
                 interface: None,
                 path_hash: None,
                 via_hash: None,
+                public_key: None,
             })
             .collect();
         // One orphan older than TTL must be dropped even if under the count cap.
@@ -3061,6 +3156,7 @@ mod tests {
             interface: None,
             path_hash: None,
             via_hash: None,
+            public_key: None,
         });
         let live = PeerRow {
             destination_hash: "aa".repeat(16),
@@ -3070,6 +3166,7 @@ mod tests {
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
+            public_key: None,
         };
         let merged = sync_live_peer_cache(&mut cache, vec![live]);
         assert!(merged.iter().any(|p| p.destination_hash == "aa".repeat(16)));
@@ -3315,5 +3412,78 @@ mod tests {
         assert_eq!(peers[0].display_name.as_deref(), Some("Announced"));
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[tokio::test]
+    async fn identity_public_key_hex_matches_status_after_replace_before_live_restart() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        let first = handle
+            .identity_generate(None, false)
+            .await
+            .expect("generate first identity");
+        let first_key = handle
+            .identity_public_key_hex()
+            .await
+            .expect("first public key");
+        assert_eq!(first_key.len(), 128);
+
+        let second = handle
+            .identity_generate(None, true)
+            .await
+            .expect("replace identity");
+        assert_ne!(first.identity_hash, second.identity_hash);
+        // Live bridge is not restarted in-process (only stack_restart_requested is emitted).
+        let status = handle.identity_status().await;
+        assert_eq!(status.identity_hash, second.identity_hash);
+        let key = handle
+            .identity_public_key_hex()
+            .await
+            .expect("public key after replace");
+        let file_id =
+            identity_apply::load_identity_from_file(&config_dir).expect("load replaced identity");
+        assert_eq!(key, hex::encode(file_id.get_public_key()));
+        assert_eq!(hex::encode(file_id.hash), second.identity_hash);
+        assert_ne!(key, first_key);
+
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[test]
+    fn validated_known_identity_key_accepts_matching_lxmf_dest() {
+        use rns_identity::destination::Destination;
+        use rns_identity::identity::Identity;
+
+        let identity = Identity::new();
+        let key = identity.get_public_key();
+        let dest = hex::encode(Destination::hash_from_name_and_identity(
+            identity_apply::LXMF_APP_NAME,
+            Some(&identity.hash),
+        ));
+        let (parsed_dest, parsed_key) =
+            validated_known_identity_key(&dest, &hex::encode(key)).expect("valid pair");
+        assert_eq!(parsed_dest, dest);
+        assert_eq!(parsed_key, key);
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[test]
+    fn validated_known_identity_key_rejects_mismatched_dest() {
+        use rns_identity::identity::Identity;
+
+        let identity = Identity::new();
+        let key_hex = hex::encode(identity.get_public_key());
+        let err = validated_known_identity_key("aa".repeat(16).as_str(), &key_hex)
+            .expect_err("mismatched dest");
+        assert_eq!(err, "destination_mismatch");
     }
 }

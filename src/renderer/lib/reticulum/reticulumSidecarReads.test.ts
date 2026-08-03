@@ -30,6 +30,7 @@ import {
   isReticulumSidecarRunning,
   pingReticulumDestination,
   probeReticulumPeer,
+  registerReticulumKnownIdentity,
   requestReticulumPeerPath,
 } from './reticulumSidecarReads';
 
@@ -130,6 +131,7 @@ describe('reticulumSidecarReads', () => {
       lxmfHash: null,
       displayName: null,
       identityHash: null,
+      publicKey: null,
     });
     expect(proxyGet).not.toHaveBeenCalled();
   });
@@ -147,6 +149,46 @@ describe('reticulumSidecarReads', () => {
       lxmfHash: 'f8b4e04e1234567890abcdef',
       displayName: 'NV0N',
       identityHash: 'aabbccddeeff00112233445566778899',
+      publicKey: null,
+    });
+  });
+
+  it('fetchReticulumIdentityStatus returns public_key when present', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    const pub = 'ab'.repeat(64);
+    proxyGet.mockResolvedValue({
+      configured: true,
+      lxmf_hash: 'f8b4e04e1234567890abcdef01234567',
+      identity_hash: 'aabbccddeeff00112233445566778899',
+      display_name: 'NV0N',
+      public_key: pub.toUpperCase(),
+    });
+    await expect(fetchReticulumIdentityStatus()).resolves.toEqual({
+      configured: true,
+      lxmfHash: 'f8b4e04e1234567890abcdef01234567',
+      displayName: 'NV0N',
+      identityHash: 'aabbccddeeff00112233445566778899',
+      publicKey: pub,
+    });
+  });
+
+  it('registerReticulumKnownIdentity posts to register-known', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValue({ ok: true });
+    const dest = 'a'.repeat(32);
+    const pub = 'b'.repeat(128);
+    await expect(registerReticulumKnownIdentity(dest, pub)).resolves.toEqual({ ok: true });
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/identity/register-known', {
+      destination_hash: dest,
+      public_key: pub,
+    });
+  });
+
+  it('registerReticulumKnownIdentity rejects malformed ok field', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValue({ ok: 'false' });
+    await expect(registerReticulumKnownIdentity('a'.repeat(32), 'b'.repeat(128))).resolves.toEqual({
+      ok: false,
     });
   });
 

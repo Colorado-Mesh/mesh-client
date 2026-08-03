@@ -5,6 +5,8 @@ export interface ReticulumIdentityStatus {
   identity_hash: string;
   lxmf_hash: string;
   display_name?: string | null;
+  /** 128-hex public key for Columba lxma:// identity QR when known. */
+  public_key?: string | null;
 }
 
 interface ReticulumIdentityState {

@@ -131,7 +131,42 @@ describe('useReticulumSidecarApi', () => {
       identity_hash: 'identity-hash',
       lxmf_hash: 'lxmf-hash',
       display_name: 'Mesh User',
+      public_key: null,
     });
+  });
+
+  it('refreshIdentity maps a valid 128-hex public_key into shared identity', async () => {
+    const pub = 'cd'.repeat(64);
+    getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+    window.electronAPI.reticulum.proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({
+          configured: true,
+          identity_hash: 'identity-hash',
+          lxmf_hash: 'lxmf-hash',
+          display_name: 'Mesh User',
+          public_key: pub,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        onStartStack,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.sidecarApiReady).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.refreshIdentity();
+    });
+
+    expect(result.current.identity?.public_key).toBe(pub);
   });
 
   it('does not clear shared identity while a new hook hydrates sidecar status', async () => {

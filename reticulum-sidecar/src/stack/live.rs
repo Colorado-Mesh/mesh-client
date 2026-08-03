@@ -2300,11 +2300,26 @@ impl LiveBridge {
                         .ok()
                         .map(|c| c.clone())
                         .unwrap_or_default();
+                    let pubkey_lookup = outbound
+                        .lock()
+                        .ok()
+                        .map(|d| {
+                            entries
+                                .iter()
+                                .filter_map(|e| {
+                                    let destination_hash = hex::encode(e.hash);
+                                    d.public_key_for(&destination_hash)
+                                        .map(|pk| (destination_hash, hex::encode(pk)))
+                                })
+                                .collect::<HashMap<_, _>>()
+                        })
+                        .unwrap_or_default();
                     let peer_rows: Vec<PeerRow> = entries
                         .iter()
                         .map(|e| {
                             let destination_hash = hex::encode(e.hash);
                             let display_name = name_lookup.get(&destination_hash).cloned();
+                            let public_key = pubkey_lookup.get(&destination_hash).cloned();
                             PeerRow {
                                 destination_hash,
                                 display_name,
@@ -2313,6 +2328,7 @@ impl LiveBridge {
                                 interface: Some(e.interface.clone()),
                                 path_hash: e.via.map(hex::encode),
                                 via_hash: e.via.map(hex::encode),
+                                public_key,
                             }
                         })
                         .collect();
@@ -2356,6 +2372,7 @@ impl LiveBridge {
                                     "interface": p.interface,
                                     "path_hash": p.path_hash,
                                     "via_hash": p.via_hash,
+                                    "public_key": p.public_key,
                                 })
                             })
                             .collect();
@@ -3359,6 +3376,25 @@ impl LiveBridge {
             .unwrap_or_default()
     }
 
+    /// Local identity public key as 128 lowercase hex (X25519 ∥ Ed25519).
+    pub fn identity_public_key_hex(&self) -> String {
+        hex::encode(self.identity.get_public_key())
+    }
+
+    /// Register a peer destination public key for Direct LXMF / Columba QR import.
+    pub fn register_known_identity(
+        &self,
+        destination_hash: &str,
+        public_key: [u8; 64],
+    ) -> Result<(), String> {
+        let mut driver = self
+            .outbound
+            .lock()
+            .map_err(|_| "outbound driver lock poisoned".to_string())?;
+        driver.register_identity_key(destination_hash, public_key);
+        Ok(())
+    }
+
     /// Fetch path-table peers. When `force` is false and the maintenance cache is
     /// fresher than [`PATH_PEER_CACHE_TTL`], return that snapshot (avoids a second
     /// GetPathTable on every automatic poll).
@@ -3392,11 +3428,28 @@ impl LiveBridge {
             .ok()
             .map(|c| c.clone())
             .unwrap_or_default();
+        let pubkey_lookup = self
+            .outbound
+            .lock()
+            .ok()
+            .map(|d| {
+                // Collect known keys once per fetch to avoid locking per peer.
+                entries
+                    .iter()
+                    .filter_map(|e| {
+                        let destination_hash = hex::encode(e.hash);
+                        d.public_key_for(&destination_hash)
+                            .map(|pk| (destination_hash, hex::encode(pk)))
+                    })
+                    .collect::<HashMap<_, _>>()
+            })
+            .unwrap_or_default();
         let peers: Vec<PeerRow> = entries
             .iter()
             .map(|e| {
                 let destination_hash = hex::encode(e.hash);
                 let display_name = name_lookup.get(&destination_hash).cloned();
+                let public_key = pubkey_lookup.get(&destination_hash).cloned();
                 PeerRow {
                     destination_hash,
                     display_name,
@@ -3405,6 +3458,7 @@ impl LiveBridge {
                     interface: Some(e.interface.clone()),
                     path_hash: e.via.map(hex::encode),
                     via_hash: e.via.map(hex::encode),
+                    public_key,
                 }
             })
             .collect();
@@ -4579,6 +4633,7 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.interface == b.interface
         && a.path_hash == b.path_hash
         && a.via_hash == b.via_hash
+        && a.public_key == b.public_key
 }
 
 /// Pure announce classification for propagation sync targets.
@@ -4665,6 +4720,28 @@ mod announce_display_name_tests {
         let mut added = path_table_added_hashes(&prev, &next);
         added.sort();
         assert_eq!(added, vec!["cc".to_string()]);
+    }
+
+    #[test]
+    fn peer_route_fields_equal_includes_public_key() {
+        let base = PeerRow {
+            destination_hash: "aa".into(),
+            display_name: Some("Alice".into()),
+            hops: Some(1),
+            last_seen: Some(1),
+            interface: Some("tcp".into()),
+            path_hash: Some("bb".into()),
+            via_hash: Some("cc".into()),
+            public_key: Some("dd".repeat(64)),
+        };
+        let mut other = base.clone();
+        other.last_seen = Some(99);
+        other.display_name = Some("Bob".into());
+        assert!(peer_route_fields_equal(&base, &other));
+        other.public_key = Some("ee".repeat(64));
+        assert!(!peer_route_fields_equal(&base, &other));
+        other.public_key = None;
+        assert!(!peer_route_fields_equal(&base, &other));
     }
 
     #[test]

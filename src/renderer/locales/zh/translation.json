@@ -2809,7 +2809,9 @@
       "packetLogAria": "测距测试数据包日志"
     },
     "currentRouteHeading": "当前路线",
-    "hopNameLabel": "{{name}}"
+    "hopNameLabel": "{{name}}",
+    "shareContactQr": "分享联系人",
+    "shareContactQrAria": "显示MeshCore联系人二维码以进行官方应用导入"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3704,7 +3706,9 @@
       "indexLabel": "索引 (0–{{max}})",
       "invalidHex": "必须正好是 32 个十六进制字符。",
       "addButton": "+ 添加频道",
-      "footerHelp": "密钥为 128 位（16 字节），显示为 32 个十六进制字符。通道名称最多 {{nameMax}} 个字符。最多 {{channelCount}} 通道（索引 0–{{indexMax}}）。对于#channels，请使用“从名称派生”（带有前导 # 的名称的 SHA-256）。"
+      "footerHelp": "密钥为 128 位（16 字节），显示为 32 个十六进制字符。通道名称最多 {{nameMax}} 个字符。最多 {{channelCount}} 通道（索引 0–{{indexMax}}）。对于#channels，请使用“从名称派生”（带有前导 # 的名称的 SHA-256）。",
+      "shareQr": "QR",
+      "shareQrAria": "显示{{name}}的MeshCore频道二维码"
     },
     "regions": {
       "0": {
@@ -4855,7 +4859,20 @@
     "cameraUnavailable": "摄像头在此设备上不可用",
     "confirmContactImportTitle": "导入联系人？",
     "confirmContactImportBody": "将外部链接中的 {{name}} 添加到您的 Reticulum 联系人中？",
-    "confirmContactImportAction": "导入联系人"
+    "confirmContactImportAction": "导入联系人",
+    "confirmMeshcoreContactImportTitle": "导入MeshCore联系人？",
+    "confirmMeshcoreContactImportBody": "将MeshCore联系人QR中的{{name}}添加到您的联系人？",
+    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
+    "confirmMeshcoreChannelImportTitle": "导入MeshCore频道？",
+    "confirmMeshcoreChannelImportBody": "在“广播”选项卡上应用来自MeshCore频道QR的频道{{name}} ？",
+    "confirmMeshcoreChannelImportAction": "导入频道",
+    "lxmaRegisterFailed": "无法注册联系人公钥（Reticulum 堆栈是否正在运行？）",
+    "meshcoreContactImported": "从二维码添加的MeshCore联系人",
+    "meshcoreContactImportFailed": "无法从二维码导入MeshCore联系人",
+    "meshcoreChannelImported": "已收到MeshCore频道链接—在“广播”选项卡上查看",
+    "meshcoreChannelImportFailed": "无法从二维码导入MeshCore频道",
+    "meshcoreChannelPrefill": "从QR填写的频道详细信息—保存以应用",
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
   },
   "reticulumRemote": {
     "navAria": "远程部分",

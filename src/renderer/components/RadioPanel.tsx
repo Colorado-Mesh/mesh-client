@@ -7,6 +7,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
+import { applyMeshcoreContactAdd } from '@/renderer/lib/meshClientDeepLinkApply';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -16,6 +17,10 @@ import {
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
+import {
+  buildMeshcoreChannelAddUri,
+  classifyMeshClientDeepLink,
+} from '@/shared/meshClientDeepLink';
 import {
   formatMeshtasticBluetoothPin,
   parseMeshtasticBluetoothPin,
@@ -3584,10 +3589,45 @@ function MeshcoreChannelSection({
   const [addingNew, setAddingNew] = useState(false);
   const [newIdx, setNewIdx] = useState('');
   const [deriveKeyBusy, setDeriveKeyBusy] = useState(false);
+  const [shareQrIdx, setShareQrIdx] = useState<number | null>(null);
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   const isValidHex = editKeyHex.length === 32 && /^[0-9a-fA-F]{32}$/.test(editKeyHex);
+
+  useEffect(() => {
+    const onChannelQr = (ev: Event) => {
+      const detail = (
+        ev as CustomEvent<{
+          name: string;
+          secretHex: string;
+          regionScope?: string;
+          settle?: (outcome: 'accepted' | 'rejected') => void;
+        }>
+      ).detail;
+      if (!detail?.name || !detail.secretHex) return;
+      const used = new Set(channels.map((c) => c.index));
+      let idx = 0;
+      while (used.has(idx) && idx <= MESHCORE_CHANNEL_INDEX_MAX) idx += 1;
+      if (idx > MESHCORE_CHANNEL_INDEX_MAX) {
+        addToast(t('qrIngest.meshcoreChannelNoFreeIndex'), 'error');
+        detail.settle?.('rejected');
+        return;
+      }
+      setAddingNew(true);
+      setEditingIdx(null);
+      setNewIdx(String(idx));
+      setEditName(detail.name);
+      setEditKeyHex(detail.secretHex);
+      if (detailsRef.current) detailsRef.current.open = true;
+      addToast(t('qrIngest.meshcoreChannelPrefill'), 'success');
+      detail.settle?.('accepted');
+    };
+    window.addEventListener('mesh-client:meshcoreChannelFromQr', onChannelQr);
+    return () => {
+      window.removeEventListener('mesh-client:meshcoreChannelFromQr', onChannelQr);
+    };
+  }, [addToast, channels, t]);
 
   useEffect(() => {
     if (editingIdx !== null || addingNew) {
@@ -3727,6 +3767,19 @@ function MeshcoreChannelSection({
                 >
                   {t('common.edit')}
                 </button>
+                {ch.secret?.length === 16 ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShareQrIdx((prev) => (prev === ch.index ? null : ch.index));
+                    }}
+                    aria-label={t('radioPanel.meshcoreChannel.shareQrAria', { name: ch.name })}
+                    className="px-1 text-xs text-amber-400 hover:text-amber-300"
+                  >
+                    {t('radioPanel.meshcoreChannel.shareQr')}
+                  </button>
+                ) : null}
                 {confirmDeleteIdx === ch.index ? (
                   <span className="flex items-center gap-1">
                     <button
@@ -3762,6 +3815,85 @@ function MeshcoreChannelSection({
               </div>
             );
           })}
+        </div>
+
+        {shareQrIdx != null
+          ? (() => {
+              const ch = channels.find((c) => c.index === shareQrIdx);
+              if (!ch || ch.secret?.length !== 16) return null;
+              let uri: string;
+              try {
+                uri = buildMeshcoreChannelAddUri({
+                  name: ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index }),
+                  secretHex: bytesToHex(ch.secret),
+                });
+              } catch {
+                // catch-no-log-ok invalid channel secret hides QR
+                return null;
+              }
+              return (
+                <div className="bg-deep-black/40 rounded-lg border border-gray-700/50 p-3">
+                  <QrCodeImage
+                    value={uri}
+                    size={160}
+                    ariaLabel={t('radioPanel.meshcoreChannel.shareQrAria', { name: ch.name })}
+                  />
+                </div>
+              );
+            })()
+          : null}
+
+        <div className="pt-1">
+          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <QrIngestControl
+            disabled={disabled}
+            onDecoded={(text) => {
+              const parsed = classifyMeshClientDeepLink(text);
+              if (parsed.kind === 'meshcoreChannelAdd') {
+                window.dispatchEvent(
+                  new CustomEvent('mesh-client:meshcoreChannelFromQr', {
+                    detail: {
+                      name: parsed.name,
+                      secretHex: parsed.secretHex,
+                      ...(parsed.regionScope ? { regionScope: parsed.regionScope } : {}),
+                    },
+                  }),
+                );
+                return;
+              }
+              if (parsed.kind === 'meshcoreContactAdd') {
+                void (async () => {
+                  const result = await applyMeshcoreContactAdd(parsed, {
+                    saveContact: async ({ nodeId, publicKeyHex, name, contactType }) => {
+                      try {
+                        await window.electronAPI.db.saveMeshcoreContact({
+                          node_id: nodeId,
+                          public_key: publicKeyHex,
+                          adv_name: name,
+                          contact_type: contactType,
+                          on_radio: 0,
+                        });
+                        return true;
+                      } catch (err) {
+                        console.error(
+                          '[MeshcoreChannelSection] contact QR import failed: ' +
+                            errLikeToLogString(err),
+                        );
+                        return false;
+                      }
+                    },
+                  });
+                  if (result.ok) {
+                    addToast(t('qrIngest.meshcoreContactImported'), 'success');
+                  } else {
+                    addToast(t(result.errorKey), 'error');
+                  }
+                })();
+                return;
+              }
+              addToast(t('qrIngest.unknownLink'), 'error');
+            }}
+          />
         </div>
 
         {/* ── Edit / Add Form ── */}
