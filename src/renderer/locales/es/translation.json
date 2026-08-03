@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "Tienes {{count}} backbones predeterminados habilitados. Considere deshabilitar los extras y mantener alrededor de 2 por redundancia.",
       "interfaceListGroup": {
         "user_defined": "Definido por el usuario"
-      }
+      },
+      "selectAria": "Selecciona la interfaz {{name}}",
+      "selectAll": "Seleccionar todo",
+      "selectAllAria": "Seleccionar todas las interfaces eliminables",
+      "clearSelection": "Limpiar la selección",
+      "clearSelectionAria": "Borrar selección de interfaz",
+      "deleteSelected": "Eliminar seleccionados ({{count}})",
+      "deleteSelectedAria": "Eliminar {{count}} interfaces seleccionadas",
+      "deleteSelectedConfirmTitle": "¿Eliminar las interfaces seleccionadas?",
+      "deleteSelectedConfirmBody": "¿Eliminar las interfaces {{count}} de la configuración de la pila? Esto no se puede deshacer.",
+      "deleteSelectedConfirm": "Eliminar seleccionado",
+      "deleteSelectedPartialFailed": "Se eliminaron algunas interfaces, pero {{failed}} de {{total}} falló."
     },
     "reticulumPeers": {
       "hops": "Hops",

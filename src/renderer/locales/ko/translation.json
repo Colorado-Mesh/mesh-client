@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "기본 백본이 {{count}} 개 활성화되어 있습니다. 엑스트라를 비활성화하고 이중화를 위해 약 2 개를 유지하는 것이 좋습니다.",
       "interfaceListGroup": {
         "user_defined": "사용자 정의"
-      }
+      },
+      "selectAria": "인터페이스 선택 {{name}}",
+      "selectAll": "모두 선택",
+      "selectAllAria": "삭제 가능한 모든 인터페이스 선택",
+      "clearSelection": "선택 취소",
+      "clearSelectionAria": "인터페이스 선택 지우기",
+      "deleteSelected": "선택한 항목 삭제 ({{count}})",
+      "deleteSelectedAria": "선택한 인터페이스 {{count}} 개 삭제",
+      "deleteSelectedConfirmTitle": "선택한 인터페이스를 삭제하시겠습니까?",
+      "deleteSelectedConfirmBody": "스택 구성에서 {{count}} 인터페이스를 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "deleteSelectedConfirm": "선택 항목을 삭제합니다",
+      "deleteSelectedPartialFailed": "일부 인터페이스를 삭제했지만 {{total}} 의 {{failed}} 이 (가) 실패했습니다."
     },
     "reticulumPeers": {
       "hops": "Hops",

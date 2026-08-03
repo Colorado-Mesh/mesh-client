@@ -1145,7 +1145,18 @@
       "backboneEnableTooMany": "Je hebt {{count}} standaard backbones ingeschakeld. Overweeg om extra's uit te schakelen en er ongeveer 2 te houden voor redundantie.",
       "interfaceListGroup": {
         "user_defined": "Gebruiker-gedefinieerd"
-      }
+      },
+      "selectAria": "Selecteer interface {{name}}",
+      "selectAll": "Selecteer alles",
+      "selectAllAria": "Selecteer alle verwijderbare interfaces",
+      "clearSelection": "Selectie wissen",
+      "clearSelectionAria": "Interfaceselectie wissen",
+      "deleteSelected": "Geselecteerde verwijderen ({{count}})",
+      "deleteSelectedAria": "Verwijder {{count}} geselecteerde interfaces",
+      "deleteSelectedConfirmTitle": "Geselecteerde interfaces verwijderen?",
+      "deleteSelectedConfirmBody": "{{count}} interfaces uit de stapelconfiguratie verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "deleteSelectedConfirm": "De selectie verwijderen",
+      "deleteSelectedPartialFailed": "Sommige interfaces zijn verwijderd, maar {{failed}} van {{total}} is mislukt."
     },
     "reticulumPeers": {
       "hops": "Hops",

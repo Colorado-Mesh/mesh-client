@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "Anda telah mengaktifkan {{count}} tulang punggung default. Pertimbangkan untuk menonaktifkan ekstra dan menyimpan sekitar 2 untuk redundansi.",
       "interfaceListGroup": {
         "user_defined": "Pilihan Pengguna"
-      }
+      },
+      "selectAria": "Pilih antarmuka {{name}}",
+      "selectAll": "Pilih semua",
+      "selectAllAria": "Pilih semua antarmuka yang dapat dihapus",
+      "clearSelection": "Hilangkan",
+      "clearSelectionAria": "Hapus pilihan antarmuka",
+      "deleteSelected": "Hapus yang dipilih ({{count}})",
+      "deleteSelectedAria": "Hapus {{count}} antarmuka terpilih",
+      "deleteSelectedConfirmTitle": "Hapus antarmuka yang dipilih?",
+      "deleteSelectedConfirmBody": "Hapus {{count}} antarmuka dari konfigurasi tumpukan? Ini tidak dapat diurungkan.",
+      "deleteSelectedConfirm": "Git: Tag yang dipilih dihapus.",
+      "deleteSelectedPartialFailed": "Menghapus beberapa antarmuka, tetapi {{failed}} dari {{total}} gagal."
     },
     "reticulumPeers": {
       "hops": "Hops",

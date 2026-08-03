@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "{{count}} varsayılan omurganız etkin. Ekstraları devre dışı bırakmayı ve fazlalık için yaklaşık 2 tane tutmayı düşünün.",
       "interfaceListGroup": {
         "user_defined": "Kullanıcı tanımlı"
-      }
+      },
+      "selectAria": "Arayüz seçin {{name}}",
+      "selectAll": "Tümünü seç",
+      "selectAllAria": "Silinebilir tüm arayüzleri seç",
+      "clearSelection": "Seçimi temizle",
+      "clearSelectionAria": "Arayüz seçimini temizle",
+      "deleteSelected": "Seçileni sil ({{count}})",
+      "deleteSelectedAria": "Seçilen {{count}} arayüzleri sil",
+      "deleteSelectedConfirmTitle": "Seçilen arayüzler silinsin mi?",
+      "deleteSelectedConfirmBody": "{{count}} arabirimleri yığın yapılandırmasından kaldırılsın mı? Bu işlem geri alınamaz.",
+      "deleteSelectedConfirm": "Seçilen silindi",
+      "deleteSelectedPartialFailed": "Bazı arayüzler silindi, ancak {{failed}}/{{total}} başarısız oldu."
     },
     "reticulumPeers": {
       "hops": "Hops",

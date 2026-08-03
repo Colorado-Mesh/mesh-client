@@ -1147,7 +1147,18 @@
       "backboneEnableTooMany": "Máte zapnutou výchozí páteř {{count}}. Zvažte vypnutí doplňků a ponechání asi 2 pro nadbytečnost.",
       "interfaceListGroup": {
         "user_defined": "Definováno uživatelem"
-      }
+      },
+      "selectAria": "Vyberte rozhraní {{name}}",
+      "selectAll": "Vybrat vše",
+      "selectAllAria": "Vybrat všechna odstranitelná rozhraní",
+      "clearSelection": "Vymazat výběr",
+      "clearSelectionAria": "Vymazat výběr rozhraní",
+      "deleteSelected": "Odstranit vybrané ({{count}})",
+      "deleteSelectedAria": "Smazat {{count}} vybraná rozhraní",
+      "deleteSelectedConfirmTitle": "Smazat vybraná rozhraní?",
+      "deleteSelectedConfirmBody": "Odebrat rozhraní {{count}} z konfigurace zásobníku? Tuto akci nelze vrátit zpět.",
+      "deleteSelectedConfirm": "Odstranit vybrané",
+      "deleteSelectedPartialFailed": "Některá rozhraní byla odstraněna, ale {{failed}} z {{total}} selhalo."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "您已启用{{count}}默认骨干网。请考虑禁用额外功能，并保留约2个以备不时之需。",
       "interfaceListGroup": {
         "user_defined": "用户定义"
-      }
+      },
+      "selectAria": "选择接口{{name}}",
+      "selectAll": "全部选中",
+      "selectAllAria": "选择所有可删除的接口",
+      "clearSelection": "清除选择",
+      "clearSelectionAria": "清除界面选择",
+      "deleteSelected": "删除所选（ {{count}} ）",
+      "deleteSelectedAria": "删除{{count}}所选接口",
+      "deleteSelectedConfirmTitle": "删除所选接口？",
+      "deleteSelectedConfirmBody": "从堆栈配置中删除{{count}}接口？此操作无法撤消。",
+      "deleteSelectedConfirm": "删除所选",
+      "deleteSelectedPartialFailed": "删除了一些接口，但{{total}}的{{failed}}失败。"
     },
     "reticulumPeers": {
       "hops": "Hops",

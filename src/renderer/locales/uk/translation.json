@@ -1148,7 +1148,18 @@
       "backboneEnableTooMany": "У вас увімкнено магістралі за замовчуванням {{count}}. Розгляньте можливість вимкнення додаткових послуг і збереження близько 2 для надмірності.",
       "interfaceListGroup": {
         "user_defined": "Визначений користувачем"
-      }
+      },
+      "selectAria": "Виберіть інтерфейс {{name}}",
+      "selectAll": "Вибрати все",
+      "selectAllAria": "Вибрати всі видалювані інтерфейси",
+      "clearSelection": "Очистити вибір",
+      "clearSelectionAria": "Очистити вибір інтерфейсу",
+      "deleteSelected": "Видалити вибране ({{count}})",
+      "deleteSelectedAria": "Видалити вибрані інтерфейси {{count}}",
+      "deleteSelectedConfirmTitle": "Видалити вибрані інтерфейси?",
+      "deleteSelectedConfirmBody": "Видалити інтерфейси {{count}} з конфігурації стека? Цю дію неможливо скасувати.",
+      "deleteSelectedConfirm": "Видалити вибрані",
+      "deleteSelectedPartialFailed": "Деякі інтерфейси видалено, але помилка {{failed}} з {{total}}."
     },
     "reticulumPeers": {
       "hops": "Hops",

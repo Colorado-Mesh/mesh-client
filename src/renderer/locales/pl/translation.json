@@ -1148,7 +1148,18 @@
       "backboneEnableTooMany": "Masz włączone {{count}} domyślne kręgosłupy. Rozważ wyłączenie dodatków i zachowanie około 2 na potrzeby redundancji.",
       "interfaceListGroup": {
         "user_defined": "Zdefiniowane przez użytkownika"
-      }
+      },
+      "selectAria": "Wybierz interfejs {{name}}",
+      "selectAll": "Zaznacz wszystko",
+      "selectAllAria": "Wybierz wszystkie usuwalne interfejsy",
+      "clearSelection": "Wyczyść wybór",
+      "clearSelectionAria": "Wyczyść wybór interfejsu",
+      "deleteSelected": "Usuń wybrane ({{count}})",
+      "deleteSelectedAria": "Usuń wybrane interfejsy {{count}}",
+      "deleteSelectedConfirmTitle": "Usunąć wybrane interfejsy?",
+      "deleteSelectedConfirmBody": "Usunąć interfejsy {{count}} z konfiguracji stosu? Tej czynności nie można cofnąć.",
+      "deleteSelectedConfirm": "Usuń wybrane",
+      "deleteSelectedPartialFailed": "Usunięto niektóre interfejsy, ale {{failed}} z {{total}} nie powiodło się."
     },
     "reticulumPeers": {
       "hops": "Hops",

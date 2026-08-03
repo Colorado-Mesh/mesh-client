@@ -1144,7 +1144,18 @@
       "backboneEnableTooMany": "Hai {{count}} dorsali predefinite abilitate. Prendi in considerazione la possibilità di disabilitare gli extra e di tenerne circa 2 per ridondanza.",
       "interfaceListGroup": {
         "user_defined": "Utente definito"
-      }
+      },
+      "selectAria": "Seleziona interfaccia {{name}}",
+      "selectAll": "Selezionare tutto",
+      "selectAllAria": "Seleziona tutte le interfacce eliminabili",
+      "clearSelection": "Elimina selezione",
+      "clearSelectionAria": "Cancella selezione interfaccia",
+      "deleteSelected": "Elimina selezionati ({{count}})",
+      "deleteSelectedAria": "Elimina le interfacce selezionate {{count}}",
+      "deleteSelectedConfirmTitle": "Eliminare le interfacce selezionate?",
+      "deleteSelectedConfirmBody": "Rimuovere le interfacce {{count}} dalla configurazione dello stack? Questa operazione non può essere annullata.",
+      "deleteSelectedConfirm": "Elimina elemento selezionato",
+      "deleteSelectedPartialFailed": "Alcune interfacce sono state eliminate, ma {{failed}} di {{total}} non sono riuscite."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -1144,7 +1144,18 @@
       "backboneEnableTooMany": "Du hast {{count}} Standard-Backbones aktiviert. Erwägen Sie, Extras zu deaktivieren und etwa 2 für die Redundanz aufzubewahren.",
       "interfaceListGroup": {
         "user_defined": "Benutzerdefiniert"
-      }
+      },
+      "selectAria": "Schnittstelle auswählen {{name}}",
+      "selectAll": "Alle auswählen",
+      "selectAllAria": "Alle löschbaren Schnittstellen auswählen",
+      "clearSelection": "Auswahl aufheben",
+      "clearSelectionAria": "Klare Schnittstellenauswahl",
+      "deleteSelected": "Ausgewählte löschen ({{count}})",
+      "deleteSelectedAria": "{{count}} ausgewählte Schnittstellen löschen",
+      "deleteSelectedConfirmTitle": "Ausgewählte Schnittstellen löschen?",
+      "deleteSelectedConfirmBody": "{{count}} Schnittstellen aus der Stack-Konfiguration entfernen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteSelectedConfirm": "Ausgewählte löschen",
+      "deleteSelectedPartialFailed": "Einige Schnittstellen wurden gelöscht, aber {{failed}} von {{total}} ist fehlgeschlagen."
     },
     "reticulumPeers": {
       "hops": "Hops",

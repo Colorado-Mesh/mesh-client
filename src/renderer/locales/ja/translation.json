@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "{{count}}デフォルトのバックボーンが有効になっています。余分なものを無効にし、冗長性を保つために約2つを保管することを検討してください。",
       "interfaceListGroup": {
         "user_defined": "ユーザー定義"
-      }
+      },
+      "selectAria": "インターフェース{{name}}を選択",
+      "selectAll": "すべて選択",
+      "selectAllAria": "すべての削除可能なインターフェースを選択",
+      "clearSelection": "選択を解除",
+      "clearSelectionAria": "インターフェースの選択をクリア",
+      "deleteSelected": "選択したものを削除（ {{count}} ）",
+      "deleteSelectedAria": "選択したインターフェース{{count}}を削除",
+      "deleteSelectedConfirmTitle": "選択したインターフェースを削除しますか？",
+      "deleteSelectedConfirmBody": "スタック構成から{{count}}インターフェイスを削除しますか？これは元に戻せません。",
+      "deleteSelectedConfirm": "選択した項目を削除",
+      "deleteSelectedPartialFailed": "一部のインターフェースを削除しましたが、{{total}}の{{failed}}が失敗しました。"
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -1146,7 +1146,18 @@
       "backboneEnableTooMany": "Você tem {{count}} backbones padrão ativados. Considere desativar extras e manter cerca de 2 para redundância.",
       "interfaceListGroup": {
         "user_defined": "Usuário definido"
-      }
+      },
+      "selectAria": "Selecionar interface {{name}}",
+      "selectAll": "Selecionar todos",
+      "selectAllAria": "Selecione todas as interfaces excluíveis",
+      "clearSelection": "Limpar seleção",
+      "clearSelectionAria": "Limpar seleção de interface",
+      "deleteSelected": "Excluir selecionados ({{count}})",
+      "deleteSelectedAria": "Excluir {{count}} interfaces selecionadas",
+      "deleteSelectedConfirmTitle": "Excluir interfaces selecionadas?",
+      "deleteSelectedConfirmBody": "Remover interfaces {{count}} da configuração da pilha? Isso não pode ser desfeito.",
+      "deleteSelectedConfirm": "Apagar os selecionados",
+      "deleteSelectedPartialFailed": "Excluídas algumas interfaces, mas {{failed}} de {{total}} falhou."
     },
     "reticulumPeers": {
       "hops": "Hops",

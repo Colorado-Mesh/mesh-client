@@ -1148,7 +1148,18 @@
       "backboneEnableTooMany": "У вас включена {{count}} магистраль по умолчанию. Подумайте о том, чтобы отключить дополнительные услуги и оставить около 2 для резервирования.",
       "interfaceListGroup": {
         "user_defined": "Пользовательское"
-      }
+      },
+      "selectAria": "Выберите интерфейс {{name}}",
+      "selectAll": "Выбрать все",
+      "selectAllAria": "Выбрать все удаляемые интерфейсы",
+      "clearSelection": "Очистить выбор",
+      "clearSelectionAria": "Очистить выбор интерфейса",
+      "deleteSelected": "Удалить выбранное ({{count}})",
+      "deleteSelectedAria": "Удалить {{count}} выбранных интерфейсов",
+      "deleteSelectedConfirmTitle": "Удалить выбранные интерфейсы?",
+      "deleteSelectedConfirmBody": "Удалить интерфейсы {{count}} из конфигурации стека? Это действие нельзя отменить.",
+      "deleteSelectedConfirm": "Удалить выбранное",
+      "deleteSelectedPartialFailed": "Удалены некоторые интерфейсы, но сбой {{failed}} из {{total}}."
     },
     "reticulumPeers": {
       "hops": "Hops",

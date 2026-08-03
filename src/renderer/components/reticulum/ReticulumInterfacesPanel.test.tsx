@@ -1087,6 +1087,130 @@ describe('ReticulumInterfacesPanel', () => {
     expect(
       screen.queryByRole('button', { name: 'connectionPanel.reticulumInterfaces.delete' }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reticulum-iface-select-shared')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reticulum-iface-selection-toolbar')).not.toBeInTheDocument();
+  });
+
+  it('mutes disabled interface rows and keeps enabled rows full contrast', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'hub-on',
+            name: 'RNS Beleth',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+            host: 'rns.beleth.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+          {
+            id: 'hub-off',
+            name: 'RNS AceHoss',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'rns.acehoss.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId('reticulum-iface-row-hub-on')).toHaveAttribute(
+      'data-enabled',
+      'true',
+    );
+    expect(screen.getByTestId('reticulum-iface-row-hub-off')).toHaveAttribute(
+      'data-enabled',
+      'false',
+    );
+    expect(
+      screen.getByTestId('reticulum-iface-row-hub-off').querySelector('.opacity-50'),
+    ).not.toBeNull();
+    expect(
+      screen.getByTestId('reticulum-iface-row-hub-on').querySelector('.opacity-50'),
+    ).toBeNull();
+  });
+
+  it('selects deletable interfaces and bulk-deletes via confirm', async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const proxyDelete = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyDelete = proxyDelete;
+
+    const { container } = render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        onRefresh={onRefresh}
+        interfaces={[
+          {
+            id: 'hub-a',
+            name: 'RNS Beleth',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'rns.beleth.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+          {
+            id: 'hub-b',
+            name: 'RNS AceHoss',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'rns.acehoss.net',
+            port: 4242,
+            mode: 'boundary',
+          },
+          {
+            id: 'shared',
+            name: 'SharedInstanceServer',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId('reticulum-iface-select-hub-a')).toBeInTheDocument();
+    expect(screen.getByTestId('reticulum-iface-select-hub-b')).toBeInTheDocument();
+    expect(screen.queryByTestId('reticulum-iface-select-shared')).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.selectAllAria' }),
+    );
+    expect(screen.getByTestId('reticulum-iface-select-hub-a')).toBeChecked();
+    expect(screen.getByTestId('reticulum-iface-select-hub-b')).toBeChecked();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.deleteSelectedAria',
+      }),
+    );
+    expect(
+      await screen.findByText('connectionPanel.reticulumInterfaces.deleteSelectedConfirmTitle'),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.deleteSelectedConfirm',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyDelete).toHaveBeenCalledTimes(2);
+    });
+    expect(proxyDelete).toHaveBeenCalledWith('/api/v1/interfaces/hub-a');
+    expect(proxyDelete).toHaveBeenCalledWith('/api/v1/interfaces/hub-b');
+    expect(onRefresh).toHaveBeenCalled();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows primary controls when two enabled local serial interfaces exist', () => {
