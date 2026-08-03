@@ -57,12 +57,13 @@ export function useReticulumBleRnodeRssiMap(
   sidecarRunning: boolean,
 ): ReadonlyMap<string, number> {
   const [rssiByAddress, setRssiByAddress] = useState<ReadonlyMap<string, number>>(() => new Map());
-  // Updated only in the poll setState path (not during render) for burst vs steady scheduling.
+  // Updated only in the poll path (not during render) for burst vs steady scheduling.
   const rssiByAddressRef = useRef<ReadonlyMap<string, number>>(rssiByAddress);
 
   // Sticky last non-empty target set so a brief empty hydrate does not clear/stop polls
-  // while the sidecar is still running.
+  // while the sidecar is still running. Expires after BLE connect grace if still empty.
   const stickyTargetsRef = useRef<string[]>([]);
+  const stickyIdleExpiresAtRef = useRef(0);
 
   // Content key only — do not depend on `interfaces` array identity (inline props re-render loop).
   const enabledKey = useMemo(
@@ -73,6 +74,7 @@ export function useReticulumBleRnodeRssiMap(
   useEffect(() => {
     if (!sidecarRunning) {
       stickyTargetsRef.current = [];
+      stickyIdleExpiresAtRef.current = 0;
       rssiByAddressRef.current = new Map();
       setRssiByAddress(new Map());
       return;
@@ -81,7 +83,22 @@ export function useReticulumBleRnodeRssiMap(
     const fromInterfaces = enabledKey ? enabledKey.split('|') : [];
     if (fromInterfaces.length > 0) {
       stickyTargetsRef.current = fromInterfaces;
+      // Targets present — cancel any idle expiry (brief empty hydrate can restart it).
+      stickyIdleExpiresAtRef.current = 0;
+    } else if (stickyTargetsRef.current.length > 0) {
+      if (stickyIdleExpiresAtRef.current === 0) {
+        stickyIdleExpiresAtRef.current = Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS;
+      }
+      const remainingMs = stickyIdleExpiresAtRef.current - Date.now();
+      if (remainingMs <= 0) {
+        stickyTargetsRef.current = [];
+        stickyIdleExpiresAtRef.current = 0;
+        rssiByAddressRef.current = new Map();
+        setRssiByAddress(new Map());
+        return;
+      }
     }
+
     const enabledBleTargets = stickyTargetsRef.current;
     if (enabledBleTargets.length === 0) {
       // Sidecar running but no BLE RNode targets yet — keep any prior map; do not clear.
@@ -90,8 +107,20 @@ export function useReticulumBleRnodeRssiMap(
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let idleClearTimer: ReturnType<typeof setTimeout> | null = null;
     let inflight = false;
     const burstStartedAt = Date.now();
+
+    if (fromInterfaces.length === 0 && stickyIdleExpiresAtRef.current > Date.now()) {
+      idleClearTimer = setTimeout(() => {
+        cancelled = true;
+        if (timer) clearTimeout(timer);
+        stickyTargetsRef.current = [];
+        stickyIdleExpiresAtRef.current = 0;
+        rssiByAddressRef.current = new Map();
+        setRssiByAddress(new Map());
+      }, stickyIdleExpiresAtRef.current - Date.now());
+    }
 
     const scheduleNext = () => {
       if (cancelled) return;
@@ -140,16 +169,14 @@ export function useReticulumBleRnodeRssiMap(
           }
         }
         // Preserve previous readings for addresses missing from this scan.
-        setRssiByAddress((prev) => {
-          const merged = new Map<string, number>();
-          for (const addr of enabledBleTargets) {
-            if (next.has(addr)) merged.set(addr, next.get(addr)!);
-            else if (prev.has(addr)) merged.set(addr, prev.get(addr)!);
-          }
-          // Keep ref in sync before scheduleNext() in finally (burst vs steady).
-          rssiByAddressRef.current = merged;
-          return merged;
-        });
+        const prev = rssiByAddressRef.current;
+        const merged = new Map<string, number>();
+        for (const addr of enabledBleTargets) {
+          if (next.has(addr)) merged.set(addr, next.get(addr)!);
+          else if (prev.has(addr)) merged.set(addr, prev.get(addr)!);
+        }
+        rssiByAddressRef.current = merged;
+        setRssiByAddress(merged);
       } catch (err) {
         console.debug(
           '[Reticulum] BLE RNode RSSI poll failed:',
@@ -167,6 +194,7 @@ export function useReticulumBleRnodeRssiMap(
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      if (idleClearTimer) clearTimeout(idleClearTimer);
     };
   }, [sidecarRunning, enabledKey]);
 

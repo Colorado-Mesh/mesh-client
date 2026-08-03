@@ -180,4 +180,38 @@ describe('BleCoexistenceCoordinator', () => {
     expect(coordinator.getState().scanOwner).toBeNull();
     expect(noble.resumeScanningAfterExternalScan).toHaveBeenCalledTimes(1);
   });
+
+  it('serializes concurrent same-owner acquireScan so nested release keeps the outer lease', async () => {
+    let resolvePause: (() => void) | null = null;
+    const noble = {
+      pauseScanningForExternalScan: vi.fn().mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolvePause = resolve;
+          }),
+      ),
+      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
+    };
+    const coordinator = new BleCoexistenceCoordinator();
+    coordinator.setNobleManager(noble as never);
+
+    const first = coordinator.acquireScan('reticulum');
+    const second = coordinator.acquireScan('reticulum');
+
+    expect(noble.pauseScanningForExternalScan).toHaveBeenCalledTimes(1);
+    expect(resolvePause).not.toBeNull();
+    resolvePause!();
+
+    await Promise.all([first, second]);
+    expect(coordinator.getState().scanOwner).toBe('reticulum');
+
+    // One release must leave the nested hold active.
+    coordinator.releaseScan('reticulum');
+    expect(coordinator.getState().scanOwner).toBe('reticulum');
+    expect(noble.resumeScanningAfterExternalScan).not.toHaveBeenCalled();
+
+    coordinator.releaseScan('reticulum');
+    expect(coordinator.getState().scanOwner).toBeNull();
+    expect(noble.resumeScanningAfterExternalScan).toHaveBeenCalledTimes(1);
+  });
 });

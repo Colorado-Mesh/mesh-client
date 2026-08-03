@@ -249,6 +249,50 @@ describe('useReticulumBleRnodeRssiMap', () => {
     expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
   });
 
+  it('expires sticky BLE targets after the idle grace window when interfaces stay empty', async () => {
+    const { result, rerender } = renderHook(
+      ({ ifaces }: { ifaces: Parameters<typeof useReticulumBleRnodeRssiMap>[0] }) =>
+        useReticulumBleRnodeRssiMap(ifaces, true),
+      {
+        initialProps: {
+          ifaces: [
+            {
+              id: '1',
+              enabled: true,
+              type: 'rnode',
+              serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+            },
+          ],
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+    });
+
+    // Idle grace starts on empty, not when targets were first seen.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120_000);
+    });
+    expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+
+    act(() => {
+      rerender({ ifaces: [] });
+    });
+    expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(59_000);
+    });
+    expect(result.current.get('aa:bb:cc:dd:ee:ff')).toBe(-58);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(result.current.size).toBe(0);
+  });
+
   it('bursts until first sample then steadies', async () => {
     let scanCount = 0;
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
