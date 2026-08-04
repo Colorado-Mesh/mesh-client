@@ -45,6 +45,8 @@ export interface ReticulumLxmfPayload {
   sender_name?: string;
   text?: string;
   timestamp?: number;
+  /** Opaque monotonic ring sequence from sidecar inbound buffer (catch-up cursor). */
+  ring_seq?: number;
   to_hash?: string;
   reply_to_hash?: string;
   reply_preview_text?: string;

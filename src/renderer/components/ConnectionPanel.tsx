@@ -1761,6 +1761,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('http', addr).catch((err: unknown) => {
+        // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
         // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
         const httpErr = humanizeHttpError(addr, err, t);
         if (httpErr) setError(httpErr);
@@ -1778,6 +1779,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('tcp', addr).catch((err: unknown) => {
+        // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
         // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
         const tcpErr = humanizeHttpError(addr, err, t);
         if (tcpErr) setError(tcpErr);

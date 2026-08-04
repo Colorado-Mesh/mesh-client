@@ -37,7 +37,7 @@ vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({
   useReticulumPropagationAutoSync: () => {},
 }));
 
-function sampleInbound(hash: string, text: string, timestamp = 1_000) {
+function sampleInbound(hash: string, text: string, timestamp = 1_000, ringSeq?: number) {
   return {
     sender_hash: 'e16af7d675a0ae7f3067185800a46678',
     sender_name: 'Runr02',
@@ -46,6 +46,7 @@ function sampleInbound(hash: string, text: string, timestamp = 1_000) {
     direction: 'inbound' as const,
     message_hash: hash,
     received_via: 'tcp',
+    ...(ringSeq != null ? { ring_seq: ringSeq } : {}),
   };
 }
 
@@ -216,7 +217,7 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     act(() => {
       onEvent({
         type: 'lxmf_message',
-        payload: sampleInbound(hash, 'live inbound', 5_000),
+        payload: sampleInbound(hash, 'live inbound', 5_000, 7),
       });
     });
 
@@ -224,6 +225,7 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
       expect(useMessageStore.getState().messages[identityId][hash].payload).toBe('live inbound');
     });
     expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs).toBe(5_000);
+    expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkSeq).toBe(7);
     unmount();
   });
 
@@ -255,12 +257,14 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     unmount();
   });
 
-  it('periodic catch-up after watermark does not re-warn the same boundary row', async () => {
-    const hash = '33'.repeat(32);
-    const atT = sampleInbound(hash, 'boundary', 4_000);
+  it('same-ms catch-up twins are recovered exactly once via ring_seq cursor', async () => {
+    const hashA = '33'.repeat(32);
+    const hashB = '44'.repeat(32);
+    const twinA = sampleInbound(hashA, 'twin-a', 4_000, 1);
+    const twinB = sampleInbound(hashB, 'twin-b', 4_000, 2);
     vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
-      messages: [atT],
-      ringLen: 1,
+      messages: [twinA, twinB],
+      ringLen: 2,
     });
 
     const { result, unmount } = renderHook(() => useReticulumRuntime());
@@ -269,19 +273,26 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     });
 
     await waitFor(() => {
-      expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs).toBe(4_000);
+      const bucket = useMessageStore.getState().messages[identityId];
+      expect(bucket[hashA].payload).toBe('twin-a');
+      expect(bucket[hashB].payload).toBe('twin-b');
     });
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('count=1 reason=connect'));
+    expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs).toBe(4_000);
+    expect(getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkSeq).toBe(2);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('count=2 reason=connect'));
     warnSpy.mockClear();
 
-    // Exclusive since_ts=T → empty ring slice (Runr stuck-loop regression).
-    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({ messages: [], ringLen: 1 });
-    const sinceTs = getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs ?? undefined;
+    // Complete (ts, seq) cursor → empty ring slice; both twins already ingested once.
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({ messages: [], ringLen: 2 });
+    const diag = getReticulumInboundLxmfDiagnostics();
     await expect(
       catchUpRecentInboundLxmf({
         identityId,
-        ingest: () => {},
-        sinceTs,
+        ingest: () => {
+          throw new Error('must not re-ingest after complete cursor');
+        },
+        sinceTs: diag.inboundCatchUpWatermarkTs ?? undefined,
+        sinceSeq: diag.inboundCatchUpWatermarkSeq ?? undefined,
         reason: 'periodic',
       }),
     ).resolves.toBeNull();
@@ -289,9 +300,10 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalledWith({
       limit: 200,
       sinceTs: 4_000,
+      sinceSeq: 2,
     });
-    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('count=1 reason=periodic'));
-    expect(getReticulumInboundLxmfDiagnostics().lastInboundCatchUpCount).toBe(1);
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('count=2 reason=periodic'));
+    expect(getReticulumInboundLxmfDiagnostics().lastInboundCatchUpCount).toBe(2);
     unmount();
   });
 });

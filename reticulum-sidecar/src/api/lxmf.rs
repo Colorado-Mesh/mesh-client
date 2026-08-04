@@ -128,9 +128,15 @@ pub async fn lxmf_delete_message(
 
 #[derive(Debug, Deserialize)]
 pub struct RecentLxmfQuery {
-    /// Exclusive lower bound on payload `timestamp` (ms). Omit to return the full ring.
+    /// Exclusive lower-bound cursor on payload `timestamp` (ms). Omit with `since_seq` to return
+    /// the full ring. Rows are chronological (oldest→newest). With `since_seq`, keep rows after
+    /// the complete `(since_ts, since_seq)` cursor so same-ms twins remain recoverable.
     #[serde(default)]
     pub since_ts: Option<i64>,
+    /// Opaque monotonic `ring_seq` stamped by the inbound ring. Pair with `since_ts`; ignored when
+    /// `since_ts` is omitted. Without `since_seq`, filtering is timestamp-only exclusive.
+    #[serde(default)]
+    pub since_seq: Option<u64>,
     /// Max rows (default 200, capped at 500).
     #[serde(default)]
     pub limit: Option<usize>,
@@ -142,7 +148,7 @@ pub async fn list_recent_lxmf(
     Query(q): Query<RecentLxmfQuery>,
 ) -> Json<serde_json::Value> {
     let limit = q.limit.unwrap_or(200).clamp(1, 500);
-    let messages = stack.list_recent_inbound_lxmf(q.since_ts, limit);
+    let messages = stack.list_recent_inbound_lxmf(q.since_ts, q.since_seq, limit);
     let ring_len = stack.inbound_lxmf_ring_len();
     Json(serde_json::json!({ "messages": messages, "ring_len": ring_len }))
 }

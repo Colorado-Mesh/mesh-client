@@ -10,13 +10,14 @@ vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
   fetchRecentInboundLxmfDetailed: vi.fn(),
 }));
 
-function sample(hash: string, timestamp: number): ReticulumLxmfPayload {
+function sample(hash: string, timestamp: number, ringSeq?: number): ReticulumLxmfPayload {
   return {
     sender_hash: 'e16af7d675a0ae7f3067185800a46678',
     text: 'hi',
     timestamp,
     direction: 'inbound',
     message_hash: hash,
+    ...(ringSeq != null ? { ring_seq: ringSeq } : {}),
   };
 }
 
@@ -67,7 +68,7 @@ describe('catchUpRecentInboundLxmf', () => {
   it('ingests rows, warns, and returns count plus watermark', async () => {
     const ingest = vi.fn();
     vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
-      messages: [sample('aa'.repeat(32), 1_000), sample('bb'.repeat(32), 2_500)],
+      messages: [sample('aa'.repeat(32), 1_000, 1), sample('bb'.repeat(32), 2_500, 2)],
       ringLen: 2,
     });
 
@@ -75,12 +76,17 @@ describe('catchUpRecentInboundLxmf', () => {
       identityId: 'id-1',
       ingest,
       sinceTs: 500,
+      sinceSeq: 0,
       reason: 'periodic',
     });
 
-    expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalledWith({ limit: 200, sinceTs: 500 });
+    expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalledWith({
+      limit: 200,
+      sinceTs: 500,
+      sinceSeq: 0,
+    });
     expect(ingest).toHaveBeenCalledTimes(2);
-    expect(outcome).toEqual({ count: 2, watermarkTs: 2_500 });
+    expect(outcome).toEqual({ count: 2, watermarkTs: 2_500, watermarkSeq: 2 });
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('count=2 reason=periodic'));
     expect(debugSpy).not.toHaveBeenCalled();
   });
@@ -92,18 +98,19 @@ describe('catchUpRecentInboundLxmf', () => {
         identityId: 'id-1',
         ingest: vi.fn(),
         sinceTs: 2_500,
+        sinceSeq: 2,
         reason: 'periodic',
       }),
     ).resolves.toBeNull();
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
-  it('demotes warn to debug when every hash is already in the message store', async () => {
+  it('demotes warn to debug and skips ingest when every hash is already known', async () => {
     const known = 'aa'.repeat(32);
     seedKnown('id-1', known);
     const ingest = vi.fn();
     vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
-      messages: [sample(known, 1_000)],
+      messages: [sample(known, 1_000, 1)],
       ringLen: 1,
     });
 
@@ -113,19 +120,19 @@ describe('catchUpRecentInboundLxmf', () => {
       reason: 'periodic',
     });
 
-    expect(outcome).toEqual({ count: 1, watermarkTs: 1_000 });
-    expect(ingest).toHaveBeenCalledTimes(1);
+    expect(outcome).toEqual({ count: 1, watermarkTs: 1_000, watermarkSeq: 1 });
+    expect(ingest).not.toHaveBeenCalled();
     expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('count=1 reason=periodic'));
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
-  it('still warns when a mixed batch includes an unknown hash', async () => {
+  it('warns on a mixed batch and ingests only the unknown row', async () => {
     const known = 'aa'.repeat(32);
     const unknown = 'bb'.repeat(32);
     seedKnown('id-1', known);
     const ingest = vi.fn();
     vi.mocked(fetchRecentInboundLxmfDetailed).mockResolvedValue({
-      messages: [sample(known, 1_000), sample(unknown, 2_000)],
+      messages: [sample(known, 1_000, 1), sample(unknown, 2_000, 2)],
       ringLen: 2,
     });
 
@@ -135,6 +142,8 @@ describe('catchUpRecentInboundLxmf', () => {
       reason: 'periodic',
     });
 
+    expect(ingest).toHaveBeenCalledTimes(1);
+    expect(ingest).toHaveBeenCalledWith(expect.objectContaining({ message_hash: unknown }));
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('count=2 reason=periodic'));
     expect(debugSpy).not.toHaveBeenCalledWith(expect.stringContaining('catch-up count='));
   });

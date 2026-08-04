@@ -10,9 +10,14 @@ export interface ReticulumInboundLxmfDiagnosticsSnapshot {
   lastInboundCatchUpCount: number | null;
   /**
    * Exclusive lower-bound watermark (ms) for periodic `since_ts` catch-up.
-   * Next fetch uses this as `since_ts` so the boundary row is not re-returned.
+   * Pair with {@link inboundCatchUpWatermarkSeq} for the complete cursor.
    */
   inboundCatchUpWatermarkTs: number | null;
+  /**
+   * Opaque sidecar `ring_seq` paired with {@link inboundCatchUpWatermarkTs}.
+   * Next fetch uses both so same-ms twins after the stamped sequence are still returned.
+   */
+  inboundCatchUpWatermarkSeq: number | null;
   lastInboundRingLen: number | null;
 }
 
@@ -22,6 +27,7 @@ const state: ReticulumInboundLxmfDiagnosticsSnapshot = {
   lastInboundCatchUpAt: null,
   lastInboundCatchUpCount: null,
   inboundCatchUpWatermarkTs: null,
+  inboundCatchUpWatermarkSeq: null,
   lastInboundRingLen: null,
 };
 
@@ -40,11 +46,27 @@ export function noteReticulumInboundCatchUp(count: number): void {
   state.lastInboundCatchUpCount = count;
 }
 
-export function advanceReticulumInboundCatchUpWatermark(timestampMs: number): void {
+/**
+ * Advance the exclusive `(timestamp, ring_seq)` catch-up cursor.
+ * Only moves forward; a higher timestamp resets the sequence half of the cursor.
+ */
+export function advanceReticulumInboundCatchUpWatermark(
+  timestampMs: number,
+  ringSeq?: number | null,
+): void {
   if (!Number.isFinite(timestampMs)) return;
   const ts = Math.floor(timestampMs);
-  if (state.inboundCatchUpWatermarkTs == null || ts > state.inboundCatchUpWatermarkTs) {
+  const seq = typeof ringSeq === 'number' && Number.isFinite(ringSeq) ? Math.floor(ringSeq) : null;
+
+  const curTs = state.inboundCatchUpWatermarkTs;
+  const curSeq = state.inboundCatchUpWatermarkSeq;
+  if (curTs == null || ts > curTs) {
     state.inboundCatchUpWatermarkTs = ts;
+    state.inboundCatchUpWatermarkSeq = seq;
+    return;
+  }
+  if (ts === curTs && seq != null && (curSeq == null || seq > curSeq)) {
+    state.inboundCatchUpWatermarkSeq = seq;
   }
 }
 
@@ -61,5 +83,6 @@ export function resetReticulumInboundLxmfDiagnosticsForTests(): void {
   state.lastInboundCatchUpAt = null;
   state.lastInboundCatchUpCount = null;
   state.inboundCatchUpWatermarkTs = null;
+  state.inboundCatchUpWatermarkSeq = null;
   state.lastInboundRingLen = null;
 }

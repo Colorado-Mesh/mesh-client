@@ -3,8 +3,14 @@ import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest
 import { noteReticulumInboundRingLen } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
 
 export interface FetchRecentInboundLxmfOpts {
-  /** Exclusive lower bound on payload timestamp (ms); sidecar returns `timestamp > since_ts`. */
+  /**
+   * Exclusive lower-bound cursor on payload timestamp (ms).
+   * Alone: sidecar returns `timestamp > since_ts`.
+   * With {@link sinceSeq}: rows after the complete `(since_ts, since_seq)` cursor.
+   */
   sinceTs?: number;
+  /** Opaque sidecar `ring_seq` paired with {@link sinceTs} for same-ms recovery. */
+  sinceSeq?: number;
   limit?: number;
 }
 
@@ -31,6 +37,14 @@ export async function fetchRecentInboundLxmfDetailed(
   const params = new URLSearchParams();
   if (opts.sinceTs != null && Number.isFinite(opts.sinceTs)) {
     params.set('since_ts', String(Math.floor(opts.sinceTs)));
+  }
+  if (
+    opts.sinceTs != null &&
+    Number.isFinite(opts.sinceTs) &&
+    opts.sinceSeq != null &&
+    Number.isFinite(opts.sinceSeq)
+  ) {
+    params.set('since_seq', String(Math.floor(opts.sinceSeq)));
   }
   if (opts.limit != null && Number.isFinite(opts.limit)) {
     params.set('limit', String(Math.max(1, Math.min(500, Math.floor(opts.limit)))));

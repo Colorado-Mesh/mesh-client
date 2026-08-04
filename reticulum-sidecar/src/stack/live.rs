@@ -346,7 +346,9 @@ impl LiveBridge {
                 Some(&inbound_sender_name),
             );
             // Buffer before WS emit so lag/reconnect can catch up via GET /api/v1/lxmf/recent.
-            inbound_lxmf_cb.push(payload.clone());
+            // Stamp `ring_seq` on accepted rows so live watermark and catch-up share a cursor.
+            // Deduped / lock-failed pushes return None — still emit the original payload.
+            let payload = inbound_lxmf_cb.push(payload.clone()).unwrap_or(payload);
             let message_hash = payload
                 .get("message_hash")
                 .and_then(|v| v.as_str())
