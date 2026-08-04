@@ -145,9 +145,10 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(lostBody).toContain('defer reconnect until in-flight open settles');
   });
 
-  it('clears connected MeshCore BLE MAC on connection loss and restores it after BLE reconnect attach', () => {
+  it('keeps sticky MeshCore BLE MAC suppress on connection loss and restores after BLE reconnect attach', () => {
     const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
-    expect(lostBody).toContain('setConnectedMeshcoreBleMac(null)');
+    expect(lostBody).toContain('prearmMeshcoreBleMacSuppressionFromStorage');
+    expect(lostBody).not.toContain('setConnectedMeshcoreBleMac(null)');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toContain('resolveConnectedMeshcoreBleIdentity');
     expect(reconnectBody).toContain('resolveConnectedMeshcoreBleMacForSuppression');
@@ -155,14 +156,24 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toMatch(
       /Reconnect succeeded[\s\S]*?setConnectedMeshcoreBleMac\(resolveConnectedMeshcoreBleMacForSuppression\(bleIdentityOpts\)\)/,
     );
+    expect(reconnectBody).toContain('clearMeshcoreBleMacSuppression');
   });
 
-  it('clears MeshCore BLE MAC on prepareRfConnect replacement and BLE connect failure', () => {
+  it('pre-arms sticky MeshCore BLE MAC on prepareRfConnect BLE and clears suppress on non-BLE', () => {
     const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
-    expect(prepareBody).toContain('setConnectedMeshcoreBleMac(null)');
+    expect(prepareBody).toContain('prearmMeshcoreBleMacSuppressionFromStorage');
+    expect(prepareBody).toContain('clearMeshcoreBleMacSuppression');
+    expect(prepareBody).not.toContain('setConnectedMeshcoreBleMac(null)');
     const failureBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleRfConnectFailure');
     expect(failureBody).toMatch(
-      /if \(type === 'ble'\) \{[\s\S]*?setConnectedMeshcoreBleMac\(null\)/,
+      /if \(type === 'ble'\) \{[\s\S]*?prearmMeshcoreBleMacSuppressionFromStorage/,
+    );
+  });
+
+  it('pre-arms MeshCore BLE MAC suppress on runtime mount before Meshtastic NodeDB race', () => {
+    expect(RUNTIME_SOURCE).toContain('prearmMeshcoreBleMacSuppressionFromStorage');
+    expect(RUNTIME_SOURCE).toMatch(
+      /meshcoreHookMountedRef\.current = true;[\s\S]*?prearmMeshcoreBleMacSuppressionFromStorage\(resolveLastBlePeripheralId\('meshcore'\) \?\? null\);/,
     );
   });
 
@@ -174,7 +185,10 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(connectBody).toContain(
       "fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore')",
     );
-    expect(connectBody).toContain('bleIdentityOpts ? resolveConnectedMeshcoreBleMacForSuppression');
+    expect(connectBody).toContain(
+      'setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression',
+    );
+    expect(connectBody).toContain('clearMeshcoreBleMacSuppression');
   });
 
   it('flushes deferred reconnects after reconnect attempts settle', () => {

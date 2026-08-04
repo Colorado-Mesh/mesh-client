@@ -294,9 +294,16 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
     expect(backfillIdx).toBeGreaterThan(guardIdx);
   });
 
-  it('imports the backfill helper from lib/connection', () => {
+  it('re-pushes MQTT channel keys when resolvedChannelConfigs change (RF after cold-start MQTT)', () => {
+    // PacketRouter → deviceStore channel configs must re-sync topic→index after MQTT
+    // connects with empty/MQTT-only maps (Colorado public LongFast on non-0 slot).
     expect(SOURCE).toMatch(
-      /import \{[\s\S]*?getBlePeripheralIdFromMeshTransport[\s\S]*?\} from '\.\.\/lib\/connection'/,
+      /channelConfigsRef\.current = resolvedChannelConfigs;\s*pushMqttChannelKeys\(\);/,
+    );
+    expect(SOURCE).toMatch(/\[resolvedChannelConfigs, pushMqttChannelKeys\]/);
+    // Hook-state channelConfigs alone must not be the only push trigger (stays empty on RF path).
+    expect(SOURCE).not.toMatch(
+      /pushMqttChannelKeys\(\);\s*\}, \[channelConfigs, mqttStatus, pushMqttChannelKeys\]/,
     );
   });
 });

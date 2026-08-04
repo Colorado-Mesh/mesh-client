@@ -384,6 +384,12 @@ export class MQTTManager extends EventEmitter {
       this.channelNameToIndex.set(name, idx);
     }
     this.rebuildAllDecryptKeys();
+    const mapSummary = Array.from(this.channelNameToIndex.entries())
+      .map(([name, idx]) => `${sanitizeLogMessage(name)}=${idx}`)
+      .join(',');
+    console.debug(
+      `[Meshtastic MQTT] channelNameToIndex updated (${this.channelNameToIndex.size}): ${mapSummary || '(empty)'}`,
+    ); // log-filter-ok Meshtastic MQTT logs → App log panel
   }
 
   /** Idempotent: Connection panel manual lines win over prior radio entries for the same name. */

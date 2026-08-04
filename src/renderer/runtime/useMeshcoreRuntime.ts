@@ -7,6 +7,8 @@ import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import {
+  clearMeshcoreBleMacSuppression,
+  prearmMeshcoreBleMacSuppressionFromStorage,
   readMeshcoreWebBluetoothDeviceId,
   resolveConnectedMeshcoreBleIdentity,
   resolveConnectedMeshcoreBleMacForSuppression,
@@ -857,6 +859,8 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     meshcoreHookMountedRef.current = true;
+    // Pre-arm before Meshtastic configure can dump NodeDB for the companion's old !node id.
+    prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
     const pingNoRouteTimers = meshcorePingNoRouteExpiryTimersRef.current;
     return () => {
       meshcoreHookMountedRef.current = false;
@@ -2475,9 +2479,13 @@ export function useMeshcoreRuntime() {
         bleConnectInProgressRef.current = false;
         meshcoreDeferredReconnectRef.current = false;
       }
-      // Drop sticky MeshCore BLE identity before replacement so a failed open cannot keep
-      // suppressing Meshtastic MAC-derived node hears from a previous peripheral.
-      setConnectedMeshcoreBleMac(null);
+      // BLE: keep sticky suppress MAC so Meshtastic NodeDB cannot revive the companion ghost
+      // during the open gap. Non-BLE: drop suppress entirely (no MAC-derived ghost risk).
+      if (type === 'ble') {
+        prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
+      } else {
+        clearMeshcoreBleMacSuppression();
+      }
       const driverIdentity = meshcoreDriverConnectedRef.current
         ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
         : null;
@@ -2587,7 +2595,10 @@ export function useMeshcoreRuntime() {
       setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
       meshcoreDeviceConfiguredRef.current = false;
       if (type === 'ble') {
-        setConnectedMeshcoreBleMac(null);
+        // Keep sticky suppress across failed BLE open so NodeDB cannot revive Blue.
+        prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
+      } else {
+        clearMeshcoreBleMacSuppression();
       }
       teardownMeshcoreConnEventListeners({
         driverDisconnect: true,
@@ -2609,7 +2620,9 @@ export function useMeshcoreRuntime() {
       meshcoreEverConfiguredRef.current = false;
       meshcoreDeviceConfiguredRef.current = false;
       meshcoreConnectionParamsRef.current = null;
-      setConnectedMeshcoreBleMac(null);
+      // Sticky suppress survives user disconnect so the next Meshtastic configure still
+      // skips the companion ghost until a non-BLE transport (or Forget) clears it.
+      prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreReconnectGenerationRef.current += 1;
@@ -2860,7 +2873,7 @@ export function useMeshcoreRuntime() {
         }
         setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts));
       } else {
-        setConnectedMeshcoreBleMac(null);
+        clearMeshcoreBleMacSuppression();
       }
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
@@ -2962,8 +2975,8 @@ export function useMeshcoreRuntime() {
     }
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreDeviceConfiguredRef.current = false;
-    // Stop suppressing Meshtastic hears while MeshCore link is down / reconnecting.
-    setConnectedMeshcoreBleMac(null);
+    // Keep sticky BLE suppress while reconnecting so Meshtastic cannot revive the ghost.
+    prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
     if (!meshcoreIsReconnectingRef.current) {
       console.warn('[useMeshcoreRuntime] Connection lost — initiating reconnect');
       meshcoreIsReconnectingRef.current = true;
@@ -3102,9 +3115,11 @@ export function useMeshcoreRuntime() {
           serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
           serialPort: null,
         };
-        setConnectedMeshcoreBleMac(
-          bleIdentityOpts ? resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts) : null,
-        );
+        if (bleIdentityOpts) {
+          setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts));
+        } else {
+          clearMeshcoreBleMacSuppression();
+        }
         meshcoreExplicitDisconnectRef.current = false;
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
@@ -3226,7 +3241,7 @@ export function useMeshcoreRuntime() {
             serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
             serialPort: null,
           };
-          setConnectedMeshcoreBleMac(null);
+          clearMeshcoreBleMacSuppression();
           meshcoreExplicitDisconnectRef.current = false;
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;
