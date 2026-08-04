@@ -613,6 +613,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
         });
+        // Keep periodic catch-up cursor ahead of live traffic so older ring rows do not loop.
+        if (
+          p.direction !== 'outbound' &&
+          typeof p.timestamp === 'number' &&
+          Number.isFinite(p.timestamp)
+        ) {
+          advanceReticulumInboundCatchUpWatermark(
+            p.timestamp,
+            typeof p.ring_seq === 'number' ? p.ring_seq : null,
+          );
+        }
         if (
           p.direction !== 'outbound' &&
           p.sender_hash &&
@@ -673,18 +684,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
   );
 
   const catchUpRecentInboundLxmf = useCallback(
-    async (opts?: { sinceTs?: number; reason?: string }) => {
+    async (opts?: { sinceTs?: number; sinceSeq?: number; reason?: string }) => {
       if (!identityId) return;
       const outcome = await runInboundLxmfCatchUp({
         identityId,
         ingest: ingestLxmfPayload,
         ...(opts?.sinceTs != null ? { sinceTs: opts.sinceTs } : {}),
+        ...(opts?.sinceSeq != null ? { sinceSeq: opts.sinceSeq } : {}),
         ...(opts?.reason != null ? { reason: opts.reason } : {}),
       });
       if (!outcome) return;
       noteReticulumInboundCatchUp(outcome.count);
       if (outcome.watermarkTs != null) {
-        advanceReticulumInboundCatchUpWatermark(outcome.watermarkTs);
+        advanceReticulumInboundCatchUpWatermark(outcome.watermarkTs, outcome.watermarkSeq);
       }
     },
     [identityId, ingestLxmfPayload],
@@ -1639,8 +1651,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const scheduleNext = () => {
       timeoutId = setTimeout(() => {
-        const sinceTs = getReticulumInboundLxmfDiagnostics().inboundCatchUpWatermarkTs ?? undefined;
-        void catchUpRecentInboundLxmf({ sinceTs, reason: 'periodic' }).catch((e: unknown) => {
+        const diag = getReticulumInboundLxmfDiagnostics();
+        const sinceTs = diag.inboundCatchUpWatermarkTs ?? undefined;
+        const sinceSeq = diag.inboundCatchUpWatermarkSeq ?? undefined;
+        void catchUpRecentInboundLxmf({
+          ...(sinceTs != null ? { sinceTs } : {}),
+          ...(sinceSeq != null ? { sinceSeq } : {}),
+          reason: 'periodic',
+        }).catch((e: unknown) => {
           console.warn(
             '[useReticulumRuntime] periodic inbound LXMF catch-up failed ' + errLikeToLogString(e),
           );

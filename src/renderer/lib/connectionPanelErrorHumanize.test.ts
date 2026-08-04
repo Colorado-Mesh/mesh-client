@@ -45,10 +45,12 @@ describe('hostFromAddressInput / isMeshtasticLocalAddress', () => {
     expect(hostFromAddressInput('http://meshtastic.local')).toBe('meshtastic.local');
     expect(isMeshtasticLocalAddress('meshtastic.local')).toBe(true);
     expect(isMeshtasticLocalAddress('node.meshtastic.local')).toBe(true);
-    expect(isMeshtasticLocalAddress('192.168.1.10')).toBe(true);
-    expect(isMeshtasticLocalAddress('fd00::1')).toBe(true);
-    expect(isMeshtasticLocalAddress('fe80::1')).toBe(true);
-    expect(isMeshtasticLocalAddress('::1')).toBe(true);
+    expect(isMeshtasticLocalAddress('radio.local')).toBe(true);
+    // Regression #610: private/ULA/loopback are local hosts but not mDNS — Bonjour copy must not apply.
+    expect(isMeshtasticLocalAddress('192.168.1.10')).toBe(false);
+    expect(isMeshtasticLocalAddress('fd00::1')).toBe(false);
+    expect(isMeshtasticLocalAddress('fe80::1')).toBe(false);
+    expect(isMeshtasticLocalAddress('::1')).toBe(false);
     expect(isMeshtasticLocalAddress('8.8.8.8')).toBe(false);
     expect(isMeshtasticLocalAddress('2001:db8::1')).toBe(false);
   });
@@ -93,7 +95,9 @@ describe('humanizeHttpError', () => {
       'timeoutMdnsWindows',
     ],
     ['mdns non-windows timeout', 'linux', 'meshtastic.local', 'timeout', 'timeoutMdnsNonWindows'],
-    ['local private ip timeout', 'linux', '192.168.1.10', 'aborted', 'timeoutMdnsNonWindows'],
+    ['private ip timeout linux', 'linux', '192.168.1.10', 'aborted', 'timeoutGeneric'],
+    ['private ip timeout darwin', 'darwin', '192.168.4.35', 'timeout', 'timeoutGeneric'],
+    ['private ip timeout win32', 'win32', '192.168.1.10', 'timed out', 'timeoutGeneric'],
     ['public ip timeout', 'linux', '8.8.8.8', 'aborted', 'timeoutGeneric'],
     ['unauthorized', 'linux', '192.168.1.10', '401 unauthorized', 'unauthorizedHint'],
     ['refused', 'linux', '192.168.1.10', 'ECONNREFUSED', 'econnrefusedHint'],
@@ -104,16 +108,48 @@ describe('humanizeHttpError', () => {
     expect(result).toContain(`connectionPanel.humanize.http.${hintKey}`);
   });
 
-  it('adds local-network suffix on non-timeout errors for LAN addresses', () => {
+  // Regression #610: do not re-broaden isMeshtasticLocalAddress to isLocalConnectHost.
+  it.each(['win32', 'darwin', 'linux'] as const)(
+    'does not attach Bonjour/mDNS timeout hints to private IPs on %s',
+    (platform) => {
+      mockPlatform(platform);
+      const result = humanizeHttpError('192.168.4.35', new Error('connection timed out'), t);
+      expect(result).toContain('timeoutGeneric');
+      expect(result).not.toContain('timeoutMdnsWindows');
+      expect(result).not.toContain('timeoutMdnsNonWindows');
+      expect(result).not.toContain('suffixMdnsWindows');
+      expect(result).not.toContain('suffixMdnsNonWindows');
+    },
+  );
+
+  it('adds mDNS suffix on non-timeout errors for .local hosts only', () => {
     mockPlatform('win32');
-    const result = humanizeHttpError('192.168.1.10', new Error('weird failure'), t);
-    expect(result).toContain('suffixMdnsWindows');
+    const mdnsResult = humanizeHttpError('meshtastic.local', new Error('weird failure'), t);
+    expect(mdnsResult).toContain('suffixMdnsWindows');
+
+    mockPlatform('linux');
+    const mdnsNonWin = humanizeHttpError('meshtastic.local', new Error('weird failure'), t);
+    expect(mdnsNonWin).toContain('suffixMdnsNonWindows');
+  });
+
+  it('returns raw message for private-IP non-timeout errors (no Bonjour suffix)', () => {
+    mockPlatform('win32');
+    expect(humanizeHttpError('192.168.1.10', new Error('weird failure'), t)).toBe('weird failure');
   });
 
   it('returns raw message for generic public IP errors', () => {
     mockPlatform('linux');
     expect(humanizeHttpError('8.8.8.8', new Error('weird failure'), t)).toBe('weird failure');
   });
+
+  it.each(['win32', 'darwin'] as const)(
+    'suppresses MeshCore setup AbortError on private IP (%s)',
+    (platform) => {
+      mockPlatform(platform);
+      const err = new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+      expect(humanizeHttpError('192.168.4.35', err, t)).toBe('');
+    },
+  );
 });
 
 describe('humanizeBleError', () => {

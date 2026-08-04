@@ -1275,7 +1275,8 @@ export default function ConnectionPanel({
       } else {
         errorMsg = err instanceof Error ? err.message : t('connectionPanel.error.connectionFailed');
       }
-      setError(errorMsg);
+      // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
+      if (errorMsg) setError(errorMsg);
       setConnecting(false);
       setConnectionStage('');
     }
@@ -1760,7 +1761,10 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('http', addr).catch((err: unknown) => {
-        setError(humanizeHttpError(addr, err, t));
+        // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
+        // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
+        const httpErr = humanizeHttpError(addr, err, t);
+        if (httpErr) setError(httpErr);
         setConnecting(false);
         setConnectionStage('');
       });
@@ -1775,7 +1779,10 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('tcp', addr).catch((err: unknown) => {
-        setError(humanizeHttpError(addr, err, t));
+        // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
+        // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
+        const tcpErr = humanizeHttpError(addr, err, t);
+        if (tcpErr) setError(tcpErr);
         setConnecting(false);
         setConnectionStage('');
       });
