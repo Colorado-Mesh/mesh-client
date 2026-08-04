@@ -4818,7 +4818,9 @@
     "clearHistory": "履歴をクリアする",
     "clearHistoryTitle": "ルームの履歴をクリアする",
     "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
-    "clearHistoryConfirmAction": "履歴の削除"
+    "clearHistoryConfirmAction": "履歴の削除",
+    "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
+    "whisperNoTarget": "ささやき声ターゲットはまだありません。/msg NICKテキストを使用して開始します。"
   },
   "signalMeter": {
     "rssi": "RSSI",

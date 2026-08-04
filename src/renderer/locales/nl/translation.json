@@ -4818,7 +4818,9 @@
     "clearHistory": "Geschiedenis wissen",
     "clearHistoryTitle": "Kamergeschiedenis wissen",
     "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
-    "clearHistoryConfirmAction": "Geschiedenis verwijderen"
+    "clearHistoryConfirmAction": "Geschiedenis verwijderen",
+    "whisperReplyPlaceholder": "Reageer op {{name}} of /msg...",
+    "whisperNoTarget": "Nog geen fluisterdoelwit. Gebruik /msg NICK text om te starten."
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -4822,7 +4822,9 @@
     "clearHistory": "Wyczyść historię",
     "clearHistoryTitle": "Wyczyść historię pokoju",
     "clearHistoryConfirm": "Usunąć całą zapisaną historię wiadomości dla {{room}}? Tego nie można cofnąć.",
-    "clearHistoryConfirmAction": "Usuń historię"
+    "clearHistoryConfirmAction": "Usuń historię",
+    "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
+    "whisperNoTarget": "Nie ma jeszcze szeptanego celu. Użyj /msg tekstu PSEUDONIMU, aby rozpocząć."
   },
   "signalMeter": {
     "rssi": "RSSI",

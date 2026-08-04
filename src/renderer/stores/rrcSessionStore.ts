@@ -102,6 +102,12 @@ function coalesceRoomAliases(
   return { key, existing, rooms: next };
 }
 
+/** Last peer for IRC-style plain-text replies in `[whispers]`. */
+export interface RrcWhisperPeer {
+  identity_hash: string;
+  nickname: string | null;
+}
+
 /** Per-hub RRC session state, keyed by lowercase hub destination hash in `sessionsByHub`. */
 export interface RrcHubSessionState {
   status: RrcSessionStatus;
@@ -118,6 +124,8 @@ export interface RrcHubSessionState {
   partIntentRooms: Set<string>;
   /** True when user requested disconnect (not hub drop). */
   disconnectIntent: boolean;
+  /** Peer for plain-text NOTICE replies while viewing `[whispers]`. */
+  lastWhisperPeer: RrcWhisperPeer | null;
 }
 
 export function emptyHubSession(): RrcHubSessionState {
@@ -133,6 +141,7 @@ export function emptyHubSession(): RrcHubSessionState {
     unreadByRoom: new Map(),
     partIntentRooms: new Set(),
     disconnectIntent: false,
+    lastWhisperPeer: null,
   };
 }
 
@@ -279,6 +288,7 @@ interface RrcSessionStoreState {
   clearPartIntent: (room: string, hubHash?: string) => void;
   setDisconnectIntent: (intent: boolean, hubHash?: string) => void;
   setModerationBanner: (message: string | null, hubHash?: string) => void;
+  setLastWhisperPeer: (peer: RrcWhisperPeer | null, hubHash?: string) => void;
   /** Update one hub's session (creating it if new). Never wipes sibling hubs. */
   applyStatus: (
     status: RrcSessionStatus,
@@ -498,6 +508,20 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   setModerationBanner: (message, hubHash) => {
     set((s) =>
       mutateHubSession(s, hubHash, (session) => ({ ...session, moderationBanner: message })),
+    );
+  },
+
+  setLastWhisperPeer: (peer, hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        lastWhisperPeer: peer
+          ? {
+              identity_hash: peer.identity_hash.trim().toLowerCase(),
+              nickname: peer.nickname?.trim() ? peer.nickname.trim() : null,
+            }
+          : null,
+      })),
     );
   },
 

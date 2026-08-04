@@ -4820,7 +4820,9 @@
     "clearHistory": "Vymazat historii",
     "clearHistoryTitle": "Vymazat historii místnosti",
     "clearHistoryConfirm": "Smazat veškerou uloženou historii zpráv pro {{room}}? Toto nelze vrátit zpět.",
-    "clearHistoryConfirmAction": "Smazat historii"
+    "clearHistoryConfirmAction": "Smazat historii",
+    "whisperReplyPlaceholder": "Odpověz uživateli {{name}} nebo /msg…",
+    "whisperNoTarget": "Zatím žádný šeptající cíl. Pro zahájení použijte /msg NICK text."
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

@@ -4818,7 +4818,9 @@
     "clearHistory": "Cancella cronologia",
     "clearHistoryTitle": "Cancella la cronologia della stanza",
     "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
-    "clearHistoryConfirmAction": "Elimina la cronologia"
+    "clearHistoryConfirmAction": "Elimina la cronologia",
+    "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
+    "whisperNoTarget": "Ancora nessun bersaglio sussurrato. Usa /msg NICK text per iniziare."
   },
   "signalMeter": {
     "rssi": "RSSI",

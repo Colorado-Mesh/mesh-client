@@ -4818,7 +4818,9 @@
     "clearHistory": "清除历史记录",
     "clearHistoryTitle": "清除房间历史记录",
     "clearHistoryConfirm": "删除 {{room}} 的所有已保存消息历史记录？此操作无法撤消。",
-    "clearHistoryConfirmAction": "删除历史记录"
+    "clearHistoryConfirmAction": "删除历史记录",
+    "whisperReplyPlaceholder": "回复{{name}}或/msg…",
+    "whisperNoTarget": "还没有耳语目标。使用/msg昵称文本开始。"
   },
   "signalMeter": {
     "rssi": "RSSI",

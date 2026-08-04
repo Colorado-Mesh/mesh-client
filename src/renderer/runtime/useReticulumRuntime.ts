@@ -1059,6 +1059,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ? p.room
               : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
 
+          if (
+            isDirect &&
+            typeof p.sender_hash === 'string' &&
+            /^[0-9a-f]{32}$/i.test(p.sender_hash.trim())
+          ) {
+            session.setLastWhisperPeer(
+              {
+                identity_hash: p.sender_hash.trim().toLowerCase(),
+                nickname: typeof p.nickname === 'string' ? p.nickname : null,
+              },
+              hubDestHash,
+            );
+          }
+
           if (kind === 'notice') {
             const listed = parseRrcListNotice(p.body);
             if (listed) session.setListedRooms(listed, hubDestHash);

@@ -4820,7 +4820,9 @@
     "clearHistory": "Очистити історію",
     "clearHistoryTitle": "Очистити історію кімнати",
     "clearHistoryConfirm": "Видалити всю збережену історію повідомлень для {{room}}? Це неможливо скасувати.",
-    "clearHistoryConfirmAction": "Видалити історію"
+    "clearHistoryConfirmAction": "Видалити історію",
+    "whisperReplyPlaceholder": "Відповісти на {{name}} або /msg…",
+    "whisperNoTarget": "Жодної шепотілої мішені ще немає. Використовуйте /msg NICK text, щоб почати."
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

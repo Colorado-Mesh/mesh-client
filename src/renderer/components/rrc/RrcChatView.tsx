@@ -73,6 +73,8 @@ export interface RrcChatViewProps {
   nickname?: string;
   /** Keep the per-message copy control visible (same App Appearance setting as Chat). */
   alwaysShowMessageActions?: boolean;
+  /** Composer placeholder override (e.g. whisper reply hint). */
+  placeholder?: string;
 }
 
 export function RrcChatView({
@@ -87,9 +89,11 @@ export function RrcChatView({
   isMuted,
   nickname = '',
   alwaysShowMessageActions = false,
+  placeholder,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
+  const composerPlaceholder = placeholder ?? t('rrc.messagePlaceholder');
 
   if (!connected) {
     return (
@@ -184,8 +188,8 @@ export function RrcChatView({
             }
           }}
           disabled={!canSend || isMuted}
-          placeholder={t('rrc.messagePlaceholder')}
-          aria-label={t('rrc.messagePlaceholder')}
+          placeholder={composerPlaceholder}
+          aria-label={composerPlaceholder}
           rows={2}
           className="min-w-0 flex-1 resize-none rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1.5 font-sans text-sm text-amber-50 disabled:opacity-50"
         />

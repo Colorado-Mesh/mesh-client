@@ -4818,7 +4818,9 @@
     "clearHistory": "Verlauf löschen",
     "clearHistoryTitle": "Raumverlauf löschen",
     "clearHistoryConfirm": "Gesamten gespeicherten Nachrichtenverlauf für {{room}} löschen? Dies kann nicht rückgängig gemacht werden.",
-    "clearHistoryConfirmAction": "Verlauf löschen"
+    "clearHistoryConfirmAction": "Verlauf löschen",
+    "whisperReplyPlaceholder": "Antworte auf {{name}} oder /msg…",
+    "whisperNoTarget": "Noch kein Flüsterziel. Verwenden Sie /msg NICK-TEXT, um zu beginnen."
   },
   "signalMeter": {
     "rssi": "RSSI",

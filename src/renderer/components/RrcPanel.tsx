@@ -31,6 +31,7 @@ import {
   resolveRrcMsgTarget,
   RRC_HELP_I18N_KEYS,
 } from '@/renderer/lib/rrcSlashCommands';
+import { resolveRrcWhisperReplyTarget } from '@/renderer/lib/rrcWhisperReply';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   MAX_RRC_HUB_SESSIONS,
@@ -99,6 +100,10 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const sessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
   const showTimestamps = useRrcSessionStore((s) => s.showTimestamps);
   const capabilities = useRrcSessionStore((s) => s.capabilities);
+  const lastWhisperPeer = useRrcSessionStore((s) => {
+    const hub = s.focusedHubHash;
+    return hub ? (s.sessionsByHub.get(hub)?.lastWhisperPeer ?? null) : null;
+  });
   const setNickname = useRrcSessionStore((s) => s.setNickname);
   const setFocusedHub = useRrcSessionStore((s) => s.setFocusedHub);
   const setActiveRoom = useRrcSessionStore((s) => s.setActiveRoom);
@@ -111,6 +116,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const localIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
   const setDisconnectIntent = useRrcSessionStore((s) => s.setDisconnectIntent);
   const setModerationBanner = useRrcSessionStore((s) => s.setModerationBanner);
+  const setLastWhisperPeer = useRrcSessionStore((s) => s.setLastWhisperPeer);
   const setError = useRrcSessionStore((s) => s.setError);
   const clearHubSession = useRrcSessionStore((s) => s.clearHubSession);
 
@@ -308,6 +314,17 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
   const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;
+  const whisperComposerPlaceholder = useMemo(() => {
+    if (activeRoom !== RRC_WHISPERS_ROOM) return undefined;
+    const peer = resolveRrcWhisperReplyTarget({
+      lastWhisperPeer,
+      messages: activeMessages,
+      localIdentityHash,
+    });
+    if (!peer) return undefined;
+    const name = peer.nickname || peer.identity_hash.slice(0, 8);
+    return t('rrc.whisperReplyPlaceholder', { name });
+  }, [activeMessages, activeRoom, lastWhisperPeer, localIdentityHash, t]);
   const connected =
     status === 'active' || status === 'awaiting_welcome' || status === 'reconnecting';
   const connectInFlight = status === 'connecting' || status === 'awaiting_welcome';
@@ -665,6 +682,10 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               return;
             }
             const label = resolved.nickname || resolved.identity_hash.slice(0, 8);
+            setLastWhisperPeer({
+              identity_hash: resolved.identity_hash,
+              nickname: resolved.nickname ?? null,
+            });
             if (activeRoom !== RRC_WHISPERS_ROOM) setActiveRoom(RRC_WHISPERS_ROOM);
             addMessage({
               id: `whisper-out-${Date.now()}`,
@@ -709,6 +730,47 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
           return;
         }
 
+        if (activeRoom === RRC_WHISPERS_ROOM) {
+          if (status !== 'active' || !hubDestHash) {
+            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+            return;
+          }
+          if (!capabilities.direct_notice) {
+            useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
+            return;
+          }
+          const peer = resolveRrcWhisperReplyTarget({
+            lastWhisperPeer,
+            messages: messagesForActiveRoom(),
+            localIdentityHash,
+          });
+          if (!peer) {
+            useRrcSessionStore.getState().setError(t('rrc.whisperNoTarget'));
+            return;
+          }
+          const res = await window.electronAPI.reticulum.rrc.send({
+            hub_dest_hash: hubDestHash,
+            body: parsed.body,
+            type: 'notice',
+            dst_hash: peer.identity_hash,
+          });
+          if (!res.ok) {
+            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+            return;
+          }
+          const label = peer.nickname || peer.identity_hash.slice(0, 8);
+          setLastWhisperPeer(peer);
+          addMessage({
+            id: `whisper-out-${Date.now()}`,
+            room: RRC_WHISPERS_ROOM,
+            kind: 'system',
+            body: t('rrc.slash.msgSent', { name: label, text: parsed.body }),
+            timestamp: Date.now(),
+            dst_hash: peer.identity_hash,
+          });
+          setDraft('');
+          return;
+        }
         if (!activeRoom || activeRoom.startsWith('[')) {
           useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
           return;
@@ -744,9 +806,13 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       handlePart,
       hubDestHash,
       joinRoom,
+      lastWhisperPeer,
+      localIdentityHash,
+      messagesForActiveRoom,
       rooms,
       sendHubCommand,
       setActiveRoom,
+      setLastWhisperPeer,
       setNickname,
       status,
       t,
@@ -988,6 +1054,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             isMuted={isMuted}
             nickname={nickname}
             alwaysShowMessageActions={alwaysShowMessageActions}
+            placeholder={whisperComposerPlaceholder}
           />
           {showNicklist && (
             <RrcNickList
