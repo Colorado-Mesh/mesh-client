@@ -313,6 +313,8 @@ IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`):
 
 When a destination is reachable over more than one next hop, the sidecar keeps up to **three ranked path slots** (one active + backups). Failover promotes a backup (or rediscovers via another live interface) before giving up — Nomad page loads exhaust alternate paths inside one request; LXMF Direct does the same before preferred-PN fallback. See [troubleshooting](troubleshooting.md#nomad-network-pages-hang-or-almost-never-load) for triage.
 
+**AutoInterface vs private TCP/UDP:** Peers learned on Auto are normal 0-hop neighbors; RNS may keep Auto active even when a private LAN hub path exists (including equal-hop ties). For LXMF Direct, the sidecar **automatically** demotes Auto toward a live **private** path when Auto is unhealthy for delivery or Direct fails on Auto — then fails over private → public → preferred PN. It does **not** rewrite healthy Auto Direct, and does **not** preempt Auto to public internet hubs. See [troubleshooting — local DMs hang with AutoInterface + private TCP hub](troubleshooting.md#reticulum-local-dms-hang-with-autointerface--private-tcp-hub).
+
 **Network → stack settings → Prefer path medium** sets the global bias:
 
 | Preference              | Behavior                                                        |
@@ -482,6 +484,7 @@ Transfers require a **high-speed** path (TCP/network); LoRa/BLE-only destination
 | Sidecar won't start / health timeout       | [troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)               |
 | `register_packet_tap` / cargo build failed | [troubleshooting.md#reticulum-sidecar-cargo-build-fails](troubleshooting.md#reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed) |
 | AutoInterface utun log spam (macOS VPN)    | [troubleshooting.md#reticulum-autointerface-log-spam-on-macos](troubleshooting.md#reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs)                     |
+| Local DMs hang (Auto + private TCP hub)    | [troubleshooting.md#reticulum-local-dms-hang-with-autointerface--private-tcp-hub](troubleshooting.md#reticulum-local-dms-hang-with-autointerface--private-tcp-hub) |
 | Interface add/edit/delete fails            | [troubleshooting.md#reticulum-interface-addeditdelete-fails](troubleshooting.md#reticulum-interface-addeditdelete-fails)                                           |
 | Nomad / topology 404                       | [troubleshooting.md#reticulum-nomad-network-or-topology-api-returns-404](troubleshooting.md#reticulum-nomad-network-or-topology-api-returns-404)                   |
 | RNode Wi‑Fi won't connect                  | [troubleshooting.md#rnode-wi-fi-interface-offline-or-wont-connect](troubleshooting.md#rnode-wi-fi-interface-offline-or-wont-connect)                               |

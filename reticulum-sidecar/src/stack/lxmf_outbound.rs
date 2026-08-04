@@ -19,9 +19,13 @@ use rns_transport::messages::{TransportMessage, TransportQuery};
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
+use super::super::auto_path_policy::{
+    should_preempt_auto_for_private_direct, should_prefer_private_after_auto_failure,
+};
 use super::super::path_failover::{
     IFACE_SUPPRESS_SECS, push_tried_iface, should_retry_direct_path_failover,
 };
+use super::super::types::InterfaceRow;
 use super::super::via::classify_interface;
 use super::{lxmf_payload_from_message, parse_hash16};
 
@@ -125,6 +129,8 @@ pub struct LxmfOutboundDriver {
     path_interfaces: HashMap<[u8; 16], String>,
     /// Last known next-hop via hash hex per destination.
     path_vias: HashMap<[u8; 16], String>,
+    /// Local interface rows (config + live status) for Auto / private LAN policy.
+    interfaces: Vec<InterfaceRow>,
     path_request_gate: PathRequestGate,
     /// Message hashes that already consumed the one-shot Direct→PN fallback.
     pn_fallback_attempted: HashSet<[u8; 32]>,
@@ -157,6 +163,7 @@ impl LxmfOutboundDriver {
             path_table_hashes: HashSet::new(),
             path_interfaces: HashMap::new(),
             path_vias: HashMap::new(),
+            interfaces: Vec::new(),
             path_request_gate: PathRequestGate::new(),
             pn_fallback_attempted: HashSet::new(),
             direct_path_failovers: HashMap::new(),
@@ -251,6 +258,11 @@ impl LxmfOutboundDriver {
                 self.path_vias.insert(entry.hash, via_hex.to_string());
             }
         }
+    }
+
+    /// Refresh local interface rows used for Auto / private LAN Direct policy.
+    pub fn update_interfaces(&mut self, interfaces: Vec<InterfaceRow>) {
+        self.interfaces = interfaces;
     }
 
     /// Remove a single destination from the local path cache (e.g. after transport DropPath).
@@ -527,6 +539,21 @@ impl LxmfOutboundDriver {
                 self.fail_outbound_message(router, event_tx, message);
             }
             DirectDeliveryPlan::UseReusableLink | DirectDeliveryPlan::StartNewLink { .. } => {
+                // Unhealthy Auto + live private hub → suppress Auto before opening Direct.
+                if matches!(plan, DirectDeliveryPlan::StartNewLink { .. })
+                    && self.maybe_preempt_unhealthy_auto_path(dest_hash)
+                {
+                    if !router_owned {
+                        let now = now_f64();
+                        message.method = DeliveryMethod::Direct;
+                        message.last_delivery_attempt = now;
+                        message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+                        router.send(message);
+                    }
+                    // router_owned: message remains in pending_outbound; cleared path
+                    // forces RequestPath on the next tick after Auto suppress.
+                    return;
+                }
                 let hops = match plan {
                     DirectDeliveryPlan::StartNewLink { hops } => hops,
                     _ => route_hops_for(&self.route_hops, dest_hash),
@@ -544,6 +571,28 @@ impl LxmfOutboundDriver {
                 }
             }
         }
+    }
+
+    /// When Auto is active but unhealthy and a private LAN hub is live, suppress
+    /// Auto and RequestPath so Direct can use the private path.
+    fn maybe_preempt_unhealthy_auto_path(&mut self, dest_hash: [u8; 16]) -> bool {
+        let active = self.path_interfaces.get(&dest_hash).cloned();
+        if !should_preempt_auto_for_private_direct(active.as_deref(), &[], &self.interfaces) {
+            return false;
+        }
+        tracing::info!(
+            dest = %hex::encode(dest_hash),
+            active = ?active,
+            "AutoInterface unhealthy for delivery; suppressing Auto toward private LAN path"
+        );
+        queue_path_failover_queries(
+            &self.transport_tx,
+            dest_hash,
+            &[],
+            "auto unhealthy private preempt",
+        );
+        self.clear_path_to(&hex::encode(dest_hash));
+        true
     }
 
     #[allow(clippy::too_many_arguments)] // path-gate + router ownership split is intentional
@@ -870,6 +919,8 @@ impl LxmfOutboundDriver {
                 return Err(Box::new(message));
             }
         };
+        let prefer_private =
+            should_prefer_private_after_auto_failure(iface.as_deref(), &self.interfaces);
         queue_path_failover_queries(&self.transport_tx, dest_hash, &vias_to_drop, reason);
         self.clear_path_to(&hex::encode(dest_hash));
 
@@ -882,6 +933,7 @@ impl LxmfOutboundDriver {
             msg = %hex::encode(msg_hash),
             rounds,
             tried = ?tried,
+            prefer_private,
             reason,
             "Direct path failover: suppress/drop via + RequestPath; re-queuing Direct"
         );

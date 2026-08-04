@@ -992,8 +992,24 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-nomad.sh`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
+5. **Local DMs hang with Auto + LAN TCP hub** — see [Reticulum local DMs hang with AutoInterface + private TCP hub](#reticulum-local-dms-hang-with-autointerface--private-tcp-hub).
 
 Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
+
+### Reticulum local DMs hang with AutoInterface + private TCP hub
+
+**Symptoms**: LXMF Direct to a LAN peer stalls on **Sending** (or takes minutes) while **AutoInterface** is enabled and a **private** TCP/UDP hub is also up (e.g. local transport at `192.168.x.x`). Disabling Auto and restarting the stack makes the same DMs work over the hub (`received_via` / path interface shows TCP). Announce flood is not required to reproduce.
+
+**Cause**: AutoInterface peers are normal Reticulum **0-hop** neighbors. Transport prefers fewest hops; Auto and TCP are both `network` medium. A fresher Auto path can stay **active** even when a private hub path to the same peer is also 0-hop (equal-hop tie / learn order). If that Auto link is unhealthy (multicast, carrier, beacon issues), Direct waits on Auto while the private hub path sits unused as a backup. A 0-hop path **to the hub itself** does not mean Direct already chose the hub for the peer.
+
+**Automatic recovery** (mesh-client sidecar):
+
+1. **Health preempt** — If Auto looks degraded for delivery (beacon/carrier/status) and a live **private** path exists (RFC1918 / IPv6 ULA or link-local / `.local` TCP/UDP), suppress Auto and open Direct on that private path before waiting out a full Auto link hang.
+2. **Failure failover** — If Direct still fails or times out on Auto, exhaust backups **private non-Auto → public hubs → preferred PN** (does not preempt healthy Auto to the internet).
+
+Healthy Auto is left preferred (RNS default). Public hubs are never chosen by the health preempt.
+
+**Manual workaround**: Connection → Interfaces → disable **Auto** → restart stack if prompted. Keep the private hub up; confirm it is not `ECONNREFUSED` in the log (`hostLink` TCP probe).
 
 ### Reticulum Nomad Network or topology API returns 404
 

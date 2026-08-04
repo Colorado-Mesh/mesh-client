@@ -1023,7 +1023,11 @@ impl LiveBridge {
 
         let mut current_iface = path_iface.clone();
         let mut current_via = active_via_hash_from_slots(&path_slots_snapshot);
-        let live_ifaces = live_interface_names(interfaces);
+        // Private LAN hubs before public when selecting failover prefer targets.
+        let live_ifaces = super::auto_path_policy::order_live_ifaces_private_first(
+            &live_interface_names(interfaces),
+            interfaces,
+        );
         // One generation for this page request + all via failovers. Bumping per
         // Link attempt would cancel a newer request when the older one retries.
         let link_gen = self
@@ -2320,12 +2324,67 @@ impl LiveBridge {
         let outbound = self.outbound.clone();
         let event_tx = self.event_tx.clone();
         let propagation = self.propagation.clone();
+        let config_dir = self.config_dir.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
             let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
             loop {
                 interval.tick().await;
+                // Keep Auto / private-LAN policy inputs fresh (host from config, online from stats).
+                {
+                    let config_rows =
+                        config::interfaces_from_config_dir(&config_dir).unwrap_or_default();
+                    let merged = if let Ok(Some(TransportQueryResponse::InterfaceStats(stats))) =
+                        tokio::time::timeout(
+                            TRANSPORT_QUERY_TIMEOUT,
+                            handle.query_control(TransportQuery::GetInterfaceStats),
+                        )
+                        .await
+                    {
+                        let live_rows: Vec<InterfaceRow> = stats
+                            .iter()
+                            .enumerate()
+                            .map(|(i, s)| InterfaceRow {
+                                id: format!("rns-{i}"),
+                                name: s.name.clone(),
+                                iface_type: s.mode.clone(),
+                                enabled: s.online,
+                                status: if s.online { "up" } else { "down" }.into(),
+                                host: None,
+                                port: None,
+                                preset: None,
+                                serial_port: None,
+                                frequency: None,
+                                bandwidth: None,
+                                txpower: None,
+                                spreading_factor: None,
+                                coding_rate: None,
+                                callsign: None,
+                                id_interval: None,
+                                mode: None,
+                                seed_addresses: Vec::new(),
+                                discoverable: None,
+                                latitude: None,
+                                longitude: None,
+                                height: None,
+                                discovery_name: None,
+                                announce_interval_min: None,
+                                connectable: None,
+                                reachable_on: None,
+                                network_name: None,
+                                passphrase: None,
+                                extra_config: std::collections::HashMap::new(),
+                            })
+                            .collect();
+                        merge_live_interfaces_with_config(&config_rows, live_rows)
+                    } else {
+                        config_rows
+                    };
+                    if let Ok(mut driver) = outbound.lock() {
+                        driver.update_interfaces(merged);
+                    }
+                }
                 // Only replace the outbound path table on a successful GetPathTable.
                 // Timeout/empty fallback must NOT wipe known routes (that forced every
                 // LXMF send onto the propagation node with hasPath:false).
@@ -3770,6 +3829,9 @@ impl LiveBridge {
             "apply_interfaces: syncing {} interface(s) from config",
             interfaces.len()
         );
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.update_interfaces(interfaces.clone());
+        }
         self.sync_ble_peer_interfaces(&interfaces).await
     }
 

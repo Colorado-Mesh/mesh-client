@@ -1,6 +1,7 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
 mod announce_ws_coalesce;
+mod auto_path_policy;
 mod ble;
 pub mod config;
 pub mod config_audit;
