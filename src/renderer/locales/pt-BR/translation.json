@@ -5112,7 +5112,6 @@
     "reject": "Rejeitar",
     "incomingTitle": "Chamada de voz recebida",
     "inCall": "Em chamada",
-    "calling": "A chamar…",
     "callAria": "Iniciar chamada de voz LXST",
     "answerAria": "Atender chamada de voz",
     "rejectAria": "Rejeitar chamada de voz",
@@ -5145,8 +5144,10 @@
       "busy": "Linha ocupada.",
       "rejected": "Chamada rejeitada",
       "noAnswer": "Sem resposta — a chamada expirou.",
-      "failed": "Falha na chamada de voz."
+      "failed": "Falha na chamada de voz.",
+      "connectFailed": "Não foi possível conectar."
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "Chamando…"
   }
 }

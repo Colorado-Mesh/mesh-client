@@ -5112,7 +5112,6 @@
     "reject": "Rejeter",
     "incomingTitle": "Appel vocal entrant",
     "inCall": "En appel",
-    "calling": "Appel en cours...",
     "callAria": "Démarrer l'appel vocal",
     "answerAria": "Répondre comme un appel vocal",
     "rejectAria": "Refuser l'appel vocal",
@@ -5145,8 +5144,10 @@
       "busy": "Ligne occupée",
       "rejected": "Appel rejeté",
       "noAnswer": "Pas de réponse — appel expiré.",
-      "failed": "Échec de l'appel vocal."
+      "failed": "Échec de l'appel vocal.",
+      "connectFailed": "Impossible de se connecter."
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "Sonnerie…"
   }
 }

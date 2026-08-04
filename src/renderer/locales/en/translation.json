@@ -735,8 +735,8 @@
     "reject": "Reject",
     "incomingTitle": "Incoming voice call",
     "inCall": "In call",
-    "calling": "Calling…",
     "connecting": "Connecting…",
+    "ringing": "Ringing…",
     "callAria": "Start LXST voice call",
     "answerAria": "Answer voice call",
     "rejectAria": "Reject voice call",
@@ -759,6 +759,7 @@
     },
     "toast": {
       "busy": "Line busy.",
+      "connectFailed": "Could not connect.",
       "rejected": "Call rejected.",
       "noAnswer": "No answer — call timed out.",
       "failed": "Voice call failed."

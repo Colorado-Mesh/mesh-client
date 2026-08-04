@@ -8,6 +8,8 @@ import { useReticulumVoiceStore } from '../stores/reticulumVoiceStore';
 import {
   playVoiceBusyTone,
   playVoiceFailTone,
+  startVoiceDialTone,
+  startVoiceRingback,
   stopVoiceCallTones,
 } from './reticulumVoiceCallTones';
 import {
@@ -20,6 +22,7 @@ import {
   reticulumVoiceSetMuted,
   startReticulumVoiceMediaForActiveCall,
   stopReticulumVoiceMedia,
+  syncReticulumVoiceProgressTones,
 } from './reticulumVoiceSession';
 import { RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS } from './timeConstants';
 
@@ -28,6 +31,7 @@ vi.mock('@/renderer/components/Toast', () => ({
 }));
 
 vi.mock('./reticulumVoiceCallTones', () => ({
+  startVoiceDialTone: vi.fn(),
   startVoiceRingback: vi.fn(),
   stopVoiceCallTones: vi.fn(),
   playVoiceBusyTone: vi.fn(),
@@ -74,6 +78,8 @@ describe('reticulumVoiceSession', () => {
     vi.mocked(playVoiceFailTone).mockReset();
     vi.mocked(playVoiceBusyTone).mockReset();
     vi.mocked(stopVoiceCallTones).mockReset();
+    vi.mocked(startVoiceDialTone).mockReset();
+    vi.mocked(startVoiceRingback).mockReset();
     Object.assign(window, {
       electronAPI: {
         reticulum: { voice: voiceApi },
@@ -92,7 +98,7 @@ describe('reticulumVoiceSession', () => {
     vi.unstubAllGlobals();
   });
 
-  it('dials with peer identity_hash and sets optimistic calling without mic helper', async () => {
+  it('dials with peer identity_hash and starts dial tone not ringback', async () => {
     const dest = 'b'.repeat(32);
     const id = 'a'.repeat(32);
     useReticulumPeerStore.getState().updatePeer(dest, {
@@ -102,6 +108,8 @@ describe('reticulumVoiceSession', () => {
     await reticulumVoiceCallPeer(dest);
     expect(voiceApi.call).toHaveBeenCalledWith({ identity_hash: id });
     expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('calling');
+    expect(startVoiceDialTone).toHaveBeenCalled();
+    expect(startVoiceRingback).not.toHaveBeenCalled();
   });
 
   it('falls back to destination hash when identity unknown', async () => {
@@ -118,12 +126,58 @@ describe('reticulumVoiceSession', () => {
     expect(pushAppToast).toHaveBeenCalled();
   });
 
-  it('clears optimistic call and plays fail tone when call IPC returns ok false', async () => {
+  it('clears optimistic call and toasts when voice is not available', async () => {
     voiceApi.call.mockResolvedValue({ ok: false, error: 'voice not available' });
     await reticulumVoiceCallPeer('f'.repeat(32));
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
-    expect(playVoiceFailTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
+    expect(voiceApi.hangup).toHaveBeenCalled();
+  });
+
+  it('clears optimistic call with busy tone on connect-style dial failure', async () => {
+    voiceApi.call.mockResolvedValue({ ok: false, error: 'discovery failed' });
+    await reticulumVoiceCallPeer('f'.repeat(32));
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
+  });
+
+  it('syncReticulumVoiceProgressTones maps calling→dial and connecting→ringback', () => {
+    syncReticulumVoiceProgressTones('calling');
+    expect(startVoiceDialTone).toHaveBeenCalled();
+    expect(startVoiceRingback).not.toHaveBeenCalled();
+    vi.mocked(startVoiceDialTone).mockClear();
+    syncReticulumVoiceProgressTones('connecting');
+    expect(startVoiceRingback).toHaveBeenCalled();
+    syncReticulumVoiceProgressTones('ringing');
+    expect(startVoiceRingback).toHaveBeenCalled();
+    vi.mocked(stopVoiceCallTones).mockClear();
+    syncReticulumVoiceProgressTones('established');
+    expect(stopVoiceCallTones).toHaveBeenCalled();
+  });
+
+  it('voice.error connect-fail plays busy tone, toasts, and hangs up', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('2'.repeat(32));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    handleReticulumVoiceTerminal({
+      errorMessage: 'active call is not established',
+    });
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
+    expect(voiceApi.hangup).toHaveBeenCalled();
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+    warnSpy.mockRestore();
+  });
+
+  it('terminal rejected plays fail tone without toast', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+    });
+    handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: 'rejected' });
+    expect(playVoiceFailTone).toHaveBeenCalled();
+    expect(pushAppToast).not.toHaveBeenCalled();
   });
 
   it('hangup clears optimistic calling even without WS', async () => {
@@ -330,6 +384,8 @@ describe('reticulumVoiceSession', () => {
     expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('calling');
     await vi.advanceTimersByTimeAsync(RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS + 10);
     expect(voiceApi.hangup).toHaveBeenCalled();
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
 
@@ -345,7 +401,6 @@ describe('reticulumVoiceSession', () => {
         status: 'established',
       },
     });
-    const { syncReticulumVoiceProgressTones } = await import('./reticulumVoiceSession');
     syncReticulumVoiceProgressTones('established');
     await vi.advanceTimersByTimeAsync(RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS + 10);
     expect(voiceApi.hangup).not.toHaveBeenCalled();

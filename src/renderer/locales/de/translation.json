@@ -5112,7 +5112,6 @@
     "reject": "Ablehnen",
     "incomingTitle": "Eingehender Anruf",
     "inCall": "Im Gespräch",
-    "calling": "Anruf…",
     "callAria": "LXST-Sprachanruf starten",
     "answerAria": "Sprachanruf annehmen",
     "rejectAria": "Sprachanruf ablehnen",
@@ -5146,7 +5145,9 @@
       "busy": "Leitung besetzt",
       "rejected": "Anruf abgelehnt",
       "noAnswer": "Keine Antwort — Anruf abgelaufen.",
-      "failed": "Sprachanruf fehlgeschlagen."
-    }
+      "failed": "Sprachanruf fehlgeschlagen.",
+      "connectFailed": "Konnte keine Verbindung herstellen"
+    },
+    "ringing": "Klingelt ..."
   }
 }

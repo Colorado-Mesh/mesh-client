@@ -5112,7 +5112,6 @@
     "reject": "Reddet",
     "incomingTitle": "Gelen sesli arama",
     "inCall": "Aramada",
-    "calling": "Aranıyor",
     "callAria": "LXST sesli aramasını başlat",
     "answerAria": "Sesli aramayı yanıtla",
     "rejectAria": "Sesli aramayı reddet",
@@ -5145,8 +5144,10 @@
       "busy": "Hat meşgul.",
       "rejected": "Çağrı reddedildi.",
       "noAnswer": "Cevap yok — çağrı zaman aşımına uğradı.",
-      "failed": "Sesli arama başarısız."
+      "failed": "Sesli arama başarısız.",
+      "connectFailed": "Bağlanamadı."
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "Aranıyor"
   }
 }

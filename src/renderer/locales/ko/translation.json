@@ -5112,7 +5112,6 @@
     "reject": "거부",
     "incomingTitle": "수신 음성 통화",
     "inCall": "통화 중",
-    "calling": "부르심",
     "callAria": "LXST 음성 통화 시작",
     "answerAria": "음성 통화 받기",
     "rejectAria": "음성 통화 거부",
@@ -5145,8 +5144,10 @@
       "busy": "라인 사용 중.",
       "rejected": "통화가 거부되었습니다.",
       "noAnswer": "응답 없음 — 통화 시간이 초과되었습니다.",
-      "failed": "음성 통화에 실패했습니다."
+      "failed": "음성 통화에 실패했습니다.",
+      "connectFailed": "연결할 수 없습니다."
     },
-    "statsSeparator": "Poisonblow"
+    "statsSeparator": "Poisonblow",
+    "ringing": "벨소리"
   }
 }

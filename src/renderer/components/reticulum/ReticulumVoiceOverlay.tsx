@@ -26,14 +26,16 @@ function formatElapsed(ms: number): string {
 function phaseLabelKey(status: string): string {
   switch (status) {
     case 'calling':
-    case 'ringing':
-      return 'reticulumVoice.calling';
-    case 'connecting':
+      // Dial-tone / path discovery phase.
       return 'reticulumVoice.connecting';
+    case 'connecting':
+    case 'ringing':
+      // Link up — ringback while waiting for answer.
+      return 'reticulumVoice.ringing';
     case 'established':
       return 'reticulumVoice.inCall';
     default:
-      return 'reticulumVoice.calling';
+      return 'reticulumVoice.connecting';
   }
 }
 
@@ -56,7 +58,8 @@ export function ReticulumVoiceOverlay() {
 
   useEffect(() => {
     syncReticulumVoiceProgressTones(activeStatus);
-    if (activeStatus === 'established' || activeStatus === 'connecting') {
+    // PCM TX only after established — early frames cause fatal lxst CallNotEstablished.
+    if (activeStatus === 'established') {
       void startReticulumVoiceMediaForActiveCall();
     }
     if (activeStatus == null) {

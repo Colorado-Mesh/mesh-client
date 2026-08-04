@@ -5112,7 +5112,6 @@
     "reject": "Tolak",
     "incomingTitle": "Panggilan suara masuk",
     "inCall": "Dalam panggilan",
-    "calling": "Memanggil…",
     "callAria": "Mulai panggilan suara LXST",
     "answerAria": "Jawab panggilan suara",
     "rejectAria": "Tolak panggilan suara",
@@ -5145,8 +5144,10 @@
       "busy": "Line sedang sibuk",
       "rejected": "Panggilan ditolak.",
       "noAnswer": "Tidak ada jawaban — waktu panggilan habis.",
-      "failed": "Panggilan suara gagal."
+      "failed": "Panggilan suara gagal.",
+      "connectFailed": "Tidak dapat terhubung."
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "Dering"
   }
 }

@@ -5116,7 +5116,6 @@
     "reject": "Odrzuć",
     "incomingTitle": "przychodzące połączenie głosowe...",
     "inCall": "W trakcie połączenia",
-    "calling": "Dzwoni",
     "callAria": "Rozpocznij połączenie głosowe LXST",
     "answerAria": "Odbierz połączenie głosowe",
     "rejectAria": "Odrzuć połączenie głosowe",
@@ -5149,8 +5148,10 @@
       "busy": "\"Linia jest zajęta\"",
       "rejected": "Połączenie odrzucone",
       "noAnswer": "Brak odpowiedzi — przekroczono limit czasu połączenia.",
-      "failed": "Połączenie głosowe nie powiodło się."
+      "failed": "Połączenie głosowe nie powiodło się.",
+      "connectFailed": "Nie można połączyć."
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "Dzwonienie…"
   }
 }

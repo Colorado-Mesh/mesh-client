@@ -5112,7 +5112,6 @@
     "reject": "Rifiuta",
     "incomingTitle": "Chiamata vocale in arrivo",
     "inCall": "In chiamata",
-    "calling": "Chiamata in corso...",
     "callAria": "Avvia chiamata vocale LXST",
     "answerAria": "Rispondi alla chiamata vocale",
     "rejectAria": "Rifiuta chiamata vocale",
@@ -5145,8 +5144,10 @@
       "busy": "Linea occupata.",
       "rejected": "Chiamata respinta",
       "noAnswer": "Nessuna risposta — chiamata scaduta.",
-      "failed": "Chiamata vocale non riuscita."
+      "failed": "Chiamata vocale non riuscita.",
+      "connectFailed": "Impossibile connettersi"
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "Suono."
   }
 }

@@ -5112,7 +5112,6 @@
     "reject": "Afwijzen",
     "incomingTitle": "Binnenkomende spraakoproep",
     "inCall": "In gesprek",
-    "calling": "Bellen…",
     "callAria": "LXST-spraakoproep starten",
     "answerAria": "Spraakoproep beantwoorden",
     "rejectAria": "Spraakoproep weigeren",
@@ -5146,7 +5145,9 @@
       "busy": "Lijn bezet",
       "rejected": "Oproep afgewezen",
       "noAnswer": "Geen antwoord — er is een time-out opgetreden.",
-      "failed": "Spraakoproep mislukt."
-    }
+      "failed": "Spraakoproep mislukt.",
+      "connectFailed": "Kon niet verbinden"
+    },
+    "ringing": "Bellen"
   }
 }

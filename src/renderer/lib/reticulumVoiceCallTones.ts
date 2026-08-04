@@ -1,5 +1,5 @@
 /**
- * LXST call progress tones (ringback / busy / fail) via Web Audio.
+ * LXST call progress tones (dial / ringback / busy / fail) via Web Audio.
  * Honors global chat notification mute (`mesh-client:notifMuted`).
  */
 
@@ -8,6 +8,9 @@ import { CHAT_NOTIF_MUTED_STORAGE_KEY } from '@/renderer/lib/chatInactiveNotific
 let sharedAudioContext: AudioContext | null = null;
 let ringbackTimer: ReturnType<typeof setInterval> | null = null;
 let busyStopTimer: ReturnType<typeof setTimeout> | null = null;
+/** Continuous dial-tone oscillators (350+440 Hz); stopped via stopVoiceCallTones. */
+let dialOscillators: OscillatorNode[] = [];
+let dialGain: GainNode | null = null;
 
 function getSharedAudioContext(): AudioContext | null {
   try {
@@ -71,6 +74,30 @@ function withRunningContext(run: (ctx: AudioContext) => void): void {
   go();
 }
 
+function stopDialToneNodes(): void {
+  for (const osc of dialOscillators) {
+    try {
+      osc.stop();
+    } catch {
+      // catch-no-log-ok already stopped
+    }
+    try {
+      osc.disconnect();
+    } catch {
+      // catch-no-log-ok
+    }
+  }
+  dialOscillators = [];
+  if (dialGain) {
+    try {
+      dialGain.disconnect();
+    } catch {
+      // catch-no-log-ok
+    }
+    dialGain = null;
+  }
+}
+
 function scheduleRingbackBurst(ctx: AudioContext): void {
   // US-style ringback: 440+480 Hz dual tone ~2s on, ~4s off (burst only; interval handles off).
   const now = ctx.currentTime;
@@ -79,9 +106,35 @@ function scheduleRingbackBurst(ctx: AudioContext): void {
   playTonePulse(ctx, 480, dur, now);
 }
 
-/** Start looping ringback while calling/ringing. Idempotent. */
+/** Continuous US dial tone (350+440 Hz) while connecting. Idempotent. */
+export function startVoiceDialTone(): void {
+  if (isNotifMuted()) return;
+  if (dialOscillators.length > 0) return;
+  // Stop ringback cadence; keep dial nodes separate from pulse timers.
+  if (ringbackTimer != null) {
+    clearInterval(ringbackTimer);
+    ringbackTimer = null;
+  }
+  withRunningContext((ctx) => {
+    if (dialOscillators.length > 0) return;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.connect(ctx.destination);
+    dialGain = gain;
+    for (const freq of [350, 440]) {
+      const osc = ctx.createOscillator();
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start();
+      dialOscillators.push(osc);
+    }
+  });
+}
+
+/** Start looping ringback while link is up / ringing. Idempotent. */
 export function startVoiceRingback(): void {
   if (isNotifMuted()) return;
+  stopDialToneNodes();
   if (ringbackTimer != null) return;
   withRunningContext((ctx) => {
     scheduleRingbackBurst(ctx);
@@ -93,8 +146,9 @@ export function startVoiceRingback(): void {
   }, 6000);
 }
 
-/** Stop ringback / cancel pending busy cadence. */
+/** Stop dial / ringback / cancel pending busy cadence. */
 export function stopVoiceCallTones(): void {
+  stopDialToneNodes();
   if (ringbackTimer != null) {
     clearInterval(ringbackTimer);
     ringbackTimer = null;

@@ -5112,7 +5112,6 @@
     "reject": "許可しない",
     "incomingTitle": "着信ボイス",
     "inCall": "通話中",
-    "calling": "呼び出す",
     "callAria": "LXST音声通話を開始する",
     "answerAria": "音声通話に応答する",
     "rejectAria": "音声通話を拒否する",
@@ -5145,8 +5144,10 @@
       "busy": "回線はビジー状態です。",
       "rejected": "コールは拒否されました",
       "noAnswer": "応答がありません—通話がタイムアウトしました。",
-      "failed": "音声通話に失敗しました。"
+      "failed": "音声通話に失敗しました。",
+      "connectFailed": "接続できませんでした。"
     },
-    "statsSeparator": "・"
+    "statsSeparator": "・",
+    "ringing": "リンギング"
   }
 }

@@ -14,15 +14,17 @@ const answer = vi.fn();
 const reject = vi.fn();
 const hangup = vi.fn();
 const setMuted = vi.fn();
+const startMedia = vi.fn();
+const syncTones = vi.fn();
 
 vi.mock('@/renderer/lib/reticulumVoiceSession', () => ({
   reticulumVoiceAnswer: () => answer(),
   reticulumVoiceReject: () => reject(),
   reticulumVoiceHangup: () => hangup(),
   reticulumVoiceSetMuted: (...args: unknown[]) => setMuted(...args),
-  startReticulumVoiceMediaForActiveCall: vi.fn(),
+  startReticulumVoiceMediaForActiveCall: (...args: unknown[]) => startMedia(...args),
   stopReticulumVoiceMedia: vi.fn(),
-  syncReticulumVoiceProgressTones: vi.fn(),
+  syncReticulumVoiceProgressTones: (...args: unknown[]) => syncTones(...args),
 }));
 
 describe('ReticulumVoiceOverlay', () => {
@@ -31,6 +33,8 @@ describe('ReticulumVoiceOverlay', () => {
     reject.mockReset();
     hangup.mockReset();
     setMuted.mockReset();
+    startMedia.mockReset();
+    syncTones.mockReset();
     act(() => {
       useReticulumVoiceStore.getState().clearCall();
       useReticulumPeerStore.getState().clearPeers();
@@ -116,7 +120,8 @@ describe('ReticulumVoiceOverlay', () => {
       });
     });
     expect(screen.queryByRole('dialog', { name: /incoming voice call/i })).toBeNull();
-    expect(screen.getByRole('status', { name: /connecting|in call/i })).toBeTruthy();
+    expect(screen.getByRole('status', { name: /ringing/i })).toBeTruthy();
+    expect(startMedia).not.toHaveBeenCalled();
 
     act(() => {
       useReticulumVoiceStore.getState().applyUpdate({
@@ -132,6 +137,27 @@ describe('ReticulumVoiceOverlay', () => {
     });
     expect(screen.queryByRole('dialog', { name: /incoming voice call/i })).toBeNull();
     expect(screen.getByRole('status', { name: /in call/i })).toBeTruthy();
+    expect(startMedia).toHaveBeenCalled();
+  });
+
+  it('shows Connecting on calling and does not start media until established', () => {
+    act(() => {
+      useReticulumVoiceStore.getState().beginOutgoing('b'.repeat(32));
+    });
+    render(<ReticulumVoiceOverlay />);
+    expect(screen.getByRole('status', { name: /connecting/i })).toBeTruthy();
+    expect(startMedia).not.toHaveBeenCalled();
+    expect(syncTones).toHaveBeenCalledWith('calling');
+
+    act(() => {
+      useReticulumVoiceStore.getState().applyUpdate({
+        type: 'outgoing',
+        link_id: 'a'.repeat(32),
+        remote_identity: 'b'.repeat(32),
+      });
+    });
+    expect(screen.getByRole('status', { name: /ringing/i })).toBeTruthy();
+    expect(startMedia).not.toHaveBeenCalled();
   });
 
   it('shows hangup while optimistic calling with TX/RX counters', async () => {
@@ -161,8 +187,8 @@ describe('ReticulumVoiceOverlay', () => {
       });
     });
     const { container } = render(<ReticulumVoiceOverlay />);
-    expect(screen.getByRole('status', { name: /calling/i })).toBeTruthy();
-    const panel = screen.getByRole('status', { name: /calling/i });
+    expect(screen.getByRole('status', { name: /connecting/i })).toBeTruthy();
+    const panel = screen.getByRole('status', { name: /connecting/i });
     expect(panel.className).toContain('top-1/2');
     expect(panel.className).toContain('left-1/2');
     expect(panel.className).toContain('-translate-x-1/2');

@@ -5112,7 +5112,6 @@
     "reject": "不同意",
     "incomingTitle": "传入语音呼叫",
     "inCall": "通话中",
-    "calling": "呼叫中",
     "callAria": "开始LXST语音通话",
     "answerAria": "应答语音呼叫",
     "rejectAria": "拒绝语音通话",
@@ -5145,8 +5144,10 @@
       "busy": "线路繁忙。",
       "rejected": "呼叫被拒绝。",
       "noAnswer": "无应答—呼叫超时。",
-      "failed": "语音通话失败。"
+      "failed": "语音通话失败。",
+      "connectFailed": "无法连接"
     },
-    "statsSeparator": "·"
+    "statsSeparator": "·",
+    "ringing": "铃声"
   }
 }

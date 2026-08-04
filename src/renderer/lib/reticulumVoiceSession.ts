@@ -14,7 +14,7 @@ import {
   resolveVoiceDialIdentityHash,
 } from '@/renderer/lib/reticulumVoiceAudio';
 import {
-  playVoiceFailTone,
+  startVoiceDialTone,
   startVoiceRingback,
   stopVoiceCallTones,
 } from '@/renderer/lib/reticulumVoiceCallTones';
@@ -22,6 +22,7 @@ import {
   applyVoiceTerminalFeedback,
   humanizeVoiceIpcError,
 } from '@/renderer/lib/reticulumVoiceFeedback';
+import { classifyVoiceTerminalReason } from '@/renderer/lib/reticulumVoiceOutcome';
 import { collectIdentityHashesForLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
 import { RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS } from '@/renderer/lib/timeConstants';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
@@ -457,11 +458,23 @@ function toastCallFailed(detail?: unknown): void {
 
 function abortOutgoingCallAttempt(message?: string): void {
   clearSafetyHangupTimer();
-  stopVoiceCallTones();
-  playVoiceFailTone();
-  const humanized = humanizeVoiceIpcError(message);
-  useReticulumVoiceStore.getState().applyError(humanized);
-  pushAppToast(humanized, 'error');
+  const raw = message?.trim() || 'connect_failed';
+  const lower = raw.toLowerCase();
+  if (lower.includes('not available')) {
+    stopVoiceCallTones();
+    const humanized = i18n.t('reticulumVoice.errors.notRunning');
+    useReticulumVoiceStore.getState().applyError(humanized);
+    pushAppToast(humanized, 'error');
+  } else {
+    const kind = classifyVoiceTerminalReason(raw);
+    const reason = kind === 'busy' || kind === 'connectFailed' ? raw : 'connect_failed';
+    applyVoiceTerminalFeedback(reason);
+    useReticulumVoiceStore.getState().applyError(humanizeVoiceIpcError(reason));
+  }
+  // Clear sticky lxst line if dial IPC failed while discovery may still be held.
+  void window.electronAPI.reticulum.voice.hangup().catch(() => {
+    // catch-no-log-ok best-effort clear
+  });
 }
 
 function terminalEventMatchesActiveCall(opts: {
@@ -548,7 +561,7 @@ export async function reticulumVoiceCallPeer(
   // Optimistic UI so Hang up is available before WS voice.update.
   useReticulumVoiceStore.getState().beginOutgoing(resolved.dialHash);
   const generation = useReticulumVoiceStore.getState().callGeneration;
-  startVoiceRingback();
+  syncReticulumVoiceProgressTones('calling');
   scheduleOutgoingSafetyHangup(generation);
 
   try {
@@ -644,7 +657,7 @@ export async function reticulumVoiceSetMuted(muted: boolean): Promise<void> {
 
 /**
  * Handle terminal signalling from WS (busy / rejected / timeout / completed).
- * Clears media, tones, safety timer; toast for unsuccessful outcomes.
+ * Clears media, tones, safety timer; toast for connect-fail and busy only.
  */
 export function handleReticulumVoiceTerminal(opts: {
   linkId?: string | null;
@@ -681,15 +694,15 @@ export function handleReticulumVoiceTerminal(opts: {
       `[reticulumVoice] voice.terminated reason=${JSON.stringify(reason)} linkId=${opts.linkId ?? ''}`,
     );
   }
-  applyVoiceTerminalFeedback(opts.errorMessage ? 'failed' : reason, {
-    // errorMessage path uses applyError toast via humanized message below
-    showToast: !opts.errorMessage,
-  });
+
+  applyVoiceTerminalFeedback(reason);
 
   if (opts.errorMessage) {
-    const humanized = humanizeVoiceIpcError(opts.errorMessage);
-    pushAppToast(humanized, 'error');
-    useReticulumVoiceStore.getState().applyError(humanized, {
+    // Best-effort hangup so lxst active_call / outgoing_discovery cannot stick busy.
+    void window.electronAPI.reticulum.voice.hangup().catch(() => {
+      // catch-no-log-ok best-effort clear after voice.error
+    });
+    useReticulumVoiceStore.getState().applyError(humanizeVoiceIpcError(opts.errorMessage), {
       callGeneration: useReticulumVoiceStore.getState().callGeneration,
     });
   } else {
@@ -697,17 +710,19 @@ export function handleReticulumVoiceTerminal(opts: {
   }
 }
 
-/** Sync ringback / stop tones from active call status (overlay / runtime). */
+/** Sync dial / ringback / stop tones from active call status (overlay / runtime). */
 export function syncReticulumVoiceProgressTones(status: string | null | undefined): void {
-  if (status === 'calling' || status === 'ringing') {
+  if (status === 'calling') {
+    startVoiceDialTone();
+    return;
+  }
+  if (status === 'connecting' || status === 'ringing') {
     startVoiceRingback();
     return;
   }
-  if (status === 'established' || status === 'connecting') {
+  if (status === 'established') {
     stopVoiceCallTones();
-    if (status === 'established') {
-      clearSafetyHangupTimer();
-    }
+    clearSafetyHangupTimer();
     return;
   }
   if (!status) {

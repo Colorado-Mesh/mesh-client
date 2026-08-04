@@ -249,6 +249,19 @@ impl VoiceSessionManager {
             Ok(f) => f,
             Err(e) => return json!({ "ok": false, "error": format!("invalid pcm frame: {e}") }),
         };
+        // Soft-drop pre-establish frames — SendOpusFrames before Established emits fatal
+        // lxst Error ("active call is not established") and sticks the line busy.
+        {
+            let st = self.shared.state.read().await;
+            let status = st
+                .active_call
+                .as_ref()
+                .and_then(|c| c.get("status"))
+                .and_then(|s| s.as_str());
+            if status != Some("established") {
+                return json!({ "ok": true, "dropped": "not_established" });
+            }
+        }
         let profile = match profile_wire.and_then(Profile::from_wire) {
             Some(p) => p,
             None => DEFAULT_CALL_PROFILE,
@@ -1097,6 +1110,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn send_audio_soft_drops_when_not_established() {
+        let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
+        let (event_tx, _) = broadcast::channel::<String>(4);
+        let (voice_audio_tx, _) = broadcast::channel::<String>(4);
+        let mgr = VoiceSessionManager {
+            shared: Arc::new(ManagerShared {
+                control_tx: Some(control_tx),
+                event_tx,
+                voice_audio_tx,
+                state: RwLock::new(VoiceState {
+                    running: true,
+                    active_call: Some(json!({
+                        "link_id": "aa",
+                        "remote_identity": "bb",
+                        "role": "outgoing",
+                        "status": "connecting",
+                        "answered": false,
+                    })),
+                    ..VoiceState::default()
+                }),
+                muted: AtomicBool::new(false),
+                register_error: None,
+            }),
+        };
+        let n = Profile::QualityHigh.sample_frames_per_packet()
+            * usize::from(Profile::QualityHigh.channels());
+        let mut bytes = Vec::with_capacity(n * 4);
+        for _ in 0..n {
+            bytes.extend_from_slice(&0f32.to_le_bytes());
+        }
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        let resp = mgr.send_audio(None, 1, &b64).await;
+        assert_eq!(resp["ok"], true);
+        assert_eq!(resp["dropped"], "not_established");
+        assert!(
+            control_rx.try_recv().is_err(),
+            "must not enqueue SendOpusFrames"
+        );
+    }
+
+    #[tokio::test]
     async fn send_audio_accepts_quality_high_frame_size() {
         let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
         let (event_tx, _) = broadcast::channel::<String>(4);
@@ -1108,6 +1162,13 @@ mod tests {
                 voice_audio_tx,
                 state: RwLock::new(VoiceState {
                     running: true,
+                    active_call: Some(json!({
+                        "link_id": "aa",
+                        "remote_identity": "bb",
+                        "role": "outgoing",
+                        "status": "established",
+                        "answered": true,
+                    })),
                     ..VoiceState::default()
                 }),
                 muted: AtomicBool::new(false),

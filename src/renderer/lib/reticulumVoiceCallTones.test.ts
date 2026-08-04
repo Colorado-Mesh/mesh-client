@@ -6,6 +6,7 @@ import {
   playVoiceBusyTone,
   playVoiceFailTone,
   resetVoiceCallTonesForTests,
+  startVoiceDialTone,
   startVoiceRingback,
   stopVoiceCallTones,
 } from './reticulumVoiceCallTones';
@@ -28,15 +29,18 @@ describe('reticulumVoiceCallTones', () => {
           connect: () => undefined,
           start: () => undefined,
           stop: () => undefined,
+          disconnect: () => undefined,
         };
       }
       createGain() {
         return {
           gain: {
+            value: 0,
             setValueAtTime: () => undefined,
             exponentialRampToValueAtTime: () => undefined,
           },
           connect: () => undefined,
+          disconnect: () => undefined,
         };
       }
       resume() {
@@ -52,12 +56,29 @@ describe('reticulumVoiceCallTones', () => {
     vi.stubGlobal('AudioContext', undefined);
   });
 
+  it('starts continuous dial tone and is idempotent', () => {
+    startVoiceDialTone();
+    expect(oscillatorCount).toBe(2);
+    startVoiceDialTone();
+    expect(oscillatorCount).toBe(2);
+    stopVoiceCallTones();
+  });
+
   it('starts ringback oscillators and stops cleanly', () => {
     startVoiceRingback();
     expect(oscillatorCount).toBeGreaterThan(0);
     const afterStart = oscillatorCount;
     startVoiceRingback(); // idempotent
     expect(oscillatorCount).toBe(afterStart);
+    stopVoiceCallTones();
+  });
+
+  it('switching dial to ringback stops dial oscillators from staying active', () => {
+    startVoiceDialTone();
+    expect(oscillatorCount).toBe(2);
+    oscillatorCount = 0;
+    startVoiceRingback();
+    expect(oscillatorCount).toBeGreaterThan(0);
     stopVoiceCallTones();
   });
 
@@ -71,6 +92,7 @@ describe('reticulumVoiceCallTones', () => {
 
   it('suppresses tones when notif muted', () => {
     localStorage.setItem(CHAT_NOTIF_MUTED_STORAGE_KEY, '1');
+    startVoiceDialTone();
     startVoiceRingback();
     playVoiceBusyTone();
     playVoiceFailTone();
