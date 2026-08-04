@@ -1,0 +1,19 @@
+diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/link_manager.rs
+index cd33492..6579213 100644
+--- a/crates/rns-runtime/src/link_manager.rs
++++ b/crates/rns-runtime/src/link_manager.rs
+@@ -1175,7 +1175,13 @@ impl LinkManager {
+         if !self.active_links.contains_key(&link_id) {
+             let processed = self.dispatch_destination_packet(raw, interface_id);
+             if let Some(ref tx) = self.inbound_raw_tx {
+-                let _ = tx.try_send(raw.to_vec());
++                if let Err(e) = tx.try_send(raw.to_vec()) {
++                    tracing::warn!(
++                        dest = %hex::encode(link_id),
++                        error = %e,
++                        "inbound raw channel full; dropping newest opportunistic packet"
++                    );
++                }
+             }
+             tracing::debug!(
+                 dest = hex::encode(link_id),
