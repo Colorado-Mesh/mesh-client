@@ -60,13 +60,28 @@ describe('reticulumVoiceStore', () => {
     expect(useReticulumVoiceStore.getState().incomingCall).toBeNull();
   });
 
-  it('applyTerminated without link id leaves current call unchanged', () => {
+  it('applyTerminated without link id leaves call with a real link unchanged', () => {
     useReticulumVoiceStore.getState().applyIncoming(CALL);
     useReticulumVoiceStore.getState().applyTerminated(null, 'busy');
     useReticulumVoiceStore.getState().applyTerminated('', 'busy');
     useReticulumVoiceStore.getState().applyTerminated('   ', 'busy');
     expect(useReticulumVoiceStore.getState().activeCall?.link_id).toBe(CALL.link_id);
     expect(useReticulumVoiceStore.getState().incomingCall?.status).toBe('ringing');
+  });
+
+  it('applyTerminated without link id clears outgoing pending (empty link)', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('c'.repeat(32));
+    useReticulumVoiceStore.getState().applyTerminated('', 'busy');
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+  });
+
+  it('applyError ignores stale callGeneration', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('c'.repeat(32));
+    const gen = useReticulumVoiceStore.getState().callGeneration;
+    useReticulumVoiceStore.getState().applyError('stale', { callGeneration: gen - 1 });
+    expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('calling');
+    useReticulumVoiceStore.getState().applyError('fresh', { callGeneration: gen });
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
 
   it('beginOutgoing sets calling before WS and hangup clears stats', () => {

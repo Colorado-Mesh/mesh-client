@@ -1196,6 +1196,37 @@ function checkReticulumConnectionPanelIssues(ctx) {
     }
   }
 
+  // LXST voice Answer must be a phone-UI verb, not the noun "answer/response".
+  if (flatKey === 'reticulumVoice.answer' && enVal === 'Answer' && locale !== 'en') {
+    if (/^(Antwort|Antwoord)$/i.test(val)) {
+      issues.push(
+        'reticulumVoice.answer must be a phone accept verb (e.g. Annehmen/Beantwoorden), not noun Antwort/Antwoord',
+      );
+    }
+  }
+  if (flatKey === 'reticulumVoice.capabilityUnknownShort' && enVal === '?' && locale !== 'en') {
+    if (val.trim().length > 2 || /\s/.test(val) || /^\.\?/.test(val)) {
+      issues.push(
+        'reticulumVoice.capabilityUnknownShort must stay a short "?" badge, not a sentence',
+      );
+    }
+  }
+  if (flatKey === 'reticulumVoice.errors.noIdentity' && locale !== 'en') {
+    if (/\bKollegen\b/i.test(val) || /\bcollega\b/i.test(val)) {
+      issues.push(
+        'reticulumVoice.errors.noIdentity must use peer wording, not office-colleague false friends',
+      );
+    }
+  }
+  if (flatKey.startsWith('reticulumVoice.') && locale !== 'en') {
+    for (const token of ['LXST', 'Sideband', 'rsLXST', 'mesh-client', 'Ratspeak']) {
+      if (enVal.includes(token) && !val.includes(token)) {
+        issues.push(`reticulumVoice key must preserve wire/product token "${token}"`);
+        break;
+      }
+    }
+  }
+
   if (leafKey === 'reticulumStopStack' && locale !== 'en') {
     for (const { re, hint } of RETICULUM_STOP_STACK_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {

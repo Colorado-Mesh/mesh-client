@@ -12,6 +12,7 @@ import {
   syncReticulumVoiceProgressTones,
 } from '@/renderer/lib/reticulumVoiceSession';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
+import { isReticulumIncomingRinging } from '@/shared/voice-types';
 
 function formatElapsed(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -43,11 +44,11 @@ export function ReticulumVoiceOverlay() {
   const active = useReticulumVoiceStore((s) => s.activeCall);
   const muted = useReticulumVoiceStore((s) => s.microphoneMuted);
   const callStartedAtMs = useReticulumVoiceStore((s) => s.callStartedAtMs);
+  const callGeneration = useReticulumVoiceStore((s) => s.callGeneration);
   const stats = useReticulumVoiceStore((s) => s.stats);
   const [nowMs, setNowMs] = useState<number | null>(null);
 
   const activeStatus = active?.status ?? null;
-  const activeLinkId = active?.link_id ?? null;
 
   useEffect(() => {
     syncReticulumVoiceProgressTones(activeStatus);
@@ -58,7 +59,8 @@ export function ReticulumVoiceOverlay() {
       stopReticulumVoiceMedia();
       syncReticulumVoiceProgressTones(null);
     }
-  }, [activeStatus, activeLinkId]);
+    // Key media start on status + generation only — link_id fill must not restart capture.
+  }, [activeStatus, callGeneration]);
 
   useEffect(() => {
     if (callStartedAtMs == null) return;
@@ -76,10 +78,9 @@ export function ReticulumVoiceOverlay() {
 
   const elapsedMs =
     callStartedAtMs == null || nowMs == null ? 0 : Math.max(0, nowMs - callStartedAtMs);
+  const elapsedLabel = formatElapsed(elapsedMs);
 
-  const showIncoming =
-    incoming?.role === 'incoming' &&
-    (incoming.status === 'ringing' || incoming.status === 'available');
+  const showIncoming = isReticulumIncomingRinging(incoming);
 
   const showInCall =
     active != null &&
@@ -139,9 +140,9 @@ export function ReticulumVoiceOverlay() {
         <span className="text-xs text-gray-200">{t(phaseLabelKey(active.status))}</span>
         <span
           className="font-mono text-[10px] text-gray-400"
-          aria-label={t('reticulumVoice.elapsedAria')}
+          aria-label={t('reticulumVoice.elapsedAria', { time: elapsedLabel })}
         >
-          {formatElapsed(elapsedMs)}
+          {elapsedLabel}
         </span>
         <span className="max-w-[8rem] truncate font-mono text-[10px] text-gray-400">
           {active.remote_identity}
@@ -168,13 +169,13 @@ export function ReticulumVoiceOverlay() {
         </button>
       </div>
       <div className="flex gap-3 font-mono text-[10px] text-gray-400">
-        <span aria-label={t('reticulumVoice.txAria')}>
+        <span aria-label={t('reticulumVoice.txAria', { count: stats.txFrames })}>
           {t('reticulumVoice.txFrames', { count: stats.txFrames })}
           {stats.txPackets > 0
-            ? ` · ${t('reticulumVoice.txPackets', { count: stats.txPackets })}`
+            ? ` ${t('reticulumVoice.statsSeparator')} ${t('reticulumVoice.txPackets', { count: stats.txPackets })}`
             : ''}
         </span>
-        <span aria-label={t('reticulumVoice.rxAria')}>
+        <span aria-label={t('reticulumVoice.rxAria', { count: stats.rxFrames })}>
           {t('reticulumVoice.rxFrames', { count: stats.rxFrames })}
         </span>
       </div>

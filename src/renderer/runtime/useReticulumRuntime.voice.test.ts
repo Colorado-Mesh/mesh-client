@@ -5,6 +5,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import i18n from '@/renderer/lib/i18n';
 import { resetReticulumManualStackStopSuppressForTests } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { encodeF32LeBase64 } from '@/renderer/lib/reticulumVoiceAudio';
 import { useReticulumRuntime } from '@/renderer/runtime/useReticulumRuntime';
@@ -157,7 +158,10 @@ describe('useReticulumRuntime voice event routing', () => {
       onEvent({ type: 'voice.error', payload: { message: 'codec boom' } });
     });
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
-    expect(useReticulumVoiceStore.getState().lastError).toBe('codec boom');
+    // Sidecar English is humanized — never stored/toasted raw.
+    expect(useReticulumVoiceStore.getState().lastError).toBe(
+      i18n.t('reticulumVoice.errors.callFailed'),
+    );
 
     unmount();
   });

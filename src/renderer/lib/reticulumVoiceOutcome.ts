@@ -6,8 +6,16 @@ export type VoiceTerminalKind = 'busy' | 'rejected' | 'noAnswer' | 'failed' | 'c
 
 export function classifyVoiceTerminalReason(reason: string | null | undefined): VoiceTerminalKind {
   const r = (reason ?? '').trim().toLowerCase();
-  // Empty reason = clean hangup / remote end without Busy|Rejected signal.
-  if (!r || r === 'completed' || r === 'hangup' || r === 'cancelled' || r === 'canceled') {
+  // Empty / normal end: clean hangup, sidecar Established→terminate, or generic terminated.
+  if (
+    !r ||
+    r === 'completed' ||
+    r === 'hangup' ||
+    r === 'cancelled' ||
+    r === 'canceled' ||
+    r === 'established' ||
+    r === 'terminated'
+  ) {
     return 'completed';
   }
   if (

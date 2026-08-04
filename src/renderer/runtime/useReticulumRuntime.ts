@@ -1188,9 +1188,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
         });
       }
       if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { message?: string };
+        const p = evt.payload as { message?: string; link_id?: string };
         handleReticulumVoiceTerminal({
-          errorMessage: p.message ?? 'voice error',
+          linkId: typeof p.link_id === 'string' ? p.link_id : null,
+          errorMessage: typeof p.message === 'string' && p.message.trim() ? p.message : 'failed',
+          callGeneration: useReticulumVoiceStore.getState().callGeneration,
         });
       }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
@@ -1331,8 +1333,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
     unsubVoiceAudioRef.current = window.electronAPI.reticulum.onVoiceAudio((evt) => {
       if (evt.type !== 'voice.audio' || !evt.payload || typeof evt.payload !== 'object') return;
-      const p = evt.payload as { channels?: number; samples_b64?: string };
+      const p = evt.payload as { link_id?: string; channels?: number; samples_b64?: string };
       if (typeof p.samples_b64 !== 'string') return;
+      const active = useReticulumVoiceStore.getState().activeCall;
+      const status = active?.status;
+      if (status !== 'established' && status !== 'connecting') return;
+      const eventLink = typeof p.link_id === 'string' ? p.link_id.trim().toLowerCase() : '';
+      const activeLink = (active?.link_id ?? '').trim().toLowerCase();
+      if (eventLink && activeLink && eventLink !== activeLink) return;
       const samples = decodeF32LeBase64(p.samples_b64);
       const channels =
         typeof p.channels === 'number' && Number.isInteger(p.channels) && p.channels > 0

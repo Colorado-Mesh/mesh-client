@@ -208,13 +208,21 @@ pnpm run trace-deprecation
 
 ### Permission messages in the console
 
-The session allowlist grants **serial**, **geolocation**, and **media** (camera for QR ingest; microphone reserved for future live audio). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
+The session allowlist grants **serial**, **geolocation**, and **media** (camera for QR ingest; microphone for Reticulum LXST voice calls). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
 
-If microphone permission is denied when a future live-audio feature requests it:
+If microphone permission is denied when placing or answering an LXST voice call:
 
 - **macOS:** System Settings → Privacy & Security → Microphone — allow Mesh-client (or Electron when running `pnpm run dev`). Packaged builds include `NSMicrophoneUsageDescription`.
 - **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
 - **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
+
+### Reticulum LXST voice call fails or is silent
+
+- **Stack not running:** Call needs a live Reticulum sidecar (`available` + `enabled` + `running` from `/api/v1/voice/status`). Start the stack from Connection.
+- **Peer identity unknown:** Dial uses a 32-hex **identity** hash (not only the LXMF destination). Wait for an announce or Probe the peer from Peers / Chat DM, then try Call again.
+- **Busy / rejected / no answer:** Line-busy and reject play distinct tones; discovery/ring timeouts surface as no-answer toasts. Only one local call at a time — Hang up before dialing again.
+- **One-way or silent audio:** Confirm microphone permission (above). Outgoing media warms `AudioContext` on the Call/Answer click; if capture still fails, check OS privacy and that another app is not exclusive-locking the mic. TX drops increment `localTxDrops` under IPC pressure — hang up and retry on a quieter link.
+- **Interop:** Peer must run LXST telephony (Sideband, Ratspeak, or mesh-client with rsLXST). This is not an LXMF voice-note clip.
 
 If QR camera scanning fails with camera permission denied:
 

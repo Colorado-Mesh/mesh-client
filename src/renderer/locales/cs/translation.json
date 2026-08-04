@@ -5123,12 +5123,13 @@
       "callFailed": "Hlasový hovor se nezdařil.",
       "notRunning": "Hlas není k dispozici, dokud není spuštěn zásobník Reticulum.",
       "micFailed": "Nelze získat přístup k mikrofonu pro hlas.",
-      "muteFailed": "Nelze aktualizovat ztlumení mikrofonu v relaci hlasu."
+      "muteFailed": "Nelze aktualizovat ztlumení mikrofonu v relaci hlasu.",
+      "callInProgress": "Hlasový hovor již probíhá."
     },
     "connecting": "Připojování…",
-    "elapsedAria": "Uplynulý čas hovoru",
-    "txAria": "Přenášené hlasové rámce",
-    "rxAria": "Přijaté hlasové rámce",
+    "elapsedAria": "Uplynulý čas hovoru {{time}}",
+    "txAria": "Přenášené hlasové rámce {{count}}",
+    "rxAria": "Přijaté hlasové rámce {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5144,6 +5145,7 @@
       "rejected": "Hovor byl zamítnut.",
       "noAnswer": "Žádná odpověď — vypršel časový limit hovoru.",
       "failed": "Hlasový hovor se nezdařil."
-    }
+    },
+    "statsSeparator": "·"
   }
 }

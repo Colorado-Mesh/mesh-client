@@ -234,6 +234,16 @@ export function ChatComposer({
     [protocol, showFloodScopeOverride, viewKey],
   );
 
+  const commitCustomFloodScopeDraft = useCallback(() => {
+    const normalized = normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
+    if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
+      setFloodScopeCustomError(t('chatPanel.floodScopeOverrideCustomInvalid'));
+      return;
+    }
+    persistFloodScopeOverride(normalized);
+    closeFloodScopeMenu();
+  }, [closeFloodScopeMenu, floodScopeCustomDraft, persistFloodScopeOverride, t]);
+
   const rememberFloodScopeIfNeeded = useCallback(
     (override: string) => {
       // Default (`''`) and Unscoped must not enter the quick-pick list.
@@ -1246,16 +1256,7 @@ export function ChatComposer({
                             }
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const normalized =
-                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
-                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
-                                setFloodScopeCustomError(
-                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
-                                );
-                                return;
-                              }
-                              persistFloodScopeOverride(normalized);
-                              closeFloodScopeMenu();
+                              commitCustomFloodScopeDraft();
                             }
                           }}
                           ref={floodScopeCustomInputRef}
@@ -1283,16 +1284,7 @@ export function ChatComposer({
                           <button
                             type="button"
                             onClick={() => {
-                              const normalized =
-                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
-                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
-                                setFloodScopeCustomError(
-                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
-                                );
-                                return;
-                              }
-                              persistFloodScopeOverride(normalized);
-                              closeFloodScopeMenu();
+                              commitCustomFloodScopeDraft();
                             }}
                             className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded px-2 py-1 text-[10px] font-medium"
                           >

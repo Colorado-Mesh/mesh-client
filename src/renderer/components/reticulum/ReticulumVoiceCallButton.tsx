@@ -5,6 +5,8 @@ import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHead
 import { peerLxstTelephonyCapability } from '@/renderer/lib/reticulumVoiceCapability';
 import { reticulumVoiceCallPeer } from '@/renderer/lib/reticulumVoiceSession';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
+import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
+import { isReticulumVoiceSessionBusy } from '@/shared/voice-types';
 
 interface ReticulumVoiceCallButtonProps {
   lxmfPeerHash: string;
@@ -23,19 +25,23 @@ export function ReticulumVoiceCallButton({
   const { t } = useTranslation();
   // Re-render when identity activity updates so capability badge can flip to heard.
   useReticulumIdentityActivityStore((s) => s.byDestination);
+  const activeCall = useReticulumVoiceStore((s) => s.activeCall);
+  const incomingCall = useReticulumVoiceStore((s) => s.incomingCall);
+  const sessionBusy = isReticulumVoiceSessionBusy(activeCall ?? incomingCall);
   const capability = peerLxstTelephonyCapability({ lxmfPeerHash, identityHash });
   const capabilityLabel =
     capability === 'heard'
       ? t('reticulumVoice.capabilityHeard')
       : t('reticulumVoice.capabilityUnknown');
-  const title = `${t('reticulumVoice.callAria')} — ${capabilityLabel}. ${t('reticulumVoice.help.interop')}`;
+  const ariaLabel = `${t('reticulumVoice.callAria')} — ${capabilityLabel}`;
+  const title = `${ariaLabel}. ${t('reticulumVoice.help.interop')}`;
 
   return (
     <button
       type="button"
       className={className}
-      disabled={disabled}
-      aria-label={title}
+      disabled={disabled || sessionBusy}
+      aria-label={ariaLabel}
       title={title}
       onClick={(e) => {
         e.stopPropagation();

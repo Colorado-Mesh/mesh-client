@@ -14,21 +14,20 @@ import {
   resolveVoiceDialIdentityHash,
 } from '@/renderer/lib/reticulumVoiceAudio';
 import {
-  playVoiceBusyTone,
   playVoiceFailTone,
   startVoiceRingback,
   stopVoiceCallTones,
 } from '@/renderer/lib/reticulumVoiceCallTones';
 import {
-  classifyVoiceTerminalReason,
-  voiceToastKeyForTerminal,
-} from '@/renderer/lib/reticulumVoiceOutcome';
+  applyVoiceTerminalFeedback,
+  humanizeVoiceIpcError,
+} from '@/renderer/lib/reticulumVoiceFeedback';
 import { collectIdentityHashesForLxmfPeer } from '@/renderer/lib/rncpOfferPeerMatch';
 import { RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS } from '@/renderer/lib/timeConstants';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
-import { isVoiceStatusResponse } from '@/shared/voice-types';
+import { isReticulumVoiceSessionBusy, isVoiceStatusResponse } from '@/shared/voice-types';
 
 let captureCtx: AudioContext | null = null;
 let captureSource: MediaStreamAudioSourceNode | null = null;
@@ -46,6 +45,19 @@ let audioUnsub: (() => void) | null = null;
 let txTimer: ReturnType<typeof setInterval> | null = null;
 let pendingSamples: number[] = [];
 let safetyHangupTimer: ReturnType<typeof setTimeout> | null = null;
+/** Call generation for which capture/playback were last started (dedupe Answer + overlay). */
+let mediaStartedForCallGeneration = -1;
+/** Throttle hot-path sendAudio failure logs. */
+let lastTxDropWarnAtMs = 0;
+/**
+ * Contexts created during Call/Answer click (user gesture) before await.
+ * Taken over by startCapture/startPlayback so Chromium does not leave them suspended.
+ */
+let primedCaptureCtx: AudioContext | null = null;
+let primedPlaybackCtx: AudioContext | null = null;
+
+/** Cap pending mic samples (~3 QualityHigh frames) when IPC backs up. */
+const PENDING_SAMPLES_MAX = LXST_QUALITY_HIGH_FRAME_SAMPLES * 3;
 
 function discardCaptureResources(
   stream: MediaStream | null,
@@ -92,6 +104,66 @@ async function ensureMicAccess(): Promise<boolean> {
   return true;
 }
 
+async function resumeAudioContext(ctx: AudioContext): Promise<void> {
+  if (ctx.state === 'suspended') {
+    try {
+      await ctx.resume();
+    } catch {
+      // catch-no-log-ok resume may still fail without gesture in tests/headless
+    }
+  }
+}
+
+/**
+ * Create/resume primed media contexts while still in a user-gesture stack
+ * (Call / Answer click) so Chromium does not leave them suspended.
+ */
+export function warmReticulumVoiceAudioContexts(): void {
+  try {
+    if (!primedCaptureCtx || primedCaptureCtx.state === 'closed') {
+      primedCaptureCtx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
+    }
+    void resumeAudioContext(primedCaptureCtx);
+  } catch {
+    // catch-no-log-ok AudioContext unavailable in test/headless
+  }
+  try {
+    if (!primedPlaybackCtx || primedPlaybackCtx.state === 'closed') {
+      primedPlaybackCtx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
+    }
+    void resumeAudioContext(primedPlaybackCtx);
+  } catch {
+    // catch-no-log-ok AudioContext unavailable in test/headless
+  }
+}
+
+function takePrimedCaptureCtx(): AudioContext | null {
+  const ctx = primedCaptureCtx;
+  primedCaptureCtx = null;
+  return ctx && ctx.state !== 'closed' ? ctx : null;
+}
+
+function takePrimedPlaybackCtx(): AudioContext | null {
+  const ctx = primedPlaybackCtx;
+  primedPlaybackCtx = null;
+  return ctx && ctx.state !== 'closed' ? ctx : null;
+}
+
+function discardPrimedAudioContexts(): void {
+  if (primedCaptureCtx) {
+    void primedCaptureCtx.close().catch(() => {
+      // catch-no-log-ok
+    });
+    primedCaptureCtx = null;
+  }
+  if (primedPlaybackCtx) {
+    void primedPlaybackCtx.close().catch(() => {
+      // catch-no-log-ok
+    });
+    primedPlaybackCtx = null;
+  }
+}
+
 function stopCapture(): void {
   captureGeneration += 1;
   if (txTimer != null) {
@@ -122,6 +194,8 @@ function stopPlayback(): void {
 }
 
 export function stopReticulumVoiceMedia(): void {
+  mediaStartedForCallGeneration = -1;
+  discardPrimedAudioContexts();
   stopCapture();
   stopPlayback();
 }
@@ -136,6 +210,8 @@ function clearSafetyHangupTimer(): void {
 /** @internal Test helper */
 export function resetReticulumVoiceSessionTimersForTests(): void {
   clearSafetyHangupTimer();
+  mediaStartedForCallGeneration = -1;
+  lastTxDropWarnAtMs = 0;
 }
 
 function scheduleOutgoingSafetyHangup(generation: number): void {
@@ -151,18 +227,39 @@ function scheduleOutgoingSafetyHangup(generation: number): void {
   }, RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS);
 }
 
+function noteLocalTxDrop(reason: string): void {
+  useReticulumVoiceStore.getState().incrementLocalTxDrops();
+  const now = Date.now();
+  if (now - lastTxDropWarnAtMs < 5000) return;
+  lastTxDropWarnAtMs = now;
+  console.debug(`[reticulumVoice] sendAudio drop: ${reason}`);
+}
+
 async function startCaptureAndTx(): Promise<void> {
+  const primed = takePrimedCaptureCtx();
   stopCapture();
   const generation = captureGeneration;
   if (!(await ensureMicAccess())) {
+    if (primed) {
+      void primed.close().catch(() => {
+        // catch-no-log-ok
+      });
+    }
     if (generation !== captureGeneration) return;
     pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
     return;
   }
-  if (generation !== captureGeneration) return;
+  if (generation !== captureGeneration) {
+    if (primed) {
+      void primed.close().catch(() => {
+        // catch-no-log-ok
+      });
+    }
+    return;
+  }
 
   let stream: MediaStream | null = null;
-  let ctx: AudioContext | null = null;
+  let ctx: AudioContext | null = primed;
   let source: MediaStreamAudioSourceNode | null = null;
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- see captureProcessor note
   let processor: ScriptProcessorNode | null = null;
@@ -176,10 +273,13 @@ async function startCaptureAndTx(): Promise<void> {
       },
     });
     if (generation !== captureGeneration) {
-      discardCaptureResources(stream, null, null, null, null);
+      discardCaptureResources(stream, ctx, null, null, null);
       return;
     }
-    ctx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
+    if (!ctx || ctx.state === 'closed') {
+      ctx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
+    }
+    await resumeAudioContext(ctx);
     if (generation !== captureGeneration) {
       discardCaptureResources(stream, ctx, null, null, null);
       return;
@@ -196,6 +296,11 @@ async function startCaptureAndTx(): Promise<void> {
       const input = ev.inputBuffer.getChannelData(0);
       for (const s of input) {
         pendingSamples.push(s);
+      }
+      if (pendingSamples.length > PENDING_SAMPLES_MAX) {
+        const drop = pendingSamples.length - PENDING_SAMPLES_MAX;
+        pendingSamples.splice(0, drop);
+        noteLocalTxDrop('pending_samples_cap');
       }
     };
     source.connect(processor);
@@ -242,20 +347,32 @@ async function startCaptureAndTx(): Promise<void> {
         })
         .then((resp) => {
           if (!resp.ok) {
-            useReticulumVoiceStore.getState().incrementLocalTxDrops();
+            noteLocalTxDrop(resp.error ?? 'send_not_ok');
           }
         })
         .catch(() => {
-          useReticulumVoiceStore.getState().incrementLocalTxDrops();
+          noteLocalTxDrop('send_ipc_throw');
         });
     },
     Math.max(20, frameMs),
   );
 }
 
-function startPlayback(): void {
-  stopPlayback();
-  playbackCtx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
+async function startPlayback(): Promise<void> {
+  const primed = takePrimedPlaybackCtx();
+  if (audioUnsub) {
+    audioUnsub();
+    audioUnsub = null;
+  }
+  playbackCursor = 0;
+  if (playbackCtx) {
+    void playbackCtx.close().catch(() => {
+      // catch-no-log-ok close during teardown
+    });
+    playbackCtx = null;
+  }
+  playbackCtx = primed ?? new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
+  await resumeAudioContext(playbackCtx);
   playbackCursor = playbackCtx.currentTime;
   audioUnsub = useReticulumVoiceStore.getState().subscribeAudio((channels, samples) => {
     const ctx = playbackCtx;
@@ -284,10 +401,16 @@ function startPlayback(): void {
 }
 
 export async function startReticulumVoiceMediaForActiveCall(): Promise<void> {
-  startPlayback();
+  const generation = useReticulumVoiceStore.getState().callGeneration;
+  if (generation > 0 && mediaStartedForCallGeneration === generation) {
+    return;
+  }
+  mediaStartedForCallGeneration = generation;
   try {
+    await startPlayback();
     await startCaptureAndTx();
   } catch (e) {
+    mediaStartedForCallGeneration = -1;
     console.warn('[reticulumVoice] mic capture failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
   }
@@ -305,10 +428,58 @@ function toastCallFailed(detail?: unknown): void {
   pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
 }
 
+function abortOutgoingCallAttempt(message?: string): void {
+  clearSafetyHangupTimer();
+  stopVoiceCallTones();
+  playVoiceFailTone();
+  const humanized = humanizeVoiceIpcError(message);
+  useReticulumVoiceStore.getState().applyError(humanized);
+  pushAppToast(humanized, 'error');
+}
+
+function terminalEventMatchesActiveCall(opts: {
+  linkId?: string | null;
+  callGeneration?: number | null;
+  /** WS voice.error often omits link_id — allow matching the current session. */
+  allowMissingLinkId?: boolean;
+}): boolean {
+  const state = useReticulumVoiceStore.getState();
+  if (
+    opts.callGeneration != null &&
+    Number.isFinite(opts.callGeneration) &&
+    opts.callGeneration !== state.callGeneration
+  ) {
+    return false;
+  }
+  const active = state.activeCall;
+  if (!active) return false;
+  const eventLink = (opts.linkId ?? '').trim().toLowerCase();
+  const activeLink = active.link_id.trim().toLowerCase();
+  if (eventLink && activeLink && eventLink !== activeLink) {
+    return false;
+  }
+  // Empty event link_id: only accept while local call also has no link yet (outgoing pending),
+  // unless this is an error path that routinely omits link_id.
+  if (!eventLink && activeLink && !opts.allowMissingLinkId) {
+    return false;
+  }
+  return true;
+}
+
 export async function reticulumVoiceCallPeer(
   lxmfPeerHash: string,
   opts?: { identityHash?: string | null },
 ): Promise<void> {
+  const busyCall =
+    useReticulumVoiceStore.getState().activeCall ?? useReticulumVoiceStore.getState().incomingCall;
+  if (isReticulumVoiceSessionBusy(busyCall)) {
+    pushAppToast(i18n.t('reticulumVoice.errors.callInProgress'), 'error');
+    return;
+  }
+
+  // Warm AudioContexts in the click stack before any await.
+  warmReticulumVoiceAudioContexts();
+
   const api = window.electronAPI.reticulum.voice;
   let statusRaw: unknown;
   try {
@@ -358,28 +529,20 @@ export async function reticulumVoiceCallPeer(
     if (!resp.ok) {
       const msg = resp.error || i18n.t('reticulumVoice.errors.callFailed');
       console.warn(`[reticulumVoice] call failed reason=${msg}`);
-      clearSafetyHangupTimer();
-      stopVoiceCallTones();
-      playVoiceFailTone();
-      useReticulumVoiceStore.getState().applyError(msg);
-      pushAppToast(msg, 'error');
+      abortOutgoingCallAttempt(msg);
     }
   } catch (e) {
     console.warn('[reticulumVoice] call IPC failed', e);
-    clearSafetyHangupTimer();
-    stopVoiceCallTones();
-    playVoiceFailTone();
-    useReticulumVoiceStore.getState().applyError(i18n.t('reticulumVoice.errors.callFailed'));
-    toastCallFailed(e);
+    abortOutgoingCallAttempt(i18n.t('reticulumVoice.errors.callFailed'));
   }
-  // Mic deferred until connecting/established (overlay effect).
 }
 
 export async function reticulumVoiceAnswer(): Promise<void> {
+  warmReticulumVoiceAudioContexts();
   try {
     const resp = await window.electronAPI.reticulum.voice.answer();
     if (!resp.ok) {
-      pushAppToast(resp.error || i18n.t('reticulumVoice.errors.callFailed'), 'error');
+      pushAppToast(humanizeVoiceIpcError(resp.error), 'error');
       return;
     }
   } catch (e) {
@@ -393,14 +556,19 @@ export async function reticulumVoiceAnswer(): Promise<void> {
 
 export async function reticulumVoiceReject(): Promise<void> {
   clearSafetyHangupTimer();
-  stopReticulumVoiceMedia();
   stopVoiceCallTones();
   try {
-    await window.electronAPI.reticulum.voice.reject();
+    const resp = await window.electronAPI.reticulum.voice.reject();
+    if (!resp.ok) {
+      pushAppToast(humanizeVoiceIpcError(resp.error), 'error');
+      return;
+    }
   } catch (e) {
     console.warn('[reticulumVoice] reject IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
+    return;
   }
+  stopReticulumVoiceMedia();
   useReticulumVoiceStore.getState().clearCall();
 }
 
@@ -408,33 +576,36 @@ export async function reticulumVoiceHangup(opts?: {
   terminalReason?: string | null;
 }): Promise<void> {
   clearSafetyHangupTimer();
-  stopReticulumVoiceMedia();
   const reason = opts?.terminalReason ?? 'hangup';
-  const kind = classifyVoiceTerminalReason(reason);
-  stopVoiceCallTones();
-  if (kind === 'busy') playVoiceBusyTone();
-  else if (kind === 'noAnswer' || kind === 'failed' || kind === 'rejected') playVoiceFailTone();
-
-  const toastKey = voiceToastKeyForTerminal(kind);
-  if (toastKey && kind !== 'completed') {
-    pushAppToast(i18n.t(toastKey), 'error');
-  }
+  applyVoiceTerminalFeedback(reason);
 
   console.info(`[reticulumVoice] hangup reason=${reason}`);
   try {
-    await window.electronAPI.reticulum.voice.hangup();
+    const resp = await window.electronAPI.reticulum.voice.hangup();
+    if (!resp.ok) {
+      pushAppToast(humanizeVoiceIpcError(resp.error), 'error');
+      return;
+    }
   } catch (e) {
     console.warn('[reticulumVoice] hangup IPC failed', e);
+    pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
+    return;
   }
+  stopReticulumVoiceMedia();
   useReticulumVoiceStore.getState().clearCall();
 }
 
 export async function reticulumVoiceSetMuted(muted: boolean): Promise<void> {
   try {
-    await window.electronAPI.reticulum.voice.mute({ muted });
+    const resp = await window.electronAPI.reticulum.voice.mute({ muted });
+    if (!resp.ok) {
+      pushAppToast(humanizeVoiceIpcError(resp.error ?? 'mute'), 'error');
+      return;
+    }
   } catch (e) {
     console.warn('[reticulumVoice] mute IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.muteFailed'), 'error');
+    return;
   }
   useReticulumVoiceStore.getState().setMicrophoneMuted(muted);
 }
@@ -447,22 +618,31 @@ export function handleReticulumVoiceTerminal(opts: {
   linkId?: string | null;
   reason?: string | null;
   errorMessage?: string | null;
+  callGeneration?: number | null;
 }): void {
+  if (
+    !terminalEventMatchesActiveCall({
+      ...opts,
+      allowMissingLinkId: Boolean(opts.errorMessage),
+    })
+  ) {
+    console.debug('[reticulumVoice] ignoring stale terminal event', opts);
+    return;
+  }
   clearSafetyHangupTimer();
   stopReticulumVoiceMedia();
   const reason = opts.errorMessage ?? opts.reason ?? null;
-  const kind = classifyVoiceTerminalReason(reason);
-  stopVoiceCallTones();
-  if (kind === 'busy') playVoiceBusyTone();
-  else if (kind === 'rejected' || kind === 'noAnswer' || kind === 'failed') playVoiceFailTone();
-
-  const toastKey = voiceToastKeyForTerminal(kind);
-  if (toastKey) {
-    pushAppToast(i18n.t(toastKey), 'error');
-  }
+  applyVoiceTerminalFeedback(opts.errorMessage ? 'failed' : reason, {
+    // errorMessage path uses applyError toast via humanized message below
+    showToast: !opts.errorMessage,
+  });
 
   if (opts.errorMessage) {
-    useReticulumVoiceStore.getState().applyError(opts.errorMessage);
+    const humanized = humanizeVoiceIpcError(opts.errorMessage);
+    pushAppToast(humanized, 'error');
+    useReticulumVoiceStore.getState().applyError(humanized, {
+      callGeneration: useReticulumVoiceStore.getState().callGeneration,
+    });
   } else {
     useReticulumVoiceStore.getState().applyTerminated(opts.linkId ?? null, reason);
   }

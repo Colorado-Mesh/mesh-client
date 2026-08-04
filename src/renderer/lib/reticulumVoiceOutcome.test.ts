@@ -11,6 +11,8 @@ describe('classifyVoiceTerminalReason', () => {
     expect(classifyVoiceTerminalReason('safety_timeout')).toBe('noAnswer');
     expect(classifyVoiceTerminalReason(null)).toBe('completed');
     expect(classifyVoiceTerminalReason('hangup')).toBe('completed');
+    expect(classifyVoiceTerminalReason('established')).toBe('completed');
+    expect(classifyVoiceTerminalReason('terminated')).toBe('completed');
     expect(classifyVoiceTerminalReason('encode exploded')).toBe('failed');
   });
 

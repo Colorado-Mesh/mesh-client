@@ -5121,12 +5121,13 @@
       "callFailed": "Panggilan suara gagal.",
       "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan.",
       "micFailed": "Tidak dapat mengakses mikrofon untuk suara.",
-      "muteFailed": "Tidak dapat memperbarui mikrofon bisu pada sesi suara."
+      "muteFailed": "Tidak dapat memperbarui mikrofon bisu pada sesi suara.",
+      "callInProgress": "A voice call is already in progress."
     },
     "connecting": "Menyambung…",
-    "elapsedAria": "Waktu berlalu",
-    "txAria": "Bingkai suara yang ditransmisikan",
-    "rxAria": "Bingkai suara yang diterima",
+    "elapsedAria": "Waktu berlalu {{time}}",
+    "txAria": "Bingkai suara yang ditransmisikan {{count}}",
+    "rxAria": "Bingkai suara yang diterima {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "Panggilan ditolak.",
       "noAnswer": "Tidak ada jawaban — waktu panggilan habis.",
       "failed": "Panggilan suara gagal."
-    }
+    },
+    "statsSeparator": "·"
   }
 }

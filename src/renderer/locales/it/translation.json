@@ -5121,12 +5121,13 @@
       "callFailed": "Chiamata vocale non riuscita.",
       "notRunning": "La voce non è disponibile fino a quando lo stack Reticulum non è in esecuzione.",
       "micFailed": "Impossibile accedere al microfono per la voce.",
-      "muteFailed": "Impossibile aggiornare il silenziamento del microfono nella sessione vocale."
+      "muteFailed": "Impossibile aggiornare il silenziamento del microfono nella sessione vocale.",
+      "callInProgress": "Una chiamata vocale è già in corso."
     },
     "connecting": "Collegamento in corso…",
-    "elapsedAria": "Tempo trascorso",
-    "txAria": "Frame vocali trasmessi",
-    "rxAria": "Frame vocali ricevuti",
+    "elapsedAria": "Tempo trascorso {{time}}",
+    "txAria": "Frame vocali trasmessi {{count}}",
+    "rxAria": "Frame vocali ricevuti {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "Chiamata respinta",
       "noAnswer": "Nessuna risposta — chiamata scaduta.",
       "failed": "Chiamata vocale non riuscita."
-    }
+    },
+    "statsSeparator": "·"
   }
 }

@@ -5121,12 +5121,13 @@
       "callFailed": "音声通話に失敗しました。",
       "notRunning": "Reticulumスタックが実行されるまで、音声は使用できません。",
       "micFailed": "音声用のマイクにアクセスできませんでした。",
-      "muteFailed": "音声セッションでマイクのミュートを更新できませんでした。"
+      "muteFailed": "音声セッションでマイクのミュートを更新できませんでした。",
+      "callInProgress": "音声通話はすでに進行中です。"
     },
     "connecting": "連携中…",
-    "elapsedAria": "経過時間",
-    "txAria": "送信された音声フレーム",
-    "rxAria": "受信したボイスフレーム",
+    "elapsedAria": "経過時間 {{time}}",
+    "txAria": "送信された音声フレーム {{count}}",
+    "rxAria": "受信したボイスフレーム {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "コールは拒否されました",
       "noAnswer": "応答がありません—通話がタイムアウトしました。",
       "failed": "音声通話に失敗しました。"
-    }
+    },
+    "statsSeparator": "・"
   }
 }

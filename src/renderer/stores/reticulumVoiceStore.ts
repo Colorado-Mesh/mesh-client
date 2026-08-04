@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import type { VoiceActiveCall } from '@/shared/voice-types';
-import { isVoiceActiveCall } from '@/shared/voice-types';
+import { isReticulumIncomingRinging, isVoiceActiveCall } from '@/shared/voice-types';
 
 export type VoiceAudioListener = (channels: number, samples: Float32Array) => void;
 
@@ -44,7 +44,7 @@ interface ReticulumVoiceStoreState {
   applyUpdate: (payload: unknown) => void;
   applyStats: (payload: unknown) => void;
   applyTerminated: (linkId?: string | null, reason?: string | null) => void;
-  applyError: (message: string) => void;
+  applyError: (message: string, opts?: { callGeneration?: number | null }) => void;
   incrementLocalTxDrops: () => void;
   setMicrophoneMuted: (muted: boolean) => void;
   clearCall: () => void;
@@ -65,13 +65,7 @@ function asActiveCall(value: unknown): VoiceActiveCall | null {
 
 /** Keep incomingCall only while the call is still ringing / available. */
 function incomingFromActive(active: VoiceActiveCall | null): VoiceActiveCall | null {
-  if (
-    active?.role === 'incoming' &&
-    (active.status === 'ringing' || active.status === 'available')
-  ) {
-    return active;
-  }
-  return null;
+  return isReticulumIncomingRinging(active) ? active : null;
 }
 
 function resetSessionFields(): Pick<
@@ -247,12 +241,15 @@ export const useReticulumVoiceStore = create<ReticulumVoiceStoreState>((set, get
 
   applyTerminated: (linkId, reason) => {
     set((s) => {
-      if (!linkId?.trim()) {
-        // Missing/empty link id — ignore (do not blind-clear the current call).
+      if (!s.activeCall) return s;
+      const eventLink = (linkId ?? '').trim().toLowerCase();
+      const activeLink = s.activeCall.link_id.trim().toLowerCase();
+      if (eventLink && activeLink && eventLink !== activeLink) {
+        // Stale terminate for a previous call.
         return s;
       }
-      if (s.activeCall?.link_id && s.activeCall.link_id.toLowerCase() !== linkId.toLowerCase()) {
-        // Stale terminate for a previous call.
+      // Empty event link: only clear while local call also has no link (outgoing pending).
+      if (!eventLink && activeLink) {
         return s;
       }
       return {
@@ -262,11 +259,20 @@ export const useReticulumVoiceStore = create<ReticulumVoiceStoreState>((set, get
     });
   },
 
-  applyError: (message) => {
-    set({
-      ...resetSessionFields(),
-      lastError: message,
-      lastTerminalReason: message,
+  applyError: (message, opts) => {
+    set((s) => {
+      if (
+        opts?.callGeneration != null &&
+        Number.isFinite(opts.callGeneration) &&
+        opts.callGeneration !== s.callGeneration
+      ) {
+        return s;
+      }
+      return {
+        ...resetSessionFields(),
+        lastError: message,
+        lastTerminalReason: message,
+      };
     });
   },
 

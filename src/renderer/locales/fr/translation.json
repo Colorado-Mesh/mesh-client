@@ -5121,12 +5121,13 @@
       "callFailed": "Échec de l'appel vocal.",
       "notRunning": "La voix n'est pas disponible tant que la pile Reticulum n'est pas en cours d'exécution.",
       "micFailed": "Impossible d'accéder au microphone pour la voix.",
-      "muteFailed": "Impossible de mettre à jour le microphone muet sur la session vocale."
+      "muteFailed": "Impossible de mettre à jour le microphone muet sur la session vocale.",
+      "callInProgress": "Un appel vocal est déjà en cours."
     },
     "connecting": "Connexion…",
-    "elapsedAria": "Temps écoulé",
-    "txAria": "Trames vocales transmises",
-    "rxAria": "Trames vocales reçues",
+    "elapsedAria": "Temps écoulé {{time}}",
+    "txAria": "Trames vocales transmises {{count}}",
+    "rxAria": "Trames vocales reçues {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "Appel rejeté",
       "noAnswer": "Pas de réponse — appel expiré.",
       "failed": "Échec de l'appel vocal."
-    }
+    },
+    "statsSeparator": "·"
   }
 }

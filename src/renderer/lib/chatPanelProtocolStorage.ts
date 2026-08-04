@@ -1,4 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { normalizeMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScope';
+import { isValidMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 
 import {
   type ChatLastReadSanitizeMessage,
@@ -10,6 +12,9 @@ import {
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { parseStoredJson } from './parseStoredJson';
 import type { MeshProtocol } from './types';
+
+/** Cap persisted flood-scope override map size (view keys). */
+const FLOOD_SCOPE_OVERRIDE_MAX_KEYS = 200;
 
 export {
   type ChatLastReadSanitizeMessage,
@@ -132,12 +137,16 @@ export function floodScopeOverridesStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:floodScopeOverrides:${protocol}`;
 }
 
-/** True when a stored override is Unscoped or a non-empty named hashtag (not Default). */
+/** True when a stored override is Unscoped or a valid named hashtag (not Default). */
 function isPersistedFloodScopeOverride(value: string): boolean {
   if (value === FLOOD_SCOPE_OVERRIDE_UNSCOPED) return true;
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === '#') return false;
-  return true;
+  return isValidMeshcoreFloodScopeHashtag(normalizeMeshcoreFloodScopeHashtag(value));
+}
+
+function normalizePersistedFloodScopeOverride(value: string): string | null {
+  if (value === FLOOD_SCOPE_OVERRIDE_UNSCOPED) return FLOOD_SCOPE_OVERRIDE_UNSCOPED;
+  const normalized = normalizeMeshcoreFloodScopeHashtag(value);
+  return isValidMeshcoreFloodScopeHashtag(normalized) ? normalized : null;
 }
 
 /** Load persisted Chat flood-scope overrides (viewKey → override) for this protocol. */
@@ -149,8 +158,10 @@ export function loadFloodScopeOverridesInitial(protocol: MeshProtocol): Record<s
     const result: Record<string, string> = {};
     for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
       if (typeof v !== 'string') continue;
-      if (!isPersistedFloodScopeOverride(v)) continue;
-      result[k] = v === FLOOD_SCOPE_OVERRIDE_UNSCOPED ? FLOOD_SCOPE_OVERRIDE_UNSCOPED : v.trim();
+      const normalized = normalizePersistedFloodScopeOverride(v);
+      if (!normalized) continue;
+      result[k] = normalized;
+      if (Object.keys(result).length >= FLOOD_SCOPE_OVERRIDE_MAX_KEYS) break;
     }
     return result;
   }
@@ -174,8 +185,19 @@ export function saveFloodScopeOverride(
       localStorage.setItem(key, JSON.stringify(rest));
       return;
     }
-    current[viewKey] =
-      override === FLOOD_SCOPE_OVERRIDE_UNSCOPED ? FLOOD_SCOPE_OVERRIDE_UNSCOPED : override.trim();
+    const normalized = normalizePersistedFloodScopeOverride(override);
+    if (!normalized) {
+      const rest = Object.fromEntries(Object.entries(current).filter(([k]) => k !== viewKey));
+      localStorage.setItem(key, JSON.stringify(rest));
+      return;
+    }
+    current[viewKey] = normalized;
+    const entries = Object.entries(current);
+    if (entries.length > FLOOD_SCOPE_OVERRIDE_MAX_KEYS) {
+      const trimmed = Object.fromEntries(entries.slice(-FLOOD_SCOPE_OVERRIDE_MAX_KEYS));
+      localStorage.setItem(key, JSON.stringify(trimmed));
+      return;
+    }
     localStorage.setItem(key, JSON.stringify(current));
   } catch (e) {
     console.debug(

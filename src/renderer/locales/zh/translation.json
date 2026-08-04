@@ -5121,12 +5121,13 @@
       "callFailed": "语音通话失败。",
       "notRunning": "在 Reticulum 堆栈运行之前，语音不可用。",
       "micFailed": "无法访问麦克风进行语音通话。",
-      "muteFailed": "无法更新语音会话上的麦克风静音。"
+      "muteFailed": "无法更新语音会话上的麦克风静音。",
+      "callInProgress": "语音通话已在进行中。"
     },
     "connecting": "连接中…",
-    "elapsedAria": "运行时间",
-    "txAria": "传输的语音帧",
-    "rxAria": "已接收语音帧",
+    "elapsedAria": "运行时间 {{time}}",
+    "txAria": "传输的语音帧 {{count}}",
+    "rxAria": "已接收语音帧 {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "呼叫被拒绝。",
       "noAnswer": "无应答—呼叫超时。",
       "failed": "语音通话失败。"
-    }
+    },
+    "statsSeparator": "·"
   }
 }

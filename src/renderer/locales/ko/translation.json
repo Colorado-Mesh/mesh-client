@@ -5121,12 +5121,13 @@
       "callFailed": "음성 통화에 실패했습니다.",
       "notRunning": "Reticulum 스택이 실행될 때까지 음성을 사용할 수 없습니다.",
       "micFailed": "음성을 위해 마이크에 액세스할 수 없습니다.",
-      "muteFailed": "음성 세션에서 마이크 음소거를 업데이트할 수 없습니다."
+      "muteFailed": "음성 세션에서 마이크 음소거를 업데이트할 수 없습니다.",
+      "callInProgress": "음성 통화가 이미 진행 중입니다."
     },
     "connecting": "Connecting",
-    "elapsedAria": "경과 시간",
-    "txAria": "전송된 음성 프레임",
-    "rxAria": "수신된 음성 프레임",
+    "elapsedAria": "경과 시간 {{time}}",
+    "txAria": "전송된 음성 프레임 {{count}}",
+    "rxAria": "수신된 음성 프레임 {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "통화가 거부되었습니다.",
       "noAnswer": "응답 없음 — 통화 시간이 초과되었습니다.",
       "failed": "음성 통화에 실패했습니다."
-    }
+    },
+    "statsSeparator": "Poisonblow"
   }
 }

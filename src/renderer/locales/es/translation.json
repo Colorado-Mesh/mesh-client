@@ -5121,12 +5121,13 @@
       "callFailed": "La llamada de voz ha fallado.",
       "notRunning": "La voz no está disponible hasta que la pila de Reticulum esté en ejecución.",
       "micFailed": "No se ha podido acceder al micrófono para voz.",
-      "muteFailed": "No se ha podido actualizar el silencio del micrófono en la sesión de voz."
+      "muteFailed": "No se ha podido actualizar el silencio del micrófono en la sesión de voz.",
+      "callInProgress": "Ya hay una llamada de voz en curso."
     },
     "connecting": "Conectando…",
-    "elapsedAria": "Tiempo transcurrido",
-    "txAria": "Tramas de voz transmitidas",
-    "rxAria": "Tramas de voz recibidas",
+    "elapsedAria": "Tiempo transcurrido {{time}}",
+    "txAria": "Tramas de voz transmitidas {{count}}",
+    "rxAria": "Tramas de voz recibidas {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pKT {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "Llamada rechazada",
       "noAnswer": "Sin respuesta: el tiempo de espera de la llamada ha expirado.",
       "failed": "La llamada de voz ha fallado."
-    }
+    },
+    "statsSeparator": "·"
   }
 }

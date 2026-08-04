@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import i18n from '@/renderer/lib/i18n';
+import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 
 import { ReticulumVoiceCallButton } from './ReticulumVoiceCallButton';
 
@@ -18,6 +19,7 @@ vi.mock('@/renderer/lib/reticulumVoiceSession', () => ({
 describe('ReticulumVoiceCallButton', () => {
   beforeEach(() => {
     callPeer.mockReset();
+    useReticulumVoiceStore.getState().clearCall();
   });
 
   it('invokes call helper with peer hash and has no axe violations', async () => {
@@ -31,7 +33,7 @@ describe('ReticulumVoiceCallButton', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('uses outlined cyan chip action class and keeps interop only in aria/title', () => {
+  it('uses outlined cyan chip action class and keeps interop only in title', () => {
     render(
       <ReticulumVoiceCallButton lxmfPeerHash={'a'.repeat(32)} identityHash={'b'.repeat(32)} />,
     );
@@ -40,8 +42,16 @@ describe('ReticulumVoiceCallButton', () => {
     expect(btn.className).toMatch(/text-cyan-/);
     expect(btn.className).not.toContain('hover:underline');
     const interop = i18n.t('reticulumVoice.help.interop');
-    expect(btn.getAttribute('aria-label')).toContain(interop);
+    expect(btn.getAttribute('aria-label')).not.toContain(interop);
     expect(btn.getAttribute('title')).toContain(interop);
     expect(screen.queryByText(interop)).not.toBeInTheDocument();
+  });
+
+  it('disables while a voice session is busy', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('c'.repeat(32));
+    render(
+      <ReticulumVoiceCallButton lxmfPeerHash={'a'.repeat(32)} identityHash={'b'.repeat(32)} />,
+    );
+    expect(screen.getByRole('button', { name: /start lxst voice call/i })).toBeDisabled();
   });
 });

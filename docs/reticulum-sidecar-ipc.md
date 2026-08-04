@@ -282,7 +282,9 @@ Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sand
 | `reticulum:showRncpOpenFileDialog` / `showRncpSaveDirectoryDialog` | Native pickers that seed the rncp send-file / save-dir+fetch-jail allowlists                                 |
 | `reticulum:revealInFolder`                                         | Reveal a path in the OS file manager when it matches an rncp picker allowlist                                |
 | `reticulum:onEvent` / `onStatus`                                   | Shared `/ws` events and sidecar status                                                                       |
+| `reticulum:voiceSendAudio`                                         | Dedicated PCM TX ingest (`POST /api/v1/voice/audio`); own ~2000/min budget (not generic `proxyPost`)         |
 | `reticulum:onVoiceAudio`                                           | Dedicated `/ws/voice` → `reticulum:voiceAudio` PCM frames (`voice.audio`)                                    |
+| `electronAPI.reticulum.voice.*`                                    | Preload surface: `getStatus` / `call` / `answer` / `reject` / `hangup` / `mute` / `sendAudio`                |
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds, **`blePairingTimedOut`** OS passkey / TX-read timeouts). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 

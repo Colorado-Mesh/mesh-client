@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isReticulumIncomingRinging,
+  isReticulumVoiceSessionBusy,
   isVoiceActiveCall,
   isVoiceStatusResponse,
   parseVoiceAudioRequest,
@@ -77,5 +79,18 @@ describe('voice-types guards', () => {
         samples_b64: 'A'.repeat(VOICE_AUDIO_SAMPLES_B64_MAX + 1),
       }),
     ).toEqual({ error: 'samples_b64_too_large' });
+  });
+
+  it('classifies incoming ringing and session busy', () => {
+    const ringing = {
+      link_id: 'a'.repeat(32),
+      remote_identity: 'b'.repeat(32),
+      role: 'incoming' as const,
+      status: 'ringing' as const,
+    };
+    expect(isReticulumIncomingRinging(ringing)).toBe(true);
+    expect(isReticulumIncomingRinging({ ...ringing, status: 'established' })).toBe(false);
+    expect(isReticulumVoiceSessionBusy(ringing)).toBe(true);
+    expect(isReticulumVoiceSessionBusy(null)).toBe(false);
   });
 });

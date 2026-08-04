@@ -5121,12 +5121,13 @@
       "callFailed": "Falha na chamada de voz.",
       "notRunning": "A voz não está disponível até que a pilha Reticulum esteja em execução.",
       "micFailed": "Não foi possível acessar o microfone para voz.",
-      "muteFailed": "Não foi possível atualizar o mudo do microfone na sessão de voz."
+      "muteFailed": "Não foi possível atualizar o mudo do microfone na sessão de voz.",
+      "callInProgress": "Uma chamada de voz já está em andamento."
     },
     "connecting": "Conectando…",
-    "elapsedAria": "Tempo corrido:",
-    "txAria": "Quadros de voz transmitidos",
-    "rxAria": "Quadros de voz recebidos",
+    "elapsedAria": "Tempo corrido: {{time}}",
+    "txAria": "Quadros de voz transmitidos {{count}}",
+    "rxAria": "Quadros de voz recebidos {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "Chamada rejeitada",
       "noAnswer": "Sem resposta — a chamada expirou.",
       "failed": "Falha na chamada de voz."
-    }
+    },
+    "statsSeparator": "·"
   }
 }

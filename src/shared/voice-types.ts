@@ -116,6 +116,25 @@ export function isVoiceActiveCall(value: unknown): value is VoiceActiveCall {
   );
 }
 
+/** Incoming ring UI: role incoming and still ringing/available. */
+export function isReticulumIncomingRinging(
+  call: VoiceActiveCall | null | undefined,
+): call is VoiceActiveCall {
+  return call?.role === 'incoming' && (call.status === 'ringing' || call.status === 'available');
+}
+
+/** True when a non-terminal local voice session is in progress. */
+export function isReticulumVoiceSessionBusy(call: VoiceActiveCall | null | undefined): boolean {
+  if (!call) return false;
+  return (
+    call.status === 'calling' ||
+    call.status === 'ringing' ||
+    call.status === 'connecting' ||
+    call.status === 'established' ||
+    call.status === 'available'
+  );
+}
+
 export function isVoiceStatusResponse(value: unknown): value is VoiceStatusResponse {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;

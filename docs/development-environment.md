@@ -119,7 +119,7 @@ pnpm run reticulum:sidecar:build
 
 This writes `reticulum-sidecar/target/debug/mesh-client-reticulum` (macOS/Linux) or `.exe` on Windows.
 
-**First-time / recover siblings:** from the mesh-client repo root, run `./scripts/clone-ratspeak-stack.sh`. That script clones (or updates) sibling checkouts `../rsReticulum`, `../rsLXMF`, and `../rsNomad`, floats each to **`origin/main`** by default, and applies mesh-client overlays (fails if a patch will not apply). For bisect or a known-good pin, set `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` to a SHA or ref before running the clone script.
+**First-time / recover siblings:** from the mesh-client repo root, run `./scripts/clone-ratspeak-stack.sh`. That script clones (or updates) sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, and `../rsLXST`, floats each to **`origin/main`** by default, and applies mesh-client overlays (fails if a patch will not apply). For bisect or a known-good pin, set `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` to a SHA or ref before running the clone script.
 
 When those siblings already exist, `pnpm run reticulum:sidecar:build` applies required overlays via `scripts/ensure-rsReticulum-patches.sh` before compiling with `rns-stack,rns-ble,rns-rnode-tcp`. See [`reticulum-sidecar/patches/README.md`](../reticulum-sidecar/patches/README.md) for overlay details.
 

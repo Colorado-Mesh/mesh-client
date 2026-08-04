@@ -5121,12 +5121,13 @@
       "callFailed": "Sesli arama başarısız.",
       "notRunning": "Reticulum yığını çalışana kadar ses kullanılamaz.",
       "micFailed": "Ses için mikrofona erişilemedi.",
-      "muteFailed": "Sesli oturumda mikrofon sessize alınamadı."
+      "muteFailed": "Sesli oturumda mikrofon sessize alınamadı.",
+      "callInProgress": "Bir sesli arama zaten devam ediyor."
     },
     "connecting": "Bağlanıyor…",
-    "elapsedAria": "Geçen zaman",
-    "txAria": "İletilen ses çerçeveleri",
-    "rxAria": "Alınan ses çerçeveleri",
+    "elapsedAria": "Geçen zaman {{time}}",
+    "txAria": "İletilen ses çerçeveleri {{count}}",
+    "rxAria": "Alınan ses çerçeveleri {{count}}",
     "txFrames": "TX {{count}}",
     "txPackets": "pkt {{count}}",
     "rxFrames": "RX {{count}}",
@@ -5142,6 +5143,7 @@
       "rejected": "Çağrı reddedildi.",
       "noAnswer": "Cevap yok — çağrı zaman aşımına uğradı.",
       "failed": "Sesli arama başarısız."
-    }
+    },
+    "statsSeparator": "·"
   }
 }
