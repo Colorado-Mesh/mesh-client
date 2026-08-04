@@ -195,8 +195,10 @@ pub fn spawn_lxmf_inbound_receiver(
     // Bound only if upstream grows a bounded setter; do not buffer-copy into a second queue.
     let (link_packet_tx, mut link_packet_rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
     let (resource_tx, mut resource_rx) = mpsc::channel::<(Vec<u8>, [u8; 16])>(256);
-    // Bounded: opportunistic bursts from hubs; drop-oldest via try_send on the LinkManager side.
-    let (inbound_raw_tx, mut inbound_raw_rx) = mpsc::channel::<Vec<u8>>(256);
+    // Bounded: LinkManager `try_send`s here. When full, tokio mpsc drops the *new* packet
+    // (not oldest) — "dropping newest opportunistic packet" (LinkManager saturation log overlay).
+    let (inbound_raw_tx, mut inbound_raw_rx) =
+        mpsc::channel::<Vec<u8>>(INBOUND_RAW_CHANNEL_CAPACITY);
 
     let identity_for_raw = identity.clone();
     let mut link_mgr = LinkManager::with_destination(
@@ -244,14 +246,49 @@ pub fn spawn_lxmf_inbound_receiver(
     });
 }
 
+/// Capacity for opportunistic inbound raw frames (`LinkManager` `try_send`s into this queue).
+pub(crate) const INBOUND_RAW_CHANNEL_CAPACITY: usize = 256;
+
 /// Prepend `lxmf_dest_hash` when the sender omitted it (Python opportunistic strips dest hash).
+///
+/// Do **not** use this for opportunistic raw decrypt output — self-messages start with
+/// `source_hash == lxmf_dest_hash` after the dest is stripped, which would skip a needed prepend.
+/// Prefer [`prepend_lxmf_dest_hash`] on that path.
 pub(crate) fn prepend_lxmf_dest_hash_if_needed(lxmf_dest_hash: [u8; 16], data: &[u8]) -> Vec<u8> {
     if data.len() >= 16 && data[..16] == lxmf_dest_hash {
         data.to_vec()
     } else {
-        let mut full = lxmf_dest_hash.to_vec();
-        full.extend_from_slice(data);
-        full
+        prepend_lxmf_dest_hash(lxmf_dest_hash, data)
+    }
+}
+
+/// Always prepend `lxmf_dest_hash` (opportunistic Python strips it before encrypt).
+pub(crate) fn prepend_lxmf_dest_hash(lxmf_dest_hash: [u8; 16], data: &[u8]) -> Vec<u8> {
+    let mut full = lxmf_dest_hash.to_vec();
+    full.extend_from_slice(data);
+    full
+}
+
+/// Enqueue an opportunistic raw frame the same way `LinkManager` does (`try_send`).
+///
+/// When the queue is full, the **new** packet is dropped (tokio bounded mpsc) and a warning is
+/// logged. This is not drop-oldest. Production saturation logs live in the LinkManager overlay;
+/// this helper exists so unit tests can assert the same drop-newest policy.
+#[cfg(test)]
+pub(crate) fn try_enqueue_inbound_raw(
+    tx: &mpsc::Sender<Vec<u8>>,
+    raw: Vec<u8>,
+) -> Result<(), mpsc::error::TrySendError<Vec<u8>>> {
+    match tx.try_send(raw) {
+        Ok(()) => Ok(()),
+        Err(e @ mpsc::error::TrySendError::Full(_)) => {
+            tracing::warn!(
+                capacity = INBOUND_RAW_CHANNEL_CAPACITY,
+                "LXMF inbound raw channel full; dropping newest opportunistic packet"
+            );
+            Err(e)
+        }
+        Err(e) => Err(e),
     }
 }
 
@@ -313,7 +350,7 @@ async fn handle_opportunistic_raw_packet(
         tracing::debug!(len = raw.len(), "opportunistic LXMF decrypt failed");
         return;
     };
-    let unpack_data = prepend_lxmf_dest_hash_if_needed(lxmf_dest_hash, &plaintext);
+    let unpack_data = prepend_lxmf_dest_hash(lxmf_dest_hash, &plaintext);
     let msg = match LxMessage::unpack(&unpack_data) {
         Ok(msg) => msg,
         Err(e) => {
@@ -418,11 +455,72 @@ mod tests {
         let plaintext = decrypt_opportunistic_payload(&recipient, &raw).expect("decrypt");
         assert_eq!(plaintext, stripped);
 
-        let unpack_data = prepend_lxmf_dest_hash_if_needed(lxmf_hash, &plaintext);
+        let unpack_data = prepend_lxmf_dest_hash(lxmf_hash, &plaintext);
         let recovered = LxMessage::unpack(&unpack_data).expect("unpack");
         assert_eq!(recovered.content, "hello from sideband");
         assert_eq!(recovered.source_hash, sender_lxmf);
         assert_eq!(recovered.destination_hash, lxmf_hash);
+    }
+
+    #[test]
+    fn opportunistic_self_send_requires_always_prepend() {
+        // After Python strips dest, self-send plaintext starts with source_hash == lxmf_dest_hash.
+        // Conditional prepend would skip and corrupt unpack; always-prepend recovers.
+        let identity = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+
+        let mut msg = LxMessage::new(
+            lxmf_hash,
+            lxmf_hash,
+            "",
+            "loopback self-send",
+            DeliveryMethod::Opportunistic,
+        );
+        msg.sign(
+            identity
+                .get_signing_key()
+                .as_ref()
+                .expect("identity signing key"),
+        )
+        .unwrap();
+        let packed = msg.pack().unwrap();
+        assert!(packed.len() > 16 && packed[..16] == lxmf_hash);
+        let stripped = &packed[16..];
+        assert_eq!(
+            &stripped[..16],
+            &lxmf_hash,
+            "self-send stripped body must start with source == dest hash"
+        );
+
+        let wrongly_skipped = prepend_lxmf_dest_hash_if_needed(lxmf_hash, stripped);
+        assert_eq!(
+            wrongly_skipped, stripped,
+            "conditional helper skips when source_hash == dest (self-send)"
+        );
+        assert!(
+            LxMessage::unpack(&wrongly_skipped).is_err(),
+            "skipped prepend must not unpack as a valid self-send LXM"
+        );
+
+        let unpack_data = prepend_lxmf_dest_hash(lxmf_hash, stripped);
+        let recovered = LxMessage::unpack(&unpack_data).expect("always-prepend unpack");
+        assert_eq!(recovered.content, "loopback self-send");
+        assert_eq!(recovered.source_hash, lxmf_hash);
+        assert_eq!(recovered.destination_hash, lxmf_hash);
+    }
+
+    #[tokio::test]
+    async fn inbound_raw_try_send_drops_newest_when_full() {
+        let (tx, mut rx) = mpsc::channel::<Vec<u8>>(2);
+        assert!(try_enqueue_inbound_raw(&tx, vec![1]).is_ok());
+        assert!(try_enqueue_inbound_raw(&tx, vec![2]).is_ok());
+        match try_enqueue_inbound_raw(&tx, vec![3]) {
+            Err(mpsc::error::TrySendError::Full(dropped)) => assert_eq!(dropped, vec![3]),
+            other => panic!("expected Full(newest), got {other:?}"),
+        }
+        assert_eq!(rx.recv().await.expect("first"), vec![1]);
+        assert_eq!(rx.recv().await.expect("second"), vec![2]);
+        assert!(rx.try_recv().is_err(), "newest must not be queued");
     }
 
     #[test]
@@ -436,6 +534,14 @@ mod tests {
         assert!(
             src.contains("handle_opportunistic_raw_packet"),
             "opportunistic raw packets must be delivered to the LXMF router"
+        );
+        assert!(
+            src.contains("prepend_lxmf_dest_hash(lxmf_dest_hash, &plaintext)"),
+            "opportunistic path must always prepend dest hash (self-send safe)"
+        );
+        assert!(
+            src.contains("dropping newest opportunistic packet"),
+            "full inbound_raw queue must log saturation (drop-newest policy)"
         );
     }
 }
