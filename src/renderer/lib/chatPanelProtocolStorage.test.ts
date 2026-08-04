@@ -2,11 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearDraft,
+  clearFloodScopeOverride,
   draftsStorageKey,
   ensureMeshcoreChatLastReadSanitized,
+  FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+  floodScopeOverridesStorageKey,
   getSanitizedMeshtasticChatLastRead,
   lastReadStorageKey,
   loadDraftsInitial,
+  loadFloodScopeOverridesInitial,
   loadMutedViews,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
@@ -20,6 +24,7 @@ import {
   sanitizeMeshtasticChatLastRead,
   sanitizeReticulumChatLastRead,
   saveDraft,
+  saveFloodScopeOverride,
   saveMutedViews,
   savePersistedRoomsLastRead,
   saveStarred,
@@ -135,6 +140,66 @@ describe('chatPanelProtocolStorage — drafts', () => {
 
     localStorage.setItem(draftsStorageKey('meshtastic'), 'not json{');
     expect(loadDraftsInitial('meshtastic')).toEqual({});
+  });
+});
+
+describe('chatPanelProtocolStorage — flood scope overrides', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('returns empty object when nothing stored', () => {
+    expect(loadFloodScopeOverridesInitial('meshcore')).toEqual({});
+  });
+
+  it('keeps Unscoped and named scopes distinct from Default', () => {
+    saveFloodScopeOverride('meshcore', 'ch:0', FLOOD_SCOPE_OVERRIDE_UNSCOPED);
+    saveFloodScopeOverride('meshcore', 'ch:1', '#metro');
+    saveFloodScopeOverride('meshcore', 'ch:2', '');
+    expect(loadFloodScopeOverridesInitial('meshcore')).toEqual({
+      'ch:0': FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+      'ch:1': '#metro',
+    });
+    expect(localStorage.getItem(floodScopeOverridesStorageKey('meshcore'))).toBe(
+      JSON.stringify({
+        'ch:0': FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+        'ch:1': '#metro',
+      }),
+    );
+  });
+
+  it('Default clears a previously stored Unscoped choice', () => {
+    saveFloodScopeOverride('meshcore', 'ch:0', FLOOD_SCOPE_OVERRIDE_UNSCOPED);
+    clearFloodScopeOverride('meshcore', 'ch:0');
+    expect(loadFloodScopeOverridesInitial('meshcore')).toEqual({});
+  });
+
+  it('does not coerce Unscoped to Default on load', () => {
+    localStorage.setItem(
+      floodScopeOverridesStorageKey('meshcore'),
+      JSON.stringify({ 'ch:0': FLOOD_SCOPE_OVERRIDE_UNSCOPED, 'ch:1': '' }),
+    );
+    expect(loadFloodScopeOverridesInitial('meshcore')).toEqual({
+      'ch:0': FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+    });
+  });
+
+  it('scopes overrides per protocol', () => {
+    saveFloodScopeOverride('meshcore', 'ch:0', '#metro');
+    saveFloodScopeOverride('meshtastic', 'ch:0', '#ignored');
+    expect(loadFloodScopeOverridesInitial('meshcore')['ch:0']).toBe('#metro');
+    expect(loadFloodScopeOverridesInitial('meshtastic')['ch:0']).toBe('#ignored');
+  });
+
+  it('ignores non-string values and corrupt JSON', () => {
+    localStorage.setItem(
+      floodScopeOverridesStorageKey('meshcore'),
+      JSON.stringify({ 'ch:0': 42, 'ch:1': '#metro', 'ch:2': '#' }),
+    );
+    expect(loadFloodScopeOverridesInitial('meshcore')).toEqual({ 'ch:1': '#metro' });
+
+    localStorage.setItem(floodScopeOverridesStorageKey('meshcore'), 'not json{');
+    expect(loadFloodScopeOverridesInitial('meshcore')).toEqual({});
   });
 });
 
