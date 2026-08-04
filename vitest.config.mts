@@ -120,6 +120,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcoreContactAutoAdd.test.ts',
   'src/renderer/lib/meshcoreDbCacheHydration.repair.test.ts',
   'src/renderer/lib/meshcoreOwnNodeIds.test.ts',
+  'src/renderer/lib/reticulumLastSelfLxmfHash.test.ts',
+  'src/renderer/lib/reticulumOwnNodeIds.test.ts',
   'src/renderer/lib/meshcore/meshcoreRfRxRuntime.test.ts',
   'src/renderer/lib/meshcoreRoomCredentialStorage.test.ts',
   'src/renderer/lib/meshcoreRepeaterCredentialStorage.test.ts',

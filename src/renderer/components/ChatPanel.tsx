@@ -857,18 +857,23 @@ function ChatPanel({
   const visibleDmTabs = useMemo(() => {
     const all = new Set(openDmTabs);
     if (activeDmNode != null) all.add(activeDmNode);
-    for (const [nodeNum, dmCount] of inferredDmTabs) {
-      const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
-      if (dmCount > dismissedCount) {
-        all.add(nodeNum);
+    // Reticulum: until own identity is known, outbound history misattributes peer=self.
+    // Only keep explicitly opened/active tabs so a sticky self hex pill cannot flash on launch.
+    const allowInferredReticulumTabs = protocol !== 'reticulum' || ownNodeIdSet.size > 0;
+    if (allowInferredReticulumTabs) {
+      for (const [nodeNum, dmCount] of inferredDmTabs) {
+        const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
+        if (dmCount > dismissedCount) {
+          all.add(nodeNum);
+        }
       }
-    }
-    for (const [nodeNum, unread] of dmUnreadCounts) {
-      if (
-        unread > 0 &&
-        (!dmOnlyChat || !isDismissedDmConversation(nodeNum, dismissedDmTabs, inferredDmTabs))
-      ) {
-        all.add(nodeNum);
+      for (const [nodeNum, unread] of dmUnreadCounts) {
+        if (
+          unread > 0 &&
+          (!dmOnlyChat || !isDismissedDmConversation(nodeNum, dismissedDmTabs, inferredDmTabs))
+        ) {
+          all.add(nodeNum);
+        }
       }
     }
     return Array.from(all).filter((nodeNum) => {
@@ -884,6 +889,7 @@ function ChatPanel({
     inferredDmTabs,
     isOwnNode,
     openDmTabs,
+    ownNodeIdSet,
     protocol,
   ]);
 

@@ -63,6 +63,8 @@ import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity'
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
+import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
+import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
 import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
@@ -1203,17 +1205,22 @@ function AppContent() {
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
 
   const reticulumIdentity = useReticulumIdentityStore((s) => s.identity);
-  const reticulumOwnNodeIdSet = useMemo(() => {
-    const fromRuntime =
-      typeof reticulumRuntime.selfNodeId === 'number'
-        ? reticulumRuntime.selfNodeId
-        : reticulumRuntime.state.myNodeNum;
-    const fromIdentity = reticulumIdentity?.lxmf_hash
-      ? reticulumHashToNodeId(reticulumIdentity.lxmf_hash)
-      : 0;
-    const selfId = Math.max(fromRuntime >>> 0, fromIdentity >>> 0);
-    return selfId > 0 ? new Set([selfId]) : new Set<number>();
-  }, [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
+  useEffect(() => {
+    const hash = reticulumIdentity?.lxmf_hash?.trim();
+    if (!hash) return;
+    persistReticulumSelfLxmfHash(hash);
+  }, [reticulumIdentity?.lxmf_hash]);
+
+  const reticulumOwnNodeIdSet = useMemo(
+    () =>
+      resolveReticulumOwnNodeIdSet({
+        runtimeSelfNodeId:
+          typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : null,
+        connectionMyNodeNum: reticulumRuntime.state.myNodeNum,
+        lxmfHash: reticulumIdentity?.lxmf_hash,
+      }),
+    [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum],
+  );
 
   useEffect(() => {
     if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;

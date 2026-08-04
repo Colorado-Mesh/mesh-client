@@ -103,6 +103,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
 import {
   commitRncpLxmfControlHandled,
@@ -411,6 +412,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       };
       useReticulumIdentityStore.getState().setIdentity(nextIdentity);
       setSelfLxmfHash(status.lxmfHash);
+      persistReticulumSelfLxmfHash(status.lxmfHash);
       syncSelfNodeFromIdentityStatus(status.lxmfHash, status.displayName);
       return status.lxmfHash;
     },
@@ -1770,6 +1772,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       if (!next?.lxmf_hash) return;
       setSelfLxmfHash(next.lxmf_hash);
+      persistReticulumSelfLxmfHash(next.lxmf_hash);
       syncSelfNodeFromIdentityStatus(next.lxmf_hash, next.display_name?.trim() || null);
       const nodeId = reticulumHashToNodeId(next.lxmf_hash);
       if (nodeId > 0 && identityId) {
