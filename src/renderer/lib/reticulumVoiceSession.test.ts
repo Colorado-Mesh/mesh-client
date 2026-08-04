@@ -259,6 +259,45 @@ describe('reticulumVoiceSession', () => {
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
 
+  it('outgoing terminated with null reason plays busy tone and connect-failed toast', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+    });
+    handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: null });
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+  });
+
+  it('outgoing terminated with terminated reason plays busy tone and toasts', () => {
+    // beginOutgoing has empty link_id; terminate without link_id matches pending outgoing.
+    useReticulumVoiceStore.getState().beginOutgoing('2'.repeat(32));
+    handleReticulumVoiceTerminal({ reason: 'terminated' });
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+  });
+
+  it('established then terminated with null reason completes silently', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'snapshot',
+      active_call: {
+        link_id: '1'.repeat(32),
+        remote_identity: '2'.repeat(32),
+        role: 'outgoing',
+        status: 'established',
+        answered: true,
+      },
+    });
+    handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: null });
+    expect(playVoiceBusyTone).not.toHaveBeenCalled();
+    expect(playVoiceFailTone).not.toHaveBeenCalled();
+    expect(pushAppToast).not.toHaveBeenCalled();
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+  });
+
   it('ignores stale terminal for a different link_id', () => {
     useReticulumVoiceStore.getState().applyUpdate({
       type: 'outgoing',
@@ -404,5 +443,19 @@ describe('reticulumVoiceSession', () => {
     syncReticulumVoiceProgressTones('established');
     await vi.advanceTimersByTimeAsync(RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS + 10);
     expect(voiceApi.hangup).not.toHaveBeenCalled();
+  });
+
+  it('safety hangup still fires when activeCall was cleared without feedback', async () => {
+    const dest = 'a'.repeat(32);
+    await reticulumVoiceCallPeer(dest);
+    const generation = useReticulumVoiceStore.getState().callGeneration;
+    // Silent wipe (e.g. snapshot null) without terminal feedback — timer still armed.
+    useReticulumVoiceStore.getState().clearCall();
+    // clearCall does not bump generation; restore generation so safety matches.
+    useReticulumVoiceStore.setState({ callGeneration: generation });
+    await vi.advanceTimersByTimeAsync(RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS + 10);
+    expect(voiceApi.hangup).toHaveBeenCalled();
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
   });
 });

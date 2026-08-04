@@ -64,11 +64,12 @@ describe('reticulumVoiceCallTones', () => {
     stopVoiceCallTones();
   });
 
-  it('starts ringback oscillators and stops cleanly', () => {
+  it('starts UK double-ring ringback (4 oscillators per burst) and is idempotent', () => {
     startVoiceRingback();
-    expect(oscillatorCount).toBeGreaterThan(0);
+    // Two rings × dual tone (400+450) = 4 oscillators per burst.
+    expect(oscillatorCount).toBe(4);
     const afterStart = oscillatorCount;
-    startVoiceRingback(); // idempotent
+    startVoiceRingback(); // idempotent — no second burst until interval
     expect(oscillatorCount).toBe(afterStart);
     stopVoiceCallTones();
   });

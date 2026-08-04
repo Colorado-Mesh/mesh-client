@@ -98,12 +98,18 @@ function stopDialToneNodes(): void {
   }
 }
 
+/** UK double-ring: 0.4s on, 0.2s gap, 0.4s on, then ~1s silence (interval = 2s). */
+const UK_RING_ON_S = 0.4;
+const UK_RING_GAP_S = 0.2;
+const UK_RINGBACK_INTERVAL_MS = 2000;
+
 function scheduleRingbackBurst(ctx: AudioContext): void {
-  // US-style ringback: 440+480 Hz dual tone ~2s on, ~4s off (burst only; interval handles off).
   const now = ctx.currentTime;
-  const dur = 2;
-  playTonePulse(ctx, 440, dur, now);
-  playTonePulse(ctx, 480, dur, now);
+  const second = now + UK_RING_ON_S + UK_RING_GAP_S;
+  for (const freq of [400, 450]) {
+    playTonePulse(ctx, freq, UK_RING_ON_S, now);
+    playTonePulse(ctx, freq, UK_RING_ON_S, second);
+  }
 }
 
 /** Continuous US dial tone (350+440 Hz) while connecting. Idempotent. */
@@ -131,7 +137,7 @@ export function startVoiceDialTone(): void {
   });
 }
 
-/** Start looping ringback while link is up / ringing. Idempotent. */
+/** Start looping UK double-ring ringback while link is up / ringing. Idempotent. */
 export function startVoiceRingback(): void {
   if (isNotifMuted()) return;
   stopDialToneNodes();
@@ -143,7 +149,7 @@ export function startVoiceRingback(): void {
     withRunningContext((ctx) => {
       scheduleRingbackBurst(ctx);
     });
-  }, 6000);
+  }, UK_RINGBACK_INTERVAL_MS);
 }
 
 /** Stop dial / ringback / cancel pending busy cadence. */

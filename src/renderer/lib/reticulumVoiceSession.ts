@@ -231,8 +231,11 @@ function scheduleOutgoingSafetyHangup(generation: number): void {
     safetyHangupTimer = null;
     const state = useReticulumVoiceStore.getState();
     if (state.callGeneration !== generation) return;
-    const status = state.activeCall?.status;
-    if (!status || status === 'established') return;
+    // Established for this generation — leave the call alone.
+    if (state.activeCall?.status === 'established' || state.callEstablishedAtMs != null) {
+      return;
+    }
+    // Fire even when activeCall was cleared without terminal feedback (e.g. silent snapshot).
     console.warn('[reticulumVoice] safety hangup — outgoing never established');
     void reticulumVoiceHangup({ terminalReason: 'safety_timeout' });
   }, RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS);
@@ -684,12 +687,23 @@ export function handleReticulumVoiceTerminal(opts: {
   }
   clearSafetyHangupTimer();
   stopReticulumVoiceMedia();
-  const reason = opts.errorMessage ?? opts.reason ?? null;
+  const active = useReticulumVoiceStore.getState().activeCall;
+  let reason = opts.errorMessage ?? opts.reason ?? null;
+  // lxst unanswered outbound ends with CallTerminated { reason: None } → reason null/"terminated".
+  // Treat incomplete outgoing as connect-failed (busy + toast), not silent completed.
+  if (
+    !opts.errorMessage &&
+    (!reason || reason === 'terminated') &&
+    active?.role === 'outgoing' &&
+    active.status !== 'established'
+  ) {
+    reason = 'connect_failed';
+  }
   if (opts.errorMessage) {
     console.warn(
       `[reticulumVoice] voice.error message=${JSON.stringify(opts.errorMessage)} linkId=${opts.linkId ?? ''}`,
     );
-  } else if (reason) {
+  } else {
     console.info(
       `[reticulumVoice] voice.terminated reason=${JSON.stringify(reason)} linkId=${opts.linkId ?? ''}`,
     );

@@ -23,6 +23,7 @@ describe('classifyVoiceTerminalReason', () => {
   it('maps connect-phase failures to connectFailed', () => {
     expect(classifyVoiceTerminalReason('discovery timeout')).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('safety_timeout')).toBe('connectFailed');
+    expect(classifyVoiceTerminalReason('connect_failed')).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('active call is not established')).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('unreachable peer')).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('no path')).toBe('connectFailed');
