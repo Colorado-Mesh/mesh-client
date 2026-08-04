@@ -331,9 +331,10 @@ impl StackHandle {
     pub fn list_recent_inbound_lxmf(
         &self,
         since_ts: Option<i64>,
+        since_seq: Option<u64>,
         limit: usize,
     ) -> Vec<serde_json::Value> {
-        self.inbound_lxmf.snapshot(since_ts, limit)
+        self.inbound_lxmf.snapshot(since_ts, since_seq, limit)
     }
 
     pub fn inbound_lxmf_ring_len(&self) -> usize {

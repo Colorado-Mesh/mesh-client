@@ -11,6 +11,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
   apply-rsReticulum-discovery-announce-egress.sh
   apply-rsReticulum-path-medium-slots.sh
+  apply-rsReticulum-inbound-raw-saturation-log.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(

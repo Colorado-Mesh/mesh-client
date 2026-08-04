@@ -57,6 +57,7 @@ export interface ReticulumDiagnosticSidecarSnapshot {
     lastInboundCatchUpAt: number | null;
     lastInboundCatchUpCount: number | null;
     inboundCatchUpWatermarkTs: number | null;
+    inboundCatchUpWatermarkSeq: number | null;
     lastInboundRingLen: number | null;
   };
 }

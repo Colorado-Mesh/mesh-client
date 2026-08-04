@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import {
-  isLocalConnectHost,
+  isMdnsConnectHost,
   parseConnectHostPort,
   stripConnectHostBrackets,
 } from '@/shared/connectHost';
@@ -28,9 +28,9 @@ export function hostFromAddressInput(address: string): string {
   }
 }
 
+/** True only for *.local / meshtastic.local — not private IPs (do not use isLocalConnectHost; #610). */
 export function isMeshtasticLocalAddress(address: string): boolean {
-  const host = hostFromAddressInput(address);
-  return isLocalConnectHost(host);
+  return isMdnsConnectHost(hostFromAddressInput(address));
 }
 
 type RuntimePlatform = 'linux' | 'darwin' | 'win32' | 'unknown';
@@ -85,7 +85,14 @@ export function humanizeSerialError(err: unknown, t: TFunction): string {
 }
 
 export function humanizeHttpError(address: string, err: unknown, t: TFunction): string {
+  // Same contract as humanizeBleError: intentional MeshCore setup supersede/cancel is not a
+  // user-facing HTTP/TCP failure — do not attach Bonjour/LAN network hints.
+  if (isMeshcoreSetupAbortError(err)) {
+    return '';
+  }
   const msg = err instanceof Error ? err.message : String(err);
+  // Bonjour / "try the IP" copy only for real mDNS hosts. Do not switch to isLocalConnectHost —
+  // #610 did and showed meshtastic.local Bonjour advice for MeshCore TCP private IPs.
   const isMdns = isMeshtasticLocalAddress(address);
   const platform = runtimePlatform();
   const isWindows = platform === 'win32';

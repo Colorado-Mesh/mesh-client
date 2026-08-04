@@ -14,7 +14,7 @@ describe('useReticulumRuntime inbound LXMF catch-up wiring (source contract)', (
       /import \{ catchUpRecentInboundLxmf as runInboundLxmfCatchUp \} from '@\/renderer\/lib\/reticulum\/catchUpRecentInboundLxmf'/,
     );
     expect(SOURCE).toMatch(
-      /const catchUpRecentInboundLxmf = useCallback\(\s*async \(opts\?: \{ sinceTs\?: number; reason\?: string \}\) => \{/,
+      /const catchUpRecentInboundLxmf = useCallback\(\s*async \(opts\?: \{ sinceTs\?: number; sinceSeq\?: number; reason\?: string \}\) => \{/,
     );
     expect(SOURCE).toContain('await runInboundLxmfCatchUp({');
   });
@@ -37,7 +37,17 @@ describe('useReticulumRuntime inbound LXMF catch-up wiring (source contract)', (
   });
 
   it('schedules periodic catch-up while the stack is active', () => {
-    expect(SOURCE).toMatch(/void catchUpRecentInboundLxmf\(\{ sinceTs, reason: 'periodic' \}\)/);
+    expect(SOURCE).toMatch(/void catchUpRecentInboundLxmf\(\{/);
+    expect(SOURCE).toContain("reason: 'periodic'");
+    expect(SOURCE).toContain('inboundCatchUpWatermarkSeq');
     expect(SOURCE).toMatch(/RETICULUM_INBOUND_LXMF_CATCHUP_MS/);
+  });
+
+  it('advances the catch-up watermark on live inbound ingest', () => {
+    const ingestBody = extractUseCallbackBody(SOURCE, 'ingestLxmfPayload');
+    expect(ingestBody).toContain('advanceReticulumInboundCatchUpWatermark(');
+    expect(ingestBody).toContain('p.timestamp');
+    expect(ingestBody).toContain('p.ring_seq');
+    expect(ingestBody).toMatch(/p\.direction !== 'outbound'/);
   });
 });

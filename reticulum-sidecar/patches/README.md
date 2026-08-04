@@ -426,3 +426,24 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 ### Sunset
 
 When ratspeak/rsReticulum lands equivalent multi-slot ranking + medium preference, remove this patch and the apply step from `ensure-rsReticulum-patches.sh` / `clone-ratspeak-stack.sh` / `update.sh`.
+
+## rsReticulum-inbound-raw-saturation-log.patch
+
+Log when `LinkManager` opportunistic inbound-raw `try_send` fails because the bounded channel is full (tokio mpsc drops the **newest** packet; not drop-oldest).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local) |
+
+**Touches:** `crates/rns-runtime/src/link_manager.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-inbound-raw-saturation-log.sh
+```
+
+### Sunset
+
+When upstream logs (or otherwise surfaces) inbound-raw saturation the same way, remove this patch and the apply step.

@@ -45,8 +45,8 @@ describe('fetchRecentInboundLxmf', () => {
       ring_len: 3,
     });
 
-    const rows = await fetchRecentInboundLxmf({ sinceTs: 500, limit: 50 });
-    expect(proxyGet).toHaveBeenCalledWith('/api/v1/lxmf/recent?since_ts=500&limit=50');
+    const rows = await fetchRecentInboundLxmf({ sinceTs: 500, sinceSeq: 3, limit: 50 });
+    expect(proxyGet).toHaveBeenCalledWith('/api/v1/lxmf/recent?since_ts=500&since_seq=3&limit=50');
     expect(rows).toHaveLength(1);
     expect(rows[0]?.text).toBe('hello');
     expect(getReticulumInboundLxmfDiagnostics().lastInboundRingLen).toBe(3);
