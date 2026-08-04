@@ -871,22 +871,39 @@ function ChatPanel({
         all.add(nodeNum);
       }
     }
-    return Array.from(all).filter(
-      (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
-    );
+    return Array.from(all).filter((nodeNum) => {
+      if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(nodeNum)) return false;
+      if (protocol === 'reticulum' && isOwnNode(nodeNum)) return false;
+      return true;
+    });
   }, [
     activeDmNode,
     dismissedDmTabs,
     dmOnlyChat,
     dmUnreadCounts,
     inferredDmTabs,
+    isOwnNode,
     openDmTabs,
     protocol,
   ]);
 
+  // Drop a sticky self DM if identity becomes known after hydrate (openDmTabs / autofocus race).
+  useEffect(() => {
+    if (protocol !== 'reticulum' || ownNodeIdSet.size === 0) return;
+    if (activeDmNode != null && isOwnNode(activeDmNode)) {
+      setActiveDmNode(null);
+    }
+    setOpenDmTabs((prev) => {
+      const next = prev.filter((id) => !isOwnNode(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [activeDmNode, isOwnNode, ownNodeIdSet, protocol]);
+
   // Reticulum DM-only: auto-focus the conversation with the most history when none selected.
   useEffect(() => {
     if (!dmOnlyChat || activeDmNode != null || visibleDmTabs.length === 0) return;
+    // Wait until own identity is known so we never autofocus a misattributed self tab.
+    if (protocol === 'reticulum' && ownNodeIdSet.size === 0) return;
     let bestTab = visibleDmTabs[0];
     let bestCount = inferredDmTabs.get(bestTab) ?? 0;
     for (const [nodeNum, count] of inferredDmTabs) {
@@ -896,9 +913,10 @@ function ChatPanel({
         bestTab = nodeNum;
       }
     }
+    if (protocol === 'reticulum' && isOwnNode(bestTab)) return;
     setActiveDmNode(bestTab);
     setViewMode('dm');
-  }, [activeDmNode, dmOnlyChat, inferredDmTabs, visibleDmTabs]);
+  }, [activeDmNode, dmOnlyChat, inferredDmTabs, isOwnNode, ownNodeIdSet, protocol, visibleDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 

@@ -317,7 +317,7 @@ describe('chatUnreadCounts', () => {
     expect(peer).toBe(peerId);
   });
 
-  it('Reticulum outbound infers peer from to when own identity is unknown', () => {
+  it('Reticulum outbound with unknown own prefers hash-backed sender until identity is known', () => {
     const selfHash = 'f9aa38ba0c5a00000000000000000000';
     const selfId = parseInt(selfHash.slice(0, 12), 16) >>> 0;
     const peerId = 2838895306;
@@ -331,7 +331,9 @@ describe('chatUnreadCounts', () => {
       new Set(),
       'reticulum',
     );
-    expect(peer).toBe(peerId);
+    // Ambiguous without own IDs — prefer sender (same rule that fixes inbound self-DM on launch).
+    // Chat filters self tabs once App passes identity-backed ownNodeIds.
+    expect(peer).toBe(selfId);
   });
 
   it('Reticulum inbound to=self + hash resolves peer when ownNodeIds populated', () => {
@@ -351,7 +353,7 @@ describe('chatUnreadCounts', () => {
     expect(peer).toBe(peerId);
   });
 
-  it('Reticulum inbound to=self + hash misattributes peer to self when own empty', () => {
+  it('Reticulum inbound to=self + hash prefers sender peer when own empty', () => {
     const peerHash = '8fd7a9361aca00000000000000000000';
     const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
     const selfId = 4172361550;
@@ -365,7 +367,7 @@ describe('chatUnreadCounts', () => {
       new Set(),
       'reticulum',
     );
-    expect(peer).toBe(selfId);
+    expect(peer).toBe(peerId);
   });
 
   it('computeReticulumChatUnread clears after dm:peer last-read when own populated', () => {
@@ -384,10 +386,10 @@ describe('chatUnreadCounts', () => {
     expect(
       computeReticulumChatUnread([inbound], 'configured', { [`dm:${peerId}`]: 2000 }, own),
     ).toBe(0);
-    // Empty own + peer watermark still leaves sticky dm:self unread (App must pass own).
+    // Empty own still attributes inbound hash-backed DMs to the sender peer.
     expect(
       computeReticulumChatUnread([inbound], 'configured', { [`dm:${peerId}`]: 2000 }, new Set()),
-    ).toBe(1);
+    ).toBe(0);
   });
 });
 

@@ -3828,6 +3828,78 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(input).not.toBeDisabled();
   });
 
+  it('does not autofocus a self DM when inbound history has to=self', async () => {
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfHash = '368f994c056de0d8882855eb0d627497';
+    const selfId = parseInt(selfHash.slice(0, 12), 16) >>> 0;
+    localStorage.setItem(`mesh-client:openDmTabs:reticulum`, JSON.stringify([selfId]));
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'Other Peer',
+        payload: 'hello from peer',
+        channel: 0,
+        to: selfId,
+        reticulum_sender_hash: peerHash,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    const selfNode: MeshNode = {
+      node_id: selfId,
+      reticulum_destination_hash: selfHash,
+      long_name: 'Myself',
+      short_name: 'ME',
+      hw_model: 'Reticulum',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      favorited: false,
+      source: 'rf',
+    };
+    const peerNode: MeshNode = {
+      node_id: peerId,
+      reticulum_destination_hash: peerHash,
+      long_name: 'Other Peer',
+      short_name: 'OP',
+      hw_model: 'Reticulum',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      favorited: false,
+      source: 'rf',
+    };
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          messages={messages}
+          ownNodeIds={[selfId]}
+          nodes={
+            new Map([
+              [selfId, selfNode],
+              [peerId, peerNode],
+            ])
+          }
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('hello from peer')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Myself' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Other Peer' }).length).toBeGreaterThanOrEqual(1);
+    const openTabs = JSON.parse(
+      localStorage.getItem('mesh-client:openDmTabs:reticulum') ?? '[]',
+    ) as number[];
+    expect(openTabs).not.toContain(selfId);
+  });
+
   it('prompts to select a DM when no contacts are known', async () => {
     render(
       <ToastProvider>

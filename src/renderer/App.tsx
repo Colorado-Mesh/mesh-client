@@ -1202,13 +1202,18 @@ function AppContent() {
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
 
+  const reticulumIdentity = useReticulumIdentityStore((s) => s.identity);
   const reticulumOwnNodeIdSet = useMemo(() => {
-    const selfId =
+    const fromRuntime =
       typeof reticulumRuntime.selfNodeId === 'number'
         ? reticulumRuntime.selfNodeId
         : reticulumRuntime.state.myNodeNum;
-    return selfId > 0 ? new Set([selfId >>> 0]) : new Set<number>();
-  }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
+    const fromIdentity = reticulumIdentity?.lxmf_hash
+      ? reticulumHashToNodeId(reticulumIdentity.lxmf_hash)
+      : 0;
+    const selfId = Math.max(fromRuntime >>> 0, fromIdentity >>> 0);
+    return selfId > 0 ? new Set([selfId]) : new Set<number>();
+  }, [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
 
   useEffect(() => {
     if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
@@ -1461,13 +1466,12 @@ function AppContent() {
     () => Array.from(reticulumOwnNodeIdSet),
     [reticulumOwnNodeIdSet],
   );
-  const reticulumIdentityForHeader = useReticulumIdentityStore((s) => s.identity);
   const headerMyNodeNum = (() => {
     if (protocol !== 'reticulum') return activeConnectionView.state.myNodeNum;
     const fromRuntime =
       typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : 0;
-    const fromIdentity = reticulumIdentityForHeader?.lxmf_hash
-      ? reticulumHashToNodeId(reticulumIdentityForHeader.lxmf_hash)
+    const fromIdentity = reticulumIdentity?.lxmf_hash
+      ? reticulumHashToNodeId(reticulumIdentity.lxmf_hash)
       : 0;
     return Math.max(activeConnectionView.state.myNodeNum, fromRuntime, fromIdentity);
   })();
@@ -1479,8 +1483,8 @@ function AppContent() {
           ? useNodeStore.getState().nodes[reticulumIdentityId]?.[selfId >>> 0]?.longName
           : undefined;
       return resolveReticulumSelfHeaderLabel({
-        identityDisplayName: reticulumIdentityForHeader?.display_name,
-        lxmfHash: reticulumIdentityForHeader?.lxmf_hash ?? null,
+        identityDisplayName: reticulumIdentity?.display_name,
+        lxmfHash: reticulumIdentity?.lxmf_hash ?? null,
         storedLongName: stored,
       });
     }
