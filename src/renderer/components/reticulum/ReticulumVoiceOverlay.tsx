@@ -143,7 +143,7 @@ export function ReticulumVoiceOverlay() {
 
   return (
     <div
-      className="fixed right-3 bottom-3 z-[70] flex flex-col gap-1 rounded-lg border border-gray-600 bg-slate-900/95 px-3 py-2 shadow-lg"
+      className="fixed top-1/2 left-1/2 z-[70] flex -translate-x-1/2 -translate-y-1/2 flex-col gap-1 rounded-lg border border-gray-600 bg-slate-900/95 px-3 py-2 shadow-lg"
       role="status"
       aria-label={t(phaseLabelKey(active.status))}
     >

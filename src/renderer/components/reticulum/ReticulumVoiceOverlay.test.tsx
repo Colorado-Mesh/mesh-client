@@ -162,6 +162,12 @@ describe('ReticulumVoiceOverlay', () => {
     });
     const { container } = render(<ReticulumVoiceOverlay />);
     expect(screen.getByRole('status', { name: /calling/i })).toBeTruthy();
+    const panel = screen.getByRole('status', { name: /calling/i });
+    expect(panel.className).toContain('top-1/2');
+    expect(panel.className).toContain('left-1/2');
+    expect(panel.className).toContain('-translate-x-1/2');
+    expect(panel.className).toContain('-translate-y-1/2');
+    expect(panel.className).not.toContain('bottom-3');
     expect(screen.getByText('Dial Peer')).toBeTruthy();
     expect(screen.queryByText(id)).toBeNull();
     expect(screen.getByText(/TX 4/i)).toBeTruthy();
