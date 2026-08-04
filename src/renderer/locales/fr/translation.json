@@ -4820,7 +4820,8 @@
     "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
     "clearHistoryConfirmAction": "Supprimer l'historique",
     "whisperReplyPlaceholder": "Répondre à {{name}} ou /msg…",
-    "whisperNoTarget": "Pas encore de cible murmurée. Utilisez /msg NICK text pour commencer."
+    "whisperNoTarget": "Pas encore de cible murmurée. Utilisez /msg NICK text pour commencer.",
+    "jumpToLatest": "Aller au dernier"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -3121,6 +3121,7 @@
     "msgNick": "Message {{name}}",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
+    "jumpToLatest": "Jump to Latest",
     "messagePlaceholder": "Message or /command…",
     "whisperReplyPlaceholder": "Reply to {{name}} or /msg…",
     "whisperNoTarget": "No whisper target yet. Use /msg NICK text to start.",

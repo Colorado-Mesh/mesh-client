@@ -1055,6 +1055,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             nickname={nickname}
             alwaysShowMessageActions={alwaysShowMessageActions}
             placeholder={whisperComposerPlaceholder}
+            isActive={isActive}
           />
           {showNicklist && (
             <RrcNickList

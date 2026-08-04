@@ -4822,7 +4822,8 @@
     "clearHistoryConfirm": "Удалить всю сохраненную историю сообщений для {{room}}? Это невозможно отменить.",
     "clearHistoryConfirmAction": "Удалить историю",
     "whisperReplyPlaceholder": "Ответить на {{name}} или /msg…",
-    "whisperNoTarget": "Пока нет шепчущейся цели. Используйте /msg NICK text для запуска."
+    "whisperNoTarget": "Пока нет шепчущейся цели. Используйте /msg NICK text для запуска.",
+    "jumpToLatest": "Перейти к последнему"
   },
   "signalMeter": {
     "rssi": "РССИ",

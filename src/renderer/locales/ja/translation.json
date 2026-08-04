@@ -4820,7 +4820,8 @@
     "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
     "clearHistoryConfirmAction": "履歴の削除",
     "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
-    "whisperNoTarget": "ささやき声ターゲットはまだありません。/msg NICKテキストを使用して開始します。"
+    "whisperNoTarget": "ささやき声ターゲットはまだありません。/msg NICKテキストを使用して開始します。",
+    "jumpToLatest": "最新へジャンプ"
   },
   "signalMeter": {
     "rssi": "RSSI",

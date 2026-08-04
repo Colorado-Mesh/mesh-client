@@ -4820,7 +4820,8 @@
     "clearHistoryConfirm": "Excluir todo o histórico de mensagens salvas para {{room}}? Isto não pode ser desfeito.",
     "clearHistoryConfirmAction": "Excluir histórico",
     "whisperReplyPlaceholder": "Responder a {{name}} ou /msg…",
-    "whisperNoTarget": "Nenhum alvo sussurrado ainda. Use /msg NICK text para começar."
+    "whisperNoTarget": "Nenhum alvo sussurrado ainda. Use /msg NICK text para começar.",
+    "jumpToLatest": "Ir para as últimas"
   },
   "signalMeter": {
     "rssi": "RSSI",

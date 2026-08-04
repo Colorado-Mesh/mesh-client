@@ -4820,7 +4820,8 @@
     "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
     "clearHistoryConfirmAction": "Elimina la cronologia",
     "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
-    "whisperNoTarget": "Ancora nessun bersaglio sussurrato. Usa /msg NICK text per iniziare."
+    "whisperNoTarget": "Ancora nessun bersaglio sussurrato. Usa /msg NICK text per iniziare.",
+    "jumpToLatest": "Passa all'ultimo"
   },
   "signalMeter": {
     "rssi": "RSSI",

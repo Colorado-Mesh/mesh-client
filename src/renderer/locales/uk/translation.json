@@ -4822,7 +4822,8 @@
     "clearHistoryConfirm": "Видалити всю збережену історію повідомлень для {{room}}? Це неможливо скасувати.",
     "clearHistoryConfirmAction": "Видалити історію",
     "whisperReplyPlaceholder": "Відповісти на {{name}} або /msg…",
-    "whisperNoTarget": "Жодної шепотілої мішені ще немає. Використовуйте /msg NICK text, щоб почати."
+    "whisperNoTarget": "Жодної шепотілої мішені ще немає. Використовуйте /msg NICK text, щоб почати.",
+    "jumpToLatest": "Перейти до останнього"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

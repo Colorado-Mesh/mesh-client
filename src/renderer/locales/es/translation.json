@@ -4820,7 +4820,8 @@
     "clearHistoryConfirm": "¿Eliminar todo el historial de mensajes guardados para {{room}}? Esto no se puede deshacer.",
     "clearHistoryConfirmAction": "Eliminar historial",
     "whisperReplyPlaceholder": "Responder a {{name}} o /msg...",
-    "whisperNoTarget": "Todavía no hay un objetivo de susurro. Usa /msg NICK text para comenzar."
+    "whisperNoTarget": "Todavía no hay un objetivo de susurro. Usa /msg NICK text para comenzar.",
+    "jumpToLatest": "Saltar a lo último"
   },
   "signalMeter": {
     "rssi": "RSSI",

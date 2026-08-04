@@ -4820,7 +4820,8 @@
     "clearHistoryConfirm": "{{room}}에 대해 저장된 메시지 기록을 모두 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
     "clearHistoryConfirmAction": "기록 삭제",
     "whisperReplyPlaceholder": "{{name}} 또는/msg에 회신…",
-    "whisperNoTarget": "아직 속삭이는 대상이 없습니다. 시작하려면/msg NICK 텍스트를 사용하십시오."
+    "whisperNoTarget": "아직 속삭이는 대상이 없습니다. 시작하려면/msg NICK 텍스트를 사용하십시오.",
+    "jumpToLatest": "최신으로 이동"
   },
   "signalMeter": {
     "rssi": "RSSI",
