@@ -47,6 +47,12 @@ let pendingSamples: number[] = [];
 let safetyHangupTimer: ReturnType<typeof setTimeout> | null = null;
 /** Call generation for which capture/playback were last started (dedupe Answer + overlay). */
 let mediaStartedForCallGeneration = -1;
+/**
+ * In-flight media start promise keyed by callGeneration — concurrent Answer + overlay
+ * effect must share one getUserMedia (Columba inbound thrash).
+ */
+let mediaStartInFlight: Promise<void> | null = null;
+let mediaStartInFlightGeneration = -1;
 /** Throttle hot-path sendAudio failure logs. */
 let lastTxDropWarnAtMs = 0;
 /**
@@ -195,6 +201,8 @@ function stopPlayback(): void {
 
 export function stopReticulumVoiceMedia(): void {
   mediaStartedForCallGeneration = -1;
+  mediaStartInFlight = null;
+  mediaStartInFlightGeneration = -1;
   discardPrimedAudioContexts();
   stopCapture();
   stopPlayback();
@@ -211,6 +219,8 @@ function clearSafetyHangupTimer(): void {
 export function resetReticulumVoiceSessionTimersForTests(): void {
   clearSafetyHangupTimer();
   mediaStartedForCallGeneration = -1;
+  mediaStartInFlight = null;
+  mediaStartInFlightGeneration = -1;
   lastTxDropWarnAtMs = 0;
 }
 
@@ -402,18 +412,35 @@ async function startPlayback(): Promise<void> {
 
 export async function startReticulumVoiceMediaForActiveCall(): Promise<void> {
   const generation = useReticulumVoiceStore.getState().callGeneration;
-  if (generation > 0 && mediaStartedForCallGeneration === generation) {
+  // Claimed generation (including 0 after a start) must not re-enter getUserMedia.
+  if (mediaStartedForCallGeneration === generation) {
     return;
   }
-  mediaStartedForCallGeneration = generation;
-  try {
-    await startPlayback();
-    await startCaptureAndTx();
-  } catch (e) {
-    mediaStartedForCallGeneration = -1;
-    console.warn('[reticulumVoice] mic capture failed', e);
-    pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
+  if (mediaStartInFlight && mediaStartInFlightGeneration === generation) {
+    await mediaStartInFlight;
+    return;
   }
+
+  mediaStartInFlightGeneration = generation;
+  const startPromise = (async () => {
+    // Claim generation before awaits so concurrent callers coalesce.
+    mediaStartedForCallGeneration = generation;
+    try {
+      await startPlayback();
+      await startCaptureAndTx();
+    } catch (e) {
+      // Keep mediaStartedForCallGeneration claimed so overlay does not thrash getUserMedia.
+      console.warn('[reticulumVoice] mic capture failed', e);
+      pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
+    } finally {
+      if (mediaStartInFlightGeneration === generation) {
+        mediaStartInFlight = null;
+        mediaStartInFlightGeneration = -1;
+      }
+    }
+  })();
+  mediaStartInFlight = startPromise;
+  await startPromise;
 }
 
 function peerIdentityForLxmfDest(lxmfPeerHash: string): string | null {
@@ -542,9 +569,14 @@ export async function reticulumVoiceAnswer(): Promise<void> {
   try {
     const resp = await window.electronAPI.reticulum.voice.answer();
     if (!resp.ok) {
+      console.warn(
+        '[reticulumVoice] answer failed',
+        typeof resp.error === 'string' ? resp.error : JSON.stringify(resp),
+      );
       pushAppToast(humanizeVoiceIpcError(resp.error), 'error');
       return;
     }
+    console.info('[reticulumVoice] answer ok');
   } catch (e) {
     console.warn('[reticulumVoice] answer IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
@@ -626,12 +658,29 @@ export function handleReticulumVoiceTerminal(opts: {
       allowMissingLinkId: Boolean(opts.errorMessage),
     })
   ) {
-    console.debug('[reticulumVoice] ignoring stale terminal event', opts);
+    console.debug(
+      '[reticulumVoice] ignoring stale terminal event',
+      JSON.stringify({
+        linkId: opts.linkId ?? null,
+        reason: opts.reason ?? null,
+        errorMessage: opts.errorMessage ?? null,
+        callGeneration: opts.callGeneration ?? null,
+      }),
+    );
     return;
   }
   clearSafetyHangupTimer();
   stopReticulumVoiceMedia();
   const reason = opts.errorMessage ?? opts.reason ?? null;
+  if (opts.errorMessage) {
+    console.warn(
+      `[reticulumVoice] voice.error message=${JSON.stringify(opts.errorMessage)} linkId=${opts.linkId ?? ''}`,
+    );
+  } else if (reason) {
+    console.info(
+      `[reticulumVoice] voice.terminated reason=${JSON.stringify(reason)} linkId=${opts.linkId ?? ''}`,
+    );
+  }
   applyVoiceTerminalFeedback(opts.errorMessage ? 'failed' : reason, {
     // errorMessage path uses applyError toast via humanized message below
     showToast: !opts.errorMessage,

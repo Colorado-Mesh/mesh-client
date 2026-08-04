@@ -18,6 +18,8 @@ import {
   reticulumVoiceHangup,
   reticulumVoiceReject,
   reticulumVoiceSetMuted,
+  startReticulumVoiceMediaForActiveCall,
+  stopReticulumVoiceMedia,
 } from './reticulumVoiceSession';
 import { RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS } from './timeConstants';
 
@@ -209,9 +211,110 @@ describe('reticulumVoiceSession', () => {
       link_id: '1'.repeat(32),
       remote_identity: '2'.repeat(32),
     });
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     handleReticulumVoiceTerminal({ linkId: '9'.repeat(32), reason: 'busy' });
     expect(useReticulumVoiceStore.getState().activeCall?.link_id).toBe('1'.repeat(32));
     expect(playVoiceBusyTone).not.toHaveBeenCalled();
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[reticulumVoice] ignoring stale terminal event',
+      expect.stringContaining('"linkId":"99999999999999999999999999999999"'),
+    );
+    debugSpy.mockRestore();
+  });
+
+  it('logs voice.error message as JSON string for developer bundles', () => {
+    useReticulumVoiceStore.getState().applyIncoming({
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+      role: 'incoming',
+      status: 'ringing',
+      answered: false,
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    handleReticulumVoiceTerminal({
+      linkId: '1'.repeat(32),
+      errorMessage: 'codec boom',
+    });
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[reticulumVoice] voice.error message="codec boom"'),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('coalesces concurrent media starts for the same callGeneration', async () => {
+    vi.useRealTimers();
+    let getUserMediaCalls = 0;
+    let resolveMedia!: (stream: MediaStream) => void;
+    const mediaGate = new Promise<MediaStream>((resolve) => {
+      resolveMedia = resolve;
+    });
+    const track = { stop: vi.fn() };
+    const fakeStream = { getTracks: () => [track] } as unknown as MediaStream;
+
+    class FakeAudioContext {
+      state = 'running';
+      destination = {};
+      currentTime = 0;
+      sampleRate = 48000;
+      createMediaStreamSource() {
+        return { connect: vi.fn(), disconnect: vi.fn() };
+      }
+      createScriptProcessor() {
+        return {
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          onaudioprocess: null as unknown,
+        };
+      }
+      createGain() {
+        return { connect: vi.fn(), disconnect: vi.fn(), gain: { value: 0 } };
+      }
+      createBuffer(_channels: number, frames: number) {
+        return {
+          duration: frames / 48000,
+          copyToChannel: vi.fn(),
+        };
+      }
+      createBufferSource() {
+        return { buffer: null as unknown, connect: vi.fn(), start: vi.fn() };
+      }
+      resume = vi.fn(() => Promise.resolve());
+      close = vi.fn(() => Promise.resolve());
+    }
+
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn(async () => {
+          getUserMediaCalls += 1;
+          return mediaGate;
+        }),
+      },
+    });
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    useReticulumVoiceStore.getState().applyIncoming({
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+      role: 'incoming',
+      status: 'connecting',
+      answered: true,
+    });
+
+    const a = startReticulumVoiceMediaForActiveCall();
+    const b = startReticulumVoiceMediaForActiveCall();
+    // Wait until the single-flight path reaches getUserMedia.
+    await vi.waitFor(() => {
+      expect(getUserMediaCalls).toBe(1);
+    });
+    resolveMedia(fakeStream);
+    await Promise.all([a, b]);
+    expect(getUserMediaCalls).toBe(1);
+
+    await startReticulumVoiceMediaForActiveCall();
+    expect(getUserMediaCalls).toBe(1);
+
+    stopReticulumVoiceMedia();
   });
 
   it('hangup with busy terminalReason plays busy tone', async () => {

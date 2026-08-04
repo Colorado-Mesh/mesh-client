@@ -222,7 +222,8 @@ If microphone permission is denied when placing or answering an LXST voice call:
 - **Peer identity unknown:** Dial uses a 32-hex **identity** hash (not only the LXMF destination). Wait for an announce or Probe the peer from Peers / Chat DM, then try Call again.
 - **Busy / rejected / no answer:** Line-busy and reject play distinct tones; discovery/ring timeouts surface as no-answer toasts. Only one local call at a time — Hang up before dialing again.
 - **One-way or silent audio:** Confirm microphone permission (above). Outgoing media warms `AudioContext` on the Call/Answer click; if capture still fails, check OS privacy and that another app is not exclusive-locking the mic. TX drops increment `localTxDrops` under IPC pressure — hang up and retry on a quieter link.
-- **Interop:** Peer must run LXST telephony (Sideband, Ratspeak, or mesh-client with rsLXST). This is not an LXMF voice-note clip.
+- **Inbound accept fails (Columba / Python LXST):** mesh-client→peer may work while peer→mesh-client fails on Answer. In a developer-bundle log look for `[ReticulumSidecar]` lines `call start role=incoming`, `call failed` / `call terminated`, and renderer `[reticulumVoice] voice.error message=…` / `answer failed`. Generic UI toast **Voice call failed** hides the raw rsLXST reason — the log line is definitive.
+- **Interop:** Peer must run LXST telephony (Sideband, Ratspeak, Columba, or mesh-client with rsLXST). This is not an LXMF voice-note clip.
 
 If QR camera scanning fails with camera permission denied:
 
@@ -1261,18 +1262,24 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 ### Reticulum: Ratspeak DMs work but mesh-client stays silent
 
-**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat, **Columba**) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
 
-**Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`.
+**Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`. Short messages from Python clients (Sideband/Columba) often use **opportunistic** DATA — current sidecars wire `set_inbound_raw_channel` (lxmd parity) so those packets are not dropped after proof.
 
 **Checks**:
 
 1. Upgrade / rebuild the sidecar (`pnpm run reticulum:sidecar:build`) and **Restart stack**.
-2. On Network, use **Announce now**; on the other client, confirm mesh-client’s LXMF hash (Network identity) appears after the announce.
+2. On Network, use **Announce now**; on the other client, confirm mesh-client’s **LXMF** hash (Network identity → LXMF destination, not only the identity hash) appears after the announce.
 3. Same fabric: enable the same TCP hub / Auto / RNode paths on both clients when A/B testing.
 4. Contact named in Chat but missing from Peers → path dead; use **Peers → Request path / Probe**, or wait for the peer’s announce on that fabric.
 5. **Auto interface up ≠ Auto peers.** Auto “up” means LAN multicast carrier works; peer rows appear only when another RNS node announces onto that Auto group (or paths are owned by that interface). Multi-hop peers labeled with a TCP hub name and a shared `via` are hub fanout, not LAN neighbors.
 6. Configure a remote **propagation node** if the peer is often offline (does not replace missing announces).
+7. **Columba / Sideband opportunistic triage** (developer bundle, default `RUST_LOG=warn`): after a send from the phone, look for `[ReticulumSidecar]` lines:
+   - `LXMF inbound opportunistic packet` — frame reached the raw channel
+   - `opportunistic LXMF decrypt failed` (+ `error=…`) — ciphertext did not decrypt to this identity
+   - `inbound data not an LXMF message` with `via=opportunistic` — decrypt OK, unpack failed
+   - `inbound LXMF queued for clients` — sidecar accepted the message (if Chat still empty, look at renderer ingest / identity)
+   - **None of the above** after a Columba send → packet never hit `lxmf.delivery` (wrong dest hash on the phone, missing reverse path/announce, or not opportunistic/link traffic at all)
 
 ### Reticulum interface add/edit/delete fails
 

@@ -570,7 +570,8 @@ fn log_audit_start(st: &mut VoiceState) {
     audit.log_phase = VoiceAuditLogPhase::StartLogged;
     let remote_prefix = remote_prefix(&audit.remote_hex);
     let link = audit.link_id_hex.as_deref().unwrap_or("-");
-    tracing::info!(
+    // warn: default sidecar RUST_LOG=warn so developer bundles capture call lifecycle
+    tracing::warn!(
         target: "voice",
         "call start role={} remote={} link_id={}",
         audit.role,
@@ -594,7 +595,7 @@ fn mark_audit_established(st: &mut VoiceState) {
     ) {
         audit.log_phase = VoiceAuditLogPhase::OutcomeLogged;
         let remote_prefix = remote_prefix(&audit.remote_hex);
-        tracing::info!(
+        tracing::warn!(
             target: "voice",
             "call connected role={} remote={}",
             audit.role,
@@ -617,7 +618,7 @@ fn log_audit_outcome_and_end(st: &mut VoiceState, outcome: &str, reason: Option<
         let successful =
             outcome == "completed" || (audit.ever_established && outcome == "terminated");
         if successful && audit.ever_established && outcome == "terminated" {
-            tracing::info!(
+            tracing::warn!(
                 target: "voice",
                 "call ended role={} remote={} reason={}",
                 audit.role,
@@ -625,7 +626,7 @@ fn log_audit_outcome_and_end(st: &mut VoiceState, outcome: &str, reason: Option<
                 reason_s
             );
         } else if outcome == "completed" {
-            tracing::info!(
+            tracing::warn!(
                 target: "voice",
                 "call connected role={} remote={}",
                 audit.role,
@@ -645,7 +646,8 @@ fn log_audit_outcome_and_end(st: &mut VoiceState, outcome: &str, reason: Option<
     if audit.log_phase != VoiceAuditLogPhase::EndLogged {
         audit.log_phase = VoiceAuditLogPhase::EndLogged;
         let summary = format_voice_audit_end_summary(&audit, outcome, &st.media, Instant::now());
-        tracing::info!(target: "voice", "{summary}");
+        // warn: default RUST_LOG=warn so end summaries appear in developer bundles
+        tracing::warn!(target: "voice", "{summary}");
     }
     st.media = VoiceMediaCounters::default();
 }
