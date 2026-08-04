@@ -36,18 +36,18 @@ pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
 const UNPACK_WARN_INTERVAL: Duration = Duration::from_secs(5);
 static LAST_UNPACK_WARN_MS: AtomicU64 = AtomicU64::new(0);
 
-fn rate_limited_unpack_warn(error: &str, len: usize) {
+fn rate_limited_unpack_warn(via: &str, error: &str, len: usize) {
     let now_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0);
     let prev = LAST_UNPACK_WARN_MS.load(Ordering::Relaxed);
     if now_ms.saturating_sub(prev) < UNPACK_WARN_INTERVAL.as_millis() as u64 {
-        tracing::debug!(error = %error, len, "link data not an LXMF message");
+        tracing::debug!(via, error = %error, len, "inbound data not an LXMF message");
         return;
     }
     LAST_UNPACK_WARN_MS.store(now_ms, Ordering::Relaxed);
-    tracing::warn!(error = %error, len, "link data not an LXMF message");
+    tracing::warn!(via, error = %error, len, "inbound data not an LXMF message");
 }
 
 fn mark_announce_sent(last_at: &Arc<Mutex<Option<Instant>>>) {
@@ -333,7 +333,7 @@ async fn handle_link_delivered_data(
     let msg = match LxMessage::unpack(&unpack_data) {
         Ok(msg) => msg,
         Err(e) => {
-            rate_limited_unpack_warn(&e.to_string(), unpack_data.len());
+            rate_limited_unpack_warn("link", &e.to_string(), unpack_data.len());
             return;
         }
     };
@@ -354,7 +354,7 @@ async fn handle_opportunistic_raw_packet(
     let msg = match LxMessage::unpack(&unpack_data) {
         Ok(msg) => msg,
         Err(e) => {
-            rate_limited_unpack_warn(&e.to_string(), unpack_data.len());
+            rate_limited_unpack_warn("opportunistic", &e.to_string(), unpack_data.len());
             return;
         }
     };
@@ -365,9 +365,51 @@ async fn handle_opportunistic_raw_packet(
 mod tests {
     use super::*;
     use lxmf_core::constants::DeliveryMethod;
+    use lxmf_core::router::RouterConfig;
     use rns_identity::destination::Destination;
     use rns_identity::identity::Identity;
     use rns_wire::flags::PacketType;
+
+    fn opportunistic_data_header(destination_hash: [u8; 16]) -> PacketHeader {
+        PacketHeader {
+            flags: PacketFlags {
+                header_type: HeaderType::Header1,
+                context_flag: false,
+                transport_type: TransportType::Broadcast,
+                destination_type: DestinationType::Single,
+                packet_type: PacketType::Data,
+            },
+            hops: 0,
+            transport_id: None,
+            destination_hash,
+            context: PacketContext::None,
+        }
+    }
+
+    /// Python-style opportunistic frame: encrypt stripped LXM body to recipient.
+    fn build_opportunistic_raw(
+        recipient: &Identity,
+        lxmf_hash: [u8; 16],
+        packed_with_dest: &[u8],
+    ) -> Vec<u8> {
+        assert!(packed_with_dest.len() > 16 && packed_with_dest[..16] == lxmf_hash);
+        let stripped = &packed_with_dest[16..];
+        let ciphertext = recipient.encrypt(stripped, None).unwrap();
+        let mut raw = opportunistic_data_header(lxmf_hash).pack();
+        raw.extend_from_slice(&ciphertext);
+        raw
+    }
+
+    async fn router_with_content_callback(
+        seen: Arc<Mutex<Option<String>>>,
+    ) -> Arc<TokioMutex<LxmRouter>> {
+        let router = Arc::new(TokioMutex::new(LxmRouter::new(RouterConfig::default())));
+        let seen_cb = seen.clone();
+        router.lock().await.register_delivery_callback(move |msg| {
+            *seen_cb.lock().expect("callback mutex") = Some(msg.content.clone());
+        });
+        router
+    }
 
     #[test]
     fn build_announce_packet_is_non_empty_announce() {
@@ -435,22 +477,7 @@ mod tests {
         assert!(packed.len() > 16 && packed[..16] == lxmf_hash);
         let stripped = &packed[16..];
 
-        let ciphertext = recipient.encrypt(stripped, None).unwrap();
-        let header = PacketHeader {
-            flags: PacketFlags {
-                header_type: HeaderType::Header1,
-                context_flag: false,
-                transport_type: TransportType::Broadcast,
-                destination_type: DestinationType::Single,
-                packet_type: PacketType::Data,
-            },
-            hops: 0,
-            transport_id: None,
-            destination_hash: lxmf_hash,
-            context: PacketContext::None,
-        };
-        let mut raw = header.pack();
-        raw.extend_from_slice(&ciphertext);
+        let raw = build_opportunistic_raw(&recipient, lxmf_hash, &packed);
 
         let plaintext = decrypt_opportunistic_payload(&recipient, &raw).expect("decrypt");
         assert_eq!(plaintext, stripped);
@@ -460,6 +487,111 @@ mod tests {
         assert_eq!(recovered.content, "hello from sideband");
         assert_eq!(recovered.source_hash, sender_lxmf);
         assert_eq!(recovered.destination_hash, lxmf_hash);
+    }
+
+    #[tokio::test]
+    async fn opportunistic_handler_delivers_to_callback() {
+        let recipient = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+
+        let mut msg = LxMessage::new(
+            lxmf_hash,
+            sender_lxmf,
+            "",
+            "hello from sideband",
+            DeliveryMethod::Opportunistic,
+        );
+        msg.sign(
+            sender
+                .get_signing_key()
+                .as_ref()
+                .expect("sender signing key"),
+        )
+        .unwrap();
+        let raw = build_opportunistic_raw(&recipient, lxmf_hash, &msg.pack().unwrap());
+
+        let seen = Arc::new(Mutex::new(None::<String>));
+        let router = router_with_content_callback(seen.clone()).await;
+        handle_opportunistic_raw_packet(&router, &recipient, lxmf_hash, &raw).await;
+        assert_eq!(
+            seen.lock().expect("seen").as_deref(),
+            Some("hello from sideband")
+        );
+    }
+
+    #[tokio::test]
+    async fn opportunistic_handler_delivers_self_send_to_callback() {
+        let identity = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+
+        let mut msg = LxMessage::new(
+            lxmf_hash,
+            lxmf_hash,
+            "",
+            "loopback self-send",
+            DeliveryMethod::Opportunistic,
+        );
+        msg.sign(
+            identity
+                .get_signing_key()
+                .as_ref()
+                .expect("identity signing key"),
+        )
+        .unwrap();
+        let raw = build_opportunistic_raw(&identity, lxmf_hash, &msg.pack().unwrap());
+
+        let seen = Arc::new(Mutex::new(None::<String>));
+        let router = router_with_content_callback(seen.clone()).await;
+        handle_opportunistic_raw_packet(&router, &identity, lxmf_hash, &raw).await;
+        assert_eq!(
+            seen.lock().expect("seen").as_deref(),
+            Some("loopback self-send")
+        );
+    }
+
+    #[tokio::test]
+    async fn link_handler_delivers_stripped_and_prefixed_bodies() {
+        let recipient = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+
+        let mut msg = LxMessage::new(
+            lxmf_hash,
+            sender_lxmf,
+            "",
+            "link delivered",
+            DeliveryMethod::Direct,
+        );
+        msg.sign(
+            sender
+                .get_signing_key()
+                .as_ref()
+                .expect("sender signing key"),
+        )
+        .unwrap();
+        let packed = msg.pack().unwrap();
+        let stripped = &packed[16..];
+
+        let seen = Arc::new(Mutex::new(None::<String>));
+        let router = router_with_content_callback(seen.clone()).await;
+
+        handle_link_delivered_data(&router, lxmf_hash, stripped).await;
+        assert_eq!(
+            seen.lock().expect("seen").as_deref(),
+            Some("link delivered"),
+            "stripped link body must prepend dest and deliver"
+        );
+
+        *seen.lock().expect("seen") = None;
+        handle_link_delivered_data(&router, lxmf_hash, &packed).await;
+        assert_eq!(
+            seen.lock().expect("seen").as_deref(),
+            Some("link delivered"),
+            "already-prefixed link body must deliver without double-prepend"
+        );
     }
 
     #[test]
