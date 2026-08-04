@@ -19,10 +19,12 @@ let dialPhaseTimer: ReturnType<typeof setTimeout> | null = null;
 let dtmfToRingTimer: ReturnType<typeof setTimeout> | null = null;
 
 const OUTGOING_DIAL_MS = 2000;
-const DTMF_ON_S = 0.08;
-const DTMF_GAP_S = 0.05;
-/** 4 × on + 3 × gap (last gap omitted) = 470ms. */
+const DTMF_ON_S = 0.12;
+const DTMF_GAP_S = 0.06;
+/** 4 × on + 3 × gap (last gap omitted) = 660ms. */
 export const DTMF_BURST_MS = Math.round(4 * DTMF_ON_S * 1000 + 3 * DTMF_GAP_S * 1000);
+/** Silence after last DTMF digit before UK ringback. */
+export const DTMF_TO_RING_GAP_MS = 250;
 
 /** Standard DTMF keypad: nybble 0–F → 0–9, A–D, *, #. */
 const DTMF_KEY_BY_NYBBLE = '0123456789ABCD*#' as const;
@@ -160,14 +162,20 @@ function stopRingbackInterval(): void {
 
 /** Map peer identity/destination hash → 4 DTMF keys (stable per peer). */
 export function dtmfKeysFromPeerHash(hash: string): string {
+  // Full 32-hex fold — prefix-only made many peers sound identical.
   const hex = hash
     .replace(/[^0-9a-f]/gi, '')
     .toLowerCase()
-    .padEnd(4, '0')
-    .slice(0, 4);
+    .padEnd(32, '0')
+    .slice(0, 32);
   let out = '';
-  for (const c of hex) {
-    out += DTMF_KEY_BY_NYBBLE[parseInt(c, 16)] ?? '0';
+  for (let chunk = 0; chunk < 4; chunk += 1) {
+    let n = 0;
+    const base = chunk * 8;
+    for (let j = 0; j < 8; j += 1) {
+      n ^= parseInt(hex.charAt(base + j), 16);
+    }
+    out += DTMF_KEY_BY_NYBBLE[n & 0xf] ?? '0';
   }
   return out;
 }
@@ -265,7 +273,7 @@ export function startOutgoingConnectToneSequence(peerHash: string): void {
       connectSequenceActive = false;
       connectSequenceHash = null;
       startVoiceRingback();
-    }, DTMF_BURST_MS);
+    }, DTMF_BURST_MS + DTMF_TO_RING_GAP_MS);
   }, OUTGOING_DIAL_MS);
 }
 

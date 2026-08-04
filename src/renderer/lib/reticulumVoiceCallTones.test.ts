@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CHAT_NOTIF_MUTED_STORAGE_KEY } from './chatInactiveNotifications';
 import {
   DTMF_BURST_MS,
+  DTMF_TO_RING_GAP_MS,
   dtmfKeysFromPeerHash,
   isOutgoingConnectToneSequenceActive,
   playVoiceBusyTone,
@@ -107,17 +108,20 @@ describe('reticulumVoiceCallTones', () => {
     expect(oscillatorCount).toBe(2);
   });
 
-  it('maps peer hash to stable 4 DTMF keys', () => {
-    expect(dtmfKeysFromPeerHash('a1b2' + '0'.repeat(28))).toBe('A1B2');
-    expect(dtmfKeysFromPeerHash('a1b2' + '0'.repeat(28))).toBe(
-      dtmfKeysFromPeerHash('A1B2ffffffffffffffffffffffffffffffff'),
-    );
-    expect(dtmfKeysFromPeerHash('0123' + 'f'.repeat(28))).toBe('0123');
-    expect(dtmfKeysFromPeerHash('ef' + '0'.repeat(30))).toBe('*#00');
-    expect(dtmfKeysFromPeerHash('abcd')).not.toBe(dtmfKeysFromPeerHash('dcba'));
+  it('maps peer hash to stable 4 DTMF keys via full-hash fold', () => {
+    const a = 'a1b2' + '0'.repeat(28);
+    expect(dtmfKeysFromPeerHash(a)).toBe(dtmfKeysFromPeerHash(a.toUpperCase()));
+    expect(dtmfKeysFromPeerHash(a)).toHaveLength(4);
+    // Same prefix, different later bytes → different melody (prefix-only bug).
+    const samePrefixA = 'aaaa' + '0'.repeat(28);
+    const samePrefixB = 'aaaa' + '0'.repeat(27) + '1';
+    expect(dtmfKeysFromPeerHash(samePrefixA)).not.toBe(dtmfKeysFromPeerHash(samePrefixB));
+    const h1 = '0123456789abcdef0123456789abcdef';
+    const h2 = '0123456789abcdef0123456789abcdee';
+    expect(dtmfKeysFromPeerHash(h1)).not.toBe(dtmfKeysFromPeerHash(h2));
   });
 
-  it('connect sequence: dial 2s → DTMF → ringback; stop cancels later ring', () => {
+  it('connect sequence: dial 2s → DTMF → gap → ringback; stop cancels later ring', () => {
     vi.useFakeTimers();
     const hash = 'a1b2' + 'c'.repeat(28);
     startOutgoingConnectToneSequence(hash);
@@ -137,7 +141,11 @@ describe('reticulumVoiceCallTones', () => {
     expect(isOutgoingConnectToneSequenceActive()).toBe(true);
 
     oscillatorCount = 0;
-    vi.advanceTimersByTime(DTMF_BURST_MS - 1);
+    vi.advanceTimersByTime(DTMF_BURST_MS);
+    // Still in post-DTMF silence — ringback not yet.
+    expect(oscillatorCount).toBe(0);
+    expect(isOutgoingConnectToneSequenceActive()).toBe(true);
+    vi.advanceTimersByTime(DTMF_TO_RING_GAP_MS - 1);
     expect(oscillatorCount).toBe(0);
     vi.advanceTimersByTime(1);
     // UK ringback burst: 4 oscillators; sequence no longer active.
