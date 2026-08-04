@@ -200,6 +200,81 @@ describe('AppPanel: sound notification toggle', () => {
   });
 });
 
+describe('AppPanel: MeshCore path hash mode persist', () => {
+  const defaultProps = {
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:appSettings');
+  });
+
+  it('does not stamp default meshcorePathHashMode into app settings on mount', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshcore" />
+      </ToastProvider>,
+    );
+    await screen.findByLabelText(/Default path hash size/i);
+    await waitFor(
+      () => {
+        const raw = localStorage.getItem('mesh-client:appSettings');
+        expect(raw).toBeTruthy();
+      },
+      { timeout: 1500 },
+    );
+    const raw = localStorage.getItem('mesh-client:appSettings');
+    expect(raw).not.toContain('meshcorePathHashMode');
+  });
+
+  it('persists meshcorePathHashMode when the user changes the dropdown', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshcore" />
+      </ToastProvider>,
+    );
+    const select = await screen.findByLabelText(/Default path hash size/i);
+    fireEvent.change(select, { target: { value: '1' } });
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"meshcorePathHashMode":1');
+    });
+  });
+
+  it('syncs dropdown from device-reported mode when user has not changed it', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <AppPanel
+          {...defaultProps}
+          protocol="meshcore"
+          isMeshcoreRadioConnected
+          deviceReportedPathHashMode={null}
+        />
+      </ToastProvider>,
+    );
+    const select = await screen.findByLabelText(/Default path hash size/i);
+    expect(select).toHaveValue('0');
+
+    rerender(
+      <ToastProvider>
+        <AppPanel
+          {...defaultProps}
+          protocol="meshcore"
+          isMeshcoreRadioConnected
+          deviceReportedPathHashMode={1}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('1');
+    });
+  });
+});
+
 describe('AppPanel: MeshCore Open wire toggle', () => {
   const defaultProps = {
     nodeCount: 0,

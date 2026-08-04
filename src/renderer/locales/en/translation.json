@@ -255,7 +255,7 @@
     "meshcorePathHashModeShort1": "2-byte",
     "meshcorePathHashModeShort2": "3-byte",
     "meshcorePathHashDeviceReported": "Connected radio reports: {{mode}}",
-    "meshcorePathHashModeHint": "Requires companion firmware v1.14.0+ and repeaters on v1.14+ along the path. Pre-1.14 repeaters silently drop multibyte packets. Repeater and room servers can also use CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashModeHint": "Connect follows the companion's current mode; changing this dropdown writes the radio while connected. Requires companion firmware v1.14.0+ and repeaters on v1.14+ along the path. Pre-1.14 repeaters silently drop multibyte packets. Repeater and room servers can also use CLI: set path.hash.mode {0|1|2}.",
     "meshcorePathHashApplyFailed": "Path hash mode failed: {{message}}",
     "messagesLoadLimitIntro": "Limit how many messages load into memory for the UI, and cap how many rows stay in SQLite. Loading fewer keeps RAM down on busy networks; the database cap prunes older messages on app startup (stored per protocol).",
     "logPanelHelp": "When enabled, a live log stream appears on the right. On the Reticulum tab, device lines include sidecar output and local interface health. Debug lines require the checkbox inside the log panel.",

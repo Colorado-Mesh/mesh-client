@@ -79,6 +79,7 @@ import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
   isMeshcoreOpenWireCompatEnabled,
+  mergeAppSetting,
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import {
@@ -2354,36 +2355,20 @@ export function useMeshcoreRuntime() {
           return next;
         });
 
+        // Companion is source of truth on connect — do not push App settings onto the radio.
+        // Sync UI preference FROM the device so a stamped default (1-byte) cannot fight MeshCore app.
         try {
-          const settingsRaw = getAppSettingsRaw();
-          const settings = parseStoredJson<{ meshcorePathHashMode?: number }>(
-            settingsRaw,
-            'initConn meshcorePathHashMode',
-          );
-          const savedMode = settings?.meshcorePathHashMode;
-          if (isMeshcorePathHashMode(savedMode)) {
-            const fw =
-              pathFields.firmwareVersion ??
-              (typeof deviceInfo?.firmwareVersion === 'string'
-                ? deviceInfo.firmwareVersion
-                : undefined) ??
-              (typeof deviceInfo?.firmware_build_date === 'string'
-                ? deviceInfo.firmware_build_date
-                : undefined);
-            const canApply = savedMode === 0 || meshcoreFirmwareSupportsMultibytePathHash(fw ?? '');
-            if (canApply && savedMode !== pathFields.pathHashMode) {
-              const setMode =
-                typeof conn.setPathHashMode === 'function'
-                  ? (m: MeshcorePathHashMode) => conn.setPathHashMode!(m)
-                  : (m: MeshcorePathHashMode) => setMeshcorePathHashModeOnRadio(conn, m);
-              await awaitUnlessMeshcoreSetupCancelled(setupGen, setMode(savedMode));
-              setState((prev) => ({ ...prev, pathHashMode: savedMode }));
-            }
+          if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+            mergeAppSetting(
+              'meshcorePathHashMode',
+              pathFields.pathHashMode,
+              'initConn adopt pathHashMode from radio',
+            );
           }
         } catch (e) {
           if (isMeshcoreSetupAbortError(e)) throw e;
           console.warn(
-            '[useMeshcoreRuntime] initConn reapply path hash mode failed ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] initConn adopt path hash mode failed ' + errLikeToLogString(e),
           );
         }
       } catch (e) {

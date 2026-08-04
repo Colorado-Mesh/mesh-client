@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  appPanelSettingsPersistPayload,
   buildSetPathHashModeFrame,
   parsePathHashModeFromDeviceQuery,
   setMeshcorePathHashModeOnRadio,
@@ -9,6 +10,12 @@ import {
 describe('meshcorePathHashMode', () => {
   it('builds CMD 61 frame', () => {
     expect(Array.from(buildSetPathHashModeFrame(1))).toEqual([61, 0, 1]);
+  });
+
+  it('omits meshcorePathHashMode from AppPanel persist unless user changed it', () => {
+    const settings = { chatCompactMode: true, meshcorePathHashMode: 0 };
+    expect(appPanelSettingsPersistPayload(settings, false)).toEqual({ chatCompactMode: true });
+    expect(appPanelSettingsPersistPayload(settings, true)).toEqual(settings);
   });
 
   it('parses pathHashMode from deviceQuery payload', () => {
