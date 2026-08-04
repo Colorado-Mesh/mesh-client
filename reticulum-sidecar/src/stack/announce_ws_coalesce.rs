@@ -162,6 +162,7 @@ pub fn resolve_announce_aspect(name_hash: &[u8; 10]) -> Option<&'static str> {
             "lxmf.propagation",
             "nomadnetwork.node",
             "rrc.hub",
+            "lxst.telephony",
         ]
         .into_iter()
         .map(|aspect| (rns_identity::name_hash::name_hash(aspect), aspect))
@@ -456,6 +457,10 @@ mod tests {
         assert_eq!(
             resolve_announce_aspect(&rns_identity::name_hash::name_hash("rrc.hub")),
             Some("rrc.hub")
+        );
+        assert_eq!(
+            resolve_announce_aspect(&rns_identity::name_hash::name_hash("lxst.telephony")),
+            Some("lxst.telephony")
         );
         assert_eq!(resolve_announce_aspect(&[0u8; 10]), None);
         assert_eq!(resolve_announce_aspect(&[1u8; 10]), None);

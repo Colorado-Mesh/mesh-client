@@ -4818,7 +4818,10 @@
     "clearHistory": "履歴をクリアする",
     "clearHistoryTitle": "ルームの履歴をクリアする",
     "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
-    "clearHistoryConfirmAction": "履歴の削除"
+    "clearHistoryConfirmAction": "履歴の削除",
+    "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
+    "whisperNoTarget": "まだささやきの相手がいません。開始するには /msg NICK テキスト を使用します。",
+    "jumpToLatest": "最新へジャンプ"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} がオフラインになりました",
     "offlineBody": "最後に聞いた音: {{time}}",
     "unknown": "未知"
+  },
+  "reticulumVoice": {
+    "call": "通話する",
+    "answer": "返信",
+    "reject": "許可しない",
+    "incomingTitle": "着信ボイス",
+    "inCall": "通話中",
+    "callAria": "LXST音声通話を開始する",
+    "answerAria": "音声通話に応答する",
+    "rejectAria": "音声通話を拒否する",
+    "hangupAria": "音声通話を切る",
+    "muteAria": "マイクをミュートする",
+    "unmuteAria": "マイクのミュートを解除",
+    "errors": {
+      "noIdentity": "呼び出すことができません：ピアIDはまだわかりません。アナウンスを待つか、ピアをプローブします。",
+      "callFailed": "音声通話に失敗しました。",
+      "notRunning": "Reticulumスタックが実行されるまで、音声は使用できません。",
+      "micFailed": "音声用のマイクにアクセスできませんでした。",
+      "muteFailed": "音声セッションでマイクのミュートを更新できませんでした。",
+      "callInProgress": "音声通話はすでに進行中です。"
+    },
+    "connecting": "連携中…",
+    "elapsedAria": "経過時間 {{time}}",
+    "txAria": "送信された音声フレーム {{count}}",
+    "rxAria": "受信したボイスフレーム {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "このピアのLXSTテレフォニーアナウンスが聞こえました",
+    "capabilityUnknown": "LXSTテレフォニーのアナウンスがまだ聞こえていません（通話がまだ機能する可能性があります）",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "LXST音声には、LXSTテレフォニー（サイドバンド、Ratspeak、またはmesh-client）を実行するピアが必要です。ボイスノートクリップではありません。Python LXSTがリファレンスです。rsLXSTは実験的です。"
+    },
+    "toast": {
+      "busy": "回線はビジー状態です。",
+      "rejected": "コールは拒否されました",
+      "noAnswer": "応答がありません—通話がタイムアウトしました。",
+      "failed": "音声通話に失敗しました。",
+      "connectFailed": "接続できませんでした。"
+    },
+    "statsSeparator": "・",
+    "ringing": "呼び出し中…"
   }
 }

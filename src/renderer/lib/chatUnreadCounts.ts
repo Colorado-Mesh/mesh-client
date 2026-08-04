@@ -108,13 +108,22 @@ export function resolveChatDmPeer(
   if (peer === undefined && protocol === 'reticulum') {
     const fromU = msg.sender_id >>> 0;
     const toU = effectiveTo >>> 0;
-    const isOwnU32 = (id: number) => ownNodeIds.has(id >>> 0);
+    const isOwnU32 = (id: number) => {
+      for (const own of ownNodeIds) {
+        if (normalizeReticulumNodeId(own) === normalizeReticulumNodeId(id)) return true;
+      }
+      return false;
+    };
     if (msg.reticulum_sender_hash && fromU !== toU) {
       const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
-      if (senderFromHash === fromU && !isOwnU32(toU)) {
-        peer = toU;
-      } else if (senderFromHash === fromU && !isOwnU32(fromU)) {
-        peer = fromU;
+      // Prefer the hash-backed sender as the peer. When own is still unknown, treating `to`
+      // as the peer opens a sticky self-DM on launch (inbound hydrate before identity).
+      if (senderFromHash === fromU) {
+        if (!isOwnU32(fromU)) {
+          peer = fromU;
+        } else if (!isOwnU32(toU)) {
+          peer = toU;
+        }
       } else if (!isOwnU32(fromU)) {
         peer = fromU;
       }

@@ -45,7 +45,7 @@ mac:
   helperBundleId: com.mesh-client.app.helper
   extendInfo:
     NSBluetoothAlwaysUsageDescription: 'Mesh-client needs Bluetooth to communicate with Meshtastic devices.'
-    NSMicrophoneUsageDescription: 'Mesh-client needs the microphone to record Reticulum voice clips.'
+    NSMicrophoneUsageDescription: 'Mesh-client needs the microphone for Reticulum LXST voice calls.'
     NSCameraUsageDescription: 'Mesh-client needs the camera to scan QR codes for channel and contact sharing.'
   target:
     - dmg

@@ -170,6 +170,37 @@ pub fn remaining_live_ifaces(live_ifaces: &[String], blocked_ifaces: &[String]) 
         .collect()
 }
 
+/// Control-plane ops for Suppress + DropAllVia + RequestPath failover (sync or async senders).
+#[derive(Debug, Clone)]
+pub struct PathFailoverControlOps {
+    pub dest: [u8; 16],
+    pub vias_to_drop: Vec<String>,
+    pub suppress_secs: f64,
+    /// Prefer-tier iface names (private-first when requested); empty = no extra RequestPath hint.
+    pub prefer_ifaces: Vec<String>,
+}
+
+/// Build shared failover control ops from blocked vias + optional failed active via.
+pub fn build_path_failover_control_ops(
+    dest: [u8; 16],
+    blocked_vias: &[String],
+    failed_via: Option<&str>,
+    prefer_ifaces: &[String],
+) -> PathFailoverControlOps {
+    let mut vias_to_drop: Vec<String> = blocked_vias.to_vec();
+    if let Some(via) = failed_via.map(str::trim).filter(|s| !s.is_empty()) {
+        if !vias_to_drop.iter().any(|b| b.eq_ignore_ascii_case(via)) {
+            vias_to_drop.push(via.to_string());
+        }
+    }
+    PathFailoverControlOps {
+        dest,
+        vias_to_drop,
+        suppress_secs: IFACE_SUPPRESS_SECS,
+        prefer_ifaces: prefer_ifaces.to_vec(),
+    }
+}
+
 /// True when Direct LXMF should attempt another path before preferred-PN fallback.
 pub fn should_retry_direct_path_failover(rounds_already: u8) -> bool {
     rounds_already < MAX_VIA_FAILOVERS
@@ -380,6 +411,26 @@ mod tests {
         assert_eq!(
             names,
             vec!["TTP_TCP".to_string(), "Local Transport Pi".to_string()]
+        );
+    }
+
+    #[test]
+    fn build_path_failover_control_ops_merges_failed_via() {
+        let dest = [0x11u8; 16];
+        let ops = build_path_failover_control_ops(
+            dest,
+            &["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()],
+            Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+            &["Local Transport Pi".into()],
+        );
+        assert_eq!(ops.dest, dest);
+        assert!((ops.suppress_secs - IFACE_SUPPRESS_SECS).abs() < f64::EPSILON);
+        assert_eq!(ops.prefer_ifaces, vec!["Local Transport Pi".to_string()]);
+        assert_eq!(ops.vias_to_drop.len(), 2);
+        assert!(
+            ops.vias_to_drop
+                .iter()
+                .any(|v| v == "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         );
     }
 

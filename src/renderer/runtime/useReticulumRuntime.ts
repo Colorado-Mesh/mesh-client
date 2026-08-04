@@ -103,6 +103,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
 import {
   commitRncpLxmfControlHandled,
@@ -137,9 +138,12 @@ import {
   lxmfBodyContainsRncpRequestEnable,
   parseRncpReceiveDestShare,
 } from '@/shared/rncpRequestEnable';
+import { parseVoiceAudioRequest } from '@/shared/voice-types';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { decodeF32LeBase64 } from '../lib/reticulumVoiceAudio';
+import { handleReticulumVoiceTerminal } from '../lib/reticulumVoiceSession';
 import { resolveRrcInvoluntaryPartBannerKey } from '../lib/rrcInvoluntaryPartBanner';
 import {
   isRrcJoinInfoNotice,
@@ -189,6 +193,7 @@ import {
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useReticulumVoiceStore } from '../stores/reticulumVoiceStore';
 import { useRncpEnableRequestStore } from '../stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '../stores/rncpTransferStore';
 import { useRnshSessionStore } from '../stores/rnshSessionStore';
@@ -258,6 +263,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     MAX_RAW_PACKET_LOG_ENTRIES,
   );
   const unsubEventRef = useRef<(() => void) | null>(null);
+  const unsubVoiceAudioRef = useRef<(() => void) | null>(null);
   const connectRef = useRef<(() => Promise<void>) | null>(null);
   const restartStackRef = useRef<(() => Promise<void>) | null>(null);
   const connectInFlightRef = useRef(false);
@@ -406,6 +412,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       };
       useReticulumIdentityStore.getState().setIdentity(nextIdentity);
       setSelfLxmfHash(status.lxmfHash);
+      persistReticulumSelfLxmfHash(status.lxmfHash);
       syncSelfNodeFromIdentityStatus(status.lxmfHash, status.displayName);
       return status.lxmfHash;
     },
@@ -1055,6 +1062,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ? p.room
               : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
 
+          if (
+            isDirect &&
+            typeof p.sender_hash === 'string' &&
+            /^[0-9a-f]{32}$/i.test(p.sender_hash.trim())
+          ) {
+            session.setLastWhisperPeer(
+              {
+                identity_hash: p.sender_hash.trim().toLowerCase(),
+                nickname: typeof p.nickname === 'string' ? p.nickname : null,
+              },
+              hubDestHash,
+              { onlyIfUnpinned: true },
+            );
+          }
+
           if (kind === 'notice') {
             const listed = parseRrcListNotice(p.body);
             if (listed) session.setListedRooms(listed, hubDestHash);
@@ -1178,6 +1200,36 @@ export function useReticulumRuntime(): ProtocolRuntime {
             .getState()
             .applyError(p.session_id, p.reason_key ?? 'error', p.message ?? '');
         }
+      }
+      if (evt.type === 'voice.update' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumVoiceStore.getState().applyUpdate(evt.payload);
+      }
+      if (evt.type === 'voice.incoming' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumVoiceStore.getState().applyIncoming(evt.payload);
+      }
+      if (evt.type === 'voice.stats' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumVoiceStore.getState().applyStats(evt.payload);
+      }
+      if (evt.type === 'voice.terminated' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { link_id?: string; reason?: string | null };
+        handleReticulumVoiceTerminal({
+          linkId: p.link_id ?? null,
+          reason: p.reason ?? null,
+          callGeneration: useReticulumVoiceStore.getState().callGeneration,
+        });
+      }
+      if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          message?: string;
+          link_id?: string;
+          remote_identity?: string;
+        };
+        handleReticulumVoiceTerminal({
+          linkId: typeof p.link_id === 'string' ? p.link_id : null,
+          errorMessage: typeof p.message === 'string' && p.message.trim() ? p.message : 'failed',
+          remoteIdentity: typeof p.remote_identity === 'string' ? p.remote_identity : null,
+          callGeneration: useReticulumVoiceStore.getState().callGeneration,
+        });
       }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { transfer_id?: string; progress?: number };
@@ -1311,9 +1363,39 @@ export function useReticulumRuntime(): ProtocolRuntime {
     ],
   );
 
+  const subscribeSidecarEventBridges = useCallback(() => {
+    unsubEventRef.current?.();
+    unsubVoiceAudioRef.current?.();
+    unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+    unsubVoiceAudioRef.current = window.electronAPI.reticulum.onVoiceAudio((evt) => {
+      if (evt.type !== 'voice.audio' || !evt.payload || typeof evt.payload !== 'object') return;
+      const p = evt.payload as { link_id?: string; channels?: number; samples_b64?: string };
+      const parsed = parseVoiceAudioRequest({
+        channels: p.channels,
+        samples_b64: p.samples_b64,
+      });
+      if ('error' in parsed) return;
+      const active = useReticulumVoiceStore.getState().activeCall;
+      const status = active?.status;
+      if (status !== 'established' && status !== 'connecting') return;
+      const eventLink = typeof p.link_id === 'string' ? p.link_id.trim().toLowerCase() : '';
+      const activeLink = (active?.link_id ?? '').trim().toLowerCase();
+      // After establish, require an exact link_id match (drop stale/malformed frames).
+      if (status === 'established') {
+        if (!eventLink || !activeLink || eventLink !== activeLink) return;
+      } else if (eventLink && activeLink && eventLink !== activeLink) {
+        return;
+      }
+      const samples = decodeF32LeBase64(parsed.samples_b64);
+      useReticulumVoiceStore.getState().emitAudio(parsed.channels, samples);
+    });
+  }, [handleSidecarEvent]);
+
   const tearDownFromSidecarStop = useCallback(() => {
     unsubEventRef.current?.();
     unsubEventRef.current = null;
+    unsubVoiceAudioRef.current?.();
+    unsubVoiceAudioRef.current = null;
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
@@ -1386,6 +1468,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       unsubEventRef.current?.();
       unsubEventRef.current = null;
+      unsubVoiceAudioRef.current?.();
+      unsubVoiceAudioRef.current = null;
       // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
       if (!import.meta.env.DEV) {
         void window.electronAPI.reticulum.stop().catch((e: unknown) => {
@@ -1423,8 +1507,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
       await window.electronAPI.reticulum.start({ reuseIfRunning: true });
-      unsubEventRef.current?.();
-      unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+      subscribeSidecarEventBridges();
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       if (connectedNodeId > 0) {
@@ -1475,7 +1558,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectInFlightDoneRef.current = null;
     }
   }, [
-    handleSidecarEvent,
+    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
@@ -1502,6 +1585,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     unsubEventRef.current?.();
     unsubEventRef.current = null;
+    unsubVoiceAudioRef.current?.();
+    unsubVoiceAudioRef.current = null;
     try {
       await window.electronAPI.reticulum.stop();
     } catch (e) {
@@ -1542,9 +1627,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
       syncConnectionStore({ status: 'connecting', connectionType: null });
       unsubEventRef.current?.();
       unsubEventRef.current = null;
+      unsubVoiceAudioRef.current?.();
+      unsubVoiceAudioRef.current = null;
       await window.electronAPI.reticulum.stop();
       await window.electronAPI.reticulum.start({ reuseIfRunning: false });
-      unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+      subscribeSidecarEventBridges();
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
@@ -1581,7 +1668,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectInFlightDoneRef.current = null;
     }
   }, [
-    handleSidecarEvent,
+    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
@@ -1685,6 +1772,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       if (!next?.lxmf_hash) return;
       setSelfLxmfHash(next.lxmf_hash);
+      persistReticulumSelfLxmfHash(next.lxmf_hash);
       syncSelfNodeFromIdentityStatus(next.lxmf_hash, next.display_name?.trim() || null);
       const nodeId = reticulumHashToNodeId(next.lxmf_hash);
       if (nodeId > 0 && identityId) {

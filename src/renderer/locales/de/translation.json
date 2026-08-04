@@ -4818,7 +4818,10 @@
     "clearHistory": "Verlauf löschen",
     "clearHistoryTitle": "Raumverlauf löschen",
     "clearHistoryConfirm": "Gesamten gespeicherten Nachrichtenverlauf für {{room}} löschen? Dies kann nicht rückgängig gemacht werden.",
-    "clearHistoryConfirmAction": "Verlauf löschen"
+    "clearHistoryConfirmAction": "Verlauf löschen",
+    "whisperReplyPlaceholder": "Antworte auf {{name}} oder /msg…",
+    "whisperNoTarget": "Noch kein Flüsterziel. Verwenden Sie /msg NICK TEXT, um zu beginnen.",
+    "jumpToLatest": "Zum neuesten Stand springen"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} ist offline gegangen",
     "offlineBody": "Zuletzt gehört: {{time}}",
     "unknown": "unbekannt"
+  },
+  "reticulumVoice": {
+    "call": "Anrufen",
+    "answer": "Annehmen",
+    "reject": "Ablehnen",
+    "incomingTitle": "Eingehender Anruf",
+    "inCall": "Im Gespräch",
+    "callAria": "LXST-Sprachanruf starten",
+    "answerAria": "Sprachanruf annehmen",
+    "rejectAria": "Sprachanruf ablehnen",
+    "hangupAria": "Sprachanruf auflegen",
+    "muteAria": "Mikrofon stummschalten",
+    "unmuteAria": "Mikrofon Stummschaltung aufheben",
+    "errors": {
+      "noIdentity": "Anruf nicht möglich: Peer-Identität noch nicht bekannt. Warten Sie auf eine Ankündigung oder prüfen Sie den Peer.",
+      "callFailed": "Sprachanruf fehlgeschlagen.",
+      "callInProgress": "Ein Sprachanruf läuft bereits.",
+      "notRunning": "Sprachanrufe sind erst verfügbar, wenn der Reticulum-Stack läuft.",
+      "micFailed": "Konnte nicht auf das Mikrofon für Sprache zugreifen.",
+      "muteFailed": "Mikrofon-Stummschaltung in der Sprachsitzung konnte nicht aktualisiert werden."
+    },
+    "connecting": "Verbinden…",
+    "elapsedAria": "Verstrichene Zeit {{time}}",
+    "txAria": "Gesendete Sprachrahmen {{count}}",
+    "rxAria": "Empfangene Sprachrahmen {{count}}",
+    "statsSeparator": "·",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST-Telefonie-Announce für diesen Peer gehört",
+    "capabilityUnknown": "LXST-Telefonie-Announce noch nicht gehört (Anruf kann trotzdem funktionieren)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "LXST Voice benötigt einen Peer, der LXST-Telefonie ausführt (Sideband, Ratspeak oder mesh-client). Kein Sprachnotizclip. Python LXST ist die Referenz; rsLXST ist experimentell."
+    },
+    "toast": {
+      "busy": "Leitung besetzt",
+      "rejected": "Anruf abgelehnt",
+      "noAnswer": "Keine Antwort — Anruf abgelaufen.",
+      "failed": "Sprachanruf fehlgeschlagen.",
+      "connectFailed": "Konnte keine Verbindung herstellen"
+    },
+    "ringing": "Klingelt…"
   }
 }

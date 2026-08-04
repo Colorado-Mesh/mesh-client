@@ -35,19 +35,48 @@ pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
 
 const UNPACK_WARN_INTERVAL: Duration = Duration::from_secs(5);
 static LAST_UNPACK_WARN_MS: AtomicU64 = AtomicU64::new(0);
+static LAST_OPPORTUNISTIC_RECV_WARN_MS: AtomicU64 = AtomicU64::new(0);
+static LAST_OPPORTUNISTIC_DECRYPT_WARN_MS: AtomicU64 = AtomicU64::new(0);
 
-fn rate_limited_unpack_warn(via: &str, error: &str, len: usize) {
-    let now_ms = std::time::SystemTime::now()
+fn now_unix_ms() -> u64 {
+    std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
-        .unwrap_or(0);
-    let prev = LAST_UNPACK_WARN_MS.load(Ordering::Relaxed);
-    if now_ms.saturating_sub(prev) < UNPACK_WARN_INTERVAL.as_millis() as u64 {
+        .unwrap_or(0)
+}
+
+fn rate_limited_warn(last_ms: &AtomicU64, interval: Duration) -> bool {
+    let now_ms = now_unix_ms();
+    let prev = last_ms.load(Ordering::Relaxed);
+    if now_ms.saturating_sub(prev) < interval.as_millis() as u64 {
+        return false;
+    }
+    last_ms.store(now_ms, Ordering::Relaxed);
+    true
+}
+
+fn rate_limited_unpack_warn(via: &str, error: &str, len: usize) {
+    if !rate_limited_warn(&LAST_UNPACK_WARN_MS, UNPACK_WARN_INTERVAL) {
         tracing::debug!(via, error = %error, len, "inbound data not an LXMF message");
         return;
     }
-    LAST_UNPACK_WARN_MS.store(now_ms, Ordering::Relaxed);
     tracing::warn!(via, error = %error, len, "inbound data not an LXMF message");
+}
+
+fn rate_limited_opportunistic_recv_warn(len: usize) {
+    if !rate_limited_warn(&LAST_OPPORTUNISTIC_RECV_WARN_MS, UNPACK_WARN_INTERVAL) {
+        tracing::debug!(len, "LXMF inbound opportunistic packet");
+        return;
+    }
+    tracing::warn!(len, "LXMF inbound opportunistic packet");
+}
+
+fn rate_limited_opportunistic_decrypt_warn(len: usize, error: &str) {
+    if !rate_limited_warn(&LAST_OPPORTUNISTIC_DECRYPT_WARN_MS, UNPACK_WARN_INTERVAL) {
+        tracing::debug!(len, error = %error, "opportunistic LXMF decrypt failed");
+        return;
+    }
+    tracing::warn!(len, error = %error, "opportunistic LXMF decrypt failed");
 }
 
 fn mark_announce_sent(last_at: &Arc<Mutex<Option<Instant>>>) {
@@ -236,7 +265,7 @@ pub fn spawn_lxmf_inbound_receiver(
                     handle_link_delivered_data(&router, lxmf_dest_hash, &data).await;
                 }
                 Some(raw) = inbound_raw_rx.recv() => {
-                    tracing::debug!(len = raw.len(), "LXMF inbound opportunistic packet");
+                    rate_limited_opportunistic_recv_warn(raw.len());
                     handle_opportunistic_raw_packet(&router, &identity_for_raw, lxmf_dest_hash, &raw)
                         .await;
                 }
@@ -296,16 +325,24 @@ pub(crate) fn try_enqueue_inbound_raw(
 ///
 /// LinkManager already decrypts once to emit an RNS proof; we decrypt again from the raw
 /// frame (same as lxmd `decrypt_inbound`) because the raw channel forwards ciphertext.
-pub(crate) fn decrypt_opportunistic_payload(identity: &Identity, raw: &[u8]) -> Option<Vec<u8>> {
-    let (header, data_offset) = PacketHeader::unpack(raw).ok()?;
+///
+/// Returns `Err` with a short reason when header/type/payload/decrypt fails so callers can
+/// emit developer-bundle-visible warns (default `RUST_LOG=warn`).
+pub(crate) fn decrypt_opportunistic_payload(
+    identity: &Identity,
+    raw: &[u8],
+) -> Result<Vec<u8>, &'static str> {
+    let (header, data_offset) = PacketHeader::unpack(raw).map_err(|_| "bad_header")?;
     if header.flags.packet_type != PacketType::Data {
-        return None;
+        return Err("not_data");
     }
-    let payload = raw.get(data_offset..)?;
+    let payload = raw.get(data_offset..).ok_or("truncated_payload")?;
     if payload.is_empty() {
-        return None;
+        return Err("empty_payload");
     }
-    identity.decrypt(payload, None, false).ok()
+    identity
+        .decrypt(payload, None, false)
+        .map_err(|_| "decrypt")
 }
 
 async fn deliver_unpacked_lxmf(router: &Arc<TokioMutex<LxmRouter>>, msg: &LxMessage, via: &str) {
@@ -346,9 +383,12 @@ async fn handle_opportunistic_raw_packet(
     lxmf_dest_hash: [u8; 16],
     raw: &[u8],
 ) {
-    let Some(plaintext) = decrypt_opportunistic_payload(identity, raw) else {
-        tracing::debug!(len = raw.len(), "opportunistic LXMF decrypt failed");
-        return;
+    let plaintext = match decrypt_opportunistic_payload(identity, raw) {
+        Ok(p) => p,
+        Err(error) => {
+            rate_limited_opportunistic_decrypt_warn(raw.len(), error);
+            return;
+        }
     };
     let unpack_data = prepend_lxmf_dest_hash(lxmf_dest_hash, &plaintext);
     let msg = match LxMessage::unpack(&unpack_data) {
@@ -487,6 +527,26 @@ mod tests {
         assert_eq!(recovered.content, "hello from sideband");
         assert_eq!(recovered.source_hash, sender_lxmf);
         assert_eq!(recovered.destination_hash, lxmf_hash);
+    }
+
+    #[test]
+    fn opportunistic_decrypt_rejects_non_data_and_empty_payload() {
+        let recipient = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let mut header = opportunistic_data_header(lxmf_hash);
+        header.flags.packet_type = PacketType::Announce;
+        let raw = header.pack();
+        assert_eq!(
+            decrypt_opportunistic_payload(&recipient, &raw).unwrap_err(),
+            "not_data"
+        );
+
+        let data_header = opportunistic_data_header(lxmf_hash);
+        let empty_raw = data_header.pack();
+        assert_eq!(
+            decrypt_opportunistic_payload(&recipient, &empty_raw).unwrap_err(),
+            "empty_payload"
+        );
     }
 
     #[tokio::test]

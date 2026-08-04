@@ -1104,6 +1104,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('reticulum:event', handler);
       return () => ipcRenderer.off('reticulum:event', handler);
     },
+    onVoiceAudio: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
+      const handler = (_: unknown, event: ReticulumSidecarEvent) => {
+        cb(event);
+      };
+      ipcRenderer.on('reticulum:voiceAudio', handler);
+      return () => ipcRenderer.off('reticulum:voiceAudio', handler);
+    },
     onStatus: (cb: (status: ReticulumSidecarStatus) => void): (() => void) => {
       const handler = (_: unknown, status: ReticulumSidecarStatus) => {
         cb(status);
@@ -1173,6 +1180,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ),
       getStatus: () =>
         unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rnsh/status')),
+    },
+    voice: {
+      getStatus: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/voice/status')),
+      call: (opts: { identity_hash: string }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/call', opts)),
+      answer: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/answer', {})),
+      reject: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/reject', {})),
+      hangup: () =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/hangup', {})),
+      mute: (opts: { muted: boolean }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/voice/mute', opts)),
+      sendAudio: (opts: { profile?: number; channels: number; samples_b64: string }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceSendAudio', opts)),
     },
     rncp: {
       send: (opts: { destination_hash: string; path: string }) =>

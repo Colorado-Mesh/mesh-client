@@ -294,3 +294,9 @@ export const NOMAD_PAGE_FETCH_DEBOUNCE_MS = 300;
  * firmware's exact 2000ms boundary for serial/BLE/TCP write and timer-granularity slack.
  */
 export const MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS = 2.5 * MS_PER_SECOND;
+
+/**
+ * Renderer safety hangup for optimistic LXST dial when WS never reaches Established.
+ * Slightly above rsLXST `outgoing_call_timeout` (70s).
+ */
+export const RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS = 75 * MS_PER_SECOND;

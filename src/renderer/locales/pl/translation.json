@@ -4822,7 +4822,10 @@
     "clearHistory": "Wyczyść historię",
     "clearHistoryTitle": "Wyczyść historię pokoju",
     "clearHistoryConfirm": "Usunąć całą zapisaną historię wiadomości dla {{room}}? Tego nie można cofnąć.",
-    "clearHistoryConfirmAction": "Usuń historię"
+    "clearHistoryConfirmAction": "Usuń historię",
+    "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
+    "whisperNoTarget": "Nie ma jeszcze celu szeptu. Użyj /msg NICK tekst, aby rozpocząć.",
+    "jumpToLatest": "Przejdź do najnowszych"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5106,5 +5109,49 @@
     "offlineTitle": "{{name}} przeszedł w tryb offline",
     "offlineBody": "Ostatnio słyszano: {{time}}",
     "unknown": "nieznany"
+  },
+  "reticulumVoice": {
+    "call": "Zadzwoń",
+    "answer": "Odpowiedź",
+    "reject": "Odrzuć",
+    "incomingTitle": "przychodzące połączenie głosowe...",
+    "inCall": "W trakcie połączenia",
+    "callAria": "Rozpocznij połączenie głosowe LXST",
+    "answerAria": "Odbierz połączenie głosowe",
+    "rejectAria": "Odrzuć połączenie głosowe",
+    "hangupAria": "Odłóż połączenie głosowe",
+    "muteAria": "Wycisz mikrofon",
+    "unmuteAria": "wycisz/wyłącz wyciszenie mikrofonu",
+    "errors": {
+      "noIdentity": "Nie można wywołać: tożsamość rówieśnika nie jest jeszcze znana. Poczekaj na ogłoszenie lub zbadaj rówieśnika.",
+      "callFailed": "Połączenie głosowe nie powiodło się.",
+      "notRunning": "Głos nie jest dostępny, dopóki stos Reticulum nie zostanie uruchomiony.",
+      "micFailed": "Nie można uzyskać dostępu do mikrofonu dla głosu.",
+      "muteFailed": "Nie można zaktualizować wyciszenia mikrofonu w sesji głosowej.",
+      "callInProgress": "Połączenie głosowe jest już w toku."
+    },
+    "connecting": "Łączenie…",
+    "elapsedAria": "Czas, jaki upłynął {{time}}",
+    "txAria": "Przesyłane ramki głosowe {{count}}",
+    "rxAria": "Odebrane ramki głosowe {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Ogłoszenie telefoniczne LXST wysłuchane przez tego kolegę",
+    "capabilityUnknown": "Ogłoszenie telefoniczne LXST nie zostało jeszcze usłyszane (połączenie może nadal działać)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "Głos LXST potrzebuje telefonii LXST (Sideband, Ratspeak lub mesh-client). Nie klip z notatką głosową. Python LXST jest odniesieniem; rsLXST jest eksperymentalny."
+    },
+    "toast": {
+      "busy": "\"Linia jest zajęta\"",
+      "rejected": "Połączenie odrzucone",
+      "noAnswer": "Brak odpowiedzi — przekroczono limit czasu połączenia.",
+      "failed": "Połączenie głosowe nie powiodło się.",
+      "connectFailed": "Nie można połączyć."
+    },
+    "statsSeparator": "·",
+    "ringing": "Dzwoni…"
   }
 }

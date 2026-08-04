@@ -1379,6 +1379,30 @@ describe('updateChannelKeys', () => {
     expect(manager.getChannelNameToIndex()).toEqual({ LongFast: 1 });
   });
 
+  it('cold-start then RF re-push: empty map then LongFast@1 (resolvedChannelConfigs path)', () => {
+    const manager = new MQTTManager();
+    stubMqttConnect(manager);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+    });
+
+    // MQTT connected before RF channel configs arrived.
+    expect(manager.getChannelNameToIndex().LongFast).toBeUndefined();
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
+    expect(debugSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\[Meshtastic MQTT\] channelNameToIndex updated \(1\): LongFast=1/),
+    );
+    debugSpy.mockRestore();
+  });
+
   it('Nathan/Colorado: radio LongFast@1 overrides manual LongFast@0 for topic attribution', () => {
     const manager = new MQTTManager();
     const access = mqttChannelTestAccess(manager);

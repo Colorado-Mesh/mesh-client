@@ -1,4 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { normalizeMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScope';
+import { isValidMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 
 import {
   type ChatLastReadSanitizeMessage,
@@ -10,6 +12,9 @@ import {
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { parseStoredJson } from './parseStoredJson';
 import type { MeshProtocol } from './types';
+
+/** Cap persisted flood-scope override map size (view keys). */
+const FLOOD_SCOPE_OVERRIDE_MAX_KEYS = 200;
 
 export {
   type ChatLastReadSanitizeMessage,
@@ -120,6 +125,90 @@ export function clearDraft(protocol: MeshProtocol, viewKey: string): void {
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] clearDraft failed ' + errLikeToLogString(e));
   }
+}
+
+/**
+ * Chat composer sentinel: explicitly Unscoped (mesh-wide), distinct from Default (`''`).
+ * Must round-trip through flood-scope override storage unchanged.
+ */
+export const FLOOD_SCOPE_OVERRIDE_UNSCOPED = '__unscoped__';
+
+export function floodScopeOverridesStorageKey(protocol: MeshProtocol): string {
+  return `mesh-client:floodScopeOverrides:${protocol}`;
+}
+
+/** True when a stored override is Unscoped or a valid named hashtag (not Default). */
+function isPersistedFloodScopeOverride(value: string): boolean {
+  if (value === FLOOD_SCOPE_OVERRIDE_UNSCOPED) return true;
+  return isValidMeshcoreFloodScopeHashtag(normalizeMeshcoreFloodScopeHashtag(value));
+}
+
+function normalizePersistedFloodScopeOverride(value: string): string | null {
+  if (value === FLOOD_SCOPE_OVERRIDE_UNSCOPED) return FLOOD_SCOPE_OVERRIDE_UNSCOPED;
+  const normalized = normalizeMeshcoreFloodScopeHashtag(value);
+  return isValidMeshcoreFloodScopeHashtag(normalized) ? normalized : null;
+}
+
+/** Load persisted Chat flood-scope overrides (viewKey → override) for this protocol. */
+export function loadFloodScopeOverridesInitial(protocol: MeshProtocol): Record<string, string> {
+  const raw = localStorage.getItem(floodScopeOverridesStorageKey(protocol));
+  if (raw == null) return {};
+  const parsed = parseStoredJson<unknown>(raw, 'ChatPanel floodScopeOverrides');
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    const result: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v !== 'string') continue;
+      const normalized = normalizePersistedFloodScopeOverride(v);
+      if (!normalized) continue;
+      result[k] = normalized;
+      if (Object.keys(result).length >= FLOOD_SCOPE_OVERRIDE_MAX_KEYS) break;
+    }
+    return result;
+  }
+  return {};
+}
+
+/**
+ * Persist a flood-scope override for a view key.
+ * Default (`''`) clears the key so it is distinct from Unscoped.
+ */
+export function saveFloodScopeOverride(
+  protocol: MeshProtocol,
+  viewKey: string,
+  override: string,
+): void {
+  try {
+    const key = floodScopeOverridesStorageKey(protocol);
+    const current = loadFloodScopeOverridesInitial(protocol);
+    if (!override || !isPersistedFloodScopeOverride(override)) {
+      const rest = Object.fromEntries(Object.entries(current).filter(([k]) => k !== viewKey));
+      localStorage.setItem(key, JSON.stringify(rest));
+      return;
+    }
+    const normalized = normalizePersistedFloodScopeOverride(override);
+    if (!normalized) {
+      const rest = Object.fromEntries(Object.entries(current).filter(([k]) => k !== viewKey));
+      localStorage.setItem(key, JSON.stringify(rest));
+      return;
+    }
+    current[viewKey] = normalized;
+    const entries = Object.entries(current);
+    if (entries.length > FLOOD_SCOPE_OVERRIDE_MAX_KEYS) {
+      const trimmed = Object.fromEntries(entries.slice(-FLOOD_SCOPE_OVERRIDE_MAX_KEYS));
+      localStorage.setItem(key, JSON.stringify(trimmed));
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify(current));
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] saveFloodScopeOverride failed ' + errLikeToLogString(e),
+    );
+  }
+}
+
+/** Remove the flood-scope override for a specific view key (back to Default). */
+export function clearFloodScopeOverride(protocol: MeshProtocol, viewKey: string): void {
+  saveFloodScopeOverride(protocol, viewKey, '');
 }
 
 /** Load muted view keys for this protocol (e.g. 'ch:0', 'dm:12345'). */

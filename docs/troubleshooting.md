@@ -208,13 +208,23 @@ pnpm run trace-deprecation
 
 ### Permission messages in the console
 
-The session allowlist grants **serial**, **geolocation**, and **media** (camera for QR ingest; microphone reserved for future live audio). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
+The session allowlist grants **serial**, **geolocation**, and **media** (camera for QR ingest; microphone for Reticulum LXST voice calls). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
 
-If microphone permission is denied when a future live-audio feature requests it:
+If microphone permission is denied when placing or answering an LXST voice call:
 
 - **macOS:** System Settings → Privacy & Security → Microphone — allow Mesh-client (or Electron when running `pnpm run dev`). Packaged builds include `NSMicrophoneUsageDescription`.
 - **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
 - **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
+
+### Reticulum LXST voice call fails or is silent
+
+- **Stack not running:** Call needs a live Reticulum sidecar (`available` + `enabled` + `running` from `/api/v1/voice/status`). Start the stack from Connection.
+- **Peer identity unknown:** Dial uses a 32-hex **identity** hash (not only the LXMF destination). Wait for an announce or Probe the peer from Peers / Chat DM, then try Call again.
+- **Busy / rejected / no answer:** Line-busy and reject play distinct tones; discovery/ring timeouts surface as no-answer toasts. Only one local call at a time — Hang up before dialing again.
+- **Call progress tones (outbound):** Expect **dial tone → peer-derived DTMF burst → UK double-ring** while connecting. **Busy / no-answer** uses a short busy cadence; **connect-fail / unexpected drop** uses a fast reorder tone (not the same as busy). Hearing dial/ring without two-way audio is often still connecting — wait for Established before assuming failure.
+- **One-way or silent audio:** Confirm microphone permission (above). **Answer** only warms `AudioContext` on the click; **microphone capture/TX begins after `voice.update: established`** (Call click warms contexts before dial). If capture still fails after Established, check OS privacy and that another app is not exclusive-locking the mic. TX drops increment `localTxDrops` under IPC pressure — hang up and retry on a quieter link.
+- **Inbound accept fails (Columba / Python LXST):** mesh-client→peer may work while peer→mesh-client fails on Answer. Current builds defer mic/TX until Established and soft-drop pre-establish PCM (older packages could fatal-error lxst with `active call is not established` on Answer). Rebuild sidecar + app, then retry. If it still fails, check developer-bundle logs for `[ReticulumSidecar]` `call start role=incoming`, `call failed` / `call terminated`, and renderer `[reticulumVoice] voice.error message=…` / `answer failed`. Generic UI toast **Voice call failed** hides the raw rsLXST reason — the log line is definitive.
+- **Interop:** Peer must run LXST telephony (Sideband, Ratspeak, Columba, or mesh-client with rsLXST). This is not an LXMF voice-note clip.
 
 If QR camera scanning fails with camera permission denied:
 
@@ -983,8 +993,24 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-nomad.sh`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
+5. **Local DMs hang with Auto + LAN TCP hub** — see [Reticulum local DMs hang with AutoInterface + private TCP hub](#reticulum-local-dms-hang-with-autointerface--private-tcp-hub).
 
 Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
+
+### Reticulum local DMs hang with AutoInterface + private TCP hub
+
+**Symptoms**: LXMF Direct to a LAN peer stalls on **Sending** (or takes minutes) while **AutoInterface** is enabled and a **private** TCP/UDP hub is also up (e.g. local transport at `192.168.x.x`). Disabling Auto and restarting the stack makes the same DMs work over the hub (`received_via` / path interface shows TCP). Announce flood is not required to reproduce.
+
+**Cause**: AutoInterface peers are normal Reticulum **0-hop** neighbors. Transport prefers fewest hops; Auto and TCP are both `network` medium. A fresher Auto path can stay **active** even when a private hub path to the same peer is also 0-hop (equal-hop tie / learn order). If that Auto link is unhealthy (multicast, carrier, beacon issues), Direct waits on Auto while the private hub path sits unused as a backup. A 0-hop path **to the hub itself** does not mean Direct already chose the hub for the peer.
+
+**Automatic recovery** (mesh-client sidecar):
+
+1. **Health preempt** — If Auto looks degraded for delivery (beacon/carrier/status) and a live **private** path exists (RFC1918 / IPv6 ULA or link-local / `.local` TCP/UDP), suppress Auto and open Direct on that private path before waiting out a full Auto link hang.
+2. **Failure failover** — If Direct still fails or times out on Auto, exhaust backups **private non-Auto → public hubs → preferred PN** (does not preempt healthy Auto to the internet).
+
+Healthy Auto is left preferred (RNS default). Public hubs are never chosen by the health preempt.
+
+**Manual workaround**: Connection → Interfaces → disable **Auto** → restart stack if prompted. Keep the private hub up; confirm it is not `ECONNREFUSED` in the log (`hostLink` TCP probe).
 
 ### Reticulum Nomad Network or topology API returns 404
 
@@ -1253,18 +1279,24 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 ### Reticulum: Ratspeak DMs work but mesh-client stays silent
 
-**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat, **Columba**) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
 
-**Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`.
+**Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`. Short messages from Python clients (Sideband/Columba) often use **opportunistic** DATA — current sidecars wire `set_inbound_raw_channel` (lxmd parity) so those packets are not dropped after proof.
 
 **Checks**:
 
 1. Upgrade / rebuild the sidecar (`pnpm run reticulum:sidecar:build`) and **Restart stack**.
-2. On Network, use **Announce now**; on the other client, confirm mesh-client’s LXMF hash (Network identity) appears after the announce.
+2. On Network, use **Announce now**; on the other client, confirm mesh-client’s **LXMF** hash (Network identity → LXMF destination, not only the identity hash) appears after the announce.
 3. Same fabric: enable the same TCP hub / Auto / RNode paths on both clients when A/B testing.
 4. Contact named in Chat but missing from Peers → path dead; use **Peers → Request path / Probe**, or wait for the peer’s announce on that fabric.
 5. **Auto interface up ≠ Auto peers.** Auto “up” means LAN multicast carrier works; peer rows appear only when another RNS node announces onto that Auto group (or paths are owned by that interface). Multi-hop peers labeled with a TCP hub name and a shared `via` are hub fanout, not LAN neighbors.
 6. Configure a remote **propagation node** if the peer is often offline (does not replace missing announces).
+7. **Columba / Sideband opportunistic triage** (developer bundle, default `RUST_LOG=warn`): after a send from the phone, look for `[ReticulumSidecar]` lines:
+   - `LXMF inbound opportunistic packet` — frame reached the raw channel
+   - `opportunistic LXMF decrypt failed` (+ `error=…`) — ciphertext did not decrypt to this identity
+   - `inbound data not an LXMF message` with `via=opportunistic` — decrypt OK, unpack failed
+   - `inbound LXMF queued for clients` — sidecar accepted the message (if Chat still empty, look at renderer ingest / identity)
+   - **None of the above** after a Columba send → packet never hit `lxmf.delivery` (wrong dest hash on the phone, missing reverse path/announce, or not opportunistic/link traffic at all)
 
 ### Reticulum interface add/edit/delete fails
 
@@ -1392,12 +1424,12 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 MQTT ingest must map inbound text to the **receiver's** local channel slot using the MQTT topic channel name (`LongFast`, regional names, etc.) via `channelNameToIndex`. `MeshPacket.channel` in the ServiceEnvelope is the **sender's** local RF slot and must not drive attribution — remote gateways often use a different slot layout (e.g. LongFast on slot 1 while you use slot 0).
 
-Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or delayed `mqtt:updateChannelKeys` after connect.
+Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or MQTT connecting before RF channel configs arrive (cold-start empty map).
 
 **Fix**
 
 1. Update to a build that prefers the **topic channel name** for MQTT text ingest (sampled log `mqtt-channel-topic-mismatch:*` when topic index disagrees with packet channel).
-2. Connect the radio so channel keys and slot indexes sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
+2. Connect the radio so channel keys and slot indexes sync to MQTT. Current builds **re-push** `mqtt:updateChannelKeys` when RF `resolvedChannelConfigs` land after MQTT is already connected — look for `[Meshtastic MQTT] channelNameToIndex updated` in the App log (e.g. `LongFast=1`).
 3. **MQTT-only (no radio):** add `ChannelName@index=base64` lines in Connection → Channel PSKs (e.g. `LongFast@1=AQ==` for Colorado-mesh slot-1 public). The Connection panel shows an inline hint when no radio is configured and no `@index` lines are present.
 4. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, `meshtastic.mqttChannelKeyEntryCount`, and `meshtastic.mqttChannelNameToIndex` (main-process topic→slot map; e.g. `{ "LongFast": 1 }` for Colorado-style public on slot 1). Slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
 5. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
@@ -1415,7 +1447,7 @@ Meshtastic node numbers are frequently the lower 32 bits of the BLE MAC. With bo
 
 **Fix**
 
-1. Update to a build that suppresses Meshtastic `last_heard` bumps for node IDs matching the **connected MeshCore BLE MAC**.
+1. Update to a build that suppresses Meshtastic `last_heard` bumps for node IDs matching the **remembered/connected MeshCore BLE MAC** (`connectedMeshcoreBleMac.ts`). A valid MAC is **persisted and pre-armed** across cold start, failed reconnect, and user disconnect; it clears only on **Forget** or switching MeshCore to a non-BLE transport.
 2. Until then: delete the ghost node on Meshtastic Nodes (it may return while both radios are on-air on older builds).
 3. Confirm MeshCore Connection is BLE to that peripheral; Diagnostics foreign-LoRa is separate from the Nodes list.
 

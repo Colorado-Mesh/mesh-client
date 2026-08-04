@@ -21,7 +21,7 @@ vi.mock('react-i18next', () => ({
         'radioPanel.floodScopeRemoveSavedAria': `Remove ${hashtag} from saved scopes`,
         'radioPanel.floodScopeInvalidHashtag': 'Enter a valid region hashtag',
         'radioPanel.floodScopeCustom': 'Custom hashtag',
-        'radioPanel.floodScopeCustomPlaceholder': '#myregion',
+        'radioPanel.floodScopeCustomPlaceholder': '#metro',
         'radioPanel.floodScopeApply': 'Apply flood scope',
         'radioPanel.floodScopeApplySuccess': 'Flood scope applied',
         'radioPanel.floodScopeApplyFailed': `Flood scope failed: ${message}`,

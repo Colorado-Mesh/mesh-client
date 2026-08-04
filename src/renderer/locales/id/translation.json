@@ -4818,7 +4818,10 @@
     "clearHistory": "Hapus riwayat",
     "clearHistoryTitle": "Hapus riwayat ruangan",
     "clearHistoryConfirm": "Hapus semua riwayat pesan tersimpan untuk {{room}}? Hal ini tidak dapat dibatalkan.",
-    "clearHistoryConfirmAction": "Hapus riwayat"
+    "clearHistoryConfirmAction": "Hapus riwayat",
+    "whisperReplyPlaceholder": "Balas {{name}} atau /msg…",
+    "whisperNoTarget": "Belum ada target bisikan. Gunakan /msg NICK teks untuk memulai.",
+    "jumpToLatest": "Langsung ke Terbaru"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} offline",
     "offlineBody": "Terakhir didengar: {{time}}",
     "unknown": "tidak dikenal"
+  },
+  "reticulumVoice": {
+    "call": "Panggil",
+    "answer": "Jawaban",
+    "reject": "Tolak",
+    "incomingTitle": "Panggilan suara masuk",
+    "inCall": "Dalam panggilan",
+    "callAria": "Mulai panggilan suara LXST",
+    "answerAria": "Jawab panggilan suara",
+    "rejectAria": "Tolak panggilan suara",
+    "hangupAria": "Menutup panggilan suara",
+    "muteAria": "Bisukan mikrofon",
+    "unmuteAria": "Unmute microphone",
+    "errors": {
+      "noIdentity": "Tidak dapat menelepon: identitas teman sebaya belum diketahui. Tunggu pengumuman atau selidiki rekan sejawat.",
+      "callFailed": "Panggilan suara gagal.",
+      "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan.",
+      "micFailed": "Tidak dapat mengakses mikrofon untuk suara.",
+      "muteFailed": "Tidak dapat memperbarui mikrofon bisu pada sesi suara.",
+      "callInProgress": "A voice call is already in progress."
+    },
+    "connecting": "Menyambung…",
+    "elapsedAria": "Waktu berlalu {{time}}",
+    "txAria": "Bingkai suara yang ditransmisikan {{count}}",
+    "rxAria": "Bingkai suara yang diterima {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Pengumuman telepon LXST terdengar untuk rekan ini",
+    "capabilityUnknown": "Pengumuman telepon LXST belum terdengar (panggilan mungkin masih berfungsi)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "Suara LXST membutuhkan rekan yang menjalankan telepon LXST (Sideband, Ratspeak, atau mesh-client). Bukan klip catatan suara. Python LXST adalah referensi; rsLXST adalah eksperimental."
+    },
+    "toast": {
+      "busy": "Line sedang sibuk",
+      "rejected": "Panggilan ditolak.",
+      "noAnswer": "Tidak ada jawaban — waktu panggilan habis.",
+      "failed": "Panggilan suara gagal.",
+      "connectFailed": "Tidak dapat terhubung."
+    },
+    "statsSeparator": "·",
+    "ringing": "Berdering…"
   }
 }

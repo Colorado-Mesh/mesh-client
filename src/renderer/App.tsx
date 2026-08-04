@@ -63,6 +63,8 @@ import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity'
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
+import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
+import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
 import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
@@ -82,6 +84,7 @@ import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnect
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import { RncpEnableRequestModal } from './components/remote/RncpEnableRequestModal';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
+import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOverlay';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
@@ -479,6 +482,7 @@ export default function App() {
       <ToastProvider>
         <AppContent />
         <RncpEnableRequestModal />
+        <ReticulumVoiceOverlay />
       </ToastProvider>
     </ProtocolRuntimeProvider>
   );
@@ -1200,13 +1204,23 @@ function AppContent() {
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
 
-  const reticulumOwnNodeIdSet = useMemo(() => {
-    const selfId =
-      typeof reticulumRuntime.selfNodeId === 'number'
-        ? reticulumRuntime.selfNodeId
-        : reticulumRuntime.state.myNodeNum;
-    return selfId > 0 ? new Set([selfId >>> 0]) : new Set<number>();
-  }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
+  const reticulumIdentity = useReticulumIdentityStore((s) => s.identity);
+  useEffect(() => {
+    const hash = reticulumIdentity?.lxmf_hash?.trim();
+    if (!hash) return;
+    persistReticulumSelfLxmfHash(hash);
+  }, [reticulumIdentity?.lxmf_hash]);
+
+  const reticulumOwnNodeIdSet = useMemo(
+    () =>
+      resolveReticulumOwnNodeIdSet({
+        runtimeSelfNodeId:
+          typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : null,
+        connectionMyNodeNum: reticulumRuntime.state.myNodeNum,
+        lxmfHash: reticulumIdentity?.lxmf_hash,
+      }),
+    [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum],
+  );
 
   useEffect(() => {
     if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
@@ -1459,13 +1473,12 @@ function AppContent() {
     () => Array.from(reticulumOwnNodeIdSet),
     [reticulumOwnNodeIdSet],
   );
-  const reticulumIdentityForHeader = useReticulumIdentityStore((s) => s.identity);
   const headerMyNodeNum = (() => {
     if (protocol !== 'reticulum') return activeConnectionView.state.myNodeNum;
     const fromRuntime =
       typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : 0;
-    const fromIdentity = reticulumIdentityForHeader?.lxmf_hash
-      ? reticulumHashToNodeId(reticulumIdentityForHeader.lxmf_hash)
+    const fromIdentity = reticulumIdentity?.lxmf_hash
+      ? reticulumHashToNodeId(reticulumIdentity.lxmf_hash)
       : 0;
     return Math.max(activeConnectionView.state.myNodeNum, fromRuntime, fromIdentity);
   })();
@@ -1477,8 +1490,8 @@ function AppContent() {
           ? useNodeStore.getState().nodes[reticulumIdentityId]?.[selfId >>> 0]?.longName
           : undefined;
       return resolveReticulumSelfHeaderLabel({
-        identityDisplayName: reticulumIdentityForHeader?.display_name,
-        lxmfHash: reticulumIdentityForHeader?.lxmf_hash ?? null,
+        identityDisplayName: reticulumIdentity?.display_name,
+        lxmfHash: reticulumIdentity?.lxmf_hash ?? null,
         storedLongName: stored,
       });
     }
@@ -3056,6 +3069,7 @@ function AppContent() {
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             hasRncpTransfer={capabilities.hasRncpTransfer}
+                            hasLxstVoice={capabilities.hasLxstVoice}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
                             showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
@@ -3269,6 +3283,7 @@ function AppContent() {
                                 }
                                 groupMemberIds={contactGroups.groupMemberIds}
                                 contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                                hasLxstVoice={capabilities.hasLxstVoice}
                               />
                             ) : (
                               <NodeListPanel

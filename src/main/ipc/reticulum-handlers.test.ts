@@ -148,6 +148,7 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:syncInterfaceIssueScope',
         'reticulum:proxyGet',
         'reticulum:proxyPost',
+        'reticulum:voiceSendAudio',
         'reticulum:proxyPut',
         'reticulum:proxyDelete',
         'reticulum:readDefaultConfigFile',
@@ -174,6 +175,10 @@ describe('registerReticulumIpcHandlers', () => {
       handlers.get('reticulum:syncInterfaceIssueScope')?.(event, []);
       await handlers.get('reticulum:proxyGet')?.(event, '/api/v1/x');
       await handlers.get('reticulum:proxyPost')?.(event, '/api/v1/x', {});
+      await handlers.get('reticulum:voiceSendAudio')?.(event, {
+        channels: 1,
+        samples_b64: 'AAAA',
+      });
       await handlers.get('reticulum:proxyPut')?.(event, '/api/v1/x', {});
       await handlers.get('reticulum:proxyDelete')?.(event, '/api/v1/x');
       handlers.get('reticulum:readDefaultConfigFile')?.(event);
@@ -183,9 +188,10 @@ describe('registerReticulumIpcHandlers', () => {
       await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
       await handlers.get('reticulum:validateConfig')?.(event);
 
-      expect(assertIpcSenderMock).toHaveBeenCalledTimes(14);
+      expect(assertIpcSenderMock).toHaveBeenCalledTimes(15);
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:start');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:proxyPost');
+      expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:voiceSendAudio');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:setNomadContentSource');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:validateConfig');
     });
@@ -592,6 +598,34 @@ describe('registerReticulumIpcHandlers', () => {
       ).rejects.toThrow(/rncpSend\/rncpFetch\/setRncpListener/);
       expect(manager.proxyPost).not.toHaveBeenCalled();
     });
+
+    it('proxyPost rejects voice PCM path; voiceSendAudio forwards validated frames', async () => {
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, '/api/v1/voice/audio', {
+          channels: 1,
+          samples_b64: 'AAAA',
+        }),
+      ).rejects.toThrow(/voiceSendAudio/);
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+
+      const ok = await handlers.get('reticulum:voiceSendAudio')?.(event, {
+        channels: 1,
+        samples_b64: 'AAAA',
+        profile: 0x50,
+      });
+      expect(ok).toEqual({ ok: true });
+      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/voice/audio', {
+        channels: 1,
+        samples_b64: 'AAAA',
+        profile: 0x50,
+      });
+
+      const bad = await handlers.get('reticulum:voiceSendAudio')?.(event, {
+        channels: 1,
+        samples_b64: '',
+      });
+      expect(bad).toEqual({ ok: false, error: 'empty_samples_b64' });
+    });
   });
 });
 
@@ -616,6 +650,22 @@ describe('wireReticulumSidecarBridge', () => {
     expect(win.webContents.send).toHaveBeenCalledWith('reticulum:event', {
       type: 'wire_packet',
       payload: {},
+    });
+  });
+
+  it('forwards manager "voiceAudio" emissions to reticulum:voiceAudio', () => {
+    const manager = createManagerStub();
+    const win = createWinStub();
+    wireReticulumSidecarBridge(manager as never, () => win as unknown as BrowserWindow);
+
+    const voiceHandler = manager.on.mock.calls.find((call) => call[0] === 'voiceAudio')?.[1] as (
+      evt: unknown,
+    ) => void;
+    expect(voiceHandler).toBeTypeOf('function');
+    voiceHandler({ type: 'voice.audio', payload: { channels: 1, samples_b64: 'AAAA' } });
+    expect(win.webContents.send).toHaveBeenCalledWith('reticulum:voiceAudio', {
+      type: 'voice.audio',
+      payload: { channels: 1, samples_b64: 'AAAA' },
     });
   });
 

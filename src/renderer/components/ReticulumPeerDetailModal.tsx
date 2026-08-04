@@ -34,6 +34,7 @@ import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import {
+  refreshReticulumPeersFromSidecar,
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '@/renderer/stores/reticulumPeerStore';
@@ -395,7 +396,6 @@ export default function ReticulumPeerDetailModal({
         favorited: Boolean(peer.favorited),
       });
       registerReticulumDestinationHash(reticulumHashToNodeId(key), key);
-      const { refreshReticulumPeersFromSidecar } = await import('../stores/reticulumPeerStore');
       await refreshReticulumPeersFromSidecar();
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] save contact ' + errLikeToLogString(e));

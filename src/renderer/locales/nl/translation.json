@@ -4818,7 +4818,10 @@
     "clearHistory": "Geschiedenis wissen",
     "clearHistoryTitle": "Kamergeschiedenis wissen",
     "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
-    "clearHistoryConfirmAction": "Geschiedenis verwijderen"
+    "clearHistoryConfirmAction": "Geschiedenis verwijderen",
+    "whisperReplyPlaceholder": "Reageer op {{name}} of /msg...",
+    "whisperNoTarget": "Nog geen fluisterdoel. Gebruik /msg NICK tekst om te starten.",
+    "jumpToLatest": "Spring naar de laatste"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} is offline gegaan",
     "offlineBody": "Laatst gehoord: {{time}}",
     "unknown": "onbekend"
+  },
+  "reticulumVoice": {
+    "call": "Oproep",
+    "answer": "Beantwoorden",
+    "reject": "Afwijzen",
+    "incomingTitle": "Binnenkomende spraakoproep",
+    "inCall": "In gesprek",
+    "callAria": "LXST-spraakoproep starten",
+    "answerAria": "Spraakoproep beantwoorden",
+    "rejectAria": "Spraakoproep weigeren",
+    "hangupAria": "Ophangen spraakoproep",
+    "muteAria": "Microfoon dempen",
+    "unmuteAria": "Dempen van de microfoon opheffen",
+    "errors": {
+      "noIdentity": "Kan niet bellen: peer-identiteit nog niet bekend. Wacht op een aankondiging of probeer de peer.",
+      "callFailed": "Spraakoproep mislukt.",
+      "callInProgress": "Er is al een spraakoproep bezig.",
+      "notRunning": "Spraak is niet beschikbaar totdat de Reticulum-stack actief is.",
+      "micFailed": "Kon geen toegang krijgen tot de microfoon voor spraak.",
+      "muteFailed": "Kan microfoondemping niet bijwerken tijdens de spraaksessie."
+    },
+    "connecting": "Verbinden…",
+    "elapsedAria": "Verstreken tijd {{time}}",
+    "txAria": "Verzonden spraakframes {{count}}",
+    "rxAria": "Ontvangen spraakframes {{count}}",
+    "statsSeparator": "·",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST-telefonie-aankondiging gehoord voor deze peer",
+    "capabilityUnknown": "LXST-telefonie-aankondiging nog niet gehoord (oproep kan nog steeds werken)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "LXST-spraak heeft een peer-running LXST-telefonie nodig (Sideband, Ratspeak of mesh-client). Geen voice-note clip. Python LXST is de referentie; rsLXST is experimenteel."
+    },
+    "toast": {
+      "busy": "Lijn bezet",
+      "rejected": "Oproep afgewezen",
+      "noAnswer": "Geen antwoord — er is een time-out opgetreden.",
+      "failed": "Spraakoproep mislukt.",
+      "connectFailed": "Kon niet verbinden"
+    },
+    "ringing": "Overgaan…"
   }
 }

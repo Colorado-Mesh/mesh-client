@@ -59,6 +59,10 @@ import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import {
+  RETICULUM_DM_HEADER_ACTION_CLASS,
+  RETICULUM_DM_HEADER_STATUS_CLASS,
+} from '@/renderer/lib/reticulumDmHeaderActions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -150,6 +154,7 @@ import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
+import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import {
   ReticulumDmPathActions,
@@ -229,7 +234,7 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
   if (parts.length === 0) return null;
   return (
     <div
-      className="flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
+      className={`${RETICULUM_DM_HEADER_STATUS_CLASS} text-gray-400`}
       role="status"
       aria-label={t('chatPanel.dmPeerInfoAria')}
     >
@@ -508,6 +513,8 @@ export interface ChatPanelProps {
   reticulumStackLive?: boolean;
   /** Reticulum: rncp file transfer available — shows the DM header "Send file" control. */
   hasRncpTransfer?: boolean;
+  /** Reticulum: LXST voice Call control in the DM header. */
+  hasLxstVoice?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
@@ -562,6 +569,7 @@ function ChatPanel({
   onOpenPropagationSettings,
   reticulumStackLive = false,
   hasRncpTransfer = false,
+  hasLxstVoice = false,
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
@@ -849,36 +857,59 @@ function ChatPanel({
   const visibleDmTabs = useMemo(() => {
     const all = new Set(openDmTabs);
     if (activeDmNode != null) all.add(activeDmNode);
-    for (const [nodeNum, dmCount] of inferredDmTabs) {
-      const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
-      if (dmCount > dismissedCount) {
-        all.add(nodeNum);
+    // Reticulum: until own identity is known, outbound history misattributes peer=self.
+    // Only keep explicitly opened/active tabs so a sticky self hex pill cannot flash on launch.
+    const allowInferredReticulumTabs = protocol !== 'reticulum' || ownNodeIdSet.size > 0;
+    if (allowInferredReticulumTabs) {
+      for (const [nodeNum, dmCount] of inferredDmTabs) {
+        const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
+        if (dmCount > dismissedCount) {
+          all.add(nodeNum);
+        }
+      }
+      for (const [nodeNum, unread] of dmUnreadCounts) {
+        if (
+          unread > 0 &&
+          (!dmOnlyChat || !isDismissedDmConversation(nodeNum, dismissedDmTabs, inferredDmTabs))
+        ) {
+          all.add(nodeNum);
+        }
       }
     }
-    for (const [nodeNum, unread] of dmUnreadCounts) {
-      if (
-        unread > 0 &&
-        (!dmOnlyChat || !isDismissedDmConversation(nodeNum, dismissedDmTabs, inferredDmTabs))
-      ) {
-        all.add(nodeNum);
-      }
-    }
-    return Array.from(all).filter(
-      (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
-    );
+    return Array.from(all).filter((nodeNum) => {
+      if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(nodeNum)) return false;
+      if (protocol === 'reticulum' && isOwnNode(nodeNum)) return false;
+      return true;
+    });
   }, [
     activeDmNode,
     dismissedDmTabs,
     dmOnlyChat,
     dmUnreadCounts,
     inferredDmTabs,
+    isOwnNode,
     openDmTabs,
+    ownNodeIdSet,
     protocol,
   ]);
+
+  // Drop a sticky self DM if identity becomes known after hydrate (openDmTabs / autofocus race).
+  useEffect(() => {
+    if (protocol !== 'reticulum' || ownNodeIdSet.size === 0) return;
+    if (activeDmNode != null && isOwnNode(activeDmNode)) {
+      setActiveDmNode(null);
+    }
+    setOpenDmTabs((prev) => {
+      const next = prev.filter((id) => !isOwnNode(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [activeDmNode, isOwnNode, ownNodeIdSet, protocol]);
 
   // Reticulum DM-only: auto-focus the conversation with the most history when none selected.
   useEffect(() => {
     if (!dmOnlyChat || activeDmNode != null || visibleDmTabs.length === 0) return;
+    // Wait until own identity is known so we never autofocus a misattributed self tab.
+    if (protocol === 'reticulum' && ownNodeIdSet.size === 0) return;
     let bestTab = visibleDmTabs[0];
     let bestCount = inferredDmTabs.get(bestTab) ?? 0;
     for (const [nodeNum, count] of inferredDmTabs) {
@@ -888,9 +919,10 @@ function ChatPanel({
         bestTab = nodeNum;
       }
     }
+    if (protocol === 'reticulum' && isOwnNode(bestTab)) return;
     setActiveDmNode(bestTab);
     setViewMode('dm');
-  }, [activeDmNode, dmOnlyChat, inferredDmTabs, visibleDmTabs]);
+  }, [activeDmNode, dmOnlyChat, inferredDmTabs, isOwnNode, ownNodeIdSet, protocol, visibleDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
@@ -1740,6 +1772,11 @@ function ChatPanel({
     return peer?.hops ?? null;
   });
 
+  const reticulumDmIdentityHash = useReticulumPeerStore((s) => {
+    if (!reticulumDmDestinationHash) return null;
+    return s.getPeer(reticulumDmDestinationHash)?.identity_hash ?? null;
+  });
+
   const reticulumDmPassiveHops = useMemo(() => {
     if (reticulumDmPeerHops != null) return reticulumDmPeerHops;
     if (activeDmNode == null) return null;
@@ -2273,6 +2310,16 @@ function ChatPanel({
                 dmShareCandidates={rncpShareCandidates}
               />
             ) : null;
+          const voiceCallControl =
+            protocol === 'reticulum' && hasLxstVoice && reticulumDmDestinationHash != null ? (
+              <ReticulumVoiceCallButton
+                key={`dm-voice-${reticulumDmDestinationHash}`}
+                lxmfPeerHash={reticulumDmDestinationHash}
+                identityHash={reticulumDmIdentityHash}
+                disabled={!reticulumStackLive}
+                className={RETICULUM_DM_HEADER_ACTION_CLASS}
+              />
+            ) : null;
           const peerDetailsAppearance = reticulumDmDestinationHash
             ? peerAppearanceByHash.get(reticulumDmDestinationHash)
             : undefined;
@@ -2280,7 +2327,7 @@ function ChatPanel({
             protocol === 'reticulum' && onPeerClick && reticulumDmDestinationHash != null ? (
               <button
                 type="button"
-                className="bg-secondary-dark text-muted inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:text-gray-200"
+                className={`${RETICULUM_DM_HEADER_ACTION_CLASS} max-w-full`}
                 aria-label={t('chatPanel.openPeerDetailsAria', { name: dmNodeName })}
                 onClick={() => {
                   onPeerClick(reticulumDmDestinationHash);
@@ -2296,13 +2343,17 @@ function ChatPanel({
                 <span className="min-w-0 truncate">{t('chatPanel.openPeerDetails')}</span>
               </button>
             ) : null;
-          if (!pathBadge && !dmNode && !rncpControl && !peerDetailsControl) return null;
+          if (!pathBadge && !dmNode && !rncpControl && !voiceCallControl && !peerDetailsControl) {
+            return null;
+          }
+          // Order: path status → last heard → peer details → Probe/Path → Call → Send file.
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
-              {pathActions}
-              {peerDetailsControl}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+              {peerDetailsControl}
+              {pathActions}
+              {voiceCallControl}
               {rncpControl}
             </div>
           );

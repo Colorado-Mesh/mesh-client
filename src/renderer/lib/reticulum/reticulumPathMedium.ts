@@ -7,24 +7,20 @@
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { classifyReticulumVia } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import {
+  activeReticulumPathSlot,
+  backupReticulumPathSlots,
+  type PathMedium,
+  type ReticulumPathSlot,
+} from '@/renderer/lib/reticulum/reticulumPathSlots';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { applyReticulumPeerActivePathSlot } from '@/renderer/stores/reticulumPeerStore';
 
 export type PathMediumPreference = 'lowest' | 'network' | 'rf';
-export type PathMedium = 'rf' | 'network';
+export type { PathMedium, ReticulumPathSlot };
+export { activeReticulumPathSlot, backupReticulumPathSlots };
 /** UI pin control: Auto follows the global preference. */
 export type PeerMediumPinChoice = 'auto' | PathMedium;
-
-export interface ReticulumPathSlot {
-  active: boolean;
-  hops: number | null;
-  via_hash: string | null;
-  interface: string | null;
-  interface_id: number | null;
-  medium: PathMedium | null;
-  timestamp: number | null;
-  expires: number | null;
-  expired: boolean;
-}
 
 export interface ReticulumPeerPathsResult {
   ok: boolean;
@@ -174,20 +170,6 @@ export const RETICULUM_PATH_SETTLE_MS = 800;
 /** Second attempt when the first `/paths` read is still empty. */
 export const RETICULUM_PATH_RETRY_MS = 1200;
 
-/** Active path: marked active + live, else first live slot, else first slot. */
-export function activeReticulumPathSlot(
-  paths: readonly ReticulumPathSlot[],
-): ReticulumPathSlot | null {
-  if (paths.length === 0) return null;
-  return paths.find((s) => s.active && !s.expired) ?? paths.find((s) => !s.expired) ?? paths[0];
-}
-
-/** Non-expired slots excluding the chosen active slot (transport caps at 3 total). */
-export function backupReticulumPathSlots(paths: readonly ReticulumPathSlot[]): ReticulumPathSlot[] {
-  const active = activeReticulumPathSlot(paths);
-  return paths.filter((s) => !s.expired && s !== active);
-}
-
 function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -203,7 +185,6 @@ export async function refreshReticulumPeerRouteFromPaths(
   hash: string,
   opts?: { settleMs?: number; retryMs?: number },
 ): Promise<ReticulumPeerPathsResult> {
-  const { applyReticulumPeerActivePathSlot } = await import('@/renderer/stores/reticulumPeerStore');
   const settleMs = opts?.settleMs ?? 0;
   if (settleMs > 0) await sleepMs(settleMs);
   const first = await fetchReticulumPeerPaths(hash);

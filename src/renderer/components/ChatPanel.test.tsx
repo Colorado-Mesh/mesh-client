@@ -3828,6 +3828,187 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(input).not.toBeDisabled();
   });
 
+  it('does not autofocus a self DM when inbound history has to=self', async () => {
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfHash = '368f994c056de0d8882855eb0d627497';
+    const selfId = parseInt(selfHash.slice(0, 12), 16) >>> 0;
+    localStorage.setItem(`mesh-client:openDmTabs:reticulum`, JSON.stringify([selfId]));
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'Other Peer',
+        payload: 'hello from peer',
+        channel: 0,
+        to: selfId,
+        reticulum_sender_hash: peerHash,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    const selfNode: MeshNode = {
+      node_id: selfId,
+      reticulum_destination_hash: selfHash,
+      long_name: 'Myself',
+      short_name: 'ME',
+      hw_model: 'Reticulum',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      favorited: false,
+      source: 'rf',
+    };
+    const peerNode: MeshNode = {
+      node_id: peerId,
+      reticulum_destination_hash: peerHash,
+      long_name: 'Other Peer',
+      short_name: 'OP',
+      hw_model: 'Reticulum',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      favorited: false,
+      source: 'rf',
+    };
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          messages={messages}
+          ownNodeIds={[selfId]}
+          nodes={
+            new Map([
+              [selfId, selfNode],
+              [peerId, peerNode],
+            ])
+          }
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('hello from peer')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Myself' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Other Peer' }).length).toBeGreaterThanOrEqual(1);
+    const openTabs = JSON.parse(
+      localStorage.getItem('mesh-client:openDmTabs:reticulum') ?? '[]',
+    ) as number[];
+    expect(openTabs).not.toContain(selfId);
+  });
+
+  it('does not flash an inferred self DM while own identity is still unknown', async () => {
+    const peerHash = '81bc0c0c5937ee0b750dbed29e744997';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfHash = '8fd7a9361aca12360c7985bc934bdd20';
+    const selfId = parseInt(selfHash.slice(0, 12), 16) >>> 0;
+    const selfHexLabel = `!${(selfId >>> 0).toString(16).padStart(8, '0')}`;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: selfId,
+        sender_name: 'NV0N',
+        payload: 'outbound to peer',
+        channel: 0,
+        to: peerId,
+        reticulum_sender_hash: selfHash,
+        timestamp: Date.now() - 1000,
+        status: 'acked',
+      },
+      {
+        sender_id: peerId,
+        sender_name: 'w0rmt',
+        payload: 'inbound from peer',
+        channel: 0,
+        to: selfId,
+        reticulum_sender_hash: peerHash,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    const peerNode: MeshNode = {
+      node_id: peerId,
+      reticulum_destination_hash: peerHash,
+      long_name: 'w0rmt',
+      short_name: 'w0rm',
+      hw_model: 'Reticulum',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      favorited: false,
+      source: 'rf',
+    };
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          myNodeNum={0}
+          ownNodeIds={[]}
+          messages={messages}
+          nodes={new Map([[peerId, peerNode]])}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: selfHexLabel })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'w0rmt' })).not.toBeInTheDocument();
+    expect(screen.queryByText('outbound to peer')).not.toBeInTheDocument();
+    expect(screen.queryByText('inbound from peer')).not.toBeInTheDocument();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          myNodeNum={selfId}
+          ownNodeIds={[selfId]}
+          messages={messages}
+          nodes={new Map([[peerId, peerNode]])}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('inbound from peer')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: selfHexLabel })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'w0rmt' }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('keeps explicitly opened DM tabs while own identity is still unknown', async () => {
+    const peerHash = '81bc0c0c5937ee0b750dbed29e744997';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify([peerId]));
+    const peerNode: MeshNode = {
+      node_id: peerId,
+      reticulum_destination_hash: peerHash,
+      long_name: 'w0rmt',
+      short_name: 'w0rm',
+      hw_model: 'Reticulum',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      favorited: false,
+      source: 'rf',
+    };
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          myNodeNum={0}
+          ownNodeIds={[]}
+          nodes={new Map([[peerId, peerNode]])}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'w0rmt' })).toBeInTheDocument();
+    });
+  });
+
   it('prompts to select a DM when no contacts are known', async () => {
     render(
       <ToastProvider>
@@ -4301,6 +4482,83 @@ describe('ChatPanel reticulum dm-only chat', () => {
     );
     await user.click(screen.getByRole('button', { name: /Open peer details for Detail Peer/i }));
     expect(onPeerClick).toHaveBeenCalledExactlyOnceWith(peerHash);
+  });
+
+  it('orders DM header as status → last heard → peer details → Probe → Path → Call → Send file', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    const peerId = parseInt(hash.slice(0, 12), 16) >>> 0;
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 2 });
+    const onPeerClick = vi.fn();
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: hash,
+          long_name: 'Order Peer',
+          short_name: 'OP',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          hops_away: 2,
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    const precedes = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          nodes={nodes}
+          initialDmTarget={peerId}
+          reticulumStackLive
+          onPeerClick={onPeerClick}
+          hasLxstVoice
+          hasRncpTransfer
+        />
+      </ToastProvider>,
+    );
+
+    const pathStatus = await screen.findByRole('status', {
+      name: 'Destination path is reachable',
+    });
+    const peerInfo = screen.getByRole('status', { name: 'DM peer info' });
+    const peerDetails = screen.getByRole('button', {
+      name: /Open peer details for Order Peer/i,
+    });
+    const probe = screen.getByRole('button', {
+      name: 'Probe Reticulum path reachability for this destination',
+    });
+    const path = screen.getByRole('button', {
+      name: 'Request Reticulum path to this destination',
+    });
+    const call = screen.getByRole('button', { name: /start lxst voice call/i });
+    const sendFile = screen.getByRole('button', { name: /Send file to Order Peer via rncp/i });
+
+    expect(precedes(pathStatus, peerInfo)).toBe(true);
+    expect(precedes(peerInfo, peerDetails)).toBe(true);
+    expect(precedes(peerDetails, probe)).toBe(true);
+    expect(precedes(probe, path)).toBe(true);
+    expect(precedes(path, call)).toBe(true);
+    expect(precedes(call, sendFile)).toBe(true);
+
+    expect(peerDetails.className).toContain('border-cyan-500/35');
+    expect(peerDetails.className).toMatch(/text-cyan-/);
+    expect(peerDetails.className).not.toContain('bg-secondary-dark');
+    expect(peerDetails.className).not.toContain('rounded-full');
+    expect(call.className).toContain('border-cyan-500/35');
+    expect(call.className).toMatch(/text-cyan-/);
+    expect(call.className).not.toContain('ml-2');
+    expect(
+      screen.queryByText(/LXST voice needs a peer running LXST telephony/i),
+    ).not.toBeInTheDocument();
   });
 
   it('prefers custom Lucide appearance over LXMFace on DM tab', () => {

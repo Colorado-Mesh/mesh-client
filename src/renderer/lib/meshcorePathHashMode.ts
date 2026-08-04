@@ -62,6 +62,21 @@ export interface MeshcoreDeviceQueryPathHashFields {
   clientRepeat?: number;
 }
 
+/**
+ * AppPanel auto-saves the full settings object (defaults merged in). Omit path hash mode
+ * unless the user explicitly changed the dropdown this session — otherwise a visit to App
+ * stamps mode 0 into localStorage and later connect logic used to fight the radio.
+ */
+export function appPanelSettingsPersistPayload(
+  settings: Record<string, unknown>,
+  userChangedPathHashMode: boolean,
+): Record<string, unknown> {
+  if (userChangedPathHashMode) return { ...settings };
+  const rest = { ...settings };
+  delete rest.meshcorePathHashMode;
+  return rest;
+}
+
 /** Parse path_hash_mode from meshcore.js DeviceInfo (v10+ companion protocol). */
 export function parsePathHashModeFromDeviceQuery(info: unknown): MeshcoreDeviceQueryPathHashFields {
   if (info == null || typeof info !== 'object') return {};

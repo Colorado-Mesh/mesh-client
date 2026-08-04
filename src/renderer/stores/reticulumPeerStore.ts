@@ -13,7 +13,7 @@ import {
 import {
   activeReticulumPathSlot,
   type ReticulumPathSlot,
-} from '@/renderer/lib/reticulum/reticulumPathMedium';
+} from '@/renderer/lib/reticulum/reticulumPathSlots';
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import {

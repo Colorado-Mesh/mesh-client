@@ -4818,7 +4818,10 @@
     "clearHistory": "Effacer l'historique",
     "clearHistoryTitle": "Effacer l'historique de la salle",
     "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
-    "clearHistoryConfirmAction": "Supprimer l'historique"
+    "clearHistoryConfirmAction": "Supprimer l'historique",
+    "whisperReplyPlaceholder": "Répondre à {{name}} ou /msg…",
+    "whisperNoTarget": "Pas encore de destinataire pour le murmure. Utilisez /msg NICK texte pour commencer.",
+    "jumpToLatest": "Aller au dernier"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} s'est déconnecté",
     "offlineBody": "Dernière écoute : {{time}}",
     "unknown": "inconnu"
+  },
+  "reticulumVoice": {
+    "call": "Appeler",
+    "answer": "Réponse",
+    "reject": "Rejeter",
+    "incomingTitle": "Appel vocal entrant",
+    "inCall": "En appel",
+    "callAria": "Démarrer l'appel vocal",
+    "answerAria": "Répondre comme un appel vocal",
+    "rejectAria": "Refuser l'appel vocal",
+    "hangupAria": "Raccrocher l'appel vocal",
+    "muteAria": "Désactiver le microphone",
+    "unmuteAria": "Activer le son du microphone",
+    "errors": {
+      "noIdentity": "Impossible d'appeler : l'identité de l'homologue n'est pas encore connue. Attendez une annonce ou sondez le pair.",
+      "callFailed": "Échec de l'appel vocal.",
+      "notRunning": "La voix n'est pas disponible tant que la pile Reticulum n'est pas en cours d'exécution.",
+      "micFailed": "Impossible d'accéder au microphone pour la voix.",
+      "muteFailed": "Impossible de mettre à jour le microphone muet sur la session vocale.",
+      "callInProgress": "Un appel vocal est déjà en cours."
+    },
+    "connecting": "Connexion…",
+    "elapsedAria": "Temps écoulé {{time}}",
+    "txAria": "Trames vocales transmises {{count}}",
+    "rxAria": "Trames vocales reçues {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Annonce téléphonique LXST entendue pour ce pair",
+    "capabilityUnknown": "Annonce téléphonique LXST pas encore entendue (l'appel peut encore fonctionner)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "it",
+    "help": {
+      "interop": "La voix LXST a besoin d'un pair exécutant la téléphonie LXST (Sideband, Ratspeak ou mesh-client). Pas un clip de note vocale. Python LXST est la référence ; rsLXST est expérimental."
+    },
+    "toast": {
+      "busy": "Ligne occupée",
+      "rejected": "Appel rejeté",
+      "noAnswer": "Pas de réponse — appel expiré.",
+      "failed": "Échec de l'appel vocal.",
+      "connectFailed": "Impossible de se connecter."
+    },
+    "statsSeparator": "·",
+    "ringing": "Ça sonne…"
   }
 }

@@ -1,7 +1,13 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  clearMeshcoreBleMacSuppression,
+  commitConnectedMeshcoreBleSuppression,
   getConnectedMeshcoreBleMac,
+  MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY,
+  prearmMeshcoreBleMacSuppressionFromStorage,
+  preserveOrClearMeshcoreBleSuppression,
   readMeshcoreWebBluetoothDeviceId,
   resetConnectedMeshcoreBleMacForTests,
   resolveConnectedMeshcoreBleIdentity,
@@ -79,17 +85,50 @@ describe('setConnectedMeshcoreBleMac', () => {
     resetConnectedMeshcoreBleMacForTests();
   });
 
-  it('stores parseable Noble MACs', () => {
+  it('stores parseable Noble MACs and persists them for cold-start pre-arm', () => {
     setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
+    expect(getConnectedMeshcoreBleMac()).toBe('cc:2e:e3:da:2e:2f');
+    expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBe(
+      'cc:2e:e3:da:2e:2f',
+    );
+    expect(shouldSuppressMeshtasticNodeHear(0xe3da2e2f, getConnectedMeshcoreBleMac())).toBe(true);
+  });
+
+  it('clears in-memory value for opaque Web Bluetooth UUIDs without wiping sticky persistence', () => {
+    setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
+    setConnectedMeshcoreBleMac('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+    expect(getConnectedMeshcoreBleMac()).toBeNull();
+    expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBe(
+      'cc:2e:e3:da:2e:2f',
+    );
+    expect(shouldSuppressMeshtasticNodeHear(0xe3da2e2f, getConnectedMeshcoreBleMac())).toBe(false);
+  });
+
+  it('set(null) clears memory only; prearm restores sticky MAC before live BLE connect', () => {
+    setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
+    setConnectedMeshcoreBleMac(null);
+    expect(getConnectedMeshcoreBleMac()).toBeNull();
+    expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBe(
+      'cc:2e:e3:da:2e:2f',
+    );
+    expect(prearmMeshcoreBleMacSuppressionFromStorage(null)).toBe('cc:2e:e3:da:2e:2f');
     expect(getConnectedMeshcoreBleMac()).toBe('cc:2e:e3:da:2e:2f');
     expect(shouldSuppressMeshtasticNodeHear(0xe3da2e2f, getConnectedMeshcoreBleMac())).toBe(true);
   });
 
-  it('clears instead of storing opaque Web Bluetooth UUIDs', () => {
+  it('prearm uses last-BLE fallback when persistence is empty', () => {
+    expect(prearmMeshcoreBleMacSuppressionFromStorage('cc:2e:e3:da:2e:2f')).toBe(
+      'cc:2e:e3:da:2e:2f',
+    );
+    expect(getConnectedMeshcoreBleMac()).toBe('cc:2e:e3:da:2e:2f');
+  });
+
+  it('clearMeshcoreBleMacSuppression drops memory and persistence', () => {
     setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
-    setConnectedMeshcoreBleMac('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+    clearMeshcoreBleMacSuppression();
     expect(getConnectedMeshcoreBleMac()).toBeNull();
-    expect(shouldSuppressMeshtasticNodeHear(0xe3da2e2f, getConnectedMeshcoreBleMac())).toBe(false);
+    expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBeNull();
+    expect(prearmMeshcoreBleMacSuppressionFromStorage(null)).toBeNull();
   });
 });
 
@@ -105,5 +144,27 @@ describe('readMeshcoreWebBluetoothDeviceId', () => {
   it('returns null for non-Web-Bluetooth handles', () => {
     expect(readMeshcoreWebBluetoothDeviceId({})).toBeNull();
     expect(readMeshcoreWebBluetoothDeviceId(null)).toBeNull();
+  });
+});
+
+describe('preserveOrClearMeshcoreBleSuppression / commitConnectedMeshcoreBleSuppression', () => {
+  afterEach(() => {
+    resetConnectedMeshcoreBleMacForTests();
+  });
+
+  it('preserves sticky MAC for BLE and clears for non-BLE', () => {
+    setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
+    preserveOrClearMeshcoreBleSuppression(true, 'cc:2e:e3:da:2e:2f');
+    expect(getConnectedMeshcoreBleMac()).toBe('cc:2e:e3:da:2e:2f');
+    preserveOrClearMeshcoreBleSuppression(false);
+    expect(getConnectedMeshcoreBleMac()).toBeNull();
+    expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBeNull();
+  });
+
+  it('commits a parseable MAC after successful BLE attach', () => {
+    commitConnectedMeshcoreBleSuppression({
+      blePeripheralId: 'aa:bb:cc:dd:ee:ff',
+    });
+    expect(getConnectedMeshcoreBleMac()).toBe('aa:bb:cc:dd:ee:ff');
   });
 });

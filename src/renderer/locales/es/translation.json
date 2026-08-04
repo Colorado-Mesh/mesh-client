@@ -4818,7 +4818,10 @@
     "clearHistory": "Borrar historial",
     "clearHistoryTitle": "Borrar historial de sala",
     "clearHistoryConfirm": "¿Eliminar todo el historial de mensajes guardados para {{room}}? Esto no se puede deshacer.",
-    "clearHistoryConfirmAction": "Eliminar historial"
+    "clearHistoryConfirmAction": "Eliminar historial",
+    "whisperReplyPlaceholder": "Responder a {{name}} o /msg...",
+    "whisperNoTarget": "Todavía no hay un destinatario de susurro. Usa /msg NICK texto para comenzar.",
+    "jumpToLatest": "Saltar a lo último"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} se desconectó",
     "offlineBody": "Última escucha: {{time}}",
     "unknown": "desconocido"
+  },
+  "reticulumVoice": {
+    "call": "Convocatoria",
+    "answer": "Respuesta",
+    "reject": "Rechazar",
+    "incomingTitle": "Llamada de voz entrante",
+    "inCall": "En llamada",
+    "callAria": "Iniciar llamada de voz LXST",
+    "answerAria": "Responder llamada de voz",
+    "rejectAria": "Rechazar llamada de voz",
+    "hangupAria": "Colgar voz",
+    "muteAria": "Silencie el micrófono",
+    "unmuteAria": "Reactivar micrófono",
+    "errors": {
+      "noIdentity": "No se puede llamar: la identidad del compañero aún no se conoce. Espere un anuncio o sondee al compañero.",
+      "callFailed": "La llamada de voz ha fallado.",
+      "notRunning": "La voz no está disponible hasta que la pila de Reticulum esté en ejecución.",
+      "micFailed": "No se ha podido acceder al micrófono para voz.",
+      "muteFailed": "No se ha podido actualizar el silencio del micrófono en la sesión de voz.",
+      "callInProgress": "Ya hay una llamada de voz en curso."
+    },
+    "connecting": "Conectando…",
+    "elapsedAria": "Tiempo transcurrido {{time}}",
+    "txAria": "Tramas de voz transmitidas {{count}}",
+    "rxAria": "Tramas de voz recibidas {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pKT {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Anuncio de telefonía LXST escuchado para este compañero",
+    "capabilityUnknown": "Anuncio de telefonía LXST aún no escuchado (la llamada aún puede funcionar)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "¿?",
+    "help": {
+      "interop": "La voz LXST necesita una telefonía LXST entre pares (Sideband, Ratspeak o mesh-client). No es un clip de nota de voz. Python LXST es la referencia; rsLXST es experimental."
+    },
+    "toast": {
+      "busy": "Línea ocupada",
+      "rejected": "Llamada rechazada",
+      "noAnswer": "Sin respuesta: el tiempo de espera de la llamada ha expirado.",
+      "failed": "La llamada de voz ha fallado.",
+      "connectFailed": "No se pudo conectar."
+    },
+    "statsSeparator": "·",
+    "ringing": "Sonando…"
   }
 }

@@ -24,7 +24,14 @@ import {
   splitChatMessage,
 } from '../lib/chatComposerLimits';
 import { formatLocationMessage } from '../lib/chatLocationUtils';
-import { clearDraft, loadDraftsInitial, saveDraft } from '../lib/chatPanelProtocolStorage';
+import {
+  clearDraft,
+  FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+  loadDraftsInitial,
+  loadFloodScopeOverridesInitial,
+  saveDraft,
+  saveFloodScopeOverride,
+} from '../lib/chatPanelProtocolStorage';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
   isValidMeshcoreFloodScopeHashtag,
@@ -69,7 +76,10 @@ export interface ChatComposerSendOpts {
   /** Reticulum ratspeak.chat.v2 reply target (LXMF message hash). */
   replyHash?: string;
   chunkIndex?: number;
-  /** MeshCore: ephemeral flood-scope hashtag for this send only (not persisted). */
+  /**
+   * MeshCore: flood-scope hashtag for this send only (applied then radio default restored).
+   * Composer UI remembers the selection per viewKey separately.
+   */
   floodScopeOverride?: string;
 }
 
@@ -107,7 +117,7 @@ export interface ChatComposerProps {
   onSendSuccess?: () => void;
   /** Use LXMF message hash for reply threading (Reticulum). */
   lxmfReplyHashReplies?: boolean;
-  /** MeshCore: show per-message flood-scope override control. */
+  /** MeshCore: show per-channel flood-scope override control (remembered per viewKey). */
   showFloodScopeOverride?: boolean;
   /** MeshCore: user-managed flood-scope quick-picks. */
   floodScopePresets?: string[];
@@ -202,6 +212,8 @@ export function ChatComposer({
   const floodScopeCustomInputRef = useRef<HTMLInputElement | null>(null);
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
+  const floodScopeOverrideRef = useRef(floodScopeOverride);
+  floodScopeOverrideRef.current = floodScopeOverride;
   const prevViewKeyRef = useRef<string | null>(null);
 
   const closeFloodScopeMenu = useCallback(() => {
@@ -212,10 +224,30 @@ export function ChatComposer({
     setFloodScopeCustomError(null);
   }, []);
 
+  const persistFloodScopeOverride = useCallback(
+    (next: string) => {
+      setFloodScopeOverride(next);
+      floodScopeOverrideRef.current = next;
+      if (!showFloodScopeOverride) return;
+      saveFloodScopeOverride(protocol, viewKey, next);
+    },
+    [protocol, showFloodScopeOverride, viewKey],
+  );
+
+  const commitCustomFloodScopeDraft = useCallback(() => {
+    const normalized = normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
+    if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
+      setFloodScopeCustomError(t('chatPanel.floodScopeOverrideCustomInvalid'));
+      return;
+    }
+    persistFloodScopeOverride(normalized);
+    closeFloodScopeMenu();
+  }, [closeFloodScopeMenu, floodScopeCustomDraft, persistFloodScopeOverride, t]);
+
   const rememberFloodScopeIfNeeded = useCallback(
     (override: string) => {
-      // Default (`''`) and Unscoped (`__unscoped__`) must not enter the quick-pick list.
-      if (!override || override === '__unscoped__') return;
+      // Default (`''`) and Unscoped must not enter the quick-pick list.
+      if (!override || override === FLOOD_SCOPE_OVERRIDE_UNSCOPED) return;
       if (!isValidMeshcoreFloodScopeHashtag(override)) return;
       if (onRememberFloodScopePreset) {
         onRememberFloodScopePreset(override);
@@ -338,7 +370,7 @@ export function ChatComposer({
 
   const queueOutbox = queueOutboxProp ?? noopQueue;
 
-  // Draft persistence: save/restore unsent input when viewKey changes
+  // Draft + flood-scope persistence: save/restore when viewKey changes
   useEffect(() => {
     const prevKey = prevViewKeyRef.current;
     if (prevKey !== null && prevKey !== viewKey) {
@@ -348,14 +380,26 @@ export function ChatComposer({
       } else {
         clearDraft(protocol, prevKey);
       }
+      if (showFloodScopeOverride) {
+        saveFloodScopeOverride(protocol, prevKey, floodScopeOverrideRef.current);
+      }
     }
     prevViewKeyRef.current = viewKey;
     const drafts = loadDraftsInitial(protocol);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft from localStorage on tab switch
     setInput(drafts[viewKey] ?? '');
+    if (showFloodScopeOverride) {
+      const overrides = loadFloodScopeOverridesInitial(protocol);
+      const restored = overrides[viewKey] ?? '';
+      setFloodScopeOverride(restored);
+      floodScopeOverrideRef.current = restored;
+    } else {
+      setFloodScopeOverride('');
+      floodScopeOverrideRef.current = '';
+    }
     setMentionQuery(null);
     setChatActionError(null);
-  }, [viewKey, protocol]);
+  }, [viewKey, protocol, showFloodScopeOverride]);
 
   const mentionCandidates = useMemo(
     () => (mentionQuery != null ? buildMentionCandidates(nodes, protocol, mentionQuery) : []),
@@ -467,7 +511,7 @@ export function ChatComposer({
             replyHash: i === 0 ? reticulumReplyHash : undefined,
             chunkIndex: i,
             floodScopeOverride:
-              floodScopeOverride === '__unscoped__'
+              floodScopeOverride === FLOOD_SCOPE_OVERRIDE_UNSCOPED
                 ? ''
                 : floodScopeOverride
                   ? floodScopeOverride
@@ -827,7 +871,7 @@ export function ChatComposer({
 
   const floodScopeOverrideActive = floodScopeOverride !== '';
   const floodScopeOverrideIndicator =
-    floodScopeOverride === '__unscoped__'
+    floodScopeOverride === FLOOD_SCOPE_OVERRIDE_UNSCOPED
       ? t('chatPanel.floodScopeOverrideUnscoped')
       : floodScopeOverride || null;
 
@@ -1212,16 +1256,7 @@ export function ChatComposer({
                             }
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const normalized =
-                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
-                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
-                                setFloodScopeCustomError(
-                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
-                                );
-                                return;
-                              }
-                              setFloodScopeOverride(normalized);
-                              closeFloodScopeMenu();
+                              commitCustomFloodScopeDraft();
                             }
                           }}
                           ref={floodScopeCustomInputRef}
@@ -1249,16 +1284,7 @@ export function ChatComposer({
                           <button
                             type="button"
                             onClick={() => {
-                              const normalized =
-                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
-                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
-                                setFloodScopeCustomError(
-                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
-                                );
-                                return;
-                              }
-                              setFloodScopeOverride(normalized);
-                              closeFloodScopeMenu();
+                              commitCustomFloodScopeDraft();
                             }}
                             className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded px-2 py-1 text-[10px] font-medium"
                           >
@@ -1280,7 +1306,7 @@ export function ChatComposer({
                               label: tag,
                             })),
                             {
-                              value: '__unscoped__',
+                              value: FLOOD_SCOPE_OVERRIDE_UNSCOPED,
                               label: t('chatPanel.floodScopeOverrideUnscoped'),
                             },
                           ] as const
@@ -1295,7 +1321,7 @@ export function ChatComposer({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setFloodScopeOverride(option.value);
+                                  persistFloodScopeOverride(option.value);
                                   closeFloodScopeMenu();
                                 }}
                                 className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
@@ -1316,7 +1342,7 @@ export function ChatComposer({
                               setFloodScopeCustomEditing(true);
                               setFloodScopeCustomDraft(
                                 floodScopeOverride &&
-                                  floodScopeOverride !== '__unscoped__' &&
+                                  floodScopeOverride !== FLOOD_SCOPE_OVERRIDE_UNSCOPED &&
                                   !floodScopePresets.includes(floodScopeOverride)
                                   ? floodScopeOverride
                                   : '',

@@ -42,6 +42,7 @@ vi.mock('./reticulum-ble-rnode-config', () => ({
 const mockWsInstances: MockWebSocketInstance[] = [];
 
 interface MockWebSocketInstance {
+  url: string;
   handlers: Map<string, (...args: unknown[]) => void>;
   close: ReturnType<typeof vi.fn>;
   removeAllListeners: ReturnType<typeof vi.fn>;
@@ -476,14 +477,20 @@ describe('ReticulumSidecarManager', () => {
     const manager = new ReticulumSidecarManager();
     await manager.start();
 
-    expect(mockWsInstances.length).toBeGreaterThan(0);
-    const wsInstance = mockWsInstances[mockWsInstances.length - 1];
-    expect(wsInstance.options).toEqual({ maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES });
+    expect(mockWsInstances.length).toBeGreaterThanOrEqual(2);
+    const wsInstance = mockWsInstances.find((w) => w.url.endsWith('/ws'));
+    const voiceWsInstance = mockWsInstances.find((w) => w.url.endsWith('/ws/voice'));
+    expect(wsInstance).toBeDefined();
+    expect(voiceWsInstance).toBeDefined();
+    expect(wsInstance!.options).toEqual({ maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES });
+    expect(voiceWsInstance!.options).toEqual({ maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES });
 
     const events: unknown[] = [];
+    const voiceAudio: unknown[] = [];
     manager.on('event', (e) => events.push(e));
+    manager.on('voiceAudio', (e) => voiceAudio.push(e));
 
-    const openHandler = wsInstance.handlers.get('open');
+    const openHandler = wsInstance!.handlers.get('open');
     expect(openHandler).toBeDefined();
     openHandler?.();
     expect(events).toEqual([{ type: 'ws_connected', payload: { reconnect: false } }]);
@@ -494,7 +501,7 @@ describe('ReticulumSidecarManager', () => {
     expect(events).toEqual([{ type: 'ws_connected', payload: { reconnect: true } }]);
     events.length = 0;
 
-    const messageHandler = wsInstance.handlers.get('message');
+    const messageHandler = wsInstance!.handlers.get('message');
     expect(messageHandler).toBeDefined();
 
     // Oversized frame is dropped, not forwarded as an 'event'.
@@ -506,6 +513,29 @@ describe('ReticulumSidecarManager', () => {
     const normal = Buffer.from(JSON.stringify({ type: 'status', payload: { ok: true } }));
     messageHandler?.(normal);
     expect(events).toEqual([{ type: 'status', payload: { ok: true } }]);
+
+    // Stray voice.audio on shared /ws is ignored (dedicated /ws/voice owns PCM).
+    messageHandler?.(
+      Buffer.from(
+        JSON.stringify({ type: 'voice.audio', payload: { channels: 1, samples_b64: 'AA' } }),
+      ),
+    );
+    expect(events).toHaveLength(1); // still only status above
+    events.length = 0;
+
+    const voiceMessageHandler = voiceWsInstance!.handlers.get('message');
+    expect(voiceMessageHandler).toBeDefined();
+    voiceMessageHandler?.(
+      Buffer.from(
+        JSON.stringify({
+          type: 'voice.audio',
+          payload: { channels: 1, samples_b64: 'AAAA' },
+        }),
+      ),
+    );
+    expect(voiceAudio).toEqual([
+      { type: 'voice.audio', payload: { channels: 1, samples_b64: 'AAAA' } },
+    ]);
 
     await manager.stop();
     existsSpy.mockRestore();

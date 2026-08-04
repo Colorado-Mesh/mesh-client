@@ -55,6 +55,7 @@ import {
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
 import { ReticulumPeerPathsDetail } from './reticulum/ReticulumPeerPathsDetail';
+import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
 
@@ -79,6 +80,8 @@ export interface ReticulumPeerListPanelProps {
   onManageGroups?: () => void;
   groupMemberIds?: Set<number>;
   contactGroupsEnabled?: boolean;
+  /** LXST voice Call button on each peer row. */
+  hasLxstVoice?: boolean;
 }
 
 function peerHashToNodeNum(hash: string): number {
@@ -238,6 +241,7 @@ export default function ReticulumPeerListPanel({
   onManageGroups,
   groupMemberIds,
   contactGroupsEnabled = false,
+  hasLxstVoice = false,
 }: ReticulumPeerListPanelProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -578,6 +582,13 @@ export default function ReticulumPeerListPanel({
       >
         <MessageCircle className="inline h-3.5 w-3.5" aria-hidden />
       </button>
+      {hasLxstVoice ? (
+        <ReticulumVoiceCallButton
+          lxmfPeerHash={peer.destination_hash}
+          identityHash={peer.identity_hash}
+          disabled={busy || !isConnected}
+        />
+      ) : null}
       <button
         type="button"
         className="ml-2 text-amber-400 hover:underline disabled:opacity-40"

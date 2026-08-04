@@ -214,4 +214,124 @@ describe('RrcPanel', () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
+
+  it('sends plain text in [whispers] as NOTICE to the last /msg peer', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', [{ identity_hash: peerHash, nickname: 'Alice' }]);
+    store.setActiveRoom('#general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+
+    render(<RrcPanel isActive />);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/msg Alice first whisper');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.send).toHaveBeenCalledWith({
+        hub_dest_hash: hubA,
+        body: 'first whisper',
+        type: 'notice',
+        dst_hash: peerHash,
+      });
+    });
+    expect(useRrcSessionStore.getState().activeRoom).toBe('[whispers]');
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
+      identity_hash: peerHash,
+      nickname: 'Alice',
+    });
+
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    const whisperComposer = screen.getByRole('textbox', { name: /Reply to Alice/i });
+    await user.clear(whisperComposer);
+    await user.type(whisperComposer, 'second whisper');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.send).toHaveBeenCalledWith({
+        hub_dest_hash: hubA,
+        body: 'second whisper',
+        type: 'notice',
+        dst_hash: peerHash,
+      });
+    });
+  });
+
+  it('keeps pinned /msg peer when an inbound whisper arrives from someone else', async () => {
+    const user = userEvent.setup();
+    const aliceHash = 'dddddddddddddddddddddddddddddddd';
+    const bobHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', [
+      { identity_hash: aliceHash, nickname: 'Alice' },
+      { identity_hash: bobHash, nickname: 'Bob' },
+    ]);
+    store.setActiveRoom('#general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+
+    render(<RrcPanel isActive />);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/msg Alice hello Alice');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.whisperReplyPinned).toBe(true);
+    });
+
+    // Inbound whisper from Bob must not steal the pinned reply target.
+    useRrcSessionStore
+      .getState()
+      .setLastWhisperPeer({ identity_hash: bobHash, nickname: 'Bob' }, hubA, {
+        onlyIfUnpinned: true,
+      });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
+      identity_hash: aliceHash,
+      nickname: 'Alice',
+    });
+
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    const whisperComposer = screen.getByRole('textbox', { name: /Reply to Alice/i });
+    await user.clear(whisperComposer);
+    await user.type(whisperComposer, 'still Alice');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.send).toHaveBeenCalledWith({
+        hub_dest_hash: hubA,
+        body: 'still Alice',
+        type: 'notice',
+        dst_hash: aliceHash,
+      });
+    });
+  });
+
+  it('rejects plain text in [hub] with join-room prompt', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.setActiveRoom('[hub]');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.type(composer, 'hello hub');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().lastError).toBe('Join a room to start chatting.');
+    });
+    expect(window.electronAPI.reticulum.rrc.send).not.toHaveBeenCalled();
+  });
 });

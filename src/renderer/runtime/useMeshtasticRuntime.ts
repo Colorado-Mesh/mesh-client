@@ -696,9 +696,11 @@ export function useMeshtasticRuntime() {
       });
   }, []);
 
+  // mqttStatus alone: connect-time push (may be empty / MQTT-only until RF channels arrive).
+  // Radio configs land in deviceStore → resolvedChannelConfigs (effect below) and must re-push.
   useEffect(() => {
     pushMqttChannelKeys();
-  }, [channelConfigs, mqttStatus, pushMqttChannelKeys]);
+  }, [mqttStatus, pushMqttChannelKeys]);
 
   const overlayMqttTopicPrefixFromRadioRef = useRef<string | null>(null);
 
@@ -4320,10 +4322,12 @@ export function useMeshtasticRuntime() {
 
   // Channel configs now arrive through MeshtasticProtocol → deviceStore, so the
   // ref MQTT uplink reads must follow the resolved list (store first, hook state
-  // for MQTT-only presets) rather than the hook state alone.
+  // for MQTT-only presets) rather than the hook state alone. Re-push topic→index
+  // when RF channels land after a cold-start MQTT connect (LongFast may be non-0).
   useEffect(() => {
     channelConfigsRef.current = resolvedChannelConfigs;
-  }, [resolvedChannelConfigs]);
+    pushMqttChannelKeys();
+  }, [resolvedChannelConfigs, pushMqttChannelKeys]);
 
   const resolvedModuleConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return moduleConfigs;

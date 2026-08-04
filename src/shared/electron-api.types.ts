@@ -45,6 +45,13 @@ import type {
 } from './rrc-types';
 import type { SupportBundleMode } from './support-bundle.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
+import type {
+  VoiceAudioRequest,
+  VoiceCallRequest,
+  VoiceMuteRequest,
+  VoiceOkResponse,
+  VoiceStatusResponse,
+} from './voice-types';
 
 export type { MeshProtocol, SupportBundleMode };
 
@@ -1077,6 +1084,11 @@ export interface ElectronAPI {
     setNomadContentSource: (path: string) => Promise<unknown>;
     validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
+    /**
+     * High-rate LXST PCM receive frames (`voice.audio` via `/ws/voice`).
+     * Not delivered on {@link onEvent} / shared `/ws`.
+     */
+    onVoiceAudio: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
     /** Thin typed wrappers over proxyGet/proxyPost for RRC. */
     rrc: {
@@ -1104,6 +1116,16 @@ export interface ElectronAPI {
       resize: (opts: RnshResizeRequest) => Promise<RemoteOkResponse>;
       disconnect: (opts: RnshDisconnectRequest) => Promise<RemoteOkResponse>;
       getStatus: () => Promise<RnshStatusResponse>;
+    };
+    /** LXST voice (rsLXST telephony) — thin wrappers over `/api/v1/voice/*`. */
+    voice: {
+      getStatus: () => Promise<VoiceStatusResponse>;
+      call: (opts: VoiceCallRequest) => Promise<VoiceOkResponse>;
+      answer: () => Promise<VoiceOkResponse>;
+      reject: () => Promise<VoiceOkResponse>;
+      hangup: () => Promise<VoiceOkResponse>;
+      mute: (opts: VoiceMuteRequest) => Promise<VoiceOkResponse>;
+      sendAudio: (opts: VoiceAudioRequest) => Promise<VoiceOkResponse>;
     };
     /**
      * rncp (file transfer). `send` / `fetch` / `setListener` are picker-backed

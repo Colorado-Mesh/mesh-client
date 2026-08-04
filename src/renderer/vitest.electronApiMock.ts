@@ -387,6 +387,7 @@ export function createElectronAPIMock(): ElectronAPI {
       setNomadContentSource: vi.fn().mockResolvedValue({ ok: true }),
       validateConfig: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
       onEvent: vi.fn().mockReturnValue(() => {}),
+      onVoiceAudio: vi.fn().mockReturnValue(() => {}),
       onStatus: vi.fn().mockReturnValue(() => {}),
       rrc: {
         listHubs: vi.fn().mockResolvedValue({ hubs: [] }),
@@ -410,6 +411,22 @@ export function createElectronAPIMock(): ElectronAPI {
         resize: vi.fn().mockResolvedValue({ ok: true }),
         disconnect: vi.fn().mockResolvedValue({ ok: true }),
         getStatus: vi.fn().mockResolvedValue({ sessions: [] }),
+      },
+      voice: {
+        getStatus: vi.fn().mockResolvedValue({
+          available: true,
+          enabled: true,
+          running: true,
+          microphone_muted: false,
+          codec: 'opus',
+          active_call: null,
+        }),
+        call: vi.fn().mockResolvedValue({ ok: true }),
+        answer: vi.fn().mockResolvedValue({ ok: true }),
+        reject: vi.fn().mockResolvedValue({ ok: true }),
+        hangup: vi.fn().mockResolvedValue({ ok: true }),
+        mute: vi.fn().mockResolvedValue({ ok: true, microphone_muted: false }),
+        sendAudio: vi.fn().mockResolvedValue({ ok: true }),
       },
       rncp: {
         send: vi.fn().mockResolvedValue({ ok: true }),

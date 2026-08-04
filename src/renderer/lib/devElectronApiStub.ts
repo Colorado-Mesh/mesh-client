@@ -319,6 +319,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       readDefaultConfigFile: async () => ({ path: null, content: null }),
       showConfigImportDialog: async () => ({ path: null, content: null }),
       onEvent: noopUnsub,
+      onVoiceAudio: noopUnsub,
       onStatus: noopUnsub,
       rrc: {
         listHubs: async () => ({ hubs: [] }),

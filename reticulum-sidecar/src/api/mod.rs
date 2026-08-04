@@ -15,6 +15,7 @@ mod rrc;
 mod status;
 mod system;
 pub(crate) mod validate;
+mod voice;
 mod ws;
 
 use std::sync::Arc;
@@ -244,7 +245,13 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/stack/restart", post(system::stack_restart))
         .route("/api/v1/system/factory-reset", post(system::factory_reset))
         .route("/api/v1/diagnostics", get(system::diagnostics))
-        .route("/api/v1/voice/status", get(system::voice_status))
+        .route("/api/v1/voice/status", get(voice::voice_status))
+        .route("/api/v1/voice/call", post(voice::voice_call))
+        .route("/api/v1/voice/answer", post(voice::voice_answer))
+        .route("/api/v1/voice/reject", post(voice::voice_reject))
+        .route("/api/v1/voice/hangup", post(voice::voice_hangup))
+        .route("/api/v1/voice/mute", post(voice::voice_mute))
+        .route("/api/v1/voice/audio", post(voice::voice_audio))
         .route("/api/v1/games/status", get(system::games_status))
         .route(
             "/api/v1/identities",
@@ -253,6 +260,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/identities/switch", post(system::switch_identity))
         .route("/api/v1/identities/delete", post(system::delete_identity))
         .route("/ws", get(ws::ws_handler))
+        .route("/ws/voice", get(ws::ws_voice_handler))
         .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
         .layer(localhost_cors_layer())
         .with_state(stack)

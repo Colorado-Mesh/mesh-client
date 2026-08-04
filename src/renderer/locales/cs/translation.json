@@ -4820,7 +4820,10 @@
     "clearHistory": "Vymazat historii",
     "clearHistoryTitle": "Vymazat historii místnosti",
     "clearHistoryConfirm": "Smazat veškerou uloženou historii zpráv pro {{room}}? Toto nelze vrátit zpět.",
-    "clearHistoryConfirmAction": "Smazat historii"
+    "clearHistoryConfirmAction": "Smazat historii",
+    "whisperReplyPlaceholder": "Odpověz uživateli {{name}} nebo /msg…",
+    "whisperNoTarget": "Zatím žádný cíl pro šeptání. Pro zahájení použijte /msg NICK text.",
+    "jumpToLatest": "Přejít na nejnovější"
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",
@@ -5104,5 +5107,49 @@
     "offlineTitle": "{{name}} přešel do režimu offline",
     "offlineBody": "Naposledy slyšet: {{time}}",
     "unknown": "neznámý"
+  },
+  "reticulumVoice": {
+    "call": "Výzva",
+    "answer": "Odpověď",
+    "reject": "Zamítnout",
+    "incomingTitle": "Příchozí hlasový hovor",
+    "inCall": "Při hovoru",
+    "callAria": "Zahájit hlasový hovor LXST",
+    "answerAria": "Přijetí hlasového hovoru",
+    "rejectAria": "Odmítnout hlasový hovor",
+    "hangupAria": "Zavěsit hlasový hovor",
+    "muteAria": "Ztlumení mikrofonu",
+    "unmuteAria": "Zrušit ztlumení mikrofonu",
+    "errors": {
+      "noIdentity": "Nelze volat: identita protějšku zatím není známa. Počkejte na oznámení nebo sondujte kolegu.",
+      "callFailed": "Hlasový hovor se nezdařil.",
+      "notRunning": "Hlas není k dispozici, dokud není spuštěn zásobník Reticulum.",
+      "micFailed": "Nelze získat přístup k mikrofonu pro hlas.",
+      "muteFailed": "Nelze aktualizovat ztlumení mikrofonu v relaci hlasu.",
+      "callInProgress": "Hlasový hovor již probíhá."
+    },
+    "connecting": "Připojování…",
+    "elapsedAria": "Uplynulý čas hovoru {{time}}",
+    "txAria": "Přenášené hlasové rámce {{count}}",
+    "rxAria": "Přijaté hlasové rámce {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "LXST telefonie oznamuje slyšení pro tohoto kolegu",
+    "capabilityUnknown": "Telefonní hlášení LXST ještě nebylo vyslyšeno (hovor může stále fungovat)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "?",
+    "help": {
+      "interop": "Hlas LXST potřebuje kolegu, který používá telefonii LXST (Sideband, Ratspeak nebo mesh-client). Není to klip s hlasovou poznámkou. Python LXST je referenční; rsLXST je experimentální."
+    },
+    "toast": {
+      "busy": "Linka je obsazená.",
+      "rejected": "Hovor byl zamítnut.",
+      "noAnswer": "Žádná odpověď — vypršel časový limit hovoru.",
+      "failed": "Hlasový hovor se nezdařil.",
+      "connectFailed": "Nelze se spojit."
+    },
+    "statsSeparator": "·",
+    "ringing": "Vyzvání…"
   }
 }

@@ -4818,7 +4818,10 @@
     "clearHistory": "Cancella cronologia",
     "clearHistoryTitle": "Cancella la cronologia della stanza",
     "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
-    "clearHistoryConfirmAction": "Elimina la cronologia"
+    "clearHistoryConfirmAction": "Elimina la cronologia",
+    "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
+    "whisperNoTarget": "Ancora nessun destinatario per il sussurro. Usa /msg NICK testo per iniziare.",
+    "jumpToLatest": "Passa all'ultimo"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} è andato offline",
     "offlineBody": "Ultimo ascolto: {{time}}",
     "unknown": "sconosciuto"
+  },
+  "reticulumVoice": {
+    "call": "Chiama",
+    "answer": "Risposta",
+    "reject": "Rifiuta",
+    "incomingTitle": "Chiamata vocale in arrivo",
+    "inCall": "In chiamata",
+    "callAria": "Avvia chiamata vocale LXST",
+    "answerAria": "Rispondi alla chiamata vocale",
+    "rejectAria": "Rifiuta chiamata vocale",
+    "hangupAria": "Riaggancia chiamata vocale",
+    "muteAria": "Disattiva microfono",
+    "unmuteAria": "Attiva microfono",
+    "errors": {
+      "noIdentity": "Impossibile chiamare: identità peer non ancora nota. Attendere un annuncio o sondare il peer.",
+      "callFailed": "Chiamata vocale non riuscita.",
+      "notRunning": "La voce non è disponibile fino a quando lo stack Reticulum non è in esecuzione.",
+      "micFailed": "Impossibile accedere al microfono per la voce.",
+      "muteFailed": "Impossibile aggiornare il silenziamento del microfono nella sessione vocale.",
+      "callInProgress": "Una chiamata vocale è già in corso."
+    },
+    "connecting": "Collegamento in corso…",
+    "elapsedAria": "Tempo trascorso {{time}}",
+    "txAria": "Frame vocali trasmessi {{count}}",
+    "rxAria": "Frame vocali ricevuti {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Annuncio telefonico LXST ascoltato per questo peer",
+    "capabilityUnknown": "Annuncio telefonico LXST non ancora sentito (la chiamata potrebbe ancora funzionare)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "dove...?",
+    "help": {
+      "interop": "La voce LXST ha bisogno di un peer che esegua la telefonia LXST (Sideband, Ratspeak o mesh-client). Non una clip di note vocali. Python LXST è il riferimento; rsLXST è sperimentale."
+    },
+    "toast": {
+      "busy": "Linea occupata.",
+      "rejected": "Chiamata respinta",
+      "noAnswer": "Nessuna risposta — chiamata scaduta.",
+      "failed": "Chiamata vocale non riuscita.",
+      "connectFailed": "Impossibile connettersi"
+    },
+    "statsSeparator": "·",
+    "ringing": "Sta squillando…"
   }
 }

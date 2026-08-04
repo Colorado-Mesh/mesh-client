@@ -8,6 +8,7 @@ import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
+import { isMeshcorePathHashMode } from '@/shared/meshcorePathHash';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
 import type { LocationFilter } from '../App';
@@ -20,6 +21,7 @@ import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import { appPanelSettingsPersistPayload } from '../lib/meshcorePathHashMode';
 import {
   DEFAULT_MESSAGE_RETENTION,
   MESSAGE_RETENTION_KEYS,
@@ -307,6 +309,7 @@ export default function AppPanel({
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const pathHashModeUserChangedRef = useRef(false);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
   const [deleteAgeDays, setDeleteAgeDays] = useState(90);
@@ -387,7 +390,10 @@ export default function AppPanel({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       mergeAppSettingsPartial(
-        settings as unknown as Record<string, unknown>,
+        appPanelSettingsPersistPayload(
+          settings as unknown as Record<string, unknown>,
+          pathHashModeUserChangedRef.current,
+        ),
         'AppPanel saveSettings',
       );
     }, 300);
@@ -395,6 +401,17 @@ export default function AppPanel({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [settings]);
+
+  // Keep dropdown aligned with companion when connect adopts radio mode into settings.
+  useEffect(() => {
+    if (!isMeshcorePathHashMode(deviceReportedPathHashMode)) return;
+    if (pathHashModeUserChangedRef.current) return;
+    setSettings((prev) =>
+      prev.meshcorePathHashMode === deviceReportedPathHashMode
+        ? prev
+        : { ...prev, meshcorePathHashMode: deviceReportedPathHashMode },
+    );
+  }, [deviceReportedPathHashMode]);
 
   useEffect(() => {
     onLocationFilterChange({
@@ -1458,6 +1475,7 @@ export default function AppPanel({
                 onChange={(e) => {
                   const raw = Number.parseInt(e.target.value, 10);
                   if (raw !== 0 && raw !== 1 && raw !== 2) return;
+                  pathHashModeUserChangedRef.current = true;
                   updateSetting('meshcorePathHashMode', raw);
                   if (isMeshcoreRadioConnected && onApplyMeshcorePathHashMode) {
                     void onApplyMeshcorePathHashMode(raw).catch((err: unknown) => {

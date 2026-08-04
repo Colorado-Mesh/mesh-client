@@ -4818,7 +4818,10 @@
     "clearHistory": "Geçmişi temizle",
     "clearHistoryTitle": "Oda geçmişini temizle",
     "clearHistoryConfirm": "{{room}} için kayıtlı tüm mesaj geçmişi silinsin mi? Bu geri alınamaz.",
-    "clearHistoryConfirmAction": "Geçmişi sil"
+    "clearHistoryConfirmAction": "Geçmişi sil",
+    "whisperReplyPlaceholder": "{{name}} veya /msg'ye yanıt verin…",
+    "whisperNoTarget": "Henüz fısıltı hedefi yok. Başlamak için /msg NICK metin kullanın.",
+    "jumpToLatest": "En Yeniye Atla"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5102,5 +5105,49 @@
     "offlineTitle": "{{name}} çevrimdışı oldu",
     "offlineBody": "Son duyulma tarihi: {{time}}",
     "unknown": "bilinmiyor"
+  },
+  "reticulumVoice": {
+    "call": "Ara",
+    "answer": "Yanıt",
+    "reject": "Reddet",
+    "incomingTitle": "Gelen sesli arama",
+    "inCall": "Aramada",
+    "callAria": "LXST sesli aramasını başlat",
+    "answerAria": "Sesli aramayı yanıtla",
+    "rejectAria": "Sesli aramayı reddet",
+    "hangupAria": "Sesli aramayı kapat",
+    "muteAria": "Mikrofonu kapat",
+    "unmuteAria": "Mikrofonu aç",
+    "errors": {
+      "noIdentity": "Aranamıyor: akran kimliği henüz bilinmiyor. Bir duyuru bekleyin veya akranınızı sorgulayın.",
+      "callFailed": "Sesli arama başarısız.",
+      "notRunning": "Reticulum yığını çalışana kadar ses kullanılamaz.",
+      "micFailed": "Ses için mikrofona erişilemedi.",
+      "muteFailed": "Sesli oturumda mikrofon sessize alınamadı.",
+      "callInProgress": "Bir sesli arama zaten devam ediyor."
+    },
+    "connecting": "Bağlanıyor…",
+    "elapsedAria": "Geçen zaman {{time}}",
+    "txAria": "İletilen ses çerçeveleri {{count}}",
+    "rxAria": "Alınan ses çerçeveleri {{count}}",
+    "txFrames": "TX {{count}}",
+    "txPackets": "pkt {{count}}",
+    "rxFrames": "RX {{count}}",
+    "capabilityHeard": "Bu akran için LXST telefon anonsu duyuldu",
+    "capabilityUnknown": "LXST telefon anonsu henüz duyulmadı (arama hala çalışıyor olabilir)",
+    "capabilityHeardShort": "LXST",
+    "capabilityUnknownShort": "lehine propaganda yapıyordun?",
+    "help": {
+      "interop": "LXST sesi, LXST telefonunu çalıştıran bir eşe ihtiyaç duyar (Sideband, Ratspeak veya mesh-client). Sesli not klibi değil. Python LXST referans; rsLXST deneyseldir."
+    },
+    "toast": {
+      "busy": "Hat meşgul.",
+      "rejected": "Çağrı reddedildi.",
+      "noAnswer": "Cevap yok — çağrı zaman aşımına uğradı.",
+      "failed": "Sesli arama başarısız.",
+      "connectFailed": "Bağlanamadı."
+    },
+    "statsSeparator": "·",
+    "ringing": "Çalıyor…"
   }
 }

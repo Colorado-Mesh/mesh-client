@@ -7,10 +7,12 @@ import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import {
+  clearMeshcoreBleMacSuppression,
+  commitConnectedMeshcoreBleSuppression,
+  prearmMeshcoreBleMacSuppressionFromStorage,
+  preserveOrClearMeshcoreBleSuppression,
   readMeshcoreWebBluetoothDeviceId,
   resolveConnectedMeshcoreBleIdentity,
-  resolveConnectedMeshcoreBleMacForSuppression,
-  setConnectedMeshcoreBleMac,
 } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -77,6 +79,7 @@ import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
   isMeshcoreOpenWireCompatEnabled,
+  mergeAppSetting,
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import {
@@ -857,6 +860,8 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     meshcoreHookMountedRef.current = true;
+    // Pre-arm before Meshtastic configure can dump NodeDB for the companion's old !node id.
+    prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
     const pingNoRouteTimers = meshcorePingNoRouteExpiryTimersRef.current;
     return () => {
       meshcoreHookMountedRef.current = false;
@@ -2350,36 +2355,20 @@ export function useMeshcoreRuntime() {
           return next;
         });
 
+        // Companion is source of truth on connect — do not push App settings onto the radio.
+        // Sync UI preference FROM the device so a stamped default (1-byte) cannot fight MeshCore app.
         try {
-          const settingsRaw = getAppSettingsRaw();
-          const settings = parseStoredJson<{ meshcorePathHashMode?: number }>(
-            settingsRaw,
-            'initConn meshcorePathHashMode',
-          );
-          const savedMode = settings?.meshcorePathHashMode;
-          if (isMeshcorePathHashMode(savedMode)) {
-            const fw =
-              pathFields.firmwareVersion ??
-              (typeof deviceInfo?.firmwareVersion === 'string'
-                ? deviceInfo.firmwareVersion
-                : undefined) ??
-              (typeof deviceInfo?.firmware_build_date === 'string'
-                ? deviceInfo.firmware_build_date
-                : undefined);
-            const canApply = savedMode === 0 || meshcoreFirmwareSupportsMultibytePathHash(fw ?? '');
-            if (canApply && savedMode !== pathFields.pathHashMode) {
-              const setMode =
-                typeof conn.setPathHashMode === 'function'
-                  ? (m: MeshcorePathHashMode) => conn.setPathHashMode!(m)
-                  : (m: MeshcorePathHashMode) => setMeshcorePathHashModeOnRadio(conn, m);
-              await awaitUnlessMeshcoreSetupCancelled(setupGen, setMode(savedMode));
-              setState((prev) => ({ ...prev, pathHashMode: savedMode }));
-            }
+          if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+            mergeAppSetting(
+              'meshcorePathHashMode',
+              pathFields.pathHashMode,
+              'initConn adopt pathHashMode from radio',
+            );
           }
         } catch (e) {
           if (isMeshcoreSetupAbortError(e)) throw e;
           console.warn(
-            '[useMeshcoreRuntime] initConn reapply path hash mode failed ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] initConn adopt path hash mode failed ' + errLikeToLogString(e),
           );
         }
       } catch (e) {
@@ -2475,9 +2464,12 @@ export function useMeshcoreRuntime() {
         bleConnectInProgressRef.current = false;
         meshcoreDeferredReconnectRef.current = false;
       }
-      // Drop sticky MeshCore BLE identity before replacement so a failed open cannot keep
-      // suppressing Meshtastic MAC-derived node hears from a previous peripheral.
-      setConnectedMeshcoreBleMac(null);
+      // BLE: keep sticky suppress MAC so Meshtastic NodeDB cannot revive the companion ghost
+      // during the open gap. Non-BLE: drop suppress entirely (no MAC-derived ghost risk).
+      preserveOrClearMeshcoreBleSuppression(
+        type === 'ble',
+        resolveLastBlePeripheralId('meshcore') ?? null,
+      );
       const driverIdentity = meshcoreDriverConnectedRef.current
         ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
         : null;
@@ -2586,9 +2578,11 @@ export function useMeshcoreRuntime() {
     (type: 'ble' | 'serial' | 'tcp', driverIdentityId?: string): Promise<void> => {
       setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
       meshcoreDeviceConfiguredRef.current = false;
-      if (type === 'ble') {
-        setConnectedMeshcoreBleMac(null);
-      }
+      // Keep sticky suppress across failed BLE open so NodeDB cannot revive Blue.
+      preserveOrClearMeshcoreBleSuppression(
+        type === 'ble',
+        resolveLastBlePeripheralId('meshcore') ?? null,
+      );
       teardownMeshcoreConnEventListeners({
         driverDisconnect: true,
         driverIdentityId,
@@ -2609,7 +2603,9 @@ export function useMeshcoreRuntime() {
       meshcoreEverConfiguredRef.current = false;
       meshcoreDeviceConfiguredRef.current = false;
       meshcoreConnectionParamsRef.current = null;
-      setConnectedMeshcoreBleMac(null);
+      // Sticky suppress survives user disconnect so the next Meshtastic configure still
+      // skips the companion ghost until a non-BLE transport (or Forget) clears it.
+      prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreReconnectGenerationRef.current += 1;
@@ -2858,9 +2854,9 @@ export function useMeshcoreRuntime() {
         if (bleId) {
           params.blePeripheralId = bleId;
         }
-        setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts));
+        commitConnectedMeshcoreBleSuppression(bleIdentityOpts);
       } else {
-        setConnectedMeshcoreBleMac(null);
+        clearMeshcoreBleMacSuppression();
       }
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
@@ -2962,8 +2958,8 @@ export function useMeshcoreRuntime() {
     }
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreDeviceConfiguredRef.current = false;
-    // Stop suppressing Meshtastic hears while MeshCore link is down / reconnecting.
-    setConnectedMeshcoreBleMac(null);
+    // Keep sticky BLE suppress while reconnecting so Meshtastic cannot revive the ghost.
+    prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
     if (!meshcoreIsReconnectingRef.current) {
       console.warn('[useMeshcoreRuntime] Connection lost — initiating reconnect');
       meshcoreIsReconnectingRef.current = true;
@@ -3102,9 +3098,11 @@ export function useMeshcoreRuntime() {
           serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
           serialPort: null,
         };
-        setConnectedMeshcoreBleMac(
-          bleIdentityOpts ? resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts) : null,
-        );
+        if (bleIdentityOpts) {
+          commitConnectedMeshcoreBleSuppression(bleIdentityOpts);
+        } else {
+          clearMeshcoreBleMacSuppression();
+        }
         meshcoreExplicitDisconnectRef.current = false;
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
@@ -3226,7 +3224,7 @@ export function useMeshcoreRuntime() {
             serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
             serialPort: null,
           };
-          setConnectedMeshcoreBleMac(null);
+          clearMeshcoreBleMacSuppression();
           meshcoreExplicitDisconnectRef.current = false;
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;
