@@ -343,8 +343,18 @@ async function startCaptureAndTx(): Promise<void> {
   const frameMs = (LXST_QUALITY_HIGH_FRAME_SAMPLES / LXST_QUALITY_HIGH_SAMPLE_RATE_HZ) * 1000;
   txTimer = setInterval(
     () => {
-      if (useReticulumVoiceStore.getState().microphoneMuted) {
+      const voiceState = useReticulumVoiceStore.getState();
+      if (voiceState.microphoneMuted) {
         pendingSamples = [];
+        return;
+      }
+      // Defense in depth with sidecar soft-drop: never TX before Established
+      // (Answer used to open the mic early and fatal-error lxst on Columba inbound).
+      if (voiceState.activeCall?.status !== 'established') {
+        if (pendingSamples.length >= LXST_QUALITY_HIGH_FRAME_SAMPLES) {
+          pendingSamples = [];
+          noteLocalTxDrop('not_established');
+        }
         return;
       }
       if (pendingSamples.length < LXST_QUALITY_HIGH_FRAME_SAMPLES) return;
@@ -583,6 +593,8 @@ export async function reticulumVoiceCallPeer(
 }
 
 export async function reticulumVoiceAnswer(): Promise<void> {
+  // Warm AudioContext in the user-gesture stack; defer getUserMedia/TX until
+  // Established (overlay starts media) so early PCM cannot fatal-error lxst.
   warmReticulumVoiceAudioContexts();
   try {
     const resp = await window.electronAPI.reticulum.voice.answer();
@@ -601,7 +613,6 @@ export async function reticulumVoiceAnswer(): Promise<void> {
     return;
   }
   stopVoiceCallTones();
-  await startReticulumVoiceMediaForActiveCall();
 }
 
 export async function reticulumVoiceReject(): Promise<void> {

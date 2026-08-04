@@ -118,6 +118,19 @@ describe('useReticulumRuntime voice event routing', () => {
         type: 'voice.update',
         payload: {
           type: 'snapshot',
+          active_call: { ...CALL, status: 'connecting', answered: true },
+        },
+      });
+    });
+    expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('connecting');
+    // Connecting clears the incoming-ring modal state (Answer deferral relies on this).
+    expect(useReticulumVoiceStore.getState().incomingCall).toBeNull();
+
+    act(() => {
+      onEvent({
+        type: 'voice.update',
+        payload: {
+          type: 'snapshot',
           active_call: { ...CALL, status: 'established', answered: true },
         },
       });

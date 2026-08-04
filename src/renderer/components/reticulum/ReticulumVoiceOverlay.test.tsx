@@ -137,7 +137,40 @@ describe('ReticulumVoiceOverlay', () => {
     });
     expect(screen.queryByRole('dialog', { name: /incoming voice call/i })).toBeNull();
     expect(screen.getByRole('status', { name: /in call/i })).toBeTruthy();
-    expect(startMedia).toHaveBeenCalled();
+    expect(startMedia).toHaveBeenCalledTimes(1);
+  });
+
+  it('inbound connecting does not start media; inbound established starts once', () => {
+    act(() => {
+      useReticulumVoiceStore.getState().applyUpdate({
+        type: 'snapshot',
+        active_call: {
+          link_id: 'a'.repeat(32),
+          remote_identity: 'b'.repeat(32),
+          role: 'incoming',
+          status: 'connecting',
+          answered: true,
+        },
+      });
+    });
+    render(<ReticulumVoiceOverlay />);
+    expect(screen.getByRole('status', { name: /ringing/i })).toBeTruthy();
+    expect(startMedia).not.toHaveBeenCalled();
+
+    act(() => {
+      useReticulumVoiceStore.getState().applyUpdate({
+        type: 'snapshot',
+        active_call: {
+          link_id: 'a'.repeat(32),
+          remote_identity: 'b'.repeat(32),
+          role: 'incoming',
+          status: 'established',
+          answered: true,
+        },
+      });
+    });
+    expect(screen.getByRole('status', { name: /in call/i })).toBeTruthy();
+    expect(startMedia).toHaveBeenCalledTimes(1);
   });
 
   it('shows Connecting on calling and does not start media until established', () => {

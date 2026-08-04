@@ -5,6 +5,7 @@ import { pushAppToast } from '@/renderer/components/Toast';
 
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '../stores/reticulumVoiceStore';
+import { LXST_QUALITY_HIGH_FRAME_SAMPLES, LXST_QUALITY_HIGH_PROFILE } from './reticulumVoiceAudio';
 import {
   isOutgoingConnectToneSequenceActive,
   playVoiceBusyTone,
@@ -28,6 +29,69 @@ import {
   syncReticulumVoiceProgressTones,
 } from './reticulumVoiceSession';
 import { RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS } from './timeConstants';
+
+interface FakeProcessor {
+  connect: ReturnType<typeof vi.fn>;
+  disconnect: ReturnType<typeof vi.fn>;
+  onaudioprocess: ((ev: { inputBuffer: { getChannelData: () => Float32Array } }) => void) | null;
+}
+
+function installCaptureTestHarness(): { processor: FakeProcessor; pushPcmFrame: () => void } {
+  const processor: FakeProcessor = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    onaudioprocess: null,
+  };
+  const track = { stop: vi.fn() };
+  const fakeStream = { getTracks: () => [track] } as unknown as MediaStream;
+
+  class FakeAudioContext {
+    state = 'running';
+    destination = {};
+    currentTime = 0;
+    sampleRate = 48000;
+    createMediaStreamSource() {
+      return { connect: vi.fn(), disconnect: vi.fn() };
+    }
+    createScriptProcessor() {
+      return processor;
+    }
+    createGain() {
+      return { connect: vi.fn(), disconnect: vi.fn(), gain: { value: 0 } };
+    }
+    createBuffer(_channels: number, frames: number) {
+      return {
+        duration: frames / 48000,
+        copyToChannel: vi.fn(),
+      };
+    }
+    createBufferSource() {
+      return { buffer: null as unknown, connect: vi.fn(), start: vi.fn() };
+    }
+    resume = vi.fn(() => Promise.resolve());
+    close = vi.fn(() => Promise.resolve());
+  }
+
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: {
+      getUserMedia: vi.fn(() => Promise.resolve(fakeStream)),
+    },
+  });
+  vi.stubGlobal('AudioContext', FakeAudioContext);
+
+  return {
+    processor,
+    pushPcmFrame: () => {
+      const data = new Float32Array(LXST_QUALITY_HIGH_FRAME_SAMPLES).fill(0.1);
+      processor.onaudioprocess?.({
+        inputBuffer: {
+          getChannelData: () => data,
+        },
+      });
+    },
+  };
+}
 
 vi.mock('@/renderer/components/Toast', () => ({
   pushAppToast: vi.fn(),
@@ -54,6 +118,92 @@ const voiceApi = {
   sendAudio: vi.fn(),
 };
 
+describe('reticulumVoiceSession TX gate', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    stopReticulumVoiceMedia();
+    resetReticulumVoiceSessionTimersForTests();
+    useReticulumVoiceStore.getState().clearCall();
+    voiceApi.sendAudio.mockReset();
+    voiceApi.sendAudio.mockResolvedValue({ ok: true });
+    vi.mocked(pushAppToast).mockReset();
+    Object.assign(window, {
+      electronAPI: {
+        reticulum: { voice: voiceApi },
+        media: {
+          ensureMicrophoneAccess: vi.fn(() =>
+            Promise.resolve({ granted: true, status: 'granted' }),
+          ),
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    stopReticulumVoiceMedia();
+    resetReticulumVoiceSessionTimersForTests();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('skips sendAudio until established, then sends QualityHigh frames', async () => {
+    const { processor, pushPcmFrame } = installCaptureTestHarness();
+    useReticulumVoiceStore.getState().applyIncoming({
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+      role: 'incoming',
+      status: 'connecting',
+      answered: true,
+    });
+
+    await startReticulumVoiceMediaForActiveCall();
+    expect(processor.onaudioprocess).toEqual(expect.any(Function));
+    pushPcmFrame();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(voiceApi.sendAudio).not.toHaveBeenCalled();
+
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'snapshot',
+      active_call: {
+        link_id: '1'.repeat(32),
+        remote_identity: '2'.repeat(32),
+        role: 'incoming',
+        status: 'established',
+        answered: true,
+      },
+    });
+    pushPcmFrame();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(voiceApi.sendAudio).toHaveBeenCalled();
+    expect(voiceApi.sendAudio.mock.calls[0]?.[0]).toMatchObject({
+      profile: LXST_QUALITY_HIGH_PROFILE,
+      channels: 1,
+    });
+    expect(typeof voiceApi.sendAudio.mock.calls[0]?.[0]?.samples_b64).toBe('string');
+  });
+
+  it('soft-drop sendAudio ok+dropped does not toast', async () => {
+    const { processor, pushPcmFrame } = installCaptureTestHarness();
+    voiceApi.sendAudio.mockResolvedValue({ ok: true, dropped: 'not_established' });
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'snapshot',
+      active_call: {
+        link_id: '1'.repeat(32),
+        remote_identity: '2'.repeat(32),
+        role: 'incoming',
+        status: 'established',
+        answered: true,
+      },
+    });
+    await startReticulumVoiceMediaForActiveCall();
+    expect(processor.onaudioprocess).toEqual(expect.any(Function));
+    pushPcmFrame();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(voiceApi.sendAudio).toHaveBeenCalled();
+    expect(pushAppToast).not.toHaveBeenCalled();
+  });
+});
+
 describe('reticulumVoiceSession', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -70,6 +220,7 @@ describe('reticulumVoiceSession', () => {
     voiceApi.answer.mockReset();
     voiceApi.reject.mockReset();
     voiceApi.mute.mockReset();
+    voiceApi.sendAudio.mockReset();
     voiceApi.getStatus.mockResolvedValue({
       available: true,
       enabled: true,
@@ -80,6 +231,7 @@ describe('reticulumVoiceSession', () => {
     voiceApi.answer.mockResolvedValue({ ok: true });
     voiceApi.reject.mockResolvedValue({ ok: true });
     voiceApi.mute.mockResolvedValue({ ok: true, microphone_muted: true });
+    voiceApi.sendAudio.mockResolvedValue({ ok: true });
     vi.mocked(pushAppToast).mockReset();
     vi.mocked(playVoiceFailTone).mockReset();
     vi.mocked(playVoiceBusyTone).mockReset();
@@ -101,6 +253,7 @@ describe('reticulumVoiceSession', () => {
   });
 
   afterEach(() => {
+    stopReticulumVoiceMedia();
     resetReticulumVoiceSessionTimersForTests();
     vi.useRealTimers();
     vi.unstubAllGlobals();
@@ -275,10 +428,71 @@ describe('reticulumVoiceSession', () => {
     expect(useReticulumVoiceStore.getState().incomingCall?.status).toBe('ringing');
   });
 
+  it('answer success does not start media (defers until established)', async () => {
+    let getUserMediaCalls = 0;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn(() => {
+          getUserMediaCalls += 1;
+          return Promise.reject(new Error('should not open mic on answer'));
+        }),
+      },
+    });
+    useReticulumVoiceStore.getState().applyIncoming({
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+      role: 'incoming',
+      status: 'ringing',
+      answered: false,
+    });
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    await reticulumVoiceAnswer();
+    expect(voiceApi.answer).toHaveBeenCalledTimes(1);
+    expect(infoSpy).toHaveBeenCalledWith('[reticulumVoice] answer ok');
+    expect(getUserMediaCalls).toBe(0);
+    expect(voiceApi.sendAudio).not.toHaveBeenCalled();
+    expect(stopVoiceCallTones).toHaveBeenCalled();
+    expect(useReticulumVoiceStore.getState().incomingCall?.status).toBe('ringing');
+    expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('ringing');
+    expect(pushAppToast).not.toHaveBeenCalled();
+    infoSpy.mockRestore();
+  });
+
   it('answer does not start media when IPC fails', async () => {
+    let getUserMediaCalls = 0;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn(() => {
+          getUserMediaCalls += 1;
+          return Promise.reject(new Error('should not open mic on answer failure'));
+        }),
+      },
+    });
     voiceApi.answer.mockResolvedValue({ ok: false, error: 'voice not available' });
     await reticulumVoiceAnswer();
     expect(pushAppToast).toHaveBeenCalled();
+    expect(getUserMediaCalls).toBe(0);
+    expect(voiceApi.sendAudio).not.toHaveBeenCalled();
+  });
+
+  it('answer does not start media when IPC throws', async () => {
+    let getUserMediaCalls = 0;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn(() => {
+          getUserMediaCalls += 1;
+          return Promise.reject(new Error('should not open mic on answer throw'));
+        }),
+      },
+    });
+    voiceApi.answer.mockRejectedValue(new Error('ipc boom'));
+    await reticulumVoiceAnswer();
+    expect(pushAppToast).toHaveBeenCalled();
+    expect(getUserMediaCalls).toBe(0);
+    expect(voiceApi.sendAudio).not.toHaveBeenCalled();
   });
 
   it('mute updates store only when IPC succeeds', async () => {
