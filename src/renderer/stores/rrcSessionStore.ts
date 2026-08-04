@@ -8,7 +8,11 @@ import {
   rrcIdentityHashesMatch,
 } from '@/renderer/lib/rrcRoomMembers';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
-import { MAX_RRC_MEMBERS_PER_ROOM, MAX_RRC_ROOMS_PER_HUB } from '@/renderer/lib/sessionMemoryCaps';
+import {
+  MAX_RRC_MEMBERS_PER_ROOM,
+  MAX_RRC_ROOMS_PER_HUB,
+  RRC_ROOM_HISTORY_LOAD_COUNT,
+} from '@/renderer/lib/sessionMemoryCaps';
 import type {
   RrcChatMessage,
   RrcHubCapabilities,
@@ -18,7 +22,7 @@ import type {
   RrcSessionStatus,
 } from '@/shared/rrc-types';
 
-const MAX_MESSAGES_PER_ROOM = 500;
+const MAX_MESSAGES_PER_ROOM = RRC_ROOM_HISTORY_LOAD_COUNT;
 const MAX_ROOMS_PER_HUB = MAX_RRC_ROOMS_PER_HUB;
 const MAX_MEMBERS_PER_ROOM = MAX_RRC_MEMBERS_PER_ROOM;
 
@@ -126,6 +130,11 @@ export interface RrcHubSessionState {
   disconnectIntent: boolean;
   /** Peer for plain-text NOTICE replies while viewing `[whispers]`. */
   lastWhisperPeer: RrcWhisperPeer | null;
+  /**
+   * When true, inbound whispers must not overwrite `lastWhisperPeer`
+   * (user started a `/msg` or plain reply to a chosen peer).
+   */
+  whisperReplyPinned: boolean;
 }
 
 export function emptyHubSession(): RrcHubSessionState {
@@ -142,6 +151,7 @@ export function emptyHubSession(): RrcHubSessionState {
     partIntentRooms: new Set(),
     disconnectIntent: false,
     lastWhisperPeer: null,
+    whisperReplyPinned: false,
   };
 }
 
@@ -288,7 +298,11 @@ interface RrcSessionStoreState {
   clearPartIntent: (room: string, hubHash?: string) => void;
   setDisconnectIntent: (intent: boolean, hubHash?: string) => void;
   setModerationBanner: (message: string | null, hubHash?: string) => void;
-  setLastWhisperPeer: (peer: RrcWhisperPeer | null, hubHash?: string) => void;
+  setLastWhisperPeer: (
+    peer: RrcWhisperPeer | null,
+    hubHash?: string,
+    opts?: { pin?: boolean; onlyIfUnpinned?: boolean },
+  ) => void;
   /** Update one hub's session (creating it if new). Never wipes sibling hubs. */
   applyStatus: (
     status: RrcSessionStatus,
@@ -511,17 +525,24 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     );
   },
 
-  setLastWhisperPeer: (peer, hubHash) => {
+  setLastWhisperPeer: (peer, hubHash, opts) => {
     set((s) =>
-      mutateHubSession(s, hubHash, (session) => ({
-        ...session,
-        lastWhisperPeer: peer
-          ? {
-              identity_hash: peer.identity_hash.trim().toLowerCase(),
-              nickname: peer.nickname?.trim() ? peer.nickname.trim() : null,
-            }
-          : null,
-      })),
+      mutateHubSession(s, hubHash, (session) => {
+        if (opts?.onlyIfUnpinned && session.whisperReplyPinned) {
+          return session;
+        }
+        if (!peer) {
+          return { ...session, lastWhisperPeer: null, whisperReplyPinned: false };
+        }
+        return {
+          ...session,
+          lastWhisperPeer: {
+            identity_hash: peer.identity_hash.trim().toLowerCase(),
+            nickname: peer.nickname?.trim() ? peer.nickname.trim() : null,
+          },
+          whisperReplyPinned: opts?.pin === true ? true : session.whisperReplyPinned,
+        };
+      }),
     );
   },
 

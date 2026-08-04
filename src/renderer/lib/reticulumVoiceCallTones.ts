@@ -319,15 +319,23 @@ function scheduleCadencePulses(
  * Reorder / fast busy: 480+620 Hz, 0.25s on / 0.25s off (≤1.5s → 3 pulses).
  * Used for connect-fail and unexpected drop.
  */
-export function playVoiceReorderTone(): void {
+function playVoiceDualCadence(opts: {
+  onDurationS: number;
+  periodS: number;
+  pulseCount: number;
+}): void {
   stopVoiceCallTones();
   if (isNotifMuted()) return;
   withRunningContext((ctx) => {
-    scheduleCadencePulses(ctx, 0.25, 0.5, 3);
+    scheduleCadencePulses(ctx, opts.onDurationS, opts.periodS, opts.pulseCount);
   });
   busyStopTimer = setTimeout(() => {
     busyStopTimer = null;
   }, TERMINAL_TONE_MAX_MS);
+}
+
+export function playVoiceReorderTone(): void {
+  playVoiceDualCadence({ onDurationS: 0.25, periodS: 0.5, pulseCount: 3 });
 }
 
 /**
@@ -335,14 +343,7 @@ export function playVoiceReorderTone(): void {
  * Used for line-busy and no-answer.
  */
 export function playVoiceBusyTone(): void {
-  stopVoiceCallTones();
-  if (isNotifMuted()) return;
-  withRunningContext((ctx) => {
-    scheduleCadencePulses(ctx, 0.5, 1.0, 2);
-  });
-  busyStopTimer = setTimeout(() => {
-    busyStopTimer = null;
-  }, TERMINAL_TONE_MAX_MS);
+  playVoiceDualCadence({ onDurationS: 0.5, periodS: 1.0, pulseCount: 2 });
 }
 
 /** Distinct short down-tone for reject only. */

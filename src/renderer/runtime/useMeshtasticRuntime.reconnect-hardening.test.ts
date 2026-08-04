@@ -301,6 +301,8 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
       /channelConfigsRef\.current = resolvedChannelConfigs;\s*pushMqttChannelKeys\(\);/,
     );
     expect(SOURCE).toMatch(/\[resolvedChannelConfigs, pushMqttChannelKeys\]/);
+    expect(SOURCE).toMatch(/meshtasticMqttChannelKeyEntries\(channelConfigsRef\.current\)/);
+    expect(SOURCE).toMatch(/updateChannelKeys\(\{\s*entries\s*\}\)/);
     // Hook-state channelConfigs alone must not be the only push trigger (stays empty on RF path).
     expect(SOURCE).not.toMatch(
       /pushMqttChannelKeys\(\);\s*\}, \[channelConfigs, mqttStatus, pushMqttChannelKeys\]/,

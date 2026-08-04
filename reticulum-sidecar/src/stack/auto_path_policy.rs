@@ -92,17 +92,41 @@ pub fn interface_row_is_private_network(row: &InterfaceRow) -> bool {
     row.host.as_deref().is_some_and(host_is_private_lan)
 }
 
-/// Enabled Auto interfaces that are not live → degraded for delivery.
-pub fn auto_unhealthy_for_delivery(interfaces: &[InterfaceRow]) -> bool {
+/// Whether Auto is unhealthy for Direct delivery.
+///
+/// - `delivery_degraded`: recent Auto Direct failure still within suppress window.
+/// - Otherwise evaluate the **active** Auto path row when known (a second down Auto
+///   must not demote a live active Auto).
+/// - When the active iface is Auto by name only (no matching row), unhealthy only if
+///   every enabled Auto is down.
+pub fn auto_unhealthy_for_delivery(
+    interfaces: &[InterfaceRow],
+    active_path_iface: Option<&str>,
+    delivery_degraded: bool,
+) -> bool {
+    if delivery_degraded {
+        return true;
+    }
     let autos: Vec<&InterfaceRow> = interfaces
         .iter()
         .filter(|r| is_auto_interface_row(r) && r.enabled)
         .collect();
-    if autos.is_empty() {
+    if let Some(name) = active_path_iface.map(str::trim).filter(|s| !s.is_empty()) {
+        if let Some(row) = find_interface_row(name, interfaces) {
+            if is_auto_interface_row(row) {
+                return !interface_status_live(&row.status);
+            }
+            return false;
+        }
+        if is_auto_iface_name_or_type(name) {
+            if autos.is_empty() {
+                return true;
+            }
+            return autos.iter().all(|r| !interface_status_live(&r.status));
+        }
         return false;
     }
-    // Any enabled Auto that is not live counts as unhealthy (path slots may linger).
-    autos.iter().any(|r| !interface_status_live(&r.status))
+    false
 }
 
 /// Live private TCP/UDP interface display names.
@@ -181,11 +205,12 @@ pub fn should_preempt_auto_for_private_direct(
     active_path_iface: Option<&str>,
     path_slot_ifaces: &[String],
     interfaces: &[InterfaceRow],
+    delivery_degraded: bool,
 ) -> bool {
     if !path_iface_is_auto(active_path_iface, interfaces) {
         return false;
     }
-    if !auto_unhealthy_for_delivery(interfaces) {
+    if !auto_unhealthy_for_delivery(interfaces, active_path_iface, delivery_degraded) {
         return false;
     }
     let private = live_private_iface_names(interfaces);
@@ -196,6 +221,22 @@ pub fn should_preempt_auto_for_private_direct(
         return true;
     }
     path_has_live_private_backup(path_slot_ifaces, interfaces)
+}
+
+/// Live iface names for failover prefer tier (private LAN first when requested).
+pub fn prefer_ifaces_for_failover(
+    interfaces: &[InterfaceRow],
+    blocked_ifaces: &[String],
+    prefer_private_first: bool,
+) -> Vec<String> {
+    use super::path_failover::{live_interface_names, remaining_live_ifaces};
+    let live = live_interface_names(interfaces);
+    let ordered = if prefer_private_first {
+        order_live_ifaces_private_first(&live, interfaces)
+    } else {
+        live
+    };
+    remaining_live_ifaces(&ordered, blocked_ifaces)
 }
 
 /// After Auto Direct failure, prefer private live ifaces when choosing rediscovery targets.
@@ -323,11 +364,55 @@ mod tests {
                 Some("192.168.1.111"),
             ),
         ];
-        assert!(!auto_unhealthy_for_delivery(&ifaces));
+        assert!(!auto_unhealthy_for_delivery(&ifaces, Some("Auto"), false));
         assert!(!should_preempt_auto_for_private_direct(
             Some("Auto"),
             &["Auto".into(), "Local Transport Pi".into()],
             &ifaces,
+            false,
+        ));
+    }
+
+    #[test]
+    fn mixed_auto_live_active_not_unhealthy() {
+        let ifaces = [
+            row("Auto", "auto", true, "up", None),
+            row("Auto Backup", "auto", true, "down", None),
+            row(
+                "Local Transport Pi",
+                "tcp",
+                true,
+                "up",
+                Some("192.168.1.111"),
+            ),
+        ];
+        assert!(!auto_unhealthy_for_delivery(&ifaces, Some("Auto"), false));
+        assert!(!should_preempt_auto_for_private_direct(
+            Some("Auto"),
+            &[],
+            &ifaces,
+            false,
+        ));
+    }
+
+    #[test]
+    fn delivery_degraded_preempts_while_auto_up() {
+        let ifaces = [
+            row("Auto", "auto", true, "up", None),
+            row(
+                "Local Transport Pi",
+                "tcp",
+                true,
+                "up",
+                Some("192.168.1.111"),
+            ),
+        ];
+        assert!(auto_unhealthy_for_delivery(&ifaces, Some("Auto"), true));
+        assert!(should_preempt_auto_for_private_direct(
+            Some("Auto"),
+            &["Auto".into(), "Local Transport Pi".into()],
+            &ifaces,
+            true,
         ));
     }
 
@@ -343,11 +428,12 @@ mod tests {
                 Some("192.168.1.111"),
             ),
         ];
-        assert!(auto_unhealthy_for_delivery(&ifaces));
+        assert!(auto_unhealthy_for_delivery(&ifaces, Some("Auto"), false));
         assert!(should_preempt_auto_for_private_direct(
             Some("Auto"),
             &["Auto".into(), "Local Transport Pi".into()],
             &ifaces,
+            false,
         ));
     }
 
@@ -361,6 +447,7 @@ mod tests {
             Some("Auto"),
             &["Auto".into(), "Ratspeak 2".into()],
             &ifaces,
+            false,
         ));
     }
 
@@ -380,6 +467,7 @@ mod tests {
             Some("Auto"),
             &[],
             &ifaces,
+            false,
         ));
     }
 
@@ -401,7 +489,28 @@ mod tests {
             Some("Auto"),
             &["Auto".into(), "Ratspeak 2".into()],
             &ifaces,
+            false,
         ));
+    }
+
+    #[test]
+    fn prefer_ifaces_private_first_excludes_blocked() {
+        let ifaces = [
+            row("Ratspeak 2", "tcp", true, "up", Some("2.ratspeak.org")),
+            row(
+                "Local Transport Pi",
+                "tcp",
+                true,
+                "up",
+                Some("192.168.1.111"),
+            ),
+            row("Auto", "auto", true, "up", None),
+        ];
+        let prefer = prefer_ifaces_for_failover(&ifaces, &["Auto".into()], true);
+        assert_eq!(
+            prefer,
+            vec!["Local Transport Pi".to_string(), "Ratspeak 2".to_string()]
+        );
     }
 
     #[test]

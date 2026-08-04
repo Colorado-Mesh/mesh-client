@@ -4820,7 +4820,7 @@
     "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "clearHistoryConfirmAction": "Geschiedenis verwijderen",
     "whisperReplyPlaceholder": "Reageer op {{name}} of /msg...",
-    "whisperNoTarget": "Nog geen fluisterdoelwit. Gebruik /msg NICK text om te starten.",
+    "whisperNoTarget": "Nog geen fluisterdoel. Gebruik /msg NICK tekst om te starten.",
     "jumpToLatest": "Spring naar de laatste"
   },
   "signalMeter": {
@@ -5148,6 +5148,6 @@
       "failed": "Spraakoproep mislukt.",
       "connectFailed": "Kon niet verbinden"
     },
-    "ringing": "Bellen"
+    "ringing": "Overgaan…"
   }
 }

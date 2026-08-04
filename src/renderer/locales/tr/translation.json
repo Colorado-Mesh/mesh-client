@@ -4820,7 +4820,7 @@
     "clearHistoryConfirm": "{{room}} için kayıtlı tüm mesaj geçmişi silinsin mi? Bu geri alınamaz.",
     "clearHistoryConfirmAction": "Geçmişi sil",
     "whisperReplyPlaceholder": "{{name}} veya /msg'ye yanıt verin…",
-    "whisperNoTarget": "Henüz fısıltı hedefi yok. Başlamak için /msg NICK text kullanın.",
+    "whisperNoTarget": "Henüz fısıltı hedefi yok. Başlamak için /msg NICK metin kullanın.",
     "jumpToLatest": "En Yeniye Atla"
   },
   "signalMeter": {
@@ -5148,6 +5148,6 @@
       "connectFailed": "Bağlanamadı."
     },
     "statsSeparator": "·",
-    "ringing": "Aranıyor"
+    "ringing": "Çalıyor…"
   }
 }

@@ -524,19 +524,33 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             }
         }
         TelephonyServiceEvent::Error { message } => {
-            {
+            let link_hex = {
                 let mut st = shared.state.write().await;
                 st.last_error = Some(message.clone());
+                let link = st
+                    .active_call
+                    .as_ref()
+                    .and_then(|c| c.get("link_id"))
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_string)
+                    .or_else(|| {
+                        st.audit
+                            .as_ref()
+                            .and_then(|a| a.link_id_hex.clone())
+                            .filter(|s| !s.is_empty())
+                    });
                 if st.active_call.is_some() {
                     st.active_call = None;
                     log_audit_outcome_and_end(&mut st, "error", Some(message.as_str()));
                 }
+                link
+            };
+            let mut payload = json!({ "type": "error", "message": message });
+            if let Some(link_id) = link_hex {
+                payload["link_id"] = json!(link_id);
             }
-            emit(
-                &shared.event_tx,
-                "voice.error",
-                &json!({ "type": "error", "message": message }),
-            );
+            emit(&shared.event_tx, "voice.error", &payload);
         }
         TelephonyServiceEvent::Stopped => {
             let mut st = shared.state.write().await;
@@ -1075,6 +1089,25 @@ mod tests {
         assert!(shared.state.read().await.active_call.is_none());
         assert!(shared.state.read().await.audit.is_none());
 
+        // Re-install an active call so Error can stamp link_id before clear.
+        {
+            let mut st = shared.state.write().await;
+            st.active_call = Some(json!({
+                "link_id": hex::encode(link),
+                "remote_identity": "22".repeat(16),
+                "role": "outgoing",
+                "status": "established",
+            }));
+            st.audit = Some(VoiceAuditSession {
+                role: "outgoing",
+                remote_hex: "22".repeat(16),
+                link_id_hex: Some(hex::encode(link)),
+                started_at: Instant::now(),
+                established_at: None,
+                ever_established: true,
+                log_phase: VoiceAuditLogPhase::StartLogged,
+            });
+        }
         bridge_service_event(
             &shared,
             TelephonyServiceEvent::Error {
@@ -1084,6 +1117,10 @@ mod tests {
         .await;
         let err = event_rx.try_recv().expect("voice.error");
         assert!(err.contains("\"type\":\"voice.error\""));
+        assert!(
+            err.contains(&hex::encode(link)),
+            "voice.error must include active link_id: {err}"
+        );
         assert_eq!(
             shared.state.read().await.last_error.as_deref(),
             Some("boom")

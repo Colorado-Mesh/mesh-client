@@ -20,10 +20,12 @@ use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
 use super::super::auto_path_policy::{
-    should_preempt_auto_for_private_direct, should_prefer_private_after_auto_failure,
+    prefer_ifaces_for_failover, should_preempt_auto_for_private_direct,
+    should_prefer_private_after_auto_failure,
 };
 use super::super::path_failover::{
-    IFACE_SUPPRESS_SECS, push_tried_iface, should_retry_direct_path_failover,
+    IFACE_SUPPRESS_SECS, build_path_failover_control_ops, push_tried_iface,
+    should_retry_direct_path_failover,
 };
 use super::super::types::InterfaceRow;
 use super::super::via::classify_interface;
@@ -131,6 +133,9 @@ pub struct LxmfOutboundDriver {
     path_vias: HashMap<[u8; 16], String>,
     /// Local interface rows (config + live status) for Auto / private LAN policy.
     interfaces: Vec<InterfaceRow>,
+    /// Until this unix time, treat Auto as delivery-degraded for private preempt
+    /// (Auto status may still report "up" after a Direct failure on Auto).
+    auto_delivery_degraded_until: f64,
     path_request_gate: PathRequestGate,
     /// Message hashes that already consumed the one-shot Direct→PN fallback.
     pn_fallback_attempted: HashSet<[u8; 32]>,
@@ -164,6 +169,7 @@ impl LxmfOutboundDriver {
             path_interfaces: HashMap::new(),
             path_vias: HashMap::new(),
             interfaces: Vec::new(),
+            auto_delivery_degraded_until: 0.0,
             path_request_gate: PathRequestGate::new(),
             pn_fallback_attempted: HashSet::new(),
             direct_path_failovers: HashMap::new(),
@@ -577,18 +583,29 @@ impl LxmfOutboundDriver {
     /// Auto and RequestPath so Direct can use the private path.
     fn maybe_preempt_unhealthy_auto_path(&mut self, dest_hash: [u8; 16]) -> bool {
         let active = self.path_interfaces.get(&dest_hash).cloned();
-        if !should_preempt_auto_for_private_direct(active.as_deref(), &[], &self.interfaces) {
+        let delivery_degraded = now_f64() < self.auto_delivery_degraded_until;
+        if !should_preempt_auto_for_private_direct(
+            active.as_deref(),
+            &[],
+            &self.interfaces,
+            delivery_degraded,
+        ) {
             return false;
         }
+        let blocked: Vec<String> = active.iter().cloned().collect();
+        let prefer = prefer_ifaces_for_failover(&self.interfaces, &blocked, true);
         tracing::info!(
             dest = %hex::encode(dest_hash),
             active = ?active,
+            prefer = ?prefer,
+            delivery_degraded,
             "AutoInterface unhealthy for delivery; suppressing Auto toward private LAN path"
         );
         queue_path_failover_queries(
             &self.transport_tx,
             dest_hash,
             &[],
+            &prefer,
             "auto unhealthy private preempt",
         );
         self.clear_path_to(&hex::encode(dest_hash));
@@ -921,7 +938,17 @@ impl LxmfOutboundDriver {
         };
         let prefer_private =
             should_prefer_private_after_auto_failure(iface.as_deref(), &self.interfaces);
-        queue_path_failover_queries(&self.transport_tx, dest_hash, &vias_to_drop, reason);
+        if prefer_private {
+            self.auto_delivery_degraded_until = now_f64() + IFACE_SUPPRESS_SECS;
+        }
+        let prefer = prefer_ifaces_for_failover(&self.interfaces, &tried, prefer_private);
+        queue_path_failover_queries(
+            &self.transport_tx,
+            dest_hash,
+            &vias_to_drop,
+            &prefer,
+            reason,
+        );
         self.clear_path_to(&hex::encode(dest_hash));
 
         let now = now_f64();
@@ -934,6 +961,7 @@ impl LxmfOutboundDriver {
             rounds,
             tried = ?tried,
             prefer_private,
+            prefer = ?prefer,
             reason,
             "Direct path failover: suppress/drop via + RequestPath; re-queuing Direct"
         );
@@ -1252,17 +1280,23 @@ fn try_queue_path_request(
 }
 
 /// Fire-and-forget suppress + DropAllVia + DropPath + RequestPath for Direct failover.
+///
+/// When `prefer_ifaces` is non-empty, issue a second RequestPath (Nomad parity) so
+/// remaining live hubs — especially private LAN — get another rediscovery chance
+/// after Auto was suppressed.
 fn queue_path_failover_queries(
     transport_tx: &mpsc::Sender<TransportMessage>,
     dest: [u8; 16],
     vias_to_drop: &[String],
+    prefer_ifaces: &[String],
     reason: &str,
 ) {
+    let ops = build_path_failover_control_ops(dest, vias_to_drop, None, prefer_ifaces);
     let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
     if let Err(e) = transport_tx.try_send(TransportMessage::Rpc {
         query: TransportQuery::SuppressCurrentPathInterface {
-            dest,
-            duration: IFACE_SUPPRESS_SECS,
+            dest: ops.dest,
+            duration: ops.suppress_secs,
         },
         response_tx,
     }) {
@@ -1273,7 +1307,7 @@ fn queue_path_failover_queries(
             "path failover SuppressCurrentPathInterface try_send rejected"
         );
     }
-    for via_hex in vias_to_drop {
+    for via_hex in &ops.vias_to_drop {
         if let Ok(next_hop) = parse_hash16(via_hex) {
             let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
             if let Err(e) = transport_tx.try_send(TransportMessage::Rpc {
@@ -1291,6 +1325,17 @@ fn queue_path_failover_queries(
         }
     }
     let _ = try_queue_path_request(transport_tx, dest, true, reason);
+    if !ops.prefer_ifaces.is_empty() {
+        tracing::debug!(
+            dest = %hex::encode(dest),
+            prefer = ?ops.prefer_ifaces,
+            reason,
+            "path failover: extra RequestPath toward prefer-tier live interfaces"
+        );
+        let _ = transport_tx.try_send(TransportMessage::RequestPath {
+            destination_hash: dest,
+        });
+    }
 }
 
 pub fn parse_propagation_hash(hex_str: &str) -> Option<[u8; 16]> {
@@ -1475,6 +1520,157 @@ mod tests {
             !driver.direct_path_failovers.contains_key(&msg_hash),
             "exhausted state must be removed"
         );
+    }
+
+    fn iface_row(
+        name: &str,
+        iface_type: &str,
+        enabled: bool,
+        status: &str,
+        host: Option<&str>,
+    ) -> InterfaceRow {
+        use crate::stack::types::interface_discovery_defaults;
+        let (
+            discoverable,
+            latitude,
+            longitude,
+            height,
+            discovery_name,
+            announce_interval_min,
+            connectable,
+            reachable_on,
+        ) = interface_discovery_defaults();
+        InterfaceRow {
+            id: name.to_lowercase().replace(' ', "-"),
+            name: name.into(),
+            iface_type: iface_type.into(),
+            enabled,
+            status: status.into(),
+            host: host.map(str::to_string),
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: vec![],
+            discoverable,
+            latitude,
+            longitude,
+            height,
+            discovery_name,
+            announce_interval_min,
+            connectable,
+            reachable_on,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::default(),
+        }
+    }
+
+    #[test]
+    fn auto_failure_sets_degraded_and_queues_extra_request_path() {
+        use lxmf_core::constants::DeliveryMethod;
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig};
+        use tokio::sync::broadcast;
+
+        let identity = Identity::new();
+        let (tx, mut rx) = mpsc::channel(64);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        driver.update_interfaces(vec![
+            iface_row("Auto", "auto", true, "up", None),
+            iface_row(
+                "Local Transport Pi",
+                "tcp",
+                true,
+                "up",
+                Some("192.168.1.111"),
+            ),
+            iface_row("Ratspeak 2", "tcp", true, "up", Some("2.ratspeak.org")),
+        ]);
+        let dest_hash = dest(0xef);
+        let msg_hash = [0x43u8; 32];
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 1,
+            hex_key: hex::encode(dest_hash),
+            interface: Some("Auto".into()),
+            via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+        }]);
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, _event_rx) = broadcast::channel(8);
+        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
+        msg.hash = Some(msg_hash);
+
+        let result = driver.requeue_direct_after_path_failover(
+            &mut router,
+            &event_tx,
+            msg,
+            dest_hash,
+            "timed out waiting for link proof",
+        );
+        assert!(result.is_ok());
+        assert!(
+            driver.auto_delivery_degraded_until > now_f64(),
+            "Auto Direct failure must latch delivery-degraded window"
+        );
+
+        let mut request_path_count = 0usize;
+        while let Ok(msg) = rx.try_recv() {
+            if matches!(msg, TransportMessage::RequestPath { .. }) {
+                request_path_count += 1;
+            }
+        }
+        assert!(
+            request_path_count >= 2,
+            "prefer_private should queue DropPath RequestPath plus extra RequestPath, got {request_path_count}"
+        );
+
+        // Degraded + private live → preempt next Direct start.
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 1,
+            hex_key: hex::encode(dest_hash),
+            interface: Some("Auto".into()),
+            via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+        }]);
+        assert!(driver.maybe_preempt_unhealthy_auto_path(dest_hash));
+        assert!(!driver.has_path_to(&hex::encode(dest_hash)));
+    }
+
+    #[test]
+    fn healthy_auto_with_down_sibling_does_not_preempt() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        driver.update_interfaces(vec![
+            iface_row("Auto", "auto", true, "up", None),
+            iface_row("Auto Backup", "auto", true, "down", None),
+            iface_row(
+                "Local Transport Pi",
+                "tcp",
+                true,
+                "up",
+                Some("192.168.1.111"),
+            ),
+        ]);
+        let dest_hash = dest(0xaa);
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 1,
+            hex_key: hex::encode(dest_hash),
+            interface: Some("Auto".into()),
+            via: None,
+        }]);
+        assert!(!driver.maybe_preempt_unhealthy_auto_path(dest_hash));
+        assert!(driver.has_path_to(&hex::encode(dest_hash)));
     }
 
     #[test]

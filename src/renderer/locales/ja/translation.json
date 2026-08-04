@@ -4820,7 +4820,7 @@
     "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
     "clearHistoryConfirmAction": "履歴の削除",
     "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
-    "whisperNoTarget": "ささやき声ターゲットはまだありません。/msg NICKテキストを使用して開始します。",
+    "whisperNoTarget": "まだささやきの相手がいません。開始するには /msg NICK テキスト を使用します。",
     "jumpToLatest": "最新へジャンプ"
   },
   "signalMeter": {
@@ -5148,6 +5148,6 @@
       "connectFailed": "接続できませんでした。"
     },
     "statsSeparator": "・",
-    "ringing": "リンギング"
+    "ringing": "呼び出し中…"
   }
 }

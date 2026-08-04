@@ -290,6 +290,8 @@ IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`):
 
 - Discover hubs from announces, connect by hash, or favourite hubs (Nomad-style). Soft cap **8** concurrent hub sessions.
 - Per-hub rooms, nicklists (`/who`), topics, slash commands (`/help`, `/join`, `/part`, `/list`, `/msg`, …). Hub and room **auto-join** prefs in localStorage.
+- **`[whispers]`:** `/msg NICK text` opens the synthetic whispers room and pins the reply peer. Plain text in `[whispers]` sends a NOTICE to that peer (no `/msg` prefix). Inbound whispers update the reply target only when the user has not pinned a peer via `/msg` or a prior plain reply. With no target yet, send shows `rrc.whisperNoTarget`.
+- Chat virtualization pins to the bottom while reading live traffic; **Jump to latest** appears when scrolled up; leaving/re-entering RRC restores the prior scroll pin when possible (`RrcChatView` + TanStack Virtual).
 - Unintended link drops enter **reconnecting** (backoff 2–30 s), preserve desired rooms (including join keys), and rejoin after WELCOME. Explicit **Disconnect** / **Cancel** clears that hub (`will_reconnect: false`).
 - **Involuntary PART:** hub/self `PARTED` while the room is still desired queues a silent re-JOIN; UI banner uses neutral `rrc.moderation.hubParted` (not kick/ban wording). Member-fanout `PARTED` (another peer left) updates the nicklist only — must not be treated as self-leave.
 - @mention unread badges and inactive-tab toasts; muted views use the shared Chat mute storage keyed as `rrc:<hub>:<room>`.

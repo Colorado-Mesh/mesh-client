@@ -1383,6 +1383,12 @@ impl LiveBridge {
             .unwrap_or_default();
         let failed_via = active_via_hash_from_slots(&slots_before);
         let prefer = remaining_live_ifaces(live_ifaces, blocked_ifaces);
+        let failover_ops = path_failover::build_path_failover_control_ops(
+            dest,
+            blocked_vias,
+            failed_via.as_deref(),
+            &prefer,
+        );
 
         // Promote an already-known unblocked backup before waiting on rediscovery.
         let known_backup = select_unblocked_slot(
@@ -1395,8 +1401,8 @@ impl LiveBridge {
 
         if self
             .query_control_timed(TransportQuery::SuppressCurrentPathInterface {
-                dest,
-                duration: path_failover::IFACE_SUPPRESS_SECS,
+                dest: failover_ops.dest,
+                duration: failover_ops.suppress_secs,
             })
             .await
             .is_none()
@@ -1409,13 +1415,7 @@ impl LiveBridge {
         }
         // Drop every known-bad next hop (not only the currently active slot —
         // after a timeout the table may flip to another iface sharing an older via).
-        let mut vias_to_drop: Vec<String> = blocked_vias.to_vec();
-        if let Some(via) = failed_via.clone() {
-            if !vias_to_drop.iter().any(|b| b.eq_ignore_ascii_case(&via)) {
-                vias_to_drop.push(via);
-            }
-        }
-        for via_hex in &vias_to_drop {
+        for via_hex in &failover_ops.vias_to_drop {
             if let Ok(next_hop) = parse_hash16(via_hex) {
                 if self
                     .query_control_timed(TransportQuery::DropAllVia { next_hop })
@@ -5280,6 +5280,95 @@ mod announce_display_name_tests {
         assert_eq!(
             cache.get(&"ff".repeat(16)).map(String::as_str),
             Some("renamed")
+        );
+    }
+}
+
+#[cfg(test)]
+mod nomad_private_first_failover_tests {
+    use super::*;
+    use crate::stack::auto_path_policy::order_live_ifaces_private_first;
+    use crate::stack::path_failover::{live_interface_names, remaining_live_ifaces};
+    use crate::stack::types::interface_discovery_defaults;
+
+    fn iface_row(name: &str, status: &str, host: Option<&str>) -> InterfaceRow {
+        let (
+            discoverable,
+            latitude,
+            longitude,
+            height,
+            discovery_name,
+            announce_interval_min,
+            connectable,
+            reachable_on,
+        ) = interface_discovery_defaults();
+        InterfaceRow {
+            id: name.to_lowercase().replace(' ', "-"),
+            name: name.into(),
+            iface_type: "tcp".into(),
+            enabled: true,
+            status: status.into(),
+            host: host.map(str::to_string),
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: vec![],
+            discoverable,
+            latitude,
+            longitude,
+            height,
+            discovery_name,
+            announce_interval_min,
+            connectable,
+            reachable_on,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::default(),
+        }
+    }
+
+    /// Mirrors LiveBridge::query_nomad_node prefer-list construction after a failed path.
+    #[test]
+    fn live_bridge_prefer_list_is_private_first_excluding_blocked() {
+        let interfaces = [
+            iface_row("Ratspeak 2", "up", Some("2.ratspeak.org")),
+            iface_row("Local Transport Pi", "up", Some("192.168.1.111")),
+            iface_row("Auto", "up", None),
+        ];
+        // LiveBridge uses iface_type detection via auto_path_policy for private;
+        // mark Auto as auto type so it is not a private network target.
+        let mut interfaces = interfaces.to_vec();
+        interfaces[2].iface_type = "auto".into();
+
+        let live_ifaces =
+            order_live_ifaces_private_first(&live_interface_names(&interfaces), &interfaces);
+        assert_eq!(
+            live_ifaces.first().map(String::as_str),
+            Some("Local Transport Pi")
+        );
+        let prefer = remaining_live_ifaces(&live_ifaces, &["Auto".into()]);
+        assert_eq!(
+            prefer,
+            vec!["Local Transport Pi".to_string(), "Ratspeak 2".to_string()]
+        );
+        // Neither host private → preserve input order after filter.
+        let public_only = [
+            iface_row("Ratspeak 2", "up", Some("2.ratspeak.org")),
+            iface_row("TTP", "up", Some("1.ratspeak.org")),
+        ];
+        let live_public =
+            order_live_ifaces_private_first(&live_interface_names(&public_only), &public_only);
+        assert_eq!(
+            live_public,
+            vec!["Ratspeak 2".to_string(), "TTP".to_string()]
         );
     }
 }

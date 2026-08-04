@@ -149,7 +149,19 @@ describe('useReticulumRuntime voice event routing', () => {
         payload: {
           link_id: CALL.link_id,
           profile: 0x50,
-          channels: 1.5, // non-integer → default to 1
+          channels: 1.5, // non-integer → dropped by shared validator
+          samples_b64: encodeF32LeBase64(pcm),
+        },
+      });
+    });
+    expect(heard).toHaveLength(0);
+    act(() => {
+      onVoiceAudio({
+        type: 'voice.audio',
+        payload: {
+          link_id: CALL.link_id,
+          profile: 0x50,
+          channels: 1,
           samples_b64: encodeF32LeBase64(pcm),
         },
       });
@@ -171,7 +183,14 @@ describe('useReticulumRuntime voice event routing', () => {
       onEvent({ type: 'voice.incoming', payload: CALL });
     });
     act(() => {
-      onEvent({ type: 'voice.error', payload: { message: 'codec boom' } });
+      onEvent({
+        type: 'voice.error',
+        payload: {
+          message: 'codec boom',
+          link_id: CALL.link_id,
+          remote_identity: CALL.remote_identity,
+        },
+      });
     });
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
     // Sidecar English is humanized — never stored/toasted raw.

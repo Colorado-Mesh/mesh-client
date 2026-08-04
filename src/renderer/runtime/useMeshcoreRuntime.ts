@@ -8,11 +8,11 @@ import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import {
   clearMeshcoreBleMacSuppression,
+  commitConnectedMeshcoreBleSuppression,
   prearmMeshcoreBleMacSuppressionFromStorage,
+  preserveOrClearMeshcoreBleSuppression,
   readMeshcoreWebBluetoothDeviceId,
   resolveConnectedMeshcoreBleIdentity,
-  resolveConnectedMeshcoreBleMacForSuppression,
-  setConnectedMeshcoreBleMac,
 } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -2481,11 +2481,10 @@ export function useMeshcoreRuntime() {
       }
       // BLE: keep sticky suppress MAC so Meshtastic NodeDB cannot revive the companion ghost
       // during the open gap. Non-BLE: drop suppress entirely (no MAC-derived ghost risk).
-      if (type === 'ble') {
-        prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
-      } else {
-        clearMeshcoreBleMacSuppression();
-      }
+      preserveOrClearMeshcoreBleSuppression(
+        type === 'ble',
+        resolveLastBlePeripheralId('meshcore') ?? null,
+      );
       const driverIdentity = meshcoreDriverConnectedRef.current
         ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
         : null;
@@ -2594,12 +2593,11 @@ export function useMeshcoreRuntime() {
     (type: 'ble' | 'serial' | 'tcp', driverIdentityId?: string): Promise<void> => {
       setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
       meshcoreDeviceConfiguredRef.current = false;
-      if (type === 'ble') {
-        // Keep sticky suppress across failed BLE open so NodeDB cannot revive Blue.
-        prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
-      } else {
-        clearMeshcoreBleMacSuppression();
-      }
+      // Keep sticky suppress across failed BLE open so NodeDB cannot revive Blue.
+      preserveOrClearMeshcoreBleSuppression(
+        type === 'ble',
+        resolveLastBlePeripheralId('meshcore') ?? null,
+      );
       teardownMeshcoreConnEventListeners({
         driverDisconnect: true,
         driverIdentityId,
@@ -2871,7 +2869,7 @@ export function useMeshcoreRuntime() {
         if (bleId) {
           params.blePeripheralId = bleId;
         }
-        setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts));
+        commitConnectedMeshcoreBleSuppression(bleIdentityOpts);
       } else {
         clearMeshcoreBleMacSuppression();
       }
@@ -3116,7 +3114,7 @@ export function useMeshcoreRuntime() {
           serialPort: null,
         };
         if (bleIdentityOpts) {
-          setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(bleIdentityOpts));
+          commitConnectedMeshcoreBleSuppression(bleIdentityOpts);
         } else {
           clearMeshcoreBleMacSuppression();
         }

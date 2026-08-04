@@ -63,6 +63,30 @@ export function clearMeshcoreBleMacSuppression(): void {
 }
 
 /**
+ * BLE opens/reconnects keep sticky suppress (pre-arm from storage + last peripheral).
+ * Non-BLE transports clear suppress entirely.
+ */
+export function preserveOrClearMeshcoreBleSuppression(
+  isBle: boolean,
+  fallbackLastBlePeripheralId?: string | null,
+): void {
+  if (isBle) {
+    prearmMeshcoreBleMacSuppressionFromStorage(fallbackLastBlePeripheralId ?? null);
+  } else {
+    clearMeshcoreBleMacSuppression();
+  }
+}
+
+/** Resolve + store suppress MAC after a successful MeshCore BLE attach. */
+export function commitConnectedMeshcoreBleSuppression(opts: {
+  blePeripheralId?: string | null;
+  webBluetoothDeviceId?: string | null;
+  fallbackLastBlePeripheralId?: string | null;
+}): void {
+  setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(opts));
+}
+
+/**
  * Pre-arm suppress MAC from persistence and/or a last-BLE peripheral id so Meshtastic
  * configure NodeDB dumps cannot bump the MeshCore companion ghost before BLE attach.
  */

@@ -39,6 +39,12 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/addMessage\([\s\S]*?\{ hubDestHash \}/);
   });
 
+  it('updates lastWhisperPeer from inbound directs only when unpinned', () => {
+    expect(SOURCE).toMatch(/isDirect &&[\s\S]*?sender_hash[\s\S]*?setLastWhisperPeer/);
+    expect(SOURCE).toMatch(/onlyIfUnpinned:\s*true/);
+    expect(SOURCE).toMatch(/RRC_WHISPERS_ROOM/);
+  });
+
   it('uses neutral hubParted banner for involuntary parts (not kick/ban wording)', () => {
     expect(SOURCE).toMatch(/resolveRrcInvoluntaryPartBannerKey/);
     expect(SOURCE).toMatch(/sessionStatus: view\.status/);

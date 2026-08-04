@@ -587,6 +587,40 @@ describe('reticulumVoiceSession', () => {
     debugSpy.mockRestore();
   });
 
+  it('ignores stale voice.error without link_id after a newer linked call', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+    });
+    const gen = useReticulumVoiceStore.getState().callGeneration;
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    handleReticulumVoiceTerminal({
+      errorMessage: 'stale boom',
+      callGeneration: gen,
+      // no linkId, no remoteIdentity — must not tear down the linked call
+    });
+    expect(useReticulumVoiceStore.getState().activeCall?.link_id).toBe('1'.repeat(32));
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[reticulumVoice] ignoring stale terminal event',
+      expect.any(String),
+    );
+    debugSpy.mockRestore();
+  });
+
+  it('ignores terminal when callGeneration does not match', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('2'.repeat(32));
+    const gen = useReticulumVoiceStore.getState().callGeneration;
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    handleReticulumVoiceTerminal({
+      reason: 'busy',
+      callGeneration: gen + 1,
+    });
+    expect(useReticulumVoiceStore.getState().activeCall).not.toBeNull();
+    expect(playVoiceBusyTone).not.toHaveBeenCalled();
+    debugSpy.mockRestore();
+  });
+
   it('logs voice.error message as JSON string for developer bundles', () => {
     useReticulumVoiceStore.getState().applyIncoming({
       link_id: '1'.repeat(32),

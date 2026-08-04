@@ -4822,7 +4822,7 @@
     "clearHistoryConfirm": "Видалити всю збережену історію повідомлень для {{room}}? Це неможливо скасувати.",
     "clearHistoryConfirmAction": "Видалити історію",
     "whisperReplyPlaceholder": "Відповісти на {{name}} або /msg…",
-    "whisperNoTarget": "Жодної шепотілої мішені ще немає. Використовуйте /msg NICK text, щоб почати.",
+    "whisperNoTarget": "Ще немає адресата для приватного повідомлення. Щоб почати, використовуйте /msg NICK текст.",
     "jumpToLatest": "Перейти до останнього"
   },
   "signalMeter": {
@@ -5150,6 +5150,6 @@
       "connectFailed": "Не вдалося з'єднатися."
     },
     "statsSeparator": "·",
-    "ringing": "Йде виклик"
+    "ringing": "Дзвенить…"
   }
 }

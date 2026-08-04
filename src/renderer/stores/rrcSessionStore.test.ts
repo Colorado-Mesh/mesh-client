@@ -11,6 +11,39 @@ describe('rrcSessionStore', () => {
     vi.mocked(window.electronAPI.db.insertRrcMessage).mockClear();
   });
 
+  it('pins whisper reply peer and ignores onlyIfUnpinned overwrites', () => {
+    const hubA = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const hubB = '39d8d2b79d8467a4bb9f7c9204fe55c3';
+    const alice = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const bob = 'cccccccccccccccccccccccccccccccc';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setLastWhisperPeer({ identity_hash: alice, nickname: 'Alice' }, hubA, { pin: true });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.whisperReplyPinned).toBe(true);
+
+    store.setLastWhisperPeer({ identity_hash: bob, nickname: 'Bob' }, hubA, {
+      onlyIfUnpinned: true,
+    });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
+      identity_hash: alice,
+      nickname: 'Alice',
+    });
+
+    // Background hub inbound must not alter focused hub's pinned peer.
+    store.applyStatus('active', hubB, 'Hub B');
+    store.setLastWhisperPeer({ identity_hash: bob, nickname: 'Bob' }, hubB, {
+      onlyIfUnpinned: true,
+    });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
+      identity_hash: alice,
+      nickname: 'Alice',
+    });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubB)?.lastWhisperPeer).toEqual({
+      identity_hash: bob,
+      nickname: 'Bob',
+    });
+  });
+
   it('appends messages and bumps unread for inactive rooms', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');

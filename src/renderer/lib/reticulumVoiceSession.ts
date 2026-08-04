@@ -384,7 +384,7 @@ async function startCaptureAndTx(): Promise<void> {
   );
 }
 
-async function startPlayback(): Promise<void> {
+async function startPlayback(expectedCallGeneration: number): Promise<boolean> {
   const primed = takePrimedPlaybackCtx();
   if (audioUnsub) {
     audioUnsub();
@@ -399,6 +399,13 @@ async function startPlayback(): Promise<void> {
   }
   playbackCtx = primed ?? new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
   await resumeAudioContext(playbackCtx);
+  if (useReticulumVoiceStore.getState().callGeneration !== expectedCallGeneration) {
+    void playbackCtx.close().catch(() => {
+      // catch-no-log-ok stale generation after resume
+    });
+    playbackCtx = null;
+    return false;
+  }
   playbackCursor = playbackCtx.currentTime;
   audioUnsub = useReticulumVoiceStore.getState().subscribeAudio((channels, samples) => {
     const ctx = playbackCtx;
@@ -424,6 +431,7 @@ async function startPlayback(): Promise<void> {
     node.start(startAt);
     playbackCursor = startAt + buffer.duration;
   });
+  return true;
 }
 
 export async function startReticulumVoiceMediaForActiveCall(): Promise<void> {
@@ -442,12 +450,24 @@ export async function startReticulumVoiceMediaForActiveCall(): Promise<void> {
     // Claim generation before awaits so concurrent callers coalesce.
     mediaStartedForCallGeneration = generation;
     try {
-      await startPlayback();
+      const playbackOk = await startPlayback(generation);
+      if (!playbackOk || useReticulumVoiceStore.getState().callGeneration !== generation) {
+        stopReticulumVoiceMedia();
+        return;
+      }
       await startCaptureAndTx();
+      if (useReticulumVoiceStore.getState().callGeneration !== generation) {
+        stopReticulumVoiceMedia();
+      }
     } catch (e) {
-      // Keep mediaStartedForCallGeneration claimed so overlay does not thrash getUserMedia.
-      console.warn('[reticulumVoice] mic capture failed', e);
-      pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
+      // Keep mediaStartedForCallGeneration claimed so overlay does not thrash getUserMedia
+      // unless the call generation already moved on.
+      if (useReticulumVoiceStore.getState().callGeneration === generation) {
+        console.warn('[reticulumVoice] mic capture failed', e);
+        pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
+      } else {
+        stopReticulumVoiceMedia();
+      }
     } finally {
       if (mediaStartInFlightGeneration === generation) {
         mediaStartInFlight = null;
@@ -495,7 +515,11 @@ function abortOutgoingCallAttempt(message?: string): void {
 function terminalEventMatchesActiveCall(opts: {
   linkId?: string | null;
   callGeneration?: number | null;
-  /** WS voice.error often omits link_id — allow matching the current session. */
+  remoteIdentity?: string | null;
+  /**
+   * When true and event has no link_id: accept only if the local call also has no link yet,
+   * or the event remote_identity matches the active call (outgoing_failed before link).
+   */
   allowMissingLinkId?: boolean;
 }): boolean {
   const state = useReticulumVoiceStore.getState();
@@ -513,10 +537,22 @@ function terminalEventMatchesActiveCall(opts: {
   if (eventLink && activeLink && eventLink !== activeLink) {
     return false;
   }
-  // Empty event link_id: only accept while local call also has no link yet (outgoing pending),
-  // unless this is an error path that routinely omits link_id.
-  if (!eventLink && activeLink && !opts.allowMissingLinkId) {
-    return false;
+  if (!eventLink && activeLink) {
+    if (!opts.allowMissingLinkId) return false;
+    const eventRemote = (opts.remoteIdentity ?? '').trim().toLowerCase();
+    const activeRemote = active.remote_identity.trim().toLowerCase();
+    // Established (or link-assigned) call: require remote match so a stale
+    // link-less error cannot tear down a newer session.
+    if (!eventRemote || !activeRemote || eventRemote !== activeRemote) {
+      return false;
+    }
+  }
+  if (!eventLink && !activeLink && opts.allowMissingLinkId) {
+    const eventRemote = (opts.remoteIdentity ?? '').trim().toLowerCase();
+    const activeRemote = active.remote_identity.trim().toLowerCase();
+    if (eventRemote && activeRemote && eventRemote !== activeRemote) {
+      return false;
+    }
   }
   return true;
 }
@@ -680,10 +716,12 @@ export function handleReticulumVoiceTerminal(opts: {
   reason?: string | null;
   errorMessage?: string | null;
   callGeneration?: number | null;
+  remoteIdentity?: string | null;
 }): void {
   if (
     !terminalEventMatchesActiveCall({
       ...opts,
+      // Errors may omit link_id (outgoing_failed / mid-call Error before link fill).
       allowMissingLinkId: Boolean(opts.errorMessage),
     })
   ) {

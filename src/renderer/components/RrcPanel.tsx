@@ -682,10 +682,14 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               return;
             }
             const label = resolved.nickname || resolved.identity_hash.slice(0, 8);
-            setLastWhisperPeer({
-              identity_hash: resolved.identity_hash,
-              nickname: resolved.nickname ?? null,
-            });
+            setLastWhisperPeer(
+              {
+                identity_hash: resolved.identity_hash,
+                nickname: resolved.nickname ?? null,
+              },
+              undefined,
+              { pin: true },
+            );
             if (activeRoom !== RRC_WHISPERS_ROOM) setActiveRoom(RRC_WHISPERS_ROOM);
             addMessage({
               id: `whisper-out-${Date.now()}`,
@@ -759,7 +763,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             return;
           }
           const label = peer.nickname || peer.identity_hash.slice(0, 8);
-          setLastWhisperPeer(peer);
+          setLastWhisperPeer(peer, undefined, { pin: true });
           addMessage({
             id: `whisper-out-${Date.now()}`,
             room: RRC_WHISPERS_ROOM,

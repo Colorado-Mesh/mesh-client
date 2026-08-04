@@ -137,6 +137,7 @@ import {
   lxmfBodyContainsRncpRequestEnable,
   parseRncpReceiveDestShare,
 } from '@/shared/rncpRequestEnable';
+import { parseVoiceAudioRequest } from '@/shared/voice-types';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -1070,6 +1071,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 nickname: typeof p.nickname === 'string' ? p.nickname : null,
               },
               hubDestHash,
+              { onlyIfUnpinned: true },
             );
           }
 
@@ -1211,13 +1213,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
         handleReticulumVoiceTerminal({
           linkId: p.link_id ?? null,
           reason: p.reason ?? null,
+          callGeneration: useReticulumVoiceStore.getState().callGeneration,
         });
       }
       if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { message?: string; link_id?: string };
+        const p = evt.payload as {
+          message?: string;
+          link_id?: string;
+          remote_identity?: string;
+        };
         handleReticulumVoiceTerminal({
           linkId: typeof p.link_id === 'string' ? p.link_id : null,
           errorMessage: typeof p.message === 'string' && p.message.trim() ? p.message : 'failed',
+          remoteIdentity: typeof p.remote_identity === 'string' ? p.remote_identity : null,
           callGeneration: useReticulumVoiceStore.getState().callGeneration,
         });
       }
@@ -1360,19 +1368,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubVoiceAudioRef.current = window.electronAPI.reticulum.onVoiceAudio((evt) => {
       if (evt.type !== 'voice.audio' || !evt.payload || typeof evt.payload !== 'object') return;
       const p = evt.payload as { link_id?: string; channels?: number; samples_b64?: string };
-      if (typeof p.samples_b64 !== 'string') return;
+      const parsed = parseVoiceAudioRequest({
+        channels: p.channels,
+        samples_b64: p.samples_b64,
+      });
+      if ('error' in parsed) return;
       const active = useReticulumVoiceStore.getState().activeCall;
       const status = active?.status;
       if (status !== 'established' && status !== 'connecting') return;
       const eventLink = typeof p.link_id === 'string' ? p.link_id.trim().toLowerCase() : '';
       const activeLink = (active?.link_id ?? '').trim().toLowerCase();
-      if (eventLink && activeLink && eventLink !== activeLink) return;
-      const samples = decodeF32LeBase64(p.samples_b64);
-      const channels =
-        typeof p.channels === 'number' && Number.isInteger(p.channels) && p.channels > 0
-          ? p.channels
-          : 1;
-      useReticulumVoiceStore.getState().emitAudio(channels, samples);
+      // After establish, require an exact link_id match (drop stale/malformed frames).
+      if (status === 'established') {
+        if (!eventLink || !activeLink || eventLink !== activeLink) return;
+      } else if (eventLink && activeLink && eventLink !== activeLink) {
+        return;
+      }
+      const samples = decodeF32LeBase64(parsed.samples_b64);
+      useReticulumVoiceStore.getState().emitAudio(parsed.channels, samples);
     });
   }, [handleSidecarEvent]);
 
