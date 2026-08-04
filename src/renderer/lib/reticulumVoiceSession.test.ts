@@ -6,11 +6,14 @@ import { pushAppToast } from '@/renderer/components/Toast';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '../stores/reticulumVoiceStore';
 import {
+  isOutgoingConnectToneSequenceActive,
   playVoiceBusyTone,
   playVoiceFailTone,
-  startVoiceDialTone,
+  playVoiceReorderTone,
+  startOutgoingConnectToneSequence,
   startVoiceRingback,
   stopVoiceCallTones,
+  stopVoiceProgressTones,
 } from './reticulumVoiceCallTones';
 import {
   handleReticulumVoiceTerminal,
@@ -31,10 +34,13 @@ vi.mock('@/renderer/components/Toast', () => ({
 }));
 
 vi.mock('./reticulumVoiceCallTones', () => ({
-  startVoiceDialTone: vi.fn(),
+  startOutgoingConnectToneSequence: vi.fn(),
+  isOutgoingConnectToneSequenceActive: vi.fn(() => false),
   startVoiceRingback: vi.fn(),
   stopVoiceCallTones: vi.fn(),
+  stopVoiceProgressTones: vi.fn(),
   playVoiceBusyTone: vi.fn(),
+  playVoiceReorderTone: vi.fn(),
   playVoiceFailTone: vi.fn(),
 }));
 
@@ -77,9 +83,11 @@ describe('reticulumVoiceSession', () => {
     vi.mocked(pushAppToast).mockReset();
     vi.mocked(playVoiceFailTone).mockReset();
     vi.mocked(playVoiceBusyTone).mockReset();
+    vi.mocked(playVoiceReorderTone).mockReset();
     vi.mocked(stopVoiceCallTones).mockReset();
-    vi.mocked(startVoiceDialTone).mockReset();
+    vi.mocked(startOutgoingConnectToneSequence).mockReset();
     vi.mocked(startVoiceRingback).mockReset();
+    vi.mocked(isOutgoingConnectToneSequenceActive).mockReturnValue(false);
     Object.assign(window, {
       electronAPI: {
         reticulum: { voice: voiceApi },
@@ -98,7 +106,7 @@ describe('reticulumVoiceSession', () => {
     vi.unstubAllGlobals();
   });
 
-  it('dials with peer identity_hash and starts dial tone not ringback', async () => {
+  it('dials with peer identity_hash and starts connect tone sequence', async () => {
     const dest = 'b'.repeat(32);
     const id = 'a'.repeat(32);
     useReticulumPeerStore.getState().updatePeer(dest, {
@@ -108,7 +116,7 @@ describe('reticulumVoiceSession', () => {
     await reticulumVoiceCallPeer(dest);
     expect(voiceApi.call).toHaveBeenCalledWith({ identity_hash: id });
     expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('calling');
-    expect(startVoiceDialTone).toHaveBeenCalled();
+    expect(startOutgoingConnectToneSequence).toHaveBeenCalledWith(id);
     expect(startVoiceRingback).not.toHaveBeenCalled();
   });
 
@@ -134,19 +142,20 @@ describe('reticulumVoiceSession', () => {
     expect(voiceApi.hangup).toHaveBeenCalled();
   });
 
-  it('clears optimistic call with busy tone on connect-style dial failure', async () => {
+  it('clears optimistic call with reorder tone on connect-style dial failure', async () => {
     voiceApi.call.mockResolvedValue({ ok: false, error: 'discovery failed' });
     await reticulumVoiceCallPeer('f'.repeat(32));
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
-    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
   });
 
-  it('syncReticulumVoiceProgressTones maps calling→dial and connecting→ringback', () => {
+  it('syncReticulumVoiceProgressTones maps calling→connect sequence and connecting→ringback', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('a'.repeat(32));
     syncReticulumVoiceProgressTones('calling');
-    expect(startVoiceDialTone).toHaveBeenCalled();
+    expect(startOutgoingConnectToneSequence).toHaveBeenCalledWith('a'.repeat(32));
     expect(startVoiceRingback).not.toHaveBeenCalled();
-    vi.mocked(startVoiceDialTone).mockClear();
+    vi.mocked(startOutgoingConnectToneSequence).mockClear();
     syncReticulumVoiceProgressTones('connecting');
     expect(startVoiceRingback).toHaveBeenCalled();
     syncReticulumVoiceProgressTones('ringing');
@@ -154,19 +163,65 @@ describe('reticulumVoiceSession', () => {
     vi.mocked(stopVoiceCallTones).mockClear();
     syncReticulumVoiceProgressTones('established');
     expect(stopVoiceCallTones).toHaveBeenCalled();
+    vi.mocked(stopVoiceProgressTones).mockClear();
+    syncReticulumVoiceProgressTones(null);
+    expect(stopVoiceProgressTones).toHaveBeenCalled();
+    expect(stopVoiceCallTones).toHaveBeenCalledTimes(1); // established only
   });
 
-  it('voice.error connect-fail plays busy tone, toasts, and hangs up', () => {
+  it('connecting/ringing skip ringback while connect sequence is still active', () => {
+    vi.mocked(isOutgoingConnectToneSequenceActive).mockReturnValue(true);
+    syncReticulumVoiceProgressTones('connecting');
+    syncReticulumVoiceProgressTones('ringing');
+    expect(startVoiceRingback).not.toHaveBeenCalled();
+  });
+
+  it('voice.error connect-fail plays reorder tone, toasts, and hangs up', () => {
     useReticulumVoiceStore.getState().beginOutgoing('2'.repeat(32));
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     handleReticulumVoiceTerminal({
       errorMessage: 'active call is not established',
     });
-    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
     expect(voiceApi.hangup).toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
     warnSpy.mockRestore();
+  });
+
+  it('voice.error announce discovery timeout is connectFailed (reorder + toast)', () => {
+    useReticulumVoiceStore.getState().beginOutgoing('2'.repeat(32));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    handleReticulumVoiceTerminal({
+      errorMessage: 'remote LXST telephony announce was not discovered before timeout',
+    });
+    expect(playVoiceReorderTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
+    expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
+    warnSpy.mockRestore();
+  });
+
+  it('terminal no-answer plays busy tone and toasts', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+    });
+    handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: 'ring_timeout' });
+    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).not.toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
+  });
+
+  it('terminal unexpected drop plays reorder tone and toasts', () => {
+    useReticulumVoiceStore.getState().applyUpdate({
+      type: 'outgoing',
+      link_id: '1'.repeat(32),
+      remote_identity: '2'.repeat(32),
+    });
+    handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: 'encode exploded' });
+    expect(playVoiceReorderTone).toHaveBeenCalled();
+    expect(pushAppToast).toHaveBeenCalled();
   });
 
   it('terminal rejected plays fail tone without toast', () => {
@@ -245,6 +300,7 @@ describe('reticulumVoiceSession', () => {
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
     expect(playVoiceFailTone).not.toHaveBeenCalled();
     expect(playVoiceBusyTone).not.toHaveBeenCalled();
+    expect(playVoiceReorderTone).not.toHaveBeenCalled();
   });
 
   it('terminal busy plays busy tone and toasts', () => {
@@ -255,27 +311,28 @@ describe('reticulumVoiceSession', () => {
     });
     handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: 'busy' });
     expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).not.toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
 
-  it('outgoing terminated with null reason plays busy tone and connect-failed toast', () => {
+  it('outgoing terminated with null reason plays reorder tone and connect-failed toast', () => {
     useReticulumVoiceStore.getState().applyUpdate({
       type: 'outgoing',
       link_id: '1'.repeat(32),
       remote_identity: '2'.repeat(32),
     });
     handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: null });
-    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
 
-  it('outgoing terminated with terminated reason plays busy tone and toasts', () => {
+  it('outgoing terminated with terminated reason plays reorder tone and toasts', () => {
     // beginOutgoing has empty link_id; terminate without link_id matches pending outgoing.
     useReticulumVoiceStore.getState().beginOutgoing('2'.repeat(32));
     handleReticulumVoiceTerminal({ reason: 'terminated' });
-    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
@@ -293,6 +350,7 @@ describe('reticulumVoiceSession', () => {
     });
     handleReticulumVoiceTerminal({ linkId: '1'.repeat(32), reason: null });
     expect(playVoiceBusyTone).not.toHaveBeenCalled();
+    expect(playVoiceReorderTone).not.toHaveBeenCalled();
     expect(playVoiceFailTone).not.toHaveBeenCalled();
     expect(pushAppToast).not.toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
@@ -423,7 +481,7 @@ describe('reticulumVoiceSession', () => {
     expect(useReticulumVoiceStore.getState().activeCall?.status).toBe('calling');
     await vi.advanceTimersByTimeAsync(RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS + 10);
     expect(voiceApi.hangup).toHaveBeenCalled();
-    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
     expect(useReticulumVoiceStore.getState().activeCall).toBeNull();
   });
@@ -455,7 +513,7 @@ describe('reticulumVoiceSession', () => {
     useReticulumVoiceStore.setState({ callGeneration: generation });
     await vi.advanceTimersByTimeAsync(RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS + 10);
     expect(voiceApi.hangup).toHaveBeenCalled();
-    expect(playVoiceBusyTone).toHaveBeenCalled();
+    expect(playVoiceReorderTone).toHaveBeenCalled();
     expect(pushAppToast).toHaveBeenCalled();
   });
 });

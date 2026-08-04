@@ -7,6 +7,7 @@ import i18n from '@/renderer/lib/i18n';
 import {
   playVoiceBusyTone,
   playVoiceFailTone,
+  playVoiceReorderTone,
   stopVoiceCallTones,
 } from '@/renderer/lib/reticulumVoiceCallTones';
 import {
@@ -27,18 +28,20 @@ export function humanizeVoiceIpcError(raw: string | null | undefined): string {
   const kind = classifyVoiceTerminalReason(msg);
   if (kind === 'connectFailed') return i18n.t('reticulumVoice.toast.connectFailed');
   if (kind === 'busy') return i18n.t('reticulumVoice.toast.busy');
+  if (kind === 'noAnswer') return i18n.t('reticulumVoice.toast.noAnswer');
   return i18n.t('reticulumVoice.errors.callFailed');
 }
 
-/** Shared busy/fail tones + toast for terminal outcomes (hangup + WS terminate). */
+/** Shared reorder/busy/fail tones + toast for terminal outcomes (hangup + WS terminate). */
 export function applyVoiceTerminalFeedback(
   reason: string | null | undefined,
   opts?: { showToast?: boolean },
 ): VoiceTerminalKind {
   const kind = classifyVoiceTerminalReason(reason);
   stopVoiceCallTones();
-  if (kind === 'busy' || kind === 'connectFailed') playVoiceBusyTone();
-  else if (kind === 'noAnswer' || kind === 'failed' || kind === 'rejected') playVoiceFailTone();
+  if (kind === 'connectFailed' || kind === 'failed') playVoiceReorderTone();
+  else if (kind === 'busy' || kind === 'noAnswer') playVoiceBusyTone();
+  else if (kind === 'rejected') playVoiceFailTone();
 
   const showToast = opts?.showToast ?? shouldToastVoiceTerminal(kind);
   const toastKey = voiceToastKeyForTerminal(kind);

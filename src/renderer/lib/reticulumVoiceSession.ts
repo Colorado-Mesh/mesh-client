@@ -14,9 +14,11 @@ import {
   resolveVoiceDialIdentityHash,
 } from '@/renderer/lib/reticulumVoiceAudio';
 import {
-  startVoiceDialTone,
+  isOutgoingConnectToneSequenceActive,
+  startOutgoingConnectToneSequence,
   startVoiceRingback,
   stopVoiceCallTones,
+  stopVoiceProgressTones,
 } from '@/renderer/lib/reticulumVoiceCallTones';
 import {
   applyVoiceTerminalFeedback,
@@ -727,10 +729,13 @@ export function handleReticulumVoiceTerminal(opts: {
 /** Sync dial / ringback / stop tones from active call status (overlay / runtime). */
 export function syncReticulumVoiceProgressTones(status: string | null | undefined): void {
   if (status === 'calling') {
-    startVoiceDialTone();
+    const remote = useReticulumVoiceStore.getState().activeCall?.remote_identity ?? '';
+    startOutgoingConnectToneSequence(remote);
     return;
   }
   if (status === 'connecting' || status === 'ringing') {
+    // Outbound sequence owns dial→DTMF→ring; do not skip ahead when WS updates early.
+    if (isOutgoingConnectToneSequenceActive()) return;
     startVoiceRingback();
     return;
   }
@@ -740,7 +745,8 @@ export function syncReticulumVoiceProgressTones(status: string | null | undefine
     return;
   }
   if (!status) {
-    stopVoiceCallTones();
+    // Progress tones only — do not cancel one-shot busy/fail after terminal feedback.
+    stopVoiceProgressTones();
     clearSafetyHangupTimer();
   }
 }

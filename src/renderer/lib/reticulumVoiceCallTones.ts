@@ -12,6 +12,41 @@ let busyStopTimer: ReturnType<typeof setTimeout> | null = null;
 let dialOscillators: OscillatorNode[] = [];
 let dialGain: GainNode | null = null;
 
+/** Outbound connect sequence: 2s dial → DTMF → ringback. */
+let connectSequenceActive = false;
+let connectSequenceHash: string | null = null;
+let dialPhaseTimer: ReturnType<typeof setTimeout> | null = null;
+let dtmfToRingTimer: ReturnType<typeof setTimeout> | null = null;
+
+const OUTGOING_DIAL_MS = 2000;
+const DTMF_ON_S = 0.08;
+const DTMF_GAP_S = 0.05;
+/** 4 × on + 3 × gap (last gap omitted) = 470ms. */
+export const DTMF_BURST_MS = Math.round(4 * DTMF_ON_S * 1000 + 3 * DTMF_GAP_S * 1000);
+
+/** Standard DTMF keypad: nybble 0–F → 0–9, A–D, *, #. */
+const DTMF_KEY_BY_NYBBLE = '0123456789ABCD*#' as const;
+
+/** Classic DTMF row+col Hz per key. */
+const DTMF_FREQS: Readonly<Record<string, readonly [number, number]>> = {
+  '1': [697, 1209],
+  '2': [697, 1336],
+  '3': [697, 1477],
+  A: [697, 1633],
+  '4': [770, 1209],
+  '5': [770, 1336],
+  '6': [770, 1477],
+  B: [770, 1633],
+  '7': [852, 1209],
+  '8': [852, 1336],
+  '9': [852, 1477],
+  C: [852, 1633],
+  '*': [941, 1209],
+  '0': [941, 1336],
+  '#': [941, 1477],
+  D: [941, 1633],
+};
+
 function getSharedAudioContext(): AudioContext | null {
   try {
     if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
@@ -22,6 +57,24 @@ function getSharedAudioContext(): AudioContext | null {
     // catch-no-log-ok: AudioContext unavailable in test/headless environments
     return null;
   }
+}
+
+function clearOutgoingConnectToneSequenceTimers(): void {
+  if (dialPhaseTimer != null) {
+    clearTimeout(dialPhaseTimer);
+    dialPhaseTimer = null;
+  }
+  if (dtmfToRingTimer != null) {
+    clearTimeout(dtmfToRingTimer);
+    dtmfToRingTimer = null;
+  }
+  connectSequenceActive = false;
+  connectSequenceHash = null;
+}
+
+/** True while dial→DTMF phase owns the timeline (before ringback starts). */
+export function isOutgoingConnectToneSequenceActive(): boolean {
+  return connectSequenceActive;
 }
 
 /** @internal Test helper — reset singleton between tests. */
@@ -98,10 +151,46 @@ function stopDialToneNodes(): void {
   }
 }
 
-/** UK double-ring: 0.4s on, 0.2s gap, 0.4s on, then ~1s silence (interval = 2s). */
+function stopRingbackInterval(): void {
+  if (ringbackTimer != null) {
+    clearInterval(ringbackTimer);
+    ringbackTimer = null;
+  }
+}
+
+/** Map peer identity/destination hash → 4 DTMF keys (stable per peer). */
+export function dtmfKeysFromPeerHash(hash: string): string {
+  const hex = hash
+    .replace(/[^0-9a-f]/gi, '')
+    .toLowerCase()
+    .padEnd(4, '0')
+    .slice(0, 4);
+  let out = '';
+  for (const c of hex) {
+    out += DTMF_KEY_BY_NYBBLE[parseInt(c, 16)] ?? '0';
+  }
+  return out;
+}
+
+function playDtmfBurst(keys: string): void {
+  withRunningContext((ctx) => {
+    const now = ctx.currentTime;
+    const period = DTMF_ON_S + DTMF_GAP_S;
+    for (let i = 0; i < keys.length; i += 1) {
+      const key = keys.charAt(i);
+      if (!(key in DTMF_FREQS)) continue;
+      const freqs = DTMF_FREQS[key];
+      const t = now + i * period;
+      playTonePulse(ctx, freqs[0], DTMF_ON_S, t);
+      playTonePulse(ctx, freqs[1], DTMF_ON_S, t);
+    }
+  });
+}
+
+/** UK double-ring: 0.4s on, 0.2s off, 0.4s on, 2.0s silence (3.0s cycle); 400+450 Hz. */
 const UK_RING_ON_S = 0.4;
 const UK_RING_GAP_S = 0.2;
-const UK_RINGBACK_INTERVAL_MS = 2000;
+const UK_RINGBACK_INTERVAL_MS = 3000;
 
 function scheduleRingbackBurst(ctx: AudioContext): void {
   const now = ctx.currentTime;
@@ -117,10 +206,7 @@ export function startVoiceDialTone(): void {
   if (isNotifMuted()) return;
   if (dialOscillators.length > 0) return;
   // Stop ringback cadence; keep dial nodes separate from pulse timers.
-  if (ringbackTimer != null) {
-    clearInterval(ringbackTimer);
-    ringbackTimer = null;
-  }
+  stopRingbackInterval();
   withRunningContext((ctx) => {
     if (dialOscillators.length > 0) return;
     const gain = ctx.createGain();
@@ -152,36 +238,106 @@ export function startVoiceRingback(): void {
   }, UK_RINGBACK_INTERVAL_MS);
 }
 
-/** Stop dial / ringback / cancel pending busy cadence. */
-export function stopVoiceCallTones(): void {
+/**
+ * Outbound connect cadence: dial 2s → rapid 4-digit peer DTMF → UK ringback.
+ * Idempotent for the same peer hash while the dial/DTMF phase is active.
+ */
+export function startOutgoingConnectToneSequence(peerHash: string): void {
+  const hash = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase() || '0000';
+  if (connectSequenceActive && connectSequenceHash === hash) return;
+
+  clearOutgoingConnectToneSequenceTimers();
   stopDialToneNodes();
-  if (ringbackTimer != null) {
-    clearInterval(ringbackTimer);
-    ringbackTimer = null;
-  }
+  stopRingbackInterval();
+
+  connectSequenceActive = true;
+  connectSequenceHash = hash;
+
+  startVoiceDialTone();
+  dialPhaseTimer = setTimeout(() => {
+    dialPhaseTimer = null;
+    if (!connectSequenceActive) return;
+    stopDialToneNodes();
+    playDtmfBurst(dtmfKeysFromPeerHash(hash));
+    dtmfToRingTimer = setTimeout(() => {
+      dtmfToRingTimer = null;
+      if (!connectSequenceActive) return;
+      connectSequenceActive = false;
+      connectSequenceHash = null;
+      startVoiceRingback();
+    }, DTMF_BURST_MS);
+  }, OUTGOING_DIAL_MS);
+}
+
+/** Stop dial / ringback / cancel pending connect sequence — leaves one-shot busy/fail alone. */
+export function stopVoiceProgressTones(): void {
+  clearOutgoingConnectToneSequenceTimers();
+  stopDialToneNodes();
+  stopRingbackInterval();
+}
+
+/** Stop dial / ringback / cancel pending busy cadence marker. */
+export function stopVoiceCallTones(): void {
+  stopVoiceProgressTones();
   if (busyStopTimer != null) {
     clearTimeout(busyStopTimer);
     busyStopTimer = null;
   }
 }
 
-/** Short repeating busy cadence (~0.5s on/off), then stop. */
+const BUSY_DUAL_HZ = [480, 620] as const;
+/** Cap one-shot reorder / busy playback (wall clock). */
+const TERMINAL_TONE_MAX_MS = 1500;
+
+function playDualBusyPulse(ctx: AudioContext, onDurS: number, startTime: number): void {
+  for (const freq of BUSY_DUAL_HZ) {
+    playTonePulse(ctx, freq, onDurS, startTime);
+  }
+}
+
+function scheduleCadencePulses(
+  ctx: AudioContext,
+  onDurS: number,
+  periodS: number,
+  pulseCount: number,
+): void {
+  const now = ctx.currentTime;
+  for (let i = 0; i < pulseCount; i += 1) {
+    playDualBusyPulse(ctx, onDurS, now + i * periodS);
+  }
+}
+
+/**
+ * Reorder / fast busy: 480+620 Hz, 0.25s on / 0.25s off (≤1.5s → 3 pulses).
+ * Used for connect-fail and unexpected drop.
+ */
+export function playVoiceReorderTone(): void {
+  stopVoiceCallTones();
+  if (isNotifMuted()) return;
+  withRunningContext((ctx) => {
+    scheduleCadencePulses(ctx, 0.25, 0.5, 3);
+  });
+  busyStopTimer = setTimeout(() => {
+    busyStopTimer = null;
+  }, TERMINAL_TONE_MAX_MS);
+}
+
+/**
+ * Standard busy: 480+620 Hz, 0.5s on / 0.5s off (≤1.5s → 2 pulses).
+ * Used for line-busy and no-answer.
+ */
 export function playVoiceBusyTone(): void {
   stopVoiceCallTones();
   if (isNotifMuted()) return;
   withRunningContext((ctx) => {
-    const now = ctx.currentTime;
-    for (let i = 0; i < 6; i += 1) {
-      const t = now + i;
-      playTonePulse(ctx, 480, 0.45, t);
-    }
+    scheduleCadencePulses(ctx, 0.5, 1.0, 2);
   });
   busyStopTimer = setTimeout(() => {
     busyStopTimer = null;
-  }, 6500);
+  }, TERMINAL_TONE_MAX_MS);
 }
 
-/** Distinct short down-tone for no-answer / reject / generic fail. */
+/** Distinct short down-tone for reject only. */
 export function playVoiceFailTone(): void {
   stopVoiceCallTones();
   if (isNotifMuted()) return;

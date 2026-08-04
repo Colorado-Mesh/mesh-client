@@ -22,6 +22,12 @@ describe('classifyVoiceTerminalReason', () => {
 
   it('maps connect-phase failures to connectFailed', () => {
     expect(classifyVoiceTerminalReason('discovery timeout')).toBe('connectFailed');
+    // Exact lxst OutgoingCallFailed copy — "discovered" must not fall through to noAnswer.
+    expect(
+      classifyVoiceTerminalReason(
+        'remote LXST telephony announce was not discovered before timeout',
+      ),
+    ).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('safety_timeout')).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('connect_failed')).toBe('connectFailed');
     expect(classifyVoiceTerminalReason('active call is not established')).toBe('connectFailed');
@@ -29,16 +35,17 @@ describe('classifyVoiceTerminalReason', () => {
     expect(classifyVoiceTerminalReason('no path')).toBe('connectFailed');
   });
 
-  it('maps toast keys; only busy and connectFailed toast by default', () => {
+  it('maps toast keys; toast busy, connectFailed, noAnswer, failed', () => {
     expect(voiceToastKeyForTerminal('busy')).toBe('reticulumVoice.toast.busy');
     expect(voiceToastKeyForTerminal('connectFailed')).toBe('reticulumVoice.toast.connectFailed');
     expect(voiceToastKeyForTerminal('noAnswer')).toBe('reticulumVoice.toast.noAnswer');
+    expect(voiceToastKeyForTerminal('failed')).toBe('reticulumVoice.toast.failed');
     expect(voiceToastKeyForTerminal('completed')).toBeNull();
     expect(shouldToastVoiceTerminal('busy')).toBe(true);
     expect(shouldToastVoiceTerminal('connectFailed')).toBe(true);
+    expect(shouldToastVoiceTerminal('noAnswer')).toBe(true);
+    expect(shouldToastVoiceTerminal('failed')).toBe(true);
     expect(shouldToastVoiceTerminal('rejected')).toBe(false);
-    expect(shouldToastVoiceTerminal('noAnswer')).toBe(false);
-    expect(shouldToastVoiceTerminal('failed')).toBe(false);
     expect(shouldToastVoiceTerminal('completed')).toBe(false);
   });
 });

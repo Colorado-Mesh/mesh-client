@@ -29,8 +29,11 @@ export function classifyVoiceTerminalReason(reason: string | null | undefined): 
   }
   if (r === 'rejected' || r.includes('reject')) return 'rejected';
   // Connect-phase failures (before / without answered media) → busy tone + connect toast.
+  // Match "discover" so both "discovery timeout" and lxst "was not discovered" hit here
+  // before the generic timeout → noAnswer rule below.
   if (
-    r.includes('discovery') ||
+    r.includes('discover') ||
+    r.includes('announce') ||
     r.includes('unreachable') ||
     r.includes('safety') ||
     r.includes('not established') ||
@@ -62,7 +65,7 @@ export function voiceToastKeyForTerminal(kind: VoiceTerminalKind): string | null
     case 'connectFailed':
       return 'reticulumVoice.toast.connectFailed';
     case 'rejected':
-      // Kept for i18n literal registration; toast gated off in applyVoiceTerminalFeedback.
+      // Kept for i18n literal registration; toast gated off (fail tone only).
       return 'reticulumVoice.toast.rejected';
     case 'noAnswer':
       return 'reticulumVoice.toast.noAnswer';
@@ -73,7 +76,7 @@ export function voiceToastKeyForTerminal(kind: VoiceTerminalKind): string | null
   }
 }
 
-/** Only connect-failure and line-busy toast by default. */
+/** Toast for line-busy, connect-fail, no-answer, and unexpected drop. */
 export function shouldToastVoiceTerminal(kind: VoiceTerminalKind): boolean {
-  return kind === 'busy' || kind === 'connectFailed';
+  return kind === 'busy' || kind === 'connectFailed' || kind === 'noAnswer' || kind === 'failed';
 }

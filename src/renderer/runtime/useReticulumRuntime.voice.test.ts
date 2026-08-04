@@ -32,8 +32,11 @@ vi.mock('@/renderer/components/Toast', () => ({
 
 vi.mock('@/renderer/lib/reticulumVoiceCallTones', () => ({
   startVoiceRingback: vi.fn(),
+  startOutgoingConnectToneSequence: vi.fn(),
+  isOutgoingConnectToneSequenceActive: vi.fn(() => false),
   stopVoiceCallTones: vi.fn(),
   playVoiceBusyTone: vi.fn(),
+  playVoiceReorderTone: vi.fn(),
   playVoiceFailTone: vi.fn(),
   syncReticulumVoiceProgressTones: vi.fn(),
 }));
