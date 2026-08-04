@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 
 import { ReticulumVoiceOverlay } from './ReticulumVoiceOverlay';
@@ -32,6 +33,7 @@ describe('ReticulumVoiceOverlay', () => {
     setMuted.mockReset();
     act(() => {
       useReticulumVoiceStore.getState().clearCall();
+      useReticulumPeerStore.getState().clearPeers();
     });
   });
 
@@ -134,8 +136,24 @@ describe('ReticulumVoiceOverlay', () => {
 
   it('shows hangup while optimistic calling with TX/RX counters', async () => {
     const user = userEvent.setup();
+    const dest = 'c'.repeat(32);
+    const id = 'b'.repeat(32);
     act(() => {
-      useReticulumVoiceStore.getState().beginOutgoing('b'.repeat(32));
+      useReticulumPeerStore.setState({
+        peers: new Map([
+          [
+            dest,
+            {
+              destination_hash: dest,
+              identity_hash: id,
+              display_name: 'Dial Peer',
+              hops: 1,
+            },
+          ],
+        ]),
+        peersRevision: 1,
+      });
+      useReticulumVoiceStore.getState().beginOutgoing(id);
       useReticulumVoiceStore.getState().applyStats({
         tx_frames: 4,
         tx_packets: 3,
@@ -144,11 +162,43 @@ describe('ReticulumVoiceOverlay', () => {
     });
     const { container } = render(<ReticulumVoiceOverlay />);
     expect(screen.getByRole('status', { name: /calling/i })).toBeTruthy();
+    expect(screen.getByText('Dial Peer')).toBeTruthy();
+    expect(screen.queryByText(id)).toBeNull();
     expect(screen.getByText(/TX 4/i)).toBeTruthy();
     expect(screen.getByText(/RX 1/i)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /hang up voice call/i }));
     expect(hangup).toHaveBeenCalled();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows peer display name on incoming dialog instead of raw hash', () => {
+    const dest = 'd'.repeat(32);
+    const id = 'e'.repeat(32);
+    act(() => {
+      useReticulumPeerStore.setState({
+        peers: new Map([
+          [
+            dest,
+            {
+              destination_hash: dest,
+              identity_hash: id,
+              display_name: 'Incoming Peer',
+              hops: 0,
+            },
+          ],
+        ]),
+        peersRevision: 1,
+      });
+      useReticulumVoiceStore.getState().applyIncoming({
+        link_id: 'a'.repeat(32),
+        remote_identity: id,
+        role: 'incoming',
+        status: 'ringing',
+      });
+    });
+    render(<ReticulumVoiceOverlay />);
+    expect(screen.getByText('Incoming Peer')).toBeTruthy();
+    expect(screen.queryByText(id)).toBeNull();
   });
 });

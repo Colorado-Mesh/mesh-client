@@ -2,6 +2,7 @@ import { Mic, MicOff, PhoneOff } from 'lucide-react-motion';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { resolveReticulumVoiceRemoteLabel } from '@/renderer/lib/reticulumVoiceRemoteLabel';
 import {
   reticulumVoiceAnswer,
   reticulumVoiceHangup,
@@ -11,6 +12,7 @@ import {
   stopReticulumVoiceMedia,
   syncReticulumVoiceProgressTones,
 } from '@/renderer/lib/reticulumVoiceSession';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 import { isReticulumIncomingRinging } from '@/shared/voice-types';
 
@@ -46,6 +48,8 @@ export function ReticulumVoiceOverlay() {
   const callStartedAtMs = useReticulumVoiceStore((s) => s.callStartedAtMs);
   const callGeneration = useReticulumVoiceStore((s) => s.callGeneration);
   const stats = useReticulumVoiceStore((s) => s.stats);
+  // Re-resolve name when peer table updates (dial may start before peers hydrate).
+  useReticulumPeerStore((s) => s.peersRevision);
   const [nowMs, setNowMs] = useState<number | null>(null);
 
   const activeStatus = active?.status ?? null;
@@ -90,6 +94,11 @@ export function ReticulumVoiceOverlay() {
       active.status === 'established' ||
       active.status === 'ringing');
 
+  const remoteHash = showIncoming
+    ? (incoming?.remote_identity ?? '')
+    : (active?.remote_identity ?? '');
+  const remoteLabel = remoteHash ? resolveReticulumVoiceRemoteLabel(remoteHash) : '';
+
   if (!showIncoming && !showInCall) return null;
 
   if (showIncoming && incoming) {
@@ -104,7 +113,9 @@ export function ReticulumVoiceOverlay() {
           <h2 className="text-bright-green mb-2 text-lg font-semibold">
             {t('reticulumVoice.incomingTitle')}
           </h2>
-          <p className="mb-4 font-mono text-sm text-gray-300">{incoming.remote_identity}</p>
+          <p className="mb-4 truncate text-sm text-gray-300" title={remoteHash}>
+            {remoteLabel}
+          </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -144,8 +155,8 @@ export function ReticulumVoiceOverlay() {
         >
           {elapsedLabel}
         </span>
-        <span className="max-w-[8rem] truncate font-mono text-[10px] text-gray-400">
-          {active.remote_identity}
+        <span className="max-w-[8rem] truncate text-[10px] text-gray-300" title={remoteHash}>
+          {remoteLabel}
         </span>
         <button
           type="button"
