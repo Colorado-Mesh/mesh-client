@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  assertApplicationsSymlink,
   VerificationFailure,
   fail,
   isCompleteAppBundle,
@@ -44,5 +45,31 @@ describe('verify-mac-packaging helpers', () => {
 
   it('isCompleteAppBundle returns false for missing launcher paths', () => {
     expect(isCompleteAppBundle('/nonexistent/Mesh-client.app')).toBe(false);
+  });
+
+  it('assertApplicationsSymlink accepts Applications → /Applications', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-apps-link-'));
+    try {
+      symlinkSync('/Applications', join(dir, 'Applications'));
+      expect(() => assertApplicationsSymlink(dir)).not.toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('assertApplicationsSymlink rejects missing or wrong-target links', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-apps-link-bad-'));
+    try {
+      expect(() => assertApplicationsSymlink(dir)).toThrow(VerificationFailure);
+
+      writeFileSync(join(dir, 'Applications'), 'not-a-symlink');
+      expect(() => assertApplicationsSymlink(dir)).toThrow(/must be a symlink/);
+
+      rmSync(join(dir, 'Applications'));
+      symlinkSync('/tmp', join(dir, 'Applications'));
+      expect(() => assertApplicationsSymlink(dir)).toThrow(/must target \/Applications/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

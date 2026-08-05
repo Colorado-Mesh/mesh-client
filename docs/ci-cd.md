@@ -337,6 +337,7 @@ Post-build smoke tests:
 - **`scripts/verify-mac-packaging.mjs`** — macOS packaging guard (runs after `dist:mac` / `dist:mac:publish` and in `packaging-smoke` on tag releases). Validates:
   - **`.dmg` and `.zip`** artifacts exist under `release/` with minimum size thresholds
   - Bundle layout via **direct `.app`** (local dist), **`ditto -xk` ZIP extract** (CI artifact path — preserves symlinks), and **`hdiutil attach` DMG mount**
+  - DMG mount root includes an **`Applications` → `/Applications` symlink** (drag-to-install layout from `electron-builder.yml` `dmg.contents`)
   - **Electron Framework symlinks** (`Versions/Current`, root `Electron Framework`) remain symlinks — `upload-artifact` dereferences them and breaks the bundle (~3× framework bloat)
   - Thin **MacOS launcher** + full **Electron Framework** binary sizes; bundled **Reticulum sidecar** present
   - CI uploads **DMG/ZIP only** — never raw `Mesh-client.app` (see comment in `release.yaml` **Upload macOS Artifact**)

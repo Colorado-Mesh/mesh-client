@@ -57,6 +57,15 @@ mac:
   # APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars at build time.
   # Automatically skipped when code signing is skipped (no cert available).
   notarize: true
+# Drag-to-install layout: app icon + Applications folder symlink (Finder DMG window).
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
 linux:
   target:
     - target: AppImage

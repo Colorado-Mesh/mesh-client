@@ -9,7 +9,16 @@
  * Local dist:mac path: validates on-disk .app plus DMG mount; skips ZIP extract when .app exists.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  statSync,
+} from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
@@ -144,6 +153,29 @@ function assertFrameworkSymlinks(bundleRoot, label) {
   }
 }
 
+/**
+ * Drag-to-install affordance: DMG root must include Applications → /Applications.
+ * Uses lstat (not existsSync) so the symlink is detected even if the target is absent
+ * (e.g. unit tests on non-macOS hosts where /Applications does not exist).
+ * @param {string} mountRoot
+ */
+function assertApplicationsSymlink(mountRoot) {
+  const applicationsLink = path.join(mountRoot, 'Applications');
+  let st;
+  try {
+    st = lstatSync(applicationsLink);
+  } catch {
+    fail(`Missing Applications symlink in dmg mount: ${applicationsLink}`);
+  }
+  if (!st.isSymbolicLink()) {
+    fail(`Applications must be a symlink to /Applications: ${applicationsLink}`);
+  }
+  const target = readlinkSync(applicationsLink);
+  if (target !== '/Applications') {
+    fail(`Applications symlink must target /Applications (got ${JSON.stringify(target)})`);
+  }
+}
+
 /** @param {string} bundleRoot @param {string} sourceLabel */
 function validateAppBundle(bundleRoot, sourceLabel) {
   const bundleName = path.basename(bundleRoot);
@@ -220,6 +252,7 @@ function mountDmgAndValidate(dmgPath, validate) {
   );
 
   try {
+    assertApplicationsSymlink(VERIFY_DMG_MOUNT_DIR);
     const bundle = findCompleteAppBundle(VERIFY_DMG_MOUNT_DIR);
     if (!bundle) {
       fail(`No complete ${APP_NAME}.app found inside dmg: ${dmgPath}`);
@@ -340,6 +373,7 @@ try {
 }
 
 export {
+  assertApplicationsSymlink,
   assertFrameworkSymlinks,
   collectAppBundles,
   collectArchives,

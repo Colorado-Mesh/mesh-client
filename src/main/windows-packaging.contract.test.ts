@@ -219,6 +219,12 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain('ditto -xk');
     expect(macVerify).toContain('hdiutil attach');
     expect(macVerify).toContain('isSymbolicLink');
+    expect(macVerify).toContain('assertApplicationsSymlink');
+    expect(macVerify).toContain('/Applications');
+
+    const electronBuilder = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
+    expect(electronBuilder).toContain('type: link');
+    expect(electronBuilder).toContain('path: /Applications');
 
     const linuxVerify = readFileSync(
       join(REPO_ROOT, 'scripts', 'verify-linux-packaging.mjs'),
