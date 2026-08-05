@@ -132,6 +132,13 @@ jobs:
           name: READ-ME-FIRST-test-build
           path: release-warnings
 
+      # Embeds buildChannel=test + Actions runUrl into the main bundle (support exports / logs).
+      - name: Stamp CI build info
+        env:
+          MESH_CLIENT_BUILD_CHANNEL: test
+          MESH_CLIENT_BUILD_WORKFLOW: Build Binaries (no release)
+        run: node scripts/ci-write-build-info-env.mjs
+
       - name: Build
         env:
           # ── macOS code signing (only effective on macOS runners) ────────────

@@ -208,6 +208,13 @@ jobs:
             exit 1
           fi
 
+      # Embeds buildChannel=release + tag + Actions runUrl into the main bundle (support exports / logs).
+      - name: Stamp CI build info
+        env:
+          MESH_CLIENT_BUILD_CHANNEL: release
+          MESH_CLIENT_BUILD_WORKFLOW: Build/Release Electron App
+        run: node scripts/ci-write-build-info-env.mjs
+
       - name: Build and Publish
         env:
           # electron-publish reads GH_TOKEN; GITHUB_TOKEN alone is not used for uploads

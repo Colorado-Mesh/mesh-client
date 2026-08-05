@@ -3,6 +3,7 @@ import fs from 'fs';
 import JSZip from 'jszip';
 import path from 'path';
 
+import { buildInfoForManifest, getBuildInfo } from '../shared/buildInfo';
 import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
@@ -92,6 +93,7 @@ export function validateDebugSnapshotJson(debugSnapshotJson: string): Record<str
 
 function buildManifest(mode: SupportBundleMode): Record<string, unknown> {
   const kind = mode === 'github' ? 'mesh-client-github-report' : 'mesh-client-developer-bundle';
+  const stamped = buildInfoForManifest(getBuildInfo());
   const manifest: Record<string, unknown> = {
     kind,
     bundleVersion: 1,
@@ -99,17 +101,33 @@ function buildManifest(mode: SupportBundleMode): Record<string, unknown> {
       typeof app !== 'undefined' && typeof app.getVersion === 'function'
         ? app.getVersion()
         : 'unknown',
+    buildChannel: stamped.buildChannel,
     platform: process.platform,
     arch: process.arch,
     packaged:
       typeof app !== 'undefined' && typeof app.isPackaged === 'boolean' ? app.isPackaged : false,
     capturedAt: new Date().toISOString(),
   };
+  if (stamped.buildInfo) {
+    manifest.buildInfo = stamped.buildInfo;
+  }
   const flatpakId = process.env.FLATPAK_ID;
   if (typeof flatpakId === 'string' && flatpakId.length > 0) {
     manifest.flatpakId = flatpakId;
   }
   return manifest;
+}
+
+function buildChannelReadmeLine(): string {
+  const stamped = buildInfoForManifest(getBuildInfo());
+  const runUrl =
+    stamped.buildInfo && typeof stamped.buildInfo.runUrl === 'string'
+      ? stamped.buildInfo.runUrl
+      : undefined;
+  if (runUrl) {
+    return `Build channel: ${stamped.buildChannel} — CI run: ${runUrl}`;
+  }
+  return `Build channel: ${stamped.buildChannel}`;
 }
 
 function buildReadme(mode: SupportBundleMode): string {
@@ -118,11 +136,13 @@ function buildReadme(mode: SupportBundleMode): string {
 
 This zip is safe to attach to public GitHub issues.
 
+${buildChannelReadmeLine()}
+
 Contents:
   debug-snapshot.json  — UI/session state for triage (Meshtastic, MeshCore, Reticulum sidecar)
   mesh-client.log      — Application log (current session)
   mesh-client.log.1    — Rotated log backup (if present)
-  manifest.json        — App version and platform metadata
+  manifest.json        — App version, buildChannel, and platform metadata
   README.txt           — This file
 
 Reticulum sidecar health, interface audit, and identity hashes are in debug-snapshot.json
@@ -141,6 +161,8 @@ The database may contain saved passwords (MeshCore room/repeater credentials, MQ
 settings, and similar secrets). Share this bundle only with maintainers via a
 private channel (email, Discord DM, etc.) when they request it.
 
+${buildChannelReadmeLine()}
+
 Contents:
   debug-snapshot.json           — UI/session state for triage (includes Reticulum sidecar snapshot)
   mesh-client.db                — SQLite database backup (contains secrets)
@@ -148,7 +170,7 @@ Contents:
   reticulum/mesh_client_stack.json — Sidecar stack state, mnemonic redacted (if present)
   mesh-client.log               — Application log (current session)
   mesh-client.log.1             — Rotated log backup (if present)
-  manifest.json                 — App version and platform metadata
+  manifest.json                 — App version, buildChannel, and platform metadata
   README.txt                    — This file
 `;
 }

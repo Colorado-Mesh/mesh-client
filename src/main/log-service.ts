@@ -5,6 +5,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { formatBuildInfoLogFragment } from '../shared/buildInfo';
 import { formatLogFileTimestamp } from '../shared/formatLogTimestamp';
 import {
   sanitizeForConsoleEcho,
@@ -23,7 +24,7 @@ export function formatRuntimeLogTag(): string {
       : 'unknown';
   const packaged =
     typeof app !== 'undefined' && typeof app.isPackaged === 'boolean' ? app.isPackaged : false;
-  return `platform=${process.platform} arch=${process.arch} os=${osRelease()} electron=${process.versions.electron} node=${process.versions.node} app=${appVersion} packaged=${packaged}`;
+  return `platform=${process.platform} arch=${process.arch} os=${osRelease()} electron=${process.versions.electron} node=${process.versions.node} app=${appVersion} packaged=${packaged} ${formatBuildInfoLogFragment()}`;
 }
 
 /**

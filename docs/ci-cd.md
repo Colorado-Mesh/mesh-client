@@ -99,13 +99,14 @@ Triggered by pushing a version tag (e.g., `v1.2.3`):
 
 1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release, writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
 2. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads), then prepends the schema compare note to the draft body. On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`).
-3. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
+3. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*:publish` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
+4. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
    - `macos-latest` → `pnpm run dist:mac:publish`
    - `ubuntu-latest` → `pnpm run dist:linux:publish`
    - `windows-latest` → `pnpm run dist:win:publish`
-4. Rebuilds native dependencies (`pnpm run rebuild`)
-5. Installs Linux build dependencies (`libudev-dev`, `rpm`)
-6. Publishes artifacts to GitHub Releases
+5. Rebuilds native dependencies (`pnpm run rebuild`)
+6. Installs Linux build dependencies (`libudev-dev`, `rpm`)
+7. Publishes artifacts to GitHub Releases
 
 Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
 
@@ -309,6 +310,18 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 ---
 
 ## Packaging smoke builds (`build.yaml` / `flatpak.yaml` / `release.yaml`)
+
+### Build channel stamp (test vs release)
+
+**Build Binaries** (`build.yaml`) and **Release** (`release.yaml`) run `scripts/ci-write-build-info-env.mjs` before packaging. That writes a JSON `MESH_CLIENT_BUILD_INFO` blob into `$GITHUB_ENV`, which `scripts/esbuild-main-build.mjs` embeds via esbuild `--define` into the main process.
+
+| Channel   | Workflow                       | Support-bundle `manifest.json`                            |
+| --------- | ------------------------------ | --------------------------------------------------------- |
+| `test`    | Build Binaries (no release)    | `buildChannel: "test"` + `buildInfo.runUrl` (Actions run) |
+| `release` | Build/Release Electron App     | `buildChannel: "release"` + `tag` + `buildInfo.runUrl`    |
+| `local`   | unmarked `pnpm run dist` / dev | `buildChannel: "local"` only                              |
+
+`appVersion` remains `package.json` semver (unchanged). Use `buildChannel` + `buildInfo.runUrl` when triaging Export for GitHub / Developer zips so a test binary is not mistaken for an official release. Startup logs include a compact fragment (`buildChannel=… run=… runId=… sha=…`).
 
 ### Schema compare vs last official release
 

@@ -215,7 +215,7 @@ describe('stripConsoleStyles (via appendLine + getRecentLines)', () => {
 });
 
 describe('formatRuntimeLogTag', () => {
-  it('includes platform, arch, electron, node, and packaged fields', async () => {
+  it('includes platform, arch, electron, node, packaged, and buildChannel fields', async () => {
     const { formatRuntimeLogTag } = await import('./log-service');
     const tag = formatRuntimeLogTag();
     expect(tag).toContain('platform=');
@@ -223,5 +223,6 @@ describe('formatRuntimeLogTag', () => {
     expect(tag).toContain('electron=');
     expect(tag).toContain('node=');
     expect(tag).toContain('packaged=');
+    expect(tag).toContain('buildChannel=local');
   });
 });
