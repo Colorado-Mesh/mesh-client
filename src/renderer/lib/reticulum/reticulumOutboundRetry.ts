@@ -1,11 +1,12 @@
 /**
- * After a manual LXMF resend succeeds, the store rekeys `pendingId` → `newHash`.
- * Delete the prior SQLite row when `pendingId` was a real LXMF hash (not an optimistic
- * `reticulum-pending-*` id), so failed+retried messages do not leave duplicate DB rows.
+ * After LXMF send (or resend) rekeys `pendingId` → `newHash`, delete the prior SQLite row.
+ * Covers:
+ * - optimistic `reticulum-pending-*` rows (otherwise orphan while still `sending`)
+ * - prior real LXMF hashes after a successful retry
  */
 export function shouldDeletePriorReticulumOutboundHash(
   pendingId: string,
   newHash: string,
 ): boolean {
-  return pendingId !== newHash && !pendingId.startsWith('reticulum-pending-');
+  return pendingId !== newHash && pendingId.length > 0 && newHash.length > 0;
 }

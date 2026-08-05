@@ -172,12 +172,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           ? Math.trunc(Number(m.next_delivery_attempt_at))
           : null;
 
-      if (
-        messageHash &&
-        !messageHash.startsWith('reticulum-pending-') &&
-        deliveryStatus &&
-        deliveryStatus !== 'sending'
-      ) {
+      // Drop optimistic twins even while still `sending` — otherwise a stuck Direct
+      // Completes leaves reticulum-pending-* + real-hash duplicates after hydrate.
+      if (messageHash && !messageHash.startsWith('reticulum-pending-')) {
         db.prepareOnce(
           `DELETE FROM reticulum_messages
            WHERE identity_id = ? AND sender_id = ? AND payload = ?

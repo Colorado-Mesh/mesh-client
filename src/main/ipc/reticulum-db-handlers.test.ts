@@ -300,6 +300,38 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_method).toBe('paper');
   });
 
+  it('saveReticulumMessage drops reticulum-pending twins while still sending', () => {
+    const identityId = 'id-rt-pending-orphan';
+    const senderId = 'cc'.repeat(16);
+    const payload = 'hello aibot';
+    const ts = 1_700_000_000_000;
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts,
+      message_hash: 'reticulum-pending-1700000000000',
+      delivery_status: 'sending',
+    });
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts + 182,
+      message_hash: 'ab'.repeat(32),
+      delivery_status: 'sending',
+    });
+    const rows = db!
+      .prepareOnce(
+        'SELECT message_hash, delivery_status FROM reticulum_messages WHERE identity_id = ? ORDER BY id',
+      )
+      .all(identityId) as { message_hash: string; delivery_status: string }[];
+    expect(rows).toEqual([{ message_hash: 'ab'.repeat(32), delivery_status: 'sending' }]);
+  });
+
   it('pruneReticulumIdentityActivityByAge deletes stale millisecond last_seen rows', () => {
     const nowMs = Date.now();
     db!
