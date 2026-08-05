@@ -39,10 +39,12 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/addMessage\([\s\S]*?\{ hubDestHash \}/);
   });
 
-  it('updates lastWhisperPeer from inbound directs only when unpinned', () => {
-    expect(SOURCE).toMatch(/isDirect &&[\s\S]*?sender_hash[\s\S]*?setLastWhisperPeer/);
-    expect(SOURCE).toMatch(/onlyIfUnpinned:\s*true/);
-    expect(SOURCE).toMatch(/RRC_WHISPERS_ROOM/);
+  it('routes direct NOTICE into per-peer @hash DMs via openDm', () => {
+    expect(SOURCE).toMatch(/resolveRrcDmPeerFromDirectMessage/);
+    expect(SOURCE).toMatch(/session\.openDm\(peer, hubDestHash, \{ focus: false \}\)/);
+    expect(SOURCE).toMatch(/rrcDmRoomKey\(peer\.identity_hash\)/);
+    expect(SOURCE).not.toMatch(/RRC_WHISPERS_ROOM/);
+    expect(SOURCE).not.toMatch(/setLastWhisperPeer/);
   });
 
   it('uses neutral hubParted banner for involuntary parts (not kick/ban wording)', () => {

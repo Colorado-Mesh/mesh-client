@@ -63,8 +63,8 @@ export interface RrcRoomSidebarProps {
   onToggleFavourite: (name: string) => void;
   onToggleAutoJoin: (name: string) => void;
   autoJoin: string[];
-  /** Display label for the synthetic [whispers] room (peer nick). */
-  whisperRoomLabel?: string;
+  /** Display labels for per-peer `@hash` DMs (match key → nick). */
+  dmRoomLabels?: Map<string, string>;
 }
 
 export function RrcRoomSidebar({
@@ -89,7 +89,7 @@ export function RrcRoomSidebar({
   onToggleFavourite,
   onToggleAutoJoin,
   autoJoin,
-  whisperRoomLabel,
+  dmRoomLabels,
 }: RrcRoomSidebarProps) {
   const { t } = useTranslation();
   const q = roomSearch.trim().toLowerCase();
@@ -98,16 +98,17 @@ export function RrcRoomSidebar({
   const activeKey = activeRoom ? rrcRoomMatchKey(activeRoom) : null;
 
   const displayName = (name: string): string => {
-    if (whisperRoomLabel && isRrcWhisperRoom(name)) return whisperRoomLabel;
+    if (isRrcWhisperRoom(name)) {
+      return dmRoomLabels?.get(rrcRoomMatchKey(name)) ?? name;
+    }
     return name;
   };
 
   const filterName = (name: string) => {
     if (!q) return true;
     if (name.toLowerCase().includes(q)) return true;
-    if (whisperRoomLabel && isRrcWhisperRoom(name) && whisperRoomLabel.toLowerCase().includes(q)) {
-      return true;
-    }
+    const label = displayName(name);
+    if (label !== name && label.toLowerCase().includes(q)) return true;
     return false;
   };
 

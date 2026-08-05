@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  migrateLegacyWhispersForHub,
+  resetRrcLegacyWhispersMigrateForTests,
+} from '@/renderer/lib/rrcLegacyWhispersMigrate';
+import { clearRrcOpenDms, loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
+
 import { useRrcSessionStore } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
@@ -9,39 +15,81 @@ describe('rrcSessionStore', () => {
     useRrcSessionStore.getState().setNickname('tester');
     useRrcSessionStore.getState().setLocalIdentityHash('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     vi.mocked(window.electronAPI.db.insertRrcMessage).mockClear();
+    clearRrcOpenDms('28c7c1a68c735693aa8e6b8193ed44b2');
+    clearRrcOpenDms('39d8d2b79d8467a4bb9f7c9204fe55c3');
   });
 
-  it('pins whisper reply peer and ignores onlyIfUnpinned overwrites', () => {
+  it('migrates legacy [whispers] history into per-peer DMs once', async () => {
+    const hubA = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const peerA = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const selfHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    resetRrcLegacyWhispersMigrateForTests(hubA);
+    clearRrcOpenDms(hubA);
+    useRrcSessionStore.getState().setLocalIdentityHash(selfHash);
+    useRrcSessionStore.getState().applyStatus('active', hubA, 'Hub A');
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([
+      {
+        message_id: 'legacy-1',
+        hub_hash: hubA,
+        room: '[whispers]',
+        sender_hash: peerA,
+        nickname: 'Zeva',
+        kind: 'notice',
+        body: 'psst',
+        timestamp: 10,
+      },
+    ]);
+    vi.mocked(window.electronAPI.db.insertRrcMessage).mockResolvedValue({ changes: 1 });
+
+    await migrateLegacyWhispersForHub(hubA);
+
+    expect(useRrcSessionStore.getState().rooms.has(`@${peerA}`)).toBe(true);
+    expect(loadRrcOpenDms(hubA)).toEqual([{ identity_hash: peerA, nickname: 'Zeva' }]);
+    const key = useRrcSessionStore.getState().roomMessageKey(`@${peerA}`, hubA);
+    expect(useRrcSessionStore.getState().messages.get(key ?? '')?.[0]?.body).toBe('psst');
+
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockClear();
+    await migrateLegacyWhispersForHub(hubA);
+    expect(window.electronAPI.db.listRrcMessages).not.toHaveBeenCalled();
+  });
+
+  it('opens and closes per-peer DMs without wiping message history', () => {
     const hubA = '28c7c1a68c735693aa8e6b8193ed44b2';
     const hubB = '39d8d2b79d8467a4bb9f7c9204fe55c3';
     const alice = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     const bob = 'cccccccccccccccccccccccccccccccc';
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', hubA, 'Hub A');
-    store.setLastWhisperPeer({ identity_hash: alice, nickname: 'Alice' }, hubA, { pin: true });
-    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.whisperReplyPinned).toBe(true);
+    store.openDm({ identity_hash: alice, nickname: 'Alice' }, hubA, { focus: true });
+    expect(useRrcSessionStore.getState().activeRoom).toBe(`@${alice}`);
+    expect(useRrcSessionStore.getState().rooms.has(`@${alice}`)).toBe(true);
 
-    store.setLastWhisperPeer({ identity_hash: bob, nickname: 'Bob' }, hubA, {
-      onlyIfUnpinned: true,
+    store.addMessage({
+      id: 'dm-1',
+      room: `@${alice}`,
+      kind: 'msg',
+      body: 'hi Alice',
+      sender_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      timestamp: 1,
+      dst_hash: alice,
     });
-    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
-      identity_hash: alice,
-      nickname: 'Alice',
-    });
+    const key = useRrcSessionStore.getState().roomMessageKey(`@${alice}`, hubA);
+    expect(useRrcSessionStore.getState().messages.get(key ?? '')?.length).toBe(1);
 
-    // Background hub inbound must not alter focused hub's pinned peer.
+    store.openDm({ identity_hash: bob, nickname: 'Bob' }, hubA, { focus: false });
+    expect(useRrcSessionStore.getState().rooms.has(`@${bob}`)).toBe(true);
+    expect(useRrcSessionStore.getState().activeRoom).toBe(`@${alice}`);
+
+    store.closeDm(`@${alice}`, hubA);
+    expect(useRrcSessionStore.getState().rooms.has(`@${alice}`)).toBe(false);
+    // History retained after leave.
+    expect(useRrcSessionStore.getState().messages.get(key ?? '')?.length).toBe(1);
+
+    // DMs on another hub stay isolated.
     store.applyStatus('active', hubB, 'Hub B');
-    store.setLastWhisperPeer({ identity_hash: bob, nickname: 'Bob' }, hubB, {
-      onlyIfUnpinned: true,
-    });
-    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
-      identity_hash: alice,
-      nickname: 'Alice',
-    });
-    expect(useRrcSessionStore.getState().sessionsByHub.get(hubB)?.lastWhisperPeer).toEqual({
-      identity_hash: bob,
-      nickname: 'Bob',
-    });
+    store.openDm({ identity_hash: bob, nickname: 'Bob' }, hubB, { focus: true });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.rooms.has(`@${bob}`)).toBe(true);
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubB)?.rooms.has(`@${bob}`)).toBe(true);
   });
 
   it('appends messages and bumps unread for inactive rooms', () => {

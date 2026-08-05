@@ -3,8 +3,8 @@
  */
 
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
+import { isRrcDmRoom, isRrcLegacyWhispersRoom } from '@/renderer/lib/rrcDmRoom';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
-import { RRC_WHISPERS_ROOM } from '@/renderer/stores/rrcSessionStore';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 /** Strip a leading `@` from `/msg` targets so `@nv0n` resolves like `nv0n`. */
@@ -72,8 +72,9 @@ export function bodyMentionsRrcNick(body: string, nickname: string): boolean {
   return findNextRrcNickMention(body, nickname) != null;
 }
 
+/** True for per-peer `@hash` DMs or the legacy `[whispers]` inbox. */
 export function isRrcWhisperRoom(room: string | null | undefined): boolean {
-  return (room ?? '').trim().toLowerCase() === RRC_WHISPERS_ROOM;
+  return isRrcDmRoom(room) || isRrcLegacyWhispersRoom(room);
 }
 
 export function isRrcDirectMessage(msg: Pick<RrcChatMessage, 'room' | 'dst_hash'>): boolean {
