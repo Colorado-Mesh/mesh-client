@@ -683,7 +683,13 @@ export function attachMeshcoreConnSideEffects(
           console.debug('[meshcoreConnSideEffects] stale conn close ' + errLikeToLogString(e));
         });
       }
-      if (shouldReconnect && !meshcoreExplicitDisconnectRef.current) {
+      if (
+        shouldReconnect &&
+        !meshcoreExplicitDisconnectRef.current &&
+        // TCP reconnect is owned by the runtime meshcore.tcp.onDisconnected listener (#792).
+        // Calling lost here as well double-entered the scheduler (n7eal dual backoff).
+        meshcoreConnectTypeRef.current !== 'tcp'
+      ) {
         handleConnectionLostRef.current();
       }
     });

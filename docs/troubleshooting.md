@@ -32,6 +32,8 @@ Open the **Log** panel (right rail), enable **debug** if needed, reproduce the p
 
 Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes **Reticulum** sidecar status, interface diagnostics, and config audit when the stack was running at export time (`reticulum` section in `debug-snapshot.json`; `[ReticulumSidecar]` lines in the log).
 
+Open `manifest.json` first when triaging: `appVersion` is package semver; **`buildChannel`** is `test` (Build Binaries), `release` (official Release workflow), or `local` (unmarked local dist). For CI builds, `buildInfo.runUrl` links to the exact GitHub Actions run — do not assume `appVersion` alone means an official release.
+
 **Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.). It may also include **Reticulum** rnsd config and sidecar stack state under `reticulum/` — share only via a **private channel** when a maintainer requests **Export for Developer**.
 
 Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:

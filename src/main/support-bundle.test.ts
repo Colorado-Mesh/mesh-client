@@ -273,14 +273,22 @@ describe('buildSupportBundleZip', () => {
     expect(names).toContain('mesh-client.log.1');
   });
 
-  it('manifest records github kind', async () => {
+  it('manifest records github kind and buildChannel', async () => {
     const dest = path.join(workDir, 'manifest.zip');
     await buildSupportBundleZip(dest, 'github', '{"ok":true}');
     const buf = await fs.promises.readFile(dest);
     const zip = await JSZip.loadAsync(buf);
     const manifestRaw = await zip.file('manifest.json')!.async('string');
-    const manifest = JSON.parse(manifestRaw) as { kind: string; appVersion: string };
+    const manifest = JSON.parse(manifestRaw) as {
+      kind: string;
+      appVersion: string;
+      buildChannel: string;
+    };
     expect(manifest.kind).toBe('mesh-client-github-report');
     expect(manifest.appVersion).toBe('9.9.9-test');
+    expect(manifest.buildChannel).toBe('local');
+
+    const readme = await zip.file('README.txt')!.async('string');
+    expect(readme).toContain('Build channel: local');
   });
 });

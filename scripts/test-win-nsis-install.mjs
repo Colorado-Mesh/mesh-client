@@ -154,6 +154,7 @@ function main(arch, probe7z) {
   const installer = installerName(version, arch);
   const installerPath = path.join(releaseDir, installer);
   if (!existsSync(installerPath)) {
+    dumpDir('release dir (installer missing)', releaseDir, 2);
     fail(`Installer not found: ${installerPath}`);
   }
 

@@ -366,6 +366,7 @@ import {
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
+import { createRfReconnectController } from '../lib/rfReconnectController';
 import { rfMaxReconnectAttemptsForTransport } from '../lib/rfReconnectShared';
 import { registerMeshcoreSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import {
@@ -563,8 +564,10 @@ export function useMeshcoreRuntime() {
   const meshcoreReconnectConnectInFlightRef = useRef(false);
   /** Set when Noble drops during an in-flight connect; reconnect runs after connect() settles. */
   const meshcoreDeferredReconnectRef = useRef(false);
-  /** Coalesce loss-handler + finally schedules so TCP drops mid-init cannot start two backoff loops. */
-  const meshcoreReconnectSchedulePendingRef = useRef(false);
+  /** Single-owner reconnect scheduler (shared MeshCore/Meshtastic invariant). */
+  const meshcoreRfReconnectRef = useRef(
+    createRfReconnectController({ logTag: 'useMeshcoreRuntime' }),
+  );
   const meshcoreConnectionParamsRef = useRef<{
     rfType: 'ble' | 'serial' | 'tcp';
     httpAddress?: string;
@@ -2541,6 +2544,7 @@ export function useMeshcoreRuntime() {
       if (!opts?.preserveReconnectState) {
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
+        meshcoreRfReconnectRef.current.cancel();
       }
     },
     [teardownMeshcoreConnEventListeners],
@@ -2638,6 +2642,7 @@ export function useMeshcoreRuntime() {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreReconnectGenerationRef.current += 1;
+      meshcoreRfReconnectRef.current.cancel();
       meshcoreSetupGenerationRef.current += 1;
       const ackEntries = new Set(pendingAcksRef.current.values());
       for (const e of ackEntries) {
@@ -2736,6 +2741,7 @@ export function useMeshcoreRuntime() {
     if (meshcoreReconnectAttemptRef.current >= maxReconnectAttempts) {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
+      meshcoreRfReconnectRef.current.markExhausted();
       if (params.rfType === 'ble') {
         bleConnectInProgressRef.current = false;
       }
@@ -2761,7 +2767,14 @@ export function useMeshcoreRuntime() {
             }));
             meshcoreIsReconnectingRef.current = true;
             meshcoreReconnectAttemptRef.current = 0;
-            void attemptMeshcoreReconnectRef.current();
+            // Re-enter through the controller after markExhausted (idle → owner).
+            const linkLost = meshcoreRfReconnectRef.current.onLinkLost();
+            meshcoreReconnectGenerationRef.current = linkLost.generation;
+            if (linkLost.shouldStartOwner) {
+              scheduleMeshcoreReconnectAttemptRef.current();
+            } else {
+              meshcoreDeferredReconnectRef.current = true;
+            }
           },
           onTimeout: () => {
             void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);
@@ -2780,6 +2793,7 @@ export function useMeshcoreRuntime() {
 
     const generation = meshcoreReconnectGenerationRef.current;
     meshcoreReconnectAttemptRef.current += 1;
+    meshcoreRfReconnectRef.current.beginAttempt(meshcoreReconnectAttemptRef.current);
     setState((s) => ({
       ...s,
       status: 'reconnecting',
@@ -2809,9 +2823,13 @@ export function useMeshcoreRuntime() {
         !meshcoreExplicitDisconnectRef.current
       ) {
         meshcoreDeferredReconnectRef.current = false;
+        meshcoreRfReconnectRef.current.endAttempt({ keepReconnecting: true });
         scheduleMeshcoreReconnectAttemptRef.current();
         return;
       }
+      meshcoreRfReconnectRef.current.endAttempt({
+        keepReconnecting: meshcoreIsReconnectingRef.current,
+      });
       // Another cycle may still own reconnect (generation bumped while isReconnecting stayed
       // true). Only clear the UI when this cycle was cancelled and nothing else is driving it —
       // otherwise a raced setup-abort / delay abort left status=reconnecting forever (#792).
@@ -2826,6 +2844,7 @@ export function useMeshcoreRuntime() {
     }
     if (delayResult === 'suspended') {
       meshcoreIsReconnectingRef.current = false;
+      meshcoreRfReconnectRef.current.cancel();
       setState((s) => ({
         ...s,
         status: 'disconnected',
@@ -2843,9 +2862,13 @@ export function useMeshcoreRuntime() {
         !meshcoreExplicitDisconnectRef.current
       ) {
         meshcoreDeferredReconnectRef.current = false;
+        meshcoreRfReconnectRef.current.endAttempt({ keepReconnecting: true });
         scheduleMeshcoreReconnectAttemptRef.current();
         return;
       }
+      meshcoreRfReconnectRef.current.endAttempt({
+        keepReconnecting: meshcoreIsReconnectingRef.current,
+      });
       if (!meshcoreIsReconnectingRef.current) {
         setState((s) => ({
           ...s,
@@ -2856,6 +2879,7 @@ export function useMeshcoreRuntime() {
       return;
     }
 
+    meshcoreRfReconnectRef.current.beginOpening();
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
     const isBleReconnect = params.rfType === 'ble';
     if (meshcoreReconnectConnectInFlightRef.current) {
@@ -2863,6 +2887,7 @@ export function useMeshcoreRuntime() {
         '[useMeshcoreRuntime] reconnect: skip overlapping open (connect already in flight)',
       );
       meshcoreDeferredReconnectRef.current = true;
+      meshcoreRfReconnectRef.current.markDirty();
       return;
     }
     meshcoreReconnectConnectInFlightRef.current = true;
@@ -2930,6 +2955,7 @@ export function useMeshcoreRuntime() {
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
       meshcoreDeferredReconnectRef.current = false;
+      meshcoreRfReconnectRef.current.markSuccess();
       setState((s) => ({
         ...s,
         serialNeedsReselect: false,
@@ -2989,6 +3015,12 @@ export function useMeshcoreRuntime() {
         bleConnectInProgressRef.current = false;
       }
       if (meshcoreDeferredReconnectRef.current) {
+        meshcoreRfReconnectRef.current.markDirty();
+      }
+      const settled = meshcoreRfReconnectRef.current.endAttempt({
+        keepReconnecting: meshcoreIsReconnectingRef.current,
+      });
+      if (meshcoreDeferredReconnectRef.current || settled.shouldSchedule) {
         meshcoreDeferredReconnectRef.current = false;
         if (meshcoreIsReconnectingRef.current) {
           console.debug(
@@ -3007,15 +3039,13 @@ export function useMeshcoreRuntime() {
   }, [attemptMeshcoreReconnect]);
 
   const scheduleMeshcoreReconnectAttempt = useCallback(() => {
-    if (meshcoreReconnectSchedulePendingRef.current) return;
-    meshcoreReconnectSchedulePendingRef.current = true;
-    queueMicrotask(() => {
-      meshcoreReconnectSchedulePendingRef.current = false;
+    meshcoreRfReconnectRef.current.scheduleOwner(() => {
       if (!meshcoreIsReconnectingRef.current || meshcoreExplicitDisconnectRef.current) {
         return;
       }
       if (meshcoreReconnectConnectInFlightRef.current) {
         meshcoreDeferredReconnectRef.current = true;
+        meshcoreRfReconnectRef.current.markDirty();
         return;
       }
       void attemptMeshcoreReconnectRef.current();
@@ -3055,14 +3085,14 @@ export function useMeshcoreRuntime() {
       if (!rehydrated) return;
       meshcoreConnectionParamsRef.current = rehydrated;
     }
+    // Single-owner: while a cycle is active, onLinkLost only dirties — never schedules after
+    // await disconnect (n7eal TCP dual attempt 2+3 / #792–#796).
     const wasReconnecting = meshcoreIsReconnectingRef.current;
-    // Backoff delay owns the cycle (inFlight false). Bump generation to abort that delay; do not
-    // start a parallel attemptMeshcoreReconnect — deferred flush on delay abort / schedule owns it.
-    const deferForBackoff = wasReconnecting && !meshcoreReconnectConnectInFlightRef.current;
-    if (deferForBackoff) {
+    const linkLost = meshcoreRfReconnectRef.current.onLinkLost();
+    meshcoreReconnectGenerationRef.current = linkLost.generation;
+    if (!linkLost.shouldStartOwner) {
       meshcoreDeferredReconnectRef.current = true;
     }
-    meshcoreReconnectGenerationRef.current += 1;
     meshcoreDeviceConfiguredRef.current = false;
     // Keep sticky BLE suppress while reconnecting so Meshtastic cannot revive the ghost.
     prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
@@ -3091,18 +3121,15 @@ export function useMeshcoreRuntime() {
           );
         });
       }
-      // Single-flight: if open+attach is still running, generation bump invalidates it;
-      // that attempt's failure path (or finally deferred flush) schedules the next cycle.
-      if (meshcoreReconnectConnectInFlightRef.current) {
-        console.debug(
-          '[useMeshcoreRuntime] Connection lost — defer reconnect until in-flight open settles',
-        );
+      // Owner (attempt finally / delay-abort) schedules follow-ups. Lost-handler must not
+      // schedule when a cycle was already active — even if inFlight cleared during await.
+      if (!linkLost.shouldStartOwner) {
         meshcoreDeferredReconnectRef.current = true;
-        return;
-      }
-      if (deferForBackoff) {
         console.debug(
-          '[useMeshcoreRuntime] Connection lost during reconnect backoff — defer until delay settles',
+          meshcoreRfReconnectRef.current.phase === 'opening' ||
+            meshcoreReconnectConnectInFlightRef.current
+            ? '[useMeshcoreRuntime] Connection lost — defer reconnect until in-flight open settles'
+            : '[useMeshcoreRuntime] Connection lost during reconnect backoff — defer until delay settles',
         );
         return;
       }
@@ -3131,6 +3158,7 @@ export function useMeshcoreRuntime() {
   const onPowerSuspend = useCallback(() => {
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreIsReconnectingRef.current = false;
+    meshcoreRfReconnectRef.current.cancel();
   }, []);
 
   const onPowerResume = useCallback(() => {

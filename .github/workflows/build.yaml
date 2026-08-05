@@ -132,6 +132,13 @@ jobs:
           name: READ-ME-FIRST-test-build
           path: release-warnings
 
+      # Embeds buildChannel=test + Actions runUrl into the main bundle (support exports / logs).
+      - name: Stamp CI build info
+        env:
+          MESH_CLIENT_BUILD_CHANNEL: test
+          MESH_CLIENT_BUILD_WORKFLOW: Build Binaries (no release)
+        run: node scripts/ci-write-build-info-env.mjs
+
       - name: Build
         env:
           # ── macOS code signing (only effective on macOS runners) ────────────
@@ -143,6 +150,16 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
           APPLE_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
         run: ${{ matrix.build_script }}
+
+      # Stage under release/ so upload-artifact@v7's least-common-ancestor stays
+      # release/ (paths outside release/ nest installers as release/release/*.exe and
+      # break packaging-smoke, which downloads to path: release).
+      - name: Stage READ-ME-FIRST into release output
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp release-warnings/READ-ME-FIRST-test-build.md release/READ-ME-FIRST-test-build.md
 
       # Do not upload raw Mesh-client.app — upload-artifact@v7 dereferences framework
       # symlinks (~3× Electron Framework size). DMG/ZIP preserve correct layout.
@@ -160,7 +177,7 @@ jobs:
             release/mac-universal/**/*.zip
             release/*.dmg
             release/*.zip
-            release-warnings/READ-ME-FIRST-test-build.md
+            release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
       - name: Upload Linux Artifact
@@ -172,7 +189,7 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.rpm
-            release-warnings/READ-ME-FIRST-test-build.md
+            release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
       - name: Upload Windows Artifact
@@ -183,7 +200,7 @@ jobs:
           path: |
             # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
             release/*.exe
-            release-warnings/READ-ME-FIRST-test-build.md
+            release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
   packaging-smoke:
