@@ -658,11 +658,14 @@
     "shareAsPaperClose": "Fechar",
     "shareAsPaperEmpty": "Digite uma mensagem primeiro e depois compartilhe-a como papel.",
     "shareAsPaperFailed": "Não foi possível criar a mensagem em papel",
-    "shareAsPaperIdentityUnknown": "Chave pública de ponto desconhecida — importe o QR do contato ou aguarde um anúncio e tente novamente.",
+    "shareAsPaperIdentityUnknown": "Chave pública do peer desconhecida — importe o QR do contato ou aguarde um anúncio e tente novamente.",
     "shareAsPaperTooLarge": "A mensagem é muito longa para um QR em papel — encurte-a e tente novamente.",
     "scanPaper": "Digitalizar papel",
     "scanPaperAria": "Digitalize ou cole uma mensagem de papel LXMF criptografada",
-    "scanPaperHint": "Cole ou digitalize um QR de papel para descriptografar no Chat."
+    "scanPaperHint": "Cole ou digitalize um QR de papel para descriptografar no Chat.",
+    "shareAsPaperMessageLabel": "Mensagem para encriptar",
+    "shareAsPaperGenerate": "Criar QR de papel",
+    "shareAsPaperCopyFailed": "Não foi possível copiar o link do papel"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Digitalizar/Importar",
-      "hint": "Digitalize ou cole um QR para contatos, cartões Columba lxma://ou mensagens de papel LXMF criptografadas."
+      "hint": "Digitalize ou cole um QR para contatos, cartões Columba lxma:// ou mensagens de papel LXMF criptografadas."
     }
   },
   "nodeDetailModal": {

@@ -648,7 +648,7 @@
     "openPeerDetails": "피어 세부정보",
     "openPeerDetailsAria": "{{name}}의 피어 세부정보 열기",
     "reticulumSendPaper": "종이",
-    "reticulumSendPaperTooltip": "암호화된 LXMF 용지 메시지로 공유 (QR/lxm://link)",
+    "reticulumSendPaperTooltip": "암호화된 LXMF 종이 메시지로 공유 (QR / lxm:// 링크)",
     "shareAsPaper": "종이로 공유",
     "shareAsPaperAria": "초안을 암호화된 LXMF 용지 QR로 공유",
     "shareAsPaperTitle": "종이 메시지",
@@ -662,7 +662,10 @@
     "shareAsPaperTooLarge": "메시지가 용지 QR에 비해 너무 깁니다. 길이를 줄이고 다시 시도하세요.",
     "scanPaper": "용지 스캔",
     "scanPaperAria": "암호화된 LXMF 용지 메시지 스캔 또는 붙여넣기",
-    "scanPaperHint": "용지 QR을 붙여넣거나 스캔하여 채팅에 암호를 해독합니다."
+    "scanPaperHint": "용지 QR을 붙여넣거나 스캔하여 채팅에 암호를 해독합니다.",
+    "shareAsPaperMessageLabel": "암호화할 메시지",
+    "shareAsPaperGenerate": "용지 QR 생성",
+    "shareAsPaperCopyFailed": "용지 링크를 복사할 수 없습니다"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "스캔/가져오기",
-      "hint": "QR에서 연락처, Columba lxma://카드 또는 암호화된 LXMF 종이 메시지를 스캔하거나 붙여넣습니다."
+      "hint": "연락처, Columba lxma:// 카드 또는 암호화된 LXMF 종이 메시지를 QR에서 스캔하거나 붙여넣습니다."
     }
   },
   "nodeDetailModal": {

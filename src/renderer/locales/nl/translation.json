@@ -648,7 +648,7 @@
     "openPeerDetails": "Peerdetails",
     "openPeerDetailsAria": "Peerdetails openen voor {{name}}",
     "reticulumSendPaper": "Papier",
-    "reticulumSendPaperTooltip": "Gedeeld als een versleuteld LXMF-papierbericht (QR /lxm :// link)",
+    "reticulumSendPaperTooltip": "Gedeeld als een versleuteld LXMF-papierbericht (QR / lxm:// link)",
     "shareAsPaper": "Delen als papier",
     "shareAsPaperAria": "Concept delen als gecodeerd LXMF-papier QR",
     "shareAsPaperTitle": "Papieren bericht",
@@ -657,12 +657,15 @@
     "shareAsPaperCopied": "Papieren link gekopieerd",
     "shareAsPaperClose": "Sluiten",
     "shareAsPaperEmpty": "Typ eerst een bericht en deel het vervolgens als papier.",
-    "shareAsPaperFailed": "Kon bericht niet aanmaken.",
-    "shareAsPaperIdentityUnknown": "Peer public key onbekend — importeer de QR-code van de contactpersoon of wacht op een aankondiging en probeer het opnieuw.",
+    "shareAsPaperFailed": "Kon papieren bericht niet aanmaken.",
+    "shareAsPaperIdentityUnknown": "Openbare sleutel van peer onbekend — importeer de QR-code van de contactpersoon of wacht op een aankondiging en probeer het opnieuw.",
     "shareAsPaperTooLarge": "Bericht is te lang voor een papieren QR — verkort het en probeer het opnieuw.",
     "scanPaper": "Papier scannen",
     "scanPaperAria": "Een gecodeerd LXMF-papierbericht scannen of plakken",
-    "scanPaperHint": "Plak of scan een papieren QR-code om te ontsleutelen in Chat."
+    "scanPaperHint": "Plak of scan een papieren QR-code om te ontsleutelen in Chat.",
+    "shareAsPaperMessageLabel": "Bericht om te versleutelen",
+    "shareAsPaperGenerate": "Maak papieren QR",
+    "shareAsPaperCopyFailed": "Kon papieren link niet kopiëren"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Scannen / importeren",
-      "hint": "Scan of plak een QR voor contacten, Columba lxma:// kaarten of gecodeerde LXMF-papieren berichten."
+      "hint": "Scan of plak een QR voor contacten, Columba lxma://-kaarten of gecodeerde LXMF-papieren berichten."
     }
   },
   "nodeDetailModal": {

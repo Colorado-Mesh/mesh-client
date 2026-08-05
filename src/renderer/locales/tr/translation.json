@@ -648,13 +648,13 @@
     "openPeerDetails": "Eş ayrıntıları",
     "openPeerDetailsAria": "{{name}} için eş ayrıntılarını aç",
     "reticulumSendPaper": "Kağıt",
-    "reticulumSendPaperTooltip": "Şifrelenmiş LXMF kağıt mesajı olarak paylaşılır (QR /lxm :// link)",
+    "reticulumSendPaperTooltip": "Şifrelenmiş LXMF kağıt mesajı olarak paylaşılır (QR / lxm:// bağlantı)",
     "shareAsPaper": "Kağıt olarak paylaş",
     "shareAsPaperAria": "Taslağı şifreli LXMF kağıt QR olarak paylaş",
     "shareAsPaperTitle": "Kağıt mesajı",
     "shareAsPaperHint": "Bu QR kodunu gösterin veya bağlantıyı kopyalayın. Sadece alıcının kimliği şifresini çözebilir. Metni kısa tutun — kağıt mesajların boyut sınırı vardır.",
     "shareAsPaperCopyUri": "Bağlantıyı kopyala",
-    "shareAsPaperCopied": "Ödev bağlantısı kopyalandı",
+    "shareAsPaperCopied": "Kağıt bağlantısı kopyalandı",
     "shareAsPaperClose": "Kapat",
     "shareAsPaperEmpty": "Önce bir mesaj yazın, sonra kağıt olarak paylaşın.",
     "shareAsPaperFailed": "Kağıt mesajı oluşturulamadı",
@@ -662,7 +662,10 @@
     "shareAsPaperTooLarge": "Mesaj kağıt QR için çok uzun — kısaltın ve tekrar deneyin.",
     "scanPaper": "Kağıdı tara",
     "scanPaperAria": "Şifrelenmiş bir LXMF kağıt mesajını tarayın veya yapıştırın",
-    "scanPaperHint": "Sohbetin şifresini çözmek için basılı bir QR'yi yapıştırın veya tarayın."
+    "scanPaperHint": "Sohbetin şifresini çözmek için basılı bir QR'yi yapıştırın veya tarayın.",
+    "shareAsPaperMessageLabel": "Şifrelenecek mesaj",
+    "shareAsPaperGenerate": "Kağıt QR oluştur",
+    "shareAsPaperCopyFailed": "Kağıt bağlantısı kopyalanamadı"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Tara / içe aktar",
-      "hint": "Kişiler, Columba lxma :// kartları veya şifreli LXMF kağıt mesajları için bir QR tarayın veya yapıştırın."
+      "hint": "Kişiler, Columba lxma:// kartları veya şifreli LXMF kağıt mesajları için bir QR tarayın veya yapıştırın."
     }
   },
   "nodeDetailModal": {

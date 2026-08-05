@@ -659,14 +659,17 @@
     "shareAsPaperHint": "Pokaż ten QR lub skopiuj link. Tylko tożsamość odbiorcy może go odszyfrować. Tekst powinien być krótki — wiadomości papierowe mają limit rozmiaru.",
     "shareAsPaperCopyUri": "Kopiuj link",
     "shareAsPaperCopied": "Skopiowano link do papieru",
-    "shareAsPaperClose": "Zamknięty",
+    "shareAsPaperClose": "Zamknij",
     "shareAsPaperEmpty": "Najpierw wpisz wiadomość, a następnie udostępnij ją na papierze.",
     "shareAsPaperFailed": "Nie można utworzyć wiadomości papierowej",
-    "shareAsPaperIdentityUnknown": "Peer public key unknown — zaimportuj kontaktowy QR lub poczekaj na ogłoszenie, a następnie spróbuj ponownie.",
+    "shareAsPaperIdentityUnknown": "Nieznany klucz publiczny peera — zaimportuj kontaktowy QR lub poczekaj na ogłoszenie, a następnie spróbuj ponownie.",
     "shareAsPaperTooLarge": "Wiadomość jest zbyt długa dla papierowego QR — skróć ją i spróbuj ponownie.",
     "scanPaper": "Zeskanuj papier",
     "scanPaperAria": "Zeskanuj lub wklej zaszyfrowaną wiadomość papierową LXMF",
-    "scanPaperHint": "Wklej lub zeskanuj papierowy kod QR, aby odszyfrować go na czacie."
+    "scanPaperHint": "Wklej lub zeskanuj papierowy kod QR, aby odszyfrować go na czacie.",
+    "shareAsPaperMessageLabel": "Wiadomość do zaszyfrowania",
+    "shareAsPaperGenerate": "Utwórz papierowy QR",
+    "shareAsPaperCopyFailed": "Nie można skopiować papierowego linku"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2656,7 +2659,7 @@
     },
     "reticulumScanImport": {
       "title": "Skanuj / importuj",
-      "hint": "Zeskanuj lub wklej kod QR dla kontaktów, kart Columba lxma://lub zaszyfrowanych wiadomości papierowych LXMF."
+      "hint": "Zeskanuj lub wklej kod QR dla kontaktów, kart Columba lxma:// lub zaszyfrowanych wiadomości papierowych LXMF."
     }
   },
   "nodeDetailModal": {

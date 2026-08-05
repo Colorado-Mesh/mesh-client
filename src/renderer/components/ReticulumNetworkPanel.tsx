@@ -22,6 +22,7 @@ import {
   switchReticulumIdentity,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
+import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
@@ -603,10 +604,13 @@ export function ReticulumNetworkPanel({
             onDecoded={(text) => {
               void (async () => {
                 const outcome = await handleReticulumQrIngest(text);
-                if (outcome.handled) {
-                  addToast(t(outcome.toast.key, outcome.toast.params), outcome.toast.variant);
-                }
-              })();
+                showReticulumQrIngestToast(outcome, { t, addToast });
+              })().catch((err: unknown) => {
+                console.error(
+                  '[ReticulumNetworkPanel] QR ingest failed: ' + errLikeToLogString(err),
+                );
+                addToast(t('qrIngest.unknownLink'), 'error');
+              });
             }}
           />
         </div>

@@ -4,11 +4,16 @@
  */
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { ingestReticulumLxmfPayloadWithSideEffects } from '@/renderer/lib/ingest/reticulumIngest';
 import { pubkeyToNodeId } from '@/renderer/lib/meshcoreUtils';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
+import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { refreshReticulumPeersFromSidecar } from '@/renderer/stores/reticulumPeerStore';
 import { hexToBytesExact } from '@/shared/hexBytes';
 import type { MeshClientDeepLink } from '@/shared/meshClientDeepLink';
+import { paperErrorToI18n } from '@/shared/reticulumPaperErrors';
 
 export type DeepLinkApplyResult =
   | { ok: true; kind: MeshClientDeepLink['kind']; deferred?: boolean }
@@ -141,12 +146,6 @@ export async function applyMeshcoreChannelAdd(
   }
 }
 
-const PAPER_INGEST_ERROR_KEYS: Record<string, string> = {
-  invalid_uri: 'qrIngest.paperInvalidUri',
-  decrypt_failed: 'qrIngest.paperDecryptFailed',
-  identity_not_configured: 'qrIngest.paperIdentityNotConfigured',
-};
-
 /** Ingest encrypted LXMF paper `lxm://` URI via sidecar (decrypt → Chat). */
 export async function applyLxmPaperIngest(opts: { uri: string }): Promise<DeepLinkApplyResult> {
   try {
@@ -158,12 +157,18 @@ export async function applyLxmPaperIngest(opts: { uri: string }): Promise<DeepLi
       message?: unknown;
     };
     if (res.ok === true) {
+      const lxmfPayload = extractLxmfPayloadFromSendResponse(res);
+      if (lxmfPayload) {
+        const identityId =
+          getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
+        ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload);
+      }
       return { ok: true, kind: 'lxmPaperMessage' };
     }
     const code = typeof res.error === 'string' ? res.error : '';
     return {
       ok: false,
-      errorKey: PAPER_INGEST_ERROR_KEYS[code] ?? 'qrIngest.paperIngestFailed',
+      errorKey: paperErrorToI18n(code, 'ingest'),
       detail: code || undefined,
     };
   } catch (err) {

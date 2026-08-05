@@ -648,7 +648,7 @@
     "openPeerDetails": "Peer-Details",
     "openPeerDetailsAria": "Peer-Details für {{name}} öffnen",
     "reticulumSendPaper": "Papier",
-    "reticulumSendPaperTooltip": "Als verschlüsselte LXMF-Papiernachricht geteilt (QR /lxm :// link)",
+    "reticulumSendPaperTooltip": "Als verschlüsselte LXMF-Papiernachricht geteilt (QR / lxm:// Link)",
     "shareAsPaper": "Als Papier teilen",
     "shareAsPaperAria": "Entwurf als verschlüsseltes LXMF-Papier-QR teilen",
     "shareAsPaperTitle": "Papiernachricht",
@@ -662,7 +662,10 @@
     "shareAsPaperTooLarge": "Die Nachricht ist zu lang für einen Papier-QR — kürzen Sie sie und versuchen Sie es erneut.",
     "scanPaper": "Papier scannen",
     "scanPaperAria": "Scannen oder fügen Sie eine verschlüsselte LXMF-Papiernachricht ein",
-    "scanPaperHint": "Fügen Sie einen Papier-QR ein oder scannen Sie ihn, um ihn in den Chat zu entschlüsseln."
+    "scanPaperHint": "Fügen Sie einen Papier-QR ein oder scannen Sie ihn, um ihn in den Chat zu entschlüsseln.",
+    "shareAsPaperMessageLabel": "Nachricht zum Verschlüsseln",
+    "shareAsPaperGenerate": "Papier-QR erstellen",
+    "shareAsPaperCopyFailed": "Papierlink konnte nicht kopiert werden"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Scannen und Importieren",
-      "hint": "Scannen oder fügen Sie einen QR nach Kontakten, Columba lxma:// -Karten oder verschlüsselten LXMF-Papiernachrichten ein."
+      "hint": "Scannen oder fügen Sie einen QR für Kontakte, Columba lxma://-Karten oder verschlüsselte LXMF-Papiernachrichten ein."
     }
   },
   "nodeDetailModal": {

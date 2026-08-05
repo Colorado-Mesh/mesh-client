@@ -46,4 +46,14 @@ describe('ReticulumMessageStatusBadge', () => {
     expect(screen.getByLabelText('chatPanel.reticulumSendPaperTooltip')).toBeTruthy();
     expect(screen.getByText(/reticulumSendPaper/)).toBeTruthy();
   });
+
+  it('shows PN abbrev while propagated send is still in flight', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="sending" via="tcp" deliveryMethod="propagated" />,
+    );
+    expect(screen.getByText(/reticulumPnAbbrev/)).toBeTruthy();
+    expect(
+      screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.reticulumSendPropagated'),
+    ).toBeTruthy();
+  });
 });

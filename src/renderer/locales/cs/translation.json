@@ -650,7 +650,7 @@
     "openPeerDetails": "Podrobnosti peeru",
     "openPeerDetailsAria": "Otevřít podrobnosti peeru pro {{name}}",
     "reticulumSendPaper": "Papír",
-    "reticulumSendPaperTooltip": "Sdíleno jako šifrovaná papírová zpráva LXMF (QR / lxm:// link)",
+    "reticulumSendPaperTooltip": "Sdíleno jako šifrovaná papírová zpráva LXMF (QR / lxm:// odkaz)",
     "shareAsPaper": "Sdílet jako papír",
     "shareAsPaperAria": "Sdílet koncept jako šifrovaný LXMF papír QR",
     "shareAsPaperTitle": "Papírová zpráva",
@@ -664,7 +664,10 @@
     "shareAsPaperTooLarge": "Zpráva je na papírové QR příliš dlouhá — zkraťte ji a zkuste to znovu.",
     "scanPaper": "Naskenovat papír",
     "scanPaperAria": "Naskenujte nebo vložte šifrovanou papírovou zprávu LXMF",
-    "scanPaperHint": "Vložte nebo naskenujte papírový QR kód pro dešifrování do chatu."
+    "scanPaperHint": "Vložte nebo naskenujte papírový QR kód pro dešifrování do chatu.",
+    "shareAsPaperMessageLabel": "Zpráva k zašifrování",
+    "shareAsPaperGenerate": "Vytvořit papírové QR",
+    "shareAsPaperCopyFailed": "Nelze zkopírovat papírový odkaz"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2654,7 +2657,7 @@
     },
     "reticulumScanImport": {
       "title": "Skenovat / importovat",
-      "hint": "Naskenujte nebo vložte QR pro kontakty, karty Columba lxma://nebo šifrované papírové zprávy LXMF."
+      "hint": "Naskenujte nebo vložte QR pro kontakty, karty Columba lxma:// nebo šifrované papírové zprávy LXMF."
     }
   },
   "nodeDetailModal": {

@@ -648,7 +648,7 @@
     "openPeerDetails": "Detalles del peer",
     "openPeerDetailsAria": "Abrir detalles del peer para {{name}}",
     "reticulumSendPaper": "Papel",
-    "reticulumSendPaperTooltip": "Compartido como un mensaje de papel LXMF cifrado (QR / lxm:// link)",
+    "reticulumSendPaperTooltip": "Compartido como un mensaje de papel LXMF cifrado (QR / lxm:// enlace)",
     "shareAsPaper": "Compartir como papel",
     "shareAsPaperAria": "Compartir borrador como QR de papel LXMF cifrado",
     "shareAsPaperTitle": "Mensaje en papel",
@@ -658,11 +658,14 @@
     "shareAsPaperClose": "Cerrar",
     "shareAsPaperEmpty": "Escribe un mensaje primero y luego compártelo en papel.",
     "shareAsPaperFailed": "No se ha podido crear el mensaje en papel",
-    "shareAsPaperIdentityUnknown": "Clave pública del mismo nivel desconocida: importe su QR de contacto o espere un anuncio y vuelva a intentarlo.",
+    "shareAsPaperIdentityUnknown": "Clave pública del peer desconocida: importe su QR de contacto o espere un anuncio y vuelva a intentarlo.",
     "shareAsPaperTooLarge": "El mensaje es demasiado largo para un QR en papel: acórtalo e inténtalo de nuevo.",
     "scanPaper": "Escanear tarjeta de papel",
     "scanPaperAria": "Escanear o pegar un mensaje en papel LXMF cifrado",
-    "scanPaperHint": "Pegue o escanee un QR en papel para descifrar en el chat."
+    "scanPaperHint": "Pegue o escanee un QR en papel para descifrar en el chat.",
+    "shareAsPaperMessageLabel": "Mensaje a cifrar",
+    "shareAsPaperGenerate": "Crear QR en papel",
+    "shareAsPaperCopyFailed": "No se ha podido copiar el enlace en papel"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Escanear / Importar",
-      "hint": "Escanee o pegue un QR en busca de contactos, tarjetas Columba lxma://o mensajes cifrados en papel LXMF."
+      "hint": "Escanee o pegue un QR en busca de contactos, tarjetas Columba lxma:// o mensajes cifrados en papel LXMF."
     }
   },
   "nodeDetailModal": {

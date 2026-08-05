@@ -4139,7 +4139,12 @@ impl LiveBridge {
                     "destination_hash": req.destination_hash,
                 }));
             }
-            Err(other) => return Err(format!("paper create: {other:?}")),
+            Err(_other) => {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "internal_error",
+                }));
+            }
         };
 
         let ts_ms = (std::time::SystemTime::now()
@@ -4185,11 +4190,19 @@ impl LiveBridge {
 
     /// Decrypt an `lxm://` paper URI with the local identity and deliver as inbound LXMF.
     pub async fn ingest_lxmf_paper(&self, uri: &str) -> Result<serde_json::Value, String> {
+        // PAPER_MDU ciphertext bound + dest hash + base64url overhead; reject before router lock.
+        const MAX_PAPER_URI_CHARS: usize = 16_384;
         let trimmed = uri.trim();
         if trimmed.is_empty() {
             return Ok(serde_json::json!({
                 "ok": false,
                 "error": "invalid_uri",
+            }));
+        }
+        if trimmed.len() > MAX_PAPER_URI_CHARS {
+            return Ok(serde_json::json!({
+                "ok": false,
+                "error": "paper_too_large",
             }));
         }
 
@@ -4216,7 +4229,12 @@ impl LiveBridge {
                     "error": "decrypt_failed",
                 }));
             }
-            Err(other) => return Err(format!("paper ingest: {other:?}")),
+            Err(_) => {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "internal_error",
+                }));
+            }
         };
 
         let payload = lxmf_payload_from_message(

@@ -648,7 +648,7 @@
     "openPeerDetails": "Détails du pair",
     "openPeerDetailsAria": "Ouvrir les détails du pair pour {{name}}",
     "reticulumSendPaper": "Papier",
-    "reticulumSendPaperTooltip": "Partagé sous forme de message papier LXMF crypté (QR / lxm :// link)",
+    "reticulumSendPaperTooltip": "Partagé sous forme de message papier LXMF chiffré (QR / lxm:// lien)",
     "shareAsPaper": "Partager sous forme de papier",
     "shareAsPaperAria": "Partager le brouillon sous forme de QR papier LXMF crypté",
     "shareAsPaperTitle": "Message papier",
@@ -657,12 +657,15 @@
     "shareAsPaperCopied": "Lien papier copié",
     "shareAsPaperClose": "Fermer",
     "shareAsPaperEmpty": "Tapez d'abord un message, puis partagez-le sur papier.",
-    "shareAsPaperFailed": "Impossible de créer le message.",
+    "shareAsPaperFailed": "Impossible de créer le message papier.",
     "shareAsPaperIdentityUnknown": "Clé publique de pair inconnue — importez leur QR de contact ou attendez une annonce, puis réessayez.",
     "shareAsPaperTooLarge": "Le message est trop long pour un QR papier — raccourcissez-le et réessayez.",
     "scanPaper": "Numériser le papier",
     "scanPaperAria": "Numériser ou coller un message papier LXMF crypté",
-    "scanPaperHint": "Collez ou numérisez un QR papier pour le décrypter dans le Chat."
+    "scanPaperHint": "Collez ou numérisez un QR papier pour le décrypter dans le Chat.",
+    "shareAsPaperMessageLabel": "Message à crypter",
+    "shareAsPaperGenerate": "Créer un QR papier",
+    "shareAsPaperCopyFailed": "Impossible de copier le lien papier"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Numériser/importer",
-      "hint": "Numérisez ou collez un QR pour les contacts, les cartes Columba lxma ://ou les messages papier chiffrés LXMF."
+      "hint": "Numérisez ou collez un QR pour les contacts, les cartes Columba lxma:// ou les messages papier chiffrés LXMF."
     }
   },
   "nodeDetailModal": {

@@ -648,7 +648,7 @@
     "openPeerDetails": "ピアの詳細",
     "openPeerDetailsAria": "{{name}} のピア詳細を開く",
     "reticulumSendPaper": "ペーパー",
-    "reticulumSendPaperTooltip": "暗号化されたLXMF紙メッセージ（ QR/lxm :// link ）として共有",
+    "reticulumSendPaperTooltip": "暗号化されたLXMF紙メッセージ（QR / lxm:// リンク）として共有",
     "shareAsPaper": "紙として共有",
     "shareAsPaperAria": "下書きを暗号化されたLXMF紙QRとして共有する",
     "shareAsPaperTitle": "紙のメッセージ",
@@ -662,7 +662,10 @@
     "shareAsPaperTooLarge": "紙のQRにはメッセージが長すぎます。短くしてもう一度お試しください。",
     "scanPaper": "スキャン用紙",
     "scanPaperAria": "暗号化されたLXMF紙メッセージをスキャンまたは貼り付ける",
-    "scanPaperHint": "紙のQRを貼り付けるかスキャンして、チャットに復号します。"
+    "scanPaperHint": "紙のQRを貼り付けるかスキャンして、チャットに復号します。",
+    "shareAsPaperMessageLabel": "暗号化するメッセージ",
+    "shareAsPaperGenerate": "紙のQRを作成する",
+    "shareAsPaperCopyFailed": "用紙リンクをコピーできませんでした"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "スキャン/インポート",
-      "hint": "連絡先、Columba lxma ://カード、または暗号化されたLXMF紙メッセージのQRをスキャンまたは貼り付けます。"
+      "hint": "連絡先、Columba lxma:// カード、または暗号化された LXMF 紙メッセージの QR をスキャンまたは貼り付けます。"
     }
   },
   "nodeDetailModal": {

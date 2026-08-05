@@ -216,6 +216,21 @@ If microphone permission is denied when placing or answering an LXST voice call:
 - **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
 - **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
 
+### Reticulum LXMF paper create/ingest fails
+
+**Symptoms**: Chat **Share as paper** errors; Scan paper / Network QR / OS `lxm://` toast fails; paper badge missing after restart.
+
+| Sidecar / UI error                                 | Likely cause                                               | Fix                                                                               |
+| -------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `identity_unknown` / `shareAsPaperIdentityUnknown` | Peer pubkey not in `known_identities`                      | Import peer `lxma://` contact QR or wait for an announce, then retry              |
+| `decrypt_failed` / `paperDecryptFailed`            | Paper encrypted to a different identity                    | Switch to the recipient identity slot (Network) that matches the paper            |
+| `paper_too_large` / `shareAsPaperTooLarge`         | Message exceeds LXMF paper size cap                        | Shorten the text and recreate                                                     |
+| `invalid_uri` / `paperInvalidUri`                  | Truncated or non-paper `lxm://` blob                       | Rescan / recopy the full QR or URI                                                |
+| `identity_not_configured`                          | No local LXMF identity                                     | Generate/import identity on Network, ensure stack is running                      |
+| Paper badge gone after restart                     | Older builds stripped `received_via: paper` on SQLite save | Update to a build that allowlists `paper` in `reticulumMessageTransport` / DB IPC |
+
+See [reticulum.md](reticulum.md#chat-lxmf) and [sidecar IPC](reticulum-sidecar-ipc.md) paper routes.
+
 ### Reticulum Games challenge fails or board does not update
 
 - **Stack not running / games disabled:** Games need a live `rns-stack` sidecar with sibling `lrgp-rs`. Check Connection → Start stack and `GET` status via Games tab (or logs for `games requires live rns-stack`).

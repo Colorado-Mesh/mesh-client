@@ -1,5 +1,5 @@
 import { FileText, QrCode } from 'lucide-react-motion';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import QrCodeImage from '@/renderer/components/QrCodeImage';
@@ -7,8 +7,10 @@ import QrIngestControl from '@/renderer/components/QrIngestControl';
 import { useToast } from '@/renderer/components/Toast';
 import { useActiveMeshIdentity } from '@/renderer/hooks/useActiveMeshIdentity';
 import { loadDraftsInitial } from '@/renderer/lib/chatPanelProtocolStorage';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { createReticulumPaperMessage } from '@/renderer/lib/reticulum/createReticulumPaperMessage';
 import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
+import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
@@ -43,6 +45,25 @@ export function ChatDmPaperShareControl({
     setOpen(true);
   }, [viewKey]);
 
+  const closeModal = useCallback(() => {
+    setOpen(false);
+    setUri(null);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) {
+        e.preventDefault();
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [busy, closeModal, open]);
+
   const createPaper = useCallback(async () => {
     if (busy || !focusedIdentityId) return;
     setBusy(true);
@@ -62,40 +83,40 @@ export function ChatDmPaperShareControl({
     }
   }, [addToast, busy, focusedIdentityId, lxmfPeerHash, t, text]);
 
+  const shareButton = (
+    <button
+      type="button"
+      className={className}
+      disabled={!sidecarRunning}
+      aria-label={t('chatPanel.shareAsPaperAria')}
+      onClick={openModal}
+    >
+      <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span className="min-w-0 truncate">{t('chatPanel.shareAsPaper')}</span>
+    </button>
+  );
+
   if (!open) {
-    return (
-      <button
-        type="button"
-        className={className}
-        disabled={!sidecarRunning}
-        aria-label={t('chatPanel.shareAsPaperAria')}
-        onClick={openModal}
-      >
-        <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="min-w-0 truncate">{t('chatPanel.shareAsPaper')}</span>
-      </button>
-    );
+    return shareButton;
   }
 
   return (
     <>
-      <button
-        type="button"
-        className={className}
-        disabled={!sidecarRunning}
-        aria-label={t('chatPanel.shareAsPaperAria')}
-        onClick={openModal}
-      >
-        <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="min-w-0 truncate">{t('chatPanel.shareAsPaper')}</span>
-      </button>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('chatPanel.shareAsPaperTitle')}
-      >
-        <div className="bg-deep-black max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-700 p-4 shadow-xl">
+      {shareButton}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <button
+          type="button"
+          className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0"
+          aria-label={t('chatPanel.shareAsPaperClose')}
+          disabled={busy}
+          onClick={closeModal}
+        />
+        <div
+          className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-700 p-4 shadow-xl"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('chatPanel.shareAsPaperTitle')}
+        >
           <h2 className="text-sm font-semibold text-gray-100">
             {t('chatPanel.shareAsPaperTitle')}
           </h2>
@@ -103,7 +124,7 @@ export function ChatDmPaperShareControl({
           {uri == null ? (
             <>
               <label className="mt-3 block">
-                <span className="sr-only">{t('chatPanel.shareAsPaperTitle')}</span>
+                <span className="sr-only">{t('chatPanel.shareAsPaperMessageLabel')}</span>
                 <textarea
                   className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-100"
                   rows={4}
@@ -123,15 +144,13 @@ export function ChatDmPaperShareControl({
                     void createPaper();
                   }}
                 >
-                  {t('chatPanel.shareAsPaper')}
+                  {t('chatPanel.shareAsPaperGenerate')}
                 </button>
                 <button
                   type="button"
                   className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-300"
                   disabled={busy}
-                  onClick={() => {
-                    setOpen(false);
-                  }}
+                  onClick={closeModal}
                 >
                   {t('chatPanel.shareAsPaperClose')}
                 </button>
@@ -147,9 +166,16 @@ export function ChatDmPaperShareControl({
                   type="button"
                   className="bg-readable-green rounded px-3 py-1.5 text-xs font-medium text-white"
                   onClick={() => {
-                    void writeClipboardText(uri).then(() => {
-                      addToast(t('chatPanel.shareAsPaperCopied'), 'success');
-                    });
+                    void writeClipboardText(uri)
+                      .then(() => {
+                        addToast(t('chatPanel.shareAsPaperCopied'), 'success');
+                      })
+                      .catch((err: unknown) => {
+                        console.warn(
+                          '[ChatDmPaperShareControl] clipboard failed: ' + errLikeToLogString(err),
+                        );
+                        addToast(t('chatPanel.shareAsPaperCopyFailed'), 'error');
+                      });
                   }}
                 >
                   {t('chatPanel.shareAsPaperCopyUri')}
@@ -157,10 +183,7 @@ export function ChatDmPaperShareControl({
                 <button
                   type="button"
                   className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-300"
-                  onClick={() => {
-                    setOpen(false);
-                    setUri(null);
-                  }}
+                  onClick={closeModal}
                 >
                   {t('chatPanel.shareAsPaperClose')}
                 </button>
@@ -206,11 +229,13 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
             onDecoded={(decoded) => {
               void (async () => {
                 const outcome = await handleReticulumQrIngest(decoded);
-                if (outcome.handled) {
-                  addToast(t(outcome.toast.key, outcome.toast.params), outcome.toast.variant);
-                  if (outcome.toast.variant === 'success') setExpanded(false);
+                if (showReticulumQrIngestToast(outcome, { t, addToast })) {
+                  if (outcome.handled && outcome.toast.variant === 'success') setExpanded(false);
                 }
-              })();
+              })().catch((err: unknown) => {
+                console.error('[ChatPaperScanControl] ingest failed: ' + errLikeToLogString(err));
+                addToast(t('qrIngest.unknownLink'), 'error');
+              });
             }}
           />
         </div>

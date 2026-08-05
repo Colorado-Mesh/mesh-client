@@ -648,7 +648,7 @@
     "openPeerDetails": "对等方详情",
     "openPeerDetailsAria": "打开 {{name}} 的对等方详情",
     "reticulumSendPaper": "纸张",
-    "reticulumSendPaperTooltip": "共享为加密的LXMF纸质消息（ QR/lxm://link ）",
+    "reticulumSendPaperTooltip": "共享为加密的 LXMF 纸质消息（QR / lxm:// 链接）",
     "shareAsPaper": "以纸张形式共享",
     "shareAsPaperAria": "以加密的LXMF纸质QR格式共享草稿",
     "shareAsPaperTitle": "纸质消息",
@@ -659,10 +659,13 @@
     "shareAsPaperEmpty": "请先键入消息，然后以纸质形式分享。",
     "shareAsPaperFailed": "无法创建纸质消息",
     "shareAsPaperIdentityUnknown": "对等公钥未知—导入他们的联系人QR或等待公告，然后重试。",
-    "shareAsPaperTooLarge": "邮件对于纸质二维码来说太长了，请缩短消息，然后重试。",
+    "shareAsPaperTooLarge": "消息对于纸质二维码来说太长了，请缩短消息，然后重试。",
     "scanPaper": "扫描纸",
     "scanPaperAria": "扫描或粘贴加密的LXMF纸质消息",
-    "scanPaperHint": "粘贴或扫描纸质二维码以解密到聊天中。"
+    "scanPaperHint": "粘贴或扫描纸质二维码以解密到聊天中。",
+    "shareAsPaperMessageLabel": "要加密的消息",
+    "shareAsPaperGenerate": "创建纸质二维码",
+    "shareAsPaperCopyFailed": "无法复制纸质链接"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "扫描/导入",
-      "hint": "扫描或粘贴QR码以查找联系人、Columba lxma://卡或加密的LXMF纸质消息。"
+      "hint": "扫描或粘贴 QR 码以查找联系人、Columba lxma:// 卡或加密的 LXMF 纸质消息。"
     }
   },
   "nodeDetailModal": {

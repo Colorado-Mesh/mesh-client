@@ -647,8 +647,8 @@
     "hopCountRefinedFromRf": "Diperbarui dari jalur RF",
     "openPeerDetails": "Detail peer",
     "openPeerDetailsAria": "Buka detail peer untuk {{name}}",
-    "reticulumSendPaper": "Paper",
-    "reticulumSendPaperTooltip": "Dibagikan sebagai pesan kertas LXMF terenkripsi (QR /lxm :// link)",
+    "reticulumSendPaper": "Kertas",
+    "reticulumSendPaperTooltip": "Dibagikan sebagai pesan kertas LXMF terenkripsi (QR / lxm:// tautan)",
     "shareAsPaper": "Bagikan sebagai kertas",
     "shareAsPaperAria": "Bagikan draf sebagai QR kertas LXMF terenkripsi",
     "shareAsPaperTitle": "Pesan kertas",
@@ -662,7 +662,10 @@
     "shareAsPaperTooLarge": "Pesan terlalu panjang untuk QR kertas — persingkat dan coba lagi.",
     "scanPaper": "Pindai kertas",
     "scanPaperAria": "Pindai atau tempel pesan kertas LXMF terenkripsi",
-    "scanPaperHint": "Tempel atau pindai QR kertas untuk mendekripsi ke Chat."
+    "scanPaperHint": "Tempel atau pindai QR kertas untuk mendekripsi ke Chat.",
+    "shareAsPaperMessageLabel": "Pesan untuk dienkripsi",
+    "shareAsPaperGenerate": "Buat QR kertas",
+    "shareAsPaperCopyFailed": "Tidak dapat menyalin tautan kertas"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Pindai / impor",
-      "hint": "Pindai atau tempel QR untuk kontak, Columba lxma :// kartu, atau pesan kertas LXMF terenkripsi."
+      "hint": "Pindai atau tempel QR untuk kontak, kartu Columba lxma://, atau pesan kertas LXMF terenkripsi."
     }
   },
   "nodeDetailModal": {
@@ -4900,7 +4903,7 @@
     "paperInvalidUri": "Itu tidak terlihat seperti tautan kertas LXMF yang valid",
     "paperDecryptFailed": "Tidak dapat mendekripsi pesan kertas — apakah ini identitas yang benar?",
     "paperIdentityNotConfigured": "Identitas Reticulum belum siap — mulai tumpukan dan konfigurasikan identitas terlebih dahulu",
-    "paperIngestFailed": "Tidak dapat menelan pesan kertas"
+    "paperIngestFailed": "Tidak dapat memproses pesan kertas"
   },
   "reticulumRemote": {
     "navAria": "Bagian terpencil",

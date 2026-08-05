@@ -662,7 +662,10 @@
     "shareAsPaperTooLarge": "Il messaggio è troppo lungo per un QR cartaceo: accorcialo e riprova.",
     "scanPaper": "Scansiona la carta",
     "scanPaperAria": "Scansiona o incolla un messaggio cartaceo LXMF crittografato",
-    "scanPaperHint": "Incolla o scansiona un QR cartaceo per decifrarlo in Chat."
+    "scanPaperHint": "Incolla o scansiona un QR cartaceo per decifrarlo in Chat.",
+    "shareAsPaperMessageLabel": "Messaggio da crittografare",
+    "shareAsPaperGenerate": "Crea QR cartaceo",
+    "shareAsPaperCopyFailed": "Impossibile copiare il link cartaceo"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -2652,7 +2655,7 @@
     },
     "reticulumScanImport": {
       "title": "Scansione / importazione",
-      "hint": "Scansiona o incolla un QR per contatti, schede Columba lxma://o messaggi cartacei LXMF crittografati."
+      "hint": "Scansiona o incolla un QR per contatti, schede Columba lxma:// o messaggi cartacei LXMF crittografati."
     }
   },
   "nodeDetailModal": {
