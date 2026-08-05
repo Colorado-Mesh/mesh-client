@@ -16,6 +16,7 @@ import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
 import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
+import { buildRrcWhisperCompleteMembers } from '@/renderer/lib/rrcNickComplete';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { clearRrcRoomHistory, hydrateRrcRoomMessages } from '@/renderer/lib/rrcRoomHistory';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
@@ -375,6 +376,16 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     }
     return members;
   }, [activeRoomInfo?.members, localIdentityHash, nickname]);
+
+  const chatCompleteMembers = useMemo(() => {
+    if (activeRoom !== RRC_WHISPERS_ROOM) return nicklistMembers;
+    return buildRrcWhisperCompleteMembers({
+      lastWhisperPeer,
+      messages: activeMessages,
+      localIdentityHash,
+      selfNickname: nickname,
+    });
+  }, [activeRoom, activeMessages, lastWhisperPeer, localIdentityHash, nickname, nicklistMembers]);
 
   const displayError = lastError ? formatRrcErrorMessage(lastError, t) : null;
 
@@ -1057,7 +1068,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             canSend={status === 'active'}
             isMuted={isMuted}
             nickname={nickname}
-            members={nicklistMembers}
+            members={chatCompleteMembers}
             alwaysShowMessageActions={alwaysShowMessageActions}
             placeholder={whisperComposerPlaceholder}
             isActive={isActive}

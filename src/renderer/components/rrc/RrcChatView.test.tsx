@@ -91,7 +91,7 @@ describe('RrcChatView IRC layout', () => {
     expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
   });
 
-  it('highlights self @nick with a mark', () => {
+  it('highlights self @nick in IRC bold red', () => {
     render(
       <RrcChatView
         {...baseProps}
@@ -99,8 +99,34 @@ describe('RrcChatView IRC layout', () => {
         messages={[makeMsg({ id: '1', body: 'hey @nv0n check', nickname: 'Zeva' })]}
       />,
     );
-    const mark = screen.getByText('@nv0n');
-    expect(mark.tagName).toBe('MARK');
+    const el = screen.getByText('@nv0n');
+    expect(el.tagName).toBe('SPAN');
+    expect(el.className).toContain('font-bold');
+    expect(el.className).toContain('text-red-500');
+    expect(el.className).not.toMatch(/bg-yellow/);
+  });
+
+  it('renders [whispers] inbound notice as room-style <nick> body', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        activeRoom="[whispers]"
+        messages={[
+          makeMsg({
+            id: '1',
+            room: '[whispers]',
+            kind: 'notice',
+            body: 'psst',
+            nickname: 'Zeva',
+          }),
+        ]}
+      />,
+    );
+    const line = screen.getByTestId('rrc-chat-line');
+    expect(line.textContent).toMatch(/<Zeva>\s*psst/);
+    expect(line.textContent).not.toMatch(/-Zeva-/);
+    expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
+    expect(line.className).toContain('text-amber-50/90');
   });
 
   it('hides empty system/notice rows', () => {
@@ -183,6 +209,34 @@ describe('RrcChatView mention completer', () => {
     await user.click(screen.getByRole('option', { name: /Zeva/i }));
     expect(box).toHaveValue('@Zeva ');
     expect((box as HTMLTextAreaElement).value).not.toContain('@[');
+  });
+
+  it('completes @ from whisper peer members in [whispers]', async () => {
+    const user = userEvent.setup();
+    const members = [{ identity_hash: 'aa'.repeat(16), nickname: 'Zeva' }];
+
+    function Harness() {
+      const [draft, setDraft] = useState('');
+      return (
+        <RrcChatView
+          {...baseProps}
+          activeRoom="[whispers]"
+          draft={draft}
+          onDraftChange={setDraft}
+          members={members}
+          messages={[]}
+        />
+      );
+    }
+
+    render(<Harness />);
+    const box = screen.getByLabelText('rrc.messagePlaceholder');
+    await user.type(box, '@ze');
+    await waitFor(() => {
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: /Zeva/i }));
+    expect(box).toHaveValue('@Zeva ');
   });
 });
 

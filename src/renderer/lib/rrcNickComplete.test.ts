@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildRrcWhisperCompleteMembers,
   findRrcAtMentionAtCaret,
   insertRrcNickMention,
   listRrcNickCompleteCandidates,
@@ -79,5 +80,48 @@ describe('nextRrcNickCompleteIndex', () => {
 
   it('returns -1 for empty candidates', () => {
     expect(nextRrcNickCompleteIndex([], -1, false)).toBe(-1);
+  });
+});
+
+describe('buildRrcWhisperCompleteMembers', () => {
+  const peerA = 'aa'.repeat(16);
+  const peerB = 'bb'.repeat(16);
+  const self = 'cc'.repeat(16);
+
+  it('dedupes lastWhisperPeer and message senders; keeps nicknamed peers', () => {
+    const members = buildRrcWhisperCompleteMembers({
+      lastWhisperPeer: { identity_hash: peerA, nickname: 'Zeva' },
+      messages: [
+        {
+          kind: 'notice',
+          sender_hash: peerA,
+          nickname: 'Zeva',
+        },
+        {
+          kind: 'notice',
+          sender_hash: peerB,
+          nickname: 'Bob',
+        },
+        {
+          kind: 'system',
+          dst_hash: peerB,
+          nickname: null,
+        },
+      ],
+      localIdentityHash: self,
+      selfNickname: 'nv0n',
+    });
+    const nicks = members.map((m) => m.nickname).sort();
+    expect(nicks).toEqual(['Bob', 'Zeva', 'nv0n']);
+  });
+
+  it('skips peers without nicknames', () => {
+    const members = buildRrcWhisperCompleteMembers({
+      lastWhisperPeer: { identity_hash: peerA, nickname: null },
+      messages: [{ kind: 'notice', sender_hash: peerA, nickname: null }],
+      localIdentityHash: self,
+      selfNickname: null,
+    });
+    expect(members).toEqual([]);
   });
 });

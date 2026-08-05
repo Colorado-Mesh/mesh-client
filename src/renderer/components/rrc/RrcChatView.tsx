@@ -23,7 +23,11 @@ import {
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '@/renderer/lib/chatScrollUtils';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
-import { bodyMentionsRrcNick, findNextRrcNickMention } from '@/renderer/lib/rrcMention';
+import {
+  bodyMentionsRrcNick,
+  findNextRrcNickMention,
+  isRrcWhisperRoom,
+} from '@/renderer/lib/rrcMention';
 import { parseRrcWhisperEcho, shouldDisplayRrcChatMessage } from '@/renderer/lib/rrcMessageDisplay';
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import {
@@ -125,12 +129,9 @@ function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
       nodes.push(...renderRrcInlineText(text.slice(last, match.start), `t${last}`));
     }
     nodes.push(
-      <mark
-        key={`m-${match.start}`}
-        className="rounded bg-yellow-400/50 px-0.5 font-semibold text-yellow-950"
-      >
+      <span key={`m-${match.start}`} className="font-bold text-red-500">
         {text.slice(match.start, match.end)}
-      </mark>,
+      </span>,
     );
     last = match.end;
     cursor = match.end;
@@ -484,15 +485,22 @@ export function RrcChatView({
                       use24Hour: use24HourTime,
                     })
                   : null;
-                const lineClass =
-                  msg.kind === 'notice' || msg.kind === 'system'
+                const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
+                // Inbound whispers are wire NOTICE — show room-style <nick> in [whispers].
+                const whisperAsRoomMsg =
+                  isRrcWhisperRoom(activeRoom) &&
+                  (msg.kind === 'notice' || msg.kind === 'msg') &&
+                  Boolean(nick) &&
+                  !whisperEcho;
+                const lineClass = whisperAsRoomMsg
+                  ? 'text-amber-50/90'
+                  : msg.kind === 'notice' || msg.kind === 'system'
                     ? 'text-amber-300/90'
                     : msg.kind === 'action'
                       ? 'text-cyan-200/90 italic'
                       : msg.kind === 'error'
                         ? 'text-red-300'
                         : 'text-amber-50/90';
-                const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
                 const body = highlightRrcSelfMentions(
                   whisperEcho ? whisperEcho.text : msg.body,
                   nickname,
@@ -520,6 +528,13 @@ export function RrcChatView({
                           <>
                             * <NickSpan nick={nick} /> {body}
                           </>
+                        ) : whisperAsRoomMsg || msg.kind === 'msg' ? (
+                          <>
+                            <span className={`font-semibold ${rrcNickColorClass(nick)}`}>
+                              &lt;{nick}&gt;
+                            </span>{' '}
+                            {body}
+                          </>
                         ) : msg.kind === 'notice' ||
                           msg.kind === 'system' ||
                           msg.kind === 'error' ? (
@@ -531,14 +546,7 @@ export function RrcChatView({
                             )}
                             {body}
                           </>
-                        ) : (
-                          <>
-                            <span className={`font-semibold ${rrcNickColorClass(nick)}`}>
-                              &lt;{nick}&gt;
-                            </span>{' '}
-                            {body}
-                          </>
-                        )}
+                        ) : null}
                       </div>
                       <button
                         type="button"

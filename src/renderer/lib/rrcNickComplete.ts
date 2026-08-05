@@ -95,3 +95,63 @@ export function nextRrcNickCompleteIndex(
   }
   return (currentIndex + 1) % candidates.length;
 }
+
+export interface BuildRrcWhisperCompleteMembersOpts {
+  lastWhisperPeer: { identity_hash: string; nickname?: string | null } | null;
+  messages: readonly {
+    kind: string;
+    nickname?: string | null;
+    sender_hash?: string | null;
+    dst_hash?: string | null;
+  }[];
+  localIdentityHash?: string | null;
+  selfNickname?: string | null;
+}
+
+/**
+ * Nick candidates for @/Tab completion in the synthetic [whispers] room
+ * (no hub roster — peers come from last whisper + transcript senders).
+ */
+export function buildRrcWhisperCompleteMembers(
+  opts: BuildRrcWhisperCompleteMembersOpts,
+): { identity_hash: string; nickname?: string | null }[] {
+  const byHash = new Map<string, { identity_hash: string; nickname?: string | null }>();
+  const local = opts.localIdentityHash?.trim().toLowerCase() || null;
+
+  const upsert = (identity_hash: string, nickname?: string | null) => {
+    const hash = identity_hash.trim().toLowerCase();
+    if (!hash) return;
+    const nick = nickname?.trim() || null;
+    const prev = byHash.get(hash);
+    if (prev) {
+      if (!prev.nickname?.trim() && nick) {
+        byHash.set(hash, { identity_hash: hash, nickname: nick });
+      }
+      return;
+    }
+    byHash.set(hash, { identity_hash: hash, nickname: nick });
+  };
+
+  if (opts.lastWhisperPeer?.identity_hash.trim()) {
+    upsert(opts.lastWhisperPeer.identity_hash, opts.lastWhisperPeer.nickname);
+  }
+
+  for (const msg of opts.messages) {
+    if (msg.kind === 'system' && msg.dst_hash?.trim()) {
+      upsert(msg.dst_hash, msg.nickname);
+      continue;
+    }
+    if ((msg.kind === 'notice' || msg.kind === 'msg' || msg.kind === 'action') && msg.sender_hash) {
+      const sender = msg.sender_hash.trim().toLowerCase();
+      if (local && sender === local) continue;
+      upsert(sender, msg.nickname);
+    }
+  }
+
+  const selfNick = opts.selfNickname?.trim() || null;
+  if (selfNick) {
+    upsert(local ?? `nick:${selfNick.toLowerCase()}`, selfNick);
+  }
+
+  return [...byHash.values()].filter((m) => Boolean(m.nickname?.trim()));
+}
