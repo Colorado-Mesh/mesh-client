@@ -130,6 +130,7 @@ describe('Windows packaging (contract)', () => {
     expect(installScript).toContain('assertBundledReticulumSidecarInBundle');
     expect(installScript).toContain('/LOG=');
     expect(installScript).toContain('find-nsis-app-archive.mjs');
+    expect(installScript).toContain("dumpDir('release dir (installer missing)'");
 
     const finderScript = readFileSync(
       join(REPO_ROOT, 'scripts', 'find-nsis-app-archive.mjs'),
@@ -156,6 +157,13 @@ describe('Windows packaging (contract)', () => {
     );
     expect(buildWorkflow).toContain('needs: build');
     expect(buildWorkflow).not.toContain('win-arm64-install:');
+    // READ-ME-FIRST must live under release/ in uploads so artifact LCA stays release/
+    // (paths outside release/ nest as release/release/*.exe and break packaging-smoke).
+    expect(buildWorkflow).toContain('Stage READ-ME-FIRST into release output');
+    expect(buildWorkflow).toContain('release/READ-ME-FIRST-test-build.md');
+    expect(buildWorkflow).not.toMatch(
+      /Upload Windows Artifact[\s\S]*release-warnings\/READ-ME-FIRST-test-build\.md/,
+    );
 
     const buildJobBlock = buildWorkflow.slice(
       buildWorkflow.indexOf('  build:'),

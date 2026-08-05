@@ -316,7 +316,7 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 1. Labels **Build Binaries** / **Build Flatpak (no release)** runs as a **test build** (not an official release) in `$GITHUB_STEP_SUMMARY`
 2. Compares this tree’s `CURRENT_SCHEMA_VERSION` to the last published (non-draft) GitHub Release tag
-3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-flatpak.md` (flatpak) / `READ-ME-FIRST-schema.md` (release) and includes the warning in platform / Flatpak artifact uploads when sharing Actions downloads
+3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-flatpak.md` (flatpak) / `READ-ME-FIRST-schema.md` (release). **Build Binaries** stages the note into `release/` before platform uploads so `upload-artifact`’s least-common-ancestor stays under `release/` (mixing `release-warnings/` nests installers as `release/release/*.exe` and breaks `packaging-smoke`). Flatpak keeps a separate per-arch `flatpak-schema-warning-*` artifact beside the bundle
 4. Exposes `schema_bumped` / `curr_schema` / `prev_schema` / `prev_tag` for packaging
 
 When schema is bumped, packaging runs `scripts/write-schema-upgrade-notice.mjs` so Windows NSIS can show a MessageBox and macOS/Linux/Flatpak bundles can include `SCHEMA-UPGRADE.txt` in app resources (`electron-builder-before-pack.mjs` / Flatpak `resources/` copy).
