@@ -99,13 +99,13 @@ Triggered by pushing a version tag (e.g., `v1.2.3`):
 
 1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release, writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
 2. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads), then prepends the schema compare note to the draft body. On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`).
-3. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*:publish` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
-4. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
+3. Installs Linux build dependencies (`libudev-dev`, `rpm`, …) on `ubuntu-latest` runners
+4. Rebuilds native dependencies (`pnpm run rebuild`)
+5. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*:publish` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
+6. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
    - `macos-latest` → `pnpm run dist:mac:publish`
    - `ubuntu-latest` → `pnpm run dist:linux:publish`
    - `windows-latest` → `pnpm run dist:win:publish`
-5. Rebuilds native dependencies (`pnpm run rebuild`)
-6. Installs Linux build dependencies (`libudev-dev`, `rpm`)
 7. Publishes artifacts to GitHub Releases
 
 Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).

@@ -149,10 +149,11 @@ export function writeBuildInfoEnv(env = process.env, opts = {}) {
 
 function main() {
   const { payload } = writeBuildInfoEnv();
-  console.log(
+  process.stdout.write(
     `Wrote MESH_CLIENT_BUILD_INFO channel=${payload.channel}` +
       (payload.runId ? ` runId=${payload.runId}` : '') +
-      (payload.tag ? ` tag=${payload.tag}` : ''),
+      (payload.tag ? ` tag=${payload.tag}` : '') +
+      '\n',
   );
 }
 

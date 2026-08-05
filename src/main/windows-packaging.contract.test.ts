@@ -159,11 +159,30 @@ describe('Windows packaging (contract)', () => {
     expect(buildWorkflow).not.toContain('win-arm64-install:');
     // READ-ME-FIRST must live under release/ in uploads so artifact LCA stays release/
     // (paths outside release/ nest as release/release/*.exe and break packaging-smoke).
-    expect(buildWorkflow).toContain('Stage READ-ME-FIRST into release output');
-    expect(buildWorkflow).toContain('release/READ-ME-FIRST-test-build.md');
-    expect(buildWorkflow).not.toMatch(
-      /Upload Windows Artifact[\s\S]*release-warnings\/READ-ME-FIRST-test-build\.md/,
+    const stageReadmeIdx = buildWorkflow.indexOf('Stage READ-ME-FIRST into release output');
+    expect(stageReadmeIdx).toBeGreaterThan(-1);
+    const firstUploadIdx = Math.min(
+      ...(
+        ['Upload macOS Artifact', 'Upload Linux Artifact', 'Upload Windows Artifact'] as const
+      ).map((name) => {
+        const idx = buildWorkflow.indexOf(name);
+        expect(idx, name).toBeGreaterThan(-1);
+        return idx;
+      }),
     );
+    expect(stageReadmeIdx).toBeLessThan(firstUploadIdx);
+    for (const uploadName of [
+      'Upload macOS Artifact',
+      'Upload Linux Artifact',
+      'Upload Windows Artifact',
+    ] as const) {
+      const start = buildWorkflow.indexOf(`- name: ${uploadName}`);
+      expect(start, uploadName).toBeGreaterThan(-1);
+      const nextStep = buildWorkflow.indexOf('\n      - name:', start + 1);
+      const block = buildWorkflow.slice(start, nextStep === -1 ? undefined : nextStep);
+      expect(block).toContain('release/READ-ME-FIRST-test-build.md');
+      expect(block).not.toContain('release-warnings/READ-ME-FIRST-test-build.md');
+    }
 
     const buildJobBlock = buildWorkflow.slice(
       buildWorkflow.indexOf('  build:'),

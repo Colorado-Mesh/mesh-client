@@ -211,6 +211,37 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('createRfReconnectController');
   });
 
+  it('handleConnectionLost returns early on explicit user disconnect', () => {
+    const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
+    expect(lostBody).toMatch(
+      /if \(meshtasticExplicitDisconnectRef\.current\) \{[\s\S]*?skip reconnect \(user disconnect\)/,
+    );
+    const explicitIdx = lostBody.indexOf('meshtasticExplicitDisconnectRef.current');
+    const onLinkLostIdx = lostBody.indexOf('onLinkLost()');
+    expect(explicitIdx).toBeGreaterThanOrEqual(0);
+    expect(onLinkLostIdx).toBeGreaterThan(explicitIdx);
+  });
+
+  it('attemptReconnect marks controller exhausted and re-enters via onLinkLost after serial rediscovery', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('markExhausted()');
+    expect(reconnectBody).toMatch(
+      /startSerialRediscovery\(\{[\s\S]*?onFound:[\s\S]*?onLinkLost\(\)[\s\S]*?scheduleMeshtasticReconnectAttemptRef\.current\(\)/,
+    );
+    expect(reconnectBody).not.toMatch(
+      /startSerialRediscovery\(\{[\s\S]*?onFound:[\s\S]*?void attemptReconnectRef\.current\(\)/,
+    );
+  });
+
+  it('cancels controller on suspend, manual disconnect, and connect replacement', () => {
+    const suspendBody = extractUseCallbackBody(SOURCE, 'onPowerSuspend');
+    expect(suspendBody).toContain('meshtasticRfReconnectRef.current.cancel()');
+    const finalizeBody = extractUseCallbackBody(SOURCE, 'finalizeDriverDisconnect');
+    expect(finalizeBody).toContain('meshtasticRfReconnectRef.current.cancel()');
+    const prepareBody = extractUseCallbackBody(SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('meshtasticRfReconnectRef.current.cancel()');
+  });
+
   it('coalesces reconnect attempt schedules via scheduleOwner', () => {
     expect(SOURCE).toContain('scheduleMeshtasticReconnectAttempt');
     expect(SOURCE).toContain('meshtasticRfReconnectRef');
@@ -289,6 +320,7 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
     expect(finalizeBody).toContain('reconnectConnectInFlightRef.current = false');
     expect(finalizeBody).toContain('reconnectAttemptRef.current = 0');
     expect(finalizeBody).toContain('reconnectGenerationRef.current++');
+    expect(finalizeBody).toContain('meshtasticRfReconnectRef.current.cancel()');
     const driverIndex = finalizeBody.indexOf('connectionDriver.disconnect');
     const explicitIndex = finalizeBody.indexOf('meshtasticExplicitDisconnectRef.current = true');
     const cleanupIdx = finalizeBody.lastIndexOf('cleanupSubscriptions()');

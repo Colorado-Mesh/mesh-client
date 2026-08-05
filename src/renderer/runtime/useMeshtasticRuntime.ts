@@ -1995,6 +1995,10 @@ export function useMeshtasticRuntime() {
   const nobleYieldReconnectNudgeRef = useRef(false);
 
   const handleConnectionLost = useCallback(() => {
+    if (meshtasticExplicitDisconnectRef.current) {
+      console.debug('[useMeshtasticRuntime] skip reconnect (user disconnect)');
+      return;
+    }
     // Single-owner: while a cycle is active, onLinkLost only dirties — never schedules after
     // await disconnect (MeshCore n7eal TCP parity / #792–#796).
     const wasReconnecting = isReconnectingRef.current;
@@ -2101,6 +2105,7 @@ export function useMeshtasticRuntime() {
     if (reconnectAttemptRef.current >= maxReconnectAttempts) {
       isReconnectingRef.current = false;
       reconnectAttemptRef.current = 0;
+      meshtasticRfReconnectRef.current.markExhausted();
       cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
@@ -2130,7 +2135,14 @@ export function useMeshtasticRuntime() {
             }));
             isReconnectingRef.current = true;
             reconnectAttemptRef.current = 0;
-            void attemptReconnectRef.current();
+            // Re-enter through the controller after markExhausted (idle → owner).
+            const linkLost = meshtasticRfReconnectRef.current.onLinkLost();
+            reconnectGenerationRef.current = linkLost.generation;
+            if (linkLost.shouldStartOwner) {
+              scheduleMeshtasticReconnectAttemptRef.current();
+            } else {
+              meshtasticDeferredReconnectRef.current = true;
+            }
           },
           onTimeout: () => {
             void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);
@@ -2398,6 +2410,7 @@ export function useMeshtasticRuntime() {
   const onPowerSuspend = useCallback(() => {
     reconnectGenerationRef.current += 1;
     isReconnectingRef.current = false;
+    meshtasticRfReconnectRef.current.cancel();
   }, []);
 
   const onPowerResume = useCallback(() => {
@@ -2553,6 +2566,7 @@ export function useMeshtasticRuntime() {
       // Supersede any in-flight reconnect open so configure-timeout gating does not stick.
       reconnectConnectInFlightRef.current = false;
       reconnectGenerationRef.current++;
+      meshtasticRfReconnectRef.current.cancel();
       if (type === 'ble') {
         bleConnectInProgressRef.current = true;
         meshtasticDeferredReconnectRef.current = false;
@@ -2718,6 +2732,7 @@ export function useMeshtasticRuntime() {
       reconnectConnectInFlightRef.current = false;
       reconnectAttemptRef.current = 0;
       reconnectGenerationRef.current++;
+      meshtasticRfReconnectRef.current.cancel();
       connectionParamsRef.current = null;
 
       const device = deviceRef.current;

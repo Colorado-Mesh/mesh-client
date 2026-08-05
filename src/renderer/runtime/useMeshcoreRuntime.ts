@@ -2544,6 +2544,7 @@ export function useMeshcoreRuntime() {
       if (!opts?.preserveReconnectState) {
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
+        meshcoreRfReconnectRef.current.cancel();
       }
     },
     [teardownMeshcoreConnEventListeners],
@@ -2641,6 +2642,7 @@ export function useMeshcoreRuntime() {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreReconnectGenerationRef.current += 1;
+      meshcoreRfReconnectRef.current.cancel();
       meshcoreSetupGenerationRef.current += 1;
       const ackEntries = new Set(pendingAcksRef.current.values());
       for (const e of ackEntries) {
@@ -2739,6 +2741,7 @@ export function useMeshcoreRuntime() {
     if (meshcoreReconnectAttemptRef.current >= maxReconnectAttempts) {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
+      meshcoreRfReconnectRef.current.markExhausted();
       if (params.rfType === 'ble') {
         bleConnectInProgressRef.current = false;
       }
@@ -2764,7 +2767,14 @@ export function useMeshcoreRuntime() {
             }));
             meshcoreIsReconnectingRef.current = true;
             meshcoreReconnectAttemptRef.current = 0;
-            void attemptMeshcoreReconnectRef.current();
+            // Re-enter through the controller after markExhausted (idle → owner).
+            const linkLost = meshcoreRfReconnectRef.current.onLinkLost();
+            meshcoreReconnectGenerationRef.current = linkLost.generation;
+            if (linkLost.shouldStartOwner) {
+              scheduleMeshcoreReconnectAttemptRef.current();
+            } else {
+              meshcoreDeferredReconnectRef.current = true;
+            }
           },
           onTimeout: () => {
             void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);

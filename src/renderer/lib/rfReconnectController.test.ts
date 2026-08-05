@@ -138,6 +138,36 @@ describe('createRfReconnectController', () => {
     expect(c.attemptActive).toBe(false);
   });
 
+  it('markExhausted returns to idle so a later onLinkLost can start a new owner', () => {
+    const c = create();
+    c.onLinkLost();
+    c.beginAttempt(3);
+    c.markExhausted();
+    expect(c.isReconnecting).toBe(false);
+    expect(c.phase).toBe('idle');
+    expect(c.attemptActive).toBe(false);
+
+    const again = c.onLinkLost();
+    expect(again.shouldStartOwner).toBe(true);
+    expect(c.isReconnecting).toBe(true);
+
+    const runs: number[] = [];
+    c.scheduleOwner(() => runs.push(1));
+    flushMicrotasks();
+    expect(runs).toEqual([1]);
+  });
+
+  it('cancel before scheduled owner runs prevents the owner', () => {
+    const c = create();
+    c.onLinkLost();
+    const runs: number[] = [];
+    c.scheduleOwner(() => runs.push(1));
+    c.cancel();
+    flushMicrotasks();
+    expect(runs).toEqual([]);
+    expect(c.isReconnecting).toBe(false);
+  });
+
   it('scheduleOwner during attemptActive sets dirty instead of running', () => {
     const c = create();
     c.onLinkLost();

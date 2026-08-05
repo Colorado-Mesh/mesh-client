@@ -284,6 +284,7 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(finalizeBody).toContain('meshcoreIsReconnectingRef.current = false');
     expect(finalizeBody).toContain('meshcoreReconnectAttemptRef.current = 0');
     expect(finalizeBody).toContain('meshcoreReconnectGenerationRef.current += 1');
+    expect(finalizeBody).toContain('meshcoreRfReconnectRef.current.cancel()');
     expect(finalizeBody).toContain('meshcoreEverConfiguredRef.current = false');
     const teardownIndex = finalizeBody.indexOf('teardownMeshcoreConnEventListeners');
     const explicitIndex = finalizeBody.indexOf('meshcoreExplicitDisconnectRef.current = true');
@@ -301,6 +302,28 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
     expect(lostBody).toMatch(
       /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?skip reconnect \(user disconnect\)/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect marks controller exhausted and re-enters via onLinkLost after serial rediscovery', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('markExhausted()');
+    expect(reconnectBody).toMatch(
+      /startSerialRediscovery\(\{[\s\S]*?onFound:[\s\S]*?onLinkLost\(\)[\s\S]*?scheduleMeshcoreReconnectAttemptRef\.current\(\)/,
+    );
+    expect(reconnectBody).not.toMatch(
+      /startSerialRediscovery\(\{[\s\S]*?onFound:[\s\S]*?void attemptMeshcoreReconnectRef\.current\(\)/,
+    );
+  });
+
+  it('cancels controller on suspend, manual disconnect, and connect replacement', () => {
+    const suspendBody = extractUseCallbackBody(RUNTIME_SOURCE, 'onPowerSuspend');
+    expect(suspendBody).toContain('meshcoreRfReconnectRef.current.cancel()');
+    const finalizeBody = extractUseCallbackBody(RUNTIME_SOURCE, 'finalizeDriverDisconnect');
+    expect(finalizeBody).toContain('meshcoreRfReconnectRef.current.cancel()');
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toMatch(
+      /!opts\?\.preserveReconnectState[\s\S]*?meshcoreRfReconnectRef\.current\.cancel\(\)/,
     );
   });
 
