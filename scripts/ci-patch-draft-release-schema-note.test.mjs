@@ -3,6 +3,7 @@ import {
   mergeSchemaNoteIntoReleaseBody,
   patchDraftReleaseSchemaNote,
   requireDraftReleaseForSchemaPatch,
+  schemaMarkdownFromCompareOutputs,
 } from './ci-patch-draft-release-schema-note.mjs';
 
 describe('mergeSchemaNoteIntoReleaseBody', () => {
@@ -38,6 +39,30 @@ describe('requireDraftReleaseForSchemaPatch', () => {
     expect(() =>
       requireDraftReleaseForSchemaPatch([{ id: 1, draft: false, body: 'published' }], 'v1.0.0'),
     ).toThrow('No release found for v1.0.0');
+  });
+});
+
+describe('schemaMarkdownFromCompareOutputs', () => {
+  it('rebuilds release markdown from trusted schema outputs', () => {
+    const md = schemaMarkdownFromCompareOutputs({
+      MESH_CLIENT_SCHEMA_CURR: '49',
+      MESH_CLIENT_SCHEMA_PREV: '48',
+      MESH_CLIENT_SCHEMA_PREV_TAG: 'v5.26.0',
+    });
+    expect(md).toContain('Release build — database schema check');
+    expect(md).toContain('49');
+    expect(md).toContain('v5.26.0');
+    expect(md).toContain('48 → 49');
+  });
+
+  it('rejects unsafe tags', () => {
+    expect(() =>
+      schemaMarkdownFromCompareOutputs({
+        MESH_CLIENT_SCHEMA_CURR: '49',
+        MESH_CLIENT_SCHEMA_PREV: '48',
+        MESH_CLIENT_SCHEMA_PREV_TAG: 'evil;rm',
+      }),
+    ).toThrow(/Unsafe release tag/);
   });
 });
 

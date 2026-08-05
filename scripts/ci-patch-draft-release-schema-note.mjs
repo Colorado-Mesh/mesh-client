@@ -1,8 +1,17 @@
 #!/usr/bin/env node
 /**
  * Prepend schema-compare markdown to an existing draft GitHub release body.
+ *
+ * Markdown is rebuilt from trusted schema job outputs (env), not read from a
+ * downloaded artifact — avoids CodeQL `js/file-access-to-http` (file → GitHub API).
  */
 import { pathToFileURL } from 'node:url';
+import {
+  formatSchemaCompareMarkdown,
+  isSchemaBumped,
+  trustedReleaseTag,
+  trustedSchemaVersion,
+} from './ci-schema-release-compare.mjs';
 import {
   authToken,
   ensureGithubDraftRelease,
@@ -42,6 +51,29 @@ export function requireDraftReleaseForSchemaPatch(releases, tag) {
 }
 
 /**
+ * Rebuild release-mode schema markdown from compare-job outputs (env).
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function schemaMarkdownFromCompareOutputs(env = process.env) {
+  const currSchema = trustedSchemaVersion(env.MESH_CLIENT_SCHEMA_CURR);
+  const prevRaw = env.MESH_CLIENT_SCHEMA_PREV;
+  const prevSchema =
+    typeof prevRaw === 'string' && prevRaw !== '' && /^\d+$/.test(prevRaw)
+      ? trustedSchemaVersion(prevRaw)
+      : null;
+  const prevTagRaw = env.MESH_CLIENT_SCHEMA_PREV_TAG;
+  const prevTag =
+    typeof prevTagRaw === 'string' && prevTagRaw !== '' ? trustedReleaseTag(prevTagRaw) : null;
+  return formatSchemaCompareMarkdown({
+    mode: 'release',
+    currSchema,
+    prevSchema,
+    prevTag,
+    schemaBumped: isSchemaBumped(currSchema, prevSchema),
+  });
+}
+
+/**
  * @param {{
  *   tag: string,
  *   token: string,
@@ -71,13 +103,13 @@ export async function patchDraftReleaseSchemaNote(opts) {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const fileIdx = argv.indexOf('--markdown-file');
-  if (fileIdx < 0 || !argv[fileIdx + 1]) {
-    throw new Error('Usage: ci-patch-draft-release-schema-note.mjs --markdown-file <path>');
+  if (argv.includes('--markdown-file')) {
+    throw new Error(
+      'Usage: ci-patch-draft-release-schema-note.mjs (pass MESH_CLIENT_SCHEMA_* env from schema-release-compare; --markdown-file removed for CodeQL)',
+    );
   }
-  const fs = await import('node:fs');
-  const markdown = fs.readFileSync(argv[fileIdx + 1], 'utf8');
 
+  const markdown = schemaMarkdownFromCompareOutputs(process.env);
   const tag = resolveTag(argv, process.env);
   const token = authToken(process.env);
   await patchDraftReleaseSchemaNote({
