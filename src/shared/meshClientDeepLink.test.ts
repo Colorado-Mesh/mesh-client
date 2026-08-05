@@ -51,9 +51,21 @@ describe('meshClientDeepLink', () => {
     }
   });
 
-  it('soft-fails unknown lxm paper blobs', () => {
+  it('classifies opaque lxm:// blobs as paper messages', () => {
+    const blob = 'A'.repeat(48);
+    const uri = `lxm://${blob}`;
+    const parsed = classifyMeshClientDeepLink(uri);
+    expect(parsed).toEqual({ kind: 'lxmPaperMessage', uri });
+  });
+
+  it('rejects short non-contact lxm:// hosts as unknown (not paper)', () => {
     const parsed = classifyMeshClientDeepLink('lxm://ABCDEFGHIJKLMNOP');
-    expect(parsed.kind).toBe('lxmPaperUnsupported');
+    expect(parsed.kind).toBe('unknown');
+  });
+
+  it('does not treat contact/identity hosts as paper', () => {
+    expect(classifyMeshClientDeepLink(`lxm://contact/${'a'.repeat(32)}`).kind).toBe('lxmContact');
+    expect(classifyMeshClientDeepLink(`lxm://identity/${'b'.repeat(32)}`).kind).toBe('lxmIdentity');
   });
 
   it.each(['linux', 'darwin', 'win32'] as const)(

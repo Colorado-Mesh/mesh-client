@@ -646,7 +646,23 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Diperbarui dari jalur RF",
     "openPeerDetails": "Detail peer",
-    "openPeerDetailsAria": "Buka detail peer untuk {{name}}"
+    "openPeerDetailsAria": "Buka detail peer untuk {{name}}",
+    "reticulumSendPaper": "Paper",
+    "reticulumSendPaperTooltip": "Dibagikan sebagai pesan kertas LXMF terenkripsi (QR /lxm :// link)",
+    "shareAsPaper": "Bagikan sebagai kertas",
+    "shareAsPaperAria": "Bagikan draf sebagai QR kertas LXMF terenkripsi",
+    "shareAsPaperTitle": "Pesan kertas",
+    "shareAsPaperHint": "Tampilkan QR ini atau salin tautannya. Hanya identitas penerima yang dapat mendekripsinya. Jaga agar teks tetap pendek — pesan kertas memiliki batas ukuran.",
+    "shareAsPaperCopyUri": "Salin tautan",
+    "shareAsPaperCopied": "Tautan kertas disalin",
+    "shareAsPaperClose": "Tutup",
+    "shareAsPaperEmpty": "Ketik pesan terlebih dahulu, lalu bagikan sebagai kertas.",
+    "shareAsPaperFailed": "Tidak dapat membuat pesan kertas",
+    "shareAsPaperIdentityUnknown": "Kunci publik sejawat tidak diketahui — impor QR kontak mereka atau tunggu pengumuman, lalu coba lagi.",
+    "shareAsPaperTooLarge": "Pesan terlalu panjang untuk QR kertas — persingkat dan coba lagi.",
+    "scanPaper": "Pindai kertas",
+    "scanPaperAria": "Pindai atau tempel pesan kertas LXMF terenkripsi",
+    "scanPaperHint": "Tempel atau pindai QR kertas untuk mendekripsi ke Chat."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2633,6 +2649,10 @@
       },
       "warning": "Pengaturan ini mengontrol hosting node propagasi lokal, autopeer, biaya PoW, dan penolakan Sinkronisasi untuk remote berbiaya tinggi. Kesalahan konfigurasi dapat membakar CPU, mengisi disk, atau menerima banyak rekan.",
       "enforceUnavailableTip": "Sakelar enforce stamps/ratchets tidak diterapkan pada stack rsLXMF saat ini (hanya disimpan untuk kompatibilitas)."
+    },
+    "reticulumScanImport": {
+      "title": "Pindai / impor",
+      "hint": "Pindai atau tempel QR untuk kontak, Columba lxma :// kartu, atau pesan kertas LXMF terenkripsi."
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4861,6 @@
   "qrIngest": {
     "qrImageAlt": "kode QR",
     "encodeFailed": "Tidak dapat membuat kode QR",
-    "paperUnsupported": "Pesan kertas LXMF terenkripsi belum didukung",
     "contactImported": "Kontak ditambahkan dari tautan dalam",
     "contactImportFailed": "Tidak dapat mengimpor kontak dari tautan",
     "unknownLink": "Tautan tidak dikenal",
@@ -4876,7 +4895,12 @@
     "meshcoreChannelImported": "Tautan saluran MeshCore diterima — tinjau di tab Radio",
     "meshcoreChannelImportFailed": "Tidak dapat mengimpor saluran MeshCore dari QR",
     "meshcoreChannelPrefill": "Detail saluran diisi dari QR — simpan untuk diterapkan",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Pesan kertas didekripsi ke dalam Obrolan",
+    "paperInvalidUri": "Itu tidak terlihat seperti tautan kertas LXMF yang valid",
+    "paperDecryptFailed": "Tidak dapat mendekripsi pesan kertas — apakah ini identitas yang benar?",
+    "paperIdentityNotConfigured": "Identitas Reticulum belum siap — mulai tumpukan dan konfigurasikan identitas terlebih dahulu",
+    "paperIngestFailed": "Tidak dapat menelan pesan kertas"
   },
   "reticulumRemote": {
     "navAria": "Bagian terpencil",

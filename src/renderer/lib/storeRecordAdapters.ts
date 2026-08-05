@@ -431,10 +431,12 @@ export function reticulumDbRowToMessageRecord(row: {
   const isTapback = isReticulumTapbackDbRow(row);
   const receivedVia =
     row.received_via === 'rf' ||
+    row.received_via === 'ble' ||
     row.received_via === 'tcp' ||
     row.received_via === 'network' ||
     row.received_via === 'mqtt' ||
-    row.received_via === 'both'
+    row.received_via === 'both' ||
+    row.received_via === 'paper'
       ? row.received_via
       : undefined;
   const deliveryMethod = parseReticulumDeliveryMethod(row.delivery_method);

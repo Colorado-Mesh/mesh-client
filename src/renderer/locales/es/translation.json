@@ -646,7 +646,23 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Actualizado desde la ruta de RF",
     "openPeerDetails": "Detalles del peer",
-    "openPeerDetailsAria": "Abrir detalles del peer para {{name}}"
+    "openPeerDetailsAria": "Abrir detalles del peer para {{name}}",
+    "reticulumSendPaper": "Papel",
+    "reticulumSendPaperTooltip": "Compartido como un mensaje de papel LXMF cifrado (QR / lxm:// link)",
+    "shareAsPaper": "Compartir como papel",
+    "shareAsPaperAria": "Compartir borrador como QR de papel LXMF cifrado",
+    "shareAsPaperTitle": "Mensaje en papel",
+    "shareAsPaperHint": "Muestra este QR o copia el enlace. Solo la identidad del destinatario puede descifrarla. Mantenga el texto corto: los mensajes en papel tienen un límite de tamaño.",
+    "shareAsPaperCopyUri": "Copiar enlace",
+    "shareAsPaperCopied": "Enlace en papel copiado",
+    "shareAsPaperClose": "Cerrar",
+    "shareAsPaperEmpty": "Escribe un mensaje primero y luego compártelo en papel.",
+    "shareAsPaperFailed": "No se ha podido crear el mensaje en papel",
+    "shareAsPaperIdentityUnknown": "Clave pública del mismo nivel desconocida: importe su QR de contacto o espere un anuncio y vuelva a intentarlo.",
+    "shareAsPaperTooLarge": "El mensaje es demasiado largo para un QR en papel: acórtalo e inténtalo de nuevo.",
+    "scanPaper": "Escanear tarjeta de papel",
+    "scanPaperAria": "Escanear o pegar un mensaje en papel LXMF cifrado",
+    "scanPaperHint": "Pegue o escanee un QR en papel para descifrar en el chat."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2633,6 +2649,10 @@
       },
       "warning": "Estas configuraciones controlan el alojamiento del nodo de propagación local, el autopeer, los costos de PoW y el rechazo de sincronización para dispositivos remotos de alto costo. Una configuración incorrecta puede quemar la CPU, llenar el disco o aceptar muchos pares.",
       "enforceUnavailableTip": "Los interruptores de exigir sellos/ratchets no se aplican en el stack rsLXMF actual (solo se conservan por compatibilidad)."
+    },
+    "reticulumScanImport": {
+      "title": "Escanear / Importar",
+      "hint": "Escanee o pegue un QR en busca de contactos, tarjetas Columba lxma://o mensajes cifrados en papel LXMF."
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4861,6 @@
   "qrIngest": {
     "qrImageAlt": "Código QR",
     "encodeFailed": "No se pudo generar código",
-    "paperUnsupported": "Los mensajes en papel LXMF cifrados aún no son compatibles",
     "contactImported": "Contacto añadido desde el enlace profundo",
     "contactImportFailed": "No se ha podido importar el contacto desde el enlace",
     "unknownLink": "Enlace no reconocido",
@@ -4876,7 +4895,12 @@
     "meshcoreChannelImported": "Enlace de canal de MeshCore recibido — revisión en la pestaña Radio",
     "meshcoreChannelImportFailed": "No se ha podido importar el canal MeshCore desde QR",
     "meshcoreChannelPrefill": "Detalles del canal rellenados desde QR — guardar para aplicar",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Mensaje en papel descifrado en el chat",
+    "paperInvalidUri": "Eso no parece un enlace de papel LXMF válido",
+    "paperDecryptFailed": "No se ha podido descifrar el mensaje en papel: ¿es esta la identidad correcta?",
+    "paperIdentityNotConfigured": "La identidad de Reticulum no está lista: inicie la pila y configure primero la identidad",
+    "paperIngestFailed": "No se ha podido ingerir el mensaje en papel"
   },
   "reticulumRemote": {
     "navAria": "Secciones remotas",

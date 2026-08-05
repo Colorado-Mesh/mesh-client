@@ -71,8 +71,9 @@ use persistence::PersistedState;
 pub use pn_hosting_policy::PnHostingPolicy;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
-    AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow, LxmfReactionRequest,
-    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow,
+    LxmfPaperCreateRequest, LxmfPaperIngestRequest, LxmfReactionRequest, LxmfSendRequest,
+    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
 #[cfg(not(feature = "rns-stack"))]
@@ -2391,6 +2392,38 @@ impl StackHandle {
         drop(inner);
         self.emit_event("lxmf_message", payload);
         Ok(res)
+    }
+
+    pub async fn lxmf_paper_create(
+        &self,
+        req: LxmfSendRequest,
+    ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let res = live.create_lxmf_paper(&req).await?;
+            if res.get("ok") == Some(&serde_json::Value::Bool(true)) {
+                if let Some(payload) = res.get("message").cloned() {
+                    self.emit_event("lxmf_message", payload);
+                }
+            }
+            return Ok(res);
+        }
+        Ok(serde_json::json!({
+            "ok": false,
+            "error": "identity_not_configured",
+        }))
+    }
+
+    pub async fn lxmf_paper_ingest(&self, uri: String) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            // ingest_lxm_uri fires the delivery callback (WS lxmf_message); return HTTP body only.
+            return live.ingest_lxmf_paper(&uri).await;
+        }
+        Ok(serde_json::json!({
+            "ok": false,
+            "error": "identity_not_configured",
+        }))
     }
 
     fn maybe_emit_identity_restart(&self) {

@@ -646,7 +646,23 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Bijgewerkt vanaf RF-pad",
     "openPeerDetails": "Peerdetails",
-    "openPeerDetailsAria": "Peerdetails openen voor {{name}}"
+    "openPeerDetailsAria": "Peerdetails openen voor {{name}}",
+    "reticulumSendPaper": "Papier",
+    "reticulumSendPaperTooltip": "Gedeeld als een versleuteld LXMF-papierbericht (QR /lxm :// link)",
+    "shareAsPaper": "Delen als papier",
+    "shareAsPaperAria": "Concept delen als gecodeerd LXMF-papier QR",
+    "shareAsPaperTitle": "Papieren bericht",
+    "shareAsPaperHint": "Toon deze QR of kopieer de link. Alleen de identiteit van de ontvanger kan het ontsleutelen. Houd de tekst kort — papieren berichten hebben een maximale grootte.",
+    "shareAsPaperCopyUri": "Link kopiëren",
+    "shareAsPaperCopied": "Papieren link gekopieerd",
+    "shareAsPaperClose": "Sluiten",
+    "shareAsPaperEmpty": "Typ eerst een bericht en deel het vervolgens als papier.",
+    "shareAsPaperFailed": "Kon bericht niet aanmaken.",
+    "shareAsPaperIdentityUnknown": "Peer public key onbekend — importeer de QR-code van de contactpersoon of wacht op een aankondiging en probeer het opnieuw.",
+    "shareAsPaperTooLarge": "Bericht is te lang voor een papieren QR — verkort het en probeer het opnieuw.",
+    "scanPaper": "Papier scannen",
+    "scanPaperAria": "Een gecodeerd LXMF-papierbericht scannen of plakken",
+    "scanPaperHint": "Plak of scan een papieren QR-code om te ontsleutelen in Chat."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2633,6 +2649,10 @@
       },
       "warning": "Deze instellingen regelen de hosting van lokale propagatieknooppunten, autopeer, PoW-kosten en synchronisatieweigering voor dure afstandsbedieningen. Een verkeerde configuratie kan de CPU verbranden, de schijf vullen of veel peers accepteren.",
       "enforceUnavailableTip": "De schakelaars voor enforce stamps/ratchets worden op de huidige rsLXMF-stack niet toegepast (alleen bewaard voor compatibiliteit)."
+    },
+    "reticulumScanImport": {
+      "title": "Scannen / importeren",
+      "hint": "Scan of plak een QR voor contacten, Columba lxma:// kaarten of gecodeerde LXMF-papieren berichten."
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4861,6 @@
   "qrIngest": {
     "qrImageAlt": "QR-code",
     "encodeFailed": "Kon geen QR-code genereren",
-    "paperUnsupported": "Gecodeerde papieren LXMF-berichten worden nog niet ondersteund",
     "contactImported": "Contact toegevoegd via deep link",
     "contactImportFailed": "Kan contactpersoon uit link niet importeren",
     "unknownLink": "Onbekende link",
@@ -4876,7 +4895,12 @@
     "meshcoreChannelImported": "MeshCore-kanaallink ontvangen — bekijk op het tabblad Radio",
     "meshcoreChannelImportFailed": "Kan MeshCore-kanaal niet importeren uit QR",
     "meshcoreChannelPrefill": "Kanaalgegevens ingevuld vanuit QR — opslaan om toe te passen",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Papieren bericht ontsleuteld in chat",
+    "paperInvalidUri": "Dat ziet er niet uit als een geldige LXMF-papieren link",
+    "paperDecryptFailed": "Kon papieren bericht niet ontsleutelen — is dit de juiste identiteit?",
+    "paperIdentityNotConfigured": "Reticulum-identiteit is niet gereed — start eerst de stack en configureer de identiteit",
+    "paperIngestFailed": "Kon papieren bericht niet opnemen"
   },
   "reticulumRemote": {
     "navAria": "Secties op afstand",

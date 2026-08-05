@@ -646,7 +646,23 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "RF yolundan güncellendi",
     "openPeerDetails": "Eş ayrıntıları",
-    "openPeerDetailsAria": "{{name}} için eş ayrıntılarını aç"
+    "openPeerDetailsAria": "{{name}} için eş ayrıntılarını aç",
+    "reticulumSendPaper": "Kağıt",
+    "reticulumSendPaperTooltip": "Şifrelenmiş LXMF kağıt mesajı olarak paylaşılır (QR /lxm :// link)",
+    "shareAsPaper": "Kağıt olarak paylaş",
+    "shareAsPaperAria": "Taslağı şifreli LXMF kağıt QR olarak paylaş",
+    "shareAsPaperTitle": "Kağıt mesajı",
+    "shareAsPaperHint": "Bu QR kodunu gösterin veya bağlantıyı kopyalayın. Sadece alıcının kimliği şifresini çözebilir. Metni kısa tutun — kağıt mesajların boyut sınırı vardır.",
+    "shareAsPaperCopyUri": "Bağlantıyı kopyala",
+    "shareAsPaperCopied": "Ödev bağlantısı kopyalandı",
+    "shareAsPaperClose": "Kapat",
+    "shareAsPaperEmpty": "Önce bir mesaj yazın, sonra kağıt olarak paylaşın.",
+    "shareAsPaperFailed": "Kağıt mesajı oluşturulamadı",
+    "shareAsPaperIdentityUnknown": "Eşler arası genel anahtar bilinmiyor — kişi QR'larını içe aktarın veya bir duyuru bekleyin, ardından tekrar deneyin.",
+    "shareAsPaperTooLarge": "Mesaj kağıt QR için çok uzun — kısaltın ve tekrar deneyin.",
+    "scanPaper": "Kağıdı tara",
+    "scanPaperAria": "Şifrelenmiş bir LXMF kağıt mesajını tarayın veya yapıştırın",
+    "scanPaperHint": "Sohbetin şifresini çözmek için basılı bir QR'yi yapıştırın veya tarayın."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2633,6 +2649,10 @@
       },
       "warning": "Bu ayarlar, yerel yayılma düğümü barındırmayı, otomatik eşlemeyi, PoW maliyetlerini ve yüksek maliyetli uzaktan kumandalar için Senkronizasyon reddini kontrol eder. Yanlış yapılandırma CPU'yu yakabilir, diski doldurabilir veya birçok eş kabul edebilir.",
       "enforceUnavailableTip": "Enforce stamps/ratchets anahtarları geçerli rsLXMF yığınında uygulanmaz (yalnızca uyumluluk için saklanır)."
+    },
+    "reticulumScanImport": {
+      "title": "Tara / içe aktar",
+      "hint": "Kişiler, Columba lxma :// kartları veya şifreli LXMF kağıt mesajları için bir QR tarayın veya yapıştırın."
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4861,6 @@
   "qrIngest": {
     "qrImageAlt": "QR kodu",
     "encodeFailed": "QR kodu oluşturulamadı",
-    "paperUnsupported": "Şifrelenmiş LXMF kağıt mesajları henüz desteklenmiyor",
     "contactImported": "Kişi derin bağlantıdan eklendi",
     "contactImportFailed": "Bağlantıdaki kişi içe aktarılamadı",
     "unknownLink": "Tanınmayan bağlantı",
@@ -4876,7 +4895,12 @@
     "meshcoreChannelImported": "MeshCore kanal bağlantısı alındı — Radyo sekmesinde inceleme",
     "meshcoreChannelImportFailed": "MeshCore kanalı QR'dan içe aktarılamadı",
     "meshcoreChannelPrefill": "QR'dan doldurulan kanal ayrıntıları — uygulamak için kaydedin",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Kağıt mesajın şifresi Sohbete çözüldü",
+    "paperInvalidUri": "Bu geçerli bir LXMF kağıt bağlantısı gibi görünmüyor",
+    "paperDecryptFailed": "Kağıt mesajın şifresi çözülemedi — bu doğru kimlik mi?",
+    "paperIdentityNotConfigured": "Reticulum kimliği hazır değil — önce yığını başlatın ve kimliği yapılandırın",
+    "paperIngestFailed": "Kağıt mesajı alınamadı"
   },
   "reticulumRemote": {
     "navAria": "Uzak bölümler",

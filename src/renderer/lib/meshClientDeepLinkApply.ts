@@ -140,3 +140,34 @@ export async function applyMeshcoreChannelAdd(
     return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
   }
 }
+
+const PAPER_INGEST_ERROR_KEYS: Record<string, string> = {
+  invalid_uri: 'qrIngest.paperInvalidUri',
+  decrypt_failed: 'qrIngest.paperDecryptFailed',
+  identity_not_configured: 'qrIngest.paperIdentityNotConfigured',
+};
+
+/** Ingest encrypted LXMF paper `lxm://` URI via sidecar (decrypt → Chat). */
+export async function applyLxmPaperIngest(opts: { uri: string }): Promise<DeepLinkApplyResult> {
+  try {
+    const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/paper/ingest', {
+      uri: opts.uri,
+    })) as {
+      ok?: boolean;
+      error?: string;
+      message?: unknown;
+    };
+    if (res.ok === true) {
+      return { ok: true, kind: 'lxmPaperMessage' };
+    }
+    const code = typeof res.error === 'string' ? res.error : '';
+    return {
+      ok: false,
+      errorKey: PAPER_INGEST_ERROR_KEYS[code] ?? 'qrIngest.paperIngestFailed',
+      detail: code || undefined,
+    };
+  } catch (err) {
+    console.error('[applyLxmPaperIngest] failed: ' + errLikeToLogString(err));
+    return { ok: false, errorKey: 'qrIngest.paperIngestFailed' };
+  }
+}

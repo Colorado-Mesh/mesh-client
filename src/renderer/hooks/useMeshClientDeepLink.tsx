@@ -7,6 +7,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   applyLxmaContactImport,
   applyLxmContactImport,
+  applyLxmPaperIngest,
   applyMeshcoreChannelAdd,
   applyMeshcoreContactAdd,
 } from '@/renderer/lib/meshClientDeepLinkApply';
@@ -44,8 +45,14 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
 
     const unsub = api.onOpenUrl((url) => {
       const parsed = classifyMeshClientDeepLink(url);
-      if (parsed.kind === 'lxmPaperUnsupported') {
-        addToast(t('qrIngest.paperUnsupported'), 'error');
+      if (parsed.kind === 'lxmPaperMessage') {
+        void (async () => {
+          const result = await applyLxmPaperIngest({ uri: parsed.uri });
+          addToast(
+            t(result.ok ? 'qrIngest.paperIngested' : result.errorKey),
+            result.ok ? 'success' : 'error',
+          );
+        })();
         return;
       }
       if (parsed.kind === 'lxmContact') {

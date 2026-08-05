@@ -335,16 +335,20 @@ impl LiveBridge {
             }
             // Match path-table iface name to local config (same as outbound) so
             // TCP hubs named e.g. "RNS Testnet" classify as tcp, not network.
-            let received_via = cache_for_cb
-                .lock()
-                .ok()
-                .and_then(|cache| cache.get(&sender_hex).cloned())
-                .map(|iface_name| {
-                    let config_rows =
-                        config::interfaces_from_config_dir(&config_dir_for_cb).unwrap_or_default();
-                    classify_path_interface_name(&iface_name, &config_rows).to_string()
-                })
-                .unwrap_or_else(|| "network".into());
+            let received_via = if msg.method == DeliveryMethod::Paper {
+                "paper".to_string()
+            } else {
+                cache_for_cb
+                    .lock()
+                    .ok()
+                    .and_then(|cache| cache.get(&sender_hex).cloned())
+                    .map(|iface_name| {
+                        let config_rows = config::interfaces_from_config_dir(&config_dir_for_cb)
+                            .unwrap_or_default();
+                        classify_path_interface_name(&iface_name, &config_rows).to_string()
+                    })
+                    .unwrap_or_else(|| "network".into())
+            };
             let inbound_sender_name = name_cache_for_cb
                 .lock()
                 .ok()
@@ -4063,6 +4067,173 @@ impl LiveBridge {
         }))
     }
 
+    /// Encode a signed LXMF message as an encrypted `lxm://` paper URI (no network send).
+    pub async fn create_lxmf_paper(
+        &self,
+        req: &LxmfSendRequest,
+    ) -> Result<serde_json::Value, String> {
+        let dest = parse_hash16(&req.destination_hash)?;
+        let mut identity_known = self
+            .outbound
+            .lock()
+            .map(|d| d.identity_known_for(&req.destination_hash))
+            .unwrap_or(false);
+        if !identity_known {
+            identity_known = self.ensure_identity_for_direct(&req.destination_hash).await;
+        }
+        if !identity_known {
+            return Ok(serde_json::json!({
+                "ok": false,
+                "error": "identity_unknown",
+                "destination_hash": req.destination_hash,
+            }));
+        }
+
+        let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
+        let reply_quote = req
+            .reply_preview_text
+            .as_deref()
+            .map(str::trim)
+            .filter(|q| !q.is_empty());
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
+            dest,
+            "",
+            &req.text,
+            DeliveryMethod::Paper,
+            reply_to,
+            reply_quote,
+        )?;
+
+        let dest_hex = req.destination_hash.to_lowercase();
+        let uri_result = {
+            let driver = self
+                .outbound
+                .lock()
+                .map_err(|_| "outbound lock poisoned".to_string())?;
+            msg.to_paper_uri(|plaintext| {
+                driver
+                    .encrypt_for_destination(&dest_hex, plaintext)
+                    .ok_or_else(|| {
+                        lxmf_core::message::MessageError::PackFailed(format!(
+                            "no identity key for destination {dest_hex}"
+                        ))
+                    })
+            })
+        };
+        let uri = match uri_result {
+            Ok(uri) => uri,
+            Err(lxmf_core::message::MessageError::PackFailed(ref s))
+                if s.contains("exceeds maximum size") =>
+            {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "paper_too_large",
+                }));
+            }
+            Err(lxmf_core::message::MessageError::PackFailed(ref s))
+                if s.contains("no identity key") =>
+            {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "identity_unknown",
+                    "destination_hash": req.destination_hash,
+                }));
+            }
+            Err(other) => return Err(format!("paper create: {other:?}")),
+        };
+
+        let ts_ms = (std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+            * 1000) as i64;
+        let reply_to_hash_echo = reply_to
+            .map(hex::encode)
+            .or_else(|| req.reply_to_hash.clone());
+        let mut payload = serde_json::json!({
+            "sender_hash": self.lxmf_hash_hex,
+            "sender_name": self.display_name,
+            "text": req.text,
+            "timestamp": ts_ms,
+            "to_hash": req.destination_hash,
+            "reply_to_hash": reply_to_hash_echo,
+            "reply_to_id": req.reply_to_id,
+            "direction": "outbound",
+            "delivery_method": "paper",
+            "sent_via": "paper",
+            "received_via": "paper",
+            "delivery_status": "delivered",
+            "message_hash": message_hash_hex.clone(),
+        });
+        if let Some(quote) = reply_quote {
+            if let Some(obj) = payload.as_object_mut() {
+                obj.insert(
+                    "reply_preview_text".into(),
+                    serde_json::Value::String(quote.to_string()),
+                );
+            }
+        }
+
+        Ok(serde_json::json!({
+            "ok": true,
+            "uri": uri,
+            "message_hash": message_hash_hex,
+            "delivery_method": "paper",
+            "message": payload,
+        }))
+    }
+
+    /// Decrypt an `lxm://` paper URI with the local identity and deliver as inbound LXMF.
+    pub async fn ingest_lxmf_paper(&self, uri: &str) -> Result<serde_json::Value, String> {
+        let trimmed = uri.trim();
+        if trimmed.is_empty() {
+            return Ok(serde_json::json!({
+                "ok": false,
+                "error": "invalid_uri",
+            }));
+        }
+
+        let identity = self.identity.clone();
+        let mut router = self.router.lock().await;
+        let message = match router.ingest_lxm_uri(trimmed, |ciphertext| {
+            identity
+                .decrypt(ciphertext, None, false)
+                .map_err(|_| lxmf_core::message::MessageError::PackFailed("decrypt".into()))
+        }) {
+            Ok(message) => message,
+            Err(
+                lxmf_core::message::MessageError::InvalidUri(_)
+                | lxmf_core::message::MessageError::TooShort(_),
+            ) => {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "invalid_uri",
+                }));
+            }
+            Err(lxmf_core::message::MessageError::PackFailed(ref s)) if s == "decrypt" => {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "decrypt_failed",
+                }));
+            }
+            Err(other) => return Err(format!("paper ingest: {other:?}")),
+        };
+
+        let payload = lxmf_payload_from_message(
+            &message,
+            &self.lxmf_hash_hex,
+            &self.display_name,
+            Some("paper"),
+            None,
+            "inbound",
+            None,
+        );
+        Ok(serde_json::json!({
+            "ok": true,
+            "message": payload,
+        }))
+    }
+
     pub async fn apply_interfaces(&self, stack: &StackHandle) -> Result<(), String> {
         let interfaces = stack.list_interfaces().await;
         tracing::info!(
@@ -4232,7 +4403,13 @@ pub(super) fn lxmf_payload_from_message(
         "timestamp": ts_ms,
         "to_hash": to_hex,
         "direction": direction,
-        "message_hash": message_hash
+        "message_hash": message_hash,
+        "delivery_method": match msg.method {
+            DeliveryMethod::Direct => "direct",
+            DeliveryMethod::Propagated => "propagated",
+            DeliveryMethod::Opportunistic => "opportunistic",
+            DeliveryMethod::Paper => "paper",
+        },
     });
     if let Some(via) = received_via {
         if let Some(obj) = payload.as_object_mut() {
@@ -5716,5 +5893,29 @@ mod reply_field_tests {
                 .map(|s| s.chars().count()),
             Some(REPLY_QUOTE_MAX_CHARS)
         );
+    }
+
+    #[test]
+    fn lxmf_payload_sets_paper_delivery_method_and_received_via() {
+        let msg = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "paper body",
+            DeliveryMethod::Paper,
+        );
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            Some("paper"),
+            None,
+            "inbound",
+            Some("Bob"),
+        );
+        assert_eq!(payload["delivery_method"], "paper");
+        assert_eq!(payload["received_via"], "paper");
+        assert_eq!(payload["text"], "paper body");
+        assert_eq!(payload["sender_name"], "Bob");
     }
 }

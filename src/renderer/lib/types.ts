@@ -410,6 +410,7 @@ export interface ChatMessage {
     | 'both'
     | 'tcp'
     | 'network'
+    | 'paper'
     | `${'rf' | 'ble' | 'tcp' | 'network'}+${string}`;
   // true for backlog messages (e.g. MeshCore MsgWaiting catch-up); excluded from unread counter
   isHistory?: boolean;

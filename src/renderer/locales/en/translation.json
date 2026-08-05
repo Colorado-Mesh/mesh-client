@@ -486,11 +486,27 @@
     "reticulumSendStoredAtPn": "Stored at propagation node",
     "reticulumPnAbbrev": "PN",
     "reticulumSendDelivered": "Delivered",
+    "reticulumSendPaper": "Paper",
+    "reticulumSendPaperTooltip": "Shared as an encrypted LXMF paper message (QR / lxm:// link)",
     "reticulumSendFailed": "Failed to send",
     "reticulumNoPropagationNode": "No propagation node configured. Set a preferred propagation node on the Reticulum Network tab.",
     "sentViaPropagation": "Propagation node",
     "reticulumImageAttachment": "Image: {{name}}",
     "reticulumFileAttachment": "File: {{name}}",
+    "shareAsPaper": "Share as paper",
+    "shareAsPaperAria": "Share draft as encrypted LXMF paper QR",
+    "shareAsPaperTitle": "Paper message",
+    "shareAsPaperHint": "Show this QR or copy the link. Only the recipient’s identity can decrypt it. Keep the text short — paper messages have a size limit.",
+    "shareAsPaperCopyUri": "Copy link",
+    "shareAsPaperCopied": "Paper link copied",
+    "shareAsPaperClose": "Close",
+    "shareAsPaperEmpty": "Type a message first, then share it as paper.",
+    "shareAsPaperFailed": "Could not create paper message",
+    "shareAsPaperIdentityUnknown": "Peer public key unknown — import their contact QR or wait for an announce, then try again.",
+    "shareAsPaperTooLarge": "Message is too long for a paper QR — shorten it and try again.",
+    "scanPaper": "Scan paper",
+    "scanPaperAria": "Scan or paste an encrypted LXMF paper message",
+    "scanPaperHint": "Paste or scan a paper QR to decrypt into Chat.",
     "reticulumAudioAttachment": "Voice: {{name}}",
     "rncp": {
       "sendFile": "Send file",
@@ -2695,6 +2711,10 @@
     "debugPingResponses": "Ping responses"
   },
   "networkPanel": {
+    "reticulumScanImport": {
+      "title": "Scan / import",
+      "hint": "Scan or paste a QR for contacts, Columba lxma:// cards, or encrypted LXMF paper messages."
+    },
     "reticulumStackSettings": {
       "title": "Stack settings",
       "enableTransport": "Enable transport (route for other peers)",
@@ -5189,7 +5209,11 @@
   "qrIngest": {
     "qrImageAlt": "QR code",
     "encodeFailed": "Could not generate QR code",
-    "paperUnsupported": "Encrypted LXMF paper messages are not supported yet",
+    "paperIngested": "Paper message decrypted into Chat",
+    "paperInvalidUri": "That does not look like a valid LXMF paper link",
+    "paperDecryptFailed": "Could not decrypt paper message — is this the correct identity?",
+    "paperIdentityNotConfigured": "Reticulum identity is not ready — start the stack and configure identity first",
+    "paperIngestFailed": "Could not ingest paper message",
     "contactImported": "Contact added from deep link",
     "contactImportFailed": "Could not import contact from link",
     "unknownLink": "Unrecognized link",

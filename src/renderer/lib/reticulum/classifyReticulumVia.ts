@@ -159,7 +159,8 @@ export function messageTransportFromWire(
     raw === 'both' ||
     raw === 'ble' ||
     raw === 'tcp' ||
-    raw === 'network'
+    raw === 'network' ||
+    raw === 'paper'
   ) {
     return raw;
   }

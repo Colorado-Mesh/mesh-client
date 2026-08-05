@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upsertReticulumDestination = vi.fn().mockResolvedValue({ changes: 1 });
+const proxyPost = vi.fn();
 
 vi.stubGlobal('window', {
   electronAPI: {
     db: {
       upsertReticulumDestination,
+    },
+    reticulum: {
+      proxyPost,
     },
   },
 });
@@ -23,6 +27,7 @@ import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticul
 import {
   applyLxmaContactImport,
   applyLxmContactImport,
+  applyLxmPaperIngest,
   applyMeshcoreChannelAdd,
   applyMeshcoreContactAdd,
 } from './meshClientDeepLinkApply';
@@ -32,6 +37,7 @@ describe('meshClientDeepLinkApply', () => {
     vi.mocked(registerReticulumKnownIdentity).mockReset();
     upsertReticulumDestination.mockReset();
     upsertReticulumDestination.mockResolvedValue({ changes: 1 });
+    proxyPost.mockReset();
   });
 
   it('applyLxmaContactImport registers then upserts with is_contact', async () => {
@@ -121,5 +127,33 @@ describe('meshClientDeepLinkApply', () => {
     );
     expect(result).toEqual({ ok: true, kind: 'meshcoreChannelAdd' });
     expect(applyChannel).toHaveBeenCalledWith({ name: 'Pub', secretHex: 'cd'.repeat(16) });
+  });
+
+  it('applyLxmPaperIngest posts uri to sidecar', async () => {
+    proxyPost.mockResolvedValue({ ok: true });
+    const uri = `lxm://${'A'.repeat(48)}`;
+    const result = await applyLxmPaperIngest({ uri });
+    expect(result).toEqual({ ok: true, kind: 'lxmPaperMessage' });
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/paper/ingest', { uri });
+  });
+
+  it('applyLxmPaperIngest maps decrypt_failed', async () => {
+    proxyPost.mockResolvedValue({ ok: false, error: 'decrypt_failed' });
+    const result = await applyLxmPaperIngest({ uri: `lxm://${'B'.repeat(48)}` });
+    expect(result).toEqual({
+      ok: false,
+      errorKey: 'qrIngest.paperDecryptFailed',
+      detail: 'decrypt_failed',
+    });
+  });
+
+  it('applyLxmPaperIngest maps invalid_uri', async () => {
+    proxyPost.mockResolvedValue({ ok: false, error: 'invalid_uri' });
+    const result = await applyLxmPaperIngest({ uri: 'lxm://bad' });
+    expect(result).toEqual({
+      ok: false,
+      errorKey: 'qrIngest.paperInvalidUri',
+      detail: 'invalid_uri',
+    });
   });
 });

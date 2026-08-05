@@ -271,6 +271,14 @@ pub struct LxmfSendRequest {
     pub reply_preview_text: Option<String>,
 }
 
+/// Create an encrypted `lxm://` paper URI (no network send).
+pub type LxmfPaperCreateRequest = LxmfSendRequest;
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfPaperIngestRequest {
+    pub uri: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LxmfReactionRequest {
     pub destination_hash: String,

@@ -1,7 +1,6 @@
 /**
  * Classify and parse mesh-client deep-link URIs (lxm:// contact/identity cards,
- * Columba lxma://, MeshCore meshcore:// contact/channel, Meshtastic channel URLs).
- * Full encrypted LXMF paper blobs are not supported yet.
+ * Columba lxma://, encrypted LXMF paper blobs, MeshCore meshcore://, Meshtastic channel URLs).
  */
 
 import { canonicalizeReticulumDestinationHash } from './reticulumDestinationHash';
@@ -25,13 +24,15 @@ export type MeshClientDeepLink =
       secretHex: string;
       regionScope?: string;
     }
-  | { kind: 'lxmPaperUnsupported'; uri: string }
+  | { kind: 'lxmPaperMessage'; uri: string }
   | { kind: 'unknown'; raw: string };
 
 const MESHTASTIC_URL_RE = /^(?:meshtastic:\/\/|https?:\/\/meshtastic\.org\/e\/)/i;
 const MESHCORE_PUBKEY_RE = /^[0-9a-f]{64}$/;
 const MESHCORE_CHANNEL_SECRET_RE = /^[0-9a-f]{32}$/;
 const LXMA_PUBKEY_RE = /^[0-9a-f]{128}$/;
+/** Paper `lxm://` host is URL-safe base64 of dest‖ciphertext; require a minimum blob length. */
+const LXM_PAPER_BLOB_RE = /^[A-Za-z0-9_-]{32,}$/;
 
 function isMeshcoreContactType(n: number): n is MeshcoreContactType {
   return n === 1 || n === 2 || n === 3 || n === 4;
@@ -159,6 +160,12 @@ function classifyMeshcoreUri(trimmed: string): MeshClientDeepLink {
   }
 }
 
+/** True when an `lxm://` host+path looks like an encrypted paper blob (not contact/identity). */
+export function looksLikeLxmPaperBlob(hostAndPath: string): boolean {
+  const blob = hostAndPath.replace(/^\/*/, '').replace(/\/*$/, '');
+  return LXM_PAPER_BLOB_RE.test(blob);
+}
+
 export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
   const trimmed = raw.trim();
   if (!trimmed) return { kind: 'unknown', raw };
@@ -184,7 +191,7 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
 
       if (host === 'contact') {
         const hash = canonicalizeReticulumDestinationHash(path);
-        if (!hash) return { kind: 'lxmPaperUnsupported', uri: trimmed };
+        if (!hash) return { kind: 'unknown', raw: trimmed };
         const name = url.searchParams.get('name') ?? undefined;
         return {
           kind: 'lxmContact',
@@ -196,7 +203,7 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
       if (host === 'identity') {
         const identityHash = path.toLowerCase();
         if (!/^[0-9a-f]{16,64}$/.test(identityHash)) {
-          return { kind: 'lxmPaperUnsupported', uri: trimmed };
+          return { kind: 'unknown', raw: trimmed };
         }
         const lxmfHash = url.searchParams.get('lxmf')?.toLowerCase() || undefined;
         const name = url.searchParams.get('name') || undefined;
@@ -208,10 +215,19 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
         };
       }
 
-      // Encrypted paper messages and other lxm:// forms — soft-fail.
-      return { kind: 'lxmPaperUnsupported', uri: trimmed };
+      // Encrypted paper: lxm://<base64url(dest‖ciphertext)> — host is the blob.
+      const blob = path ? `${host}/${path}` : host;
+      if (looksLikeLxmPaperBlob(blob)) {
+        return { kind: 'lxmPaperMessage', uri: trimmed };
+      }
+      return { kind: 'unknown', raw: trimmed };
     } catch {
-      return { kind: 'lxmPaperUnsupported', uri: trimmed };
+      // Some engines reject very long hosts; still try paper when scheme + blob remain.
+      const withoutScheme = trimmed.replace(/^lxm:\/\//i, '');
+      if (looksLikeLxmPaperBlob(withoutScheme.split(/[?#]/)[0] ?? '')) {
+        return { kind: 'lxmPaperMessage', uri: trimmed };
+      }
+      return { kind: 'unknown', raw: trimmed };
     }
   }
 

@@ -94,6 +94,8 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         )
         .route("/api/v1/ble/scan", get(interfaces::ble_scan))
         .route("/api/v1/lxmf/send", post(lxmf::lxmf_send))
+        .route("/api/v1/lxmf/paper/create", post(lxmf::lxmf_paper_create))
+        .route("/api/v1/lxmf/paper/ingest", post(lxmf::lxmf_paper_ingest))
         .route("/api/v1/lxmf/reaction", post(lxmf::lxmf_reaction))
         .route("/api/v1/lxmf/recent", get(lxmf::list_recent_lxmf))
         .route(

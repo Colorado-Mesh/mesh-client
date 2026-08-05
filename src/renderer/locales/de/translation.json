@@ -646,7 +646,23 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Aktualisiert von RF-Pfad",
     "openPeerDetails": "Peer-Details",
-    "openPeerDetailsAria": "Peer-Details für {{name}} öffnen"
+    "openPeerDetailsAria": "Peer-Details für {{name}} öffnen",
+    "reticulumSendPaper": "Papier",
+    "reticulumSendPaperTooltip": "Als verschlüsselte LXMF-Papiernachricht geteilt (QR /lxm :// link)",
+    "shareAsPaper": "Als Papier teilen",
+    "shareAsPaperAria": "Entwurf als verschlüsseltes LXMF-Papier-QR teilen",
+    "shareAsPaperTitle": "Papiernachricht",
+    "shareAsPaperHint": "Zeigen Sie diesen QR an oder kopieren Sie den Link. Nur die Identität des Empfängers kann ihn entschlüsseln. Halten Sie den Text kurz — Papiernachrichten haben eine Größenbeschränkung.",
+    "shareAsPaperCopyUri": "Link kopieren",
+    "shareAsPaperCopied": "Papierlink kopiert",
+    "shareAsPaperClose": "Schließen",
+    "shareAsPaperEmpty": "Geben Sie zuerst eine Nachricht ein und teilen Sie sie dann als Papier.",
+    "shareAsPaperFailed": "Papiernachricht konnte nicht erstellt werden",
+    "shareAsPaperIdentityUnknown": "Öffentlicher Peer-Schlüssel unbekannt — importieren Sie den Kontakt-QR oder warten Sie auf eine Ankündigung und versuchen Sie es dann erneut.",
+    "shareAsPaperTooLarge": "Die Nachricht ist zu lang für einen Papier-QR — kürzen Sie sie und versuchen Sie es erneut.",
+    "scanPaper": "Papier scannen",
+    "scanPaperAria": "Scannen oder fügen Sie eine verschlüsselte LXMF-Papiernachricht ein",
+    "scanPaperHint": "Fügen Sie einen Papier-QR ein oder scannen Sie ihn, um ihn in den Chat zu entschlüsseln."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2633,6 +2649,10 @@
       },
       "warning": "Diese Einstellungen steuern das Hosting lokaler Ausbreitungsknoten, Autopeer, PoW-Kosten und die Synchronisierungsverweigerung für kostenintensive Remote-Remotes. Eine Fehlkonfiguration kann die CPU belasten, die Festplatte füllen oder viele Peers akzeptieren.",
       "enforceUnavailableTip": "Die Schalter „Stempel/Ratchets erzwingen“ werden auf dem aktuellen rsLXMF-Stack nicht angewendet (nur zur Kompatibilität gespeichert)."
+    },
+    "reticulumScanImport": {
+      "title": "Scannen und Importieren",
+      "hint": "Scannen oder fügen Sie einen QR nach Kontakten, Columba lxma:// -Karten oder verschlüsselten LXMF-Papiernachrichten ein."
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4861,6 @@
   "qrIngest": {
     "qrImageAlt": "QR-Code",
     "encodeFailed": "Code konnte nicht generiert werden",
-    "paperUnsupported": "Verschlüsselte LXMF-Papiernachrichten werden noch nicht unterstützt",
     "contactImported": "Kontakt aus Deep Link hinzugefügt",
     "contactImportFailed": "Kontakt konnte nicht aus Link importiert werden",
     "unknownLink": "Unbekannter Link",
@@ -4876,7 +4895,12 @@
     "meshcoreChannelImported": "MeshCore-Kanallink erhalten — Überprüfung auf der Registerkarte Radio",
     "meshcoreChannelImportFailed": "MeshCore-Kanal konnte nicht aus QR importiert werden",
     "meshcoreChannelPrefill": "Kanaldetails aus QR ausgefüllt — zum Anwenden speichern",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "In Chat entschlüsselte Papiernachricht",
+    "paperInvalidUri": "Das sieht nicht nach einem gültigen LXMF-Papierlink aus",
+    "paperDecryptFailed": "Papiernachricht konnte nicht entschlüsselt werden — ist das die richtige Identität?",
+    "paperIdentityNotConfigured": "Die Reticulum-Identität ist nicht bereit — starten Sie den Stack und konfigurieren Sie zuerst die Identität",
+    "paperIngestFailed": "Papiernachricht konnte nicht aufgenommen werden"
   },
   "reticulumRemote": {
     "navAria": "Entfernte Abschnitte",

@@ -646,7 +646,23 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Aggiornato da percorso RF",
     "openPeerDetails": "Dettagli peer",
-    "openPeerDetailsAria": "Apri i dettagli del peer per {{name}}"
+    "openPeerDetailsAria": "Apri i dettagli del peer per {{name}}",
+    "reticulumSendPaper": "Carta",
+    "reticulumSendPaperTooltip": "Condiviso come messaggio cartaceo LXMF crittografato (QR / lxm:// link)",
+    "shareAsPaper": "Condividi come cartaceo",
+    "shareAsPaperAria": "Condividi la bozza come QR cartaceo LXMF crittografato",
+    "shareAsPaperTitle": "Messaggio cartaceo",
+    "shareAsPaperHint": "Mostra questo QR o copia il link. Solo l'identità del destinatario può decifrarlo. Mantieni il testo breve: i messaggi cartacei hanno un limite di dimensione.",
+    "shareAsPaperCopyUri": "Copia link",
+    "shareAsPaperCopied": "Link cartaceo copiato",
+    "shareAsPaperClose": "Chiudi",
+    "shareAsPaperEmpty": "Digita prima un messaggio, quindi condividilo su carta.",
+    "shareAsPaperFailed": "Impossibile creare il messaggio cartaceo",
+    "shareAsPaperIdentityUnknown": "Chiave pubblica peer sconosciuta: importa il QR del contatto o attendi un annuncio, quindi riprova.",
+    "shareAsPaperTooLarge": "Il messaggio è troppo lungo per un QR cartaceo: accorcialo e riprova.",
+    "scanPaper": "Scansiona la carta",
+    "scanPaperAria": "Scansiona o incolla un messaggio cartaceo LXMF crittografato",
+    "scanPaperHint": "Incolla o scansiona un QR cartaceo per decifrarlo in Chat."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -2633,6 +2649,10 @@
       },
       "warning": "Queste impostazioni controllano l'hosting del nodo di propagazione locale, l'autopeer, i costi PoW e il rifiuto della sincronizzazione per i dispositivi remoti ad alto costo. Una configurazione errata può bruciare la CPU, riempire il disco o accettare molti peer.",
       "enforceUnavailableTip": "Le opzioni di enforcement stamps/ratchets non sono applicate sullo stack rsLXMF attuale (persistono solo per compatibilità)."
+    },
+    "reticulumScanImport": {
+      "title": "Scansione / importazione",
+      "hint": "Scansiona o incolla un QR per contatti, schede Columba lxma://o messaggi cartacei LXMF crittografati."
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4861,6 @@
   "qrIngest": {
     "qrImageAlt": "Codice QR",
     "encodeFailed": "Impossibile generare il codice QR",
-    "paperUnsupported": "I messaggi cartacei LXMF crittografati non sono ancora supportati",
     "contactImported": "Contatto aggiunto dal deep link",
     "contactImportFailed": "Impossibile importare il contatto dal link",
     "unknownLink": "Link non riconosciuto",
@@ -4876,7 +4895,12 @@
     "meshcoreChannelImported": "Link al canale MeshCore ricevuto — recensione nella scheda Radio",
     "meshcoreChannelImportFailed": "Impossibile importare il canale MeshCore da QR",
     "meshcoreChannelPrefill": "Dettagli del canale compilati da QR — salva per applicare",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Messaggio cartaceo decifrato in chat",
+    "paperInvalidUri": "Questo non sembra un link cartaceo LXMF valido",
+    "paperDecryptFailed": "Impossibile decifrare il messaggio cartaceo: è l'identità corretta?",
+    "paperIdentityNotConfigured": "L'identità Reticulum non è pronta: avvia prima lo stack e configura l'identità",
+    "paperIngestFailed": "Impossibile inserire il messaggio cartaceo"
   },
   "reticulumRemote": {
     "navAria": "Sezioni remote",
