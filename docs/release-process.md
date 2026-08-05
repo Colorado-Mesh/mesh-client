@@ -19,6 +19,15 @@ Both workflows upload to a **draft** GitHub Release. A maintainer reviews artifa
 
 Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main` (including the version-bump commit from `pnpm run release`).
 
+### Database schema upgrades
+
+`CURRENT_SCHEMA_VERSION` in [`src/main/db-schema-sync.ts`](../src/main/db-schema-sync.ts) is the on-disk SQLite `user_version` this build supports. Schema upgrades are **one-way**:
+
+- **CI:** `schema-release-compare` (Build Binaries and Release) warns when this build’s schema is newer than the last published release. Test builds also upload `READ-ME-FIRST-test-build.md` with the artifact set.
+- **Installers:** when bumped, Windows NSIS shows an advisory MessageBox; macOS/Linux packages may include `SCHEMA-UPGRADE.txt` in app resources.
+- **App launch:** if an existing database’s `user_version` is behind this build, Mesh-Client shows a blocking **Quit / Upgrade** dialog **before** running `runSchemaUpgrade`. Quit leaves the database unchanged. Set `MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE=1` to auto-accept (E2E / automation only).
+- **Too new:** opening a database upgraded by a newer app with an older build still fails with the existing schema-too-new fatal dialog.
+
 ---
 
 ## Prerequisites

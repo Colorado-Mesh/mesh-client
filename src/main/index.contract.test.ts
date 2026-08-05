@@ -456,6 +456,16 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).not.toMatch(/showMessageBox\([^)]*mainWindow[^)]*Startup Error/s);
   });
 
+  it('quits quietly when schema upgrade is declined without a fatal error dialog', () => {
+    expect(INDEX_SOURCE).toContain('isDatabaseSchemaUpgradeDeclinedError(error)');
+    expect(INDEX_SOURCE).toMatch(
+      /isDatabaseSchemaUpgradeDeclinedError\(error\)[\s\S]*?app\.quit\(\)[\s\S]*?return;/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /isDatabaseSchemaUpgradeDeclinedError\(error\)[\s\S]*?Schema upgrade declined[\s\S]*?app\.quit\(\)/,
+    );
+  });
+
   it('shows import blocked dialog when merge source schema is too new', () => {
     expect(INDEX_SOURCE).toContain("'Mesh-Client — Import Blocked'");
     expect(INDEX_SOURCE).toMatch(

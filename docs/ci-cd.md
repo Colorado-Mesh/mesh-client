@@ -11,7 +11,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `ci.yaml`                | Push/PR to `main`                            | Lint, typecheck, build, Flatpak manifest validation                             |
 | `tests.yaml`             | Push/PR to `main`                            | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
 | `e2e.yaml`               | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
-| `build.yaml`             | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build                                               |
+| `build.yaml`             | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
 | `reticulum-sidecar.yaml` | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
 | `release.yaml`           | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
 | `flatpak.yaml`           | Version tags (`v*`), manual                  | Build Flatpak; publish to release on tags                                       |
@@ -97,14 +97,15 @@ PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.co
 
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
-1. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`).
-2. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
+1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release, writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
+2. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads), then prepends the schema compare note to the draft body. On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`).
+3. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
    - `macos-latest` → `pnpm run dist:mac:publish`
    - `ubuntu-latest` → `pnpm run dist:linux:publish`
    - `windows-latest` → `pnpm run dist:win:publish`
-3. Rebuilds native dependencies (`pnpm run rebuild`)
-4. Installs Linux build dependencies (`libudev-dev`, `rpm`)
-5. Publishes artifacts to GitHub Releases
+4. Rebuilds native dependencies (`pnpm run rebuild`)
+5. Installs Linux build dependencies (`libudev-dev`, `rpm`)
+6. Publishes artifacts to GitHub Releases
 
 Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
 
@@ -308,6 +309,19 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 ## Packaging smoke builds (`build.yaml` / `release.yaml`)
 
+### Schema compare vs last official release
+
+Both workflows start with a **`schema-release-compare`** job (`scripts/ci-schema-release-compare.mjs`) that:
+
+1. Labels **Build Binaries** runs as a **test build** (not an official release) in `$GITHUB_STEP_SUMMARY`
+2. Compares this tree’s `CURRENT_SCHEMA_VERSION` to the last published (non-draft) GitHub Release tag
+3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-schema.md` (release) and includes the warning in platform artifact uploads when sharing Actions downloads
+4. Exposes `schema_bumped` / `curr_schema` / `prev_schema` / `prev_tag` for packaging
+
+When schema is bumped, packaging runs `scripts/write-schema-upgrade-notice.mjs` so Windows NSIS can show a MessageBox and macOS/Linux bundles can include `SCHEMA-UPGRADE.txt` via `electron-builder-before-pack.mjs`.
+
+On first launch after a schema bump against an existing database, the app shows a blocking **Quit / Upgrade** dialog before mutating SQLite (see [Release Process — Database schema upgrades](release-process.md#database-schema-upgrades)).
+
 Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`. The script pins `Architectures: amd64` only on deb822 stanzas in `ubuntu.sources` that lack an `Architectures` field, writes arm64 ports mirrors as deb822 `arm64.sources` (not legacy `.list`), and is idempotent across workflow re-runs.
 
 Reticulum sidecar staging before `electron-builder`:
@@ -323,6 +337,7 @@ Post-build smoke tests:
 - **`scripts/verify-mac-packaging.mjs`** — macOS packaging guard (runs after `dist:mac` / `dist:mac:publish` and in `packaging-smoke` on tag releases). Validates:
   - **`.dmg` and `.zip`** artifacts exist under `release/` with minimum size thresholds
   - Bundle layout via **direct `.app`** (local dist), **`ditto -xk` ZIP extract** (CI artifact path — preserves symlinks), and **`hdiutil attach` DMG mount**
+  - DMG mount root includes an **`Applications` → `/Applications` symlink** (drag-to-install layout from `electron-builder.yml` `dmg.contents`)
   - **Electron Framework symlinks** (`Versions/Current`, root `Electron Framework`) remain symlinks — `upload-artifact` dereferences them and breaks the bundle (~3× framework bloat)
   - Thin **MacOS launcher** + full **Electron Framework** binary sizes; bundled **Reticulum sidecar** present
   - CI uploads **DMG/ZIP only** — never raw `Mesh-client.app` (see comment in `release.yaml` **Upload macOS Artifact**)

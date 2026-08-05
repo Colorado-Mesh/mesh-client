@@ -1,6 +1,7 @@
 /**
  * electron-builder beforePack hook — copy the staged per-arch Reticulum sidecar into
  * resources/reticulum-sidecar/ so extraResources bundles the correct binary.
+ * Also attaches SCHEMA-UPGRADE.txt when CI wrote a schema-bump notice.
  */
 import { copyFileSync, existsSync, mkdirSync, statSync } from 'fs';
 import path from 'path';
@@ -13,6 +14,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
+const SCHEMA_UPGRADE_TXT = path.join(projectRoot, 'resources', 'SCHEMA-UPGRADE.txt');
 
 /**
  * @param {import('app-builder-lib').BeforePackContext} context
@@ -41,4 +43,26 @@ export default async function beforePack(context) {
   mkdirSync(path.dirname(destPath), { recursive: true });
   copyFileSync(stagedPath, destPath);
   console.debug(`[beforePack] Reticulum sidecar: ${stagedPath} → ${destPath}`);
+
+  if (existsSync(SCHEMA_UPGRADE_TXT)) {
+    const config = context.packager.config;
+    const existing = config.extraResources;
+    /** @type {Array<string | { from: string, to?: string, filter?: string[] }>} */
+    const list = Array.isArray(existing) ? [...existing] : existing ? [existing] : [];
+    const already = list.some(
+      (entry) =>
+        typeof entry === 'object' &&
+        entry != null &&
+        'from' in entry &&
+        String(entry.from).includes('SCHEMA-UPGRADE.txt'),
+    );
+    if (!already) {
+      list.push({
+        from: SCHEMA_UPGRADE_TXT,
+        to: 'SCHEMA-UPGRADE.txt',
+      });
+      config.extraResources = list;
+      console.debug('[beforePack] Bundling SCHEMA-UPGRADE.txt notice');
+    }
+  }
 }

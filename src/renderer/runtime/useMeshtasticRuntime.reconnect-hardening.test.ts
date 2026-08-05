@@ -193,9 +193,47 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
     expect(finallyBody).toContain('if (isBleReconnect) bleConnectInProgressRef.current = false;');
     expect(finallyBody).toContain('if (meshtasticDeferredReconnectRef.current)');
-    expect(finallyBody).toContain('queueMicrotask(() => handleConnectionLostRef.current())');
+    expect(finallyBody).toContain('scheduleMeshtasticReconnectAttemptRef.current()');
+    // Must not re-enter handleConnectionLost (double generation bump / dual backoff loops).
+    expect(finallyBody).not.toContain('handleConnectionLostRef.current()');
     expect(finallyBody.indexOf('if (meshtasticDeferredReconnectRef.current)')).toBeGreaterThan(
       finallyBody.indexOf('if (isBleReconnect)'),
+    );
+  });
+
+  it('handleConnectionLost defers during reconnect backoff without starting a parallel attempt', () => {
+    const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
+    expect(lostBody).toContain('deferForBackoff');
+    expect(lostBody).toMatch(
+      /deferForBackoff[\s\S]*?Connection lost during reconnect backoff — defer until delay settles/,
+    );
+    expect(lostBody).toMatch(
+      /if \(deferForBackoff\) \{[\s\S]*?return;[\s\S]*?scheduleMeshtasticReconnectAttemptRef/,
+    );
+  });
+
+  it('coalesces reconnect attempt schedules via scheduleMeshtasticReconnectAttempt', () => {
+    expect(SOURCE).toContain('meshtasticReconnectSchedulePendingRef');
+    expect(SOURCE).toContain('scheduleMeshtasticReconnectAttempt');
+    const scheduleBody = extractUseCallbackBody(SOURCE, 'scheduleMeshtasticReconnectAttempt');
+    expect(scheduleBody).toContain('meshtasticReconnectSchedulePendingRef.current');
+    expect(scheduleBody).toContain('attemptReconnectRef.current()');
+    expect(SOURCE).toMatch(
+      /useLayoutEffect\(\(\) => \{\s*scheduleMeshtasticReconnectAttemptRef\.current = scheduleMeshtasticReconnectAttempt;\s*\}, \[scheduleMeshtasticReconnectAttempt\]\)/,
+    );
+  });
+
+  it('attemptReconnect clears stuck reconnecting UI when delay aborts', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(
+      /delayResult === 'aborted'[\s\S]*?!isReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    );
+  });
+
+  it('attemptReconnect delay abort flushes deferred restart', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(
+      /delayResult === 'aborted'[\s\S]*?meshtasticDeferredReconnectRef\.current[\s\S]*?scheduleMeshtasticReconnectAttemptRef\.current\(\)/,
     );
   });
 

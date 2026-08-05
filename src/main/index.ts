@@ -81,6 +81,7 @@ import {
   getMeshcoreTraceHistory,
   initDatabase,
   isDatabaseSchemaTooNewError,
+  isDatabaseSchemaUpgradeDeclinedError,
   mergeDatabase,
   type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
@@ -6687,6 +6688,14 @@ void app
         mainWindow?.webContents.send('power:resume');
       });
     } catch (error) {
+      if (isDatabaseSchemaUpgradeDeclinedError(error)) {
+        console.debug(
+          '[main] Schema upgrade declined; quitting without changing database:',
+          sanitizeLogMessage(error.message),
+        );
+        app.quit();
+        return;
+      }
       console.error(
         '[main] Fatal startup error:',
         sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
