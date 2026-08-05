@@ -187,6 +187,7 @@ import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
+import { createRfReconnectController } from '../lib/rfReconnectController';
 import { rfMaxReconnectAttemptsForTransport } from '../lib/rfReconnectShared';
 import { registerMeshtasticSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import {
@@ -398,8 +399,10 @@ export function useMeshtasticRuntime() {
   const bleConnectInProgressRef = useRef(false);
   /** Disconnect during connect — run handleConnectionLost after connect settles. */
   const meshtasticDeferredReconnectRef = useRef(false);
-  /** Coalesce loss-handler + finally schedules so TCP drops mid-configure cannot start two backoff loops. */
-  const meshtasticReconnectSchedulePendingRef = useRef(false);
+  /** Single-owner reconnect scheduler (shared MeshCore/Meshtastic invariant). */
+  const meshtasticRfReconnectRef = useRef(
+    createRfReconnectController({ logTag: 'useMeshtasticRuntime' }),
+  );
   /** True while reconnect open+configure owns the session (single-flight; blocks overlapping opens). */
   const reconnectConnectInFlightRef = useRef(false);
   const reconnectGenerationRef = useRef<number>(0);
@@ -1992,14 +1995,14 @@ export function useMeshtasticRuntime() {
   const nobleYieldReconnectNudgeRef = useRef(false);
 
   const handleConnectionLost = useCallback(() => {
+    // Single-owner: while a cycle is active, onLinkLost only dirties — never schedules after
+    // await disconnect (MeshCore n7eal TCP parity / #792–#796).
     const wasReconnecting = isReconnectingRef.current;
-    // Backoff delay owns the cycle (inFlight false). Bump generation to abort that delay; do not
-    // start a parallel attemptReconnect — deferred flush on delay abort / schedule owns it.
-    const deferForBackoff = wasReconnecting && !reconnectConnectInFlightRef.current;
-    if (deferForBackoff) {
+    const linkLost = meshtasticRfReconnectRef.current.onLinkLost();
+    reconnectGenerationRef.current = linkLost.generation;
+    if (!linkLost.shouldStartOwner) {
       meshtasticDeferredReconnectRef.current = true;
     }
-    reconnectGenerationRef.current += 1;
     const afterNobleYieldRelease = nobleYieldReconnectNudgeRef.current;
     nobleYieldReconnectNudgeRef.current = false;
     if (!wasReconnecting) {
@@ -2053,18 +2056,15 @@ export function useMeshtasticRuntime() {
       }
       // After disconnect: detach wire effects / loss-watch (restores toDevice; never deletes).
       cleanupSubscriptions();
-      // Single-flight: if open+configure is still running, generation bump invalidates it;
-      // that attempt's failure path (or finally deferred flush) schedules the next cycle.
-      if (reconnectConnectInFlightRef.current) {
-        console.debug(
-          '[useMeshtasticRuntime] Connection lost — defer reconnect until in-flight open settles',
-        );
+      // Owner (attempt finally / delay-abort) schedules follow-ups. Lost-handler must not
+      // schedule when a cycle was already active — even if inFlight cleared during await.
+      if (!linkLost.shouldStartOwner) {
         meshtasticDeferredReconnectRef.current = true;
-        return;
-      }
-      if (deferForBackoff) {
         console.debug(
-          '[useMeshtasticRuntime] Connection lost during reconnect backoff — defer until delay settles',
+          meshtasticRfReconnectRef.current.phase === 'opening' ||
+            reconnectConnectInFlightRef.current
+            ? '[useMeshtasticRuntime] Connection lost — defer reconnect until in-flight open settles'
+            : '[useMeshtasticRuntime] Connection lost during reconnect backoff — defer until delay settles',
         );
         return;
       }
@@ -2156,6 +2156,7 @@ export function useMeshtasticRuntime() {
     const generation = reconnectGenerationRef.current;
 
     reconnectAttemptRef.current++;
+    meshtasticRfReconnectRef.current.beginAttempt(reconnectAttemptRef.current);
     setState((s) => ({
       ...s,
       status: 'reconnecting',
@@ -2180,9 +2181,13 @@ export function useMeshtasticRuntime() {
         !meshtasticExplicitDisconnectRef.current
       ) {
         meshtasticDeferredReconnectRef.current = false;
+        meshtasticRfReconnectRef.current.endAttempt({ keepReconnecting: true });
         scheduleMeshtasticReconnectAttemptRef.current();
         return;
       }
+      meshtasticRfReconnectRef.current.endAttempt({
+        keepReconnecting: isReconnectingRef.current,
+      });
       // Only clear the UI when this cycle was cancelled and nothing else is driving reconnect.
       if (!isReconnectingRef.current) {
         setState((s) => ({
@@ -2195,6 +2200,7 @@ export function useMeshtasticRuntime() {
     }
     if (delayResult === 'suspended') {
       isReconnectingRef.current = false;
+      meshtasticRfReconnectRef.current.cancel();
       setState((s) => ({
         ...s,
         status: 'disconnected',
@@ -2211,9 +2217,13 @@ export function useMeshtasticRuntime() {
         !meshtasticExplicitDisconnectRef.current
       ) {
         meshtasticDeferredReconnectRef.current = false;
+        meshtasticRfReconnectRef.current.endAttempt({ keepReconnecting: true });
         scheduleMeshtasticReconnectAttemptRef.current();
         return;
       }
+      meshtasticRfReconnectRef.current.endAttempt({
+        keepReconnecting: isReconnectingRef.current,
+      });
       if (!isReconnectingRef.current) {
         setState((s) => ({
           ...s,
@@ -2230,9 +2240,11 @@ export function useMeshtasticRuntime() {
         '[useMeshtasticRuntime] reconnect: skip overlapping open (connect already in flight)',
       );
       meshtasticDeferredReconnectRef.current = true;
+      meshtasticRfReconnectRef.current.markDirty();
       return;
     }
 
+    meshtasticRfReconnectRef.current.beginOpening();
     let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
     const isBleReconnect = params.type === 'ble';
     reconnectConnectInFlightRef.current = true;
@@ -2302,6 +2314,7 @@ export function useMeshtasticRuntime() {
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       meshtasticDeferredReconnectRef.current = false;
+      meshtasticRfReconnectRef.current.markSuccess();
       setState((s) => ({
         ...s,
         serialNeedsReselect: false,
@@ -2357,6 +2370,12 @@ export function useMeshtasticRuntime() {
       reconnectConnectInFlightRef.current = false;
       if (isBleReconnect) bleConnectInProgressRef.current = false;
       if (meshtasticDeferredReconnectRef.current) {
+        meshtasticRfReconnectRef.current.markDirty();
+      }
+      const settled = meshtasticRfReconnectRef.current.endAttempt({
+        keepReconnecting: isReconnectingRef.current,
+      });
+      if (meshtasticDeferredReconnectRef.current || settled.shouldSchedule) {
         meshtasticDeferredReconnectRef.current = false;
         if (isReconnectingRef.current) {
           console.debug(
@@ -2474,15 +2493,13 @@ export function useMeshtasticRuntime() {
   attemptReconnectRef.current = attemptReconnect;
 
   const scheduleMeshtasticReconnectAttempt = useCallback(() => {
-    if (meshtasticReconnectSchedulePendingRef.current) return;
-    meshtasticReconnectSchedulePendingRef.current = true;
-    queueMicrotask(() => {
-      meshtasticReconnectSchedulePendingRef.current = false;
+    meshtasticRfReconnectRef.current.scheduleOwner(() => {
       if (!isReconnectingRef.current || meshtasticExplicitDisconnectRef.current) {
         return;
       }
       if (reconnectConnectInFlightRef.current) {
         meshtasticDeferredReconnectRef.current = true;
+        meshtasticRfReconnectRef.current.markDirty();
         return;
       }
       void attemptReconnectRef.current();

@@ -201,22 +201,21 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
-  it('handleConnectionLost defers during reconnect backoff without starting a parallel attempt', () => {
+  it('handleConnectionLost defers when cycle already active (single-owner controller)', () => {
     const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
-    expect(lostBody).toContain('deferForBackoff');
+    expect(lostBody).toContain('onLinkLost()');
+    expect(lostBody).toContain('shouldStartOwner');
     expect(lostBody).toMatch(
-      /deferForBackoff[\s\S]*?Connection lost during reconnect backoff — defer until delay settles/,
+      /if \(!linkLost\.shouldStartOwner\) \{[\s\S]*?return;[\s\S]*?scheduleMeshtasticReconnectAttemptRef/,
     );
-    expect(lostBody).toMatch(
-      /if \(deferForBackoff\) \{[\s\S]*?return;[\s\S]*?scheduleMeshtasticReconnectAttemptRef/,
-    );
+    expect(SOURCE).toContain('createRfReconnectController');
   });
 
-  it('coalesces reconnect attempt schedules via scheduleMeshtasticReconnectAttempt', () => {
-    expect(SOURCE).toContain('meshtasticReconnectSchedulePendingRef');
+  it('coalesces reconnect attempt schedules via scheduleOwner', () => {
     expect(SOURCE).toContain('scheduleMeshtasticReconnectAttempt');
+    expect(SOURCE).toContain('meshtasticRfReconnectRef');
     const scheduleBody = extractUseCallbackBody(SOURCE, 'scheduleMeshtasticReconnectAttempt');
-    expect(scheduleBody).toContain('meshtasticReconnectSchedulePendingRef.current');
+    expect(scheduleBody).toContain('scheduleOwner');
     expect(scheduleBody).toContain('attemptReconnectRef.current()');
     expect(SOURCE).toMatch(
       /useLayoutEffect\(\(\) => \{\s*scheduleMeshtasticReconnectAttemptRef\.current = scheduleMeshtasticReconnectAttempt;\s*\}, \[scheduleMeshtasticReconnectAttempt\]\)/,

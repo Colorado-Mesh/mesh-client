@@ -1,6 +1,6 @@
 /**
- * Shared LoRa reconnect parity: MeshCore and Meshtastic must flush deferred reconnect via a
- * coalesced attempt scheduler — not nested handleConnectionLost (n7eal TCP dual backoff / #792).
+ * Shared LoRa reconnect parity: MeshCore and Meshtastic must use createRfReconnectController
+ * so connection-lost never double-schedules while a cycle is active (n7eal TCP / #792–#796).
  */
 import { describe, expect, it } from 'vitest';
 
@@ -14,51 +14,43 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
     {
       label: 'MeshCore',
       source: MESHCORE,
+      controllerRef: 'meshcoreRfReconnectRef',
       attemptName: 'attemptMeshcoreReconnect',
       scheduleRef: 'scheduleMeshcoreReconnectAttemptRef.current()',
       lostRef: 'handleMeshcoreConnectionLostRef.current()',
-      deferredRef: 'meshcoreDeferredReconnectRef.current',
+      lostName: 'handleMeshcoreConnectionLost',
     },
     {
       label: 'Meshtastic',
       source: MESHTASTIC,
+      controllerRef: 'meshtasticRfReconnectRef',
       attemptName: 'attemptReconnect',
       scheduleRef: 'scheduleMeshtasticReconnectAttemptRef.current()',
       lostRef: 'handleConnectionLostRef.current()',
-      deferredRef: 'meshtasticDeferredReconnectRef.current',
+      lostName: 'handleConnectionLost',
     },
   ] as const)(
-    '$label reconnect finally flushes deferred via schedule, not nested connection-lost',
-    ({ source, attemptName, scheduleRef, lostRef, deferredRef }) => {
+    '$label uses createRfReconnectController and lost-handler never schedules when cycle active',
+    ({ source, controllerRef, attemptName, scheduleRef, lostRef, lostName }) => {
+      expect(source).toContain('createRfReconnectController');
+      expect(source).toContain(controllerRef);
+      expect(source).toContain('shouldStartOwner');
+
+      const lostBody = extractUseCallbackBody(source, lostName);
+      expect(lostBody).toContain('onLinkLost()');
+      expect(lostBody).toContain('!linkLost.shouldStartOwner');
+      // Must not fall through to schedule after await when shouldStartOwner is false.
+      expect(lostBody).toMatch(
+        /if \(!linkLost\.shouldStartOwner\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?schedule/,
+      );
+
       const reconnectBody = extractUseCallbackBody(source, attemptName);
       const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
-      expect(finallyBody).toContain(deferredRef);
       expect(finallyBody).toContain(scheduleRef);
       expect(finallyBody).not.toContain(lostRef);
+      expect(finallyBody).toContain('endAttempt');
     },
   );
-
-  it('MeshCore defers reconnect during backoff instead of starting a parallel attempt', () => {
-    const lostBody = extractUseCallbackBody(MESHCORE, 'handleMeshcoreConnectionLost');
-    expect(lostBody).toContain('deferForBackoff');
-    expect(lostBody).toMatch(
-      /deferForBackoff[\s\S]*?Connection lost during reconnect backoff — defer until delay settles/,
-    );
-    expect(lostBody).toMatch(
-      /if \(deferForBackoff\) \{[\s\S]*?return;[\s\S]*?scheduleMeshcoreReconnectAttemptRef/,
-    );
-  });
-
-  it('Meshtastic defers reconnect during backoff instead of starting a parallel attempt', () => {
-    const lostBody = extractUseCallbackBody(MESHTASTIC, 'handleConnectionLost');
-    expect(lostBody).toContain('deferForBackoff');
-    expect(lostBody).toMatch(
-      /deferForBackoff[\s\S]*?Connection lost during reconnect backoff — defer until delay settles/,
-    );
-    expect(lostBody).toMatch(
-      /if \(deferForBackoff\) \{[\s\S]*?return;[\s\S]*?scheduleMeshtasticReconnectAttemptRef/,
-    );
-  });
 
   it('MeshCore TCP defers status=configured until after contacts+channels', () => {
     expect(MESHCORE).toContain("const deferConfiguredUntilRadioInit = transportType === 'tcp'");
@@ -68,5 +60,10 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
     expect(MESHCORE).toMatch(
       /if \(deferConfiguredUntilRadioInit\) \{[\s\S]*?status: 'configured'[\s\S]*?triggerRoomAutoLoginRef\.current\(\)/,
     );
+  });
+
+  it('MeshCore TCP device_status disconnect does not double-call connection-lost', () => {
+    // Runtime owns meshcore.tcp.onDisconnected; side effects must skip TCP.
+    expect(MESHCORE).toContain('window.electronAPI.meshcore.tcp.onDisconnected');
   });
 });

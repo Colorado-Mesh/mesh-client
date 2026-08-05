@@ -364,22 +364,21 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('handleMeshcoreConnectionLost defers during reconnect backoff without starting a parallel attempt', () => {
+  it('handleMeshcoreConnectionLost defers when cycle already active (single-owner controller)', () => {
     const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
-    expect(lostBody).toContain('deferForBackoff');
+    expect(lostBody).toContain('onLinkLost()');
+    expect(lostBody).toContain('shouldStartOwner');
     expect(lostBody).toMatch(
-      /deferForBackoff[\s\S]*?Connection lost during reconnect backoff — defer until delay settles/,
+      /if \(!linkLost\.shouldStartOwner\) \{[\s\S]*?return;[\s\S]*?scheduleMeshcoreReconnectAttemptRef/,
     );
-    expect(lostBody).toMatch(
-      /if \(deferForBackoff\) \{[\s\S]*?return;[\s\S]*?scheduleMeshcoreReconnectAttemptRef/,
-    );
+    expect(RUNTIME_SOURCE).toContain('createRfReconnectController');
   });
 
-  it('coalesces reconnect attempt schedules via scheduleMeshcoreReconnectAttempt', () => {
-    expect(RUNTIME_SOURCE).toContain('meshcoreReconnectSchedulePendingRef');
+  it('coalesces reconnect attempt schedules via scheduleOwner', () => {
     expect(RUNTIME_SOURCE).toContain('scheduleMeshcoreReconnectAttempt');
+    expect(RUNTIME_SOURCE).toContain('meshcoreRfReconnectRef');
     const scheduleBody = extractUseCallbackBody(RUNTIME_SOURCE, 'scheduleMeshcoreReconnectAttempt');
-    expect(scheduleBody).toContain('meshcoreReconnectSchedulePendingRef.current');
+    expect(scheduleBody).toContain('scheduleOwner');
     expect(scheduleBody).toContain('attemptMeshcoreReconnectRef.current()');
     expect(RUNTIME_SOURCE).toMatch(
       /useLayoutEffect\(\(\) => \{\s*attemptMeshcoreReconnectRef\.current = attemptMeshcoreReconnect;\s*\}, \[attemptMeshcoreReconnect\]\)/,
@@ -426,9 +425,10 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
     );
   });
 
-  it('skips handleConnectionLost on explicit user disconnect', () => {
+  it('skips handleConnectionLost on explicit user disconnect or MeshCore TCP', () => {
+    // TCP reconnect is owned by runtime meshcore.tcp.onDisconnected (avoid dual entry).
     expect(CONN_EVENTS_SOURCE).toMatch(
-      /if \(shouldReconnect && !meshcoreExplicitDisconnectRef\.current\)/,
+      /shouldReconnect &&\s*!meshcoreExplicitDisconnectRef\.current &&[\s\S]*?meshcoreConnectTypeRef\.current !== 'tcp'/,
     );
   });
 
