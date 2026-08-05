@@ -5,8 +5,9 @@ import {
 } from '@/shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
 import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
+import { isAllowedReticulumReceivedVia } from '@/shared/reticulumMessageTransport';
 
-import type { MessageRecord } from '../stores/messageStore';
+import type { MessageRecord, MessageTransport } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
 import {
@@ -429,13 +430,9 @@ export function reticulumDbRowToMessageRecord(row: {
   const messageHash =
     row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
   const isTapback = isReticulumTapbackDbRow(row);
-  const receivedVia =
-    row.received_via === 'rf' ||
-    row.received_via === 'tcp' ||
-    row.received_via === 'network' ||
-    row.received_via === 'mqtt' ||
-    row.received_via === 'both'
-      ? row.received_via
+  const receivedVia: MessageTransport | undefined =
+    typeof row.received_via === 'string' && isAllowedReticulumReceivedVia(row.received_via)
+      ? (row.received_via as MessageTransport)
       : undefined;
   const deliveryMethod = parseReticulumDeliveryMethod(row.delivery_method);
   const status: MessageRecord['status'] =

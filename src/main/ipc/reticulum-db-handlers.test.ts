@@ -276,6 +276,30 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_status).toBe('sending');
   });
 
+  it('saveReticulumMessage persists paper received_via and delivery_method', () => {
+    const identityId = 'id-rt-paper';
+    const messageHash = 'ef'.repeat(32);
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: 'paper hello',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'delivered',
+      delivery_method: 'paper',
+      received_via: 'paper',
+    });
+    const row = db!
+      .prepareOnce(
+        'SELECT received_via, delivery_method FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+      )
+      .get(identityId, messageHash) as { received_via: string; delivery_method: string };
+    expect(row.received_via).toBe('paper');
+    expect(row.delivery_method).toBe('paper');
+  });
+
   it('pruneReticulumIdentityActivityByAge deletes stale millisecond last_seen rows', () => {
     const nowMs = Date.now();
     db!

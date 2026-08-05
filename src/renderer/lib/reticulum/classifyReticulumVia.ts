@@ -1,5 +1,7 @@
 import type { MessageTransport } from '@/renderer/stores/messageStore';
+import { isAllowedReticulumReceivedVia } from '@/shared/reticulumMessageTransport';
 
+/** Interface egress atoms (not including mqtt/both/paper message labels). */
 const RETICULUM_VIA_ATOMS = ['ble', 'rf', 'tcp', 'network'] as const;
 export type ReticulumVia = (typeof RETICULUM_VIA_ATOMS)[number];
 
@@ -153,15 +155,8 @@ export function messageTransportFromWire(
   if (isReticulumViaLabel(raw) || isReticulumVia(raw)) {
     return reticulumViaToMessageTransport(raw);
   }
-  if (
-    raw === 'rf' ||
-    raw === 'mqtt' ||
-    raw === 'both' ||
-    raw === 'ble' ||
-    raw === 'tcp' ||
-    raw === 'network'
-  ) {
-    return raw;
+  if (isAllowedReticulumReceivedVia(raw)) {
+    return raw as MessageTransport;
   }
   return classifyReticulumVia(raw);
 }

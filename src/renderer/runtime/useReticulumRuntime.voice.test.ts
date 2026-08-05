@@ -34,6 +34,7 @@ vi.mock('@/renderer/lib/reticulumVoiceCallTones', () => ({
   startVoiceRingback: vi.fn(),
   startOutgoingConnectToneSequence: vi.fn(),
   isOutgoingConnectToneSequenceActive: vi.fn(() => false),
+  promoteOutgoingConnectSequenceToRingback: vi.fn(),
   stopVoiceCallTones: vi.fn(),
   playVoiceBusyTone: vi.fn(),
   playVoiceReorderTone: vi.fn(),

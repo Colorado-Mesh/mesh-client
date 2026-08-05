@@ -184,13 +184,48 @@ describe('MeshClientDeepLinkHost', () => {
     expect(window.electronAPI.db.upsertReticulumDestination).not.toHaveBeenCalled();
   });
 
-  it('soft-fails encrypted paper links', async () => {
+  it('ingests encrypted paper links via sidecar', async () => {
+    const paperUri = `lxm://${'A'.repeat(48)}`;
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum = {
+      ...window.electronAPI.reticulum,
+      proxyPost,
+    };
+    render(<MeshClientDeepLinkHost />);
+    await act(async () => {
+      openUrlHandler?.(paperUri);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/paper/ingest', { uri: paperUri });
+    });
+    expect(addToast).toHaveBeenCalledWith('qrIngest.paperIngested', 'success');
+  });
+
+  it('toasts decrypt failure for paper ingest', async () => {
+    const paperUri = `lxm://${'B'.repeat(48)}`;
+    const proxyPost = vi.fn().mockResolvedValue({ ok: false, error: 'decrypt_failed' });
+    window.electronAPI.reticulum = {
+      ...window.electronAPI.reticulum,
+      proxyPost,
+    };
+    render(<MeshClientDeepLinkHost />);
+    await act(async () => {
+      openUrlHandler?.(paperUri);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('qrIngest.paperDecryptFailed', 'error');
+    });
+  });
+
+  it('treats non-paper short lxm:// blobs as unknown', async () => {
     render(<MeshClientDeepLinkHost />);
     await act(async () => {
       openUrlHandler?.('lxm://paper/not-a-supported-form');
       await Promise.resolve();
     });
-    expect(addToast).toHaveBeenCalledWith('qrIngest.paperUnsupported', 'error');
+    expect(addToast).toHaveBeenCalledWith('qrIngest.unknownLink', 'error');
   });
 
   it('dispatches meshtastic channel URLs for RadioPanel', async () => {

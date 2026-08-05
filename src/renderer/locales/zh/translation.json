@@ -646,7 +646,26 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "从射频路径更新",
     "openPeerDetails": "对等方详情",
-    "openPeerDetailsAria": "打开 {{name}} 的对等方详情"
+    "openPeerDetailsAria": "打开 {{name}} 的对等方详情",
+    "reticulumSendPaper": "纸张",
+    "reticulumSendPaperTooltip": "共享为加密的 LXMF 纸质消息（QR / lxm:// 链接）",
+    "shareAsPaper": "以纸张形式共享",
+    "shareAsPaperAria": "以加密的LXMF纸质QR格式共享草稿",
+    "shareAsPaperTitle": "纸质消息",
+    "shareAsPaperHint": "显示此二维码或复制链接。只有收件人的身份才能解密。保持文本简短—纸质消息有大小限制。",
+    "shareAsPaperCopyUri": "复制链接",
+    "shareAsPaperCopied": "纸质链接已复制",
+    "shareAsPaperClose": "关闭",
+    "shareAsPaperEmpty": "请先键入消息，然后以纸质形式分享。",
+    "shareAsPaperFailed": "无法创建纸质消息",
+    "shareAsPaperIdentityUnknown": "对等公钥未知—导入他们的联系人QR或等待公告，然后重试。",
+    "shareAsPaperTooLarge": "消息对于纸质二维码来说太长了，请缩短消息，然后重试。",
+    "scanPaper": "扫描纸",
+    "scanPaperAria": "扫描或粘贴加密的LXMF纸质消息",
+    "scanPaperHint": "粘贴或扫描纸质二维码以解密到聊天中。",
+    "shareAsPaperMessageLabel": "要加密的消息",
+    "shareAsPaperGenerate": "创建纸质二维码",
+    "shareAsPaperCopyFailed": "无法复制纸质链接"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2633,6 +2652,10 @@
       },
       "warning": "这些设置控制本地传播节点托管、自动对等、PoW 成本以及高成本远程的同步拒绝。配置错误可能会烧毁 CPU、填满磁盘或接受许多对等点。",
       "enforceUnavailableTip": "强制 stamps/ratchets 开关在当前 rsLXMF 协议栈上不会生效（仅为兼容性而保留）。"
+    },
+    "reticulumScanImport": {
+      "title": "扫描/导入",
+      "hint": "扫描或粘贴 QR 码以查找联系人、Columba lxma:// 卡或加密的 LXMF 纸质消息。"
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4864,6 @@
   "qrIngest": {
     "qrImageAlt": "QR Code",
     "encodeFailed": "无法生成 QR 码。",
-    "paperUnsupported": "尚不支持加密的LXMF纸质消息",
     "contactImported": "从深度链接添加的联系人",
     "contactImportFailed": "无法从链接导入联系人",
     "unknownLink": "无法识别的链接",
@@ -4876,7 +4898,12 @@
     "meshcoreChannelImported": "已收到MeshCore频道链接—在“广播”选项卡上查看",
     "meshcoreChannelImportFailed": "无法从二维码导入MeshCore频道",
     "meshcoreChannelPrefill": "从QR填写的频道详细信息—保存以应用",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "已将纸质消息解密到聊天中",
+    "paperInvalidUri": "这看起来不像有效的LXMF纸张链接",
+    "paperDecryptFailed": "无法解密纸质消息—这是正确的身份吗？",
+    "paperIdentityNotConfigured": "Reticulum 身份尚未准备就绪—首先启动堆栈并配置身份",
+    "paperIngestFailed": "无法摄取纸质消息"
   },
   "reticulumRemote": {
     "navAria": "远程部分",

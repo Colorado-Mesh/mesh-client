@@ -10,15 +10,20 @@ import type {
   RemoteInboundDecision,
   RemoteInboundPolicyRow,
 } from '../../shared/remote-types';
+import { RETICULUM_DELIVERY_METHODS } from '../../shared/reticulumDeliveryMethod';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import { sanitizeReticulumDisplayNameForDb } from '../../shared/reticulumDisplayName';
+import { isAllowedReticulumReceivedVia } from '../../shared/reticulumMessageTransport';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
 import { sanitizeReticulumAttachmentPathForDb } from '../reticulum-attachment-path';
 import { assertIpcSender } from '../validate-ipc-sender';
 
+export { isAllowedReticulumReceivedVia };
+
 const REMOTE_ADDRESS_SERVICES = new Set<RemoteAddressService>(['rnsh', 'rncp']);
 const REMOTE_INBOUND_DECISIONS = new Set<RemoteInboundDecision>(['allow', 'block']);
+const ALLOWED_DELIVERY_METHOD = new Set<string>(RETICULUM_DELIVERY_METHODS);
 
 interface ParsedRemoteAddressUpsert {
   id: string;
@@ -87,19 +92,6 @@ const ALLOWED_DELIVERY_STATUS = new Set([
   'received',
   'queued',
 ]);
-
-const ALLOWED_DELIVERY_METHOD = new Set(['direct', 'propagated', 'opportunistic', 'paper']);
-
-const RETICULUM_VIA_ATOMS = new Set(['rf', 'ble', 'tcp', 'network', 'mqtt', 'both']);
-const RETICULUM_MULTI_VIA_ATOMS = new Set(['ble', 'rf', 'tcp', 'network']);
-
-/** Single atom or explicit `+`-joined multi-egress (e.g. `rf+tcp`). */
-export function isAllowedReticulumReceivedVia(value: string): boolean {
-  if (RETICULUM_VIA_ATOMS.has(value)) return true;
-  const parts = value.split('+');
-  if (parts.length < 2 || parts.length > 4) return false;
-  return parts.every((p) => RETICULUM_MULTI_VIA_ATOMS.has(p));
-}
 
 export interface ReticulumDbIpcDeps {
   ipcMain: IpcMain;

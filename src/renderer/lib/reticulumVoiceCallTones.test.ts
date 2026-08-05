@@ -7,9 +7,11 @@ import {
   DTMF_TO_RING_GAP_MS,
   dtmfKeysFromPeerHash,
   isOutgoingConnectToneSequenceActive,
+  MODEM_HANDSHAKE_MS,
   playVoiceBusyTone,
   playVoiceFailTone,
   playVoiceReorderTone,
+  promoteOutgoingConnectSequenceToRingback,
   resetVoiceCallTonesForTests,
   startOutgoingConnectToneSequence,
   startVoiceDialTone,
@@ -19,24 +21,51 @@ import {
 
 describe('reticulumVoiceCallTones', () => {
   let oscillatorCount = 0;
+  let bufferSourceCount = 0;
 
   beforeEach(() => {
     oscillatorCount = 0;
+    bufferSourceCount = 0;
     resetVoiceCallTonesForTests();
     localStorage.removeItem(CHAT_NOTIF_MUTED_STORAGE_KEY);
     class MockAudioContext {
       state: AudioContextState = 'running';
       currentTime = 0;
+      sampleRate = 48000;
       destination = {} as AudioDestinationNode;
       createOscillator() {
         oscillatorCount += 1;
-        return {
-          frequency: { value: 0 },
+        const osc: {
+          type: string;
+          frequency: {
+            value: number;
+            setValueAtTime: () => undefined;
+            linearRampToValueAtTime: () => undefined;
+          };
+          connect: () => undefined;
+          start: () => undefined;
+          stop: () => undefined;
+          disconnect: () => undefined;
+          onended: ((this: OscillatorNode, ev: Event) => void) | null;
+        } = {
+          type: 'sine',
+          frequency: {
+            value: 0,
+            setValueAtTime: () => undefined,
+            linearRampToValueAtTime: () => undefined,
+          },
           connect: () => undefined,
           start: () => undefined,
-          stop: () => undefined,
+          stop: () => {
+            const handler = osc.onended;
+            if (handler) {
+              handler.call(osc as unknown as OscillatorNode, new Event('ended'));
+            }
+          },
           disconnect: () => undefined,
+          onended: null,
         };
+        return osc;
       }
       createGain() {
         return {
@@ -44,8 +73,34 @@ describe('reticulumVoiceCallTones', () => {
             value: 0,
             setValueAtTime: () => undefined,
             exponentialRampToValueAtTime: () => undefined,
+            linearRampToValueAtTime: () => undefined,
           },
           connect: () => undefined,
+          disconnect: () => undefined,
+        };
+      }
+      createBiquadFilter() {
+        return {
+          type: 'bandpass',
+          frequency: { setValueAtTime: () => undefined },
+          Q: { setValueAtTime: () => undefined },
+          connect: () => undefined,
+          disconnect: () => undefined,
+        };
+      }
+      createBuffer(_channels: number, length: number) {
+        return {
+          getChannelData: () => new Float32Array(length),
+        };
+      }
+      createBufferSource() {
+        bufferSourceCount += 1;
+        return {
+          buffer: null as AudioBuffer | null,
+          loop: false,
+          connect: () => undefined,
+          start: () => undefined,
+          stop: () => undefined,
           disconnect: () => undefined,
         };
       }
@@ -121,7 +176,7 @@ describe('reticulumVoiceCallTones', () => {
     expect(dtmfKeysFromPeerHash(h1)).not.toBe(dtmfKeysFromPeerHash(h2));
   });
 
-  it('connect sequence: dial 2s → DTMF → gap → ringback; stop cancels later ring', () => {
+  it('connect sequence: dial → DTMF → modem handshake → carrier; promote cuts to ringback', () => {
     vi.useFakeTimers();
     const hash = 'a1b2' + 'c'.repeat(28);
     startOutgoingConnectToneSequence(hash);
@@ -131,6 +186,7 @@ describe('reticulumVoiceCallTones', () => {
     expect(oscillatorCount).toBe(2);
 
     oscillatorCount = 0;
+    bufferSourceCount = 0;
     vi.advanceTimersByTime(1999);
     expect(oscillatorCount).toBe(0);
     expect(isOutgoingConnectToneSequenceActive()).toBe(true);
@@ -141,26 +197,59 @@ describe('reticulumVoiceCallTones', () => {
     expect(isOutgoingConnectToneSequenceActive()).toBe(true);
 
     oscillatorCount = 0;
-    vi.advanceTimersByTime(DTMF_BURST_MS);
-    // Still in post-DTMF silence — ringback not yet.
+    bufferSourceCount = 0;
+    vi.advanceTimersByTime(DTMF_BURST_MS + DTMF_TO_RING_GAP_MS - 1);
     expect(oscillatorCount).toBe(0);
+    expect(bufferSourceCount).toBe(0);
     expect(isOutgoingConnectToneSequenceActive()).toBe(true);
-    vi.advanceTimersByTime(DTMF_TO_RING_GAP_MS - 1);
-    expect(oscillatorCount).toBe(0);
+
     vi.advanceTimersByTime(1);
+    // Handshake: answer osc + chirp osc + train buffer source.
+    expect(oscillatorCount).toBe(2);
+    expect(bufferSourceCount).toBe(1);
+    expect(isOutgoingConnectToneSequenceActive()).toBe(true);
+
+    oscillatorCount = 0;
+    bufferSourceCount = 0;
+    vi.advanceTimersByTime(MODEM_HANDSHAKE_MS - 1);
+    expect(oscillatorCount).toBe(0);
+    expect(bufferSourceCount).toBe(0);
+
+    vi.advanceTimersByTime(1);
+    // Carrier: sine osc + looping noise buffer (no ringback yet).
+    expect(oscillatorCount).toBe(1);
+    expect(bufferSourceCount).toBe(1);
+    expect(isOutgoingConnectToneSequenceActive()).toBe(true);
+
+    oscillatorCount = 0;
+    bufferSourceCount = 0;
+    promoteOutgoingConnectSequenceToRingback();
     // UK ringback burst: 4 oscillators; sequence no longer active.
     expect(oscillatorCount).toBe(4);
     expect(isOutgoingConnectToneSequenceActive()).toBe(false);
 
     oscillatorCount = 0;
+    bufferSourceCount = 0;
+    vi.advanceTimersByTime(5000);
+    // Heartbeat / carrier timers cancelled — only ringback interval may fire.
+    expect(bufferSourceCount).toBe(0);
+    expect(oscillatorCount).toBe(4); // one more UK ringback cycle at 3s
+    stopVoiceCallTones();
+  });
+
+  it('stop during modem cancels carrier and later ringback', () => {
+    vi.useFakeTimers();
+    const hash = 'a1b2' + 'c'.repeat(28);
     startOutgoingConnectToneSequence(hash);
+    vi.advanceTimersByTime(2000 + DTMF_BURST_MS + DTMF_TO_RING_GAP_MS);
     expect(isOutgoingConnectToneSequenceActive()).toBe(true);
-    vi.advanceTimersByTime(500);
+    oscillatorCount = 0;
+    bufferSourceCount = 0;
     stopVoiceCallTones();
     expect(isOutgoingConnectToneSequenceActive()).toBe(false);
-    oscillatorCount = 0;
-    vi.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(MODEM_HANDSHAKE_MS + 5000);
     expect(oscillatorCount).toBe(0);
+    expect(bufferSourceCount).toBe(0);
   });
 
   it('suppresses tones when notif muted', () => {
@@ -168,9 +257,11 @@ describe('reticulumVoiceCallTones', () => {
     startVoiceDialTone();
     startVoiceRingback();
     startOutgoingConnectToneSequence('a'.repeat(32));
+    promoteOutgoingConnectSequenceToRingback();
     playVoiceReorderTone();
     playVoiceBusyTone();
     playVoiceFailTone();
     expect(oscillatorCount).toBe(0);
+    expect(bufferSourceCount).toBe(0);
   });
 });

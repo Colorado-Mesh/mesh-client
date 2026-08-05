@@ -148,6 +148,7 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
+import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
@@ -335,6 +336,14 @@ function TransportBadge({
 
   // Reticulum: explicit atom / multi-egress text labels (never Meshtastic RF+MQTT "both").
   if (protocol === 'reticulum' && via !== 'mqtt' && via !== 'both') {
+    if (via === 'paper') {
+      const paperLabel = t('chatPanel.reticulumSendPaper');
+      return (
+        <span className="text-[10px] text-sky-400" title={paperLabel} aria-label={paperLabel}>
+          {paperLabel}
+        </span>
+      );
+    }
     const viasLabel = formatReticulumViaBadgeLabel(via);
     const atoms = parseReticulumViaAtoms(via);
     const label =
@@ -518,6 +527,8 @@ export interface ChatPanelProps {
   hasLxstVoice?: boolean;
   /** Reticulum: LRGP games Challenge control in the DM header. */
   hasLrgpGames?: boolean;
+  /** Reticulum: LXMF paper Share as paper / Scan paper controls. */
+  hasLxmfPaper?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
@@ -574,6 +585,7 @@ function ChatPanel({
   hasRncpTransfer = false,
   hasLxstVoice = false,
   hasLrgpGames = false,
+  hasLxmfPaper = false,
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
@@ -2333,6 +2345,15 @@ function ChatPanel({
                 className={RETICULUM_DM_HEADER_ACTION_CLASS}
               />
             ) : null;
+          const paperShareControl =
+            protocol === 'reticulum' && hasLxmfPaper && reticulumDmDestinationHash != null ? (
+              <ChatDmPaperShareControl
+                key={`dm-paper-${reticulumDmDestinationHash}`}
+                lxmfPeerHash={reticulumDmDestinationHash}
+                viewKey={viewKey}
+                sidecarRunning={reticulumStackLive}
+              />
+            ) : null;
           const peerDetailsAppearance = reticulumDmDestinationHash
             ? peerAppearanceByHash.get(reticulumDmDestinationHash)
             : undefined;
@@ -2362,11 +2383,12 @@ function ChatPanel({
             !rncpControl &&
             !voiceCallControl &&
             !gamesChallengeControl &&
+            !paperShareControl &&
             !peerDetailsControl
           ) {
             return null;
           }
-          // Order: path status → last heard → peer details → Probe/Path → Call → Challenge → Send file.
+          // Order: path status → last heard → peer details → Probe/Path → Call → Challenge → Paper → Send file.
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
@@ -2375,6 +2397,7 @@ function ChatPanel({
               {pathActions}
               {voiceCallControl}
               {gamesChallengeControl}
+              {paperShareControl}
               {rncpControl}
             </div>
           );
@@ -3154,6 +3177,9 @@ function ChatPanel({
         reticulumDmDestinationHash != null && (
           <ChatDmRncpOfferBanner lxmfPeerHash={reticulumDmDestinationHash} />
         )}
+      {protocol === 'reticulum' && hasLxmfPaper ? (
+        <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
+      ) : null}
       <ChatComposer
         className="mt-1"
         protocol={protocol}

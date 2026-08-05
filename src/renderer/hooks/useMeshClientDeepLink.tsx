@@ -10,6 +10,8 @@ import {
   applyMeshcoreChannelAdd,
   applyMeshcoreContactAdd,
 } from '@/renderer/lib/meshClientDeepLinkApply';
+import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
+import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import { classifyMeshClientDeepLink } from '@/shared/meshClientDeepLink';
 
 type PendingImport =
@@ -44,8 +46,14 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
 
     const unsub = api.onOpenUrl((url) => {
       const parsed = classifyMeshClientDeepLink(url);
-      if (parsed.kind === 'lxmPaperUnsupported') {
-        addToast(t('qrIngest.paperUnsupported'), 'error');
+      if (parsed.kind === 'lxmPaperMessage') {
+        void (async () => {
+          const outcome = await handleReticulumQrIngest(parsed.uri);
+          showReticulumQrIngestToast(outcome, { t, addToast });
+        })().catch((err: unknown) => {
+          console.error('[MeshClientDeepLinkHost] paper ingest failed: ' + errLikeToLogString(err));
+          addToast(t('qrIngest.unknownLink'), 'error');
+        });
         return;
       }
       if (parsed.kind === 'lxmContact') {

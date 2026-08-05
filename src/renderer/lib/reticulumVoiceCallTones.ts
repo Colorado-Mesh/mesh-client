@@ -12,19 +12,35 @@ let busyStopTimer: ReturnType<typeof setTimeout> | null = null;
 let dialOscillators: OscillatorNode[] = [];
 let dialGain: GainNode | null = null;
 
-/** Outbound connect sequence: 2s dial → DTMF → ringback. */
+/** Outbound connect sequence: 2s dial → DTMF → modem handshake → carrier. */
 let connectSequenceActive = false;
 let connectSequenceHash: string | null = null;
 let dialPhaseTimer: ReturnType<typeof setTimeout> | null = null;
-let dtmfToRingTimer: ReturnType<typeof setTimeout> | null = null;
+let dtmfToModemTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Modem handshake / carrier soundscape nodes (stopped on promote / hangup). */
+let modemStoppables: { stop: (when?: number) => void; disconnect: () => void }[] = [];
+let modemDisconnectables: { disconnect: () => void }[] = [];
+let modemCarrierStartTimer: ReturnType<typeof setTimeout> | null = null;
+let modemHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 const OUTGOING_DIAL_MS = 2000;
 const DTMF_ON_S = 0.12;
 const DTMF_GAP_S = 0.06;
 /** 4 × on + 3 × gap (last gap omitted) = 660ms. */
 export const DTMF_BURST_MS = Math.round(4 * DTMF_ON_S * 1000 + 3 * DTMF_GAP_S * 1000);
-/** Silence after last DTMF digit before UK ringback. */
+/** Silence after last DTMF digit before modem handshake. */
 export const DTMF_TO_RING_GAP_MS = 250;
+
+const MODEM_ANSWER_S = 0.45;
+const MODEM_CHIRP_S = 0.35;
+const MODEM_TRAIN_S = 0.5;
+/** Wall-clock duration of one-shot handshake before carrier bed starts. */
+export const MODEM_HANDSHAKE_MS = Math.round(
+  (MODEM_ANSWER_S + MODEM_CHIRP_S + MODEM_TRAIN_S) * 1000,
+);
+const MODEM_HEARTBEAT_MS = 2800;
+const MODEM_HEARTBEAT_CHIRP_S = 0.18;
 
 /** Standard DTMF keypad: nybble 0–F → 0–9, A–D, *, #. */
 const DTMF_KEY_BY_NYBBLE = '0123456789ABCD*#' as const;
@@ -66,15 +82,15 @@ function clearOutgoingConnectToneSequenceTimers(): void {
     clearTimeout(dialPhaseTimer);
     dialPhaseTimer = null;
   }
-  if (dtmfToRingTimer != null) {
-    clearTimeout(dtmfToRingTimer);
-    dtmfToRingTimer = null;
+  if (dtmfToModemTimer != null) {
+    clearTimeout(dtmfToModemTimer);
+    dtmfToModemTimer = null;
   }
   connectSequenceActive = false;
   connectSequenceHash = null;
 }
 
-/** True while dial→DTMF phase owns the timeline (before ringback starts). */
+/** True while dial→DTMF→modem owns the timeline (before ringback starts). */
 export function isOutgoingConnectToneSequenceActive(): boolean {
   return connectSequenceActive;
 }
@@ -160,6 +176,60 @@ function stopRingbackInterval(): void {
   }
 }
 
+function stopModemConnectingSoundscape(): void {
+  if (modemCarrierStartTimer != null) {
+    clearTimeout(modemCarrierStartTimer);
+    modemCarrierStartTimer = null;
+  }
+  if (modemHeartbeatTimer != null) {
+    clearInterval(modemHeartbeatTimer);
+    modemHeartbeatTimer = null;
+  }
+  for (const node of modemStoppables) {
+    try {
+      node.stop();
+    } catch {
+      // catch-no-log-ok already stopped
+    }
+    try {
+      node.disconnect();
+    } catch {
+      // catch-no-log-ok
+    }
+  }
+  modemStoppables = [];
+  for (const node of modemDisconnectables) {
+    try {
+      node.disconnect();
+    } catch {
+      // catch-no-log-ok
+    }
+  }
+  modemDisconnectables = [];
+}
+
+function trackModemStoppable(node: {
+  stop: (when?: number) => void;
+  disconnect: () => void;
+}): void {
+  modemStoppables.push(node);
+}
+
+function trackModemDisconnectable(node: { disconnect: () => void }): void {
+  modemDisconnectables.push(node);
+}
+
+function untrackModemStoppable(node: {
+  stop: (when?: number) => void;
+  disconnect: () => void;
+}): void {
+  modemStoppables = modemStoppables.filter((n) => n !== node);
+}
+
+function untrackModemDisconnectable(node: { disconnect: () => void }): void {
+  modemDisconnectables = modemDisconnectables.filter((n) => n !== node);
+}
+
 /** Map peer identity/destination hash → 4 DTMF keys (stable per peer). */
 export function dtmfKeysFromPeerHash(hash: string): string {
   // Full 32-hex fold — prefix-only made many peers sound identical.
@@ -209,6 +279,150 @@ function scheduleRingbackBurst(ctx: AudioContext): void {
   }
 }
 
+function scheduleModemChirp(
+  ctx: AudioContext,
+  startTime: number,
+  durationS: number,
+  gainLevel: number,
+): void {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(1200, startTime);
+  osc.frequency.linearRampToValueAtTime(2400, startTime + durationS);
+  gain.gain.setValueAtTime(gainLevel, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + durationS);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + durationS);
+  trackModemStoppable(osc);
+  trackModemDisconnectable(gain);
+  osc.onended = () => {
+    untrackModemStoppable(osc);
+    untrackModemDisconnectable(gain);
+  };
+}
+
+function playModemHandshake(ctx: AudioContext): void {
+  let t = ctx.currentTime;
+
+  // V.25-style 2100 Hz answer tone
+  const ansOsc = ctx.createOscillator();
+  const ansGain = ctx.createGain();
+  ansOsc.frequency.setValueAtTime(2100, t);
+  ansGain.gain.setValueAtTime(0.1, t);
+  ansGain.gain.exponentialRampToValueAtTime(0.0001, t + MODEM_ANSWER_S);
+  ansOsc.connect(ansGain);
+  ansGain.connect(ctx.destination);
+  ansOsc.start(t);
+  ansOsc.stop(t + MODEM_ANSWER_S);
+  trackModemStoppable(ansOsc);
+  trackModemDisconnectable(ansGain);
+  t += MODEM_ANSWER_S;
+
+  // Sweeping chirp
+  scheduleModemChirp(ctx, t, MODEM_CHIRP_S, 0.06);
+  t += MODEM_CHIRP_S;
+
+  // Brief bandpass training noise
+  const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * MODEM_TRAIN_S));
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i += 1) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = 'bandpass';
+  bandpass.frequency.setValueAtTime(1800, t);
+  bandpass.Q.setValueAtTime(2.5, t);
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.1, t);
+  noiseGain.gain.setValueAtTime(0.1, t + MODEM_TRAIN_S - 0.05);
+  noiseGain.gain.linearRampToValueAtTime(0.0001, t + MODEM_TRAIN_S);
+  noise.connect(bandpass);
+  bandpass.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+  noise.start(t);
+  noise.stop(t + MODEM_TRAIN_S);
+  trackModemStoppable(noise);
+  trackModemDisconnectable(bandpass);
+  trackModemDisconnectable(noiseGain);
+}
+
+function startModemCarrierBed(ctx: AudioContext): void {
+  const now = ctx.currentTime;
+
+  // Quiet continuous 1800 Hz carrier sine
+  const carrierOsc = ctx.createOscillator();
+  const carrierGain = ctx.createGain();
+  carrierOsc.frequency.setValueAtTime(1800, now);
+  carrierGain.gain.setValueAtTime(0.035, now);
+  carrierOsc.connect(carrierGain);
+  carrierGain.connect(ctx.destination);
+  carrierOsc.start(now);
+  trackModemStoppable(carrierOsc);
+  trackModemDisconnectable(carrierGain);
+
+  // Soft looping bandpass noise bed
+  const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * 1.0));
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i += 1) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = 'bandpass';
+  bandpass.frequency.setValueAtTime(1800, now);
+  bandpass.Q.setValueAtTime(1.8, now);
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.045, now);
+  noise.connect(bandpass);
+  bandpass.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+  noise.start(now);
+  trackModemStoppable(noise);
+  trackModemDisconnectable(bandpass);
+  trackModemDisconnectable(noiseGain);
+}
+
+function playModemHeartbeatChirp(): void {
+  if (!connectSequenceActive) return;
+  withRunningContext((ctx) => {
+    scheduleModemChirp(ctx, ctx.currentTime, MODEM_HEARTBEAT_CHIRP_S, 0.04);
+  });
+}
+
+/**
+ * One-shot modem handshake, then quiet continuous carrier until connect/fail.
+ * Idempotent while already in the soundscape (caller gates via sequence timers).
+ */
+function startModemConnectingSoundscape(): void {
+  if (isNotifMuted()) return;
+  stopModemConnectingSoundscape();
+  withRunningContext((ctx) => {
+    playModemHandshake(ctx);
+  });
+  modemCarrierStartTimer = setTimeout(() => {
+    modemCarrierStartTimer = null;
+    if (!connectSequenceActive) return;
+    withRunningContext((ctx) => {
+      startModemCarrierBed(ctx);
+    });
+    if (modemHeartbeatTimer != null) {
+      clearInterval(modemHeartbeatTimer);
+    }
+    modemHeartbeatTimer = setInterval(() => {
+      playModemHeartbeatChirp();
+    }, MODEM_HEARTBEAT_MS);
+  }, MODEM_HANDSHAKE_MS);
+}
+
 /** Continuous US dial tone (350+440 Hz) while connecting. Idempotent. */
 export function startVoiceDialTone(): void {
   if (isNotifMuted()) return;
@@ -235,6 +449,7 @@ export function startVoiceDialTone(): void {
 export function startVoiceRingback(): void {
   if (isNotifMuted()) return;
   stopDialToneNodes();
+  stopModemConnectingSoundscape();
   if (ringbackTimer != null) return;
   withRunningContext((ctx) => {
     scheduleRingbackBurst(ctx);
@@ -247,14 +462,15 @@ export function startVoiceRingback(): void {
 }
 
 /**
- * Outbound connect cadence: dial 2s → rapid 4-digit peer DTMF → UK ringback.
- * Idempotent for the same peer hash while the dial/DTMF phase is active.
+ * Outbound connect cadence: dial 2s → rapid 4-digit peer DTMF → modem handshake → carrier.
+ * Idempotent for the same peer hash while the dial/DTMF/modem phase is active.
  */
 export function startOutgoingConnectToneSequence(peerHash: string): void {
   const hash = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase() || '0000';
   if (connectSequenceActive && connectSequenceHash === hash) return;
 
   clearOutgoingConnectToneSequenceTimers();
+  stopModemConnectingSoundscape();
   stopDialToneNodes();
   stopRingbackInterval();
 
@@ -267,19 +483,28 @@ export function startOutgoingConnectToneSequence(peerHash: string): void {
     if (!connectSequenceActive) return;
     stopDialToneNodes();
     playDtmfBurst(dtmfKeysFromPeerHash(hash));
-    dtmfToRingTimer = setTimeout(() => {
-      dtmfToRingTimer = null;
+    dtmfToModemTimer = setTimeout(() => {
+      dtmfToModemTimer = null;
       if (!connectSequenceActive) return;
-      connectSequenceActive = false;
-      connectSequenceHash = null;
-      startVoiceRingback();
+      startModemConnectingSoundscape();
     }, DTMF_BURST_MS + DTMF_TO_RING_GAP_MS);
   }, OUTGOING_DIAL_MS);
+}
+
+/**
+ * End dial/DTMF/modem ownership and start UK ringback immediately (on connect).
+ */
+export function promoteOutgoingConnectSequenceToRingback(): void {
+  clearOutgoingConnectToneSequenceTimers();
+  stopModemConnectingSoundscape();
+  stopDialToneNodes();
+  startVoiceRingback();
 }
 
 /** Stop dial / ringback / cancel pending connect sequence — leaves one-shot busy/fail alone. */
 export function stopVoiceProgressTones(): void {
   clearOutgoingConnectToneSequenceTimers();
+  stopModemConnectingSoundscape();
   stopDialToneNodes();
   stopRingbackInterval();
 }

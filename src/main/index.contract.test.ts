@@ -149,6 +149,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(/key not allowed/);
     expect(INDEX_SOURCE).toContain("'meshtasticLastRfSelfNodeId'");
     expect(INDEX_SOURCE).toContain("'meshcoreLastSelfNodeId'");
+    expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
     expect(INDEX_SOURCE).toContain('meshtasticRemoteAdminKey:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');

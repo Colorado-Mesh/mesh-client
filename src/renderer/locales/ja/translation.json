@@ -646,7 +646,26 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "RFパスから更新されました",
     "openPeerDetails": "ピアの詳細",
-    "openPeerDetailsAria": "{{name}} のピア詳細を開く"
+    "openPeerDetailsAria": "{{name}} のピア詳細を開く",
+    "reticulumSendPaper": "ペーパー",
+    "reticulumSendPaperTooltip": "暗号化されたLXMF紙メッセージ（QR / lxm:// リンク）として共有",
+    "shareAsPaper": "紙として共有",
+    "shareAsPaperAria": "下書きを暗号化されたLXMF紙QRとして共有する",
+    "shareAsPaperTitle": "紙のメッセージ",
+    "shareAsPaperHint": "このQRを表示するか、リンクをコピーしてください。受信者の身元だけが解読できます。テキストは短くしてください。紙のメッセージにはサイズ制限があります。",
+    "shareAsPaperCopyUri": "リンクをコピー",
+    "shareAsPaperCopied": "用紙リンクをコピーしました",
+    "shareAsPaperClose": "閉じる",
+    "shareAsPaperEmpty": "最初にメッセージを入力し、紙として共有します。",
+    "shareAsPaperFailed": "紙のメッセージを作成できませんでした",
+    "shareAsPaperIdentityUnknown": "ピア公開鍵不明—連絡先のQRをインポートするか、アナウンスを待ち、もう一度お試しください。",
+    "shareAsPaperTooLarge": "紙のQRにはメッセージが長すぎます。短くしてもう一度お試しください。",
+    "scanPaper": "スキャン用紙",
+    "scanPaperAria": "暗号化されたLXMF紙メッセージをスキャンまたは貼り付ける",
+    "scanPaperHint": "紙のQRを貼り付けるかスキャンして、チャットに復号します。",
+    "shareAsPaperMessageLabel": "暗号化するメッセージ",
+    "shareAsPaperGenerate": "紙のQRを作成する",
+    "shareAsPaperCopyFailed": "用紙リンクをコピーできませんでした"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2633,6 +2652,10 @@
       },
       "warning": "これらの設定は、ローカル伝播ノードのホスティング、自動ピア、PoW コスト、および高コストのリモートの同期拒否を制御します。構成を誤ると、CPU が消費されたり、ディスクがいっぱいになったり、多数のピアを受け入れたりする可能性があります。",
       "enforceUnavailableTip": "スタンプ／ラチェット強制のトグルは現行の rsLXMF スタックでは適用されません（互換のため保存のみ）。"
+    },
+    "reticulumScanImport": {
+      "title": "スキャン/インポート",
+      "hint": "連絡先、Columba lxma:// カード、または暗号化された LXMF 紙メッセージの QR をスキャンまたは貼り付けます。"
     }
   },
   "nodeDetailModal": {
@@ -4841,7 +4864,6 @@
   "qrIngest": {
     "qrImageAlt": "QRコード",
     "encodeFailed": "QRコードを生成できませんでした",
-    "paperUnsupported": "暗号化されたLXMFペーパーメッセージはまだサポートされていません",
     "contactImported": "ディープリンクから追加された連絡先",
     "contactImportFailed": "リンクから連絡先をインポートできませんでした",
     "unknownLink": "認識されないリンク",
@@ -4876,7 +4898,12 @@
     "meshcoreChannelImported": "MeshCoreチャンネルリンクを受信しました—ラジオタブで確認してください",
     "meshcoreChannelImportFailed": "QRからMeshCoreチャンネルをインポートできませんでした",
     "meshcoreChannelPrefill": "QRから入力されたチャンネルの詳細—保存して適用",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "紙のメッセージがチャットに復号されました",
+    "paperInvalidUri": "有効なLXMF用紙リンクのように見えません",
+    "paperDecryptFailed": "紙のメッセージを復号できませんでした—これは正しいIDですか？",
+    "paperIdentityNotConfigured": "Reticulum アイデンティティの準備ができていません — まずスタックを起動してアイデンティティを設定してください",
+    "paperIngestFailed": "紙のメッセージを取り込めませんでした"
   },
   "reticulumRemote": {
     "navAria": "リモートセクション",

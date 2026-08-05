@@ -71,6 +71,9 @@ function statusLabelText(
       if (deliveryMethod === 'propagated') {
         return t('chatPanel.reticulumSendStoredAtPn');
       }
+      if (deliveryMethod === 'paper') {
+        return t('chatPanel.reticulumSendPaper');
+      }
       return t('chatPanel.reticulumSendDelivered');
     default:
       return error ?? t('chatPanel.reticulumSendFailed');
@@ -85,6 +88,9 @@ function viaPrefixText(
 ): string {
   if (deliveryMethod === 'propagated') {
     return t('chatPanel.sentViaPropagation');
+  }
+  if (deliveryMethod === 'paper') {
+    return t('chatPanel.reticulumSendPaperTooltip');
   }
   if (atoms.length > 1) {
     return t('chatPanel.sentViaMultiple', { vias: viasLabel });
@@ -101,10 +107,17 @@ export function ReticulumMessageStatusBadge({
   const { t } = useTranslation();
   const atoms = parseReticulumViaAtoms(via);
   const viasLabel = formatReticulumViaBadgeLabel(via ?? 'network');
-  const label = deliveryMethod === 'propagated' ? t('chatPanel.reticulumPnAbbrev') : viasLabel;
+  const label =
+    deliveryMethod === 'propagated'
+      ? t('chatPanel.reticulumPnAbbrev')
+      : deliveryMethod === 'paper'
+        ? t('chatPanel.reticulumSendPaper')
+        : viasLabel;
   const statusLabel = statusLabelText(t, status, deliveryMethod, error);
   const viaPrefix = viaPrefixText(t, deliveryMethod, atoms, viasLabel);
-  const tooltip = `${viaPrefix}: ${statusLabel}`;
+  // Completed paper: paper-only prefix. Failed/sending paper keep status suffix (incl. error text).
+  const tooltip =
+    deliveryMethod === 'paper' && status === 'acked' ? viaPrefix : `${viaPrefix}: ${statusLabel}`;
   return (
     <DeliveryStatusBadgeFrame
       label={label}

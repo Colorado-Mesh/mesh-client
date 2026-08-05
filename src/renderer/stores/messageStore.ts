@@ -18,6 +18,7 @@ export type MessageTransport =
   | 'both'
   | 'tcp'
   | 'network'
+  | 'paper'
   | `${'rf' | 'ble' | 'tcp' | 'network'}+${string}`;
 
 export interface MessageRecord {

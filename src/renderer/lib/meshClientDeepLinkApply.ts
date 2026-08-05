@@ -4,11 +4,16 @@
  */
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { ingestReticulumLxmfPayloadWithSideEffects } from '@/renderer/lib/ingest/reticulumIngest';
 import { pubkeyToNodeId } from '@/renderer/lib/meshcoreUtils';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
+import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { refreshReticulumPeersFromSidecar } from '@/renderer/stores/reticulumPeerStore';
 import { hexToBytesExact } from '@/shared/hexBytes';
 import type { MeshClientDeepLink } from '@/shared/meshClientDeepLink';
+import { paperErrorToI18n } from '@/shared/reticulumPaperErrors';
 
 export type DeepLinkApplyResult =
   | { ok: true; kind: MeshClientDeepLink['kind']; deferred?: boolean }
@@ -138,5 +143,36 @@ export async function applyMeshcoreChannelAdd(
   } catch (err) {
     console.error('[applyMeshcoreChannelAdd] failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
+  }
+}
+
+/** Ingest encrypted LXMF paper `lxm://` URI via sidecar (decrypt → Chat). */
+export async function applyLxmPaperIngest(opts: { uri: string }): Promise<DeepLinkApplyResult> {
+  try {
+    const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/paper/ingest', {
+      uri: opts.uri,
+    })) as {
+      ok?: boolean;
+      error?: string;
+      message?: unknown;
+    };
+    if (res.ok === true) {
+      const lxmfPayload = extractLxmfPayloadFromSendResponse(res);
+      if (lxmfPayload) {
+        const identityId =
+          getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
+        ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload);
+      }
+      return { ok: true, kind: 'lxmPaperMessage' };
+    }
+    const code = typeof res.error === 'string' ? res.error : '';
+    return {
+      ok: false,
+      errorKey: paperErrorToI18n(code, 'ingest'),
+      detail: code || undefined,
+    };
+  } catch (err) {
+    console.error('[applyLxmPaperIngest] failed: ' + errLikeToLogString(err));
+    return { ok: false, errorKey: 'qrIngest.paperIngestFailed' };
   }
 }

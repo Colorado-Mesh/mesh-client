@@ -414,6 +414,7 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');
+    expect(INDEX_SOURCE).toContain('reticulumLastSelfLxmfHash');
     expect(INDEX_SOURCE).toContain('reticulumRmapAnnounceIntervalMin');
     expect(INDEX_SOURCE).toContain('reticulumRmapReachableOn');
     expect(INDEX_SOURCE).toContain('reticulumRmapHeightMeters');
@@ -428,6 +429,7 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
       INDEX_SOURCE.indexOf('APP_SETTINGS_ALLOWED_KEYS'),
       INDEX_SOURCE.indexOf('APP_SETTINGS_MAX_VALUE_LENGTH'),
     );
+    expect(allowListBlock).toContain("'reticulumLastSelfLxmfHash'");
     expect(allowListBlock).toContain("'reticulumRmapAnnounceIntervalMin'");
     expect(allowListBlock).toContain("'reticulumRmapReachableOn'");
     expect(allowListBlock).toContain("'reticulumRmapHeightMeters'");

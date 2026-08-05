@@ -38,6 +38,8 @@ describe('classifyReticulumVia', () => {
     expect(messageTransportFromWire('rf', null, 'inbound')).toBe('rf');
     expect(messageTransportFromWire(null, 'tcp', 'outbound')).toBe('tcp');
     expect(messageTransportFromWire(null, 'rf+tcp', 'outbound')).toBe('rf+tcp');
+    expect(messageTransportFromWire('paper', null, 'inbound')).toBe('paper');
+    expect(messageTransportFromWire(null, 'paper', 'outbound')).toBe('paper');
     expect(isReticulumVia('network')).toBe(true);
     expect(isReticulumVia('mqtt')).toBe(false);
     expect(isReticulumViaLabel('rf+tcp')).toBe(true);

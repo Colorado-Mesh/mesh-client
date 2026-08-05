@@ -1718,6 +1718,25 @@ export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'reticulumSendDelivered',
   'reticulumSendSending',
   'reticulumSendFailed',
+  'reticulumSendPaper',
+  'reticulumSendPaperTooltip',
+  'shareAsPaper',
+  'shareAsPaperAria',
+  'shareAsPaperTitle',
+  'shareAsPaperMessageLabel',
+  'shareAsPaperGenerate',
+  'shareAsPaperHint',
+  'shareAsPaperCopyUri',
+  'shareAsPaperCopied',
+  'shareAsPaperCopyFailed',
+  'shareAsPaperClose',
+  'shareAsPaperEmpty',
+  'shareAsPaperFailed',
+  'shareAsPaperIdentityUnknown',
+  'shareAsPaperTooLarge',
+  'scanPaper',
+  'scanPaperAria',
+  'scanPaperHint',
 ]);
 
 /** Reticulum DM-only chat copy — contact must not become customer inquiry (문의). */
@@ -2202,6 +2221,17 @@ export const ROUTING_PORT_TOKENS = [
 const MOJIBAKE_RE = /Ð[\u0080-\u00FF]{2,}|Ã[\u0080-\u00BF]{2,}|Â[\u0080-\u00BF]{2,}/;
 
 const BROKEN_MESHTASTIC_SCHEME_RE = /meshtastic[\s\u00a0]+:\/\//i;
+/** Auto-translate often inserts spaces / NBSP before `://` in `lxm://` / `lxma://`. */
+const BROKEN_LXM_SCHEME_RE = /\blxma?[\s\u00a0]+:\/\//i;
+/**
+ * Prose glued onto a scheme after stripping complete URI tokens
+ * (e.g. leftover `lxm://` + word). Paper payloads are URL-safe base64 and may
+ * start with letters — do not flag those; strip `lxm(a)://…` tokens first.
+ */
+const LXM_SCHEME_GLUED_TO_WORD_RE =
+  /\blxma?:\/\/(?=[A-Za-z\u00C0-\u024F\u0400-\u04FF\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF])/u;
+/** Complete `lxm://` / `lxma://` URI token (scheme + non-whitespace payload). */
+const LXM_URI_TOKEN_RE = /\blxma?:\/\/[^\s<>"']+/gi;
 
 const MESHTASTIC_MISSPELLING_RE = /meshtastisch/i;
 
@@ -2376,12 +2406,36 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
     issues.push('meshtastic:// scheme must not contain whitespace before "://"');
   }
 
+  if (BROKEN_LXM_SCHEME_RE.test(val)) {
+    issues.push('lxm:// / lxma:// scheme must not contain whitespace before "://"');
+  }
+
+  // Strip complete URI tokens first so alphabetic paper payloads (e.g. lxm://AbC…)
+  // are not treated as scheme-glued-to-prose false positives.
+  const valWithoutLxmUris = val.replace(LXM_URI_TOKEN_RE, '');
+  if (LXM_SCHEME_GLUED_TO_WORD_RE.test(valWithoutLxmUris)) {
+    issues.push('lxm:// / lxma:// must be followed by a space or punctuation, not glued to a word');
+  }
+
   if (
     enVal.includes('meshtastic://') &&
     /meshtastic/i.test(val) &&
     !val.includes('meshtastic://')
   ) {
     issues.push('meshtastic:// URL scheme is broken or missing');
+  }
+
+  if (enVal.includes('lxma://') && /lxma/i.test(val) && !val.includes('lxma://')) {
+    issues.push('lxma:// URL scheme is broken or missing');
+  }
+
+  if (
+    enVal.includes('lxm://') &&
+    !enVal.includes('lxma://') &&
+    /\blxm\b/i.test(val) &&
+    !val.includes('lxm://')
+  ) {
+    issues.push('lxm:// URL scheme is broken or missing');
   }
 
   if (MESHTASTIC_MISSPELLING_RE.test(val)) {

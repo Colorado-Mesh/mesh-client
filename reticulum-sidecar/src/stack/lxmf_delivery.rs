@@ -736,4 +736,118 @@ mod tests {
             "full inbound_raw queue must log saturation (drop-newest policy)"
         );
     }
+
+    #[test]
+    fn paper_uri_round_trip_with_identity_crypto() {
+        use lxmf_core::message::MessageError;
+
+        let recipient = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+
+        let mut msg = LxMessage::new(
+            lxmf_hash,
+            sender_lxmf,
+            "",
+            "paper hello",
+            DeliveryMethod::Paper,
+        );
+        msg.sign(
+            sender
+                .get_signing_key()
+                .as_ref()
+                .expect("sender signing key"),
+        )
+        .unwrap();
+
+        let uri = msg
+            .to_paper_uri(|plaintext| {
+                recipient
+                    .encrypt(plaintext, None)
+                    .map_err(|_| MessageError::PackFailed("encrypt".into()))
+            })
+            .expect("to_paper_uri");
+
+        assert!(uri.starts_with("lxm://"));
+
+        let recovered = LxMessage::from_paper_uri(&uri, |ciphertext| {
+            recipient
+                .decrypt(ciphertext, None, false)
+                .map_err(|_| MessageError::PackFailed("decrypt".into()))
+        })
+        .expect("from_paper_uri");
+        assert_eq!(recovered.content, "paper hello");
+        assert_eq!(recovered.method, DeliveryMethod::Paper);
+        assert_eq!(recovered.destination_hash, lxmf_hash);
+    }
+
+    #[test]
+    fn paper_uri_wrong_identity_decrypt_fails() {
+        use lxmf_core::message::MessageError;
+
+        let recipient = Identity::new();
+        let wrong = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+
+        let mut msg = LxMessage::new(lxmf_hash, sender_lxmf, "", "secret", DeliveryMethod::Paper);
+        msg.sign(
+            sender
+                .get_signing_key()
+                .as_ref()
+                .expect("sender signing key"),
+        )
+        .unwrap();
+        let uri = msg
+            .to_paper_uri(|plaintext| {
+                recipient
+                    .encrypt(plaintext, None)
+                    .map_err(|_| MessageError::PackFailed("encrypt".into()))
+            })
+            .expect("to_paper_uri");
+
+        let err = LxMessage::from_paper_uri(&uri, |ciphertext| {
+            wrong
+                .decrypt(ciphertext, None, false)
+                .map_err(|_| MessageError::PackFailed("decrypt".into()))
+        });
+        assert!(err.is_err(), "wrong identity must not decrypt paper");
+    }
+
+    #[test]
+    fn paper_uri_oversized_rejected() {
+        use lxmf_core::constants::PAPER_MDU;
+        use lxmf_core::message::MessageError;
+
+        let recipient = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+        // Large enough that dest‖ciphertext exceeds PAPER_MDU after identity encryption.
+        let big = "x".repeat(PAPER_MDU);
+        let mut msg = LxMessage::new(lxmf_hash, sender_lxmf, "", &big, DeliveryMethod::Paper);
+        msg.sign(
+            sender
+                .get_signing_key()
+                .as_ref()
+                .expect("sender signing key"),
+        )
+        .unwrap();
+        let err = msg.to_paper_uri(|plaintext| {
+            recipient
+                .encrypt(plaintext, None)
+                .map_err(|_| MessageError::PackFailed("encrypt".into()))
+        });
+        match err {
+            Err(MessageError::PackFailed(s)) => {
+                assert!(
+                    s.contains("exceeds maximum size"),
+                    "unexpected pack error: {s}"
+                );
+            }
+            other => panic!("expected oversized PackFailed, got {other:?}"),
+        }
+    }
 }

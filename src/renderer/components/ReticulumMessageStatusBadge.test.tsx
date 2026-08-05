@@ -39,8 +39,31 @@ describe('ReticulumMessageStatusBadge', () => {
     expect(screen.getByText(/reticulumPnAbbrev/)).toBeTruthy();
   });
 
-  it('shows Queued at PN while propagated Sending', () => {
-    render(<ReticulumMessageStatusBadge status="sending" via="tcp" deliveryMethod="propagated" />);
+  it('shows Paper for paper Completes', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="paper" />,
+    );
+    expect(screen.getByLabelText('chatPanel.reticulumSendPaperTooltip')).toBeTruthy();
+    expect(screen.getByText(/reticulumSendPaper/)).toBeTruthy();
+  });
+
+  it('keeps failure status in tooltip for failed paper messages', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge
+        status="failed"
+        via="paper"
+        deliveryMethod="paper"
+        error="decrypt boom"
+      />,
+    );
+    expect(screen.getByLabelText('chatPanel.reticulumSendPaperTooltip: decrypt boom')).toBeTruthy();
+  });
+
+  it('shows PN abbrev while propagated send is still in flight', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="sending" via="tcp" deliveryMethod="propagated" />,
+    );
+    expect(screen.getByText(/reticulumPnAbbrev/)).toBeTruthy();
     expect(
       screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.reticulumSendPropagated'),
     ).toBeTruthy();

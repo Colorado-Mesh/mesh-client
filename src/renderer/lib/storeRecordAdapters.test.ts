@@ -310,6 +310,32 @@ describe('store record adapters (merge precedence)', () => {
     expect(messageRecordToChatMessage(record).reticulumDeliveryMethod).toBe('propagated');
   });
 
+  it('rehydrates paper received_via and delivery_method from DB', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      payload: 'paper body',
+      timestamp: 1_700_000_000_000,
+      message_hash: 'ff'.repeat(16),
+      delivery_status: 'delivered',
+      delivery_method: 'paper',
+      received_via: 'paper',
+    });
+    expect(record.receivedVia).toBe('paper');
+    expect(record.reticulumDeliveryMethod).toBe('paper');
+    expect(record.status).toBe('acked');
+  });
+
+  it('rehydrates ble received_via from DB', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      payload: 'ble body',
+      timestamp: 1_700_000_000_000,
+      message_hash: 'fe'.repeat(16),
+      received_via: 'ble',
+    });
+    expect(record.receivedVia).toBe('ble');
+  });
+
   it('round-trips Reticulum LXMF hash and reply fields from DB rows', () => {
     const record = reticulumDbRowToMessageRecord({
       sender_id: 'aa'.repeat(16),

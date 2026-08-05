@@ -115,6 +115,30 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'meshtastic:// scheme must not contain whitespace before "://"');
   });
 
+  it('flags whitespace inside lxm:// before ://', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'qrIngest.hint',
+      val: 'Paste lxm :// blob here',
+      enVal: 'Paste lxm:// blob here',
+    });
+    expectIssue(issues, 'lxm:// / lxma:// scheme must not contain whitespace before "://"');
+  });
+
+  it('accepts alphabetic paper payload prefixes on lxm:// URIs', () => {
+    // Alphabetic base64url-style prefix (not a secret — repeated alphabet for lint).
+    const paperBlob = `${'Abcdefghij'.repeat(5)}${'0123456789'.repeat(2)}`;
+    const issues = localeStringQualityIssues({
+      locale: 'en',
+      flatKey: 'chatPanel.shareAsPaperHint',
+      val: `Show QR for lxm://${paperBlob} offline`,
+      enVal: `Show QR for lxm://${paperBlob} offline`,
+    });
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('glued to a word')]),
+    );
+  });
+
   it('flags meshtastisch misspelling', () => {
     const issues = localeStringQualityIssues({
       locale: 'de',

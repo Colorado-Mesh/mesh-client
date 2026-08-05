@@ -151,6 +151,8 @@ export interface ProtocolCapabilities {
   hasLxstVoice: boolean;
   /** Reticulum: LRGP games (Games tab, Peers / Chat DM Challenge) */
   hasLrgpGames: boolean;
+  /** Reticulum: LXMF encrypted paper message share/scan (Chat DM) */
+  hasLxmfPaper: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
   lxmfPayloadLimit?: number;
 }
@@ -228,6 +230,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: false,
   hasLxstVoice: false,
   hasLrgpGames: false,
+  hasLxmfPaper: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -304,6 +307,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: false,
   hasLxstVoice: false,
   hasLrgpGames: false,
+  hasLxmfPaper: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -379,5 +383,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: true,
   hasLxstVoice: true,
   hasLrgpGames: true,
+  hasLxmfPaper: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

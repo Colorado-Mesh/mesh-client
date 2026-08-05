@@ -321,7 +321,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 **Messaging (Chat + RRC)**
 
-- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** on disk under `reticulum/attachments/` also display inline); **LXST voice Call** on DM headers (live telephony — not an LXMF voice-note clip)
+- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** on disk under `reticulum/attachments/` also display inline); **LXST voice Call** on DM headers (live telephony — not an LXMF voice-note clip); **Share as paper** / **Scan paper** for offline encrypted LXMF QR/`lxm://` handoff (**Paper** delivery badge)
 - **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs)
 - **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch) over Reticulum, with saved addresses and inbound-policy controls; also available from Chat DMs as send-file (distinct from Meshtastic remote admin)
 - **Direct** delivery when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered

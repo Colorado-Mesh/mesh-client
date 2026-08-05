@@ -219,6 +219,7 @@ export async function persistReticulumMessageToDb(
       message_hash: p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text),
       received_via: resolvePayloadTransport(p) ?? null,
       delivery_status: resolvePersistedDeliveryStatus(p),
+      delivery_method: parseReticulumDeliveryMethod(p.delivery_method) ?? null,
       attachment_path: attachmentPath ?? null,
     });
   } catch (e) {

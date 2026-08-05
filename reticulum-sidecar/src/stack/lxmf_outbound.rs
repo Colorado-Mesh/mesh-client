@@ -796,9 +796,14 @@ impl LxmfOutboundDriver {
         Some(packed)
     }
 
-    fn encrypt_for_destination(&self, dest_hash_hex: &str, plaintext: &[u8]) -> Option<Vec<u8>> {
-        let pub_key = self.known_identities.get(&dest_hash_hex.to_lowercase())?;
-        let remote = Identity::from_public_key(pub_key).ok()?;
+    /// Encrypt plaintext to a known peer destination identity (Direct/PN/paper).
+    pub fn encrypt_for_destination(
+        &self,
+        dest_hash_hex: &str,
+        plaintext: &[u8],
+    ) -> Option<Vec<u8>> {
+        let pub_key = self.public_key_for(dest_hash_hex)?;
+        let remote = Identity::from_public_key(&pub_key).ok()?;
         remote.encrypt(plaintext, None).ok()
     }
 

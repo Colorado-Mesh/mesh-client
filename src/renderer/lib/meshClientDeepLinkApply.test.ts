@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upsertReticulumDestination = vi.fn().mockResolvedValue({ changes: 1 });
+const proxyPost = vi.fn();
 
 vi.stubGlobal('window', {
   electronAPI: {
     db: {
       upsertReticulumDestination,
+    },
+    reticulum: {
+      proxyPost,
     },
   },
 });
@@ -18,11 +22,27 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   refreshReticulumPeersFromSidecar: vi.fn().mockResolvedValue(undefined),
 }));
 
+const ingestReticulumLxmfPayloadWithSideEffects = vi.fn().mockReturnValue(true);
+
+vi.mock('@/renderer/lib/ingest/reticulumIngest', () => ({
+  ingestReticulumLxmfPayloadWithSideEffects: (...args: unknown[]) =>
+    ingestReticulumLxmfPayloadWithSideEffects(...args),
+}));
+
+vi.mock('@/renderer/lib/identityByProtocol', () => ({
+  getIdentityIdForProtocol: () => 'id-reticulum',
+}));
+
+vi.mock('@/renderer/lib/offlineProtocolIdentities', () => ({
+  getOfflineIdentityIdForProtocol: () => 'id-reticulum-offline',
+}));
+
 import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 import {
   applyLxmaContactImport,
   applyLxmContactImport,
+  applyLxmPaperIngest,
   applyMeshcoreChannelAdd,
   applyMeshcoreContactAdd,
 } from './meshClientDeepLinkApply';
@@ -32,6 +52,8 @@ describe('meshClientDeepLinkApply', () => {
     vi.mocked(registerReticulumKnownIdentity).mockReset();
     upsertReticulumDestination.mockReset();
     upsertReticulumDestination.mockResolvedValue({ changes: 1 });
+    proxyPost.mockReset();
+    ingestReticulumLxmfPayloadWithSideEffects.mockClear();
   });
 
   it('applyLxmaContactImport registers then upserts with is_contact', async () => {
@@ -121,5 +143,64 @@ describe('meshClientDeepLinkApply', () => {
     );
     expect(result).toEqual({ ok: true, kind: 'meshcoreChannelAdd' });
     expect(applyChannel).toHaveBeenCalledWith({ name: 'Pub', secretHex: 'cd'.repeat(16) });
+  });
+
+  it('applyLxmPaperIngest posts uri to sidecar', async () => {
+    proxyPost.mockResolvedValue({ ok: true });
+    const uri = `lxm://${'A'.repeat(48)}`;
+    const result = await applyLxmPaperIngest({ uri });
+    expect(result).toEqual({ ok: true, kind: 'lxmPaperMessage' });
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/paper/ingest', { uri });
+  });
+
+  it('applyLxmPaperIngest fallback-ingests HTTP message payload', async () => {
+    const message = {
+      sender_hash: 'aa'.repeat(16),
+      text: 'paper inbound',
+      message_hash: 'bb'.repeat(16),
+      delivery_method: 'paper',
+      received_via: 'paper',
+      direction: 'inbound',
+    };
+    proxyPost.mockResolvedValue({ ok: true, message });
+    const result = await applyLxmPaperIngest({ uri: `lxm://${'C'.repeat(48)}` });
+    expect(result).toEqual({ ok: true, kind: 'lxmPaperMessage' });
+    expect(ingestReticulumLxmfPayloadWithSideEffects).toHaveBeenCalledWith('id-reticulum', message);
+  });
+
+  it('applyLxmPaperIngest maps decrypt_failed', async () => {
+    proxyPost.mockResolvedValue({ ok: false, error: 'decrypt_failed' });
+    const result = await applyLxmPaperIngest({ uri: `lxm://${'B'.repeat(48)}` });
+    expect(result).toEqual({
+      ok: false,
+      errorKey: 'qrIngest.paperDecryptFailed',
+      detail: 'decrypt_failed',
+    });
+  });
+
+  it('applyLxmPaperIngest maps invalid_uri', async () => {
+    proxyPost.mockResolvedValue({ ok: false, error: 'invalid_uri' });
+    const result = await applyLxmPaperIngest({ uri: 'lxm://bad' });
+    expect(result).toEqual({
+      ok: false,
+      errorKey: 'qrIngest.paperInvalidUri',
+      detail: 'invalid_uri',
+    });
+  });
+
+  it('applyLxmPaperIngest maps identity_not_configured', async () => {
+    proxyPost.mockResolvedValue({ ok: false, error: 'identity_not_configured' });
+    const result = await applyLxmPaperIngest({ uri: `lxm://${'D'.repeat(48)}` });
+    expect(result).toEqual({
+      ok: false,
+      errorKey: 'qrIngest.paperIdentityNotConfigured',
+      detail: 'identity_not_configured',
+    });
+  });
+
+  it('applyLxmPaperIngest maps thrown errors to generic failure', async () => {
+    proxyPost.mockRejectedValue(new Error('network'));
+    const result = await applyLxmPaperIngest({ uri: `lxm://${'E'.repeat(48)}` });
+    expect(result).toEqual({ ok: false, errorKey: 'qrIngest.paperIngestFailed' });
   });
 });

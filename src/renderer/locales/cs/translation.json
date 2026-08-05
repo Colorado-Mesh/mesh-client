@@ -648,7 +648,26 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Aktualizováno z RF cesty",
     "openPeerDetails": "Podrobnosti peeru",
-    "openPeerDetailsAria": "Otevřít podrobnosti peeru pro {{name}}"
+    "openPeerDetailsAria": "Otevřít podrobnosti peeru pro {{name}}",
+    "reticulumSendPaper": "Papír",
+    "reticulumSendPaperTooltip": "Sdíleno jako šifrovaná papírová zpráva LXMF (QR / lxm:// odkaz)",
+    "shareAsPaper": "Sdílet jako papír",
+    "shareAsPaperAria": "Sdílet koncept jako šifrovaný LXMF papír QR",
+    "shareAsPaperTitle": "Papírová zpráva",
+    "shareAsPaperHint": "Zobrazit tento QR nebo zkopírovat odkaz. Dešifrovat ji může pouze totožnost příjemce. Udržujte text krátký — papírové zprávy mají limit velikosti.",
+    "shareAsPaperCopyUri": "Kopírovat odkaz",
+    "shareAsPaperCopied": "Papírový odkaz zkopírován",
+    "shareAsPaperClose": "Zavřít",
+    "shareAsPaperEmpty": "Nejprve napiš zprávu a pak ji sdílej jako papír.",
+    "shareAsPaperFailed": "Nelze vytvořit papírovou zprávu",
+    "shareAsPaperIdentityUnknown": "Veřejný klíč protějšku neznámý — importujte QR kontaktů nebo počkejte na oznámení a zkuste to znovu.",
+    "shareAsPaperTooLarge": "Zpráva je na papírové QR příliš dlouhá — zkraťte ji a zkuste to znovu.",
+    "scanPaper": "Naskenovat papír",
+    "scanPaperAria": "Naskenujte nebo vložte šifrovanou papírovou zprávu LXMF",
+    "scanPaperHint": "Vložte nebo naskenujte papírový QR kód pro dešifrování do chatu.",
+    "shareAsPaperMessageLabel": "Zpráva k zašifrování",
+    "shareAsPaperGenerate": "Vytvořit papírové QR",
+    "shareAsPaperCopyFailed": "Nelze zkopírovat papírový odkaz"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2635,6 +2654,10 @@
       },
       "warning": "Tato nastavení řídí místní hosting uzlu propagace, autopeer, náklady na PoW a odmítnutí synchronizace pro vysoce nákladné dálkové ovladače. Špatná konfigurace může vypálit CPU, zaplnit disk nebo přijmout mnoho kolegů.",
       "enforceUnavailableTip": "Přepínače vynucení stamps/ratchets se na aktuálním rsLXMF stacku neaplikují (ukládají se jen kvůli kompatibilitě)."
+    },
+    "reticulumScanImport": {
+      "title": "Skenovat / importovat",
+      "hint": "Naskenujte nebo vložte QR pro kontakty, karty Columba lxma:// nebo šifrované papírové zprávy LXMF."
     }
   },
   "nodeDetailModal": {
@@ -4843,7 +4866,6 @@
   "qrIngest": {
     "qrImageAlt": "QR kód",
     "encodeFailed": "Nelze vygenerovat QR kód",
-    "paperUnsupported": "Šifrované papírové zprávy LXMF zatím nejsou podporovány",
     "contactImported": "Kontakt přidán z hlubokého odkazu",
     "contactImportFailed": "Nelze importovat kontakt z odkazu",
     "unknownLink": "Nerozpoznaný odkaz",
@@ -4878,7 +4900,12 @@
     "meshcoreChannelImported": "Odkaz na kanál MeshCore přijat — kontrola na kartě Rádio",
     "meshcoreChannelImportFailed": "Nelze importovat kanál MeshCore z QR",
     "meshcoreChannelPrefill": "Podrobnosti kanálu vyplněny z QR — uložit pro použití",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Papírová zpráva dešifrovaná do chatu",
+    "paperInvalidUri": "To nevypadá jako platný papírový odkaz LXMF",
+    "paperDecryptFailed": "Nelze dešifrovat papírovou zprávu — je to správná identita?",
+    "paperIdentityNotConfigured": "Reticulum identita není připravena — nejprve spusťte zásobník a nakonfigurujte identitu",
+    "paperIngestFailed": "Nelze ingestovat papírovou zprávu"
   },
   "reticulumRemote": {
     "navAria": "Vzdálené úseky",

@@ -11,6 +11,7 @@ import {
   playVoiceBusyTone,
   playVoiceFailTone,
   playVoiceReorderTone,
+  promoteOutgoingConnectSequenceToRingback,
   startOutgoingConnectToneSequence,
   startVoiceRingback,
   stopVoiceCallTones,
@@ -100,6 +101,7 @@ vi.mock('@/renderer/components/Toast', () => ({
 vi.mock('./reticulumVoiceCallTones', () => ({
   startOutgoingConnectToneSequence: vi.fn(),
   isOutgoingConnectToneSequenceActive: vi.fn(() => false),
+  promoteOutgoingConnectSequenceToRingback: vi.fn(),
   startVoiceRingback: vi.fn(),
   stopVoiceCallTones: vi.fn(),
   stopVoiceProgressTones: vi.fn(),
@@ -239,6 +241,7 @@ describe('reticulumVoiceSession', () => {
     vi.mocked(stopVoiceCallTones).mockReset();
     vi.mocked(startOutgoingConnectToneSequence).mockReset();
     vi.mocked(startVoiceRingback).mockReset();
+    vi.mocked(promoteOutgoingConnectSequenceToRingback).mockReset();
     vi.mocked(isOutgoingConnectToneSequenceActive).mockReturnValue(false);
     Object.assign(window, {
       electronAPI: {
@@ -311,6 +314,7 @@ describe('reticulumVoiceSession', () => {
     vi.mocked(startOutgoingConnectToneSequence).mockClear();
     syncReticulumVoiceProgressTones('connecting');
     expect(startVoiceRingback).toHaveBeenCalled();
+    expect(promoteOutgoingConnectSequenceToRingback).not.toHaveBeenCalled();
     syncReticulumVoiceProgressTones('ringing');
     expect(startVoiceRingback).toHaveBeenCalled();
     vi.mocked(stopVoiceCallTones).mockClear();
@@ -322,10 +326,14 @@ describe('reticulumVoiceSession', () => {
     expect(stopVoiceCallTones).toHaveBeenCalledTimes(1); // established only
   });
 
-  it('connecting/ringing skip ringback while connect sequence is still active', () => {
+  it('connecting/ringing promotes sequence to ringback while connect sequence is active', () => {
     vi.mocked(isOutgoingConnectToneSequenceActive).mockReturnValue(true);
     syncReticulumVoiceProgressTones('connecting');
+    expect(promoteOutgoingConnectSequenceToRingback).toHaveBeenCalledTimes(1);
+    expect(startVoiceRingback).not.toHaveBeenCalled();
+    vi.mocked(promoteOutgoingConnectSequenceToRingback).mockClear();
     syncReticulumVoiceProgressTones('ringing');
+    expect(promoteOutgoingConnectSequenceToRingback).toHaveBeenCalledTimes(1);
     expect(startVoiceRingback).not.toHaveBeenCalled();
   });
 

@@ -5,10 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
-import {
-  applyLxmaContactImport,
-  applyLxmContactImport,
-} from '@/renderer/lib/meshClientDeepLinkApply';
+import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
 import { translateReticulumAuditIssue } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
   fetchPathMediumPreference,
@@ -25,16 +22,13 @@ import {
   switchReticulumIdentity,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
+import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
-import {
-  buildLxmaContactUri,
-  buildLxmIdentityUri,
-  classifyMeshClientDeepLink,
-} from '@/shared/meshClientDeepLink';
+import { buildLxmaContactUri, buildLxmIdentityUri } from '@/shared/meshClientDeepLink';
 import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
@@ -601,6 +595,27 @@ export function ReticulumNetworkPanel({
         </div>
       </ReticulumCollapsibleSection>
 
+      <ReticulumCollapsibleSection title={t('networkPanel.reticulumScanImport.title')}>
+        <p className="text-muted text-xs">{t('networkPanel.reticulumScanImport.hint')}</p>
+        <div className="mt-2">
+          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <QrIngestControl
+            disabled={!sidecarApiReady}
+            onDecoded={(text) => {
+              void (async () => {
+                const outcome = await handleReticulumQrIngest(text);
+                showReticulumQrIngestToast(outcome, { t, addToast });
+              })().catch((err: unknown) => {
+                console.error(
+                  '[ReticulumNetworkPanel] QR ingest failed: ' + errLikeToLogString(err),
+                );
+                addToast(t('qrIngest.unknownLink'), 'error');
+              });
+            }}
+          />
+        </div>
+      </ReticulumCollapsibleSection>
+
       <ReticulumCollapsibleSection title={t('connectionPanel.reticulumIdentity.title')}>
         <p className="text-muted text-xs">{t('connectionPanel.reticulumIdentity.hint')}</p>
         {identityError ? (
@@ -608,48 +623,6 @@ export function ReticulumNetworkPanel({
             {identityError}
           </p>
         ) : null}
-        <div className="mt-2">
-          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
-          <QrIngestControl
-            disabled={!sidecarApiReady}
-            onDecoded={(text) => {
-              void (async () => {
-                const parsed = classifyMeshClientDeepLink(text);
-                if (parsed.kind === 'lxmPaperUnsupported') {
-                  addToast(t('qrIngest.paperUnsupported'), 'error');
-                  return;
-                }
-                if (parsed.kind === 'lxmContact') {
-                  const result = await applyLxmContactImport({
-                    destinationHash: parsed.destinationHash,
-                    name: parsed.name ?? null,
-                  });
-                  addToast(
-                    t(result.ok ? 'qrIngest.contactImported' : result.errorKey),
-                    result.ok ? 'success' : 'error',
-                  );
-                  return;
-                }
-                if (parsed.kind === 'lxmaContact') {
-                  const result = await applyLxmaContactImport({
-                    destinationHash: parsed.destinationHash,
-                    publicKeyHex: parsed.publicKeyHex,
-                  });
-                  addToast(
-                    t(result.ok ? 'qrIngest.contactImported' : result.errorKey),
-                    result.ok ? 'success' : 'error',
-                  );
-                  return;
-                }
-                if (parsed.kind === 'lxmIdentity') {
-                  addToast(t('qrIngest.identityShown'), 'success');
-                  return;
-                }
-                addToast(t('qrIngest.unknownLink'), 'error');
-              })();
-            }}
-          />
-        </div>
         {identityReady ? (
           <>
             <IdentitySlotsSection

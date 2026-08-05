@@ -648,7 +648,26 @@
     "reticulumPnAbbrev": "PN",
     "hopCountRefinedFromRf": "Оновлено з RF PATH",
     "openPeerDetails": "Подробиці піра",
-    "openPeerDetailsAria": "Відкрити подробиці піра для {{name}}"
+    "openPeerDetailsAria": "Відкрити подробиці піра для {{name}}",
+    "reticulumSendPaper": "Папір",
+    "reticulumSendPaperTooltip": "Спільне використання як зашифрованого паперового повідомлення LXMF (QR / lxm:// посилання)",
+    "shareAsPaper": "Поділитися як на папері",
+    "shareAsPaperAria": "Поділитися чернеткою як зашифрованим паперовим QR-кодом LXMF",
+    "shareAsPaperTitle": "Паперове повідомлення",
+    "shareAsPaperHint": "Покажіть цей QR-код або скопіюйте посилання. Розшифрувати його може лише особа одержувача. Тримайте текст коротким — паперові повідомлення мають обмеження за розміром.",
+    "shareAsPaperCopyUri": "Копіювати посилання",
+    "shareAsPaperCopied": "Посилання на папір скопійовано",
+    "shareAsPaperClose": "Закрити",
+    "shareAsPaperEmpty": "Спочатку введіть повідомлення, а потім поділіться ним на папері.",
+    "shareAsPaperFailed": "Не вдалося створити паперове повідомлення",
+    "shareAsPaperIdentityUnknown": "Невідомий відкритий ключ вузла — імпортуйте QR-код контакту або дочекайтеся оголошення, а потім повторіть спробу.",
+    "shareAsPaperTooLarge": "Повідомлення задовге для паперового QR-коду. Скоротіть його та повторіть спробу.",
+    "scanPaper": "Сканування паперу",
+    "scanPaperAria": "Відскануйте або вставте зашифроване паперове повідомлення LXMF",
+    "scanPaperHint": "Вставте або відскануйте паперовий QR-код, щоб розшифрувати його в чаті.",
+    "shareAsPaperMessageLabel": "Повідомлення для шифрування",
+    "shareAsPaperGenerate": "Створити паперовий QR-код",
+    "shareAsPaperCopyFailed": "Не вдалося скопіювати посилання на папір"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -2635,6 +2654,10 @@
       },
       "warning": "Ці налаштування контролюють хостинг локального вузла розповсюдження, автоматичний одноранговий зв’язок, витрати на PoW і відмову синхронізації для дорогих віддалених пристроїв. Неправильна конфігурація може спалити ЦП, заповнити диск або прийняти багато однорангових пристроїв.",
       "enforceUnavailableTip": "Перемикачі enforce stamps/ratchets не застосовуються на поточному стеку rsLXMF (зберігаються лише для сумісності)."
+    },
+    "reticulumScanImport": {
+      "title": "Сканувати / імпортувати",
+      "hint": "Відскануйте або вставте QR-код для контактів, карт Columba lxma:// або зашифрованих паперових повідомлень LXMF."
     }
   },
   "nodeDetailModal": {
@@ -4843,7 +4866,6 @@
   "qrIngest": {
     "qrImageAlt": "QR-код",
     "encodeFailed": "Не вдалося згенерувати QR-код",
-    "paperUnsupported": "Зашифровані паперові повідомлення LXMF ще не підтримуються",
     "contactImported": "Контакт додано з глибокого посилання",
     "contactImportFailed": "Не вдалося імпортувати контакт з посилання",
     "unknownLink": "Нерозпізнане посилання",
@@ -4878,7 +4900,12 @@
     "meshcoreChannelImported": "Отримано посилання на канал MeshCore — відгук на вкладці \"Радіо\"",
     "meshcoreChannelImportFailed": "Не вдалося імпортувати канал MeshCore з QR",
     "meshcoreChannelPrefill": "Відомості про канал заповнено з QR — збережіть, щоб застосувати",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing"
+    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "paperIngested": "Паперове повідомлення розшифровано в чат",
+    "paperInvalidUri": "Це не схоже на дійсне посилання на папір LXMF",
+    "paperDecryptFailed": "Не вдалося розшифрувати паперове повідомлення — чи це правильна ідентифікація?",
+    "paperIdentityNotConfigured": "Ідентичність Reticulum не готова — спочатку запустіть стек і налаштуйте ідентичність",
+    "paperIngestFailed": "Не вдалося обробити паперове повідомлення"
   },
   "reticulumRemote": {
     "navAria": "Віддалені ділянки",

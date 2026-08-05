@@ -4,7 +4,10 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use serde::Deserialize;
 
-use crate::stack::{LxmfReactionRequest, LxmfSendRequest, StackHandle};
+use crate::stack::{
+    LxmfPaperCreateRequest, LxmfPaperIngestRequest, LxmfReactionRequest, LxmfSendRequest,
+    StackHandle,
+};
 
 pub async fn lxmf_send(
     State(stack): State<Arc<StackHandle>>,
@@ -13,6 +16,65 @@ pub async fn lxmf_send(
     match stack.lxmf_send(body).await {
         Ok(payload) => Json(serde_json::json!({ "ok": true, "message": payload })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+/// Normalize paper create transport errors to stable API codes for the renderer.
+pub(crate) fn map_paper_create_error(e: String) -> String {
+    if e == "identity_unknown"
+        || e == "paper_too_large"
+        || e == "identity_not_configured"
+        || e == "invalid_hash"
+        || e == "internal_error"
+    {
+        e
+    } else if e.contains("exactly 32 hex") || e.contains("invalid hex") {
+        "invalid_hash".to_string()
+    } else if e.contains("exceeds maximum size") {
+        "paper_too_large".to_string()
+    } else if e.contains("identity") || e.contains("not configured") {
+        "identity_not_configured".to_string()
+    } else {
+        "internal_error".to_string()
+    }
+}
+
+/// Normalize paper ingest transport errors to stable API codes for the renderer.
+pub(crate) fn map_paper_ingest_error(e: String) -> String {
+    if e == "invalid_uri"
+        || e == "decrypt_failed"
+        || e == "identity_not_configured"
+        || e == "paper_too_large"
+        || e == "identity_unknown"
+        || e == "internal_error"
+    {
+        e
+    } else if e.contains("invalid_uri") || e.contains("TooShort") {
+        "invalid_uri".to_string()
+    } else if e.contains("decrypt") {
+        "decrypt_failed".to_string()
+    } else {
+        "internal_error".to_string()
+    }
+}
+
+pub async fn lxmf_paper_create(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<LxmfPaperCreateRequest>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_paper_create(body).await {
+        Ok(payload) => Json(payload),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": map_paper_create_error(e) })),
+    }
+}
+
+pub async fn lxmf_paper_ingest(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<LxmfPaperIngestRequest>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_paper_ingest(body.uri).await {
+        Ok(payload) => Json(payload),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": map_paper_ingest_error(e) })),
     }
 }
 
@@ -67,7 +129,7 @@ pub async fn list_peers(
 
 #[cfg(test)]
 mod peers_query_tests {
-    use super::peers_query_forces_refresh;
+    use super::{map_paper_ingest_error, peers_query_forces_refresh};
 
     #[test]
     fn peers_query_forces_refresh_accepts_truthy_variants() {
@@ -78,6 +140,48 @@ mod peers_query_tests {
         assert!(!peers_query_forces_refresh(Some("0")));
         assert!(!peers_query_forces_refresh(Some("no")));
         assert!(!peers_query_forces_refresh(Some("maybe")));
+    }
+
+    #[test]
+    fn map_paper_ingest_error_preserves_and_normalizes_codes() {
+        assert_eq!(map_paper_ingest_error("invalid_uri".into()), "invalid_uri");
+        assert_eq!(
+            map_paper_ingest_error("decrypt_failed".into()),
+            "decrypt_failed"
+        );
+        assert_eq!(
+            map_paper_ingest_error("identity_unknown".into()),
+            "identity_unknown"
+        );
+        assert_eq!(
+            map_paper_ingest_error("paper create: invalid_uri detail".into()),
+            "invalid_uri"
+        );
+        assert_eq!(
+            map_paper_ingest_error("paper ingest: decrypt boom".into()),
+            "decrypt_failed"
+        );
+        assert_eq!(
+            map_paper_ingest_error("paper ingest: weird Debug".into()),
+            "internal_error"
+        );
+    }
+
+    #[test]
+    fn map_paper_create_error_normalizes_codes() {
+        use super::map_paper_create_error;
+        assert_eq!(
+            map_paper_create_error("hash must be exactly 32 hex characters".into()),
+            "invalid_hash"
+        );
+        assert_eq!(
+            map_paper_create_error("paper create: PackFailed".into()),
+            "internal_error"
+        );
+        assert_eq!(
+            map_paper_create_error("paper_too_large".into()),
+            "paper_too_large"
+        );
     }
 }
 

@@ -15,6 +15,7 @@ import {
 } from '@/renderer/lib/reticulumVoiceAudio';
 import {
   isOutgoingConnectToneSequenceActive,
+  promoteOutgoingConnectSequenceToRingback,
   startOutgoingConnectToneSequence,
   startVoiceRingback,
   stopVoiceCallTones,
@@ -783,8 +784,11 @@ export function syncReticulumVoiceProgressTones(status: string | null | undefine
     return;
   }
   if (status === 'connecting' || status === 'ringing') {
-    // Outbound sequence owns dial→DTMF→ring; do not skip ahead when WS updates early.
-    if (isOutgoingConnectToneSequenceActive()) return;
+    // Cut dial/DTMF/modem immediately and start UK ringback on connect.
+    if (isOutgoingConnectToneSequenceActive()) {
+      promoteOutgoingConnectSequenceToRingback();
+      return;
+    }
     startVoiceRingback();
     return;
   }

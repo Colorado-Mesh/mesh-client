@@ -253,6 +253,19 @@ describe('ReticulumNetworkPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders Scan / import as its own section outside Identity', async () => {
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    expect(await screen.findByText('networkPanel.reticulumScanImport.title')).toBeInTheDocument();
+    expect(screen.getByText('networkPanel.reticulumScanImport.hint')).toBeInTheDocument();
+    expect(screen.getByText('connectionPanel.reticulumIdentity.title')).toBeInTheDocument();
+    // Identity no longer nests the multi-purpose QR ingest control.
+    const identityHeading = screen.getByText('connectionPanel.reticulumIdentity.title');
+    const scanHeading = screen.getByText('networkPanel.reticulumScanImport.title');
+    expect(
+      scanHeading.compareDocumentPosition(identityHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('renders Check config failure when validateConfig throws', async () => {
     const user = userEvent.setup();
     window.electronAPI.reticulum.validateConfig = vi
