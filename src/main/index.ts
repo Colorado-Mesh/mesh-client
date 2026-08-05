@@ -6093,8 +6093,11 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
       return;
     }
     if (meshcoreTcpSocket) {
-      meshcoreTcpSocket.destroy();
+      // Null before destroy so the superseded socket's 'close' does not emit
+      // meshcore:tcp-disconnected (renderer reconnect is driven by that event — #792).
+      const prev = meshcoreTcpSocket;
       meshcoreTcpSocket = null;
+      prev.destroy();
     }
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
@@ -6102,8 +6105,8 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     const connectTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      socket.destroy();
       if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
+      socket.destroy();
       reject(new Error('meshcore:tcp-connect: connection timeout'));
     }, MESHCORE_TCP_CONNECT_TIMEOUT_MS);
     socket.connect(p, socketHost, () => {
@@ -6179,8 +6182,10 @@ ipcMain.handle('meshcore:tcp-disconnect', (event) => {
   assertIpcSender(event, 'meshcore:tcp-disconnect');
   if (meshcoreTcpSocket) {
     console.debug('[IPC] meshcore:tcp-disconnect');
-    meshcoreTcpSocket.destroy();
+    // Null before destroy so this teardown close is not reported as a live link drop.
+    const prev = meshcoreTcpSocket;
     meshcoreTcpSocket = null;
+    prev.destroy();
   }
 });
 
@@ -6206,8 +6211,11 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
       return;
     }
     if (meshtasticTcpSocket) {
-      meshtasticTcpSocket.destroy();
+      // Null before destroy so the superseded socket's 'close' does not emit
+      // meshtastic:tcp-disconnected (renderer reconnect is driven by that event — #792).
+      const prev = meshtasticTcpSocket;
       meshtasticTcpSocket = null;
+      prev.destroy();
     }
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
@@ -6215,8 +6223,8 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
     const connectTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      socket.destroy();
       if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      socket.destroy();
       reject(new Error('meshtastic:tcp-connect: connection timeout'));
     }, MESHTASTIC_TCP_CONNECT_TIMEOUT_MS);
     socket.connect(p, socketHost, () => {
@@ -6292,8 +6300,10 @@ ipcMain.handle('meshtastic:tcp-disconnect', (event) => {
   assertIpcSender(event, 'meshtastic:tcp-disconnect');
   if (meshtasticTcpSocket) {
     console.debug('[IPC] meshtastic:tcp-disconnect');
-    meshtasticTcpSocket.destroy();
+    // Null before destroy so this teardown close is not reported as a live link drop.
+    const prev = meshtasticTcpSocket;
     meshtasticTcpSocket = null;
+    prev.destroy();
   }
 });
 

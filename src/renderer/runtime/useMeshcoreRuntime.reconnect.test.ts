@@ -324,6 +324,20 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(reconnectBody).toMatch(
       /isMeshcoreSetupAbortError\(err\)[\s\S]*?reconnect aborted \(setup superseded\)/,
     );
+    // Must not clear isReconnecting on setup abort — that raced with TCP disconnect mid-initConn
+    // and left status=reconnecting with no further attempts (n7eal / #792 MeshCore TCP).
+    const abortIdx = reconnectBody.indexOf('isMeshcoreSetupAbortError(err)');
+    expect(abortIdx).toBeGreaterThan(-1);
+    const abortBlock = reconnectBody.slice(abortIdx, abortIdx + 900);
+    expect(abortBlock).toContain('meshcoreDeferredReconnectRef.current = true');
+    expect(abortBlock).not.toMatch(/meshcoreIsReconnectingRef\.current = false/);
+  });
+
+  it('attemptMeshcoreReconnect clears stuck reconnecting UI when delay aborts', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /delayResult === 'aborted'[\s\S]*?!meshcoreIsReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    );
   });
 
   it('observes parallel init setup AbortErrors so sibling cancels are not unhandled', () => {
