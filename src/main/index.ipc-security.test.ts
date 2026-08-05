@@ -119,6 +119,25 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
     const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
     expect(handlerBody).toContain('meshtasticTcpSocket.destroy()');
   });
+
+  it('emits meshtastic:tcp-disconnected only for the active socket (PR #792)', () => {
+    // connect/disconnect null the ref before destroy(); a superseded close must not broadcast
+    // or the renderer TCP loss-watch will tear down a healthy replacement session.
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
+    expect(closeIdx).toBeGreaterThan(handlerIdx);
+    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 600);
+    expect(closeBody).toContain('if (meshtasticTcpSocket === socket)');
+    expect(closeBody).toContain("mainWindow?.webContents.send('meshtastic:tcp-disconnected')");
+    // Emit must be inside the active-socket guard (not before it).
+    const guardIdx = closeBody.indexOf('if (meshtasticTcpSocket === socket)');
+    const emitIdx = closeBody.indexOf(
+      "mainWindow?.webContents.send('meshtastic:tcp-disconnected')",
+    );
+    expect(guardIdx).toBeGreaterThan(-1);
+    expect(emitIdx).toBeGreaterThan(guardIdx);
+  });
 });
 
 // ─── meshcore:tcp-write byte element validation ──────────────────────
@@ -322,6 +341,22 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
     expect(handlerBody).toContain('formatHostForSocket(');
+  });
+
+  it('emits meshcore:tcp-disconnected only for the active socket (PR #792)', () => {
+    // Same contract as meshtastic:tcp-connect — superseded closes from connect-replace /
+    // disconnect must not look like a live link drop to the renderer reconnect path.
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
+    expect(closeIdx).toBeGreaterThan(handlerIdx);
+    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 600);
+    expect(closeBody).toContain('if (meshcoreTcpSocket === socket)');
+    expect(closeBody).toContain("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
+    const guardIdx = closeBody.indexOf('if (meshcoreTcpSocket === socket)');
+    const emitIdx = closeBody.indexOf("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
+    expect(guardIdx).toBeGreaterThan(-1);
+    expect(emitIdx).toBeGreaterThan(guardIdx);
   });
 });
 
