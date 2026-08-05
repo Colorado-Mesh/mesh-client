@@ -1,6 +1,6 @@
 /**
- * Serial USB and Linux Web Bluetooth init run getSelfInfo → getContacts → getChannels
- * before post-init RPCs. TCP and Noble BLE keep overlapping init RPCs.
+ * Serial USB, TCP, and Linux Web Bluetooth init run getSelfInfo → getContacts → getChannels
+ * before post-init RPCs. Noble BLE (macOS/Windows) keeps overlapping init RPCs.
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,12 +21,59 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+/** Shared companion RPC surface for WebSerial (USB) and SerialConnection (TCP-over-IPC). */
+function assignCompanionRpcMocks<T extends object>(target: T): T {
+  Object.assign(target, {
+    getSelfInfo: getSelfInfoMock,
+    getContacts: getContactsMock,
+    getChannels: getChannelsMock,
+    deviceQuery: vi.fn().mockResolvedValue({
+      firmwareVer: 1,
+      firmware_build_date: 'test',
+      manufacturerModel: 'test',
+    }),
+    syncDeviceTime: vi.fn().mockResolvedValue(undefined),
+    getWaitingMessages: vi.fn().mockResolvedValue([]),
+    syncNextMessage: vi.fn().mockResolvedValue(null),
+    setOtherParams: vi.fn().mockResolvedValue(undefined),
+    setAutoAddContacts: vi.fn().mockResolvedValue(undefined),
+    setManualAddContacts: vi.fn().mockResolvedValue(undefined),
+    getBatteryVoltage: vi.fn().mockResolvedValue({ batteryMilliVolts: 4200 }),
+    getStatsCore: vi.fn().mockResolvedValue({
+      type: 0,
+      raw: new Uint8Array(9),
+      data: { batteryMilliVolts: 4100, uptimeSecs: 1, queueLen: 0 },
+    }),
+    getStatsRadio: vi.fn().mockResolvedValue({
+      type: 1,
+      raw: new Uint8Array([1]),
+      data: { noiseFloor: -110, lastRssi: -90, lastSnr: 5, txAirSecs: 0, rxAirSecs: 0 },
+    }),
+    getStatsPackets: vi.fn().mockResolvedValue({
+      type: 2,
+      raw: new Uint8Array([2]),
+      data: {
+        recv: 0,
+        sent: 0,
+        nSentFlood: 0,
+        nSentDirect: 0,
+        nRecvFlood: 0,
+        nRecvDirect: 0,
+        nRecvErrors: 0,
+      },
+    }),
+    sendFloodAdvert: vi.fn().mockResolvedValue(undefined),
+  });
+  return target;
+}
+
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
     private listeners = new Map<string | number, Set<(...args: unknown[]) => void>>();
 
     constructor(port: unknown) {
       void port;
+      assignCompanionRpcMocks(this);
     }
     on(event: string | number, cb: (...args: unknown[]) => void) {
       const listeners = this.listeners.get(event) ?? new Set();
@@ -53,45 +100,6 @@ vi.mock('@liamcottle/meshcore.js', () => {
       return undefined;
     }
     close = vi.fn().mockResolvedValue(undefined);
-    getSelfInfo = getSelfInfoMock;
-    getContacts = getContactsMock;
-    getChannels = getChannelsMock;
-    deviceQuery = vi.fn().mockResolvedValue({
-      firmwareVer: 1,
-      firmware_build_date: 'test',
-      manufacturerModel: 'test',
-    });
-    syncDeviceTime = vi.fn().mockResolvedValue(undefined);
-    getWaitingMessages = vi.fn().mockResolvedValue([]);
-    syncNextMessage = vi.fn().mockResolvedValue(null);
-    setOtherParams = vi.fn().mockResolvedValue(undefined);
-    setAutoAddContacts = vi.fn().mockResolvedValue(undefined);
-    setManualAddContacts = vi.fn().mockResolvedValue(undefined);
-    getBatteryVoltage = vi.fn().mockResolvedValue({ batteryMilliVolts: 4200 });
-    getStatsCore = vi.fn().mockResolvedValue({
-      type: 0,
-      raw: new Uint8Array(9),
-      data: { batteryMilliVolts: 4100, uptimeSecs: 1, queueLen: 0 },
-    });
-    getStatsRadio = vi.fn().mockResolvedValue({
-      type: 1,
-      raw: new Uint8Array([1]),
-      data: { noiseFloor: -110, lastRssi: -90, lastSnr: 5, txAirSecs: 0, rxAirSecs: 0 },
-    });
-    getStatsPackets = vi.fn().mockResolvedValue({
-      type: 2,
-      raw: new Uint8Array([2]),
-      data: {
-        recv: 0,
-        sent: 0,
-        nSentFlood: 0,
-        nSentDirect: 0,
-        nRecvFlood: 0,
-        nRecvDirect: 0,
-        nRecvErrors: 0,
-      },
-    });
-    sendFloodAdvert = vi.fn().mockResolvedValue(undefined);
     sendToRadioFrame = vi.fn().mockImplementation((data: Uint8Array) => {
       void data;
       this.emit('rx', new Uint8Array([25, 0x0f, 3]));
@@ -99,6 +107,9 @@ vi.mock('@liamcottle/meshcore.js', () => {
   }
 
   class MockSerialConnection {
+    constructor() {
+      assignCompanionRpcMocks(this);
+    }
     write(bytes: Uint8Array) {
       void bytes;
     }
@@ -172,6 +183,64 @@ const selfInfoPayload = {
   radioFreq: 902_000_000,
 };
 
+function installSequentialInitGates(callOrder: string[]) {
+  const selfInfoGate = deferred<undefined>();
+  const contactsGate = deferred<undefined>();
+  const channelsGate = deferred<undefined>();
+
+  getSelfInfoMock.mockImplementation(async () => {
+    callOrder.push('getSelfInfo:start');
+    await selfInfoGate.promise;
+    callOrder.push('getSelfInfo:end');
+    return selfInfoPayload;
+  });
+  getContactsMock.mockImplementation(async () => {
+    callOrder.push('getContacts:start');
+    await contactsGate.promise;
+    callOrder.push('getContacts:end');
+    return [];
+  });
+  getChannelsMock.mockImplementation(async () => {
+    callOrder.push('getChannels:start');
+    await channelsGate.promise;
+    callOrder.push('getChannels:end');
+    return [];
+  });
+
+  return { selfInfoGate, contactsGate, channelsGate };
+}
+
+async function assertSequentialInitOrder(
+  callOrder: string[],
+  gates: ReturnType<typeof installSequentialInitGates>,
+): Promise<void> {
+  await waitFor(() => {
+    expect(callOrder).toContain('getSelfInfo:start');
+  });
+  expect(callOrder).not.toContain('getContacts:start');
+  expect(callOrder).not.toContain('getChannels:start');
+
+  gates.selfInfoGate.resolve(undefined);
+  await waitFor(() => {
+    expect(callOrder).toContain('getSelfInfo:end');
+    expect(callOrder).toContain('getContacts:start');
+  });
+  expect(callOrder).not.toContain('getChannels:start');
+
+  gates.contactsGate.resolve(undefined);
+  await waitFor(() => {
+    expect(callOrder).toContain('getContacts:end');
+  });
+  expect(callOrder.indexOf('getChannels:start')).toBeGreaterThan(
+    callOrder.indexOf('getContacts:end'),
+  );
+
+  gates.channelsGate.resolve(undefined);
+  await waitFor(() => {
+    expect(callOrder).toContain('getChannels:end');
+  });
+}
+
 describe('useMeshcoreRuntime initConn RPC ordering', () => {
   const originalSerial = navigator.serial;
   let subscribeSpy: ReturnType<typeof vi.spyOn>;
@@ -181,6 +250,11 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.meshcore.tcp.connect).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.meshcore.tcp.disconnect).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.meshcore.tcp.write).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.meshcore.tcp.onData).mockReturnValue(() => {});
+    vi.mocked(window.electronAPI.meshcore.tcp.onDisconnected).mockReturnValue(() => {});
     subscribeSpy = vi.spyOn(meshcoreProtocol, 'subscribe').mockReturnValue(() => {});
     destroySpy = vi.spyOn(meshcoreProtocol, 'destroyDevice').mockResolvedValue(undefined);
     discoverSpy = vi.spyOn(meshcoreProtocol, 'discoverSelf').mockResolvedValue({
@@ -200,28 +274,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
 
   it('serial: getContacts waits for getSelfInfo; getChannels runs after contacts before connect finishes', async () => {
     const callOrder: string[] = [];
-    const selfInfoGate = deferred<undefined>();
-    const contactsGate = deferred<undefined>();
-    const channelsGate = deferred<undefined>();
-
-    getSelfInfoMock.mockImplementation(async () => {
-      callOrder.push('getSelfInfo:start');
-      await selfInfoGate.promise;
-      callOrder.push('getSelfInfo:end');
-      return selfInfoPayload;
-    });
-    getContactsMock.mockImplementation(async () => {
-      callOrder.push('getContacts:start');
-      await contactsGate.promise;
-      callOrder.push('getContacts:end');
-      return [];
-    });
-    getChannelsMock.mockImplementation(async () => {
-      callOrder.push('getChannels:start');
-      await channelsGate.promise;
-      callOrder.push('getChannels:end');
-      return [];
-    });
+    const gates = installSequentialInitGates(callOrder);
 
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
@@ -236,31 +289,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
       await Promise.resolve();
     });
 
-    await waitFor(() => {
-      expect(callOrder).toContain('getSelfInfo:start');
-    });
-    expect(callOrder).not.toContain('getContacts:start');
-    expect(callOrder).not.toContain('getChannels:start');
-
-    selfInfoGate.resolve(undefined);
-    await waitFor(() => {
-      expect(callOrder).toContain('getSelfInfo:end');
-      expect(callOrder).toContain('getContacts:start');
-    });
-    expect(callOrder).not.toContain('getChannels:start');
-
-    contactsGate.resolve(undefined);
-    await waitFor(() => {
-      expect(callOrder).toContain('getContacts:end');
-    });
-    expect(callOrder.indexOf('getChannels:start')).toBeGreaterThan(
-      callOrder.indexOf('getContacts:end'),
-    );
-
-    channelsGate.resolve(undefined);
-    await waitFor(() => {
-      expect(callOrder).toContain('getChannels:end');
-    });
+    await assertSequentialInitOrder(callOrder, gates);
 
     await act(async () => {
       await connectPromise;
@@ -272,6 +301,73 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  // Noble BLE parallel init is preserved when !needsSequentialMeshcoreRadioInit (useMeshcoreRuntime.ts).
-  // TCP and serial use sequential getSelfInfo → getContacts → getChannels.
+  it('tcp: getContacts waits for getSelfInfo; getChannels runs after contacts (sequential, not parallel)', async () => {
+    const callOrder: string[] = [];
+    const gates = installSequentialInitGates(callOrder);
+
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('tcp', '192.168.88.29:5050');
+      await Promise.resolve();
+    });
+
+    await assertSequentialInitOrder(callOrder, gates);
+
+    await act(async () => {
+      await connectPromise;
+    });
+
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+
+  it('tcp: stays connected (not configured) until after getChannels so room auto-login cannot overlap contact dump', async () => {
+    const callOrder: string[] = [];
+    const gates = installSequentialInitGates(callOrder);
+
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('tcp', '10.0.0.2:5050');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(callOrder).toContain('getSelfInfo:start');
+    });
+
+    gates.selfInfoGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getSelfInfo:end');
+      expect(callOrder).toContain('getContacts:start');
+    });
+    // After selfInfo, TCP must not look fully configured yet (room auto-login gates on configured).
+    expect(result.current.state.status).toBe('connected');
+    expect(callOrder).not.toContain('getChannels:start');
+
+    gates.contactsGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:end');
+      expect(callOrder).toContain('getChannels:start');
+    });
+    expect(result.current.state.status).toBe('connected');
+
+    gates.channelsGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getChannels:end');
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    await act(async () => {
+      await connectPromise;
+    });
+
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
 });
