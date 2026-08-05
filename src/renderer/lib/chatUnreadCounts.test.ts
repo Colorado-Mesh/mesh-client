@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  buildProtocolSwitcherUnreadByProtocol,
   chatViewKeyForMessage,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
@@ -517,5 +518,31 @@ describe('pickAudibleNotificationType', () => {
         reply,
       ]),
     ).toBe('reply');
+  });
+});
+
+describe('buildProtocolSwitcherUnreadByProtocol', () => {
+  it('keeps meshtastic and meshcore chat-only and sums reticulum chat with rrc', () => {
+    expect(buildProtocolSwitcherUnreadByProtocol(2, 5, 3, 4)).toEqual({
+      meshtastic: 2,
+      meshcore: 5,
+      reticulum: 7,
+    });
+  });
+
+  it('leaves zeros zero when chat and rrc are empty', () => {
+    expect(buildProtocolSwitcherUnreadByProtocol(0, 0, 0, 0)).toEqual({
+      meshtastic: 0,
+      meshcore: 0,
+      reticulum: 0,
+    });
+  });
+
+  it('badges reticulum from rrc alone when lxmf chat is zero', () => {
+    expect(buildProtocolSwitcherUnreadByProtocol(0, 1, 0, 6)).toEqual({
+      meshtastic: 0,
+      meshcore: 1,
+      reticulum: 6,
+    });
   });
 });

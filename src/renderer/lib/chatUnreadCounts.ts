@@ -241,6 +241,24 @@ export function computeReticulumChatUnread(
   return totalUnreadCount(messages, persistedLastRead, ownNodeIds, 'reticulum');
 }
 
+/**
+ * Unread counts for the top protocol switcher.
+ * Reticulum includes RRC so inactive-protocol RRC traffic badges the Reticulum pill;
+ * Chat sidebar must keep using chat-only totals (not this map).
+ */
+export function buildProtocolSwitcherUnreadByProtocol(
+  meshtasticChatUnread: number,
+  meshcoreChatUnread: number,
+  reticulumChatUnread: number,
+  rrcUnread: number,
+): Record<MeshProtocol, number> {
+  return {
+    meshtastic: meshtasticChatUnread,
+    meshcore: meshcoreChatUnread,
+    reticulum: reticulumChatUnread + rrcUnread,
+  };
+}
+
 /** True when at least one message maps to a view that is not per-conversation muted. */
 export function hasAudibleBackgroundMessages(
   messages: readonly ChatMessage[],

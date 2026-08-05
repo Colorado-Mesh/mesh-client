@@ -8,13 +8,14 @@ import { ProtocolUnreadBadge } from './ProtocolUnreadBadge';
 
 export interface ProtocolSwitcherProps {
   protocol: MeshProtocol;
-  chatUnreadByProtocol: Record<MeshProtocol, number>;
+  /** Per-protocol unread for inactive pills (Reticulum includes RRC). */
+  unreadByProtocol: Record<MeshProtocol, number>;
   onProtocolChange: (protocol: MeshProtocol) => void;
 }
 
 export function ProtocolSwitcher({
   protocol,
-  chatUnreadByProtocol,
+  unreadByProtocol,
   onProtocolChange,
 }: ProtocolSwitcherProps) {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export function ProtocolSwitcher({
     >
       {REGISTERED_MESH_PROTOCOLS.map((proto, index) => {
         const theme = PROTOCOL_THEME[proto];
-        const unread = chatUnreadByProtocol[proto] ?? 0;
+        const unread = unreadByProtocol[proto] ?? 0;
         return (
           <Fragment key={proto}>
             {index > 0 && <div className="h-4 w-px bg-gray-600" aria-hidden="true" />}

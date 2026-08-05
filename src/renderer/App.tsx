@@ -35,6 +35,7 @@ import {
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import {
+  buildProtocolSwitcherUnreadByProtocol,
   type ChatUnreadDmOptions,
   computeReticulumChatUnread,
   totalUnreadCount,
@@ -1449,6 +1450,16 @@ function AppContent() {
     () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
     [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread],
   );
+  const protocolSwitcherUnreadByProtocol = useMemo(
+    () =>
+      buildProtocolSwitcherUnreadByProtocol(
+        meshtasticChatUnread,
+        meshcoreChatUnread,
+        reticulumChatUnread,
+        rrcUnread,
+      ),
+    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread],
+  );
   const roomsUnreadByProtocol = useMemo(
     () => protocolRecord(0, meshcoreRoomsUnread, 0),
     [meshcoreRoomsUnread],
@@ -2718,7 +2729,7 @@ function AppContent() {
             <div className="flex shrink-0 items-center pl-8">
               <ProtocolSwitcher
                 protocol={protocol}
-                chatUnreadByProtocol={chatUnreadByProtocol}
+                unreadByProtocol={protocolSwitcherUnreadByProtocol}
                 onProtocolChange={handleProtocolChange}
               />
             </div>
