@@ -156,6 +156,13 @@ describe('meshcore_messages dedup index and fresh DB version', () => {
     expect(DB_SOURCE).toMatch(
       /!confirmDatabaseSchemaUpgrade[\s\S]*?throw new DatabaseSchemaUpgradeDeclinedError/,
     );
+    // Confirm before writable setup so decline leaves journal_mode untouched.
+    const confirmIdx = DB_SOURCE.indexOf('confirmDatabaseSchemaUpgrade(userVersion');
+    const walIdx = DB_SOURCE.indexOf("db.pragma('journal_mode = WAL')");
+    const chmodIdx = DB_SOURCE.indexOf('fs.chmodSync(dbPath');
+    expect(confirmIdx).toBeGreaterThan(-1);
+    expect(walIdx).toBeGreaterThan(confirmIdx);
+    expect(chmodIdx).toBeGreaterThan(confirmIdx);
   });
 
   it('canonical DDL defines protocol-neutral contact_groups tables', () => {

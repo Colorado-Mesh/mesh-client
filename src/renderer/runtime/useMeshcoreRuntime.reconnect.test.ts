@@ -381,6 +381,12 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     const scheduleBody = extractUseCallbackBody(RUNTIME_SOURCE, 'scheduleMeshcoreReconnectAttempt');
     expect(scheduleBody).toContain('meshcoreReconnectSchedulePendingRef.current');
     expect(scheduleBody).toContain('attemptMeshcoreReconnectRef.current()');
+    expect(RUNTIME_SOURCE).toMatch(
+      /useLayoutEffect\(\(\) => \{\s*attemptMeshcoreReconnectRef\.current = attemptMeshcoreReconnect;\s*\}, \[attemptMeshcoreReconnect\]\)/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /useLayoutEffect\(\(\) => \{\s*scheduleMeshcoreReconnectAttemptRef\.current = scheduleMeshcoreReconnectAttempt;\s*\}, \[scheduleMeshcoreReconnectAttempt\]\)/,
+    );
   });
 
   it('attemptMeshcoreReconnect delay abort flushes deferred restart', () => {

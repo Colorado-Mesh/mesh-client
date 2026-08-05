@@ -68,6 +68,8 @@ describe('database schema upgrade confirm runtime', () => {
 
     const after = new NodeSqliteDB(dbPath);
     expect(after.pragma('user_version', { simple: true })).toBe(seedVersion);
+    // Declined upgrade must not apply WAL (or other writable setup) before the prompt.
+    expect(String(after.pragma('journal_mode', { simple: true })).toLowerCase()).not.toBe('wal');
     after.close();
 
     expect(

@@ -9,7 +9,7 @@ import {
   Mesh,
   Portnums,
 } from '@meshtastic/protobufs';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { getStoreForwardHistoryProfile } from '@/renderer/lib/appSettingsStorage';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
@@ -2488,7 +2488,9 @@ export function useMeshtasticRuntime() {
       void attemptReconnectRef.current();
     });
   }, []);
-  scheduleMeshtasticReconnectAttemptRef.current = scheduleMeshtasticReconnectAttempt;
+  useLayoutEffect(() => {
+    scheduleMeshtasticReconnectAttemptRef.current = scheduleMeshtasticReconnectAttempt;
+  }, [scheduleMeshtasticReconnectAttempt]);
 
   const prepareRfConnect = useCallback(
     async (

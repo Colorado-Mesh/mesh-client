@@ -247,8 +247,8 @@ export async function runSchemaReleaseCompare(argv, env = process.env) {
     env.GITHUB_OUTPUT,
   );
 
-  // Also print for logs
-  console.log(markdown.trimEnd());
+  // Also print for logs (console.debug aliases console.log in Node; keeps App Log filterable if reused)
+  console.debug(markdown.trimEnd());
 
   return {
     mode,

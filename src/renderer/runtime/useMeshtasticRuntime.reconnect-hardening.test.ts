@@ -218,6 +218,9 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     const scheduleBody = extractUseCallbackBody(SOURCE, 'scheduleMeshtasticReconnectAttempt');
     expect(scheduleBody).toContain('meshtasticReconnectSchedulePendingRef.current');
     expect(scheduleBody).toContain('attemptReconnectRef.current()');
+    expect(SOURCE).toMatch(
+      /useLayoutEffect\(\(\) => \{\s*scheduleMeshtasticReconnectAttemptRef\.current = scheduleMeshtasticReconnectAttempt;\s*\}, \[scheduleMeshtasticReconnectAttempt\]\)/,
+    );
   });
 
   it('attemptReconnect clears stuck reconnecting UI when delay aborts', () => {

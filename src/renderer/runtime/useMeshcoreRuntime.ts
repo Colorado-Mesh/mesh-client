@@ -1,6 +1,6 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 import { CayenneLpp } from '@liamcottle/meshcore.js';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
@@ -3002,7 +3002,9 @@ export function useMeshcoreRuntime() {
     }
   }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
 
-  attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
+  useLayoutEffect(() => {
+    attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
+  }, [attemptMeshcoreReconnect]);
 
   const scheduleMeshcoreReconnectAttempt = useCallback(() => {
     if (meshcoreReconnectSchedulePendingRef.current) return;
@@ -3019,7 +3021,9 @@ export function useMeshcoreRuntime() {
       void attemptMeshcoreReconnectRef.current();
     });
   }, []);
-  scheduleMeshcoreReconnectAttemptRef.current = scheduleMeshcoreReconnectAttempt;
+  useLayoutEffect(() => {
+    scheduleMeshcoreReconnectAttemptRef.current = scheduleMeshcoreReconnectAttempt;
+  }, [scheduleMeshcoreReconnectAttempt]);
 
   const handleMeshcoreConnectionLost = useCallback(() => {
     if (meshcoreExplicitDisconnectRef.current) {

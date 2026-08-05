@@ -94,20 +94,8 @@ export function initDatabase(): void {
 
   try {
     db = new NodeSqliteDB(dbPath);
-    // Restrict DB file to owner-only access (no-op on Windows)
-    try {
-      fs.chmodSync(dbPath, 0o600);
-    } catch (e) {
-      console.debug(
-        '[db] chmod failed (non-fatal, expected on Windows):',
-        e instanceof Error ? e.message : e,
-      ); // log-injection-ok OS-level error from fs.chmodSync, not user input
-    }
-    db.pragma('journal_mode = WAL');
-    db.pragma('synchronous = NORMAL');
-    db.pragma('busy_timeout = 5000');
-    db.pragma('foreign_keys = ON');
 
+    // Confirm irreversible upgrades before any writable DB configuration (chmod / WAL / sync).
     const userVersion = db.pragma('user_version', { simple: true }) as number;
     if (userVersion > 0 && userVersion < CURRENT_SCHEMA_VERSION) {
       if (!confirmDatabaseSchemaUpgrade(userVersion, CURRENT_SCHEMA_VERSION)) {
@@ -124,6 +112,20 @@ export function initDatabase(): void {
         throw new DatabaseSchemaUpgradeDeclinedError(userVersion, CURRENT_SCHEMA_VERSION);
       }
     }
+
+    // Restrict DB file to owner-only access (no-op on Windows)
+    try {
+      fs.chmodSync(dbPath, 0o600);
+    } catch (e) {
+      console.debug(
+        '[db] chmod failed (non-fatal, expected on Windows):',
+        e instanceof Error ? e.message : e,
+      ); // log-injection-ok OS-level error from fs.chmodSync, not user input
+    }
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('busy_timeout = 5000');
+    db.pragma('foreign_keys = ON');
 
     const setup = db.transaction(() => {
       const cur = db!.pragma('user_version', { simple: true }) as number;
