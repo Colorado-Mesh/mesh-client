@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Rand voor inkomend bericht",
         "description": "Randkleur voor inkomende kanaalberichten."
+      },
+      "messageActionsBarBg": {
+        "label": "Achtergrond van de actiebalk van het bericht",
+        "description": "Achtergrondvulling voor de rij met actieknoppen van het bericht. Standaard verborgen — inschakelen met het selectievakje \"Achtergrond weergeven\"."
+      },
+      "messageActionButtonHover": {
+        "label": "Bericht actieknop hover kleur",
+        "description": "Hover kleur voor alle actieknoppen van het bericht (kopiëren, beantwoorden, reageren, direct bericht, ster en wanneer met ster)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem.",
     "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
     "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
-    "themeResetFailed": "Kan kleuren niet resetten."
+    "themeResetFailed": "Kan kleuren niet resetten.",
+    "messageActionsBarBgVisible": "Achtergrond tonen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

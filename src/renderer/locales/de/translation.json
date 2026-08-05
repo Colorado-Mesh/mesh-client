@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Rahmen für eingehende Nachrichten",
         "description": "Rahmenfarbe für eingehende Kanalnachrichten."
+      },
+      "messageActionsBarBg": {
+        "label": "Hintergrund der Nachrichtenaktionsleiste",
+        "description": "Hintergrundfüllung für die Nachrichtenaktionsschaltflächen-Zeile. Standardmäßig ausgeblendet — mit dem Kontrollkästchen \"Hintergrund anzeigen\" aktivieren."
+      },
+      "messageActionButtonHover": {
+        "label": "Hover-Farbe der Schaltfläche „Nachrichtenaktion“",
+        "description": "Hover-Farbe für alle Schaltflächen für Nachrichtenaktionen (Kopieren, Antworten, Reagieren, Direktnachricht, Sternchen und wenn Sternchen markiert sind)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Erzwinge Uhren wie Chat-Zeitstempel im 24-Stunden-Format. Wenn diese Option deaktiviert ist, folgt sie Ihrem Systemgebietsschema.",
     "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
     "themeRestoreFailed": "Farbprüfpunkt konnte nicht wiederhergestellt werden.",
-    "themeResetFailed": "Farben konnten nicht zurückgesetzt werden."
+    "themeResetFailed": "Farben konnten nicht zurückgesetzt werden.",
+    "messageActionsBarBgVisible": "Zeige Hintergrund"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

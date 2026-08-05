@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Gelen mesaj sınırı",
         "description": "Gelen kanal mesajları için kenarlık rengi."
+      },
+      "messageActionsBarBg": {
+        "label": "Mesaj eylemleri çubuğu arka planı",
+        "description": "Mesaj eylem düğmeleri satırı için arka plan dolgusu. Varsayılan olarak gizlidir — \"Arka planı göster\" onay kutusuyla etkinleştirin."
+      },
+      "messageActionButtonHover": {
+        "label": "Mesaj eylem düğmesi fareyle üzerine gelme rengi",
+        "description": "Tüm mesaj eylem düğmeleri için fareyle üzerine gelme rengi (kopyalama, yanıtlama, tepki verme, doğrudan mesaj, yıldız ve yıldızlandığında)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin.",
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
     "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
-    "themeResetFailed": "Renkler sıfırlanamadı."
+    "themeResetFailed": "Renkler sıfırlanamadı.",
+    "messageActionsBarBgVisible": "Arka planı göster"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

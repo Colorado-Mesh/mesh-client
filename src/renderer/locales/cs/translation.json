@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Hranice příchozí zprávy",
         "description": "Barva ohraničení pro příchozí zprávy kanálu."
+      },
+      "messageActionsBarBg": {
+        "label": "Pozadí panelu akcí zpráv",
+        "description": "Výplň pozadí pro řádek tlačítek akce zprávy. Skryté ve výchozím nastavení — povolte zaškrtnutím políčka \"Zobrazit pozadí\"."
+      },
+      "messageActionButtonHover": {
+        "label": "Barva tlačítka akce zprávy při najetí myší",
+        "description": "U všech tlačítek akce zprávy (kopírovat, odpovídat, reagovat, přímá zpráva, hvězdička a při označení hvězdičkou najeďte myší)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému.",
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
     "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
-    "themeResetFailed": "Obnovení barev se nezdařilo."
+    "themeResetFailed": "Obnovení barev se nezdařilo.",
+    "messageActionsBarBgVisible": "Zobrazit pozadí"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

@@ -39,11 +39,13 @@ import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
   hasThemeSnapshot,
+  isMessageActionsBarBgVisible,
   loadThemeColors,
   persistThemeColors,
   resetThemeColors,
   restoreThemeSnapshot,
   saveThemeSnapshot,
+  setMessageActionsBarBgVisible,
   THEME_COLOR_PRESETS,
   THEME_TOKEN_META,
   type ThemeColorKey,
@@ -312,6 +314,9 @@ export default function AppPanel({
   const pathHashModeUserChangedRef = useRef(false);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
+  const [messageActionsBarBgVisible, setMessageActionsBarBgVisibleState] = useState<boolean>(
+    isMessageActionsBarBgVisible(),
+  );
   const [deleteAgeDays, setDeleteAgeDays] = useState(90);
 
   const commitThemeColor = useCallback((key: ThemeColorKey, hex: string) => {
@@ -342,6 +347,7 @@ export default function AppPanel({
     try {
       const restored = restoreThemeSnapshot();
       setThemeColors(restored);
+      setMessageActionsBarBgVisibleState(isMessageActionsBarBgVisible());
       addToast(t('appPanel.themeRestored'), 'success');
     } catch (err) {
       console.warn('[AppPanel] restoreThemeSnapshot failed ' + errLikeToLogString(err));
@@ -351,8 +357,11 @@ export default function AppPanel({
 
   const handleResetThemeColors = useCallback(() => {
     try {
+      // resetThemeColors() persists and applies the messageActionsBarBg visibility
+      // reset internally — just sync the React state mirrors here.
       resetThemeColors();
       setThemeColors({ ...DEFAULT_THEME_COLORS });
+      setMessageActionsBarBgVisibleState(false);
       addToast(t('appPanel.colorsReset'), 'success');
     } catch (err) {
       console.warn('[AppPanel] resetThemeColors failed ' + errLikeToLogString(err));
@@ -2013,6 +2022,10 @@ export default function AppPanel({
             <p className="text-muted text-xs">{t('appPanel.themeColorsApplyHint')}</p>
             {THEME_TOKEN_META.map((meta) => {
               const hex = themeColors[meta.key];
+              // messageActionsBarBg is hidden (opacity 0) until the "Show background"
+              // checkbox is on — fade the preview swatch to match what's actually applied.
+              const swatchOpacity =
+                meta.key === 'messageActionsBarBg' && !messageActionsBarBgVisible ? 0.15 : 1;
               return (
                 <div
                   key={meta.key}
@@ -2020,7 +2033,7 @@ export default function AppPanel({
                 >
                   <span
                     className="h-6 w-6 shrink-0 rounded border border-gray-600"
-                    style={{ backgroundColor: hex }}
+                    style={{ backgroundColor: hex, opacity: swatchOpacity }}
                     title={hex}
                     aria-hidden="true"
                   />
@@ -2060,6 +2073,24 @@ export default function AppPanel({
                         />
                       );
                     })}
+                    {meta.key === 'messageActionsBarBg' && (
+                      <label className="ml-2 flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={messageActionsBarBgVisible}
+                          onChange={(e) => {
+                            const newValue = e.target.checked;
+                            setMessageActionsBarBgVisibleState(newValue);
+                            setMessageActionsBarBgVisible(newValue);
+                          }}
+                          className="h-4 w-4"
+                          aria-label={t('appPanel.messageActionsBarBgVisible')}
+                        />
+                        <span className="text-[10px] text-gray-400">
+                          {t('appPanel.messageActionsBarBgVisible')}
+                        </span>
+                      </label>
+                    )}
                   </div>
                 </div>
               );

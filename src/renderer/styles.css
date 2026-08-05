@@ -13,6 +13,11 @@
      color-mixes to a light/white ring on Chromium/Electron. */
   --color-chat-incoming-bg: rgb(30 41 59 / 0.38);
   --color-chat-incoming-border: #1e293b;
+  /* Message actions bar background — hidden by default (opacity 0); toggled to
+     fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
+  --color-message-actions-bar-bg: rgb(15 23 42 / 0);
+  /* Message action button hover color */
+  --color-message-action-button-hover: #94a3b8;
 }
 
 /* Leaflet container needs explicit height */
@@ -361,4 +366,31 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   max-width: 100%;
+}
+
+/* Message actions bar — use theme CSS custom property for background */
+.message-actions-bar {
+  background-color: var(--color-message-actions-bar-bg);
+}
+
+/* Message action button hover colors — use theme CSS custom property.
+   .message-action covers copy/reply/react/dm; .message-action-star is separate
+   so its "starred" resting state (fixed amber, not user-customizable) stays
+   visually distinct from the shared hover color. */
+.message-action,
+.message-action-star {
+  transition: color 0.2s;
+}
+
+.message-action:hover,
+.message-action-star:hover {
+  color: var(--color-message-action-button-hover);
+}
+
+.message-action-star.starred {
+  color: #fbbf24;
+}
+
+.message-action-star.starred:hover {
+  color: #fde68a;
 }

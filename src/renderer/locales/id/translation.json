@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Batas pesan masuk",
         "description": "Warna batas untuk pesan saluran masuk."
+      },
+      "messageActionsBarBg": {
+        "label": "Latar belakang bilah tindakan pesan",
+        "description": "Isi latar belakang untuk baris tombol tindakan pesan. Tersembunyi secara default — aktifkan dengan kotak centang \"Tampilkan latar belakang \"."
+      },
+      "messageActionButtonHover": {
+        "label": "Tombol tindakan pesan hover color",
+        "description": "Arahkan kursor ke warna untuk semua tombol tindakan pesan (salin, balas, bereaksi, pesan langsung, bintang, dan saat dibintangi)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda.",
     "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
     "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
-    "themeResetFailed": "Gagal mengatur ulang warna."
+    "themeResetFailed": "Gagal mengatur ulang warna.",
+    "messageActionsBarBgVisible": "Tampilkan latar belakang"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

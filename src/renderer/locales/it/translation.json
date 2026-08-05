@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Bordo del messaggio in arrivo",
         "description": "Colore del bordo per i messaggi del canale in arrivo."
+      },
+      "messageActionsBarBg": {
+        "label": "Sfondo barra azioni messaggio",
+        "description": "Riempimento dello sfondo per la riga dei pulsanti di azione del messaggio. Nascosto per impostazione predefinita — abilita con la casella di controllo \"Mostra sfondo\"."
+      },
+      "messageActionButtonHover": {
+        "label": "Colore del pulsante di azione del messaggio al passaggio del mouse",
+        "description": "Colore del passaggio del mouse per tutti i pulsanti di azione del messaggio (copia, risposta, reazione, messaggio diretto, stella e quando è selezionato)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Forza gli orologi come i timestamp della chat al formato di 24 ore. Quando è spento, seguire le impostazioni locali del sistema.",
     "themeSaveFailed": "Impossibile salvare il checkpoint del colore.",
     "themeRestoreFailed": "Impossibile ripristinare il checkpoint del colore.",
-    "themeResetFailed": "Impossibile reimpostare i colori."
+    "themeResetFailed": "Impossibile reimpostare i colori.",
+    "messageActionsBarBgVisible": "Mostra lo sfondo"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

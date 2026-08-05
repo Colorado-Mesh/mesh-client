@@ -8,6 +8,7 @@ import { parseStoredJson } from './parseStoredJson';
 import { contrastRatio } from './wcagContrast';
 
 export const THEME_COLORS_STORAGE_KEY = 'mesh-client:themeColors';
+export const MESSAGE_ACTIONS_BAR_BG_VISIBLE_STORAGE_KEY = 'mesh-client:messageActionsBarBgVisible';
 
 /** Keys persisted in localStorage (camelCase). */
 export type ThemeColorKey =
@@ -20,7 +21,9 @@ export type ThemeColorKey =
   | 'secondaryDark'
   | 'muted'
   | 'chatIncomingBg'
-  | 'chatIncomingBorder';
+  | 'chatIncomingBorder'
+  | 'messageActionsBarBg'
+  | 'messageActionButtonHover';
 
 /** CSS custom property name (no leading --). */
 export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
@@ -34,6 +37,8 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
   muted: '--color-muted',
   chatIncomingBg: '--color-chat-incoming-bg',
   chatIncomingBorder: '--color-chat-incoming-border',
+  messageActionsBarBg: '--color-message-actions-bar-bg',
+  messageActionButtonHover: '--color-message-action-button-hover',
 };
 
 /** Default hex values — must match src/renderer/styles.css @theme block. */
@@ -48,6 +53,8 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   muted: '#94a3b8',
   chatIncomingBg: '#1e293b',
   chatIncomingBorder: '#1e293b',
+  messageActionsBarBg: '#0f172a',
+  messageActionButtonHover: '#94a3b8',
 };
 
 export interface ThemeTokenMeta {
@@ -129,6 +136,16 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
     key: 'chatIncomingBorder',
     labelKey: 'appPanel.theme.chatIncomingBorder.label',
     descriptionKey: 'appPanel.theme.chatIncomingBorder.description',
+  },
+  {
+    key: 'messageActionsBarBg',
+    labelKey: 'appPanel.theme.messageActionsBarBg.label',
+    descriptionKey: 'appPanel.theme.messageActionsBarBg.description',
+  },
+  {
+    key: 'messageActionButtonHover',
+    labelKey: 'appPanel.theme.messageActionButtonHover.label',
+    descriptionKey: 'appPanel.theme.messageActionButtonHover.description',
   },
 ];
 
@@ -225,6 +242,12 @@ export function applyThemeColors(
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
       root.style.setProperty(THEME_CSS_VARS[key], `rgb(${r} ${g} ${b} / 0.38)`);
+    } else if (key === 'messageActionsBarBg') {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      const opacity = isMessageActionsBarBgVisible() ? 1 : 0;
+      root.style.setProperty(THEME_CSS_VARS[key], `rgb(${r} ${g} ${b} / ${opacity})`);
     } else {
       root.style.setProperty(THEME_CSS_VARS[key], hex);
     }
@@ -283,6 +306,9 @@ export function persistThemeColors(colors: Record<ThemeColorKey, string>): void 
 
 export function resetThemeColors(): void {
   localStorage.removeItem(THEME_COLORS_STORAGE_KEY);
+  // Persist before the single applyThemeColors pass so the messageActionsBarBg
+  // opacity branch reads the reset (hidden) value, not the stale one.
+  persistMessageActionsBarBgVisible(false);
   applyThemeColors(DEFAULT_THEME_COLORS);
 }
 
@@ -296,24 +322,68 @@ export function hasThemeSnapshot(): boolean {
 /** Save the current live colors as a checkpoint, distinct from factory defaults. */
 export function saveThemeSnapshot(): void {
   const current = loadThemeColors();
-  localStorage.setItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY, JSON.stringify(current));
+  const visibility = isMessageActionsBarBgVisible();
+  const snapshot = { colors: current, messageActionsBarBgVisible: visibility };
+  localStorage.setItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
 }
 
 /** Restore the last saved checkpoint (if any), applying and persisting it as the current colors. */
 export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
-  const parsed = parseStoredJson<StoredThemeColors>(
-    localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY),
+  const stored = localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY);
+
+  // Handle both old format (direct colors) and new format (colors + visibility)
+  let colorData: StoredThemeColors | undefined;
+  let savedVisibility = false;
+
+  const parsed = parseStoredJson<Record<string, unknown>>(
+    stored,
     'themeColors restoreThemeSnapshot',
   );
+  if (parsed !== null && typeof parsed === 'object') {
+    if ('colors' in parsed && typeof parsed.colors === 'object' && parsed.colors !== null) {
+      // New format with visibility
+      colorData = parsed.colors;
+      savedVisibility = parsed.messageActionsBarBgVisible === true;
+    } else {
+      // Old format - just colors
+      colorData = parsed;
+    }
+  }
+
   const merged = { ...DEFAULT_THEME_COLORS };
-  if (parsed) {
+  if (colorData) {
     for (const key of Object.keys(DEFAULT_THEME_COLORS) as ThemeColorKey[]) {
-      const v = parsed[key];
+      const v = colorData[key];
       if (typeof v === 'string' && normalizeHex(v)) merged[key] = normalizeHex(v)!;
     }
   }
   ensureReadableGreenContrast(merged);
   persistThemeColors(merged);
+  // Persist visibility before the single applyThemeColors pass below so the
+  // messageActionsBarBg opacity branch reads the restored value, not the stale one.
+  persistMessageActionsBarBgVisible(savedVisibility);
   applyThemeColors(merged);
+
   return merged;
+}
+
+/** Load message actions bar background visibility setting (default: false for backward compat). */
+export function isMessageActionsBarBgVisible(): boolean {
+  const stored = localStorage.getItem(MESSAGE_ACTIONS_BAR_BG_VISIBLE_STORAGE_KEY);
+  return stored === 'true';
+}
+
+/**
+ * Storage-only write, no reapply — for callers (restoreThemeSnapshot, resetThemeColors)
+ * that will call applyThemeColors themselves right after, so the flag is in place for
+ * that single pass instead of triggering a redundant second DOM style pass.
+ */
+function persistMessageActionsBarBgVisible(visible: boolean): void {
+  localStorage.setItem(MESSAGE_ACTIONS_BAR_BG_VISIBLE_STORAGE_KEY, visible ? 'true' : 'false');
+}
+
+/** Persist message actions bar background visibility setting and re-apply theme colors. */
+export function setMessageActionsBarBgVisible(visible: boolean): void {
+  persistMessageActionsBarBgVisible(visible);
+  applyThemeColors(loadThemeColors());
 }
