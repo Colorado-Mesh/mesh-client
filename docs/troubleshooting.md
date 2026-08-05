@@ -1305,7 +1305,9 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 ### Reticulum: Ratspeak DMs work but mesh-client stays silent
 
-**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat, **Columba**) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat, **Columba**, **Retichat**) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+
+**First reply Ack’d, second shows**: After mesh-client sends a **Direct** DM, the peer’s first reply often shows **Ack** on their client but never appears in mesh-client Chat/SQLite; a second reply usually lands. That reply rides the **outbound-initiated reusable Direct link**. The sidecar must wire `LinkDeliveryManager::set_inbound_packet_sender` (live stack start → `spawn_lxmf_outbound_backchannel`) so plaintext reaches the same unpack path as peer-initiated `lxmf.delivery` links — otherwise rsLXMF still sends **LinkProof** (Ack) and drops the payload. Upgrade / rebuild the sidecar and **Restart stack**. Developer bundles: look for `LXMF outbound-link backchannel packet` after the peer’s first reply; inbound ring catch-up cannot recover messages that never entered the ring.
 
 **Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`. Short messages from Python clients (Sideband/Columba) often use **opportunistic** DATA — current sidecars wire `set_inbound_raw_channel` (lxmd parity) so those packets are not dropped after proof.
 

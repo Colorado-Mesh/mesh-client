@@ -40,7 +40,7 @@ use super::games_session::GamesSessionManager;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
-    spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
+    spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
 };
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
@@ -410,6 +410,21 @@ impl LiveBridge {
             });
         }
 
+        // Outbound Direct reusable links ACK peer replies via LinkProof even when the
+        // plaintext is not forwarded — wire set_inbound_packet_sender so backchannel
+        // DATA reaches the same unpack path as peer-initiated lxmf.delivery links.
+        let mut outbound_driver = LxmfOutboundDriver::new(
+            handle.transport_tx.clone(),
+            &identity,
+            lxmf_hash_hex.clone(),
+            display_name.clone(),
+        );
+        outbound_driver.set_inbound_packet_sender(spawn_lxmf_outbound_backchannel(
+            lxmf_dest_hash,
+            router.clone(),
+        ));
+        let outbound = Arc::new(Mutex::new(outbound_driver));
+
         let bridge = Self {
             config_dir: config_dir.clone(),
             storage_dir: storage_dir.clone(),
@@ -423,12 +438,7 @@ impl LiveBridge {
             path_peer_cache,
             path_peer_cache_fetched_at,
             display_name_cache,
-            outbound: Arc::new(Mutex::new(LxmfOutboundDriver::new(
-                handle.transport_tx.clone(),
-                &identity,
-                lxmf_hash_hex.clone(),
-                display_name.clone(),
-            ))),
+            outbound,
             propagation: Arc::new(PropagationBridge::new(
                 handle.transport_tx.clone(),
                 lxmf_propagation_dest_hash,
