@@ -401,6 +401,34 @@ describe('RrcPanel', () => {
     expect(window.electronAPI.reticulum.rrc.join).not.toHaveBeenCalled();
   });
 
+  it('does not issue /who for an open DM room', async () => {
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general');
+    store.openDm({ identity_hash: peerHash, nickname: 'Alice' }, hubA, { focus: true });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().rooms.has(`@${peerHash}`)).toBe(true);
+    });
+    // Allow the joined-room /who effect to run.
+    await new Promise((r) => setTimeout(r, 30));
+    const whoCalls = vi.mocked(window.electronAPI.reticulum.rrc.send).mock.calls.filter((args) => {
+      const body = (args[0] as { body?: string } | undefined)?.body;
+      return typeof body === 'string' && body.startsWith('/who');
+    });
+    expect(whoCalls.every((args) => !(args[0] as { room?: string }).room?.startsWith('@'))).toBe(
+      true,
+    );
+    expect(whoCalls.some((args) => (args[0] as { room?: string }).room === `@${peerHash}`)).toBe(
+      false,
+    );
+  });
+
   it('rejects plain text in [hub] with join-room prompt', async () => {
     const user = userEvent.setup();
     const store = useRrcSessionStore.getState();

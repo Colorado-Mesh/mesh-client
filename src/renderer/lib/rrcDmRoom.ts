@@ -69,7 +69,11 @@ export function resolveRrcDmPeerFromDirectMessage(
   const local = localIdentityHash?.trim().toLowerCase() || null;
   const sender = msg.sender_hash?.trim().toLowerCase() || null;
 
-  if (sender && isRrcWhisperPeerHash(sender) && (!local || sender !== local)) {
+  // Without local identity we cannot tell inbound (peer→self) from outbound echo
+  // (self→peer). Defer until identity init completes so we never open a DM on self.
+  if (!local) return null;
+
+  if (sender && isRrcWhisperPeerHash(sender) && sender !== local) {
     return {
       identity_hash: sender,
       nickname: msg.nickname?.trim() ? msg.nickname.trim() : null,
@@ -77,10 +81,14 @@ export function resolveRrcDmPeerFromDirectMessage(
   }
 
   // Outbound (sender is self or missing): peer is dst; nick usually unknown on echo.
-  return {
-    identity_hash: dst,
-    nickname: null,
-  };
+  if (!sender || sender === local) {
+    return {
+      identity_hash: dst,
+      nickname: null,
+    };
+  }
+
+  return null;
 }
 
 /**

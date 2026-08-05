@@ -26,7 +26,7 @@ function hasMigrated(hubHash: string): boolean {
   try {
     return localStorage.getItem(migratedKey(hubHash)) === '1';
   } catch {
-    // catch-no-log-ok
+    // catch-no-log-ok private mode / blocked storage — treat as not migrated so we retry
     return false;
   }
 }
@@ -35,7 +35,7 @@ function markMigrated(hubHash: string): void {
   try {
     localStorage.setItem(migratedKey(hubHash), '1');
   } catch {
-    // catch-no-log-ok
+    // catch-no-log-ok private mode / quota — next session may re-run; INSERT OR IGNORE is safe
   }
 }
 
@@ -52,13 +52,14 @@ export function resetRrcLegacyWhispersMigrateForTests(hubHash?: string): void {
       for (const k of keys) localStorage.removeItem(k);
     }
   } catch {
-    // catch-no-log-ok
+    // catch-no-log-ok test cleanup best-effort when Storage is unavailable
   }
 }
 
 /**
  * Load legacy `[whispers]` history, split into per-peer DMs, open those DMs, and
  * mark migration done for the hub. Safe to call repeatedly (no-ops after mark).
+ * Completion is persisted only after the read and all re-persist writes succeed.
  */
 export async function migrateLegacyWhispersForHub(hubHash: string): Promise<void> {
   const hub = normalizeRrcHubHash(hubHash);
@@ -73,7 +74,7 @@ export async function migrateLegacyWhispersForHub(hubHash: string): Promise<void
     );
   } catch (e) {
     console.warn('[rrcLegacyWhispersMigrate] list failed ' + errLikeToLogString(e));
-    markMigrated(hub);
+    // Leave unmarked so a later run can retry when SQLite is healthy again.
     return;
   }
 
@@ -95,6 +96,7 @@ export async function migrateLegacyWhispersForHub(hubHash: string): Promise<void
 
   const byRoom = splitLegacyWhispersMessages(mapped, local);
   const store = useRrcSessionStore.getState();
+  let writeFailed = false;
 
   for (const [room, msgs] of byRoom) {
     const peerHash = room.slice(1);
@@ -126,10 +128,13 @@ export async function migrateLegacyWhispersForHub(hubHash: string): Promise<void
           timestamp: msg.timestamp,
         });
       } catch (e) {
+        writeFailed = true;
         console.warn('[rrcLegacyWhispersMigrate] insert failed ' + errLikeToLogString(e));
       }
     }
   }
 
-  markMigrated(hub);
+  if (!writeFailed) {
+    markMigrated(hub);
+  }
 }

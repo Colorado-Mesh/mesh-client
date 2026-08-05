@@ -39,18 +39,11 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/addMessage\([\s\S]*?\{ hubDestHash \}/);
   });
 
-  it('routes direct NOTICE into per-peer @hash DMs via openDm', () => {
-    expect(SOURCE).toMatch(/resolveRrcDmPeerFromDirectMessage/);
-    expect(SOURCE).toMatch(/session\.openDm\(peer, hubDestHash, \{ focus: false \}\)/);
-    expect(SOURCE).toMatch(/rrcDmRoomKey\(peer\.identity_hash\)/);
+  it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
+    expect(SOURCE).toContain('applyRrcDirectMessageRoom');
+    expect(SOURCE).toMatch(/applyRrcDirectMessageRoom\(\{[\s\S]*?openDm:/);
     expect(SOURCE).not.toMatch(/RRC_WHISPERS_ROOM/);
     expect(SOURCE).not.toMatch(/setLastWhisperPeer/);
-  });
-
-  it('does not steal focus when opening an inbound DM tab', () => {
-    expect(SOURCE).toMatch(
-      /Do not steal focus from an active room[\s\S]{0,200}openDm\(peer, hubDestHash, \{ focus: false \}\)/,
-    );
   });
 
   it('never treats synthetic [hub] / @dm names as JOIN targets from join-info NOTICE', () => {

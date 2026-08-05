@@ -31,15 +31,17 @@ describe('migrateLegacyWhispersForHub', () => {
     expect(window.electronAPI.db.listRrcMessages).not.toHaveBeenCalled();
   });
 
-  it('marks migrated and returns when list fails', async () => {
+  it('leaves migration unmarked when list fails so a later run can retry', async () => {
     vi.mocked(window.electronAPI.db.listRrcMessages).mockRejectedValue(new Error('db down'));
     await migrateLegacyWhispersForHub(hubA);
     expect(console.warn).toHaveBeenCalled();
     expect(loadRrcOpenDms(hubA)).toEqual([]);
 
+    // Must remain retryable — do not mark migrated on read failure.
     vi.mocked(window.electronAPI.db.listRrcMessages).mockClear();
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
     await migrateLegacyWhispersForHub(hubA);
-    expect(window.electronAPI.db.listRrcMessages).not.toHaveBeenCalled();
+    expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalled();
   });
 
   it('marks migrated when there are no legacy rows', async () => {
@@ -189,5 +191,11 @@ describe('migrateLegacyWhispersForHub', () => {
         .messages.get(key ?? '')
         ?.map((m) => m.body),
     ).toEqual(['one', 'two']);
+
+    // Insert failure must leave migration unmarked for retry.
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockClear();
+    vi.mocked(window.electronAPI.db.insertRrcMessage).mockResolvedValue({ changes: 1 });
+    await migrateLegacyWhispersForHub(hubA);
+    expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 /**
- * Source contract: Reticulum peer-detail modal must be isolated in its own ErrorBoundary
- * so a React #185 / render failure cannot take down the App shell.
+ * Source contract: Reticulum peer-detail modal must be isolated so a React #185 /
+ * render failure cannot take down the App shell; resetKeys recover on peer switch.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,9 +11,10 @@ const TEST_DIR = import.meta.dirname ?? __dirname;
 const SOURCE = readFileSync(join(TEST_DIR, 'App.tsx'), 'utf-8');
 
 describe('App ReticulumPeerDetailModal ErrorBoundary (regression)', () => {
-  it('wraps ReticulumPeerDetailModal in ErrorBoundary outside the panel tree', () => {
+  it('wraps ReticulumPeerDetailModal in ReticulumPeerDetailErrorBoundary with Suspense fallback', () => {
+    expect(SOURCE).toContain('ReticulumPeerDetailErrorBoundary');
     expect(SOURCE).toMatch(
-      /hasReticulumPeerDetailModal && selectedPeerHash !== null && \(\s*<ErrorBoundary>\s*<Suspense[\s\S]*?ReticulumPeerDetailModal/,
+      /hasReticulumPeerDetailModal && selectedPeerHash !== null && \(\s*<ReticulumPeerDetailErrorBoundary[\s\S]*?peerHash=\{selectedPeerHash\}[\s\S]*?suspenseFallback=\{<DialogLazyFallback \/>\}[\s\S]*?ReticulumPeerDetailModal/,
     );
   });
 });

@@ -113,7 +113,7 @@ import {
   tryReserveRncpLxmfControlHandled,
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
-import { resolveRrcDmPeerFromDirectMessage, rrcDmRoomKey } from '@/renderer/lib/rrcDmRoom';
+import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { shouldDropEmptyRrcInbound } from '@/renderer/lib/rrcMessageDisplay';
 import {
@@ -1057,21 +1057,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const isDirect = Boolean(p.dst_hash);
           let room: string;
           if (isDirect) {
-            const peer = resolveRrcDmPeerFromDirectMessage(
-              {
-                dst_hash: typeof p.dst_hash === 'string' ? p.dst_hash : null,
-                sender_hash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
-                nickname: typeof p.nickname === 'string' ? p.nickname : null,
+            room = applyRrcDirectMessageRoom({
+              dst_hash: typeof p.dst_hash === 'string' ? p.dst_hash : null,
+              sender_hash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
+              nickname: typeof p.nickname === 'string' ? p.nickname : null,
+              localIdentityHash: session.localIdentityHash,
+              hubDestHash,
+              fallbackRoom: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+              openDm: (peer, hub, openOpts) => {
+                session.openDm(peer, hub, openOpts);
               },
-              session.localIdentityHash,
-            );
-            if (peer) {
-              // Do not steal focus from an active room — unread badge surfaces new DMs.
-              session.openDm(peer, hubDestHash, { focus: false });
-              room = rrcDmRoomKey(peer.identity_hash);
-            } else {
-              room = view.activeRoom ?? RRC_HUB_STREAM_ROOM;
-            }
+            });
           } else {
             room =
               typeof p.room === 'string' && p.room.trim()

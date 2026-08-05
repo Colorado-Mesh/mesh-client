@@ -168,7 +168,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     if (!hubDestHash || status !== 'active') return;
     const hub = hubDestHash;
     for (const dm of loadRrcOpenDms(hub)) {
-      openDm(dm, hub, { focus: false });
+      openDm(dm, hub, { focus: false, persist: false });
       void hydrateRrcRoomMessages(hub, rrcDmRoomKey(dm.identity_hash));
     }
     void migrateLegacyWhispersForHub(hub);
@@ -226,9 +226,13 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const sendHubCommand = useCallback(
     async (body: string) => {
       if (status !== 'active' || !hubDestHash) return;
+      const hubRoom =
+        activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
+          ? activeRoom
+          : undefined;
       await window.electronAPI.reticulum.rrc.send({
         hub_dest_hash: hubDestHash,
-        room: activeRoom && !activeRoom.startsWith('[') ? activeRoom : undefined,
+        room: hubRoom,
         body,
         type: 'msg',
       });
@@ -249,7 +253,8 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         listed: listedRooms,
         joined: [...rooms.keys()].map((name) => ({ name })),
       });
-      if (!room || room.startsWith('[')) return;
+      // Never /who synthetic streams or per-peer DMs (client-local only).
+      if (!room || room.startsWith('[') || isRrcDmRoom(room)) return;
       const reqKey = `${hubDestHash}::${rrcRoomMatchKey(room)}`;
       if (!force && whoRequestedRef.current.has(reqKey)) return;
       whoRequestedRef.current.add(reqKey);
@@ -268,7 +273,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     if (status !== 'active' || !hubDestHash) return;
     const live = new Set<string>();
     for (const key of rooms.keys()) {
-      if (!key || key.startsWith('[')) continue;
+      if (!key || key.startsWith('[') || isRrcDmRoom(key)) continue;
       const reqKey = `${hubDestHash}::${rrcRoomMatchKey(key)}`;
       live.add(reqKey);
       requestRoomWho(key, false);
@@ -670,7 +675,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             }
             // Update local nicklist entry for self immediately.
             const selfHash = useRrcSessionStore.getState().localIdentityHash;
-            if (selfHash && activeRoom && !activeRoom.startsWith('[')) {
+            if (selfHash && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)) {
               const members = activeRoomInfo?.members ?? [];
               const next = members.map((m) =>
                 m.identity_hash.toLowerCase() === selfHash
@@ -1134,7 +1139,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               busy={actionBusy}
               onRefreshWho={() => {
                 const room = activeRoom;
-                if (!room || room.startsWith('[')) return;
+                if (!room || room.startsWith('[') || isRrcDmRoom(room)) return;
                 requestRoomWho(room, true);
               }}
               onNickClick={(member: RrcRoomMember) => {

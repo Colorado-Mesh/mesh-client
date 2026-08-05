@@ -4,7 +4,7 @@ import {
   migrateLegacyWhispersForHub,
   resetRrcLegacyWhispersMigrateForTests,
 } from '@/renderer/lib/rrcLegacyWhispersMigrate';
-import { clearRrcOpenDms, loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
+import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 
 import { useRrcSessionStore } from './rrcSessionStore';
 
@@ -90,6 +90,28 @@ describe('rrcSessionStore', () => {
     store.openDm({ identity_hash: bob, nickname: 'Bob' }, hubB, { focus: true });
     expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.rooms.has(`@${bob}`)).toBe(true);
     expect(useRrcSessionStore.getState().sessionsByHub.get(hubB)?.rooms.has(`@${bob}`)).toBe(true);
+  });
+
+  it('restore with persist:false keeps newest-first open-DM storage order', () => {
+    const hubA = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const alice = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const bob = 'cccccccccccccccccccccccccccccccc';
+    const carol = 'dddddddddddddddddddddddddddddddd';
+    // Newest-first as upsertRrcOpenDm would store after bob then alice then carol opens.
+    saveRrcOpenDms(hubA, [
+      { identity_hash: carol, nickname: 'Carol' },
+      { identity_hash: bob, nickname: 'Bob' },
+      { identity_hash: alice, nickname: 'Alice' },
+    ]);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    for (const dm of loadRrcOpenDms(hubA)) {
+      store.openDm(dm, hubA, { focus: false, persist: false });
+    }
+    expect(loadRrcOpenDms(hubA).map((d) => d.identity_hash)).toEqual([carol, bob, alice]);
+    expect(useRrcSessionStore.getState().rooms.has(`@${carol}`)).toBe(true);
+    expect(useRrcSessionStore.getState().rooms.has(`@${bob}`)).toBe(true);
+    expect(useRrcSessionStore.getState().rooms.has(`@${alice}`)).toBe(true);
   });
 
   it('appends messages and bumps unread for inactive rooms', () => {

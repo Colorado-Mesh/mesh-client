@@ -320,6 +320,9 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   });
 
   it('attemptMeshcoreReconnect treats setup AbortError as superseded reconnect', () => {
+    // Behavioral mount of attemptMeshcoreReconnect with mocked transport + fake timers is
+    // impractical for this monolithic runtime (AGENTS.md source-contract guidance). Keep
+    // source contracts for the setup-abort → deferred restart + stuck-UI clear paths.
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toMatch(
       /isMeshcoreSetupAbortError\(err\)[\s\S]*?reconnect aborted \(setup superseded\)/,

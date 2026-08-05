@@ -78,6 +78,28 @@ describe('resolveRrcDmPeerFromDirectMessage', () => {
       ),
     ).toBeNull();
   });
+
+  it('defers when local identity is unavailable (outbound echo before init)', () => {
+    // Self-sent echo would otherwise open a DM on the sender (self) if we trusted sender_hash.
+    expect(
+      resolveRrcDmPeerFromDirectMessage(
+        { dst_hash: peerA, sender_hash: selfHash, nickname: 'Me' },
+        null,
+      ),
+    ).toBeNull();
+    expect(
+      resolveRrcDmPeerFromDirectMessage(
+        { dst_hash: peerA, sender_hash: selfHash, nickname: 'Me' },
+        undefined,
+      ),
+    ).toBeNull();
+    expect(
+      resolveRrcDmPeerFromDirectMessage(
+        { dst_hash: selfHash, sender_hash: peerA, nickname: 'Zeva' },
+        null,
+      ),
+    ).toBeNull();
+  });
 });
 
 describe('splitLegacyWhispersMessages', () => {

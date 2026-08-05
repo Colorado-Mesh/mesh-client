@@ -298,9 +298,14 @@ interface RrcSessionStoreState {
   setModerationBanner: (message: string | null, hubHash?: string) => void;
   /**
    * Open a client-local per-peer DM (`@hash`) — no hub JOIN.
-   * Persists to localStorage so the DM survives restart until `closeDm`.
+   * Persists to localStorage so the DM survives restart until `closeDm`
+   * (unless `persist: false` when restoring already-saved tabs).
    */
-  openDm: (peer: RrcDmPeer, hubHash?: string, opts?: { focus?: boolean }) => void;
+  openDm: (
+    peer: RrcDmPeer,
+    hubHash?: string,
+    opts?: { focus?: boolean; persist?: boolean },
+  ) => void;
   /**
    * Close a client-local DM: remove from JOINED + open-DM prefs.
    * Keeps SQLite / in-memory message history unless Clear history is used.
@@ -536,7 +541,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     set((s) => {
       const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
       if (!hub) return {};
-      upsertRrcOpenDm(hub, { identity_hash: hash, nickname: nick });
+      // Restoring from loadRrcOpenDms must not rewrite storage (preserves newest-first order).
+      if (opts?.persist !== false) {
+        upsertRrcOpenDm(hub, { identity_hash: hash, nickname: nick });
+      }
       return mutateHubSession(s, hub, (session) => {
         const rooms = new Map(session.rooms);
         const existing = rooms.get(room);
