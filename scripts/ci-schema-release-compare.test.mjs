@@ -38,10 +38,24 @@ describe('formatSchemaCompareMarkdown', () => {
       schemaBumped: true,
     });
     expect(md).toContain('Test build — not an official release');
+    expect(md).toContain('Build Binaries');
     expect(md).toContain('49');
     expect(md).toContain('v5.26.0');
     expect(md).toContain('48 → 49');
     expect(md).toContain('cannot downgrade');
+  });
+
+  it('uses a custom workflow label for Flatpak test builds', () => {
+    const md = formatSchemaCompareMarkdown({
+      mode: 'test-build',
+      currSchema: 49,
+      prevSchema: 48,
+      prevTag: 'v5.26.0',
+      schemaBumped: true,
+      workflowLabel: 'Build Flatpak',
+    });
+    expect(md).toContain('Build Flatpak');
+    expect(md).not.toContain('Build Binaries');
   });
 
   it('notes when there is no bump', () => {

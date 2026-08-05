@@ -14,7 +14,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `build.yaml`             | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
 | `reticulum-sidecar.yaml` | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
 | `release.yaml`           | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
-| `flatpak.yaml`           | Version tags (`v*`), manual                  | Build Flatpak; publish to release on tags                                       |
+| `flatpak.yaml`           | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
 | `docs.yml`               | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
 
 ---
@@ -117,13 +117,14 @@ See [Release Process](release-process.md) for the maintainer workflow.
 
 Builds Flatpak bundles using [`flatpak/flatpak-github-actions`](https://github.com/flatpak/flatpak-github-actions).
 
-**Triggers:** version tags (`v*`) and manual `workflow_dispatch`.
+**Triggers:** version tags (`v*`) and manual `workflow_dispatch` (**Build Flatpak (no release)**).
 
 A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privileged `ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08` container (Flathub remote, `flatpak-builder`, and system-scope runtime installs). **x86_64** runs on `ubuntu-latest`; **aarch64** runs on `ubuntu-24.04-arm` (native ARM runners — not QEMU on bare Ubuntu).
 
-1. Generates `flatpak/generated-sources.json` via `flatpak-node-generator`
-2. Builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
-3. Uploads `org.coloradomesh.MeshClient-{x86_64,aarch64}.flatpak` artifacts
+1. **`schema-release-compare`** — same compare as Build Binaries / Release; uploads `READ-ME-FIRST-flatpak.md` and feeds `write-schema-upgrade-notice.mjs` so bumped schemas embed `SCHEMA-UPGRADE.txt` under Flatpak `resources/`
+2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
+3. Builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
+4. Uploads `org.coloradomesh.MeshClient-{x86_64,aarch64}.flatpak` artifacts plus per-arch `flatpak-schema-warning-*` (the READ-ME-FIRST note for Actions downloads)
 
 On **version tag pushes**, a `publish` job attaches both bundles to the GitHub Release. aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
@@ -307,18 +308,18 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 ---
 
-## Packaging smoke builds (`build.yaml` / `release.yaml`)
+## Packaging smoke builds (`build.yaml` / `flatpak.yaml` / `release.yaml`)
 
 ### Schema compare vs last official release
 
-Both workflows start with a **`schema-release-compare`** job (`scripts/ci-schema-release-compare.mjs`) that:
+**Build Binaries**, **Build Flatpak**, and **Release** start with a **`schema-release-compare`** job (`scripts/ci-schema-release-compare.mjs`) that:
 
-1. Labels **Build Binaries** runs as a **test build** (not an official release) in `$GITHUB_STEP_SUMMARY`
+1. Labels **Build Binaries** / **Build Flatpak (no release)** runs as a **test build** (not an official release) in `$GITHUB_STEP_SUMMARY`
 2. Compares this tree’s `CURRENT_SCHEMA_VERSION` to the last published (non-draft) GitHub Release tag
-3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-schema.md` (release) and includes the warning in platform artifact uploads when sharing Actions downloads
+3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-flatpak.md` (flatpak) / `READ-ME-FIRST-schema.md` (release) and includes the warning in platform / Flatpak artifact uploads when sharing Actions downloads
 4. Exposes `schema_bumped` / `curr_schema` / `prev_schema` / `prev_tag` for packaging
 
-When schema is bumped, packaging runs `scripts/write-schema-upgrade-notice.mjs` so Windows NSIS can show a MessageBox and macOS/Linux bundles can include `SCHEMA-UPGRADE.txt` via `electron-builder-before-pack.mjs`.
+When schema is bumped, packaging runs `scripts/write-schema-upgrade-notice.mjs` so Windows NSIS can show a MessageBox and macOS/Linux/Flatpak bundles can include `SCHEMA-UPGRADE.txt` in app resources (`electron-builder-before-pack.mjs` / Flatpak `resources/` copy).
 
 On first launch after a schema bump against an existing database, the app shows a blocking **Quit / Upgrade** dialog before mutating SQLite (see [Release Process — Database schema upgrades](release-process.md#database-schema-upgrades)).
 
