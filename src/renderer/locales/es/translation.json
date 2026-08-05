@@ -4547,7 +4547,8 @@
     "topology": "Topología de red",
     "network": "Red",
     "rrc": "RRC",
-    "remote": "Remoto"
+    "remote": "Remoto",
+    "games": "Juegos"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -5149,5 +5150,106 @@
     },
     "statsSeparator": "·",
     "ringing": "Sonando…"
+  },
+  "gamesPanel": {
+    "title": "Juegos",
+    "filters": {
+      "all": "Todos",
+      "active": "Activo",
+      "pending": "Pendiente",
+      "completed": "Completado"
+    },
+    "noSessions": "Todavía no hay sesiones de juego.",
+    "sessionRowAria": "{{app}} juego con {{peer}}",
+    "apps": {
+      "ttt": "Tres en raya",
+      "chess": "Ajedrez"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "active": "Activo",
+      "completed": "Completado",
+      "expired": "Caducada",
+      "declined": "Rechazada"
+    },
+    "unreadBadgeAria": "{{count}} sin leer",
+    "newChallenge": "Nuevo desafío",
+    "peerHashPlaceholder": "Hash de destino de pares",
+    "peerHashAria": "Hash de destino de pares",
+    "selectAppAria": "Seleccionar juego",
+    "sendChallengeAria": "Enviar desafío",
+    "sendChallenge": "Enviar desafío",
+    "selectSessionPrompt": "Selecciona una sesión de juego para jugar.",
+    "opponentLabel": "Oponente: {{peer}}",
+    "acceptAria": "Aceptar el desafío.",
+    "accept": "Aceptar",
+    "declineAria": "Rechazar Desafío",
+    "decline": "Rechazar",
+    "resignAria": "Renunciar",
+    "resign": "Renunciar",
+    "acceptDrawAria": "Aceptar oferta de sorteo",
+    "acceptDraw": "Aceptar sorteo",
+    "declineDrawAria": "Rechazar oferta de sorteo",
+    "declineDraw": "Rechazar sorteo",
+    "offerDrawAria": "Sorteo de ofertas",
+    "offerDraw": "Sorteo de ofertas",
+    "resendAria": "Reenviar la última acción",
+    "resend": "Volver a enviar",
+    "deleteSessionAria": "Eliminar la sesión",
+    "deleteSession": "Eliminar la sesión",
+    "resignConfirmTitle": "¿Renunciar al juego?",
+    "resignConfirmMessage": "¿Seguro que quieres renunciar a este juego? Esto no se puede deshacer.",
+    "drawOfferedBanner": "Tu oponente ofreció tablas.",
+    "challenge": "Desafíos",
+    "challengeAria": "Desafío a un juego",
+    "challengeAppAria": "Desafío a {{app}}",
+    "challengeSent": "{{app}} desafío enviado",
+    "ttt": {
+      "youWon": "¡Has ganado!",
+      "opponentWon": "El oponente ganó.",
+      "draw": "Plano",
+      "yourTurn": "Tu turno",
+      "opponentTurn": "TURNO DEL OPONENTE",
+      "yourMarker": "Eres {{marker}}",
+      "moveCount": "{{count}} SE mueve",
+      "boardAria": "1 tablero de Tres en raya",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "¡Has ganado!",
+      "opponentWon": "El oponente ganó.",
+      "draw": "Plano",
+      "yourTurn": "Tu turno",
+      "yourTurnInCheck": "Su turno — usted está en jaque",
+      "opponentTurn": "TURNO DEL OPONENTE",
+      "boardAria": "Tablero de ajedrez",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "vacío",
+      "legalMoveAria": "Reproducir {{move}}",
+      "pieceNames": {
+        "K": "White King",
+        "Q": "La Reina Blanca",
+        "R": "Torre blanca",
+        "B": "Alfil blanco",
+        "N": "caballero blanco, white knight",
+        "P": "Peón blanco",
+        "k": "Black King",
+        "q": "reina negra",
+        "r": "Black rook",
+        "b": "Alfil negro",
+        "n": "Deflector",
+        "p": "Peón negro"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Introduzca un hash de destino de 32 caracteres válido.",
+      "actionFailed": "Acción fallida: {{reason}}",
+      "unknownReason": "razón desconocida",
+      "resendFailed": "Fallo en el reenvío",
+      "deleteFailed": "Error al eliminar la sesión."
+    },
+    "deleteConfirmTitle": "¿Eliminar sesión?",
+    "deleteConfirmMessage": "¿Quieres eliminar esta sesión de juego de tu lista? Esto no se puede deshacer."
   }
 }

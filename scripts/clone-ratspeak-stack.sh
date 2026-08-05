@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Clone rsReticulum + rsLXMF + rsNomad + rsLXST (float origin/main by default),
+# Clone rsReticulum + rsLXMF + rsNomad + rsLXST + lrgp-rs (float origin/main by default),
 # then apply mesh-client overlays for rns-stack sidecar builds.
 set -euo pipefail
 
@@ -13,6 +13,7 @@ RNS_DIR="${WORKSPACE_ROOT}/rsReticulum"
 LXMF_DIR="${WORKSPACE_ROOT}/rsLXMF"
 NOMAD_DIR="${WORKSPACE_ROOT}/rsNomad"
 LXST_DIR="${WORKSPACE_ROOT}/rsLXST"
+LRGP_DIR="${WORKSPACE_ROOT}/lrgp-rs"
 
 # So apply-*.sh targets the same siblings as this script (WORKSPACE_ROOT may differ from ..).
 export RS_RETICULUM_DIR="${RNS_DIR}"
@@ -23,6 +24,7 @@ RS_RETICULUM_REF="${RS_RETICULUM_REF:-}"
 RS_LXMF_REF="${RS_LXMF_REF:-}"
 RS_NOMAD_REF="${RS_NOMAD_REF:-}"
 RS_LXST_REF="${RS_LXST_REF:-}"
+RS_LRGP_REF="${RS_LRGP_REF:-}"
 
 # Last selected ref from ensure_repo (origin/main, origin/master, or pin).
 ENSURE_REPO_SELECTED_REF=''
@@ -116,7 +118,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   return 0
 fi
 
-echo "Preparing Ratspeak stack (rsReticulum/rsLXMF/rsNomad/rsLXST float origin/main unless RS_*_REF set)..."
+echo "Preparing Ratspeak stack (rsReticulum/rsLXMF/rsNomad/rsLXST/lrgp-rs float origin/main unless RS_*_REF set)..."
 ensure_repo "${RNS_DIR}" 'https://github.com/ratspeak/rsReticulum.git' \
   "${RS_RETICULUM_REF}" 'rsReticulum'
 rns_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_RETICULUM_REF}")"
@@ -137,9 +139,14 @@ nomad_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_NOMAD_REF}")"
 ensure_repo "${LXST_DIR}" 'https://github.com/ratspeak/rsLXST.git' "${RS_LXST_REF}" 'rsLXST'
 lxst_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_LXST_REF}")"
 
+# lrgp-rs (LRGP games) — required for rns-stack games; float origin/main unless RS_LRGP_REF set.
+ensure_repo "${LRGP_DIR}" 'https://github.com/ratspeak/lrgp-rs.git' "${RS_LRGP_REF}" 'lrgp-rs'
+lrgp_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_LRGP_REF}")"
+
 rns_sha="$(git -C "${RNS_DIR}" rev-parse HEAD)"
 lxmf_sha="$(git -C "${LXMF_DIR}" rev-parse HEAD)"
 nomad_sha="$(git -C "${NOMAD_DIR}" rev-parse HEAD)"
 lxst_sha="$(git -C "${LXST_DIR}" rev-parse HEAD)"
-echo "Ratspeak stack ready: rsReticulum @ ${rns_sha:0:12} (${rns_mode}), rsLXMF @ ${lxmf_sha:0:12} (${lxmf_mode}), rsNomad @ ${nomad_sha:0:12} (${nomad_mode}), rsLXST @ ${lxst_sha:0:12} (${lxst_mode})"
-echo "Ratspeak stack SHAs (full): rsReticulum=${rns_sha} rsLXMF=${lxmf_sha} rsNomad=${nomad_sha} rsLXST=${lxst_sha}"
+lrgp_sha="$(git -C "${LRGP_DIR}" rev-parse HEAD)"
+echo "Ratspeak stack ready: rsReticulum @ ${rns_sha:0:12} (${rns_mode}), rsLXMF @ ${lxmf_sha:0:12} (${lxmf_mode}), rsNomad @ ${nomad_sha:0:12} (${nomad_mode}), rsLXST @ ${lxst_sha:0:12} (${lxst_mode}), lrgp-rs @ ${lrgp_sha:0:12} (${lrgp_mode})"
+echo "Ratspeak stack SHAs (full): rsReticulum=${rns_sha} rsLXMF=${lxmf_sha} rsNomad=${nomad_sha} rsLXST=${lxst_sha} lrgp-rs=${lrgp_sha}"

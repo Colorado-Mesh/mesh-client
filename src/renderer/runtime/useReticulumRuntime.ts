@@ -177,6 +177,7 @@ import {
   normalizeRmapDiscoveryRows,
   useReticulumDiscoveryMapStore,
 } from '../stores/reticulumDiscoveryMapStore';
+import { useReticulumGamesStore } from '../stores/reticulumGamesStore';
 import {
   parseAnnounceActivityRows,
   setReticulumAnnounceBusPressureActive,
@@ -1230,6 +1231,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
           remoteIdentity: typeof p.remote_identity === 'string' ? p.remote_identity : null,
           callGeneration: useReticulumVoiceStore.getState().callGeneration,
         });
+      }
+      if (evt.type === 'games.update' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumGamesStore.getState().applyGamesUpdate(evt.payload);
+      }
+      if (evt.type === 'games.action_result' && evt.payload && typeof evt.payload === 'object') {
+        useReticulumGamesStore.getState().applyActionResult(evt.payload);
       }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { transfer_id?: string; progress?: number };

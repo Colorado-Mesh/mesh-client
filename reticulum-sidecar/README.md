@@ -14,21 +14,22 @@ Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See
 ./scripts/clone-ratspeak-stack.sh
 ```
 
-That floats `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` to `origin/main` (override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` for bisect). Peer default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) in the **renderer** (`src/renderer/lib/reticulum/lxmface.ts`), not this sidecar.
+That floats `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` / `lrgp-rs` to `origin/main` (override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect). Peer default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) in the **renderer** (`src/renderer/lib/reticulum/lxmface.ts`), not this sidecar.
 
-**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum`, `rsLXMF`, `rsNomad`, and `rsLXST` directories on disk (CI runs `clone-ratspeak-stack.sh`; locally use the script above):
+**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, and `lrgp-rs` directories on disk (CI runs `clone-ratspeak-stack.sh`; locally use the script above):
 
 ```bash
 pnpm run reticulum:sidecar:build
 ```
 
-**Full rsReticulum + rsLXMF + rsNomad + rsLXST** — sibling checkout (Ratspeak layout + Colorado-Mesh rsNomad + LXST voice):
+**Full rsReticulum + rsLXMF + rsNomad + rsLXST + lrgp-rs** — sibling checkout (Ratspeak layout + Colorado-Mesh rsNomad + LXST voice + LRGP games):
 
 ```
 parent/
   rsReticulum/
   rsLXMF/
   rsLXST/
+  lrgp-rs/
   rsNomad/
   mesh-client/reticulum-sidecar/
 ```
@@ -83,7 +84,7 @@ Install coverage tooling once: `cargo install cargo-llvm-cov`.
 - **Pre-commit** runs sibling `rsNomad` fmt/clippy plus sidecar stub fmt/clippy/test when `cargo` is on `PATH` (no coverage).
 - **CI lint** (`reticulum-sidecar.yaml`): `rsNomad` fmt/clippy, then full-feature sidecar `fmt --check` + Clippy.
 - **CI coverage** (`tests.yaml`): `cargo llvm-cov --fail-under-lines 45` when sidecar paths change (ratchet toward ~52%; ignores `rsReticulum`/`rsLXMF`/`rsNomad` path deps).
-- **Ratspeak / Nomad / LXST siblings:** `scripts/clone-ratspeak-stack.sh` floats `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` to `origin/main` (override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF`); overlays must apply.
+- **Ratspeak / Nomad / LXST / LRGP siblings:** `scripts/clone-ratspeak-stack.sh` floats `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` / `lrgp-rs` to `origin/main` (override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF`); overlays must apply for rsReticulum/rsLXMF.
 
 ## API
 

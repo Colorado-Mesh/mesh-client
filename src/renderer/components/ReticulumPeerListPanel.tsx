@@ -54,6 +54,7 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
 import { ReticulumPeerPathsDetail } from './reticulum/ReticulumPeerPathsDetail';
 import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
@@ -82,6 +83,8 @@ export interface ReticulumPeerListPanelProps {
   contactGroupsEnabled?: boolean;
   /** LXST voice Call button on each peer row. */
   hasLxstVoice?: boolean;
+  /** LRGP games Challenge button on each peer row. */
+  hasLrgpGames?: boolean;
 }
 
 function peerHashToNodeNum(hash: string): number {
@@ -242,6 +245,7 @@ export default function ReticulumPeerListPanel({
   groupMemberIds,
   contactGroupsEnabled = false,
   hasLxstVoice = false,
+  hasLrgpGames = false,
 }: ReticulumPeerListPanelProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -586,6 +590,12 @@ export default function ReticulumPeerListPanel({
         <ReticulumVoiceCallButton
           lxmfPeerHash={peer.destination_hash}
           identityHash={peer.identity_hash}
+          disabled={busy || !isConnected}
+        />
+      ) : null}
+      {hasLrgpGames ? (
+        <ReticulumGameChallengeButton
+          lxmfPeerHash={peer.destination_hash}
           disabled={busy || !isConnected}
         />
       ) : null}

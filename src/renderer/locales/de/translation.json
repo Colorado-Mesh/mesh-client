@@ -4547,7 +4547,8 @@
     "topology": "Netzwerk-Topologie",
     "network": "Netzwerk",
     "rrc": "RRC",
-    "remote": "Remote"
+    "remote": "Remote",
+    "games": "Spiele"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -5149,5 +5150,106 @@
       "connectFailed": "Konnte keine Verbindung herstellen"
     },
     "ringing": "Klingelt…"
+  },
+  "gamesPanel": {
+    "title": "Spiele",
+    "filters": {
+      "all": "Alle",
+      "active": "Aktiv",
+      "pending": "Ausstehend",
+      "completed": "erledigt"
+    },
+    "noSessions": "Noch keine Spielsitzungen.",
+    "sessionRowAria": "{{app}} Spiel mit {{peer}}",
+    "apps": {
+      "ttt": "Drei gewinnt",
+      "chess": "Schach"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "active": "Aktiv",
+      "completed": "erledigt",
+      "expired": "Abgelaufen",
+      "declined": "Abgelehnt"
+    },
+    "unreadBadgeAria": "{{count}} ungelesen",
+    "newChallenge": "Neue Herausforderung",
+    "peerHashPlaceholder": "Peer-Ziel-Hash",
+    "peerHashAria": "Peer-Ziel-Hash",
+    "selectAppAria": "Wähle Spiel",
+    "sendChallengeAria": "Herausforderung senden",
+    "sendChallenge": "Herausforderung senden",
+    "selectSessionPrompt": "Wählen Sie eine Spielsitzung zum Spielen aus.",
+    "opponentLabel": "Einsprechender: {{peer}}",
+    "acceptAria": "Herausforderung annehmen",
+    "accept": "Zustimmen",
+    "declineAria": "Herausforderung ablehnen",
+    "decline": "Ablehnen",
+    "resignAria": "Kündigung",
+    "resign": "Kündigung",
+    "acceptDrawAria": "Ziehungsangebot annehmen",
+    "acceptDraw": "Ziehung annehmen",
+    "declineDrawAria": "Ziehungsangebot ablehnen",
+    "declineDraw": "Ziehung ablehnen",
+    "offerDrawAria": "Angebotsauslosung",
+    "offerDraw": "Angebotsauslosung",
+    "resendAria": "Letzte Aktion erneut senden",
+    "resend": "Erneut senden",
+    "deleteSessionAria": "Sitzung löschen",
+    "deleteSession": "Sitzung löschen",
+    "resignConfirmTitle": "Partie aufgeben",
+    "resignConfirmMessage": "Bist du sicher, dass du dieses Spiel kündigen möchtest? Dies kann nicht rückgängig gemacht werden.",
+    "drawOfferedBanner": "Dein Gegner hat ein Unentschieden angeboten.",
+    "challenge": "Schwierigkeiten",
+    "challengeAria": "Herausforderung zu einem Spiel",
+    "challengeAppAria": "Herausforderung an {{app}}",
+    "challengeSent": "{{app}} Herausforderung gesendet",
+    "ttt": {
+      "youWon": "Sie haben gewonnen!",
+      "opponentWon": "Gegner hat gewonnen.",
+      "draw": "Einzeichnen",
+      "yourTurn": "Du bist dran",
+      "opponentTurn": "GEGNERISCHER ZUG",
+      "yourMarker": "Du bist {{marker}}",
+      "moveCount": "{{count}} Züge",
+      "boardAria": "Tic-Tac-Toe-Brett",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Sie haben gewonnen!",
+      "opponentWon": "Gegner hat gewonnen.",
+      "draw": "Einzeichnen",
+      "yourTurn": "Du bist dran",
+      "yourTurnInCheck": "Sie sind an der Reihe — Sie sind in Schach",
+      "opponentTurn": "GEGNERISCHER ZUG",
+      "boardAria": "SchachbrettFilter Effect: Melt Down",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "empty",
+      "legalMoveAria": "Spiele {{move}}",
+      "pieceNames": {
+        "K": "Weißer König",
+        "Q": "The White Queen",
+        "R": "Weißer Turm",
+        "B": "Weißer Bischof",
+        "N": "Weißer Ritter",
+        "P": "Weißer Bauer",
+        "k": "Schwarzer König",
+        "q": "Schwarze Königin",
+        "r": "Schwarzer Turm",
+        "b": "Schwarzer Läufer",
+        "n": "Black Knight",
+        "p": "Schwarzer Bauer"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Geben Sie einen gültigen 32-stelligen Peer-Ziel-Hash ein.",
+      "actionFailed": "Aktion fehlgeschlagen: {{reason}}",
+      "unknownReason": "Unbekannter Grund",
+      "resendFailed": "Erneutes Senden fehlgeschlagen.",
+      "deleteFailed": "Die Recycling-Sitzung konnte nicht gelöscht werden."
+    },
+    "deleteConfirmTitle": "Löschen sitzung?",
+    "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden."
   }
 }

@@ -4,6 +4,7 @@ import type { ProtocolCapabilities } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
+export const GAMES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Games');
 export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');
 export const REMOTE_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Remote');
 export const NOMAD_NETWORK_PANEL_INDEX = TAB_SLOT_IDS.indexOf('NomadNetwork');
@@ -29,6 +30,7 @@ type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof Protoc
 const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
+  'hasLrgpGames', // Games
   'hasRrcPanel', // RRC
   'hasNomadNetworkPanel', // Nomad Network
   'hasReticulumRemotePanel', // Remote

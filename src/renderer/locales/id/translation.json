@@ -4547,7 +4547,8 @@
     "topology": "Topologi jaringan",
     "network": "Jaringan",
     "rrc": "RRC",
-    "remote": "Jarak jauh"
+    "remote": "Jarak jauh",
+    "games": "Game"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -5149,5 +5150,106 @@
     },
     "statsSeparator": "·",
     "ringing": "Berdering…"
+  },
+  "gamesPanel": {
+    "title": "Game",
+    "filters": {
+      "all": "Semua",
+      "active": "Aktif",
+      "pending": "Tertunda",
+      "completed": "Selesai"
+    },
+    "noSessions": "Belum ada sesi permainan.",
+    "sessionRowAria": "{{app}} permainan dengan {{peer}}",
+    "apps": {
+      "ttt": "Tic Tac Toe",
+      "chess": "Catur"
+    },
+    "status": {
+      "pending": "Tertunda",
+      "active": "Aktif",
+      "completed": "Selesai",
+      "expired": "Berakhir",
+      "declined": "Ditolak"
+    },
+    "unreadBadgeAria": "{{count}} belum dibaca",
+    "newChallenge": "Tantangan baru!",
+    "peerHashPlaceholder": "Hash tujuan sejawat",
+    "peerHashAria": "Hash tujuan sejawat",
+    "selectAppAria": "Pilih Satu Permainan",
+    "sendChallengeAria": "Kirim tantangan",
+    "sendChallenge": "Kirim tantangan",
+    "selectSessionPrompt": "Pilih sesi permainan untuk dimainkan.",
+    "opponentLabel": "Lawan: {{peer}}",
+    "acceptAria": "Terima Tantangan",
+    "accept": "Setujui",
+    "declineAria": "Tolak tantangan",
+    "decline": "Menurun",
+    "resignAria": "Mengundurkan Diri",
+    "resign": "Mengundurkan Diri",
+    "acceptDrawAria": "Terima penawaran undian",
+    "acceptDraw": "Terima undian",
+    "declineDrawAria": "Tolak penawaran undian",
+    "declineDraw": "Tolak undian",
+    "offerDrawAria": "Penawaran undian",
+    "offerDraw": "Penawaran undian",
+    "resendAria": "Kirim ulang tindakan terakhir",
+    "resend": "Kirim ulang",
+    "deleteSessionAria": "Hapus sesi",
+    "deleteSession": "Hapus sesi",
+    "resignConfirmTitle": "Mengundurkan diri dari permainan?",
+    "resignConfirmMessage": "Anda yakin ingin mengundurkan diri dari permainan ini? Ini tidak dapat diurungkan.",
+    "drawOfferedBanner": "Lawanmu menawarkan hasil imbang.",
+    "challenge": "Tantangan",
+    "challengeAria": "Tantangan untuk permainan",
+    "challengeAppAria": "Tantangan untuk {{app}}",
+    "challengeSent": "{{app}} tantangan terkirim",
+    "ttt": {
+      "youWon": "Kamu menang!",
+      "opponentWon": "Lawan menang.",
+      "draw": "Draw",
+      "yourTurn": "Giliran Anda",
+      "opponentTurn": "Giliran Lawan",
+      "yourMarker": "Anda {{marker}}",
+      "moveCount": "{{count}} bergerak",
+      "boardAria": "Papan Tic - Tac - Toe",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Kamu menang!",
+      "opponentWon": "Lawan menang.",
+      "draw": "Draw",
+      "yourTurn": "Giliran Anda",
+      "yourTurnInCheck": "Giliran Anda — Anda sudah siap",
+      "opponentTurn": "Giliran Lawan",
+      "boardAria": "Papan catur",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "kosong",
+      "legalMoveAria": "Mainkan {{move}}",
+      "pieceNames": {
+        "K": "Raja kulit putih",
+        "Q": "Ratu putih",
+        "R": "Benteng putih",
+        "B": "Uskup kulit putih",
+        "N": "Ksatria putih",
+        "P": "Pion putih",
+        "k": "Raja kulit hitam",
+        "q": "Ratu hitam",
+        "r": "Benteng hitam",
+        "b": "Uskup kulit hitam",
+        "n": "Ksatria hitam",
+        "p": "Pion hitam"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Masukkan hash tujuan rekan 32 karakter yang valid.",
+      "actionFailed": "Tindakan gagal: {{reason}}",
+      "unknownReason": "Alasan tidak dikenal",
+      "resendFailed": "Pengiriman ulang gagal.",
+      "deleteFailed": "Gagal menghapus sesi."
+    },
+    "deleteConfirmTitle": "Hapus sesi?",
+    "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan."
   }
 }

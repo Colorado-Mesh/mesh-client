@@ -4547,7 +4547,8 @@
     "topology": "ネットワーク・トポロジー",
     "network": "ネットワーク",
     "rrc": "RRC",
-    "remote": "リモート"
+    "remote": "リモート",
+    "games": "ゲーム"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -5149,5 +5150,106 @@
     },
     "statsSeparator": "・",
     "ringing": "呼び出し中…"
+  },
+  "gamesPanel": {
+    "title": "ゲーム",
+    "filters": {
+      "all": "すべて",
+      "active": "アクティブ",
+      "pending": "保留",
+      "completed": "完了"
+    },
+    "noSessions": "ゲームセッションはまだありません。",
+    "sessionRowAria": "{{peer}}との{{app}}ゲーム",
+    "apps": {
+      "ttt": "三目並べ",
+      "chess": "チェス"
+    },
+    "status": {
+      "pending": "保留",
+      "active": "アクティブ",
+      "completed": "完了",
+      "expired": "有効期限切れ",
+      "declined": "却下されました"
+    },
+    "unreadBadgeAria": "{{count}}未読",
+    "newChallenge": "新しいチャレンジ（勝負）",
+    "peerHashPlaceholder": "ピア宛先ハッシュ",
+    "peerHashAria": "ピア宛先ハッシュ",
+    "selectAppAria": "ゲームを選ぶ",
+    "sendChallengeAria": "チャレンジを発送",
+    "sendChallenge": "チャレンジを発送",
+    "selectSessionPrompt": "プレイするゲームセッションを選択します。",
+    "opponentLabel": "対戦相手： {{peer}}",
+    "acceptAria": "チャレンジを受け入れる",
+    "accept": "同意",
+    "declineAria": "チャレンジを辞退する",
+    "decline": "拒否する",
+    "resignAria": "やめる",
+    "resign": "やめる",
+    "acceptDrawAria": "抽選オファーを受け入れる",
+    "acceptDraw": "引き分けを受け入れる",
+    "declineDrawAria": "引き分けオファーを辞退する",
+    "declineDraw": "引き分けを辞退する",
+    "offerDrawAria": "オファー抽選",
+    "offerDraw": "オファー抽選",
+    "resendAria": "最後のアクションを再送",
+    "resend": "再送信",
+    "deleteSessionAria": "セッションを削除",
+    "deleteSession": "セッションを削除",
+    "resignConfirmTitle": "ゲームを終了しますか？",
+    "resignConfirmMessage": "本当にこのゲームを辞めますか？これは元に戻せません。",
+    "drawOfferedBanner": "対戦相手が引き分けを申し出ました。",
+    "challenge": "チャレンジ",
+    "challengeAria": "ゲームへの挑戦",
+    "challengeAppAria": "{{app}}へのチャレンジ",
+    "challengeSent": "{{app}}チャレンジを送信しました",
+    "ttt": {
+      "youWon": "勝ったぁ！",
+      "opponentWon": "対戦相手が勝利した。",
+      "draw": "引け",
+      "yourTurn": "あなたのターン",
+      "opponentTurn": "相手のターン！",
+      "yourMarker": "あなたは{{marker}}です",
+      "moveCount": "{{count}}ムーブ",
+      "boardAria": "Tic - Tac - Toeボード",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "勝ったぁ！",
+      "opponentWon": "対戦相手が勝利した。",
+      "draw": "引け",
+      "yourTurn": "あなたのターン",
+      "yourTurnInCheck": "あなたの番です—あなたはチェックされています",
+      "opponentTurn": "相手のターン！",
+      "boardAria": "チェスボード",
+      "squareAria": "{{square}}、{{piece}}",
+      "emptySquare": "なにも入っていません",
+      "legalMoveAria": "再生{{move}}",
+      "pieceNames": {
+        "K": "白のキング",
+        "Q": "ホワイトクイーン",
+        "R": "ホワイトルーク",
+        "B": "ホワイトビショップ",
+        "N": "ホワイト・ナイト？",
+        "P": "白い駒",
+        "k": "黒のキング",
+        "q": "ブラック・クィーン",
+        "r": "ブラックルーク",
+        "b": "ブラックビショップ",
+        "n": "黒騎士",
+        "p": "黒い質物"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "有効な32文字のピア宛先ハッシュを入力します。",
+      "actionFailed": "アクションに失敗しました： {{reason}}",
+      "unknownReason": "不明な理由",
+      "resendFailed": "再送に失敗しました。",
+      "deleteFailed": "セッションを削除できませんでした。"
+    },
+    "deleteConfirmTitle": "セッションを削除",
+    "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。"
   }
 }

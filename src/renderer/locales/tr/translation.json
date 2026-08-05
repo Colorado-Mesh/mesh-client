@@ -4547,7 +4547,8 @@
     "topology": "Ağ topolojisi",
     "network": "Ağ",
     "rrc": "RRC",
-    "remote": "Uzak"
+    "remote": "Uzak",
+    "games": "Oyun"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -5149,5 +5150,106 @@
     },
     "statsSeparator": "·",
     "ringing": "Çalıyor…"
+  },
+  "gamesPanel": {
+    "title": "Oyun",
+    "filters": {
+      "all": "Tümü",
+      "active": "Aktif",
+      "pending": "Bekleyen",
+      "completed": "Tamamlandı"
+    },
+    "noSessions": "Henüz oyun oturumu yok.",
+    "sessionRowAria": "{{app}} ile {{peer}} oyunu",
+    "apps": {
+      "ttt": "Tic Tac Toe",
+      "chess": "Satranç"
+    },
+    "status": {
+      "pending": "Bekleyen",
+      "active": "Aktif",
+      "completed": "Tamamlandı",
+      "expired": "Süresi doldu",
+      "declined": "Reddedildi"
+    },
+    "unreadBadgeAria": "{{count}} okunmadı",
+    "newChallenge": "Yeni meydan okuma",
+    "peerHashPlaceholder": "Eş hedef hash'i",
+    "peerHashAria": "Eş hedef hash'i",
+    "selectAppAria": "Oyunu Seç",
+    "sendChallengeAria": "Meydan okuma gönder",
+    "sendChallenge": "Meydan okuma gönder",
+    "selectSessionPrompt": "Oynamak için bir oyun oturumu seçin.",
+    "opponentLabel": "Rakip: {{peer}}",
+    "acceptAria": "Mücadeleyi Kabul Et",
+    "accept": "Kabul et",
+    "declineAria": "Meydan okumayı reddet",
+    "decline": "Reddet",
+    "resignAria": "Çekil",
+    "resign": "Çekil",
+    "acceptDrawAria": "Beraberlik teklifini kabul",
+    "acceptDraw": "Beraberlik Kabul Et",
+    "declineDrawAria": "Çekiliş teklifini reddet",
+    "declineDraw": "Beraberliği reddet",
+    "offerDrawAria": "Teklif çekilişi",
+    "offerDraw": "Teklif çekilişi",
+    "resendAria": "Son eylemi yeniden gönder",
+    "resend": "Yeniden gönderin",
+    "deleteSessionAria": "Oturumları Yapılandır...",
+    "deleteSession": "Oturumları Yapılandır...",
+    "resignConfirmTitle": "Oyundan çekil?",
+    "resignConfirmMessage": "Bu oyundan çıkmak istediğinden emin misin? Bu işlem geri alınamaz.",
+    "drawOfferedBanner": "Rakibiniz beraberlik teklif etti.",
+    "challenge": "Mücadele",
+    "challengeAria": "Bir oyun için meydan oku",
+    "challengeAppAria": "{{app}} için meydan okuma",
+    "challengeSent": "{{app}} meydan okuma gönderildi",
+    "ttt": {
+      "youWon": "Sen kazandın!",
+      "opponentWon": "Rakip kazandı.",
+      "draw": "Berabere.",
+      "yourTurn": "Sıra sende.",
+      "opponentTurn": "Rakibin Sırası",
+      "yourMarker": "Siz {{marker}}",
+      "moveCount": "{{count}} hamle",
+      "boardAria": "Tic - Tac - Toe tahtası",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Sen kazandın!",
+      "opponentWon": "Rakip kazandı.",
+      "draw": "Berabere.",
+      "yourTurn": "Sıra sende.",
+      "yourTurnInCheck": "Sıra sizde — kontrol altındasınız",
+      "opponentTurn": "Rakibin Sırası",
+      "boardAria": "Satranç tahtası",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "boş",
+      "legalMoveAria": "Oynat {{move}}",
+      "pieceNames": {
+        "K": "Beyaz Kral",
+        "Q": "Beyaz kraliçe",
+        "R": "Beyaz Kale",
+        "B": "Psikopoz",
+        "N": "Beyaz at",
+        "P": "Beyaz piyon",
+        "k": "Kara Kral",
+        "q": "Siyah kraliçe",
+        "r": "Siyah kale",
+        "b": "Kara fil",
+        "n": "Kara Şövalye",
+        "p": "Siyah piyon"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Geçerli bir 32 karakterlik eş hedef karması girin.",
+      "actionFailed": "İşlem başarısız oldu: {{reason}}",
+      "unknownReason": "bilinmeyen neden",
+      "resendFailed": "Yeniden Gönderilemedi",
+      "deleteFailed": "Oturum silinemedi."
+    },
+    "deleteConfirmTitle": "Oturumları Yapılandır...",
+    "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz."
   }
 }

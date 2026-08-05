@@ -104,6 +104,22 @@ describe('computeTabMappings', () => {
     expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('RRC'));
   });
 
+  it('shows Games tab after Chat and before RRC for Reticulum only', () => {
+    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const gamesIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Games'));
+    const chatIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Chat'));
+    const rrcIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('RRC'));
+    expect(RETICULUM_CAPABILITIES.hasLrgpGames).toBe(true);
+    expect(gamesIndex).toBeGreaterThan(chatIndex);
+    expect(rrcIndex).toBeGreaterThan(gamesIndex);
+    expect(reticulumTabs.displayTabLabels[gamesIndex]).toBe('tabs.games');
+
+    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
+    const meshcoreTabs = computeTabMappings(identityT, 'meshcore', MESHCORE_CAPABILITIES);
+    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Games'));
+    expect(meshcoreTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Games'));
+  });
+
   it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {
     const tabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
     const expectedSlots: (typeof TAB_SLOT_IDS)[number][] = [

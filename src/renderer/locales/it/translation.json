@@ -4547,7 +4547,8 @@
     "topology": "Topologia di rete.",
     "network": "Rete",
     "rrc": "RRC",
-    "remote": "Remoto"
+    "remote": "Remoto",
+    "games": "Giochi"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -5149,5 +5150,106 @@
     },
     "statsSeparator": "·",
     "ringing": "Sta squillando…"
+  },
+  "gamesPanel": {
+    "title": "Giochi",
+    "filters": {
+      "all": "Tutte",
+      "active": "Attivo",
+      "pending": "In sospeso",
+      "completed": "Completato"
+    },
+    "noSessions": "Ancora nessuna sessione di gioco.",
+    "sessionRowAria": "{{app}} gioco con {{peer}}",
+    "apps": {
+      "ttt": "Tris",
+      "chess": "Scacchiera"
+    },
+    "status": {
+      "pending": "In sospeso",
+      "active": "Attivo",
+      "completed": "Completato",
+      "expired": "scaduta",
+      "declined": "Rifiutato"
+    },
+    "unreadBadgeAria": "{{count}} non letto",
+    "newChallenge": "Una nuova sfida.",
+    "peerHashPlaceholder": "Hash di destinazione peer",
+    "peerHashAria": "Hash di destinazione peer",
+    "selectAppAria": "Scegli il gioco",
+    "sendChallengeAria": "Invia sfida",
+    "sendChallenge": "Invia sfida",
+    "selectSessionPrompt": "Seleziona una sessione di gioco da giocare.",
+    "opponentLabel": "Avversario: {{peer}}",
+    "acceptAria": "Accetta sfida",
+    "accept": "Accetta",
+    "declineAria": "Rifiuta la sfida",
+    "decline": "Rifiuto",
+    "resignAria": "Rinunciare",
+    "resign": "Rinunciare",
+    "acceptDrawAria": "Accetta l'offerta di estrazione",
+    "acceptDraw": "Accetta sorteggio",
+    "declineDrawAria": "Rifiuta l'offerta di estrazione",
+    "declineDraw": "Rifiuta estrazione",
+    "offerDrawAria": "Estrazione offerta",
+    "offerDraw": "Estrazione offerta",
+    "resendAria": "Invia di nuovo l'ultima azione",
+    "resend": "Invia di nuovo",
+    "deleteSessionAria": "Cancellare una sessione",
+    "deleteSession": "Cancellare una sessione",
+    "resignConfirmTitle": "Abbandona partita",
+    "resignConfirmMessage": "Vuoi davvero eliminare questo gioco? Non potrai tornare indietro.",
+    "drawOfferedBanner": "Il tuo avversario ha offerto un pareggio.",
+    "challenge": "Sfida",
+    "challengeAria": "Sfida a un gioco",
+    "challengeAppAria": "Sfida a {{app}}",
+    "challengeSent": "Sfida {{app}} inviata",
+    "ttt": {
+      "youWon": "Hai vinto!",
+      "opponentWon": "L'avversario ha vinto.",
+      "draw": "Patta.",
+      "yourTurn": "Tocca a te.",
+      "opponentTurn": "Tocca al tuo avversario",
+      "yourMarker": "Lei è {{marker}}",
+      "moveCount": "{{count}} mosse",
+      "boardAria": "Tavola Tic-Tac-Toe",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Hai vinto!",
+      "opponentWon": "L'avversario ha vinto.",
+      "draw": "Patta.",
+      "yourTurn": "Tocca a te.",
+      "yourTurnInCheck": "Tocca a te — sei sotto controllo",
+      "opponentTurn": "Tocca al tuo avversario",
+      "boardAria": "Scacchiera",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "vuoto",
+      "legalMoveAria": "Gioca {{move}}",
+      "pieceNames": {
+        "K": "Il Re bianco",
+        "Q": "Regina bianca",
+        "R": "Una Torre bianca",
+        "B": "Alfiere bianco",
+        "N": "Un Cavallo bianco",
+        "P": "Pedone bianco",
+        "k": "Il Re Nero",
+        "q": "Black Queen",
+        "r": "Una Torre nera",
+        "b": "Un Alfiere nero",
+        "n": "Il cavaliere nero",
+        "p": "Pedone nero"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Inserisci un hash di destinazione peer di 32 caratteri valido.",
+      "actionFailed": "Azione non riuscita: {{reason}}",
+      "unknownReason": "Motivo sconosciuto",
+      "resendFailed": "Nuovo invio del codice non riuscito",
+      "deleteFailed": "Sessione non eliminata"
+    },
+    "deleteConfirmTitle": "Cancellare una sessione",
+    "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata."
   }
 }

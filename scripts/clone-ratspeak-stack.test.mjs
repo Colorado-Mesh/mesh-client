@@ -142,6 +142,21 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     expect(git(dest, 'rev-parse', 'HEAD')).toBe(pinSha);
   });
 
+  it('clones lrgp-rs with optional RS_LRGP_REF pin support', () => {
+    expect(cloneScript).toContain('LRGP_DIR=');
+    expect(cloneScript).toMatch(/RS_LRGP_REF="\$\{RS_LRGP_REF:-\}"/);
+    expect(cloneScript).toContain('https://github.com/ratspeak/lrgp-rs.git');
+    expect(cloneScript).toContain(
+      `ensure_repo "\${LRGP_DIR}" 'https://github.com/ratspeak/lrgp-rs.git' "\${RS_LRGP_REF}" 'lrgp-rs'`,
+    );
+    expect(cloneScript).toContain('lrgp-rs @');
+    const { remote, tipSha } = createLocalRemote({ defaultBranch: 'main' });
+    const dest = join(makeTempDir('workspace-'), 'lrgp-rs');
+    const out = runEnsureRepo({ remoteUrl: remote, destDir: dest });
+    expect(out).toContain('SELECTED=origin/main');
+    expect(out).toContain(`SHA=${tipSha}`);
+  });
+
   it('applies rsReticulum and rsLXMF overlays after checkout via shared list', () => {
     expect(cloneScript).toContain('apply_ratspeak_rns_overlays');
     expect(cloneScript).toContain('apply_ratspeak_lxmf_overlays');

@@ -4549,7 +4549,8 @@
     "topology": "topologie sítě",
     "network": "Síť",
     "rrc": "RRC",
-    "remote": "Vzdálený přístup"
+    "remote": "Vzdálený přístup",
+    "games": "Herní aktivity"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -5151,5 +5152,106 @@
     },
     "statsSeparator": "·",
     "ringing": "Vyzvání…"
+  },
+  "gamesPanel": {
+    "title": "Herní aktivity",
+    "filters": {
+      "all": "Vše",
+      "active": "Aktivní",
+      "pending": "Čekající",
+      "completed": "Dokončeno"
+    },
+    "noSessions": "Zatím žádné herní relace.",
+    "sessionRowAria": "{{app}} hra s {{peer}}",
+    "apps": {
+      "ttt": "Piškvorky",
+      "chess": "Šachy"
+    },
+    "status": {
+      "pending": "Čekající",
+      "active": "Aktivní",
+      "completed": "Dokončeno",
+      "expired": "Platnost vypršela",
+      "declined": "Odmítnuto"
+    },
+    "unreadBadgeAria": "{{count}} nepřečteno",
+    "newChallenge": "Nová výzva!",
+    "peerHashPlaceholder": "Partnerský cílový hash",
+    "peerHashAria": "Partnerský cílový hash",
+    "selectAppAria": "Select Game",
+    "sendChallengeAria": "Odeslat výzvu",
+    "sendChallenge": "Odeslat výzvu",
+    "selectSessionPrompt": "Vyberte relaci hry, kterou chcete hrát.",
+    "opponentLabel": "Oponent: {{peer}}",
+    "acceptAria": "Přijměte naši Výzvu.",
+    "accept": "Přijmout",
+    "declineAria": "Odmítnout výzvu",
+    "decline": "Odmítnout",
+    "resignAria": "Odstoupit",
+    "resign": "Odstoupit",
+    "acceptDrawAria": "Přijmout nabídku remízy",
+    "acceptDraw": "Přijmout remízu",
+    "declineDrawAria": "Odmítnout nabídku losování",
+    "declineDraw": "Odmítnout remízu",
+    "offerDrawAria": "Nabídnout remízu",
+    "offerDraw": "Nabídnout remízu",
+    "resendAria": "Znovu odeslat poslední akci",
+    "resend": "Znovu odeslat",
+    "deleteSessionAria": "Smazat relaci",
+    "deleteSession": "Smazat relaci",
+    "resignConfirmTitle": "Chcete ukončit hru?",
+    "resignConfirmMessage": "Opravdu chcete ukončit tuto hru? Tuto akci nelze vrátit zpět.",
+    "drawOfferedBanner": "Váš soupeř nabídl remízu.",
+    "challenge": "Výzva",
+    "challengeAria": "Výzva ke hře",
+    "challengeAppAria": "Výzva pro {{app}}",
+    "challengeSent": "{{app}} výzva odeslána",
+    "ttt": {
+      "youWon": "Vyhráli jste!",
+      "opponentWon": "Soupeř vyhrál.",
+      "draw": "Nákres.",
+      "yourTurn": "Váš tah",
+      "opponentTurn": "Soupeřovo kolo",
+      "yourMarker": "Jsi {{marker}}",
+      "moveCount": "{{count}} se pohybuje",
+      "boardAria": "Tic-Tac-Toe deska",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Vyhráli jste!",
+      "opponentWon": "Soupeř vyhrál.",
+      "draw": "Nákres.",
+      "yourTurn": "Váš tah",
+      "yourTurnInCheck": "Jste na řadě — jste v šachu",
+      "opponentTurn": "Soupeřovo kolo",
+      "boardAria": "Šachovnice",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "prázdný",
+      "legalMoveAria": "Hrát {{move}}",
+      "pieceNames": {
+        "K": "Bílý král",
+        "Q": "Bílá královna",
+        "R": "Bílá věž",
+        "B": "Bílý střelec",
+        "N": "ÊÔíÒæßæ,",
+        "P": "Bílý pěšec",
+        "k": "Černý král",
+        "q": "Black Queen",
+        "r": "Černá věž",
+        "b": "Černý střelec",
+        "n": "Black Jack",
+        "p": "Černý pěšec"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Zadejte platný 32místný partnerský cílový hash.",
+      "actionFailed": "Akce se nezdařila: {{reason}}",
+      "unknownReason": "Neznámý důvod",
+      "resendFailed": "Opětovné odeslání se nezdařilo.",
+      "deleteFailed": "Odstranění relace se nezdařilo."
+    },
+    "deleteConfirmTitle": "Smazat relaci?",
+    "deleteConfirmMessage": "Odebrat tuto herní relaci ze seznamu? Tuto akci nelze vrátit zpět."
   }
 }

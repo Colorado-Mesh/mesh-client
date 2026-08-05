@@ -106,16 +106,18 @@ rebuild_reticulum_sidecar() {
     echo 'cargo not on PATH — skipping Reticulum sidecar rebuild.'
     return 0
   fi
-  echo 'Preparing rsReticulum, rsLXMF, and rsNomad functionality check...'
+  echo 'Preparing rsReticulum, rsLXMF, rsNomad, rsLXST, and lrgp-rs functionality check...'
   local sidecar_dir='reticulum-sidecar'
-  # Paths match reticulum-sidecar/Cargo.toml (../../rs* from the sidecar dir).
+  # Paths match reticulum-sidecar/Cargo.toml (../../rs* / ../../lrgp-rs from the sidecar dir).
   local rns_runtime='../../rsReticulum/crates/rns-runtime/Cargo.toml'
   local lxmf_core='../../rsLXMF/crates/lxmf-core/Cargo.toml'
   local nomad_core='../../rsNomad/crates/nomad-core/Cargo.toml'
+  local lxst_telephony='../../rsLXST/crates/lxst-telephony/Cargo.toml'
+  local lrgp_crate='../../lrgp-rs/Cargo.toml'
   bash scripts/clone-ratspeak-stack.sh
   local missing_manifest=''
   local manifest
-  for manifest in "${rns_runtime}" "${lxmf_core}" "${nomad_core}"; do
+  for manifest in "${rns_runtime}" "${lxmf_core}" "${nomad_core}" "${lxst_telephony}" "${lrgp_crate}"; do
     if [ ! -f "${sidecar_dir}/${manifest}" ]; then
       missing_manifest="${sidecar_dir}/${manifest}"
       break
@@ -125,7 +127,7 @@ rebuild_reticulum_sidecar() {
     echo "Error: required rs stack manifest missing after preparation: ${missing_manifest}" >&2
     return 1
   fi
-  echo 'Checking rsReticulum, rsLXMF, and rsNomad via full-feature sidecar build...'
+  echo 'Checking rsReticulum, rsLXMF, rsNomad, rsLXST, and lrgp-rs via full-feature sidecar build...'
   (cd "${sidecar_dir}" && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
   if [ "${CLEAN_SIDECAR_TARGET}" = '1' ]; then
     echo 'CLEAN_SIDECAR_TARGET=1: removing reticulum-sidecar/target (next sidecar build will be cold)...'
@@ -406,11 +408,12 @@ process.stdin.on("end", () => {
 # Curated release watch + known org repos (keep in sync when adopting new ratspeak libs).
 # Format: "owner/repo|stub-kind-or-empty|display-label"
 # stub-kind: games → warn while mesh-client still has sidecar stubs only.
-# (voice cleared after lxst-telephony integration; empty stub field = informational.)
+# stub-kind: games-parity → non-fatal reminder to review Ratspeak Games tab vs mesh-client.
+# (voice/games stubs cleared after lxst-telephony / lrgp-rs integration; empty stub = informational.)
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
   'ratspeak/rsLXST||rsLXST voice (lxst-telephony)'
-  'ratspeak/lrgp-rs|games|lrgp-rs games (sidecar stub)'
-  'ratspeak/Ratspeak||Ratspeak client (reference)'
+  'ratspeak/lrgp-rs||lrgp-rs games (LRGP)'
+  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)'
 )
 
@@ -469,6 +472,14 @@ check_ratspeak_upstream() {
     if [ "${stub}" = 'voice' ] || [ "${stub}" = 'games' ]; then
       warn_box "${label}" "sidecar stub" "${tag} available" "${url}"
       echo "  Reason tracked: mesh-client still stubs this feature; review integrating ${repo} @ ${tag}"
+      has_upstream_warning=1
+      HAS_WARNING=1
+    elif [ "${stub}" = 'games-parity' ]; then
+      warn_box "${label}" "Games parity review" "${tag} available" "${url}"
+      echo "  Reason tracked: compare Ratspeak Games tab with mesh-client:"
+      echo "    crates/ratspeak-tauri/src/commands/games.rs"
+      echo "    dashboard/static/js/games_tab.js"
+      echo "    docs/reticulum-games-parity.md"
       has_upstream_warning=1
       HAS_WARNING=1
     fi

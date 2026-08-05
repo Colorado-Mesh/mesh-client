@@ -1,6 +1,7 @@
 import type { BrowserWindow } from 'electron';
 import { ipcMain, shell } from 'electron';
 
+import { isGamesApiPath, parseGamesActionRequest } from '../../shared/games-types';
 import type {
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
@@ -54,8 +55,25 @@ const reticulumVoiceAudioIpcRateLimit = createIpcRateLimiter({
   label: 'reticulum:voiceSendAudio',
 });
 
+/**
+ * LRGP games control/poll traffic. Own bucket so session polls + moves do not
+ * starve the shared 300/min reticulum proxy ceiling.
+ */
+const reticulumGamesIpcRateLimit = createIpcRateLimiter({
+  max: 600,
+  windowMs: MS_PER_MINUTE,
+  label: 'reticulum:games',
+});
+
 function isVoiceAudioApiPath(apiPath: string): boolean {
   return apiPath === VOICE_AUDIO_API_PATH;
+}
+
+function assertGamesSessionId(sessionId: unknown): string | { error: string } {
+  if (typeof sessionId !== 'string' || sessionId.length === 0 || sessionId.length > 128) {
+    return { error: 'invalid_session_id' };
+  }
+  return sessionId;
 }
 
 export interface ReticulumIpcDeps {
@@ -197,6 +215,9 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     assertIpcSender(event, 'reticulum:proxyGet');
     reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
+    if (isGamesApiPath(pathArg)) {
+      throw new Error('LRGP games require reticulum:games* IPC channels');
+    }
     try {
       const m = ensureManager();
       return await m.proxyGet(pathArg);
@@ -217,6 +238,9 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     if (isVoiceAudioApiPath(pathArg)) {
       throw new Error('voice PCM ingest requires reticulum:voiceSendAudio');
+    }
+    if (isGamesApiPath(pathArg)) {
+      throw new Error('LRGP games require reticulum:games* IPC channels');
     }
     try {
       const m = ensureManager();
@@ -281,12 +305,132 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     assertIpcSender(event, 'reticulum:proxyDelete');
     reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
+    if (isGamesApiPath(pathArg)) {
+      throw new Error('LRGP games require reticulum:games* IPC channels');
+    }
     try {
       const m = ensureManager();
       return await m.proxyDelete(pathArg);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('proxyDelete', err, pathArg);
+    }
+  });
+
+  /** Dedicated LRGP games channels — blocked on generic proxyGet/Post/Delete. */
+  ipcMain.handle('reticulum:gamesStatus', async (event) => {
+    assertIpcSender(event, 'reticulum:gamesStatus');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    try {
+      return await ensureManager().proxyGet('/api/v1/games/status');
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesStatus', err, '/api/v1/games/status');
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesApps', async (event) => {
+    assertIpcSender(event, 'reticulum:gamesApps');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    try {
+      return await ensureManager().proxyGet('/api/v1/games/apps');
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesApps', err, '/api/v1/games/apps');
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesSessions', async (event, peer: unknown) => {
+    assertIpcSender(event, 'reticulum:gamesSessions');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    const q =
+      typeof peer === 'string' && peer.length > 0
+        ? `/api/v1/games/sessions?peer=${encodeURIComponent(peer)}`
+        : '/api/v1/games/sessions';
+    try {
+      return await ensureManager().proxyGet(q);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesSessions', err, q);
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesSessionDetail', async (event, sessionId: unknown) => {
+    assertIpcSender(event, 'reticulum:gamesSessionDetail');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}`;
+    try {
+      return await ensureManager().proxyGet(path);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesSessionDetail', err, path);
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesAction', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:gamesAction');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    const parsed = parseGamesActionRequest(opts);
+    if ('error' in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+    try {
+      return await ensureManager().proxyPost('/api/v1/games/action', parsed);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesAction', err, '/api/v1/games/action');
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesResend', async (event, sessionId: unknown) => {
+    assertIpcSender(event, 'reticulum:gamesResend');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}/resend`;
+    try {
+      return await ensureManager().proxyPost(path, {});
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesResend', err, path);
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesMarkRead', async (event, sessionId: unknown) => {
+    assertIpcSender(event, 'reticulum:gamesMarkRead');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}/read`;
+    try {
+      return await ensureManager().proxyPost(path, {});
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesMarkRead', err, path);
+    }
+  });
+
+  ipcMain.handle('reticulum:gamesDeleteSession', async (event, sessionId: unknown) => {
+    assertIpcSender(event, 'reticulum:gamesDeleteSession');
+    reticulumGamesIpcRateLimit.checkOrThrow();
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}`;
+    try {
+      return await ensureManager().proxyDelete(path);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('gamesDeleteSession', err, path);
     }
   });
 

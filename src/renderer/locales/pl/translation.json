@@ -4551,7 +4551,8 @@
     "topology": "Topologia sieci",
     "network": "Sieć",
     "rrc": "RRC",
-    "remote": "Zdalny"
+    "remote": "Zdalny",
+    "games": "Gry"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -5153,5 +5154,106 @@
     },
     "statsSeparator": "·",
     "ringing": "Dzwoni…"
+  },
+  "gamesPanel": {
+    "title": "Gry",
+    "filters": {
+      "all": "Wszystko",
+      "active": "Aktywna",
+      "pending": "Oczekujące",
+      "completed": "Projekt zakończony"
+    },
+    "noSessions": "Nie ma jeszcze sesji gry.",
+    "sessionRowAria": "{{app}} gra Z {{peer}}",
+    "apps": {
+      "ttt": "Kółko i krzyżyk",
+      "chess": "Szachy"
+    },
+    "status": {
+      "pending": "Oczekujące",
+      "active": "Aktywna",
+      "completed": "Projekt zakończony",
+      "expired": "Wygasłe",
+      "declined": "Odrzucone"
+    },
+    "unreadBadgeAria": "{{count}} nieprzeczytane",
+    "newChallenge": "Nowe wyzwanie",
+    "peerHashPlaceholder": "Hasz celu równorzędnego",
+    "peerHashAria": "Hasz celu równorzędnego",
+    "selectAppAria": "Wybór gry",
+    "sendChallengeAria": "Wyślij wyzwanie",
+    "sendChallenge": "Wyślij wyzwanie",
+    "selectSessionPrompt": "Wybierz sesję gry do rozegrania.",
+    "opponentLabel": "Przeciwnik: {{peer}}",
+    "acceptAria": "Zaakceptuj wyzwanie",
+    "accept": "Zaakceptuj",
+    "declineAria": "Odrzuć wyzwanie",
+    "decline": "Odrzuć",
+    "resignAria": "Rezygnacja",
+    "resign": "Rezygnacja",
+    "acceptDrawAria": "Zaakceptuj ofertę remisu",
+    "acceptDraw": "Zaakceptuj losowanie",
+    "declineDrawAria": "Odrzuć ofertę losowania",
+    "declineDraw": "Odrzuć losowanie",
+    "offerDrawAria": "Oferta losowania",
+    "offerDraw": "Oferta losowania",
+    "resendAria": "Wyślij ponownie ostatnią akcję",
+    "resend": "Wyślij ponownie",
+    "deleteSessionAria": "Usuń sesję",
+    "deleteSession": "Usuń sesję",
+    "resignConfirmTitle": "Zrezygnować z gry?",
+    "resignConfirmMessage": "Czy na pewno chcesz zrezygnować z tej gry? Tej czynności nie można cofnąć.",
+    "drawOfferedBanner": "Twój przeciwnik zaoferował remis.",
+    "challenge": "Wyzwanie",
+    "challengeAria": "Wyzwanie w grze",
+    "challengeAppAria": "Wyzwanie dla {{app}}",
+    "challengeSent": "Wysłano wyzwanie: {{app}}",
+    "ttt": {
+      "youWon": "Zwycięstwo!",
+      "opponentWon": "Przeciwnik wygrał.",
+      "draw": "Rys.",
+      "yourTurn": "Twój ruch",
+      "opponentTurn": "Tura przeciwnika",
+      "yourMarker": "Jesteś {{marker}}",
+      "moveCount": "{{count}} ruchy",
+      "boardAria": "Deska Tic-Tac-Toe",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Zwycięstwo!",
+      "opponentWon": "Przeciwnik wygrał.",
+      "draw": "Rys.",
+      "yourTurn": "Twój ruch",
+      "yourTurnInCheck": "Twoja kolej — wszystko jest pod kontrolą",
+      "opponentTurn": "Tura przeciwnika",
+      "boardAria": "szachownica",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "pusty",
+      "legalMoveAria": "Graj {{move}}",
+      "pieceNames": {
+        "K": "Biały król",
+        "Q": "Biały Hetman",
+        "R": "Biała wieża",
+        "B": "Biały goniec",
+        "N": "Biały rycerz",
+        "P": "Biały pionek",
+        "k": "czarny król",
+        "q": "czarna królowa",
+        "r": "Czarna wieża",
+        "b": "Czarny goniec",
+        "n": "Czarny skoczek",
+        "p": "czarny pionek"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Wprowadź prawidłowy 32-znakowy hasz celu równorzędnego.",
+      "actionFailed": "Działanie nie powiodło się: {{reason}}",
+      "unknownReason": "nieznanych powodów",
+      "resendFailed": "Ponowne wysłanie nie powiodło się.",
+      "deleteFailed": "Nie udało się usunąć sesji."
+    },
+    "deleteConfirmTitle": "Usuń sesję",
+    "deleteConfirmMessage": "Usunąć tę sesję gry z listy? Tej czynności nie można cofnąć."
   }
 }

@@ -10,6 +10,7 @@ export const RadioPanel = lazy(() => import('./components/RadioPanel'));
 export const ReticulumNetworkPanel = lazy(() => import('./components/ReticulumNetworkPanel'));
 export const ReticulumAdminPanel = lazy(() => import('./components/ReticulumAdminPanel'));
 export const NomadNetworkPanel = lazy(() => import('./components/NomadNetworkPanel'));
+export const GamesPanel = lazy(() => import('./components/GamesPanel'));
 export const RrcPanel = lazy(() => import('./components/RrcPanel'));
 export const ReticulumRemotePanel = lazy(() => import('./components/ReticulumRemotePanel'));
 export const ReticulumPeerListPanel = lazy(() => import('./components/ReticulumPeerListPanel'));

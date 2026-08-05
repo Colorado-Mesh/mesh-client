@@ -98,9 +98,13 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
     expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)');
-    expect(result.stdout).toContain('ratspeak/lrgp-rs|games|');
-    expect(result.stdout).toContain('ratspeak/Ratspeak||');
+    expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)');
+    expect(result.stdout).toContain(
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)',
+    );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
+    expect(updateScript).toContain('"${stub}" = \'games-parity\'');
+    expect(updateScript).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).toContain('RATSPEAK_KNOWN_ORG_REPOS:');
     expect(result.stdout).toContain('  rsReticulum');
     expect(result.stdout).toContain('  rsLXMF');
@@ -316,11 +320,13 @@ exit 0
     path.join(work, 'reticulum-sidecar', 'Cargo.toml'),
     '[package]\nname = "mesh-client-reticulum"\n',
   );
-  // Path deps are ../../rs* from reticulum-sidecar → siblings of mesh-client.
+  // Path deps are ../../rs* / ../../lrgp-rs from reticulum-sidecar → siblings of mesh-client.
   for (const rel of [
     'rsReticulum/crates/rns-runtime/Cargo.toml',
     'rsLXMF/crates/lxmf-core/Cargo.toml',
     'rsNomad/crates/nomad-core/Cargo.toml',
+    'rsLXST/crates/lxst-telephony/Cargo.toml',
+    'lrgp-rs/Cargo.toml',
   ]) {
     const abs = path.join(root, rel);
     mkdirSync(path.dirname(abs), { recursive: true });

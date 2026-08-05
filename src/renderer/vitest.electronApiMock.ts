@@ -454,6 +454,16 @@ export function createElectronAPIMock(): ElectronAPI {
         }),
         getIdentity: vi.fn().mockResolvedValue({ identity_hash: null, rncp_receive_hash: null }),
       },
+      games: {
+        getStatus: vi.fn().mockResolvedValue({ available: true, enabled: true, running: true }),
+        listApps: vi.fn().mockResolvedValue({ apps: [] }),
+        listSessions: vi.fn().mockResolvedValue({ sessions: [] }),
+        getSession: vi.fn().mockResolvedValue({ session: null }),
+        sendAction: vi.fn().mockResolvedValue({ ok: true }),
+        resend: vi.fn().mockResolvedValue({ ok: true }),
+        markRead: vi.fn().mockResolvedValue({ ok: true }),
+        deleteSession: vi.fn().mockResolvedValue({ ok: true }),
+      },
     },
     vault: {
       setPasscode: vi.fn().mockResolvedValue({ ok: true }),

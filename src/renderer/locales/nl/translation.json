@@ -4547,7 +4547,8 @@
     "topology": "Netwerktopologie",
     "network": "Netwerk",
     "rrc": "RRC",
-    "remote": "Op afstand"
+    "remote": "Op afstand",
+    "games": "Games"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -5149,5 +5150,106 @@
       "connectFailed": "Kon niet verbinden"
     },
     "ringing": "Overgaan…"
+  },
+  "gamesPanel": {
+    "title": "Games",
+    "filters": {
+      "all": "All",
+      "active": "Actief",
+      "pending": "Openstaand",
+      "completed": "Voltooid"
+    },
+    "noSessions": "Nog geen spelsessies.",
+    "sessionRowAria": "{{app}} game met {{peer}}",
+    "apps": {
+      "ttt": "Boter-kaas-eierenmahjongg map name",
+      "chess": "Chess"
+    },
+    "status": {
+      "pending": "Openstaand",
+      "active": "Actief",
+      "completed": "Voltooid",
+      "expired": "Verlopen",
+      "declined": "Geweigerd"
+    },
+    "unreadBadgeAria": "{{count}} ongelezen",
+    "newChallenge": "Nieuwe Uitdaging",
+    "peerHashPlaceholder": "Peer destination hash",
+    "peerHashAria": "Peer destination hash",
+    "selectAppAria": "SPEL KIEZEN",
+    "sendChallengeAria": "Uitdaging verzenden",
+    "sendChallenge": "Uitdaging verzenden",
+    "selectSessionPrompt": "Selecteer een spelsessie om te spelen.",
+    "opponentLabel": "Tegenstander: {{peer}}",
+    "acceptAria": "Accepteer uitdaging",
+    "accept": "Aanvaarden",
+    "declineAria": "Uitdaging afwijzen",
+    "decline": "Afwijzen",
+    "resignAria": "Stoppen",
+    "resign": "Stoppen",
+    "acceptDrawAria": "Trekkingsaanbod accepteren",
+    "acceptDraw": "Tekening accepteren",
+    "declineDrawAria": "Trekkingsaanbod afwijzen",
+    "declineDraw": "Trekking afwijzen",
+    "offerDrawAria": "Aanbieding loting",
+    "offerDraw": "Aanbieding loting",
+    "resendAria": "Laatste actie opnieuw verzenden",
+    "resend": "Opnieuw versturen",
+    "deleteSessionAria": "Sessie verwijderen",
+    "deleteSession": "Sessie verwijderen",
+    "resignConfirmTitle": "Spel opzeggen?",
+    "resignConfirmMessage": "Weet je zeker dat je dit spel wilt opzeggen? Dit kan niet ongedaan worden gemaakt.",
+    "drawOfferedBanner": "Je tegenstander bood een gelijkspel aan.",
+    "challenge": "Uitdaging",
+    "challengeAria": "Uitdaging voor een spel",
+    "challengeAppAria": "Uitdaging voor {{app}}",
+    "challengeSent": "{{app}} uitdaging verzonden",
+    "ttt": {
+      "youWon": "Je hebt gewonnen!",
+      "opponentWon": "Tegenstander heeft gewonnen.",
+      "draw": "Rapen",
+      "yourTurn": "Jouw beurt",
+      "opponentTurn": "De beurt van de tegenstander",
+      "yourMarker": "Jij bent {{marker}}",
+      "moveCount": "{{count}} verhuist",
+      "boardAria": "Tic-Tac-Toe-bord",
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "chess": {
+      "youWon": "Je hebt gewonnen!",
+      "opponentWon": "Tegenstander heeft gewonnen.",
+      "draw": "Rapen",
+      "yourTurn": "Jouw beurt",
+      "yourTurnInCheck": "Jouw beurt — jij bent aan de beurt",
+      "opponentTurn": "De beurt van de tegenstander",
+      "boardAria": "SchaakbordFilter Effect: Melt Down",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "leegmaken",
+      "legalMoveAria": "Speel {{move}}",
+      "pieceNames": {
+        "K": "WHITE KING",
+        "Q": "Witte koningin",
+        "R": "Witte toren",
+        "B": "Witte bisschop",
+        "N": "witte ridder",
+        "P": "Witte pion",
+        "k": "Zwarte koning",
+        "q": "Zwarte koningin",
+        "r": "Zwarte toren",
+        "b": "Zwarte loper",
+        "n": "Zwarte ridder",
+        "p": "Zwarte pion"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Voer een geldige peer-bestemmingshash van 32 tekens in.",
+      "actionFailed": "Actie mislukt: {{reason}}",
+      "unknownReason": "onbekende reden",
+      "resendFailed": "Opnieuw verzenden mislukt.",
+      "deleteFailed": "Kan sessie niet verwijderen."
+    },
+    "deleteConfirmTitle": "Moment verwijderen?",
+    "deleteConfirmMessage": "Deze spelsessie uit je lijst verwijderen? Dit kan niet ongedaan worden gemaakt."
   }
 }
