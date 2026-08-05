@@ -48,7 +48,7 @@ describe('TicTacToeBoard', () => {
     const onMove = vi.fn();
     render(<TicTacToeBoard session={makeSession()} onMove={onMove} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Cell 5' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cell 5, empty' }));
 
     expect(onMove).toHaveBeenCalledWith(4);
   });
@@ -73,7 +73,7 @@ describe('TicTacToeBoard', () => {
       />,
     );
 
-    const cell1 = screen.getByRole('button', { name: 'Cell 1' });
+    const cell1 = screen.getByRole('button', { name: 'Cell 1, X' });
     expect(cell1).toBeDisabled();
     await userEvent.click(cell1);
     expect(onMove).not.toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe('TicTacToeBoard', () => {
     );
 
     expect(screen.getByText("Opponent's turn")).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cell 2' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cell 2, empty' })).toBeDisabled();
   });
 
   it('shows the win message and disables the board on terminal win', () => {

@@ -8,14 +8,51 @@ import type {
   GamesUpdateEventPayload,
 } from '@/shared/games-types';
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 function isGameSession(value: unknown): value is GameSession {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
-  return typeof v.session_id === 'string' && v.session_id.length > 0;
+  return (
+    typeof v.session_id === 'string' &&
+    v.session_id.length > 0 &&
+    typeof v.identity_id === 'string' &&
+    typeof v.app_id === 'string' &&
+    isFiniteNumber(v.app_version) &&
+    typeof v.contact_hash === 'string' &&
+    typeof v.initiator === 'string' &&
+    typeof v.status === 'string' &&
+    !!v.metadata &&
+    typeof v.metadata === 'object' &&
+    !Array.isArray(v.metadata) &&
+    isFiniteNumber(v.unread) &&
+    isFiniteNumber(v.created_at) &&
+    isFiniteNumber(v.updated_at) &&
+    isFiniteNumber(v.last_action_at)
+  );
 }
 
 function asGameSession(value: unknown): GameSession | null {
   return isGameSession(value) ? value : null;
+}
+
+function isGamesAppManifest(value: unknown): value is GamesAppManifest {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.app_id === 'string' &&
+    v.app_id.length > 0 &&
+    isFiniteNumber(v.version) &&
+    typeof v.display_name === 'string'
+  );
+}
+
+function isGamesUpdatePayload(value: unknown): value is GamesUpdateEventPayload {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.app_id === 'string' && typeof v.session_id === 'string';
 }
 
 interface ReticulumGamesStoreState {
@@ -78,9 +115,8 @@ export const useReticulumGamesStore = create<ReticulumGamesStoreState>((set) => 
   },
 
   applyGamesUpdate: (payload) => {
-    if (!payload || typeof payload !== 'object') return;
-    const p = payload as GamesUpdateEventPayload;
-    const session = asGameSession(p.session);
+    if (!isGamesUpdatePayload(payload)) return;
+    const session = asGameSession(payload.session);
     if (!session) return;
     set((s) => {
       const idx = s.sessions.findIndex((row) => row.session_id === session.session_id);
@@ -101,12 +137,7 @@ export const useReticulumGamesStore = create<ReticulumGamesStoreState>((set) => 
   },
 
   setApps: (apps) => {
-    const list = Array.isArray(apps)
-      ? apps.filter(
-          (a): a is GamesAppManifest =>
-            !!a && typeof a === 'object' && typeof (a as GamesAppManifest).app_id === 'string',
-        )
-      : [];
+    const list = Array.isArray(apps) ? apps.filter(isGamesAppManifest) : [];
     set({ apps: list });
   },
 

@@ -113,10 +113,15 @@ export async function resendGamesAction(sessionId: string): Promise<boolean> {
 
 export async function markGamesSessionRead(sessionId: string): Promise<void> {
   try {
+    const before = useReticulumGamesStore
+      .getState()
+      .sessions.find((row) => row.session_id === sessionId);
+    const revision = before?.updated_at;
     await window.electronAPI.reticulum.games.markRead(sessionId);
     const state = useReticulumGamesStore.getState();
     const session = state.sessions.find((row) => row.session_id === sessionId);
-    if (session && session.unread !== 0) {
+    // Skip local unread clear when a newer games.update arrived during markRead.
+    if (session && session.updated_at === revision && session.unread !== 0) {
       state.upsertSession({ ...session, unread: 0 });
     }
   } catch (e) {

@@ -146,7 +146,9 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     expect(cloneScript).toContain('LRGP_DIR=');
     expect(cloneScript).toMatch(/RS_LRGP_REF="\$\{RS_LRGP_REF:-\}"/);
     expect(cloneScript).toContain('https://github.com/ratspeak/lrgp-rs.git');
-    expect(cloneScript).toContain(" 'lrgp-rs'");
+    expect(cloneScript).toContain(
+      `ensure_repo "\${LRGP_DIR}" 'https://github.com/ratspeak/lrgp-rs.git' "\${RS_LRGP_REF}" 'lrgp-rs'`,
+    );
     expect(cloneScript).toContain('lrgp-rs @');
     const { remote, tipSha } = createLocalRemote({ defaultBranch: 'main' });
     const dest = join(makeTempDir('workspace-'), 'lrgp-rs');

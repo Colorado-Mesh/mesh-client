@@ -5213,7 +5213,8 @@
       "yourMarker": "당신은 {{marker}} 입니다",
       "moveCount": "{{count}} 이동",
       "boardAria": "Tic-Tac-Toe 보드",
-      "cellAria": "셀 {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "당신의 승리입니다!",
@@ -5247,6 +5248,8 @@
       "unknownReason": "알 수 없는 이유",
       "resendFailed": "재전송에 실패했습니다.",
       "deleteFailed": "세션을 삭제하지 못했습니다."
-    }
+    },
+    "deleteConfirmTitle": "세션 삭제",
+    "deleteConfirmMessage": "목록에서 이 게임 세션을 제거하시겠습니까? 이 작업은 취소할 수 없습니다."
   }
 }

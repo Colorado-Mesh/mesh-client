@@ -54,6 +54,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   const [challengeHash, setChallengeHash] = useState('');
   const [challengeApp, setChallengeApp] = useState<GamesAppId>('ttt');
   const [confirmResign, setConfirmResign] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!isActive) return;
@@ -149,7 +150,9 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                       selectedSessionId === session.session_id ? 'bg-amber-950/60' : ''
                     }`}
                     aria-label={t('gamesPanel.sessionRowAria', {
-                      app: t(`gamesPanel.apps.${session.app_id}`),
+                      app: t(`gamesPanel.apps.${session.app_id}`, {
+                        defaultValue: session.app_id,
+                      }),
                       peer: sessionPeerLabel(session),
                     })}
                     onClick={() => {
@@ -158,12 +161,16 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   >
                     <span className="min-w-0 flex-1 truncate">
                       <span className="font-medium text-amber-100">
-                        {t(`gamesPanel.apps.${session.app_id}`)}
+                        {t(`gamesPanel.apps.${session.app_id}`, {
+                          defaultValue: session.app_id,
+                        })}
                       </span>
                       <span className="ml-1 text-amber-200/50">{sessionPeerLabel(session)}</span>
                     </span>
                     <span className="text-amber-200/50">
-                      {t(`gamesPanel.status.${session.status}`)}
+                      {t(`gamesPanel.status.${session.status}`, {
+                        defaultValue: session.status,
+                      })}
                     </span>
                     {session.unread > 0 && (
                       <span
@@ -342,7 +349,9 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                 className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200/70 disabled:opacity-50"
                 aria-label={t('gamesPanel.deleteSessionAria')}
                 disabled={actionBusy}
-                onClick={() => void deleteGamesSession(selectedSession.session_id)}
+                onClick={() => {
+                  setConfirmDelete(true);
+                }}
               >
                 {t('gamesPanel.deleteSession')}
               </button>
@@ -362,6 +371,21 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
           onConfirm={() => {
             setConfirmResign(false);
             handleCommand(GAMES_CMD.RESIGN);
+          }}
+        />
+      )}
+      {confirmDelete && selectedSession && (
+        <ConfirmModal
+          title={t('gamesPanel.deleteConfirmTitle')}
+          message={t('gamesPanel.deleteConfirmMessage')}
+          confirmLabel={t('gamesPanel.deleteSession')}
+          danger
+          onCancel={() => {
+            setConfirmDelete(false);
+          }}
+          onConfirm={() => {
+            setConfirmDelete(false);
+            void deleteGamesSession(selectedSession.session_id);
           }}
         />
       )}

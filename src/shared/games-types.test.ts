@@ -8,6 +8,7 @@ describe('games-types', () => {
     expect(isGamesApiPath('/api/v1/games/status')).toBe(true);
     expect(isGamesApiPath('/api/v1/games/sessions/abc/read')).toBe(true);
     expect(isGamesApiPath('/api/v1/games')).toBe(true);
+    expect(isGamesApiPath('/api/v1/games/sessions?peer=abc')).toBe(true);
     expect(isGamesApiPath('/api/v1/voice/status')).toBe(false);
     expect(isGamesApiPath('/api/v1/gameshow')).toBe(false);
   });

@@ -3125,8 +3125,10 @@ impl LiveBridge {
         }))
     }
 
-    /// Resend the last dispatched envelope for a session verbatim (same nonce),
-    /// e.g. after a transient send failure. Does not re-dispatch game logic.
+    /// Resend the last *successfully sent* envelope for a session verbatim
+    /// (same nonce). Envelopes are only cached after a successful LXMF send
+    /// (`commit_action`); failed sends are rolled back and leave no resend
+    /// cache entry. Does not re-dispatch game logic.
     pub async fn resend_last_game_action(
         &self,
         session_id: &str,

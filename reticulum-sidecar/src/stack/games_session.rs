@@ -24,6 +24,9 @@ use lrgp::transport;
 use serde_json::Value as JsonValue;
 use tokio::sync::broadcast;
 
+/// Cap on `last_envelope` so abandoned sessions cannot retain resend bytes forever.
+const MAX_LAST_ENVELOPES: usize = 256;
+
 /// A dispatched-but-not-yet-sent outgoing LRGP action. Callers (LiveBridge)
 /// must call [`GamesSessionManager::commit_action`] after a successful LXMF
 /// send, or [`GamesSessionManager::rollback_action`] on failure.
@@ -238,7 +241,9 @@ impl GamesSessionManager {
             }
         };
 
-        self.persist_session_from_state(&app_id, &session_id);
+        // Defer SQLite persist so deliver_unpacked_lxmf can release router.lock()
+        // before blocking I/O. Dispatch + WS emit stay synchronous.
+        self.schedule_persist_session(&app_id, &session_id);
 
         let mut payload = serde_json::json!({
             "app_id": app_id,
@@ -438,6 +443,17 @@ impl GamesSessionManager {
         self.persist_session_from_state(&action.app_id, &action.session_id);
         if let Ok(mut cache) = self.last_envelope.lock() {
             cache.insert(action.session_id.clone(), action.envelope_bytes.clone());
+            // Cap resend cache so deleted/abandoned sessions cannot retain
+            // envelopes for the process lifetime.
+            while cache.len() > MAX_LAST_ENVELOPES {
+                let victim = cache.keys().find(|k| *k != &action.session_id).cloned();
+                match victim {
+                    Some(k) => {
+                        cache.remove(&k);
+                    }
+                    None => break,
+                }
+            }
         }
         self.emit_action_result(&action.app_id, &action.session_id, true, None);
         self.emit_update(&action.app_id, &action.session_id, "outbound");
@@ -488,29 +504,64 @@ impl GamesSessionManager {
         let _ = self.event_tx.send(frame.to_string());
     }
 
+    /// Schedule SQLite persist off the LXMF delivery callback so it does not
+    /// run while `deliver_unpacked_lxmf` holds `router.lock()`.
+    fn schedule_persist_session(&self, app_id: &str, session_id: &str) {
+        if session_id.is_empty() || self.store.is_none() {
+            return;
+        }
+        let store = match &self.store {
+            Some(s) => Arc::clone(s),
+            None => return,
+        };
+        let router = Arc::clone(&self.router);
+        let identity_id = self.identity_id.clone();
+        let app_id = app_id.to_string();
+        let session_id = session_id.to_string();
+        let persist = move || {
+            persist_session_from_parts(&router, &store, &identity_id, &app_id, &session_id);
+        };
+        match tokio::runtime::Handle::try_current() {
+            Ok(handle) => {
+                handle.spawn_blocking(persist);
+            }
+            Err(_) => {
+                // Unit tests may call handle_inbound_lxmf outside a Tokio runtime.
+                persist();
+            }
+        }
+    }
+
     fn persist_session_from_state(&self, app_id: &str, session_id: &str) {
         let Some(store) = &self.store else {
             return;
         };
-        if session_id.is_empty() {
-            return;
-        }
-        let Some(state) = self.router.with_app(app_id, |app| {
-            app.get_session_state(session_id, &self.identity_id)
-        }) else {
-            return;
-        };
-        if state.is_empty() {
-            return;
-        }
-        if let Err(e) =
-            save_session_from_state(store, session_id, &self.identity_id, app_id, &state)
-        {
-            tracing::warn!(
-                target: "games",
-                "failed to persist lrgp session {session_id} ({app_id}): {e}"
-            );
-        }
+        persist_session_from_parts(&self.router, store, &self.identity_id, app_id, session_id);
+    }
+}
+
+fn persist_session_from_parts(
+    router: &LrgpRouter,
+    store: &LrgpStore,
+    identity_id: &str,
+    app_id: &str,
+    session_id: &str,
+) {
+    if session_id.is_empty() {
+        return;
+    }
+    let Some(state) = router.with_app(app_id, |app| app.get_session_state(session_id, identity_id))
+    else {
+        return;
+    };
+    if state.is_empty() {
+        return;
+    }
+    if let Err(e) = save_session_from_state(store, session_id, identity_id, app_id, &state) {
+        tracing::warn!(
+            target: "games",
+            "failed to persist lrgp session {session_id} ({app_id}): {e}"
+        );
     }
 }
 

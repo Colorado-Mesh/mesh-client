@@ -138,7 +138,9 @@ export interface GamesActionResultEventPayload {
 export const GAMES_API_PREFIX = '/api/v1/games/';
 
 export function isGamesApiPath(apiPath: string): boolean {
-  return apiPath === '/api/v1/games' || apiPath.startsWith(GAMES_API_PREFIX);
+  const q = apiPath.indexOf('?');
+  const pathOnly = q >= 0 ? apiPath.slice(0, q) : apiPath;
+  return pathOnly === '/api/v1/games' || pathOnly.startsWith(GAMES_API_PREFIX);
 }
 
 export function parseGamesActionRequest(opts: unknown): GamesActionRequest | { error: string } {

@@ -5213,7 +5213,8 @@
       "yourMarker": "Vous êtes {{marker}}",
       "moveCount": "{{count}} se déplace",
       "boardAria": "Carte Tic-Tac-Toe",
-      "cellAria": "Cellulaire {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Vous avez gagné !",
@@ -5247,6 +5248,8 @@
       "unknownReason": "raison inconnue",
       "resendFailed": "Échec du renvoi.",
       "deleteFailed": "Échec de la suppression de la session."
-    }
+    },
+    "deleteConfirmTitle": "Supprimer la période ?",
+    "deleteConfirmMessage": "Supprimer cette session de jeu de votre liste ? Cela ne peut pas être annulé."
   }
 }

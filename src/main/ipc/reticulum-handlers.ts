@@ -69,9 +69,9 @@ function isVoiceAudioApiPath(apiPath: string): boolean {
   return apiPath === VOICE_AUDIO_API_PATH;
 }
 
-function assertGamesSessionId(sessionId: unknown): string {
+function assertGamesSessionId(sessionId: unknown): string | { error: string } {
   if (typeof sessionId !== 'string' || sessionId.length === 0 || sessionId.length > 128) {
-    throw new Error('invalid_session_id');
+    return { error: 'invalid_session_id' };
   }
   return sessionId;
 }
@@ -358,8 +358,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:gamesSessionDetail', async (event, sessionId: unknown) => {
     assertIpcSender(event, 'reticulum:gamesSessionDetail');
     reticulumGamesIpcRateLimit.checkOrThrow();
-    const id = assertGamesSessionId(sessionId);
-    const path = `/api/v1/games/sessions/${encodeURIComponent(id)}`;
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}`;
     try {
       return await ensureManager().proxyGet(path);
     } catch (err) {
@@ -386,8 +389,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:gamesResend', async (event, sessionId: unknown) => {
     assertIpcSender(event, 'reticulum:gamesResend');
     reticulumGamesIpcRateLimit.checkOrThrow();
-    const id = assertGamesSessionId(sessionId);
-    const path = `/api/v1/games/sessions/${encodeURIComponent(id)}/resend`;
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}/resend`;
     try {
       return await ensureManager().proxyPost(path, {});
     } catch (err) {
@@ -399,8 +405,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:gamesMarkRead', async (event, sessionId: unknown) => {
     assertIpcSender(event, 'reticulum:gamesMarkRead');
     reticulumGamesIpcRateLimit.checkOrThrow();
-    const id = assertGamesSessionId(sessionId);
-    const path = `/api/v1/games/sessions/${encodeURIComponent(id)}/read`;
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}/read`;
     try {
       return await ensureManager().proxyPost(path, {});
     } catch (err) {
@@ -412,8 +421,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:gamesDeleteSession', async (event, sessionId: unknown) => {
     assertIpcSender(event, 'reticulum:gamesDeleteSession');
     reticulumGamesIpcRateLimit.checkOrThrow();
-    const id = assertGamesSessionId(sessionId);
-    const path = `/api/v1/games/sessions/${encodeURIComponent(id)}`;
+    const idOrErr = assertGamesSessionId(sessionId);
+    if (typeof idOrErr !== 'string') {
+      return { ok: false, error: idOrErr.error };
+    }
+    const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}`;
     try {
       return await ensureManager().proxyDelete(path);
     } catch (err) {

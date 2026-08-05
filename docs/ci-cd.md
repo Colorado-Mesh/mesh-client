@@ -76,7 +76,7 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
-CI clones Ratspeak siblings via `scripts/clone-ratspeak-stack.sh` and **no longer hardcodes `RS_RETICULUM_REF`** — rsReticulum / rsLXMF / rsNomad float to `origin/main` (overlays must apply). Override with `RS_*_REF` only for local bisect.
+CI clones Ratspeak siblings via `scripts/clone-ratspeak-stack.sh` and **no longer hardcodes `RS_RETICULUM_REF`** — rsReticulum / rsLXMF / rsNomad / rsLXST / lrgp-rs float to `origin/main` (overlays must apply). Override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` only for local bisect.
 
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 

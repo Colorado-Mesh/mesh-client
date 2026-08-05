@@ -5215,7 +5215,8 @@
       "yourMarker": "Вас звати {{marker}}",
       "moveCount": "{{count}} ходів",
       "boardAria": "Дошка Tic-Tac-Toe",
-      "cellAria": "Комірка {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Ви виграли!",
@@ -5249,6 +5250,8 @@
       "unknownReason": "Невідома причина",
       "resendFailed": "Помилка повторного надсилання.",
       "deleteFailed": "Не вдалося видалити сеанс."
-    }
+    },
+    "deleteConfirmTitle": "Вилучити сеанс...",
+    "deleteConfirmMessage": "Видалити цю ігрову сесію зі списку? Цю дію неможливо скасувати."
   }
 }

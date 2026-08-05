@@ -26,9 +26,42 @@ describe('reticulumGamesStore', () => {
   });
 
   it('setSessions replaces the list and filters invalid rows', () => {
-    useReticulumGamesStore.getState().setSessions([makeSession(), { not: 'a session' }, null]);
+    useReticulumGamesStore
+      .getState()
+      .setSessions([
+        makeSession(),
+        { not: 'a session' },
+        null,
+        { session_id: 'bad-missing-fields' },
+        makeSession({ session_id: 's2', unread: Number.NaN }),
+        makeSession({ session_id: 's3', created_at: Number.POSITIVE_INFINITY }),
+      ]);
     expect(useReticulumGamesStore.getState().sessions).toHaveLength(1);
     expect(useReticulumGamesStore.getState().sessions[0].session_id).toBe('s1');
+  });
+
+  it('setApps rejects incomplete manifests', () => {
+    useReticulumGamesStore
+      .getState()
+      .setApps([
+        { app_id: 'ttt', version: 1, display_name: 'Tic-Tac-Toe' },
+        { app_id: 'chess' },
+        { version: 1, display_name: 'Nope' },
+        null,
+      ]);
+    expect(useReticulumGamesStore.getState().apps).toHaveLength(1);
+    expect(useReticulumGamesStore.getState().apps[0].app_id).toBe('ttt');
+  });
+
+  it('applyGamesUpdate ignores malformed payloads and incomplete sessions', () => {
+    useReticulumGamesStore.getState().setSessions([makeSession()]);
+    useReticulumGamesStore.getState().applyGamesUpdate({ session_id: 's1' });
+    useReticulumGamesStore.getState().applyGamesUpdate({
+      app_id: 'ttt',
+      session_id: 's1',
+      session: { session_id: 's1' },
+    });
+    expect(useReticulumGamesStore.getState().sessions[0].status).toBe('pending');
   });
 
   it('upsertSession inserts new and updates existing sessions', () => {

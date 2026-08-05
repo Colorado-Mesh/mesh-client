@@ -149,4 +149,62 @@ describe('ChessBoard', () => {
 
     expect(screen.getByText('Your turn — you are in check')).toBeInTheDocument();
   });
+
+  it('maps clicks to e7e5 on a flipped black board', async () => {
+    const onMove = vi.fn();
+    render(
+      <ChessBoard
+        session={makeSession({
+          metadata: {
+            fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+            moves: [],
+            my_color: 'b',
+            first_turn: 'opponent',
+            turn: 'me',
+            move_count: 1,
+            winner: '',
+            terminal: '',
+            draw_offered: false,
+            in_check: false,
+            legal_moves: [],
+          },
+        })}
+        onMove={onMove}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /^e7,/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^e5,/ }));
+
+    expect(onMove).toHaveBeenCalledWith('e7e5');
+  });
+
+  it('appends q for pawn promotion moves', async () => {
+    const onMove = vi.fn();
+    render(
+      <ChessBoard
+        session={makeSession({
+          metadata: {
+            fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1',
+            moves: [],
+            my_color: 'w',
+            first_turn: 'me',
+            turn: 'me',
+            move_count: 20,
+            winner: '',
+            terminal: '',
+            draw_offered: false,
+            in_check: false,
+            legal_moves: [],
+          },
+        })}
+        onMove={onMove}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /^e7,/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^e8,/ }));
+
+    expect(onMove).toHaveBeenCalledWith('e7e8q');
+  });
 });

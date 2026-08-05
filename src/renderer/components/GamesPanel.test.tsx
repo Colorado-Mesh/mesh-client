@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -65,6 +65,10 @@ describe('GamesPanel', () => {
     vi.mocked(window.electronAPI.reticulum.games.sendAction).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.games.markRead).mockClear();
     vi.mocked(window.electronAPI.reticulum.games.markRead).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.games.resend).mockClear();
+    vi.mocked(window.electronAPI.reticulum.games.resend).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.games.deleteSession).mockClear();
+    vi.mocked(window.electronAPI.reticulum.games.deleteSession).mockResolvedValue({ ok: true });
   });
 
   it('renders the empty state with no axe violations', async () => {
@@ -99,7 +103,7 @@ describe('GamesPanel', () => {
   it('sends a move via the tic-tac-toe board when clicking a cell', async () => {
     await renderAndSelectSession(makeSession());
 
-    await userEvent.click(screen.getByRole('button', { name: 'Cell 1' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cell 1, empty' }));
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
@@ -138,6 +142,84 @@ describe('GamesPanel', () => {
       expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
         expect.objectContaining({ command: 'resign', session_id: 's1' }),
       );
+    });
+  });
+
+  it('sends draw accept and decline when draw_offered metadata is set', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          first_turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: true,
+        },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Accept draw offer' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({ command: 'draw_accept', session_id: 's1' }),
+      );
+    });
+
+    vi.mocked(window.electronAPI.reticulum.games.sendAction).mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'Decline draw offer' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({ command: 'draw_decline', session_id: 's1' }),
+      );
+    });
+  });
+
+  it('shows resend after a failed action and triggers resend', async () => {
+    vi.mocked(window.electronAPI.reticulum.games.sendAction).mockResolvedValue({
+      ok: false,
+      session_id: 's1',
+      error: 'send_failed',
+    });
+    vi.mocked(window.electronAPI.reticulum.games.resend).mockResolvedValue({ ok: true });
+
+    await renderAndSelectSession(makeSession());
+    await userEvent.click(screen.getByRole('button', { name: 'Cell 1, empty' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalled();
+    });
+
+    // Simulate WS action_result for the failed send so the resend control appears.
+    act(() => {
+      useReticulumGamesStore.getState().applyActionResult({
+        app_id: 'ttt',
+        session_id: 's1',
+        ok: false,
+        error: 'send_failed',
+      });
+    });
+
+    const resend = await screen.findByRole('button', { name: 'Resend last action' });
+    await userEvent.click(resend);
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.resend).toHaveBeenCalledWith('s1');
+    });
+  });
+
+  it('deletes a session only after confirmation', async () => {
+    vi.mocked(window.electronAPI.reticulum.games.deleteSession).mockResolvedValue({ ok: true });
+    await renderAndSelectSession(makeSession());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete session' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete session?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete session' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.deleteSession).toHaveBeenCalledWith('s1');
     });
   });
 });

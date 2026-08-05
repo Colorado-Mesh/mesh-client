@@ -5213,7 +5213,8 @@
       "yourMarker": "Anda {{marker}}",
       "moveCount": "{{count}} bergerak",
       "boardAria": "Papan Tic - Tac - Toe",
-      "cellAria": "Sel {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Kamu menang!",
@@ -5247,6 +5248,8 @@
       "unknownReason": "Alasan tidak dikenal",
       "resendFailed": "Pengiriman ulang gagal.",
       "deleteFailed": "Gagal menghapus sesi."
-    }
+    },
+    "deleteConfirmTitle": "Hapus sesi?",
+    "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan."
   }
 }

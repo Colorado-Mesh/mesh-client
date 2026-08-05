@@ -5213,7 +5213,8 @@
       "yourMarker": "Você é {{marker}}",
       "moveCount": "{{count}} movimentos",
       "boardAria": "Placa Tic-Tac-Toe",
-      "cellAria": "Célula {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Ganhaste!",
@@ -5247,6 +5248,8 @@
       "unknownReason": "razão desconhecida.",
       "resendFailed": "O reenvio falhou",
       "deleteFailed": "Falha ao excluir sessão."
-    }
+    },
+    "deleteConfirmTitle": "Excluir sessão?",
+    "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito."
   }
 }

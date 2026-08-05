@@ -45,7 +45,22 @@ describe('clearReticulumSessionStores', () => {
   });
 
   it('clears the games store', () => {
+    useReticulumGamesStore.getState().upsertSession({
+      session_id: 's1',
+      identity_id: 'me',
+      app_id: 'ttt',
+      app_version: 1,
+      contact_hash: 'a'.repeat(32),
+      initiator: 'me',
+      status: 'pending',
+      metadata: {},
+      unread: 1,
+      created_at: 1,
+      updated_at: 1,
+      last_action_at: 1,
+    });
     useReticulumGamesStore.getState().selectSession('s1');
+    expect(useReticulumGamesStore.getState().sessions).toHaveLength(1);
     clearReticulumSessionStores();
     expect(useReticulumGamesStore.getState().selectedSessionId).toBeNull();
     expect(useReticulumGamesStore.getState().sessions).toHaveLength(0);

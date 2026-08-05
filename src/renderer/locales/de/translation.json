@@ -5213,7 +5213,8 @@
       "yourMarker": "Du bist {{marker}}",
       "moveCount": "{{count}} Züge",
       "boardAria": "Tic-Tac-Toe-Brett",
-      "cellAria": "Zelle {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Sie haben gewonnen!",
@@ -5247,6 +5248,8 @@
       "unknownReason": "Unbekannter Grund",
       "resendFailed": "Erneutes Senden fehlgeschlagen.",
       "deleteFailed": "Die Recycling-Sitzung konnte nicht gelöscht werden."
-    }
+    },
+    "deleteConfirmTitle": "Löschen sitzung?",
+    "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden."
   }
 }

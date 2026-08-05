@@ -1913,6 +1913,8 @@
     "deleteSession": "Delete session",
     "resignConfirmTitle": "Resign game?",
     "resignConfirmMessage": "Are you sure you want to resign this game? This cannot be undone.",
+    "deleteConfirmTitle": "Delete session?",
+    "deleteConfirmMessage": "Remove this game session from your list? This cannot be undone.",
     "drawOfferedBanner": "Your opponent offered a draw.",
     "challenge": "Challenge",
     "challengeAria": "Challenge to a game",
@@ -1927,7 +1929,8 @@
       "yourMarker": "You are {{marker}}",
       "moveCount": "{{count}} moves",
       "boardAria": "Tic-Tac-Toe board",
-      "cellAria": "Cell {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "You won!",

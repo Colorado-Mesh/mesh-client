@@ -5215,7 +5215,8 @@
       "yourMarker": "Jsi {{marker}}",
       "moveCount": "{{count}} se pohybuje",
       "boardAria": "Tic-Tac-Toe deska",
-      "cellAria": "Buňka {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Vyhráli jste!",
@@ -5249,6 +5250,8 @@
       "unknownReason": "Neznámý důvod",
       "resendFailed": "Opětovné odeslání se nezdařilo.",
       "deleteFailed": "Odstranění relace se nezdařilo."
-    }
+    },
+    "deleteConfirmTitle": "Smazat relaci?",
+    "deleteConfirmMessage": "Odebrat tuto herní relaci ze seznamu? Tuto akci nelze vrátit zpět."
   }
 }

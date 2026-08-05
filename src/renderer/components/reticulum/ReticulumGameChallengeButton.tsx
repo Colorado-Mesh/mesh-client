@@ -37,15 +37,20 @@ export function ReticulumGameChallengeButton({
   }, [menuOpen]);
 
   async function handleChallenge(appId: GamesAppId) {
+    if (disabled) return;
     setMenuOpen(false);
     const ok = await sendGamesChallenge(lxmfPeerHash, appId);
     if (ok) {
       pushAppToast(
-        t('gamesPanel.challengeSent', { app: t(`gamesPanel.apps.${appId}`) }),
+        t('gamesPanel.challengeSent', {
+          app: t(`gamesPanel.apps.${appId}`, { defaultValue: appId }),
+        }),
         'success',
       );
     }
   }
+
+  const showMenu = menuOpen && !disabled;
 
   return (
     <div className="relative inline-block" ref={containerRef}>
@@ -57,26 +62,30 @@ export function ReticulumGameChallengeButton({
         title={t('gamesPanel.challengeAria')}
         onClick={(e) => {
           e.stopPropagation();
+          if (disabled) return;
           setMenuOpen((v) => !v);
         }}
       >
         <Gamepad2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span>{t('gamesPanel.challenge')}</span>
       </button>
-      {menuOpen && (
+      {showMenu && (
         <div className="absolute top-full right-0 z-10 mt-1 w-36 rounded border border-amber-800/60 bg-slate-900 shadow-lg">
           {CHALLENGE_APPS.map((appId) => (
             <button
               key={appId}
               type="button"
-              className="block w-full px-3 py-1.5 text-left text-xs text-amber-100 hover:bg-amber-900/60"
-              aria-label={t('gamesPanel.challengeAppAria', { app: t(`gamesPanel.apps.${appId}`) })}
+              className="block w-full px-3 py-1.5 text-left text-xs text-amber-100 hover:bg-amber-900/60 disabled:opacity-50"
+              disabled={disabled}
+              aria-label={t('gamesPanel.challengeAppAria', {
+                app: t(`gamesPanel.apps.${appId}`, { defaultValue: appId }),
+              })}
               onClick={(e) => {
                 e.stopPropagation();
                 void handleChallenge(appId);
               }}
             >
-              {t(`gamesPanel.apps.${appId}`)}
+              {t(`gamesPanel.apps.${appId}`, { defaultValue: appId })}
             </button>
           ))}
         </div>

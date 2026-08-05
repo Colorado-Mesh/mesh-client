@@ -38,7 +38,9 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
   } else if (terminal === 'draw') {
     statusText = t('gamesPanel.ttt.draw');
   } else if (!isActive) {
-    statusText = t(`gamesPanel.status.${session.status}`);
+    statusText = t(`gamesPanel.status.${session.status}`, {
+      defaultValue: session.status,
+    });
   } else if (isMyTurn) {
     statusText = t('gamesPanel.ttt.yourTurn');
   } else {
@@ -67,7 +69,11 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
               key={index}
               type="button"
               className="flex h-14 w-14 items-center justify-center rounded border border-amber-800/50 bg-amber-950/40 text-2xl font-bold text-amber-100 enabled:hover:bg-amber-900/60 disabled:cursor-default disabled:opacity-70"
-              aria-label={t('gamesPanel.ttt.cellAria', { index: index + 1 })}
+              aria-label={
+                isEmpty
+                  ? t('gamesPanel.ttt.cellEmptyAria', { index: index + 1 })
+                  : t('gamesPanel.ttt.cellOccupiedAria', { index: index + 1, marker: cell })
+              }
               disabled={cellDisabled}
               onClick={() => {
                 onMove(index);

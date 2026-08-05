@@ -5215,7 +5215,8 @@
       "yourMarker": "Вы {{marker}}",
       "moveCount": "{{count}} ходов",
       "boardAria": "Доска крестики-нолики",
-      "cellAria": "Ячейка {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Вы победили!",
@@ -5249,6 +5250,8 @@
       "unknownReason": "неизвесная причина",
       "resendFailed": "Повторная отправка не удалась.",
       "deleteFailed": "Не удалось удалить сеанс."
-    }
+    },
+    "deleteConfirmTitle": "Удалить сессию",
+    "deleteConfirmMessage": "Удалить эту игровую сессию из списка? Это действие нельзя отменить."
   }
 }

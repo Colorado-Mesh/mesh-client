@@ -89,7 +89,9 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   } else if (terminal === 'draw') {
     statusText = t('gamesPanel.chess.draw');
   } else if (!isActive) {
-    statusText = t(`gamesPanel.status.${session.status}`);
+    statusText = t(`gamesPanel.status.${session.status}`, {
+      defaultValue: session.status,
+    });
   } else if (isMyTurn) {
     statusText = inCheck ? t('gamesPanel.chess.yourTurnInCheck') : t('gamesPanel.chess.yourTurn');
   } else {
@@ -147,7 +149,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
                 aria-label={t('gamesPanel.chess.squareAria', {
                   square,
                   piece: piece
-                    ? t(`gamesPanel.chess.pieceNames.${piece}`)
+                    ? t(`gamesPanel.chess.pieceNames.${piece}`, { defaultValue: piece })
                     : t('gamesPanel.chess.emptySquare'),
                 })}
                 disabled={disabled || !isMyTurn}

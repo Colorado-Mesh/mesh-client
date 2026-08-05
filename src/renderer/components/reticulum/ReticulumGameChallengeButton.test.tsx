@@ -41,4 +41,15 @@ describe('ReticulumGameChallengeButton', () => {
     render(<ReticulumGameChallengeButton lxmfPeerHash={peerHash} disabled />);
     expect(screen.getByRole('button', { name: 'Challenge to a game' })).toBeDisabled();
   });
+
+  it('does not dispatch a challenge after becoming disabled with the menu open', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ReticulumGameChallengeButton lxmfPeerHash={peerHash} />);
+    await user.click(screen.getByRole('button', { name: 'Challenge to a game' }));
+    expect(screen.getByRole('button', { name: 'Challenge to Chess' })).toBeInTheDocument();
+
+    rerender(<ReticulumGameChallengeButton lxmfPeerHash={peerHash} disabled />);
+    expect(screen.queryByRole('button', { name: 'Challenge to Chess' })).not.toBeInTheDocument();
+    expect(window.electronAPI.reticulum.games.sendAction).not.toHaveBeenCalled();
+  });
 });

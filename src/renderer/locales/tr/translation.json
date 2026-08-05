@@ -5213,7 +5213,8 @@
       "yourMarker": "Siz {{marker}}",
       "moveCount": "{{count}} hamle",
       "boardAria": "Tic - Tac - Toe tahtası",
-      "cellAria": "Cell {{index}}"
+      "cellEmptyAria": "Cell {{index}}, empty",
+      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
     "chess": {
       "youWon": "Sen kazandın!",
@@ -5247,6 +5248,8 @@
       "unknownReason": "bilinmeyen neden",
       "resendFailed": "Yeniden Gönderilemedi",
       "deleteFailed": "Oturum silinemedi."
-    }
+    },
+    "deleteConfirmTitle": "Oturumları Yapılandır...",
+    "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz."
   }
 }
