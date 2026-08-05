@@ -395,6 +395,8 @@ export interface ElectronAPI {
       to_hash?: string | null;
       reply_to_hash?: string | null;
       message_hash?: string | null;
+      /** Exact prior row to replace (optimistic pending or failed hash) in the same transaction. */
+      replaces_message_hash?: string | null;
       received_via?: string | null;
       delivery_status?: string | null;
       delivery_method?: string | null;

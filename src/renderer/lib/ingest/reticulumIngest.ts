@@ -204,6 +204,7 @@ export async function persistReticulumMessageToDb(
   identityId: IdentityId,
   p: ReticulumLxmfPayload,
   attachmentPath?: string | null,
+  replacesMessageHash?: string | null,
 ): Promise<void> {
   if (!p.text || !p.sender_hash) return;
   const timestamp = p.timestamp ?? Date.now();
@@ -217,6 +218,7 @@ export async function persistReticulumMessageToDb(
       to_hash: p.to_hash ?? null,
       reply_to_hash: p.reply_to_hash ?? p.reaction_target ?? null,
       message_hash: p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text),
+      ...(replacesMessageHash ? { replaces_message_hash: replacesMessageHash } : {}),
       received_via: resolvePayloadTransport(p) ?? null,
       delivery_status: resolvePersistedDeliveryStatus(p),
       delivery_method: parseReticulumDeliveryMethod(p.delivery_method) ?? null,
@@ -339,7 +341,7 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   void persistReticulumIconFromPayload(p);
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
-  void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);
+  void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath, ctx.replacesMessageHash);
   // History stamp only — Contacts require explicit Save as contact.
   void persistReticulumHistoryFromPayload(p, identityId);
   return true;
@@ -377,6 +379,7 @@ export function persistReticulumOutboundRecord(
   senderName: string,
   toHash: string | null,
   status: MessageStatus,
+  replacesMessageHash?: string | null,
 ): void {
   const deliveryStatus = mapMessageStatusToDeliveryStatus(status);
   void window.electronAPI.db
@@ -389,6 +392,7 @@ export function persistReticulumOutboundRecord(
       to_hash: toHash,
       reply_to_hash: record.reticulumReplyToHash ?? null,
       message_hash: record.reticulumMessageHash ?? record.id,
+      ...(replacesMessageHash ? { replaces_message_hash: replacesMessageHash } : {}),
       received_via: record.receivedVia ?? null,
       delivery_status: deliveryStatus,
       ...(record.reticulumDeliveryMethod

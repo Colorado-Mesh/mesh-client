@@ -1,7 +1,7 @@
 /**
  * Compile-time CI build stamp for packaged binaries.
  *
- * Set at main-process esbuild time via `--define:__MESH_CLIENT_BUILD_INFO__=...`
+ * Set at main-process esbuild time via define `__MESH_CLIENT_BUILD_INFO__`
  * from env `MESH_CLIENT_BUILD_INFO` (see scripts/esbuild-main-build.mjs and
  * scripts/ci-write-build-info-env.mjs). Empty / unset → local unmarked build.
  */
