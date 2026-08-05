@@ -119,6 +119,9 @@ const MeshcoreConnectionBase =
 // ─── TCP ──────────────────────────────────────────────────────────────────────
 
 class IpcTcpConnection {
+  /** Serialises concurrent MeshCore TCP connects so reconnect cannot supersede mid-handshake. */
+  private static meshcoreTcpConnectChain = Promise.resolve();
+
   private readonly host: string;
   private readonly port: number;
   private inner: SerialConnectionInstance | null = null;
@@ -135,41 +138,64 @@ class IpcTcpConnection {
   }
 
   async connect(): Promise<void> {
-    const releaseListeners = (): void => {
-      this.releaseIpcListeners();
-    };
-    class TcpOverIpc extends (SerialConnection as unknown as new () => SerialConnectionInstance) {
-      async write(bytes: Uint8Array) {
-        try {
-          await window.electronAPI.meshcore.tcp.write(Array.from(bytes));
-        } catch (e) {
-          console.error('[IpcTcpConnection] write error', e);
-          throw e;
-        }
-      }
-      async close() {
-        releaseListeners();
-        await window.electronAPI.meshcore.tcp.disconnect();
-      }
-    }
-
-    try {
-      const instance = new TcpOverIpc();
-      this.inner = instance;
-      const offData = window.electronAPI.meshcore.tcp.onData((bytes) => {
-        void instance.onDataReceived(bytes);
-      });
-      const offDisc = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+    const runConnect = async (): Promise<void> => {
+      const releaseListeners = (): void => {
+        this.releaseIpcListeners();
+      };
+      let notifiedDisconnect = false;
+      const notifyDisconnectedOnce = (instance: SerialConnectionInstance): void => {
+        if (notifiedDisconnect) return;
+        notifiedDisconnect = true;
         releaseListeners();
         instance.onDisconnected();
-      });
-      this.cleanupFns = [offData, offDisc];
-      await window.electronAPI.meshcore.tcp.connect(this.host, this.port);
-      await instance.onConnected();
-    } catch (e) {
-      console.error('[IpcTcpConnection] connect/onConnected error', e);
-      this.releaseIpcListeners();
-      throw e;
+      };
+      class TcpOverIpc extends (SerialConnection as unknown as new () => SerialConnectionInstance) {
+        async write(bytes: Uint8Array) {
+          try {
+            await window.electronAPI.meshcore.tcp.write(Array.from(bytes));
+          } catch (e) {
+            console.error('[IpcTcpConnection] write error', e);
+            // Fail closed so meshcore.js stops issuing RPCs after the bridge is gone
+            // (n7eal: peer FIN → no active socket write storm).
+            notifyDisconnectedOnce(this);
+            throw e;
+          }
+        }
+        async close() {
+          releaseListeners();
+          await window.electronAPI.meshcore.tcp.disconnect();
+        }
+      }
+
+      try {
+        const instance = new TcpOverIpc();
+        this.inner = instance;
+        const offData = window.electronAPI.meshcore.tcp.onData((bytes) => {
+          void instance.onDataReceived(bytes);
+        });
+        const offDisc = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+          notifyDisconnectedOnce(instance);
+        });
+        this.cleanupFns = [offData, offDisc];
+        await window.electronAPI.meshcore.tcp.connect(this.host, this.port);
+        await instance.onConnected();
+      } catch (e) {
+        console.error('[IpcTcpConnection] connect/onConnected error', e);
+        this.releaseIpcListeners();
+        throw e;
+      }
+    };
+
+    const prev = IpcTcpConnection.meshcoreTcpConnectChain;
+    let releaseChain!: () => void;
+    IpcTcpConnection.meshcoreTcpConnectChain = new Promise<void>((resolve) => {
+      releaseChain = resolve;
+    });
+    await prev;
+    try {
+      await runConnect();
+    } finally {
+      releaseChain();
     }
   }
 

@@ -270,8 +270,9 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
     // is the only automatic recovery path for a dropped TCP connection.
     expect(RUNTIME_SOURCE).toMatch(
-      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?rfType !== 'tcp'[\s\S]{0,200}handleMeshcoreConnectionLostRef\.current\(\)/,
+      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?connectingTcp[\s\S]{0,200}handleMeshcoreConnectionLostRef\.current\(\)/,
     );
+    expect(RUNTIME_SOURCE).toContain("meshcoreConnectTypeRef.current === 'tcp'");
   });
 });
 
@@ -395,6 +396,32 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
       /if \(!linkLost\.shouldStartOwner\) \{[\s\S]*?return;[\s\S]*?scheduleMeshcoreReconnectAttemptRef/,
     );
     expect(RUNTIME_SOURCE).toContain('createRfReconnectController');
+  });
+
+  it('bumps setup generation synchronously in handleMeshcoreConnectionLost (Neal TCP mid-initConn)', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    const bumpIdx = lostBody.indexOf('meshcoreSetupGenerationRef.current += 1');
+    const asyncIdx = lostBody.indexOf('void (async () =>');
+    expect(bumpIdx).toBeGreaterThan(-1);
+    expect(asyncIdx).toBeGreaterThan(-1);
+    expect(bumpIdx).toBeLessThan(asyncIdx);
+    expect(lostBody.slice(asyncIdx)).not.toContain('meshcoreSetupGenerationRef.current += 1');
+  });
+
+  it('hard-aborts TCP initConn on dead socket before configured / post-connect', () => {
+    expect(RUNTIME_SOURCE).toContain('assertInitConnStillLive');
+    expect(RUNTIME_SOURCE).toContain('rethrowMeshcoreSetupAbortFromTcpDead');
+    expect(RUNTIME_SOURCE).toContain('isMeshcoreTcpTransportDeadError');
+    const deferConfiguredIdx = RUNTIME_SOURCE.indexOf(
+      "if (deferConfiguredUntilRadioInit) {\n        setState((prev) => ({\n          ...prev,\n          status: 'configured'",
+    );
+    expect(deferConfiguredIdx).toBeGreaterThan(-1);
+    const assertBeforeConfigured = RUNTIME_SOURCE.lastIndexOf(
+      'assertInitConnStillLive()',
+      deferConfiguredIdx,
+    );
+    expect(assertBeforeConfigured).toBeGreaterThan(-1);
+    expect(assertBeforeConfigured).toBeLessThan(deferConfiguredIdx);
   });
 
   it('coalesces reconnect attempt schedules via scheduleOwner', () => {

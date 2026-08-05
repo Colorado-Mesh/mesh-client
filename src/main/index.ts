@@ -6127,7 +6127,18 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     });
     socket.on('close', (hadError) => {
       clearTimeout(connectTimeout);
-      console.debug('[IPC] meshcore:tcp socket closed', hadError ? '(hadError)' : '(clean)');
+      // readableEnded=true after peer FIN; local destroy-before-null tear downs do not hit this
+      // branch as active (ref cleared first). Log fields help triage n7eal post-contacts hangs.
+      const remote = socket.remoteAddress
+        ? `${socket.remoteAddress}:${socket.remotePort ?? '?'}`
+        : 'unknown';
+      console.debug(
+        '[IPC] meshcore:tcp socket closed',
+        hadError ? '(hadError)' : '(clean)',
+        `remote=${sanitizeLogMessage(remote)}`,
+        `readableEnded=${socket.readableEnded}`,
+        `writableEnded=${socket.writableEnded}`,
+      );
       // Only notify when this socket is still the active bridge. connect/disconnect clear the
       // ref before destroy(), so superseded closes must not look like a live link drop
       // (renderer reconnect is driven by this event — see #792).

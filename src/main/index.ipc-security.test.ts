@@ -363,9 +363,12 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
     expect(closeIdx).toBeGreaterThan(handlerIdx);
-    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 600);
+    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 1600);
     expect(closeBody).toContain('if (meshcoreTcpSocket === socket)');
     expect(closeBody).toContain("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
+    expect(closeBody).toContain('readableEnded');
+    expect(closeBody).toContain('writableEnded');
+    expect(closeBody).toContain('remoteAddress');
     const guardIdx = closeBody.indexOf('if (meshcoreTcpSocket === socket)');
     const emitIdx = closeBody.indexOf("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
     expect(guardIdx).toBeGreaterThan(-1);

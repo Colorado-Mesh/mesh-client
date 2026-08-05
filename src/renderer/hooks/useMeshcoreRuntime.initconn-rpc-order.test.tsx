@@ -370,4 +370,53 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     });
     unmount();
   });
+
+  it('tcp: peer disconnect after getContacts does not mark configured or run getChannels post-connect', async () => {
+    const callOrder: string[] = [];
+    const gates = installSequentialInitGates(callOrder);
+    const discCallbacks: (() => void)[] = [];
+    vi.mocked(window.electronAPI.meshcore.tcp.onDisconnected).mockImplementation((cb) => {
+      discCallbacks.push(cb);
+      return () => {};
+    });
+
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('tcp', '192.168.88.29:5050');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(callOrder).toContain('getSelfInfo:start');
+    });
+    gates.selfInfoGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:start');
+    });
+    expect(result.current.state.status).toBe('connected');
+
+    gates.contactsGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:end');
+    });
+
+    // Peer FIN immediately after contacts (Neal timeline) — before channels complete.
+    await act(async () => {
+      for (const cb of discCallbacks) cb();
+      await Promise.resolve();
+    });
+
+    // Allow initConn abort + connect failure cleanup to settle.
+    await expect(
+      act(async () => {
+        await connectPromise;
+      }),
+    ).rejects.toThrow(/MeshCore connection setup cancelled/);
+
+    expect(result.current.state.status).not.toBe('configured');
+    expect(callOrder).not.toContain('getChannels:end');
+    // syncDeviceTime is post-configured; must not complete a successful post-connect path.
+    unmount();
+  });
 });
