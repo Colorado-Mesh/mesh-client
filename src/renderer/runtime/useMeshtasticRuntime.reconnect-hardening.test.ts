@@ -124,13 +124,17 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('skip overlapping open');
   });
 
-  it('bounds BLE reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+  it('bounds every reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    // Applies to all transports, not just BLE (see comment at the call site): TCP/HTTP/serial
+    // used to await the open+configure attempt with no ceiling at all, so a hang anywhere in
+    // that sequence (e.g. a disconnect landing mid-configure) wedged reconnection forever.
     expect(SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(SOURCE).toContain('raceWithDeadline');
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
     expect(reconnectBody).toContain('raceWithDeadline');
-    expect(reconnectBody).toContain('BLE reconnect attempt timed out after');
+    expect(reconnectBody).toContain('Reconnect attempt timed out after');
     expect(reconnectBody).toContain('attemptActive');
+    expect(reconnectBody).not.toContain('if (isBleReconnect) {');
   });
 
   it('disconnects late-opened transport when reconnect attempt is inactive or superseded', () => {

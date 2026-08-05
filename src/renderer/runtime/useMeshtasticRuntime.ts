@@ -2255,15 +2255,17 @@ export function useMeshtasticRuntime() {
     // Late loser after budget timeout — avoid unhandledRejection; cleanup is in catch / late path.
     void reconnectWork.catch(() => {});
     try {
-      if (isBleReconnect) {
-        await raceWithDeadline(
-          reconnectWork,
-          NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
-          `BLE reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
-        );
-      } else {
-        await reconnectWork;
-      }
+      // Applied to every transport, not just BLE (constant name is historical): TCP/HTTP/serial
+      // reconnects used to `await reconnectWork` with no ceiling at all. A disconnect that lands
+      // while an open+configure is still in flight (now common — TCP disconnect detection is
+      // near-instant, see meshtasticTransportLossDetection.ts) defers to that attempt settling;
+      // without a deadline here, a hang anywhere in openMeshtasticTransport/configure wedges the
+      // whole reconnect state machine forever instead of just failing this attempt and retrying.
+      await raceWithDeadline(
+        reconnectWork,
+        NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+        `Reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
+      );
     } catch (err) {
       attemptActive = false;
       const failedDriverIdentity =
