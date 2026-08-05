@@ -3028,6 +3028,9 @@ function ChatPanel({
                                     }}
                                     {...{ [PARENT_HOVER_ATTR]: '' }}
                                     className="message-action rounded p-1 text-xs text-gray-600"
+                                    aria-label={t('chatPanel.directMessage', {
+                                      name: msg.sender_name,
+                                    })}
                                     title={t('chatPanel.directMessage', { name: msg.sender_name })}
                                   >
                                     <Mail
