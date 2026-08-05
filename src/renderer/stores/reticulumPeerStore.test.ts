@@ -590,6 +590,71 @@ describe('reticulumPeerStore', () => {
     expect(peer?.path_hash).toBe('bb'.repeat(16));
   });
 
+  it('getPeer allocates a new object when contact and live route fields differ', () => {
+    const hash = 'aa'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            hops: 2,
+            interface: 'RMAP World',
+            path_hash: 'bb'.repeat(16),
+            via_hash: 'bb'.repeat(16),
+            last_seen: 1_700_000_000,
+          },
+        ],
+      ]),
+      contacts: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'Saved',
+            last_heard: 100,
+            is_contact: true,
+            hops: null,
+            interface: null,
+          },
+        ],
+      ]),
+      history: new Map(),
+    });
+    const a = useReticulumPeerStore.getState().getPeer(hash);
+    const b = useReticulumPeerStore.getState().getPeer(hash);
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    // UI must not use bare Object.is equality on getPeer (React 19 #185).
+    expect(a).not.toBe(b);
+    expect(a?.display_name).toBe('Saved');
+    expect(a?.hops).toBe(2);
+    expect(a?.last_seen).toBe(1_700_000_000);
+  });
+
+  it('getPeer returns the same Map entry twice for peer-only rows', () => {
+    const hash = 'dd'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'LiveOnly',
+            hops: 1,
+            last_seen: 99,
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+    });
+    const a = useReticulumPeerStore.getState().getPeer(hash);
+    const b = useReticulumPeerStore.getState().getPeer(hash);
+    expect(a).toBe(b);
+    expect(a).toBe(useReticulumPeerStore.getState().peers.get(hash));
+  });
+
   it('updatePeer seeds peers from contact-only rows', () => {
     const hash = 'cc'.repeat(16);
     useReticulumPeerStore.setState({

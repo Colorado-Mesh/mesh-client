@@ -4575,15 +4575,17 @@ function AppContent() {
       )}
 
       {capabilities.hasReticulumPeerDetailModal && selectedPeerHash !== null && (
-        <Suspense fallback={<DialogLazyFallback />}>
-          <ReticulumPeerDetailModal
-            peerHash={selectedPeerHash}
-            onClose={() => {
-              setSelectedPeerHash(null);
-            }}
-            onSendMessage={handleMessageNode}
-          />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<DialogLazyFallback />}>
+            <ReticulumPeerDetailModal
+              peerHash={selectedPeerHash}
+              onClose={() => {
+                setSelectedPeerHash(null);
+              }}
+              onSendMessage={handleMessageNode}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </>
   );
