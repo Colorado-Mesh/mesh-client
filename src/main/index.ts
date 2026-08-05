@@ -6102,6 +6102,10 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     }
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
+    // MeshCore Open / official companion TCP clients use TCP_NODELAY; Node defaults can
+    // Nagle-batch small companion RPCs and SoftAP/OpenHop peers often FIN mid-init.
+    socket.setNoDelay(true);
+    socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS);
     meshcoreTcpSocket = socket;
     const connectTimeout = setTimeout(() => {
       if (settled) return;
@@ -6377,6 +6381,8 @@ async function readBoundedArrayBuffer(response: Response, maxBytes: number): Pro
   return merged.buffer;
 }
 const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
+/** Initial TCP keepalive probe delay for MeshCore companion sockets (ms). */
+const MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
 const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
 /** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
 const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;

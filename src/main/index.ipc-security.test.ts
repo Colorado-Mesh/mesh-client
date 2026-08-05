@@ -390,6 +390,17 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
       /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*prev\.destroy\(\)/,
     );
   });
+
+  it('enables TCP_NODELAY and keepalive on meshcore:tcp-connect sockets', () => {
+    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS');
+    const connectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(connectIdx).toBeGreaterThan(-1);
+    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1600);
+    expect(connectBody).toContain('socket.setNoDelay(true)');
+    expect(connectBody).toContain(
+      'socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS)',
+    );
+  });
 });
 
 // ─── meshtastic:tcp-connect hostname validation ──────────────────────
@@ -568,7 +579,7 @@ describe('privileged IPC sender validation (source contract)', () => {
   it('meshcore tcp-connect uses connect timeout', () => {
     expect(INDEX_SOURCE).toContain('MESHCORE_TCP_CONNECT_TIMEOUT_MS');
     expect(INDEX_SOURCE).toMatch(
-      /meshcore:tcp-connect[\s\S]{0,1200}meshcore:tcp-connect: connection timeout/,
+      /meshcore:tcp-connect[\s\S]{0,1800}meshcore:tcp-connect: connection timeout/,
     );
   });
 

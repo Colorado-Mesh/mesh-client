@@ -120,6 +120,7 @@ import {
 } from '../lib/letsMeshJwt';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
+import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
 import { syncMeshcoreDmAckToMessageStore } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   CayenneLppEntry,
@@ -581,6 +582,12 @@ export function useMeshcoreRuntime() {
   const meshcoreExplicitDisconnectRef = useRef(false);
   /** True after at least one successful configure; blocks reconnect loop on first-connect failures. */
   const meshcoreEverConfiguredRef = useRef(false);
+  /**
+   * Set when main emits meshcore:tcp-disconnected (or write fail-closed). Cleared on prepareRfConnect
+   * for a new TCP open. Lets initConn abort before contacts→UI / getChannels even if the IPC
+   * event arrives a tick before setup-generation bump is observed (Fuzzy SoftAP write storms).
+   */
+  const meshcoreTcpBridgeDeadRef = useRef(false);
   /**
    * Active session configured (Meshtastic `deviceConfiguredRef` parity). Cleared on disconnect /
    * new connect; set when initConn reaches configured so post-configure Noble drops during
@@ -2123,11 +2130,23 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`,
       );
 
-      const rawInfo = sequentialRadioInit
-        ? await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000))
-        : await parallelSelfInfoPromise!;
+      // TCP: ConnectionDriver.discoverSelf already ran getSelfInfo — reuse to avoid a second
+      // companion RPC that SoftAP/OpenHop often FINs after (Neal/Fuzzy).
+      const reusedDiscoverSelf =
+        sequentialRadioInit && meshcoreConnectTypeRef.current === 'tcp'
+          ? takeMeshcoreDiscoverSelfCache(conn)
+          : undefined;
+      const rawInfo =
+        reusedDiscoverSelf ??
+        (sequentialRadioInit
+          ? await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000))
+          : await parallelSelfInfoPromise!);
       const getSelfInfoMs = Math.round(performance.now() - getSelfInfoStart);
-      console.debug(`[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms`);
+      console.debug(
+        reusedDiscoverSelf
+          ? `[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms (reused discoverSelf)`
+          : `[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms`,
+      );
       const info = enrichMeshCoreSelfInfo(rawInfo);
       setSelfInfo(info);
       setState((prev) => ({ ...prev, status: 'connected' }));
@@ -2199,6 +2218,19 @@ export function useMeshcoreRuntime() {
         });
       }
 
+      // TCP/peer FIN during contact dump: do not continue into UI / channels / configured.
+      const assertInitConnStillLive = (): void => {
+        if (meshcoreSetupGenerationRef.current !== setupGen) {
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+        if (transportType === 'tcp' && meshcoreTcpBridgeDeadRef.current) {
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+        if (transportType === 'tcp' && connRef.current !== conn) {
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+      };
+
       if (sequentialRadioInit) {
         getContactsStart = performance.now();
       }
@@ -2212,6 +2244,9 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
       );
+      // Fuzzy SoftAP: peer FIN often lands between getContacts resolve and contacts→UI —
+      // abort before DB/UI work and before getChannels write storm.
+      assertInitConnStillLive();
       // Reconcile radio truth: clear stale flags before re-marking contacts seen on-device.
       try {
         await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
@@ -2221,6 +2256,7 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
       }
+      assertInitConnStillLive();
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
@@ -2235,6 +2271,7 @@ export function useMeshcoreRuntime() {
           deferPathHistory: true,
         }),
       );
+      assertInitConnStillLive();
       applyMeshcoreNodesToUi(newNodes);
       if (identityId) {
         repairMeshcoreChannelSenderIdsInStore(identityId);
@@ -2243,15 +2280,6 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
       );
-      // TCP/peer FIN during contact dump: do not continue into channels / configured / post-connect.
-      const assertInitConnStillLive = (): void => {
-        if (meshcoreSetupGenerationRef.current !== setupGen) {
-          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
-        }
-        if (transportType === 'tcp' && connRef.current !== conn) {
-          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
-        }
-      };
       assertInitConnStillLive();
       // TCP defers status=configured (and room auto-login) until after channels below.
       if (!deferConfiguredUntilRadioInit) {
@@ -2260,6 +2288,7 @@ export function useMeshcoreRuntime() {
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       if (sequentialRadioInit) {
+        assertInitConnStillLive();
         const getChannelsStart = performance.now();
         try {
           const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
@@ -2565,6 +2594,9 @@ export function useMeshcoreRuntime() {
         });
       }
       meshcoreConnectTypeRef.current = type;
+      if (type === 'tcp') {
+        meshcoreTcpBridgeDeadRef.current = false;
+      }
       // Manual / new connect cancels background serial rediscovery.
       if (!opts?.preserveReconnectState) {
         serialRediscoveryStopRef.current?.();
@@ -7028,11 +7060,10 @@ export function useMeshcoreRuntime() {
   }, []);
 
   // Main reports the raw TCP socket's own 'close'/'error' event within milliseconds of the
-  // real network failure (clean FIN or RST alike). Without this, TCP relied solely on the
-  // passive stale/dead watchdog — which, unlike serial, doesn't exist for MeshCore's TCP
-  // transport at all (see startMeshcoreSerialWatchdog), so a dropped TCP connection had no
-  // automatic recovery path whatsoever. Mirrors the equivalent Meshtastic fix in
-  // meshtasticTransportLossDetection.ts.
+  // real network failure (clean FIN or RST alike). After first configure, this drives
+  // reconnect (Joe #792). Mid-first-open SoftAP/OpenHop FINs must only abort initConn —
+  // full handleMeshcoreConnectionLost reconnect thrash made #792 mid-init drops worse
+  // (Neal/Fuzzy). Mirrors Meshtastic meshtasticTransportLossDetection.ts post-configure.
   useEffect(() => {
     const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
       // Params are only written after a successful attachRfSession. Mid-first-connect peer FIN
@@ -7040,6 +7071,16 @@ export function useMeshcoreRuntime() {
       const storedTcp = meshcoreConnectionParamsRef.current?.rfType === 'tcp';
       const connectingTcp = meshcoreConnectTypeRef.current === 'tcp';
       if (!storedTcp && !connectingTcp) return;
+      meshcoreTcpBridgeDeadRef.current = true;
+      if (!meshcoreEverConfiguredRef.current) {
+        // Abort in-flight initConn without destroy+reconnect thrash against single-client
+        // companions. ConnectionPanel / user retry owns the next open.
+        meshcoreSetupGenerationRef.current += 1;
+        console.debug(
+          '[useMeshcoreRuntime] TCP closed before everConfigured — abort initConn (defer reconnect until configured)',
+        );
+        return;
+      }
       handleMeshcoreConnectionLostRef.current();
     });
     return () => unsub();
