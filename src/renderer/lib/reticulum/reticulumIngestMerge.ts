@@ -5,6 +5,8 @@ import { normalizeReticulumNodeId, reticulumHashToNodeId } from './destHash';
 export interface ReticulumIngestMergeContext {
   selfLxmfHash?: string | null;
   attachmentPath?: string | null;
+  /** Exact SQLite message_hash to replace when persisting this ingest (pending or prior hash). */
+  replacesMessageHash?: string | null;
 }
 
 interface LxmfDirectionPayload {

@@ -171,70 +171,75 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         m.next_delivery_attempt_at != null && Number.isFinite(Number(m.next_delivery_attempt_at))
           ? Math.trunc(Number(m.next_delivery_attempt_at))
           : null;
+      const replacesMessageHash =
+        typeof m.replaces_message_hash === 'string' &&
+        m.replaces_message_hash.length > 0 &&
+        m.replaces_message_hash.length <= 128
+          ? m.replaces_message_hash.slice(0, 128)
+          : null;
 
-      // Drop optimistic twins even while still `sending` — otherwise a stuck Direct
-      // Completes leaves reticulum-pending-* + real-hash duplicates after hydrate.
-      if (messageHash && !messageHash.startsWith('reticulum-pending-')) {
-        db.prepareOnce(
-          `DELETE FROM reticulum_messages
-           WHERE identity_id = ? AND sender_id = ? AND payload = ?
-             AND message_hash LIKE 'reticulum-pending-%'
-             AND ABS(timestamp - ?) <= 60000`,
-        ).run(identityId, senderId, payload, truncatedTimestamp);
-      }
-
-      if (messageHash) {
-        const existing = db
-          .prepareOnce(
-            'SELECT id FROM reticulum_messages WHERE identity_id = ? AND message_hash = ? LIMIT 1',
-          )
-          .get(identityId, messageHash) as { id?: number } | undefined;
-        if (existing?.id != null) {
-          // Never demote a delivered Completes back to in-flight (retry/echo saves).
+      // Exact prior-hash delete + upsert must be atomic so a failed write rolls back cleanup.
+      const run = db.transaction(() => {
+        if (replacesMessageHash && messageHash && replacesMessageHash !== messageHash) {
           db.prepareOnce(
-            `UPDATE reticulum_messages
-             SET delivery_status = CASE
-                   WHEN delivery_status = 'delivered'
-                        AND ? IN ('sending', 'pending', 'queued')
-                   THEN delivery_status
-                   ELSE COALESCE(?, delivery_status)
-                 END,
-                 received_via = COALESCE(?, received_via),
-                 sender_name = COALESCE(?, sender_name),
-                 delivery_method = COALESCE(?, delivery_method)
-             WHERE id = ?`,
-          ).run(
-            deliveryStatus,
-            deliveryStatus,
-            receivedVia,
-            senderName,
-            deliveryMethod,
-            existing.id,
-          );
-          return { changes: 1 };
+            'DELETE FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+          ).run(identityId, replacesMessageHash);
         }
-      }
 
-      db.prepareOnce(
-        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        identityId,
-        senderId,
-        senderName,
-        payload,
-        truncatedTimestamp,
-        toHash,
-        replyToHash,
-        messageHash,
-        receivedVia,
-        deliveryStatus,
-        deliveryAttempts,
-        nextDeliveryAttemptAt,
-        attachmentPath,
-        deliveryMethod,
-      );
-      return { changes: 1 };
+        if (messageHash) {
+          const existing = db
+            .prepareOnce(
+              'SELECT id FROM reticulum_messages WHERE identity_id = ? AND message_hash = ? LIMIT 1',
+            )
+            .get(identityId, messageHash) as { id?: number } | undefined;
+          if (existing?.id != null) {
+            // Never demote a delivered Completes back to in-flight (retry/echo saves).
+            db.prepareOnce(
+              `UPDATE reticulum_messages
+               SET delivery_status = CASE
+                     WHEN delivery_status = 'delivered'
+                          AND ? IN ('sending', 'pending', 'queued')
+                     THEN delivery_status
+                     ELSE COALESCE(?, delivery_status)
+                   END,
+                   received_via = COALESCE(?, received_via),
+                   sender_name = COALESCE(?, sender_name),
+                   delivery_method = COALESCE(?, delivery_method)
+               WHERE id = ?`,
+            ).run(
+              deliveryStatus,
+              deliveryStatus,
+              receivedVia,
+              senderName,
+              deliveryMethod,
+              existing.id,
+            );
+            return { changes: 1 };
+          }
+        }
+
+        db.prepareOnce(
+          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).run(
+          identityId,
+          senderId,
+          senderName,
+          payload,
+          truncatedTimestamp,
+          toHash,
+          replyToHash,
+          messageHash,
+          receivedVia,
+          deliveryStatus,
+          deliveryAttempts,
+          nextDeliveryAttemptAt,
+          attachmentPath,
+          deliveryMethod,
+        );
+        return { changes: 1 };
+      });
+      return run();
     } catch (err) {
       finishDbIpcHandler('db:saveReticulumMessage', err);
     }

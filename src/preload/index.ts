@@ -170,8 +170,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       to_hash?: string | null;
       reply_to_hash?: string | null;
       message_hash?: string | null;
+      replaces_message_hash?: string | null;
       received_via?: string | null;
       delivery_status?: string | null;
+      delivery_method?: string | null;
       delivery_attempts?: number | null;
       next_delivery_attempt_at?: number | null;
       attachment_path?: string | null;

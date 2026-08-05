@@ -300,11 +300,12 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_method).toBe('paper');
   });
 
-  it('saveReticulumMessage drops reticulum-pending twins while still sending', () => {
+  it('saveReticulumMessage replaces exact pending hash while still sending', () => {
     const identityId = 'id-rt-pending-orphan';
     const senderId = 'cc'.repeat(16);
     const payload = 'hello aibot';
     const ts = 1_700_000_000_000;
+    const pendingHash = 'reticulum-pending-1700000000000';
     const save = handlers.get('db:saveReticulumMessage');
     save?.(event, {
       identity_id: identityId,
@@ -312,7 +313,7 @@ describe('reticulum destination / activity prune IPC', () => {
       sender_name: 'Me',
       payload,
       timestamp: ts,
-      message_hash: 'reticulum-pending-1700000000000',
+      message_hash: pendingHash,
       delivery_status: 'sending',
     });
     save?.(event, {
@@ -322,6 +323,7 @@ describe('reticulum destination / activity prune IPC', () => {
       payload,
       timestamp: ts + 182,
       message_hash: 'ab'.repeat(32),
+      replaces_message_hash: pendingHash,
       delivery_status: 'sending',
     });
     const rows = db!
@@ -330,6 +332,102 @@ describe('reticulum destination / activity prune IPC', () => {
       )
       .all(identityId) as { message_hash: string; delivery_status: string }[];
     expect(rows).toEqual([{ message_hash: 'ab'.repeat(32), delivery_status: 'sending' }]);
+  });
+
+  it('saveReticulumMessage replaces only the named pending when two identical payloads exist', () => {
+    const identityId = 'id-rt-twin-payload';
+    const senderId = 'dd'.repeat(16);
+    const payload = 'hello';
+    const ts = 1_700_000_100_000;
+    const pendingA = 'reticulum-pending-a';
+    const pendingB = 'reticulum-pending-b';
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts,
+      message_hash: pendingA,
+      delivery_status: 'sending',
+    });
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts + 50,
+      message_hash: pendingB,
+      delivery_status: 'sending',
+    });
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts + 80,
+      message_hash: 'ee'.repeat(32),
+      replaces_message_hash: pendingA,
+      delivery_status: 'sending',
+    });
+    const rows = db!
+      .prepareOnce('SELECT message_hash FROM reticulum_messages WHERE identity_id = ? ORDER BY id')
+      .all(identityId) as { message_hash: string }[];
+    expect(rows.map((r) => r.message_hash)).toEqual([pendingB, 'ee'.repeat(32)]);
+  });
+
+  it('saveReticulumMessage rolls back pending delete when replacement insert fails', () => {
+    const identityId = 'id-rt-pending-rollback';
+    const senderId = 'ff'.repeat(16);
+    const payload = 'rollback me';
+    const ts = 1_700_000_200_000;
+    const pendingHash = 'reticulum-pending-rollback';
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts,
+      message_hash: pendingHash,
+      delivery_status: 'sending',
+    });
+
+    const prepareOnce = db!.prepareOnce.bind(db!);
+    const spy = vi.spyOn(db!, 'prepareOnce').mockImplementation((sql: string) => {
+      const stmt = prepareOnce(sql);
+      if (sql.includes('INSERT INTO reticulum_messages')) {
+        return {
+          run: () => {
+            throw new Error('insert boom');
+          },
+          get: stmt.get.bind(stmt),
+          all: stmt.all.bind(stmt),
+        } as unknown as ReturnType<typeof prepareOnce>;
+      }
+      return stmt;
+    });
+
+    expect(() =>
+      save?.(event, {
+        identity_id: identityId,
+        sender_id: senderId,
+        sender_name: 'Me',
+        payload,
+        timestamp: ts + 10,
+        message_hash: '11'.repeat(32),
+        replaces_message_hash: pendingHash,
+        delivery_status: 'sending',
+      }),
+    ).toThrow('insert boom');
+    spy.mockRestore();
+
+    const rows = db!
+      .prepareOnce(
+        'SELECT message_hash, delivery_status FROM reticulum_messages WHERE identity_id = ?',
+      )
+      .all(identityId) as { message_hash: string; delivery_status: string }[];
+    expect(rows).toEqual([{ message_hash: pendingHash, delivery_status: 'sending' }]);
   });
 
   it('pruneReticulumIdentityActivityByAge deletes stale millisecond last_seen rows', () => {

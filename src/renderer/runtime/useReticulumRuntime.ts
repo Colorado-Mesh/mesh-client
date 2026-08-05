@@ -1932,16 +1932,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
           };
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
-            if (shouldDeletePriorReticulumOutboundHash(pendingId, hash)) {
-              void window.electronAPI.db
-                .deleteReticulumMessage(identityId, pendingId)
-                .catch((e: unknown) => {
-                  console.warn(
-                    '[useReticulumRuntime] deleteReticulumMessage failed ' + errLikeToLogString(e),
-                  );
-                });
-            }
-            ingestOutboundSend();
+            const replacesMessageHash = shouldDeletePriorReticulumOutboundHash(pendingId, hash)
+              ? pendingId
+              : undefined;
+            ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload, {
+              selfLxmfHash: selfLxmfHash ?? undefined,
+              replacesMessageHash,
+            });
             // Terminal WS may have arrived before rename; apply buffered Completes/Fails.
             flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
             const afterFlush = useMessageStore.getState().messages[identityId]?.[hash]?.status;
