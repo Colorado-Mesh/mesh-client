@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import { estimateRrcRowHeight, RrcChatView } from './RrcChatView';
@@ -67,6 +69,120 @@ describe('estimateRrcRowHeight', () => {
     expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(22);
     expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(42);
     expect(estimateRrcRowHeight(undefined)).toBe(22);
+  });
+});
+
+describe('RrcChatView IRC layout', () => {
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    mockScrollToEnd.mockClear();
+  });
+
+  it('renders <nick> body on one line without block wrappers in the line', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        messages={[makeMsg({ id: '1', body: 'hello', nickname: 'nv0n' })]}
+      />,
+    );
+    const line = screen.getByTestId('rrc-chat-line');
+    expect(line.textContent).toMatch(/<nv0n>\s*hello/);
+    expect(line.querySelector('.min-w-0')?.querySelector('div')).toBeNull();
+    expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
+  });
+
+  it('highlights self @nick with a mark', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        nickname="nv0n"
+        messages={[makeMsg({ id: '1', body: 'hey @nv0n check', nickname: 'Zeva' })]}
+      />,
+    );
+    const mark = screen.getByText('@nv0n');
+    expect(mark.tagName).toBe('MARK');
+  });
+
+  it('hides empty system/notice rows', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        messages={[
+          makeMsg({ id: '1', body: '', kind: 'system', nickname: null }),
+          makeMsg({ id: '2', body: 'kept', nickname: 'alice' }),
+        ]}
+      />,
+    );
+    expect(screen.getByText(/kept/)).toBeInTheDocument();
+    expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(1);
+  });
+
+  it('renders whisper echo without a leading *', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        messages={[
+          makeMsg({
+            id: '1',
+            kind: 'system',
+            body: '→ Zeva: hi there',
+            nickname: null,
+            sender_hash: null,
+          }),
+        ]}
+      />,
+    );
+    const line = screen.getByTestId('rrc-chat-line');
+    expect(line.textContent).toMatch(/→\s*Zeva:\s*hi there/);
+    expect(line.textContent?.trim().startsWith('*')).toBe(false);
+    expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
+  });
+
+  it('renders /me action with colored nick', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        messages={[makeMsg({ id: '1', kind: 'action', body: 'waves', nickname: 'Zeva' })]}
+      />,
+    );
+    const line = screen.getByTestId('rrc-chat-line');
+    expect(line.textContent).toMatch(/\*\s*Zeva\s+waves/);
+    expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
+  });
+});
+
+describe('RrcChatView mention completer', () => {
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    mockScrollToEnd.mockClear();
+  });
+
+  it('shows listbox and inserts @Zeva on select', async () => {
+    const user = userEvent.setup();
+    const members = [{ identity_hash: 'aa'.repeat(16), nickname: 'Zeva' }];
+
+    function Harness() {
+      const [draft, setDraft] = useState('');
+      return (
+        <RrcChatView
+          {...baseProps}
+          draft={draft}
+          onDraftChange={setDraft}
+          members={members}
+          messages={[]}
+        />
+      );
+    }
+
+    render(<Harness />);
+    const box = screen.getByLabelText('rrc.messagePlaceholder');
+    await user.type(box, '@ze');
+    await waitFor(() => {
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: /Zeva/i }));
+    expect(box).toHaveValue('@Zeva ');
+    expect((box as HTMLTextAreaElement).value).not.toContain('@[');
   });
 });
 
@@ -144,7 +260,6 @@ describe('RrcChatView stick-to-bottom', () => {
         messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
       />,
     );
-    // Allow the follow effect to run; it must not scroll while unpinned.
     await waitFor(() => {
       expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
     });
@@ -215,7 +330,6 @@ describe('RrcChatView stick-to-bottom', () => {
       writable: true,
       configurable: true,
     });
-    // Stay pinned (no scroll event — isPinnedToBottomRef defaults true; isAtEnd true).
 
     rerender(
       <RrcChatView

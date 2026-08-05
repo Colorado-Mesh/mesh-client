@@ -1057,6 +1057,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             canSend={status === 'active'}
             isMuted={isMuted}
             nickname={nickname}
+            members={nicklistMembers}
             alwaysShowMessageActions={alwaysShowMessageActions}
             placeholder={whisperComposerPlaceholder}
             isActive={isActive}

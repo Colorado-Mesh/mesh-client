@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
+import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import type { RrcRoomMember } from '@/shared/rrc-types';
 
 function formatHash(hash: string): string {
@@ -95,7 +96,7 @@ export function RrcNickList({
               <li key={m.identity_hash}>
                 <button
                   type="button"
-                  className="w-full truncate rounded px-1.5 py-1 text-left text-amber-100/90 hover:bg-amber-950/40"
+                  className={`w-full truncate rounded px-1.5 py-1 text-left hover:bg-amber-950/40 ${rrcNickColorClass(label)}`}
                   aria-label={t('rrc.msgNick', { name: label })}
                   title={t('rrc.msgNick', { name: label })}
                   onClick={() => {

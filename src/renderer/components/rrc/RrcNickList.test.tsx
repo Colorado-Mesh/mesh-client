@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
+
 import { RrcNickList } from './RrcNickList';
 
 describe('RrcNickList', () => {
@@ -52,5 +54,19 @@ describe('RrcNickList', () => {
       'aria-expanded',
       'false',
     );
+  });
+
+  it('applies the same nick color class as the transcript helper', () => {
+    render(
+      <RrcNickList
+        collapsed={false}
+        onToggleCollapsed={vi.fn()}
+        members={[{ identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Zeva' }]}
+        busy={false}
+        onRefreshWho={vi.fn()}
+        onNickClick={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Zeva').className).toContain(rrcNickColorClass('Zeva'));
   });
 });
