@@ -7,6 +7,38 @@ on:
     tags: ['v*']
 
 jobs:
+  schema-release-compare:
+    name: Schema vs last official release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      schema_bumped: ${{ steps.compare.outputs.schema_bumped }}
+      curr_schema: ${{ steps.compare.outputs.curr_schema }}
+      prev_schema: ${{ steps.compare.outputs.prev_schema }}
+      prev_tag: ${{ steps.compare.outputs.prev_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compare schema to last published release
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          node scripts/ci-schema-release-compare.mjs
+          --workflow-label "Build Flatpak"
+          --write-readme READ-ME-FIRST-flatpak.md
+
+      - name: Upload READ-ME-FIRST warning
+        uses: actions/upload-artifact@v7
+        with:
+          name: READ-ME-FIRST-flatpak
+          path: READ-ME-FIRST-flatpak.md
+          retention-days: 30
+
   # Sidecar is built on bare Ubuntu runners (apt). The flathub-infra Flatpak container is a
   # minimal freedesktopsdk/sdk rootfs with no apt/dnf — host cargo builds cannot install deps there.
   reticulum-sidecar:
@@ -60,7 +92,7 @@ jobs:
   # "Flatpak system operation Deploy not allowed for user".
   flatpak:
     name: Flatpak (${{ matrix.arch }})
-    needs: reticulum-sidecar
+    needs: [reticulum-sidecar, schema-release-compare]
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -83,6 +115,20 @@ jobs:
         with:
           name: mesh-client-reticulum-${{ matrix.arch }}
           path: resources/reticulum-sidecar
+
+      - name: Write schema upgrade installer notice
+        env:
+          MESH_CLIENT_SCHEMA_BUMPED: ${{ needs.schema-release-compare.outputs.schema_bumped }}
+          MESH_CLIENT_SCHEMA_CURR: ${{ needs.schema-release-compare.outputs.curr_schema }}
+          MESH_CLIENT_SCHEMA_PREV: ${{ needs.schema-release-compare.outputs.prev_schema }}
+          MESH_CLIENT_SCHEMA_PREV_TAG: ${{ needs.schema-release-compare.outputs.prev_tag }}
+        run: node scripts/write-schema-upgrade-notice.mjs
+
+      - name: Download READ-ME-FIRST warning
+        uses: actions/download-artifact@v8
+        with:
+          name: READ-ME-FIRST-flatpak
+          path: flatpak-warnings
 
       - name: Generate offline pnpm sources
         run: |
@@ -148,6 +194,15 @@ jobs:
             echo "Flatpak launch failed immediately (exit $code)" >&2
             exit 1
           fi
+
+      # flatpak-builder already uploaded the .flatpak; attach the schema warning beside it
+      # for workflow_dispatch test builds (and tag runs) downloading Actions artifacts.
+      - name: Upload READ-ME-FIRST with Flatpak artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: flatpak-schema-warning-${{ matrix.arch }}
+          path: flatpak-warnings/READ-ME-FIRST-flatpak.md
+          retention-days: 30
 
   publish:
     name: Publish to GitHub Release

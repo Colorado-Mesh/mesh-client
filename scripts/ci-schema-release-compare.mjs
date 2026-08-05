@@ -47,15 +47,17 @@ export function readSchemaVersionFromFile(filePath) {
  *   prevSchema: number | null
  *   prevTag: string | null
  *   schemaBumped: boolean
+ *   workflowLabel?: string
  * }} opts
  */
 export function formatSchemaCompareMarkdown(opts) {
   const lines = [];
   if (opts.mode === 'test-build') {
+    const workflowLabel = opts.workflowLabel?.trim() || 'Build Binaries';
     lines.push('# Test build — not an official release');
     lines.push('');
     lines.push(
-      'These artifacts are from **Build Binaries** (`workflow_dispatch`). They are not a published GitHub Release.',
+      `These artifacts are from **${workflowLabel}** (\`workflow_dispatch\`). They are not a published GitHub Release.`,
     );
     lines.push('');
   } else {
@@ -207,6 +209,15 @@ export async function runSchemaReleaseCompare(argv, env = process.env) {
       ? path.resolve(argv[readmeIdx + 1])
       : path.join(ROOT, 'READ-ME-FIRST-test-build.md');
 
+  const labelIdx = argv.indexOf('--workflow-label');
+  const workflowLabel =
+    labelIdx >= 0 && argv[labelIdx + 1]
+      ? argv[labelIdx + 1]
+      : typeof env.MESH_CLIENT_SCHEMA_WORKFLOW_LABEL === 'string' &&
+          env.MESH_CLIENT_SCHEMA_WORKFLOW_LABEL
+        ? env.MESH_CLIENT_SCHEMA_WORKFLOW_LABEL
+        : undefined;
+
   const currFile = path.join(ROOT, SCHEMA_REL);
   const currSchema = readSchemaVersionFromFile(currFile);
 
@@ -232,6 +243,7 @@ export async function runSchemaReleaseCompare(argv, env = process.env) {
     prevSchema,
     prevTag,
     schemaBumped,
+    workflowLabel,
   });
 
   writeStepSummary(markdown, env.GITHUB_STEP_SUMMARY);
