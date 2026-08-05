@@ -127,3 +127,74 @@ index ddca80fc9134fa56ac273b17387e62af087c95c6..365b64b0e60cce8f23cb9d6a6d463b6d
      await this.transport.disconnect();
    }
  
+diff --git a/src/utils/queue.js b/src/utils/queue.js
+index d6082a6401e15eeb3e8873820b64341c961ac35f..73457e9e6fbde50800af427bb82b53b59049a7df 100755
+--- a/src/utils/queue.js
++++ b/src/utils/queue.js
+@@ -55,10 +55,8 @@ export class Queue {
+     this.queue.push(queueItem);
+   }
+   remove(id) {
+-    if (this.lock) {
+-      setTimeout(()=>this.remove(id), 100);
+-      return;
+-    }
++    // mesh-client patch: see src/utils/queue.ts for rationale — this used to deadlock
++    // whenever processQueue never released `lock`.
+     this.queue = this.queue.filter((item)=>item.id !== id);
+   }
+   processAck(id) {
+@@ -88,10 +86,12 @@ export class Queue {
+           await new Promise((resolve)=>setTimeout(resolve, 200));
+           try {
+             await writer.write(item.data);
+-            item.sent = true;
+           } catch (error) {
+             console.error(`Error sending packet ${item.id}`, error);
+           }
++          // mesh-client patch: see src/utils/queue.ts for rationale — mark attempted either
++          // way so one write failure can't wedge every other queued packet behind it.
++          item.sent = true;
+         }
+       }
+     } finally{
+diff --git a/src/utils/queue.ts b/src/utils/queue.ts
+index 9c0d192d0a22c1a158e70f4dc3b74460ea7bd22b..7d63cb22ad5c6a8cde8823b9925e93b63f8cdeb9 100755
+--- a/src/utils/queue.ts
++++ b/src/utils/queue.ts
+@@ -70,10 +70,11 @@ export class Queue {
+   }
+ 
+   public remove(id: number): void {
+-    if (this.lock) {
+-      setTimeout(() => this.remove(id), 100);
+-      return;
+-    }
++    // mesh-client patch: `queue` mutation is synchronous and single-threaded, so there is
++    // no real race to guard against here. Gating on `lock` deadlocked whenever
++    // `processQueue` never released it (see the processQueue patch below): the item's own
++    // 60s ack/timeout in push() could never actually remove it, so processQueue kept
++    // re-picking the same still-queued item forever.
+     this.queue = this.queue.filter((item) => item.id !== id);
+   }
+ 
+@@ -115,10 +116,18 @@ export class Queue {
+           await new Promise((resolve) => setTimeout(resolve, 200));
+           try {
+             await writer.write(item.data);
+-            item.sent = true;
+           } catch (error) {
+             console.error(`Error sending packet ${item.id}`, error);
+           }
++          // mesh-client patch: mark the item attempted whether or not the write succeeded.
++          // The original code only did this on success, so a single transport-level write
++          // failure (e.g. socket briefly gone during a reconnect) left the item permanently
++          // unsent — this loop kept re-picking the same first-in-line item forever at the
++          // 200ms cadence above, holding `lock` and starving every other queued packet
++          // (including heartbeats) behind it. The item's own promise still settles normally
++          // via the ack/60s-timeout machinery in push(); this only stops it from wedging
++          // every *other* packet.
++          item.sent = true;
+         }
+       }
+     } finally {

@@ -2871,21 +2871,24 @@ export function useMeshcoreRuntime() {
     const reconnectWork = runReconnectAttempt();
     void reconnectWork.catch(() => {});
     try {
-      if (isBleReconnect) {
-        await raceWithDeadline(
-          reconnectWork,
-          NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
-          `BLE reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
-        );
-      } else {
-        await reconnectWork;
-      }
+      // Applied to every transport, not just BLE (constant name is historical): TCP/serial
+      // reconnects used to `await reconnectWork` with no ceiling at all. A disconnect that
+      // lands while an open+attach is still in flight defers to that attempt settling; without
+      // a deadline here, a hang anywhere in openMeshCoreTransport/attachRfSession wedges the
+      // whole reconnect state machine forever instead of just failing this attempt and retrying.
+      await raceWithDeadline(
+        reconnectWork,
+        NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+        `Reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
+      );
     } catch (err) {
       attemptActive = false;
-      if (isBleReconnect) {
-        // Stop background initConn RPCs if open resolved into attach after the budget fired.
-        meshcoreSetupGenerationRef.current += 1;
-      }
+      // Stop background initConn RPCs (getSelfInfo/getContacts/getChannels/etc.) if open
+      // resolved into attach after the budget fired. Not BLE-specific: raceWithDeadline now
+      // guards every transport's reconnect attempt, so a TCP/serial attempt can hit this same
+      // path — bumping only for BLE here left non-BLE stale setup RPCs free to keep running
+      // and apply state after the attempt was already declared failed.
+      meshcoreSetupGenerationRef.current += 1;
       if (isMeshcoreSetupAbortError(err)) {
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
         meshcoreIsReconnectingRef.current = false;
@@ -6844,6 +6847,20 @@ export function useMeshcoreRuntime() {
       onDisconnected: () => handleMeshcoreConnectionLostRef.current(),
     });
     return () => registerMeshcoreSerialDisconnectTarget(null);
+  }, []);
+
+  // Main reports the raw TCP socket's own 'close'/'error' event within milliseconds of the
+  // real network failure (clean FIN or RST alike). Without this, TCP relied solely on the
+  // passive stale/dead watchdog — which, unlike serial, doesn't exist for MeshCore's TCP
+  // transport at all (see startMeshcoreSerialWatchdog), so a dropped TCP connection had no
+  // automatic recovery path whatsoever. Mirrors the equivalent Meshtastic fix in
+  // meshtasticTransportLossDetection.ts.
+  useEffect(() => {
+    const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+      if (meshcoreConnectionParamsRef.current?.rfType !== 'tcp') return;
+      handleMeshcoreConnectionLostRef.current();
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
