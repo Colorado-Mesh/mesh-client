@@ -2531,7 +2531,7 @@ export default function RoomsPanel({
                                   </button>
                                   <span>{formatTimestamp(m.timestamp)}</span>
                                   <div
-                                    className={`ml-auto flex items-center gap-1 transition-opacity ${
+                                    className={`message-actions-bar ml-auto flex items-center gap-1 rounded transition-opacity ${
                                       alwaysShowMessageActions
                                         ? 'opacity-100'
                                         : 'opacity-0 group-focus-within/msg:opacity-100 group-hover/msg:opacity-100'
@@ -2544,7 +2544,7 @@ export default function RoomsPanel({
                                           onMessageNode?.(m.sender_id);
                                         }}
                                         {...{ [PARENT_HOVER_ATTR]: '' }}
-                                        className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
+                                        className="message-action rounded p-0.5 text-gray-500"
                                         aria-label={t('nodeDetailModal.messageButton')}
                                         title={t('nodeDetailModal.messageButton')}
                                       >
@@ -2562,10 +2562,8 @@ export default function RoomsPanel({
                                         toggleStar(m);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className={`rounded p-0.5 transition-colors ${
-                                        isStarred
-                                          ? 'text-amber-400 hover:text-amber-200'
-                                          : 'text-gray-500 hover:text-amber-400'
+                                      className={`message-action-star rounded p-0.5 ${
+                                        isStarred ? 'starred' : 'text-gray-500'
                                       }`}
                                       aria-label={
                                         isStarred
@@ -2595,7 +2593,7 @@ export default function RoomsPanel({
                                         });
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="rounded p-0.5 text-gray-500 hover:text-gray-300"
+                                      className="message-action rounded p-0.5 text-gray-500"
                                       aria-label={t('chatPanel.copyMessage')}
                                       title={t('chatPanel.copyMessage')}
                                     >

@@ -4,14 +4,17 @@ import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
   hasThemeSnapshot,
+  isMessageActionsBarBgVisible,
   isValidHex,
   loadThemeColors,
+  MESSAGE_ACTIONS_BAR_BG_VISIBLE_STORAGE_KEY,
   normalizeHex,
   persistThemeColors,
   resetThemeColors,
   restoreThemeSnapshot,
   sanitizeHexDraft,
   saveThemeSnapshot,
+  setMessageActionsBarBgVisible,
   THEME_COLORS_SNAPSHOT_STORAGE_KEY,
   THEME_COLORS_STORAGE_KEY,
   THEME_TOKEN_META,
@@ -145,6 +148,7 @@ describe('themeColors', () => {
     beforeEach(() => {
       localStorage.removeItem(THEME_COLORS_STORAGE_KEY);
       localStorage.removeItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY);
+      localStorage.removeItem(MESSAGE_ACTIONS_BAR_BG_VISIBLE_STORAGE_KEY);
     });
 
     it('hasThemeSnapshot is false until a snapshot is saved', () => {
@@ -153,13 +157,22 @@ describe('themeColors', () => {
       expect(hasThemeSnapshot()).toBe(true);
     });
 
-    it('saveThemeSnapshot captures the current live colors', () => {
+    it('saveThemeSnapshot captures the current live colors nested under colors', () => {
       persistThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#123456' });
       saveThemeSnapshot();
       const stored = JSON.parse(
         localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY) ?? '{}',
-      ) as Record<string, string>;
-      expect(stored.appBg).toBe('#123456');
+      ) as { colors: Record<string, string>; messageActionsBarBgVisible: boolean };
+      expect(stored.colors.appBg).toBe('#123456');
+    });
+
+    it('saveThemeSnapshot captures the messageActionsBarBg visibility flag', () => {
+      setMessageActionsBarBgVisible(true);
+      saveThemeSnapshot();
+      const stored = JSON.parse(
+        localStorage.getItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY) ?? '{}',
+      ) as { colors: Record<string, string>; messageActionsBarBgVisible: boolean };
+      expect(stored.messageActionsBarBgVisible).toBe(true);
     });
 
     it('restoreThemeSnapshot re-applies and persists the saved checkpoint', () => {
@@ -190,6 +203,37 @@ describe('themeColors', () => {
       resetThemeColors();
       expect(hasThemeSnapshot()).toBe(true);
       expect(restoreThemeSnapshot().appBg).toBe('#123456');
+    });
+
+    it('restoreThemeSnapshot round-trips the messageActionsBarBg visibility flag', () => {
+      setMessageActionsBarBgVisible(true);
+      saveThemeSnapshot();
+
+      setMessageActionsBarBgVisible(false);
+      expect(isMessageActionsBarBgVisible()).toBe(false);
+
+      restoreThemeSnapshot();
+      expect(isMessageActionsBarBgVisible()).toBe(true);
+    });
+
+    it('restoreThemeSnapshot falls back to hidden visibility for an old-format snapshot (colors only)', () => {
+      localStorage.setItem(
+        THEME_COLORS_SNAPSHOT_STORAGE_KEY,
+        JSON.stringify({ ...DEFAULT_THEME_COLORS, appBg: '#123456' }),
+      );
+      setMessageActionsBarBgVisible(true);
+
+      const restored = restoreThemeSnapshot();
+      expect(restored.appBg).toBe('#123456');
+      expect(isMessageActionsBarBgVisible()).toBe(false);
+    });
+
+    it('resetThemeColors also resets messageActionsBarBg visibility to hidden', () => {
+      setMessageActionsBarBgVisible(true);
+      expect(isMessageActionsBarBgVisible()).toBe(true);
+
+      resetThemeColors();
+      expect(isMessageActionsBarBgVisible()).toBe(false);
     });
   });
 });

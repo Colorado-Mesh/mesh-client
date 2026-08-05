@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Borde del mensaje entrante",
         "description": "Color del borde de los mensajes entrantes del canal."
+      },
+      "messageActionsBarBg": {
+        "label": "Fondo de la barra de acciones del mensaje",
+        "description": "Relleno de fondo para la fila de botones de acción del mensaje. Oculto por defecto — habilitar con la casilla de verificación \"Mostrar fondo\"."
+      },
+      "messageActionButtonHover": {
+        "label": "Color del botón de acción del mensaje al pasar por encima",
+        "description": "Color del cursor para todos los botones de acción del mensaje (copiar, responder, reaccionar, mensaje directo, estrella y cuando está destacado)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Forza los relojes, como las marcas de tiempo del chat, al formato de 24 horas. Cuando esté apagado, siga la configuración regional de su sistema.",
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
     "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
-    "themeResetFailed": "Error al restablecer los colores."
+    "themeResetFailed": "Error al restablecer los colores.",
+    "messageActionsBarBgVisible": "Mostrar fondo"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

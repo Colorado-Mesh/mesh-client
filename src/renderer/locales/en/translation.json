@@ -356,8 +356,17 @@
       "chatIncomingBorder": {
         "label": "Incoming message border",
         "description": "Border color for incoming channel messages."
+      },
+      "messageActionsBarBg": {
+        "label": "Message actions bar background",
+        "description": "Background fill for the message action buttons row. Hidden by default — enable with the \"Show background\" checkbox."
+      },
+      "messageActionButtonHover": {
+        "label": "Message action button hover color",
+        "description": "Hover color for all message action buttons (copy, reply, react, direct message, star, and when starred)."
       }
     },
+    "messageActionsBarBgVisible": "Show background",
     "themePreset": {
       "green300": "Green 300",
       "slate950": "Slate 950",

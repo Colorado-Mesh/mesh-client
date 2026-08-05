@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Ramka wiadomości przychodzącej",
         "description": "Kolor obramowania przychodzących wiadomości kanału."
+      },
+      "messageActionsBarBg": {
+        "label": "Tło paska akcji wiadomości",
+        "description": "Wypełnienie tła wiersza przycisków akcji wiadomości. Ukryte domyślnie — włącz pole wyboru „Pokaż tło”."
+      },
+      "messageActionButtonHover": {
+        "label": "Kolor przycisku akcji wiadomości po najechaniu kursorem",
+        "description": "Najedź kursorem na kolor wszystkich przycisków akcji wiadomości (kopiuj, odpowiedz, zareaguj, wiadomość bezpośrednia, gwiazdka i po oznaczeniu gwiazdką)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Wymuś wyświetlanie zegarów, takich jak znaczniki czasu czatu, w formacie 24-godzinnym. Gdy jest wyłączony, postępuje zgodnie z ustawieniami regionalnymi systemu.",
     "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
     "themeRestoreFailed": "Nie udało się przywrócić punktu kontrolnego koloru.",
-    "themeResetFailed": "Nie udało się zresetować kolorów."
+    "themeResetFailed": "Nie udało się zresetować kolorów.",
+    "messageActionsBarBgVisible": "Pokaż tło"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

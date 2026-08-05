@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "传入消息边框",
         "description": "传入通道消息的边框颜色。"
+      },
+      "messageActionsBarBg": {
+        "label": "消息操作栏背景",
+        "description": "消息操作按钮行的背景填充。默认情况下隐藏—使用“显示背景”复选框启用。"
+      },
+      "messageActionButtonHover": {
+        "label": "消息操作按钮悬停颜色",
+        "description": "所有消息操作按钮（复制、回复、反应、直接消息、星标和加星标时）的悬停颜色。"
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。",
     "themeSaveFailed": "无法保存颜色检查点。",
     "themeRestoreFailed": "无法还原颜色检查点。",
-    "themeResetFailed": "无法重置颜色。"
+    "themeResetFailed": "无法重置颜色。",
+    "messageActionsBarBgVisible": "显示背景"
   },
   "aria": {
     "closeDialog": "关闭对话框",

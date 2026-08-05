@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "수신 메시지 테두리",
         "description": "수신 채널 메시지의 테두리 색상입니다."
+      },
+      "messageActionsBarBg": {
+        "label": "메시지 작업 표시줄 배경",
+        "description": "메시지 작업 버튼 행의 배경 채우기. 기본적으로 숨김 — \"배경 표시\" 확인란으로 활성화합니다."
+      },
+      "messageActionButtonHover": {
+        "label": "메시지 작업 버튼 호버 색상",
+        "description": "모든 메시지 작업 버튼 (복사, 회신, 반응, 다이렉트 메시지, 별표 표시 및 별표 표시) 에 대한 마우스 오버 색상."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "채팅 타임스탬프와 같은 시계를 24시간 형식으로 강제 설정합니다. 꺼지면 시스템 로케일을 따릅니다.",
     "themeSaveFailed": "색상 체크포인트를 저장하지 못했습니다.",
     "themeRestoreFailed": "색상 체크포인트를 복원하지 못했습니다.",
-    "themeResetFailed": "색상을 재설정하지 못했습니다."
+    "themeResetFailed": "색상을 재설정하지 못했습니다.",
+    "messageActionsBarBgVisible": "배경 표시"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

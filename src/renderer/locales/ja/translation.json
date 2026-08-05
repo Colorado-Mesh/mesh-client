@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "受信メッセージの境界線",
         "description": "受信チャネルメッセージの境界線の色。"
+      },
+      "messageActionsBarBg": {
+        "label": "メッセージアクションバーの背景",
+        "description": "メッセージアクションボタン行の背景塗りつぶし。デフォルトで非表示—「背景を表示」チェックボックスで有効にします。"
+      },
+      "messageActionButtonHover": {
+        "label": "メッセージアクションボタンのホバー色",
+        "description": "すべてのメッセージアクションボタン（コピー、返信、反応、ダイレクトメッセージ、スター、スター付き）のホバーカラー。"
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。",
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
-    "themeResetFailed": "色をリセットできませんでした。"
+    "themeResetFailed": "色をリセットできませんでした。",
+    "messageActionsBarBgVisible": "背景を表示"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

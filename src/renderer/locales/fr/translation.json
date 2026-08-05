@@ -300,6 +300,14 @@
       "chatIncomingBorder": {
         "label": "Bordure du message entrant",
         "description": "Couleur de bordure pour les messages de canal entrants."
+      },
+      "messageActionsBarBg": {
+        "label": "Arrière-plan de la barre d'actions du",
+        "description": "Remplissage d'arrière-plan pour la ligne des boutons d'action du message. Masqué par défaut — activer avec la case à cocher « Afficher l'arrière-plan »."
+      },
+      "messageActionButtonHover": {
+        "label": "Couleur du bouton d'action du message au survol",
+        "description": "Survolez la couleur pour tous les boutons d'action de message (copier, répondre, réagir, message direct, étoile et lorsqu'il est marqué d'une étoile)."
       }
     },
     "themePreset": {
@@ -378,7 +386,8 @@
     "use24HourTimeDesc": "Forcer les horloges comme les horodatages de chat au format 24 heures. Lorsqu'il est désactivé, suit les paramètres régionaux de votre système.",
     "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
     "themeRestoreFailed": "Échec de la restauration du point de contrôle des couleurs.",
-    "themeResetFailed": "Impossible de réinitialiser les couleurs."
+    "themeResetFailed": "Impossible de réinitialiser les couleurs.",
+    "messageActionsBarBgVisible": "Afficher l'arrière-plan"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

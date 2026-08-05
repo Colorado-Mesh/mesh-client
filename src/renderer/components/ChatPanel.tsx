@@ -2927,7 +2927,7 @@ function ChatPanel({
 
                           {/* Inline reaction trigger — visible on hover/focus-within, or always when alwaysShowMessageActions is set */}
                           <div
-                            className={`flex shrink-0 gap-0.5 transition-all ${
+                            className={`message-actions-bar flex shrink-0 gap-0.5 rounded transition-all ${
                               alwaysShowMessageActions
                                 ? 'opacity-100'
                                 : 'opacity-0 group-focus-within/msg:opacity-100 group-hover/msg:opacity-100'
@@ -2943,7 +2943,7 @@ function ChatPanel({
                                 });
                               }}
                               {...{ [PARENT_HOVER_ATTR]: '' }}
-                              className="rounded p-1 text-xs text-gray-600 hover:text-green-400"
+                              className="message-action rounded p-1 text-xs text-gray-600"
                               aria-label={t('chatPanel.copyMessage')}
                               title={t('chatPanel.copyMessage')}
                             >
@@ -2963,7 +2963,7 @@ function ChatPanel({
                                     composerInputRef.current?.focus();
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
+                                  className="message-action rounded p-1 text-xs text-gray-600"
                                   aria-label={t('chatPanel.replyToMessage')}
                                   title={t('chatPanel.replyButton')}
                                 >
@@ -3008,7 +3008,7 @@ function ChatPanel({
                                     }
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
+                                  className="message-action rounded p-1 text-xs text-gray-600"
                                   aria-label={t('chatPanel.addReaction')}
                                   title={t('chatPanel.reactButton')}
                                 >
@@ -3027,7 +3027,10 @@ function ChatPanel({
                                       openDmTo(msg.sender_id);
                                     }}
                                     {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
+                                    className="message-action rounded p-1 text-xs text-gray-600"
+                                    aria-label={t('chatPanel.directMessage', {
+                                      name: msg.sender_name,
+                                    })}
                                     title={t('chatPanel.directMessage', { name: msg.sender_name })}
                                   >
                                     <Mail
@@ -3049,10 +3052,8 @@ function ChatPanel({
                                         toggleStar(msg);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className={`rounded p-1 text-xs transition-colors ${
-                                        isStarred
-                                          ? 'text-amber-400 hover:text-amber-200'
-                                          : 'text-gray-600 hover:text-amber-400'
+                                      className={`message-action-star rounded p-1 text-xs ${
+                                        isStarred ? 'starred' : 'text-gray-600'
                                       }`}
                                       aria-label={
                                         isStarred
