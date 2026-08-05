@@ -4547,7 +4547,8 @@
     "topology": "网络拓扑图",
     "network": "网络",
     "rrc": "RRC",
-    "remote": "远程"
+    "remote": "远程",
+    "games": "出賽"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -5149,5 +5150,103 @@
     },
     "statsSeparator": "·",
     "ringing": "正在响铃…"
+  },
+  "gamesPanel": {
+    "title": "出賽",
+    "filters": {
+      "all": "所有食谱",
+      "active": "Active",
+      "pending": "待定",
+      "completed": "已完成"
+    },
+    "noSessions": "还没有游戏会话。",
+    "sessionRowAria": "{{app}}游戏与{{peer}}",
+    "apps": {
+      "ttt": "井字游戏",
+      "chess": "棋格"
+    },
+    "status": {
+      "pending": "待定",
+      "active": "Active",
+      "completed": "已完成",
+      "expired": "已失效",
+      "declined": "已拒绝"
+    },
+    "unreadBadgeAria": "{{count}}未读",
+    "newChallenge": "新的挑战！",
+    "peerHashPlaceholder": "对等目标哈希",
+    "peerHashAria": "对等目标哈希",
+    "selectAppAria": "选择游戏:",
+    "sendChallengeAria": "发送挑战\"",
+    "sendChallenge": "发送挑战\"",
+    "selectSessionPrompt": "选择要玩的游戏会话。",
+    "opponentLabel": "对手： {{peer}}",
+    "acceptAria": "接受挑战",
+    "accept": "接受",
+    "declineAria": "拒绝挑战",
+    "decline": "拒绝",
+    "resignAria": "放弃",
+    "resign": "放弃",
+    "acceptDrawAria": "接受抽奖报价",
+    "acceptDraw": "接受抽奖",
+    "declineDrawAria": "拒绝抽奖优惠",
+    "declineDraw": "拒绝抽奖",
+    "offerDrawAria": "提出和棋",
+    "offerDraw": "提出和棋",
+    "resendAria": "重新发送上次操作",
+    "resend": "重新发送",
+    "deleteSessionAria": "删除会话？",
+    "deleteSession": "删除会话？",
+    "resignConfirmTitle": "是否放弃游戏？",
+    "resignConfirmMessage": "您确定要退出此游戏吗？此操作无法撤消。",
+    "drawOfferedBanner": "您的对手开出平局。",
+    "challenge": "挑战",
+    "challengeAria": "挑战游戏",
+    "challengeAppAria": "挑战{{app}}",
+    "challengeSent": "{{app}}挑战已发送",
+    "ttt": {
+      "youWon": "您赢了 ！",
+      "opponentWon": "对手获胜。",
+      "draw": "单次抽奖",
+      "yourTurn": "轮到你了",
+      "opponentTurn": "对手的回合",
+      "yourMarker": "您是{{marker}}",
+      "moveCount": "{{count}}步",
+      "boardAria": "Tic-Tac-Toe板",
+      "cellAria": "Cell {{index}}"
+    },
+    "chess": {
+      "youWon": "您赢了 ！",
+      "opponentWon": "对手获胜。",
+      "draw": "单次抽奖",
+      "yourTurn": "轮到你了",
+      "yourTurnInCheck": "轮到你了—你可以检查了",
+      "opponentTurn": "对手的回合",
+      "boardAria": "棋盘",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "空",
+      "legalMoveAria": "播放{{move}}",
+      "pieceNames": {
+        "K": "白王",
+        "Q": "白皇后",
+        "R": "白色车厢",
+        "B": "White bishop",
+        "N": "白骑士",
+        "P": "白兵",
+        "k": "黑王",
+        "q": "黑方王后",
+        "r": "黑方车",
+        "b": "黑人主教",
+        "n": "黑骑士",
+        "p": "黑兵"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "输入有效的32个字符的对等目标哈希。",
+      "actionFailed": "操作失败： {{reason}}",
+      "unknownReason": "未知原因",
+      "resendFailed": "重新发送失败",
+      "deleteFailed": "删除会话失败。"
+    }
   }
 }

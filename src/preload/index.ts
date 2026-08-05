@@ -1197,6 +1197,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
       sendAudio: (opts: { profile?: number; channels: number; samples_b64: string }) =>
         unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceSendAudio', opts)),
     },
+    /** LRGP games — dedicated IPC (blocked on generic proxy). */
+    games: {
+      getStatus: () => unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesStatus')),
+      listApps: () => unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesApps')),
+      listSessions: (peer?: string) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesSessions', peer)),
+      getSession: (sessionId: string) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesSessionDetail', sessionId)),
+      sendAction: (opts: {
+        dest_hash: string;
+        app_id: string;
+        command: string;
+        session_id?: string;
+        payload?: Record<string, unknown>;
+        delivery_method?: string;
+      }) => unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesAction', opts)),
+      resend: (sessionId: string) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesResend', sessionId)),
+      markRead: (sessionId: string) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesMarkRead', sessionId)),
+      deleteSession: (sessionId: string) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesDeleteSession', sessionId)),
+    },
     rncp: {
       send: (opts: { destination_hash: string; path: string }) =>
         ipcRenderer.invoke('reticulum:rncpSend', opts),

@@ -13,13 +13,14 @@ path = "src/main.rs"
 [features]
 default = []
 # Full stack: requires sibling checkouts at ../../rsReticulum, ../../rsLXMF,
-# ../../rsNomad, and ../../rsLXST (Ratspeak layout).
+# ../../rsNomad, ../../rsLXST, and ../../lrgp-rs (Ratspeak layout).
 rns-stack = [
     "dep:rns-runtime",
     "dep:lxmf-core",
     "dep:nomad-core",
     "dep:lxst-telephony",
     "dep:lxst-core",
+    "dep:lrgp",
     "dep:rns-identity",
     "dep:rns-wire",
     "dep:rns-ratkey",
@@ -103,6 +104,11 @@ optional = true
 [dependencies.lxst-core]
 package = "lxst-core"
 path = "../../rsLXST/crates/lxst-core"
+optional = true
+
+[dependencies.lrgp]
+package = "lrgp"
+path = "../../lrgp-rs"
 optional = true
 
 [dependencies.rns-interface]

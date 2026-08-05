@@ -5,6 +5,7 @@ import {
   Code,
   Crosshair,
   FileChartColumn,
+  Gamepad2,
   GitBranch,
   Globe,
   Hash,
@@ -38,6 +39,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'Games':
+      return <Gamepad2 {...p} />;
     case 'RRC':
       return <Hash {...p} />;
     case 'Remote':

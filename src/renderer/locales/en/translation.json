@@ -1865,6 +1865,104 @@
       "esp32FlashStalled": "Firmware transfer stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and flash again."
     }
   },
+  "gamesPanel": {
+    "title": "Games",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "pending": "Pending",
+      "completed": "Completed"
+    },
+    "noSessions": "No game sessions yet.",
+    "sessionRowAria": "{{app}} game with {{peer}}",
+    "apps": {
+      "ttt": "Tic-Tac-Toe",
+      "chess": "Chess"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "completed": "Completed",
+      "expired": "Expired",
+      "declined": "Declined"
+    },
+    "unreadBadgeAria": "{{count}} unread",
+    "newChallenge": "New challenge",
+    "peerHashPlaceholder": "Peer destination hash",
+    "peerHashAria": "Peer destination hash",
+    "selectAppAria": "Select game",
+    "sendChallengeAria": "Send challenge",
+    "sendChallenge": "Send challenge",
+    "selectSessionPrompt": "Select a game session to play.",
+    "opponentLabel": "Opponent: {{peer}}",
+    "acceptAria": "Accept challenge",
+    "accept": "Accept",
+    "declineAria": "Decline challenge",
+    "decline": "Decline",
+    "resignAria": "Resign",
+    "resign": "Resign",
+    "acceptDrawAria": "Accept draw offer",
+    "acceptDraw": "Accept draw",
+    "declineDrawAria": "Decline draw offer",
+    "declineDraw": "Decline draw",
+    "offerDrawAria": "Offer draw",
+    "offerDraw": "Offer draw",
+    "resendAria": "Resend last action",
+    "resend": "Resend",
+    "deleteSessionAria": "Delete session",
+    "deleteSession": "Delete session",
+    "resignConfirmTitle": "Resign game?",
+    "resignConfirmMessage": "Are you sure you want to resign this game? This cannot be undone.",
+    "drawOfferedBanner": "Your opponent offered a draw.",
+    "challenge": "Challenge",
+    "challengeAria": "Challenge to a game",
+    "challengeAppAria": "Challenge to {{app}}",
+    "challengeSent": "{{app}} challenge sent",
+    "ttt": {
+      "youWon": "You won!",
+      "opponentWon": "Opponent won.",
+      "draw": "Draw.",
+      "yourTurn": "Your turn",
+      "opponentTurn": "Opponent's turn",
+      "yourMarker": "You are {{marker}}",
+      "moveCount": "{{count}} moves",
+      "boardAria": "Tic-Tac-Toe board",
+      "cellAria": "Cell {{index}}"
+    },
+    "chess": {
+      "youWon": "You won!",
+      "opponentWon": "Opponent won.",
+      "draw": "Draw.",
+      "yourTurn": "Your turn",
+      "yourTurnInCheck": "Your turn — you are in check",
+      "opponentTurn": "Opponent's turn",
+      "boardAria": "Chess board",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "empty",
+      "legalMoveAria": "Play {{move}}",
+      "pieceNames": {
+        "K": "White king",
+        "Q": "White queen",
+        "R": "White rook",
+        "B": "White bishop",
+        "N": "White knight",
+        "P": "White pawn",
+        "k": "Black king",
+        "q": "Black queen",
+        "r": "Black rook",
+        "b": "Black bishop",
+        "n": "Black knight",
+        "p": "Black pawn"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Enter a valid 32-character peer destination hash.",
+      "actionFailed": "Action failed: {{reason}}",
+      "unknownReason": "unknown reason",
+      "resendFailed": "Resend failed.",
+      "deleteFailed": "Failed to delete session."
+    }
+  },
   "identityVault": {
     "title": "Identity vault",
     "hint": "Encrypt a local copy of your identity backup with a vault passcode. Unlock to access protected identity operations.",
@@ -4750,6 +4848,7 @@
   "tabs": {
     "connection": "Connection",
     "chat": "Chat",
+    "games": "Games",
     "rrc": "RRC",
     "remote": "Remote",
     "nomadnetwork": "Nomad Network",

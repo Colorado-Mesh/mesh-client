@@ -318,6 +318,8 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(PRELOAD_SOURCE).toContain('rrc:');
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPost'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceSendAudio'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesStatus'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesAction'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPut'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyDelete'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:readDefaultConfigFile'");

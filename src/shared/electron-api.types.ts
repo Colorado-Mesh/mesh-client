@@ -1,5 +1,14 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import type {
+  GamesActionRequest,
+  GamesActionResult,
+  GamesAppManifest,
+  GamesListSessionsResponse,
+  GamesOkResponse,
+  GamesSessionDetailResponse,
+  GamesStatusResponse,
+} from './games-types';
 import type { MeshProtocol } from './meshProtocol';
 import type {
   PathCapability,
@@ -1126,6 +1135,20 @@ export interface ElectronAPI {
       hangup: () => Promise<VoiceOkResponse>;
       mute: (opts: VoiceMuteRequest) => Promise<VoiceOkResponse>;
       sendAudio: (opts: VoiceAudioRequest) => Promise<VoiceOkResponse>;
+    };
+    /**
+     * LRGP games (lrgp-rs). Dedicated IPC channels — generic `proxyGet`/`proxyPost`
+     * reject `/api/v1/games/*` so session polls/moves do not share the 300/min proxy bucket.
+     */
+    games: {
+      getStatus: () => Promise<GamesStatusResponse>;
+      listApps: () => Promise<{ apps?: GamesAppManifest[] } | GamesStatusResponse>;
+      listSessions: (peer?: string) => Promise<GamesListSessionsResponse>;
+      getSession: (sessionId: string) => Promise<GamesSessionDetailResponse>;
+      sendAction: (opts: GamesActionRequest) => Promise<GamesActionResult>;
+      resend: (sessionId: string) => Promise<GamesActionResult | GamesOkResponse>;
+      markRead: (sessionId: string) => Promise<GamesOkResponse>;
+      deleteSession: (sessionId: string) => Promise<GamesOkResponse>;
     };
     /**
      * rncp (file transfer). `send` / `fetch` / `setListener` are picker-backed

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 
 import { clearReticulumSessionStores } from './clearReticulumSessionStores';
@@ -41,5 +42,12 @@ describe('clearReticulumSessionStores', () => {
     clearReticulumSessionStores();
     expect(hangup).not.toHaveBeenCalled();
     expect(stopMedia).toHaveBeenCalled();
+  });
+
+  it('clears the games store', () => {
+    useReticulumGamesStore.getState().selectSession('s1');
+    clearReticulumSessionStores();
+    expect(useReticulumGamesStore.getState().selectedSessionId).toBeNull();
+    expect(useReticulumGamesStore.getState().sessions).toHaveLength(0);
   });
 });

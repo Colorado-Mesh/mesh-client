@@ -27,6 +27,7 @@ vi.mock('lucide-react-motion', async (importOriginal) => {
     Wifi: MockIcon,
     GitBranch: MockIcon,
     Shield: MockIcon,
+    Gamepad2: MockIcon,
   };
 });
 

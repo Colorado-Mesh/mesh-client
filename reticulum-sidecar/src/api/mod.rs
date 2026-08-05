@@ -1,6 +1,7 @@
 //! HTTP + WebSocket API (Ratspeak-aligned contract; see docs/reticulum-sidecar-ipc.md).
 
 mod config;
+mod games;
 mod identity;
 mod interfaces;
 mod lxmf;
@@ -252,7 +253,22 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/voice/hangup", post(voice::voice_hangup))
         .route("/api/v1/voice/mute", post(voice::voice_mute))
         .route("/api/v1/voice/audio", post(voice::voice_audio))
-        .route("/api/v1/games/status", get(system::games_status))
+        .route("/api/v1/games/status", get(games::games_status))
+        .route("/api/v1/games/apps", get(games::games_apps))
+        .route("/api/v1/games/sessions", get(games::games_sessions))
+        .route(
+            "/api/v1/games/sessions/{id}",
+            get(games::games_session_detail).delete(games::games_session_delete),
+        )
+        .route("/api/v1/games/action", post(games::games_action))
+        .route(
+            "/api/v1/games/sessions/{id}/resend",
+            post(games::games_session_resend),
+        )
+        .route(
+            "/api/v1/games/sessions/{id}/read",
+            post(games::games_session_read),
+        )
         .route(
             "/api/v1/identities",
             get(system::list_identities).post(system::create_identity),

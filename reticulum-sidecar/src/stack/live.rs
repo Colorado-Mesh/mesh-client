@@ -36,6 +36,7 @@ use super::announce_ws_coalesce::{
     AnnounceWsCoalescer, AnnounceWsRow, build_announce_received_frame, resolve_announce_aspect,
 };
 use super::config;
+use super::games_session::GamesSessionManager;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
@@ -135,6 +136,7 @@ pub struct LiveBridge {
     rnsh_session: Arc<RnshSessionManager>,
     rncp_transfer: Arc<RncpTransferManager>,
     voice_session: Arc<VoiceSessionManager>,
+    games_session: Arc<GamesSessionManager>,
     /// Local Nomad page/file host (rsNomad / nomad-core).
     nomad_server: Arc<NomadServerHandle>,
     /// Shared persisted stack state (Nomad node list, prefs).
@@ -309,6 +311,12 @@ impl LiveBridge {
         apply_pn_hosting_policy_to_router(&mut router, &pn_hosting_policy);
         router.set_transport(handle.transport_tx.clone());
 
+        let games_session = Arc::new(GamesSessionManager::spawn(
+            &storage_dir,
+            lxmf_hash_hex.clone(),
+            event_tx.clone(),
+        ));
+
         let cache_for_cb = peer_via_cache.clone();
         let name_cache_for_cb = display_name_cache.clone();
         let event_tx_cb = event_tx.clone();
@@ -316,11 +324,15 @@ impl LiveBridge {
         let self_hash_cb = lxmf_hash_hex.clone();
         let self_name_cb = display_name.clone();
         let config_dir_for_cb = config_dir.clone();
+        let games_session_cb = games_session.clone();
         router.register_delivery_callback(move |msg| {
             if !msg.incoming {
                 return;
             }
             let sender_hex = hex::encode(msg.source_hash);
+            if games_session_cb.handle_inbound_lxmf(&msg.fields, &sender_hex, &msg.content) {
+                return;
+            }
             // Match path-table iface name to local config (same as outbound) so
             // TCP hubs named e.g. "RNS Testnet" classify as tcp, not network.
             let received_via = cache_for_cb
@@ -455,6 +467,7 @@ impl LiveBridge {
                 &identity,
                 event_tx.clone(),
             )),
+            games_session,
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
             #[cfg(feature = "rns-ble")]
@@ -2174,6 +2187,36 @@ impl LiveBridge {
             .await
     }
 
+    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    pub async fn games_status(&self) -> serde_json::Value {
+        self.games_session.status()
+    }
+
+    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    pub async fn games_apps(&self) -> serde_json::Value {
+        self.games_session.list_apps()
+    }
+
+    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    pub async fn games_sessions(&self, peer: Option<&str>) -> serde_json::Value {
+        self.games_session.list_sessions(peer)
+    }
+
+    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    pub async fn games_session_detail(&self, session_id: &str) -> serde_json::Value {
+        self.games_session.session_detail(session_id)
+    }
+
+    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    pub async fn games_mark_read(&self, session_id: &str) -> Result<(), String> {
+        self.games_session.mark_read(session_id)
+    }
+
+    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    pub async fn games_delete_session(&self, session_id: &str) -> Result<(), String> {
+        self.games_session.delete_session(session_id)
+    }
+
     pub async fn rncp_send(&self, destination_hash_hex: &str, path: &str) -> serde_json::Value {
         match self.rncp_transfer.send(destination_hash_hex, path).await {
             Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
@@ -2931,6 +2974,202 @@ impl LiveBridge {
             .map(hex::encode)
             .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
         Ok((msg, hash_hex))
+    }
+
+    /// Like [`prepare_signed_outbound_lxmf`](Self::prepare_signed_outbound_lxmf), but
+    /// stamps arbitrary custom fields (e.g. LRGP's `FIELD_CUSTOM_TYPE` / `FIELD_CUSTOM_META`
+    /// envelope bytes) before signing so they are covered by the message hash.
+    fn prepare_signed_outbound_lxmf_with_fields(
+        &self,
+        dest: [u8; 16],
+        title: &str,
+        content: &str,
+        method: DeliveryMethod,
+        fields: &HashMap<u8, Vec<u8>>,
+    ) -> Result<(LxMessage, String), String> {
+        let mut msg = LxMessage::new(
+            dest,
+            parse_hash16(&self.lxmf_hash_hex)?,
+            title,
+            content,
+            method,
+        );
+        for (&field_id, bytes) in fields {
+            msg.set_field(field_id, bytes.clone());
+        }
+        let signing_key = self
+            .identity
+            .get_signing_key()
+            .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
+        msg.sign(&signing_key)
+            .map_err(|e| format!("lxmf sign: {e:?}"))?;
+        let hash_hex = msg
+            .hash
+            .map(hex::encode)
+            .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
+        Ok((msg, hash_hex))
+    }
+
+    /// Resolve a Direct-vs-Propagated delivery method for an LRGP action, mirroring
+    /// [`send_lxmf`](Self::send_lxmf)'s fallback chain. On `Err`, the caller must
+    /// roll back the prepared action and return the JSON payload as-is.
+    async fn resolve_game_delivery_method(
+        &self,
+        dest_hash: &str,
+    ) -> Result<DeliveryMethod, serde_json::Value> {
+        let (mut has_path, mut identity_known) = self
+            .outbound
+            .lock()
+            .map(|d| (d.has_path_to(dest_hash), d.identity_known_for(dest_hash)))
+            .unwrap_or((false, false));
+
+        let preferred_pn_hash = {
+            let router = self.router.lock().await;
+            router.outbound_propagation_node.map(hex::encode)
+        };
+        let preferred_pn_set = preferred_pn_hash.is_some();
+        if let Some(ref pn_hex) = preferred_pn_hash {
+            let _ = self.refresh_pn_announce_costs(pn_hex).await;
+        }
+
+        if !has_path {
+            has_path = self.ensure_path_for_direct(dest_hash, false).await;
+        }
+        if has_path && !identity_known {
+            identity_known = self.ensure_identity_for_direct(dest_hash).await;
+        }
+
+        match lxmf_outbound::choose_lxmf_send_route(has_path, identity_known, preferred_pn_set) {
+            lxmf_outbound::LxmfSendRoute::Direct => Ok(DeliveryMethod::Direct),
+            lxmf_outbound::LxmfSendRoute::Propagated => Ok(DeliveryMethod::Propagated),
+            lxmf_outbound::LxmfSendRoute::NoPropagationNode => Err(serde_json::json!({
+                "ok": false,
+                "error": "no_propagation_node",
+                "destination_hash": dest_hash,
+            })),
+        }
+    }
+
+    /// Dispatch an LRGP game action: validate/snapshot via [`GamesSessionManager`],
+    /// send the resulting envelope over LXMF (Direct-preferred, Propagated fallback),
+    /// then commit or roll back the session mutation based on send outcome.
+    pub async fn send_game_action(
+        &self,
+        dest_hash: &str,
+        app_id: &str,
+        command: &str,
+        session_id: Option<&str>,
+        payload: Option<&serde_json::Value>,
+    ) -> Result<serde_json::Value, String> {
+        let action = match self
+            .games_session
+            .prepare_action(dest_hash, app_id, command, session_id, payload)
+        {
+            Ok(a) => a,
+            Err(e) => return Ok(serde_json::json!({ "ok": false, "error": e })),
+        };
+
+        let dest = match parse_hash16(&action.dest_hash) {
+            Ok(d) => d,
+            Err(e) => {
+                self.games_session.rollback_action(action);
+                return Err(e);
+            }
+        };
+
+        let delivery_method = match self.resolve_game_delivery_method(&action.dest_hash).await {
+            Ok(m) => m,
+            Err(no_route_json) => {
+                self.games_session.rollback_action(action);
+                return Ok(no_route_json);
+            }
+        };
+
+        let (msg, message_hash_hex) = match self.prepare_signed_outbound_lxmf_with_fields(
+            dest,
+            "",
+            &action.fallback_text,
+            delivery_method,
+            &action.fields,
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                self.games_session.rollback_action(action);
+                return Err(e);
+            }
+        };
+
+        let send_result = {
+            let mut router = self.router.lock().await;
+            let res = router.try_send(msg);
+            if res.is_ok() {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.process_tick(&mut router, &self.event_tx);
+                }
+            }
+            res
+        };
+        if let Err(e) = send_result {
+            self.games_session.rollback_action(action);
+            return Err(format!("lxmf game action send: {e:?}"));
+        }
+
+        self.games_session.commit_action(&action);
+
+        Ok(serde_json::json!({
+            "ok": true,
+            "app_id": action.app_id,
+            "session_id": action.session_id,
+            "destination_hash": action.dest_hash,
+            "message_hash": message_hash_hex,
+        }))
+    }
+
+    /// Resend the last dispatched envelope for a session verbatim (same nonce),
+    /// e.g. after a transient send failure. Does not re-dispatch game logic.
+    pub async fn resend_last_game_action(
+        &self,
+        session_id: &str,
+    ) -> Result<serde_json::Value, String> {
+        let resend = match self.games_session.prepare_resend(session_id) {
+            Ok(r) => r,
+            Err(e) => return Ok(serde_json::json!({ "ok": false, "error": e })),
+        };
+
+        let dest = parse_hash16(&resend.dest_hash)?;
+        let delivery_method = match self.resolve_game_delivery_method(&resend.dest_hash).await {
+            Ok(m) => m,
+            Err(no_route_json) => return Ok(no_route_json),
+        };
+
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf_with_fields(
+            dest,
+            "",
+            &resend.fallback_text,
+            delivery_method,
+            &resend.fields,
+        )?;
+
+        {
+            let mut router = self.router.lock().await;
+            router
+                .try_send(msg)
+                .map_err(|e| format!("lxmf game resend: {e:?}"))?;
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.process_tick(&mut router, &self.event_tx);
+            }
+        }
+
+        self.games_session
+            .emit_action_result(&resend.app_id, session_id, true, None);
+
+        Ok(serde_json::json!({
+            "ok": true,
+            "app_id": resend.app_id,
+            "session_id": session_id,
+            "destination_hash": resend.dest_hash,
+            "message_hash": message_hash_hex,
+        }))
     }
 
     pub async fn send_reaction(

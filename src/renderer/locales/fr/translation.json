@@ -4547,7 +4547,8 @@
     "topology": "Topologie de réseau",
     "network": "Réseau",
     "rrc": "RRC",
-    "remote": "À distance"
+    "remote": "À distance",
+    "games": "Jeux"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -5149,5 +5150,103 @@
     },
     "statsSeparator": "·",
     "ringing": "Ça sonne…"
+  },
+  "gamesPanel": {
+    "title": "Jeux",
+    "filters": {
+      "all": "Tous",
+      "active": "Actif",
+      "pending": "En attente",
+      "completed": "Terminé"
+    },
+    "noSessions": "Pas encore de sessions de jeu.",
+    "sessionRowAria": "{{app}} jeu avec {{peer}}",
+    "apps": {
+      "ttt": "Tictacto",
+      "chess": "Échecs"
+    },
+    "status": {
+      "pending": "En attente",
+      "active": "Actif",
+      "completed": "Terminé",
+      "expired": "Expiré",
+      "declined": "Décliné"
+    },
+    "unreadBadgeAria": "{{count}} non lu",
+    "newChallenge": "Nouveau défi",
+    "peerHashPlaceholder": "Hash de Destination",
+    "peerHashAria": "Hash de Destination",
+    "selectAppAria": "Choisir jeu",
+    "sendChallengeAria": "Envoyer un défi",
+    "sendChallenge": "Envoyer un défi",
+    "selectSessionPrompt": "Sélectionnez une session de jeu à jouer.",
+    "opponentLabel": "Opposant : {{peer}}",
+    "acceptAria": "Accepter le défi",
+    "accept": "Accepter",
+    "declineAria": "Refuser le défi",
+    "decline": "Refuser",
+    "resignAria": "Démissionner",
+    "resign": "Démissionner",
+    "acceptDrawAria": "Accepter l'offre de tirage",
+    "acceptDraw": "Accepter le tirage",
+    "declineDrawAria": "Refuser l'offre de tirage",
+    "declineDraw": "Refuser le tirage",
+    "offerDrawAria": "Proposer la partie nulle",
+    "offerDraw": "Proposer la partie nulle",
+    "resendAria": "Renvoyer la dernière action",
+    "resend": "Envoyer à nouveau",
+    "deleteSessionAria": "Supprimer la session",
+    "deleteSession": "Supprimer la session",
+    "resignConfirmTitle": "Abandonner la partie ?",
+    "resignConfirmMessage": "Êtes-vous sûr de vouloir démissionner de ce jeu ? Cela ne peut pas être annulé.",
+    "drawOfferedBanner": "Votre adversaire a offert un match nul.",
+    "challenge": "Défi",
+    "challengeAria": "Défi à un jeu",
+    "challengeAppAria": "Défiez {{app}}",
+    "challengeSent": "{{app}} défi envoyé",
+    "ttt": {
+      "youWon": "Vous avez gagné !",
+      "opponentWon": "L'adversaire a gagné.",
+      "draw": "Dessin.",
+      "yourTurn": "À votre tour",
+      "opponentTurn": "Au tour de l'adversaire",
+      "yourMarker": "Vous êtes {{marker}}",
+      "moveCount": "{{count}} se déplace",
+      "boardAria": "Carte Tic-Tac-Toe",
+      "cellAria": "Cellulaire {{index}}"
+    },
+    "chess": {
+      "youWon": "Vous avez gagné !",
+      "opponentWon": "L'adversaire a gagné.",
+      "draw": "Dessin.",
+      "yourTurn": "À votre tour",
+      "yourTurnInCheck": "À votre tour — vous êtes sous contrôle",
+      "opponentTurn": "Au tour de l'adversaire",
+      "boardAria": "Echiquier",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "vide",
+      "legalMoveAria": "Jouer {{move}}",
+      "pieceNames": {
+        "K": "Roi blanc",
+        "Q": "La Reine Blanche",
+        "R": "Tour blanche",
+        "B": "White bishop",
+        "N": "Chevalier blanc",
+        "P": "Pion blanc",
+        "k": "Black King",
+        "q": "Reine noire",
+        "r": "Tour noire",
+        "b": "Black bishop",
+        "n": "Chevalier noir",
+        "p": "Pion noir"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Entrez un hachage de destination homologue valide de 32 caractères.",
+      "actionFailed": "Échec de l'action : {{reason}}",
+      "unknownReason": "raison inconnue",
+      "resendFailed": "Échec du renvoi.",
+      "deleteFailed": "Échec de la suppression de la session."
+    }
   }
 }

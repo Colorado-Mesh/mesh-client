@@ -4549,7 +4549,8 @@
     "topology": "Топологія мережі",
     "network": "Мережа",
     "rrc": "RRC",
-    "remote": "Віддалений"
+    "remote": "Віддалений",
+    "games": "Ігри"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -5151,5 +5152,103 @@
     },
     "statsSeparator": "·",
     "ringing": "Дзвенить…"
+  },
+  "gamesPanel": {
+    "title": "Ігри",
+    "filters": {
+      "all": "Всі",
+      "active": "Активний",
+      "pending": "Очікується",
+      "completed": "Завершено"
+    },
+    "noSessions": "Ще немає ігрових сеансів.",
+    "sessionRowAria": "{{app}} гра з {{peer}}",
+    "apps": {
+      "ttt": "Хрестики-нулики",
+      "chess": "Шахи"
+    },
+    "status": {
+      "pending": "Очікується",
+      "active": "Активний",
+      "completed": "Завершено",
+      "expired": "Минув термін дії",
+      "declined": "Відхилено"
+    },
+    "unreadBadgeAria": "{{count}} непрочитаних",
+    "newChallenge": "Новий виклик!",
+    "peerHashPlaceholder": "Хеш призначення вузла",
+    "peerHashAria": "Хеш призначення вузла",
+    "selectAppAria": "Вибрати гру",
+    "sendChallengeAria": "Надіслати челендж",
+    "sendChallenge": "Надіслати челендж",
+    "selectSessionPrompt": "Виберіть ігровий сеанс для відтворення.",
+    "opponentLabel": "Опонент: {{peer}}",
+    "acceptAria": "Прийняти виклик",
+    "accept": "Прийняти",
+    "declineAria": "Відхилити виклик",
+    "decline": "Відмовитися",
+    "resignAria": "Здатись",
+    "resign": "Здатись",
+    "acceptDrawAria": "Прийняти пропозицію розіграшу",
+    "acceptDraw": "Прийняти розіграш",
+    "declineDrawAria": "Відхилити пропозицію розіграшу",
+    "declineDraw": "Відхилити розіграш",
+    "offerDrawAria": "Розіграш пропозицій",
+    "offerDraw": "Розіграш пропозицій",
+    "resendAria": "Надіслати останню дію ще раз",
+    "resend": "Відправити повторно",
+    "deleteSessionAria": "Вилучити сеанс...",
+    "deleteSession": "Вилучити сеанс...",
+    "resignConfirmTitle": "Вийти з гри?",
+    "resignConfirmMessage": "Ви впевнені, що хочете вийти з цієї гри? Цю дію неможливо скасувати.",
+    "drawOfferedBanner": "Ваш суперник запропонував нічию.",
+    "challenge": "Проблема",
+    "challengeAria": "Виклик грі",
+    "challengeAppAria": "Виклик {{app}}",
+    "challengeSent": "{{app}} виклик надіслано",
+    "ttt": {
+      "youWon": "Ви виграли!",
+      "opponentWon": "Противник переміг.",
+      "draw": "Балка",
+      "yourTurn": "Ваш хід.",
+      "opponentTurn": "Хід опонента",
+      "yourMarker": "Вас звати {{marker}}",
+      "moveCount": "{{count}} ходів",
+      "boardAria": "Дошка Tic-Tac-Toe",
+      "cellAria": "Комірка {{index}}"
+    },
+    "chess": {
+      "youWon": "Ви виграли!",
+      "opponentWon": "Противник переміг.",
+      "draw": "Балка",
+      "yourTurn": "Ваш хід.",
+      "yourTurnInCheck": "Ваша черга — ви на чеку",
+      "opponentTurn": "Хід опонента",
+      "boardAria": "Шахова дошкаFilter Effect: Melt Down",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "Порожня клітина",
+      "legalMoveAria": "Грати {{move}}",
+      "pieceNames": {
+        "K": "Білий король",
+        "Q": "Біла королева",
+        "R": "Біла грач",
+        "B": "Білий слон",
+        "N": "Білий лицар",
+        "P": "Білий пішак",
+        "k": "Чорний король",
+        "q": "Чорна королева",
+        "r": "Чорна грач",
+        "b": "Чорний слон",
+        "n": "Чорний лицар",
+        "p": "Чорний пішак"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Введіть дійсний 32-символьний хеш призначення вузла.",
+      "actionFailed": "Помилка дії: {{reason}}",
+      "unknownReason": "Невідома причина",
+      "resendFailed": "Помилка повторного надсилання.",
+      "deleteFailed": "Не вдалося видалити сеанс."
+    }
   }
 }

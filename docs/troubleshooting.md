@@ -216,6 +216,15 @@ If microphone permission is denied when placing or answering an LXST voice call:
 - **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
 - **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
 
+### Reticulum Games challenge fails or board does not update
+
+- **Stack not running / games disabled:** Games need a live `rns-stack` sidecar with sibling `lrgp-rs`. Check Connection → Start stack and `GET` status via Games tab (or logs for `games requires live rns-stack`).
+- **`unsupported_app`:** Peer lacks that LRGP app (mesh-client and Ratspeak ship Tic-Tac-Toe + Chess). Challenge with `ttt` or `chess`.
+- **`not_your_turn` / `invalid_move`:** Local validation rejected the move before send; wait for opponent or pick a legal cell/UCI move.
+- **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list.
+- **IPC blocked on proxy:** Renderer must use `electronAPI.reticulum.games.*` (`reticulum:games*`); generic `proxyGet`/`proxyPost` to `/api/v1/games/*` is rejected by design.
+- **Interop with Ratspeak:** Same LRGP v1 wire (`lrgp.v1` + `0xFB`/`0xFD`). See [reticulum-games-parity.md](reticulum-games-parity.md).
+
 ### Reticulum LXST voice call fails or is silent
 
 - **Stack not running:** Call needs a live Reticulum sidecar (`available` + `enabled` + `running` from `/api/v1/voice/status`). Start the stack from Connection.

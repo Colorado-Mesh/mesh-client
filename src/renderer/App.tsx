@@ -126,6 +126,7 @@ import {
   AppPanel,
   ChannelUtilizationChart,
   DiagnosticsPanel,
+  GamesPanel,
   MapPanel,
   ModulePanel,
   NomadNetworkPanel,
@@ -159,6 +160,7 @@ import {
   computeTabMappings,
   DIAGNOSTICS_PANEL_INDEX,
   findFilteredTabIndexForPanel,
+  GAMES_PANEL_INDEX,
   GRAPH_PANEL_INDEX,
   MAP_TAB_PANEL_INDEX,
   MODULES_PANEL_INDEX,
@@ -1921,6 +1923,7 @@ function AppContent() {
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
+  const [gamesTabVisited, setGamesTabVisited] = useState(false);
   const [rrcTabVisited, setRrcTabVisited] = useState(false);
   const [remoteTabVisited, setRemoteTabVisited] = useState(false);
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
@@ -1938,6 +1941,7 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
     setChatTabVisited(false);
     setRoomsTabVisited(false);
+    setGamesTabVisited(false);
     setRrcTabVisited(false);
     setRemoteTabVisited(false);
     setNomadTabVisited(false);
@@ -1951,6 +1955,13 @@ function AppContent() {
       setRoomsTabVisited(true);
     }
   }, [activePanelIndex, capabilities.hasRoomServersPanel]);
+
+  useEffect(() => {
+    if (activePanelIndex === GAMES_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Games tab visit for keep-alive mount
+      setGamesTabVisited(true);
+    }
+  }, [activePanelIndex]);
 
   useEffect(() => {
     if (activePanelIndex === RRC_PANEL_INDEX) {
@@ -3070,6 +3081,7 @@ function AppContent() {
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             hasRncpTransfer={capabilities.hasRncpTransfer}
                             hasLxstVoice={capabilities.hasLxstVoice}
+                            hasLrgpGames={capabilities.hasLrgpGames}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
                             showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
@@ -3165,6 +3177,33 @@ function AppContent() {
                         </Suspense>
                       </div>
                     )}
+                    <div
+                      id={`panel-${GAMES_PANEL_INDEX}`}
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), GAMES_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== GAMES_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {(activePanelIndex === GAMES_PANEL_INDEX || gamesTabVisited) && (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={
+                                activePanelIndex !== GAMES_PANEL_INDEX || !capabilities.hasLrgpGames
+                              }
+                            >
+                              <GamesPanel
+                                isActive={
+                                  activePanelIndex === GAMES_PANEL_INDEX &&
+                                  capabilities.hasLrgpGames
+                                }
+                              />
+                            </div>
+                          </Suspense>
+                        </ErrorBoundary>
+                      )}
+                    </div>
                     <div
                       id={`panel-${RRC_PANEL_INDEX}`}
                       role="tabpanel"
@@ -3284,6 +3323,7 @@ function AppContent() {
                                 groupMemberIds={contactGroups.groupMemberIds}
                                 contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
                                 hasLxstVoice={capabilities.hasLxstVoice}
+                                hasLrgpGames={capabilities.hasLrgpGames}
                               />
                             ) : (
                               <NodeListPanel

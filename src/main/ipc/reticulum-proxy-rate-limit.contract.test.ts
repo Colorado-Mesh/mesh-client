@@ -53,6 +53,21 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     expect(preload).not.toMatch(/invoke\('reticulum:proxyPost',\s*'\/api\/v1\/voice\/audio'/);
   });
 
+  it('routes LRGP games through dedicated IPC with its own rate limit', () => {
+    expect(HANDLERS_SOURCE).toContain("label: 'reticulum:games'");
+    expect(HANDLERS_SOURCE).toMatch(/max:\s*600/);
+    expect(HANDLERS_SOURCE).toContain('reticulumGamesIpcRateLimit.checkOrThrow()');
+    expect(HANDLERS_SOURCE).toContain('LRGP games require reticulum:games* IPC channels');
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesStatus'");
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesAction'");
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesDeleteSession'");
+    const preload = readFileSync(join(__dirname, '../../preload/index.ts'), 'utf-8');
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:gamesStatus'");
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:gamesAction'");
+    expect(preload).not.toMatch(/invoke\('reticulum:proxyGet',\s*'\/api\/v1\/games/);
+    expect(preload).not.toMatch(/invoke\('reticulum:proxyPost',\s*'\/api\/v1\/games/);
+  });
+
   it('aligns sidecar peer cache and WS added batch with ~100k scale', () => {
     expect(SIDECAR_STACK_SOURCE).toMatch(/const MAX_PEER_CACHE: usize = 100_000;/);
     expect(SIDECAR_LIVE_SOURCE).toMatch(/const MAX_PEERS_UPDATED_ADDED: usize = 4096;/);

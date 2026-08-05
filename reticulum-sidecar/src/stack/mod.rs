@@ -33,6 +33,8 @@ mod types;
 mod via;
 
 #[cfg(feature = "rns-stack")]
+mod games_session;
+#[cfg(feature = "rns-stack")]
 mod link_task;
 #[cfg(feature = "rns-stack")]
 mod live;
@@ -2590,13 +2592,87 @@ impl StackHandle {
         serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle feature-status API awaited by HTTP handlers
     pub async fn games_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.games_status().await;
+        }
         serde_json::json!({
-            "available": true,
+            "available": cfg!(feature = "rns-stack"),
             "enabled": false,
-            "reason": "LRGP games pending lrgp-rs integration"
+            "reason": "LRGP games require a live rns-stack sidecar"
         })
+    }
+
+    pub async fn games_apps(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.games_apps().await;
+        }
+        serde_json::json!({ "apps": [] })
+    }
+
+    pub async fn games_sessions(&self, peer: Option<&str>) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.games_sessions(peer).await;
+        }
+        let _ = peer;
+        serde_json::json!({ "sessions": [] })
+    }
+
+    pub async fn games_session_detail(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.games_session_detail(session_id).await;
+        }
+        let _ = session_id;
+        serde_json::json!({ "session": null })
+    }
+
+    pub async fn games_send_action(
+        &self,
+        dest_hash: &str,
+        app_id: &str,
+        command: &str,
+        session_id: Option<&str>,
+        payload: Option<&serde_json::Value>,
+    ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live
+                .send_game_action(dest_hash, app_id, command, session_id, payload)
+                .await;
+        }
+        let _ = (dest_hash, app_id, command, session_id, payload);
+        Err("LRGP games require a live rns-stack sidecar".to_string())
+    }
+
+    pub async fn games_resend_action(&self, session_id: &str) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.resend_last_game_action(session_id).await;
+        }
+        let _ = session_id;
+        Err("LRGP games require a live rns-stack sidecar".to_string())
+    }
+
+    pub async fn games_mark_read(&self, session_id: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.games_mark_read(session_id).await;
+        }
+        let _ = session_id;
+        Err("LRGP games require a live rns-stack sidecar".to_string())
+    }
+
+    pub async fn games_delete_session(&self, session_id: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.games_delete_session(session_id).await;
+        }
+        let _ = session_id;
+        Err("LRGP games require a live rns-stack sidecar".to_string())
     }
 
     pub async fn list_identities(&self) -> serde_json::Value {

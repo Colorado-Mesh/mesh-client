@@ -154,6 +154,7 @@ import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
+import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
 import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import {
@@ -515,6 +516,8 @@ export interface ChatPanelProps {
   hasRncpTransfer?: boolean;
   /** Reticulum: LXST voice Call control in the DM header. */
   hasLxstVoice?: boolean;
+  /** Reticulum: LRGP games Challenge control in the DM header. */
+  hasLrgpGames?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
@@ -570,6 +573,7 @@ function ChatPanel({
   reticulumStackLive = false,
   hasRncpTransfer = false,
   hasLxstVoice = false,
+  hasLrgpGames = false,
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
@@ -2320,6 +2324,15 @@ function ChatPanel({
                 className={RETICULUM_DM_HEADER_ACTION_CLASS}
               />
             ) : null;
+          const gamesChallengeControl =
+            protocol === 'reticulum' && hasLrgpGames && reticulumDmDestinationHash != null ? (
+              <ReticulumGameChallengeButton
+                key={`dm-games-${reticulumDmDestinationHash}`}
+                lxmfPeerHash={reticulumDmDestinationHash}
+                disabled={!reticulumStackLive}
+                className={RETICULUM_DM_HEADER_ACTION_CLASS}
+              />
+            ) : null;
           const peerDetailsAppearance = reticulumDmDestinationHash
             ? peerAppearanceByHash.get(reticulumDmDestinationHash)
             : undefined;
@@ -2343,10 +2356,17 @@ function ChatPanel({
                 <span className="min-w-0 truncate">{t('chatPanel.openPeerDetails')}</span>
               </button>
             ) : null;
-          if (!pathBadge && !dmNode && !rncpControl && !voiceCallControl && !peerDetailsControl) {
+          if (
+            !pathBadge &&
+            !dmNode &&
+            !rncpControl &&
+            !voiceCallControl &&
+            !gamesChallengeControl &&
+            !peerDetailsControl
+          ) {
             return null;
           }
-          // Order: path status → last heard → peer details → Probe/Path → Call → Send file.
+          // Order: path status → last heard → peer details → Probe/Path → Call → Challenge → Send file.
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
@@ -2354,6 +2374,7 @@ function ChatPanel({
               {peerDetailsControl}
               {pathActions}
               {voiceCallControl}
+              {gamesChallengeControl}
               {rncpControl}
             </div>
           );

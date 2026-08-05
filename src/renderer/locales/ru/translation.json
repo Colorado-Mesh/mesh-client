@@ -4549,7 +4549,8 @@
     "topology": "Топология сети",
     "network": "Сеть",
     "rrc": "RRC",
-    "remote": "Удалённый"
+    "remote": "Удалённый",
+    "games": "Игры"
   },
   "takServerPanel": {
     "title": "TAK Сервер",
@@ -5151,5 +5152,103 @@
     },
     "statsSeparator": "·",
     "ringing": "Идёт вызов…"
+  },
+  "gamesPanel": {
+    "title": "Игры",
+    "filters": {
+      "all": "Все",
+      "active": "Действующая",
+      "pending": "В процессе",
+      "completed": "Завершено"
+    },
+    "noSessions": "Игровых сессий пока нет.",
+    "sessionRowAria": "{{app}} игра с {{peer}}",
+    "apps": {
+      "ttt": "Крестики Нолики",
+      "chess": "Шахматы"
+    },
+    "status": {
+      "pending": "В процессе",
+      "active": "Действующая",
+      "completed": "Завершено",
+      "expired": "Истек срок действия",
+      "declined": "Отклонено"
+    },
+    "unreadBadgeAria": "{{count}} НЕ прочитано",
+    "newChallenge": "Новый спор",
+    "peerHashPlaceholder": "Хеш назначения однорангового узла",
+    "peerHashAria": "Хеш назначения однорангового узла",
+    "selectAppAria": "Выбрать игру",
+    "sendChallengeAria": "Отправить вызов",
+    "sendChallenge": "Отправить вызов",
+    "selectSessionPrompt": "Выберите игровой сеанс для игры.",
+    "opponentLabel": "Противник: {{peer}}",
+    "acceptAria": "Принять вызов",
+    "accept": "Принять",
+    "declineAria": "Отклонить вызов",
+    "decline": "Отклонить",
+    "resignAria": "(Добровольное) увольнение",
+    "resign": "(Добровольное) увольнение",
+    "acceptDrawAria": "Принять предложение о розыгрыше",
+    "acceptDraw": "Принять жеребьев",
+    "declineDrawAria": "Отклонить предложение о розыгрыше",
+    "declineDraw": "Отклонить розыгрыш",
+    "offerDrawAria": "Розыгрыш предложения",
+    "offerDraw": "Розыгрыш предложения",
+    "resendAria": "Отправить последнее действие еще раз",
+    "resend": "Отправить повторно",
+    "deleteSessionAria": "Удалить сессию",
+    "deleteSession": "Удалить сессию",
+    "resignConfirmTitle": "Выйти из игры?",
+    "resignConfirmMessage": "Вы уверены, что хотите выйти из этой игры? Это действие нельзя отменить.",
+    "drawOfferedBanner": "Ваш оппонент предложил ничью.",
+    "challenge": "Испытание",
+    "challengeAria": "Вызов игре",
+    "challengeAppAria": "Вызов {{app}}",
+    "challengeSent": "{{app}} вызов отправлен",
+    "ttt": {
+      "youWon": "Вы победили!",
+      "opponentWon": "Противник победил.",
+      "draw": "Чертеж",
+      "yourTurn": "Твой черед",
+      "opponentTurn": "Ход противника",
+      "yourMarker": "Вы {{marker}}",
+      "moveCount": "{{count}} ходов",
+      "boardAria": "Доска крестики-нолики",
+      "cellAria": "Ячейка {{index}}"
+    },
+    "chess": {
+      "youWon": "Вы победили!",
+      "opponentWon": "Противник победил.",
+      "draw": "Чертеж",
+      "yourTurn": "Твой черед",
+      "yourTurnInCheck": "Ваша очередь — вы на чеку",
+      "opponentTurn": "Ход противника",
+      "boardAria": "Шахматная доска",
+      "squareAria": "{{square}}, {{piece}}",
+      "emptySquare": "пустой",
+      "legalMoveAria": "Играть {{move}}",
+      "pieceNames": {
+        "K": "Белый король",
+        "Q": "БЕЛАЯ КОРОЛЕВА",
+        "R": "Белая ладья",
+        "B": "Белый слон",
+        "N": "Белый рыцарь",
+        "P": "Белая пешка",
+        "k": "Черный король",
+        "q": "Черная королева",
+        "r": "Черная ладья",
+        "b": "Чёрный епископ",
+        "n": "Чёрный рыцарь",
+        "p": "Черная пешка"
+      }
+    },
+    "errors": {
+      "invalidPeerHash": "Введите допустимый 32-символьный одноранговый хэш назначения.",
+      "actionFailed": "Действие не выполнено: {{reason}}",
+      "unknownReason": "неизвесная причина",
+      "resendFailed": "Повторная отправка не удалась.",
+      "deleteFailed": "Не удалось удалить сеанс."
+    }
   }
 }
