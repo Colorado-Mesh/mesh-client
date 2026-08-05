@@ -79,18 +79,17 @@ jobs:
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
         run: node scripts/ci-ensure-github-draft-release.mjs
 
-      - name: Download schema compare readme
-        uses: actions/download-artifact@v7
-        with:
-          name: READ-ME-FIRST-schema-${{ github.sha }}
-          path: schema-compare
-
+      # Rebuild schema note from compare-job outputs (not the downloaded artifact) so the
+      # patch script never does file→HTTP (CodeQL js/file-access-to-http).
       - name: Patch draft release body with schema note
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
-        run: node scripts/ci-patch-draft-release-schema-note.mjs --markdown-file schema-compare/READ-ME-FIRST-schema.md
+          MESH_CLIENT_SCHEMA_CURR: ${{ needs.schema-release-compare.outputs.curr_schema }}
+          MESH_CLIENT_SCHEMA_PREV: ${{ needs.schema-release-compare.outputs.prev_schema }}
+          MESH_CLIENT_SCHEMA_PREV_TAG: ${{ needs.schema-release-compare.outputs.prev_tag }}
+        run: node scripts/ci-patch-draft-release-schema-note.mjs
 
   resolve-release-matrix:
     needs: prepare-github-release

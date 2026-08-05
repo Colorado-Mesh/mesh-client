@@ -142,7 +142,7 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.13.0",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.26",
-    "@stoprocent/noble": "^2.6.5",
+    "@stoprocent/noble": "^2.7.1",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "@zip.js/zip.js": "^2.8.34",
@@ -194,7 +194,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-v8": "^4.1.10",
     "concurrently": "^9.2.4",
-    "electron": "^41.10.3",
+    "electron": "^41.10.4",
     "electron-builder": "^26.15.7",
     "esbuild": "^0.28.1",
     "eslint": "^10.8.0",

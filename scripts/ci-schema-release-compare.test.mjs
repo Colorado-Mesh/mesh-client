@@ -7,6 +7,8 @@ import {
   isSchemaBumped,
   parseCurrentSchemaVersion,
   runSchemaReleaseCompare,
+  trustedReleaseTag,
+  trustedSchemaVersion,
   writeGithubOutput,
 } from './ci-schema-release-compare.mjs';
 
@@ -17,6 +19,19 @@ describe('parseCurrentSchemaVersion', () => {
 
   it('rejects missing export', () => {
     expect(() => parseCurrentSchemaVersion('const x = 1;')).toThrow(/Could not parse/);
+  });
+});
+
+describe('trustedReleaseTag / trustedSchemaVersion', () => {
+  it('reconstructs tags from digit groups', () => {
+    expect(trustedReleaseTag('v5.26.0')).toBe('v5.26.0');
+    expect(trustedReleaseTag('v01.02.03')).toBe('v1.2.3');
+  });
+
+  it('rejects unsafe tags and schema values', () => {
+    expect(() => trustedReleaseTag('../evil')).toThrow(/Unsafe release tag/);
+    expect(() => trustedSchemaVersion(0)).toThrow(/Invalid schema version/);
+    expect(() => trustedSchemaVersion('nope')).toThrow(/Invalid schema version/);
   });
 });
 

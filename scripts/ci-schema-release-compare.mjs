@@ -102,19 +102,44 @@ export function isSchemaBumped(currSchema, prevSchema) {
 }
 
 /**
+ * Reconstruct a trusted `vX.Y.Z` from validated digits (breaks CodeQL
+ * `js/http-to-file-access` taint from GitHub release JSON → disk writes).
+ * @param {unknown} tag
+ * @returns {string}
+ */
+export function trustedReleaseTag(tag) {
+  const m = typeof tag === 'string' ? /^v(\d+)\.(\d+)\.(\d+)$/.exec(tag) : null;
+  if (!m) {
+    throw new Error(`Unsafe release tag: ${JSON.stringify(tag)}`);
+  }
+  return `v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`;
+}
+
+/**
+ * Coerce a schema version to a trusted positive integer.
+ * @param {unknown} value
+ * @returns {number}
+ */
+export function trustedSchemaVersion(value) {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`Invalid schema version: ${JSON.stringify(value)}`);
+  }
+  return n;
+}
+
+/**
  * @param {string} tag
  * @param {string} [cwd]
  */
 export function readSchemaVersionFromGitTag(tag, cwd = ROOT) {
-  if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
-    throw new Error(`Unsafe git tag for schema lookup: ${JSON.stringify(tag)}`);
-  }
-  const source = execFileSync('git', ['show', `${tag}:${SCHEMA_REL}`], {
+  const safeTag = trustedReleaseTag(tag);
+  const source = execFileSync('git', ['show', `${safeTag}:${SCHEMA_REL}`], {
     cwd,
     encoding: 'utf8',
     maxBuffer: 2 * 1024 * 1024,
   });
-  return parseCurrentSchemaVersion(source);
+  return trustedSchemaVersion(parseCurrentSchemaVersion(source));
 }
 
 /**
@@ -155,7 +180,8 @@ export async function fetchLatestPublishedReleaseSchema(opts = {}) {
     return null;
   }
 
-  const tag = candidate.tag_name;
+  // Rebuild tag/schema from validated digits so later disk writes are not network-tainted.
+  const tag = trustedReleaseTag(candidate.tag_name);
   try {
     execFileSync('git', ['fetch', '--depth', '1', 'origin', `refs/tags/${tag}:refs/tags/${tag}`], {
       cwd: ROOT,
@@ -219,24 +245,27 @@ export async function runSchemaReleaseCompare(argv, env = process.env) {
         : undefined;
 
   const currFile = path.join(ROOT, SCHEMA_REL);
-  const currSchema = readSchemaVersionFromFile(currFile);
+  const currSchema = trustedSchemaVersion(readSchemaVersionFromFile(currFile));
 
   let prevSchema = null;
   let prevTag = null;
   const prevSchemaEnv = env.MESH_CLIENT_SCHEMA_PREV;
   const prevTagEnv = env.MESH_CLIENT_SCHEMA_PREV_TAG;
   if (typeof prevSchemaEnv === 'string' && prevSchemaEnv !== '' && /^\d+$/.test(prevSchemaEnv)) {
-    prevSchema = Number(prevSchemaEnv);
-    prevTag = typeof prevTagEnv === 'string' && prevTagEnv ? prevTagEnv : 'unknown';
+    if (typeof prevTagEnv === 'string' && prevTagEnv && /^v\d+\.\d+\.\d+$/.test(prevTagEnv)) {
+      prevSchema = trustedSchemaVersion(prevSchemaEnv);
+      prevTag = trustedReleaseTag(prevTagEnv);
+    }
   } else if (!argv.includes('--offline')) {
     const prev = await fetchLatestPublishedReleaseSchema({ excludeTag });
     if (prev) {
-      prevSchema = prev.schema;
-      prevTag = prev.tag;
+      prevSchema = trustedSchemaVersion(prev.schema);
+      prevTag = trustedReleaseTag(prev.tag);
     }
   }
 
   const schemaBumped = isSchemaBumped(currSchema, prevSchema);
+  // Markdown is built only from trusted integers / reconstructed tags (not raw HTTP JSON).
   const markdown = formatSchemaCompareMarkdown({
     mode,
     currSchema,
