@@ -63,6 +63,59 @@ describe('meshtasticTransportLossDetection', () => {
     expect(onLost).toHaveBeenCalledTimes(1);
   });
 
+  it('notifies immediately on main-process TCP socket disconnect', () => {
+    // Regression: writes that fail after the socket is gone report "no active socket",
+    // which does not match TRANSPORT_LOST_MESSAGE, so this IPC event is TCP's only fast
+    // path — without it, TCP relied solely on the passive watchdog (up to 3 minutes).
+    let capturedCb: (() => void) | undefined;
+    const spy = vi
+      .spyOn(window.electronAPI.meshtastic.tcp, 'onDisconnected')
+      .mockImplementation((cb) => {
+        capturedCb = cb;
+        return () => {};
+      });
+
+    const onLost = vi.fn();
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    try {
+      attachMeshtasticTransportLossWatch(device, 'tcp', onLost);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      capturedCb?.();
+
+      expect(onLost).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('unsubscribes the TCP disconnect listener on cleanup', () => {
+    const unsub = vi.fn();
+    const spy = vi
+      .spyOn(window.electronAPI.meshtastic.tcp, 'onDisconnected')
+      .mockReturnValue(unsub);
+
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    try {
+      const detach = attachMeshtasticTransportLossWatch(device, 'tcp', vi.fn());
+      expect(unsub).not.toHaveBeenCalled();
+
+      detach();
+
+      expect(unsub).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('serializes concurrent getWriter calls without WritableStream locked errors', async () => {
     let innerWriteCount = 0;
     const inner = new WritableStream<Uint8Array>({

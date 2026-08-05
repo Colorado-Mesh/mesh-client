@@ -2257,15 +2257,17 @@ export function useMeshtasticRuntime() {
     // Late loser after budget timeout — avoid unhandledRejection; cleanup is in catch / late path.
     void reconnectWork.catch(() => {});
     try {
-      if (isBleReconnect) {
-        await raceWithDeadline(
-          reconnectWork,
-          NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
-          `BLE reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
-        );
-      } else {
-        await reconnectWork;
-      }
+      // Applied to every transport, not just BLE (constant name is historical): TCP/HTTP/serial
+      // reconnects used to `await reconnectWork` with no ceiling at all. A disconnect that lands
+      // while an open+configure is still in flight (now common — TCP disconnect detection is
+      // near-instant, see meshtasticTransportLossDetection.ts) defers to that attempt settling;
+      // without a deadline here, a hang anywhere in openMeshtasticTransport/configure wedges the
+      // whole reconnect state machine forever instead of just failing this attempt and retrying.
+      await raceWithDeadline(
+        reconnectWork,
+        NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+        `Reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
+      );
     } catch (err) {
       attemptActive = false;
       const failedDriverIdentity =
@@ -2276,6 +2278,11 @@ export function useMeshtasticRuntime() {
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       await lateTransport.cleanup(failedDriverIdentity);
+      // wireSubscriptions() already ran for this attempt's device by the time raceWithDeadline
+      // can time out (it's called synchronously right after open, before any long await); if we
+      // don't detach here, the loss-watch listener and wrapped toDevice stream stay live against
+      // the now-abandoned device until something else happens to tear them down.
+      cleanupSubscriptions();
       console.warn(
         `[useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
           ' ' +

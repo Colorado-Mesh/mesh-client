@@ -108,17 +108,28 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
-  it('bounds BLE reconnect open+attach with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+  it('bounds every reconnect open+attach with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    // Applies to all transports, not just BLE (see comment at the call site): TCP/serial used
+    // to await the open+attach attempt with no ceiling at all, so a hang anywhere in that
+    // sequence (e.g. a disconnect landing mid-attach) wedged reconnection forever — and unlike
+    // serial, MeshCore TCP has no fallback watchdog either (see meshcoreSerialWatchdog).
     expect(RUNTIME_SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(RUNTIME_SOURCE).toContain('raceWithDeadline');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toContain('raceWithDeadline');
-    expect(reconnectBody).toContain('BLE reconnect attempt timed out after');
+    expect(reconnectBody).toContain('Reconnect attempt timed out after');
     expect(reconnectBody).toContain('attemptActive');
     expect(reconnectBody).toContain('meshcoreReconnectConnectInFlightRef.current = true');
+    expect(reconnectBody).not.toContain('if (isBleReconnect) {\n        await raceWithDeadline');
   });
 
-  it('on BLE reconnect timeout invalidates setup generation and cleans late transports', () => {
+  it('on reconnect timeout invalidates setup generation and cleans late transports (any transport, CodeRabbit #792)', () => {
+    // meshcoreSetupGenerationRef guards background initConn RPCs (getSelfInfo/getContacts/
+    // getChannels/etc.) generically — not BLE-specific (see its other call sites). Gating the
+    // bump on isBleReconnect here was only ever correct while raceWithDeadline itself was
+    // BLE-only; now that every transport's reconnect races the same deadline, a timed-out
+    // TCP/serial attempt must invalidate the setup generation too, or its background RPCs keep
+    // running and can apply stale state after the attempt was already declared failed.
     expect(RUNTIME_SOURCE).toContain('createBleReconnectTransportCleanup');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toMatch(
@@ -127,9 +138,12 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toMatch(
       /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('MeshCore reconnect superseded during attach'\)/,
     );
-    expect(reconnectBody).toMatch(
-      /catch \(err\) \{[\s\S]*?isBleReconnect[\s\S]*?meshcoreSetupGenerationRef\.current \+= 1/,
+    const catchBody = reconnectBody.slice(
+      reconnectBody.indexOf('} catch (err) {'),
+      reconnectBody.indexOf('await lateTransport.cleanup(opened?.driverIdentityId)'),
     );
+    expect(catchBody).toContain('meshcoreSetupGenerationRef.current += 1');
+    expect(catchBody).not.toContain('if (isBleReconnect)');
   });
 
   it('cleans up transport when RF link is lost after reconnect attach', () => {
@@ -250,6 +264,15 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('registerMeshcoreSerialDisconnectTarget');
     expect(RUNTIME_SOURCE).toContain('startSerialRediscovery');
     expect(RUNTIME_SOURCE).toContain('captureSerialIdentityForRediscovery');
+  });
+
+  it('notifies immediately on main-process TCP socket disconnect (regression)', () => {
+    // Unlike serial, MeshCore's TCP transport has no fallback watchdog at all (see
+    // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
+    // is the only automatic recovery path for a dropped TCP connection.
+    expect(RUNTIME_SOURCE).toMatch(
+      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?rfType !== 'tcp'[\s\S]{0,200}handleMeshcoreConnectionLostRef\.current\(\)/,
+    );
   });
 });
 

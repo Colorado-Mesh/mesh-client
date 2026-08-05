@@ -6124,8 +6124,13 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     socket.on('close', (hadError) => {
       clearTimeout(connectTimeout);
       console.debug('[IPC] meshcore:tcp socket closed', hadError ? '(hadError)' : '(clean)');
-      mainWindow?.webContents.send('meshcore:tcp-disconnected');
-      if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
+      // Only notify when this socket is still the active bridge. connect/disconnect clear the
+      // ref before destroy(), so superseded closes must not look like a live link drop
+      // (renderer reconnect is driven by this event — see #792).
+      if (meshcoreTcpSocket === socket) {
+        meshcoreTcpSocket = null;
+        mainWindow?.webContents.send('meshcore:tcp-disconnected');
+      }
     });
     socket.on('error', (err) => {
       clearTimeout(connectTimeout);
@@ -6232,8 +6237,13 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
     socket.on('close', (hadError) => {
       clearTimeout(connectTimeout);
       console.debug('[IPC] meshtastic:tcp socket closed', hadError ? '(hadError)' : '(clean)');
-      mainWindow?.webContents.send('meshtastic:tcp-disconnected');
-      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      // Only notify when this socket is still the active bridge. connect/disconnect clear the
+      // ref before destroy(), so superseded closes must not look like a live link drop
+      // (renderer reconnect is driven by this event — see #792).
+      if (meshtasticTcpSocket === socket) {
+        meshtasticTcpSocket = null;
+        mainWindow?.webContents.send('meshtastic:tcp-disconnected');
+      }
     });
     socket.on('error', (err) => {
       clearTimeout(connectTimeout);

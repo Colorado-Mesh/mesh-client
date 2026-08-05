@@ -124,13 +124,29 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).toContain('skip overlapping open');
   });
 
-  it('bounds BLE reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+  it('bounds every reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    // Applies to all transports, not just BLE (see comment at the call site): TCP/HTTP/serial
+    // used to await the open+configure attempt with no ceiling at all, so a hang anywhere in
+    // that sequence (e.g. a disconnect landing mid-configure) wedged reconnection forever.
     expect(SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(SOURCE).toContain('raceWithDeadline');
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
     expect(reconnectBody).toContain('raceWithDeadline');
-    expect(reconnectBody).toContain('BLE reconnect attempt timed out after');
+    expect(reconnectBody).toContain('Reconnect attempt timed out after');
     expect(reconnectBody).toContain('attemptActive');
+    expect(reconnectBody).not.toContain('if (isBleReconnect) {');
+  });
+
+  it('detaches wire subscriptions when a reconnect attempt times out (CodeRabbit #792)', () => {
+    // wireSubscriptions() runs synchronously right after open, well before the deadline can
+    // fire, so a timed-out attempt leaves the loss-watch listener and wrapped toDevice stream
+    // live against the now-abandoned device unless the deadline's own catch block detaches them
+    // too — lateTransport.cleanup() alone only tears down the driver/transport, not those.
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    const cleanupIdx = reconnectBody.indexOf('await lateTransport.cleanup(failedDriverIdentity);');
+    expect(cleanupIdx).toBeGreaterThan(-1);
+    const afterCleanup = reconnectBody.slice(cleanupIdx, cleanupIdx + 500);
+    expect(afterCleanup).toContain('cleanupSubscriptions();');
   });
 
   it('disconnects late-opened transport when reconnect attempt is inactive or superseded', () => {

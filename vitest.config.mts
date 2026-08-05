@@ -104,6 +104,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshtasticRemoteAdminKeyStorage.test.ts',
   'src/renderer/lib/meshcore/meshcoreLiveContactPersist.test.ts',
   'src/renderer/lib/meshtastic/meshtasticTransportSideEffects.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticTransportLossDetection.test.ts',
   'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.post-reboot.test.ts',
   'src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.telemetry-nodeinfo.test.ts',
   'src/renderer/lib/meshtastic/meshtasticNodeSideEffects.test.ts',

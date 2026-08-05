@@ -195,6 +195,18 @@ export function attachMeshtasticTransportLossWatch(
     }
   }
 
+  if (type === 'tcp') {
+    // Main process reports the socket's own 'close'/'error' event within milliseconds of the
+    // real network failure (clean FIN or RST alike). Without this, TCP relied solely on the
+    // passive stale/dead watchdog noticing silence — up to 3 minutes after a connection that
+    // was already gone — because writes that fail with "no active socket" don't match the
+    // TRANSPORT_LOST_MESSAGE regex below, so this is the only fast path for TCP.
+    const unsubTcpDisconnected = window.electronAPI.meshtastic.tcp.onDisconnected(() => {
+      notify('tcp-socket-closed');
+    });
+    cleanups.push(unsubTcpDisconnected);
+  }
+
   const transport = device.transport as { toDevice?: WritableStream<Uint8Array> } | undefined;
   if (transport?.toDevice) {
     const transportObj = device.transport as object;
