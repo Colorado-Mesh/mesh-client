@@ -10,6 +10,7 @@ import {
   resetRrcHubDisconnectSuppressForTests,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
+import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
@@ -38,6 +39,9 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockClear();
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockResolvedValue({ changes: 1 });
     localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
+    clearRrcOpenDms(hubA);
+    clearRrcOpenDms(hubB);
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
   });
 
   it('renders amber hub chrome and select-hub prompt', async () => {
@@ -215,7 +219,7 @@ describe('RrcPanel', () => {
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
-  it('sends plain text in [whispers] as NOTICE to the last /msg peer', async () => {
+  it('opens a per-peer DM on /msg and replies with NOTICE to that peer', async () => {
     const user = userEvent.setup();
     const peerHash = 'dddddddddddddddddddddddddddddddd';
     const store = useRrcSessionStore.getState();
@@ -241,13 +245,10 @@ describe('RrcPanel', () => {
         dst_hash: peerHash,
       });
     });
-    expect(useRrcSessionStore.getState().activeRoom).toBe('[whispers]');
-    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
-      identity_hash: peerHash,
-      nickname: 'Alice',
-    });
+    expect(useRrcSessionStore.getState().activeRoom).toBe(`@${peerHash}`);
+    expect(useRrcSessionStore.getState().rooms.has(`@${peerHash}`)).toBe(true);
 
-    const whisperKey = useRrcSessionStore.getState().roomMessageKey('[whispers]');
+    const whisperKey = useRrcSessionStore.getState().roomMessageKey(`@${peerHash}`);
     const outbound = useRrcSessionStore
       .getState()
       .messages.get(whisperKey ?? '')
@@ -256,10 +257,11 @@ describe('RrcPanel', () => {
       kind: 'msg',
       body: 'first whisper',
       dst_hash: peerHash,
+      room: `@${peerHash}`,
     });
     expect(outbound?.body).not.toContain('→');
 
-    // Sidebar + header show peer nick, not the synthetic [whispers] key.
+    // Sidebar + header show peer nick, not the @hash key.
     expect(screen.getByRole('button', { name: 'Open room Alice' })).toBeInTheDocument();
     expect(screen.getByText(/· Alice/)).toBeInTheDocument();
 
@@ -279,7 +281,7 @@ describe('RrcPanel', () => {
     });
   });
 
-  it('keeps pinned /msg peer when an inbound whisper arrives from someone else', async () => {
+  it('keeps separate DM tabs when whispering two peers', async () => {
     const user = userEvent.setup();
     const aliceHash = 'dddddddddddddddddddddddddddddddd';
     const bobHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
@@ -301,19 +303,16 @@ describe('RrcPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Send' }));
 
     await waitFor(() => {
-      expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.whisperReplyPinned).toBe(true);
+      expect(useRrcSessionStore.getState().activeRoom).toBe(`@${aliceHash}`);
     });
 
-    // Inbound whisper from Bob must not steal the pinned reply target.
-    useRrcSessionStore
-      .getState()
-      .setLastWhisperPeer({ identity_hash: bobHash, nickname: 'Bob' }, hubA, {
-        onlyIfUnpinned: true,
-      });
-    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.lastWhisperPeer).toEqual({
-      identity_hash: aliceHash,
-      nickname: 'Alice',
+    // Inbound-style open of Bob's DM must not replace Alice's tab.
+    useRrcSessionStore.getState().openDm({ identity_hash: bobHash, nickname: 'Bob' }, hubA, {
+      focus: false,
     });
+    expect(useRrcSessionStore.getState().rooms.has(`@${aliceHash}`)).toBe(true);
+    expect(useRrcSessionStore.getState().rooms.has(`@${bobHash}`)).toBe(true);
+    expect(useRrcSessionStore.getState().activeRoom).toBe(`@${aliceHash}`);
 
     vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
     const whisperComposer = screen.getByRole('textbox', { name: /Reply to Alice/i });
@@ -329,6 +328,105 @@ describe('RrcPanel', () => {
         dst_hash: aliceHash,
       });
     });
+  });
+
+  it('leaves a DM locally without hub PART and keeps history', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', [{ identity_hash: peerHash, nickname: 'Alice' }]);
+    store.openDm({ identity_hash: peerHash, nickname: 'Alice' }, hubA, { focus: true });
+    store.addMessage({
+      id: 'keep-me',
+      room: `@${peerHash}`,
+      kind: 'msg',
+      body: 'saved',
+      timestamp: 1,
+      dst_hash: peerHash,
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.part).mockClear();
+
+    render(<RrcPanel isActive />);
+    await user.click(screen.getByRole('button', { name: /Leave room/i }));
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().rooms.has(`@${peerHash}`)).toBe(false);
+    });
+    expect(window.electronAPI.reticulum.rrc.part).not.toHaveBeenCalled();
+    expect(loadRrcOpenDms(hubA)).toEqual([]);
+    const key = useRrcSessionStore.getState().roomMessageKey(`@${peerHash}`, hubA);
+    expect(useRrcSessionStore.getState().messages.get(key ?? '')?.[0]?.body).toBe('saved');
+  });
+
+  it('restores open DMs from localStorage when the hub becomes active', async () => {
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    upsertRrcOpenDm(hubA, { identity_hash: peerHash, nickname: 'Alice' });
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general');
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().rooms.has(`@${peerHash}`)).toBe(true);
+    });
+    expect(screen.getByRole('button', { name: 'Open room Alice' })).toBeInTheDocument();
+    // Restore must not steal focus from the active channel.
+    expect(useRrcSessionStore.getState().activeRoom).toBe('#general');
+  });
+
+  it('does not hub-JOIN an @hash DM room name', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.openDm({ identity_hash: peerHash, nickname: 'Alice' }, hubA, { focus: false });
+    store.setActiveRoom('#general');
+    vi.mocked(window.electronAPI.reticulum.rrc.join).mockClear();
+
+    render(<RrcPanel isActive />);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, `/join @${peerHash}`);
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().activeRoom).toBe(`@${peerHash}`);
+    });
+    expect(window.electronAPI.reticulum.rrc.join).not.toHaveBeenCalled();
+  });
+
+  it('does not issue /who for an open DM room', async () => {
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general');
+    store.openDm({ identity_hash: peerHash, nickname: 'Alice' }, hubA, { focus: true });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().rooms.has(`@${peerHash}`)).toBe(true);
+    });
+    // Allow the joined-room /who effect to run.
+    await new Promise((r) => setTimeout(r, 30));
+    const whoCalls = vi.mocked(window.electronAPI.reticulum.rrc.send).mock.calls.filter((args) => {
+      const body = (args[0] as { body?: string } | undefined)?.body;
+      return typeof body === 'string' && body.startsWith('/who');
+    });
+    expect(whoCalls.every((args) => !(args[0] as { room?: string }).room?.startsWith('@'))).toBe(
+      true,
+    );
+    expect(whoCalls.some((args) => (args[0] as { room?: string }).room === `@${peerHash}`)).toBe(
+      false,
+    );
   });
 
   it('rejects plain text in [hub] with join-room prompt', async () => {

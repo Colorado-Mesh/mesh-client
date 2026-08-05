@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
     "clearHistoryConfirmAction": "Elimina la cronologia",
     "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
-    "whisperNoTarget": "Ancora nessun destinatario per il sussurro. Usa /msg NICK testo per iniziare.",
     "jumpToLatest": "Passa all'ultimo"
   },
   "signalMeter": {

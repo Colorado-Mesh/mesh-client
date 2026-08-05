@@ -54,6 +54,16 @@ describe('rrcRecentRooms', () => {
     expect(loadRrcRecentRooms(HUB)).toEqual(['lobby', 'other']);
   });
 
+  it('strips synthetic [whispers]/[hub]/@dm keys from recent', () => {
+    localStorage.setItem(
+      `mesh-client:rrc:recentRooms:${HUB}`,
+      JSON.stringify(['[whispers]', '[hub]', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'lobby']),
+    );
+    expect(loadRrcRecentRooms(HUB)).toEqual(['lobby']);
+    expect(pushRrcRecentRoom(HUB, '[whispers]')).toEqual(['lobby']);
+    expect(pushRrcRecentRoom(HUB, '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toEqual(['lobby']);
+  });
+
   it('returns empty when storage is unavailable', () => {
     // renderer-logic runs in node — no Storage global; stub localStorage to throw.
     vi.stubGlobal('localStorage', {

@@ -117,7 +117,11 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
-    expect(handlerBody).toContain('meshtasticTcpSocket.destroy()');
+    // Null the active ref before destroy so the superseded close does not emit
+    // meshtastic:tcp-disconnected against a healthy replacement (#792).
+    expect(handlerBody).toMatch(
+      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*prev\.destroy\(\)/,
+    );
   });
 
   it('emits meshtastic:tcp-disconnected only for the active socket (PR #792)', () => {
@@ -137,6 +141,15 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
     );
     expect(guardIdx).toBeGreaterThan(-1);
     expect(emitIdx).toBeGreaterThan(guardIdx);
+  });
+
+  it('nulls meshtasticTcpSocket before destroy on disconnect (PR #792)', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-disconnect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toMatch(
+      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*prev\.destroy\(\)/,
+    );
   });
 });
 
@@ -339,7 +352,7 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
   it('normalizes bracketed IPv6 before net.Socket.connect', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1400);
     expect(handlerBody).toContain('formatHostForSocket(');
   });
 
@@ -358,6 +371,22 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     expect(guardIdx).toBeGreaterThan(-1);
     expect(emitIdx).toBeGreaterThan(guardIdx);
   });
+
+  it('nulls meshcoreTcpSocket before destroy on connect-replace and disconnect (PR #792)', () => {
+    const connectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(connectIdx).toBeGreaterThan(-1);
+    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1200);
+    expect(connectBody).toMatch(
+      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*prev\.destroy\(\)/,
+    );
+
+    const disconnectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-disconnect'");
+    expect(disconnectIdx).toBeGreaterThan(-1);
+    const disconnectBody = INDEX_SOURCE.slice(disconnectIdx, disconnectIdx + 400);
+    expect(disconnectBody).toMatch(
+      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*prev\.destroy\(\)/,
+    );
+  });
 });
 
 // ─── meshtastic:tcp-connect hostname validation ──────────────────────
@@ -373,7 +402,7 @@ describe('meshtastic:tcp-connect hostname validation (source contract)', () => {
   it('normalizes bracketed IPv6 before net.Socket.connect', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1400);
     expect(handlerBody).toContain('formatHostForSocket(');
   });
 

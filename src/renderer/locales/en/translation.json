@@ -3249,7 +3249,6 @@
     "jumpToLatest": "Jump to Latest",
     "messagePlaceholder": "Message or /command…",
     "whisperReplyPlaceholder": "Reply to {{name}} or /msg…",
-    "whisperNoTarget": "No whisper target yet. Use /msg NICK text to start.",
     "send": "Send",
     "dismissBanner": "Dismiss notice",
     "directNoticeUnsupported": "This hub does not support direct NOTICE (/msg).",

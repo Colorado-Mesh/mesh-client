@@ -113,6 +113,7 @@ import {
   tryReserveRncpLxmfControlHandled,
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
+import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { shouldDropEmptyRrcInbound } from '@/renderer/lib/rrcMessageDisplay';
 import {
@@ -200,11 +201,7 @@ import { useRncpEnableRequestStore } from '../stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '../stores/rncpTransferStore';
 import { useRnshSessionStore } from '../stores/rnshSessionStore';
 import { useRrcHubStore } from '../stores/rrcHubStore';
-import {
-  RRC_HUB_STREAM_ROOM,
-  RRC_WHISPERS_ROOM,
-  useRrcSessionStore,
-} from '../stores/rrcSessionStore';
+import { RRC_HUB_STREAM_ROOM, useRrcSessionStore } from '../stores/rrcSessionStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 /** Safety poll interval when the path table is large (>2k peers). */
@@ -1058,25 +1055,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ? p.kind
               : 'msg';
           const isDirect = Boolean(p.dst_hash);
-          const room = isDirect
-            ? RRC_WHISPERS_ROOM
-            : typeof p.room === 'string' && p.room.trim()
-              ? p.room
-              : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
-
-          if (
-            isDirect &&
-            typeof p.sender_hash === 'string' &&
-            /^[0-9a-f]{32}$/i.test(p.sender_hash.trim())
-          ) {
-            session.setLastWhisperPeer(
-              {
-                identity_hash: p.sender_hash.trim().toLowerCase(),
-                nickname: typeof p.nickname === 'string' ? p.nickname : null,
-              },
+          let room: string;
+          if (isDirect) {
+            room = applyRrcDirectMessageRoom({
+              dst_hash: typeof p.dst_hash === 'string' ? p.dst_hash : null,
+              sender_hash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
+              nickname: typeof p.nickname === 'string' ? p.nickname : null,
+              localIdentityHash: session.localIdentityHash,
               hubDestHash,
-              { onlyIfUnpinned: true },
-            );
+              fallbackRoom: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+              openDm: (peer, hub, openOpts) => {
+                session.openDm(peer, hub, openOpts);
+              },
+            });
+          } else {
+            room =
+              typeof p.room === 'string' && p.room.trim()
+                ? p.room
+                : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
           }
 
           if (kind === 'notice') {
@@ -1089,7 +1085,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
             // rrcd may emit join-info NOTICE without a usable JOINED member list —
             // treat it as membership so JOINED UI + `/who` can run.
-            if (isRrcJoinInfoNotice(p.body) && topic) {
+            // Never treat synthetic `[hub]` / `@dm` names as hub JOIN targets.
+            if (
+              isRrcJoinInfoNotice(p.body) &&
+              topic &&
+              !topic.room.startsWith('[') &&
+              !topic.room.startsWith('@')
+            ) {
               session.roomJoined(topic.room, undefined, hubDestHash);
             }
             if (isRrcModerationLanguage(p.body)) {
@@ -1105,7 +1107,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
             typeof p.sender_hash === 'string' &&
             p.sender_hash.length >= 8 &&
             typeof room === 'string' &&
-            !room.startsWith('[')
+            !room.startsWith('[') &&
+            !room.startsWith('@')
           ) {
             session.mergeRoomMembers(
               room,

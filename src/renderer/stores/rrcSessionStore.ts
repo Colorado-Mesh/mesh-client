@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 
+import {
+  isRrcWhisperPeerHash,
+  parseRrcDmRoomKey,
+  type RrcDmPeer,
+  rrcDmRoomKey,
+} from '@/renderer/lib/rrcDmRoom';
 import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
+import { removeRrcOpenDm, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 import {
   coalesceRrcMemberRoster,
@@ -32,8 +39,14 @@ export const MAX_RRC_HUB_SESSIONS = 8;
 /** Synthetic room key for hub-scoped NOTICE/ERROR with no K_ROOM. */
 export const RRC_HUB_STREAM_ROOM = '[hub]';
 
-/** Synthetic room for direct NOTICE whispers (K_DST). */
+/**
+ * @deprecated Legacy single-inbox key — use `@<hash>` via `rrcDmRoomKey`.
+ * Kept for migration / old tests.
+ */
 export const RRC_WHISPERS_ROOM = '[whispers]';
+
+/** @deprecated Prefer `RrcDmPeer` from `rrcDmRoom`. */
+export type RrcWhisperPeer = RrcDmPeer;
 
 function normRoom(room: string): string {
   return room.trim().toLowerCase();
@@ -53,7 +66,7 @@ function trimRoomMap(rooms: Map<string, RrcRoomInfo>): Map<string, RrcRoomInfo> 
   let dropped = 0;
   for (const key of next.keys()) {
     if (dropped >= overflow) break;
-    if (key.startsWith('[')) continue; // keep synthetic streams
+    if (key.startsWith('[') || key.startsWith('@')) continue; // keep synthetic streams / DMs
     next.delete(key);
     dropped += 1;
   }
@@ -106,12 +119,6 @@ function coalesceRoomAliases(
   return { key, existing, rooms: next };
 }
 
-/** Last peer for IRC-style plain-text replies in `[whispers]`. */
-export interface RrcWhisperPeer {
-  identity_hash: string;
-  nickname: string | null;
-}
-
 /** Per-hub RRC session state, keyed by lowercase hub destination hash in `sessionsByHub`. */
 export interface RrcHubSessionState {
   status: RrcSessionStatus;
@@ -128,13 +135,6 @@ export interface RrcHubSessionState {
   partIntentRooms: Set<string>;
   /** True when user requested disconnect (not hub drop). */
   disconnectIntent: boolean;
-  /** Peer for plain-text NOTICE replies while viewing `[whispers]`. */
-  lastWhisperPeer: RrcWhisperPeer | null;
-  /**
-   * When true, inbound whispers must not overwrite `lastWhisperPeer`
-   * (user started a `/msg` or plain reply to a chosen peer).
-   */
-  whisperReplyPinned: boolean;
 }
 
 export function emptyHubSession(): RrcHubSessionState {
@@ -150,8 +150,6 @@ export function emptyHubSession(): RrcHubSessionState {
     unreadByRoom: new Map(),
     partIntentRooms: new Set(),
     disconnectIntent: false,
-    lastWhisperPeer: null,
-    whisperReplyPinned: false,
   };
 }
 
@@ -298,11 +296,21 @@ interface RrcSessionStoreState {
   clearPartIntent: (room: string, hubHash?: string) => void;
   setDisconnectIntent: (intent: boolean, hubHash?: string) => void;
   setModerationBanner: (message: string | null, hubHash?: string) => void;
-  setLastWhisperPeer: (
-    peer: RrcWhisperPeer | null,
+  /**
+   * Open a client-local per-peer DM (`@hash`) — no hub JOIN.
+   * Persists to localStorage so the DM survives restart until `closeDm`
+   * (unless `persist: false` when restoring already-saved tabs).
+   */
+  openDm: (
+    peer: RrcDmPeer,
     hubHash?: string,
-    opts?: { pin?: boolean; onlyIfUnpinned?: boolean },
+    opts?: { focus?: boolean; persist?: boolean },
   ) => void;
+  /**
+   * Close a client-local DM: remove from JOINED + open-DM prefs.
+   * Keeps SQLite / in-memory message history unless Clear history is used.
+   */
+  closeDm: (roomOrHash: string, hubHash?: string) => void;
   /** Update one hub's session (creating it if new). Never wipes sibling hubs. */
   applyStatus: (
     status: RrcSessionStatus,
@@ -525,25 +533,75 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     );
   },
 
-  setLastWhisperPeer: (peer, hubHash, opts) => {
-    set((s) =>
-      mutateHubSession(s, hubHash, (session) => {
-        if (opts?.onlyIfUnpinned && session.whisperReplyPinned) {
-          return session;
+  openDm: (peer, hubHash, opts) => {
+    const hash = peer.identity_hash.trim().toLowerCase();
+    if (!isRrcWhisperPeerHash(hash)) return;
+    const room = rrcDmRoomKey(hash);
+    const nick = peer.nickname?.trim() ? peer.nickname.trim() : null;
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      // Restoring from loadRrcOpenDms must not rewrite storage (preserves newest-first order).
+      if (opts?.persist !== false) {
+        upsertRrcOpenDm(hub, { identity_hash: hash, nickname: nick });
+      }
+      return mutateHubSession(s, hub, (session) => {
+        const rooms = new Map(session.rooms);
+        const existing = rooms.get(room);
+        const prevMember = existing?.members?.[0];
+        const nextNick = nick ?? prevMember?.nickname ?? null;
+        rooms.set(room, {
+          name: room,
+          members: [{ identity_hash: hash, nickname: nextNick }],
+          member_count: 1,
+          topic: existing?.topic ?? null,
+        });
+        const focus = opts?.focus !== false;
+        return {
+          ...session,
+          rooms: trimRoomMap(rooms),
+          activeRoom: focus ? room : session.activeRoom,
+        };
+      });
+    });
+  },
+
+  closeDm: (roomOrHash, hubHash) => {
+    const parsed = parseRrcDmRoomKey(roomOrHash);
+    const hash =
+      parsed ?? (isRrcWhisperPeerHash(roomOrHash) ? roomOrHash.trim().toLowerCase() : null);
+    if (!hash) return;
+    const room = rrcDmRoomKey(hash);
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      removeRrcOpenDm(hub, hash);
+      return mutateHubSession(s, hub, (session) => {
+        const rooms = new Map(session.rooms);
+        rooms.delete(room);
+        const unreadByRoom = new Map(session.unreadByRoom);
+        for (const [rk] of session.unreadByRoom) {
+          if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
         }
-        if (!peer) {
-          return { ...session, lastWhisperPeer: null, whisperReplyPinned: false };
+        const activeGone = session.activeRoom != null && rrcRoomsMatch(session.activeRoom, room);
+        let nextActive = activeGone ? null : session.activeRoom;
+        if (activeGone) {
+          // Prefer another real room, else another open DM, else null.
+          for (const name of rooms.keys()) {
+            if (!name.startsWith('[')) {
+              nextActive = name;
+              break;
+            }
+          }
         }
         return {
           ...session,
-          lastWhisperPeer: {
-            identity_hash: peer.identity_hash.trim().toLowerCase(),
-            nickname: peer.nickname?.trim() ? peer.nickname.trim() : null,
-          },
-          whisperReplyPinned: opts?.pin === true ? true : session.whisperReplyPinned,
+          rooms,
+          unreadByRoom,
+          activeRoom: nextActive,
         };
-      }),
-    );
+      });
+    });
   },
 
   applyStatus: (status, hubDestHash, hubName) => {

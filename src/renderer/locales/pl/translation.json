@@ -4847,7 +4847,6 @@
     "clearHistoryConfirm": "Usunąć całą zapisaną historię wiadomości dla {{room}}? Tego nie można cofnąć.",
     "clearHistoryConfirmAction": "Usuń historię",
     "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
-    "whisperNoTarget": "Nie ma jeszcze celu szeptu. Użyj /msg NICK tekst, aby rozpocząć.",
     "jumpToLatest": "Przejdź do najnowszych"
   },
   "signalMeter": {

@@ -2,6 +2,7 @@ import { Copy, MessageCircle, Star, X } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useReticulumPeer } from '@/renderer/hooks/useReticulumPeer';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
@@ -61,7 +62,7 @@ export default function ReticulumPeerDetailModal({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const peer = useReticulumPeerStore((s) => s.getPeer(peerHash));
+  const peer = useReticulumPeer(peerHash);
   const isContact = useReticulumPeerStore((s) => s.isContact(peerHash));
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
   const setCustomDisplayName = useReticulumPeerStore((s) => s.setCustomDisplayName);

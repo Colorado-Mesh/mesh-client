@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "clearHistoryConfirmAction": "Geschiedenis verwijderen",
     "whisperReplyPlaceholder": "Reageer op {{name}} of /msg...",
-    "whisperNoTarget": "Nog geen fluisterdoel. Gebruik /msg NICK tekst om te starten.",
     "jumpToLatest": "Spring naar de laatste"
   },
   "signalMeter": {

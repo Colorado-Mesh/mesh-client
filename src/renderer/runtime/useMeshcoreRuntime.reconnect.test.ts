@@ -320,9 +320,44 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   });
 
   it('attemptMeshcoreReconnect treats setup AbortError as superseded reconnect', () => {
+    // Behavioral mount of attemptMeshcoreReconnect with mocked transport + fake timers is
+    // impractical for this monolithic runtime (AGENTS.md source-contract guidance). Keep
+    // source contracts for the setup-abort → deferred restart + stuck-UI clear paths.
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toMatch(
       /isMeshcoreSetupAbortError\(err\)[\s\S]*?reconnect aborted \(setup superseded\)/,
+    );
+    // Must not clear isReconnecting on setup abort — that raced with TCP disconnect mid-initConn
+    // and left status=reconnecting with no further attempts (n7eal / #792 MeshCore TCP).
+    const abortIdx = reconnectBody.indexOf('isMeshcoreSetupAbortError(err)');
+    expect(abortIdx).toBeGreaterThan(-1);
+    const abortBlock = reconnectBody.slice(abortIdx, abortIdx + 900);
+    expect(abortBlock).toContain('meshcoreDeferredReconnectRef.current = true');
+    expect(abortBlock).not.toMatch(/meshcoreIsReconnectingRef\.current = false/);
+  });
+
+  it('attemptMeshcoreReconnect clears stuck reconnecting UI when delay aborts', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /delayResult === 'aborted'[\s\S]*?!meshcoreIsReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect clears stuck UI when generation mismatches after delay', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    // Post-delay guard: generation bump or cleared isReconnecting must not leave status=reconnecting.
+    expect(reconnectBody).toMatch(
+      /meshcoreReconnectGenerationRef\.current !== generation[\s\S]*?!meshcoreIsReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect finally flushes deferred restart after setup abort', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    const abortIdx = reconnectBody.indexOf('isMeshcoreSetupAbortError(err)');
+    expect(abortIdx).toBeGreaterThan(-1);
+    const afterAbort = reconnectBody.slice(abortIdx);
+    expect(afterAbort).toMatch(
+      /finally[\s\S]*?meshcoreDeferredReconnectRef\.current[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
   });
 

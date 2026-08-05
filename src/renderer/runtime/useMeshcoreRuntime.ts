@@ -2770,7 +2770,19 @@ export function useMeshcoreRuntime() {
         ? true
         : meshcoreReconnectGenerationRef.current !== generation,
     );
-    if (delayResult === 'aborted') return;
+    if (delayResult === 'aborted') {
+      // Another cycle may still own reconnect (generation bumped while isReconnecting stayed
+      // true). Only clear the UI when this cycle was cancelled and nothing else is driving it —
+      // otherwise a raced setup-abort / delay abort left status=reconnecting forever (#792).
+      if (!meshcoreIsReconnectingRef.current) {
+        setState((s) => ({
+          ...s,
+          status: 'disconnected',
+          connectionLoss: true,
+        }));
+      }
+      return;
+    }
     if (delayResult === 'suspended') {
       meshcoreIsReconnectingRef.current = false;
       setState((s) => ({
@@ -2784,6 +2796,13 @@ export function useMeshcoreRuntime() {
       !meshcoreIsReconnectingRef.current ||
       meshcoreReconnectGenerationRef.current !== generation
     ) {
+      if (!meshcoreIsReconnectingRef.current) {
+        setState((s) => ({
+          ...s,
+          status: 'disconnected',
+          connectionLoss: true,
+        }));
+      }
       return;
     }
 
@@ -2890,8 +2909,14 @@ export function useMeshcoreRuntime() {
       // and apply state after the attempt was already declared failed.
       meshcoreSetupGenerationRef.current += 1;
       if (isMeshcoreSetupAbortError(err)) {
+        // Setup abort means connection-lost (or a newer connect) bumped setup generation while
+        // this attempt's initConn was still running. Do NOT clear isReconnecting — that flag is
+        // what finally's deferred restart and delayUnlessSuspended use to keep the cycle alive.
+        // Clearing it here left status=reconnecting with no further attempts (n7eal TCP #792).
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
-        meshcoreIsReconnectingRef.current = false;
+        if (meshcoreIsReconnectingRef.current) {
+          meshcoreDeferredReconnectRef.current = true;
+        }
         return;
       }
       await lateTransport.cleanup(opened?.driverIdentityId);

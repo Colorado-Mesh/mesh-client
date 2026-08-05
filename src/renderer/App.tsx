@@ -86,6 +86,7 @@ import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import { RncpEnableRequestModal } from './components/remote/RncpEnableRequestModal';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOverlay';
+import { ReticulumPeerDetailErrorBoundary } from './components/ReticulumPeerDetailErrorBoundary';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
@@ -4575,7 +4576,13 @@ function AppContent() {
       )}
 
       {capabilities.hasReticulumPeerDetailModal && selectedPeerHash !== null && (
-        <Suspense fallback={<DialogLazyFallback />}>
+        <ReticulumPeerDetailErrorBoundary
+          peerHash={selectedPeerHash}
+          onClose={() => {
+            setSelectedPeerHash(null);
+          }}
+          suspenseFallback={<DialogLazyFallback />}
+        >
           <ReticulumPeerDetailModal
             peerHash={selectedPeerHash}
             onClose={() => {
@@ -4583,7 +4590,7 @@ function AppContent() {
             }}
             onSendMessage={handleMessageNode}
           />
-        </Suspense>
+        </ReticulumPeerDetailErrorBoundary>
       )}
     </>
   );

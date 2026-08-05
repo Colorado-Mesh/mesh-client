@@ -426,3 +426,133 @@ describe('ReticulumPeerDetailModal — Network route hydrate', () => {
     });
   });
 });
+
+/** Contact/history + live path-table route mismatch — bare getPeer selectors throw React #185. */
+function seedContactLiveRouteMismatch(hash: string): void {
+  useReticulumPeerStore.setState({
+    peers: new Map([
+      [
+        hash,
+        {
+          destination_hash: hash,
+          hops: 2,
+          interface: 'RMAP World',
+          path_hash: 'bb'.repeat(16),
+          via_hash: 'bb'.repeat(16),
+          last_seen: 1_700_000_000,
+        },
+      ],
+    ]),
+    contacts: new Map([
+      [
+        hash,
+        {
+          destination_hash: hash,
+          display_name: 'Saved Contact',
+          last_heard: 100,
+          is_contact: true,
+          hops: null,
+          interface: null,
+        },
+      ],
+    ]),
+    history: new Map(),
+    peerAppearanceByHash: new Map(),
+    lastRefreshAt: null,
+  });
+}
+
+function seedHistoryLiveRouteMismatch(hash: string): void {
+  useReticulumPeerStore.setState({
+    peers: new Map([
+      [
+        hash,
+        {
+          destination_hash: hash,
+          display_name: 'History Peer',
+          hops: 3,
+          interface: 'TCP Hub',
+          path_hash: 'cc'.repeat(16),
+          via_hash: 'cc'.repeat(16),
+          last_seen: 1_700_000_100,
+        },
+      ],
+    ]),
+    contacts: new Map(),
+    history: new Map([
+      [
+        hash,
+        {
+          destination_hash: hash,
+          display_name: 'History Peer',
+          last_heard: 200,
+          is_contact: false,
+          hops: null,
+          interface: null,
+        },
+      ],
+    ]),
+    peerAppearanceByHash: new Map(),
+    lastRefreshAt: null,
+  });
+}
+
+describe('ReticulumPeerDetailModal — getPeer selector stability (React #185)', () => {
+  beforeEach(() => {
+    addToast.mockClear();
+    refreshReticulumPeerRouteFromPathsMock.mockClear();
+    refreshReticulumPeerRouteFromPathsMock.mockResolvedValue({ ok: false, paths: [] });
+    refreshReticulumPeersFromSidecarMock.mockClear();
+    refreshReticulumPeersFromSidecarMock.mockResolvedValue(undefined);
+    requestReticulumPeerPathMock.mockReset();
+    probeReticulumPeerMock.mockReset();
+    vi.mocked(window.electronAPI.db.getReticulumIdentityActivity).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getReticulumDestinations).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.upsertReticulumDestination).mockResolvedValue(undefined);
+  });
+
+  it('mounts when contact and live path-table route fields differ', async () => {
+    seedContactLiveRouteMismatch(PEER_HASH);
+    expect(useReticulumPeerStore.getState().getPeer(PEER_HASH)).not.toBe(
+      useReticulumPeerStore.getState().getPeer(PEER_HASH),
+    );
+
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    expect(
+      await screen.findByRole('button', { name: 'peerDetailModal.copyHash' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Saved Contact')).toBeInTheDocument();
+  });
+
+  it('Save as contact keeps the modal mounted when refresh leaves a route mismatch', async () => {
+    const user = userEvent.setup();
+    seedHistoryLiveRouteMismatch(PEER_HASH);
+
+    refreshReticulumPeersFromSidecarMock.mockImplementation(() => {
+      seedContactLiveRouteMismatch(PEER_HASH);
+      return Promise.resolve(undefined);
+    });
+
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('button', { name: 'peerDetailModal.saveContact' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'peerDetailModal.saveContact' }));
+
+    await waitFor(() => {
+      expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
+    });
+
+    // After refresh the peer is a contact — Save is gone, but the modal must still be up.
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'peerDetailModal.saveContact' })).toBeNull();
+    });
+    expect(screen.getByRole('button', { name: 'peerDetailModal.copyHash' })).toBeInTheDocument();
+    expect(screen.getByText('Saved Contact')).toBeInTheDocument();
+  });
+});

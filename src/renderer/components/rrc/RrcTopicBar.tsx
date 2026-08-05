@@ -8,7 +8,7 @@ export interface RrcTopicBarProps {
 
 export function RrcTopicBar({ room, topic, memberCount }: RrcTopicBarProps) {
   const { t } = useTranslation();
-  if (!room || room.startsWith('[')) return null;
+  if (!room || room.startsWith('[') || room.startsWith('@')) return null;
   return (
     <div className="flex items-center gap-2 border-b border-amber-800/40 bg-amber-950/20 px-3 py-1.5 text-xs text-amber-100/80">
       <span className="font-semibold text-amber-200">{room}</span>

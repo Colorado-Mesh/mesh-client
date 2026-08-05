@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
     "clearHistoryConfirmAction": "Supprimer l'historique",
     "whisperReplyPlaceholder": "Répondre à {{name}} ou /msg…",
-    "whisperNoTarget": "Pas encore de destinataire pour le murmure. Utilisez /msg NICK texte pour commencer.",
     "jumpToLatest": "Aller au dernier"
   },
   "signalMeter": {
