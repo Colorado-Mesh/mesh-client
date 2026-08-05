@@ -3284,7 +3284,6 @@
       "usageMe": "Usage: /me ACTION",
       "usageMsg": "Usage: /msg NICK|HASH text",
       "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
-      "msgSent": "→ {{name}}: {{text}}",
       "nickChanged": "Nickname set to {{name}}",
       "commandSent": "Command sent: {{cmd}}"
     },

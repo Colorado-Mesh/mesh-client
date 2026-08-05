@@ -4788,8 +4788,7 @@
       "commandSent": "Comando inviato: {{cmd}}",
       "helpMsg": "/msg NICK| testo HASH — sussurro AVVISO diretto (rrcd)",
       "usageMsg": "Sintassi: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash."
     },
     "listedRooms": "Quotazioni",
     "refreshRoomList": "Aggiorna l'elenco delle stanze (/list)",

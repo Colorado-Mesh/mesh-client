@@ -114,6 +114,7 @@ import {
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
+import { shouldDropEmptyRrcInbound } from '@/renderer/lib/rrcMessageDisplay';
 import {
   LARGE_MESH_NODE_THRESHOLD,
   MEGA_MESH_FULL_PEER_REFRESH_MAX_AGE_MS,
@@ -1117,6 +1118,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
               'merge',
               hubDestHash,
             );
+          }
+
+          // Empty notice/system/error would render as a lone IRC `*` — skip transcript.
+          if (shouldDropEmptyRrcInbound(kind, p.body)) {
+            return;
           }
 
           session.addMessage(

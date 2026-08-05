@@ -4790,8 +4790,7 @@
       "commandSent": "Команда отправлена: {{cmd}}",
       "helpMsg": "/msg NICK|HASH text — direct NOTICE whisper (rrcd)",
       "usageMsg": "Использование: /msg NICK| текст ХЕША",
-      "msgTargetNotFound": "Не удалось разрешить цель/msg до полного хэша удостоверения. Присоединяйтесь к комнате или используйте полный хэш.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "Не удалось разрешить цель/msg до полного хэша удостоверения. Присоединяйтесь к комнате или используйте полный хэш."
     },
     "listedRooms": "Внесен",
     "refreshRoomList": "Обновить список комнат (/list)",

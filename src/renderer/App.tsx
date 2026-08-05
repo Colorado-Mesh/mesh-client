@@ -66,6 +66,7 @@ import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulum
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
 import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
+import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
@@ -2393,8 +2394,6 @@ function AppContent() {
       const room = m.room?.trim() || '[hub]';
       return activeRoom == null || !rrcRoomsMatch(activeRoom, room);
     });
-    // Match ChatPanel: notify when off panel, window hidden, or another room received traffic.
-    if (onRrcPanel && !document.hidden && !forOtherRoom) return;
 
     const type = resolveInactiveRrcNotificationType({
       newMessages: newMsgs,
@@ -2404,7 +2403,18 @@ function AppContent() {
       notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
       localIdentityHash: rrcLocalIdentityHash,
     });
-    if (type) playMessageNotification(type);
+    // Watching the active room: still ping on whisper / @nick (IRC highlight); stay silent on channel.
+    if (
+      type &&
+      shouldPlayRrcNotification({
+        onRrcPanel,
+        documentHidden: document.hidden,
+        forOtherRoom,
+        type,
+      })
+    ) {
+      playMessageNotification(type);
+    }
   }, [rrcMessageFlat.length, rrcNickname, rrcHubDestHash, rrcLocalIdentityHash]);
 
   useAppTrayUnreadSync(

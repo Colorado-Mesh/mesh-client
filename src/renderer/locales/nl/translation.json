@@ -4788,8 +4788,7 @@
       "commandSent": "Opdracht verzonden: {{cmd}}",
       "helpMsg": "/msg NICK|HASH tekst — directe KENNISGEVING fluisteren (rrcd)",
       "usageMsg": "Gebruik: /msg NICK|HASH TEKST",
-      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash."
     },
     "listedRooms": "Vermeld.",
     "refreshRoomList": "Lijst met kamers vernieuwen (/list)",

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, LogIn, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
+import { isRrcWhisperRoom } from '@/renderer/lib/rrcMention';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import type { RrcListedRoom, RrcRoomInfo } from '@/shared/rrc-types';
 
@@ -62,6 +63,8 @@ export interface RrcRoomSidebarProps {
   onToggleFavourite: (name: string) => void;
   onToggleAutoJoin: (name: string) => void;
   autoJoin: string[];
+  /** Display label for the synthetic [whispers] room (peer nick). */
+  whisperRoomLabel?: string;
 }
 
 export function RrcRoomSidebar({
@@ -86,6 +89,7 @@ export function RrcRoomSidebar({
   onToggleFavourite,
   onToggleAutoJoin,
   autoJoin,
+  whisperRoomLabel,
 }: RrcRoomSidebarProps) {
   const { t } = useTranslation();
   const q = roomSearch.trim().toLowerCase();
@@ -93,7 +97,19 @@ export function RrcRoomSidebar({
   const joinedKeys = new Set(joinedDeduped.map((r) => rrcRoomMatchKey(r.name)));
   const activeKey = activeRoom ? rrcRoomMatchKey(activeRoom) : null;
 
-  const filterName = (name: string) => !q || name.toLowerCase().includes(q);
+  const displayName = (name: string): string => {
+    if (whisperRoomLabel && isRrcWhisperRoom(name)) return whisperRoomLabel;
+    return name;
+  };
+
+  const filterName = (name: string) => {
+    if (!q) return true;
+    if (name.toLowerCase().includes(q)) return true;
+    if (whisperRoomLabel && isRrcWhisperRoom(name) && whisperRoomLabel.toLowerCase().includes(q)) {
+      return true;
+    }
+    return false;
+  };
 
   const unreadFor = (name: string): number => {
     const match = rrcRoomMatchKey(name);
@@ -111,6 +127,8 @@ export function RrcRoomSidebar({
     const key = rrcRoomMatchKey(name);
     const selected = activeKey != null && activeKey === key;
     const unread = opts?.unread ?? 0;
+    const label = displayName(name);
+    const isWhisper = isRrcWhisperRoom(name);
     const isFav = favourites.some((f) => rrcRoomsMatch(f, name));
     const isAuto = autoJoin.some((a) => rrcRoomsMatch(a, name));
 
@@ -122,14 +140,14 @@ export function RrcRoomSidebar({
             className={`relative flex w-full flex-col items-center gap-0.5 rounded px-1 py-1.5 ${
               selected ? 'border-l-2 border-amber-400 bg-amber-950/40' : 'hover:bg-amber-950/25'
             }`}
-            title={name}
-            aria-label={t('rrc.selectRoom', { name })}
+            title={label}
+            aria-label={t('rrc.selectRoom', { name: label })}
             onClick={() => {
               onSelectRoom(name, { join: opts?.joined === false });
             }}
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-950/60 text-[10px] font-semibold text-amber-100">
-              {roomCollapsedLabel(name)}
+              {roomCollapsedLabel(label)}
             </span>
             {unread > 0 && !selected && (
               <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-600" />
@@ -149,13 +167,13 @@ export function RrcRoomSidebar({
           <button
             type="button"
             className="min-w-0 flex-1 px-2 py-1.5 text-left text-sm"
-            aria-label={t('rrc.selectRoom', { name })}
+            aria-label={t('rrc.selectRoom', { name: label })}
             onClick={() => {
               onSelectRoom(name, { join: opts?.joined === false });
             }}
           >
             <div className="flex items-center justify-between gap-1">
-              <span className="truncate">{name}</span>
+              <span className="truncate">{label}</span>
               {unread > 0 && !selected && (
                 <span className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
                   {unread > 99 ? '99+' : unread}
@@ -166,33 +184,37 @@ export function RrcRoomSidebar({
               <div className="truncate text-[10px] text-amber-200/40">{opts.topic}</div>
             ) : null}
           </button>
-          <button
-            type="button"
-            className={`shrink-0 p-1 ${isFav ? 'text-amber-400' : 'text-amber-200/30'}`}
-            aria-label={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
-            title={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
-            onClick={() => {
-              onToggleFavourite(name);
-            }}
-          >
-            <Star size={12} fill={isFav ? 'currentColor' : 'none'} />
-          </button>
-          <button
-            type="button"
-            className={
-              isAuto
-                ? 'shrink-0 rounded border border-amber-400 bg-amber-800/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-50'
-                : 'shrink-0 rounded border border-dashed border-amber-700/60 px-1.5 py-0.5 text-[9px] font-semibold text-amber-200/45 hover:border-amber-500 hover:text-amber-200'
-            }
-            aria-label={isAuto ? t('rrc.disableAutoJoin') : t('rrc.enableAutoJoin')}
-            aria-pressed={isAuto}
-            title={isAuto ? t('rrc.roomAutoJoinOnHint') : t('rrc.roomAutoJoinOffHint')}
-            onClick={() => {
-              onToggleAutoJoin(name);
-            }}
-          >
-            A
-          </button>
+          {!isWhisper && (
+            <>
+              <button
+                type="button"
+                className={`shrink-0 p-1 ${isFav ? 'text-amber-400' : 'text-amber-200/30'}`}
+                aria-label={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
+                title={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
+                onClick={() => {
+                  onToggleFavourite(name);
+                }}
+              >
+                <Star size={12} fill={isFav ? 'currentColor' : 'none'} />
+              </button>
+              <button
+                type="button"
+                className={
+                  isAuto
+                    ? 'shrink-0 rounded border border-amber-400 bg-amber-800/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-50'
+                    : 'shrink-0 rounded border border-dashed border-amber-700/60 px-1.5 py-0.5 text-[9px] font-semibold text-amber-200/45 hover:border-amber-500 hover:text-amber-200'
+                }
+                aria-label={isAuto ? t('rrc.disableAutoJoin') : t('rrc.enableAutoJoin')}
+                aria-pressed={isAuto}
+                title={isAuto ? t('rrc.roomAutoJoinOnHint') : t('rrc.roomAutoJoinOffHint')}
+                onClick={() => {
+                  onToggleAutoJoin(name);
+                }}
+              >
+                A
+              </button>
+            </>
+          )}
         </div>
       </li>
     );

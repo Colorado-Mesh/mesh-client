@@ -4788,8 +4788,7 @@
       "commandSent": "Komut gönderildi: {{cmd}}",
       "helpMsg": "/msg NICK|KARMA metin — doğrudan BİLDİRİM fısıltısı (rrcd)",
       "usageMsg": "Kullanım: /msg NICK|KARMA METİN",
-      "msgTargetNotFound": "/msg hedefi tam kimlik karmasına çözülemedi. Bir odaya katılın veya tam karmayı kullanın.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "/msg hedefi tam kimlik karmasına çözülemedi. Bir odaya katılın veya tam karmayı kullanın."
     },
     "listedRooms": "Listelenmiş",
     "refreshRoomList": "Oda listesini yenile (/list)",

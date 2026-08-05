@@ -4788,8 +4788,7 @@
       "commandSent": "Commande envoyée : {{cmd}}",
       "helpMsg": "/msg NICK| texte DE HACHAGE — murmure d'AVIS direct (rrcd)",
       "usageMsg": "Utilisation : /msg NICK| texte DE HACHAGE",
-      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
-      "msgSent": "→ {{name}} : {{text}}"
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash."
     },
     "listedRooms": "Liste",
     "refreshRoomList": "Actualiser la liste des salles (/list)",
