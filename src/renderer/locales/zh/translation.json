@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "删除 {{room}} 的所有已保存消息历史记录？此操作无法撤消。",
     "clearHistoryConfirmAction": "删除历史记录",
     "whisperReplyPlaceholder": "回复{{name}}或/msg…",
-    "whisperNoTarget": "还没有私语对象。使用 /msg NICK 文本 开始。",
     "jumpToLatest": "跳到最新"
   },
   "signalMeter": {

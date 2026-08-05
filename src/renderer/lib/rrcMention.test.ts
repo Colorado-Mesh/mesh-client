@@ -4,6 +4,7 @@ import {
   bodyMentionsRrcNick,
   classifyRrcNotificationType,
   isRrcRoomMuted,
+  isRrcWhisperRoom,
   rrcMuteViewKey,
   stripRrcMsgTargetAt,
 } from './rrcMention';
@@ -36,10 +37,25 @@ describe('bodyMentionsRrcNick', () => {
   });
 });
 
+describe('isRrcWhisperRoom', () => {
+  it('treats per-peer @hash DMs and legacy [whispers] as whisper rooms', () => {
+    expect(isRrcWhisperRoom('[whispers]')).toBe(true);
+    expect(isRrcWhisperRoom(`@${'aa'.repeat(16)}`)).toBe(true);
+    expect(isRrcWhisperRoom('#lobby')).toBe(false);
+    expect(isRrcWhisperRoom('[hub]')).toBe(false);
+  });
+});
+
 describe('classifyRrcNotificationType', () => {
   it('classifies whispers and dst_hash as dm', () => {
     expect(
       classifyRrcNotificationType({ body: 'hi', room: '[whispers]', kind: 'notice' }, 'nv0n'),
+    ).toBe('dm');
+    expect(
+      classifyRrcNotificationType(
+        { body: 'hi', room: `@${'aa'.repeat(16)}`, kind: 'notice' },
+        'nv0n',
+      ),
     ).toBe('dm');
     expect(
       classifyRrcNotificationType(

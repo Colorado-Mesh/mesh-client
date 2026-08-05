@@ -63,6 +63,21 @@ describe('resolveRrcDmPeerFromDirectMessage', () => {
       ),
     ).toEqual({ identity_hash: peerA, nickname: null });
   });
+
+  it('returns null without a valid dst_hash', () => {
+    expect(
+      resolveRrcDmPeerFromDirectMessage(
+        { dst_hash: null, sender_hash: peerA, nickname: 'Zeva' },
+        selfHash,
+      ),
+    ).toBeNull();
+    expect(
+      resolveRrcDmPeerFromDirectMessage(
+        { dst_hash: 'short', sender_hash: peerA, nickname: 'Zeva' },
+        selfHash,
+      ),
+    ).toBeNull();
+  });
 });
 
 describe('splitLegacyWhispersMessages', () => {
@@ -89,5 +104,28 @@ describe('splitLegacyWhispersMessages', () => {
     expect([...byRoom.keys()].sort()).toEqual([`@${peerA}`, `@${peerB}`].sort());
     expect(byRoom.get(`@${peerA}`)?.[0]?.nickname).toBe('Alice');
     expect(byRoom.get(`@${peerB}`)?.[0]?.dst_hash).toBe(peerB);
+  });
+
+  it('skips self-only outbound rows that lack a peer dst', () => {
+    const byRoom = splitLegacyWhispersMessages(
+      [
+        msg({
+          id: '1',
+          kind: 'msg',
+          sender_hash: selfHash,
+          nickname: 'Me',
+          dst_hash: null,
+        }),
+        msg({
+          id: '2',
+          kind: 'notice',
+          sender_hash: peerA,
+          nickname: 'Alice',
+          dst_hash: null,
+        }),
+      ],
+      selfHash,
+    );
+    expect([...byRoom.keys()]).toEqual([`@${peerA}`]);
   });
 });

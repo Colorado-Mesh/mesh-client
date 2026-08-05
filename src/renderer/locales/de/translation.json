@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "Gesamten gespeicherten Nachrichtenverlauf für {{room}} löschen? Dies kann nicht rückgängig gemacht werden.",
     "clearHistoryConfirmAction": "Verlauf löschen",
     "whisperReplyPlaceholder": "Antworte auf {{name}} oder /msg…",
-    "whisperNoTarget": "Noch kein Flüsterziel. Verwenden Sie /msg NICK TEXT, um zu beginnen.",
     "jumpToLatest": "Zum neuesten Stand springen"
   },
   "signalMeter": {

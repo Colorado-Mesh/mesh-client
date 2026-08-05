@@ -47,6 +47,18 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).not.toMatch(/setLastWhisperPeer/);
   });
 
+  it('does not steal focus when opening an inbound DM tab', () => {
+    expect(SOURCE).toMatch(
+      /Do not steal focus from an active room[\s\S]{0,200}openDm\(peer, hubDestHash, \{ focus: false \}\)/,
+    );
+  });
+
+  it('never treats synthetic [hub] / @dm names as JOIN targets from join-info NOTICE', () => {
+    expect(SOURCE).toContain('Never treat synthetic `[hub]` / `@dm` names as hub JOIN targets');
+    expect(SOURCE).toMatch(/!topic\.room\.startsWith\('\['\)/);
+    expect(SOURCE).toMatch(/!topic\.room\.startsWith\('@'\)/);
+  });
+
   it('uses neutral hubParted banner for involuntary parts (not kick/ban wording)', () => {
     expect(SOURCE).toMatch(/resolveRrcInvoluntaryPartBannerKey/);
     expect(SOURCE).toMatch(/sessionStatus: view\.status/);

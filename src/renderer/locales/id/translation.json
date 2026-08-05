@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "Hapus semua riwayat pesan tersimpan untuk {{room}}? Hal ini tidak dapat dibatalkan.",
     "clearHistoryConfirmAction": "Hapus riwayat",
     "whisperReplyPlaceholder": "Balas {{name}} atau /msg…",
-    "whisperNoTarget": "Belum ada target bisikan. Gunakan /msg NICK teks untuk memulai.",
     "jumpToLatest": "Langsung ke Terbaru"
   },
   "signalMeter": {

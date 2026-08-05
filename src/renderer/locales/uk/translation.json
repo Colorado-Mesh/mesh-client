@@ -4845,7 +4845,6 @@
     "clearHistoryConfirm": "Видалити всю збережену історію повідомлень для {{room}}? Це неможливо скасувати.",
     "clearHistoryConfirmAction": "Видалити історію",
     "whisperReplyPlaceholder": "Відповісти на {{name}} або /msg…",
-    "whisperNoTarget": "Ще немає адресата для приватного повідомлення. Щоб почати, використовуйте /msg NICK текст.",
     "jumpToLatest": "Перейти до останнього"
   },
   "signalMeter": {

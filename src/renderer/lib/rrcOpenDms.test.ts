@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearRrcOpenDms, loadRrcOpenDms, removeRrcOpenDm, upsertRrcOpenDm } from './rrcOpenDms';
+import {
+  clearRrcOpenDms,
+  loadRrcOpenDms,
+  removeRrcOpenDm,
+  saveRrcOpenDms,
+  upsertRrcOpenDm,
+} from './rrcOpenDms';
 
 const HUB = '28c7c1a68c735693aa8e6b8193ed44b2';
 const alice = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -45,5 +51,35 @@ describe('rrcOpenDms', () => {
 
     removeRrcOpenDm(HUB, alice);
     expect(loadRrcOpenDms(HUB)).toEqual([{ identity_hash: bob, nickname: 'Bob' }]);
+  });
+
+  it('rejects invalid hashes and corrupt storage payloads', () => {
+    expect(upsertRrcOpenDm(HUB, { identity_hash: 'short', nickname: 'X' })).toEqual([]);
+    localStorage.setItem(`mesh-client:rrc:openDms:${HUB}`, '{not-json');
+    expect(loadRrcOpenDms(HUB)).toEqual([]);
+    localStorage.setItem(
+      `mesh-client:rrc:openDms:${HUB}`,
+      JSON.stringify({ identity_hash: alice }),
+    );
+    expect(loadRrcOpenDms(HUB)).toEqual([]);
+    localStorage.setItem(
+      `mesh-client:rrc:openDms:${HUB}`,
+      JSON.stringify([{ nickname: 'Alice' }, { identity_hash: alice, nickname: 'Alice' }, null]),
+    );
+    expect(loadRrcOpenDms(HUB)).toEqual([{ identity_hash: alice, nickname: 'Alice' }]);
+  });
+
+  it('caps open DMs at 50 and clear removes the hub key', () => {
+    const peers = Array.from({ length: 55 }, (_, i) => ({
+      identity_hash: i.toString(16).padStart(32, '0'),
+      nickname: `n${i}`,
+    }));
+    saveRrcOpenDms(HUB, peers);
+    expect(loadRrcOpenDms(HUB)).toHaveLength(50);
+    expect(loadRrcOpenDms(HUB)[0]?.identity_hash).toBe(peers[0]?.identity_hash);
+
+    clearRrcOpenDms(HUB);
+    expect(localStorage.getItem(`mesh-client:rrc:openDms:${HUB}`)).toBeNull();
+    expect(loadRrcOpenDms(HUB)).toEqual([]);
   });
 });

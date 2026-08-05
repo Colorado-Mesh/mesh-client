@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "Excluir todo o histórico de mensagens salvas para {{room}}? Isto não pode ser desfeito.",
     "clearHistoryConfirmAction": "Excluir histórico",
     "whisperReplyPlaceholder": "Responder a {{name}} ou /msg…",
-    "whisperNoTarget": "Nenhum destinatário de sussurro ainda. Use /msg NICK texto para começar.",
     "jumpToLatest": "Ir para as últimas"
   },
   "signalMeter": {

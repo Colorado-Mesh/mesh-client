@@ -4845,7 +4845,6 @@
     "clearHistoryConfirm": "Smazat veškerou uloženou historii zpráv pro {{room}}? Toto nelze vrátit zpět.",
     "clearHistoryConfirmAction": "Smazat historii",
     "whisperReplyPlaceholder": "Odpověz uživateli {{name}} nebo /msg…",
-    "whisperNoTarget": "Zatím žádný cíl pro šeptání. Pro zahájení použijte /msg NICK text.",
     "jumpToLatest": "Přejít na nejnovější"
   },
   "signalMeter": {

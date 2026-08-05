@@ -340,6 +340,24 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
+  it('attemptMeshcoreReconnect clears stuck UI when generation mismatches after delay', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    // Post-delay guard: generation bump or cleared isReconnecting must not leave status=reconnecting.
+    expect(reconnectBody).toMatch(
+      /meshcoreReconnectGenerationRef\.current !== generation[\s\S]*?!meshcoreIsReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect finally flushes deferred restart after setup abort', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    const abortIdx = reconnectBody.indexOf('isMeshcoreSetupAbortError(err)');
+    expect(abortIdx).toBeGreaterThan(-1);
+    const afterAbort = reconnectBody.slice(abortIdx);
+    expect(afterAbort).toMatch(
+      /finally[\s\S]*?meshcoreDeferredReconnectRef\.current[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
+    );
+  });
+
   it('observes parallel init setup AbortErrors so sibling cancels are not unhandled', () => {
     expect(RUNTIME_SOURCE).toContain('observeMeshcoreSetupAbort');
     expect(RUNTIME_SOURCE).toMatch(

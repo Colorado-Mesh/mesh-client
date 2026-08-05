@@ -4843,7 +4843,6 @@
     "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
     "clearHistoryConfirmAction": "履歴の削除",
     "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
-    "whisperNoTarget": "まだささやきの相手がいません。開始するには /msg NICK テキスト を使用します。",
     "jumpToLatest": "最新へジャンプ"
   },
   "signalMeter": {
