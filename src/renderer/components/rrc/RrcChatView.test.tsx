@@ -143,10 +143,12 @@ describe('RrcChatView IRC layout', () => {
     expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(1);
   });
 
-  it('renders whisper echo without a leading *', () => {
+  it('renders legacy → whisper echo as <selfNick> without arrows', () => {
     render(
       <RrcChatView
         {...baseProps}
+        activeRoom="[whispers]"
+        nickname="nv0n"
         messages={[
           makeMsg({
             id: '1',
@@ -154,14 +156,39 @@ describe('RrcChatView IRC layout', () => {
             body: '→ Zeva: hi there',
             nickname: null,
             sender_hash: null,
+            room: '[whispers]',
           }),
         ]}
       />,
     );
     const line = screen.getByTestId('rrc-chat-line');
-    expect(line.textContent).toMatch(/→\s*Zeva:\s*hi there/);
-    expect(line.textContent?.trim().startsWith('*')).toBe(false);
-    expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
+    expect(line.textContent).toMatch(/<nv0n>\s*hi there/);
+    expect(line.textContent).not.toContain('→');
+    expect(line.className).toContain('text-amber-50/90');
+    expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
+  });
+
+  it('renders outbound whisper msg as room-style <selfNick>', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        activeRoom="[whispers]"
+        nickname="nv0n"
+        messages={[
+          makeMsg({
+            id: '1',
+            room: '[whispers]',
+            kind: 'msg',
+            body: 'testing',
+            nickname: 'nv0n',
+            dst_hash: 'aa'.repeat(16),
+          }),
+        ]}
+      />,
+    );
+    const line = screen.getByTestId('rrc-chat-line');
+    expect(line.textContent).toMatch(/<nv0n>\s*testing/);
+    expect(line.textContent).not.toContain('→');
   });
 
   it('renders /me action with colored nick', () => {

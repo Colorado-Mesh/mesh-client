@@ -4788,8 +4788,7 @@
       "commandSent": "コマンドが送信されました： {{cmd}}",
       "helpMsg": "/msg NICK |ハッシュテキスト—直接通知ウィスパー(rrcd)",
       "usageMsg": "使用法:/msg NICK |ハッシュテキスト",
-      "msgTargetNotFound": "/msgターゲットを完全なIDハッシュに解決できませんでした。ルームに参加するか、完全なハッシュを使用してください。",
-      "msgSent": "→ {{name}} ： {{text}}"
+      "msgTargetNotFound": "/msgターゲットを完全なIDハッシュに解決できませんでした。ルームに参加するか、完全なハッシュを使用してください。"
     },
     "listedRooms": "公開",
     "refreshRoomList": "ルームリストを更新(/list)",

@@ -486,12 +486,16 @@ export function RrcChatView({
                     })
                   : null;
                 const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
-                // Inbound whispers are wire NOTICE — show room-style <nick> in [whispers].
+                // Inbound whispers are wire NOTICE; outbound are msg; legacy → system → self nick.
+                const selfNick = nickname.trim();
+                const lineNick = whisperEcho
+                  ? selfNick || formatHash(msg.sender_hash ?? '') || 'me'
+                  : nick;
                 const whisperAsRoomMsg =
-                  isRrcWhisperRoom(activeRoom) &&
-                  (msg.kind === 'notice' || msg.kind === 'msg') &&
-                  Boolean(nick) &&
-                  !whisperEcho;
+                  Boolean(whisperEcho) ||
+                  (isRrcWhisperRoom(activeRoom) &&
+                    (msg.kind === 'notice' || msg.kind === 'msg') &&
+                    Boolean(nick));
                 const lineClass = whisperAsRoomMsg
                   ? 'text-amber-50/90'
                   : msg.kind === 'notice' || msg.kind === 'system'
@@ -520,18 +524,14 @@ export function RrcChatView({
                         <span className="shrink-0 text-[10px] text-amber-200/35">[{time}]</span>
                       )}
                       <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
-                        {whisperEcho ? (
-                          <>
-                            → <NickSpan nick={whisperEcho.name} />: {body}
-                          </>
-                        ) : msg.kind === 'action' ? (
+                        {msg.kind === 'action' ? (
                           <>
                             * <NickSpan nick={nick} /> {body}
                           </>
                         ) : whisperAsRoomMsg || msg.kind === 'msg' ? (
                           <>
-                            <span className={`font-semibold ${rrcNickColorClass(nick)}`}>
-                              &lt;{nick}&gt;
+                            <span className={`font-semibold ${rrcNickColorClass(lineNick)}`}>
+                              &lt;{lineNick}&gt;
                             </span>{' '}
                             {body}
                           </>

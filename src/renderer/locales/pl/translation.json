@@ -4792,8 +4792,7 @@
       "commandSent": "Wysłano polecenie: {{cmd}}",
       "helpMsg": "/msg NICK|HASH text — direct NOTICE whisper (rrcd)",
       "usageMsg": "Użycie: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash."
     },
     "listedRooms": "Wylistowany",
     "refreshRoomList": "Odśwież listę pokoi (/list)",

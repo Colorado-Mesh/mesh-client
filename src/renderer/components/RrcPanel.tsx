@@ -32,7 +32,10 @@ import {
   resolveRrcMsgTarget,
   RRC_HELP_I18N_KEYS,
 } from '@/renderer/lib/rrcSlashCommands';
-import { resolveRrcWhisperReplyTarget } from '@/renderer/lib/rrcWhisperReply';
+import {
+  resolveRrcWhisperReplyTarget,
+  rrcWhisperDisplayLabel,
+} from '@/renderer/lib/rrcWhisperReply';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   MAX_RRC_HUB_SESSIONS,
@@ -326,6 +329,17 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     const name = peer.nickname || peer.identity_hash.slice(0, 8);
     return t('rrc.whisperReplyPlaceholder', { name });
   }, [activeMessages, activeRoom, lastWhisperPeer, localIdentityHash, t]);
+
+  const whisperRoomLabel = useMemo(() => {
+    const peer = resolveRrcWhisperReplyTarget({
+      lastWhisperPeer,
+      messages: activeMessages,
+      localIdentityHash,
+    });
+    return rrcWhisperDisplayLabel(peer);
+  }, [activeMessages, lastWhisperPeer, localIdentityHash]);
+
+  const activeRoomHeaderLabel = activeRoom === RRC_WHISPERS_ROOM ? whisperRoomLabel : activeRoom;
   const connected =
     status === 'active' || status === 'awaiting_welcome' || status === 'reconnecting';
   const connectInFlight = status === 'connecting' || status === 'awaiting_welcome';
@@ -692,7 +706,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
               return;
             }
-            const label = resolved.nickname || resolved.identity_hash.slice(0, 8);
             setLastWhisperPeer(
               {
                 identity_hash: resolved.identity_hash,
@@ -705,8 +718,10 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             addMessage({
               id: `whisper-out-${Date.now()}`,
               room: RRC_WHISPERS_ROOM,
-              kind: 'system',
-              body: t('rrc.slash.msgSent', { name: label, text: parsed.text }),
+              kind: 'msg',
+              body: parsed.text,
+              nickname: nickname || null,
+              sender_hash: localIdentityHash,
               timestamp: Date.now(),
               dst_hash: resolved.identity_hash,
             });
@@ -773,13 +788,14 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
             return;
           }
-          const label = peer.nickname || peer.identity_hash.slice(0, 8);
           setLastWhisperPeer(peer, undefined, { pin: true });
           addMessage({
             id: `whisper-out-${Date.now()}`,
             room: RRC_WHISPERS_ROOM,
-            kind: 'system',
-            body: t('rrc.slash.msgSent', { name: label, text: parsed.body }),
+            kind: 'msg',
+            body: parsed.body,
+            nickname: nickname || null,
+            sender_hash: localIdentityHash,
             timestamp: Date.now(),
             dst_hash: peer.identity_hash,
           });
@@ -824,6 +840,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       lastWhisperPeer,
       localIdentityHash,
       messagesForActiveRoom,
+      nickname,
       rooms,
       sendHubCommand,
       setActiveRoom,
@@ -942,6 +959,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             setPrefsEpoch((n) => n + 1);
           }}
           autoJoin={autoJoinRooms}
+          whisperRoomLabel={whisperRoomLabel}
         />
       )}
 
@@ -953,7 +971,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             </div>
             <div className="text-xs text-amber-200/50">
               {t(`rrc.status.${status}`)}
-              {activeRoom ? ` · ${activeRoom}` : ''}
+              {activeRoomHeaderLabel ? ` · ${activeRoomHeaderLabel}` : ''}
               {capabilities.direct_notice ? ` · ${t('rrc.capDirectNotice')}` : ''}
             </div>
           </div>

@@ -4788,8 +4788,7 @@
       "commandSent": "命令已发送： {{cmd}}",
       "helpMsg": "/msg NICK |哈希文本—直接通知私语(rrcd)",
       "usageMsg": "用法：/msg NICK |哈希文本",
-      "msgTargetNotFound": "无法将/msg目标解析为完整的身份哈希。加入房间或使用完整的哈希值。",
-      "msgSent": "→ {{name}} ： {{text}}"
+      "msgTargetNotFound": "无法将/msg目标解析为完整的身份哈希。加入房间或使用完整的哈希值。"
     },
     "listedRooms": "已上市",
     "refreshRoomList": "刷新房间列表(/list)",

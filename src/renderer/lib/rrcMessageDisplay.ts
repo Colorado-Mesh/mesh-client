@@ -20,7 +20,8 @@ export function shouldDropEmptyRrcInbound(kind: string, body: string): boolean {
 }
 
 /**
- * Parse local whisper-sent echo body (`→ name: text` from `rrc.slash.msgSent`).
+ * Parse legacy local whisper-sent echo body (`→ name: text`).
+ * New outbound whispers are stored as room-style `msg` rows.
  */
 export function parseRrcWhisperEcho(body: string): { name: string; text: string } | null {
   const m = /^→\s+(.+?):\s([\s\S]*)$/.exec(body);

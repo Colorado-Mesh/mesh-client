@@ -4788,8 +4788,7 @@
       "commandSent": "Perintah dikirim: {{cmd}}",
       "helpMsg": "/msg NICK| teks HASH — bisikan PEMBERITAHUAN langsung (rrcd)",
       "usageMsg": "Penggunaan: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash."
     },
     "listedRooms": "tercantum",
     "refreshRoomList": "Segarkan daftar ruangan (/list)",

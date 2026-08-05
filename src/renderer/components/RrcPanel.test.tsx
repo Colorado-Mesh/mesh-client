@@ -247,6 +247,22 @@ describe('RrcPanel', () => {
       nickname: 'Alice',
     });
 
+    const whisperKey = useRrcSessionStore.getState().roomMessageKey('[whispers]');
+    const outbound = useRrcSessionStore
+      .getState()
+      .messages.get(whisperKey ?? '')
+      ?.find((m) => m.body === 'first whisper');
+    expect(outbound).toMatchObject({
+      kind: 'msg',
+      body: 'first whisper',
+      dst_hash: peerHash,
+    });
+    expect(outbound?.body).not.toContain('→');
+
+    // Sidebar + header show peer nick, not the synthetic [whispers] key.
+    expect(screen.getByRole('button', { name: 'Open room Alice' })).toBeInTheDocument();
+    expect(screen.getByText(/· Alice/)).toBeInTheDocument();
+
     vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
     const whisperComposer = screen.getByRole('textbox', { name: /Reply to Alice/i });
     await user.clear(whisperComposer);

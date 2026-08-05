@@ -4788,8 +4788,7 @@
       "commandSent": "전송된 명령: {{cmd}}",
       "helpMsg": "/msg NICK | 해시 텍스트 — 직접 알림 속삭임 (rrcd)",
       "usageMsg": "사용법:/msg NICK | 해시 텍스트",
-      "msgTargetNotFound": "/msg 대상을 전체 ID 해시로 해결할 수 없습니다. 방에 가입하거나 전체 해시를 사용하세요.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "/msg 대상을 전체 ID 해시로 해결할 수 없습니다. 방에 가입하거나 전체 해시를 사용하세요."
     },
     "listedRooms": "등재됨",
     "refreshRoomList": "룸 목록 새로 고침 (/list)",

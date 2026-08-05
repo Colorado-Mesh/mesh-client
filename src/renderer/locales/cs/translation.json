@@ -4790,8 +4790,7 @@
       "commandSent": "Příkaz odeslán: {{cmd}}",
       "helpMsg": "/msg NICK|HASH text — přímé OZNÁMENÍ šeptem (rrcd)",
       "usageMsg": "Použití: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Nelze přeložit /msg cíl na úplný hash identity. Připojte se k místnosti nebo použijte celý hash.",
-      "msgSent": "→ {{name}}: {{text}}"
+      "msgTargetNotFound": "Nelze přeložit /msg cíl na úplný hash identity. Připojte se k místnosti nebo použijte celý hash."
     },
     "listedRooms": "Uvedeno",
     "refreshRoomList": "Aktualizovat seznam místností (/list)",
