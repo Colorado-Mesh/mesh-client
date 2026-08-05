@@ -219,9 +219,9 @@ describe('meshcoreDualNobleBleInit', () => {
     expect(isRendererNobleBlePlatform()).toBe(false);
   });
 
-  it('needsSequentialMeshcoreRadioInit is true for serial and Linux Web Bluetooth only', () => {
+  it('needsSequentialMeshcoreRadioInit is true for serial, TCP, and Linux Web Bluetooth', () => {
     expect(needsSequentialMeshcoreRadioInit('serial')).toBe(true);
-    expect(needsSequentialMeshcoreRadioInit('tcp')).toBe(false);
+    expect(needsSequentialMeshcoreRadioInit('tcp')).toBe(true);
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     expect(needsSequentialMeshcoreRadioInit('ble')).toBe(false);
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');

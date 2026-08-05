@@ -272,5 +272,6 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  // TCP/Noble BLE parallel init is preserved when !needsSequentialMeshcoreRadioInit (useMeshcoreRuntime.ts).
+  // Noble BLE parallel init is preserved when !needsSequentialMeshcoreRadioInit (useMeshcoreRuntime.ts).
+  // TCP and serial use sequential getSelfInfo → getContacts → getChannels.
 });

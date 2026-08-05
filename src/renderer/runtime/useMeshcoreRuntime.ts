@@ -563,6 +563,8 @@ export function useMeshcoreRuntime() {
   const meshcoreReconnectConnectInFlightRef = useRef(false);
   /** Set when Noble drops during an in-flight connect; reconnect runs after connect() settles. */
   const meshcoreDeferredReconnectRef = useRef(false);
+  /** Coalesce loss-handler + finally schedules so TCP drops mid-init cannot start two backoff loops. */
+  const meshcoreReconnectSchedulePendingRef = useRef(false);
   const meshcoreConnectionParamsRef = useRef<{
     rfType: 'ble' | 'serial' | 'tcp';
     httpAddress?: string;
@@ -590,6 +592,7 @@ export function useMeshcoreRuntime() {
   const meshcoreSerialLossCleanupRef = useRef<(() => void) | null>(null);
   const handleMeshcoreConnectionLostRef = useRef<() => void>(() => {});
   const attemptMeshcoreReconnectRef = useRef<() => Promise<void>>(async () => {});
+  const scheduleMeshcoreReconnectAttemptRef = useRef<() => void>(() => {});
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
   const meshcoreSetupGenerationRef = useRef(0);
   // Map pubKeyPrefix (6-byte hex) → nodeId for DM routing
@@ -2127,19 +2130,24 @@ export function useMeshcoreRuntime() {
       const myNodeId = pubkeyToNodeId(info.publicKey);
       persistMeshcoreSelfNodeId(myNodeId);
       tryPersistMeshcorePublicKeyFromRadio(info.publicKey);
+      const transportType = meshcoreConnectTypeRef.current;
+      // TCP: defer status=configured until after contacts+channels so room auto-login cannot
+      // overlap the companion contact dump (n7eal TCP mid-initConn drops / #792 follow-up).
+      const deferConfiguredUntilRadioInit = transportType === 'tcp';
       setState((prev) => ({
         ...prev,
         myNodeNum: myNodeId,
-        status: 'configured',
+        status: deferConfiguredUntilRadioInit ? 'connected' : 'configured',
         connectionLoss: false,
         serialNeedsReselect: false,
       }));
-      meshcoreDeviceConfiguredRef.current = true;
+      if (!deferConfiguredUntilRadioInit) {
+        meshcoreDeviceConfiguredRef.current = true;
+      }
       if (getStoredMeshProtocol() === 'meshcore') {
         useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
       }
 
-      const transportType = meshcoreConnectTypeRef.current;
       const discovery = { myNodeNum: myNodeId, publicKey: info.publicKey };
       let identityId = opts?.driverIdentityId ?? null;
       if (identityId) {
@@ -2180,7 +2188,7 @@ export function useMeshcoreRuntime() {
           rawPacketsForHopCorrelation: () => rawPacketsRef.current,
         });
         setConnection(identityId, {
-          status: 'configured',
+          status: deferConfiguredUntilRadioInit ? 'connected' : 'configured',
           connectionType: transportType === 'tcp' ? 'http' : transportType,
           myNodeNum: myNodeId,
         });
@@ -2230,7 +2238,10 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
       );
-      triggerRoomAutoLoginRef.current();
+      // TCP defers status=configured (and room auto-login) until after channels below.
+      if (!deferConfiguredUntilRadioInit) {
+        triggerRoomAutoLoginRef.current();
+      }
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       if (sequentialRadioInit) {
@@ -2253,6 +2264,24 @@ export function useMeshcoreRuntime() {
           if (isMeshcoreSetupAbortError(e)) throw e;
           console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
         }
+      }
+
+      if (deferConfiguredUntilRadioInit) {
+        setState((prev) => ({
+          ...prev,
+          status: 'configured',
+          connectionLoss: false,
+          serialNeedsReselect: false,
+        }));
+        meshcoreDeviceConfiguredRef.current = true;
+        if (identityId) {
+          setConnection(identityId, {
+            status: 'configured',
+            connectionType: 'http',
+            myNodeNum: myNodeId,
+          });
+        }
+        triggerRoomAutoLoginRef.current();
       }
 
       // Re-resolve map/App GPS after the node store picks up getSelfInfo advert coords (same tick as setNodes is too early).
@@ -2771,6 +2800,18 @@ export function useMeshcoreRuntime() {
         : meshcoreReconnectGenerationRef.current !== generation,
     );
     if (delayResult === 'aborted') {
+      // Generation bump during backoff (or cancel) aborted this delay. If a deferred restart was
+      // requested, the owning cycle must schedule the next attempt — do not leave isReconnecting
+      // true with no further work (n7eal TCP / #792).
+      if (
+        meshcoreDeferredReconnectRef.current &&
+        meshcoreIsReconnectingRef.current &&
+        !meshcoreExplicitDisconnectRef.current
+      ) {
+        meshcoreDeferredReconnectRef.current = false;
+        scheduleMeshcoreReconnectAttemptRef.current();
+        return;
+      }
       // Another cycle may still own reconnect (generation bumped while isReconnecting stayed
       // true). Only clear the UI when this cycle was cancelled and nothing else is driving it —
       // otherwise a raced setup-abort / delay abort left status=reconnecting forever (#792).
@@ -2796,6 +2837,15 @@ export function useMeshcoreRuntime() {
       !meshcoreIsReconnectingRef.current ||
       meshcoreReconnectGenerationRef.current !== generation
     ) {
+      if (
+        meshcoreDeferredReconnectRef.current &&
+        meshcoreIsReconnectingRef.current &&
+        !meshcoreExplicitDisconnectRef.current
+      ) {
+        meshcoreDeferredReconnectRef.current = false;
+        scheduleMeshcoreReconnectAttemptRef.current();
+        return;
+      }
       if (!meshcoreIsReconnectingRef.current) {
         setState((s) => ({
           ...s,
@@ -2930,9 +2980,7 @@ export function useMeshcoreRuntime() {
         meshcoreIsReconnectingRef.current &&
         meshcoreReconnectGenerationRef.current === generation
       ) {
-        queueMicrotask(() => {
-          void attemptMeshcoreReconnectRef.current();
-        });
+        scheduleMeshcoreReconnectAttemptRef.current();
       }
     } finally {
       attemptActive = false;
@@ -2946,13 +2994,32 @@ export function useMeshcoreRuntime() {
           console.debug(
             '[useMeshcoreRuntime] reconnect settled — running deferred reconnect after transport drop',
           );
-          queueMicrotask(() => handleMeshcoreConnectionLostRef.current());
+          // Call attempt directly (coalesced) — nested handleMeshcoreConnectionLost re-bumped
+          // generation and raced a second backoff loop with this flush (n7eal TCP / #792).
+          scheduleMeshcoreReconnectAttemptRef.current();
         }
       }
     }
   }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
 
   attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
+
+  const scheduleMeshcoreReconnectAttempt = useCallback(() => {
+    if (meshcoreReconnectSchedulePendingRef.current) return;
+    meshcoreReconnectSchedulePendingRef.current = true;
+    queueMicrotask(() => {
+      meshcoreReconnectSchedulePendingRef.current = false;
+      if (!meshcoreIsReconnectingRef.current || meshcoreExplicitDisconnectRef.current) {
+        return;
+      }
+      if (meshcoreReconnectConnectInFlightRef.current) {
+        meshcoreDeferredReconnectRef.current = true;
+        return;
+      }
+      void attemptMeshcoreReconnectRef.current();
+    });
+  }, []);
+  scheduleMeshcoreReconnectAttemptRef.current = scheduleMeshcoreReconnectAttempt;
 
   const handleMeshcoreConnectionLost = useCallback(() => {
     if (meshcoreExplicitDisconnectRef.current) {
@@ -2984,11 +3051,18 @@ export function useMeshcoreRuntime() {
       if (!rehydrated) return;
       meshcoreConnectionParamsRef.current = rehydrated;
     }
+    const wasReconnecting = meshcoreIsReconnectingRef.current;
+    // Backoff delay owns the cycle (inFlight false). Bump generation to abort that delay; do not
+    // start a parallel attemptMeshcoreReconnect — deferred flush on delay abort / schedule owns it.
+    const deferForBackoff = wasReconnecting && !meshcoreReconnectConnectInFlightRef.current;
+    if (deferForBackoff) {
+      meshcoreDeferredReconnectRef.current = true;
+    }
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreDeviceConfiguredRef.current = false;
     // Keep sticky BLE suppress while reconnecting so Meshtastic cannot revive the ghost.
     prearmMeshcoreBleMacSuppressionFromStorage(resolveLastBlePeripheralId('meshcore') ?? null);
-    if (!meshcoreIsReconnectingRef.current) {
+    if (!wasReconnecting) {
       console.warn('[useMeshcoreRuntime] Connection lost — initiating reconnect');
       meshcoreIsReconnectingRef.current = true;
     } else {
@@ -3022,7 +3096,13 @@ export function useMeshcoreRuntime() {
         meshcoreDeferredReconnectRef.current = true;
         return;
       }
-      void attemptMeshcoreReconnectRef.current();
+      if (deferForBackoff) {
+        console.debug(
+          '[useMeshcoreRuntime] Connection lost during reconnect backoff — defer until delay settles',
+        );
+        return;
+      }
+      scheduleMeshcoreReconnectAttemptRef.current();
     })();
   }, [teardownMeshcoreConnEventListeners]);
 

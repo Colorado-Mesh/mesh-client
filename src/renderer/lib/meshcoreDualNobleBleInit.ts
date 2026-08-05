@@ -31,12 +31,13 @@ export function isRendererNobleBlePlatform(): boolean {
 }
 
 /**
- * USB serial and Linux Web Bluetooth share single-flight companion RPC + WritableStream
+ * USB serial, TCP, and Linux Web Bluetooth share single-flight companion RPC + WritableStream
  * writes; init must run getSelfInfo → getContacts → getChannels before post-init side effects.
- * Noble BLE (macOS/Windows) and TCP keep parallel overlap.
+ * Noble BLE (macOS/Windows) keeps parallel overlap.
  */
 export function needsSequentialMeshcoreRadioInit(transport: 'ble' | 'serial' | 'tcp'): boolean {
-  return transport === 'serial' || (transport === 'ble' && !isRendererNobleBlePlatform());
+  // serial/tcp always sequential; Noble BLE (macOS/Windows) keeps parallel overlap.
+  return transport !== 'ble' || !isRendererNobleBlePlatform();
 }
 
 function nobleBleConfigureBusyForProtocolType(protocolType: MeshProtocol): boolean {
