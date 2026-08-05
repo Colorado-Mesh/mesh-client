@@ -13,6 +13,8 @@ interface Props {
   selectedIdx: number;
   onSelect: (name: string) => void;
   onSetSelectedIdx: (idx: number) => void;
+  /** DOM id for the listbox (aria-controls / option id prefix). */
+  listboxId?: string;
 }
 
 export default function MentionAutocomplete({
@@ -20,12 +22,14 @@ export default function MentionAutocomplete({
   selectedIdx,
   onSelect,
   onSetSelectedIdx,
+  listboxId = 'mention-autocomplete-listbox',
 }: Props) {
   const { t } = useTranslation();
   if (candidates.length === 0) return null;
 
   return (
     <div
+      id={listboxId}
       className="absolute bottom-full left-0 z-50 mb-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-600 bg-slate-800 shadow-lg"
       role="listbox"
       aria-label={t('chatPanel.mentionSuggestionsAria')}
@@ -33,6 +37,7 @@ export default function MentionAutocomplete({
       {candidates.map((c, i) => (
         <button
           key={c.nodeId}
+          id={`${listboxId}-option-${i}`}
           type="button"
           role="option"
           aria-selected={i === selectedIdx}

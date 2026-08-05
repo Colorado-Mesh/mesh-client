@@ -57,6 +57,9 @@ function rrcMessageVirtualizerKey(msg: RrcChatMessage | null | undefined, index:
   return msg.id || `rrc-slot-${index}`;
 }
 
+const EMPTY_RRC_MEMBERS: readonly RrcRoomMember[] = Object.freeze([]);
+const RRC_MENTION_LISTBOX_ID = 'rrc-mention-listbox';
+
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gu;
 const TRAILING_PUNCT = /[.,!?;:'"()]+$/;
 
@@ -161,7 +164,7 @@ export interface RrcChatViewProps {
   /** Local session nick — used to highlight @mentions of self. */
   nickname?: string;
   /** Active room members for @ / Tab nick completion. */
-  members?: RrcRoomMember[];
+  members?: readonly RrcRoomMember[];
   /** Keep the per-message copy control visible (same App Appearance setting as Chat). */
   alwaysShowMessageActions?: boolean;
   /** Composer placeholder override (e.g. whisper reply hint). */
@@ -181,7 +184,7 @@ export function RrcChatView({
   canSend,
   isMuted,
   nickname = '',
-  members = [],
+  members = EMPTY_RRC_MEMBERS,
   alwaysShowMessageActions = false,
   placeholder,
   isActive = true,
@@ -193,6 +196,8 @@ export function RrcChatView({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  /** Skip one caret sync after programmatic Tab/insert selection updates. */
+  const skipMentionSyncRef = useRef(false);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
   const unreadStartIndexRef = useRef(-1);
@@ -206,6 +211,10 @@ export function RrcChatView({
   const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
   const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
   const [tabCycleIndex, setTabCycleIndex] = useState(-1);
+  /** Original `@` prefix while Tab-cycling so candidates do not narrow to the inserted nick. */
+  const [mentionCyclePrefix, setMentionCyclePrefix] = useState<string | null>(null);
+  /** Length of the nick currently inserted during an active Tab cycle. */
+  const [mentionInsertedNickLen, setMentionInsertedNickLen] = useState(0);
 
   const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
 
@@ -213,32 +222,44 @@ export function RrcChatView({
 
   const mentionCandidates = useMemo(() => {
     if (mentionQuery == null) return [];
-    return listRrcNickCompleteCandidates(nickLabels, mentionQuery).map((name, i) => ({
+    const filterQuery = mentionCyclePrefix ?? mentionQuery;
+    return listRrcNickCompleteCandidates(nickLabels, filterQuery).map((name, i) => ({
       nodeId: i,
       name,
     }));
-  }, [mentionQuery, nickLabels]);
+  }, [mentionQuery, mentionCyclePrefix, nickLabels]);
 
-  const syncMentionFromCaret = useCallback((value: string, caret: number) => {
-    const at = findRrcAtMentionAtCaret(value, caret);
-    if (!at) {
-      setMentionQuery(null);
-      setTabCycleIndex(-1);
-      return;
-    }
-    setMentionTriggerPos(at.start);
-    setMentionQuery(at.query);
-    setMentionSelectedIdx(0);
+  const clearMentionCycle = useCallback(() => {
+    setMentionCyclePrefix(null);
+    setMentionInsertedNickLen(0);
     setTabCycleIndex(-1);
   }, []);
 
+  const syncMentionFromCaret = useCallback(
+    (value: string, caret: number) => {
+      const at = findRrcAtMentionAtCaret(value, caret);
+      if (!at) {
+        setMentionQuery(null);
+        clearMentionCycle();
+        return;
+      }
+      setMentionTriggerPos(at.start);
+      setMentionQuery(at.query);
+      setMentionSelectedIdx(0);
+      clearMentionCycle();
+    },
+    [clearMentionCycle],
+  );
+
   const insertMention = useCallback(
     (name: string) => {
-      const queryLen = mentionQuery?.length ?? 0;
+      const queryLen =
+        mentionCyclePrefix != null ? mentionInsertedNickLen : (mentionQuery?.length ?? 0);
       const { text, caret } = insertRrcNickMention(draft, mentionTriggerPos, queryLen, name);
       onDraftChange(text);
       setMentionQuery(null);
-      setTabCycleIndex(-1);
+      clearMentionCycle();
+      skipMentionSyncRef.current = true;
       requestAnimationFrame(() => {
         const el = textareaRef.current;
         if (!el) return;
@@ -246,7 +267,15 @@ export function RrcChatView({
         el.setSelectionRange(caret, caret);
       });
     },
-    [draft, mentionQuery, mentionTriggerPos, onDraftChange],
+    [
+      clearMentionCycle,
+      draft,
+      mentionCyclePrefix,
+      mentionInsertedNickLen,
+      mentionQuery,
+      mentionTriggerPos,
+      onDraftChange,
+    ],
   );
 
   const estimateSize = useCallback(
@@ -374,7 +403,7 @@ export function RrcChatView({
       if (e.key === 'Escape') {
         e.preventDefault();
         setMentionQuery(null);
-        setTabCycleIndex(-1);
+        clearMentionCycle();
         return;
       }
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -385,22 +414,23 @@ export function RrcChatView({
       }
       if (e.key === 'Tab') {
         e.preventDefault();
-        const names = mentionCandidates.map((c) => c.name);
+        const cycling = mentionCyclePrefix != null;
+        const prefix = cycling ? mentionCyclePrefix : mentionQuery;
+        const names = listRrcNickCompleteCandidates(nickLabels, prefix);
         const nextIdx = nextRrcNickCompleteIndex(names, tabCycleIndex, e.shiftKey);
         if (nextIdx < 0) return;
         const nick = names[nextIdx];
         if (!nick) return;
+        const replaceLen = cycling ? mentionInsertedNickLen : mentionQuery.length;
+        if (!cycling) setMentionCyclePrefix(mentionQuery);
+        setMentionInsertedNickLen(nick.length);
         setTabCycleIndex(nextIdx);
         setMentionSelectedIdx(nextIdx);
-        const { text, caret } = insertRrcNickMention(
-          draft,
-          mentionTriggerPos,
-          mentionQuery.length,
-          nick,
-        );
+        const { text, caret } = insertRrcNickMention(draft, mentionTriggerPos, replaceLen, nick);
         onDraftChange(text);
         // Keep dropdown open for further Tab cycles (query = completed nick).
         setMentionQuery(nick);
+        skipMentionSyncRef.current = true;
         requestAnimationFrame(() => {
           const el = textareaRef.current;
           if (!el) return;
@@ -421,7 +451,8 @@ export function RrcChatView({
         const nick = candidates[nextIdx];
         if (!nick) return;
         setMentionTriggerPos(at.start);
-        setMentionQuery(at.query);
+        setMentionCyclePrefix(at.query);
+        setMentionInsertedNickLen(nick.length);
         setTabCycleIndex(nextIdx);
         setMentionSelectedIdx(nextIdx);
         const { text, caret: newCaret } = insertRrcNickMention(
@@ -432,6 +463,7 @@ export function RrcChatView({
         );
         onDraftChange(text);
         setMentionQuery(nick);
+        skipMentionSyncRef.current = true;
         requestAnimationFrame(() => {
           textareaRef.current?.setSelectionRange(newCaret, newCaret);
         });
@@ -442,6 +474,7 @@ export function RrcChatView({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       setMentionQuery(null);
+      clearMentionCycle();
       onSend(draft);
     }
   };
@@ -590,31 +623,52 @@ export function RrcChatView({
       <div className="relative flex gap-2 border-t border-amber-800/40 p-2">
         {mentionQuery != null && mentionCandidates.length > 0 && (
           <MentionAutocomplete
+            listboxId={RRC_MENTION_LISTBOX_ID}
             candidates={mentionCandidates}
             selectedIdx={mentionSelectedIdx}
             onSelect={insertMention}
             onSetSelectedIdx={setMentionSelectedIdx}
           />
         )}
-        <textarea
-          ref={textareaRef}
-          value={draft}
-          onChange={(e) => {
-            const value = e.target.value;
-            onDraftChange(value);
-            syncMentionFromCaret(value, e.target.selectionStart ?? value.length);
-          }}
-          onSelect={(e) => {
-            const el = e.currentTarget;
-            syncMentionFromCaret(el.value, el.selectionStart ?? el.value.length);
-          }}
-          onKeyDown={handleComposerKeyDown}
-          disabled={!canSend || isMuted}
-          placeholder={composerPlaceholder}
+        <div
+          role="combobox"
+          tabIndex={-1}
           aria-label={composerPlaceholder}
-          rows={2}
-          className="min-w-0 flex-1 resize-none rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1.5 font-sans text-sm text-amber-50 disabled:opacity-50"
-        />
+          aria-haspopup="listbox"
+          aria-expanded={mentionQuery != null && mentionCandidates.length > 0}
+          aria-controls={RRC_MENTION_LISTBOX_ID}
+          aria-activedescendant={
+            mentionQuery != null && mentionCandidates.length > 0
+              ? `${RRC_MENTION_LISTBOX_ID}-option-${mentionSelectedIdx}`
+              : undefined
+          }
+          className="min-w-0 flex-1"
+        >
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            onChange={(e) => {
+              const value = e.target.value;
+              onDraftChange(value);
+              syncMentionFromCaret(value, e.target.selectionStart ?? value.length);
+            }}
+            onSelect={(e) => {
+              if (skipMentionSyncRef.current) {
+                skipMentionSyncRef.current = false;
+                return;
+              }
+              const el = e.currentTarget;
+              syncMentionFromCaret(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onKeyDown={handleComposerKeyDown}
+            disabled={!canSend || isMuted}
+            placeholder={composerPlaceholder}
+            aria-label={composerPlaceholder}
+            aria-autocomplete="list"
+            rows={2}
+            className="w-full resize-none rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1.5 font-sans text-sm text-amber-50 disabled:opacity-50"
+          />
+        </div>
         <button
           type="button"
           className="self-end rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"

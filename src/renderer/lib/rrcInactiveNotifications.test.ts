@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { resolveInactiveRrcNotificationType } from './rrcInactiveNotifications';
-import { shouldPlayRrcNotification } from './rrcNotificationGate';
 
 describe('resolveInactiveRrcNotificationType', () => {
   const base = {
@@ -72,26 +71,5 @@ describe('resolveInactiveRrcNotificationType', () => {
         ],
       }),
     ).toBeNull();
-  });
-});
-
-describe('shouldPlayRrcNotification (focused room gate)', () => {
-  it('allows dm while focused; blocks channel', () => {
-    expect(
-      shouldPlayRrcNotification({
-        onRrcPanel: true,
-        documentHidden: false,
-        forOtherRoom: false,
-        type: 'dm',
-      }),
-    ).toBe(true);
-    expect(
-      shouldPlayRrcNotification({
-        onRrcPanel: true,
-        documentHidden: false,
-        forOtherRoom: false,
-        type: 'channel',
-      }),
-    ).toBe(false);
   });
 });

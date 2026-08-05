@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
@@ -208,6 +210,7 @@ describe('RrcChatView mention completer', () => {
   beforeEach(() => {
     mockIsAtEnd = true;
     mockScrollToEnd.mockClear();
+    hydrateAxeThemeColors(document.documentElement);
   });
 
   it('shows listbox and inserts @Zeva on select', async () => {
@@ -227,18 +230,23 @@ describe('RrcChatView mention completer', () => {
       );
     }
 
-    render(<Harness />);
-    const box = screen.getByLabelText('rrc.messagePlaceholder');
+    const { container } = render(<Harness />);
+    const box = screen.getByRole('textbox');
     await user.type(box, '@ze');
     await waitFor(() => {
       expect(screen.getByRole('listbox')).toBeInTheDocument();
     });
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+    const combo = screen.getByRole('combobox');
+    expect(combo).toHaveAttribute('aria-expanded', 'true');
+    expect(combo).toHaveAttribute('aria-controls', 'rrc-mention-listbox');
     await user.click(screen.getByRole('option', { name: /Zeva/i }));
     expect(box).toHaveValue('@Zeva ');
     expect((box as HTMLTextAreaElement).value).not.toContain('@[');
   });
 
-  it('completes @ from whisper peer members in [whispers]', async () => {
+  it('completes @ from provided room members', async () => {
     const user = userEvent.setup();
     const members = [{ identity_hash: 'aa'.repeat(16), nickname: 'Zeva' }];
 
@@ -257,13 +265,45 @@ describe('RrcChatView mention completer', () => {
     }
 
     render(<Harness />);
-    const box = screen.getByLabelText('rrc.messagePlaceholder');
+    const box = screen.getByRole('textbox');
     await user.type(box, '@ze');
     await waitFor(() => {
       expect(screen.getByRole('listbox')).toBeInTheDocument();
     });
     await user.click(screen.getByRole('option', { name: /Zeva/i }));
     expect(box).toHaveValue('@Zeva ');
+  });
+
+  it('Tab cycles nicks without narrowing the original prefix', async () => {
+    const user = userEvent.setup();
+    const members = [
+      { identity_hash: 'aa'.repeat(16), nickname: 'Zeva' },
+      { identity_hash: 'bb'.repeat(16), nickname: 'Zoe' },
+    ];
+
+    function Harness() {
+      const [draft, setDraft] = useState('');
+      return (
+        <RrcChatView
+          {...baseProps}
+          draft={draft}
+          onDraftChange={setDraft}
+          members={members}
+          messages={[]}
+        />
+      );
+    }
+
+    render(<Harness />);
+    const box = screen.getByRole('textbox');
+    await user.type(box, '@z');
+    await waitFor(() => {
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+    await user.keyboard('{Tab}');
+    expect(box).toHaveValue('@Zeva ');
+    await user.keyboard('{Tab}');
+    expect(box).toHaveValue('@Zoe ');
   });
 });
 
