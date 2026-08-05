@@ -19,11 +19,34 @@ import {
   isDatabaseSchemaTooNewError,
   runSchemaUpgrade,
 } from './db-schema-sync';
+import { confirmDatabaseSchemaUpgrade } from './fatal-startup-dialog';
 import { sanitizeLogMessage } from './log-service';
 import { buildFtsMatchQuery, isMessageFtsReady } from './messageFts';
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
 export { CURRENT_SCHEMA_VERSION, DatabaseSchemaTooNewError, isDatabaseSchemaTooNewError };
+
+/** Thrown when the user declines an irreversible schema upgrade at startup. */
+export class DatabaseSchemaUpgradeDeclinedError extends Error {
+  readonly code = 'DB_SCHEMA_UPGRADE_DECLINED' as const;
+  readonly fromVersion: number;
+  readonly toVersion: number;
+
+  constructor(fromVersion: number, toVersion: number) {
+    super(
+      `[db] Schema upgrade from v${fromVersion} to v${toVersion} declined; database left unchanged`,
+    );
+    this.name = 'DatabaseSchemaUpgradeDeclinedError';
+    this.fromVersion = fromVersion;
+    this.toVersion = toVersion;
+  }
+}
+
+export function isDatabaseSchemaUpgradeDeclinedError(
+  err: unknown,
+): err is DatabaseSchemaUpgradeDeclinedError {
+  return err instanceof DatabaseSchemaUpgradeDeclinedError;
+}
 
 /** Thrown when mergeDatabase rejects the source path before opening SQLite. */
 export class MergeSourceInvalidError extends Error {
@@ -85,9 +108,26 @@ export function initDatabase(): void {
     db.pragma('busy_timeout = 5000');
     db.pragma('foreign_keys = ON');
 
+    const userVersion = db.pragma('user_version', { simple: true }) as number;
+    if (userVersion > 0 && userVersion < CURRENT_SCHEMA_VERSION) {
+      if (!confirmDatabaseSchemaUpgrade(userVersion, CURRENT_SCHEMA_VERSION)) {
+        try {
+          db.close();
+        } catch (closeErr) {
+          console.debug(
+            '[db] close after declined schema upgrade failed (non-fatal):',
+            sanitizeLogMessage(closeErr instanceof Error ? closeErr.message : String(closeErr)),
+          );
+        } finally {
+          db = null;
+        }
+        throw new DatabaseSchemaUpgradeDeclinedError(userVersion, CURRENT_SCHEMA_VERSION);
+      }
+    }
+
     const setup = db.transaction(() => {
-      const userVersion = db!.pragma('user_version', { simple: true }) as number;
-      if (userVersion === 0) {
+      const cur = db!.pragma('user_version', { simple: true }) as number;
+      if (cur === 0) {
         createBaseTables();
         db!.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
       }
@@ -100,6 +140,13 @@ export function initDatabase(): void {
       `[db] Database initialized at ${sanitizeLogMessage(dbPath)} (user_version = ${version})`,
     );
   } catch (error) {
+    if (isDatabaseSchemaUpgradeDeclinedError(error)) {
+      console.debug(
+        '[db] Schema upgrade declined; database left unchanged:',
+        sanitizeLogMessage(error.message),
+      );
+      throw error;
+    }
     console.error(
       '[db] Database init failed:',
       sanitizeLogMessage(error instanceof Error ? error.message : String(error)),

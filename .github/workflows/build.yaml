@@ -7,7 +7,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  schema-release-compare:
+    name: Schema vs last official release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      schema_bumped: ${{ steps.compare.outputs.schema_bumped }}
+      curr_schema: ${{ steps.compare.outputs.curr_schema }}
+      prev_schema: ${{ steps.compare.outputs.prev_schema }}
+      prev_tag: ${{ steps.compare.outputs.prev_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compare schema to last published release
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/ci-schema-release-compare.mjs --write-readme READ-ME-FIRST-test-build.md
+
+      - name: Upload READ-ME-FIRST warning
+        uses: actions/upload-artifact@v7
+        with:
+          name: READ-ME-FIRST-test-build
+          path: READ-ME-FIRST-test-build.md
+          retention-days: 30
+
   build:
+    needs: schema-release-compare
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -88,6 +118,20 @@ jobs:
       - name: Rebuild native dependencies
         run: pnpm run rebuild
 
+      - name: Write schema upgrade installer notice
+        env:
+          MESH_CLIENT_SCHEMA_BUMPED: ${{ needs.schema-release-compare.outputs.schema_bumped }}
+          MESH_CLIENT_SCHEMA_CURR: ${{ needs.schema-release-compare.outputs.curr_schema }}
+          MESH_CLIENT_SCHEMA_PREV: ${{ needs.schema-release-compare.outputs.prev_schema }}
+          MESH_CLIENT_SCHEMA_PREV_TAG: ${{ needs.schema-release-compare.outputs.prev_tag }}
+        run: node scripts/write-schema-upgrade-notice.mjs
+
+      - name: Download READ-ME-FIRST warning
+        uses: actions/download-artifact@v7
+        with:
+          name: READ-ME-FIRST-test-build
+          path: release-warnings
+
       - name: Build
         env:
           # ── macOS code signing (only effective on macOS runners) ────────────
@@ -116,6 +160,7 @@ jobs:
             release/mac-universal/**/*.zip
             release/*.dmg
             release/*.zip
+            release-warnings/READ-ME-FIRST-test-build.md
           retention-days: 30
 
       - name: Upload Linux Artifact
@@ -127,6 +172,7 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.rpm
+            release-warnings/READ-ME-FIRST-test-build.md
           retention-days: 30
 
       - name: Upload Windows Artifact
@@ -137,6 +183,7 @@ jobs:
           path: |
             # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
             release/*.exe
+            release-warnings/READ-ME-FIRST-test-build.md
           retention-days: 30
 
   packaging-smoke:

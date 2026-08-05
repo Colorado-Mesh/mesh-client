@@ -143,7 +143,18 @@ describe('meshcore_messages dedup index and fresh DB version', () => {
   it('fresh DB init stamps user_version = CURRENT_SCHEMA_VERSION then runs runSchemaUpgrade', () => {
     expect(DB_SOURCE).toMatch(/CURRENT_SCHEMA_VERSION/);
     expect(DB_SOURCE).toMatch(
-      /if \(userVersion === 0\) \{[\s\S]*?createBaseTables\(\)[\s\S]*?pragma\(`user_version = \$\{CURRENT_SCHEMA_VERSION\}`\)[\s\S]*?\}\s*runSchemaUpgrade\(db!\)/,
+      /if \(cur === 0\) \{[\s\S]*?createBaseTables\(\)[\s\S]*?pragma\(`user_version = \$\{CURRENT_SCHEMA_VERSION\}`\)[\s\S]*?\}\s*runSchemaUpgrade\(db!\)/,
+    );
+  });
+
+  it('confirms irreversible schema upgrade before runSchemaUpgrade when behind', () => {
+    expect(DB_SOURCE).toContain('confirmDatabaseSchemaUpgrade');
+    expect(DB_SOURCE).toContain('DatabaseSchemaUpgradeDeclinedError');
+    expect(DB_SOURCE).toMatch(
+      /userVersion > 0 && userVersion < CURRENT_SCHEMA_VERSION[\s\S]*?confirmDatabaseSchemaUpgrade/,
+    );
+    expect(DB_SOURCE).toMatch(
+      /!confirmDatabaseSchemaUpgrade[\s\S]*?throw new DatabaseSchemaUpgradeDeclinedError/,
     );
   });
 

@@ -20,7 +20,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  schema-release-compare:
+    name: Schema vs last official release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      schema_bumped: ${{ steps.compare.outputs.schema_bumped }}
+      curr_schema: ${{ steps.compare.outputs.curr_schema }}
+      prev_schema: ${{ steps.compare.outputs.prev_schema }}
+      prev_tag: ${{ steps.compare.outputs.prev_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Resolve release tag from package.json
+        id: release_tag
+        run: echo "value=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Compare schema to last published release
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+        run: >
+          node scripts/ci-schema-release-compare.mjs --release
+          --write-readme READ-ME-FIRST-schema.md
+
+      - name: Upload schema compare readme
+        uses: actions/upload-artifact@v7
+        with:
+          name: READ-ME-FIRST-schema-${{ github.sha }}
+          path: READ-ME-FIRST-schema.md
+          retention-days: 30
+
   prepare-github-release:
+    needs: schema-release-compare
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -40,6 +78,19 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
         run: node scripts/ci-ensure-github-draft-release.mjs
+
+      - name: Download schema compare readme
+        uses: actions/download-artifact@v7
+        with:
+          name: READ-ME-FIRST-schema-${{ github.sha }}
+          path: schema-compare
+
+      - name: Patch draft release body with schema note
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+        run: node scripts/ci-patch-draft-release-schema-note.mjs --markdown-file schema-compare/READ-ME-FIRST-schema.md
 
   resolve-release-matrix:
     needs: prepare-github-release
@@ -62,7 +113,7 @@ jobs:
         run: echo "include=$(node scripts/resolve-release-matrix.mjs)" >> "$GITHUB_OUTPUT"
 
   release:
-    needs: [prepare-github-release, resolve-release-matrix]
+    needs: [schema-release-compare, prepare-github-release, resolve-release-matrix]
     if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -125,6 +176,14 @@ jobs:
 
       - name: Rebuild native dependencies
         run: pnpm run rebuild
+
+      - name: Write schema upgrade installer notice
+        env:
+          MESH_CLIENT_SCHEMA_BUMPED: ${{ needs.schema-release-compare.outputs.schema_bumped }}
+          MESH_CLIENT_SCHEMA_CURR: ${{ needs.schema-release-compare.outputs.curr_schema }}
+          MESH_CLIENT_SCHEMA_PREV: ${{ needs.schema-release-compare.outputs.prev_schema }}
+          MESH_CLIENT_SCHEMA_PREV_TAG: ${{ needs.schema-release-compare.outputs.prev_tag }}
+        run: node scripts/write-schema-upgrade-notice.mjs
 
       - name: Validate macOS signing secrets
         if: matrix.os == 'macos-latest' && github.event_name == 'release'
