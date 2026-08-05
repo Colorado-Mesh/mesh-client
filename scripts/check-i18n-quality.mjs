@@ -2223,9 +2223,15 @@ const MOJIBAKE_RE = /Ð[\u0080-\u00FF]{2,}|Ã[\u0080-\u00BF]{2,}|Â[\u0080-\u00B
 const BROKEN_MESHTASTIC_SCHEME_RE = /meshtastic[\s\u00a0]+:\/\//i;
 /** Auto-translate often inserts spaces / NBSP before `://` in `lxm://` / `lxma://`. */
 const BROKEN_LXM_SCHEME_RE = /\blxma?[\s\u00a0]+:\/\//i;
-/** Scheme glued to the following word without a space (e.g. `lxma://o`, `lxm://link`). */
+/**
+ * Prose glued onto a scheme after stripping complete URI tokens
+ * (e.g. leftover `lxm://` + word). Paper payloads are URL-safe base64 and may
+ * start with letters — do not flag those; strip `lxm(a)://…` tokens first.
+ */
 const LXM_SCHEME_GLUED_TO_WORD_RE =
   /\blxma?:\/\/(?=[A-Za-z\u00C0-\u024F\u0400-\u04FF\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF])/u;
+/** Complete `lxm://` / `lxma://` URI token (scheme + non-whitespace payload). */
+const LXM_URI_TOKEN_RE = /\blxma?:\/\/[^\s<>"']+/gi;
 
 const MESHTASTIC_MISSPELLING_RE = /meshtastisch/i;
 
@@ -2404,7 +2410,10 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
     issues.push('lxm:// / lxma:// scheme must not contain whitespace before "://"');
   }
 
-  if (LXM_SCHEME_GLUED_TO_WORD_RE.test(val)) {
+  // Strip complete URI tokens first so alphabetic paper payloads (e.g. lxm://AbC…)
+  // are not treated as scheme-glued-to-prose false positives.
+  const valWithoutLxmUris = val.replace(LXM_URI_TOKEN_RE, '');
+  if (LXM_SCHEME_GLUED_TO_WORD_RE.test(valWithoutLxmUris)) {
     issues.push('lxm:// / lxma:// must be followed by a space or punctuation, not glued to a word');
   }
 

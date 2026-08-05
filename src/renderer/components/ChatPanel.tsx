@@ -527,6 +527,8 @@ export interface ChatPanelProps {
   hasLxstVoice?: boolean;
   /** Reticulum: LRGP games Challenge control in the DM header. */
   hasLrgpGames?: boolean;
+  /** Reticulum: LXMF paper Share as paper / Scan paper controls. */
+  hasLxmfPaper?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
@@ -583,6 +585,7 @@ function ChatPanel({
   hasRncpTransfer = false,
   hasLxstVoice = false,
   hasLrgpGames = false,
+  hasLxmfPaper = false,
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
@@ -2343,7 +2346,7 @@ function ChatPanel({
               />
             ) : null;
           const paperShareControl =
-            protocol === 'reticulum' && reticulumDmDestinationHash != null ? (
+            protocol === 'reticulum' && hasLxmfPaper && reticulumDmDestinationHash != null ? (
               <ChatDmPaperShareControl
                 key={`dm-paper-${reticulumDmDestinationHash}`}
                 lxmfPeerHash={reticulumDmDestinationHash}
@@ -3174,7 +3177,7 @@ function ChatPanel({
         reticulumDmDestinationHash != null && (
           <ChatDmRncpOfferBanner lxmfPeerHash={reticulumDmDestinationHash} />
         )}
-      {protocol === 'reticulum' ? (
+      {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
       <ChatComposer

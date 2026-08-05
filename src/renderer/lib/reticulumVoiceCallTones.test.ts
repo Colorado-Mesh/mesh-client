@@ -35,7 +35,19 @@ describe('reticulumVoiceCallTones', () => {
       destination = {} as AudioDestinationNode;
       createOscillator() {
         oscillatorCount += 1;
-        return {
+        const osc: {
+          type: string;
+          frequency: {
+            value: number;
+            setValueAtTime: () => undefined;
+            linearRampToValueAtTime: () => undefined;
+          };
+          connect: () => undefined;
+          start: () => undefined;
+          stop: () => undefined;
+          disconnect: () => undefined;
+          onended: ((this: OscillatorNode, ev: Event) => void) | null;
+        } = {
           type: 'sine',
           frequency: {
             value: 0,
@@ -44,9 +56,16 @@ describe('reticulumVoiceCallTones', () => {
           },
           connect: () => undefined,
           start: () => undefined,
-          stop: () => undefined,
+          stop: () => {
+            const handler = osc.onended;
+            if (handler) {
+              handler.call(osc as unknown as OscillatorNode, new Event('ended'));
+            }
+          },
           disconnect: () => undefined,
+          onended: null,
         };
+        return osc;
       }
       createGain() {
         return {

@@ -115,7 +115,9 @@ export function ReticulumMessageStatusBadge({
         : viasLabel;
   const statusLabel = statusLabelText(t, status, deliveryMethod, error);
   const viaPrefix = viaPrefixText(t, deliveryMethod, atoms, viasLabel);
-  const tooltip = deliveryMethod === 'paper' ? viaPrefix : `${viaPrefix}: ${statusLabel}`;
+  // Completed paper: paper-only prefix. Failed/sending paper keep status suffix (incl. error text).
+  const tooltip =
+    deliveryMethod === 'paper' && status === 'acked' ? viaPrefix : `${viaPrefix}: ${statusLabel}`;
   return (
     <DeliveryStatusBadgeFrame
       label={label}

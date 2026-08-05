@@ -130,4 +130,20 @@ describe('createReticulumPaperMessage', () => {
     expect(result).toEqual({ ok: false, errorKey: 'chatPanel.shareAsPaperFailed' });
     expect(ingestReticulumLxmfPayloadWithSideEffects).not.toHaveBeenCalled();
   });
+
+  it('maps proxyPost transport rejection to shareAsPaperFailed', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      proxyPost.mockRejectedValue(new Error('network down'));
+      const result = await createReticulumPaperMessage({
+        identityId: 'id-1',
+        destinationHash: 'bb'.repeat(16),
+        text: 'hi',
+      });
+      expect(result).toEqual({ ok: false, errorKey: 'chatPanel.shareAsPaperFailed' });
+      expect(ingestReticulumLxmfPayloadWithSideEffects).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
 });

@@ -222,6 +222,7 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
       }
       return { kind: 'unknown', raw: trimmed };
     } catch {
+      // catch-no-log-ok malformed / overlong paper hosts: fall back to raw blob check without logging
       // Some engines reject very long hosts; still try paper when scheme + blob remain.
       const withoutScheme = trimmed.replace(/^lxm:\/\//i, '');
       if (looksLikeLxmPaperBlob(withoutScheme.split(/[?#]/)[0] ?? '')) {

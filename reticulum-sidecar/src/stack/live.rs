@@ -4237,6 +4237,13 @@ impl LiveBridge {
             }
         };
 
+        let sender_hex = hex::encode(message.source_hash);
+        let inbound_sender_name = self
+            .display_name_cache
+            .lock()
+            .ok()
+            .map(|cache| resolve_inbound_sender_name_map(&cache, &sender_hex))
+            .unwrap_or_else(|| sender_hex.get(..12).unwrap_or(&sender_hex).to_string());
         let payload = lxmf_payload_from_message(
             &message,
             &self.lxmf_hash_hex,
@@ -4244,7 +4251,7 @@ impl LiveBridge {
             Some("paper"),
             None,
             "inbound",
-            None,
+            Some(&inbound_sender_name),
         );
         Ok(serde_json::json!({
             "ok": true,

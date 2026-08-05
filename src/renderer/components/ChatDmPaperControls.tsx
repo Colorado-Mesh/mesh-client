@@ -1,5 +1,5 @@
 import { FileText, QrCode } from 'lucide-react-motion';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import QrCodeImage from '@/renderer/components/QrCodeImage';
@@ -37,6 +37,8 @@ export function ChatDmPaperShareControl({
   const [text, setText] = useState('');
   const [uri, setUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogPanelRef = useRef<HTMLDivElement>(null);
 
   const openModal = useCallback(() => {
     const drafts = loadDraftsInitial('reticulum');
@@ -64,6 +66,21 @@ export function ChatDmPaperShareControl({
     };
   }, [busy, closeModal, open]);
 
+  useEffect(() => {
+    if (!open) return undefined;
+    const trigger = triggerRef.current;
+    const frame = requestAnimationFrame(() => {
+      const focusable = dialogPanelRef.current?.querySelector<HTMLElement>(
+        'textarea:not([disabled]), button:not([disabled])',
+      );
+      focusable?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      trigger?.focus();
+    };
+  }, [open]);
+
   const createPaper = useCallback(async () => {
     if (busy || !focusedIdentityId) return;
     setBusy(true);
@@ -85,6 +102,7 @@ export function ChatDmPaperShareControl({
 
   const shareButton = (
     <button
+      ref={triggerRef}
       type="button"
       className={className}
       disabled={!sidecarRunning}
@@ -112,6 +130,7 @@ export function ChatDmPaperShareControl({
           onClick={closeModal}
         />
         <div
+          ref={dialogPanelRef}
           className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-700 p-4 shadow-xl"
           role="dialog"
           aria-modal="true"

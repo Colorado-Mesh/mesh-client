@@ -9,6 +9,7 @@ import {
   ChatPaperScanControl,
 } from '@/renderer/components/ChatDmPaperControls';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 const addToast = vi.fn();
 const createReticulumPaperMessage = vi.fn();
@@ -129,11 +130,19 @@ describe('ChatDmPaperControls', () => {
       expect(addToast).toHaveBeenCalledWith('chatPanel.shareAsPaperCopied', 'success');
     });
 
-    writeClipboardText.mockRejectedValueOnce(new Error('denied'));
-    await user.click(screen.getByRole('button', { name: 'chatPanel.shareAsPaperCopyUri' }));
-    await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('chatPanel.shareAsPaperCopyFailed', 'error');
-    });
+    const { spy, restore } = mockConsoleWarn();
+    try {
+      writeClipboardText.mockRejectedValueOnce(new Error('denied'));
+      await user.click(screen.getByRole('button', { name: 'chatPanel.shareAsPaperCopyUri' }));
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('chatPanel.shareAsPaperCopyFailed', 'error');
+      });
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('[ChatDmPaperShareControl] clipboard failed:'),
+      );
+    } finally {
+      restore();
+    }
   });
 
   it('disables share when sidecar is stopped', async () => {

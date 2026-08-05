@@ -219,6 +219,17 @@ function trackModemDisconnectable(node: { disconnect: () => void }): void {
   modemDisconnectables.push(node);
 }
 
+function untrackModemStoppable(node: {
+  stop: (when?: number) => void;
+  disconnect: () => void;
+}): void {
+  modemStoppables = modemStoppables.filter((n) => n !== node);
+}
+
+function untrackModemDisconnectable(node: { disconnect: () => void }): void {
+  modemDisconnectables = modemDisconnectables.filter((n) => n !== node);
+}
+
 /** Map peer identity/destination hash → 4 DTMF keys (stable per peer). */
 export function dtmfKeysFromPeerHash(hash: string): string {
   // Full 32-hex fold — prefix-only made many peers sound identical.
@@ -287,6 +298,10 @@ function scheduleModemChirp(
   osc.stop(startTime + durationS);
   trackModemStoppable(osc);
   trackModemDisconnectable(gain);
+  osc.onended = () => {
+    untrackModemStoppable(osc);
+    untrackModemDisconnectable(gain);
+  };
 }
 
 function playModemHandshake(ctx: AudioContext): void {

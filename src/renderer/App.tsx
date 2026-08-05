@@ -3082,6 +3082,7 @@ function AppContent() {
                             hasRncpTransfer={capabilities.hasRncpTransfer}
                             hasLxstVoice={capabilities.hasLxstVoice}
                             hasLrgpGames={capabilities.hasLrgpGames}
+                            hasLxmfPaper={capabilities.hasLxmfPaper}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
                             showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
