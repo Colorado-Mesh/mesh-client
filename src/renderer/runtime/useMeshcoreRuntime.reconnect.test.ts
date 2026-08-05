@@ -123,7 +123,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).not.toContain('if (isBleReconnect) {\n        await raceWithDeadline');
   });
 
-  it('on BLE reconnect timeout invalidates setup generation and cleans late transports', () => {
+  it('on reconnect timeout invalidates setup generation and cleans late transports (any transport, CodeRabbit #792)', () => {
+    // meshcoreSetupGenerationRef guards background initConn RPCs (getSelfInfo/getContacts/
+    // getChannels/etc.) generically — not BLE-specific (see its other call sites). Gating the
+    // bump on isBleReconnect here was only ever correct while raceWithDeadline itself was
+    // BLE-only; now that every transport's reconnect races the same deadline, a timed-out
+    // TCP/serial attempt must invalidate the setup generation too, or its background RPCs keep
+    // running and can apply stale state after the attempt was already declared failed.
     expect(RUNTIME_SOURCE).toContain('createBleReconnectTransportCleanup');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toMatch(
@@ -132,9 +138,12 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toMatch(
       /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('MeshCore reconnect superseded during attach'\)/,
     );
-    expect(reconnectBody).toMatch(
-      /catch \(err\) \{[\s\S]*?isBleReconnect[\s\S]*?meshcoreSetupGenerationRef\.current \+= 1/,
+    const catchBody = reconnectBody.slice(
+      reconnectBody.indexOf('} catch (err) {'),
+      reconnectBody.indexOf('await lateTransport.cleanup(opened?.driverIdentityId)'),
     );
+    expect(catchBody).toContain('meshcoreSetupGenerationRef.current += 1');
+    expect(catchBody).not.toContain('if (isBleReconnect)');
   });
 
   it('cleans up transport when RF link is lost after reconnect attach', () => {

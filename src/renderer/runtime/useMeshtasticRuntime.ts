@@ -2276,6 +2276,11 @@ export function useMeshtasticRuntime() {
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       await lateTransport.cleanup(failedDriverIdentity);
+      // wireSubscriptions() already ran for this attempt's device by the time raceWithDeadline
+      // can time out (it's called synchronously right after open, before any long await); if we
+      // don't detach here, the loss-watch listener and wrapped toDevice stream stay live against
+      // the now-abandoned device until something else happens to tear them down.
+      cleanupSubscriptions();
       console.warn(
         `[useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
           ' ' +

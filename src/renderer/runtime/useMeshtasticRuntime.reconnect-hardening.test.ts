@@ -137,6 +137,18 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(reconnectBody).not.toContain('if (isBleReconnect) {');
   });
 
+  it('detaches wire subscriptions when a reconnect attempt times out (CodeRabbit #792)', () => {
+    // wireSubscriptions() runs synchronously right after open, well before the deadline can
+    // fire, so a timed-out attempt leaves the loss-watch listener and wrapped toDevice stream
+    // live against the now-abandoned device unless the deadline's own catch block detaches them
+    // too — lateTransport.cleanup() alone only tears down the driver/transport, not those.
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    const cleanupIdx = reconnectBody.indexOf('await lateTransport.cleanup(failedDriverIdentity);');
+    expect(cleanupIdx).toBeGreaterThan(-1);
+    const afterCleanup = reconnectBody.slice(cleanupIdx, cleanupIdx + 500);
+    expect(afterCleanup).toContain('cleanupSubscriptions();');
+  });
+
   it('disconnects late-opened transport when reconnect attempt is inactive or superseded', () => {
     expect(SOURCE).toContain('createBleReconnectTransportCleanup');
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');

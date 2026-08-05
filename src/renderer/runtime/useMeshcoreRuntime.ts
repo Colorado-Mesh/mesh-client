@@ -2887,10 +2887,12 @@ export function useMeshcoreRuntime() {
       );
     } catch (err) {
       attemptActive = false;
-      if (isBleReconnect) {
-        // Stop background initConn RPCs if open resolved into attach after the budget fired.
-        meshcoreSetupGenerationRef.current += 1;
-      }
+      // Stop background initConn RPCs (getSelfInfo/getContacts/getChannels/etc.) if open
+      // resolved into attach after the budget fired. Not BLE-specific: raceWithDeadline now
+      // guards every transport's reconnect attempt, so a TCP/serial attempt can hit this same
+      // path — bumping only for BLE here left non-BLE stale setup RPCs free to keep running
+      // and apply state after the attempt was already declared failed.
+      meshcoreSetupGenerationRef.current += 1;
       if (isMeshcoreSetupAbortError(err)) {
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
         meshcoreIsReconnectingRef.current = false;
