@@ -1990,7 +1990,8 @@ function AppContent() {
 
   const handleOpenGamesSession = useCallback(
     (sessionId: string) => {
-      if (!capabilities.hasLrgpGames) return;
+      // Gate on Reticulum capabilities — deep links must work while another protocol is active.
+      if (!reticulumCapabilities.hasLrgpGames) return;
       void (async () => {
         if (protocol !== 'reticulum') {
           lastTabByProtocol.current.set(protocol, activeTab);
@@ -2009,7 +2010,7 @@ function AppContent() {
         await openReticulumGameSession(sessionId);
       })();
     },
-    [activePanelIndex, activeTab, capabilities.hasLrgpGames, protocol, tabsByProtocol],
+    [activePanelIndex, activeTab, protocol, reticulumCapabilities.hasLrgpGames, tabsByProtocol],
   );
 
   useEffect(() => {

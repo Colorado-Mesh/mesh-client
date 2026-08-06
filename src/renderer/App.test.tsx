@@ -9,7 +9,11 @@ import {
   OFFLINE_MESHCORE_IDENTITY_ID,
 } from './lib/offlineProtocolIdentities';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
-import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
+import {
+  MESHCORE_CAPABILITIES,
+  MESHTASTIC_CAPABILITIES,
+  RETICULUM_CAPABILITIES,
+} from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
 import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
 import {
@@ -24,6 +28,10 @@ import { useMessageStore } from './stores/messageStore';
 import { upsertNode, useNodeStore } from './stores/nodeStore';
 
 const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
+
+const { openReticulumGameSessionMock } = vi.hoisted(() => ({
+  openReticulumGameSessionMock: vi.fn().mockResolvedValue(true),
+}));
 
 function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
   const byId: Record<string, ReturnType<typeof chatMessageToMessageRecord>> = {};
@@ -285,6 +293,8 @@ beforeEach(() => {
   vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) =>
     protocol === 'meshcore' ? MESHCORE_CAPABILITIES : MESHTASTIC_CAPABILITIES,
   );
+  openReticulumGameSessionMock.mockClear();
+  openReticulumGameSessionMock.mockResolvedValue(true);
 });
 
 function setDocumentHidden(hidden: boolean): void {
@@ -346,6 +356,7 @@ vi.mock('./lazyAppPanels', () => ({
 vi.mock('./lazyTabPanels', () => ({
   AppPanel: () => null,
   DiagnosticsPanel: () => null,
+  GamesPanel: () => <div data-testid="games-panel-mock">games</div>,
   MapPanel: () => null,
   ModulePanel: () => null,
   PacketDistributionPanel: () => <div data-testid="packet-distribution-mock">dist</div>,
@@ -359,6 +370,15 @@ vi.mock('./lazyTabPanels', () => ({
   TakServerPanel: () => null,
   TelemetryPanel: () => null,
 }));
+
+vi.mock('./lib/reticulum/reticulumGamesSession', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/reticulum/reticulumGamesSession')>();
+  return {
+    ...actual,
+    openReticulumGameSession: (...args: unknown[]) => openReticulumGameSessionMock(...args),
+  };
+});
 
 vi.mock('./lazyModals', () => ({
   ContactGroupsModal: () => null,
@@ -1387,5 +1407,45 @@ describe('App accessibility', () => {
     await waitFor(() => {
       expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('0');
     });
+  });
+
+  it('opens Games from mesh-client:openGamesSession while MeshCore is active', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    expect(MESHCORE_CAPABILITIES.hasLrgpGames).toBe(false);
+    expect(RETICULUM_CAPABILITIES.hasLrgpGames).toBe(true);
+
+    // App.test defaults reticulum → Meshtastic caps; restore Games capability without
+    // mounting ReticulumStackAutostartCoordinator (needs appSettingsStorage exports).
+    vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
+      if (protocol === 'meshcore') return MESHCORE_CAPABILITIES;
+      if (protocol === 'reticulum') {
+        return { ...RETICULUM_CAPABILITIES, hasReticulumInterfaceConfig: false };
+      }
+      return MESHTASTIC_CAPABILITIES;
+    });
+
+    renderApp();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('tab', { name: /^Games/ })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('mesh-client:openGamesSession', {
+          detail: { sessionId: 'lrgp:test-session-from-meshcore' },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(localStorage.getItem('mesh-protocol')).toBe('reticulum');
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /^Games/ })).toHaveAttribute('aria-selected', 'true');
+    });
+    expect(screen.getByTestId('games-panel-mock')).toBeInTheDocument();
+    expect(openReticulumGameSessionMock).toHaveBeenCalledWith('lrgp:test-session-from-meshcore');
   });
 });
