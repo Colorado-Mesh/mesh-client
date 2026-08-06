@@ -1937,8 +1937,18 @@
     "declineDraw": "Decline draw",
     "offerDrawAria": "Offer draw",
     "offerDraw": "Offer draw",
+    "claimThreefold": "Claim threefold",
+    "claimThreefoldAria": "Claim threefold repetition draw",
+    "claimFiftyMove": "Claim 50-move",
+    "claimFiftyMoveAria": "Claim fifty-move rule draw",
     "resendAria": "Resend last action",
     "resend": "Resend",
+    "delivery": {
+      "sending": "Sending…",
+      "propagating": "Offline Inbox…",
+      "propagated": "Stored",
+      "failed": "Retry needed"
+    },
     "deleteSessionAria": "Delete session",
     "deleteSession": "Delete session",
     "resignConfirmTitle": "Resign game?",
@@ -1973,6 +1983,13 @@
       "squareAria": "{{square}}, {{piece}}",
       "emptySquare": "empty",
       "legalMoveAria": "Play {{move}}",
+      "promotionChooserAria": "Choose promotion piece",
+      "promoteTo": {
+        "q": "Promote to queen",
+        "r": "Promote to rook",
+        "b": "Promote to bishop",
+        "n": "Promote to knight"
+      },
       "pieceNames": {
         "K": "White king",
         "Q": "White queen",

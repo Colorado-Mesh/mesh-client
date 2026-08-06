@@ -5277,6 +5277,13 @@
         "b": "흑인 주교",
         "n": "흑기사",
         "p": "블랙 폰"
+      },
+      "promotionChooserAria": "프로모션 조각 선택",
+      "promoteTo": {
+        "q": "여왕으로 승급하기",
+        "r": "ROOK로 승격",
+        "b": "감독으로 승진",
+        "n": "기사로 승급하기"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "세션을 삭제하지 못했습니다."
     },
     "deleteConfirmTitle": "세션 삭제",
-    "deleteConfirmMessage": "목록에서 이 게임 세션을 제거하시겠습니까? 이 작업은 취소할 수 없습니다."
+    "deleteConfirmMessage": "목록에서 이 게임 세션을 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
+    "claimThreefold": "3배 받기",
+    "claimThreefoldAria": "3배 반복 추첨 요청",
+    "claimFiftyMove": "청구항 50-이동",
+    "claimFiftyMoveAria": "오십이동 규칙 추첨 요청",
+    "delivery": {
+      "sending": "전송 중…",
+      "propagating": "오프라인 수신함...",
+      "propagated": "저장량",
+      "failed": "다시 시도 필요"
+    }
   }
 }

@@ -316,6 +316,7 @@ impl LiveBridge {
             lxmf_hash_hex.clone(),
             event_tx.clone(),
         ));
+        spawn_games_lxmf_outbound_bridge(games_session.clone(), event_tx.subscribe());
 
         let cache_for_cb = peer_via_cache.clone();
         let name_cache_for_cb = display_name_cache.clone();
@@ -3086,7 +3087,8 @@ impl LiveBridge {
         let dest = match parse_hash16(&action.dest_hash) {
             Ok(d) => d,
             Err(e) => {
-                self.games_session.rollback_action(action);
+                self.games_session
+                    .rollback_action(action, Some("invalid_dest_hash"));
                 return Err(e);
             }
         };
@@ -3094,7 +3096,8 @@ impl LiveBridge {
         let delivery_method = match self.resolve_game_delivery_method(&action.dest_hash).await {
             Ok(m) => m,
             Err(no_route_json) => {
-                self.games_session.rollback_action(action);
+                self.games_session
+                    .rollback_action(action, Some("no_propagation_node"));
                 return Ok(no_route_json);
             }
         };
@@ -3108,7 +3111,8 @@ impl LiveBridge {
         ) {
             Ok(v) => v,
             Err(e) => {
-                self.games_session.rollback_action(action);
+                self.games_session
+                    .rollback_action(action, Some("sign_failed"));
                 return Err(e);
             }
         };
@@ -3124,11 +3128,13 @@ impl LiveBridge {
             res
         };
         if let Err(e) = send_result {
-            self.games_session.rollback_action(action);
+            self.games_session
+                .rollback_action(action, Some("send_failed"));
             return Err(format!("lxmf game action send: {e:?}"));
         }
 
-        self.games_session.commit_action(&action);
+        self.games_session
+            .commit_action(&action, Some(&message_hash_hex));
 
         Ok(serde_json::json!({
             "ok": true,
@@ -3178,6 +3184,11 @@ impl LiveBridge {
 
         self.games_session
             .emit_action_result(&resend.app_id, session_id, true, None);
+        self.games_session.note_resend_enqueued(
+            session_id,
+            &resend.app_id,
+            Some(&message_hash_hex),
+        );
 
         Ok(serde_json::json!({
             "ok": true,
@@ -5021,6 +5032,40 @@ fn parse_optional_reply_to_hash(hex_str: Option<&str>) -> Option<[u8; 32]> {
             None
         }
     }
+}
+
+/// Bridge `lxmf_outbound_status` WS frames into Games session `delivery_state`.
+fn spawn_games_lxmf_outbound_bridge(
+    games: Arc<GamesSessionManager>,
+    mut rx: broadcast::Receiver<String>,
+) {
+    tokio::spawn(async move {
+        loop {
+            match rx.recv().await {
+                Ok(frame) => {
+                    let Ok(v) = serde_json::from_str::<serde_json::Value>(&frame) else {
+                        continue;
+                    };
+                    if v.get("type").and_then(|t| t.as_str()) != Some("lxmf_outbound_status") {
+                        continue;
+                    }
+                    let Some(payload) = v.get("payload") else {
+                        continue;
+                    };
+                    let Some(hash) = payload.get("message_hash").and_then(|h| h.as_str()) else {
+                        continue;
+                    };
+                    let Some(status) = payload.get("status").and_then(|s| s.as_str()) else {
+                        continue;
+                    };
+                    let method = payload.get("delivery_method").and_then(|m| m.as_str());
+                    games.apply_outbound_status(hash, status, method);
+                }
+                Err(broadcast::error::RecvError::Lagged(_)) => {}
+                Err(broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    });
 }
 
 /// Min interval between inbound-LXMF receipt warns (developer-bundle visibility without spam).

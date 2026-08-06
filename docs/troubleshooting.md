@@ -246,6 +246,11 @@ See [reticulum.md](reticulum.md#chat-lxmf) and [sidecar IPC](reticulum-sidecar-i
 - **`not_your_turn` / `invalid_move`:** Local validation rejected the move before send; wait for opponent or pick a legal cell/UCI move.
 - **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list (sidebar Games badge + DM-style ping on inbound challenge).
 - **Accept does nothing / session stays Pending:** After a stack restart the Games tab can still list SQLite sessions; the sidecar now rehydrates those into memory on spawn. If Accept still fails, check the action error toast (`unknown_session` / `no_propagation_node`) and that the stack is running.
+- **Resend after restart:** Last outbound LRGP envelope is persisted in `reticulum/storage/lrgp/games_outbound.db`. Resend should still work after Stop/Start stack. If you still get `no_previous_action`, send a new move first (nothing was committed before restart).
+- **Delivery chips (Sending / Offline Inbox / Retry needed):** Session `delivery_state` tracks LXMF outbound status. **Retry needed** enables Resend for the last committed envelope.
+- **Board jumped then snapped back:** Client optimistic paint rolls back when enqueue fails (`games.action_result` ok:false or IPC error).
+- **Promotion chooser:** Pawn to last rank opens queen/rook/bishop/knight (filtered by `legal_moves`); Escape cancels.
+- **Claim threefold / 50-move:** When Chess metadata `draw_offer_reason` is `3fr` or `50m`, Claim replaces Offer Draw and sends `draw_offer` with `{ r }`.
 - **IPC blocked on proxy:** Renderer must use `electronAPI.reticulum.games.*` (`reticulum:games*`); generic `proxyGet`/`proxyPost` to `/api/v1/games/*` is rejected by design.
 - **Interop with Ratspeak:** Same LRGP v1 wire (`lrgp.v1` + `0xFB`/`0xFD`). See [reticulum-games-parity.md](reticulum-games-parity.md).
 

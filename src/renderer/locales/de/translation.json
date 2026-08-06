@@ -5277,6 +5277,13 @@
         "b": "Schwarzer Läufer",
         "n": "Black Knight",
         "p": "Schwarzer Bauer"
+      },
+      "promotionChooserAria": "Aktionsstück wählen",
+      "promoteTo": {
+        "q": "Zur Königin befördern",
+        "r": "Zum Turm befördern",
+        "b": "Zum Bischof befördern",
+        "n": "Zum Ritter befördern"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Die Recycling-Sitzung konnte nicht gelöscht werden."
     },
     "deleteConfirmTitle": "Löschen sitzung?",
-    "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden."
+    "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden.",
+    "claimThreefold": "Dreifach einfordern",
+    "claimThreefoldAria": "Dreifache Wiederholungsziehung beanspruchen",
+    "claimFiftyMove": "50-Bewegungen einfordern",
+    "claimFiftyMoveAria": "Auslosung der Fünfzig-Züge-Regel beanspruchen",
+    "delivery": {
+      "sending": "Senden…",
+      "propagating": "Offline-Posteingang...",
+      "propagated": "Gespeichert",
+      "failed": "Erneuter Versuch erforderlich"
+    }
   }
 }

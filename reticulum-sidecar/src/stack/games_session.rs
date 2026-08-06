@@ -27,6 +27,8 @@ use lrgp::transport;
 use serde_json::Value as JsonValue;
 use tokio::sync::broadcast;
 
+use super::games_outbound_store::GamesOutboundStore;
+
 /// Cap on `last_envelope` so abandoned sessions cannot retain resend bytes forever.
 const MAX_LAST_ENVELOPES: usize = 256;
 
@@ -60,12 +62,15 @@ pub struct PreparedResend {
 pub struct GamesSessionManager {
     router: Arc<LrgpRouter>,
     store: Option<Arc<LrgpStore>>,
+    outbound_store: Option<Arc<GamesOutboundStore>>,
     /// LXMF delivery hash hex of the local identity — used as `identity_id`
     /// for every router / store call (one games DB per sidecar identity).
     identity_id: String,
     event_tx: broadcast::Sender<String>,
     /// session_id -> last packed outbound envelope bytes, for resend.
     last_envelope: Mutex<HashMap<String, Vec<u8>>>,
+    /// message_hash -> (session_id, app_id) for LXMF outbound status bridge.
+    msg_to_session: Mutex<HashMap<String, (String, String)>>,
 }
 
 impl GamesSessionManager {
@@ -96,17 +101,59 @@ impl GamesSessionManager {
             }
         };
 
+        let outbound_store = match std::fs::create_dir_all(&games_dir) {
+            Ok(()) => match GamesOutboundStore::open(games_dir.join("games_outbound.db")) {
+                Ok(s) => Some(Arc::new(s)),
+                Err(e) => {
+                    tracing::warn!(target: "games", "failed to open games outbound store: {e}");
+                    None
+                }
+            },
+            Err(_) => None,
+        };
+
         let manager = Self {
             router,
             store,
+            outbound_store,
             identity_id,
             event_tx,
             last_envelope: Mutex::new(HashMap::new()),
+            msg_to_session: Mutex::new(HashMap::new()),
         };
         // SQLite survives stack restart; in-memory LrgpRouter does not. Without
         // this, Games tab still lists pending sessions but Accept is a no-op.
         manager.hydrate_all_from_store();
+        manager.hydrate_outbound_cache();
         manager
+    }
+
+    /// Restore in-memory envelope cache + message_hash map from the overlay DB.
+    fn hydrate_outbound_cache(&self) {
+        let Some(outbound) = &self.outbound_store else {
+            return;
+        };
+        let rows = match outbound.list_for_identity(&self.identity_id) {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::warn!(target: "games", "failed to list outbound rows for hydrate: {e}");
+                return;
+            }
+        };
+        if let Ok(mut cache) = self.last_envelope.lock() {
+            for row in &rows {
+                if !row.envelope.is_empty() {
+                    cache.insert(row.session_id.clone(), row.envelope.clone());
+                }
+            }
+        }
+        if let Ok(mut map) = self.msg_to_session.lock() {
+            for row in &rows {
+                if let (Some(hash), Some(app_id)) = (&row.message_hash, &row.app_id) {
+                    map.insert(hash.clone(), (row.session_id.clone(), app_id.clone()));
+                }
+            }
+        }
     }
 
     /// Inject every SQLite session row into the in-memory router (spawn / restart).
@@ -245,7 +292,7 @@ impl GamesSessionManager {
                         Some(p) => s.contact_hash.eq_ignore_ascii_case(p),
                         None => true,
                     })
-                    .map(|s| serde_json::to_value(s).unwrap_or(JsonValue::Null))
+                    .map(|s| self.session_to_json(&s))
                     .collect();
                 serde_json::json!({ "sessions": rows })
             }
@@ -259,11 +306,32 @@ impl GamesSessionManager {
         };
         match store.get_session(session_id, &self.identity_id) {
             Ok(Some(session)) => {
-                serde_json::json!({ "session": serde_json::to_value(session).unwrap_or(JsonValue::Null) })
+                serde_json::json!({ "session": self.session_to_json(&session) })
             }
             Ok(None) => serde_json::json!({ "session": null }),
             Err(e) => serde_json::json!({ "session": null, "error": e.to_string() }),
         }
+    }
+
+    /// Serialize a session and merge overlay `delivery_state` when present.
+    fn session_to_json(&self, session: &Session) -> JsonValue {
+        let mut value = serde_json::to_value(session).unwrap_or(JsonValue::Null);
+        if let Some(obj) = value.as_object_mut() {
+            let state = self
+                .delivery_state_for(&session.session_id)
+                .unwrap_or_else(|| "idle".into());
+            obj.insert("delivery_state".into(), JsonValue::String(state));
+        }
+        value
+    }
+
+    fn delivery_state_for(&self, session_id: &str) -> Option<String> {
+        let outbound = self.outbound_store.as_ref()?;
+        outbound
+            .get(session_id, &self.identity_id)
+            .ok()
+            .flatten()
+            .map(|r| r.delivery_state)
     }
 
     pub fn mark_read(&self, session_id: &str) -> Result<(), String> {
@@ -288,6 +356,14 @@ impl GamesSessionManager {
             .map_err(|e| e.to_string())?;
         if let Ok(mut cache) = self.last_envelope.lock() {
             cache.remove(session_id);
+        }
+        if let Ok(mut map) = self.msg_to_session.lock() {
+            map.retain(|_, (sid, _)| sid != session_id);
+        }
+        if let Some(outbound) = &self.outbound_store {
+            if let Err(e) = outbound.delete(session_id, &self.identity_id) {
+                tracing::warn!(target: "games", "failed to delete outbound row: {e}");
+            }
         }
         Ok(())
     }
@@ -492,14 +568,29 @@ impl GamesSessionManager {
     /// retransmit rather than a new move).
     pub fn prepare_resend(&self, session_id: &str) -> Result<PreparedResend, String> {
         let envelope_bytes = {
-            let cache = self
+            let from_memory = self
                 .last_envelope
                 .lock()
-                .map_err(|_| "games cache poisoned".to_string())?;
-            cache
+                .map_err(|_| "games cache poisoned".to_string())?
                 .get(session_id)
-                .cloned()
-                .ok_or_else(|| "no_previous_action".to_string())?
+                .cloned();
+            if let Some(bytes) = from_memory {
+                bytes
+            } else if let Some(outbound) = &self.outbound_store {
+                let row = outbound
+                    .get(session_id, &self.identity_id)
+                    .map_err(|e| format!("outbound_read_error: {e}"))?
+                    .ok_or_else(|| "no_previous_action".to_string())?;
+                if row.envelope.is_empty() {
+                    return Err("no_previous_action".to_string());
+                }
+                if let Ok(mut cache) = self.last_envelope.lock() {
+                    cache.insert(session_id.to_string(), row.envelope.clone());
+                }
+                row.envelope
+            } else {
+                return Err("no_previous_action".to_string());
+            }
         };
         let envelope = envelope::unpack_from_bytes(&envelope_bytes)
             .map_err(|e| format!("resend_decode_error: {e}"))?;
@@ -551,8 +642,8 @@ impl GamesSessionManager {
     }
 
     /// Persist state + cache the envelope for resend + emit WS events after a
-    /// successful LXMF send.
-    pub fn commit_action(&self, action: &PreparedGameAction) {
+    /// successful LXMF enqueue (`try_send`).
+    pub fn commit_action(&self, action: &PreparedGameAction, message_hash: Option<&str>) {
         self.persist_session_from_state(&action.app_id, &action.session_id);
         if let Ok(mut cache) = self.last_envelope.lock() {
             cache.insert(action.session_id.clone(), action.envelope_bytes.clone());
@@ -568,12 +659,46 @@ impl GamesSessionManager {
                 }
             }
         }
+        if let Some(hash) = message_hash {
+            if let Ok(mut map) = self.msg_to_session.lock() {
+                map.insert(
+                    hash.to_string(),
+                    (action.session_id.clone(), action.app_id.clone()),
+                );
+                while map.len() > MAX_LAST_ENVELOPES {
+                    let victim = map.keys().find(|k| *k != hash).cloned();
+                    match victim {
+                        Some(k) => {
+                            map.remove(&k);
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+        if let Some(outbound) = &self.outbound_store {
+            if let Err(e) = outbound.upsert(
+                &action.session_id,
+                &self.identity_id,
+                &action.envelope_bytes,
+                message_hash,
+                "sending",
+                Some(&action.app_id),
+            ) {
+                tracing::warn!(target: "games", "failed to persist outbound envelope: {e}");
+            } else if let Err(e) =
+                outbound.prune_to_cap(&self.identity_id, Some(&action.session_id))
+            {
+                tracing::warn!(target: "games", "failed to prune outbound store: {e}");
+            }
+        }
         self.emit_action_result(&action.app_id, &action.session_id, true, None);
         self.emit_update(&action.app_id, &action.session_id, "outbound");
     }
 
     /// Reverse a `prepare_action` mutation after a failed LXMF send.
-    pub fn rollback_action(&self, action: PreparedGameAction) {
+    /// Emits `games.action_result` ok:false and `games.update` with rolled-back state.
+    pub fn rollback_action(&self, action: PreparedGameAction, error: Option<&str>) {
         if let Err(e) = self.router.rollback_outgoing(
             &action.app_id,
             &action.session_id,
@@ -582,6 +707,116 @@ impl GamesSessionManager {
         ) {
             tracing::warn!(target: "games", "lrgp rollback_outgoing failed: {e}");
         }
+        if let Some(outbound) = &self.outbound_store {
+            if let Err(e) = outbound.set_delivery_state(
+                &action.session_id,
+                &self.identity_id,
+                "failed",
+                None,
+                Some(&action.app_id),
+            ) {
+                tracing::warn!(target: "games", "failed to set delivery_state=failed: {e}");
+            }
+        }
+        let err = error.unwrap_or("send_failed");
+        self.emit_action_result(&action.app_id, &action.session_id, false, Some(err));
+        self.emit_update(&action.app_id, &action.session_id, "outbound");
+    }
+
+    /// Map an LXMF outbound status frame onto the owning game session.
+    pub fn apply_outbound_status(
+        &self,
+        message_hash: &str,
+        wire_status: &str,
+        delivery_method: Option<&str>,
+    ) {
+        let Some(mapped) = map_lxmf_wire_to_delivery_state(wire_status, delivery_method) else {
+            return;
+        };
+        let (session_id, app_id) = {
+            let from_map = self
+                .msg_to_session
+                .lock()
+                .ok()
+                .and_then(|m| m.get(message_hash).cloned());
+            if let Some(pair) = from_map {
+                pair
+            } else if let Some(outbound) = &self.outbound_store {
+                match outbound.get_by_message_hash(&self.identity_id, message_hash) {
+                    Ok(Some(row)) => {
+                        let app = row.app_id.unwrap_or_default();
+                        (row.session_id, app)
+                    }
+                    _ => return,
+                }
+            } else {
+                return;
+            }
+        };
+        if let Some(outbound) = &self.outbound_store {
+            if let Err(e) = outbound.set_delivery_state(
+                &session_id,
+                &self.identity_id,
+                mapped,
+                Some(message_hash),
+                if app_id.is_empty() {
+                    None
+                } else {
+                    Some(app_id.as_str())
+                },
+            ) {
+                tracing::warn!(target: "games", "failed to update delivery_state: {e}");
+            }
+        }
+        let app = if app_id.is_empty() { "ttt" } else { &app_id };
+        self.emit_update(app, &session_id, "outbound");
+    }
+
+    /// After a successful resend, re-bind message_hash and set delivery_state=sending.
+    pub fn note_resend_enqueued(&self, session_id: &str, app_id: &str, message_hash: Option<&str>) {
+        if let Some(hash) = message_hash {
+            if let Ok(mut map) = self.msg_to_session.lock() {
+                map.insert(
+                    hash.to_string(),
+                    (session_id.to_string(), app_id.to_string()),
+                );
+            }
+        }
+        if let Some(outbound) = &self.outbound_store {
+            let envelope = self
+                .last_envelope
+                .lock()
+                .ok()
+                .and_then(|c| c.get(session_id).cloned())
+                .or_else(|| {
+                    outbound
+                        .get(session_id, &self.identity_id)
+                        .ok()
+                        .flatten()
+                        .map(|r| r.envelope)
+                });
+            if let Some(bytes) = envelope {
+                if bytes.is_empty() {
+                    let _ = outbound.set_delivery_state(
+                        session_id,
+                        &self.identity_id,
+                        "sending",
+                        message_hash,
+                        Some(app_id),
+                    );
+                } else {
+                    let _ = outbound.upsert(
+                        session_id,
+                        &self.identity_id,
+                        &bytes,
+                        message_hash,
+                        "sending",
+                        Some(app_id),
+                    );
+                }
+            }
+        }
+        self.emit_update(app_id, session_id, "outbound");
     }
 
     pub fn emit_action_result(
@@ -683,6 +918,22 @@ fn generate_session_id() -> String {
     let mut buf = [0u8; 8];
     rand::thread_rng().fill_bytes(&mut buf);
     hex::encode(buf)
+}
+
+/// Map LXMF wire status (+ optional delivery_method) to session `delivery_state`.
+fn map_lxmf_wire_to_delivery_state(
+    wire_status: &str,
+    delivery_method: Option<&str>,
+) -> Option<&'static str> {
+    let propagated = delivery_method == Some("propagated");
+    match wire_status {
+        "sending" if propagated => Some("propagating"),
+        "sending" => Some("sending"),
+        "delivered" if propagated => Some("propagated"),
+        "delivered" => Some("delivered"),
+        "failed" => Some("failed"),
+        _ => None,
+    }
 }
 
 fn now_secs() -> f64 {
@@ -795,11 +1046,16 @@ mod tests {
     use super::*;
     use lrgp::constants::{CMD_ACCEPT, CMD_CHALLENGE};
 
-    fn test_manager() -> (tempfile::TempDir, GamesSessionManager) {
+    fn test_manager() -> (
+        tempfile::TempDir,
+        GamesSessionManager,
+        broadcast::Sender<String>,
+    ) {
         let dir = tempfile::tempdir().expect("tempdir");
         let (event_tx, _rx) = broadcast::channel(16);
-        let manager = GamesSessionManager::spawn(dir.path(), "selfidentityhash".into(), event_tx);
-        (dir, manager)
+        let manager =
+            GamesSessionManager::spawn(dir.path(), "selfidentityhash".into(), event_tx.clone());
+        (dir, manager, event_tx)
     }
 
     fn inbound_challenge_fields(session_id: &str) -> BTreeMap<u8, Vec<u8>> {
@@ -812,7 +1068,7 @@ mod tests {
 
     #[test]
     fn router_registers_ttt_and_chess() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let apps = manager.router.list_apps();
         let ids: Vec<&str> = apps.iter().map(|m| m.app_id.as_str()).collect();
         assert!(ids.contains(&"ttt"));
@@ -834,7 +1090,7 @@ mod tests {
 
     #[test]
     fn prepare_action_unknown_session_without_store_row() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
         let err = manager
             .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
@@ -844,7 +1100,7 @@ mod tests {
 
     #[test]
     fn prepare_action_propagates_store_read_failure() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
         FORCE_HYDRATE_STORE_READ_ERR.store(true, Ordering::SeqCst);
         let err = manager
@@ -864,7 +1120,7 @@ mod tests {
 
     #[test]
     fn local_reject_maps_invalid_move_on_empty_payload() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
         assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields("sess1"), &dest, ""));
         let err = manager
@@ -893,7 +1149,7 @@ mod tests {
         let action = manager
             .prepare_action(&peer, "ttt", CMD_ACCEPT, Some(session_id), None)
             .expect("accept should work after SQLite hydrate");
-        manager.commit_action(&action);
+        manager.commit_action(&action, Some("testhash1"));
 
         let detail = manager.session_detail(session_id);
         assert_eq!(detail["session"]["status"], "active");
@@ -901,14 +1157,14 @@ mod tests {
 
     #[test]
     fn local_reject_maps_not_your_turn() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let dest = "b".repeat(32);
 
         // Our own outgoing challenge creates the session (turn unset yet).
         let challenge = manager
             .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
             .expect("challenge prepared");
-        manager.commit_action(&challenge);
+        manager.commit_action(&challenge, Some("testhash2"));
 
         // Opponent's accept arrives inbound and hands the turn to them.
         let mut payload = serde_json::Map::new();
@@ -943,14 +1199,14 @@ mod tests {
 
     #[test]
     fn handle_inbound_for_non_lrgp_returns_false() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let fields: BTreeMap<u8, Vec<u8>> = BTreeMap::new();
         assert!(!manager.handle_inbound_lxmf(&fields, "peer", "hello"));
     }
 
     #[test]
     fn status_reports_enabled_when_store_opens() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let status = manager.status();
         assert_eq!(status["available"], true);
         assert_eq!(status["enabled"], true);
@@ -958,7 +1214,7 @@ mod tests {
 
     #[test]
     fn list_apps_includes_both_builtin_games() {
-        let (_dir, manager) = test_manager();
+        let (_dir, manager, _) = test_manager();
         let apps = manager.list_apps();
         let ids: Vec<String> = apps["apps"]
             .as_array()
@@ -968,5 +1224,114 @@ mod tests {
             .collect();
         assert!(ids.contains(&"ttt".to_string()));
         assert!(ids.contains(&"chess".to_string()));
+    }
+
+    #[test]
+    fn commit_persists_envelope_across_restart() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let identity = "selfidentityhash";
+        let peer = "d".repeat(32);
+        let session_id = "sess-env-persist";
+        let (event_tx, _rx) = broadcast::channel(16);
+        {
+            let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx.clone());
+            assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields(session_id), &peer, ""));
+            let accept = manager
+                .prepare_action(&peer, "ttt", CMD_ACCEPT, Some(session_id), None)
+                .expect("accept");
+            manager.commit_action(&accept, Some("mh-restart"));
+            manager
+                .prepare_resend(session_id)
+                .expect("resend in-process");
+        }
+        let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx);
+        manager
+            .prepare_resend(session_id)
+            .expect("resend after restart");
+        let detail = manager.session_detail(session_id);
+        assert_eq!(detail["session"]["delivery_state"], "sending");
+    }
+
+    #[test]
+    fn delete_session_clears_outbound_envelope() {
+        let (_dir, manager, _) = test_manager();
+        let dest = "e".repeat(32);
+        let challenge = manager
+            .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
+            .expect("challenge");
+        let sid = challenge.session_id.clone();
+        manager.commit_action(&challenge, Some("mh-del"));
+        manager.delete_session(&sid).expect("delete");
+        let err = manager.prepare_resend(&sid).expect_err("no envelope");
+        assert_eq!(err, "no_previous_action");
+    }
+
+    #[test]
+    fn apply_outbound_status_maps_propagating_and_failed() {
+        let (_dir, manager, _) = test_manager();
+        let dest = "f".repeat(32);
+        let challenge = manager
+            .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
+            .expect("challenge");
+        let sid = challenge.session_id.clone();
+        manager.commit_action(&challenge, Some("mh-status"));
+        manager.apply_outbound_status("mh-status", "sending", Some("propagated"));
+        assert_eq!(
+            manager.session_detail(&sid)["session"]["delivery_state"],
+            "propagating"
+        );
+        manager.apply_outbound_status("mh-status", "delivered", Some("propagated"));
+        assert_eq!(
+            manager.session_detail(&sid)["session"]["delivery_state"],
+            "propagated"
+        );
+        manager.apply_outbound_status("mh-status", "failed", None);
+        assert_eq!(
+            manager.session_detail(&sid)["session"]["delivery_state"],
+            "failed"
+        );
+    }
+
+    #[test]
+    fn rollback_emits_action_result_false() {
+        let (_dir, manager, event_tx) = test_manager();
+        let mut rx = event_tx.subscribe();
+        let dest = "a".repeat(32);
+        let action = manager
+            .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
+            .expect("challenge");
+        let sid = action.session_id.clone();
+        manager.rollback_action(action, Some("send_failed"));
+        let frame = rx.try_recv().expect("action_result frame");
+        let v: JsonValue = serde_json::from_str(&frame).expect("json");
+        assert_eq!(v["type"], "games.action_result");
+        assert_eq!(v["payload"]["ok"], false);
+        assert_eq!(v["payload"]["session_id"], sid);
+        assert_eq!(v["payload"]["error"], "send_failed");
+    }
+
+    #[test]
+    fn map_wire_status_helpers() {
+        assert_eq!(
+            map_lxmf_wire_to_delivery_state("sending", None),
+            Some("sending")
+        );
+        assert_eq!(
+            map_lxmf_wire_to_delivery_state("sending", Some("propagated")),
+            Some("propagating")
+        );
+        assert_eq!(
+            map_lxmf_wire_to_delivery_state("delivered", Some("propagated")),
+            Some("propagated")
+        );
+        assert_eq!(
+            map_lxmf_wire_to_delivery_state("delivered", None),
+            Some("delivered")
+        );
+        assert_eq!(
+            map_lxmf_wire_to_delivery_state("failed", None),
+            Some("failed")
+        );
+        assert_eq!(map_lxmf_wire_to_delivery_state("unknown", None), None);
     }
 }

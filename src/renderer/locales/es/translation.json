@@ -5277,6 +5277,13 @@
         "b": "Alfil negro",
         "n": "Deflector",
         "p": "Peón negro"
+      },
+      "promotionChooserAria": "Elegir pieza de promoción",
+      "promoteTo": {
+        "q": "Ascender a reina",
+        "r": "Ascender a torre",
+        "b": "Ascender a obispo",
+        "n": "Ascender a caballero"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Error al eliminar la sesión."
     },
     "deleteConfirmTitle": "¿Eliminar sesión?",
-    "deleteConfirmMessage": "¿Quieres eliminar esta sesión de juego de tu lista? Esto no se puede deshacer."
+    "deleteConfirmMessage": "¿Quieres eliminar esta sesión de juego de tu lista? Esto no se puede deshacer.",
+    "claimThreefold": "Reclamación triple",
+    "claimThreefoldAria": "Reivindicar el sorteo de repetición triple",
+    "claimFiftyMove": "Reclamar 50-move",
+    "claimFiftyMoveAria": "Reclama el sorteo de la regla de cincuenta movimientos",
+    "delivery": {
+      "sending": "Enviando",
+      "propagating": "Bandeja de entrada sin conexión...",
+      "propagated": "Almacenado",
+      "failed": "Se necesita volver a intentarlo"
+    }
   }
 }

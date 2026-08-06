@@ -44,6 +44,8 @@ export interface SendGamesActionOpts {
   command: string;
   sessionId?: string;
   payload?: Record<string, unknown>;
+  /** When set, apply client optimistic board patch before IPC. */
+  optimistic?: { kind: 'ttt'; cellIndex: number } | { kind: 'chess'; uci: string };
 }
 
 /** Send an LRGP action over LXMF. Resolves `true` on success (`{ ok: true }`). */
@@ -54,6 +56,14 @@ export async function sendGamesAction(opts: SendGamesActionOpts): Promise<boolea
     return false;
   }
   const store = useReticulumGamesStore.getState();
+  const sessionId = opts.sessionId;
+  let beganOptimistic = false;
+  if (opts.optimistic && sessionId) {
+    beganOptimistic =
+      opts.optimistic.kind === 'ttt'
+        ? store.beginOptimisticMove(sessionId, 'ttt', opts.optimistic.cellIndex)
+        : store.beginOptimisticMove(sessionId, 'chess', opts.optimistic.uci);
+  }
   store.setActionBusy(true);
   try {
     const req: GamesActionRequest = {
@@ -65,6 +75,9 @@ export async function sendGamesAction(opts: SendGamesActionOpts): Promise<boolea
     };
     const result = await window.electronAPI.reticulum.games.sendAction(req);
     if (!result.ok) {
+      if (beganOptimistic && sessionId) {
+        store.rollbackOptimistic(sessionId);
+      }
       pushAppToast(
         i18n.t('gamesPanel.errors.actionFailed', {
           reason: result.error ?? result.reason ?? i18n.t('gamesPanel.errors.unknownReason'),
@@ -75,6 +88,9 @@ export async function sendGamesAction(opts: SendGamesActionOpts): Promise<boolea
     }
     return true;
   } catch (e) {
+    if (beganOptimistic && sessionId) {
+      store.rollbackOptimistic(sessionId);
+    }
     console.warn('[reticulumGamesSession] sendAction failed', e);
     pushAppToast(
       i18n.t('gamesPanel.errors.actionFailed', {

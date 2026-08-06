@@ -5277,6 +5277,13 @@
         "b": "ブラックビショップ",
         "n": "黒騎士",
         "p": "黒い質物"
+      },
+      "promotionChooserAria": "プロモーションピースを選択",
+      "promoteTo": {
+        "q": "クイーンに昇格",
+        "r": "ルークに昇格",
+        "b": "ビショップに昇格",
+        "n": "騎士に昇格"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "セッションを削除できませんでした。"
     },
     "deleteConfirmTitle": "セッションを削除",
-    "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。"
+    "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。",
+    "claimThreefold": "3倍にする",
+    "claimThreefoldAria": "3倍の繰り返しドローを獲得",
+    "claimFiftyMove": "50ムーブを受け取る",
+    "claimFiftyMoveAria": "50ムーブルールの引き分けを獲得する",
+    "delivery": {
+      "sending": "送信中・・・",
+      "propagating": "オフライン受信トレイ…",
+      "propagated": "格納されています",
+      "failed": "再試行が必要です"
+    }
   }
 }

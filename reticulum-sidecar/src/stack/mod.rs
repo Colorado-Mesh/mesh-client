@@ -33,6 +33,8 @@ mod types;
 mod via;
 
 #[cfg(feature = "rns-stack")]
+mod games_outbound_store;
+#[cfg(feature = "rns-stack")]
 mod games_session;
 #[cfg(feature = "rns-stack")]
 mod link_task;

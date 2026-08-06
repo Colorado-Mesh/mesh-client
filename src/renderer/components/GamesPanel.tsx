@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
+import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
 import {
   gamesMetaBool,
+  gamesMetaStr,
   isGamesSessionInitiator,
 } from '@/renderer/lib/reticulum/reticulumGamesMetadata';
 import {
@@ -21,7 +23,13 @@ import {
 import { resolveReticulumRemoteHashLabel } from '@/renderer/lib/reticulumVoiceRemoteLabel';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
-import { GAMES_CMD, type GamesAppId, type GameSession } from '@/shared/games-types';
+import {
+  GAMES_CMD,
+  GAMES_DRAW_CLAIM,
+  type GamesAppId,
+  type GameSession,
+  isGamesDeliveryInFlight,
+} from '@/shared/games-types';
 
 export interface GamesPanelProps {
   isActive: boolean;
@@ -92,33 +100,65 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
 
   function handleMove(payload: Record<string, unknown>) {
     if (!selectedSession) return;
+    const optimistic =
+      selectedSession.app_id === 'chess' && typeof payload.m === 'string'
+        ? { kind: 'chess' as const, uci: payload.m }
+        : selectedSession.app_id === 'ttt' && typeof payload.i === 'number'
+          ? { kind: 'ttt' as const, cellIndex: payload.i }
+          : undefined;
     void sendGamesAction({
       destHash: selectedSession.contact_hash,
       appId: selectedSession.app_id,
       command: GAMES_CMD.MOVE,
       sessionId: selectedSession.session_id,
       payload,
+      optimistic,
     });
   }
 
-  function handleCommand(command: string) {
+  function handleCommand(command: string, payload?: Record<string, unknown>) {
     if (!selectedSession) return;
     void sendGamesAction({
       destHash: selectedSession.contact_hash,
       appId: selectedSession.app_id,
       command,
       sessionId: selectedSession.session_id,
+      payload,
     });
   }
 
   const showResend =
     selectedSession != null &&
-    lastActionResult != null &&
-    !lastActionResult.ok &&
-    lastActionResult.session_id === selectedSession.session_id;
+    (selectedSession.delivery_state === 'failed' ||
+      (lastActionResult != null &&
+        !lastActionResult.ok &&
+        lastActionResult.session_id === selectedSession.session_id));
   const drawOffered = selectedSession
     ? gamesMetaBool(selectedSession.metadata, 'draw_offered')
     : false;
+  const drawClaimReason =
+    selectedSession?.app_id === 'chess'
+      ? gamesMetaStr(selectedSession.metadata, 'draw_offer_reason')
+      : '';
+  const boardDisabled = actionBusy || isGamesDeliveryInFlight(selectedSession?.delivery_state);
+
+  function deliveryChip(session: GameSession): { label: string; color: string } | null {
+    const state = session.delivery_state;
+    if (!state || state === 'idle' || state === 'delivered') return null;
+    if (state === 'pending' || state === 'sending') {
+      return { label: t('gamesPanel.delivery.sending'), color: 'text-cyan-300' };
+    }
+    if (state === 'propagating') {
+      return { label: t('gamesPanel.delivery.propagating'), color: 'text-amber-300' };
+    }
+    if (state === 'propagated') {
+      return { label: t('gamesPanel.delivery.propagated'), color: 'text-amber-200/70' };
+    }
+    if (state === 'failed') {
+      return { label: t('gamesPanel.delivery.failed'), color: 'text-red-300' };
+    }
+    return null;
+  }
 
   return (
     <div className="bg-primary-dark flex h-full w-full min-w-0 text-amber-50">
@@ -241,10 +281,21 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             <div className="text-xs text-amber-200/60">
               {t('gamesPanel.opponentLabel', { peer: sessionPeerLabel(selectedSession) })}
             </div>
+            {(() => {
+              const chip = deliveryChip(selectedSession);
+              return chip ? (
+                <DeliveryStatusBadgeFrame
+                  label={chip.label}
+                  icon={selectedSession.delivery_state === 'failed' ? '!' : '…'}
+                  colorClass={chip.color}
+                  tooltip={chip.label}
+                />
+              ) : null;
+            })()}
             {selectedSession.app_id === 'chess' ? (
               <ChessBoard
                 session={selectedSession}
-                disabled={actionBusy}
+                disabled={boardDisabled}
                 onMove={(m) => {
                   handleMove({ m });
                 }}
@@ -252,7 +303,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             ) : (
               <TicTacToeBoard
                 session={selectedSession}
-                disabled={actionBusy}
+                disabled={boardDisabled}
                 onMove={(i) => {
                   handleMove({ i });
                 }}
@@ -324,6 +375,30 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                         {t('gamesPanel.declineDraw')}
                       </button>
                     </>
+                  ) : drawClaimReason === GAMES_DRAW_CLAIM.THREEFOLD ? (
+                    <button
+                      type="button"
+                      className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"
+                      aria-label={t('gamesPanel.claimThreefoldAria')}
+                      disabled={actionBusy}
+                      onClick={() => {
+                        handleCommand(GAMES_CMD.DRAW_OFFER, { r: GAMES_DRAW_CLAIM.THREEFOLD });
+                      }}
+                    >
+                      {t('gamesPanel.claimThreefold')}
+                    </button>
+                  ) : drawClaimReason === GAMES_DRAW_CLAIM.FIFTY_MOVE ? (
+                    <button
+                      type="button"
+                      className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"
+                      aria-label={t('gamesPanel.claimFiftyMoveAria')}
+                      disabled={actionBusy}
+                      onClick={() => {
+                        handleCommand(GAMES_CMD.DRAW_OFFER, { r: GAMES_DRAW_CLAIM.FIFTY_MOVE });
+                      }}
+                    >
+                      {t('gamesPanel.claimFiftyMove')}
+                    </button>
                   ) : (
                     <button
                       type="button"

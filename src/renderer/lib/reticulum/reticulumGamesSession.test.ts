@@ -11,7 +11,11 @@ vi.mock('@/renderer/components/Toast', () => ({
 
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 
-import { markGamesSessionRead, openReticulumGameSession } from './reticulumGamesSession';
+import {
+  markGamesSessionRead,
+  openReticulumGameSession,
+  sendGamesAction,
+} from './reticulumGamesSession';
 
 function makeSession(overrides: Record<string, unknown> = {}) {
   return {
@@ -104,5 +108,48 @@ describe('openReticulumGameSession', () => {
   it('rejects invalid session ids', async () => {
     await expect(openReticulumGameSession('nope')).resolves.toBe(false);
     expect(listSessions).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendGamesAction optimistic rollback', () => {
+  const sendAction = vi.fn();
+
+  beforeEach(() => {
+    useReticulumGamesStore.getState().clear();
+    sendAction.mockReset();
+    Object.assign(window, {
+      electronAPI: {
+        reticulum: {
+          games: { sendAction, markRead: vi.fn(), listSessions: vi.fn() },
+        },
+      },
+    });
+  });
+
+  it('rolls back optimistic TTT patch when IPC returns ok:false', async () => {
+    useReticulumGamesStore.getState().upsertSession(
+      makeSession({
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+        },
+      }),
+    );
+    sendAction.mockResolvedValue({ ok: false, error: 'send_failed' });
+    const ok = await sendGamesAction({
+      destHash: 'a'.repeat(32),
+      appId: 'ttt',
+      command: 'move',
+      sessionId: 's1',
+      payload: { i: 0 },
+      optimistic: { kind: 'ttt', cellIndex: 0 },
+    });
+    expect(ok).toBe(false);
+    expect(useReticulumGamesStore.getState().sessions[0].metadata.board).toBe('_________');
+    expect(useReticulumGamesStore.getState().optimisticBackup.s1).toBeUndefined();
   });
 });

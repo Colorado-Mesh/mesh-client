@@ -30,6 +30,7 @@ rns-stack = [
     "dep:rmpv",
     "dep:tempfile",
     "dep:notify",
+    "dep:rusqlite",
 ]
 rns-serial = ["rns-runtime/serial"]
 rns-ble = ["rns-runtime/ble", "dep:rns-interface", "rns-interface/ble"]
@@ -125,6 +126,11 @@ optional = true
 [dependencies.rns-crypto]
 package = "rns-crypto"
 path = "../../rsReticulum/crates/rns-crypto"
+optional = true
+
+[dependencies.rusqlite]
+version = "0.32"
+features = ["bundled"]
 optional = true
 
 [lints.rust]

@@ -258,6 +258,72 @@ describe('GamesPanel', () => {
     });
   });
 
+  it('shows resend when delivery_state is failed', async () => {
+    await renderAndSelectSession(makeSession({ delivery_state: 'failed' }));
+    expect(screen.getByRole('button', { name: 'Resend last action' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Retry needed')).toBeInTheDocument();
+  });
+
+  it('shows claim threefold and sends draw_offer with r=3fr', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        app_id: 'chess',
+        metadata: {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          turn: 'me',
+          my_color: 'w',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: false,
+          draw_offer_reason: '3fr',
+          in_check: false,
+          legal_moves: [],
+          moves: [],
+        },
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Claim threefold repetition draw' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'draw_offer',
+          payload: { r: '3fr' },
+        }),
+      );
+    });
+  });
+
+  it('shows claim 50-move and sends draw_offer with r=50m', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        app_id: 'chess',
+        metadata: {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          turn: 'me',
+          my_color: 'w',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: false,
+          draw_offer_reason: '50m',
+          in_check: false,
+          legal_moves: [],
+          moves: [],
+        },
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Claim fifty-move rule draw' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'draw_offer',
+          payload: { r: '50m' },
+        }),
+      );
+    });
+  });
+
   it('deletes a session only after confirmation', async () => {
     vi.mocked(window.electronAPI.reticulum.games.deleteSession).mockResolvedValue({ ok: true });
     await renderAndSelectSession(makeSession());

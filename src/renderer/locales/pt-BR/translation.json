@@ -5277,6 +5277,13 @@
         "b": "bispo preto",
         "n": "cavalo preto",
         "p": "peão preto"
+      },
+      "promotionChooserAria": "Escolher peça promocional",
+      "promoteTo": {
+        "q": "Promover a rainha",
+        "r": "Promover a torre",
+        "b": "Promover a bispo",
+        "n": "Promover a cavaleiro"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Falha ao excluir sessão."
     },
     "deleteConfirmTitle": "Excluir sessão?",
-    "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito."
+    "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito.",
+    "claimThreefold": "Reivindicação tripla",
+    "claimThreefoldAria": "Reivindicar triplo sorteio de repetição",
+    "claimFiftyMove": "Reivindicação 50-mover",
+    "claimFiftyMoveAria": "Reivindicar sorteio de regra de cinquenta movimentos",
+    "delivery": {
+      "sending": "Enviando…",
+      "propagating": "Caixa de entrada offline...",
+      "propagated": "Armazenada",
+      "failed": "Tentativa necessária"
+    }
   }
 }

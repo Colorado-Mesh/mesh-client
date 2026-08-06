@@ -5277,6 +5277,13 @@
         "b": "Zwarte loper",
         "n": "Zwarte ridder",
         "p": "Zwarte pion"
+      },
+      "promotionChooserAria": "Promotiestuk kiezen",
+      "promoteTo": {
+        "q": "Promoveer tot koningin",
+        "r": "Promoot tot rook",
+        "b": "Promoveer tot bisschop",
+        "n": "Promoveer tot ridder"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Kan sessie niet verwijderen."
     },
     "deleteConfirmTitle": "Moment verwijderen?",
-    "deleteConfirmMessage": "Deze spelsessie uit je lijst verwijderen? Dit kan niet ongedaan worden gemaakt."
+    "deleteConfirmMessage": "Deze spelsessie uit je lijst verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "claimThreefold": "Claim drievoudig",
+    "claimThreefoldAria": "Claim drievoudige herhalingstekening",
+    "claimFiftyMove": "Claim 50-move",
+    "claimFiftyMoveAria": "Regeltrekking voor vijftig zetten claimen",
+    "delivery": {
+      "sending": "Versturen...",
+      "propagating": "Offline inbox...",
+      "propagated": "Opgeslagen",
+      "failed": "Opnieuw proberen nodig"
+    }
   }
 }

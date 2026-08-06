@@ -5277,6 +5277,13 @@
         "b": "Kara fil",
         "n": "Kara Şövalye",
         "p": "Siyah piyon"
+      },
+      "promotionChooserAria": "Promosyon parçası seçin",
+      "promoteTo": {
+        "q": "Kraliçeliğe terfi ettir",
+        "r": "Kaleye terfi ettir",
+        "b": "Piskoposluğa terfi ettir",
+        "n": "Şövalyeliğe terfi ettir"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Oturum silinemedi."
     },
     "deleteConfirmTitle": "Oturumları Yapılandır...",
-    "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz."
+    "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz.",
+    "claimThreefold": "Üç katını iste",
+    "claimThreefoldAria": "Üç kat tekrar çekilişi talep et",
+    "claimFiftyMove": "Talep 50 - hareket",
+    "claimFiftyMoveAria": "Elli hamlelik kural çekilişi talep et",
+    "delivery": {
+      "sending": "Gönderiliyor...",
+      "propagating": "Çevrimdışı Gelen Kutusu…",
+      "propagated": "ve saklanmalı.",
+      "failed": "Yeniden deneme gerekli"
+    }
   }
 }

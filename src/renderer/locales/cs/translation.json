@@ -5279,6 +5279,13 @@
         "b": "Černý střelec",
         "n": "Black Jack",
         "p": "Černý pěšec"
+      },
+      "promotionChooserAria": "Vybrat propagační kousek",
+      "promoteTo": {
+        "q": "Povýšit na královnu",
+        "r": "Povýšit na věž",
+        "b": "Povýšit na biskupa",
+        "n": "Povýšit na rytíře"
       }
     },
     "errors": {
@@ -5289,6 +5296,16 @@
       "deleteFailed": "Odstranění relace se nezdařilo."
     },
     "deleteConfirmTitle": "Smazat relaci?",
-    "deleteConfirmMessage": "Odebrat tuto herní relaci ze seznamu? Tuto akci nelze vrátit zpět."
+    "deleteConfirmMessage": "Odebrat tuto herní relaci ze seznamu? Tuto akci nelze vrátit zpět.",
+    "claimThreefold": "Nárokujte trojnásobně",
+    "claimThreefoldAria": "Uplatnit trojnásobné opakování losování",
+    "claimFiftyMove": "Uplatnit 50 tahů",
+    "claimFiftyMoveAria": "Uplatnit remízu pravidla padesáti tahů",
+    "delivery": {
+      "sending": "Odesílání...",
+      "propagating": "Offline doručené zprávy...",
+      "propagated": "Doručená na Vyzvedni.to a připravená k výdeji",
+      "failed": "Je třeba to zkusit znovu"
+    }
   }
 }

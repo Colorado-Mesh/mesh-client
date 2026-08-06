@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { isGamesApiPath, parseGamesActionRequest } from './games-types';
+import {
+  GAMES_DRAW_CLAIM,
+  isGamesApiPath,
+  isGamesDeliveryInFlight,
+  parseGamesActionRequest,
+} from './games-types';
 
 describe('games-types', () => {
   it('detects games API paths', () => {
@@ -11,6 +16,19 @@ describe('games-types', () => {
     expect(isGamesApiPath('/api/v1/games/sessions?peer=abc')).toBe(true);
     expect(isGamesApiPath('/api/v1/voice/status')).toBe(false);
     expect(isGamesApiPath('/api/v1/gameshow')).toBe(false);
+  });
+
+  it('exports stable draw-claim reason codes', () => {
+    expect(GAMES_DRAW_CLAIM.THREEFOLD).toBe('3fr');
+    expect(GAMES_DRAW_CLAIM.FIFTY_MOVE).toBe('50m');
+  });
+
+  it('detects in-flight delivery states', () => {
+    expect(isGamesDeliveryInFlight('pending')).toBe(true);
+    expect(isGamesDeliveryInFlight('sending')).toBe(true);
+    expect(isGamesDeliveryInFlight('propagating')).toBe(true);
+    expect(isGamesDeliveryInFlight('failed')).toBe(false);
+    expect(isGamesDeliveryInFlight(undefined)).toBe(false);
   });
 
   it('parses valid game actions', () => {

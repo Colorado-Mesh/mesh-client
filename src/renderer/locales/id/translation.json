@@ -5277,6 +5277,13 @@
         "b": "Uskup kulit hitam",
         "n": "Ksatria hitam",
         "p": "Pion hitam"
+      },
+      "promotionChooserAria": "Pilih bagian promosi",
+      "promoteTo": {
+        "q": "Promosikan menjadi ratu",
+        "r": "Promosikan ke benteng",
+        "b": "Promosikan menjadi uskup",
+        "n": "Promosikan menjadi ksatria"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Gagal menghapus sesi."
     },
     "deleteConfirmTitle": "Hapus sesi?",
-    "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan."
+    "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan.",
+    "claimThreefold": "Klaim tiga kali lipat",
+    "claimThreefoldAria": "Klaim undian pengulangan tiga kali lipat",
+    "claimFiftyMove": "Klaim 50 - move",
+    "claimFiftyMoveAria": "Klaim undian aturan lima puluh langkah",
+    "delivery": {
+      "sending": "Mengirim...",
+      "propagating": "Kotak Masuk Offline…",
+      "propagated": "Disimpan",
+      "failed": "Coba lagi yang diperlukan"
+    }
   }
 }

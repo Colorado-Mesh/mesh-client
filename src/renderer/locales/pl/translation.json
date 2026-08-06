@@ -5281,6 +5281,13 @@
         "b": "Czarny goniec",
         "n": "Czarny skoczek",
         "p": "czarny pionek"
+      },
+      "promotionChooserAria": "Wybierz element promocyjny",
+      "promoteTo": {
+        "q": "Awansuj na królową",
+        "r": "Awansuj na wieżę",
+        "b": "Awansuj na biskupa",
+        "n": "Awansuj na rycerza"
       }
     },
     "errors": {
@@ -5291,6 +5298,16 @@
       "deleteFailed": "Nie udało się usunąć sesji."
     },
     "deleteConfirmTitle": "Usuń sesję",
-    "deleteConfirmMessage": "Usunąć tę sesję gry z listy? Tej czynności nie można cofnąć."
+    "deleteConfirmMessage": "Usunąć tę sesję gry z listy? Tej czynności nie można cofnąć.",
+    "claimThreefold": "Odbierz trzykrotnie",
+    "claimThreefoldAria": "Odbierz trzykrotne powtórzenie losowania",
+    "claimFiftyMove": "Odbierz 50 ruchów",
+    "claimFiftyMoveAria": "Odbierz remis reguły pięćdziesięciu ruchów",
+    "delivery": {
+      "sending": "Wysyłanie…",
+      "propagating": "Skrzynka odbiorcza offline...",
+      "propagated": "Przechowywane",
+      "failed": "Wymagana ponowna próba"
+    }
   }
 }

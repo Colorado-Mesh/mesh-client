@@ -5277,6 +5277,13 @@
         "b": "Un Alfiere nero",
         "n": "Il cavaliere nero",
         "p": "Pedone nero"
+      },
+      "promotionChooserAria": "Scegli il pezzo promozionale",
+      "promoteTo": {
+        "q": "Promuovi a regina",
+        "r": "Promuovi a torre",
+        "b": "Promuovi a vescovo",
+        "n": "Promuovi a cavaliere"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "Sessione non eliminata"
     },
     "deleteConfirmTitle": "Cancellare una sessione",
-    "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata."
+    "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata.",
+    "claimThreefold": "Riscuoti il triplo",
+    "claimThreefoldAria": "Richiedi il triplo sorteggio di ripetizione",
+    "claimFiftyMove": "Claim 50-move",
+    "claimFiftyMoveAria": "Richiedi l'estrazione della regola delle cinquanta mosse",
+    "delivery": {
+      "sending": "Invio in corso…",
+      "propagating": "Posta in arrivo offline...",
+      "propagated": "Memorizzato",
+      "failed": "Nuovo tentativo necessario"
+    }
   }
 }

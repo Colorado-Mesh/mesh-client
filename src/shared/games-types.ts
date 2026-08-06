@@ -61,6 +61,23 @@ export type GamesCommand = (typeof GAMES_CMD)[keyof typeof GAMES_CMD];
 
 export type GamesSessionStatus = 'pending' | 'active' | 'completed' | 'expired' | 'declined';
 
+/** Sidecar overlay delivery state (Ratspeak-aligned LXMF outbound bridge). */
+export type GamesDeliveryState =
+  'idle' | 'pending' | 'sending' | 'propagating' | 'propagated' | 'delivered' | 'failed';
+
+/** Chess FIDE draw-claim reason codes (`lrgp-rs` ChessApp `KEY_REASON`). */
+export const GAMES_DRAW_CLAIM = {
+  THREEFOLD: '3fr',
+  FIFTY_MOVE: '50m',
+} as const;
+
+export type GamesDrawClaimReason = (typeof GAMES_DRAW_CLAIM)[keyof typeof GAMES_DRAW_CLAIM];
+
+/** True when `delivery_state` means an outbound move is still in flight. */
+export function isGamesDeliveryInFlight(state: string | undefined | null): boolean {
+  return state === 'pending' || state === 'sending' || state === 'propagating';
+}
+
 /** `lrgp-rs` TicTacToeApp session metadata (see `session_to_json` in tictactoe.rs). */
 export interface GamesTttMetadata {
   board: string;
@@ -99,6 +116,11 @@ export interface GameSession {
   initiator: string;
   /** One of {@link GamesSessionStatus}; kept as `string` since the sidecar may add new values. */
   status: string;
+  /**
+   * Sidecar overlay LXMF delivery state (`sending` / `propagating` / `failed` / …).
+   * Optional for older payloads; treated as idle when absent.
+   */
+  delivery_state?: string;
   metadata: Record<string, unknown>;
   unread: number;
   created_at: number;

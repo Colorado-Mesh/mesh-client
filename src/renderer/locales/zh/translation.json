@@ -5277,6 +5277,13 @@
         "b": "黑人主教",
         "n": "黑骑士",
         "p": "黑兵"
+      },
+      "promotionChooserAria": "选择促销片段",
+      "promoteTo": {
+        "q": "晋升为大床房",
+        "r": "晋升为车队",
+        "b": "晋升为主教",
+        "n": "晋升为骑士"
       }
     },
     "errors": {
@@ -5287,6 +5294,16 @@
       "deleteFailed": "删除会话失败。"
     },
     "deleteConfirmTitle": "删除会话？",
-    "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。"
+    "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。",
+    "claimThreefold": "领取三倍奖励",
+    "claimThreefoldAria": "领取三重重复抽奖",
+    "claimFiftyMove": "领取50步",
+    "claimFiftyMoveAria": "领取五十步规则抽奖",
+    "delivery": {
+      "sending": "发送中…",
+      "propagating": "离线收件箱…",
+      "propagated": "已存储",
+      "failed": "需要重试"
+    }
   }
 }
