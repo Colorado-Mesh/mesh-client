@@ -17,6 +17,9 @@ use tokio::sync::{broadcast, mpsc};
 /// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
 type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
 
+/// Cap concurrent host-peer peering-key PoW jobs (CPU-heavy stamp generation).
+const MAX_PEERING_KEY_JOBS: usize = 8;
+
 pub struct PropagationBridge {
     local_dest_hash: [u8; 16],
     local_node: Arc<Mutex<PropagationNode>>,
@@ -96,6 +99,9 @@ impl PropagationBridge {
             let Ok(mut jobs) = self.peering_key_jobs.lock() else {
                 return;
             };
+            if jobs.len() >= MAX_PEERING_KEY_JOBS {
+                return;
+            }
             if !jobs.insert(peer_hash) {
                 return;
             }

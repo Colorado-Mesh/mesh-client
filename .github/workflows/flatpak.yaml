@@ -219,11 +219,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: node scripts/rename-test-build-artifacts.mjs --flatpak .
 
-      # Artifact name matches prior flatpak-builder upload style (bundle + -${arch}).
+      # Artifact name ends with .flatpak so publish flatten → flatpak-dist/*.flatpak matches.
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@v7
         with:
-          name: org.coloradomesh.MeshClient.flatpak-${{ matrix.arch }}
+          name: org.coloradomesh.MeshClient.flatpak-${{ matrix.arch }}.flatpak
           path: |
             org.coloradomesh.MeshClient*.flatpak
           if-no-files-found: error
@@ -252,7 +252,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: 'org.coloradomesh.MeshClient-*'
+          pattern: 'org.coloradomesh.MeshClient.flatpak-*.flatpak'
           path: flatpak-dist
 
       - name: Flatten arch-suffixed bundles for release

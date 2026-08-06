@@ -723,6 +723,7 @@ impl LxmfOutboundDriver {
         if let Some(hash) = message.hash.or(message.message_id) {
             self.pn_fallback_attempted.remove(&hash);
             self.direct_path_failovers.remove(&hash);
+            self.pending_pn_deposits.remove(&hash);
             let _ = router.mark_outbound_failed(&hash);
             emit_outbound_status_by_hash(event_tx, &hash, "failed", Some(method));
         }

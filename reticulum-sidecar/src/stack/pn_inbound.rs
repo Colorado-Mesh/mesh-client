@@ -668,15 +668,33 @@ mod tests {
     use super::*;
     use lxmf_core::propagation_admission::PnInboundAdmissionConfig;
 
-    #[test]
-    fn accept_resource_tracks_client_correlation() {
+    fn test_runtime() -> PnInboundRuntime {
         let config = PnInboundAdmissionConfig {
             sequential_validation: true,
             static_sequential: false,
             max_inbound_syncs: 4,
             from_static_only: false,
         };
-        let mut runtime = PnInboundRuntime::new(config, None, 64 * 1024);
+        PnInboundRuntime::new(config, None, 64 * 1024)
+    }
+
+    fn start_inbound(
+        runtime: &mut PnInboundRuntime,
+        link_id: LinkId,
+        resource_id: LogicalResourceId,
+    ) {
+        runtime.handle_resource_event(LinkResourceEvent::Started {
+            link_id,
+            resource_id,
+            direction: LinkResourceDirection::Inbound,
+            data_size: 128,
+            total_segments: 1,
+        });
+    }
+
+    #[test]
+    fn accept_resource_tracks_client_correlation() {
+        let mut runtime = test_runtime();
         let link_id = [0x11; 16];
         let resource_id = [0x22; 32];
         assert!(runtime.accept_resource(link_id, resource_id, 128, None));
@@ -686,5 +704,84 @@ mod tests {
         assert_eq!(runtime.pending_validation_count(), 0);
         assert_eq!(runtime.throttle_count(), 0);
         let _ = PnValidationJob::for_test(vec![1, 2, 3], false);
+    }
+
+    #[test]
+    fn resource_completed_without_start_returns_none() {
+        let mut runtime = test_runtime();
+        let link_id = [0x11; 16];
+        let resource_id = [0x22; 32];
+        assert!(runtime.accept_resource(link_id, resource_id, 128, None));
+        assert!(
+            runtime
+                .resource_completed((link_id, resource_id), vec![1, 2, 3])
+                .is_none()
+        );
+        assert_eq!(runtime.correlation_count(), 0);
+        assert_eq!(runtime.pending_validation_count(), 0);
+    }
+
+    #[test]
+    fn client_owner_sets_allow_multiple_false() {
+        let mut runtime = test_runtime();
+        let link_id = [0x11; 16];
+        let resource_id = [0x22; 32];
+        assert!(runtime.accept_resource(link_id, resource_id, 128, None));
+        start_inbound(&mut runtime, link_id, resource_id);
+        let job = runtime
+            .resource_completed((link_id, resource_id), vec![9, 9, 9])
+            .expect("client completion");
+        assert!(!job.allow_multiple());
+    }
+
+    #[test]
+    fn conclude_validation_ignores_token_link_mismatch_and_duplicates() {
+        let mut runtime = test_runtime();
+        let link_id = [0x11; 16];
+        let other_link = [0x12; 16];
+        let resource_id = [0x22; 32];
+        assert!(runtime.accept_resource(link_id, resource_id, 128, None));
+        start_inbound(&mut runtime, link_id, resource_id);
+        let job = runtime
+            .resource_completed((link_id, resource_id), vec![1])
+            .expect("job");
+        let token = job.token();
+
+        assert!(
+            runtime
+                .conclude_validation(token, other_link, PnValidationOutcome::Valid)
+                .is_none()
+        );
+        let claim = runtime
+            .conclude_validation(token, link_id, PnValidationOutcome::Valid)
+            .expect("first claim");
+        assert_eq!(claim.link_id(), link_id);
+        assert!(
+            runtime
+                .conclude_validation(token, link_id, PnValidationOutcome::Valid)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn invalid_stamp_quarantines_link() {
+        let mut runtime = test_runtime();
+        let link_id = [0x33; 16];
+        let resource_id = [0x44; 32];
+        assert!(runtime.accept_resource(link_id, resource_id, 128, None));
+        start_inbound(&mut runtime, link_id, resource_id);
+        let job = runtime
+            .resource_completed((link_id, resource_id), vec![1])
+            .expect("job");
+        let claim = runtime
+            .conclude_validation(job.token(), link_id, PnValidationOutcome::InvalidStamp)
+            .expect("claim");
+        assert!(claim.should_close_link());
+        assert!(runtime.is_link_quarantined(&link_id));
+        assert!(!runtime.accept_resource(link_id, [0x55; 32], 64, None));
+        assert!(matches!(
+            runtime.preflight_offer(link_id, None),
+            Err(OfferResponse::ErrorThrottled)
+        ));
     }
 }

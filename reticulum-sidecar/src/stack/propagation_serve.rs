@@ -417,24 +417,42 @@ fn spawn_propagation_validation(
         };
 
         let mut accepted = 0usize;
-        if let Ok(mut node) = local_node.lock() {
-            for entry in &entries {
-                let stamp_value = u8::try_from(entry.stamp_value).unwrap_or(u8::MAX);
-                if node.accept_stamped_propagated_blob(
-                    &entry.lxmf_data,
-                    &entry.stamp_data,
-                    stamp_value,
-                ) {
-                    accepted += 1;
-                    tracing::info!(
-                        target: "propagation-deposit",
-                        pn_hash = %pn_hash_hex,
-                        transient_id = %hex::encode(entry.transient_id),
+        let accept_local_node = Arc::clone(&local_node);
+        let accept_pn_hash_hex = pn_hash_hex.clone();
+        match tokio::task::spawn_blocking(move || {
+            let mut accepted = 0usize;
+            if let Ok(mut node) = accept_local_node.lock() {
+                for entry in &entries {
+                    let stamp_value = u8::try_from(entry.stamp_value).unwrap_or(u8::MAX);
+                    if node.accept_stamped_propagated_blob(
+                        &entry.lxmf_data,
+                        &entry.stamp_data,
                         stamp_value,
-                        blob_len = entry.lxmf_data.len(),
-                        "local PN accepted stamped propagated blob"
-                    );
+                    ) {
+                        accepted += 1;
+                        tracing::info!(
+                            target: "propagation-deposit",
+                            pn_hash = %accept_pn_hash_hex,
+                            transient_id = %hex::encode(entry.transient_id),
+                            stamp_value,
+                            blob_len = entry.lxmf_data.len(),
+                            "local PN accepted stamped propagated blob"
+                        );
+                    }
                 }
+            }
+            accepted
+        })
+        .await
+        {
+            Ok(count) => accepted = count,
+            Err(error) => {
+                tracing::warn!(
+                    target: "propagation-deposit",
+                    link_id = %hex::encode(link_id),
+                    error = %error,
+                    "propagation accept worker failed"
+                );
             }
         }
 
@@ -464,7 +482,6 @@ fn spawn_propagation_validation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn source_wires_resource_accept_and_consumes_accounting() {
@@ -510,13 +527,7 @@ mod tests {
 
     #[test]
     fn stamped_blob_enters_shared_store_and_bad_stamp_rejected() {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0);
-        let dir = std::env::temp_dir().join(format!("mesh-client-pn-ingress-{nanos}"));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).expect("temp dir");
+        let dir = tempfile::tempdir().expect("tempdir");
 
         let mut node = PropagationNode::with_storage(
             lxmf_core::propagation_node::PropagationNodeConfig {
@@ -524,7 +535,7 @@ mod tests {
                 ..Default::default()
             },
             [0xAA; 16],
-            dir.clone(),
+            dir.path().to_path_buf(),
         )
         .expect("node");
 
@@ -542,7 +553,5 @@ mod tests {
         );
         assert_eq!(bad.0, PnValidationOutcome::Failed);
         assert!(bad.1.is_empty());
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

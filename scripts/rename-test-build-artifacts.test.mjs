@@ -109,6 +109,24 @@ describe('resolveTestRenameStamp', () => {
       runNumber: 214,
     });
   });
+
+  it('rejects fractional and negative runNumber in parseBuildInfoEnv', () => {
+    expect(() => parseBuildInfoEnv(JSON.stringify({ runNumber: 1.5 }))).toThrow(
+      /non-negative integer/,
+    );
+    expect(() => parseBuildInfoEnv(JSON.stringify({ runNumber: -1 }))).toThrow(
+      /non-negative integer/,
+    );
+  });
+
+  it('rejects fractional and negative runNumber in resolveTestRenameStamp', () => {
+    expect(() => resolveTestRenameStamp({ channel: 'test', runNumber: 2.5 })).toThrow(
+      /non-negative integer/,
+    );
+    expect(() => resolveTestRenameStamp({ channel: 'test', runNumber: -3 })).toThrow(
+      /non-negative integer/,
+    );
+  });
 });
 
 describe('renameTestBuildArtifacts', () => {

@@ -126,7 +126,7 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
 3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
 4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
-5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
+5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
 
 On **version tag pushes**, a `publish` job attaches both **clean-named** bundles to the GitHub Release. aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 

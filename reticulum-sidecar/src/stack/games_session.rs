@@ -604,10 +604,42 @@ impl GamesSessionManager {
             )
             .map_err(|e| format!("dispatch_error: {e}"))?;
 
-        let fields = transport::pack_into_preencoded_fields(&prepared.envelope)
-            .map_err(|e| format!("encode_error: {e}"))?;
-        let envelope_bytes = envelope::pack_to_bytes(&prepared.envelope)
-            .map_err(|e| format!("encode_error: {e}"))?;
+        let fields = match transport::pack_into_preencoded_fields(&prepared.envelope) {
+            Ok(fields) => fields,
+            Err(e) => {
+                let encode_error = format!("encode_error: {e}");
+                if let Err(rb) = self.router.rollback_outgoing(
+                    app_id,
+                    &prepared.session_id,
+                    &self.identity_id,
+                    snapshot,
+                ) {
+                    tracing::warn!(
+                        target: "games",
+                        "lrgp rollback_outgoing after encode failure: {rb}"
+                    );
+                }
+                return Err(encode_error);
+            }
+        };
+        let envelope_bytes = match envelope::pack_to_bytes(&prepared.envelope) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                let encode_error = format!("encode_error: {e}");
+                if let Err(rb) = self.router.rollback_outgoing(
+                    app_id,
+                    &prepared.session_id,
+                    &self.identity_id,
+                    snapshot,
+                ) {
+                    tracing::warn!(
+                        target: "games",
+                        "lrgp rollback_outgoing after encode failure: {rb}"
+                    );
+                }
+                return Err(encode_error);
+            }
+        };
 
         Ok(PreparedGameAction {
             app_id: app_id.to_string(),
@@ -1275,29 +1307,31 @@ mod tests {
         assert!(manager.handle_inbound_lxmf(&accept_fields, &peer, ""));
 
         let _guard = hydrate_err_test_guard();
-        // Coin-flip first turn: if we own the turn, play once so the peer owns it.
-        match manager.prepare_action(
-            &peer,
-            "ttt",
-            CMD_MOVE,
-            Some(&sid),
-            Some(&serde_json::json!({ "i": 0 })),
-        ) {
-            Err(e) => assert_eq!(e, ERR_NOT_YOUR_TURN),
-            Ok(action) => {
-                manager.commit_action(&action, Some("move1"));
-                let err = manager
-                    .prepare_action(
-                        &peer,
-                        "ttt",
-                        CMD_MOVE,
-                        Some(&sid),
-                        Some(&serde_json::json!({ "i": 1 })),
-                    )
-                    .expect_err("expected not_your_turn after handing off");
-                assert_eq!(err, ERR_NOT_YOUR_TURN);
-            }
+        // Coin-flip first turn: hand off if we own it, then assert a single not-your-turn.
+        let detail = manager.session_detail(&sid);
+        let turn = detail["session"]["metadata"]["turn"].as_str().unwrap_or("");
+        if turn == self_id {
+            let action = manager
+                .prepare_action(
+                    &peer,
+                    "ttt",
+                    CMD_MOVE,
+                    Some(&sid),
+                    Some(&serde_json::json!({ "i": 0 })),
+                )
+                .expect("own-turn move should prepare");
+            manager.commit_action(&action, Some("move1"));
         }
+        let err = manager
+            .prepare_action(
+                &peer,
+                "ttt",
+                CMD_MOVE,
+                Some(&sid),
+                Some(&serde_json::json!({ "i": 1 })),
+            )
+            .expect_err("expected not_your_turn when peer owns the turn");
+        assert_eq!(err, ERR_NOT_YOUR_TURN);
     }
 
     #[test]

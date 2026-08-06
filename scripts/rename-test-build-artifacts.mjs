@@ -113,14 +113,8 @@ export function parseBuildInfoEnv(raw) {
     /** @type {{ channel?: string, runNumber?: number }} */
     const out = {};
     if (typeof parsed.channel === 'string') out.channel = parsed.channel;
-    if (typeof parsed.runNumber === 'number' && Number.isFinite(parsed.runNumber)) {
-      out.runNumber = Math.floor(parsed.runNumber);
-    } else if (parsed.runNumber != null && parsed.runNumber !== '') {
-      const n = Number(parsed.runNumber);
-      if (!Number.isFinite(n)) {
-        throw new Error(`Invalid runNumber in MESH_CLIENT_BUILD_INFO: ${String(parsed.runNumber)}`);
-      }
-      out.runNumber = Math.floor(n);
+    if (parsed.runNumber != null && parsed.runNumber !== '') {
+      out.runNumber = parseStrictRunNumber(parsed.runNumber, 'MESH_CLIENT_BUILD_INFO.runNumber');
     }
     return out;
   } catch (e) {
@@ -129,6 +123,19 @@ export function parseBuildInfoEnv(raw) {
     }
     throw e;
   }
+}
+
+/**
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {number}
+ */
+function parseStrictRunNumber(value, label) {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
+    throw new Error(`${label} must be a finite non-negative integer (got ${String(value)})`);
+  }
+  return n;
 }
 
 /**
@@ -146,12 +153,15 @@ export function resolveTestRenameStamp(opts) {
     return null;
   }
   const runNumber = opts.runNumber ?? fromEnv.runNumber;
-  if (runNumber == null || !Number.isFinite(runNumber)) {
+  if (runNumber == null) {
     throw new Error(
       'MESH_CLIENT_BUILD_CHANNEL=test requires a finite runNumber (MESH_CLIENT_BUILD_INFO.runNumber)',
     );
   }
-  return { channel: 'test', runNumber: Math.floor(runNumber) };
+  return {
+    channel: 'test',
+    runNumber: parseStrictRunNumber(runNumber, 'runNumber'),
+  };
 }
 
 /**
@@ -285,8 +295,12 @@ function main() {
   if (parsed.flatpakCwd) {
     // Only touch Flatpak bundles in the given directory (non-recursive).
     const files = fs
-      .readdirSync(parsed.rootDir)
-      .filter((n) => n.endsWith('.flatpak') && shouldRenameInstaller(n));
+      .readdirSync(parsed.rootDir, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isFile() && entry.name.endsWith('.flatpak') && shouldRenameInstaller(entry.name),
+      )
+      .map((entry) => entry.name);
     const stamp = resolveTestRenameStamp({
       channel: parsed.channel,
       buildInfoRaw: parsed.buildInfoRaw,

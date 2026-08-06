@@ -82,6 +82,7 @@ import {
 import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
 import {
   applyPropagationSyncEvent,
+  normalizePropagationSyncProgress,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
@@ -837,12 +838,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         scheduleDebouncedDiagnosticsRefresh();
         // Sync Completes can leave inbound LXMF only in the sidecar ring until the next
         // periodic catch-up — pull immediately so Chat updates without waiting ~60s.
-        const normalizedProgress =
-          typeof p.progress === 'number' && Number.isFinite(p.progress)
-            ? p.progress <= 1
-              ? p.progress * 100
-              : Math.min(100, p.progress)
-            : 0;
+        const normalizedProgress = normalizePropagationSyncProgress(
+          typeof p.progress === 'number' ? p.progress : 0,
+        );
         if (
           wasSyncActive &&
           p.active === false &&
