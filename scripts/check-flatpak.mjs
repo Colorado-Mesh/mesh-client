@@ -9,6 +9,7 @@ import {
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
 import { metainfoVersionMismatchMessage } from './metainfoRelease.mjs';
+import { FLATPAK_BUILD_INFO_EXPORT_SNIPPET } from './write-flatpak-ci-build-info.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -448,6 +449,60 @@ function checkDesktopStartupWMClass(pkg) {
   return violations;
 }
 
+function checkManifestCiBuildInfoExport() {
+  const violations = [];
+  if (!fs.existsSync(MANIFEST)) return violations;
+  const yaml = fs.readFileSync(MANIFEST, 'utf8');
+  const rel = path.relative(ROOT, MANIFEST);
+  for (const line of FLATPAK_BUILD_INFO_EXPORT_SNIPPET.split('\n')) {
+    if (!yaml.includes(line)) {
+      violations.push({
+        file: rel,
+        message: `manifest build must export MESH_CLIENT_BUILD_INFO from flatpak/ci-build-info.json (missing: ${line})`,
+      });
+      break;
+    }
+  }
+  return violations;
+}
+
+function checkFlatpakWorkflowTestBuildContracts() {
+  const violations = [];
+  if (!fs.existsSync(FLATPAK_WORKFLOW)) return violations;
+  const yaml = fs.readFileSync(FLATPAK_WORKFLOW, 'utf8');
+  const rel = path.relative(ROOT, FLATPAK_WORKFLOW);
+
+  if (!yaml.includes('Build Flatpak (no release)')) {
+    violations.push({
+      file: rel,
+      message:
+        'flatpak.yaml run-name / labels must include Build Flatpak (no release) for workflow_dispatch',
+    });
+  }
+  if (!yaml.includes('write-flatpak-ci-build-info.mjs')) {
+    violations.push({
+      file: rel,
+      message:
+        'flatpak.yaml must write flatpak/ci-build-info.json via write-flatpak-ci-build-info.mjs',
+    });
+  }
+  if (!/upload-artifact:\s*false/.test(yaml)) {
+    violations.push({
+      file: rel,
+      message:
+        'flatpak-builder must set upload-artifact: false so smoke/rename can run before a single upload',
+    });
+  }
+  if (!yaml.includes('rename-test-build-artifacts.mjs --flatpak')) {
+    violations.push({
+      file: rel,
+      message:
+        'flatpak.yaml must rename dispatch bundles with rename-test-build-artifacts.mjs --flatpak',
+    });
+  }
+  return violations;
+}
+
 function main() {
   const violations = [
     ...checkMetainfoVersionMatchesPackage(PKG_JSON),
@@ -456,6 +511,8 @@ function main() {
     ...checkManifestPnpmVersion(PKG_JSON),
     ...checkFlatpakWorkflowStoreVersion(PKG_JSON),
     ...checkManifestBranchAndElectronPayload(PKG_JSON),
+    ...checkManifestCiBuildInfoExport(),
+    ...checkFlatpakWorkflowTestBuildContracts(),
     ...checkManifestReticulumSidecarPayload(),
     ...checkWrapperLaunchPaths(),
     ...checkDesktopStartupWMClass(PKG_JSON),

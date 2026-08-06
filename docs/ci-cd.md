@@ -124,10 +124,11 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 
 1. **`schema-release-compare`** — same compare as Build Binaries / Release; uploads `READ-ME-FIRST-flatpak.md` and feeds `write-schema-upgrade-notice.mjs` so bumped schemas embed `SCHEMA-UPGRADE.txt` under Flatpak `resources/`
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
-3. Builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
-4. Uploads `org.coloradomesh.MeshClient-{x86_64,aarch64}.flatpak` artifacts plus per-arch `flatpak-schema-warning-*` (the READ-ME-FIRST note for Actions downloads)
+3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
+4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
+5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
 
-On **version tag pushes**, a `publish` job attaches both bundles to the GitHub Release. aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
+On **version tag pushes**, a `publish` job attaches both **clean-named** bundles to the GitHub Release. aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
 `flatpak/generated-sources.json` is generated automatically in CI by `flatpak-node-generator` before each build — it does not need to be committed to the repo. For local builds, generate it manually; see [development-environment.md](development-environment.md) for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.
 
@@ -313,15 +314,30 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 ### Build channel stamp (test vs release)
 
-**Build Binaries** (`build.yaml`) and **Release** (`release.yaml`) run `scripts/ci-write-build-info-env.mjs` before packaging. That writes a JSON `MESH_CLIENT_BUILD_INFO` blob into `$GITHUB_ENV`, which `scripts/esbuild-main-build.mjs` embeds via esbuild `--define` into the main process.
+**Build Binaries** (`build.yaml`), **Release** (`release.yaml`), and **Build Flatpak** (`flatpak.yaml`) run `scripts/ci-write-build-info-env.mjs` before packaging. That writes a JSON `MESH_CLIENT_BUILD_INFO` blob into `$GITHUB_ENV`, which `scripts/esbuild-main-build.mjs` embeds via esbuild `--define` into the main process. Flatpak also writes `flatpak/ci-build-info.json` (gitignored) so the sandbox `pnpm run build` sees the same env.
 
-| Channel   | Workflow                       | Support-bundle `manifest.json`                            |
-| --------- | ------------------------------ | --------------------------------------------------------- |
-| `test`    | Build Binaries (no release)    | `buildChannel: "test"` + `buildInfo.runUrl` (Actions run) |
-| `release` | Build/Release Electron App     | `buildChannel: "release"` + `tag` + `buildInfo.runUrl`    |
-| `local`   | unmarked `pnpm run dist` / dev | `buildChannel: "local"` only                              |
+| Channel   | Workflow                                                | Support-bundle `manifest.json`                            |
+| --------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| `test`    | Build Binaries (no release); Build Flatpak (no release) | `buildChannel: "test"` + `buildInfo.runUrl` (Actions run) |
+| `release` | Build/Release Electron App; Build Flatpak (tag)         | `buildChannel: "release"` + `tag` + `buildInfo.runUrl`    |
+| `local`   | unmarked `pnpm run dist` / dev / local Flatpak          | `buildChannel: "local"` only                              |
 
 `appVersion` remains `package.json` semver (unchanged). Use `buildChannel` + `buildInfo.runUrl` when triaging Export for GitHub / Developer zips so a test binary is not mistaken for an official release. Startup logs include a compact fragment (`buildChannel=… run=… runId=… sha=…`).
+
+**Which binary am I running?** If a tester says they downloaded Actions run N but the app reports a different run, open **Export for GitHub** → `manifest.json` → `buildInfo.runUrl` (authoritative), or the `[Startup] runtime … run=…` line in the app log. Same-semver test installers used to share identical filenames across runs; test builds now stamp `-run{N}` into downloadable basenames (see below).
+
+### Test-build installer filenames (`-run{N}`)
+
+**Test / one-off only** — never official GitHub Release assets:
+
+| Workflow       | When                       | Filename stamp                                                                                                                                                                                                                            |
+| -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `build.yaml`   | Always (dispatch-only)     | After `dist:*`, `scripts/rename-test-build-artifacts.mjs` renames AppImage/deb/rpm/DMG/ZIP/Setup under `release/` to include `-run{GITHUB_RUN_NUMBER}` (e.g. `Mesh-client-5.26.0-run214.AppImage`, `Mesh-client Setup 5.26.0-run214.exe`) |
+| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke, rename to `org.coloradomesh.MeshClient-run{N}.flatpak`, then upload                                                                                                                                                   |
+| `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak` (no `-run{N}`)                                                                                                                                                                                |
+| `release.yaml` | tag publish                | Clean electron-builder names (no rename step)                                                                                                                                                                                             |
+
+`packaging-smoke` on Build Binaries downloads **stamped** names (Windows Setup matcher accepts default or `-run{N}`). Flatpak smoke always uses the unstamped local path **before** rename. Manual Flatpak runs use Actions run title **`Build Flatpak (no release)`**; tag runs use **`Build Flatpak`**.
 
 ### Schema compare vs last official release
 

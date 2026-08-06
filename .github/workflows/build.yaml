@@ -151,6 +151,12 @@ jobs:
           APPLE_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
         run: ${{ matrix.build_script }}
 
+      # Stamp downloadable installer basenames with -run{N} so same-semver test
+      # builds do not overwrite each other after unzip. Runs after dist:* verify
+      # (unstamped names) and before upload (packaging-smoke downloads stamped names).
+      - name: Rename test-build installers with run number
+        run: node scripts/rename-test-build-artifacts.mjs --root release
+
       # Stage under release/ so upload-artifact@v7's least-common-ancestor stays
       # release/ (paths outside release/ nest installers as release/release/*.exe and
       # break packaging-smoke, which downloads to path: release).
@@ -198,7 +204,7 @@ jobs:
         with:
           name: mesh-client-windows-${{ github.sha }}
           path: |
-            # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
+            # Per-arch NSIS installers (test builds: …-run{N}.exe / …-run{N}-arm64.exe)
             release/*.exe
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
