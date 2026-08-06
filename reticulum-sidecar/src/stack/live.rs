@@ -3016,7 +3016,10 @@ impl LiveBridge {
             method,
         );
         for (&field_id, bytes) in fields {
-            msg.set_field(field_id, bytes.clone());
+            // LRGP packs native MessagePack field values (0xFB string / 0xFD map).
+            // `set_field` would wrap those in BIN and break Python/Ratspeak peers.
+            msg.set_msgpack_field(field_id, bytes.clone())
+                .map_err(|e| format!("lxmf set_msgpack_field {field_id:#x}: {e}"))?;
         }
         let signing_key = self
             .identity
