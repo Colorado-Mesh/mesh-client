@@ -24,19 +24,19 @@ Status: `done` | `partial` | `wontfix` | `todo`
 
 ## UI
 
-| Ratspeak UI                         | mesh-client                     | Status  | Notes                                     |
-| ----------------------------------- | ------------------------------- | ------- | ----------------------------------------- |
-| Games tab                           | Left-rail Games (`Gamepad2`)    | done    | Reticulum-only via `hasLrgpGames`         |
-| Session list filters                | GamesPanel filters              | done    |                                           |
-| Unread badge                        | session unread + tab affordance | partial | confirm badge wiring vs Chat              |
-| TTT board                           | `TicTacToeBoard`                | done    |                                           |
-| Chess board                         | `ChessBoard`                    | done    |                                           |
-| Challenge from contacts             | Peers / Chat DM Challenge       | done    |                                           |
-| Draw / resign                       | session actions                 | done    |                                           |
-| Delivery state / resend             | resend IPC + UI                 | partial | match Ratspeak delivery UX                |
-| Notification route `lrgp:<session>` | deep-link                       | todo    | follow MeshClientDeepLinkHost later       |
-| Optimistic rollback UI              | local reject + action_result    | partial | sidecar rollback; polish UI               |
-| Win celebration                     | —                               | wontfix | optional polish; not required for interop |
+| Ratspeak UI                         | mesh-client                      | Status  | Notes                                     |
+| ----------------------------------- | -------------------------------- | ------- | ----------------------------------------- |
+| Games tab                           | Left-rail Games (`Gamepad2`)     | done    | Reticulum-only via `hasLrgpGames`         |
+| Session list filters                | GamesPanel filters               | done    |                                           |
+| Unread badge                        | session unread + Games tab badge | done    | sidebar red pill via `gamesUnread`        |
+| TTT board                           | `TicTacToeBoard`                 | done    |                                           |
+| Chess board                         | `ChessBoard`                     | done    |                                           |
+| Challenge from contacts             | Peers / Chat DM Challenge        | done    |                                           |
+| Draw / resign                       | session actions                  | done    |                                           |
+| Delivery state / resend             | resend IPC + UI                  | partial | match Ratspeak delivery UX                |
+| Notification route `lrgp:<session>` | deep-link                        | todo    | follow MeshClientDeepLinkHost later       |
+| Optimistic rollback UI              | local reject + action_result     | partial | sidecar rollback; polish UI               |
+| Win celebration                     | —                                | wontfix | optional polish; not required for interop |
 
 ## Wire interop
 

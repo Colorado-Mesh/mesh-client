@@ -6,10 +6,16 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as chatNotifications from '@/renderer/lib/chatNotifications';
+import { setReticulumGamesTabFocused } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
 import { resetReticulumManualStackStopSuppressForTests } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { useReticulumRuntime } from '@/renderer/runtime/useReticulumRuntime';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+
+vi.mock('@/renderer/lib/chatNotifications', () => ({
+  playMessageNotification: vi.fn(),
+}));
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
   fetchRecentInboundLxmf: vi.fn().mockResolvedValue([]),
@@ -53,6 +59,9 @@ describe('useReticulumRuntime games event routing', () => {
   beforeEach(() => {
     resetReticulumManualStackStopSuppressForTests();
     useReticulumGamesStore.getState().clear();
+    setReticulumGamesTabFocused(false);
+    localStorage.removeItem('mesh-client:notifMuted');
+    vi.mocked(chatNotifications.playMessageNotification).mockClear();
     eventHandler = null;
     vi.mocked(window.electronAPI.reticulum.onEvent).mockImplementation((cb) => {
       eventHandler = cb;
@@ -140,6 +149,25 @@ describe('useReticulumRuntime games event routing', () => {
     expect(state.actionBusy).toBe(false);
     expect(state.lastActionResult?.ok).toBe(false);
     expect(state.lastActionResult?.error).toBe('not_your_turn');
+
+    unmount();
+  });
+
+  it('plays a notification for inbound pending challenges', async () => {
+    const { onEvent, unmount } = await connectAndGetHandler();
+
+    act(() => {
+      onEvent({
+        type: 'games.update',
+        payload: {
+          app_id: 'ttt',
+          session_id: 's1',
+          direction: 'inbound',
+          session: makeSession({ status: 'pending', initiator: 'a'.repeat(32), identity_id: 'me' }),
+        },
+      });
+    });
+    expect(chatNotifications.playMessageNotification).toHaveBeenCalledWith('dm');
 
     unmount();
   });

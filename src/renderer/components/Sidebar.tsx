@@ -21,6 +21,8 @@ interface SidebarProps {
   rrcUnread?: number;
   /** Pending rncp inbound offers for Remote tab badge; 0 hides badge */
   remotePendingOffers?: number;
+  /** Unread LRGP game session count for Games tab badge; 0 hides badge */
+  gamesUnread?: number;
   /** Set of tab indices that are disabled (greyed out, non-clickable) */
   disabledTabs?: Set<number>;
   collapsed: boolean;
@@ -36,6 +38,7 @@ export default function Sidebar({
   roomsUnread = 0,
   rrcUnread = 0,
   remotePendingOffers = 0,
+  gamesUnread = 0,
   disabledTabs,
   collapsed,
   onToggle,
@@ -68,6 +71,7 @@ export default function Sidebar({
           const showRoomsBadge = slotId === 'Rooms' && roomsUnread > 0;
           const showRrcBadge = slotId === 'RRC' && rrcUnread > 0;
           const showRemoteBadge = slotId === 'Remote' && remotePendingOffers > 0;
+          const showGamesBadge = slotId === 'Games' && gamesUnread > 0;
           const badgeCount = showChatBadge
             ? chatUnread
             : showRoomsBadge
@@ -76,8 +80,11 @@ export default function Sidebar({
                 ? rrcUnread
                 : showRemoteBadge
                   ? remotePendingOffers
-                  : 0;
-          const showBadge = showChatBadge || showRoomsBadge || showRrcBadge || showRemoteBadge;
+                  : showGamesBadge
+                    ? gamesUnread
+                    : 0;
+          const showBadge =
+            showChatBadge || showRoomsBadge || showRrcBadge || showRemoteBadge || showGamesBadge;
           const tabAriaLabel = showBadge
             ? showRemoteBadge
               ? badgeCount > 99

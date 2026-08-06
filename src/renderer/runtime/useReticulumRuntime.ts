@@ -51,6 +51,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
 import {
   advanceReticulumInboundCatchUpWatermark,
   getReticulumInboundLxmfDiagnostics,
@@ -1243,6 +1244,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       if (evt.type === 'games.update' && evt.payload && typeof evt.payload === 'object') {
         useReticulumGamesStore.getState().applyGamesUpdate(evt.payload);
+        maybeNotifyInboundGamesChallenge(evt.payload);
       }
       if (evt.type === 'games.action_result' && evt.payload && typeof evt.payload === 'object') {
         useReticulumGamesStore.getState().applyActionResult(evt.payload);

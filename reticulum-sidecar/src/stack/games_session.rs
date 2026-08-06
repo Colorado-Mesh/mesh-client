@@ -14,7 +14,8 @@ use std::sync::{Arc, Mutex};
 use lrgp::apps::chess::ChessApp;
 use lrgp::apps::tictactoe::TicTacToeApp;
 use lrgp::constants::{
-    CMD_MOVE, ERR_INVALID_MOVE, ERR_NOT_YOUR_TURN, KEY_APP, KEY_COMMAND, KEY_PAYLOAD, KEY_SESSION,
+    CMD_CHALLENGE, CMD_MOVE, ERR_INVALID_MOVE, ERR_NOT_YOUR_TURN, KEY_APP, KEY_COMMAND,
+    KEY_PAYLOAD, KEY_SESSION,
 };
 use lrgp::envelope;
 use lrgp::router::LrgpRouter;
@@ -90,13 +91,96 @@ impl GamesSessionManager {
             }
         };
 
-        Self {
+        let manager = Self {
             router,
             store,
             identity_id,
             event_tx,
             last_envelope: Mutex::new(HashMap::new()),
+        };
+        // SQLite survives stack restart; in-memory LrgpRouter does not. Without
+        // this, Games tab still lists pending sessions but Accept is a no-op.
+        manager.hydrate_all_from_store();
+        manager
+    }
+
+    /// Inject every SQLite session row into the in-memory router (spawn / restart).
+    fn hydrate_all_from_store(&self) {
+        let Some(store) = &self.store else {
+            return;
+        };
+        let sessions = match store.list_sessions(Some(&self.identity_id), None, None) {
+            Ok(rows) => rows,
+            Err(e) => {
+                tracing::warn!(target: "games", "failed to list sessions for hydrate: {e}");
+                return;
+            }
+        };
+        for session in sessions {
+            let app_id = session.app_id.clone();
+            let session_id = session.session_id.clone();
+            if let Err(e) = self.router.rollback_outgoing(
+                &app_id,
+                &session_id,
+                &self.identity_id,
+                Some(session),
+            ) {
+                tracing::warn!(
+                    target: "games",
+                    "failed to hydrate session {session_id} ({app_id}): {e}"
+                );
+            }
         }
+    }
+
+    fn session_in_memory(&self, app_id: &str, session_id: &str) -> bool {
+        self.router
+            .with_app(app_id, |app| {
+                !app.get_session_state(session_id, &self.identity_id)
+                    .is_empty()
+            })
+            .unwrap_or(false)
+    }
+
+    /// Load one session from SQLite into memory when the router has no copy.
+    fn hydrate_session_from_store(&self, app_id: &str, session_id: &str) -> bool {
+        let Some(store) = &self.store else {
+            return false;
+        };
+        let Ok(Some(session)) = store.get_session(session_id, &self.identity_id) else {
+            return false;
+        };
+        let app = if session.app_id.is_empty() {
+            app_id.to_string()
+        } else {
+            session.app_id.clone()
+        };
+        match self
+            .router
+            .rollback_outgoing(&app, session_id, &self.identity_id, Some(session))
+        {
+            Ok(()) => true,
+            Err(e) => {
+                tracing::warn!(
+                    target: "games",
+                    "failed to hydrate session {session_id} ({app}): {e}"
+                );
+                false
+            }
+        }
+    }
+
+    /// Ensure a non-challenge action has an in-memory session (hydrate from SQLite if needed).
+    fn ensure_session_hydrated(&self, app_id: &str, session_id: &str) -> Result<(), String> {
+        if self.session_in_memory(app_id, session_id) {
+            return Ok(());
+        }
+        if self.hydrate_session_from_store(app_id, session_id)
+            && self.session_in_memory(app_id, session_id)
+        {
+            return Ok(());
+        }
+        Err("unknown_session".to_string())
     }
 
     pub fn status(&self) -> JsonValue {
@@ -335,6 +419,12 @@ impl GamesSessionManager {
             Some(id) => id.to_string(),
             None => generate_session_id(),
         };
+
+        // Challenge creates a new in-memory session; every other command needs one.
+        // After stack restart the row may exist only in SQLite until hydrated.
+        if command != CMD_CHALLENGE {
+            self.ensure_session_hydrated(app_id, &session_id)?;
+        }
 
         let payload = json_payload_to_rmpv_map(payload_json);
 
@@ -680,13 +770,21 @@ fn json_payload_to_rmpv_map(value: Option<&JsonValue>) -> HashMap<String, rmpv::
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lrgp::constants::CMD_CHALLENGE;
+    use lrgp::constants::{CMD_ACCEPT, CMD_CHALLENGE};
 
     fn test_manager() -> (tempfile::TempDir, GamesSessionManager) {
         let dir = tempfile::tempdir().expect("tempdir");
         let (event_tx, _rx) = broadcast::channel(16);
         let manager = GamesSessionManager::spawn(dir.path(), "selfidentityhash".into(), event_tx);
         (dir, manager)
+    }
+
+    fn inbound_challenge_fields(session_id: &str) -> BTreeMap<u8, Vec<u8>> {
+        let env = envelope::pack_envelope("ttt", 1, CMD_CHALLENGE, session_id, None, None);
+        transport::pack_into_fields(&env)
+            .expect("pack challenge")
+            .into_iter()
+            .collect()
     }
 
     #[test]
@@ -712,13 +810,50 @@ mod tests {
     }
 
     #[test]
-    fn local_reject_maps_invalid_move_on_empty_payload() {
+    fn prepare_action_unknown_session_without_store_row() {
         let (_dir, manager) = test_manager();
         let dest = "a".repeat(32);
         let err = manager
             .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
+            .expect_err("expected unknown session");
+        assert_eq!(err, "unknown_session");
+    }
+
+    #[test]
+    fn local_reject_maps_invalid_move_on_empty_payload() {
+        let (_dir, manager) = test_manager();
+        let dest = "a".repeat(32);
+        assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields("sess1"), &dest, ""));
+        let err = manager
+            .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
             .expect_err("expected local reject");
         assert_eq!(err, ERR_INVALID_MOVE);
+    }
+
+    #[test]
+    fn accept_after_store_rehydrate_activates_pending_session() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let identity = "selfidentityhash";
+        let peer = "c".repeat(32);
+        let session_id = "sess-rehydrate";
+        let (event_tx, _rx) = broadcast::channel(16);
+
+        {
+            let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx.clone());
+            assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields(session_id), &peer, ""));
+            let listed = manager.list_sessions(None);
+            assert_eq!(listed["sessions"][0]["status"], "pending");
+        }
+
+        // Fresh manager: empty LrgpRouter memory, same SQLite file — spawn hydrates.
+        let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx);
+        let action = manager
+            .prepare_action(&peer, "ttt", CMD_ACCEPT, Some(session_id), None)
+            .expect("accept should work after SQLite hydrate");
+        manager.commit_action(&action);
+
+        let detail = manager.session_detail(session_id);
+        assert_eq!(detail["session"]["status"], "active");
     }
 
     #[test]

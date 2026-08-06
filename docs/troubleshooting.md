@@ -238,7 +238,8 @@ See [reticulum.md](reticulum.md#chat-lxmf) and [sidecar IPC](reticulum-sidecar-i
 - **Stack not running / games disabled:** Games need a live `rns-stack` sidecar with sibling `lrgp-rs`. Check Connection → Start stack and `GET` status via Games tab (or logs for `games requires live rns-stack`).
 - **`unsupported_app`:** Peer lacks that LRGP app (mesh-client and Ratspeak ship Tic-Tac-Toe + Chess). Challenge with `ttt` or `chess`.
 - **`not_your_turn` / `invalid_move`:** Local validation rejected the move before send; wait for opponent or pick a legal cell/UCI move.
-- **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list.
+- **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list (sidebar Games badge + DM-style ping on inbound challenge).
+- **Accept does nothing / session stays Pending:** After a stack restart the Games tab can still list SQLite sessions; the sidecar now rehydrates those into memory on spawn. If Accept still fails, check the action error toast (`unknown_session` / `no_propagation_node`) and that the stack is running.
 - **IPC blocked on proxy:** Renderer must use `electronAPI.reticulum.games.*` (`reticulum:games*`); generic `proxyGet`/`proxyPost` to `/api/v1/games/*` is rejected by design.
 - **Interop with Ratspeak:** Same LRGP v1 wire (`lrgp.v1` + `0xFB`/`0xFD`). See [reticulum-games-parity.md](reticulum-games-parity.md).
 

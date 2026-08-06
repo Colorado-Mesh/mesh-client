@@ -230,6 +230,10 @@ import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { reticulumHashToNodeId } from './lib/reticulum/destHash';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
+import {
+  setReticulumGamesTabFocused,
+  totalGamesUnread,
+} from './lib/reticulum/reticulumGamesNotifications';
 import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
@@ -267,6 +271,7 @@ import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
+import { useReticulumGamesStore } from './stores/reticulumGamesStore';
 import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
@@ -1333,6 +1338,8 @@ function AppContent() {
     return useRrcSessionStore.getState().totalUnread();
   }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
   const remotePendingOffers = useRncpTransferStore((s) => s.pendingOffers.size);
+  const gamesSessions = useReticulumGamesStore((s) => s.sessions);
+  const gamesUnread = useMemo(() => totalGamesUnread(gamesSessions), [gamesSessions]);
   const rrcMessageFlat = useMemo(() => {
     const out: RrcChatMessage[] = [];
     for (const list of rrcMessages.values()) out.push(...list);
@@ -1978,6 +1985,17 @@ function AppContent() {
       setGamesTabVisited(true);
     }
   }, [activePanelIndex]);
+
+  useEffect(() => {
+    setReticulumGamesTabFocused(
+      protocol === 'reticulum' &&
+        capabilities.hasLrgpGames &&
+        activePanelIndex === GAMES_PANEL_INDEX,
+    );
+    return () => {
+      setReticulumGamesTabFocused(false);
+    };
+  }, [protocol, capabilities.hasLrgpGames, activePanelIndex]);
 
   useEffect(() => {
     if (activePanelIndex === RRC_PANEL_INDEX) {
@@ -2914,6 +2932,7 @@ function AppContent() {
                   ? remotePendingOffers
                   : 0
               }
+              gamesUnread={protocol === 'reticulum' && capabilities.hasLrgpGames ? gamesUnread : 0}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
