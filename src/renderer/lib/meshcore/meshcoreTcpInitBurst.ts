@@ -3,6 +3,7 @@
  * Shared predicates for initConn / getChannels skip paths and reconnect deferral.
  */
 
+import { isMeshcoreTcpTransportDeadError } from '@/renderer/lib/bleConnectErrors';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 export function isMeshcoreTcpBurstDeadBridge(opts: {
@@ -63,6 +64,12 @@ export function isMeshcoreTcpSoftApDeadAccepted(): boolean {
 
 /** SoftAP user TX: wait for getSelfInfo live window before getContacts / peer FIN. */
 export const MESHCORE_TCP_USER_TX_LIVE_TIMEOUT_MS = 20 * MS_PER_SECOND;
+
+/**
+ * SoftAP/OpenHop often FINs a reconnect that starts immediately after the prior session.
+ * Match reconnect attempt-1 backoff so the companion accepts a new TCP live window for chat TX.
+ */
+export const MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS = 2 * MS_PER_SECOND;
 
 interface TcpLiveWaiter {
   resolve: () => void;
@@ -136,14 +143,30 @@ export function trackMeshcoreTcpUserTxSend(sendPromise: Promise<unknown>): void 
  * Ordering vs `ensureTcpLiveForUserTx` / `useSendMessage`:
  * 1. initConn calls `notifyMeshcoreTcpLiveForUserTx()` (resolves waiters),
  * 2. then `yieldToMeshcoreTcpUserTxSends()`.
- * Waiters resume in `useSendMessage` after `ensureTcpLiveForUserTx` and only then call
- * `trackMeshcoreTcpUserTxSend`. Two microtask hops let those continuations register before
- * we snapshot `inFlightUserTxSends` — do not remove the hops without reworking registration
- * to happen before the waiter resolves.
+ * Waiters resume in `ensureTcpLiveForUserTx`, which returns into a nested `useSendMessage`
+ * async IIFE that only then calls `trackMeshcoreTcpUserTxSend`. That is **three** microtask
+ * hops (notify → ensureTcpLive → useSendMessage), not two — SoftAP reopen used to snapshot
+ * an empty send list and start getContacts before track registered.
  */
-export async function yieldToMeshcoreTcpUserTxSends(): Promise<void> {
+export async function yieldToMeshcoreTcpUserTxSends(opts?: {
+  /** SoftAP user-TX reopen: wait briefly for a late-tracked send after the microtask hops. */
+  waitForFirstSendMs?: number;
+}): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
+  await Promise.resolve();
+  const waitMs = opts?.waitForFirstSendMs ?? 0;
+  if (waitMs > 0 && inFlightUserTxSends.length === 0) {
+    const deadline = Date.now() + waitMs;
+    while (Date.now() < deadline) {
+      // length mutates via trackMeshcoreTcpUserTxSend while we poll.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- module-level array
+      if (inFlightUserTxSends.length > 0) break;
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    }
+  }
   const pending = inFlightUserTxSends.slice();
   if (pending.length > 0) {
     await Promise.allSettled(pending);
@@ -160,4 +183,102 @@ export function setMeshcoreTcpWriteDeadListener(
 /** Called from IpcTcpConnection when meshcore:tcp-write fails (no active socket / peer FIN). */
 export function notifyMeshcoreTcpWriteDead(): void {
   meshcoreTcpWriteDeadListener?.();
+}
+
+/**
+ * SoftAP user TX: ensure live TCP, run op, retry once on dead-bridge write errors.
+ * Non-transport failures are not retried.
+ */
+export async function runWithMeshcoreTcpDeadWriteRetry<T>(
+  ensureLive: () => Promise<void>,
+  op: () => Promise<T>,
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await ensureLive();
+    try {
+      return await op();
+    } catch (e: unknown) {
+      lastErr = e;
+      if (!isMeshcoreTcpTransportDeadError(e)) throw e;
+    }
+  }
+  throw lastErr;
+}
+
+interface SoftApPendingUserTx {
+  run: () => Promise<void>;
+  reject: (reason?: unknown) => void;
+}
+
+let softApPendingUserTx: SoftApPendingUserTx | null = null;
+
+/**
+ * Park a SoftAP user command so SoftAP `initConn` can run it as the first companion RPC
+ * (before getSelfInfo / contacts). Returns a promise that settles when that run completes.
+ */
+export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise<T> {
+  clearMeshcoreSoftApPendingUserTx(new Error('MeshCore SoftAP pending TX superseded'));
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const resultPromise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  // Avoid unhandled rejection if open fails before the waiter attaches.
+  void resultPromise.then(
+    () => undefined,
+    () => undefined,
+  );
+  softApPendingUserTx = {
+    reject,
+    run: async () => {
+      try {
+        const value = await op();
+        resolve(value);
+      } catch (e: unknown) {
+        reject(e);
+        throw e;
+      }
+    },
+  };
+  return resultPromise;
+}
+
+/** SoftAP initConn: run and clear the parked user TX (if any). */
+export async function runMeshcoreSoftApPendingUserTx(): Promise<boolean> {
+  const pending = softApPendingUserTx;
+  softApPendingUserTx = null;
+  if (!pending) return false;
+  await pending.run();
+  return true;
+}
+
+/** Clear a parked SoftAP TX that will never run (open aborted / superseded). */
+export function clearMeshcoreSoftApPendingUserTx(err?: Error): void {
+  const pending = softApPendingUserTx;
+  if (!pending) return;
+  softApPendingUserTx = null;
+  pending.reject(err ?? new Error('MeshCore SoftAP pending TX cleared'));
+}
+
+export function hasMeshcoreSoftApPendingUserTx(): boolean {
+  return softApPendingUserTx != null;
+}
+
+/** Error message matching {@link isMeshcoreTcpTransportDeadError} for SoftAP latch-retry. */
+export const MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP = 'meshcore:tcp-write: no active socket';
+
+/**
+ * SoftAP first-RPC: if the write-dead latch flipped during the parked user op, throw a
+ * transport-dead error so `runMeshcoreUserTxWithLiveTcp` retries once (meshcore.js may have
+ * already resolved Ok while the FIN landed).
+ */
+export function throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(
+  bridgeDeadBefore: boolean,
+  bridgeDeadAfter: boolean,
+): void {
+  if (bridgeDeadAfter && !bridgeDeadBefore) {
+    throw new Error(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP);
+  }
 }

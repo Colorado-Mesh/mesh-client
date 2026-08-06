@@ -6,6 +6,16 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): 
       reject(new Error(`${label} timed out after ${ms}ms`));
     }, ms);
   });
+  // Swallow late rejects from the loser of the race so they cannot surface as
+  // Unhandled rejection (SoftAP: tcp-write fails after timeout already won).
+  void promise.then(
+    () => undefined,
+    () => undefined,
+  );
+  void timeoutPromise.then(
+    () => undefined,
+    () => undefined,
+  );
   return Promise.race([
     promise.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId);

@@ -29,9 +29,14 @@ export interface MeshcoreSessionApi {
   getDestinationPubKey?: (nodeId: number) => Uint8Array | undefined;
   /**
    * SoftAP/OpenHop: when the TCP bridge was accepted dead after contacts FIN, reopen a live
-   * socket (reconnect) and resolve once getSelfInfo completes — before getContacts / peer FIN.
+   * socket and resolve once the SoftAP user TX live window is ready (first-RPC path).
    */
   ensureTcpLiveForUserTx?: () => Promise<void>;
+  /**
+   * SoftAP/dead-bridge user TX helper: SoftAP parks the op as the first companion RPC on
+   * quiet reopen; mid-session dead bridge reconnects then runs the op.
+   */
+  runMeshcoreUserTxWithLiveTcp?: <T>(op: () => Promise<T>) => Promise<T>;
 }
 
 let activeSession: MeshcoreSessionApi | null = null;

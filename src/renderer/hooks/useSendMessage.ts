@@ -148,8 +148,11 @@ export function useSendMessage(
       }
 
       if (!handle) {
-        console.warn('[useSendMessage] no handle for', identityId);
-        return;
+        // SoftAP dead bridge may still send via quiet reopen (handle recreated on open).
+        if (!(identity.protocol.type === 'meshcore' && isMeshcoreTcpSoftApDeadAccepted())) {
+          console.warn('[useSendMessage] no handle for', identityId);
+          return;
+        }
       }
 
       const isMeshtastic = identity.protocol.type === 'meshtastic';
@@ -203,6 +206,67 @@ export function useSendMessage(
       }
 
       const wireText = resolvedOutbound.wireText;
+
+      if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
+        void (async () => {
+          try {
+            const runTx = tryGetMeshcoreSession()?.runMeshcoreUserTxWithLiveTcp;
+            if (!runTx) {
+              await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
+              const liveHandle = connectionDriver.getHandle(identityId);
+              if (!liveHandle) {
+                throw new Error('MeshCore TCP live reopen produced no handle');
+              }
+              const sendPromise = identity.protocol.sendMessage(liveHandle, {
+                text: wireText,
+                channelIndex,
+                destination,
+                destinationPubKey,
+                replyTo,
+              });
+              trackMeshcoreTcpUserTxSend(sendPromise);
+              await sendPromise;
+              updateMessageStatus(identityId, provisionalId, 'acked');
+              persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'acked');
+              return;
+            }
+            await runTx(async () => {
+              const liveHandle = connectionDriver.getHandle(identityId);
+              if (!liveHandle) {
+                throw new Error('MeshCore TCP live reopen produced no handle');
+              }
+              const sendPromise = identity.protocol.sendMessage(liveHandle, {
+                text: wireText,
+                channelIndex,
+                destination,
+                destinationPubKey,
+                replyTo,
+              });
+              await sendPromise;
+            });
+            // Only after SoftAP retry loop resolves — not inside the parked op (latch-retry
+            // may re-run the send; premature acked would stick if attempt 2 failed).
+            updateMessageStatus(identityId, provisionalId, 'acked');
+            persistMeshcoreOutboundRow(
+              { ...record, status: 'acked' },
+              myNodeNum,
+              meshcoreSenderName,
+              'acked',
+            );
+          } catch (e: unknown) {
+            const errMsg = errLikeToLogString(e);
+            console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);
+            updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
+            persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+          }
+        })();
+        return;
+      }
+
+      if (!handle) {
+        console.warn('[useSendMessage] no handle for', identityId);
+        return;
+      }
 
       const finishSend = (
         sendHandle: NonNullable<typeof handle>,
@@ -279,25 +343,6 @@ export function useSendMessage(
           },
         );
       };
-
-      if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
-        void (async () => {
-          try {
-            await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
-            const liveHandle = connectionDriver.getHandle(identityId);
-            if (!liveHandle) {
-              throw new Error('MeshCore TCP live reopen produced no handle');
-            }
-            finishSend(liveHandle, { trackForSoftApLiveWindow: true });
-          } catch (e: unknown) {
-            const errMsg = errLikeToLogString(e);
-            console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);
-            updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
-            persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
-          }
-        })();
-        return;
-      }
 
       finishSend(handle);
     },

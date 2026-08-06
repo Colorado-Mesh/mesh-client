@@ -1,14 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { isMeshcoreTcpTransportDeadError } from '../bleConnectErrors';
 import {
+  clearMeshcoreSoftApPendingUserTx,
+  hasMeshcoreSoftApPendingUserTx,
   isMeshcoreTcpBurstDeadBridge,
   isMeshcoreTcpSoftApDeadAccepted,
+  MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP,
   notifyMeshcoreTcpLiveForUserTx,
   notifyMeshcoreTcpWriteDead,
   rejectMeshcoreTcpLiveForUserTx,
+  runMeshcoreSoftApPendingUserTx,
+  runWithMeshcoreTcpDeadWriteRetry,
+  setMeshcoreSoftApPendingUserTx,
   setMeshcoreTcpSoftApDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
+  throwIfMeshcoreTcpBridgeDiedDuringSoftApOp,
   trackMeshcoreTcpUserTxSend,
   waitForMeshcoreTcpLiveForUserTx,
   yieldToMeshcoreTcpUserTxSends,
@@ -150,6 +158,117 @@ describe('SoftAP user-TX live window', () => {
     order.push('after-yield');
     await live;
     expect(order).toEqual(['live', 'sent', 'after-yield']);
+  });
+
+  it('waits for nested ensureTcpLive→send track (SoftAP chat reopen race)', async () => {
+    const order: string[] = [];
+    // Mirrors useSendMessage: await ensureTcpLive (wait), then another async hop, then track.
+    const ensureTcpLive = waitForMeshcoreTcpLiveForUserTx(5_000);
+    const sendPath = (async () => {
+      await ensureTcpLive;
+      order.push('live');
+      await Promise.resolve(); // nested IIFE hop
+      order.push('track');
+      const send = Promise.resolve().then(() => {
+        order.push('sent');
+      });
+      trackMeshcoreTcpUserTxSend(send);
+    })();
+    await Promise.resolve();
+    notifyMeshcoreTcpLiveForUserTx();
+    await yieldToMeshcoreTcpUserTxSends({ waitForFirstSendMs: 50 });
+    order.push('after-yield');
+    await sendPath;
+    expect(order).toEqual(['live', 'track', 'sent', 'after-yield']);
+  });
+});
+
+describe('runWithMeshcoreTcpDeadWriteRetry', () => {
+  it('retries once on meshcore tcp-write dead errors', async () => {
+    const ensureLive = vi.fn(() => Promise.resolve());
+    let attempts = 0;
+    const result = await runWithMeshcoreTcpDeadWriteRetry(ensureLive, () => {
+      attempts += 1;
+      if (attempts === 1) {
+        return Promise.reject(new Error('meshcore:tcp-write: no active socket'));
+      }
+      return Promise.resolve('ok');
+    });
+    expect(result).toBe('ok');
+    expect(ensureLive).toHaveBeenCalledTimes(2);
+    expect(attempts).toBe(2);
+  });
+
+  it('does not retry non-transport errors', async () => {
+    const ensureLive = vi.fn(() => Promise.resolve());
+    await expect(
+      runWithMeshcoreTcpDeadWriteRetry(ensureLive, () =>
+        Promise.reject(new Error('channel name too long')),
+      ),
+    ).rejects.toThrow('channel name too long');
+    expect(ensureLive).toHaveBeenCalledTimes(1);
+  });
+
+  it('caps attempts at 2 and rethrows the last dead-write error', async () => {
+    const ensureLive = vi.fn(() => Promise.resolve());
+    await expect(
+      runWithMeshcoreTcpDeadWriteRetry(ensureLive, () =>
+        Promise.reject(new Error("Error invoking remote method 'meshcore:tcp-write'")),
+      ),
+    ).rejects.toThrow(/meshcore:tcp-write/);
+    expect(ensureLive).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('SoftAP pending user TX slot', () => {
+  afterEach(() => {
+    clearMeshcoreSoftApPendingUserTx();
+  });
+
+  it('runs parked op as first SoftAP RPC and settles the result promise', async () => {
+    const order: string[] = [];
+    const resultPromise = setMeshcoreSoftApPendingUserTx(() => {
+      order.push('op');
+      return Promise.resolve(42);
+    });
+    expect(hasMeshcoreSoftApPendingUserTx()).toBe(true);
+    const ran = await runMeshcoreSoftApPendingUserTx();
+    expect(ran).toBe(true);
+    await expect(resultPromise).resolves.toBe(42);
+    expect(order).toEqual(['op']);
+    expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
+  });
+
+  it('clear rejects a parked TX that never ran', async () => {
+    const resultPromise = setMeshcoreSoftApPendingUserTx(() => Promise.resolve('never'));
+    clearMeshcoreSoftApPendingUserTx(new Error('aborted'));
+    await expect(resultPromise).rejects.toThrow('aborted');
+    expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
+  });
+});
+
+describe('throwIfMeshcoreTcpBridgeDiedDuringSoftApOp', () => {
+  it('throws a transport-dead error when the latch flips during the parked op', () => {
+    expect(() => {
+      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(false, true);
+    }).toThrow(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP);
+    try {
+      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(false, true);
+    } catch (e: unknown) {
+      expect(isMeshcoreTcpTransportDeadError(e)).toBe(true);
+    }
+  });
+
+  it('is a no-op when the latch was already dead or stayed live', () => {
+    expect(() => {
+      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(true, true);
+    }).not.toThrow();
+    expect(() => {
+      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(false, false);
+    }).not.toThrow();
+    expect(() => {
+      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(true, false);
+    }).not.toThrow();
   });
 });
 

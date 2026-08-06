@@ -155,7 +155,11 @@ export class ConnectionDriver {
     this.registerTransportKeys(identityId, provisionalKey, resolvedKey);
   }
 
-  async connect(protocolType: string, params: TransportParams): Promise<IdentityId> {
+  async connect(
+    protocolType: string,
+    params: TransportParams,
+    opts?: { skipDiscoverSelf?: boolean },
+  ): Promise<IdentityId> {
     const protocol = getProtocolForType(protocolType);
     if (!protocol) throw new Error(`Unknown protocol: ${protocolType}`);
 
@@ -195,7 +199,8 @@ export class ConnectionDriver {
       }
 
       let info: DiscoveryInfo | undefined;
-      if (protocol.discoverSelf) {
+      // SoftAP user-TX reopen: skip getSelfInfo so the parked user command is the first RPC.
+      if (protocol.discoverSelf && !opts?.skipDiscoverSelf) {
         try {
           info = await protocol.discoverSelf(handle);
         } catch (err) {

@@ -19,6 +19,8 @@ export async function openMeshCoreTransport(
     blePeripheralId?: string;
     host?: string;
     portSignature?: string | null;
+    /** SoftAP user-TX reopen: skip ConnectionDriver discoverSelf so user RPC is first. */
+    skipDiscoverSelf?: boolean;
   },
 ): Promise<OpenMeshCoreTransportResult> {
   const params = meshcoreTransportParams(type, {
@@ -26,7 +28,9 @@ export async function openMeshCoreTransport(
     host: opts.host,
     portSignature: opts.portSignature ?? undefined,
   });
-  const identityId = await connectionDriver.connect('meshcore', params);
+  const identityId = await connectionDriver.connect('meshcore', params, {
+    skipDiscoverSelf: opts.skipDiscoverSelf === true,
+  });
   const conn = connectionDriver.getHandle(identityId);
   if (!conn) {
     await connectionDriver.disconnect(identityId).catch((e: unknown) => {

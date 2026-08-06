@@ -2511,7 +2511,8 @@ function AppContent() {
     const sendScheduledAdvert = () => {
       // SoftAP/OpenHop: configured session may have a dead TCP bridge after contacts FIN.
       // Flood advert would tcp-write-fail and thrash reconnect.
-      if (isMeshcoreTcpSoftApDeadAccepted()) {
+      const softAp = isMeshcoreTcpSoftApDeadAccepted();
+      if (softAp) {
         console.debug('[App] auto flood advert skipped (SoftAP dead bridge)');
         return;
       }
