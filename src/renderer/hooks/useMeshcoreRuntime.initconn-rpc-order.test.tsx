@@ -324,7 +324,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  it('tcp: stays connected (not configured) until after getChannels so room auto-login cannot overlap contact dump', async () => {
+  it('tcp: latches session after self-info; UI configured after contacts dump; channels follow contacts', async () => {
     const callOrder: string[] = [];
     const gates = installSequentialInitGates(callOrder);
 
@@ -342,18 +342,17 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     gates.selfInfoGate.resolve(undefined);
     await waitFor(() => {
       expect(callOrder).toContain('getSelfInfo:end');
+      expect(result.current.state.status).toBe('connected');
       expect(callOrder).toContain('getContacts:start');
     });
-    // After selfInfo, TCP must not look fully configured yet (room auto-login gates on configured).
-    expect(result.current.state.status).toBe('connected');
     expect(callOrder).not.toContain('getChannels:start');
 
     gates.contactsGate.resolve(undefined);
     await waitFor(() => {
       expect(callOrder).toContain('getContacts:end');
       expect(callOrder).toContain('getChannels:start');
+      expect(result.current.state.status).toBe('configured');
     });
-    expect(result.current.state.status).toBe('connected');
 
     gates.channelsGate.resolve(undefined);
     await waitFor(() => {
@@ -371,7 +370,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  it('tcp: peer disconnect after getContacts completes configured from captured burst', async () => {
+  it('tcp: peer disconnect after getContacts keeps configured from post-configure dump', async () => {
     const callOrder: string[] = [];
     const gates = installSequentialInitGates(callOrder);
     const discCallbacks: (() => void)[] = [];
@@ -401,6 +400,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     await waitFor(() => {
       expect(callOrder).toContain('getContacts:end');
     });
+    expect(result.current.state.status).toBe('configured');
     await act(async () => {
       for (const cb of discCallbacks) cb();
       await Promise.resolve();
@@ -461,7 +461,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  it('tcp: peer FIN before getContacts completes aborts init without getChannels', async () => {
+  it('tcp: peer FIN during getContacts keeps configured (post-configure dump)', async () => {
     const callOrder: string[] = [];
     const gates = installSequentialInitGates(callOrder);
     const discCallbacks: (() => void)[] = [];
@@ -482,6 +482,9 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     });
     gates.selfInfoGate.resolve(undefined);
     await waitFor(() => {
+      expect(result.current.state.status).toBe('connected');
+    });
+    await waitFor(() => {
       expect(callOrder).toContain('getContacts:start');
     });
     expect(callOrder).not.toContain('getContacts:end');
@@ -490,15 +493,15 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
       for (const cb of discCallbacks) cb();
       await Promise.resolve();
     });
-    // Unblock getContacts so initConn can observe the dead bridge and abort.
+    // Unblock getContacts so soft-fail / empty-contacts path can finish.
     gates.contactsGate.resolve(undefined);
 
     await act(async () => {
-      await expect(connectPromise).rejects.toBeTruthy();
+      await connectPromise;
     });
 
     expect(callOrder).not.toContain('getChannels:start');
-    expect(result.current.state.status).not.toBe('configured');
+    expect(result.current.state.status).toBe('configured');
     unmount();
   });
 

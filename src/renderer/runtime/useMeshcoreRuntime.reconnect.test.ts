@@ -50,7 +50,9 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain(
       'initConn TCP burst-complete with dead bridge — skip post-connect RPCs',
     );
-    expect(RUNTIME_SOURCE).toMatch(/meshcoreEverConfiguredRef\.current = true;\s*\n\s*\},/);
+    expect(RUNTIME_SOURCE).toMatch(
+      /meshcoreEverConfiguredRef\.current = true;\s*\n\s*\} finally \{\s*\n\s*meshcoreInitConnInFlightRef\.current = false;/,
+    );
   });
 
   it('prepareRfConnect preserves reconnect state when requested', () => {
@@ -494,20 +496,19 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(lostBody.slice(asyncIdx)).not.toContain('meshcoreSetupGenerationRef.current += 1');
   });
 
-  it('hard-aborts TCP initConn on dead socket before configured / post-connect', () => {
+  it('latches session before contacts dump and soft-fails without clobbering hydration', () => {
+    expect(RUNTIME_SOURCE).toContain('configureBeforeContactsDump');
+    expect(RUNTIME_SOURCE).toContain('promoteConfiguredAfterContactsDump');
+    expect(RUNTIME_SOURCE).toContain('meshcoreTcpContactsDumpInFlightRef');
     expect(RUNTIME_SOURCE).toContain('assertInitConnStillLive');
     expect(RUNTIME_SOURCE).toContain('rethrowMeshcoreSetupAbortFromTcpDead');
     expect(RUNTIME_SOURCE).toContain('isMeshcoreTcpTransportDeadError');
-    const deferConfiguredIdx = RUNTIME_SOURCE.search(
-      /if\s*\(\s*deferConfiguredUntilRadioInit\s*\)\s*\{\s*setState\s*\(\s*\(prev\)\s*=>\s*\(\s*\{\s*\.\.\.prev\s*,\s*status:\s*'configured'/,
+    expect(RUNTIME_SOURCE).toContain('getContacts failed after configured — keeping session');
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP closed during post-configure contacts dump — keep configured',
     );
-    expect(deferConfiguredIdx).toBeGreaterThan(-1);
-    const assertBeforeConfigured = RUNTIME_SOURCE.lastIndexOf(
-      'assertInitConnStillLive()',
-      deferConfiguredIdx,
-    );
-    expect(assertBeforeConfigured).toBeGreaterThan(-1);
-    expect(assertBeforeConfigured).toBeLessThan(deferConfiguredIdx);
+    expect(RUNTIME_SOURCE).toContain('contactsDumpOk');
+    expect(RUNTIME_SOURCE).toContain('contacts dump soft-failed — preserving dbCache hydration');
   });
 
   it('coalesces reconnect attempt schedules via scheduleOwner', () => {
