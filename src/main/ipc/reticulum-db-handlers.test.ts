@@ -334,6 +334,38 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(rows).toEqual([{ message_hash: 'ab'.repeat(32), delivery_status: 'sending' }]);
   });
 
+  it('saveReticulumMessage ignores invalid replaces_message_hash (no accidental DELETE)', () => {
+    const identityId = 'id-rt-bad-replaces';
+    const senderId = 'ee'.repeat(16);
+    const payload = 'keep me';
+    const ts = 1_700_000_200_000;
+    const victimHash = 'reticulum-pending-victim';
+    const save = handlers.get('db:saveReticulumMessage');
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload,
+      timestamp: ts,
+      message_hash: victimHash,
+      delivery_status: 'sending',
+    });
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: senderId,
+      sender_name: 'Me',
+      payload: 'new',
+      timestamp: ts + 1,
+      message_hash: 'ff'.repeat(32),
+      replaces_message_hash: '../etc/passwd',
+      delivery_status: 'sending',
+    });
+    const rows = db!
+      .prepareOnce('SELECT message_hash FROM reticulum_messages WHERE identity_id = ? ORDER BY id')
+      .all(identityId) as { message_hash: string }[];
+    expect(rows.map((r) => r.message_hash)).toEqual([victimHash, 'ff'.repeat(32)]);
+  });
+
   it('saveReticulumMessage replaces only the named pending when two identical payloads exist', () => {
     const identityId = 'id-rt-twin-payload';
     const senderId = 'dd'.repeat(16);

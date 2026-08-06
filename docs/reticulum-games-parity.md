@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns on new Ratspeak releases with stub-kind `games-parity`.
 
-**Last review:** 2026-08-05 (delivery_state / envelope persist / optimistic board / Chess promotion+claims).
+**Last review:** 2026-08-06 (delivery_state / envelope persist / optimistic board / Chess promotion+claims).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 

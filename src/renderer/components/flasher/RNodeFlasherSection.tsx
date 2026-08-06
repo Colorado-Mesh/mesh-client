@@ -92,6 +92,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const [wifiConfigSummary, setWifiConfigSummary] = useState<string | null>(null);
   const [displayImage, setDisplayImage] = useState<string | null>(null);
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
+  const [showClearBondsConfirm, setShowClearBondsConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
@@ -567,6 +568,9 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
               }
             });
           }}
+          onClearPairedDevices={() => {
+            setShowClearBondsConfirm(true);
+          }}
         />
 
         <WifiConfig
@@ -667,6 +671,24 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           }}
           onCancel={() => {
             setShowWipeConfirm(false);
+          }}
+        />
+      ) : null}
+      {showClearBondsConfirm ? (
+        <ConfirmModal
+          title={t('flasher.clearPairedDevicesConfirmTitle')}
+          message={t('flasher.clearPairedDevicesConfirmMessage')}
+          confirmLabel={t('flasher.clearPairedDevicesConfirm')}
+          danger
+          onConfirm={() => {
+            setShowClearBondsConfirm(false);
+            void runWithRNode(async (rnode) => {
+              await rnode.clearBluetoothBonds();
+              showStatus(t('flasher.clearPairedDevicesSuccess'));
+            });
+          }}
+          onCancel={() => {
+            setShowClearBondsConfirm(false);
           }}
         />
       ) : null}

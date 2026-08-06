@@ -435,6 +435,20 @@ export const FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS =
 export const FLASHER_PROVISION_PHYSICAL_WIPE_FALSE_FRIENDS =
   /\b(wischen|veeg|протри|протер|拭|닦|擦拭)\b/i;
 
+/** flasher.clearPairedDevices* — Bluetooth bond table, not financial bonds/securities. */
+export const FLASHER_CLEAR_PAIRED_DEVICES_KEYS = new Set([
+  'flasher.clearPairedDevicesConfirm',
+  'flasher.clearPairedDevicesConfirmMessage',
+  'flasher.clearPairedDevicesSuccess',
+]);
+
+/** MT often maps Bluetooth "bond" → financial bond/obligation/securities. */
+export const FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS =
+  /(?:\b(?:Bonos|obligaciones|obligaties|Obligationen|tahvil|obligacje|cautionnement|títulos de rádio|radiobonos)\b)|(?:облигаци|債券|债券)/i;
+
+/** Must preserve the USB unpair command token verbatim. */
+export const FLASHER_CMD_BT_UNPAIR_TOKEN = 'CMD_BT_UNPAIR';
+
 /** flasher.errors.rnodeCommandTimeout — MT garbles "close apps using the serial port". */
 export const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
   ['de', /über den port/i],
@@ -2883,6 +2897,23 @@ function checkFlasherIssues(ctx) {
     if (FLASHER_PROVISION_PHYSICAL_WIPE_FALSE_FRIENDS.test(val)) {
       issues.push(
         'flasher provision errors must use EEPROM erase/clear wording (not physical wipe verbs)',
+      );
+    }
+  }
+
+  if (locale !== 'en' && FLASHER_CLEAR_PAIRED_DEVICES_KEYS.has(flatKey)) {
+    if (FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS.test(val)) {
+      issues.push(
+        'flasher clearPairedDevices must use Bluetooth bond/pairing wording, not financial bonds',
+      );
+    }
+    if (
+      flatKey === 'flasher.clearPairedDevicesConfirmMessage' &&
+      enVal.includes(FLASHER_CMD_BT_UNPAIR_TOKEN) &&
+      !val.includes(FLASHER_CMD_BT_UNPAIR_TOKEN)
+    ) {
+      issues.push(
+        `flasher.clearPairedDevicesConfirmMessage must preserve wire token ${FLASHER_CMD_BT_UNPAIR_TOKEN}`,
       );
     }
   }

@@ -8,6 +8,7 @@ export interface BluetoothConfigProps {
   onEnable: () => void;
   onDisable: () => void;
   onStartPairing: () => void;
+  onClearPairedDevices?: () => void;
 }
 
 export function BluetoothConfig({
@@ -17,6 +18,7 @@ export function BluetoothConfig({
   onEnable,
   onDisable,
   onStartPairing,
+  onClearPairedDevices,
 }: BluetoothConfigProps) {
   const { t } = useTranslation();
   const pinLabel = pairingPin !== null ? String(pairingPin).padStart(6, '0') : null;
@@ -53,6 +55,17 @@ export function BluetoothConfig({
         >
           {t('flasher.startPairing')}
         </button>
+        {onClearPairedDevices ? (
+          <button
+            type="button"
+            disabled={disabled || pairingPending}
+            aria-label={t('flasher.clearPairedDevices')}
+            onClick={onClearPairedDevices}
+            className="rounded border border-amber-700/60 px-2 py-1 text-xs text-amber-100 hover:bg-amber-950/40 disabled:opacity-40"
+          >
+            {t('flasher.clearPairedDevices')}
+          </button>
+        ) : null}
       </div>
       {pairingPending && pairingPin === null ? (
         <output className="block text-xs text-amber-200/90">{t('flasher.pairingWaiting')}</output>

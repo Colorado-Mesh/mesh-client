@@ -1188,7 +1188,8 @@
       "addDefaultHubsFailed": "Varsayılan omurgalar eklenemedi.",
       "backboneEnableGuidanceLead": "En fazla 1 ila 3 omurga ağ geçidini etkinleştirin",
       "backboneEnableGuidanceBody": "—2 gereksiz bant genişliği şişmesi olmadan fazlalık için en uygun noktadır. 1 küresel merkez ve 1 bölgesel ağ geçidini hedefleyin ve kesinlikle gerektiğinde özel arayüzleri (I2P veya Yggdrasil gibi) etkinleştirin. Yerel olarak bağlı RNode'lar ve yerel lan arayüzleri bu omurga sınırına dahil edilmez.",
-      "defaultHubsPickerHint": "Birincil ve küresel omurga ile bölgenizden başlayın. En fazla 1–3 omurga ağ geçidi etkinleştirin (2 idealdir). Yerel RNode ve LAN arayüzleri sayılmaz. Yeni girdiler inceleme için kapalı eklenir. Sync ayrıca kalan kullanım dışı resmi testnet hub’larını da kapatır (Amsterdam)."
+      "defaultHubsPickerHint": "Birincil ve küresel omurga ile bölgenizden başlayın. En fazla 1–3 omurga ağ geçidi etkinleştirin (2 idealdir). Yerel RNode ve LAN arayüzleri sayılmaz. Yeni girdiler inceleme için kapalı eklenir. Sync ayrıca kalan kullanım dışı resmi testnet hub’larını da kapatır (Amsterdam).",
+      "rnodeTransportBleHint": "BLE bağları macOS ile senkronize olmayabilir (Forget + re-pair). Radyo yakındayken USB seri veya Wi-Fi (tcp://) tercih edin."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1289,9 +1290,14 @@
       "slowTransportQueryHint": "Sepet taşıma aktörü sıkışmış olabilir — Reticulum yığınını yeniden başlatın.",
       "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın.",
       "bleBondRemoved": "{{name}}: Bluetooth bağlantısı eski (İşletim sistemi hâlâ Eşlendi gösteriyor)",
-      "bleBondRemovedHint": "Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, radyoda eşleştirmeyi başlatın (Yönetici → Bluetooth veya ~7 saniye düğmeyi basılı tutun), yığını yeniden başlatın ve yeni 6 haneli PIN'i girin.",
+      "bleBondRemovedHint": "Önce Sistem Ayarları → Bluetooth’ta bu RNode’u unutun (macOS Paired’i otomatik silmez). Mümkünse BLE bağlarından kaçınmak için USB seri veya Wi‑Fi (tcp://) tercih edin. Sonra: Admin → Bluetooth → Eşleşmiş cihazları temizle (USB, ESP32) varsa, Eşleştirmeyi başlat, bu BLE arayüzünü kaldırıp yeniden ekleyin (Cihaz seç), yığını yeniden başlatın ve yeni 6 haneli PIN’i girin.",
       "blePairingTimedOut": "{{name}}: Bluetooth şifre değişimi zaman aşımına uğradı",
-      "blePairingTimedOutHint": "Yığını durdurun, eşleştirmeyi yeniden başlatın (Yönetici → Bluetooth panelde PIN'i gösterir - radyo ekranı boş kalabilir - veya ekrandaki PIN için ~7 saniye basılı tutun), yığını bir kez yeniden başlatın ve bu PIN'i ~60 saniye içinde işletim sistemi iletişim kutusuna girin. Asla 123456 kullanmayın (Meshtastic varsayılanı)."
+      "blePairingTimedOutHint": "Yığını durdurun, eşleştirmeyi yeniden başlatın (Yönetici → Bluetooth panelde PIN'i gösterir - radyo ekranı boş kalabilir - veya ekrandaki PIN için ~7 saniye basılı tutun), yığını bir kez yeniden başlatın ve bu PIN'i ~60 saniye içinde işletim sistemi iletişim kutusuna girin. Asla 123456 kullanmayın (Meshtastic varsayılanı).",
+      "bleBondRemovedStopStack": "Yığını durdur",
+      "bleBondRemovedOpenAdmin": "Yönetici Bluetooth'unu aç",
+      "txQueueDropsHintBle": "Bu BLE RNode TX kuyruğunu boşaltamaz (bağlantı sıkışmış veya flapping). USB seri veya Wi-Fi (tcp://) tercih edin, veya Sistem Ayarları → Bluetooth'ta Forget sonrası yığını durdurup yeniden eşleştirin.",
+      "txQueueDropsHintBleBondStale": "BLE bağı bayat olduğu için TX kuyruğu dolu. Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından Yönetici → Bluetooth'unu (Eşleştirmeyi temizle/Eşleştirmeyi başlat) kullanın veya USB'ye geçin.",
+      "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın)."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1656,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX {{ifaces}} üzerinde başarısız oluyor — bu düzeltilinceye kadar yerel lan keşfi çalışmayabilir.",
         "tcpUnreachable": "TCP merkezi \"{{name}}\" ulaşılamıyor ({{host}}:{{port}})",
         "tcpConnectFailed": "TCP hub \"{{name}}\" bağlantısı reddedildi veya zaman aşımına uğradı",
-        "txQueueDrops": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu)",
+        "txQueueDrops": "\"{{name}}\" arayüzü {{count}} giden paketi düşürdü (TX kuyruğu dolu) — sıkça hâlâ etkin ölü bir TCP hub’ı",
         "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path - request drops)",
         "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Etkin sınır / omurga göbekleri: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX kuyruğu şu tarihte düşer: {{names}} — bu arayüz doymuş olabilir.",
         "tooManyDefaultBackbones": "{{count}} varsayılan omurganız etkin. Ekstraları devre dışı bırakmayı ve fazlalık için yaklaşık 2 tane tutmayı düşünün.",
-        "decommissionedHubEnabled": "Kullanım dışı hub «{{name}}» hâlâ açık — mesh-client her yığın başlangıcında kapatır. Canlı uç noktalar için «Varsayılan omurga bağlantıları ekle» veya omurga dizinini kullanın."
+        "decommissionedHubEnabled": "Kullanım dışı hub «{{name}}» hâlâ açık — mesh-client her yığın başlangıcında kapatır. Canlı uç noktalar için «Varsayılan omurga bağlantıları ekle» veya omurga dizinini kullanın.",
+        "txQueueDropsBle": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE RNode bağlantısı takıldı; USB'yi tercih edin veya yeniden eşleştirin",
+        "txQueueDropsBleBondStale": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE bond bayat; İşletim sistemi Bluetooth'unu unutun ve yeniden eşleştirin",
+        "txQueueDropsNeutral": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — arabirimin bağlantısını kontrol edin"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "Radyodan USB üzerinden eşleştirme PIN'i bekleniyor…",
     "pairingPinLabel": "Bluetooth eşleştirme PIN'i",
     "pairingPinEnterHint": "Yığın bağlandığında bu kodu OS Bluetooth iletişim kutusuna girin. 123456'yı kullanmayın.",
-    "bluetoothHint": "Cihazda Bluetooth'u etkinleştirin ve ardından Eşleştirmeyi başlat seçeneğini kullanın. 6 haneli PIN, USB üzerinden bu panelde görünür; radyo ekranı genellikle boş kalır. Reticulum BLE üzerinden bağlandığında bu PIN'i işletim sisteminizin Bluetooth iletişim kutusuna girin. RNode'un varsayılan PIN'i yoktur (123456 kullanmayın; bu Meshtastic'tir). Ekran kartlarında, yaklaşık 7 saniyelik bir düğme basılı tutulduğunda ekranda bir PIN görüntülenebilir. RNode, başarılı bir bağlantı sağlanana kadar Sistem Ayarları → Bluetooth'ta görünmeyebilir."
+    "bluetoothHint": "Cihazda Bluetooth’u açın, sonra Eşleştirmeyi başlat’ı kullanın. 6 haneli PIN bu panelde USB üzerinden görünür — radyo ekranı çoğu zaman boş kalır. Reticulum BLE ile bağlandığında o PIN’i OS Bluetooth iletişim kutusuna girin. RNode’un varsayılan PIN’i yoktur (123456 kullanmayın — o Meshtastic’tir). Ekranlı kartlarda ~7 sn düğme basılı tutmak da PIN gösterebilir. Başarılı bağdan önce RNode Sistem Ayarları → Bluetooth’ta görünmeyebilir. Eşleşmiş cihazları temizle (ESP32), yeniden eşleştirmeden önce USB üzerinden radyo bağ tablosunu temizler; Sistem Ayarları’nda cihazı hâlâ Unutmanız gerekir.",
+    "clearPairedDevices": "Eşleştirilmiş cihazları temizle",
+    "clearPairedDevicesConfirmTitle": "RNode Bluetooth bağları temizlensin mi?",
+    "clearPairedDevicesConfirmMessage": "Bu, USB üzerinden CMD_BT_UNPAIR gönderir ve ESP32 RNode’lardaki bağlı ana bilgisayarları temizler (bazı nRF52 derlemelerinde etkisiz). Yeniden eşleştirmeden önce Sistem Ayarları → Bluetooth’ta cihazı hâlâ Unutmanız gerekir.",
+    "clearPairedDevicesConfirm": "Bluetooth bağlarını temizle",
+    "clearPairedDevicesSuccess": "Radyo Bluetooth bağ tablosu temizleme istendi."
   },
   "identityVault": {
     "title": "Kimlik kasası",

@@ -1188,7 +1188,8 @@
       "addDefaultHubsFailed": "添加默认骨干网失败。",
       "backboneEnableGuidanceLead": "最多启用1至3个骨干网关",
       "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
-      "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。"
+      "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。",
+      "rnodeTransportBleHint": "BLE绑定可以与macOS取消同步（忘记+重新配对）。当收音机在附近时，首选USB串行或Wi-Fi （ tcp://）。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1289,9 +1290,14 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "共享实例已启用—在重试DM之前，完全退出其他Reticulum应用程序（ MeshChatX、Ratspeak、独立rnsd ）并重新启动此堆栈。",
       "bleBondRemoved": "{{name}}：蓝牙绑定已过时（操作系统仍显示已配对）",
-      "bleBondRemovedHint": "在“系统设置”→“蓝牙”中忘记此 RNode，开始在无线电上进行配对（管理→蓝牙或按住约 7 秒按钮），重新启动堆栈，然后输入新的 6 位 PIN。",
+      "bleBondRemovedHint": "请先在系统设置 → 蓝牙中忘记此 RNode（macOS 不会自动清除“已配对”）。尽量优先使用 USB 串口或 Wi‑Fi（tcp://）以避免 BLE 绑定。然后：管理 → 蓝牙 → 清除已配对设备（USB，ESP32，如可用）、开始配对、移除此 BLE 接口并重新添加（选择设备）、重启协议栈，并输入新的 6 位 PIN。",
       "blePairingTimedOut": "{{name}}：蓝牙密钥交换超时",
-      "blePairingTimedOutHint": "停止堆栈，再次开始配对（管理 → 蓝牙在面板中显示 PIN — 无线电显示屏可能保持空白 — 或按住按钮约 7 秒以获取屏幕上的 PIN），重新启动堆栈一次，然后在约 60 秒内在操作系统对话框中输入该 PIN。切勿使用 123456（Meshtastic 默认值）。"
+      "blePairingTimedOutHint": "停止堆栈，再次开始配对（管理 → 蓝牙在面板中显示 PIN — 无线电显示屏可能保持空白 — 或按住按钮约 7 秒以获取屏幕上的 PIN），重新启动堆栈一次，然后在约 60 秒内在操作系统对话框中输入该 PIN。切勿使用 123456（Meshtastic 默认值）。",
+      "bleBondRemovedStopStack": "停止堆栈",
+      "bleBondRemovedOpenAdmin": "打开管理员蓝牙",
+      "txQueueDropsHintBle": "此BLE RNode无法排出其TX队列（链接卡住或抖动）。首选USB串行或Wi-Fi (tcp://) ，或在忘记系统设置→蓝牙后停止堆栈并重新配对。",
+      "txQueueDropsHintBleBondStale": "TX队列已满，因为BLE绑定已过时。在系统设置→蓝牙中忘记此RNode ，然后使用管理→蓝牙（清除配对/开始配对）或切换到USB。",
+      "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1656,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "自动接口信标TX在{{ifaces}}失败—在修复此问题之前，本地局域网发现可能无法正常工作。",
         "tcpUnreachable": "无法访问TCP集线器「{{name}}」（ {{host}} ： {{port}} ）",
         "tcpConnectFailed": "TCP集线器“{{name}}”连接被拒绝或超时",
-        "txQueueDrops": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满）",
+        "txQueueDrops": "接口“{{name}}”丢弃了 {{count}} 个出站数据包（TX 队列已满）— 通常是仍启用的失效 TCP 中继",
         "linkDeliveryTimeout": "直接LXMF链接到{{hash}} …超时（ {{count}} × ）",
         "transportSaturated": "RNS传输饱和（ {{count}} LXMF路径请求丢弃）",
         "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "已启用边界/骨干集线器： {{hubs}}。",
         "announceBusPressureTipTxSaturated": "TX队列丢弃时间： {{names}} —该接口可能已饱和。",
         "tooManyDefaultBackbones": "您已启用{{count}}默认骨干网。请考虑禁用额外功能，并保留约2个以备不时之需。",
-        "decommissionedHubEnabled": "已停用的枢纽“{{name}}”仍处于启用状态 — mesh-client 会在每次启动协议栈时关闭它。请使用“添加默认骨干网”或骨干网目录获取可用端点。"
+        "decommissionedHubEnabled": "已停用的枢纽“{{name}}”仍处于启用状态 — mesh-client 会在每次启动协议栈时关闭它。请使用“添加默认骨干网”或骨干网目录获取可用端点。",
+        "txQueueDropsBle": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE RNode链接卡住；首选USB或重新配对",
+        "txQueueDropsBleBondStale": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE绑定已过期；忘记操作系统蓝牙并重新配对",
+        "txQueueDropsNeutral": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） —检查该接口的链路"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "正在等待通过 USB 从无线电配对 PIN...",
     "pairingPinLabel": "蓝牙配对 PIN 码",
     "pairingPinEnterHint": "当堆栈连接时，在操作系统蓝牙对话框中输入此代码。不要使用 123456。",
-    "bluetoothHint": "启用设备上的蓝牙，然后使用开始配对。 6 位 PIN 码通过 USB 出现在该面板中 — 收音机显示屏通常保持空白。当 Reticulum 通过 BLE 连接时，在操作系统蓝牙对话框中输入该 PIN。 RNode 没有默认 PIN（不要使用 123456 — 即 Meshtastic）。在显示板上，按住约 7 秒的按钮也可以在屏幕上显示 PIN。在成功绑定之前，RNode 可能不会出现在系统设置 → 蓝牙中。"
+    "bluetoothHint": "在设备上启用蓝牙，然后使用“开始配对”。6 位 PIN 通过 USB 显示在此面板中 — 电台屏幕通常保持空白。当 Reticulum 通过 BLE 连接时，在操作系统蓝牙对话框中输入该 PIN。RNode 没有默认 PIN（不要使用 123456 — 那是 Meshtastic）。在带显示屏的板上，按住按钮约 7 秒也可能显示 PIN。成功绑定前，RNode 可能不会出现在系统设置 → 蓝牙中。“清除已配对设备”（ESP32）会通过 USB 清除电台绑定表后再重新配对；仍须在系统设置中“忘记”该设备。",
+    "clearPairedDevices": "清除已配对的设备",
+    "clearPairedDevicesConfirmTitle": "清除RNode蓝牙绑定？",
+    "clearPairedDevicesConfirmMessage": "这将通过 USB 发送 CMD_BT_UNPAIR，并清除 ESP32 RNode 上的已绑定主机（部分 nRF52 固件无操作）。重新配对前，仍须在系统设置 → 蓝牙中“忘记”该设备。",
+    "clearPairedDevicesConfirm": "清除蓝牙绑定",
+    "clearPairedDevicesSuccess": "已请求清除电台蓝牙绑定表。"
   },
   "identityVault": {
     "title": "身份保管库",
@@ -5278,12 +5292,12 @@
         "n": "黑骑士",
         "p": "黑兵"
       },
-      "promotionChooserAria": "选择促销片段",
+      "promotionChooserAria": "选择升变棋子",
       "promoteTo": {
-        "q": "晋升为大床房",
-        "r": "晋升为车队",
-        "b": "晋升为主教",
-        "n": "晋升为骑士"
+        "q": "升变为后",
+        "r": "升变为车",
+        "b": "升变为象",
+        "n": "升变为马"
       }
     },
     "errors": {
@@ -5297,7 +5311,7 @@
     "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。",
     "claimThreefold": "领取三倍奖励",
     "claimThreefoldAria": "领取三重重复抽奖",
-    "claimFiftyMove": "领取50步",
+    "claimFiftyMove": "声明五十步规则",
     "claimFiftyMoveAria": "领取五十步规则抽奖",
     "delivery": {
       "sending": "发送中…",

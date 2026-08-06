@@ -49,16 +49,16 @@ The panel also shows a breakdown of error and warning counts, and a "This node" 
 
 ## 2. Routing Anomalies
 
-Routing anomaly detection runs on Meshtastic nodes. MeshCore also has `hasHopCount: true` (hops via `outPathLen`), so the same hop-based anomalies run for MeshCore contacts; only protocols where `hasHopCount` is `false` (currently Reticulum) skip them.
+Routing anomaly detection runs on Meshtastic nodes. MeshCore also has `hasHopCount: true` (hops via `outPathLen`), so hop-count-based findings that remain meaningful on MeshCore still run (`impossible_hop`, `route_flapping` / `path_instability`, `weak_link`). Distance-based GPS+hop heuristics (`hop_goblin`, close-in `bad_route` warning) are gated by `hasDistanceBasedHopAnomalies` — **true** for Meshtastic, **false** for MeshCore (nearby multi-hop contacts are poorly connected / repeater-mediated, not Meshtastic-style critical over-hopping). Protocols where `hasHopCount` is `false` (currently Reticulum) skip hop-based LoRa routing anomalies entirely.
 
 Detection is run in priority order; first match wins:
 
 1. `impossible_hop`
-2. `bad_route` (error variant)
+2. `bad_route` (error variant — e.g. high duplication)
 3. `route_flapping` / `path_instability` (MeshCore: prefers PathUpdated event timestamps when available)
-4. `hop_goblin`
+4. `hop_goblin` (Meshtastic only — requires `hasDistanceBasedHopAnomalies`)
 5. `weak_link` (MeshCore only, requires `hasPerHopSnr` capability and a completed trace)
-6. `bad_route` (warning variant)
+6. `bad_route` (warning variant — close-in over-hopping; Meshtastic only — requires `hasDistanceBasedHopAnomalies`)
 
 Routing rows persist for up to **24 hours** by default (configurable 1–168 h in DiagnosticsPanel → Display Settings).
 
@@ -429,7 +429,7 @@ SVG force-directed graph of nodes within direct reach (hops 0–1 from the conne
 
 On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticulum interface config** section (below continuous ping). It audits the sidecar rnsd config against the live RNS interface list and surfaces actionable repairs.
 
-Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are also folded into Diagnostics via `ReticulumDiagnosticEngine` — including TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation, **`bleBondRemoved`** (stale OS Bluetooth bond for an RNode; Forget/re-pair), and **`blePairingTimedOut`** (OS passkey not entered within the TX-read window).
+Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are also folded into Diagnostics via `ReticulumDiagnosticEngine` — including TCP connect failures, TX queue drops (generic / **`txQueueDropsBle`** / **`txQueueDropsBleBondStale`** when the drop interface is a BLE RNode and optionally bond-stale), link-delivery timeouts, transport saturation, **`bleBondRemoved`** (stale OS Bluetooth bond for an RNode; Forget/Clear paired/re-pair — sticky until stack stop), and **`blePairingTimedOut`** (OS passkey not entered within the TX-read window).
 
 Additional runtime rows (refreshed from sidecar status + `reticulumPropagationStore`, not only the config audit poll):
 

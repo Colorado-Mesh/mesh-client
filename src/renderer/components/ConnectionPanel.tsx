@@ -348,6 +348,8 @@ interface Props {
   onOpenReticulumRmapSettings?: () => void;
   /** Reticulum: open App tab GPS settings for RMAP coordinates. */
   onOpenAppGpsSettings?: () => void;
+  /** Reticulum: open Admin Bluetooth for USB Clear paired / Start pairing. */
+  onOpenAdminBluetooth?: () => void;
   /** Auto-connect is owned by ProtocolAutoConnectCoordinator when panels are tab-mounted. */
   suppressMountAutoConnect?: boolean;
 }
@@ -368,6 +370,7 @@ export default function ConnectionPanel({
   onStartReticulumStack,
   onOpenReticulumRmapSettings,
   onOpenAppGpsSettings,
+  onOpenAdminBluetooth,
   suppressMountAutoConnect = false,
 }: Props) {
   const { t } = useTranslation();
@@ -3088,6 +3091,7 @@ export default function ConnectionPanel({
           stackError={reticulumStackError}
           onOpenReticulumRmapSettings={onOpenReticulumRmapSettings}
           onOpenAppGpsSettings={onOpenAppGpsSettings}
+          onOpenAdminBluetooth={onOpenAdminBluetooth}
           onStartStack={async () => {
             setReticulumStackError(null);
             try {

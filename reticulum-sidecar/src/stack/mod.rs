@@ -2488,6 +2488,16 @@ impl StackHandle {
         Ok(())
     }
 
+    /// Graceful RNS shutdown (BLE RNode detach) before the process is SIGTERM'd.
+    pub async fn prepare_stop(&self) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.prepare_stop().await;
+            return Ok(());
+        }
+        Ok(())
+    }
+
     pub async fn factory_reset(&self) -> Result<(), String> {
         let mut inner = self.inner.write().await;
         inner.factory_reset_state()?;

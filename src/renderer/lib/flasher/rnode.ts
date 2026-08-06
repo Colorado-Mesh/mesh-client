@@ -49,6 +49,8 @@ export class RNode {
   static readonly CMD_DISP_RCND = 0x68;
   static readonly CMD_BT_CTRL = 0x46;
   static readonly CMD_BT_PIN = 0x62;
+  /** Clear bonded hosts on the radio (`bt_debond_all` on ESP32 BLE). */
+  static readonly CMD_BT_UNPAIR = 0x70;
   static readonly CMD_WIFI_MODE = 0x6a;
   static readonly CMD_WIFI_SSID = 0x6b;
   static readonly CMD_WIFI_PSK = 0x6c;
@@ -430,6 +432,11 @@ export class RNode {
 
   async enableBluetooth(): Promise<void> {
     await this.sendKissCommand([RNode.CMD_BT_CTRL, 0x01]);
+  }
+
+  /** Clear the radio's BLE bond table (ESP32). Payload `0x01` matches RNode firmware. */
+  async clearBluetoothBonds(): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_BT_UNPAIR, 0x01]);
   }
 
   async startBluetoothPairing(pinCallback: (pin: number) => void): Promise<void> {

@@ -643,6 +643,14 @@ export function attachMeshcoreConnSideEffects(
   // --- Disconnect ---
 
   const handleDisconnected = () => {
+    // TCP: runtime meshcore.tcp.onDisconnected / write-dead own bridge-dead + reconnect (#792).
+    // SoftAP/OpenHop often FINs after contacts; TcpOverIpc still emits device_status disconnected.
+    // Tearing down the driver here left "accepting dead bridge" with no ConnectionDriver handle
+    // and no scheduled reconnect (deferred flag cleared without schedule) — send then logs
+    // "no handle for offline-meshcore" and never reaches write-dead recovery.
+    if (meshcoreConnectTypeRef.current === 'tcp') {
+      return;
+    }
     let shouldReconnect = false;
     setState((prev) => {
       const wasOperational =
@@ -683,13 +691,7 @@ export function attachMeshcoreConnSideEffects(
           console.debug('[meshcoreConnSideEffects] stale conn close ' + errLikeToLogString(e));
         });
       }
-      if (
-        shouldReconnect &&
-        !meshcoreExplicitDisconnectRef.current &&
-        // TCP reconnect is owned by the runtime meshcore.tcp.onDisconnected listener (#792).
-        // Calling lost here as well double-entered the scheduler (n7eal dual backoff).
-        meshcoreConnectTypeRef.current !== 'tcp'
-      ) {
+      if (shouldReconnect && !meshcoreExplicitDisconnectRef.current) {
         handleConnectionLostRef.current();
       }
     });

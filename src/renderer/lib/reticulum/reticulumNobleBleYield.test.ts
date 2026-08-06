@@ -262,6 +262,76 @@ describe('syncReticulumNobleBleYield', () => {
     expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
     expect(state.yieldActive).toBe(true);
   });
+
+  it('releases yield and does not re-prepare when bondDesyncActive', async () => {
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: true };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 60_000,
+        bondDesyncActive: true,
+      },
+      state,
+    );
+    expect(state.yieldActive).toBe(false);
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
+    expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
+  });
+
+  it('releases scanOwner=reticulum when bondDesyncActive even if yield inactive', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: false };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 60_000,
+        bondDesyncActive: true,
+      },
+      state,
+    );
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
+    expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
+  });
+
+  it('does not reacquire lease when a stale prepare resolves after abort (bond-desync race)', async () => {
+    let resolvePrepare: ((value: boolean) => void) | undefined;
+    vi.mocked(prepareReticulumBleRnodeConnect).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolvePrepare = resolve;
+        }),
+    );
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: null,
+    });
+    const abort = new AbortController();
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: false };
+    const syncPromise = syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 60_000,
+        signal: abort.signal,
+      },
+      state,
+    );
+    await Promise.resolve();
+    expect(prepareReticulumBleRnodeConnect).toHaveBeenCalled();
+    abort.abort();
+    resolvePrepare?.(true);
+    await syncPromise;
+    expect(state.yieldActive).toBe(false);
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
+  });
 });
 
 describe('reticulumBleRnodeOnline helpers', () => {

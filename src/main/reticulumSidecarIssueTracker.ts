@@ -9,6 +9,8 @@ const LINK_DELIVERY_TIMEOUT_MARKER = 'link delivery timed out';
 const LXMF_PATH_REQUEST_SATURATED_MARKER = 'failed to queue path request for LXMF delivery';
 const SLOW_TRANSPORT_QUERY_MARKER = 'transport query slow or failed';
 const BLE_BOND_REMOVED_MARKER = 'Peer removed pairing information';
+/** rsReticulum bond-desync overlay: halt reconnect loop (tracing::warn). */
+const BLE_BOND_REMOVED_STOP_MARKER = 'BLE RNode bond removed';
 const BLE_PAIRING_TIMED_OUT_MARKER = 'BLE pairing timed out';
 
 const TCP_CONNECT_IFACE_RE = /TCP connect failed.*?name\s*=\s*(.+?)(?:\s+error\s*=|$)/;
@@ -28,17 +30,28 @@ function normalizeSidecarLogLine(text: string): string {
   return stripAnsi(text).replace(/\s+/g, ' ').trim();
 }
 
-/** Deterministic parse — avoids super-linear regex backtracking on long sidecar lines. */
-function parseBleRNodeConnectFailedIfaceName(plain: string): string | null {
-  const failedIdx = plain.toLowerCase().indexOf(BLE_RNODE_CONNECT_FAILED_PREFIX.toLowerCase());
-  if (failedIdx < 0) return null;
-  const afterFailed = plain.slice(failedIdx + BLE_RNODE_CONNECT_FAILED_PREFIX.length);
-  const nameKey = /\bname[ \t]{0,16}=[ \t]{0,16}/i.exec(afterFailed);
+/**
+ * Deterministic `name=` parse — avoids super-linear regex backtracking on long sidecar lines.
+ * When `requirePrefix` is set, only search after that substring (case-insensitive).
+ */
+function parseSidecarIfaceNameField(plain: string, requirePrefix?: string): string | null {
+  let searchIn = plain;
+  if (requirePrefix) {
+    const failedIdx = plain.toLowerCase().indexOf(requirePrefix.toLowerCase());
+    if (failedIdx < 0) return null;
+    searchIn = plain.slice(failedIdx + requirePrefix.length);
+  }
+  const nameKey = /\bname[ \t]{0,16}=[ \t]{0,16}/i.exec(searchIn);
   if (nameKey?.index == null) return null;
-  const rest = afterFailed.slice(nameKey.index + nameKey[0].length);
+  const rest = searchIn.slice(nameKey.index + nameKey[0].length);
   const errorMatch = /[ \t]+error[ \t]{0,16}=/i.exec(rest);
   const name = (errorMatch?.index != null ? rest.slice(0, errorMatch.index) : rest).trim();
   return name.length > 0 ? name : null;
+}
+
+/** Deterministic parse — avoids super-linear regex backtracking on long sidecar lines. */
+function parseBleRNodeConnectFailedIfaceName(plain: string): string | null {
+  return parseSidecarIfaceNameField(plain, BLE_RNODE_CONNECT_FAILED_PREFIX);
 }
 
 function parseTcpConnectFailedIface(line: string): string | null {
@@ -74,10 +87,17 @@ function parseSlowTransportQuery(line: string): string | null {
 
 function parseBleBondRemovedIface(line: string): string | null {
   const plain = normalizeSidecarLogLine(line);
-  if (!plain.includes(BLE_BOND_REMOVED_MARKER)) {
-    return null;
+  // Legacy connect-failed line: "BLE RNode connect failed name=… error=… Peer removed pairing information"
+  if (plain.includes(BLE_BOND_REMOVED_MARKER)) {
+    const fromConnectFailed = parseBleRNodeConnectFailedIfaceName(plain);
+    if (fromConnectFailed) return fromConnectFailed;
   }
-  return parseBleRNodeConnectFailedIfaceName(plain);
+  // Overlay halt path: "BLE RNode bond removed — stopping reconnect… name=… error=…"
+  // (no longer emits the connect-failed prefix when exiting the reconnect loop).
+  if (plain.includes(BLE_BOND_REMOVED_STOP_MARKER)) {
+    return parseSidecarIfaceNameField(plain);
+  }
+  return null;
 }
 
 function parseBlePairingTimedOutIface(line: string): string | null {
@@ -230,7 +250,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
     pruneStaleMap(this.tcpConnectFailed, nowMs, (atMs) => atMs);
     pruneStaleMap(this.txQueueDrops, nowMs, (entry) => entry.atMs);
     pruneStaleMap(this.linkDeliveryTimeouts, nowMs, (entry) => entry.atMs);
-    pruneStaleMap(this.bleBondRemoved, nowMs, (atMs) => atMs);
+    // bleBondRemoved is sticky until stack stop / retainInterfaces / clear — sidecar has
+    // halted BLE reconnect for that interface; a 5‑min log TTL must not clear UI/Noble yield.
     pruneStaleMap(this.blePairingTimedOut, nowMs, (atMs) => atMs);
 
     if (

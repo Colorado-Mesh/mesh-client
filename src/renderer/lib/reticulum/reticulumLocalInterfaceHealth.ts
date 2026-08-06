@@ -113,6 +113,71 @@ export function reticulumLocalOfflineDisplayKind(
   return isReticulumBleRnodeSerialPort(iface.serial_port) ? 'ble' : 'serial';
 }
 
+/** Transport/bond-aware remediation kind for sidecar TX-queue-full alerts. */
+export type ReticulumTxDropHintKind = 'bleBondStale' | 'ble' | 'tcp' | 'neutral';
+
+/**
+ * Classify a TX-drop interface name for Connection/Diagnostics hints.
+ * `bleBondRemoved` wins even when the row is missing or mis-typed.
+ */
+export function resolveReticulumTxDropHintKind(
+  name: string,
+  interfaces:
+    readonly Pick<ReticulumLocalInterfaceInput, 'name' | 'type' | 'serial_port'>[] | undefined,
+  bleBondRemovedNames?: readonly string[],
+): ReticulumTxDropHintKind {
+  if (bleBondRemovedNames?.includes(name)) {
+    return 'bleBondStale';
+  }
+  const row = interfaces?.find((iface) => iface.name === name);
+  if (!row) {
+    return 'neutral';
+  }
+  if (isReticulumBleRnodeSerialPort(row.serial_port)) {
+    return 'ble';
+  }
+  if (isReticulumRemoteInterfaceType(row.type)) {
+    return 'tcp';
+  }
+  return 'neutral';
+}
+
+/** Connection-panel hint key for a TX-drop kind (under `connectionPanel.reticulumSidecarIssues`). */
+export function reticulumTxDropConnectionHintKey(
+  kind: ReticulumTxDropHintKind,
+):
+  | 'txQueueDropsHint'
+  | 'txQueueDropsHintBle'
+  | 'txQueueDropsHintBleBondStale'
+  | 'txQueueDropsHintNeutral' {
+  switch (kind) {
+    case 'bleBondStale':
+      return 'txQueueDropsHintBleBondStale';
+    case 'ble':
+      return 'txQueueDropsHintBle';
+    case 'tcp':
+      return 'txQueueDropsHint';
+    case 'neutral':
+      return 'txQueueDropsHintNeutral';
+  }
+}
+
+/** Diagnostics `diagnosticsPanel.reticulum.runtime.*` cause key suffix for a TX-drop kind. */
+export function reticulumTxDropDiagnosticsCauseKey(
+  kind: ReticulumTxDropHintKind,
+): 'txQueueDrops' | 'txQueueDropsBle' | 'txQueueDropsBleBondStale' | 'txQueueDropsNeutral' {
+  switch (kind) {
+    case 'bleBondStale':
+      return 'txQueueDropsBleBondStale';
+    case 'ble':
+      return 'txQueueDropsBle';
+    case 'tcp':
+      return 'txQueueDrops';
+    case 'neutral':
+      return 'txQueueDropsNeutral';
+  }
+}
+
 export function classifyReticulumLocalInterface(
   iface: ReticulumLocalInterfaceInput,
   osSerialPorts: readonly string[],

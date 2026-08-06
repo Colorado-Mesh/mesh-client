@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { MeshNode } from '../types';
 import {
+  analyzeNode,
   detectBadRoute,
   detectHopGoblin,
   detectImpossibleHop,
@@ -272,5 +274,132 @@ describe('detectPathInstability', () => {
     const timestamps = [tenMinAgo - 5000, tenMinAgo - 4000, tenMinAgo - 3000, now - 1000];
     // Only 1 event in the window — should not flag
     expect(detectPathInstability(1, timestamps)).toBeNull();
+  });
+});
+
+describe('analyzeNode distance-based hop anomalies', () => {
+  const nearbyNode = () =>
+    baseNode({
+      snr: 6,
+      hops_away: 5,
+      latitude: 37.0,
+      longitude: -122.0,
+    });
+  const home = () =>
+    baseNode({
+      node_id: 1,
+      latitude: 37.001,
+      longitude: -122.001,
+    });
+
+  it('returns hop_goblin for Meshtastic nearby multi-hop node', () => {
+    const a = analyzeNode(
+      nearbyNode(),
+      undefined,
+      home(),
+      [],
+      false,
+      1,
+      0,
+      2,
+      MESHTASTIC_CAPABILITIES,
+    );
+    expect(a).not.toBeNull();
+    expect(a!.type).toBe('hop_goblin');
+  });
+
+  it('skips hop_goblin for MeshCore nearby multi-hop node', () => {
+    const a = analyzeNode(
+      nearbyNode(),
+      undefined,
+      home(),
+      [],
+      false,
+      1,
+      0,
+      2,
+      MESHCORE_CAPABILITIES,
+    );
+    expect(a).toBeNull();
+  });
+
+  it('skips close-in bad_route warning for MeshCore', () => {
+    // ~5 km away: outside hop_goblin's 3 km floor, inside close-in bad_route (~5 mi / ~8 km)
+    // with hops > hopsThreshold+2.
+    const node = baseNode({
+      hops_away: 5,
+      latitude: 37.045,
+      longitude: -122.0,
+    });
+    const homeNode = baseNode({
+      node_id: 1,
+      latitude: 37.0,
+      longitude: -122.0,
+    });
+    const meshtastic = analyzeNode(
+      node,
+      undefined,
+      homeNode,
+      [],
+      false,
+      1,
+      0,
+      2,
+      MESHTASTIC_CAPABILITIES,
+    );
+    expect(meshtastic).not.toBeNull();
+    expect(meshtastic!.type).toBe('bad_route');
+    expect(meshtastic!.severity).toBe('warning');
+
+    const meshcore = analyzeNode(
+      node,
+      undefined,
+      homeNode,
+      [],
+      false,
+      1,
+      0,
+      2,
+      MESHCORE_CAPABILITIES,
+    );
+    expect(meshcore).toBeNull();
+  });
+
+  it('still returns weak_link for MeshCore when trace SNR is present', () => {
+    const a = analyzeNode(
+      nearbyNode(),
+      undefined,
+      home(),
+      [],
+      false,
+      1,
+      0,
+      2,
+      MESHCORE_CAPABILITIES,
+      undefined,
+      [5, -8, 3],
+    );
+    expect(a).not.toBeNull();
+    expect(a!.type).toBe('weak_link');
+  });
+
+  it('still returns path_instability for MeshCore when PathUpdated bursts', () => {
+    const now = Date.now();
+    const a = analyzeNode(
+      nearbyNode(),
+      undefined,
+      home(),
+      [],
+      false,
+      1,
+      0,
+      2,
+      MESHCORE_CAPABILITIES,
+      undefined,
+      undefined,
+      [now - 1000, now - 2000, now - 3000, now - 4000],
+    );
+    expect(a).not.toBeNull();
+    expect(a!.type).toBe('route_flapping');
   });
 });

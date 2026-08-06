@@ -14,7 +14,9 @@ import {
   isReticulumInterfaceOnlineStatus,
   isReticulumLocalSerialInterface,
   isReticulumRemoteInterfaceType,
+  resolveReticulumTxDropHintKind,
   type ReticulumLocalInterfaceInput,
+  reticulumTxDropDiagnosticsCauseKey,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import {
   isPropagationSyncEstablishingStuck,
@@ -107,6 +109,9 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.interfaceDown',
   'diagnosticsPanel.reticulum.runtime.tcpConnectFailed',
   'diagnosticsPanel.reticulum.runtime.txQueueDrops',
+  'diagnosticsPanel.reticulum.runtime.txQueueDropsBle',
+  'diagnosticsPanel.reticulum.runtime.txQueueDropsBleBondStale',
+  'diagnosticsPanel.reticulum.runtime.txQueueDropsNeutral',
   'diagnosticsPanel.reticulum.runtime.bleBondRemoved',
   'diagnosticsPanel.reticulum.runtime.blePairingTimedOut',
   'diagnosticsPanel.reticulum.runtime.noPeers',
@@ -326,20 +331,26 @@ export function buildReticulumDiagnosticRows(
     }
     for (const drop of interfaceIssueAlert.txQueueDrops) {
       const iface = ifaceByName.get(drop.name);
+      const hintKind = resolveReticulumTxDropHintKind(
+        drop.name,
+        healthInterfaces,
+        interfaceIssueAlert.bleBondRemoved,
+      );
+      const causeKey = reticulumTxDropDiagnosticsCauseKey(hintKind);
       rows.push({
         kind: 'rf',
         id: rfRowId(homeNodeId, `reticulum/tx-queue-drops/${drop.name}`),
         nodeId: homeNodeId,
         condition: 'reticulum/tx-queue-drops',
         cause: `Interface "${drop.name}" dropped ${drop.dropCount} outbound packets (TX queue full)`,
-        causeI18n: runtimeCauseI18n('txQueueDrops', {
+        causeI18n: runtimeCauseI18n(causeKey, {
           name: drop.name,
           count: String(drop.dropCount),
         }),
         severity: 'error',
         detectedAt: now,
         reticulumInterfaceId: iface?.id,
-        reticulumRepairKind: 'disable',
+        reticulumRepairKind: hintKind === 'ble' || hintKind === 'bleBondStale' ? 'edit' : 'disable',
       });
     }
     for (const name of interfaceIssueAlert.bleBondRemoved) {

@@ -114,6 +114,37 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     expect(
       screen.getByText('connectionPanel.reticulumSidecarIssues.bleBondRemoved:RNode 41F4'),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'connectionPanel.reticulumSidecarIssues.bleBondRemovedStopStack',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('offers Stop stack and Open Admin actions when bleBondRemoved handlers are provided', async () => {
+    const onStopStack = vi.fn().mockResolvedValue(undefined);
+    const onOpenAdminBluetooth = vi.fn();
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          bleBondRemoved: ['RNode 41F4'],
+        })}
+        onStopStack={onStopStack}
+        onOpenAdminBluetooth={onOpenAdminBluetooth}
+      />,
+    );
+    const stopBtn = screen.getByRole('button', {
+      name: 'connectionPanel.reticulumSidecarIssues.bleBondRemovedStopStack',
+    });
+    const adminBtn = screen.getByRole('button', {
+      name: 'connectionPanel.reticulumSidecarIssues.bleBondRemovedOpenAdmin',
+    });
+    stopBtn.click();
+    adminBtn.click();
+    expect(onStopStack).toHaveBeenCalledTimes(1);
+    expect(onOpenAdminBluetooth).toHaveBeenCalledTimes(1);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows BLE pairing-timed-out issue from sidecar alert', async () => {
@@ -132,5 +163,118 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     ).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  const tcpIface = {
+    id: 'rmap',
+    name: 'RMAP World',
+    type: 'tcp',
+    enabled: true,
+    status: 'down',
+    serial_port: null as string | null,
+  };
+  const bleIface = {
+    id: 'rnode-41f4',
+    name: 'RNode 41F4',
+    type: 'rnode',
+    enabled: true,
+    status: 'down',
+    serial_port: 'ble://eccf2847-e1fd-3f5f-0811-064db1639a3d',
+  };
+
+  it('uses TCP TX-drop hint for TCP hubs', () => {
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          txQueueDrops: [{ name: 'RMAP World', dropCount: 512 }],
+        })}
+        interfaces={[tcpIface]}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHint'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('uses BLE TX-drop hint for BLE RNodes', () => {
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          txQueueDrops: [{ name: 'RNode 41F4', dropCount: 512 }],
+        })}
+        interfaces={[bleIface]}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHint'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('uses per-drop hints for mixed TCP + BLE (log regression)', async () => {
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          txQueueDrops: [
+            { name: 'RMAP World', dropCount: 512 },
+            { name: 'RNode 41F4', dropCount: 512 },
+          ],
+        })}
+        interfaces={[tcpIface, bleIface]}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:2'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHint'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBle'),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('uses bond-stale TX hint and keeps Admin actions when bleBondRemoved co-occurs', () => {
+    const onStopStack = vi.fn();
+    const onOpenAdminBluetooth = vi.fn();
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          txQueueDrops: [{ name: 'RNode 41F4', dropCount: 512 }],
+          bleBondRemoved: ['RNode 41F4'],
+        })}
+        interfaces={[bleIface]}
+        onStopStack={onStopStack}
+        onOpenAdminBluetooth={onOpenAdminBluetooth}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBleBondStale'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumSidecarIssues.bleBondRemovedStopStack',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('falls back to neutral TX hint when interfaces are omitted', () => {
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          txQueueDrops: [{ name: 'RNode 41F4', dropCount: 512 }],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintNeutral'),
+    ).toBeInTheDocument();
   });
 });

@@ -243,6 +243,26 @@ git diff -- crates/rns-interface/src/ble_rnode.rs \
 
 When [ratspeak/rsReticulum#20](https://github.com/ratspeak/rsReticulum/pull/20) merges and floated `origin/main` includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
+## rsReticulum-ble-rnode-bond-desync.patch
+
+Halt BLE RNode reconnect when CoreBluetooth reports **Peer removed pairing information**, and skip the TX-char SMP probe on reconnect after a successful session in the same task (fall back to pairing if subscribe fails with auth). Apply **after** the pairing-transition debounce overlay.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | tip after `rsReticulum-ble-rnode-pairing-transition-debounce.patch` |
+| **Upstream PR** | (mesh-client local; no upstream PR yet) |
+
+**Modifies (1 file):**
+
+- `crates/rns-interface/src/ble_rnode.rs` — `is_bond_removed_error`, `session_already_bonded`, reconnect halt
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
+./scripts/apply-rsReticulum-ble-rnode-bond-desync.sh
+```
+
 ## rsReticulum-discovery-announce-egress.patch
 
 Register `rnstransport.discovery.interface` as a local destination before announcing, and defer `Announcer::register` until the discoverable interface online latch is true. Without this, Boundary hubs such as **rmap.world** silently drop discovery announces (non-local + no path), and BLE RNode can consume a multi-hour `announce_interval` on a no-op TX while still connecting.

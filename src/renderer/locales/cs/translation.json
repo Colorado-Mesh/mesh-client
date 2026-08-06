@@ -1189,7 +1189,8 @@
       "addDefaultHubsFailed": "Přidání výchozích páteří se nezdařilo.",
       "backboneEnableGuidanceLead": "Povolit maximálně 1 až 3 páteřní brány",
       "backboneEnableGuidanceBody": "—2 je ideální místo pro redundanci bez zbytečného nafukování šířky pásma. Zaměřte se na 1 globální rozbočovač a 1 regionální bránu a povolte speciální rozhraní (jako je I2P nebo Yggdrasil) přesně podle potřeby. Lokálně připojené RNodes a místní LAN rozhraní se do tohoto limitu páteřní sítě nezapočítávají.",
-      "defaultHubsPickerHint": "Začněte primární a globální páteří plus svým regionem. Zapněte nejvýše 1 až 3 páteřní brány (2 je optimum). Místní RNode a LAN rozhraní se nepočítají. Nové položky se přidávají vypnuté ke kontrole. Sync také vypne zbývající vyřazené oficiální testnet huby (Amsterdam)."
+      "defaultHubsPickerHint": "Začněte primární a globální páteří plus svým regionem. Zapněte nejvýše 1 až 3 páteřní brány (2 je optimum). Místní RNode a LAN rozhraní se nepočítají. Nové položky se přidávají vypnuté ke kontrole. Sync také vypne zbývající vyřazené oficiální testnet huby (Amsterdam).",
+      "rnodeTransportBleHint": "Ble vazby se mohou desynchronizovat s macOS (Forget + re-pair). Preferujte USB sériové nebo Wi-Fi (tcp://), pokud je rádio v blízkosti."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1290,9 +1291,14 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Sdílená instance je povolena — zcela ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, samostatný rnsd) a restartujte tento zásobník před opakováním DM.",
       "bleBondRemoved": "{{name}}: Připojení Bluetooth je zastaralé (OS stále zobrazuje Spárováno)",
-      "bleBondRemovedHint": "Zapomeňte na tento RNode v Nastavení systému → Bluetooth, zahajte párování na rádiu (Admin → Bluetooth nebo podržení tlačítka ~7 s), restartujte zásobník a zadejte nový 6místný PIN.",
+      "bleBondRemovedHint": "Nejprve zapomeňte tento RNode v Nastavení systému → Bluetooth (macOS Paired automaticky nevymaže). Pokud můžete, preferujte USB serial nebo Wi‑Fi (tcp://), abyste se vyhnuli BLE vazbám. Poté: Admin → Bluetooth → Vymazat spárovaná zařízení (USB, ESP32) pokud je k dispozici, Spustit párování, odeberte a znovu přidejte toto BLE rozhraní (Vybrat zařízení), restartujte stack a zadejte nový 6místný PIN.",
       "blePairingTimedOut": "{{name}}: Vypršel časový limit výměny přístupového klíče Bluetooth",
-      "blePairingTimedOutHint": "Zastavte zásobník, spusťte párování znovu (Správce → Bluetooth zobrazí PIN na panelu — displej rádia může zůstat prázdný — nebo tlačítko ~7 s podržte pro PIN na obrazovce), restartujte zásobník jednou a zadejte tento PIN v dialogovém okně OS během ~60 sekund. Nikdy nepoužívejte 123456 (výchozí Meshtastic)."
+      "blePairingTimedOutHint": "Zastavte zásobník, spusťte párování znovu (Správce → Bluetooth zobrazí PIN na panelu — displej rádia může zůstat prázdný — nebo tlačítko ~7 s podržte pro PIN na obrazovce), restartujte zásobník jednou a zadejte tento PIN v dialogovém okně OS během ~60 sekund. Nikdy nepoužívejte 123456 (výchozí Meshtastic).",
+      "bleBondRemovedStopStack": "Zastavit zásobník",
+      "bleBondRemovedOpenAdmin": "Otevřít Bluetooth správce",
+      "txQueueDropsHintBle": "Tento ble RNode nemůže vypustit frontu TX (uvíznutý odkaz nebo mávání). Preferujte USB sériové nebo Wi-Fi (tcp://), nebo Zastavte zásobník a znovu spárujte po Zapomenout v Nastavení systému → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "Fronta TX je plná, protože vazba ble je zastaralá. Zapomeňte na tento RNode v Systémovém nastavení → Bluetooth a poté použijte Správce → Bluetooth (Vymazat spárování / Spustit párování) nebo přepněte na USB.",
+      "txQueueDropsHintNeutral": "Tento kanál TX rozhraní je plný. Chcete-li zastavit kapky, zkontrolujte stav odkazu rozhraní (nebo jej zakažte)."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
     "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
@@ -1658,7 +1664,7 @@
         "autoBeaconPhysicalFailures": "Beacon AutoInterface TX selhává na {{ifaces}} — lokální zjišťování LAN nemusí fungovat, dokud to nebude opraveno.",
         "tcpUnreachable": "Centrum TCP „{{name}}“ je nedosažitelné ({{host}}:{{port}})",
         "tcpConnectFailed": "Připojení TCP hub „{{name}}“ bylo odmítnuto nebo vypršel časový limit",
-        "txQueueDrops": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná)",
+        "txQueueDrops": "Rozhraní „{{name}}“ zahodilo {{count}} odchozích paketů (fronta TX plná) — často je stále zapnutý mrtvý TCP hub",
         "linkDeliveryTimeout": "Přímý odkaz LXMF na {{hash}}… vypršel ({{count}}×)",
         "transportSaturated": "Nasycený transport RNS ({{count}} LXMF kapek vyžadujících cestu)",
         "transportSaturatedShareInstance": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu). Sdílená instance je zapnutá — ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, rnsd) a restartujte zásobník.",
@@ -1678,7 +1684,10 @@
         "announceBusPressureTipBoundaryHubs": "Povolené hraniční / páteřní rozbočovače: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "Fronta TX klesá na: {{names}} — toto rozhraní může být nasycené.",
         "tooManyDefaultBackbones": "Máte zapnutou výchozí páteř {{count}}. Zvažte vypnutí doplňků a ponechání asi 2 pro nadbytečnost.",
-        "decommissionedHubEnabled": "Vyřazený hub „{{name}}“ je stále zapnutý — mesh-client ho při každém startu zásobníku vypne. Použijte «Přidat výchozí páteř» nebo adresář páteří pro živé koncové body."
+        "decommissionedHubEnabled": "Vyřazený hub „{{name}}“ je stále zapnutý — mesh-client ho při každém startu zásobníku vypne. Použijte «Přidat výchozí páteř» nebo adresář páteří pro živé koncové body.",
+        "txQueueDropsBle": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — ble RNode link uvízl; raději USB nebo znovu spárovat",
+        "txQueueDropsBleBondStale": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zastaralá vazba ble; Zapomeňte v OS Bluetooth a znovu spárujte",
+        "txQueueDropsNeutral": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zkontrolujte odkaz rozhraní"
       }
     },
     "routingPort": {
@@ -1851,7 +1860,12 @@
     "pairingWaiting": "Čekání na spárování PIN z rádia přes USB...",
     "pairingPinLabel": "Párování prostřednictvím Bluetooth",
     "pairingPinEnterHint": "Po připojení zásobníku zadejte tento kód do dialogu Bluetooth operačního systému. Nepoužívejte 123456.",
-    "bluetoothHint": "Povolte Bluetooth v zařízení a pak použijte Spustit párování. Na tomto panelu se přes USB zobrazí 6místný PIN — displej rádia často zůstává prázdný. Když se Reticulum připojí přes ble, zadejte tento PIN do dialogu Bluetooth OS. RNode nemá žádný výchozí PIN (nepoužívejte 123456 — to je Meshtastic). Na zobrazovacích deskách může podržení tlačítka ~7 s také zobrazit ŠPENDLÍK na obrazovce. RNode se nemusí zobrazit v systémových nastaveních → Bluetooth až do úspěšného spojení."
+    "bluetoothHint": "Zapněte Bluetooth na zařízení a použijte Spustit párování. 6místný PIN se zobrazí v tomto panelu přes USB — displej rádia často zůstane prázdný. Zadejte tento PIN v dialogu Bluetooth OS, když se Reticulum připojí přes BLE. RNode nemá výchozí PIN (nepoužívejte 123456 — to je Meshtastic). Na deskách s displejem může ~7 s podržení tlačítka také zobrazit PIN. RNode se v Nastavení systému → Bluetooth nemusí objevit před úspěšnou vazbou. Vymazat spárovaná zařízení (ESP32) vymaže tabulku vazeb rádia přes USB před opětovným párováním; zařízení musíte stále Zapomenout v nastavení systému.",
+    "clearPairedDevices": "Vymazat spárovaná zařízení",
+    "clearPairedDevicesConfirmTitle": "Vymazat vazby RNode Bluetooth?",
+    "clearPairedDevicesConfirmMessage": "Odešle CMD_BT_UNPAIR přes USB a vymaže spárované hostitele na ESP32 RNode (bez efektu na některých nRF52 buildech). Před opětovným párováním musíte zařízení stále Zapomenout v Nastavení systému → Bluetooth.",
+    "clearPairedDevicesConfirm": "Vymazat Bluetooth vazby",
+    "clearPairedDevicesSuccess": "Požadováno vymazání tabulky Bluetooth vazeb rádia."
   },
   "identityVault": {
     "title": "Trezor identity",

@@ -52,6 +52,7 @@ import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { isMeshcoreTcpSoftApDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
 import {
   meshcoreConfiguredChannelIndexSet,
   meshcoreConfiguredChatChannels,
@@ -2508,6 +2509,12 @@ function AppContent() {
     if (!meshcoreIdentityId || !connectionDriver.getHandle(meshcoreIdentityId)) return;
 
     const sendScheduledAdvert = () => {
+      // SoftAP/OpenHop: configured session may have a dead TCP bridge after contacts FIN.
+      // Flood advert would tcp-write-fail and thrash reconnect.
+      if (isMeshcoreTcpSoftApDeadAccepted()) {
+        console.debug('[App] auto flood advert skipped (SoftAP dead bridge)');
+        return;
+      }
       const action =
         autoFloodAdvertType === 'zeroHop'
           ? meshcorePanelActions.sendZeroHopAdvert
@@ -3107,6 +3114,15 @@ function AppContent() {
                               if (appTabIdx >= 0) {
                                 setAppTabVisited(true);
                                 setActiveTab(appTabIdx);
+                              }
+                            }}
+                            onOpenAdminBluetooth={() => {
+                              const adminTabIdx = findFilteredTabIndexForPanel(
+                                selectByProtocol(tabsByProtocol, protocol),
+                                ADMIN_PANEL_INDEX,
+                              );
+                              if (adminTabIdx >= 0) {
+                                setActiveTab(adminTabIdx);
                               }
                             }}
                             suppressMountAutoConnect

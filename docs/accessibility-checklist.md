@@ -23,6 +23,7 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 ## Visual / Perceivable (WCAG 1.x)
 
 - [ ] All text passes 4.5:1 contrast ratio (use Colour Contrast Analyser)
+- [ ] **Message action colors** (App → Appearance → Colors): with custom **message action** bar/button colors and **Show background** enabled, verify action icons/labels still meet **4.5:1** against the bar fill (and against chat bubble backgrounds when the bar is transparent)
 - [ ] Icon-only UI elements pass 3:1 against adjacent colors
 - [ ] Status dots have text alternative (not color-only)
 - [x] Charts (Recharts) have accessible text summary or table toggle — `TelemetryPanel` charts use `role="img"` + summarized `aria-label` (table toggle still optional)

@@ -146,6 +146,12 @@ pub struct LiveBridge {
 }
 
 impl LiveBridge {
+    /// Orderly RNS drain so BLE RNode tasks detach (radio-off) before process kill.
+    pub async fn prepare_stop(&self) {
+        tracing::info!("prepare_stop: shutting down RNS runtime for graceful BLE detach");
+        self.handle.shutdown_and_wait().await;
+    }
+
     fn primary_local_serial_id(&self) -> Option<String> {
         let state = PersistedState::load(&self.config_dir, &self.storage_dir);
         let config_ifaces =

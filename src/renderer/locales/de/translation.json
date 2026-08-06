@@ -1186,7 +1186,8 @@
       "addDefaultHubsFailed": "Standard-Backbones konnten nicht hinzugefügt werden.",
       "backboneEnableGuidanceLead": "Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways",
       "backboneEnableGuidanceBody": "—2 ist optimal für Redundanz ohne unnötigen Bandbreitenverbrauch. Streben Sie 1 globalen Hub und 1 regionales Gateway an, und aktivieren Sie Spezialschnittstellen (wie I2P oder Yggdrasil) nur bei Bedarf. Lokal verbundene RNodes und lokale LAN-Schnittstellen zählen nicht zu diesem Backbone-Limit.",
-      "defaultHubsPickerHint": "Beginnen Sie mit Primär & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist optimal). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie prüfen können. Sync deaktiviert außerdem verbleibende außer Betrieb genommene offizielle Testnet-Hubs (Amsterdam)."
+      "defaultHubsPickerHint": "Beginnen Sie mit Primär & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist optimal). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie prüfen können. Sync deaktiviert außerdem verbleibende außer Betrieb genommene offizielle Testnet-Hubs (Amsterdam).",
+      "rnodeTransportBleHint": "BLE-Bindungen können mit macOS desynchronisiert werden (Forget + Re-Pair). Bevorzugen Sie USB seriell oder Wi-Fi (tcp://), wenn das Radio in der Nähe ist."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1287,9 +1288,14 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Share-Instanz ist aktiviert — beenden Sie vollständig andere Reticulum-Apps (MeshChatX, Ratspeak, Standalone-RNSD) und starten Sie diesen Stack neu, bevor Sie DMs erneut versuchen.",
       "bleBondRemoved": "{{name}}: Bluetooth-Verbindung ist veraltet (das Betriebssystem zeigt immer noch „Paired“ an)",
-      "bleBondRemovedHint": "Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth, starten Sie die Kopplung am Radio (Admin → Bluetooth oder ~7 Sekunden gedrückt halten), starten Sie den Stack neu und geben Sie die neue 6-stellige PIN ein.",
+      "bleBondRemovedHint": "Vergessen Sie diesen RNode zuerst in Systemeinstellungen → Bluetooth (macOS entfernt Paired nicht automatisch). Bevorzugen Sie wenn möglich USB-Serial oder Wi‑Fi (tcp://), um BLE-Bindungen zu vermeiden. Dann: Admin → Bluetooth → Gekoppelte Geräte löschen (USB, ESP32) falls verfügbar, Kopplung starten, diese BLE-Schnittstelle entfernen und neu hinzufügen (Gerät wählen), Stack neu starten und die neue 6-stellige PIN eingeben.",
       "blePairingTimedOut": "{{name}}: Zeitüberschreitung beim Austausch des Bluetooth-Passschlüssels",
-      "blePairingTimedOutHint": "Stoppen Sie den Stack, starten Sie die Kopplung erneut (Admin → Bluetooth zeigt die PIN im Bedienfeld an — das Radio-Display bleibt möglicherweise leer — oder halten Sie die ~7 s-Taste für eine PIN auf dem Bildschirm gedrückt), starten Sie den Stack einmal neu und geben Sie diese PIN innerhalb von ~60 Sekunden in das OS-Dialogfeld ein. Verwenden Sie niemals 123456 (Meshtastic-Standard)."
+      "blePairingTimedOutHint": "Stoppen Sie den Stack, starten Sie die Kopplung erneut (Admin → Bluetooth zeigt die PIN im Bedienfeld an — das Radio-Display bleibt möglicherweise leer — oder halten Sie die ~7 s-Taste für eine PIN auf dem Bildschirm gedrückt), starten Sie den Stack einmal neu und geben Sie diese PIN innerhalb von ~60 Sekunden in das OS-Dialogfeld ein. Verwenden Sie niemals 123456 (Meshtastic-Standard).",
+      "bleBondRemovedStopStack": "Stapel stoppen",
+      "bleBondRemovedOpenAdmin": "Admin-Bluetooth öffnen",
+      "txQueueDropsHintBle": "Dieser BLE-RNode kann seine TX-Warteschlange nicht leeren (Link hängt oder flattert). Bevorzugen Sie USB-Serial oder Wi‑Fi (tcp://), oder stoppen Sie den Stack und koppeln Sie erneut nach Vergessen in Systemeinstellungen → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "Die TX-Warteschlange ist voll, weil die BLE-Bindung veraltet ist. Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und nutzen Sie Admin → Bluetooth (Gekoppelte löschen / Kopplung starten) oder wechseln Sie zu USB.",
+      "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",
@@ -1656,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "AutoInterface-Beacon TX schlägt auf {{ifaces}} fehl — die lokale LAN-Erkennung funktioniert möglicherweise nicht, bis dies behoben ist.",
         "tcpUnreachable": "TCP-Hub „{{name}}“ ist nicht erreichbar ({{host}}:{{port}})",
         "tcpConnectFailed": "TCP Hub \"{{name}}\" Verbindung abgelehnt oder Zeitüberschreitung",
-        "txQueueDrops": "Schnittstelle „{{name}}“ abgeworfen {{count}} ausgehende Pakete (TX-Warteschlange voll)",
+        "txQueueDrops": "Schnittstelle „{{name}}“ hat {{count}} ausgehende Pakete verworfen (TX-Warteschlange voll) — oft ist ein toter TCP-Hub noch aktiviert",
         "linkDeliveryTimeout": "Direkter LXMF-Link zu {{hash}}… Zeitüberschreitung ({{count}}×)",
         "transportSaturated": "RNS-Transport gesättigt ({{count}} LXMF-Pfadanforderung fällt ab)",
         "transportSaturatedShareInstance": "RNS-Transport gesättigt ({{count}} Path-Request-Drops). Share-Instanz ist aktiviert — beenden Sie andere Reticulum-Apps (MeshChatX, Ratspeak, rnsd) und starten Sie den Stack neu.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Aktivierte Grenz- / Backbone-Hubs: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX-Warteschlange fällt auf: {{names}} — diese Schnittstelle kann gesättigt sein.",
         "tooManyDefaultBackbones": "Du hast {{count}} Standard-Backbones aktiviert. Erwägen Sie, Extras zu deaktivieren und etwa 2 für die Redundanz aufzubewahren.",
-        "decommissionedHubEnabled": "Außer Betrieb genommener Hub „{{name}}“ ist noch aktiviert — mesh-client schaltet ihn bei jedem Stack-Start aus. Nutzen Sie „Standard-Backbones hinzufügen“ oder das Backbone-Verzeichnis für aktuelle Endpunkte."
+        "decommissionedHubEnabled": "Außer Betrieb genommener Hub „{{name}}“ ist noch aktiviert — mesh-client schaltet ihn bei jedem Stack-Start aus. Nutzen Sie „Standard-Backbones hinzufügen“ oder das Backbone-Verzeichnis für aktuelle Endpunkte.",
+        "txQueueDropsBle": "Schnittstelle \"{{name}}\" abgelegt {{count}} ausgehende Pakete (TX-Warteschlange voll) — BLE RNode-Link klemmt; lieber USB oder Re-Pair",
+        "txQueueDropsBleBondStale": "Schnittstelle „{{name}}“ abgelegt {{count}} ausgehende Pakete (TX-Warteschlange voll) — BLE-Bond veraltet; Bluetooth im Betriebssystem vergessen und neu koppeln",
+        "txQueueDropsNeutral": "Schnittstelle \"{{name}}\" hat {{count}} ausgehende Pakete abgelegt (TX-Warteschlange voll) — überprüfen Sie den Link dieser Schnittstelle"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "Warten auf PAIRING-PIN vom Radio über USB...",
     "pairingPinLabel": "PIN-Code der Bluetooth-Kopplung",
     "pairingPinEnterHint": "Geben Sie diesen Code im Bluetooth-Dialog des Betriebssystems ein, wenn der Stack eine Verbindung herstellt. Verwenden Sie 123456 nicht.",
-    "bluetoothHint": "Aktivieren Sie Bluetooth auf dem Gerät und verwenden Sie dann Start Pairing. Die 6-stellige PIN wird in diesem Bedienfeld über USB angezeigt — das Radio-Display bleibt oft leer. Geben Sie diese PIN in den Bluetooth-Dialog Ihres Betriebssystems ein, wenn sich Reticulum über BLE verbindet. RNode hat keine Standard-PIN (verwenden Sie 123456 nicht — das ist Meshtastic). Auf Anzeigetafeln kann mit einer ~7 s-Taste auch ein PIN auf dem Bildschirm angezeigt werden. Der RNode wird möglicherweise erst nach einer erfolgreichen Verbindung in den Systemeinstellungen von → Bluetooth angezeigt."
+    "bluetoothHint": "Aktivieren Sie Bluetooth am Gerät und nutzen Sie Kopplung starten. Die 6-stellige PIN erscheint in diesem Panel über USB — das Funkdisplay bleibt oft leer. Geben Sie diese PIN im Bluetooth-Dialog des OS ein, wenn Reticulum über BLE verbindet. RNode hat keine Standard-PIN (nicht 123456 verwenden — das ist Meshtastic). Auf Display-Boards kann ~7 s Tastendruck ebenfalls eine PIN zeigen. Der RNode erscheint in Systemeinstellungen → Bluetooth möglicherweise erst nach erfolgreicher Bindung. Gekoppelte Geräte löschen (ESP32) löscht die Funk-Bindungstabelle über USB vor dem erneuten Koppeln; Sie müssen das Gerät in den Systemeinstellungen trotzdem Vergessen.",
+    "clearPairedDevices": "Gekoppelte Geräte löschen",
+    "clearPairedDevicesConfirmTitle": "RNode-Bluetooth-Bindungen löschen?",
+    "clearPairedDevicesConfirmMessage": "Sendet CMD_BT_UNPAIR über USB und löscht gebundene Hosts auf ESP32-RNodes (keine Wirkung bei manchen nRF52-Builds). Sie müssen das Gerät in Systemeinstellungen → Bluetooth trotzdem noch Vergessen, bevor Sie erneut koppeln.",
+    "clearPairedDevicesConfirm": "Bluetooth-Bindungen löschen",
+    "clearPairedDevicesSuccess": "Löschen der Funk-Bluetooth-Bindungstabelle angefordert."
   },
   "identityVault": {
     "title": "Identitätstresor",

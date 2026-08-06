@@ -246,6 +246,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         )
         .route("/api/v1/remote/identity", get(remote::remote_identity))
         .route("/api/v1/stack/restart", post(system::stack_restart))
+        .route(
+            "/api/v1/stack/prepare-stop",
+            post(system::stack_prepare_stop),
+        )
         .route("/api/v1/system/factory-reset", post(system::factory_reset))
         .route("/api/v1/diagnostics", get(system::diagnostics))
         .route("/api/v1/voice/status", get(voice::voice_status))

@@ -435,6 +435,22 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(h.handleConnectionLost).toHaveBeenCalled();
   });
 
+  it('ignores TCP device_status disconnect (runtime owns TCP bridge + reconnect)', async () => {
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({ type: 'device_status', payload: { status: 'disconnected' } });
+
+    // SoftAP FIN must not strip the ConnectionDriver handle — write-dead / tcp.onDisconnected
+    // own recovery after "accepting dead bridge".
+    expect(h.state.status).toBe('configured');
+    expect(h.teardownConn).not.toHaveBeenCalled();
+    expect(h.ctx.connRef.current).toBe(h.conn);
+    await Promise.resolve();
+    expect(h.handleConnectionLost).not.toHaveBeenCalled();
+  });
+
   it('stops handling events after detach', () => {
     const h = makeHarness({ handleResponseResult: true });
     const stop = attachMeshcoreConnSideEffects(h.conn, h.ctx);

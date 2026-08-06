@@ -32,6 +32,8 @@ export interface ReticulumStackPanelProps {
   onStopStack: () => Promise<void>;
   onOpenReticulumRmapSettings?: () => void;
   onOpenAppGpsSettings?: () => void;
+  /** Open Admin → Bluetooth (USB Clear paired / Start pairing) for BLE bond recovery. */
+  onOpenAdminBluetooth?: () => void;
 }
 
 /** Connection tab: stack lifecycle, interface CRUD, and local interface health. */
@@ -42,6 +44,7 @@ export function ReticulumStackPanel({
   onStopStack,
   onOpenReticulumRmapSettings,
   onOpenAppGpsSettings,
+  onOpenAdminBluetooth,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
   const [restartError, setRestartError] = useState<string | null>(null);
@@ -266,6 +269,13 @@ export function ReticulumStackPanel({
               <ReticulumSidecarIssueAlertsBlock
                 alert={sidecarStatus.interfaceIssueAlert}
                 shareInstanceEnabled={shareInstanceEnabled}
+                interfaces={interfaces}
+                onStopStack={async () => {
+                  notifyManualStackStop();
+                  await onStopStack();
+                  await refreshSidecarStatus();
+                }}
+                onOpenAdminBluetooth={onOpenAdminBluetooth}
               />
             ) : null}
             <ReticulumLocalInterfaceAlertsBlock

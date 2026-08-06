@@ -222,6 +222,49 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
     expect(stampHistoryPeer).toHaveBeenCalled();
   });
 
+  it('passes replacesMessageHash through to saveReticulumMessage as replaces_message_hash', async () => {
+    const selfHash = 'deadbeef'.repeat(4);
+    const peerHash = 'cafebabe'.repeat(4);
+    const messageHash = 'aa'.repeat(16);
+    const pendingId = 'reticulum-pending-1';
+    const ingested = ingestReticulumLxmfPayloadWithSideEffects(
+      'id-1',
+      {
+        sender_hash: selfHash,
+        sender_name: 'Me',
+        to_hash: peerHash,
+        text: 'outbound',
+        direction: 'outbound',
+        timestamp: 1_700_000_000_000,
+        message_hash: messageHash,
+      },
+      { replacesMessageHash: pendingId },
+    );
+    expect(ingested).toBe(true);
+    await vi.waitFor(() => {
+      expect(saveReticulumMessage).toHaveBeenCalled();
+    });
+    const saveArg = saveReticulumMessage.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(saveArg.message_hash).toBe(messageHash);
+    expect(saveArg.replaces_message_hash).toBe(pendingId);
+  });
+
+  it('omits replaces_message_hash when replacesMessageHash is absent', async () => {
+    const hash = 'allowedhash1234567890allowedhash12';
+    ingestReticulumLxmfPayloadWithSideEffects('id-1', {
+      sender_hash: hash,
+      sender_name: 'Alice',
+      text: 'hello',
+      direction: 'inbound',
+      timestamp: 1_700_000_000_000,
+    });
+    await vi.waitFor(() => {
+      expect(saveReticulumMessage).toHaveBeenCalled();
+    });
+    const saveArg = saveReticulumMessage.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(saveArg).not.toHaveProperty('replaces_message_hash');
+  });
+
   it('outbound LXMF stamps recipient history without is_contact', async () => {
     const selfHash = 'deadbeef'.repeat(4);
     const peerHash = 'cafebabe'.repeat(4);

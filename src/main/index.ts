@@ -6276,6 +6276,8 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
     }
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
+    socket.setNoDelay(true);
+    socket.setKeepAlive(true, MESHTASTIC_TCP_KEEPALIVE_INITIAL_DELAY_MS);
     meshtasticTcpSocket = socket;
     const connectTimeout = setTimeout(() => {
       if (settled) return;
@@ -6297,6 +6299,20 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
     });
     socket.on('data', (data) => {
       const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (chunk.length > MESHTASTIC_TCP_DATA_MAX_BYTES) {
+        console.warn(
+          `[IPC] meshtastic:tcp-data oversized chunk (${chunk.length} > ${MESHTASTIC_TCP_DATA_MAX_BYTES}); dropping socket`,
+        );
+        try {
+          socket.destroy();
+        } catch (e) {
+          console.debug(
+            '[IPC] meshtastic:tcp-data destroy after oversize ' +
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+        return;
+      }
       mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
@@ -6427,8 +6443,12 @@ const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
 /** Initial TCP keepalive probe delay for MeshCore companion sockets (ms). */
 const MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
 const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
+/** Initial TCP keepalive probe delay for Meshtastic WiFi/TCP sockets (ms). */
+const MESHTASTIC_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
 /** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
 const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;
+/** Cap inbound Meshtastic TCP chunks before IPC fan-out (same as write max). */
+const MESHTASTIC_TCP_DATA_MAX_BYTES = MESHTASTIC_TCP_WRITE_MAX_BYTES;
 const CHAT_EXPORT_MAX_MESSAGES = 10_000;
 const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */

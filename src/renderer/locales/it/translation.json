@@ -1186,7 +1186,8 @@
       "addDefaultHubsFailed": "Impossibile aggiungere dorsali predefinite.",
       "backboneEnableGuidanceLead": "Abilita da 1 a 3 gateway backbone al massimo",
       "backboneEnableGuidanceBody": "—2 è l’optimum per la ridondanza senza spreco di banda. Punta a 1 hub globale e 1 gateway regionale, e abilita interfacce speciali (come I2P o Yggdrasil) solo se necessario. Gli RNode collegati in locale e le interfacce LAN locali non contano verso questo limite di dorsale.",
-      "defaultHubsPickerHint": "Inizia con Primaria e globale più la tua regione. Abilita al massimo da 1 a 3 gateway di dorsale (2 è l’optimum). Gli RNode locali e le interfacce LAN non contano. Le nuove voci vengono aggiunte disabilitate per la revisione. Sync disabilita anche gli hub testnet ufficiali fuori servizio rimanenti (Amsterdam)."
+      "defaultHubsPickerHint": "Inizia con Primaria e globale più la tua regione. Abilita al massimo da 1 a 3 gateway di dorsale (2 è l’optimum). Gli RNode locali e le interfacce LAN non contano. Le nuove voci vengono aggiunte disabilitate per la revisione. Sync disabilita anche gli hub testnet ufficiali fuori servizio rimanenti (Amsterdam).",
+      "rnodeTransportBleHint": "I legami BLE possono essere desincronizzati con macOS (Forget + re-pair). Preferire USB seriale o Wi-Fi (tcp://) quando la radio è nelle vicinanze."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1287,9 +1288,14 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "L'istanza di condivisione è abilitata: chiudi completamente altre app Reticulum (MeshChatX, Ratspeak, rnsd autonomo) e riavvia questo stack prima di riprovare i DM.",
       "bleBondRemoved": "{{name}}: il collegamento Bluetooth è obsoleto (il sistema operativo mostra ancora Accoppiato)",
-      "bleBondRemovedHint": "Dimentica questo RNode in Impostazioni di sistema → Bluetooth, avvia l'accoppiamento sulla radio (Amministrazione → Bluetooth o tieni premuto il pulsante per ~7 s), riavvia lo stack e inserisci il nuovo PIN di 6 cifre.",
+      "bleBondRemovedHint": "Dimentica prima questo RNode in Impostazioni di Sistema → Bluetooth (macOS non rimuove Paired automaticamente). Preferisci se possibile USB seriale o Wi‑Fi (tcp://) per evitare legami BLE. Poi: Admin → Bluetooth → Cancella dispositivi accoppiati (USB, ESP32) se disponibile, Avvia accoppiamento, rimuovi e riaggiungi questa interfaccia BLE (Scegli dispositivo), riavvia lo stack e inserisci il nuovo PIN a 6 cifre.",
       "blePairingTimedOut": "{{name}}: Scambio passkey Bluetooth scaduto",
-      "blePairingTimedOutHint": "Arresta lo stack, avvia nuovamente l'accoppiamento (Admin → Bluetooth mostra il PIN nel pannello — il display della radio potrebbe rimanere vuoto — o tieni premuto il pulsante per circa 7 secondi per un PIN sullo schermo), riavvia lo stack una volta e inserisci il PIN nella finestra di dialogo del sistema operativo entro ~60 secondi. Non utilizzare mai 123456 (impostazione predefinita Meshtastic)."
+      "blePairingTimedOutHint": "Arresta lo stack, avvia nuovamente l'accoppiamento (Admin → Bluetooth mostra il PIN nel pannello — il display della radio potrebbe rimanere vuoto — o tieni premuto il pulsante per circa 7 secondi per un PIN sullo schermo), riavvia lo stack una volta e inserisci il PIN nella finestra di dialogo del sistema operativo entro ~60 secondi. Non utilizzare mai 123456 (impostazione predefinita Meshtastic).",
+      "bleBondRemovedStopStack": "Arresta stack",
+      "bleBondRemovedOpenAdmin": "Apri Admin Bluetooth",
+      "txQueueDropsHintBle": "Questo BLE RNode non può scaricare la sua coda TX (collegamento bloccato o sbattimento). Preferire USB seriale o Wi-Fi (tcp://), o interrompere lo stack e ricollegare dopo aver dimenticato in Impostazioni di sistema → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "La coda TX è piena perché il legame BLE è scaduto. Dimenticare questo RNode in Impostazioni di sistema → Bluetooth, quindi utilizzare Admin → Bluetooth (Cancella accoppiamento / Avvia accoppiamento) o passare a USB.",
+      "txQueueDropsHintNeutral": "Questo canale TX di interfaccia è pieno. Controllare lo stato del collegamento dell'interfaccia (o disabilitarlo) per arrestare le cadute."
     },
     "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto.",
     "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT.",
@@ -1656,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX non funziona su {{ifaces}} — il rilevamento della LAN locale potrebbe non funzionare fino a quando questo problema non viene risolto.",
         "tcpUnreachable": "L'hub TCP \"{{name}}\" non è raggiungibile ({{host}}:{{port}})",
         "tcpConnectFailed": "Connessione TCP hub \"{{name}}\" rifiutata o scaduta",
-        "txQueueDrops": "L'interfaccia \"{{name}}\" ha rilasciato {{count}} pacchetti in uscita (coda TX piena)",
+        "txQueueDrops": "L’interfaccia \"{{name}}\" ha scartato {{count}} pacchetti in uscita (coda TX piena) — spesso un hub TCP morto ancora abilitato",
         "linkDeliveryTimeout": "Collegamento LXMF diretto a {{hash}}… scaduto ({{count}}×)",
         "transportSaturated": "Trasporto RNS saturo ({{count}} LXMF path-request drop)",
         "transportSaturatedShareInstance": "Trasporto RNS saturo ({{count}} gocce path-request). L'istanza di condivisione è attiva: esci da altre app Reticulum (MeshChatX, Ratspeak, rnsd) e riavvia lo stack.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Hub di confine / backbone abilitati: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "La coda TX cade su: {{names}} — l'interfaccia potrebbe essere satura.",
         "tooManyDefaultBackbones": "Hai {{count}} dorsali predefinite abilitate. Prendi in considerazione la possibilità di disabilitare gli extra e di tenerne circa 2 per ridondanza.",
-        "decommissionedHubEnabled": "L’hub fuori servizio «{{name}}» è ancora abilitato — mesh-client lo spegne a ogni avvio dello stack. Usa «Aggiungi dorsali predefinite» o la directory delle dorsali per endpoint attivi."
+        "decommissionedHubEnabled": "L’hub fuori servizio «{{name}}» è ancora abilitato — mesh-client lo spegne a ogni avvio dello stack. Usa «Aggiungi dorsali predefinite» o la directory delle dorsali per endpoint attivi.",
+        "txQueueDropsBle": "Interfaccia \"{{name}}\" drop {{count}} pacchetti in uscita (coda TX piena) — collegamento BLE RNode bloccato; preferire USB o ri-accoppiare",
+        "txQueueDropsBleBondStale": "Interfaccia \"{{name}}\" drop {{count}} pacchetti in uscita (coda TX piena) — legame BLE stantio; dimenticare nel sistema operativo Bluetooth e ri-accoppiare",
+        "txQueueDropsNeutral": "Interfaccia \"{{name}}\" ha lasciato cadere {{count}} pacchetti in uscita (coda TX piena) — controllare il collegamento di tale interfaccia"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "In attesa del PIN di abbinamento dalla radio tramite USB...",
     "pairingPinLabel": "PIN di accoppiamento Bluetooth",
     "pairingPinEnterHint": "Immettere questo codice nella finestra di dialogo Bluetooth del sistema operativo quando lo stack si connette. Non utilizzare 123456.",
-    "bluetoothHint": "Abilita il Bluetooth sul dispositivo, quindi utilizza Avvia accoppiamento. Il PIN di 6 cifre viene visualizzato in questo pannello tramite USB: il display della radio spesso rimane vuoto. Inserisci il PIN nella finestra di dialogo Bluetooth del tuo sistema operativo quando Reticulum si connette tramite BLE. RNode non ha un PIN predefinito (non utilizzare 123456 — ovvero Meshtastic). Sui tabelloni, tenendo premuto il pulsante per circa 7 s è anche possibile visualizzare un PIN sullo schermo. L'RNode potrebbe non essere visualizzato in Impostazioni di sistema → Bluetooth finché non viene stabilito con successo il collegamento."
+    "bluetoothHint": "Abilita Bluetooth sul dispositivo, poi usa Avvia accoppiamento. Il PIN a 6 cifre compare in questo pannello via USB — il display radio spesso resta vuoto. Inserisci quel PIN nel dialogo Bluetooth del SO quando Reticulum si connette via BLE. RNode non ha PIN predefinito (non usare 123456 — è Meshtastic). Su schede con display, tenere premuto ~7 s può anche mostrare un PIN. L’RNode potrebbe non comparire in Impostazioni di Sistema → Bluetooth prima di un legame riuscito. Cancella dispositivi accoppiati (ESP32) cancella la tabella dei legami radio via USB prima di riaccoppiare; devi comunque Dimenticare il dispositivo nelle impostazioni di sistema.",
+    "clearPairedDevices": "Cancella dispositivi accoppiati",
+    "clearPairedDevicesConfirmTitle": "Cancellare i legami Bluetooth RNode?",
+    "clearPairedDevicesConfirmMessage": "Invia CMD_BT_UNPAIR via USB e cancella gli host associati sugli RNode ESP32 (nessun effetto su alcune build nRF52). Devi comunque Dimenticare il dispositivo in Impostazioni di Sistema → Bluetooth prima di riaccoppiare.",
+    "clearPairedDevicesConfirm": "Cancella legami Bluetooth",
+    "clearPairedDevicesSuccess": "Richiesta di cancellazione della tabella dei legami Bluetooth della radio."
   },
   "identityVault": {
     "title": "Caveau identità",
@@ -5297,7 +5311,7 @@
     "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata.",
     "claimThreefold": "Riscuoti il triplo",
     "claimThreefoldAria": "Richiedi il triplo sorteggio di ripetizione",
-    "claimFiftyMove": "Claim 50-move",
+    "claimFiftyMove": "Richiedi regola dei 50 mosse",
     "claimFiftyMoveAria": "Richiedi l'estrazione della regola delle cinquanta mosse",
     "delivery": {
       "sending": "Invio in corso…",

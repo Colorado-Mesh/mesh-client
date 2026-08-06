@@ -10,7 +10,7 @@ import { RETICULUM_LXMF_PAYLOAD_LIMIT } from '../chatComposerLimits';
  */
 export interface ProtocolCapabilities {
   protocol: MeshProtocol;
-  /** Whether hops_away is populated for peers (Meshtastic: true; MeshCore: false) */
+  /** Whether hops_away is populated for peers (Meshtastic / MeshCore: true; Reticulum: false) */
   hasHopCount: boolean;
   /** [min, max] valid hop limit for this protocol */
   hopLimitRange: [number, number];
@@ -32,6 +32,12 @@ export interface ProtocolCapabilities {
   hasTraceRoute: boolean;
   /** Whether per-hop SNR from tracePath is available (MeshCore unique strength) */
   hasPerHopSnr: boolean;
+  /**
+   * Whether GPS+hop distance heuristics (hop_goblin, close-in bad_route warning) apply.
+   * Meshtastic: true. MeshCore: false — multi-hop nearby contacts are poorly connected /
+   * repeater-mediated, not Meshtastic-style critical over-hopping.
+   */
+  hasDistanceBasedHopAnomalies: boolean;
   /** Whether battery level / voltage telemetry is available */
   hasBatteryTelemetry: boolean;
   /** Whether repeater status (noise floor, air time, packet counts) is available */
@@ -170,6 +176,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasModemPresets: true,
   hasTraceRoute: true,
   hasPerHopSnr: false,
+  hasDistanceBasedHopAnomalies: true,
   hasBatteryTelemetry: true,
   hasRepeaterStatus: false,
   hasOnDemandNodeStatus: false,
@@ -247,6 +254,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasModemPresets: false,
   hasTraceRoute: true,
   hasPerHopSnr: true,
+  hasDistanceBasedHopAnomalies: false,
   hasBatteryTelemetry: true,
   hasRepeaterStatus: true,
   hasOnDemandNodeStatus: true,
@@ -323,6 +331,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasModemPresets: false,
   hasTraceRoute: true,
   hasPerHopSnr: false,
+  hasDistanceBasedHopAnomalies: false,
   hasBatteryTelemetry: false,
   hasRepeaterStatus: true,
   hasOnDemandNodeStatus: false,

@@ -2073,7 +2073,9 @@ export function useMeshtasticRuntime() {
         return;
       }
       scheduleMeshtasticReconnectAttemptRef.current();
-    })();
+    })().catch((e: unknown) => {
+      console.warn('[useMeshtasticRuntime] handleConnectionLost async ' + errLikeToLogString(e));
+    });
   }, [
     clearConfigureTimeout,
     cleanupSubscriptions,

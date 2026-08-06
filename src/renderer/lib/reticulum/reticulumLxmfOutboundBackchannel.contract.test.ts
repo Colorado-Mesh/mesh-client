@@ -32,6 +32,10 @@ describe('reticulum LXMF outbound Direct backchannel contracts', () => {
     expect(source).toContain('fn spawn_lxmf_outbound_backchannel');
     expect(source).toContain('LXMF outbound-link backchannel packet');
     expect(source).toContain('handle_link_delivered_data');
+    expect(source).toContain('OUTBOUND_BACKCHANNEL_CAPACITY');
+    expect(source).toMatch(
+      /mpsc::channel::<\(Vec<u8>, \[u8; 16\]\)>\(OUTBOUND_BACKCHANNEL_CAPACITY\)/,
+    );
   });
 
   it.skipIf(!existsSync(LXMF_LINK))(
