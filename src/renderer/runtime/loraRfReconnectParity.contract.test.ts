@@ -52,13 +52,14 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
     },
   );
 
-  it('MeshCore TCP defers status=configured until after contacts+channels', () => {
-    expect(MESHCORE).toContain("const deferConfiguredUntilRadioInit = transportType === 'tcp'");
+  it('MeshCore latches session after self-info; UI configured after contacts dump on all RF transports', () => {
+    expect(MESHCORE).toContain('const configureBeforeContactsDump = true');
+    expect(MESHCORE).toContain('meshcoreTcpContactsDumpInFlightRef');
+    expect(MESHCORE).toContain('TCP closed during post-configure contacts dump — keep configured');
+    expect(MESHCORE).toContain('preserving dbCache hydration');
+    expect(MESHCORE).toContain('promoteConfiguredAfterContactsDump');
     expect(MESHCORE).toMatch(
-      /deferConfiguredUntilRadioInit \? 'connected' : 'configured'[\s\S]*?if \(!deferConfiguredUntilRadioInit\) \{[\s\S]*?meshcoreDeviceConfiguredRef\.current = true/,
-    );
-    expect(MESHCORE).toMatch(
-      /if \(deferConfiguredUntilRadioInit\) \{[\s\S]*?status: 'configured'[\s\S]*?triggerRoomAutoLoginRef\.current\(\)/,
+      /meshcoreDeviceConfiguredRef\.current = true[\s\S]*?getContacts[\s\S]*?promoteConfiguredAfterContactsDump/,
     );
   });
 

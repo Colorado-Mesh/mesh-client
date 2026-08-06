@@ -1577,6 +1577,112 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     }
   });
 
+  // OS-specific: dual-Noble deferred BLE auto-connect (Cancel-before-primary-settle) exists only
+  // on macOS/Windows Noble. Linux uses Web Bluetooth and skips remembered BLE cold-start in
+  // useProtocolRfAutoConnect (`!isLinux`) — there is no equivalent dual-radio deferral to cancel.
+  it.each(['darwin', 'win32'] as const)(
+    'cancels deferred meshcore BLE auto-connect when user cancels before primary settle completes (%s)',
+    async (platform) => {
+      const { restore } = mockNobleBlePlatform(platform);
+      const mcConnKey = 'mesh-client:lastConnection:meshcore';
+      const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+      localStorage.setItem(protocolKey, 'meshtastic');
+      localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
+      localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
+      localStorage.setItem(
+        mcConnKey,
+        JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
+      );
+      localStorage.setItem(
+        mtConnKey,
+        JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
+      );
+      const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+      const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+      dualNoble.resetNobleBleConnectMutexForTests();
+      dualNoble.initNobleBleDualRadioStartup();
+      let releaseSettle!: () => void;
+      vi.spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseSettle = resolve;
+          }),
+      );
+
+      const user = userEvent.setup();
+      try {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={vi.fn().mockResolvedValue(undefined)}
+            onAutoConnect={onAutoConnect}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        // Secondary BLE waits on Meshtastic — connecting UI exposes Cancel.
+        const cancelBtn = await screen.findByRole('button', { name: /^Cancel$/i });
+        await user.click(cancelBtn);
+
+        releaseSettle();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(onAutoConnect).not.toHaveBeenCalled();
+      } finally {
+        localStorage.removeItem(mcConnKey);
+        localStorage.removeItem(mtConnKey);
+        localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+        localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+        dualNoble.resetNobleBleConnectMutexForTests();
+        restore();
+      }
+    },
+  );
+
+  it('cancels ProtocolAutoConnectCoordinator when user clicks Reconnect with a pending last connection', async () => {
+    const user = userEvent.setup();
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'tcp', httpAddress: '192.168.1.50:4403' }),
+    );
+    const gate = await import('../lib/protocolRfAutoConnectGate');
+    const cancelSpy = vi.spyOn(gate, 'cancelProtocolRfAutoConnect');
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+          suppressMountAutoConnect
+        />,
+      );
+
+      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+
+      expect(cancelSpy).toHaveBeenCalledWith('meshtastic');
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledWith('tcp', '192.168.1.50:4403');
+      });
+      const cancelOrder = cancelSpy.mock.invocationCallOrder[0];
+      const connectOrder = onConnect.mock.invocationCallOrder[0];
+      if (cancelOrder === undefined || connectOrder === undefined) {
+        throw new Error('expected cancelProtocolRfAutoConnect and onConnect call order');
+      }
+      expect(cancelOrder).toBeLessThan(connectOrder);
+    } finally {
+      cancelSpy.mockRestore();
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
   it('shows shared-peripheral notice when meshcore is active and targets the same BLE device as meshtastic', async () => {
     const { restore } = mockMacNoblePlatform();
     const sharedId = 'shared-ble-peripheral';

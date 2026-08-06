@@ -25,7 +25,8 @@
     "megabear - KD5IHC",
     "Soord https://github.com/soord",
     "WB3IHY https://github.com/WB3IHY",
-    "Letark https://github.com/Letark"
+    "Letark https://github.com/Letark",
+    "FuzzyChaos (ADL)"
   ],
   "main": "dist-electron/main/index.js",
   "scripts": {

@@ -272,15 +272,10 @@ describe('useMeshcoreRuntime stats parsing', () => {
 
   it('serial awaits channel hydration after contacts before connect resolves', async () => {
     const contactsGate = deferred<[]>();
+    const channelsGate = deferred<{ channelIdx: number; name: string; secret: Uint8Array }[]>();
     const opsSecret = new Uint8Array(16).fill(0x11);
     getContactsMock.mockReturnValueOnce(contactsGate.promise);
-    getChannelsMock.mockResolvedValueOnce([
-      {
-        channelIdx: 1,
-        name: 'Ops',
-        secret: opsSecret,
-      },
-    ]);
+    getChannelsMock.mockReturnValueOnce(channelsGate.promise);
 
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
@@ -299,18 +294,27 @@ describe('useMeshcoreRuntime stats parsing', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.state.status).toBe('configured');
+      expect(result.current.state.status).toBe('connected');
     });
     expect(result.current.channels).toEqual([]);
     expect(getChannelsMock).not.toHaveBeenCalled();
     expect(result.current.nodes.size).toBe(0);
 
     contactsGate.resolve([]);
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+    // Status is configured after contacts, but initConn still owns getChannels — suppress stats.
+    expect(getStatsCoreMock).not.toHaveBeenCalled();
+    expect(getChannelsMock).toHaveBeenCalled();
+
+    channelsGate.resolve([{ channelIdx: 1, name: 'Ops', secret: opsSecret }]);
     await act(async () => {
       await connectPromise;
     });
 
     await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
       expect(result.current.channels).toEqual([{ index: 1, name: 'Ops', secret: opsSecret }]);
     });
   });

@@ -54,6 +54,38 @@ describe('shouldDeferMeshcoreTcpReconnectAfterBurst', () => {
     ).toBe(true);
   });
 
+  it('defers mid-reconnect FIN that races ahead of burstCaptured', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: false,
+        everConfigured: true,
+        deviceConfigured: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('defers while initConn is still finishing after configure-before-dump', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: true,
+        everConfigured: true,
+        deviceConfigured: true,
+        initConnInFlight: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('defers while initConn is in flight during contacts dump before burstCaptured', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: false,
+        everConfigured: true,
+        deviceConfigured: true,
+        initConnInFlight: true,
+      }),
+    ).toBe(true);
+  });
+
   it('does not defer once both everConfigured and deviceConfigured are true', () => {
     expect(
       shouldDeferMeshcoreTcpReconnectAfterBurst({
@@ -64,7 +96,7 @@ describe('shouldDeferMeshcoreTcpReconnectAfterBurst', () => {
     ).toBe(false);
   });
 
-  it('does not defer before burst capture', () => {
+  it('does not defer before burst capture on first connect', () => {
     expect(
       shouldDeferMeshcoreTcpReconnectAfterBurst({
         burstCaptured: false,

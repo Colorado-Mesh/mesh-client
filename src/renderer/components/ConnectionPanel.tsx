@@ -22,6 +22,7 @@ import {
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
+import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnectGate';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
@@ -704,6 +705,8 @@ export default function ConnectionPanel({
   );
   const autoConnectFiredRef = useRef(false);
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Set when the user starts a manual connect so deferred BLE auto-connect must not call onAutoConnect. */
+  const autoConnectCancelRef = useRef(false);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   const [autoConnectBleTarget, setAutoConnectBleTarget] = useState<string | null>(null);
@@ -1164,6 +1167,18 @@ export default function ConnectionPanel({
   }, [isAutoConnecting, lastConnection]);
 
   const handleConnect = useCallback(async () => {
+    // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
+    // a manual TCP/serial/HTTP connect (orphan TCP socket + connectType flip).
+    // Panel-local autoConnectCancelRef is inert when suppressMountAutoConnect — also cancel the
+    // ProtocolAutoConnectCoordinator path.
+    autoConnectCancelRef.current = true;
+    cancelProtocolRfAutoConnect(protocol);
+    if (isAutoConnectingRef.current) {
+      console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for manual connect');
+    }
+    isAutoConnectingRef.current = false;
+    setIsAutoConnecting(false);
+    setAutoConnectBleTarget(null);
     if (autoConnectTimeoutRef.current) {
       clearTimeout(autoConnectTimeoutRef.current);
       autoConnectTimeoutRef.current = null;
@@ -1283,6 +1298,8 @@ export default function ConnectionPanel({
   }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
 
   const handleCancelConnection = useCallback(async () => {
+    autoConnectCancelRef.current = true;
+    cancelProtocolRfAutoConnect(protocol);
     isAutoConnectingRef.current = false;
     setIsAutoConnecting(false);
     if (autoConnectTimeoutRef.current) {
@@ -1444,6 +1461,7 @@ export default function ConnectionPanel({
     }
 
     autoConnectFiredRef.current = true;
+    autoConnectCancelRef.current = false;
 
     const lastBleId = lc.bleDeviceId ?? loadLastBleDevice(protocol);
 
@@ -1492,6 +1510,10 @@ export default function ConnectionPanel({
         return false;
       }
       void (async () => {
+        if (autoConnectCancelRef.current) {
+          maybeNotifyPrimaryBleAutoConnectSettled();
+          return;
+        }
         const bleTargetLabel = resolveBleAutoConnectLabel(
           lastBleId,
           lc,
@@ -1506,6 +1528,9 @@ export default function ConnectionPanel({
         setConnectionStage('connectionPanel.stageConnecting');
         // Primary: notify secondary after the first connect attempt (not after scan fallback).
         await reconnectBleWithScan(protocol, lastBleId, () => {
+          if (autoConnectCancelRef.current) {
+            return Promise.reject(new DOMException('Auto-connect cancelled', 'AbortError'));
+          }
           const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
           if (
             dualNobleBleBothRadiosConfigured() &&
@@ -1519,6 +1544,10 @@ export default function ConnectionPanel({
           }
           return attempt;
         });
+        if (autoConnectCancelRef.current) {
+          maybeNotifyPrimaryBleAutoConnectSettled();
+          return;
+        }
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
         setConnecting(false);
@@ -1568,11 +1597,26 @@ export default function ConnectionPanel({
           : STAGE_WAITING_NOBLE_BLE_MESHCORE,
       );
       await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+      if (autoConnectCancelRef.current) {
+        console.debug(
+          `[ConnectionPanel] ${protocol} secondary BLE auto-connect cancelled after primary settle`,
+        );
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setAutoConnectBleTarget(null);
+        setConnecting(false);
+        setConnectionStage('');
+        return;
+      }
       setConnectionStage('connectionPanel.stageConnecting');
-      void reconnectBleWithScan(protocol, bleId, () =>
-        onAutoConnectRef.current('ble', undefined, undefined, bleId),
-      )
+      void reconnectBleWithScan(protocol, bleId, () => {
+        if (autoConnectCancelRef.current) {
+          return Promise.reject(new DOMException('Auto-connect cancelled', 'AbortError'));
+        }
+        return onAutoConnectRef.current('ble', undefined, undefined, bleId);
+      })
         .then(() => {
+          if (autoConnectCancelRef.current) return;
           isAutoConnectingRef.current = false;
           setIsAutoConnecting(false);
           setConnecting(false);
@@ -1644,7 +1688,8 @@ export default function ConnectionPanel({
     } else {
       maybeNotifyPrimaryBleAutoConnectSettled();
     }
-    // HTTP: do not auto-trigger — show one-click reconnect card instead
+    // HTTP/TCP launch auto-connect is owned by ProtocolAutoConnectCoordinator /
+    // useProtocolRfAutoConnect; this panel path only settles (reconnect card if needed).
   }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig, suppressMountAutoConnect]);
 
   // Cleanup timeout on unmount
@@ -1657,6 +1702,20 @@ export default function ConnectionPanel({
 
   const handleReconnect = useCallback(() => {
     if (!lastConnection) return;
+    // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
+    // BLE/serial auto-connect (orphan socket / connectType flip).
+    autoConnectCancelRef.current = true;
+    cancelProtocolRfAutoConnect(protocol);
+    if (isAutoConnectingRef.current) {
+      console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
+    }
+    isAutoConnectingRef.current = false;
+    setIsAutoConnecting(false);
+    setAutoConnectBleTarget(null);
+    if (autoConnectTimeoutRef.current) {
+      clearTimeout(autoConnectTimeoutRef.current);
+      autoConnectTimeoutRef.current = null;
+    }
     setError(null);
 
     if (lastConnection.type === 'ble') {
@@ -1827,10 +1886,16 @@ export default function ConnectionPanel({
     if (!rfBusy || !isRendererNobleBlePlatform()) return;
 
     if (nobleBleMutexWait.waitingOnNobleBlePeer) {
-      const primary = nobleBleMutexWait.primaryProtocol;
-      if (primary === 'meshtastic') {
+      // Mutex peer wait: show who holds the mutex (`active`), not dual-radio primary.
+      // Using primaryProtocol alone made MeshCore show "Waiting for MeshCore… Meshtastic will
+      // connect" while MeshCore itself was queued behind Meshtastic GATT.
+      const waitingFor =
+        nobleBleMutexWait.waitingForPeer && nobleBleMutexWait.active
+          ? nobleBleMutexWait.active
+          : nobleBleMutexWait.primaryProtocol;
+      if (waitingFor === 'meshtastic') {
         setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHTASTIC);
-      } else if (primary === 'meshcore') {
+      } else if (waitingFor === 'meshcore') {
         setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHCORE);
       }
       return;
@@ -1849,6 +1914,7 @@ export default function ConnectionPanel({
     state.status,
     protocol,
     nobleBleMutexWait.waitingOnNobleBlePeer,
+    nobleBleMutexWait.waitingForPeer,
     nobleBleMutexWait.active,
     nobleBleMutexWait.primaryProtocol,
     connectionStage,
