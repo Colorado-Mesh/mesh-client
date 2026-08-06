@@ -299,7 +299,7 @@ describe('useMeshcoreRuntime stats parsing', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.state.status).toBe('configured');
+      expect(result.current.state.status).toBe('connected');
     });
     expect(result.current.channels).toEqual([]);
     expect(getChannelsMock).not.toHaveBeenCalled();
@@ -311,6 +311,7 @@ describe('useMeshcoreRuntime stats parsing', () => {
     });
 
     await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
       expect(result.current.channels).toEqual([{ index: 1, name: 'Ops', secret: opsSecret }]);
     });
   });
