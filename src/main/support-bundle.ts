@@ -189,12 +189,13 @@ async function readFileOrEmpty(filePath: string): Promise<Buffer> {
 /** Read the last `maxBytes` of a file (or the whole file if smaller). */
 async function readFileTailOrEmpty(filePath: string, maxBytes: number): Promise<Buffer> {
   try {
-    const st = await fs.promises.stat(filePath);
-    if (st.size <= maxBytes) {
-      return await fs.promises.readFile(filePath);
-    }
+    // Open first, then fstat/read via the same handle (avoids CodeQL js/file-system-race TOCTOU).
     const fh = await fs.promises.open(filePath, 'r');
     try {
+      const st = await fh.stat();
+      if (st.size <= maxBytes) {
+        return await fh.readFile();
+      }
       const buf = Buffer.alloc(maxBytes);
       const { bytesRead } = await fh.read(buf, 0, maxBytes, st.size - maxBytes);
       return buf.subarray(0, bytesRead);
