@@ -28,6 +28,20 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('re-runs connect after coalescing when reuseIfRunning is false', () => {
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    expect(connectBody).toContain('opts?.reuseIfRunning !== false');
+    const awaitPendingIdx = connectBody.indexOf('await pending.catch');
+    const coalescedReturnIdx = connectBody.indexOf(
+      'if (opts?.reuseIfRunning !== false)',
+      awaitPendingIdx,
+    );
+    expect(awaitPendingIdx).toBeGreaterThan(-1);
+    expect(coalescedReturnIdx).toBeGreaterThan(awaitPendingIdx);
+    // Fresh-start falls through into a new flight rather than returning early.
+    expect(connectBody.slice(coalescedReturnIdx, coalescedReturnIdx + 120)).toContain('return;');
+  });
+
   it('restartStack awaits in-flight connect before restarting', () => {
     expect(SOURCE).toMatch(
       /const restartStack = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{[\s\S]*?await pending/,

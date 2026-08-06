@@ -20,6 +20,8 @@ describe('reticulumBleBondDesync', () => {
     setReticulumBleBondDesyncActive(true);
     setReticulumBleBondDesyncActive(false);
     unsub();
+    setReticulumBleBondDesyncActive(true);
+    setReticulumBleBondDesyncActive(false);
     expect(seen).toEqual([true, false]);
   });
 });

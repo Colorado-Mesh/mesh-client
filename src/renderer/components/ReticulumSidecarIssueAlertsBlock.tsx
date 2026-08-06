@@ -114,7 +114,12 @@ export function ReticulumSidecarIssueAlertsBlock({
                 className="rounded border border-red-500/50 bg-red-950/50 px-2 py-1 text-[11px] text-red-100 hover:bg-red-900/40"
                 aria-label={t('connectionPanel.reticulumSidecarIssues.bleBondRemovedStopStack')}
                 onClick={() => {
-                  void onStopStack();
+                  void Promise.resolve(onStopStack()).catch((e: unknown) => {
+                    console.warn(
+                      '[ReticulumSidecarIssueAlertsBlock] stop stack failed ' +
+                        (e instanceof Error ? e.message : String(e)),
+                    );
+                  });
                 }}
               >
                 {t('connectionPanel.reticulumSidecarIssues.bleBondRemovedStopStack')}

@@ -624,6 +624,18 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(prepareBody).toContain('meshcorePendingDriverIdentityRef.current');
   });
 
+  it('clears SoftAP dead-bridge latch on every prepareRfConnect (not TCP-only)', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    const softApClearIdx = prepareBody.indexOf('setMeshcoreTcpSoftApDeadAccepted(false)');
+    const bridgeClearIdx = prepareBody.indexOf('meshcoreTcpBridgeDeadRef.current = false');
+    const tcpGuardIdx = prepareBody.indexOf("if (type === 'tcp')");
+    expect(softApClearIdx).toBeGreaterThan(-1);
+    expect(bridgeClearIdx).toBeGreaterThan(-1);
+    expect(tcpGuardIdx).toBeGreaterThan(-1);
+    expect(softApClearIdx).toBeLessThan(tcpGuardIdx);
+    expect(bridgeClearIdx).toBeLessThan(tcpGuardIdx);
+  });
+
   it('clears connection params on manual prepare and latches provisional params before open', () => {
     const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
     expect(prepareBody).toMatch(

@@ -75,7 +75,8 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
       return;
     }
 
-    let cancelled = false;
+    const abort = new AbortController();
+    const cancelledRef: { current: boolean } = { current: false };
 
     const tick = async () => {
       try {
@@ -86,6 +87,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
         // grace stale). Do NOT renew while yield is still active — that infinitely extends
         // the hold when an offline BLE RNode never comes up and starves Meshtastic.
         if (
+          !cancelledRef.current &&
           coexist?.scanOwner === 'reticulum' &&
           !yieldStateRef.current.yieldActive &&
           (graceExpiresAt <= 0 || Date.now() >= graceExpiresAt)
@@ -96,7 +98,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
         }
 
         const interfaces = await fetchReticulumInterfaces();
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         await syncReticulumNobleBleYield(
           {
             sidecarActive: true,
@@ -104,6 +106,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
             nowMs: Date.now(),
             bleConnectGraceExpiresAt: graceExpiresAtRef.current,
             bondDesyncActive: getReticulumBleBondDesyncActive(),
+            signal: abort.signal,
           },
           yieldStateRef.current,
         );
@@ -118,7 +121,8 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
     }, RETICULUM_LOCAL_HEALTH_FAST_POLL_MS);
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
+      abort.abort();
       window.clearInterval(intervalId);
     };
   }, [sidecarActive, bleConnectGraceExpiresAt, nowMs, bondDesyncActive]);

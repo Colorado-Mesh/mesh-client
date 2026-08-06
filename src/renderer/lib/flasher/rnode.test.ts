@@ -2,6 +2,45 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RNode, RNODE_BT_PAIRING_TIMEOUT_MS, RNODE_COMMAND_TIMEOUT_MS } from './rnode';
 
+function createMockSerialPort(): {
+  port: SerialPort;
+  pushFromDevice: (bytes: Uint8Array) => void;
+  written: Uint8Array[];
+} {
+  const written: Uint8Array[] = [];
+  let readableController: ReadableStreamDefaultController<Uint8Array> | null = null;
+  const readable = new ReadableStream<Uint8Array>({
+    start(controller) {
+      readableController = controller;
+    },
+  });
+  const writable = new WritableStream<Uint8Array>({
+    write(chunk) {
+      written.push(chunk);
+    },
+  });
+  const port = {
+    open: () => Promise.resolve(),
+    close: () => {
+      readableController?.close();
+      return Promise.resolve();
+    },
+    get readable() {
+      return readable;
+    },
+    get writable() {
+      return writable;
+    },
+  } as unknown as SerialPort;
+  return {
+    port,
+    written,
+    pushFromDevice: (bytes) => {
+      readableController?.enqueue(bytes);
+    },
+  };
+}
+
 describe('RNode command timeouts', () => {
   it('exports positive default KISS and BT pairing timeouts', () => {
     expect(RNODE_COMMAND_TIMEOUT_MS).toBeGreaterThan(5_000);
@@ -29,12 +68,18 @@ describe('RNode WiFi payloads', () => {
 });
 
 describe('RNode Bluetooth bond clear', () => {
-  it('exposes CMD_BT_UNPAIR 0x70 and clearBluetoothBonds in source', async () => {
+  it('writes framed CMD_BT_UNPAIR 0x01 via clearBluetoothBonds', async () => {
     expect(RNode.CMD_BT_UNPAIR).toBe(0x70);
-    const source = await import('./rnode?raw');
-    expect(source.default).toContain('CMD_BT_UNPAIR');
-    expect(source.default).toContain('clearBluetoothBonds');
-    expect(source.default).toMatch(/sendKissCommand\(\[RNode\.CMD_BT_UNPAIR,\s*0x01\]\)/);
+    const { port, written } = createMockSerialPort();
+    const rnode = await RNode.fromSerialPort(port);
+    await rnode.clearBluetoothBonds();
+    const expected = RNode.createKissFrame([RNode.CMD_BT_UNPAIR, 0x01]);
+    expect(
+      written.some(
+        (chunk) => chunk.length === expected.length && chunk.every((b, i) => b === expected[i]),
+      ),
+    ).toBe(true);
+    await rnode.close();
   });
 });
 
@@ -46,45 +91,6 @@ describe('RNode.startBluetoothPairing', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
-
-  function createMockSerialPort(): {
-    port: SerialPort;
-    pushFromDevice: (bytes: Uint8Array) => void;
-    written: Uint8Array[];
-  } {
-    const written: Uint8Array[] = [];
-    let readableController: ReadableStreamDefaultController<Uint8Array> | null = null;
-    const readable = new ReadableStream<Uint8Array>({
-      start(controller) {
-        readableController = controller;
-      },
-    });
-    const writable = new WritableStream<Uint8Array>({
-      write(chunk) {
-        written.push(chunk);
-      },
-    });
-    const port = {
-      open: () => Promise.resolve(),
-      close: () => {
-        readableController?.close();
-        return Promise.resolve();
-      },
-      get readable() {
-        return readable;
-      },
-      get writable() {
-        return writable;
-      },
-    } as unknown as SerialPort;
-    return {
-      port,
-      written,
-      pushFromDevice: (bytes) => {
-        readableController?.enqueue(bytes);
-      },
-    };
-  }
 
   it('keeps the session open until CMD_BT_PIN arrives (not just the KISS write)', async () => {
     const { port, pushFromDevice, written } = createMockSerialPort();

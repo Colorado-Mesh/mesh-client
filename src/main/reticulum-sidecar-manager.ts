@@ -440,8 +440,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       },
       restartFn: async () => {
         // Hung-only: process still alive but HTTP dead. Renderer owns exit/crash reconnect.
-        this.stopWatchdog();
-        await this.stopProc();
+        // Use stop() so stopPromise stays set and concurrent start() awaits the guard.
+        await this.stop();
         await this.start();
       },
     });

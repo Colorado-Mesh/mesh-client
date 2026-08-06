@@ -258,4 +258,19 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     expect(inactiveInput?.signal?.aborted).toBe(true);
     resolveInactive?.();
   });
+
+  it('passes AbortSignal on active ticks and aborts it on cleanup', async () => {
+    const { unmount } = renderHook(() => {
+      useReticulumNobleBleYieldWatcher(true);
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const activeCall = syncReticulumNobleBleYieldMock.mock.calls.find(
+      (c) => (c[0] as { sidecarActive?: boolean }).sidecarActive === true,
+    );
+    const activeInput = activeCall?.[0] as { signal?: AbortSignal } | undefined;
+    expect(activeInput?.signal).toBeInstanceOf(AbortSignal);
+    expect(activeInput?.signal?.aborted).toBe(false);
+    unmount();
+    expect(activeInput?.signal?.aborted).toBe(true);
+  });
 });

@@ -98,12 +98,18 @@ export async function syncReticulumNobleBleYield(
   const graceExpired = nowMs >= bleConnectGraceExpiresAt;
 
   const coexist = await window.electronAPI.bleCoexistence.getState();
+  if (signal?.aborted) {
+    return;
+  }
   const scanHeldByReticulum = coexist.scanOwner === 'reticulum';
 
   // After connect grace, never re-contend for the adapter: an offline BLE RNode would
   // otherwise loop suspendNoble ↔ yield-released forever and starve Meshtastic/MeshCore.
   if (graceExpired && !scanHeldByReticulum) {
     if (state.yieldActive) {
+      if (signal?.aborted) {
+        return;
+      }
       state.yieldActive = false;
       state.lastPrepareFailedAtMs = undefined;
       await releaseReticulumBleRnodeConnect();
@@ -118,11 +124,20 @@ export async function syncReticulumNobleBleYield(
         return;
       }
       const acquired = await prepareReticulumBleRnodeConnect();
+      if (signal?.aborted) {
+        if (acquired) {
+          await releaseReticulumBleRnodeConnect();
+        }
+        return;
+      }
       if (!acquired) {
         state.lastPrepareFailedAtMs = nowMs;
         return;
       }
       state.lastPrepareFailedAtMs = undefined;
+    }
+    if (signal?.aborted) {
+      return;
     }
     state.yieldActive = true;
   }
@@ -133,6 +148,9 @@ export async function syncReticulumNobleBleYield(
   // "BLE peripheral not found".
   const confirmedNoEnabledBleRnode = !hasEnabledBleRnode && interfaces.length > 0;
   if (state.yieldActive && (bleRnodeOnline || graceExpired || confirmedNoEnabledBleRnode)) {
+    if (signal?.aborted) {
+      return;
+    }
     state.yieldActive = false;
     state.lastPrepareFailedAtMs = undefined;
     await releaseReticulumBleRnodeConnect();

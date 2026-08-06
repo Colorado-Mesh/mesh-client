@@ -590,6 +590,54 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  it('shows rnodeTransportBleHint only for BLE transport', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (path === '/api/v1/rnode/presets') {
+        return Promise.resolve({ presets: [] });
+      }
+      if (path === '/api/v1/config/audit') {
+        return Promise.resolve({ issues: [] });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({ ports: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith(
+        '/api/v1/ble/availability',
+      );
+    });
+
+    const typeSelect = screen.getByLabelText('connectionPanel.reticulumInterfaces.type');
+    await user.selectOptions(typeSelect, 'rnode');
+    const transportSelect = screen.getByLabelText(
+      'connectionPanel.reticulumInterfaces.rnodeTransport',
+    );
+
+    await user.selectOptions(transportSelect, 'serial');
+    expect(
+      screen.queryByText('connectionPanel.reticulumInterfaces.rnodeTransportBleHint'),
+    ).not.toBeInTheDocument();
+
+    await user.selectOptions(transportSelect, 'ble');
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.rnodeTransportBleHint'),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(transportSelect, 'wifi');
+    expect(
+      screen.queryByText('connectionPanel.reticulumInterfaces.rnodeTransportBleHint'),
+    ).not.toBeInTheDocument();
+  });
+
   it('does not flag Wi-Fi RNode tcp:// interface rows as stale USB serial ports', () => {
     render(
       <ReticulumInterfacesPanel

@@ -453,6 +453,26 @@ describe('meshtastic:tcp-connect hostname validation (source contract)', () => {
   it('uses an independent socket ref from meshcore:tcp-connect', () => {
     expect(INDEX_SOURCE).toContain('let meshtasticTcpSocket: net.Socket | null = null;');
   });
+
+  it('destroys the socket on oversized meshtastic:tcp-data chunks without emitting', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const dataIdx = INDEX_SOURCE.indexOf("socket.on('data'", handlerIdx);
+    expect(dataIdx).toBeGreaterThan(handlerIdx);
+    const dataBody = INDEX_SOURCE.slice(dataIdx, dataIdx + 900);
+    expect(dataBody).toContain('MESHTASTIC_TCP_DATA_MAX_BYTES');
+    expect(dataBody).toContain('meshtastic:tcp-data oversized chunk');
+    expect(dataBody).toContain('socket.destroy()');
+    const oversizeIdx = dataBody.indexOf('chunk.length > MESHTASTIC_TCP_DATA_MAX_BYTES');
+    const destroyIdx = dataBody.indexOf('socket.destroy()');
+    const emitIdx = dataBody.indexOf("mainWindow?.webContents.send('meshtastic:tcp-data'");
+    expect(oversizeIdx).toBeGreaterThan(-1);
+    expect(destroyIdx).toBeGreaterThan(oversizeIdx);
+    expect(emitIdx).toBeGreaterThan(destroyIdx);
+    // Oversized branch returns before the emit (emit is only on the success path after return).
+    const returnAfterDestroy = dataBody.slice(destroyIdx, emitIdx);
+    expect(returnAfterDestroy).toContain('return;');
+  });
 });
 
 // ─── IPC sender validation (gps / tak) ──────────────────────────────

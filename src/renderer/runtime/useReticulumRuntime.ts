@@ -1530,9 +1530,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 errLikeToLogString(e),
             );
           });
-          return;
+          // Fresh-start callers (e.g. BLE RNode power-resume) must not reuse the settled flight —
+          // fall through so this invocation starts a new connect (in-flight flag cleared in finally).
+          if (opts?.reuseIfRunning !== false) {
+            return;
+          }
+        } else {
+          throw new Error('Reticulum connect already in progress');
         }
-        throw new Error('Reticulum connect already in progress');
       }
       // Defense in depth: AutostartCoordinator (or any stale caller) must not defeat Stop.
       // Intentional Start clears this via notifyManualStackStart / clear helpers first.

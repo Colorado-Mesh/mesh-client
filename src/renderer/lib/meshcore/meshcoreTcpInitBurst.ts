@@ -132,6 +132,14 @@ export function trackMeshcoreTcpUserTxSend(sendPromise: Promise<unknown>): void 
 /**
  * After notifying live waiters, yield microtasks then await any tracked user sends.
  * SoftAP companions often FIN immediately after getContacts — send must finish first.
+ *
+ * Ordering vs `ensureTcpLiveForUserTx` / `useSendMessage`:
+ * 1. initConn calls `notifyMeshcoreTcpLiveForUserTx()` (resolves waiters),
+ * 2. then `yieldToMeshcoreTcpUserTxSends()`.
+ * Waiters resume in `useSendMessage` after `ensureTcpLiveForUserTx` and only then call
+ * `trackMeshcoreTcpUserTxSend`. Two microtask hops let those continuations register before
+ * we snapshot `inFlightUserTxSends` — do not remove the hops without reworking registration
+ * to happen before the waiter resolves.
  */
 export async function yieldToMeshcoreTcpUserTxSends(): Promise<void> {
   await Promise.resolve();

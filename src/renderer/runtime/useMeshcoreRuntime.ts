@@ -2865,11 +2865,13 @@ export function useMeshcoreRuntime() {
       // and reconnect deferral cannot stick after BLE/serial prepare aborts a prior open.
       meshcoreInitConnInFlightRef.current = false;
       meshcoreInitConnInFlightSetupGenRef.current = null;
+      // SoftAP dead-bridge latch can outlive a TCP session — clear on every prepare so
+      // BLE/serial opens do not inherit a stale "accepted dead bridge" TX path.
+      meshcoreTcpBridgeDeadRef.current = false;
+      setMeshcoreTcpSoftApDeadAccepted(false);
       if (type === 'tcp') {
-        meshcoreTcpBridgeDeadRef.current = false;
         meshcoreTcpInitBurstCapturedRef.current = false;
         meshcoreTcpContactsDumpInFlightRef.current = false;
-        setMeshcoreTcpSoftApDeadAccepted(false);
         if (!opts?.preserveReconnectState) {
           meshcoreDeferredReconnectRef.current = false;
         }

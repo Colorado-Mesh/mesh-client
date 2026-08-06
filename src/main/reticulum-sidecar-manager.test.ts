@@ -673,12 +673,17 @@ describe('ReticulumSidecarManager', () => {
 
     await manager.stop();
 
-    const prepareCall = fetchMock.mock.calls.find(
+    const prepareCallIndex = fetchMock.mock.calls.findIndex(
       (args) => typeof args[0] === 'string' && args[0].includes('/api/v1/stack/prepare-stop'),
     );
-    expect(prepareCall).toBeDefined();
-    expect(prepareCall?.[1]).toMatchObject({ method: 'POST' });
+    expect(prepareCallIndex).toBeGreaterThanOrEqual(0);
+    expect(fetchMock.mock.calls[prepareCallIndex]?.[1]).toMatchObject({ method: 'POST' });
     expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    const prepareOrder = fetchMock.mock.invocationCallOrder[prepareCallIndex];
+    const killOrder = proc.kill.mock.invocationCallOrder[0];
+    expect(prepareOrder).toBeDefined();
+    expect(killOrder).toBeDefined();
+    expect(prepareOrder).toBeLessThan(killOrder);
 
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();

@@ -444,7 +444,7 @@ export const FLASHER_CLEAR_PAIRED_DEVICES_KEYS = new Set([
 
 /** MT often maps Bluetooth "bond" → financial bond/obligation/securities. */
 export const FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS =
-  /\b(Bonos|obligaciones|obligaties|Obligationen|облигаци|債券|债券|tahvil|obligacje|cautionnement|títulos de rádio|radiobonos)\b/i;
+  /(?:\b(?:Bonos|obligaciones|obligaties|Obligationen|tahvil|obligacje|cautionnement|títulos de rádio|radiobonos)\b)|(?:облигаци|債券|债券)/i;
 
 /** Must preserve the USB unpair command token verbatim. */
 export const FLASHER_CMD_BT_UNPAIR_TOKEN = 'CMD_BT_UNPAIR';
