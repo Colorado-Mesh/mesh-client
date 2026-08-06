@@ -210,6 +210,20 @@ export function useSendMessage(
       if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
         void (async () => {
           try {
+            const applySoftApSendResult = (res: { packetId?: number }): void => {
+              const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+              if (res.packetId != null && resolvedId !== provisionalId) {
+                renameMessageId(identityId, provisionalId, resolvedId);
+              }
+              updateMessageStatus(identityId, resolvedId, 'acked');
+              persistMeshcoreOutboundRow(
+                { ...record, id: resolvedId, status: 'acked' },
+                myNodeNum,
+                meshcoreSenderName,
+                'acked',
+                res.packetId != null ? res.packetId >>> 0 : undefined,
+              );
+            };
             const runTx = tryGetMeshcoreSession()?.runMeshcoreUserTxWithLiveTcp;
             if (!runTx) {
               await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
@@ -225,34 +239,25 @@ export function useSendMessage(
                 replyTo,
               });
               trackMeshcoreTcpUserTxSend(sendPromise);
-              await sendPromise;
-              updateMessageStatus(identityId, provisionalId, 'acked');
-              persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'acked');
+              applySoftApSendResult(await sendPromise);
               return;
             }
-            await runTx(async () => {
+            const res = await runTx(async () => {
               const liveHandle = connectionDriver.getHandle(identityId);
               if (!liveHandle) {
                 throw new Error('MeshCore TCP live reopen produced no handle');
               }
-              const sendPromise = identity.protocol.sendMessage(liveHandle, {
+              return identity.protocol.sendMessage(liveHandle, {
                 text: wireText,
                 channelIndex,
                 destination,
                 destinationPubKey,
                 replyTo,
               });
-              await sendPromise;
             });
             // Only after SoftAP retry loop resolves — not inside the parked op (latch-retry
             // may re-run the send; premature acked would stick if attempt 2 failed).
-            updateMessageStatus(identityId, provisionalId, 'acked');
-            persistMeshcoreOutboundRow(
-              { ...record, status: 'acked' },
-              myNodeNum,
-              meshcoreSenderName,
-              'acked',
-            );
+            applySoftApSendResult(res);
           } catch (e: unknown) {
             const errMsg = errLikeToLogString(e);
             console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);

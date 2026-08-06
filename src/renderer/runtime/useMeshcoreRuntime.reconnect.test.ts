@@ -310,6 +310,9 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('SoftAP user TX — quiet TCP reopen (no connection-lost)');
     expect(RUNTIME_SOURCE).toContain('meshcoreSoftApUserTxReopenInFlightRef');
     expect(RUNTIME_SOURCE).toContain('meshcoreConnectForSoftApTxRef');
+    expect(RUNTIME_SOURCE).toMatch(
+      /useLayoutEffect\(\(\) => \{\s*meshcoreConnectForSoftApTxRef\.current = connect;/,
+    );
     expect(RUNTIME_SOURCE).toContain('MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS');
     expect(RUNTIME_SOURCE).toContain(
       'SoftAP user-TX reopen failed — restore SoftAP-accepted configured',

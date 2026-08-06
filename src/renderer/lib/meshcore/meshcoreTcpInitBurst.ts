@@ -211,14 +211,14 @@ interface SoftApPendingUserTx {
   reject: (reason?: unknown) => void;
 }
 
-let softApPendingUserTx: SoftApPendingUserTx | null = null;
+/** FIFO parked SoftAP user commands (concurrent sends share one quiet reopen). */
+const softApPendingUserTxQueue: SoftApPendingUserTx[] = [];
 
 /**
- * Park a SoftAP user command so SoftAP `initConn` can run it as the first companion RPC
- * (before getSelfInfo / contacts). Returns a promise that settles when that run completes.
+ * Park a SoftAP user command so SoftAP `initConn` can run it (FIFO) as companion RPC(s)
+ * before getSelfInfo / contacts. Returns a promise that settles when that run completes.
  */
 export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise<T> {
-  clearMeshcoreSoftApPendingUserTx(new Error('MeshCore SoftAP pending TX superseded'));
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
   const resultPromise = new Promise<T>((res, rej) => {
@@ -230,7 +230,7 @@ export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise
     () => undefined,
     () => undefined,
   );
-  softApPendingUserTx = {
+  softApPendingUserTxQueue.push({
     reject,
     run: async () => {
       try {
@@ -241,29 +241,34 @@ export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise
         throw e;
       }
     },
-  };
+  });
   return resultPromise;
 }
 
-/** SoftAP initConn: run and clear the parked user TX (if any). */
+/** SoftAP initConn: run and clear all parked user TX in FIFO order (if any). */
 export async function runMeshcoreSoftApPendingUserTx(): Promise<boolean> {
-  const pending = softApPendingUserTx;
-  softApPendingUserTx = null;
-  if (!pending) return false;
-  await pending.run();
-  return true;
+  let ran = false;
+  while (softApPendingUserTxQueue.length > 0) {
+    const pending = softApPendingUserTxQueue.shift();
+    if (!pending) break;
+    await pending.run();
+    ran = true;
+  }
+  return ran;
 }
 
-/** Clear a parked SoftAP TX that will never run (open aborted / superseded). */
+/** Clear parked SoftAP TX that will never run (open aborted / ensure failed). */
 export function clearMeshcoreSoftApPendingUserTx(err?: Error): void {
-  const pending = softApPendingUserTx;
-  if (!pending) return;
-  softApPendingUserTx = null;
-  pending.reject(err ?? new Error('MeshCore SoftAP pending TX cleared'));
+  const batch = softApPendingUserTxQueue.splice(0);
+  if (batch.length === 0) return;
+  const reason = err ?? new Error('MeshCore SoftAP pending TX cleared');
+  for (const pending of batch) {
+    pending.reject(reason);
+  }
 }
 
 export function hasMeshcoreSoftApPendingUserTx(): boolean {
-  return softApPendingUserTx != null;
+  return softApPendingUserTxQueue.length > 0;
 }
 
 /** Error message matching {@link isMeshcoreTcpTransportDeadError} for SoftAP latch-retry. */

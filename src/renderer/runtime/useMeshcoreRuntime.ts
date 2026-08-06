@@ -4007,7 +4007,9 @@ export function useMeshcoreRuntime() {
     },
     [prepareRfConnect, attachRfSession, handleRfConnectFailure],
   );
-  meshcoreConnectForSoftApTxRef.current = connect;
+  useLayoutEffect(() => {
+    meshcoreConnectForSoftApTxRef.current = connect;
+  }, [connect]);
 
   /**
    * Gesture-free reconnect — called on startup when a last connection is remembered.
@@ -6748,7 +6750,9 @@ export function useMeshcoreRuntime() {
 
       if (!(secret instanceof Uint8Array) || secret.length === 0) {
         console.warn(
-          '[useMeshcoreRuntime] setMeshcoreChannel: invalid secret ' + errLikeToLogString(secret),
+          `[useMeshcoreRuntime] setMeshcoreChannel: invalid secret length=${
+            secret instanceof Uint8Array ? secret.length : 'n/a'
+          }`,
         );
         throw new Error('Channel secret must be a non-empty Uint8Array');
       }

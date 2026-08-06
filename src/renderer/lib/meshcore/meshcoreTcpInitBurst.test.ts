@@ -241,10 +241,31 @@ describe('SoftAP pending user TX slot', () => {
     expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
   });
 
-  it('clear rejects a parked TX that never ran', async () => {
-    const resultPromise = setMeshcoreSoftApPendingUserTx(() => Promise.resolve('never'));
+  it('runs concurrent parked ops in FIFO order', async () => {
+    const order: string[] = [];
+    const first = setMeshcoreSoftApPendingUserTx(() => {
+      order.push('a');
+      return Promise.resolve(1);
+    });
+    const second = setMeshcoreSoftApPendingUserTx(() => {
+      order.push('b');
+      return Promise.resolve(2);
+    });
+    expect(hasMeshcoreSoftApPendingUserTx()).toBe(true);
+    const ran = await runMeshcoreSoftApPendingUserTx();
+    expect(ran).toBe(true);
+    await expect(first).resolves.toBe(1);
+    await expect(second).resolves.toBe(2);
+    expect(order).toEqual(['a', 'b']);
+    expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
+  });
+
+  it('clear rejects all parked TX that never ran', async () => {
+    const first = setMeshcoreSoftApPendingUserTx(() => Promise.resolve('never-a'));
+    const second = setMeshcoreSoftApPendingUserTx(() => Promise.resolve('never-b'));
     clearMeshcoreSoftApPendingUserTx(new Error('aborted'));
-    await expect(resultPromise).rejects.toThrow('aborted');
+    await expect(first).rejects.toThrow('aborted');
+    await expect(second).rejects.toThrow('aborted');
     expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
   });
 });
