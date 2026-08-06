@@ -284,13 +284,12 @@ export function analyzeNode(
     : null;
   if (flapping) return flapping;
 
-  const hopGoblin = detectHopGoblin(
-    node,
-    homeNode,
-    distanceMultiplier,
-    distanceOffsetKm,
-    hopsThreshold,
-  );
+  // MeshCore: nearby multi-hop contacts are poorly connected / repeater-mediated,
+  // not Meshtastic-style critical over-hopping — skip GPS+hop heuristics.
+  const hopGoblin =
+    capabilities?.hasDistanceBasedHopAnomalies === false
+      ? null
+      : detectHopGoblin(node, homeNode, distanceMultiplier, distanceOffsetKm, hopsThreshold);
   if (hopGoblin) return hopGoblin;
 
   // MeshCore per-hop SNR weak link (only when trace data is present)
@@ -299,7 +298,9 @@ export function analyzeNode(
     if (weakLink) return weakLink;
   }
 
-  if (badRoute?.severity === 'warning') return badRoute;
+  if (badRoute?.severity === 'warning' && capabilities?.hasDistanceBasedHopAnomalies !== false) {
+    return badRoute;
+  }
 
   if (noisyNode) return noisyNode;
 

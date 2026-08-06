@@ -49,16 +49,16 @@ The panel also shows a breakdown of error and warning counts, and a "This node" 
 
 ## 2. Routing Anomalies
 
-Routing anomaly detection runs on Meshtastic nodes. MeshCore also has `hasHopCount: true` (hops via `outPathLen`), so the same hop-based anomalies run for MeshCore contacts; only protocols where `hasHopCount` is `false` (currently Reticulum) skip them.
+Routing anomaly detection runs on Meshtastic nodes. MeshCore also has `hasHopCount: true` (hops via `outPathLen`), so hop-count-based findings that remain meaningful on MeshCore still run (`impossible_hop`, `route_flapping` / `path_instability`, `weak_link`). Distance-based GPS+hop heuristics (`hop_goblin`, close-in `bad_route` warning) are gated by `hasDistanceBasedHopAnomalies` — **true** for Meshtastic, **false** for MeshCore (nearby multi-hop contacts are poorly connected / repeater-mediated, not Meshtastic-style critical over-hopping). Protocols where `hasHopCount` is `false` (currently Reticulum) skip hop-based LoRa routing anomalies entirely.
 
 Detection is run in priority order; first match wins:
 
 1. `impossible_hop`
-2. `bad_route` (error variant)
+2. `bad_route` (error variant — e.g. high duplication)
 3. `route_flapping` / `path_instability` (MeshCore: prefers PathUpdated event timestamps when available)
-4. `hop_goblin`
+4. `hop_goblin` (Meshtastic only — requires `hasDistanceBasedHopAnomalies`)
 5. `weak_link` (MeshCore only, requires `hasPerHopSnr` capability and a completed trace)
-6. `bad_route` (warning variant)
+6. `bad_route` (warning variant — close-in over-hopping; Meshtastic only — requires `hasDistanceBasedHopAnomalies`)
 
 Routing rows persist for up to **24 hours** by default (configurable 1–168 h in DiagnosticsPanel → Display Settings).
 
