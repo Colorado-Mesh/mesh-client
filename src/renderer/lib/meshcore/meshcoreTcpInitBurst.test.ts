@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { isMeshcoreTcpBurstDeadBridge } from './meshcoreTcpInitBurst';
+import {
+  isMeshcoreTcpBurstDeadBridge,
+  notifyMeshcoreTcpWriteDead,
+  setMeshcoreTcpWriteDeadListener,
+  shouldDeferMeshcoreTcpReconnectAfterBurst,
+} from './meshcoreTcpInitBurst';
 
 describe('isMeshcoreTcpBurstDeadBridge', () => {
   it('is true only for tcp with burst captured and bridge dead', () => {
@@ -25,5 +30,66 @@ describe('isMeshcoreTcpBurstDeadBridge', () => {
         bridgeDead: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe('shouldDeferMeshcoreTcpReconnectAfterBurst', () => {
+  it('defers when burst held and everConfigured is still false (late IPC after deviceConfigured)', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: true,
+        everConfigured: false,
+        deviceConfigured: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('defers on reconnect opens when deviceConfigured is still false', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: true,
+        everConfigured: true,
+        deviceConfigured: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('does not defer once both everConfigured and deviceConfigured are true', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: true,
+        everConfigured: true,
+        deviceConfigured: true,
+      }),
+    ).toBe(false);
+  });
+
+  it('does not defer before burst capture', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: false,
+        everConfigured: false,
+        deviceConfigured: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('notifyMeshcoreTcpWriteDead', () => {
+  afterEach(() => {
+    setMeshcoreTcpWriteDeadListener(null);
+  });
+
+  it('invokes the registered listener', () => {
+    const listener = vi.fn();
+    setMeshcoreTcpWriteDeadListener(listener);
+    notifyMeshcoreTcpWriteDead();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('is a no-op without a listener', () => {
+    expect(() => {
+      notifyMeshcoreTcpWriteDead();
+    }).not.toThrow();
   });
 });

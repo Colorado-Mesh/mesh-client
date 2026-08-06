@@ -6197,7 +6197,9 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
         settled = true;
         reject(err);
       }
-      if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
+      // Do not null meshcoreTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
+      // etc.; nulling early makes close's active-socket guard fail and swallows
+      // meshcore:tcp-disconnected (renderer never reconnects). close owns that transition.
     });
   });
 });
@@ -6315,7 +6317,9 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
         settled = true;
         reject(err);
       }
-      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      // Do not null meshtasticTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
+      // etc.; nulling early makes close's active-socket guard fail and swallows
+      // meshtastic:tcp-disconnected (renderer never reconnects). close owns that transition.
     });
   });
 });

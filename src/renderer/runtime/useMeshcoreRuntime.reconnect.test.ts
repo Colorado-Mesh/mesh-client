@@ -274,18 +274,25 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
     // is the only automatic recovery path for a dropped TCP connection.
     expect(RUNTIME_SOURCE).toMatch(
-      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?connectingTcp[\s\S]{0,400}meshcoreTcpBridgeDeadRef\.current = true;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
+      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?latchTcpBridgeDeadForBurst\('ipc'\)/,
     );
     expect(RUNTIME_SOURCE).toContain("meshcoreConnectTypeRef.current === 'tcp'");
+    expect(RUNTIME_SOURCE).toContain("source === 'ipc'");
+    expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
   });
 
   it('defers TCP reconnect after init burst capture instead of aborting initConn', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreTcpInitBurstCapturedRef');
+    expect(RUNTIME_SOURCE).toContain('shouldDeferMeshcoreTcpReconnectAfterBurst');
     expect(RUNTIME_SOURCE).toContain(
       'TCP closed after init burst — defer reconnect until configured',
     );
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP write-dead after init burst — latch bridge dead, defer reconnect',
+    );
+    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpWriteDeadListener');
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreTcpInitBurstCapturedRef\.current &&\s*!meshcoreDeviceConfiguredRef\.current[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
+      /shouldDeferMeshcoreTcpReconnectAfterBurst\(\{[\s\S]*?burstCaptured:[\s\S]*?everConfigured:[\s\S]*?deviceConfigured:[\s\S]*?\}\)[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
     expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — reconnecting dead bridge');
     expect(RUNTIME_SOURCE).toContain(

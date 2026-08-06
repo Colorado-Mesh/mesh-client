@@ -167,7 +167,11 @@ import {
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
-import { isMeshcoreTcpBurstDeadBridge } from '../lib/meshcore/meshcoreTcpInitBurst';
+import {
+  isMeshcoreTcpBurstDeadBridge,
+  setMeshcoreTcpWriteDeadListener,
+  shouldDeferMeshcoreTcpReconnectAfterBurst,
+} from '../lib/meshcore/meshcoreTcpInitBurst';
 import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_DATA,
@@ -2399,6 +2403,16 @@ export function useMeshcoreRuntime() {
             if (isMeshcoreSetupAbortError(e)) throw e;
             // Burst already held: soft-skip channels on dead bridge rather than abort configured.
             if (meshcoreTcpInitBurstCapturedRef.current && isMeshcoreTcpTransportDeadError(e)) {
+              meshcoreTcpBridgeDeadRef.current = true;
+              if (
+                shouldDeferMeshcoreTcpReconnectAfterBurst({
+                  burstCaptured: true,
+                  everConfigured: meshcoreEverConfiguredRef.current,
+                  deviceConfigured: meshcoreDeviceConfiguredRef.current,
+                })
+              ) {
+                meshcoreDeferredReconnectRef.current = true;
+              }
               console.warn(
                 '[useMeshcoreRuntime] getChannels skipped after TCP burst (bridge dead) ' +
                   errLikeToLogString(e),
@@ -7249,25 +7263,47 @@ export function useMeshcoreRuntime() {
   // After getContacts burst is captured: mark dead + defer reconnect — do not sync-bump
   // setupGeneration via handleMeshcoreConnectionLost (that cancels initConn before configured).
   useEffect(() => {
-    const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+    const latchTcpBridgeDeadForBurst = (source: 'ipc' | 'write'): void => {
       // Params are only written after a successful attachRfSession. Mid-first-connect peer FIN
       // (Neal: after getContacts) must still abort initConn — gate on the in-flight connect type too.
       const storedTcp = meshcoreConnectionParamsRef.current?.rfType === 'tcp';
       const connectingTcp = meshcoreConnectTypeRef.current === 'tcp';
       if (!storedTcp && !connectingTcp) return;
       meshcoreTcpBridgeDeadRef.current = true;
-      // deviceConfigured is false until the TCP configured block; everConfigured can stay true
-      // across reconnect opens — use deviceConfigured so mid-init burst FINs defer on every open.
-      if (meshcoreTcpInitBurstCapturedRef.current && !meshcoreDeviceConfiguredRef.current) {
+      // Defer while this open can still finish from the contacts burst (!everConfigured covers
+      // late IPC after premature deviceConfigured; !deviceConfigured covers mid-reconnect opens).
+      if (
+        shouldDeferMeshcoreTcpReconnectAfterBurst({
+          burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+          everConfigured: meshcoreEverConfiguredRef.current,
+          deviceConfigured: meshcoreDeviceConfiguredRef.current,
+        })
+      ) {
         meshcoreDeferredReconnectRef.current = true;
         console.debug(
-          '[useMeshcoreRuntime] TCP closed after init burst — defer reconnect until configured',
+          source === 'write'
+            ? '[useMeshcoreRuntime] TCP write-dead after init burst — latch bridge dead, defer reconnect'
+            : '[useMeshcoreRuntime] TCP closed after init burst — defer reconnect until configured',
         );
         return;
       }
-      handleMeshcoreConnectionLostRef.current();
+      if (source === 'ipc') {
+        handleMeshcoreConnectionLostRef.current();
+      }
+      // write-dead while fully configured: leave reconnect to meshcore:tcp-disconnected IPC
+      // so we do not double-enter the owner.
+    };
+
+    setMeshcoreTcpWriteDeadListener(() => {
+      latchTcpBridgeDeadForBurst('write');
     });
-    return () => unsub();
+    const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+      latchTcpBridgeDeadForBurst('ipc');
+    });
+    return () => {
+      setMeshcoreTcpWriteDeadListener(null);
+      unsub();
+    };
   }, []);
 
   useEffect(() => {

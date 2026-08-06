@@ -12,6 +12,7 @@ import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
+import { notifyMeshcoreTcpWriteDead } from '../../meshcore/meshcoreTcpInitBurst';
 import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { notifyNobleBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
@@ -158,6 +159,9 @@ class IpcTcpConnection {
             // Fail closed so meshcore.js stops issuing RPCs after the bridge is gone
             // (n7eal: peer FIN → no active socket write storm).
             notifyDisconnectedOnce(this);
+            // Latch bridge-dead in the runtime immediately — do not wait for
+            // meshcore:tcp-disconnected IPC (can arrive after getChannels/configured).
+            notifyMeshcoreTcpWriteDead();
             throw e;
           }
         }

@@ -151,6 +151,21 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
       /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*prev\.destroy\(\)/,
     );
   });
+
+  it('does not null meshtasticTcpSocket in the error handler (error-before-close race)', () => {
+    // Node emits 'error' then 'close' on ECONNRESET. If error nulls the ref first, close's
+    // active-socket guard fails and meshtastic:tcp-disconnected is swallowed.
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const errorIdx = INDEX_SOURCE.indexOf("socket.on('error'", handlerIdx);
+    expect(errorIdx).toBeGreaterThan(handlerIdx);
+    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
+    expect(closeIdx).toBeGreaterThan(handlerIdx);
+    expect(errorIdx).toBeGreaterThan(closeIdx);
+    const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
+    expect(errorBody).not.toMatch(/meshtasticTcpSocket\s*=\s*null/);
+    expect(errorBody).toContain('Do not null meshtasticTcpSocket');
+  });
 });
 
 // ─── meshcore:tcp-write byte element validation ──────────────────────
@@ -400,6 +415,21 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     expect(connectBody).toContain(
       'socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS)',
     );
+  });
+
+  it('does not null meshcoreTcpSocket in the error handler (error-before-close race)', () => {
+    // Node emits 'error' then 'close' on ECONNRESET. If error nulls the ref first, close's
+    // active-socket guard fails and meshcore:tcp-disconnected is swallowed (n7eal).
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const errorIdx = INDEX_SOURCE.indexOf("socket.on('error'", handlerIdx);
+    expect(errorIdx).toBeGreaterThan(handlerIdx);
+    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
+    expect(closeIdx).toBeGreaterThan(handlerIdx);
+    expect(errorIdx).toBeGreaterThan(closeIdx);
+    const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
+    expect(errorBody).not.toMatch(/meshcoreTcpSocket\s*=\s*null/);
+    expect(errorBody).toContain('Do not null meshcoreTcpSocket');
   });
 });
 

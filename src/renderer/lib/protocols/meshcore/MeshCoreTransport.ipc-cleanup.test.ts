@@ -133,6 +133,10 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
     });
 
     it('calls onDisconnected once when tcp write fails (fail closed)', async () => {
+      const { setMeshcoreTcpWriteDeadListener } =
+        await import('../../meshcore/meshcoreTcpInitBurst');
+      const writeDead = vi.fn();
+      setMeshcoreTcpWriteDeadListener(writeDead);
       const offData = vi.fn();
       const offDisc = vi.fn();
       window.electronAPI.meshcore.tcp.onData = vi.fn().mockReturnValue(offData);
@@ -151,11 +155,14 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
 
       await expect(writable.write(new Uint8Array([1, 2, 3]))).rejects.toThrow('no active socket');
       expect(discSpy).toHaveBeenCalledTimes(1);
+      expect(writeDead).toHaveBeenCalledTimes(1);
 
       await expect(writable.write(new Uint8Array([4]))).rejects.toThrow('no active socket');
       expect(discSpy).toHaveBeenCalledTimes(1);
+      expect(writeDead).toHaveBeenCalledTimes(2);
       expect(offData).toHaveBeenCalledTimes(1);
       expect(offDisc).toHaveBeenCalledTimes(1);
+      setMeshcoreTcpWriteDeadListener(null);
     });
 
     it('serializes overlapping TCP connects (single-flight chain)', async () => {

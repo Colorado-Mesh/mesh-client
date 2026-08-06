@@ -416,6 +416,51 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
+  it('tcp: write-dead after getContacts (before onDisconnected IPC) completes from burst', async () => {
+    const { notifyMeshcoreTcpWriteDead } = await import('../lib/meshcore/meshcoreTcpInitBurst');
+    const callOrder: string[] = [];
+    const gates = installSequentialInitGates(callOrder);
+    // Capture disconnect callbacks but do not fire them — simulate IPC lag behind write failures.
+    vi.mocked(window.electronAPI.meshcore.tcp.onDisconnected).mockImplementation(() => () => {});
+
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('tcp', '192.168.88.29:5050');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(callOrder).toContain('getSelfInfo:start');
+    });
+    gates.selfInfoGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:start');
+    });
+    gates.contactsGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:end');
+    });
+
+    // Latch bridge dead as soon as contacts are held — before or during getChannels.
+    await act(async () => {
+      notifyMeshcoreTcpWriteDead();
+      await Promise.resolve();
+    });
+    // Unblock a racing getChannels; deadWatch / skip path must not need its result.
+    gates.channelsGate.resolve(undefined);
+
+    await act(async () => {
+      await connectPromise;
+    });
+
+    expect(['configured', 'reconnecting']).toContain(result.current.state.status);
+    // Soft-skip or race-reject must not treat channels as successfully applied from a live bridge.
+    // getChannels:end may appear if the mock resolved after skip; status + reconnect is the contract.
+    expect(result.current.state.status).not.toBe('connected');
+    unmount();
+  });
+
   it('tcp: peer FIN before getContacts completes aborts init without getChannels', async () => {
     const callOrder: string[] = [];
     const gates = installSequentialInitGates(callOrder);
