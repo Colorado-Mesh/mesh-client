@@ -94,7 +94,12 @@ export async function probeHttpLinkRttMs(httpAddress: string): Promise<number | 
   }
 }
 
-/** Probe TCP connect RTT via main process (connect then destroy). */
+/**
+ * Probe TCP connect RTT via main process (connect then destroy).
+ *
+ * Never call this with `protocol: 'meshtastic'` (or omit `protocol`, whose
+ * default is `'meshtastic'`) — see `parseTcpProbeTarget`'s docstring for why.
+ */
 export async function probeTcpLinkRttMs(
   address: string,
   protocol: 'meshtastic' | 'meshcore' = 'meshtastic',
