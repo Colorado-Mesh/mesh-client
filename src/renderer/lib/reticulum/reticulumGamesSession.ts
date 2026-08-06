@@ -138,3 +138,15 @@ export async function deleteGamesSession(sessionId: string): Promise<void> {
     pushAppToast(i18n.t('gamesPanel.errors.deleteFailed'), 'error');
   }
 }
+
+/**
+ * Select an LRGP session after refreshing the list (deep-link / notification entry).
+ * Caller is responsible for switching protocol + Games tab.
+ */
+export async function openReticulumGameSession(sessionId: string): Promise<boolean> {
+  const id = sessionId.trim().toLowerCase();
+  if (!/^[0-9a-f]{16,64}$/.test(id)) return false;
+  await refreshGamesSessions();
+  useReticulumGamesStore.getState().selectSession(id);
+  return true;
+}

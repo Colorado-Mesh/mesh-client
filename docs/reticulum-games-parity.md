@@ -7,6 +7,8 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns on new Ratspeak releases with stub-kind `games-parity`.
 
+**Last review:** 2026-08-05 vs Ratspeak **v1.0.25** (release notes were protocol/LXMF/UI — no Games command surface changes). `lrgp-rs` floated at `0b55361` (`origin/main`).
+
 Status: `done` | `partial` | `wontfix` | `todo`
 
 ## Commands / API
@@ -24,19 +26,19 @@ Status: `done` | `partial` | `wontfix` | `todo`
 
 ## UI
 
-| Ratspeak UI                         | mesh-client                      | Status  | Notes                                     |
-| ----------------------------------- | -------------------------------- | ------- | ----------------------------------------- |
-| Games tab                           | Left-rail Games (`Gamepad2`)     | done    | Reticulum-only via `hasLrgpGames`         |
-| Session list filters                | GamesPanel filters               | done    |                                           |
-| Unread badge                        | session unread + Games tab badge | done    | sidebar red pill via `gamesUnread`        |
-| TTT board                           | `TicTacToeBoard`                 | done    |                                           |
-| Chess board                         | `ChessBoard`                     | done    |                                           |
-| Challenge from contacts             | Peers / Chat DM Challenge        | done    |                                           |
-| Draw / resign                       | session actions                  | done    |                                           |
-| Delivery state / resend             | resend IPC + UI                  | partial | match Ratspeak delivery UX                |
-| Notification route `lrgp:<session>` | deep-link                        | todo    | follow MeshClientDeepLinkHost later       |
-| Optimistic rollback UI              | local reject + action_result     | partial | sidecar rollback; polish UI               |
-| Win celebration                     | —                                | wontfix | optional polish; not required for interop |
+| Ratspeak UI                         | mesh-client                               | Status  | Notes                                                                     |
+| ----------------------------------- | ----------------------------------------- | ------- | ------------------------------------------------------------------------- |
+| Games tab                           | Left-rail Games (`Gamepad2`)              | done    | Reticulum-only via `hasLrgpGames`                                         |
+| Session list filters                | GamesPanel filters                        | done    |                                                                           |
+| Unread badge                        | session unread + Games tab badge          | done    | sidebar red pill via `gamesUnread`                                        |
+| TTT board                           | `TicTacToeBoard`                          | done    |                                                                           |
+| Chess board                         | `ChessBoard`                              | done    |                                                                           |
+| Challenge from contacts             | Peers / Chat DM Challenge                 | done    |                                                                           |
+| Draw / resign                       | session actions                           | done    |                                                                           |
+| Delivery state / resend             | resend IPC + UI                           | partial | Resend on `action_result` fail; no session `delivery_state` / LXMF bridge |
+| Notification route `lrgp:<session>` | `lrgp:` + `lxm://game/<id>` → Games tab   | done    | `MeshClientDeepLinkHost` + `openReticulumGameSession`                     |
+| Optimistic rollback UI              | session refresh on failed `action_result` | partial | Sidecar rollback; no client-side optimistic board backup                  |
+| Win celebration                     | —                                         | wontfix | optional polish; not required for interop                                 |
 
 ## Wire interop
 
@@ -48,3 +50,9 @@ Status: `done` | `partial` | `wontfix` | `todo`
 | mesh-client ↔ Ratspeak Chess    | done   |
 
 Manual gold test: two clients on a TCP hub — challenge → accept → play → resign/draw.
+
+## Remaining follow-ups
+
+1. **Session `delivery_state`** — Ratspeak tracks `sending` / `propagating` / `failed` via LXMF outbound callbacks; mesh-client still gates resend mainly on WS `games.action_result`.
+2. **Persist last outbound envelope** across sidecar restart (Ratspeak DB; mesh-client in-memory only).
+3. Chess promotion picker / threefold–50-move claim UX (Ratspeak has; mesh-client auto-queen).

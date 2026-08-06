@@ -234,6 +234,7 @@ import {
   setReticulumGamesTabFocused,
   totalGamesUnread,
 } from './lib/reticulum/reticulumGamesNotifications';
+import { openReticulumGameSession } from './lib/reticulum/reticulumGamesSession';
 import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
@@ -1985,6 +1986,43 @@ function AppContent() {
       setGamesTabVisited(true);
     }
   }, [activePanelIndex]);
+
+  const handleOpenGamesSession = useCallback(
+    (sessionId: string) => {
+      if (!capabilities.hasLrgpGames) return;
+      void (async () => {
+        if (protocol !== 'reticulum') {
+          lastTabByProtocol.current.set(protocol, activeTab);
+          lastPanelByProtocol.current.set(protocol, activePanelIndex);
+          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+          setProtocol('reticulum');
+        }
+        const gamesTabIndex = findFilteredTabIndexForPanel(
+          selectByProtocol(tabsByProtocol, 'reticulum'),
+          GAMES_PANEL_INDEX,
+        );
+        if (gamesTabIndex >= 0) {
+          setActiveTab(gamesTabIndex);
+          setGamesTabVisited(true);
+        }
+        await openReticulumGameSession(sessionId);
+      })();
+    },
+    [activePanelIndex, activeTab, capabilities.hasLrgpGames, protocol, tabsByProtocol],
+  );
+
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ sessionId?: string }>).detail;
+      if (typeof detail?.sessionId === 'string' && detail.sessionId.trim()) {
+        handleOpenGamesSession(detail.sessionId);
+      }
+    };
+    window.addEventListener('mesh-client:openGamesSession', onOpen);
+    return () => {
+      window.removeEventListener('mesh-client:openGamesSession', onOpen);
+    };
+  }, [handleOpenGamesSession]);
 
   useEffect(() => {
     setReticulumGamesTabFocused(

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildLrgpGameSessionRoute,
   buildLxmaContactUri,
   buildLxmContactUri,
+  buildLxmGameSessionUri,
   buildLxmIdentityUri,
   buildMeshcoreChannelAddUri,
   buildMeshcoreContactAddUri,
@@ -293,6 +295,33 @@ describe('meshClientDeepLink', () => {
     it('does not forward junk schemes', () => {
       expect(isForwardableMeshClientOpenUrl('ftp://x')).toBe(false);
       expect(isForwardableMeshClientOpenUrl('meshcore://other/path')).toBe(false);
+    });
+  });
+
+  describe('lxmGameSession / lrgp', () => {
+    const SESSION = 'a'.repeat(16);
+
+    it('classifies lxm://game/<session> and lrgp:<session>', () => {
+      expect(classifyMeshClientDeepLink(`lxm://game/${SESSION}`)).toEqual({
+        kind: 'lxmGameSession',
+        sessionId: SESSION,
+      });
+      expect(classifyMeshClientDeepLink(`lrgp:${SESSION.toUpperCase()}`)).toEqual({
+        kind: 'lxmGameSession',
+        sessionId: SESSION,
+      });
+      expect(isForwardableMeshClientOpenUrl(`lrgp:${SESSION}`)).toBe(true);
+    });
+
+    it('rejects short or non-hex session ids', () => {
+      expect(classifyMeshClientDeepLink('lxm://game/abc').kind).toBe('unknown');
+      expect(classifyMeshClientDeepLink('lrgp:not-hex!!!!!!!!').kind).toBe('unknown');
+    });
+
+    it('builds routes and finds argv entries', () => {
+      expect(buildLxmGameSessionUri(SESSION)).toBe(`lxm://game/${SESSION}`);
+      expect(buildLrgpGameSessionRoute(SESSION)).toBe(`lrgp:${SESSION}`);
+      expect(findLxmUrlInArgv(['app', `lrgp:${SESSION}`, '--flag'])).toBe(`lrgp:${SESSION}`);
     });
   });
 });

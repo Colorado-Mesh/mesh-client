@@ -11,7 +11,7 @@ vi.mock('@/renderer/components/Toast', () => ({
 
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 
-import { markGamesSessionRead } from './reticulumGamesSession';
+import { markGamesSessionRead, openReticulumGameSession } from './reticulumGamesSession';
 
 function makeSession(overrides: Record<string, unknown> = {}) {
   return {
@@ -73,5 +73,36 @@ describe('markGamesSessionRead', () => {
     expect(useReticulumGamesStore.getState().sessions[0]).toEqual(
       expect.objectContaining({ updated_at: 20, unread: 3 }),
     );
+  });
+});
+
+describe('openReticulumGameSession', () => {
+  const listSessions = vi.fn();
+
+  beforeEach(() => {
+    useReticulumGamesStore.getState().clear();
+    listSessions.mockReset();
+    listSessions.mockResolvedValue({
+      sessions: [makeSession({ session_id: 'a'.repeat(16) })],
+    });
+    Object.assign(window, {
+      electronAPI: {
+        reticulum: {
+          games: { listSessions, markRead: vi.fn() },
+        },
+      },
+    });
+  });
+
+  it('refreshes sessions and selects the target id', async () => {
+    const id = 'a'.repeat(16);
+    await expect(openReticulumGameSession(id)).resolves.toBe(true);
+    expect(listSessions).toHaveBeenCalled();
+    expect(useReticulumGamesStore.getState().selectedSessionId).toBe(id);
+  });
+
+  it('rejects invalid session ids', async () => {
+    await expect(openReticulumGameSession('nope')).resolves.toBe(false);
+    expect(listSessions).not.toHaveBeenCalled();
   });
 });
