@@ -12,7 +12,7 @@
 - [Soord](https://github.com/soord)
 - [WB3IHY](https://github.com/WB3IHY)
 - [Letark](https://github.com/Letark) - Apple code signing & notarization CI
-- FuzzyChaos (ADL)  - Donation for devices
+- FuzzyChaos (ADL) - Donation for devices
 
 ## Colorado Mesh
 
