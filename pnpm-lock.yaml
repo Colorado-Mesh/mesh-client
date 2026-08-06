@@ -13,6 +13,7 @@ overrides:
   app-builder-lib: ^26.15.0
   brace-expansion: 5.0.9
   builder-util-runtime: 9.7.0
+  electron: ^41.10.4
   fast-uri: ^3.1.5
   ip-address: ^10.3.1
   js-yaml: ^4.3.0
@@ -1848,6 +1849,7 @@ packages:
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   css-tree@3.2.1:
     resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
