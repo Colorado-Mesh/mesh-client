@@ -243,6 +243,15 @@ export interface SpellcheckReplacePayload {
   selectionStartOffset?: number;
 }
 
+/** Main-process hang/liveness fields embedded in support debug snapshots. */
+export interface RendererLivenessSnapshot {
+  mainUptimeSec: number;
+  lastRendererHeartbeatAgeMs: number | null;
+  rendererUnresponsiveSeen: boolean;
+  rss: number;
+  heapUsed: number;
+}
+
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
 export type BlePeripheralOwner =
@@ -965,10 +974,17 @@ export interface ElectronAPI {
   /** Spellchecker context-menu pick — syncs React-controlled inputs after replaceMisspelling. */
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => () => void;
 
-  /** Renderer liveness ping for post-resume hang detection (main log only). */
+  /** Renderer liveness ping for hang detection (resume + visible-window stall). */
   sendRendererHeartbeat: (payload?: { ts: number }) => Promise<void>;
   /** Main-process uptime in seconds (for long-session restart nudge). */
   getProcessUptimeSec: () => Promise<number>;
+  /**
+   * App-process diagnostics (IPC `app:*`).
+   * Liveness fields for support debug snapshots — namespaced (not root).
+   */
+  app: {
+    getRendererLiveness: () => Promise<RendererLivenessSnapshot>;
+  };
 
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────
   meshcore: {

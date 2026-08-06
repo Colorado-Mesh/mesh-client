@@ -7,6 +7,7 @@ import {
 } from '../../shared/meshcorePathHash';
 import { isPlaceholderLongName } from '../../shared/nodeNameUtils';
 import { errLikeToLogString } from './errLikeToLogString';
+import { filterOutMeshcoreLocallyDeletedContacts } from './meshcoreLocallyDeletedContacts';
 import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
 
@@ -201,7 +202,7 @@ export function mergeMeshcoreChatStubNodes(
       next.set(id, node);
     }
   }
-  return next;
+  return filterOutMeshcoreLocallyDeletedContacts(next);
 }
 
 /** Placeholder pubkey stored until a real contact (0x8A) replaces the row. */

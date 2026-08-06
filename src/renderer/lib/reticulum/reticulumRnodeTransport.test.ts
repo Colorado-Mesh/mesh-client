@@ -4,6 +4,7 @@ import {
   buildReticulumRnodeTcpPort,
   inferReticulumRnodeTransport,
   isReticulumTcpRnodeSerialPort,
+  isReticulumUsbSerialRnodeInterface,
   parseReticulumRnodeTcpPort,
   RNODE_DEFAULT_TCP_PORT,
 } from './reticulumRnodeTransport';
@@ -56,5 +57,36 @@ describe('reticulumRnodeTransport', () => {
     expect(inferReticulumRnodeTransport('tcp://10.0.0.1')).toBe('wifi');
     expect(inferReticulumRnodeTransport('ble://AA:BB:CC:DD:EE:FF')).toBe('ble');
     expect(inferReticulumRnodeTransport('/dev/ttyUSB0')).toBe('serial');
+  });
+
+  it('blocks USB serial RNodes for flasher port contention only', () => {
+    expect(
+      isReticulumUsbSerialRnodeInterface({
+        type: 'rnode',
+        enabled: true,
+        serial_port: '/dev/tty.usbserial-7',
+      }),
+    ).toBe(true);
+    expect(
+      isReticulumUsbSerialRnodeInterface({
+        type: 'rnode',
+        enabled: true,
+        serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+      }),
+    ).toBe(false);
+    expect(
+      isReticulumUsbSerialRnodeInterface({
+        type: 'rnode',
+        enabled: true,
+        serial_port: 'tcp://192.168.1.10',
+      }),
+    ).toBe(false);
+    expect(
+      isReticulumUsbSerialRnodeInterface({
+        type: 'rnode',
+        enabled: false,
+        serial_port: '/dev/ttyUSB0',
+      }),
+    ).toBe(false);
   });
 });

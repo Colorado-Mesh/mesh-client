@@ -179,7 +179,7 @@ describe('ChessBoard', () => {
     expect(onMove).toHaveBeenCalledWith('e7e5');
   });
 
-  it('appends q for pawn promotion moves', async () => {
+  it('opens a promotion chooser and sends the chosen piece', async () => {
     const onMove = vi.fn();
     render(
       <ChessBoard
@@ -195,7 +195,71 @@ describe('ChessBoard', () => {
             terminal: '',
             draw_offered: false,
             in_check: false,
-            legal_moves: [],
+            legal_moves: ['e7e8q', 'e7e8r', 'e7e8b', 'e7e8n'],
+          },
+        })}
+        onMove={onMove}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /^e7,/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^e8,/ }));
+
+    expect(onMove).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Choose promotion piece' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Promote to rook' }));
+    expect(onMove).toHaveBeenCalledWith('e7e8r');
+  });
+
+  it('does not submit a promotion move when disabled after the chooser opens', async () => {
+    const onMove = vi.fn();
+    const session = makeSession({
+      metadata: {
+        fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1',
+        moves: [],
+        my_color: 'w',
+        first_turn: 'me',
+        turn: 'me',
+        move_count: 20,
+        winner: '',
+        terminal: '',
+        draw_offered: false,
+        in_check: false,
+        legal_moves: ['e7e8q', 'e7e8r', 'e7e8b', 'e7e8n'],
+      },
+    });
+    const { rerender } = render(<ChessBoard session={session} onMove={onMove} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /^e7,/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^e8,/ }));
+    expect(screen.getByRole('dialog', { name: 'Choose promotion piece' })).toBeInTheDocument();
+
+    rerender(<ChessBoard session={session} onMove={onMove} disabled />);
+
+    const promote = screen.getByRole('button', { name: 'Promote to rook' });
+    expect(promote).toBeDisabled();
+    await userEvent.click(promote);
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it('auto-sends when only one promotion piece is legal', async () => {
+    const onMove = vi.fn();
+    render(
+      <ChessBoard
+        session={makeSession({
+          metadata: {
+            fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1',
+            moves: [],
+            my_color: 'w',
+            first_turn: 'me',
+            turn: 'me',
+            move_count: 20,
+            winner: '',
+            terminal: '',
+            draw_offered: false,
+            in_check: false,
+            legal_moves: ['e7e8q'],
           },
         })}
         onMove={onMove}
@@ -206,5 +270,38 @@ describe('ChessBoard', () => {
     await userEvent.click(screen.getByRole('button', { name: /^e8,/ }));
 
     expect(onMove).toHaveBeenCalledWith('e7e8q');
+  });
+
+  it('cancels promotion chooser on Escape without sending', async () => {
+    const onMove = vi.fn();
+    render(
+      <ChessBoard
+        session={makeSession({
+          metadata: {
+            fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1',
+            moves: [],
+            my_color: 'w',
+            first_turn: 'me',
+            turn: 'me',
+            move_count: 20,
+            winner: '',
+            terminal: '',
+            draw_offered: false,
+            in_check: false,
+            legal_moves: ['e7e8q', 'e7e8r'],
+          },
+        })}
+        onMove={onMove}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /^e7,/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^e8,/ }));
+    await userEvent.keyboard('{Escape}');
+
+    expect(onMove).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose promotion piece' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -18,6 +18,7 @@ import {
   meshcorePayloadIsTapbackEmojiOnly,
   normalizeMeshcoreIncomingText,
 } from '../../lib/meshcoreChannelText';
+import { shouldApplyMeshcoreContact } from '../../lib/meshcoreLocallyDeletedContacts';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -1106,6 +1107,7 @@ export function mergeStubNodesFromMeshcoreMessages(
   const next = new Map(prev);
   for (const msg of mapped) {
     if (msg.sender_id === 0) continue;
+    if (!shouldApplyMeshcoreContact(msg.sender_id)) continue;
     if (msg.sender_name === 'Unknown' && msg.sender_id === MESHCORE_UNKNOWN_SENDER_STUB_ID)
       continue;
     if (next.has(msg.sender_id)) {

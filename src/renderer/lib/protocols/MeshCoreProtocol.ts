@@ -2,11 +2,13 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 
 import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import { rememberMeshcoreDiscoverSelf } from '../meshcore/meshcoreDiscoverSelfCache';
 import type { MeshCoreContactRaw } from '../meshcore/meshcoreHookTypes';
 import { seedMeshcorePrefixLookupMaps } from '../meshcore/meshcorePubKeyRegistry';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
 import { decodeMeshcoreDirectMessageEvents } from '../meshcoreDirectMessageDecode';
 import { isMeshcoreRoomServerContactType } from '../meshcoreRoomMessageRouting';
+import type { MeshCoreSelfInfoWire } from '../meshcoreTelemetryPrivacy';
 import {
   isMeshcoreTransportStatusChatLine,
   meshcoreCompanionRxPathLenToHopCount,
@@ -62,7 +64,7 @@ export type {
 interface MeshCoreEventBus {
   on(event: string | number, cb: (...args: unknown[]) => void): void;
   off(event: string | number, cb: (...args: unknown[]) => void): void;
-  getSelfInfo(timeout?: number): Promise<{ publicKey?: Uint8Array }>;
+  getSelfInfo(timeout?: number): Promise<MeshCoreSelfInfoWire>;
 }
 
 /**
@@ -209,6 +211,8 @@ export class MeshCoreProtocol implements Protocol {
   async discoverSelf(handle: unknown, timeoutMs = 5000): Promise<DiscoveryInfo> {
     const bus = handle as MeshCoreEventBus;
     const info = await bus.getSelfInfo(timeoutMs);
+    // Stash full wire payload so TCP initConn can skip a duplicate getSelfInfo RPC.
+    rememberMeshcoreDiscoverSelf(handle, info);
     return { publicKey: info.publicKey };
   }
 

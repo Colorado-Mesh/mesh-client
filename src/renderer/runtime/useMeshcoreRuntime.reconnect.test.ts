@@ -44,9 +44,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 
   it('marks everConfigured after successful initConn so auto-connect can reconnect', () => {
-    expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreRoomReconnectSyncRef\.current\(\);[\s\S]{0,80}meshcoreEverConfiguredRef\.current = true/,
+    // Live-socket path calls roomReconnectSync; burst-complete dead-bridge path skips it.
+    // Both paths must latch everConfigured.
+    expect(RUNTIME_SOURCE).toContain('meshcoreRoomReconnectSyncRef.current()');
+    expect(RUNTIME_SOURCE).toContain(
+      'initConn TCP burst-complete with dead bridge — skip post-connect RPCs',
     );
+    expect(RUNTIME_SOURCE).toMatch(/meshcoreEverConfiguredRef\.current = true;\s*\n\s*\},/);
   });
 
   it('prepareRfConnect preserves reconnect state when requested', () => {
@@ -270,7 +274,77 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
     // is the only automatic recovery path for a dropped TCP connection.
     expect(RUNTIME_SOURCE).toMatch(
-      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?rfType !== 'tcp'[\s\S]{0,200}handleMeshcoreConnectionLostRef\.current\(\)/,
+      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?latchTcpBridgeDeadForBurst\('ipc'\)/,
+    );
+    expect(RUNTIME_SOURCE).toContain("meshcoreConnectTypeRef.current === 'tcp'");
+    expect(RUNTIME_SOURCE).toContain("source === 'ipc'");
+    expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
+  });
+
+  it('defers TCP reconnect after init burst capture instead of aborting initConn', () => {
+    expect(RUNTIME_SOURCE).toContain('meshcoreTcpInitBurstCapturedRef');
+    expect(RUNTIME_SOURCE).toContain('shouldDeferMeshcoreTcpReconnectAfterBurst');
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP closed after init burst — defer reconnect until configured',
+    );
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP write-dead after init burst — latch bridge dead, defer reconnect',
+    );
+    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpWriteDeadListener');
+    expect(RUNTIME_SOURCE).toMatch(
+      /shouldDeferMeshcoreTcpReconnectAfterBurst\(\{[\s\S]*?burstCaptured:[\s\S]*?everConfigured:[\s\S]*?deviceConfigured:[\s\S]*?\}\)[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
+    );
+    expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — reconnecting dead bridge');
+    expect(RUNTIME_SOURCE).toContain(
+      'initConn getChannels skipped (TCP burst-complete, bridge dead)',
+    );
+  });
+
+  it('registers runtime connect on MeshcoreSessionApi for UI Connect path (Neal SoftAP)', () => {
+    // Manual Connect must use session.connect → runtime connect so TCP burst-complete
+    // deferred reconnect and connectionParams latch run (useProtocolConnect must not
+    // reassemble prepare/driver/attach alone — #792 params gate + burst-complete).
+    expect(RUNTIME_SOURCE).toMatch(
+      /registerMeshcoreSession\(\{[\s\S]*?connect,[\s\S]*?prepareRfConnect,/,
+    );
+    const protocolConnectSource = readFileSync(
+      join(__dirname, '../hooks/useProtocolConnection.ts'),
+      'utf-8',
+    );
+    expect(protocolConnectSource).toContain(
+      'getMeshcoreSession().connect(mcType, httpAddress, blePeripheralId)',
+    );
+    expect(protocolConnectSource).not.toMatch(
+      /protocol === 'meshcore'[\s\S]*?prepareRfConnect\(mcType\)/,
+    );
+  });
+
+  it('hard-aborts TCP initConn before burst capture when bridge is dead', () => {
+    expect(RUNTIME_SOURCE).toContain('meshcoreTcpBridgeDeadRef.current');
+    expect(RUNTIME_SOURCE).toContain('meshcoreTcpInitBurstCapturedRef.current = true');
+    const assertFnIdx = RUNTIME_SOURCE.indexOf('const assertInitConnStillLive = (): void =>');
+    expect(assertFnIdx).toBeGreaterThan(-1);
+    expect(RUNTIME_SOURCE.slice(assertFnIdx, assertFnIdx + 600)).toMatch(
+      /tcpBurstOk[\s\S]*?return;/,
+    );
+    const burstSetIdx = RUNTIME_SOURCE.indexOf(
+      'meshcoreTcpInitBurstCapturedRef.current = true',
+      assertFnIdx,
+    );
+    expect(burstSetIdx).toBeGreaterThan(assertFnIdx);
+    const getContactsLogIdx = RUNTIME_SOURCE.indexOf(
+      'initConn getContacts ${getContactsMs}ms',
+      assertFnIdx,
+    );
+    expect(getContactsLogIdx).toBeGreaterThan(-1);
+    expect(burstSetIdx).toBeGreaterThan(getContactsLogIdx);
+  });
+
+  it('reuses discoverSelf getSelfInfo on TCP sequential initConn', () => {
+    expect(RUNTIME_SOURCE).toContain('takeMeshcoreDiscoverSelfCache');
+    expect(RUNTIME_SOURCE).toContain('reused discoverSelf');
+    expect(RUNTIME_SOURCE).toMatch(
+      /takeMeshcoreDiscoverSelfCache\(conn\)[\s\S]*?conn\.getSelfInfo\(5000\)/,
     );
   });
 });
@@ -395,6 +469,32 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
       /if \(!linkLost\.shouldStartOwner\) \{[\s\S]*?return;[\s\S]*?scheduleMeshcoreReconnectAttemptRef/,
     );
     expect(RUNTIME_SOURCE).toContain('createRfReconnectController');
+  });
+
+  it('bumps setup generation synchronously in handleMeshcoreConnectionLost (Neal TCP mid-initConn)', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    const bumpIdx = lostBody.indexOf('meshcoreSetupGenerationRef.current += 1');
+    const asyncIdx = lostBody.indexOf('void (async () =>');
+    expect(bumpIdx).toBeGreaterThan(-1);
+    expect(asyncIdx).toBeGreaterThan(-1);
+    expect(bumpIdx).toBeLessThan(asyncIdx);
+    expect(lostBody.slice(asyncIdx)).not.toContain('meshcoreSetupGenerationRef.current += 1');
+  });
+
+  it('hard-aborts TCP initConn on dead socket before configured / post-connect', () => {
+    expect(RUNTIME_SOURCE).toContain('assertInitConnStillLive');
+    expect(RUNTIME_SOURCE).toContain('rethrowMeshcoreSetupAbortFromTcpDead');
+    expect(RUNTIME_SOURCE).toContain('isMeshcoreTcpTransportDeadError');
+    const deferConfiguredIdx = RUNTIME_SOURCE.search(
+      /if\s*\(\s*deferConfiguredUntilRadioInit\s*\)\s*\{\s*setState\s*\(\s*\(prev\)\s*=>\s*\(\s*\{\s*\.\.\.prev\s*,\s*status:\s*'configured'/,
+    );
+    expect(deferConfiguredIdx).toBeGreaterThan(-1);
+    const assertBeforeConfigured = RUNTIME_SOURCE.lastIndexOf(
+      'assertInitConnStillLive()',
+      deferConfiguredIdx,
+    );
+    expect(assertBeforeConfigured).toBeGreaterThan(-1);
+    expect(assertBeforeConfigured).toBeLessThan(deferConfiguredIdx);
   });
 
   it('coalesces reconnect attempt schedules via scheduleOwner', () => {

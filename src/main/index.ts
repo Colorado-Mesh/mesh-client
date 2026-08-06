@@ -65,6 +65,7 @@ import {
   createContactGroup,
   deleteAllMeshcorePathHistory,
   deleteContactGroup,
+  deleteMeshcoreContactOn,
   deleteMeshcoreContactsByAge,
   deleteMeshcoreContactsNeverAdvertised,
   deleteMeshcorePathHistoryForNode,
@@ -310,6 +311,8 @@ async function ensureTakServerManager(): Promise<TakServerManager> {
 
 /** Max bytes per MeshCore TCP IPC write (DoS guard). */
 const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
+/** Cap per-chunk IPC fan-out from SoftAP/companion TCP reads (align with write max). */
+const MESHCORE_TCP_DATA_MAX_BYTES = MESHCORE_TCP_WRITE_MAX_BYTES;
 /** Min node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 /** Max node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
@@ -1912,6 +1915,13 @@ function createWindow() {
     }
   });
 
+  mainWindow.webContents.on('unresponsive', () => {
+    rendererHeartbeatWatchdog.markRendererUnresponsive();
+  });
+  mainWindow.webContents.on('responsive', () => {
+    rendererHeartbeatWatchdog.markRendererResponsive();
+  });
+
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDesc, validatedURL) => {
     console.error(
       '[main] Failed to load:',
@@ -3487,6 +3497,21 @@ ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
 
 // ─── IPC: Login item (launch at startup) ───────────────────────────
 ipcMain.handle('app:getProcessUptimeSec', () => Math.floor(process.uptime()));
+
+ipcMain.handle('app:getRendererLiveness', (event) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  const mem = process.memoryUsage();
+  const hb = rendererHeartbeatWatchdog.getLivenessSnapshot();
+  return {
+    mainUptimeSec: Math.floor(process.uptime()),
+    lastRendererHeartbeatAgeMs: hb.lastRendererHeartbeatAgeMs,
+    rendererUnresponsiveSeen: hb.rendererUnresponsiveSeen,
+    rss: mem.rss,
+    heapUsed: mem.heapUsed,
+  };
+});
 
 ipcMain.handle('app:getLoginItem', (event) => {
   assertIpcSender(event, 'app:getLoginItem');
@@ -5478,7 +5503,7 @@ ipcMain.handle('db:deleteMeshcoreContact', (event, nodeId: number) => {
     const db = getDbForIpc('db:deleteMeshcoreContact');
     if (!db) return { changes: 0 };
     const id = safeNonNegativeInt(nodeId);
-    return db.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(id);
+    return deleteMeshcoreContactOn(db, id);
   } catch (err) {
     finishDbIpcHandler('db:deleteMeshcoreContact', err);
   }
@@ -6102,6 +6127,10 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     }
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
+    // MeshCore Open / official companion TCP clients use TCP_NODELAY; Node defaults can
+    // Nagle-batch small companion RPCs and SoftAP/OpenHop peers often FIN mid-init.
+    socket.setNoDelay(true);
+    socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS);
     meshcoreTcpSocket = socket;
     const connectTimeout = setTimeout(() => {
       if (settled) return;
@@ -6123,11 +6152,36 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     });
     socket.on('data', (data) => {
       const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (chunk.length > MESHCORE_TCP_DATA_MAX_BYTES) {
+        console.warn(
+          `[IPC] meshcore:tcp-data oversized chunk (${chunk.length} > ${MESHCORE_TCP_DATA_MAX_BYTES}); dropping socket`,
+        );
+        try {
+          socket.destroy();
+        } catch (e) {
+          console.debug(
+            '[IPC] meshcore:tcp-data destroy after oversize ' +
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+        return;
+      }
       mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
       clearTimeout(connectTimeout);
-      console.debug('[IPC] meshcore:tcp socket closed', hadError ? '(hadError)' : '(clean)');
+      // readableEnded=true after peer FIN; local destroy-before-null tear downs do not hit this
+      // branch as active (ref cleared first). Log fields help triage n7eal post-contacts hangs.
+      const remote = socket.remoteAddress
+        ? `${socket.remoteAddress}:${socket.remotePort ?? '?'}`
+        : 'unknown';
+      console.debug(
+        '[IPC] meshcore:tcp socket closed',
+        hadError ? '(hadError)' : '(clean)',
+        `remote=${sanitizeLogMessage(remote)}`,
+        `readableEnded=${socket.readableEnded}`,
+        `writableEnded=${socket.writableEnded}`,
+      );
       // Only notify when this socket is still the active bridge. connect/disconnect clear the
       // ref before destroy(), so superseded closes must not look like a live link drop
       // (renderer reconnect is driven by this event — see #792).
@@ -6143,7 +6197,9 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
         settled = true;
         reject(err);
       }
-      if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
+      // Do not null meshcoreTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
+      // etc.; nulling early makes close's active-socket guard fail and swallows
+      // meshcore:tcp-disconnected (renderer never reconnects). close owns that transition.
     });
   });
 });
@@ -6261,7 +6317,9 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
         settled = true;
         reject(err);
       }
-      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      // Do not null meshtasticTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
+      // etc.; nulling early makes close's active-socket guard fail and swallows
+      // meshtastic:tcp-disconnected (renderer never reconnects). close owns that transition.
     });
   });
 });
@@ -6366,6 +6424,8 @@ async function readBoundedArrayBuffer(response: Response, maxBytes: number): Pro
   return merged.buffer;
 }
 const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
+/** Initial TCP keepalive probe delay for MeshCore companion sockets (ms). */
+const MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
 const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
 /** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
 const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;
@@ -6660,6 +6720,12 @@ void app
       }
       createWindow();
 
+      rendererHeartbeatWatchdog.startStallWatchdog(() => {
+        const win = mainWindow;
+        if (!win || win.isDestroyed()) return false;
+        return win.isVisible() && !win.isMinimized();
+      });
+
       const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
       const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
       setInterval(() => {
@@ -6684,7 +6750,11 @@ void app
       });
       powerMonitor.on('resume', () => {
         console.debug('[main] System resumed');
-        rendererHeartbeatWatchdog.startResumeWatchdog();
+        rendererHeartbeatWatchdog.startResumeWatchdog(() => {
+          const win = mainWindow;
+          if (!win || win.isDestroyed()) return false;
+          return win.isVisible() && !win.isMinimized();
+        });
         mainWindow?.webContents.send('power:resume');
       });
     } catch (error) {
@@ -6740,6 +6810,8 @@ void app
   });
 
 app.on('before-quit', (event) => {
+  rendererHeartbeatWatchdog.stopStallWatchdog();
+  rendererHeartbeatWatchdog.clearResumeWatchdog();
   // Clean up any pending Bluetooth device selection to prevent callback leak
   if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.debug('[main] before-quit: cleaning up pending Bluetooth callback');

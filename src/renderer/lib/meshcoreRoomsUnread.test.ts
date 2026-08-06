@@ -101,4 +101,26 @@ describe('meshcoreRoomsUnread', () => {
     expect(computeRoomUnreadCounts([msg], {}, ownNodes, muted).size).toBe(0);
     expect(totalRoomsUnreadCount([msg], {}, ownNodes, muted)).toBe(0);
   });
+
+  it('ignores orphan room posts when knownRoomServerIds is set', () => {
+    const orphan = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Ghost room',
+      roomServerId: 0x999,
+      authorId: 0x300,
+      authorName: 'Alice',
+      timestamp: 2000,
+      receivedVia: 'rf',
+    });
+    const known = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Live room',
+      roomServerId: 0x200,
+      authorId: 0x301,
+      authorName: 'Bob',
+      timestamp: 3000,
+      receivedVia: 'rf',
+    });
+    const knownIds = new Set([0x200]);
+    expect(totalRoomsUnreadCount([orphan, known], {}, ownNodes, undefined, knownIds)).toBe(1);
+    expect(totalRoomsUnreadCount([orphan], {}, ownNodes, undefined, new Set())).toBe(0);
+  });
 });

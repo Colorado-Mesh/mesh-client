@@ -11,6 +11,11 @@ export interface ProvisionParams {
   serialNumber?: number;
 }
 
+/** EEPROM is locked but checksum invalid — wipe before writing identity again. */
+export const PROVISION_WIPE_REQUIRED = 'PROVISION_WIPE_REQUIRED';
+/** Writes finished but ROM still reports not provisioned. */
+export const PROVISION_VERIFY_FAILED = 'PROVISION_VERIFY_FAILED';
+
 export async function provisionEeprom(rnode: RNode, params: ProvisionParams): Promise<void> {
   const product = params.product.id;
   const model = params.model.mapped_id ?? params.model.id;
@@ -43,6 +48,44 @@ export async function provisionEeprom(rnode: RNode, params: ProvisionParams): Pr
   }
 
   await rnode.writeRom(ROM.ADDR_INFO_LOCK, ROM.INFO_LOCK_BYTE);
+}
+
+/** Read EEPROM and throw if identity is locked with a bad checksum (needs wipe). */
+export async function assertRomWritableForProvision(rnode: RNode): Promise<boolean> {
+  const rom = await rnode.getRomAsObject();
+  const details = rom.parse();
+  if (details?.is_provisioned) {
+    return true;
+  }
+  if (rom.isInfoLocked()) {
+    throw new Error(PROVISION_WIPE_REQUIRED);
+  }
+  return false;
+}
+
+/** Re-read EEPROM and require a valid provisioned identity. */
+export async function assertRomProvisioned(rnode: RNode): Promise<void> {
+  const rom = await rnode.getRomAsObject();
+  const details = rom.parse();
+  if (!details?.is_provisioned) {
+    throw new Error(PROVISION_VERIFY_FAILED);
+  }
+}
+
+/**
+ * Write device identity to EEPROM, then verify the lock+checksum before the caller resets.
+ */
+export async function provisionEepromAndVerify(
+  rnode: RNode,
+  params: ProvisionParams,
+): Promise<'already_provisioned' | 'provisioned'> {
+  const already = await assertRomWritableForProvision(rnode);
+  if (already) {
+    return 'already_provisioned';
+  }
+  await provisionEeprom(rnode, params);
+  await assertRomProvisioned(rnode);
+  return 'provisioned';
 }
 
 export async function setFirmwareHashFromDevice(rnode: RNode): Promise<void> {

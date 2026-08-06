@@ -1804,7 +1804,9 @@
       "noSerialPorts": "USB シリアル ポートが見つかりません。 USB 経由でボードを接続し、再試行してください。",
       "rnodeCommandTimeout": "デバイスがシリアル通信で応答しなくなりました。同じシリアルポートを使用している他のアプリを終了し、ボードの起動が完了するまで待ってから再試行してください。",
       "esp32FlashStalled": "ファームウェアの転送が進まず停止しました。別のUSBケーブルまたはポートを試し、ブートローダーモード（BOOTを長押し、RESETをタップ）に入り、再度フラッシュしてください。",
-      "unknown": "予期しないエラーが発生しました"
+      "unknown": "予期しないエラーが発生しました",
+      "provisionWipeRequired": "EEPROMは無効なIDでロックされています。まずEEPROMを消去してから、再度プロビジョニングしてください。",
+      "provisionVerifyFailed": "プロビジョニング書き込みは完了しましたが、デバイスはまだプロビジョニングされていないEEPROMを報告しています。ボードの電源を入れ直し、起動を待ち、もう一度やり直すか、まずEEPROMを消去してください。"
     },
     "selectSerialPort": "シリアルポートを選択",
     "noSerialPorts": "USBシリアルポートが見つかりません。",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です",
       "cliDangerNotConfirmed": "破壊的なCLIコマンドは、リピーターパネルで確認する必要があります。",
       "pingFailed": "Ping 失敗",
-      "floodScopeBusy": "リピーター管理またはトレースルートの進行中は、フラッド スコープのオーバーライドは使用できません。アイドル状態のときに再試行してください。"
+      "floodScopeBusy": "リピーター管理またはトレースルートの進行中は、フラッド スコープのオーバーライドは使用できません。アイドル状態のときに再試行してください。",
+      "removeContactFailed": "ローカルに削除されましたが、無線がremoveContactを拒否しました。更新後に連絡先が再表示される場合があります。"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
@@ -5274,6 +5277,13 @@
         "b": "ブラックビショップ",
         "n": "黒騎士",
         "p": "黒い質物"
+      },
+      "promotionChooserAria": "プロモーションピースを選択",
+      "promoteTo": {
+        "q": "クイーンに昇格",
+        "r": "ルークに昇格",
+        "b": "ビショップに昇格",
+        "n": "騎士に昇格"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "セッションを削除できませんでした。"
     },
     "deleteConfirmTitle": "セッションを削除",
-    "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。"
+    "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。",
+    "claimThreefold": "3倍にする",
+    "claimThreefoldAria": "3倍の繰り返しドローを獲得",
+    "claimFiftyMove": "50ムーブを受け取る",
+    "claimFiftyMoveAria": "50ムーブルールの引き分けを獲得する",
+    "delivery": {
+      "sending": "送信中・・・",
+      "propagating": "オフライン受信トレイ…",
+      "propagated": "格納されています",
+      "failed": "再試行が必要です"
+    }
   }
 }

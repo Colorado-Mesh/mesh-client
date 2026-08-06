@@ -330,6 +330,19 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
     );
     expect(DATABASE_SOURCE).not.toMatch(/\.run\(total - maxCount\)/);
   });
+
+  it('cascades room BBS messages when MeshCore contacts are pruned', () => {
+    expect(DATABASE_SOURCE).toContain('deleteMeshcoreMessagesForRoomServerIds');
+    expect(DATABASE_SOURCE).toContain('deleteOrphanMeshcoreRoomMessagesOn');
+    expect(DATABASE_SOURCE).toContain('deleteMeshcoreContactsWithRoomMessageCascade');
+    expect(DATABASE_SOURCE).toContain('deleteMeshcoreContactOn');
+    expect(DATABASE_SOURCE).toMatch(
+      /deleteMeshcoreContactsByAge[\s\S]*deleteMeshcoreContactsWithRoomMessageCascade/,
+    );
+    expect(DATABASE_SOURCE).toMatch(
+      /pruneMeshcoreContactsByCount[\s\S]*deleteMeshcoreContactsWithRoomMessageCascade/,
+    );
+  });
 });
 
 describe('mergeDatabase source validation', () => {

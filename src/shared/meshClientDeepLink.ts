@@ -25,6 +25,8 @@ export type MeshClientDeepLink =
       regionScope?: string;
     }
   | { kind: 'lxmPaperMessage'; uri: string }
+  /** Open Games tab to an LRGP session (`lxm://game/<id>` or Ratspeak `lrgp:<id>`). */
+  | { kind: 'lxmGameSession'; sessionId: string }
   | { kind: 'unknown'; raw: string };
 
 const MESHTASTIC_URL_RE = /^(?:meshtastic:\/\/|https?:\/\/meshtastic\.org\/e\/)/i;
@@ -33,6 +35,27 @@ const MESHCORE_CHANNEL_SECRET_RE = /^[0-9a-f]{32}$/;
 const LXMA_PUBKEY_RE = /^[0-9a-f]{128}$/;
 /** Paper `lxm://` host is URL-safe base64 of dest‖ciphertext; require a minimum blob length. */
 const LXM_PAPER_BLOB_RE = /^[A-Za-z0-9_-]{32,}$/;
+/** LRGP session ids (sidecar uses 16 hex; accept 16–64 for forward compat). */
+const LRG_SESSION_ID_RE = /^[0-9a-f]{16,64}$/;
+
+function canonicalizeLrgSessionId(raw: string): string | null {
+  const id = raw.trim().toLowerCase();
+  return LRG_SESSION_ID_RE.test(id) ? id : null;
+}
+
+/** Ratspeak notification route: `lrgp:<session_id>`. */
+export function buildLrgpGameSessionRoute(sessionId: string): string {
+  const id = canonicalizeLrgSessionId(sessionId);
+  if (!id) throw new Error('invalid game session id');
+  return `lrgp:${id}`;
+}
+
+/** OS-forwardable deep link under the registered `lxm://` scheme. */
+export function buildLxmGameSessionUri(sessionId: string): string {
+  const id = canonicalizeLrgSessionId(sessionId);
+  if (!id) throw new Error('invalid game session id');
+  return `lxm://game/${id}`;
+}
 
 function isMeshcoreContactType(n: number): n is MeshcoreContactType {
   return n === 1 || n === 2 || n === 3 || n === 4;
@@ -170,6 +193,13 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
   const trimmed = raw.trim();
   if (!trimmed) return { kind: 'unknown', raw };
 
+  // Ratspeak Games notification route (not an OS protocol; forwarded via openUrl IPC).
+  const lrgpMatch = /^lrgp:([0-9a-fA-F]{16,64})$/.exec(trimmed);
+  if (lrgpMatch?.[1]) {
+    const sessionId = canonicalizeLrgSessionId(lrgpMatch[1]);
+    if (sessionId) return { kind: 'lxmGameSession', sessionId };
+  }
+
   if (MESHTASTIC_URL_RE.test(trimmed) || /^[A-Za-z0-9_-]{20,}={0,2}$/.test(trimmed)) {
     // Bare base64url channel payloads are handled by meshtasticUrlEncoder consumers.
     return { kind: 'meshtasticChannel', url: trimmed };
@@ -215,6 +245,12 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
         };
       }
 
+      if (host === 'game') {
+        const sessionId = canonicalizeLrgSessionId(path);
+        if (!sessionId) return { kind: 'unknown', raw: trimmed };
+        return { kind: 'lxmGameSession', sessionId };
+      }
+
       // Encrypted paper: lxm://<base64url(dest‖ciphertext)> — host is the blob.
       const blob = path ? `${host}/${path}` : host;
       if (looksLikeLxmPaperBlob(blob)) {
@@ -235,11 +271,14 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
   return { kind: 'unknown', raw: trimmed };
 }
 
-/** Scan process.argv (Windows/Linux second-instance / cold start) for an lxm:// URL. */
+/** Scan process.argv (Windows/Linux second-instance / cold start) for a forwardable deep link. */
 export function findLxmUrlInArgv(argv: readonly string[]): string | undefined {
   for (const arg of argv) {
-    if (typeof arg === 'string' && /^lxm:\/\//i.test(arg.trim())) {
-      return arg.trim();
+    if (typeof arg !== 'string') continue;
+    const trimmed = arg.trim();
+    if (!trimmed) continue;
+    if (/^lxm:\/\//i.test(trimmed) || /^lrgp:/i.test(trimmed)) {
+      return trimmed;
     }
   }
   return undefined;
@@ -247,7 +286,7 @@ export function findLxmUrlInArgv(argv: readonly string[]): string | undefined {
 
 /**
  * True when main should forward an OS open-url / argv string to the renderer.
- * Allows `lxm://` / `lxma://` / `meshcore://` and Meshtastic channel URLs;
+ * Allows `lxm://` / `lxma://` / `meshcore://` / `lrgp:` and Meshtastic channel URLs;
  * drops unrelated schemes.
  */
 export function isForwardableMeshClientOpenUrl(raw: string): boolean {

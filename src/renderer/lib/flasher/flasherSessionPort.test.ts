@@ -4,10 +4,14 @@ import { LAST_SERIAL_PORT_KEY } from '@/renderer/lib/serialPortSignature';
 
 import {
   clearFlasherFlashSession,
+  clearFlasherProvisionCompleted,
   getFlasherSessionPortId,
   getFlasherSessionSerialPort,
   getPostFlashBootWaitMs,
+  hasFlasherFlashCompleted,
+  hasFlasherProvisionCompleted,
   markFlasherFlashCompleted,
+  markFlasherProvisionCompleted,
   setFlasherSessionPortId,
   setFlasherSessionSerialPort,
 } from './flasherSessionPort';
@@ -40,6 +44,7 @@ describe('flasherSessionPort', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createLocalStorageMock());
     vi.useFakeTimers();
+    clearFlasherFlashSession();
   });
 
   it('persists picker port id for session reuse', () => {
@@ -64,5 +69,30 @@ describe('flasherSessionPort', () => {
     clearFlasherFlashSession();
     expect(getFlasherSessionSerialPort()).toBeNull();
     expect(getPostFlashBootWaitMs()).toBe(0);
+  });
+
+  it('tracks flash completion for Admin remount unlock', () => {
+    expect(hasFlasherFlashCompleted()).toBe(false);
+    markFlasherFlashCompleted();
+    expect(hasFlasherFlashCompleted()).toBe(true);
+    clearFlasherFlashSession();
+    expect(hasFlasherFlashCompleted()).toBe(false);
+  });
+
+  it('tracks provision completion and clears it with the flash session', () => {
+    markFlasherFlashCompleted();
+    markFlasherProvisionCompleted();
+    expect(hasFlasherProvisionCompleted()).toBe(true);
+    clearFlasherFlashSession();
+    expect(hasFlasherFlashCompleted()).toBe(false);
+    expect(hasFlasherProvisionCompleted()).toBe(false);
+  });
+
+  it('clearFlasherProvisionCompleted clears provision only', () => {
+    markFlasherFlashCompleted();
+    markFlasherProvisionCompleted();
+    clearFlasherProvisionCompleted();
+    expect(hasFlasherFlashCompleted()).toBe(true);
+    expect(hasFlasherProvisionCompleted()).toBe(false);
   });
 });

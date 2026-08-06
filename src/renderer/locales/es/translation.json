@@ -1804,7 +1804,9 @@
       "noSerialPorts": "No se encontraron puertos serie USB. Conecte su placa a través de USB e inténtelo nuevamente.",
       "rnodeCommandTimeout": "El dispositivo dejó de responder por serie. Cierre otras aplicaciones que usan el puerto serie, espere a que la placa termine de arrancar y vuelva a intentarlo.",
       "esp32FlashStalled": "La transferencia de firmware se detuvo sin progreso. Pruebe otro cable o puerto USB, entre en modo bootloader (mantenga BOOT, pulse RESET) y vuelva a flashear.",
-      "unknown": "Se produjo un error"
+      "unknown": "Se produjo un error",
+      "provisionWipeRequired": "EEPROM está bloqueada con una identidad no válida. Limpie la EEPROM primero, luego vuelva a aprovisionar.",
+      "provisionVerifyFailed": "Las escrituras de provisión finalizaron, pero el dispositivo aún informa una EEPROM no aprovisionada. Apague y encienda la placa, espere a que arranque e inténtelo de nuevo, o limpie primero la EEPROM."
     },
     "selectSerialPort": "Seleccionar porto serie",
     "noSerialPorts": "No se han encontrado puertos serie USB.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor.",
       "cliDangerNotConfirmed": "Los comandos CLI destructivos requieren confirmación en el panel de repetidores.",
       "pingFailed": "Falló el ping",
-      "floodScopeBusy": "La anulación del alcance Flood no está disponible mientras la administración del repetidor o el traceroute están en curso. Inténtalo de nuevo cuando esté inactivo."
+      "floodScopeBusy": "La anulación del alcance Flood no está disponible mientras la administración del repetidor o el traceroute están en curso. Inténtalo de nuevo cuando esté inactivo.",
+      "removeContactFailed": "Eliminado localmente, pero la radio rechazó removeContact. El contacto puede reaparecer después de una actualización."
     },
     "mqttHints": {
       "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
@@ -5274,6 +5277,13 @@
         "b": "Alfil negro",
         "n": "Deflector",
         "p": "Peón negro"
+      },
+      "promotionChooserAria": "Elegir pieza de promoción",
+      "promoteTo": {
+        "q": "Ascender a reina",
+        "r": "Ascender a torre",
+        "b": "Ascender a obispo",
+        "n": "Ascender a caballero"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Error al eliminar la sesión."
     },
     "deleteConfirmTitle": "¿Eliminar sesión?",
-    "deleteConfirmMessage": "¿Quieres eliminar esta sesión de juego de tu lista? Esto no se puede deshacer."
+    "deleteConfirmMessage": "¿Quieres eliminar esta sesión de juego de tu lista? Esto no se puede deshacer.",
+    "claimThreefold": "Reclamación triple",
+    "claimThreefoldAria": "Reivindicar el sorteo de repetición triple",
+    "claimFiftyMove": "Reclamar 50-move",
+    "claimFiftyMoveAria": "Reclama el sorteo de la regla de cincuenta movimientos",
+    "delivery": {
+      "sending": "Enviando",
+      "propagating": "Bandeja de entrada sin conexión...",
+      "propagated": "Almacenado",
+      "failed": "Se necesita volver a intentarlo"
+    }
   }
 }

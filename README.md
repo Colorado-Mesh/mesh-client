@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
+> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -30,9 +30,9 @@ With a dedicated local SQLite database, Mesh-Client keeps message history and me
 **Why Mesh-Client?**
 
 - **True message persistence:** Local SQLite storage for reliable long-term history, without lost chats or broken logs.
-- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (amber protocol pill; LXMF DMs and RRC hub chat via sidecar).
+- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (amber protocol pill; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
 - **Advanced mesh visibility:** Routing diagnostics and mesh health insight that mobile apps often skip.
-- **Desktop-first workflow:** MQTT integration (Meshtastic/MeshCore), LXMF DMs / propagation / RRC (Reticulum), and a full-featured interface for power users.
+- **Desktop-first workflow:** MQTT integration (Meshtastic/MeshCore); for Reticulum, LXMF DMs / encrypted paper / propagation, RRC, LRGP Games, LXST voice, and rnsh/rncp Remote — aimed at Ratspeak-compatible peers.
 - **Cross-platform stability:** A feature-rich experience across macOS, Linux, and Windows.
 
 From real-time diagnostics to permanent message archives, Mesh-Client delivers the desktop visibility serious mesh users require.
@@ -83,11 +83,11 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **protocol switcher** (Meshtastic green, MeshCore cyan, Reticulum amber) to focus a tab; the other sessions stay connected in the background.
 
-| Protocol   | Transport focus                                    | Deep-dive doc                                                                          |
-| ---------- | -------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Meshtastic | BLE, USB serial, HTTP, TCP (4403), MQTT (protobuf) | Sections below + [diagnostics](docs/diagnostics.md)                                    |
-| MeshCore   | BLE, USB serial, TCP, MQTT (JSON v1)               | Below + [parity doc](docs/meshcore-meshtastic-parity.md)                               |
-| Reticulum  | Sidecar stack: TCP, Auto, RNode USB/BLE/Wi‑Fi      | [docs/reticulum.md](docs/reticulum.md) + [IPC contract](docs/reticulum-sidecar-ipc.md) |
+| Protocol   | Transport focus                                    | Deep-dive doc                                                                                                      |
+| ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Meshtastic | BLE, USB serial, HTTP, TCP (4403), MQTT (protobuf) | Sections below + [diagnostics](docs/diagnostics.md)                                                                |
+| MeshCore   | BLE, USB serial, TCP, MQTT (JSON v1)               | Below + [parity doc](docs/meshcore-meshtastic-parity.md)                                                           |
+| Reticulum  | Sidecar stack: TCP, I2P, Auto, RNode USB/BLE/Wi‑Fi | [reticulum.md](docs/reticulum.md) · [Games](docs/reticulum-games-parity.md) · [IPC](docs/reticulum-sidecar-ipc.md) |
 
 ### Meshtastic Features
 
@@ -160,7 +160,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 ### Desktop shell (all protocols)
 
-- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber); passive toast notifications when an inactive protocol receives traffic
+- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber — Reticulum amber = LXMF Chat + **RRC** unread, not Games; Games has its own sidebar badge); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
 - **Accessibility**: modal focus trap, screen reader labels, reduce-motion and **Use 24-hour time** toggles in App → Appearance — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
@@ -227,7 +227,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **14** tabs (Connection, Chat, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **15** tabs (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -305,33 +305,58 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 ### Reticulum Features
 
-Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGPL Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the MIT renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and LXMF contacts persist in SQLite. Primary interop target: [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on rsReticulum/rsLXMF; Nomad page hosting uses sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad); LXST voice uses sibling [rsLXST](https://github.com/ratspeak/rsLXST). Architecture and API details: [docs/reticulum.md](docs/reticulum.md).
+Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGPL Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the MIT renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and LXMF contacts persist in SQLite.
+
+**Ratspeak-compatible stack.** Primary interop target is [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on [rsReticulum](https://github.com/ratspeak/rsReticulum) / [rsLXMF](https://github.com/ratspeak/rsLXMF), with sibling crates for the same surfaces Ratspeak ships:
+
+| Surface                      | Sibling / library                                   | mesh-client UI                  |
+| ---------------------------- | --------------------------------------------------- | ------------------------------- |
+| LXMF DMs, paper, propagation | rsLXMF                                              | Chat, Network                   |
+| Nomad pages                  | [rsNomad](https://github.com/Colorado-Mesh/rsNomad) | Nomad Network                   |
+| Live voice                   | [rsLXST](https://github.com/ratspeak/rsLXST)        | Call on Peers / Chat DM         |
+| Games (TTT / Chess)          | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)      | **Games** tab + Challenge       |
+| Relay chat / Remote          | rsReticulum + sidecar                               | **RRC**, **Remote** (rnsh/rncp) |
+
+Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity: [docs/reticulum-games-parity.md](docs/reticulum-games-parity.md).
 
 **Stack & interfaces (Connection tab)**
 
 - **Start stack** / **Stop stack**, **Auto-start**, **Disconnect & quit**
-- **Interfaces** CRUD: TCP client, Auto (discovery), RNode over USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host:7633`)
+- **Interfaces** CRUD: TCP client, **I2P**, Auto (discovery), RNode over USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host:7633`); **Add default backbones** regional hub picker
 - Config **audit/repair** for ghost TCP rows, unreachable hubs, and RF preset mismatches (Diagnostics + inline hints)
 
 **Network & identity (Network tab)**
 
-- Generate or import LXMF identity (mnemonic); import/export rnsd-style config from standard system paths
-- Stack settings (`enable_transport`, `share_instance`, log level), announce interval, **Clear announces**
-- **Propagation nodes**: preferred node for offline DMs, per-node sync, optional **local propagation inbox**
+- Generate or import LXMF identity (mnemonic); **identity vault** (passcode) and encrypted identity export; import/export rnsd-style config from standard system paths
+- Stack settings (`enable_transport`, `share_instance`, log level), announce interval, **Clear announces**, **RMAP v4 discovery** publish controls
+- **Propagation nodes**: preferred node for offline DMs, per-node sync, optional **local propagation inbox** / Advanced PN hosting policy
 
-**Messaging (Chat + RRC)**
+**Messaging (Chat + encrypted paper + RRC)**
 
-- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** on disk under `reticulum/attachments/` also display inline); **LXST voice Call** on DM headers (live telephony — not an LXMF voice-note clip); **Share as paper** / **Scan paper** for offline encrypted LXMF QR/`lxm://` handoff (**Paper** delivery badge)
-- **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs)
-- **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch) over Reticulum, with saved addresses and inbound-policy controls; also available from Chat DMs as send-file (distinct from Meshtastic remote admin)
-- **Direct** delivery when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered
+- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** under `reticulum/attachments/` display inline)
+- **Encrypted paper (Ratspeak / LXMF paper):** Chat DM **Share as paper** encrypts offline to a QR / `lxm://` URI with **no network send** (Completes immediately, **Paper** delivery badge); **Scan paper** (Chat or Network **Scan / import**) decrypts into the local inbox when the identity matches. OS `lxm://` paper deep links ingest without a confirm prompt; contact / MeshCore imports still confirm
+- **LXST voice Call** on DM headers and Peers rows — live telephony over rsLXST (not an LXMF voice-note clip)
+- **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs); @mentions badge Chat + the amber protocol pill
+- **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch), saved addresses and inbound-policy controls; Chat DM send-file convenience (distinct from Meshtastic remote admin)
+- **Delivery:** **Direct** when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered
 
-**Peers, topology, Nomad Network**
+**Games (LRGP)**
 
-- **Peers** tab: RNS path-table peers, messaged **History**, saved **Contacts**, and **Favorites** (sub-tabs); LXMFace avatars; virtualized large lists, path probe, **LXST Call** on peer rows, and peer detail modal (Save as contact is manual — messaging alone does not add Contacts)
+- **Games** tab (Reticulum-only): **Tic-Tac-Toe** and **Chess** over [LRGP](https://github.com/ratspeak/lrgp-rs), wire-compatible with Ratspeak — challenge, accept, play, draw/resign, session list + unread badge (sidebar; **not** folded into the amber protocol-pill total)
+- **Challenge** from Peers rows and Chat DM headers; deep links `lrgp:<session>` and `lxm://game/<id>` open the Games tab to that session
+- See [Games parity checklist](docs/reticulum-games-parity.md) for command/UI interop status vs Ratspeak
+
+**Peers, topology, Nomad Network, Map**
+
+- **Peers** tab: RNS path-table peers, messaged **History**, saved **Contacts**, and **Favorites** (sub-tabs); LXMFace avatars; virtualized large lists, path probe, **LXST Call**, **LRGP Challenge**, and peer detail modal (Save as contact is manual — messaging alone does not add Contacts)
 - **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS; interface-type filters; reachable vs heard-only sidebar list; publish via Network + Connection); **Global map** link to [rmap.world](https://rmap.world/) — no position trails or waypoints (contrast with Meshtastic/MeshCore Map)
 - **Topology** tab: best-effort graph from the RNS path table (next-hop edges, force layout)
-- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — **Choose folder** for a watched site root (e.g. sibling `nomad-page` with `pages/*.mu`) or pages directory, set a display name, Start serving (off by default; auto-restores when the stack comes back up); edit pages on disk (read-only list in the UI); fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — **Choose folder** for a watched site root (e.g. sibling `nomad-page` with `pages/*.mu`) or pages directory, set a display name, Start serving (off by default; auto-restores when the stack comes back up); Micron browser with fit-width default + open-width toggle; panel lazy-mounts after first visit
+
+**Deep links & QR**
+
+- Registered OS scheme **`lxm://`** (identity / contact / paper / game); Columba-compatible **`lxma://`** contact+key when pasting or opening; MeshCore `meshcore://` ingest when pasted/opened (not OS-registered)
+- Network **Scan / import** and Chat paper controls share one ingest path (`handleReticulumQrIngest`)
 
 **Admin & hardware**
 
@@ -461,7 +486,7 @@ All three protocols can run at the same time. Use the **Meshtastic / MeshCore / 
 2. Open the **Connection** tab and click **Start stack** (enable **Auto-start** to skip this on future launches)
 3. On **Network**, generate or import your LXMF identity (the sidecar must be running)
 4. On **Connection → Interfaces**, add transports (TCP hub, Auto, or RNode over USB/BLE/Wi‑Fi) and enable them; restart the stack after interface changes when using the full `rns-stack` build
-5. Use **Chat** for LXMF DMs; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
+5. Use **Chat** for LXMF DMs (and **Share as paper** / **Scan paper** for offline encrypted handoff); **Games** for Tic-Tac-Toe / Chess (or Challenge from Peers / Chat); **Call** for LXST voice; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
 
 Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Packaged releases include it automatically. See [docs/reticulum.md](docs/reticulum.md) and [Troubleshooting — Reticulum](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
 
@@ -506,29 +531,29 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 **Reticulum** uses the AGPL sidecar (no Meshtastic/MeshCore MQTT card). Interfaces are configured on the Connection tab after **Start stack**:
 
-| Platform | TCP client | Auto (discovery) | RNode USB serial | RNode BLE | RNode Wi‑Fi (`tcp://:7633`) |
-| -------- | ---------- | ---------------- | ---------------- | --------- | --------------------------- |
-| macOS    | Yes        | Yes              | Yes              | Yes       | Yes                         |
-| Windows  | Yes        | Yes              | Yes              | Yes       | Yes                         |
-| Linux    | Yes        | Yes              | Yes              | Yes       | Yes                         |
+| Platform | TCP client | I2P | Auto (discovery) | RNode USB serial | RNode BLE | RNode Wi‑Fi (`tcp://:7633`) |
+| -------- | ---------- | --- | ---------------- | ---------------- | --------- | --------------------------- |
+| macOS    | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
+| Windows  | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
+| Linux    | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 
-Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack needs sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, and `../rsLXST` — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
+Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack needs sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, `../rsLXST`, and `../lrgp-rs` — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
 
 ### Tech Stack
 
-| Component    | Technology                                                                                                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop      | Electron                                                                                                                                                                        |
-| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                                               |
-| Styling      | Tailwind CSS v4                                                                                                                                                                 |
-| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                                      |
-| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux)                                              |
-| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                                             |
-| Reticulum    | `mesh-client-reticulum` sidecar (Rust, rsReticulum/rsLXMF/rsNomad/rsLXST); `reticulum:*` IPC proxy; LXMF in SQLite (`reticulum_messages`, `reticulum_destinations`); LXST voice |
-| Maps         | Leaflet + OpenStreetMap (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph)                   |
-| Charts       | Recharts                                                                                                                                                                        |
-| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                                            |
-| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                                                   |
+| Component    | Technology                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop      | Electron                                                                                                                                                      |
+| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                             |
+| Styling      | Tailwind CSS v4                                                                                                                                               |
+| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                    |
+| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux)                            |
+| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                           |
+| Reticulum    | Sidecar (rsReticulum/rsLXMF/rsNomad/rsLXST/lrgp-rs): LXMF paper, LXST, LRGP Games, Nomad/RRC/Remote                                                           |
+| Maps         | Leaflet + OpenStreetMap (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
+| Charts       | Recharts                                                                                                                                                      |
+| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                          |
+| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                                 |
 
 ### Architecture
 

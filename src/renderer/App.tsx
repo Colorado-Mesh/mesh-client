@@ -35,6 +35,7 @@ import {
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import {
+  buildProtocolSwitcherUnreadByProtocol,
   type ChatUnreadDmOptions,
   computeReticulumChatUnread,
   totalUnreadCount,
@@ -229,6 +230,11 @@ import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { reticulumHashToNodeId } from './lib/reticulum/destHash';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
+import {
+  setReticulumGamesTabFocused,
+  totalGamesUnread,
+} from './lib/reticulum/reticulumGamesNotifications';
+import { openReticulumGameSession } from './lib/reticulum/reticulumGamesSession';
 import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
@@ -266,6 +272,7 @@ import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
+import { useReticulumGamesStore } from './stores/reticulumGamesStore';
 import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
@@ -1332,6 +1339,8 @@ function AppContent() {
     return useRrcSessionStore.getState().totalUnread();
   }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
   const remotePendingOffers = useRncpTransferStore((s) => s.pendingOffers.size);
+  const gamesSessions = useReticulumGamesStore((s) => s.sessions);
+  const gamesUnread = useMemo(() => totalGamesUnread(gamesSessions), [gamesSessions]);
   const rrcMessageFlat = useMemo(() => {
     const out: RrcChatMessage[] = [];
     for (const list of rrcMessages.values()) out.push(...list);
@@ -1342,11 +1351,13 @@ function AppContent() {
     void roomsLastReadRevision;
     void meshcoreMutedViewsRevision;
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
+    const knownRoomServerIds = meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values());
     const rawCount = totalRoomsUnreadCount(
       meshcoreUiMessages,
       roomsLastRead,
       meshcoreOwnNodeIdSet,
       loadMutedViews('meshcore'),
+      knownRoomServerIds,
     );
     const count =
       meshcoreRuntime.state.status === 'configured' || meshcoreOwnNodeIdSet.size > 0 ? rawCount : 0;
@@ -1356,6 +1367,7 @@ function AppContent() {
     roomsLastReadRevision,
     meshcoreOwnNodeIdSet,
     meshcoreUiMessages,
+    meshcoreUiNodes,
     meshcoreRuntime.state.status,
   ]);
 
@@ -1448,6 +1460,17 @@ function AppContent() {
   const chatUnreadByProtocol = useMemo(
     () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
     [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread],
+  );
+  const protocolSwitcherUnreadByProtocol = useMemo(
+    () =>
+      buildProtocolSwitcherUnreadByProtocol(
+        meshtasticChatUnread,
+        meshcoreChatUnread,
+        reticulumChatUnread,
+        rrcUnread,
+        gamesUnread,
+      ),
+    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread, gamesUnread],
   );
   const roomsUnreadByProtocol = useMemo(
     () => protocolRecord(0, meshcoreRoomsUnread, 0),
@@ -1964,6 +1987,55 @@ function AppContent() {
       setGamesTabVisited(true);
     }
   }, [activePanelIndex]);
+
+  const handleOpenGamesSession = useCallback(
+    (sessionId: string) => {
+      // Gate on Reticulum capabilities — deep links must work while another protocol is active.
+      if (!reticulumCapabilities.hasLrgpGames) return;
+      void (async () => {
+        if (protocol !== 'reticulum') {
+          lastTabByProtocol.current.set(protocol, activeTab);
+          lastPanelByProtocol.current.set(protocol, activePanelIndex);
+          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+          setProtocol('reticulum');
+        }
+        const gamesTabIndex = findFilteredTabIndexForPanel(
+          selectByProtocol(tabsByProtocol, 'reticulum'),
+          GAMES_PANEL_INDEX,
+        );
+        if (gamesTabIndex >= 0) {
+          setActiveTab(gamesTabIndex);
+          setGamesTabVisited(true);
+        }
+        await openReticulumGameSession(sessionId);
+      })();
+    },
+    [activePanelIndex, activeTab, protocol, reticulumCapabilities.hasLrgpGames, tabsByProtocol],
+  );
+
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ sessionId?: string }>).detail;
+      if (typeof detail?.sessionId === 'string' && detail.sessionId.trim()) {
+        handleOpenGamesSession(detail.sessionId);
+      }
+    };
+    window.addEventListener('mesh-client:openGamesSession', onOpen);
+    return () => {
+      window.removeEventListener('mesh-client:openGamesSession', onOpen);
+    };
+  }, [handleOpenGamesSession]);
+
+  useEffect(() => {
+    setReticulumGamesTabFocused(
+      protocol === 'reticulum' &&
+        capabilities.hasLrgpGames &&
+        activePanelIndex === GAMES_PANEL_INDEX,
+    );
+    return () => {
+      setReticulumGamesTabFocused(false);
+    };
+  }, [protocol, capabilities.hasLrgpGames, activePanelIndex]);
 
   useEffect(() => {
     if (activePanelIndex === RRC_PANEL_INDEX) {
@@ -2718,7 +2790,7 @@ function AppContent() {
             <div className="flex shrink-0 items-center pl-8">
               <ProtocolSwitcher
                 protocol={protocol}
-                chatUnreadByProtocol={chatUnreadByProtocol}
+                unreadByProtocol={protocolSwitcherUnreadByProtocol}
                 onProtocolChange={handleProtocolChange}
               />
             </div>
@@ -2900,6 +2972,7 @@ function AppContent() {
                   ? remotePendingOffers
                   : 0
               }
+              gamesUnread={protocol === 'reticulum' && capabilities.hasLrgpGames ? gamesUnread : 0}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />

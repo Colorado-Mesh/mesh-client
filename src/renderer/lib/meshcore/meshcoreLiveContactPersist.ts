@@ -10,6 +10,7 @@ import { bytesToHex } from '@/shared/hexBytes';
 import { useNodeStore } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { shouldApplyMeshcoreContact } from '../meshcoreLocallyDeletedContacts';
 import {
   CONTACT_TYPE_LABELS,
   mergeHwModelOnContactUpdate,
@@ -49,6 +50,7 @@ export function persistMeshcoreNodeInfoAfterAdvert(
 
   const nodeId = event.nodeId > 0 ? event.nodeId : pubkeyToNodeId(publicKey);
   if (nodeId === 0) return;
+  if (!shouldApplyMeshcoreContact(nodeId)) return;
 
   registerMeshcorePubKey(nodeId, publicKey);
 
@@ -159,6 +161,7 @@ export function persistMeshcorePathUpdatedNewContact(
   lastAdvertSec: number,
 ): void {
   if (nodeId === 0 || publicKey.length !== 32) return;
+  if (!shouldApplyMeshcoreContact(nodeId)) return;
   registerMeshcorePubKey(nodeId, publicKey);
   void window.electronAPI.db
     .saveMeshcoreContact({

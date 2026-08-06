@@ -49,12 +49,18 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 
 **What to read first in `debug-snapshot.json` (ignore misleading `offline-*` ids):**
 
-| Field                                    | Healthy connected example | Meaning                           |
-| ---------------------------------------- | ------------------------- | --------------------------------- |
-| `sessionSummary.<protocol>.liveSession`  | `true`                    | RF/MQTT session is live           |
-| `sessionSummary.<protocol>.sessionState` | `"live"`                  | Not DB-hydrated-only              |
-| `activeTab.liveSession`                  | `true`                    | Active protocol tab is connected  |
-| `warnings`                               | `[]`                      | No stuck-chat signatures detected |
+| Field                                                                   | Healthy connected example | Meaning                                                                                                    |
+| ----------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `sessionSummary.<protocol>.liveSession`                                 | `true`                    | RF/MQTT session is live                                                                                    |
+| `sessionSummary.<protocol>.sessionState`                                | `"live"`                  | Not DB-hydrated-only                                                                                       |
+| `activeTab.liveSession`                                                 | `true`                    | Active protocol tab is connected                                                                           |
+| `warnings`                                                              | `[]`                      | No stuck-chat signatures detected                                                                          |
+| `mainLiveness` (top-level)                                              | object                    | `mainUptimeSec`, `lastRendererHeartbeatAgeMs`, `rendererUnresponsiveSeen`, `rss`, `heapUsed` — hang triage |
+| `meshcore.roomsUnreadEstimate`                                          | number                    | Computed Rooms sidebar badge (known room servers only)                                                     |
+| `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
+| `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
+
+Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups).
 
 The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
 
@@ -238,7 +244,13 @@ See [reticulum.md](reticulum.md#chat-lxmf) and [sidecar IPC](reticulum-sidecar-i
 - **Stack not running / games disabled:** Games need a live `rns-stack` sidecar with sibling `lrgp-rs`. Check Connection → Start stack and `GET` status via Games tab (or logs for `games requires live rns-stack`).
 - **`unsupported_app`:** Peer lacks that LRGP app (mesh-client and Ratspeak ship Tic-Tac-Toe + Chess). Challenge with `ttt` or `chess`.
 - **`not_your_turn` / `invalid_move`:** Local validation rejected the move before send; wait for opponent or pick a legal cell/UCI move.
-- **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list.
+- **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list (sidebar Games badge + DM-style ping on inbound challenge).
+- **Accept does nothing / session stays Pending:** After a stack restart the Games tab can still list SQLite sessions; the sidecar now rehydrates those into memory on spawn. If Accept still fails, check the action error toast (`unknown_session` / `no_propagation_node`) and that the stack is running.
+- **Resend after restart:** Last outbound LRGP envelope is persisted in `reticulum/storage/lrgp/games_outbound.db`. Resend should still work after Stop/Start stack. If you still get `no_previous_action`, send a new move first (nothing was committed before restart).
+- **Delivery chips (Sending / Offline Inbox / Retry needed):** Session `delivery_state` tracks LXMF outbound status. **Retry needed** enables Resend for the last committed envelope.
+- **Board jumped then snapped back:** Client optimistic paint rolls back when enqueue fails (`games.action_result` ok:false or IPC error).
+- **Promotion chooser:** Pawn to last rank opens queen/rook/bishop/knight (filtered by `legal_moves`); Escape cancels.
+- **Claim threefold / 50-move:** When Chess metadata `draw_offer_reason` is `3fr` or `50m`, Claim replaces Offer Draw and sends `draw_offer` with `{ r }`.
 - **IPC blocked on proxy:** Renderer must use `electronAPI.reticulum.games.*` (`reticulum:games*`); generic `proxyGet`/`proxyPost` to `/api/v1/games/*` is rejected by design.
 - **Interop with Ratspeak:** Same LRGP v1 wire (`lrgp.v1` + `0xFB`/`0xFD`). See [reticulum-games-parity.md](reticulum-games-parity.md).
 
@@ -632,9 +644,9 @@ If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE
 - **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
-- **Reporting a crash:** Export the app log (App tab → Export for GitHub), attach the `.ips` if available, and note app version, OS version, uptime (look for `[main] long-session health uptimeSec=…`), and whether MeshCore BLE was connected. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
+- **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
 
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age.
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age. While the window is visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`.
 
 ### App shows "disconnected" but device is still on
 
@@ -760,6 +772,24 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 ## MeshCore
 
+### MeshCore TCP connect stuck or reconnect loop on SoftAP/OpenHop
+
+**Symptoms**: TCP connect stuck on **Connecting**; empty/stale nodes; reconnect thrash on SoftAP / OpenHop / pyMC companions; log lines like `[IPC] meshcore:tcp socket closed … readableEnded=true` during `[useMeshcoreRuntime] initConn getContacts`.
+
+**Cause**: Companion closes TCP mid-handshake or after the contacts dump. Older builds thrashed reconnect before contacts were latched.
+
+**Fix**:
+
+1. Upgrade to a build with MeshCore TCP burst-complete init (peer FIN after `getContacts` latches configured then reconnects; mid-burst FIN aborts cleanly).
+2. **Disconnect → Connect** on the Connection panel.
+3. Confirm logs show `[useMeshcoreRuntime] initConn getContacts …` completing and nodes populating. Main uses `TCP_NODELAY` + keepalive on the `meshcore:tcp-*` bridge.
+
+### MeshCore contact delete and sticky Rooms badge
+
+- Deleting a contact from Chat/Contacts removes the SQLite contact row **and** room BBS messages for that `room_server_id` (so Rooms unread cannot outlive the room server).
+- Session-local tombstones (`meshcoreLocallyDeletedContacts`) suppress UI resurrection from MQTT/stub merges until a live radio `getContacts` re-adds the id.
+- If the radio still has the contact, it may reappear after the next contact dump — delete again on the radio or forget there too.
+
 ### MeshCore contact age prune and favorites
 
 Startup maintenance can delete stale MeshCore contacts by age. Important details:
@@ -867,6 +897,8 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Room unread badges**:
 
 - New room BBS posts increment the **Rooms** sidebar badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
+- The Rooms badge only counts posts for room servers still in your contact list (`knownRoomServerIds`). Orphan BBS rows (deleted room server) no longer inflate the badge; deleting a room contact also cascades those messages from SQLite.
+- Clearing **Chat** channels does not clear Room messages — use App → Danger Zone → clear **Room messages** (or all MeshCore messages) if a badge remains after rooms are gone.
 
 **No room history after login**:
 
@@ -1305,7 +1337,9 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 ### Reticulum: Ratspeak DMs work but mesh-client stays silent
 
-**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat, **Columba**) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat, **Columba**, **Retichat**) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+
+**First reply Ack’d, second shows**: After mesh-client sends a **Direct** DM, the peer’s first reply often shows **Ack** on their client but never appears in mesh-client Chat/SQLite; a second reply usually lands. That reply rides the **outbound-initiated reusable Direct link**. The sidecar must wire `LinkDeliveryManager::set_inbound_packet_sender` (live stack start → `spawn_lxmf_outbound_backchannel`) so plaintext reaches the same unpack path as peer-initiated `lxmf.delivery` links — otherwise rsLXMF still sends **LinkProof** (Ack) and drops the payload. Upgrade / rebuild the sidecar and **Restart stack**. Developer bundles: look for `LXMF outbound-link backchannel packet` after the peer’s first reply; inbound ring catch-up cannot recover messages that never entered the ring.
 
 **Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`. Short messages from Python clients (Sideband/Columba) often use **opportunistic** DATA — current sidecars wire `set_inbound_raw_channel` (lxmd parity) so those packets are not dropped after proof.
 
@@ -1396,7 +1430,9 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 | **`ESP32_FLASH_STALLED`**   | ESP32-S3 flash wrote no progress for **60 s**                                        | Different USB cable/port; hold **BOOT (0)**, tap **RESET (EN)**, release **BOOT** for bootloader mode; flash again.                                                                                                                                                    |
 | **`NRF52_DFU_STALLED`**     | nRF52 DFU wrote no progress for **60 s**                                             | Same cable/port/bootloader steps as ESP32; confirm you selected the DFU-capable port.                                                                                                                                                                                  |
 
-**Before flashing**: stop the Reticulum stack or disable the RNode interface — the sidecar holds the serial port while the stack runs (`flasher.errors.blockedByStack`). After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.
+**Before flashing**: stop the Reticulum stack or disable the **USB serial** RNode interface — the sidecar holds that port while the stack runs (`flasher.errors.blockedByStack`). Enabled BLE or Wi‑Fi RNodes do not block the USB flasher. After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.
+
+**Provision / Set firmware hash**: Flash success unlocks Provision for the rest of the app session (survives leaving and returning to Admin). Changing product, model, or firmware file clears that unlock. If EEPROM is locked with a bad checksum, wipe EEPROM first (`PROVISION_WIPE_REQUIRED`). If Provision reports success but Set hash still says not provisioned, power-cycle and retry — or wipe and provision again (`PROVISION_VERIFY_FAILED`).
 
 ### Reticulum Remote transfer fails or `path_constrained`
 

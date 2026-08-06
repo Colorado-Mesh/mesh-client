@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Nenhuma porta serial USB encontrada. Conecte sua placa via USB e tente novamente.",
       "rnodeCommandTimeout": "O dispositivo parou de responder pela serial. Feche outros aplicativos que usam a mesma porta serial, aguarde a placa terminar de inicializar e tente novamente.",
       "esp32FlashStalled": "Transferência de firmware parada sem progresso. Tente outro cabo ou porta USB, entre no modo bootloader (segure BOOT, toque RESET) e reflashe novamente.",
-      "unknown": "Ocorreu um erro inesperado."
+      "unknown": "Ocorreu um erro inesperado.",
+      "provisionWipeRequired": "A EEPROM está bloqueada com uma identidade inválida. Limpe a EEPROM primeiro e, em seguida, provisione novamente.",
+      "provisionVerifyFailed": "As gravações de provisionamento foram concluídas, mas o dispositivo ainda relata uma EEPROM não provisionada. Faça o ciclo de energia da placa, aguarde a inicialização e tente novamente — ou limpe a EEPROM primeiro."
     },
     "selectSerialPort": "Selecionar porta serial",
     "noSerialPorts": "Nenhuma porta serial USB encontrada.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento",
       "cliDangerNotConfirmed": "Comandos CLI destrutivos requerem confirmação no painel Repetidores.",
       "pingFailed": "Falha no ping",
-      "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo."
+      "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo.",
+      "removeContactFailed": "Removido localmente, mas o rádio rejeitou removeContact. O contato pode reaparecer após uma atualização."
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
@@ -5274,6 +5277,13 @@
         "b": "bispo preto",
         "n": "cavalo preto",
         "p": "peão preto"
+      },
+      "promotionChooserAria": "Escolher peça promocional",
+      "promoteTo": {
+        "q": "Promover a rainha",
+        "r": "Promover a torre",
+        "b": "Promover a bispo",
+        "n": "Promover a cavaleiro"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Falha ao excluir sessão."
     },
     "deleteConfirmTitle": "Excluir sessão?",
-    "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito."
+    "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito.",
+    "claimThreefold": "Reivindicação tripla",
+    "claimThreefoldAria": "Reivindicar triplo sorteio de repetição",
+    "claimFiftyMove": "Reivindicação 50-mover",
+    "claimFiftyMoveAria": "Reivindicar sorteio de regra de cinquenta movimentos",
+    "delivery": {
+      "sending": "Enviando…",
+      "propagating": "Caixa de entrada offline...",
+      "propagated": "Armazenada",
+      "failed": "Tentativa necessária"
+    }
   }
 }

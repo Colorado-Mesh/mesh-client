@@ -240,4 +240,20 @@ describe('MeshClientDeepLinkHost', () => {
     expect(addToast).toHaveBeenCalledWith('qrIngest.channelLinkReceived', 'success');
     window.removeEventListener('mesh-client:meshtasticChannelUrl', spy as EventListener);
   });
+
+  it('dispatches Games session deep links without confirm', async () => {
+    const sessionId = 'a'.repeat(16);
+    const spy = vi.fn();
+    window.addEventListener('mesh-client:openGamesSession', spy as EventListener);
+    render(<MeshClientDeepLinkHost />);
+    await act(async () => {
+      openUrlHandler?.(`lrgp:${sessionId}`);
+      await Promise.resolve();
+    });
+    expect(spy).toHaveBeenCalled();
+    const detail = (spy.mock.calls[0]?.[0] as CustomEvent<{ sessionId: string }>).detail;
+    expect(detail.sessionId).toBe(sessionId);
+    expect(addToast).not.toHaveBeenCalledWith('qrIngest.unknownLink', 'error');
+    window.removeEventListener('mesh-client:openGamesSession', spy as EventListener);
+  });
 });

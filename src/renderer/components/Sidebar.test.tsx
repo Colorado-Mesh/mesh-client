@@ -255,6 +255,55 @@ describe('Sidebar', () => {
     expect(screen.getByRole('tab', { name: /2 pending inbound file offers/i })).toBeInTheDocument();
   });
 
+  it('shows Games unread badge when gamesUnread > 0', () => {
+    render(
+      <Sidebar
+        tabs={['Games']}
+        tabSlotIds={['Games']}
+        active={0}
+        onChange={vi.fn()}
+        gamesUnread={3}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Games, 3 unread' })).toBeInTheDocument();
+  });
+
+  it('hides Games badge when gamesUnread is 0', () => {
+    render(
+      <Sidebar
+        tabs={['Games']}
+        tabSlotIds={['Games']}
+        active={0}
+        onChange={vi.fn()}
+        gamesUnread={0}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Games' })).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations when Games unread badge shows', async () => {
+    render(
+      <Sidebar
+        tabs={['Games']}
+        tabSlotIds={['Games']}
+        active={0}
+        onChange={vi.fn()}
+        gamesUnread={2}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    const badge = screen.getByText('2');
+    hydrateAxeThemeColors(badge);
+    expect(await axe(badge)).toHaveNoViolations();
+  });
+
   it('hides Remote badge when remotePendingOffers is 0', () => {
     render(
       <Sidebar

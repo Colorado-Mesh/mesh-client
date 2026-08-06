@@ -89,15 +89,56 @@ function getLogFilePath(): string {
 }
 
 /**
- * Truncate log on app start; call from app.whenReady before other heavy init.
+ * Start a fresh session log. If the previous run left a non-empty `mesh-client.log`,
+ * rename it to {@link LOG_BACKUP_FILENAME} first so restart-then-export still keeps
+ * the hung/prior session (size rotation alone only kicks in at {@link LOG_MAX_BYTES}).
+ * Call from app.whenReady before other heavy init.
  */
 export function initLogFile(): void {
   recentEntries.length = 0;
   const p = getLogFilePath();
+  const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
+  /** When true, prior session bytes remain on `p` after a failed promote+restore — do not wipe. */
+  let skipFreshTruncate = false;
   try {
-    fs.writeFileSync(p, '', { encoding: 'utf8' });
+    if (fs.existsSync(p)) {
+      const { size } = fs.statSync(p);
+      if (size > 0) {
+        // Rename current → temp first so a failed replace cannot leave us with neither
+        // current nor prior backup.
+        const staging = `${backup}.staging-${process.pid}-${Date.now()}`;
+        fs.renameSync(p, staging);
+        try {
+          if (fs.existsSync(backup)) {
+            fs.unlinkSync(backup);
+          }
+          fs.renameSync(staging, backup);
+        } catch (e) {
+          debugLogService('[log-service] initLogFile promote staging backup failed', e);
+          try {
+            if (!fs.existsSync(p) && fs.existsSync(staging)) {
+              fs.renameSync(staging, p);
+              skipFreshTruncate = true;
+            }
+          } catch (restoreErr) {
+            debugLogService('[log-service] initLogFile restore staging failed', restoreErr);
+          }
+        }
+      }
+    }
   } catch (e) {
-    debugLogService('[log-service] initLogFile truncate failed', e);
+    debugLogService('[log-service] initLogFile preserve previous session failed', e);
+  }
+  if (!skipFreshTruncate) {
+    try {
+      fs.writeFileSync(p, '', { encoding: 'utf8' });
+    } catch (e) {
+      debugLogService('[log-service] initLogFile truncate failed', e);
+    }
+  } else {
+    console.debug(
+      '[log-service] initLogFile skipped truncate; prior session log restored on current path',
+    );
   }
   flushPendingBuffer();
 }

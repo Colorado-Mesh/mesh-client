@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden. Schließen Sie Ihr Board über USB an und versuchen Sie es erneut.",
       "rnodeCommandTimeout": "Das Gerät antwortet nicht mehr über die serielle Schnittstelle. Schließen Sie andere Apps, die denselben seriellen Port verwenden, warten Sie, bis die Platine den Start abgeschlossen hat, und versuchen Sie es erneut.",
       "esp32FlashStalled": "Firmware-Übertragung ohne Fortschritt blockiert. Versuchen Sie ein anderes USB-Kabel oder einen anderen Anschluss, wechseln Sie in den Bootloader-Modus (BOOT gedrückt halten, RESET antippen) und flashen Sie erneut.",
-      "unknown": "Ein unerwarteter Fehler ist aufgetreten."
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten.",
+      "provisionWipeRequired": "EEPROM ist mit einer ungültigen Identität gesperrt. Löschen Sie zuerst das EEPROM und führen Sie dann erneut die Bereitstellung durch.",
+      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge abgeschlossen, aber das Gerät meldet weiterhin ein nicht bereitgestelltes EEPROM. Schalten Sie die Platine aus und wieder ein, warten Sie auf den Start und versuchen Sie es erneut — oder löschen Sie zuerst das EEPROM."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
       "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
       "pingFailed": "Ping fehlgeschlagen",
-      "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut."
+      "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut.",
+      "removeContactFailed": "Lokal entfernt, aber das Radio hat removeContact abgelehnt. Der Kontakt kann nach einer Aktualisierung wieder angezeigt werden."
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
@@ -5274,6 +5277,13 @@
         "b": "Schwarzer Läufer",
         "n": "Black Knight",
         "p": "Schwarzer Bauer"
+      },
+      "promotionChooserAria": "Aktionsstück wählen",
+      "promoteTo": {
+        "q": "Zur Königin befördern",
+        "r": "Zum Turm befördern",
+        "b": "Zum Bischof befördern",
+        "n": "Zum Ritter befördern"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Die Recycling-Sitzung konnte nicht gelöscht werden."
     },
     "deleteConfirmTitle": "Löschen sitzung?",
-    "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden."
+    "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden.",
+    "claimThreefold": "Dreifach einfordern",
+    "claimThreefoldAria": "Dreifache Wiederholungsziehung beanspruchen",
+    "claimFiftyMove": "50-Bewegungen einfordern",
+    "claimFiftyMoveAria": "Auslosung der Fünfzig-Züge-Regel beanspruchen",
+    "delivery": {
+      "sending": "Senden…",
+      "propagating": "Offline-Posteingang...",
+      "propagated": "Gespeichert",
+      "failed": "Erneuter Versuch erforderlich"
+    }
   }
 }

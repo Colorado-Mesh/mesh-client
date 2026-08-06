@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Hiçbir USB seri bağlantı noktası bulunamadı. Anakartınızı USB üzerinden bağlayın ve tekrar deneyin.",
       "rnodeCommandTimeout": "Cihaz seri yanıt vermeyi durdurdu. Aynı seri portu kullanan diğer uygulamaları kapatın, kartın önyükleme işleminin bitmesini bekleyin ve yeniden deneyin.",
       "esp32FlashStalled": "Ürün yazılımı aktarımı ilerleme olmadan durdu. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (BOOT'a basılı tutun, RESET'e dokunun) ve yeniden flash yapın.",
-      "unknown": "Beklenmedik bir hata oluştu."
+      "unknown": "Beklenmedik bir hata oluştu.",
+      "provisionWipeRequired": "EEPROM geçersiz bir kimlikle kilitlendi. Önce EEPROM’u silin, ardından yeniden provisioning yapın.",
+      "provisionVerifyFailed": "Provisioning yazmaları tamamlandı ancak cihaz hâlâ provision edilmemiş bir EEPROM bildiriyor. Kartın gücünü kesip yeniden verin, önyüklemeyi bekleyin ve tekrar deneyin — veya önce EEPROM’u silin."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor",
       "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
       "pingFailed": "Ping başarısız oldu",
-      "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin."
+      "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin.",
+      "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact’ı reddetti. Kişi yenilendikten sonra yeniden görünebilir."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
@@ -5274,6 +5277,13 @@
         "b": "Kara fil",
         "n": "Kara Şövalye",
         "p": "Siyah piyon"
+      },
+      "promotionChooserAria": "Promosyon parçası seçin",
+      "promoteTo": {
+        "q": "Kraliçeliğe terfi ettir",
+        "r": "Kaleye terfi ettir",
+        "b": "Piskoposluğa terfi ettir",
+        "n": "Şövalyeliğe terfi ettir"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Oturum silinemedi."
     },
     "deleteConfirmTitle": "Oturumları Yapılandır...",
-    "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz."
+    "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz.",
+    "claimThreefold": "Üç katını iste",
+    "claimThreefoldAria": "Üç kat tekrar çekilişi talep et",
+    "claimFiftyMove": "Talep 50 - hareket",
+    "claimFiftyMoveAria": "Elli hamlelik kural çekilişi talep et",
+    "delivery": {
+      "sending": "Gönderiliyor...",
+      "propagating": "Çevrimdışı Gelen Kutusu…",
+      "propagated": "ve saklanmalı.",
+      "failed": "Yeniden deneme gerekli"
+    }
   }
 }

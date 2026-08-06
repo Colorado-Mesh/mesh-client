@@ -29,6 +29,7 @@ import {
   meshcorePathHashSizeFromTraceFlags,
 } from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
+import { pushAppToast } from '../components/Toast';
 import { attachMeshcoreConnSideEffects } from '../hooks/meshcore/meshcoreConnSideEffects';
 import type {
   MeshcoreConnSideEffectsCtx,
@@ -85,7 +86,9 @@ import {
 import {
   classifyMeshcoreBleTimeoutStage,
   isMeshcoreSetupAbortError,
+  isMeshcoreTcpTransportDeadError,
   MESHCORE_SETUP_ABORT_MESSAGE,
+  rethrowMeshcoreSetupAbortFromTcpDead,
 } from '../lib/bleConnectErrors';
 import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { createBleReconnectTransportCleanup } from '../lib/bleReconnectLateTransport';
@@ -100,6 +103,7 @@ import {
   meshcoreHydratedMessageRecords,
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
+import i18n from '../lib/i18n';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import {
   getIdentityChatMessages,
@@ -118,6 +122,7 @@ import {
 } from '../lib/letsMeshJwt';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
+import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
 import { syncMeshcoreDmAckToMessageStore } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   CayenneLppEntry,
@@ -163,6 +168,11 @@ import {
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
+  isMeshcoreTcpBurstDeadBridge,
+  setMeshcoreTcpWriteDeadListener,
+  shouldDeferMeshcoreTcpReconnectAfterBurst,
+} from '../lib/meshcore/meshcoreTcpInitBurst';
+import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
@@ -197,6 +207,13 @@ import {
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
+import {
+  clearMeshcoreLocallyDeletedContact,
+  filterOutMeshcoreLocallyDeletedContacts,
+  markMeshcoreLocallyDeletedContact,
+  restoreMeshcoreLocallyDeletedContactsFromStorage,
+  shouldApplyMeshcoreContact,
+} from '../lib/meshcoreLocallyDeletedContacts';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
@@ -422,6 +439,7 @@ import {
 import {
   patchMeshcoreNodeLastHeardAt,
   patchNodeFavorited,
+  removeNode,
   useNodeStore,
 } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -480,6 +498,8 @@ function meshcorePathUpdatedNodesMergeUpdater(
 }
 
 export function useMeshcoreRuntime() {
+  // Restore tombstones before any contact/message hydration in this session.
+  restoreMeshcoreLocallyDeletedContactsFromStorage();
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [queueStatus, setQueueStatus] = useState<{
     free: number;
@@ -579,6 +599,18 @@ export function useMeshcoreRuntime() {
   const meshcoreExplicitDisconnectRef = useRef(false);
   /** True after at least one successful configure; blocks reconnect loop on first-connect failures. */
   const meshcoreEverConfiguredRef = useRef(false);
+  /**
+   * Set when main emits meshcore:tcp-disconnected (or write fail-closed). Cleared on prepareRfConnect
+   * for a new TCP open. Lets initConn abort before contacts→UI / getChannels even if the IPC
+   * event arrives a tick before setup-generation bump is observed (Fuzzy SoftAP write storms).
+   */
+  const meshcoreTcpBridgeDeadRef = useRef(false);
+  /**
+   * TCP: set once getSelfInfo + getContacts have resolved (contact payload held). OpenHop/pyMC often
+   * clean-FINs at that moment — after capture we complete configured from the burst and defer
+   * reconnect instead of aborting into a never-configured loop (Neal).
+   */
+  const meshcoreTcpInitBurstCapturedRef = useRef(false);
   /**
    * Active session configured (Meshtastic `deviceConfiguredRef` parity). Cleared on disconnect /
    * new connect; set when initConn reaches configured so post-configure Noble drops during
@@ -1046,7 +1078,9 @@ export function useMeshcoreRuntime() {
         myNodeNumRef.current,
       );
       void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
-      const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
+      const mergedInitial = filterOutMeshcoreLocallyDeletedContacts(
+        mergeStubNodesFromMeshcoreMessages(initial, mapped),
+      );
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
 
       meshcoreLastPersistedNodesRef.current = new Map(mergedInitial);
@@ -1286,7 +1320,7 @@ export function useMeshcoreRuntime() {
       const resolvedId = resolved.senderId;
       const displayName = resolved.displayName;
       const storeId = meshcoreIdentityIdRef.current;
-      if (resolvedId !== 0) {
+      if (resolvedId !== 0 && shouldApplyMeshcoreContact(resolvedId)) {
         if (storeId) {
           ensureMeshcoreChatSenderInNodeStore(storeId, resolvedId, {
             lastHeardAtMs: ts,
@@ -1314,6 +1348,8 @@ export function useMeshcoreRuntime() {
         });
       }
       if (
+        resolvedId !== 0 &&
+        shouldApplyMeshcoreContact(resolvedId) &&
         !meshcoreIsChatStubNodeId(resolvedId) &&
         !pubKeyMapRef.current.has(resolvedId) &&
         !mqttPlaceholderSavedRef.current.has(resolvedId)
@@ -1558,8 +1594,18 @@ export function useMeshcoreRuntime() {
   }, [buildNodesFromContacts]);
 
   const applyMeshcoreNodesToUi = useCallback(
-    (nodeMap: Map<number, MeshNode>) => {
-      const mergedForStore = mergeMeshcoreChatStubNodes(readMeshcoreNodes(), nodeMap);
+    (nodeMap: Map<number, MeshNode>, opts?: { fromRadio?: boolean }) => {
+      // Only a live radio contact list may revive an explicitly deleted id.
+      if (opts?.fromRadio) {
+        for (const id of nodeMap.keys()) {
+          clearMeshcoreLocallyDeletedContact(id);
+        }
+      }
+      const incoming = filterOutMeshcoreLocallyDeletedContacts(nodeMap);
+      const prev = filterOutMeshcoreLocallyDeletedContacts(readMeshcoreNodes());
+      const mergedForStore = filterOutMeshcoreLocallyDeletedContacts(
+        mergeMeshcoreChatStubNodes(prev, incoming),
+      );
       setNodes(mergedForStore);
       if (mergedForStore.size > 0) meshcoreNodesAppliedRef.current = true;
       // Publish before React commits — connect-time side effects (room auto-login) filter on hw_model.
@@ -1593,6 +1639,7 @@ export function useMeshcoreRuntime() {
 
   const handleMeshcorePathUpdatedFromIngest = useCallback(
     (nodeId: number, publicKey: Uint8Array, isNewContact: boolean) => {
+      if (!shouldApplyMeshcoreContact(nodeId)) return;
       registerMeshcorePubKey(nodeId, publicKey);
       copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
       if (!meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId)) {
@@ -1853,7 +1900,11 @@ export function useMeshcoreRuntime() {
         }
         if (meshcoreExplicitDisconnectRef.current) return;
         handleMeshcoreConnectionLostRef.current();
-      })();
+      })().catch((e: unknown) => {
+        console.warn(
+          '[useMeshcoreRuntime] BLE poweredOn settle/reconnect ' + errLikeToLogString(e),
+        );
+      });
     });
   }, []);
 
@@ -2121,11 +2172,23 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`,
       );
 
-      const rawInfo = sequentialRadioInit
-        ? await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000))
-        : await parallelSelfInfoPromise!;
+      // TCP: ConnectionDriver.discoverSelf already ran getSelfInfo — reuse to avoid a second
+      // companion RPC that SoftAP/OpenHop often FINs after (Neal/Fuzzy).
+      const reusedDiscoverSelf =
+        sequentialRadioInit && meshcoreConnectTypeRef.current === 'tcp'
+          ? takeMeshcoreDiscoverSelfCache(conn)
+          : undefined;
+      const rawInfo =
+        reusedDiscoverSelf ??
+        (sequentialRadioInit
+          ? await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000))
+          : await parallelSelfInfoPromise!);
       const getSelfInfoMs = Math.round(performance.now() - getSelfInfoStart);
-      console.debug(`[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms`);
+      console.debug(
+        reusedDiscoverSelf
+          ? `[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms (reused discoverSelf)`
+          : `[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms`,
+      );
       const info = enrichMeshCoreSelfInfo(rawInfo);
       setSelfInfo(info);
       setState((prev) => ({ ...prev, status: 'connected' }));
@@ -2197,6 +2260,22 @@ export function useMeshcoreRuntime() {
         });
       }
 
+      // TCP/peer FIN during contact dump: abort before burst is captured. After burst, OpenHop
+      // clean-FIN is tolerated so we can latch configured from held contacts (Neal).
+      const assertInitConnStillLive = (): void => {
+        if (meshcoreSetupGenerationRef.current !== setupGen) {
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+        const tcpBurstOk = transportType === 'tcp' && meshcoreTcpInitBurstCapturedRef.current;
+        if (tcpBurstOk) return;
+        if (transportType === 'tcp' && meshcoreTcpBridgeDeadRef.current) {
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+        if (transportType === 'tcp' && connRef.current !== conn) {
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
+      };
+
       if (sequentialRadioInit) {
         getContactsStart = performance.now();
       }
@@ -2210,6 +2289,13 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
       );
+      // Contact payload held — TCP peer FIN from here on completes configured from this burst.
+      if (transportType === 'tcp') {
+        meshcoreTcpInitBurstCapturedRef.current = true;
+      }
+      // Fuzzy SoftAP: peer FIN often lands between getContacts resolve and contacts→UI —
+      // abort before DB/UI work when burst was not yet captured (pre-TCP path above).
+      assertInitConnStillLive();
       // Reconcile radio truth: clear stale flags before re-marking contacts seen on-device.
       try {
         await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
@@ -2219,6 +2305,7 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
       }
+      assertInitConnStillLive();
       const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
       setMeshcoreContactsForTelemetry(contacts);
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
@@ -2233,7 +2320,8 @@ export function useMeshcoreRuntime() {
           deferPathHistory: true,
         }),
       );
-      applyMeshcoreNodesToUi(newNodes);
+      assertInitConnStillLive();
+      applyMeshcoreNodesToUi(newNodes, { fromRadio: true });
       if (identityId) {
         repairMeshcoreChannelSenderIdsInStore(identityId);
       }
@@ -2241,6 +2329,12 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
       );
+      assertInitConnStillLive();
+      const tcpBurstDeadBridge = isMeshcoreTcpBurstDeadBridge({
+        transportType,
+        burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+        bridgeDead: meshcoreTcpBridgeDeadRef.current,
+      });
       // TCP defers status=configured (and room auto-login) until after channels below.
       if (!deferConfiguredUntilRadioInit) {
         triggerRoomAutoLoginRef.current();
@@ -2248,27 +2342,104 @@ export function useMeshcoreRuntime() {
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       if (sequentialRadioInit) {
-        const getChannelsStart = performance.now();
-        try {
-          const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
-            setupGen,
-            withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
-          );
-          setChannels(
-            dedupeChannelPillsByIndex(
-              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
-            ),
-          );
-          const getChannelsMs = Math.round(performance.now() - getChannelsStart);
+        const skipChannelsForDeadBurst = isMeshcoreTcpBurstDeadBridge({
+          transportType,
+          burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+          bridgeDead: meshcoreTcpBridgeDeadRef.current,
+        });
+        if (skipChannelsForDeadBurst) {
           console.debug(
-            `[useMeshcoreRuntime] initConn getChannels ${getChannelsMs}ms (${rawChannels.length} channels)`,
+            '[useMeshcoreRuntime] initConn getChannels skipped (TCP burst-complete, bridge dead)',
           );
-        } catch (e) {
-          if (isMeshcoreSetupAbortError(e)) throw e;
-          console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
+        } else {
+          assertInitConnStillLive();
+          const getChannelsStart = performance.now();
+          try {
+            // Race: peer FIN after burst must not hang getChannels until MESHCORE_INIT_TIMEOUT.
+            const channelsWork = withTimeout(
+              conn.getChannels(),
+              MESHCORE_INIT_TIMEOUT_MS,
+              'getChannels',
+            );
+            const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
+              setupGen,
+              (async () => {
+                let settled = false;
+                const deadWatch =
+                  transportType === 'tcp'
+                    ? new Promise<never>((_, reject) => {
+                        const id = setInterval(() => {
+                          if (
+                            settled ||
+                            !isMeshcoreTcpBurstDeadBridge({
+                              transportType,
+                              burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+                              bridgeDead: meshcoreTcpBridgeDeadRef.current,
+                            })
+                          ) {
+                            return;
+                          }
+                          clearInterval(id);
+                          reject(new Error('meshcore:tcp-write: no active socket'));
+                        }, 20);
+                        // Attach .catch before finally cleanup so a losing race rejection
+                        // cannot become an unhandled rejection after Promise.race settles.
+                        void channelsWork
+                          .catch(() => {
+                            // catch-no-log-ok consumed; original rejection still races via channelsWork
+                          })
+                          .finally(() => {
+                            settled = true;
+                            clearInterval(id);
+                          });
+                      })
+                    : null;
+                return deadWatch
+                  ? await Promise.race([channelsWork, deadWatch])
+                  : await channelsWork;
+              })(),
+            );
+            setChannels(
+              dedupeChannelPillsByIndex(
+                rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+              ),
+            );
+            const getChannelsMs = Math.round(performance.now() - getChannelsStart);
+            console.debug(
+              `[useMeshcoreRuntime] initConn getChannels ${getChannelsMs}ms (${rawChannels.length} channels)`,
+            );
+          } catch (e) {
+            if (isMeshcoreSetupAbortError(e)) throw e;
+            // Burst already held: soft-skip channels on dead bridge rather than abort configured.
+            if (meshcoreTcpInitBurstCapturedRef.current && isMeshcoreTcpTransportDeadError(e)) {
+              meshcoreTcpBridgeDeadRef.current = true;
+              if (
+                shouldDeferMeshcoreTcpReconnectAfterBurst({
+                  burstCaptured: true,
+                  everConfigured: meshcoreEverConfiguredRef.current,
+                  deviceConfigured: meshcoreDeviceConfiguredRef.current,
+                })
+              ) {
+                meshcoreDeferredReconnectRef.current = true;
+              }
+              console.warn(
+                '[useMeshcoreRuntime] getChannels skipped after TCP burst (bridge dead) ' +
+                  errLikeToLogString(e),
+              );
+            } else {
+              rethrowMeshcoreSetupAbortFromTcpDead(e);
+              console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
+              // TCP: a soft getChannels failure must not promote configured on a dead/superseded link
+              // before burst capture.
+              if (deferConfiguredUntilRadioInit) {
+                assertInitConnStillLive();
+              }
+            }
+          }
         }
       }
 
+      assertInitConnStillLive();
       if (deferConfiguredUntilRadioInit) {
         setState((prev) => ({
           ...prev,
@@ -2284,180 +2455,192 @@ export function useMeshcoreRuntime() {
             myNodeNum: myNodeId,
           });
         }
-        triggerRoomAutoLoginRef.current();
-      }
-
-      // Re-resolve map/App GPS after the node store picks up getSelfInfo advert coords (same tick as setNodes is too early).
-      requestAnimationFrame(() => {
-        queueMicrotask(() => {
-          void refreshOurPositionMeshCoreRef.current().catch((e: unknown) => {
-            console.debug(
-              '[useMeshcoreRuntime] post-connect refreshOurPosition ' + errLikeToLogString(e),
-            );
-          });
-          void requestTelemetryMeshCoreRef.current(myNodeId).catch((e: unknown) => {
-            console.debug(
-              '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
-                errLikeToLogString(e),
-            );
-          });
-        });
-      });
-
-      // Post-init side-effects — run sequentially to avoid shared Ok/Err listener races
-      // with user-initiated commands (e.g. config import right after connect).
-      // Apply saved manual contacts preference
-      try {
-        const savedManual = localStorage.getItem(MANUAL_CONTACTS_KEY) === 'true';
-        if (savedManual) {
-          await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.setManualAddContacts());
-        }
-      } catch (e) {
-        if (isMeshcoreSetupAbortError(e)) throw e;
-        console.warn(
-          '[useMeshcoreRuntime] setManualAddContacts (init) error ' + errLikeToLogString(e),
-        );
-      }
-
-      await awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        conn.syncDeviceTime().catch((e: unknown) => {
-          console.warn('[useMeshcoreRuntime] syncDeviceTime error ' + errLikeToLogString(e));
-        }),
-      );
-      await awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        conn
-          .getBatteryVoltage()
-          .then(({ batteryMilliVolts }) => {
-            setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts } : prev));
-          })
-          .catch((e: unknown) => {
-            console.warn('[useMeshcoreRuntime] getBatteryVoltage error ' + errLikeToLogString(e));
-          }),
-      );
-
-      await awaitUnlessMeshcoreSetupCancelled(setupGen, refreshMeshcoreAutoaddFromDevice());
-
-      try {
-        const settingsRaw = getAppSettingsRaw();
-        const settings = parseStoredJson<{ meshcoreFloodScopeHashtag?: string }>(
-          settingsRaw,
-          'initConn meshcoreFloodScopeHashtag',
-        );
-        const floodHashtag =
-          typeof settings?.meshcoreFloodScopeHashtag === 'string'
-            ? settings.meshcoreFloodScopeHashtag
-            : '';
-        if (floodHashtag) {
-          await awaitUnlessMeshcoreSetupCancelled(
-            setupGen,
-            applyMeshcoreFloodScope(conn, floodHashtag),
+        // Rooms RPCs need a live companion — defer until reconnect after burst-complete FIN.
+        if (!tcpBurstDeadBridge && !meshcoreTcpBridgeDeadRef.current) {
+          triggerRoomAutoLoginRef.current();
+        } else {
+          console.debug(
+            '[useMeshcoreRuntime] initConn skip room auto-login (TCP burst-complete, bridge dead)',
           );
         }
-      } catch (e) {
-        if (isMeshcoreSetupAbortError(e)) throw e;
-        console.warn(
-          '[useMeshcoreRuntime] initConn reapply flood scope failed ' + errLikeToLogString(e),
-        );
       }
 
-      try {
-        const deviceInfo = await awaitUnlessMeshcoreSetupCancelled(
-          setupGen,
-          conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
-        );
-        const pathFields = parsePathHashModeFromDeviceQuery(deviceInfo);
-        setState((prev) => {
-          const next = { ...prev };
-          if (deviceInfo?.firmware_build_date) {
-            next.firmwareVersion = deviceInfo.firmware_build_date;
-          }
-          if (pathFields.firmwareVersion) {
-            next.firmwareVersion = pathFields.firmwareVersion;
-          }
-          const mm =
-            pathFields.manufacturerModel ?? meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
-          if (mm) {
-            next.manufacturerModel = mm;
-          }
-          if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
-            next.pathHashMode = pathFields.pathHashMode;
-          }
-          return next;
+      const skipTcpSocketWork = isMeshcoreTcpBurstDeadBridge({
+        transportType,
+        burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+        bridgeDead: meshcoreTcpBridgeDeadRef.current,
+      });
+
+      if (!skipTcpSocketWork) {
+        // Re-resolve map/App GPS after the node store picks up getSelfInfo advert coords (same tick as setNodes is too early).
+        requestAnimationFrame(() => {
+          queueMicrotask(() => {
+            if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
+              return;
+            }
+            void refreshOurPositionMeshCoreRef.current().catch((e: unknown) => {
+              if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+              console.debug(
+                '[useMeshcoreRuntime] post-connect refreshOurPosition ' + errLikeToLogString(e),
+              );
+            });
+            void requestTelemetryMeshCoreRef.current(myNodeId).catch((e: unknown) => {
+              if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+              console.debug(
+                '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
+                  errLikeToLogString(e),
+              );
+            });
+          });
         });
 
-        // Companion is source of truth on connect — do not push App settings onto the radio.
-        // Sync UI preference FROM the device so a stamped default (1-byte) cannot fight MeshCore app.
+        // Post-init side-effects — run sequentially to avoid shared Ok/Err listener races
+        // with user-initiated commands (e.g. config import right after connect).
+        assertInitConnStillLive();
+        // Apply saved manual contacts preference
         try {
-          if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
-            mergeAppSetting(
-              'meshcorePathHashMode',
-              pathFields.pathHashMode,
-              'initConn adopt pathHashMode from radio',
+          const savedManual = localStorage.getItem(MANUAL_CONTACTS_KEY) === 'true';
+          if (savedManual) {
+            await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.setManualAddContacts());
+          }
+        } catch (e) {
+          if (isMeshcoreSetupAbortError(e)) throw e;
+          rethrowMeshcoreSetupAbortFromTcpDead(e);
+          console.warn(
+            '[useMeshcoreRuntime] setManualAddContacts (init) error ' + errLikeToLogString(e),
+          );
+        }
+
+        await awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          conn.syncDeviceTime().catch((e: unknown) => {
+            rethrowMeshcoreSetupAbortFromTcpDead(e);
+            console.warn('[useMeshcoreRuntime] syncDeviceTime error ' + errLikeToLogString(e));
+          }),
+        );
+        await awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          conn
+            .getBatteryVoltage()
+            .then(({ batteryMilliVolts }) => {
+              setSelfInfo((prev) => (prev ? { ...prev, batteryMilliVolts } : prev));
+            })
+            .catch((e: unknown) => {
+              rethrowMeshcoreSetupAbortFromTcpDead(e);
+              console.warn('[useMeshcoreRuntime] getBatteryVoltage error ' + errLikeToLogString(e));
+            }),
+        );
+
+        try {
+          await awaitUnlessMeshcoreSetupCancelled(setupGen, refreshMeshcoreAutoaddFromDevice());
+        } catch (e) {
+          if (isMeshcoreSetupAbortError(e)) throw e;
+          rethrowMeshcoreSetupAbortFromTcpDead(e);
+          console.warn(
+            '[useMeshcoreRuntime] refreshMeshcoreAutoaddFromDevice error ' + errLikeToLogString(e),
+          );
+        }
+
+        try {
+          const settingsRaw = getAppSettingsRaw();
+          const settings = parseStoredJson<{ meshcoreFloodScopeHashtag?: string }>(
+            settingsRaw,
+            'initConn meshcoreFloodScopeHashtag',
+          );
+          const floodHashtag =
+            typeof settings?.meshcoreFloodScopeHashtag === 'string'
+              ? settings.meshcoreFloodScopeHashtag
+              : '';
+          if (floodHashtag) {
+            await awaitUnlessMeshcoreSetupCancelled(
+              setupGen,
+              applyMeshcoreFloodScope(conn, floodHashtag),
             );
           }
         } catch (e) {
           if (isMeshcoreSetupAbortError(e)) throw e;
+          rethrowMeshcoreSetupAbortFromTcpDead(e);
           console.warn(
-            '[useMeshcoreRuntime] initConn adopt path hash mode failed ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] initConn reapply flood scope failed ' + errLikeToLogString(e),
           );
         }
-      } catch (e) {
-        if (isMeshcoreSetupAbortError(e)) throw e;
-        // catch-no-log-ok deviceQuery optional for firmware string
-      }
 
-      // MQTT private key export runs after other init RPCs to avoid meshcore.js listener races
-      // (Linux Web Bluetooth is especially sensitive).
-      try {
-        await awaitUnlessMeshcoreSetupCancelled(
-          setupGen,
-          exportAndPersistMeshcoreMqttIdentity(conn, info.publicKey, transportType),
-        );
-      } catch (e) {
-        if (isMeshcoreSetupAbortError(e)) throw e;
-        console.warn(
-          '[useMeshcoreRuntime] initConn MQTT identity export failed ' + errLikeToLogString(e),
-        );
-      }
-      maybeAutoLaunchMeshcoreMqttAfterIdentity();
+        try {
+          const deviceInfo = await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
+          );
+          const pathFields = parsePathHashModeFromDeviceQuery(deviceInfo);
+          setState((prev) => {
+            const next = { ...prev };
+            if (deviceInfo?.firmware_build_date) {
+              next.firmwareVersion = deviceInfo.firmware_build_date;
+            }
+            if (pathFields.firmwareVersion) {
+              next.firmwareVersion = pathFields.firmwareVersion;
+            }
+            const mm =
+              pathFields.manufacturerModel ?? meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
+            if (mm) {
+              next.manufacturerModel = mm;
+            }
+            if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+              next.pathHashMode = pathFields.pathHashMode;
+            }
+            return next;
+          });
 
-      // Proactively fetch any messages that queued while disconnected (no Chat banner).
-      scheduleMeshcoreWaitingMessagesDrain(
-        async () => {
+          // Companion is source of truth on connect — do not push App settings onto the radio.
+          // Sync UI preference FROM the device so a stamped default (1-byte) cannot fight MeshCore app.
           try {
-            await processWaitingMessagesRef.current?.({ showSyncBanner: false });
-          } catch (e: unknown) {
-            // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
-            logMeshcoreWaitingMessagesDrainError(
-              'initConn: proactive getWaitingMessages failed',
-              e,
-              false,
+            if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+              mergeAppSetting(
+                'meshcorePathHashMode',
+                pathFields.pathHashMode,
+                'initConn adopt pathHashMode from radio',
+              );
+            }
+          } catch (e) {
+            if (isMeshcoreSetupAbortError(e)) throw e;
+            console.warn(
+              '[useMeshcoreRuntime] initConn adopt path hash mode failed ' + errLikeToLogString(e),
             );
           }
-        },
-        {
-          isMounted: () => meshcoreHookMountedRef.current,
-          onDeferredChange: setWaitingMessagesDrainDeferred,
-        },
-      );
-
-      // Periodic safety-net poll in case the device never re-sends event 131.
-      if (meshcoreWaitingMessagesPollRef.current)
-        clearInterval(meshcoreWaitingMessagesPollRef.current);
-      meshcoreWaitingMessagesPollRef.current = setInterval(() => {
-        if (!meshcoreHookMountedRef.current) return;
-        if (!shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)) {
-          return;
+        } catch (e) {
+          if (isMeshcoreSetupAbortError(e)) throw e;
+          rethrowMeshcoreSetupAbortFromTcpDead(e);
+          // catch-no-log-ok deviceQuery optional for firmware string
         }
+
+        // MQTT private key export runs after other init RPCs to avoid meshcore.js listener races
+        // (Linux Web Bluetooth is especially sensitive).
+        try {
+          await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            exportAndPersistMeshcoreMqttIdentity(conn, info.publicKey, transportType),
+          );
+        } catch (e) {
+          if (isMeshcoreSetupAbortError(e)) throw e;
+          rethrowMeshcoreSetupAbortFromTcpDead(e);
+          console.warn(
+            '[useMeshcoreRuntime] initConn MQTT identity export failed ' + errLikeToLogString(e),
+          );
+        }
+        assertInitConnStillLive();
+        maybeAutoLaunchMeshcoreMqttAfterIdentity();
+
+        // Proactively fetch any messages that queued while disconnected (no Chat banner).
         scheduleMeshcoreWaitingMessagesDrain(
           async () => {
             try {
               await processWaitingMessagesRef.current?.({ showSyncBanner: false });
             } catch (e: unknown) {
               // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
-              logMeshcoreWaitingMessagesDrainError('periodic getWaitingMessages failed', e, false);
+              logMeshcoreWaitingMessagesDrainError(
+                'initConn: proactive getWaitingMessages failed',
+                e,
+                false,
+              );
             }
           },
           {
@@ -2465,9 +2648,43 @@ export function useMeshcoreRuntime() {
             onDeferredChange: setWaitingMessagesDrainDeferred,
           },
         );
-      }, MESHCORE_WAITING_MESSAGES_POLL_MS);
 
-      meshcoreRoomReconnectSyncRef.current();
+        // Periodic safety-net poll in case the device never re-sends event 131.
+        if (meshcoreWaitingMessagesPollRef.current)
+          clearInterval(meshcoreWaitingMessagesPollRef.current);
+        meshcoreWaitingMessagesPollRef.current = setInterval(() => {
+          if (!meshcoreHookMountedRef.current) return;
+          if (!shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)) {
+            return;
+          }
+          scheduleMeshcoreWaitingMessagesDrain(
+            async () => {
+              try {
+                await processWaitingMessagesRef.current?.({ showSyncBanner: false });
+              } catch (e: unknown) {
+                // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+                logMeshcoreWaitingMessagesDrainError(
+                  'periodic getWaitingMessages failed',
+                  e,
+                  false,
+                );
+              }
+            },
+            {
+              isMounted: () => meshcoreHookMountedRef.current,
+              onDeferredChange: setWaitingMessagesDrainDeferred,
+            },
+          );
+        }, MESHCORE_WAITING_MESSAGES_POLL_MS);
+
+        meshcoreRoomReconnectSyncRef.current();
+      } else {
+        console.debug(
+          '[useMeshcoreRuntime] initConn TCP burst-complete with dead bridge — skip post-connect RPCs',
+        );
+        // Do not auto-launch MQTT here: identity export was skipped with the dead bridge.
+        // Reconnect's full init will export JWT then call maybeAutoLaunchMeshcoreMqttAfterIdentity.
+      }
       meshcoreEverConfiguredRef.current = true;
     },
     [
@@ -2526,6 +2743,13 @@ export function useMeshcoreRuntime() {
         });
       }
       meshcoreConnectTypeRef.current = type;
+      if (type === 'tcp') {
+        meshcoreTcpBridgeDeadRef.current = false;
+        meshcoreTcpInitBurstCapturedRef.current = false;
+        if (!opts?.preserveReconnectState) {
+          meshcoreDeferredReconnectRef.current = false;
+        }
+      }
       // Manual / new connect cancels background serial rediscovery.
       if (!opts?.preserveReconnectState) {
         serialRediscoveryStopRef.current?.();
@@ -2952,6 +3176,23 @@ export function useMeshcoreRuntime() {
       } else {
         clearMeshcoreBleMacSuppression();
       }
+      // Burst-complete attach left a dead bridge (OpenHop FIN after contacts). UI is configured
+      // from held contacts — keep the reconnect budget and retry for a live socket instead of
+      // markSuccess (which would reset attempts and loop forever).
+      if (params.rfType === 'tcp' && meshcoreDeferredReconnectRef.current) {
+        meshcoreDeferredReconnectRef.current = false;
+        meshcoreIsReconnectingRef.current = true;
+        setState((s) => ({
+          ...s,
+          serialNeedsReselect: false,
+          connectionLoss: false,
+        }));
+        console.debug(
+          '[useMeshcoreRuntime] TCP burst-complete reconnect attach — continue for live socket',
+        );
+        scheduleMeshcoreReconnectAttemptRef.current();
+        return;
+      }
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
       meshcoreDeferredReconnectRef.current = false;
@@ -2964,7 +3205,9 @@ export function useMeshcoreRuntime() {
       requestChatOutboxDrain('meshcore');
     };
     const reconnectWork = runReconnectAttempt();
-    void reconnectWork.catch(() => {});
+    void reconnectWork.catch((e: unknown) => {
+      console.debug('[useMeshcoreRuntime] reconnectWork late reject ' + errLikeToLogString(e));
+    });
     try {
       // Applied to every transport, not just BLE (constant name is historical): TCP/serial
       // reconnects used to `await reconnectWork` with no ceiling at all. A disconnect that
@@ -3060,6 +3303,9 @@ export function useMeshcoreRuntime() {
       console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
       return;
     }
+    // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
+    // after getContacts raced past a gen bump that used to live only inside the async IIFE.
+    meshcoreSetupGenerationRef.current += 1;
     if (
       !meshcoreEverConfiguredRef.current &&
       meshcoreReconnectAttemptRef.current === 0 &&
@@ -3106,7 +3352,6 @@ export function useMeshcoreRuntime() {
     }
 
     void (async () => {
-      meshcoreSetupGenerationRef.current += 1;
       const driverIdentity =
         meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current;
       teardownMeshcoreConnEventListeners({ driverDisconnect: true });
@@ -3134,7 +3379,11 @@ export function useMeshcoreRuntime() {
         return;
       }
       scheduleMeshcoreReconnectAttemptRef.current();
-    })();
+    })().catch((e: unknown) => {
+      console.warn(
+        '[useMeshcoreRuntime] handleMeshcoreConnectionLost async ' + errLikeToLogString(e),
+      );
+    });
   }, [teardownMeshcoreConnEventListeners]);
 
   // Cleanup on unmount — tear down listeners and release connection/driver.
@@ -3195,7 +3444,9 @@ export function useMeshcoreRuntime() {
       }
       console.debug('[useMeshcoreRuntime] power resume — triggering reconnect');
       handleMeshcoreConnectionLostRef.current();
-    })();
+    })().catch((e: unknown) => {
+      console.warn('[useMeshcoreRuntime] power resume settle/reconnect ' + errLikeToLogString(e));
+    });
   }, []);
 
   const connect = useCallback(
@@ -3249,6 +3500,18 @@ export function useMeshcoreRuntime() {
         meshcoreReconnectGenerationRef.current += 1;
         connectSucceeded = true;
         meshcoreEverConfiguredRef.current = true;
+        // Neal OpenHop: peer FIN after contacts — initConn completed configured from the burst
+        // with a dead bridge; reconnect now that everConfigured is latched.
+        if (type === 'tcp' && meshcoreDeferredReconnectRef.current) {
+          meshcoreDeferredReconnectRef.current = false;
+          queueMicrotask(() => {
+            if (meshcoreExplicitDisconnectRef.current) return;
+            console.debug(
+              '[useMeshcoreRuntime] TCP burst-complete configure — reconnecting dead bridge',
+            );
+            handleMeshcoreConnectionLostRef.current();
+          });
+        }
       } catch (err) {
         const isSetupAbort = isMeshcoreSetupAbortError(err);
         if (isSetupAbort) {
@@ -3713,7 +3976,7 @@ export function useMeshcoreRuntime() {
         deferDbMerge: true,
         deferPathHistory: true,
       });
-      applyMeshcoreNodesToUi(newNodes);
+      applyMeshcoreNodesToUi(newNodes, { fromRadio: true });
       const identityId = meshcoreIdentityIdRef.current;
       if (identityId) {
         repairMeshcoreChannelSenderIdsInStore(identityId);
@@ -3819,50 +4082,67 @@ export function useMeshcoreRuntime() {
     await disconnect();
   }, [disconnect]);
 
-  const deleteNode = useCallback(async (nodeId: number) => {
-    let pubKey = pubKeyMapRef.current.get(nodeId);
-    if (!pubKey) {
-      const dbContacts =
-        (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
-      const dbRow = dbContacts.find((c) => c.node_id === nodeId);
-      if (dbRow) {
-        const hex = dbRow.public_key.replace(/\s/g, '');
-        const pairs = hex.match(/.{2}/g);
-        if (pairs) {
-          pubKey = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+  const deleteNode = useCallback(
+    async (nodeId: number) => {
+      // Tombstone first so concurrent MQTT/stub merges cannot resurrect during awaits.
+      markMeshcoreLocallyDeletedContact(nodeId);
+      let pubKey = pubKeyMapRef.current.get(nodeId);
+      if (!pubKey) {
+        const dbContacts =
+          (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+        const dbRow = dbContacts.find((c) => c.node_id === nodeId);
+        if (dbRow) {
+          const hex = dbRow.public_key.replace(/\s/g, '');
+          const pairs = hex.match(/.{2}/g);
+          if (pairs) {
+            pubKey = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+          }
         }
       }
-    }
-    if (pubKey && connRef.current) {
+      let radioRemoveFailed = false;
+      if (pubKey && connRef.current) {
+        try {
+          await connRef.current.removeContact(pubKey);
+        } catch (e) {
+          radioRemoveFailed = true;
+          console.warn(
+            '[useMeshcoreRuntime] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
+          );
+        }
+      } else if (meshcoreIsChatStubNodeId(nodeId)) {
+        // stub node: skip radio removal
+      } else {
+        // no pubKey: skip radio removal
+      }
+      pubKeyMapRef.current.delete(nodeId);
+      // Remove the 6-byte prefix mapping too
+      for (const [prefix, id] of pubKeyPrefixMapRef.current) {
+        if (id === nodeId) {
+          pubKeyPrefixMapRef.current.delete(prefix);
+          break;
+        }
+      }
+      setNodes((prev) => {
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      const storeId = resolveMeshcoreStoreIdentityId();
+      if (storeId) {
+        removeNode(storeId, nodeId);
+      }
       try {
-        await connRef.current.removeContact(pubKey);
-      } catch (e) {
-        console.warn(
-          '[useMeshcoreRuntime] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
-        );
+        await window.electronAPI.db.deleteMeshcoreContact(nodeId);
+      } catch (e: unknown) {
+        clearMeshcoreLocallyDeletedContact(nodeId);
+        console.warn('[useMeshcoreRuntime] deleteMeshcoreContact error ' + errLikeToLogString(e));
       }
-    } else if (meshcoreIsChatStubNodeId(nodeId)) {
-      // stub node: skip radio removal
-    } else {
-      // no pubKey: skip radio removal
-    }
-    pubKeyMapRef.current.delete(nodeId);
-    // Remove the 6-byte prefix mapping too
-    for (const [prefix, id] of pubKeyPrefixMapRef.current) {
-      if (id === nodeId) {
-        pubKeyPrefixMapRef.current.delete(prefix);
-        break;
+      if (radioRemoveFailed) {
+        pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
       }
-    }
-    setNodes((prev) => {
-      const next = new Map(prev);
-      next.delete(nodeId);
-      return next;
-    });
-    await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
-      console.warn('[useMeshcoreRuntime] deleteMeshcoreContact error ' + errLikeToLogString(e));
-    });
-  }, []);
+    },
+    [resolveMeshcoreStoreIdentityId],
+  );
 
   const clearRawPackets = useCallback(() => {
     setRawPackets([]);
@@ -6992,16 +7272,55 @@ export function useMeshcoreRuntime() {
   // transport at all (see startMeshcoreSerialWatchdog), so a dropped TCP connection had no
   // automatic recovery path whatsoever. Mirrors the equivalent Meshtastic fix in
   // meshtasticTransportLossDetection.ts.
+  // After getContacts burst is captured: mark dead + defer reconnect — do not sync-bump
+  // setupGeneration via handleMeshcoreConnectionLost (that cancels initConn before configured).
   useEffect(() => {
-    const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
-      if (meshcoreConnectionParamsRef.current?.rfType !== 'tcp') return;
-      handleMeshcoreConnectionLostRef.current();
+    const latchTcpBridgeDeadForBurst = (source: 'ipc' | 'write'): void => {
+      // Params are only written after a successful attachRfSession. Mid-first-connect peer FIN
+      // (Neal: after getContacts) must still abort initConn — gate on the in-flight connect type too.
+      const storedTcp = meshcoreConnectionParamsRef.current?.rfType === 'tcp';
+      const connectingTcp = meshcoreConnectTypeRef.current === 'tcp';
+      if (!storedTcp && !connectingTcp) return;
+      meshcoreTcpBridgeDeadRef.current = true;
+      // Defer while this open can still finish from the contacts burst (!everConfigured covers
+      // late IPC after premature deviceConfigured; !deviceConfigured covers mid-reconnect opens).
+      if (
+        shouldDeferMeshcoreTcpReconnectAfterBurst({
+          burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+          everConfigured: meshcoreEverConfiguredRef.current,
+          deviceConfigured: meshcoreDeviceConfiguredRef.current,
+        })
+      ) {
+        meshcoreDeferredReconnectRef.current = true;
+        console.debug(
+          source === 'write'
+            ? '[useMeshcoreRuntime] TCP write-dead after init burst — latch bridge dead, defer reconnect'
+            : '[useMeshcoreRuntime] TCP closed after init burst — defer reconnect until configured',
+        );
+        return;
+      }
+      if (source === 'ipc') {
+        handleMeshcoreConnectionLostRef.current();
+      }
+      // write-dead while fully configured: leave reconnect to meshcore:tcp-disconnected IPC
+      // so we do not double-enter the owner.
+    };
+
+    setMeshcoreTcpWriteDeadListener(() => {
+      latchTcpBridgeDeadForBurst('write');
     });
-    return () => unsub();
+    const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+      latchTcpBridgeDeadForBurst('ipc');
+    });
+    return () => {
+      setMeshcoreTcpWriteDeadListener(null);
+      unsub();
+    };
   }, []);
 
   useEffect(() => {
     registerMeshcoreSession({
+      connect,
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,
@@ -7011,6 +7330,7 @@ export function useMeshcoreRuntime() {
     });
     return () => registerMeshcoreSession(null);
   }, [
+    connect,
     prepareRfConnect,
     attachRfSession,
     handleRfConnectFailure,

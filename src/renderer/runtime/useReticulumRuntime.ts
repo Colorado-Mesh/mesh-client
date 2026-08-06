@@ -51,6 +51,8 @@ import {
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
+import { refreshGamesSessions } from '@/renderer/lib/reticulum/reticulumGamesSession';
 import {
   advanceReticulumInboundCatchUpWatermark,
   getReticulumInboundLxmfDiagnostics,
@@ -1243,9 +1245,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       if (evt.type === 'games.update' && evt.payload && typeof evt.payload === 'object') {
         useReticulumGamesStore.getState().applyGamesUpdate(evt.payload);
+        maybeNotifyInboundGamesChallenge(evt.payload);
       }
       if (evt.type === 'games.action_result' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { ok?: boolean };
         useReticulumGamesStore.getState().applyActionResult(evt.payload);
+        // Sidecar may have rolled back state on failure — refresh so boards match.
+        if (p.ok === false) {
+          void refreshGamesSessions();
+        }
       }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { transfer_id?: string; progress?: number };

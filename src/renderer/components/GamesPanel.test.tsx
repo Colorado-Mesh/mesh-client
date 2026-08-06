@@ -5,11 +5,29 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import type { GameSession } from '@/shared/games-types';
 
 import GamesPanel from './GamesPanel';
 
 const peerHash = 'a'.repeat(32);
+const peerHashPrefix = peerHash.slice(0, 12);
+
+function seedPeerDisplayName(displayName: string, destinationHash = peerHash) {
+  useReticulumPeerStore.setState((s) => ({
+    peers: new Map([
+      [
+        destinationHash,
+        {
+          destination_hash: destinationHash,
+          display_name: displayName,
+          hops: 1,
+        },
+      ],
+    ]),
+    peersRevision: s.peersRevision + 1,
+  }));
+}
 
 function makeSession(overrides: Partial<GameSession> = {}): GameSession {
   return {
@@ -50,6 +68,7 @@ async function renderAndSelectSession(session: GameSession) {
 describe('GamesPanel', () => {
   beforeEach(() => {
     useReticulumGamesStore.getState().clear();
+    useReticulumPeerStore.getState().clearPeers();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(window.electronAPI.reticulum.games.getStatus).mockClear();
     vi.mocked(window.electronAPI.reticulum.games.getStatus).mockResolvedValue({
@@ -84,6 +103,35 @@ describe('GamesPanel', () => {
     await renderAndSelectSession(makeSession());
 
     expect(screen.getByRole('group', { name: 'Tic-Tac-Toe board' })).toBeInTheDocument();
+  });
+
+  it('shows the peer display name instead of a hash prefix when known', async () => {
+    seedPeerDisplayName('Zeva');
+    await renderAndSelectSession(makeSession());
+
+    expect(screen.getByRole('button', { name: /game with Zeva/i })).toBeInTheDocument();
+    expect(screen.getByText('Opponent: Zeva')).toBeInTheDocument();
+    expect(screen.queryByText(peerHashPrefix)).not.toBeInTheDocument();
+    expect(screen.queryByText(peerHash.slice(0, 10))).not.toBeInTheDocument();
+  });
+
+  it('falls back to a short hash prefix when the peer is unknown', async () => {
+    await renderAndSelectSession(makeSession());
+
+    expect(screen.getByRole('button', { name: /game with aaaaaaaaaaaa/i })).toBeInTheDocument();
+    expect(screen.getByText(`Opponent: ${peerHashPrefix}`)).toBeInTheDocument();
+  });
+
+  it('updates the opponent label when a peer name arrives later', async () => {
+    await renderAndSelectSession(makeSession());
+    expect(screen.getByText(`Opponent: ${peerHashPrefix}`)).toBeInTheDocument();
+
+    act(() => {
+      seedPeerDisplayName('Zeva');
+    });
+
+    expect(await screen.findByText('Opponent: Zeva')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /game with Zeva/i })).toBeInTheDocument();
   });
 
   it('sends a challenge action for a valid peer hash', async () => {
@@ -207,6 +255,90 @@ describe('GamesPanel', () => {
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.games.resend).toHaveBeenCalledWith('s1');
+    });
+  });
+
+  it('shows resend when delivery_state is failed', async () => {
+    await renderAndSelectSession(makeSession({ delivery_state: 'failed' }));
+    expect(screen.getByRole('button', { name: 'Resend last action' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Retry needed')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['pending', 'Sending…'],
+    ['sending', 'Sending…'],
+    ['propagating', 'Offline Inbox…'],
+    ['propagated', 'Stored'],
+    ['failed', 'Retry needed'],
+  ] as const)('has no axe violations for delivery badge state %s', async (state, label) => {
+    const session = makeSession({ delivery_state: state });
+    vi.mocked(window.electronAPI.reticulum.games.listSessions).mockResolvedValue({
+      sessions: [session],
+    });
+    const { container } = render(<GamesPanel isActive />);
+    const row = await screen.findByRole('button', { name: new RegExp(`game with`, 'i') });
+    await userEvent.click(row);
+    expect(await screen.findByLabelText(label)).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows claim threefold and sends draw_offer with r=3fr', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        app_id: 'chess',
+        metadata: {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          turn: 'me',
+          my_color: 'w',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: false,
+          draw_offer_reason: '3fr',
+          in_check: false,
+          legal_moves: [],
+          moves: [],
+        },
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Claim threefold repetition draw' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'draw_offer',
+          payload: { r: '3fr' },
+        }),
+      );
+    });
+  });
+
+  it('shows claim 50-move and sends draw_offer with r=50m', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        app_id: 'chess',
+        metadata: {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          turn: 'me',
+          my_color: 'w',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: false,
+          draw_offer_reason: '50m',
+          in_check: false,
+          legal_moves: [],
+          moves: [],
+        },
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Claim fifty-move rule draw' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'draw_offer',
+          payload: { r: '50m' },
+        }),
+      );
     });
   });
 

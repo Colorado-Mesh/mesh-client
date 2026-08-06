@@ -131,6 +131,72 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       expect(offData).toHaveBeenCalledTimes(1);
       expect(offDisc).toHaveBeenCalledTimes(1);
     });
+
+    it('calls onDisconnected once when tcp write fails (fail closed)', async () => {
+      const { setMeshcoreTcpWriteDeadListener } =
+        await import('../../meshcore/meshcoreTcpInitBurst');
+      const writeDead = vi.fn();
+      setMeshcoreTcpWriteDeadListener(writeDead);
+      const offData = vi.fn();
+      const offDisc = vi.fn();
+      window.electronAPI.meshcore.tcp.onData = vi.fn().mockReturnValue(offData);
+      window.electronAPI.meshcore.tcp.onDisconnected = vi.fn().mockReturnValue(offDisc);
+      window.electronAPI.meshcore.tcp.connect = vi.fn().mockResolvedValue(undefined);
+      window.electronAPI.meshcore.tcp.write = vi
+        .fn()
+        .mockRejectedValue(new Error('meshcore:tcp-write: no active socket'));
+
+      const conn = await createMeshCoreConnection({ transport: 'tcp', host: '10.0.0.1:5000' });
+      const writable = conn as unknown as {
+        write: (bytes: Uint8Array) => Promise<void>;
+        onDisconnected: () => void;
+      };
+      const discSpy = vi.spyOn(writable, 'onDisconnected');
+
+      await expect(writable.write(new Uint8Array([1, 2, 3]))).rejects.toThrow('no active socket');
+      expect(discSpy).toHaveBeenCalledTimes(1);
+      expect(writeDead).toHaveBeenCalledTimes(1);
+
+      await expect(writable.write(new Uint8Array([4]))).rejects.toThrow('no active socket');
+      expect(discSpy).toHaveBeenCalledTimes(1);
+      expect(writeDead).toHaveBeenCalledTimes(2);
+      expect(offData).toHaveBeenCalledTimes(1);
+      expect(offDisc).toHaveBeenCalledTimes(1);
+      setMeshcoreTcpWriteDeadListener(null);
+    });
+
+    it('serializes overlapping TCP connects (single-flight chain)', async () => {
+      const order: string[] = [];
+      let releaseFirstConnect!: () => void;
+      const firstConnectGate = new Promise<void>((resolve) => {
+        releaseFirstConnect = resolve;
+      });
+      let connectCalls = 0;
+      window.electronAPI.meshcore.tcp.onData = vi.fn().mockReturnValue(() => {});
+      window.electronAPI.meshcore.tcp.onDisconnected = vi.fn().mockReturnValue(() => {});
+      window.electronAPI.meshcore.tcp.connect = vi.fn().mockImplementation(async () => {
+        connectCalls += 1;
+        const n = connectCalls;
+        order.push(`connect:${n}:start`);
+        if (n === 1) await firstConnectGate;
+        order.push(`connect:${n}:end`);
+      });
+
+      const first = createMeshCoreConnection({ transport: 'tcp', host: '10.0.0.1:5000' });
+      const second = createMeshCoreConnection({ transport: 'tcp', host: '10.0.0.2:5000' });
+      await Promise.resolve();
+      expect(order).toEqual(['connect:1:start']);
+      expect(connectCalls).toBe(1);
+
+      releaseFirstConnect();
+      await Promise.all([first, second]);
+      expect(order).toEqual([
+        'connect:1:start',
+        'connect:1:end',
+        'connect:2:start',
+        'connect:2:end',
+      ]);
+    });
   });
 
   describe('Noble BLE', () => {

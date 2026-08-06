@@ -44,4 +44,33 @@ describe('protocolTransportParams', () => {
       }),
     ).toEqual({ type: 'tcp', host: '192.168.200.4:4403' });
   });
+
+  it('maps MeshCore http UI type to tcp transport params with host', () => {
+    expect(
+      protocolTransportParams('meshcore', {
+        type: 'http',
+        httpAddress: '192.168.88.29:5050',
+      }),
+    ).toEqual({ type: 'tcp', host: '192.168.88.29:5050' });
+  });
+
+  it('maps MeshCore tcp UI type to tcp transport params with host', () => {
+    expect(
+      protocolTransportParams('meshcore', {
+        type: 'tcp',
+        httpAddress: '10.0.0.2:5050',
+      }),
+    ).toEqual({ type: 'tcp', host: '10.0.0.2:5050' });
+  });
+
+  it('maps MeshCore tcp/http without httpAddress to localhost', () => {
+    expect(protocolTransportParams('meshcore', { type: 'tcp' })).toEqual({
+      type: 'tcp',
+      host: 'localhost',
+    });
+    expect(protocolTransportParams('meshcore', { type: 'http' })).toEqual({
+      type: 'tcp',
+      host: 'localhost',
+    });
+  });
 });

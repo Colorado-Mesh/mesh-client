@@ -53,6 +53,8 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'reticulumRemote.settings.inboundMode.', leafKeys: true },
   { prefix: 'reticulumRemote.settings.decision.', leafKeys: true },
   { prefix: 'gamesPanel.apps.', leafKeys: true },
+  { prefix: 'gamesPanel.chess.promoteTo.', leafKeys: true },
+  { prefix: 'gamesPanel.delivery.', leafKeys: true },
   { prefix: 'gamesPanel.status.', leafKeys: true },
   { prefix: 'gamesPanel.filters.', leafKeys: true },
   { prefix: 'gamesPanel.chess.pieceNames.', leafKeys: true },

@@ -5,6 +5,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  isMeshcoreLocallyDeletedContact,
+  resetMeshcoreLocallyDeletedContactsForTests,
+} from '../lib/meshcoreLocallyDeletedContacts';
 import { meshcoreSyntheticPlaceholderPubKeyHex } from '../lib/meshcoreUtils';
 import {
   ensureOfflineProtocolIdentities,
@@ -27,9 +31,11 @@ const APPLY_PARAMS = {
 
 describe('useMeshcoreRuntime contact management (no radio connection)', () => {
   beforeEach(() => {
+    resetMeshcoreLocallyDeletedContactsForTests();
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.clearMeshcoreContacts).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.db.deleteMeshcoreContact).mockResolvedValue(undefined);
   });
 
   it('clearAllMeshcoreContacts clears SQLite and empties nodes when self node id is 0', async () => {
@@ -126,5 +132,86 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
     expect(
       useNodeStore.getState().nodes[OFFLINE_MESHCORE_IDENTITY_ID][STUB_SENDER_ID].favorited,
     ).toBe(true);
+  });
+
+  it('deleteNode removes the contact from nodeStore and marks it locally deleted', async () => {
+    const chatNodeId = 0x23456789;
+    ensureOfflineProtocolIdentities();
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, {
+      nodeId: chatNodeId,
+      longName: 'Bob',
+      hwModel: 'Chat',
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.deleteNode(chatNodeId);
+    });
+
+    expect(window.electronAPI.db.deleteMeshcoreContact).toHaveBeenCalledWith(chatNodeId);
+    expect(
+      useNodeStore.getState().nodes[OFFLINE_MESHCORE_IDENTITY_ID]?.[chatNodeId],
+    ).toBeUndefined();
+    expect(isMeshcoreLocallyDeletedContact(chatNodeId)).toBe(true);
+    expect(result.current.nodes.has(chatNodeId)).toBe(false);
+  });
+
+  it('deleted contact stays deleted when stub merge / chat-sender upsert tries to resurrect', async () => {
+    const chatNodeId = 0x3456789a;
+    ensureOfflineProtocolIdentities();
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, {
+      nodeId: chatNodeId,
+      longName: 'Carol',
+      hwModel: 'Chat',
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.deleteNode(chatNodeId);
+    });
+    expect(isMeshcoreLocallyDeletedContact(chatNodeId)).toBe(true);
+
+    const { mergeStubNodesFromMeshcoreMessages } = await import('./meshcore/meshcoreHookPreamble');
+    const { ensureMeshcoreChatSenderInNodeStore } =
+      await import('../lib/meshcore/meshcoreChatSenderNode');
+    const { mergeMeshcoreChatStubNodes, minimalMeshcoreChatNode } =
+      await import('../lib/meshcoreUtils');
+
+    const mergedStubs = mergeStubNodesFromMeshcoreMessages(new Map(), [
+      {
+        id: 1,
+        sender_id: chatNodeId,
+        sender_name: 'Carol',
+        payload: 'hi',
+        channel: 0,
+        timestamp: Date.now(),
+        status: 'acked',
+        receivedVia: 'mqtt',
+      },
+    ]);
+    expect(mergedStubs.has(chatNodeId)).toBe(false);
+
+    ensureMeshcoreChatSenderInNodeStore(OFFLINE_MESHCORE_IDENTITY_ID, chatNodeId, {
+      lastHeardAtMs: Date.now(),
+      displayName: 'Carol',
+      source: 'mqtt',
+    });
+    expect(
+      useNodeStore.getState().nodes[OFFLINE_MESHCORE_IDENTITY_ID]?.[chatNodeId],
+    ).toBeUndefined();
+
+    const device = new Map([
+      [
+        chatNodeId,
+        minimalMeshcoreChatNode(chatNodeId, 'Carol', Math.floor(Date.now() / 1000), 'rf'),
+      ],
+    ]);
+    const merged = mergeMeshcoreChatStubNodes(new Map(), device);
+    expect(merged.has(chatNodeId)).toBe(false);
+    expect(result.current.nodes.has(chatNodeId)).toBe(false);
   });
 });

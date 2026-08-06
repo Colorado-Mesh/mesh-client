@@ -42,7 +42,9 @@ overrides:
   # GHSA-p2f4-r6v6-j797 / GHSA-7g7r-gx96-252g / GHSA-mh99-v99m-4gvg /
   # GHSA-rgw5-rvv9-x895 / GHSA-4cwx-7wf7-3272 / GHSA-8xcm-r25x-g524 /
   # GHSA-v3r7-h72x-cjcm / GHSA-jr45-8vmc-qm54 / GHSA-m8rv-5g2x-5cg5 /
-  # GHSA-fxqj-rqcc-2cmp / GHSA-mwp4-54f8-5fhr).
+  # GHSA-fxqj-rqcc-2cmp / GHSA-mwp4-54f8-5fhr / GHSA-9f4c-93c8-jc8g /
+  # GHSA-v93f-fgjr-hjrj / GHSA-4f78-qhmw-8j8m / GHSA-ff2p-hmqr-hxm4 /
+  # GHSA-f2r8-jv7c-xqmp / GHSA-p2rr-rvmm-c5fp).
   # brace-expansion: keep a single 5.0.9 floor. GHSA-rgw5-rvv9-x895 is a
   # bypass of the CVE-2026-14257 mitigation and marks >=4.0.0 <5.0.9 vulnerable
   # (only >=5.0.9 counts as patched). CI audit is blocking.
@@ -51,9 +53,13 @@ overrides:
   # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
+  # electron: Dependabot #91–#96 (GHSA-9f4c-93c8-jc8g needs >=41.10.3 on the
+  # 41.x line; sibling medium GHSAs need >=41.2.2). GitHub SBOM may lag the
+  # lockfile — keep the floor so alerts cannot regress on resolve.
   app-builder-lib: ^26.15.0
   brace-expansion: 5.0.9
   builder-util-runtime: 9.7.0
+  electron: ^41.10.4
   fast-uri: ^3.1.5
   ip-address: ^10.3.1
   js-yaml: ^4.3.0

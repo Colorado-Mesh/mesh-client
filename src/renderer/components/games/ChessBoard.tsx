@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -17,6 +17,7 @@ export interface ChessBoardProps {
 
 const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const PROMO_ORDER = ['q', 'r', 'b', 'n'] as const;
 
 const PIECE_GLYPHS: Record<string, string> = {
   K: '♔',
@@ -60,6 +61,13 @@ function isWhitePiece(piece: string): boolean {
   return piece.length > 0 && piece === piece.toUpperCase();
 }
 
+function promotionOptionsFor(baseUci: string, legalMoves: string[]): string[] {
+  const found = PROMO_ORDER.filter((p) => legalMoves.includes(`${baseUci}${p}`));
+  if (found.length > 0) return [...found];
+  // Legal list may omit suffixes; still offer standard set when promoting.
+  return [...PROMO_ORDER];
+}
+
 /** LRGP `chess` app board — FEN state, moves sent as `{ m: uciMove }`. */
 export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProps) {
   const { t } = useTranslation();
@@ -74,11 +82,23 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   const legalMoves = gamesMetaStrArray(metadata, 'legal_moves');
 
   const [selected, setSelected] = useState<string | null>(null);
+  const [promoBase, setPromoBase] = useState<string | null>(null);
 
   const board = useMemo(() => parseFenBoard(fen), [fen]);
   const isActive = session.status === 'active';
   const isMyTurn = isActive && turn === session.identity_id;
   const flipped = myColor === 'b';
+
+  useEffect(() => {
+    if (!promoBase) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setPromoBase(null);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [promoBase]);
 
   let statusText: string;
   if (terminal === 'win') {
@@ -99,9 +119,17 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   }
 
   const displayRows = flipped ? [...board].reverse() : board;
+  const promoOptions = promoBase ? promotionOptionsFor(promoBase, legalMoves) : [];
+
+  function commitMove(uci: string) {
+    if (disabled || !isMyTurn) return;
+    setSelected(null);
+    setPromoBase(null);
+    onMove(uci);
+  }
 
   function handleSquareClick(rankIdx: number, fileIdx: number) {
-    if (disabled || !isMyTurn) return;
+    if (disabled || !isMyTurn || promoBase) return;
     const actualRankIdx = flipped ? 7 - rankIdx : rankIdx;
     const actualFileIdx = flipped ? 7 - fileIdx : fileIdx;
     const square = squareName(actualRankIdx, actualFileIdx);
@@ -119,16 +147,25 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
     const movingPiece = pieceAt(board, selected);
     const isPromotion =
       movingPiece.toLowerCase() === 'p' && (square.endsWith('8') || square.endsWith('1'));
-    const uci = `${selected}${square}${isPromotion ? 'q' : ''}`;
-    setSelected(null);
-    onMove(uci);
+    const base = `${selected}${square}`;
+    if (isPromotion) {
+      const options = promotionOptionsFor(base, legalMoves);
+      if (options.length === 1) {
+        commitMove(`${base}${options[0]}`);
+        return;
+      }
+      setSelected(null);
+      setPromoBase(base);
+      return;
+    }
+    commitMove(base);
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="relative flex flex-col items-center gap-3">
       <div className="text-sm text-amber-100">{statusText}</div>
       <div
-        className="grid grid-cols-8 border border-amber-800/60"
+        className="relative grid grid-cols-8 border border-amber-800/60"
         role="group"
         aria-label={t('gamesPanel.chess.boardAria')}
       >
@@ -152,7 +189,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
                     ? t(`gamesPanel.chess.pieceNames.${piece}`, { defaultValue: piece })
                     : t('gamesPanel.chess.emptySquare'),
                 })}
-                disabled={disabled || !isMyTurn}
+                disabled={disabled || !isMyTurn || !!promoBase}
                 onClick={() => {
                   handleSquareClick(rowIdx, colIdx);
                 }}
@@ -162,8 +199,46 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
             );
           }),
         )}
+        {promoBase && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center"
+            role="dialog"
+            aria-label={t('gamesPanel.chess.promotionChooserAria')}
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50"
+              aria-label={t('common.close')}
+              onClick={() => {
+                setPromoBase(null);
+              }}
+            />
+            <div
+              role="group"
+              className="relative z-20 flex flex-col gap-1 rounded border border-amber-700 bg-amber-950 p-2"
+            >
+              {promoOptions.map((p) => {
+                const glyphKey = myColor === 'b' ? p : p.toUpperCase();
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    className="flex h-10 w-10 items-center justify-center rounded text-2xl text-amber-100 hover:bg-amber-900/80 disabled:cursor-default disabled:opacity-40"
+                    aria-label={t(`gamesPanel.chess.promoteTo.${p}`)}
+                    disabled={disabled || !isMyTurn}
+                    onClick={() => {
+                      commitMove(`${promoBase}${p}`);
+                    }}
+                  >
+                    {PIECE_GLYPHS[glyphKey] ?? p}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
-      {isActive && legalMoves.length > 0 && (
+      {isActive && legalMoves.length > 0 && !promoBase && (
         <div className="flex max-w-sm flex-wrap justify-center gap-1">
           {legalMoves.map((move) => (
             <button
@@ -173,7 +248,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
               aria-label={t('gamesPanel.chess.legalMoveAria', { move })}
               disabled={disabled || !isMyTurn}
               onClick={() => {
-                onMove(move);
+                commitMove(move);
               }}
             >
               {move}

@@ -13,14 +13,12 @@ export function protocolTransportParams(
 ): TransportParams {
   if (protocol === 'meshcore') {
     const mcType = meshcoreConnectionType(opts.type);
+    const tcpHost =
+      opts.type === 'http' || opts.type === 'tcp' ? (opts.httpAddress ?? 'localhost') : undefined;
     return meshcoreTransportParams(mcType, {
       peripheralId: opts.type === 'ble' ? opts.blePeripheralId : undefined,
-      host:
-        mcType === 'tcp'
-          ? opts.type === 'http'
-            ? (opts.httpAddress ?? 'localhost')
-            : undefined
-          : undefined,
+      // http and tcp UI types both carry SoftAP/companion host in httpAddress.
+      host: mcType === 'tcp' ? tcpHost : undefined,
       portSignature: opts.type === 'serial' ? (opts.lastSerialPortId ?? undefined) : undefined,
     });
   }

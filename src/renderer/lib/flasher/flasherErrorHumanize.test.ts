@@ -11,6 +11,8 @@ vi.mock('@/renderer/lib/i18n', () => ({
         'flasher.errors.portSelectionCancelled': 'Serial port selection was cancelled.',
         'flasher.errors.rnodeCommandTimeout': 'Device stopped responding over serial.',
         'flasher.errors.esp32FlashStalled': 'Firmware transfer stalled with no progress.',
+        'flasher.errors.provisionWipeRequired': 'EEPROM is locked with an invalid identity.',
+        'flasher.errors.provisionVerifyFailed': 'device still reports an unprovisioned EEPROM',
         'flasher.errors.generic': 'Operation failed: {{message}}',
         'flasher.errors.unknown': 'An unexpected error occurred.',
       };
@@ -42,5 +44,14 @@ describe('humanizeFlasherError', () => {
 
   it('uses unknown fallback for unrecognized errors', () => {
     expect(humanizeFlasherError(new Error('SOME_GARBAGE_WIRE_TEXT'))).toContain('Operation failed');
+  });
+
+  it('maps provision verify and wipe-required errors', () => {
+    expect(humanizeFlasherError(new Error('PROVISION_WIPE_REQUIRED'))).toContain(
+      'locked with an invalid identity',
+    );
+    expect(humanizeFlasherError(new Error('PROVISION_VERIFY_FAILED'))).toContain(
+      'unprovisioned EEPROM',
+    );
   });
 });

@@ -94,6 +94,14 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
         addToast(t('qrIngest.identityShown'), 'success');
         return;
       }
+      if (parsed.kind === 'lxmGameSession') {
+        window.dispatchEvent(
+          new CustomEvent('mesh-client:openGamesSession', {
+            detail: { sessionId: parsed.sessionId },
+          }),
+        );
+        return;
+      }
       if (parsed.kind === 'meshtasticChannel') {
         window.dispatchEvent(
           new CustomEvent('mesh-client:meshtasticChannelUrl', { detail: parsed.url }),

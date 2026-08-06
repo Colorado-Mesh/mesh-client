@@ -275,6 +275,30 @@ pub fn spawn_lxmf_inbound_receiver(
     });
 }
 
+/// Wire outbound Direct-link backchannel DATA into the shared link unpack path.
+///
+/// Returns the sender to install on the outbound driver's `set_inbound_packet_sender`
+/// (`LinkDeliveryManager::set_inbound_packet_sender`). Peer replies on our outbound-initiated
+/// reusable Direct links are Ack'd (LinkProof) even when this sender is unset — without
+/// wiring, Chat never sees those payloads.
+pub fn spawn_lxmf_outbound_backchannel(
+    lxmf_dest_hash: [u8; 16],
+    router: Arc<TokioMutex<LxmRouter>>,
+) -> mpsc::UnboundedSender<(Vec<u8>, [u8; 16])> {
+    let (tx, mut rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
+    tokio::spawn(async move {
+        while let Some((plaintext, link_id)) = rx.recv().await {
+            tracing::debug!(
+                link_id = %hex::encode(link_id),
+                len = plaintext.len(),
+                "LXMF outbound-link backchannel packet"
+            );
+            handle_link_delivered_data(&router, lxmf_dest_hash, &plaintext).await;
+        }
+    });
+    tx
+}
+
 /// Capacity for opportunistic inbound raw frames (`LinkManager` `try_send`s into this queue).
 pub(crate) const INBOUND_RAW_CHANNEL_CAPACITY: usize = 256;
 
@@ -358,7 +382,11 @@ async fn deliver_unpacked_lxmf(router: &Arc<TokioMutex<LxmRouter>>, msg: &LxMess
     }
 }
 
-async fn handle_link_delivered_data(
+/// Unpack a decrypted link payload and invoke the router delivery callback.
+///
+/// Shared by peer-initiated `lxmf.delivery` links and outbound Direct backchannels
+/// (`LinkDeliveryManager::set_inbound_packet_sender` / [`spawn_lxmf_outbound_backchannel`]).
+pub(crate) async fn handle_link_delivered_data(
     router: &Arc<TokioMutex<LxmRouter>>,
     lxmf_dest_hash: [u8; 16],
     data: &[u8],
@@ -654,6 +682,124 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn link_handler_empty_payload_skips_delivery_callback() {
+        let seen = Arc::new(Mutex::new(Some("stale".to_string())));
+        let router = router_with_content_callback(seen.clone()).await;
+        handle_link_delivered_data(&router, [0x11; 16], &[]).await;
+        assert_eq!(
+            seen.lock().expect("seen").as_deref(),
+            Some("stale"),
+            "empty backchannel/link payload must not invoke delivery callback"
+        );
+    }
+
+    #[tokio::test]
+    async fn link_handler_garbage_payload_skips_delivery_callback() {
+        let seen = Arc::new(Mutex::new(None::<String>));
+        let router = router_with_content_callback(seen.clone()).await;
+        handle_link_delivered_data(&router, [0x22; 16], b"not-an-lxm-frame").await;
+        assert!(
+            seen.lock().expect("seen").is_none(),
+            "non-LXM link/backchannel bytes must not invoke delivery callback"
+        );
+    }
+
+    #[tokio::test]
+    async fn outbound_backchannel_consumer_delivers_consecutive_stripped_bodies() {
+        // Production wiring: spawn_lxmf_outbound_backchannel → handle_link_delivered_data.
+        // LinkDeliveryManager forwards decrypted stripped LXM bodies on this channel.
+        let recipient = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+
+        let seen = Arc::new(Mutex::new(Vec::<String>::new()));
+        let router = Arc::new(TokioMutex::new(LxmRouter::new(RouterConfig::default())));
+        let seen_cb = seen.clone();
+        router.lock().await.register_delivery_callback(move |msg| {
+            seen_cb
+                .lock()
+                .expect("callback mutex")
+                .push(msg.content.clone());
+        });
+
+        let backchannel_tx = spawn_lxmf_outbound_backchannel(lxmf_hash, router);
+        let link_id = [0xBC; 16];
+
+        for content in ["backchannel reply 1", "backchannel reply 2"] {
+            let mut msg =
+                LxMessage::new(lxmf_hash, sender_lxmf, "", content, DeliveryMethod::Direct);
+            msg.sign(
+                sender
+                    .get_signing_key()
+                    .as_ref()
+                    .expect("sender signing key"),
+            )
+            .unwrap();
+            let packed = msg.pack().unwrap();
+            let stripped = packed[16..].to_vec();
+            backchannel_tx
+                .send((stripped, link_id))
+                .expect("backchannel send");
+        }
+
+        let deadline = Instant::now() + Duration::from_secs(2);
+        loop {
+            let got = seen.lock().expect("seen").clone();
+            if got.len() >= 2 {
+                assert_eq!(
+                    got,
+                    vec![
+                        "backchannel reply 1".to_string(),
+                        "backchannel reply 2".to_string()
+                    ]
+                );
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "timed out waiting for backchannel deliveries; got={got:?}"
+            );
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    }
+
+    #[tokio::test]
+    async fn outbound_backchannel_is_shared_unpack_path_for_peer_replies() {
+        // Named regression: first Retichat reply after Direct send must use the same
+        // unpack path as peer-initiated lxmf.delivery link DATA.
+        let recipient = Identity::new();
+        let sender = Identity::new();
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&recipient.hash));
+        let sender_lxmf = Destination::hash_from_name_and_identity(LXMF_APP, Some(&sender.hash));
+
+        let mut msg = LxMessage::new(
+            lxmf_hash,
+            sender_lxmf,
+            "",
+            "first reply after direct",
+            DeliveryMethod::Direct,
+        );
+        msg.sign(
+            sender
+                .get_signing_key()
+                .as_ref()
+                .expect("sender signing key"),
+        )
+        .unwrap();
+        let stripped = msg.pack().unwrap()[16..].to_vec();
+
+        let seen = Arc::new(Mutex::new(None::<String>));
+        let router = router_with_content_callback(seen.clone()).await;
+        handle_link_delivered_data(&router, lxmf_hash, &stripped).await;
+        assert_eq!(
+            seen.lock().expect("seen").as_deref(),
+            Some("first reply after direct"),
+            "stripped Direct reply body (outbound-link backchannel shape) must deliver"
+        );
+    }
+
     #[test]
     fn opportunistic_self_send_requires_always_prepend() {
         // After Python strips dest, self-send plaintext starts with source_hash == lxmf_dest_hash.
@@ -734,6 +880,43 @@ mod tests {
         assert!(
             src.contains("dropping newest opportunistic packet"),
             "full inbound_raw queue must log saturation (drop-newest policy)"
+        );
+        assert!(
+            src.contains("fn spawn_lxmf_outbound_backchannel"),
+            "outbound Direct backchannel helper must remain for live.rs wiring"
+        );
+        assert!(
+            src.contains("LXMF outbound-link backchannel packet"),
+            "backchannel consumer must log a distinct marker for developer bundles"
+        );
+    }
+
+    #[test]
+    fn live_source_wires_outbound_direct_backchannel() {
+        // Without set_inbound_packet_sender, peers Ack on the outbound Direct link but
+        // plaintext never reaches delivery_callback / Chat (first-reply-drop).
+        let live = include_str!("live.rs");
+        let outbound = include_str!("lxmf_outbound.rs");
+        assert!(
+            outbound.contains("pub fn set_inbound_packet_sender"),
+            "LxmfOutboundDriver must expose set_inbound_packet_sender"
+        );
+        assert!(
+            outbound.contains("self.link_delivery.set_inbound_packet_sender(tx)"),
+            "outbound driver must forward to LinkDeliveryManager"
+        );
+        assert!(
+            live.contains("spawn_lxmf_outbound_backchannel"),
+            "live stack start must spawn the outbound-link backchannel consumer"
+        );
+        assert!(
+            live.contains("set_inbound_packet_sender(spawn_lxmf_outbound_backchannel"),
+            "live must install the backchannel sender on the outbound driver at construction"
+        );
+        let delivery = include_str!("lxmf_delivery.rs");
+        assert!(
+            delivery.contains("handle_link_delivered_data(&router, lxmf_dest_hash, &plaintext)"),
+            "backchannel consumer must call shared handle_link_delivered_data"
         );
     }
 

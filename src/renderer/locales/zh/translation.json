@@ -1804,7 +1804,9 @@
       "noSerialPorts": "未找到 USB 串行端口。通过 USB 连接您的开发板并重试。",
       "rnodeCommandTimeout": "设备已停止通过串口响应。关闭占用同一串口的其他应用，等待主板完成启动后重试。",
       "esp32FlashStalled": "固件传输无进展已停止。请尝试其他 USB 线缆或端口，进入引导加载程序模式（按住 BOOT，点按 RESET），然后重新刷写固件。",
-      "unknown": "发生意外错误。"
+      "unknown": "发生意外错误。",
+      "provisionWipeRequired": "EEPROM被无效标识锁定。请先擦除EEPROM，然后再次进行配置。",
+      "provisionVerifyFailed": "预配写入已完成，但设备仍报告未预配的EEPROM。请给电路板重新上电，等待启动后重试—或先擦除EEPROM。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "对此转发器的请求已在进行中",
       "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。",
       "pingFailed": "Ping失败",
-      "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。"
+      "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。",
+      "removeContactFailed": "已在本地删除，但电台拒绝了removeContact。刷新后联系人可能会重新出现。"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
@@ -5274,6 +5277,13 @@
         "b": "黑人主教",
         "n": "黑骑士",
         "p": "黑兵"
+      },
+      "promotionChooserAria": "选择促销片段",
+      "promoteTo": {
+        "q": "晋升为大床房",
+        "r": "晋升为车队",
+        "b": "晋升为主教",
+        "n": "晋升为骑士"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "删除会话失败。"
     },
     "deleteConfirmTitle": "删除会话？",
-    "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。"
+    "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。",
+    "claimThreefold": "领取三倍奖励",
+    "claimThreefoldAria": "领取三重重复抽奖",
+    "claimFiftyMove": "领取50步",
+    "claimFiftyMoveAria": "领取五十步规则抽奖",
+    "delivery": {
+      "sending": "发送中…",
+      "propagating": "离线收件箱…",
+      "propagated": "已存储",
+      "failed": "需要重试"
+    }
   }
 }

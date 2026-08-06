@@ -428,6 +428,13 @@ export const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
   ['nl', /\bflits/i],
 ]);
 
+/** flasher.errors.provision* — MT booking/reservation false friends for "Provision". */
+export const FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS =
+  /\b(rezerv[auy]|rezerwacj|reservierung|резерв|reservation)\b/i;
+/** Physical wipe false friends vs EEPROM erase/clear (aligned with wipeEeprom siblings). */
+export const FLASHER_PROVISION_PHYSICAL_WIPE_FALSE_FRIENDS =
+  /\b(wischen|veeg|протри|протер|拭|닦|擦拭)\b/i;
+
 /** flasher.errors.rnodeCommandTimeout — MT garbles "close apps using the serial port". */
 export const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
   ['de', /über den port/i],
@@ -2861,6 +2868,32 @@ function checkFlasherIssues(ctx) {
         'rnodeCommandTimeout must say close other apps using the serial port, not unplug via the port',
       );
     }
+  }
+
+  if (
+    locale !== 'en' &&
+    (flatKey === 'flasher.errors.provisionWipeRequired' ||
+      flatKey === 'flasher.errors.provisionVerifyFailed')
+  ) {
+    if (FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS.test(val)) {
+      issues.push(
+        'flasher provision errors must not use booking/reservation false friends for Provision',
+      );
+    }
+    if (FLASHER_PROVISION_PHYSICAL_WIPE_FALSE_FRIENDS.test(val)) {
+      issues.push(
+        'flasher provision errors must use EEPROM erase/clear wording (not physical wipe verbs)',
+      );
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === 'meshcore.errors.removeContactFailed' &&
+    /\bremoveContact\b/.test(enVal) &&
+    !/\bremoveContact\b/.test(val)
+  ) {
+    issues.push('meshcore.errors.removeContactFailed must preserve wire token removeContact');
   }
 
   if (locale !== 'en' && flatKey === LONG_SESSION_RESTART_NUDGE_KEY && /\bBLE\b/.test(enVal)) {

@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Tidak ditemukan port serial USB. Hubungkan papan Anda melalui USB dan coba lagi.",
       "rnodeCommandTimeout": "Perangkat berhenti merespons melalui serial. Tutup aplikasi lain yang menggunakan port serial yang sama, tunggu hingga papan selesai boot, lalu coba lagi.",
       "esp32FlashStalled": "Transfer firmware terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan flash lagi.",
-      "unknown": "Kesalahan tak terduga terjadi."
+      "unknown": "Kesalahan tak terduga terjadi.",
+      "provisionWipeRequired": "EEPROM dikunci dengan identitas yang tidak valid. Hapus EEPROM terlebih dahulu, lalu lakukan provisioning lagi.",
+      "provisionVerifyFailed": "Penulisan provisioning selesai tetapi perangkat masih melaporkan EEPROM yang belum diprovision. Matikan dan nyalakan ulang papan, tunggu booting, lalu coba lagi — atau hapus EEPROM terlebih dahulu."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
       "pingFailed": "Ping gagal",
-      "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
+      "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",
+      "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak removeContact. Kontak dapat muncul kembali setelah penyegaran."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -5274,6 +5277,13 @@
         "b": "Uskup kulit hitam",
         "n": "Ksatria hitam",
         "p": "Pion hitam"
+      },
+      "promotionChooserAria": "Pilih bagian promosi",
+      "promoteTo": {
+        "q": "Promosikan menjadi ratu",
+        "r": "Promosikan ke benteng",
+        "b": "Promosikan menjadi uskup",
+        "n": "Promosikan menjadi ksatria"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Gagal menghapus sesi."
     },
     "deleteConfirmTitle": "Hapus sesi?",
-    "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan."
+    "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan.",
+    "claimThreefold": "Klaim tiga kali lipat",
+    "claimThreefoldAria": "Klaim undian pengulangan tiga kali lipat",
+    "claimFiftyMove": "Klaim 50 - move",
+    "claimFiftyMoveAria": "Klaim undian aturan lima puluh langkah",
+    "delivery": {
+      "sending": "Mengirim...",
+      "propagating": "Kotak Masuk Offline…",
+      "propagated": "Disimpan",
+      "failed": "Coba lagi yang diperlukan"
+    }
   }
 }

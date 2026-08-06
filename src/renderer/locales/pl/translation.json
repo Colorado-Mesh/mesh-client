@@ -1808,7 +1808,9 @@
       "noSerialPorts": "Nie znaleziono portów szeregowych USB. Podłącz płytę przez USB i spróbuj ponownie.",
       "rnodeCommandTimeout": "Urządzenie przestało odpowiadać przez port szeregowy. Zamknij inne aplikacje korzystające z tego samego portu szeregowego, poczekaj na zakończenie uruchamiania płyty i spróbuj ponownie.",
       "esp32FlashStalled": "Transfer firmware utknął bez postępu. Wypróbuj inny kabel lub port USB, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESET) i wgraj ponownie.",
-      "unknown": "Wystąpił nieoczekiwany błąd."
+      "unknown": "Wystąpił nieoczekiwany błąd.",
+      "provisionWipeRequired": "Pamięć EEPROM jest zablokowana z nieprawidłową tożsamością. Najpierw wyczyść EEPROM, a następnie ponownie wykonaj provisioning.",
+      "provisionVerifyFailed": "Zapisywanie provisioningu zakończone, ale urządzenie nadal zgłasza nieprzygotowaną pamięć EEPROM. Wyłącz i włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM."
     },
     "selectSerialPort": "Wybierz port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych USB.",
@@ -2089,7 +2091,8 @@
       "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku",
       "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Przemienniki.",
       "pingFailed": "PING nie powiódł się",
-      "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności."
+      "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności.",
+      "removeContactFailed": "Usunięto lokalnie, ale radio odrzuciło removeContact. Kontakt może pojawić się ponownie po odświeżeniu."
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
@@ -5278,6 +5281,13 @@
         "b": "Czarny goniec",
         "n": "Czarny skoczek",
         "p": "czarny pionek"
+      },
+      "promotionChooserAria": "Wybierz element promocyjny",
+      "promoteTo": {
+        "q": "Awansuj na królową",
+        "r": "Awansuj na wieżę",
+        "b": "Awansuj na biskupa",
+        "n": "Awansuj na rycerza"
       }
     },
     "errors": {
@@ -5288,6 +5298,16 @@
       "deleteFailed": "Nie udało się usunąć sesji."
     },
     "deleteConfirmTitle": "Usuń sesję",
-    "deleteConfirmMessage": "Usunąć tę sesję gry z listy? Tej czynności nie można cofnąć."
+    "deleteConfirmMessage": "Usunąć tę sesję gry z listy? Tej czynności nie można cofnąć.",
+    "claimThreefold": "Odbierz trzykrotnie",
+    "claimThreefoldAria": "Odbierz trzykrotne powtórzenie losowania",
+    "claimFiftyMove": "Odbierz 50 ruchów",
+    "claimFiftyMoveAria": "Odbierz remis reguły pięćdziesięciu ruchów",
+    "delivery": {
+      "sending": "Wysyłanie…",
+      "propagating": "Skrzynka odbiorcza offline...",
+      "propagated": "Przechowywane",
+      "failed": "Wymagana ponowna próba"
+    }
   }
 }

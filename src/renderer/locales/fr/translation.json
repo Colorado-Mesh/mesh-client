@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Aucun port série USB trouvé. Connectez votre carte via USB et réessayez.",
       "rnodeCommandTimeout": "L'appareil ne répond plus en série. Fermez les autres applications qui utilisent le port série, attendez que la carte ait fini de démarrer, puis réessayez.",
       "esp32FlashStalled": "Le transfert du firmware est bloqué sans progression. Essayez un autre câble ou port USB, entrez en mode bootloader (maintenez BOOT, appuyez sur RESET) et flashez à nouveau.",
-      "unknown": "Une erreur inattendue s'est produite."
+      "unknown": "Une erreur inattendue s'est produite.",
+      "provisionWipeRequired": "EEPROM est verrouillé avec une identité non valide. Effacez d’abord l’EEPROM, puis provisionnez à nouveau.",
+      "provisionVerifyFailed": "Écritures de provision terminées, mais l’appareil signale toujours une EEPROM non provisionnée. Coupez puis rétablissez l’alimentation de la carte, attendez le démarrage et réessayez — ou effacez d’abord l’EEPROM."
     },
     "selectSerialPort": "Sélectionner le port série",
     "noSerialPorts": "Aucun port série USB trouvé.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
       "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
       "pingFailed": "Échec du ping",
-      "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif."
+      "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif.",
+      "removeContactFailed": "Supprimé localement, mais la radio a rejeté removeContact. Le contact peut réapparaître après un rafraîchissement."
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -5274,6 +5277,13 @@
         "b": "Black bishop",
         "n": "Chevalier noir",
         "p": "Pion noir"
+      },
+      "promotionChooserAria": "Choisir un article promotionnel",
+      "promoteTo": {
+        "q": "Promouvoir en reine",
+        "r": "Promouvoir auprès de",
+        "b": "Promouvoir évêque",
+        "n": "Promouvoir au rang de chevalier"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Échec de la suppression de la session."
     },
     "deleteConfirmTitle": "Supprimer la période ?",
-    "deleteConfirmMessage": "Supprimer cette session de jeu de votre liste ? Cela ne peut pas être annulé."
+    "deleteConfirmMessage": "Supprimer cette session de jeu de votre liste ? Cela ne peut pas être annulé.",
+    "claimThreefold": "Réclamer trois fois",
+    "claimThreefoldAria": "Réclamez trois fois le tirage de répétition",
+    "claimFiftyMove": "Revendication 50-move",
+    "claimFiftyMoveAria": "Réclamer le tirage au sort de la règle de",
+    "delivery": {
+      "sending": "Envoi en cours...",
+      "propagating": "Boîte de réception hors ligne…",
+      "propagated": "emmagasiné, rangé, conservé, entreposé, stocké",
+      "failed": "Réessayer nécessaire"
+    }
   }
 }

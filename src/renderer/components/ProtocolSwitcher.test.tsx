@@ -15,7 +15,7 @@ describe('ProtocolSwitcher', () => {
     render(
       <ProtocolSwitcher
         protocol="meshtastic"
-        chatUnreadByProtocol={{ meshtastic: 0, meshcore: 3, reticulum: 1 }}
+        unreadByProtocol={{ meshtastic: 0, meshcore: 3, reticulum: 1 }}
         onProtocolChange={onProtocolChange}
       />,
     );
@@ -41,7 +41,7 @@ describe('ProtocolSwitcher', () => {
     render(
       <ProtocolSwitcher
         protocol="reticulum"
-        chatUnreadByProtocol={{ meshtastic: 12, meshcore: 0, reticulum: 5 }}
+        unreadByProtocol={{ meshtastic: 12, meshcore: 0, reticulum: 5 }}
         onProtocolChange={() => {}}
       />,
     );
@@ -59,7 +59,7 @@ describe('ProtocolSwitcher', () => {
     const { container } = render(
       <ProtocolSwitcher
         protocol="meshcore"
-        chatUnreadByProtocol={{ meshtastic: 2, meshcore: 0, reticulum: 4 }}
+        unreadByProtocol={{ meshtastic: 2, meshcore: 0, reticulum: 4 }}
         onProtocolChange={() => {}}
       />,
     );

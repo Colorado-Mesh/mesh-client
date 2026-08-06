@@ -151,6 +151,21 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
       /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*prev\.destroy\(\)/,
     );
   });
+
+  it('does not null meshtasticTcpSocket in the error handler (error-before-close race)', () => {
+    // Node emits 'error' then 'close' on ECONNRESET. If error nulls the ref first, close's
+    // active-socket guard fails and meshtastic:tcp-disconnected is swallowed.
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const errorIdx = INDEX_SOURCE.indexOf("socket.on('error'", handlerIdx);
+    expect(errorIdx).toBeGreaterThan(handlerIdx);
+    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
+    expect(closeIdx).toBeGreaterThan(handlerIdx);
+    expect(errorIdx).toBeGreaterThan(closeIdx);
+    const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
+    expect(errorBody).not.toMatch(/meshtasticTcpSocket\s*=\s*null/);
+    expect(errorBody).toContain('Do not null meshtasticTcpSocket');
+  });
 });
 
 // ─── meshcore:tcp-write byte element validation ──────────────────────
@@ -363,9 +378,12 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
     expect(closeIdx).toBeGreaterThan(handlerIdx);
-    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 600);
+    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 1600);
     expect(closeBody).toContain('if (meshcoreTcpSocket === socket)');
     expect(closeBody).toContain("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
+    expect(closeBody).toContain('readableEnded');
+    expect(closeBody).toContain('writableEnded');
+    expect(closeBody).toContain('remoteAddress');
     const guardIdx = closeBody.indexOf('if (meshcoreTcpSocket === socket)');
     const emitIdx = closeBody.indexOf("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
     expect(guardIdx).toBeGreaterThan(-1);
@@ -386,6 +404,32 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     expect(disconnectBody).toMatch(
       /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*prev\.destroy\(\)/,
     );
+  });
+
+  it('enables TCP_NODELAY and keepalive on meshcore:tcp-connect sockets', () => {
+    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS');
+    const connectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(connectIdx).toBeGreaterThan(-1);
+    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1600);
+    expect(connectBody).toContain('socket.setNoDelay(true)');
+    expect(connectBody).toContain(
+      'socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS)',
+    );
+  });
+
+  it('does not null meshcoreTcpSocket in the error handler (error-before-close race)', () => {
+    // Node emits 'error' then 'close' on ECONNRESET. If error nulls the ref first, close's
+    // active-socket guard fails and meshcore:tcp-disconnected is swallowed (n7eal).
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const errorIdx = INDEX_SOURCE.indexOf("socket.on('error'", handlerIdx);
+    expect(errorIdx).toBeGreaterThan(handlerIdx);
+    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
+    expect(closeIdx).toBeGreaterThan(handlerIdx);
+    expect(errorIdx).toBeGreaterThan(closeIdx);
+    const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
+    expect(errorBody).not.toMatch(/meshcoreTcpSocket\s*=\s*null/);
+    expect(errorBody).toContain('Do not null meshcoreTcpSocket');
   });
 });
 
@@ -514,6 +558,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'appSettings:get',
     'appSettings:set',
     'app:rendererHeartbeat',
+    'app:getRendererLiveness',
     'db:saveNode',
     'db:saveNodePath',
     'db:getNodes',
@@ -565,7 +610,7 @@ describe('privileged IPC sender validation (source contract)', () => {
   it('meshcore tcp-connect uses connect timeout', () => {
     expect(INDEX_SOURCE).toContain('MESHCORE_TCP_CONNECT_TIMEOUT_MS');
     expect(INDEX_SOURCE).toMatch(
-      /meshcore:tcp-connect[\s\S]{0,1200}meshcore:tcp-connect: connection timeout/,
+      /meshcore:tcp-connect[\s\S]{0,1800}meshcore:tcp-connect: connection timeout/,
     );
   });
 
@@ -641,6 +686,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:rendererHeartbeat'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
+  });
+
+  it('app:getRendererLiveness validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:getRendererLiveness'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
     expect(body).toContain('validateIpcSender(event)');
   });
 });

@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Nessuna porta seriale USB trovata. Collega la scheda tramite USB e riprova.",
       "rnodeCommandTimeout": "Il dispositivo ha smesso di rispondere in seriale. Chiudere le altre app che usano la stessa porta seriale, attendere il completamento dell'avvio della scheda e riprovare.",
       "esp32FlashStalled": "Trasferimento firmware bloccato senza progressi. Provare un altro cavo o porta USB, entrare in modalità bootloader (tenere premuto BOOT, toccare RESET) e riflashare.",
-      "unknown": "Si è verificato un errore imprevisto."
+      "unknown": "Si è verificato un errore imprevisto.",
+      "provisionWipeRequired": "La EEPROM è bloccata con un'identità non valida. Pulire prima la EEPROM, quindi eseguire nuovamente il provisioning.",
+      "provisionVerifyFailed": "Le scritture di provisioning sono terminate ma il dispositivo segnala ancora una EEPROM senza provisioning. Spegnere e riaccendere la scheda, attendere l'avvio e riprovare, oppure pulire prima la EEPROM."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",
@@ -2085,7 +2087,8 @@
       "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso",
       "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori.",
       "pingFailed": "Ping non eseguito correttamente!",
-      "floodScopeBusy": "La sostituzione dell'ambito del Flood non è disponibile mentre è in corso l'amministrazione del ripetitore o il traceroute. Riprovare quando è inattivo."
+      "floodScopeBusy": "La sostituzione dell'ambito del Flood non è disponibile mentre è in corso l'amministrazione del ripetitore o il traceroute. Riprovare quando è inattivo.",
+      "removeContactFailed": "Rimosso localmente, ma la radio ha rifiutato removeContact. Il contatto potrebbe riapparire dopo un aggiornamento."
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
@@ -5274,6 +5277,13 @@
         "b": "Un Alfiere nero",
         "n": "Il cavaliere nero",
         "p": "Pedone nero"
+      },
+      "promotionChooserAria": "Scegli il pezzo promozionale",
+      "promoteTo": {
+        "q": "Promuovi a regina",
+        "r": "Promuovi a torre",
+        "b": "Promuovi a vescovo",
+        "n": "Promuovi a cavaliere"
       }
     },
     "errors": {
@@ -5284,6 +5294,16 @@
       "deleteFailed": "Sessione non eliminata"
     },
     "deleteConfirmTitle": "Cancellare una sessione",
-    "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata."
+    "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata.",
+    "claimThreefold": "Riscuoti il triplo",
+    "claimThreefoldAria": "Richiedi il triplo sorteggio di ripetizione",
+    "claimFiftyMove": "Claim 50-move",
+    "claimFiftyMoveAria": "Richiedi l'estrazione della regola delle cinquanta mosse",
+    "delivery": {
+      "sending": "Invio in corso…",
+      "propagating": "Posta in arrivo offline...",
+      "propagated": "Memorizzato",
+      "failed": "Nuovo tentativo necessario"
+    }
   }
 }

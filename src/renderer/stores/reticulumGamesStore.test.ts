@@ -146,5 +146,61 @@ describe('reticulumGamesStore', () => {
     expect(state.lastActionResult).toBeNull();
     expect(state.apps).toHaveLength(0);
     expect(state.status).toBeNull();
+    expect(state.optimisticBackup).toEqual({});
+  });
+
+  it('beginOptimisticMove patches board and rollback restores', () => {
+    useReticulumGamesStore.getState().setSessions([
+      makeSession({
+        status: 'active',
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+        },
+      }),
+    ]);
+    expect(useReticulumGamesStore.getState().beginOptimisticMove('s1', 'ttt', 0)).toBe(true);
+    expect(useReticulumGamesStore.getState().sessions[0].metadata.board).toBe('X________');
+    expect(useReticulumGamesStore.getState().optimisticBackup.s1).toBeDefined();
+    useReticulumGamesStore.getState().rollbackOptimistic('s1');
+    expect(useReticulumGamesStore.getState().sessions[0].metadata.board).toBe('_________');
+    expect(useReticulumGamesStore.getState().optimisticBackup.s1).toBeUndefined();
+  });
+
+  it('applyActionResult ok:false restores optimistic backup', () => {
+    useReticulumGamesStore.getState().setSessions([
+      makeSession({
+        status: 'active',
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+        },
+      }),
+    ]);
+    useReticulumGamesStore.getState().beginOptimisticMove('s1', 'ttt', 4);
+    useReticulumGamesStore.getState().applyActionResult({
+      app_id: 'ttt',
+      session_id: 's1',
+      ok: false,
+      error: 'send_failed',
+    });
+    expect(useReticulumGamesStore.getState().sessions[0].metadata.board).toBe('_________');
+  });
+
+  it('applyGamesUpdate preserves delivery_state from payload', () => {
+    useReticulumGamesStore.getState().applyGamesUpdate({
+      app_id: 'ttt',
+      session_id: 's1',
+      session: makeSession({ delivery_state: 'sending', status: 'active' }),
+    });
+    expect(useReticulumGamesStore.getState().sessions[0].delivery_state).toBe('sending');
   });
 });
