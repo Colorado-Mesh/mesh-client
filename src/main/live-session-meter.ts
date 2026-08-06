@@ -3,8 +3,11 @@ import { MS_PER_SECOND } from '../shared/timeConstants';
 /** Drop a pending write→data sample if no data arrives within this window. */
 export const LIVE_SESSION_PENDING_SAMPLE_TIMEOUT_MS = 3 * MS_PER_SECOND;
 
-/** Hide bars when no completed sample within this window. */
-export const LIVE_SESSION_STALE_MS = 15 * MS_PER_SECOND;
+/**
+ * Hide bars when no completed sample within this window.
+ * Must exceed typical idle write cadence (Meshtastic heartbeat ~60s).
+ */
+export const LIVE_SESSION_STALE_MS = 120 * MS_PER_SECOND;
 
 /** EWMA smoothing factor for write→first-data latency samples. */
 export const LIVE_SESSION_EWMA_ALPHA = 0.3;
