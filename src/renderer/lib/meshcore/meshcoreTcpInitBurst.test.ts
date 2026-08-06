@@ -75,6 +75,17 @@ describe('shouldDeferMeshcoreTcpReconnectAfterBurst', () => {
     ).toBe(true);
   });
 
+  it('defers while initConn is in flight during contacts dump before burstCaptured', () => {
+    expect(
+      shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: false,
+        everConfigured: true,
+        deviceConfigured: true,
+        initConnInFlight: true,
+      }),
+    ).toBe(true);
+  });
+
   it('does not defer once both everConfigured and deviceConfigured are true', () => {
     expect(
       shouldDeferMeshcoreTcpReconnectAfterBurst({

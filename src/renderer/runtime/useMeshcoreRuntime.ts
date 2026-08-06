@@ -619,8 +619,11 @@ export function useMeshcoreRuntime() {
   /**
    * True for the duration of `initConn`. After configure-before-dump, peer FIN once the contacts
    * burst is held must defer reconnect (not bump setup gen) until init finishes.
+   * Cleared in finally only when `meshcoreInitConnInFlightSetupGenRef` still matches the
+   * owning setupGen (superseded opens must not clear a newer initConn).
    */
   const meshcoreInitConnInFlightRef = useRef(false);
+  const meshcoreInitConnInFlightSetupGenRef = useRef<number | null>(null);
   /**
    * Active session configured (Meshtastic `deviceConfiguredRef` parity). Cleared on disconnect /
    * new connect; set when initConn reaches configured so post-configure Noble drops during
@@ -972,10 +975,13 @@ export function useMeshcoreRuntime() {
         });
       }, MESHCORE_STATS_POLL_MS);
 
-      // Initial stats fetch on connect
-      void fetchAndUpdateLocalStats().catch((e: unknown) => {
-        console.warn('[useMeshcoreRuntime] initial stats fetch failed ' + errLikeToLogString(e));
-      });
+      // Initial stats fetch on connect — skip while initConn still owns the radio (configure-
+      // before-dump can already show configured; interval will pick up once init finishes).
+      if (!meshcoreInitConnInFlightRef.current) {
+        void fetchAndUpdateLocalStats().catch((e: unknown) => {
+          console.warn('[useMeshcoreRuntime] initial stats fetch failed ' + errLikeToLogString(e));
+        });
+      }
     }
     return () => {
       if (meshcoreStatsPollRef.current) {
@@ -2068,6 +2074,7 @@ export function useMeshcoreRuntime() {
   const initConn = useCallback(
     async (conn: MeshCoreConnection, setupGen: number, opts?: { driverIdentityId?: string }) => {
       meshcoreInitConnInFlightRef.current = true;
+      meshcoreInitConnInFlightSetupGenRef.current = setupGen;
       try {
         connRef.current = conn;
         meshcoreConnEventListenersTeardownRef.current?.();
@@ -2339,14 +2346,14 @@ export function useMeshcoreRuntime() {
             : await parallelContactsPromise!;
           contactsDumpOk = true;
         } catch (e) {
+          // Soft-fail is TCP SoftAP/OpenHop only — BLE/serial getContacts failures must abort.
           if (
+            transportType === 'tcp' &&
             configureBeforeContactsDump &&
             meshcoreDeviceConfiguredRef.current &&
             meshcoreSetupGenerationRef.current === setupGen
           ) {
-            if (transportType === 'tcp') {
-              meshcoreTcpBridgeDeadRef.current = true;
-            }
+            meshcoreTcpBridgeDeadRef.current = true;
             console.warn(
               '[useMeshcoreRuntime] initConn getContacts failed after configured — keeping session ' +
                 errLikeToLogString(e),
@@ -2761,7 +2768,10 @@ export function useMeshcoreRuntime() {
         }
         meshcoreEverConfiguredRef.current = true;
       } finally {
-        meshcoreInitConnInFlightRef.current = false;
+        if (meshcoreInitConnInFlightSetupGenRef.current === setupGen) {
+          meshcoreInitConnInFlightRef.current = false;
+          meshcoreInitConnInFlightSetupGenRef.current = null;
+        }
       }
     },
     [
@@ -2838,11 +2848,14 @@ export function useMeshcoreRuntime() {
       if (!opts?.preserveReconnectState) {
         meshcoreConnectionParamsRef.current = null;
       }
+      // Release superseded initConn for all RF transports (not TCP-only) so stats/GPS gates
+      // and reconnect deferral cannot stick after BLE/serial prepare aborts a prior open.
+      meshcoreInitConnInFlightRef.current = false;
+      meshcoreInitConnInFlightSetupGenRef.current = null;
       if (type === 'tcp') {
         meshcoreTcpBridgeDeadRef.current = false;
         meshcoreTcpInitBurstCapturedRef.current = false;
         meshcoreTcpContactsDumpInFlightRef.current = false;
-        meshcoreInitConnInFlightRef.current = false;
         if (!opts?.preserveReconnectState) {
           meshcoreDeferredReconnectRef.current = false;
         }

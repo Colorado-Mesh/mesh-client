@@ -230,95 +230,110 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     mocks.tryGetMeshtasticSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.tryGetMeshcoreSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.awaitNobleBleProtocolSettle.mockResolvedValue(undefined);
-    vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue('darwin');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('auto-connects meshtastic TCP with stored address and skips Reticulum gate', async () => {
-    mocks.loadLastConnection.mockReturnValue({
-      type: 'tcp',
-      httpAddress: '192.168.1.50:4403',
-    });
-    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
-
-    renderHook(() => {
-      useProtocolRfAutoConnect({
-        protocol: 'meshtastic',
-        state: disconnected,
-        connectAutomatic,
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'auto-connects meshtastic TCP with stored address and skips Reticulum gate (%s)',
+    async (platform) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      mocks.loadLastConnection.mockReturnValue({
+        type: 'tcp',
+        httpAddress: '192.168.1.50:4403',
       });
-    });
+      const connectAutomatic = vi.fn().mockResolvedValue(undefined);
 
-    await waitFor(() => {
-      expect(connectAutomatic).toHaveBeenCalledWith('tcp', '192.168.1.50:4403');
-    });
-    expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
-  });
-
-  it('auto-connects meshcore HTTP (TCP/IP) with stored address and skips Reticulum gate', async () => {
-    mocks.loadLastConnection.mockReturnValue({
-      type: 'http',
-      httpAddress: '10.0.0.1:5000',
-    });
-    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
-
-    renderHook(() => {
-      useProtocolRfAutoConnect({
-        protocol: 'meshcore',
-        state: disconnected,
-        connectAutomatic,
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshtastic',
+          state: disconnected,
+          connectAutomatic,
+        });
       });
-    });
 
-    await waitFor(() => {
-      expect(connectAutomatic).toHaveBeenCalledWith('http', '10.0.0.1:5000');
-    });
-    expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
-  });
-
-  it('skips TCP auto-connect when httpAddress is blank and settles primary gate if needed', async () => {
-    mocks.loadLastConnection.mockReturnValue({ type: 'tcp', httpAddress: '   ' });
-    mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
-    mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
-    const connectAutomatic = vi.fn();
-
-    renderHook(() => {
-      useProtocolRfAutoConnect({
-        protocol: 'meshtastic',
-        state: disconnected,
-        connectAutomatic,
+      await waitFor(() => {
+        expect(connectAutomatic).toHaveBeenCalledWith('tcp', '192.168.1.50:4403');
       });
-    });
+      expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
+    },
+  );
 
-    await waitFor(() => {
-      expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
-    });
-    expect(connectAutomatic).not.toHaveBeenCalled();
-    expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
-  });
-
-  it('skips HTTP auto-connect when httpAddress is missing', async () => {
-    mocks.loadLastConnection.mockReturnValue({ type: 'http' });
-    const connectAutomatic = vi.fn();
-
-    renderHook(() => {
-      useProtocolRfAutoConnect({
-        protocol: 'meshcore',
-        state: disconnected,
-        connectAutomatic,
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'auto-connects meshcore HTTP (TCP/IP) with stored address and skips Reticulum gate (%s)',
+    async (platform) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      mocks.loadLastConnection.mockReturnValue({
+        type: 'http',
+        httpAddress: '10.0.0.1:5000',
       });
-    });
+      const connectAutomatic = vi.fn().mockResolvedValue(undefined);
 
-    await waitFor(() => {
-      expect(mocks.loadLastConnection).toHaveBeenCalledWith('meshcore');
-    });
-    // Session wait is async — give the startup path a tick to finish without connecting.
-    await waitFor(() => {
-      expect(mocks.tryGetMeshcoreSession).toHaveBeenCalled();
-    });
-    expect(connectAutomatic).not.toHaveBeenCalled();
-  });
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshcore',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
+
+      await waitFor(() => {
+        expect(connectAutomatic).toHaveBeenCalledWith('http', '10.0.0.1:5000');
+      });
+      expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'skips TCP auto-connect when httpAddress is blank and settles primary gate if needed (%s)',
+    async (platform) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      mocks.loadLastConnection.mockReturnValue({ type: 'tcp', httpAddress: '   ' });
+      mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+      mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
+      const connectAutomatic = vi.fn();
+
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshtastic',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
+
+      await waitFor(() => {
+        expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
+      });
+      expect(connectAutomatic).not.toHaveBeenCalled();
+      expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'skips HTTP auto-connect when httpAddress is missing (%s)',
+    async (platform) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      mocks.loadLastConnection.mockReturnValue({ type: 'http' });
+      const connectAutomatic = vi.fn();
+
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshcore',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
+
+      await waitFor(() => {
+        expect(mocks.loadLastConnection).toHaveBeenCalledWith('meshcore');
+      });
+      // Session wait is async — give the startup path a tick to finish without connecting.
+      await waitFor(() => {
+        expect(mocks.tryGetMeshcoreSession).toHaveBeenCalled();
+      });
+      expect(connectAutomatic).not.toHaveBeenCalled();
+    },
+  );
 });

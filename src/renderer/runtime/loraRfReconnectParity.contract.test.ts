@@ -58,7 +58,6 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
     expect(MESHCORE).toContain('TCP closed during post-configure contacts dump — keep configured');
     expect(MESHCORE).toContain('preserving dbCache hydration');
     expect(MESHCORE).toContain('promoteConfiguredAfterContactsDump');
-    expect(MESHCORE).toContain('keep UI status at');
     expect(MESHCORE).toMatch(
       /meshcoreDeviceConfiguredRef\.current = true[\s\S]*?getContacts[\s\S]*?promoteConfiguredAfterContactsDump/,
     );

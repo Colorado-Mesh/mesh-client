@@ -51,7 +51,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
       'initConn TCP burst-complete with dead bridge — skip post-connect RPCs',
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreEverConfiguredRef\.current = true;\s*\n\s*\} finally \{\s*\n\s*meshcoreInitConnInFlightRef\.current = false;/,
+      /meshcoreEverConfiguredRef\.current = true;[\s\S]*?\} finally \{[\s\S]*?meshcoreInitConnInFlightRef\.current = false;/,
     );
   });
 

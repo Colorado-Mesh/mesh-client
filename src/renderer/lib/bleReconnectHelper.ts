@@ -167,7 +167,11 @@ export async function reconnectBleWithScan(
     await connect();
     return;
   } catch (err) {
-    if (isMeshcoreSetupAbortError(err)) {
+    // AbortError (setup cancel / RF auto-connect cancel) must not fall through to scan.
+    if (
+      isMeshcoreSetupAbortError(err) ||
+      (err instanceof DOMException && err.name === 'AbortError')
+    ) {
       throw err;
     }
     const message = errLikeToLogString(err);

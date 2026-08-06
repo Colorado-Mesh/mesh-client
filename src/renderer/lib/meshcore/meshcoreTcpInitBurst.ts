@@ -18,8 +18,9 @@ export function isMeshcoreTcpBurstDeadBridge(opts: {
  * Uses !deviceConfigured so mid-reconnect opens (everConfigured already true) still defer.
  * Mid-reconnect FIN often races getContacts resolve (burst flag not set yet) — defer whenever
  * everConfigured && !deviceConfigured even without burstCaptured.
- * Configure-before-dump: deviceConfigured+everConfigured are both true during getChannels —
- * still defer while initConn is in flight after the burst so peer FIN does not bump setup gen.
+ * Configure-before-dump: deviceConfigured+everConfigured are both true during getChannels /
+ * the contacts-dump window (burstCaptured may still be false) — still defer while initConn is
+ * in flight so peer FIN does not bump setup gen.
  */
 export function shouldDeferMeshcoreTcpReconnectAfterBurst(opts: {
   burstCaptured: boolean;
@@ -27,7 +28,7 @@ export function shouldDeferMeshcoreTcpReconnectAfterBurst(opts: {
   deviceConfigured: boolean;
   initConnInFlight?: boolean;
 }): boolean {
-  if (opts.initConnInFlight && opts.burstCaptured) {
+  if (opts.initConnInFlight) {
     return true;
   }
   if (opts.deviceConfigured && opts.everConfigured) {

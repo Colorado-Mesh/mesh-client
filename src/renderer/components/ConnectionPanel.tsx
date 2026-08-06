@@ -1702,6 +1702,20 @@ export default function ConnectionPanel({
 
   const handleReconnect = useCallback(() => {
     if (!lastConnection) return;
+    // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
+    // BLE/serial auto-connect (orphan socket / connectType flip).
+    autoConnectCancelRef.current = true;
+    cancelProtocolRfAutoConnect(protocol);
+    if (isAutoConnectingRef.current) {
+      console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
+    }
+    isAutoConnectingRef.current = false;
+    setIsAutoConnecting(false);
+    setAutoConnectBleTarget(null);
+    if (autoConnectTimeoutRef.current) {
+      clearTimeout(autoConnectTimeoutRef.current);
+      autoConnectTimeoutRef.current = null;
+    }
     setError(null);
 
     if (lastConnection.type === 'ble') {
