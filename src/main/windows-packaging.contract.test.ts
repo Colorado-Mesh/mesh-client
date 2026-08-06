@@ -99,10 +99,18 @@ describe('Windows packaging (contract)', () => {
       'utf-8',
     );
     expect(verifyScript).toContain('win-arm64-unpacked');
-    expect(verifyScript).toContain('-arm64.exe');
+    expect(verifyScript).toContain('collectWinSetupInstallers');
+    expect(verifyScript).toContain('win-setup-installer-names');
     expect(verifyScript).toContain('reticulum-sidecar');
     expect(verifyScript).toContain('assertBundledReticulumSidecarInBundle');
     expect(verifyScript).not.toContain('resedit');
+
+    const setupNamesScript = readFileSync(
+      join(REPO_ROOT, 'scripts', 'win-setup-installer-names.mjs'),
+      'utf-8',
+    );
+    expect(setupNamesScript).toContain('-arm64.exe');
+    expect(setupNamesScript).toContain('^-run\\d+-arm64$');
   });
 
   it('pins electron-builder to 26.15.4 or newer', () => {
