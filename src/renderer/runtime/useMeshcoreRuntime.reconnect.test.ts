@@ -268,20 +268,14 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('notifies immediately on main-process TCP socket disconnect (regression)', () => {
     // Unlike serial, MeshCore's TCP transport has no fallback watchdog at all (see
     // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
-    // is the only automatic recovery path for a dropped TCP connection after first configure.
+    // is the only automatic recovery path for a dropped TCP connection (including mid-init).
     expect(RUNTIME_SOURCE).toMatch(
-      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?connectingTcp[\s\S]*?meshcoreEverConfiguredRef\.current[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
+      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?connectingTcp[\s\S]{0,400}meshcoreTcpBridgeDeadRef\.current = true;[\s\S]{0,200}handleMeshcoreConnectionLostRef\.current\(\)/,
     );
     expect(RUNTIME_SOURCE).toContain("meshcoreConnectTypeRef.current === 'tcp'");
-  });
-
-  it('gates mid-init TCP disconnect to abort-only (no #792 reconnect thrash before configured)', () => {
-    expect(RUNTIME_SOURCE).toContain('meshcoreTcpBridgeDeadRef');
-    expect(RUNTIME_SOURCE).toContain(
+    // Must not abort-only before configured (Neal: that looked like a single failed try).
+    expect(RUNTIME_SOURCE).not.toContain(
       'TCP closed before everConfigured — abort initConn (defer reconnect until configured)',
-    );
-    expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreTcpBridgeDeadRef\.current = true;[\s\S]*?!meshcoreEverConfiguredRef\.current[\s\S]*?meshcoreSetupGenerationRef\.current \+= 1;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
   });
 

@@ -7091,10 +7091,14 @@ export function useMeshcoreRuntime() {
   }, []);
 
   // Main reports the raw TCP socket's own 'close'/'error' event within milliseconds of the
-  // real network failure (clean FIN or RST alike). After first configure, this drives
-  // reconnect (Joe #792). Mid-first-open SoftAP/OpenHop FINs must only abort initConn —
-  // full handleMeshcoreConnectionLost reconnect thrash made #792 mid-init drops worse
-  // (Neal/Fuzzy). Mirrors Meshtastic meshtasticTransportLossDetection.ts post-configure.
+  // real network failure (clean FIN or RST alike). Without this, TCP relied solely on the
+  // passive stale/dead watchdog — which, unlike serial, doesn't exist for MeshCore's TCP
+  // transport at all (see startMeshcoreSerialWatchdog), so a dropped TCP connection had no
+  // automatic recovery path whatsoever. Mirrors the equivalent Meshtastic fix in
+  // meshtasticTransportLossDetection.ts.
+  // Mid-init: mark bridge dead so initConn asserts abort before getChannels write storms;
+  // still call handleMeshcoreConnectionLost so first-open peer FIN reconnects (Neal: abort-only
+  // gate left SoftAP/OpenHop looking like a single failed try).
   useEffect(() => {
     const unsub = window.electronAPI.meshcore.tcp.onDisconnected(() => {
       // Params are only written after a successful attachRfSession. Mid-first-connect peer FIN
@@ -7103,15 +7107,6 @@ export function useMeshcoreRuntime() {
       const connectingTcp = meshcoreConnectTypeRef.current === 'tcp';
       if (!storedTcp && !connectingTcp) return;
       meshcoreTcpBridgeDeadRef.current = true;
-      if (!meshcoreEverConfiguredRef.current) {
-        // Abort in-flight initConn without destroy+reconnect thrash against single-client
-        // companions. ConnectionPanel / user retry owns the next open.
-        meshcoreSetupGenerationRef.current += 1;
-        console.debug(
-          '[useMeshcoreRuntime] TCP closed before everConfigured — abort initConn (defer reconnect until configured)',
-        );
-        return;
-      }
       handleMeshcoreConnectionLostRef.current();
     });
     return () => unsub();
