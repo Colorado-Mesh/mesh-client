@@ -33,16 +33,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
      onFrameReceived(frame) {
  
          // emit received frame
-@@ -400,6 +408,8 @@ class Connection extends EventEmitter {
-             this.onRawDataPush(bufferReader);
-         } else if(responseCode === Constants.PushCodes.LoginSuccess){
-             this.onLoginSuccessPush(bufferReader);
-+        } else if(responseCode === Constants.PushCodes.LoginFail){
-+            this.onLoginFailPush(bufferReader);
-         } else if(responseCode === Constants.PushCodes.StatusResponse){
-             this.onStatusResponsePush(bufferReader);
-         } else if(responseCode === Constants.PushCodes.LogRxData){
-@@ -412,8 +422,14 @@ class Connection extends EventEmitter {
+@@ -412,8 +420,14 @@ class Connection extends EventEmitter {
              this.onNewAdvertPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.BinaryResponse){
              this.onBinaryResponsePush(bufferReader);
@@ -58,21 +49,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
          }
  
      }
-@@ -459,6 +475,13 @@ class Connection extends EventEmitter {
-         });
-     }
- 
-+    onLoginFailPush(bufferReader) {
-+        this.emit(Constants.PushCodes.LoginFail, {
-+            reserved: bufferReader.readByte(), // reserved
-+            pubKeyPrefix: bufferReader.readBytes(6), // 6 bytes of public key this login fail is from
-+        });
-+    }
-+
-     onStatusResponsePush(bufferReader) {
-         this.emit(Constants.PushCodes.StatusResponse, {
-             reserved: bufferReader.readByte(), // reserved
-@@ -494,15 +517,25 @@ class Connection extends EventEmitter {
+@@ -494,15 +508,25 @@ class Connection extends EventEmitter {
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
@@ -104,7 +81,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
          });
      }
  
-@@ -582,11 +615,30 @@ class Connection extends EventEmitter {
+@@ -582,11 +606,30 @@ class Connection extends EventEmitter {
      }
  
      onDeviceInfoResponse(bufferReader) {
@@ -139,7 +116,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
          });
      }
  
-@@ -2375,6 +2427,33 @@ class Connection extends EventEmitter {
+@@ -2375,6 +2418,33 @@ class Connection extends EventEmitter {
          });
      }
  
