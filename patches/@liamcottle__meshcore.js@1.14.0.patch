@@ -1,5 +1,5 @@
 diff --git a/src/buffer_reader.js b/src/buffer_reader.js
-index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9ad89545d4 100644
+index 9142fbc..2f8cf2d 100644
 --- a/src/buffer_reader.js
 +++ b/src/buffer_reader.js
 @@ -24,7 +24,10 @@ class BufferReader {
@@ -15,7 +15,7 @@ index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9a
  
      readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016e65af7dd 100644
+index 541ce73..50a3bef 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
 @@ -338,6 +338,14 @@ class Connection extends EventEmitter {
@@ -33,7 +33,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
      onFrameReceived(frame) {
  
          // emit received frame
-@@ -412,8 +420,14 @@ class Connection extends EventEmitter {
+@@ -416,8 +424,14 @@ class Connection extends EventEmitter {
              this.onNewAdvertPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.BinaryResponse){
              this.onBinaryResponsePush(bufferReader);
@@ -49,7 +49,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
          }
  
      }
-@@ -494,15 +508,25 @@ class Connection extends EventEmitter {
+@@ -498,15 +512,25 @@ class Connection extends EventEmitter {
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
@@ -81,7 +81,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
          });
      }
  
-@@ -582,11 +606,30 @@ class Connection extends EventEmitter {
+@@ -586,11 +610,30 @@ class Connection extends EventEmitter {
      }
  
      onDeviceInfoResponse(bufferReader) {
@@ -116,7 +116,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..2fb915e4e5cf109afc7772dc380bb016
          });
      }
  
-@@ -2375,6 +2418,33 @@ class Connection extends EventEmitter {
+@@ -2401,6 +2444,33 @@ class Connection extends EventEmitter {
          });
      }
  
