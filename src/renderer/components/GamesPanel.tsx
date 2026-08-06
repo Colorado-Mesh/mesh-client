@@ -18,7 +18,9 @@ import {
   sendGamesAction,
   sendGamesChallenge,
 } from '@/renderer/lib/reticulum/reticulumGamesSession';
+import { resolveReticulumRemoteHashLabel } from '@/renderer/lib/reticulumVoiceRemoteLabel';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { GAMES_CMD, type GamesAppId, type GameSession } from '@/shared/games-types';
 
 export interface GamesPanelProps {
@@ -39,7 +41,9 @@ function matchesFilter(session: GameSession, filter: GamesFilter): boolean {
 }
 
 function sessionPeerLabel(session: GameSession): string {
-  return session.contact_hash ? session.contact_hash.slice(0, 10) : session.session_id.slice(0, 8);
+  const hash = session.contact_hash?.trim();
+  if (!hash) return session.session_id.slice(0, 8);
+  return resolveReticulumRemoteHashLabel(hash);
 }
 
 export default function GamesPanel({ isActive }: GamesPanelProps) {
@@ -49,6 +53,8 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   const actionBusy = useReticulumGamesStore((s) => s.actionBusy);
   const lastActionResult = useReticulumGamesStore((s) => s.lastActionResult);
   const selectSession = useReticulumGamesStore((s) => s.selectSession);
+  // Re-resolve opponent labels when peer/contact names arrive or change.
+  useReticulumPeerStore((s) => s.peersRevision);
 
   const [filter, setFilter] = useState<GamesFilter>('all');
   const [challengeHash, setChallengeHash] = useState('');

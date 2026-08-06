@@ -5,11 +5,29 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import type { GameSession } from '@/shared/games-types';
 
 import GamesPanel from './GamesPanel';
 
 const peerHash = 'a'.repeat(32);
+const peerHashPrefix = peerHash.slice(0, 12);
+
+function seedPeerDisplayName(displayName: string, destinationHash = peerHash) {
+  useReticulumPeerStore.setState((s) => ({
+    peers: new Map([
+      [
+        destinationHash,
+        {
+          destination_hash: destinationHash,
+          display_name: displayName,
+          hops: 1,
+        },
+      ],
+    ]),
+    peersRevision: s.peersRevision + 1,
+  }));
+}
 
 function makeSession(overrides: Partial<GameSession> = {}): GameSession {
   return {
@@ -50,6 +68,7 @@ async function renderAndSelectSession(session: GameSession) {
 describe('GamesPanel', () => {
   beforeEach(() => {
     useReticulumGamesStore.getState().clear();
+    useReticulumPeerStore.getState().clearPeers();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(window.electronAPI.reticulum.games.getStatus).mockClear();
     vi.mocked(window.electronAPI.reticulum.games.getStatus).mockResolvedValue({
@@ -84,6 +103,35 @@ describe('GamesPanel', () => {
     await renderAndSelectSession(makeSession());
 
     expect(screen.getByRole('group', { name: 'Tic-Tac-Toe board' })).toBeInTheDocument();
+  });
+
+  it('shows the peer display name instead of a hash prefix when known', async () => {
+    seedPeerDisplayName('Zeva');
+    await renderAndSelectSession(makeSession());
+
+    expect(screen.getByRole('button', { name: /game with Zeva/i })).toBeInTheDocument();
+    expect(screen.getByText('Opponent: Zeva')).toBeInTheDocument();
+    expect(screen.queryByText(peerHashPrefix)).not.toBeInTheDocument();
+    expect(screen.queryByText(peerHash.slice(0, 10))).not.toBeInTheDocument();
+  });
+
+  it('falls back to a short hash prefix when the peer is unknown', async () => {
+    await renderAndSelectSession(makeSession());
+
+    expect(screen.getByRole('button', { name: /game with aaaaaaaaaaaa/i })).toBeInTheDocument();
+    expect(screen.getByText(`Opponent: ${peerHashPrefix}`)).toBeInTheDocument();
+  });
+
+  it('updates the opponent label when a peer name arrives later', async () => {
+    await renderAndSelectSession(makeSession());
+    expect(screen.getByText(`Opponent: ${peerHashPrefix}`)).toBeInTheDocument();
+
+    act(() => {
+      seedPeerDisplayName('Zeva');
+    });
+
+    expect(await screen.findByText('Opponent: Zeva')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /game with Zeva/i })).toBeInTheDocument();
   });
 
   it('sends a challenge action for a valid peer hash', async () => {

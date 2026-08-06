@@ -1,5 +1,5 @@
 /**
- * Resolve a human label for the voice overlay remote_identity field
+ * Resolve a human label for a Reticulum remote hash
  * (identity hash or LXMF destination hash).
  */
 
@@ -24,9 +24,9 @@ function labelForPeerMaps(key: string, maps: Iterable<Map<string, ReticulumPeer>
 }
 
 /**
- * Prefer peer/contact display name for a voice remote hash; fall back to a short hash prefix.
+ * Prefer peer/contact display name for a remote hash; fall back to a short hash prefix.
  */
-export function resolveReticulumVoiceRemoteLabel(remoteIdentity: string): string {
+export function resolveReticulumRemoteHashLabel(remoteIdentity: string): string {
   const key = canonicalizeReticulumDestinationHash(remoteIdentity);
   if (!key) {
     const trimmed = remoteIdentity.trim();
@@ -55,4 +55,9 @@ export function resolveReticulumVoiceRemoteLabel(remoteIdentity: string): string
   }
 
   return key.slice(0, 12);
+}
+
+/** Voice overlay alias — same resolution as {@link resolveReticulumRemoteHashLabel}. */
+export function resolveReticulumVoiceRemoteLabel(remoteIdentity: string): string {
+  return resolveReticulumRemoteHashLabel(remoteIdentity);
 }
