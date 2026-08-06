@@ -118,6 +118,9 @@ impl PathRequestGate {
 /// Bound on Direct→PN fallback hash tracking (one entry per outbound message).
 const PN_FALLBACK_ATTEMPTED_MAX: usize = 256;
 
+/// Correlatable ids for an in-flight Propagated deposit (`pn_hash`, optional `transient_id`).
+type PendingPnDeposit = ([u8; 16], Option<[u8; 32]>);
+
 pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
     link_delivery: LinkDeliveryManager,
@@ -143,6 +146,8 @@ pub struct LxmfOutboundDriver {
     direct_path_failovers: HashMap<[u8; 32], DirectPathFailoverState>,
     /// When set, remote propagation sync holds a Link to this dest — do not race deposits.
     propagation_sync_target: Option<[u8; 16]>,
+    /// In-flight Propagated deposits: message_hash → (pn_hash, transient_id).
+    pending_pn_deposits: HashMap<[u8; 32], PendingPnDeposit>,
     self_lxmf_hash: String,
     self_display_name: String,
 }
@@ -174,6 +179,7 @@ impl LxmfOutboundDriver {
             pn_fallback_attempted: HashSet::new(),
             direct_path_failovers: HashMap::new(),
             propagation_sync_target: None,
+            pending_pn_deposits: HashMap::new(),
             self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
         };
@@ -226,6 +232,11 @@ impl LxmfOutboundDriver {
     /// Mark (or clear) the remote PN currently owned by an in-flight propagation sync.
     pub fn set_propagation_sync_target(&mut self, dest: Option<[u8; 16]>) {
         self.propagation_sync_target = dest;
+    }
+
+    /// Remote PN currently reserved for user Sync / deposit (blocks host peer-sync).
+    pub fn propagation_sync_target(&self) -> Option<[u8; 16]> {
+        self.propagation_sync_target
     }
 
     /// True when a packed deposit / Direct session already holds a Link to `dest`.
@@ -479,18 +490,30 @@ impl LxmfOutboundDriver {
             return;
         }
         let hops = route_hops_for(&self.route_hops, prop_hash);
-        tracing::debug!(
-            prop = %prop_hex,
+        let message_hash_hex = message.hash.as_ref().map(hex::encode);
+        let transient_id_hex = message.transient_id.as_ref().map(hex::encode);
+        if let Some(hash) = message.hash {
+            self.pending_pn_deposits
+                .insert(hash, (prop_hash, message.transient_id));
+        }
+        tracing::info!(
+            target: "propagation-deposit",
+            message_hash = message_hash_hex.as_deref().unwrap_or(""),
+            transient_id = transient_id_hex.as_deref().unwrap_or(""),
+            pn_hash = %prop_hex,
             dest = %hex::encode(message.destination_hash),
             hops,
             packed_len = packed.len(),
             attempts,
-            "DeliverPropagated: starting packed delivery"
+            "outbound PN deposit starting packed delivery"
         );
         if let Err(err) = self
             .link_delivery
             .start_packed_delivery(message, prop_hash, hops, packed, false)
         {
+            if let Some(hash) = err.message.hash {
+                self.pending_pn_deposits.remove(&hash);
+            }
             let reason = err.error.to_string();
             tracing::warn!(
                 prop = %prop_hex,
@@ -825,7 +848,9 @@ impl LxmfOutboundDriver {
         match result {
             DeliveryResult::Complete { msg_hash, .. } => {
                 if let Some(hash) = msg_hash {
-                    let method = if self.pn_fallback_attempted.contains(&hash) {
+                    let was_pn_fallback = self.pn_fallback_attempted.contains(&hash);
+                    let pending_deposit = self.pending_pn_deposits.remove(&hash);
+                    let method = if was_pn_fallback || pending_deposit.is_some() {
                         Some("propagated")
                     } else {
                         None
@@ -833,12 +858,28 @@ impl LxmfOutboundDriver {
                     self.pn_fallback_attempted.remove(&hash);
                     self.direct_path_failovers.remove(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
+                    if let Some((pn_hash, transient_id)) = pending_deposit {
+                        tracing::info!(
+                            target: "propagation-deposit",
+                            message_hash = %hex::encode(hash),
+                            transient_id = %transient_id
+                                .as_ref()
+                                .map(hex::encode)
+                                .unwrap_or_default(),
+                            pn_hash = %hex::encode(pn_hash),
+                            pn_fallback = was_pn_fallback,
+                            "outbound PN deposit Completes"
+                        );
+                    }
                     emit_outbound_status_by_hash(event_tx, &hash, "delivered", method);
                 }
             }
             DeliveryResult::Rejected {
                 message, reason, ..
             } => {
+                if let Some(hash) = message.hash {
+                    self.pending_pn_deposits.remove(&hash);
+                }
                 tracing::warn!(
                     dest = %hex::encode(message.destination_hash),
                     method = %delivery_method_label(message.method),
@@ -857,6 +898,9 @@ impl LxmfOutboundDriver {
                 dest_hash,
                 ..
             } => {
+                if let Some(hash) = message.hash {
+                    self.pending_pn_deposits.remove(&hash);
+                }
                 tracing::warn!(
                     dest = %hex::encode(message.destination_hash),
                     link_dest = %hex::encode(dest_hash),

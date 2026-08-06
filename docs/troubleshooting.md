@@ -1275,9 +1275,24 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Symptoms**: Local Host propagation node is enabled but peers never hear your PN announce / cannot `/offer` or `/get`.
 
-**Cause**: Hosting requires a live stack with identity signing key; enable starts `lxmf.propagation` LinkManager + announce loop.
+**Cause**: Hosting requires a live stack with identity signing key; enable starts `lxmf.propagation` LinkManager + announce loop (Resource deposit ingress + stamp validation into the local store, `/offer` admission, and outbound peer inventory sync when idle).
 
-**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]`. Tune announce interval under **Advanced PN hosting**.
+**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]` / `[propagation-deposit]`. Tune announce interval under **Advanced PN hosting**. Peers depositing to your host should see your `lxmf.propagation` hash; bad stamps are rejected and logged under `propagation-deposit`.
+
+### Reticulum: Stored at PN but Sync leaves Chat empty
+
+**Symptoms**: Sender shows **Stored at propagation node** (Propagated Completes). Recipient runs **Sync messages** (progress reaches Complete / HaveAll) but the DM never appears in Chat. Preferred PN hashes may differ between the two clients.
+
+**Cause (any-node model)**: LXMF does **not** require both parties to prefer the same PN. Deposit on PN A and retrieve via Sync from PN B is valid when autopeer/static peering moves inventory. Empty Chat after Sync is usually a fabric/retrieve/ingest gap (mail never reached the synced node, stamp/admission drop on a host PN, or inbound ring not catch-up’d into Chat) — not “wrong preferred PN.”
+
+**Do not** tell users they must share the same preferred PN. Prefer log correlation instead:
+
+1. Sender Device log: `propagation-deposit` with `message_hash`, `transient_id`, `pn_hash` (deposit Completes).
+2. Recipient (or Host PN) log: `propagation-retrieve` with matching `message_hash` / `transient_id` after Sync, plus `retrieve_mode=have_all|transfer`.
+3. Renderer: `[catchUpRecentInboundLxmf] … reason=propagation_sync` or `propagation-retrieve catch-up after sync Completes count=N` (`count=0 (empty ring)` means Sync Completes with no new inbound for Chat).
+4. Confirm remote Sync Completes and that Host PN (if used) shows `[propagation-deposit] local PN accepted stamped propagated blob`.
+
+**Fix**: Retry Sync after path/announce settle; if using local Host, confirm ingress logs and peer sync ticks (`local host queued outbound peer inventory sync`). Export developer bundles from both sides and `rg 'propagation-deposit|propagation-retrieve'`.
 
 ### Reticulum PN hosting policy apply fails
 
