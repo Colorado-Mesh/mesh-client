@@ -44,9 +44,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 
   it('marks everConfigured after successful initConn so auto-connect can reconnect', () => {
-    expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreRoomReconnectSyncRef\.current\(\);[\s\S]{0,80}meshcoreEverConfiguredRef\.current = true/,
+    // Live-socket path calls roomReconnectSync; burst-complete dead-bridge path skips it.
+    // Both paths must latch everConfigured.
+    expect(RUNTIME_SOURCE).toContain('meshcoreRoomReconnectSyncRef.current()');
+    expect(RUNTIME_SOURCE).toContain(
+      'initConn TCP burst-complete with dead bridge — skip post-connect RPCs',
     );
+    expect(RUNTIME_SOURCE).toMatch(/meshcoreEverConfiguredRef\.current = true;\s*\n\s*\},/);
   });
 
   it('prepareRfConnect preserves reconnect state when requested', () => {
@@ -268,41 +272,46 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('notifies immediately on main-process TCP socket disconnect (regression)', () => {
     // Unlike serial, MeshCore's TCP transport has no fallback watchdog at all (see
     // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
-    // is the only automatic recovery path for a dropped TCP connection (including mid-init).
+    // is the only automatic recovery path for a dropped TCP connection.
     expect(RUNTIME_SOURCE).toMatch(
-      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?connectingTcp[\s\S]{0,400}meshcoreTcpBridgeDeadRef\.current = true;[\s\S]{0,200}handleMeshcoreConnectionLostRef\.current\(\)/,
+      /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?connectingTcp[\s\S]{0,400}meshcoreTcpBridgeDeadRef\.current = true;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
     expect(RUNTIME_SOURCE).toContain("meshcoreConnectTypeRef.current === 'tcp'");
-    // Must not abort-only before configured (Neal: that looked like a single failed try).
-    expect(RUNTIME_SOURCE).not.toContain(
-      'TCP closed before everConfigured — abort initConn (defer reconnect until configured)',
+  });
+
+  it('defers TCP reconnect after init burst capture instead of aborting initConn', () => {
+    expect(RUNTIME_SOURCE).toContain('meshcoreTcpInitBurstCapturedRef');
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP closed after init burst — defer reconnect until configured',
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /meshcoreTcpInitBurstCapturedRef\.current &&\s*!meshcoreDeviceConfiguredRef\.current[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
+    );
+    expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — reconnecting dead bridge');
+    expect(RUNTIME_SOURCE).toContain(
+      'initConn getChannels skipped (TCP burst-complete, bridge dead)',
     );
   });
 
-  it('hard-aborts TCP initConn before contacts→UI and getChannels when bridge is dead', () => {
+  it('hard-aborts TCP initConn before burst capture when bridge is dead', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreTcpBridgeDeadRef.current');
+    expect(RUNTIME_SOURCE).toContain('meshcoreTcpInitBurstCapturedRef.current = true');
     const assertFnIdx = RUNTIME_SOURCE.indexOf('const assertInitConnStillLive = (): void =>');
     expect(assertFnIdx).toBeGreaterThan(-1);
+    expect(RUNTIME_SOURCE.slice(assertFnIdx, assertFnIdx + 600)).toMatch(
+      /tcpBurstOk[\s\S]*?return;/,
+    );
+    const burstSetIdx = RUNTIME_SOURCE.indexOf(
+      'meshcoreTcpInitBurstCapturedRef.current = true',
+      assertFnIdx,
+    );
+    expect(burstSetIdx).toBeGreaterThan(assertFnIdx);
     const getContactsLogIdx = RUNTIME_SOURCE.indexOf(
       'initConn getContacts ${getContactsMs}ms',
       assertFnIdx,
     );
-    expect(getContactsLogIdx).toBeGreaterThan(assertFnIdx);
-    const firstAssertAfterContacts = RUNTIME_SOURCE.indexOf(
-      'assertInitConnStillLive()',
-      getContactsLogIdx,
-    );
-    const contactsToUiIdx = RUNTIME_SOURCE.indexOf('initConn contacts→UI', getContactsLogIdx);
-    const getChannelsStartIdx = RUNTIME_SOURCE.indexOf(
-      'const getChannelsStart = performance.now()',
-      getContactsLogIdx,
-    );
-    expect(firstAssertAfterContacts).toBeGreaterThan(-1);
-    expect(contactsToUiIdx).toBeGreaterThan(firstAssertAfterContacts);
-    expect(getChannelsStartIdx).toBeGreaterThan(contactsToUiIdx);
-    expect(
-      RUNTIME_SOURCE.lastIndexOf('assertInitConnStillLive()', getChannelsStartIdx),
-    ).toBeGreaterThan(contactsToUiIdx);
+    expect(getContactsLogIdx).toBeGreaterThan(-1);
+    expect(burstSetIdx).toBeGreaterThan(getContactsLogIdx);
   });
 
   it('reuses discoverSelf getSelfInfo on TCP sequential initConn', () => {
