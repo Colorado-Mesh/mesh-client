@@ -4,7 +4,7 @@ Local overlays applied via `pnpm-workspace.yaml` → `patchedDependencies`. When
 
 | Patch | Upstream | Upstream PR / status |
 | ----- | -------- | -------------------- |
-| `@liamcottle__meshcore.js@1.13.0.patch` | [meshcore-dev/meshcore.js](https://github.com/meshcore-dev/meshcore.js) | Split: [#29](https://github.com/meshcore-dev/meshcore.js/pull/29), [#30](https://github.com/meshcore-dev/meshcore.js/pull/30), [#31](https://github.com/meshcore-dev/meshcore.js/pull/31), [#32](https://github.com/meshcore-dev/meshcore.js/pull/32), [#33](https://github.com/meshcore-dev/meshcore.js/pull/33) |
+| `@liamcottle__meshcore.js@1.13.0.patch` | [meshcore-dev/meshcore.js](https://github.com/meshcore-dev/meshcore.js) | Open: [#30](https://github.com/meshcore-dev/meshcore.js/pull/30), [#31](https://github.com/meshcore-dev/meshcore.js/pull/31), [#32](https://github.com/meshcore-dev/meshcore.js/pull/32), [#33](https://github.com/meshcore-dev/meshcore.js/pull/33); [#29](https://github.com/meshcore-dev/meshcore.js/pull/29) closed (unnecessary) |
 | `@jsr__meshtastic__core@2.6.6.patch` | [meshtastic/web](https://github.com/meshtastic/web) (`packages/sdk`) | [#1312](https://github.com/meshtastic/web/pull/1312) |
 | `@jsr__meshtastic__transport-web-serial@0.2.5.patch` | [meshtastic/web](https://github.com/meshtastic/web) (`packages/transport-web-serial`) | Fixed on upstream `main` (per-instance `toDeviceStream` + abort); keep patch until npm/`@jsr` package bump includes it |
 | `usb@2.18.0.patch` | [node-usb/node-usb](https://github.com/node-usb/node-usb) | [#964](https://github.com/node-usb/node-usb/pull/964) |
@@ -13,21 +13,21 @@ Local overlays applied via `pnpm-workspace.yaml` → `patchedDependencies`. When
 
 ## @liamcottle/meshcore.js@1.13.0
 
-Protocol / companion-radio fixes. Upstreamed as five focused PRs (npm package name remains `@liamcottle/meshcore.js`; repo lives under `meshcore-dev`).
+Protocol / companion-radio fixes. Upstreamed as focused PRs (npm package name remains `@liamcottle/meshcore.js`; repo lives under `meshcore-dev`).
 
-| PR | Change |
-| -- | ------ |
-| [#29](https://github.com/meshcore-dev/meshcore.js/pull/29) | Empty login password → zero-byte payload (read-only ACL) |
-| [#30](https://github.com/meshcore-dev/meshcore.js/pull/30) | TraceData SNR count from `path_sz` flags |
-| [#31](https://github.com/meshcore-dev/meshcore.js/pull/31) | DeviceInfo v3+ fields + `setPathHashMode` (cmd 61) |
-| [#32](https://github.com/meshcore-dev/meshcore.js/pull/32) | `LoginFail` (0x86) push handler |
-| [#33](https://github.com/meshcore-dev/meshcore.js/pull/33) | `readString` stops at embedded NUL |
+| PR | Change | Status |
+| -- | ------ | ------ |
+| [#29](https://github.com/meshcore-dev/meshcore.js/pull/29) | Empty login password → zero-byte payload (read-only ACL) | **Closed unnecessary** — stock `writeString("")` already emits 0 bytes; hunk removed from this patch. Room/repeater login uses in-app `buildSendLoginFrame`. |
+| [#30](https://github.com/meshcore-dev/meshcore.js/pull/30) | TraceData SNR count from `path_sz` flags | Open — still in this patch |
+| [#31](https://github.com/meshcore-dev/meshcore.js/pull/31) | DeviceInfo v3+ fields + `setPathHashMode` (cmd 61) | Open — still in this patch |
+| [#32](https://github.com/meshcore-dev/meshcore.js/pull/32) | `LoginFail` (0x86) push handler | Open — still in this patch |
+| [#33](https://github.com/meshcore-dev/meshcore.js/pull/33) | `readString` stops at embedded NUL | Open — still in this patch |
 
 **Kept local-only (not upstreamed):** silence companion push codes `25` / `0x8E` / `0x8F`, and downgrade unhandled-frame `console.log` → `console.debug`.
 
 ### Sunset
 
-When the five PRs merge and a release newer than `1.13.0` includes them, drop the corresponding hunks (or the whole patch if only local-only hunks remain), bump the dependency, and remove this entry from `WATCH_ENTRIES` if no patch remains.
+When [#30](https://github.com/meshcore-dev/meshcore.js/pull/30)–[#33](https://github.com/meshcore-dev/meshcore.js/pull/33) merge and a release newer than `1.13.0` includes them, drop the corresponding hunks (or the whole patch if only local-only hunks remain), bump the dependency, and remove this entry from `WATCH_ENTRIES` if no patch remains. Do not re-add the #29 empty-password hunk.
 
 ## @jsr/meshtastic__core@2.6.6
 
