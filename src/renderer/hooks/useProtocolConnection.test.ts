@@ -40,6 +40,7 @@ function createMeshtasticSessionStub(): MeshtasticSessionApi {
 
 function createMeshcoreSessionStub(): MeshcoreSessionApi {
   return {
+    connect: vi.fn().mockResolvedValue(undefined),
     prepareRfConnect: vi.fn().mockResolvedValue(undefined),
     attachRfSession: vi.fn().mockResolvedValue(undefined),
     handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
@@ -100,9 +101,35 @@ describe('useProtocolConnect (driver-first)', () => {
     expect(meshtastic.attachRfSession).not.toHaveBeenCalled();
   });
 
-  it('calls MeshCore handleRfConnectFailure when attach fails', async () => {
+  it('maps http to tcp and delegates MeshCore connect to session.connect (not prepare/attach)', async () => {
     const meshcore = createMeshcoreSessionStub();
-    meshcore.attachRfSession = vi.fn().mockRejectedValue(new Error('init failed'));
+    registerMeshcoreSession(meshcore);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await result.current('meshcore', 'http', '10.0.0.1', undefined);
+
+    expect(meshcore.connect).toHaveBeenCalledWith('tcp', '10.0.0.1', undefined);
+    expect(meshcore.prepareRfConnect).not.toHaveBeenCalled();
+    expect(meshcore.attachRfSession).not.toHaveBeenCalled();
+    expect(meshcore.handleRfConnectFailure).not.toHaveBeenCalled();
+    expect(mockDriverConnect).not.toHaveBeenCalled();
+  });
+
+  it('maps MeshCore tcp UI type to session.connect tcp', async () => {
+    const meshcore = createMeshcoreSessionStub();
+    registerMeshcoreSession(meshcore);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await result.current('meshcore', 'tcp', '192.168.88.29:5050', undefined);
+
+    expect(meshcore.connect).toHaveBeenCalledWith('tcp', '192.168.88.29:5050', undefined);
+    expect(meshcore.prepareRfConnect).not.toHaveBeenCalled();
+    expect(mockDriverConnect).not.toHaveBeenCalled();
+  });
+
+  it('propagates MeshCore session.connect failures without prepare/attach failure handling', async () => {
+    const meshcore = createMeshcoreSessionStub();
+    meshcore.connect = vi.fn().mockRejectedValue(new Error('init failed'));
     registerMeshcoreSession(meshcore);
     const { result } = renderHook(() => useProtocolConnect());
 
@@ -110,18 +137,8 @@ describe('useProtocolConnect (driver-first)', () => {
       'init failed',
     );
 
-    expect(meshcore.handleRfConnectFailure).toHaveBeenCalledWith('serial', 'id-meshtastic-driver');
-  });
-
-  it('maps http to tcp and attaches MeshCore session', async () => {
-    const meshcore = createMeshcoreSessionStub();
-    registerMeshcoreSession(meshcore);
-    const { result } = renderHook(() => useProtocolConnect());
-
-    await result.current('meshcore', 'http', '10.0.0.1', undefined);
-
-    expect(meshcore.prepareRfConnect).toHaveBeenCalledWith('tcp');
-    expect(meshcore.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'tcp');
+    expect(meshcore.connect).toHaveBeenCalledWith('serial', undefined, undefined);
+    expect(meshcore.handleRfConnectFailure).not.toHaveBeenCalled();
   });
 });
 
@@ -190,7 +207,7 @@ describe('useProtocolConnectionActions', () => {
     expect(meshtastic.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'serial');
   });
 
-  it('maps http to tcp for meshcore driver-first connect', async () => {
+  it('maps http to tcp via session.connect for meshcore (UI Connect path)', async () => {
     const meshcore = createMeshcoreSessionStub();
     registerMeshcoreSession(meshcore);
 
@@ -198,8 +215,10 @@ describe('useProtocolConnectionActions', () => {
 
     await result.current.connect('http', '192.168.1.1', undefined);
 
-    expect(meshcore.prepareRfConnect).toHaveBeenCalledWith('tcp');
-    expect(meshcore.attachRfSession).toHaveBeenCalledWith('id-meshtastic-driver', 'tcp');
+    expect(meshcore.connect).toHaveBeenCalledWith('tcp', '192.168.1.1', undefined);
+    expect(meshcore.prepareRfConnect).not.toHaveBeenCalled();
+    expect(meshcore.attachRfSession).not.toHaveBeenCalled();
+    expect(mockDriverConnect).not.toHaveBeenCalled();
   });
 
   it('exposes state from the connection store for the protocol identity', () => {

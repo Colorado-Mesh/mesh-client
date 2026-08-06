@@ -300,6 +300,25 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
+  it('registers runtime connect on MeshcoreSessionApi for UI Connect path (Neal SoftAP)', () => {
+    // Manual Connect must use session.connect → runtime connect so TCP burst-complete
+    // deferred reconnect and connectionParams latch run (useProtocolConnect must not
+    // reassemble prepare/driver/attach alone — #792 params gate + burst-complete).
+    expect(RUNTIME_SOURCE).toMatch(
+      /registerMeshcoreSession\(\{[\s\S]*?connect,[\s\S]*?prepareRfConnect,/,
+    );
+    const protocolConnectSource = readFileSync(
+      join(__dirname, '../hooks/useProtocolConnection.ts'),
+      'utf-8',
+    );
+    expect(protocolConnectSource).toContain(
+      'getMeshcoreSession().connect(mcType, httpAddress, blePeripheralId)',
+    );
+    expect(protocolConnectSource).not.toMatch(
+      /protocol === 'meshcore'[\s\S]*?prepareRfConnect\(mcType\)/,
+    );
+  });
+
   it('hard-aborts TCP initConn before burst capture when bridge is dead', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreTcpBridgeDeadRef.current');
     expect(RUNTIME_SOURCE).toContain('meshcoreTcpInitBurstCapturedRef.current = true');

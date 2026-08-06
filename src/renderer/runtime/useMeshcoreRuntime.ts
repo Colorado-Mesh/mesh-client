@@ -7320,6 +7320,7 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     registerMeshcoreSession({
+      connect,
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,
@@ -7329,6 +7330,7 @@ export function useMeshcoreRuntime() {
     });
     return () => registerMeshcoreSession(null);
   }, [
+    connect,
     prepareRfConnect,
     attachRfSession,
     handleRfConnectFailure,

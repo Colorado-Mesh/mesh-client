@@ -3,6 +3,16 @@ export type MeshcoreRfTransportType = 'ble' | 'serial' | 'tcp';
 
 /** RF session lifecycle API registered by the MeshCore runtime mount ([#375]/[#377]). */
 export interface MeshcoreSessionApi {
+  /**
+   * Full manual RF connect (Connection panel). Owns prepare → open → attach → success latch
+   * (session params + TCP burst-complete deferred reconnect). Prefer this over assembling
+   * prepareRfConnect / attachRfSession in UI hooks.
+   */
+  connect: (
+    type: MeshcoreRfTransportType,
+    httpAddress?: string,
+    blePeripheralId?: string,
+  ) => Promise<void>;
   prepareRfConnect: (type: MeshcoreRfTransportType) => Promise<void>;
   attachRfSession: (driverIdentityId: string, type: MeshcoreRfTransportType) => Promise<void>;
   handleRfConnectFailure: (

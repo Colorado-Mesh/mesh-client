@@ -42,8 +42,9 @@ function deviceStateFromConnection(conn: ReturnType<typeof useConnectionByProtoc
 }
 
 /**
- * RF connect: `ConnectionDriver` opens the transport; protocol runtime attaches wire listeners,
- * configure/initConn, and reconnect state ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
+ * RF connect: MeshCore uses the runtime session `connect()` (full success path including TCP
+ * burst-complete deferred reconnect). Meshtastic keeps prepare → ConnectionDriver → attach
+ * ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
  */
 export function useProtocolConnect(): (
   protocol: MeshProtocol,
@@ -60,23 +61,11 @@ export function useProtocolConnect(): (
       httpAddress?: string,
       blePeripheralId?: string,
     ) => {
-      const params = protocolTransportParams(
-        protocol,
-        rfConnectionTransportOpts(type, { httpAddress, blePeripheralId }),
-      );
-
       if (protocol === 'meshcore') {
+        // Delegate to runtime connect — do not reassemble prepare/driver/attach here (Neal SoftAP:
+        // that skipped session params + TCP deferred-reconnect after #792 / burst-complete).
         const mcType = meshcoreConnectionType(type);
-        const meshcore = getMeshcoreSession();
-        await meshcore.prepareRfConnect(mcType);
-        let driverIdentityId: string | undefined;
-        try {
-          driverIdentityId = await driverConnect('meshcore', params);
-          await meshcore.attachRfSession(driverIdentityId, mcType);
-        } catch (err) {
-          await meshcore.handleRfConnectFailure(mcType, driverIdentityId);
-          throw err;
-        }
+        await getMeshcoreSession().connect(mcType, httpAddress, blePeripheralId);
         return;
       }
 
@@ -85,6 +74,10 @@ export function useProtocolConnect(): (
         return;
       }
 
+      const params = protocolTransportParams(
+        protocol,
+        rfConnectionTransportOpts(type, { httpAddress, blePeripheralId }),
+      );
       const meshtastic = getMeshtasticSession();
       await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
       let driverIdentityId: string | undefined;
