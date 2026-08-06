@@ -102,14 +102,25 @@ export function initLogFile(): void {
     if (fs.existsSync(p)) {
       const { size } = fs.statSync(p);
       if (size > 0) {
+        // Rename current → temp first so a failed replace cannot leave us with neither
+        // current nor prior backup.
+        const staging = `${backup}.staging-${process.pid}-${Date.now()}`;
+        fs.renameSync(p, staging);
         try {
           if (fs.existsSync(backup)) {
             fs.unlinkSync(backup);
           }
+          fs.renameSync(staging, backup);
         } catch (e) {
-          debugLogService('[log-service] initLogFile unlink backup failed', e);
+          debugLogService('[log-service] initLogFile promote staging backup failed', e);
+          try {
+            if (!fs.existsSync(p) && fs.existsSync(staging)) {
+              fs.renameSync(staging, p);
+            }
+          } catch (restoreErr) {
+            debugLogService('[log-service] initLogFile restore staging failed', restoreErr);
+          }
         }
-        fs.renameSync(p, backup);
       }
     }
   } catch (e) {

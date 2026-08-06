@@ -1,7 +1,8 @@
 /**
  * Node ids the user explicitly deleted from the MeshCore contact list.
  * Prevents `mergeMeshcoreChatStubNodes` / store upserts from resurrecting them until the
- * radio re-adds the contact (or the set is cleared).
+ * radio re-adds the contact (or the set is cleared via `clearMeshcoreLocallyDeletedContact`
+ * when a live `getContacts` / `fromRadio` apply includes the id).
  */
 const locallyDeleted = new Set<number>();
 
@@ -15,6 +16,11 @@ export function clearMeshcoreLocallyDeletedContact(nodeId: number): void {
 
 export function isMeshcoreLocallyDeletedContact(nodeId: number): boolean {
   return locallyDeleted.has(nodeId >>> 0);
+}
+
+/** True when UI/DB upsert paths may apply this contact id (not user-tombstoned). */
+export function shouldApplyMeshcoreContact(nodeId: number): boolean {
+  return nodeId > 0 && !isMeshcoreLocallyDeletedContact(nodeId);
 }
 
 export function filterOutMeshcoreLocallyDeletedContacts<T>(nodes: Map<number, T>): Map<number, T> {

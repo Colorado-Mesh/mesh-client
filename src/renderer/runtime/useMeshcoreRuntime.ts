@@ -167,6 +167,7 @@ import {
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
+import { isMeshcoreTcpBurstDeadBridge } from '../lib/meshcore/meshcoreTcpInitBurst';
 import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_DATA,
@@ -206,6 +207,7 @@ import {
   clearMeshcoreLocallyDeletedContact,
   filterOutMeshcoreLocallyDeletedContacts,
   markMeshcoreLocallyDeletedContact,
+  shouldApplyMeshcoreContact,
 } from '../lib/meshcoreLocallyDeletedContacts';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
@@ -1069,7 +1071,9 @@ export function useMeshcoreRuntime() {
         myNodeNumRef.current,
       );
       void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
-      const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
+      const mergedInitial = filterOutMeshcoreLocallyDeletedContacts(
+        mergeStubNodesFromMeshcoreMessages(initial, mapped),
+      );
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
 
       meshcoreLastPersistedNodesRef.current = new Map(mergedInitial);
@@ -1309,7 +1313,7 @@ export function useMeshcoreRuntime() {
       const resolvedId = resolved.senderId;
       const displayName = resolved.displayName;
       const storeId = meshcoreIdentityIdRef.current;
-      if (resolvedId !== 0) {
+      if (resolvedId !== 0 && shouldApplyMeshcoreContact(resolvedId)) {
         if (storeId) {
           ensureMeshcoreChatSenderInNodeStore(storeId, resolvedId, {
             lastHeardAtMs: ts,
@@ -1337,6 +1341,8 @@ export function useMeshcoreRuntime() {
         });
       }
       if (
+        resolvedId !== 0 &&
+        shouldApplyMeshcoreContact(resolvedId) &&
         !meshcoreIsChatStubNodeId(resolvedId) &&
         !pubKeyMapRef.current.has(resolvedId) &&
         !mqttPlaceholderSavedRef.current.has(resolvedId)
@@ -1626,6 +1632,7 @@ export function useMeshcoreRuntime() {
 
   const handleMeshcorePathUpdatedFromIngest = useCallback(
     (nodeId: number, publicKey: Uint8Array, isNewContact: boolean) => {
+      if (!shouldApplyMeshcoreContact(nodeId)) return;
       registerMeshcorePubKey(nodeId, publicKey);
       copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
       if (!meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId)) {
@@ -1886,7 +1893,11 @@ export function useMeshcoreRuntime() {
         }
         if (meshcoreExplicitDisconnectRef.current) return;
         handleMeshcoreConnectionLostRef.current();
-      })();
+      })().catch((e: unknown) => {
+        console.warn(
+          '[useMeshcoreRuntime] BLE poweredOn settle/reconnect ' + errLikeToLogString(e),
+        );
+      });
     });
   }, []);
 
@@ -2312,10 +2323,11 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
       );
       assertInitConnStillLive();
-      const tcpBurstDeadBridge =
-        transportType === 'tcp' &&
-        meshcoreTcpInitBurstCapturedRef.current &&
-        meshcoreTcpBridgeDeadRef.current;
+      const tcpBurstDeadBridge = isMeshcoreTcpBurstDeadBridge({
+        transportType,
+        burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+        bridgeDead: meshcoreTcpBridgeDeadRef.current,
+      });
       // TCP defers status=configured (and room auto-login) until after channels below.
       if (!deferConfiguredUntilRadioInit) {
         triggerRoomAutoLoginRef.current();
@@ -2323,10 +2335,11 @@ export function useMeshcoreRuntime() {
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       if (sequentialRadioInit) {
-        const skipChannelsForDeadBurst =
-          transportType === 'tcp' &&
-          meshcoreTcpInitBurstCapturedRef.current &&
-          meshcoreTcpBridgeDeadRef.current;
+        const skipChannelsForDeadBurst = isMeshcoreTcpBurstDeadBridge({
+          transportType,
+          burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+          bridgeDead: meshcoreTcpBridgeDeadRef.current,
+        });
         if (skipChannelsForDeadBurst) {
           console.debug(
             '[useMeshcoreRuntime] initConn getChannels skipped (TCP burst-complete, bridge dead)',
@@ -2345,27 +2358,32 @@ export function useMeshcoreRuntime() {
               setupGen,
               (async () => {
                 let settled = false;
-                const deadWatch = new Promise<never>((_, reject) => {
-                  const id = setInterval(() => {
-                    if (
-                      settled ||
-                      !(
-                        transportType === 'tcp' &&
-                        meshcoreTcpInitBurstCapturedRef.current &&
-                        meshcoreTcpBridgeDeadRef.current
-                      )
-                    ) {
-                      return;
-                    }
-                    clearInterval(id);
-                    reject(new Error('meshcore:tcp-write: no active socket'));
-                  }, 20);
-                  void channelsWork.finally(() => {
-                    settled = true;
-                    clearInterval(id);
-                  });
-                });
-                return await Promise.race([channelsWork, deadWatch]);
+                const deadWatch =
+                  transportType === 'tcp'
+                    ? new Promise<never>((_, reject) => {
+                        const id = setInterval(() => {
+                          if (
+                            settled ||
+                            !isMeshcoreTcpBurstDeadBridge({
+                              transportType,
+                              burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+                              bridgeDead: meshcoreTcpBridgeDeadRef.current,
+                            })
+                          ) {
+                            return;
+                          }
+                          clearInterval(id);
+                          reject(new Error('meshcore:tcp-write: no active socket'));
+                        }, 20);
+                        void channelsWork.finally(() => {
+                          settled = true;
+                          clearInterval(id);
+                        });
+                      })
+                    : null;
+                return deadWatch
+                  ? await Promise.race([channelsWork, deadWatch])
+                  : await channelsWork;
               })(),
             );
             setChannels(
@@ -2424,10 +2442,11 @@ export function useMeshcoreRuntime() {
         }
       }
 
-      const skipTcpSocketWork =
-        transportType === 'tcp' &&
-        meshcoreTcpInitBurstCapturedRef.current &&
-        meshcoreTcpBridgeDeadRef.current;
+      const skipTcpSocketWork = isMeshcoreTcpBurstDeadBridge({
+        transportType,
+        burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+        bridgeDead: meshcoreTcpBridgeDeadRef.current,
+      });
 
       if (!skipTcpSocketWork) {
         // Re-resolve map/App GPS after the node store picks up getSelfInfo advert coords (same tick as setNodes is too early).
@@ -2640,7 +2659,8 @@ export function useMeshcoreRuntime() {
         console.debug(
           '[useMeshcoreRuntime] initConn TCP burst-complete with dead bridge — skip post-connect RPCs',
         );
-        maybeAutoLaunchMeshcoreMqttAfterIdentity();
+        // Do not auto-launch MQTT here: identity export was skipped with the dead bridge.
+        // Reconnect's full init will export JWT then call maybeAutoLaunchMeshcoreMqttAfterIdentity.
       }
       meshcoreEverConfiguredRef.current = true;
     },
@@ -3159,7 +3179,9 @@ export function useMeshcoreRuntime() {
       requestChatOutboxDrain('meshcore');
     };
     const reconnectWork = runReconnectAttempt();
-    void reconnectWork.catch(() => {});
+    void reconnectWork.catch((e: unknown) => {
+      console.debug('[useMeshcoreRuntime] reconnectWork late reject ' + errLikeToLogString(e));
+    });
     try {
       // Applied to every transport, not just BLE (constant name is historical): TCP/serial
       // reconnects used to `await reconnectWork` with no ceiling at all. A disconnect that
@@ -3331,7 +3353,11 @@ export function useMeshcoreRuntime() {
         return;
       }
       scheduleMeshcoreReconnectAttemptRef.current();
-    })();
+    })().catch((e: unknown) => {
+      console.warn(
+        '[useMeshcoreRuntime] handleMeshcoreConnectionLost async ' + errLikeToLogString(e),
+      );
+    });
   }, [teardownMeshcoreConnEventListeners]);
 
   // Cleanup on unmount — tear down listeners and release connection/driver.
@@ -3392,7 +3418,9 @@ export function useMeshcoreRuntime() {
       }
       console.debug('[useMeshcoreRuntime] power resume — triggering reconnect');
       handleMeshcoreConnectionLostRef.current();
-    })();
+    })().catch((e: unknown) => {
+      console.warn('[useMeshcoreRuntime] power resume settle/reconnect ' + errLikeToLogString(e));
+    });
   }, []);
 
   const connect = useCallback(
@@ -4058,6 +4086,7 @@ export function useMeshcoreRuntime() {
       } else {
         // no pubKey: skip radio removal
       }
+      // Tombstone before UI/DB so concurrent MQTT/stub merges cannot resurrect during await.
       markMeshcoreLocallyDeletedContact(nodeId);
       pubKeyMapRef.current.delete(nodeId);
       // Remove the 6-byte prefix mapping too
@@ -4076,9 +4105,12 @@ export function useMeshcoreRuntime() {
       if (storeId) {
         removeNode(storeId, nodeId);
       }
-      await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
+      try {
+        await window.electronAPI.db.deleteMeshcoreContact(nodeId);
+      } catch (e: unknown) {
+        clearMeshcoreLocallyDeletedContact(nodeId);
         console.warn('[useMeshcoreRuntime] deleteMeshcoreContact error ' + errLikeToLogString(e));
-      });
+      }
       if (radioRemoveFailed) {
         pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
       }

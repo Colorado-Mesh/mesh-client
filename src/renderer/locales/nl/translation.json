@@ -1805,8 +1805,8 @@
       "rnodeCommandTimeout": "Het apparaat reageert niet meer via serieel. Sluit andere apps die dezelfde seriële poort gebruiken, wacht tot het bord klaar is met opstarten en probeer het opnieuw.",
       "esp32FlashStalled": "Firmwareoverdracht vastgelopen zonder voortgang. Probeer een andere USB-kabel of poort, ga naar de bootloader-modus (houd BOOT ingedrukt, tik op RESET) en flash opnieuw.",
       "unknown": "Er is een onverwachte fout opgetreden.",
-      "provisionWipeRequired": "EEPROM is vergrendeld met een ongeldige identiteit. Veeg eerst EEPROM af en daarna opnieuw Provision.",
-      "provisionVerifyFailed": "Voorziening schrijft voltooid, maar het apparaat rapporteert nog steeds een niet-voorziene EEPROM. Schakel het bord in, wacht op opstarten en probeer het opnieuw — of veeg eerst EEPROM af."
+      "provisionWipeRequired": "EEPROM is vergrendeld met een ongeldige identiteit. Wis eerst de EEPROM en voer daarna opnieuw provisioning uit.",
+      "provisionVerifyFailed": "Provisioning-schrijfacties zijn voltooid, maar het apparaat meldt nog steeds een niet-ingerichte EEPROM. Schakel de voeding van het bord uit en weer in, wacht op opstarten en probeer opnieuw — of wis eerst de EEPROM."
     },
     "selectSerialPort": "Seriële poort selecteren",
     "noSerialPorts": "Geen USB seriële poorten gevonden.",
@@ -2088,7 +2088,7 @@
       "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
       "pingFailed": "Ping mislukt",
       "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is.",
-      "removeContactFailed": "Lokaal verwijderd, maar de radio heeft verwijdering geweigerdContact. Het contact kan opnieuw verschijnen na een verversing."
+      "removeContactFailed": "Lokaal verwijderd, maar de radio heeft removeContact geweigerd. Het contact kan opnieuw verschijnen na een verversing."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",

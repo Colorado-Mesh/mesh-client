@@ -232,9 +232,36 @@ export function deleteOrphanMeshcoreRoomMessages(): number {
   return deleteOrphanMeshcoreRoomMessagesOn(getDatabase());
 }
 
+/**
+ * Delete one MeshCore contact and its room BBS rows atomically (FTS stays in sync via triggers).
+ * Returns SQLite `changes` for the contact row delete.
+ */
+export function deleteMeshcoreContactOn(d: NodeSqliteDB, nodeId: number): { changes: number } {
+  return d.transaction(() => {
+    deleteMeshcoreMessagesForRoomServerIds(d, [nodeId]);
+    const result = d.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(nodeId);
+    deleteOrphanMeshcoreRoomMessagesOn(d);
+    return { changes: Number(result.changes) };
+  })();
+}
+
 function selectRoomContactIdsMatching(d: NodeSqliteDB, sql: string, params: unknown[]): number[] {
   const rows = d.prepareOnce(sql).all(...params) as { node_id: number }[];
   return rows.map((r) => r.node_id);
+}
+
+/** Cascade room BBS deletes around a contact-delete callback, then sweep orphans. */
+function deleteMeshcoreContactsWithRoomMessageCascade(
+  d: NodeSqliteDB,
+  roomIds: readonly number[],
+  deleteContacts: () => number,
+): number {
+  return d.transaction(() => {
+    deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
+    const deleted = deleteContacts();
+    deleteOrphanMeshcoreRoomMessagesOn(d);
+    return deleted;
+  })();
 }
 
 export function deleteMeshcoreContactsNeverAdvertised(): number {
@@ -244,14 +271,15 @@ export function deleteMeshcoreContactsNeverAdvertised(): number {
     'SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
     [MESHCORE_CONTACT_TYPE_ROOM],
   );
-  deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
-  const result = d
-    .prepareOnce(
-      'DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
-    )
-    .run();
-  deleteOrphanMeshcoreRoomMessagesOn(d);
-  return Number(result.changes);
+  return deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () =>
+    Number(
+      d
+        .prepareOnce(
+          'DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
+        )
+        .run().changes,
+    ),
+  );
 }
 
 export { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
@@ -265,14 +293,15 @@ export function deleteMeshcoreContactsByAge(days: number): number {
     'SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
     [MESHCORE_CONTACT_TYPE_ROOM, MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec],
   );
-  deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
-  const result = d
-    .prepareOnce(
-      'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
-    )
-    .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec);
-  deleteOrphanMeshcoreRoomMessagesOn(d);
-  return Number(result.changes);
+  return deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () =>
+    Number(
+      d
+        .prepareOnce(
+          'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+        )
+        .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec).changes,
+    ),
+  );
 }
 
 export function pruneMeshcoreContactsByCount(maxCount: number): number {
@@ -302,15 +331,15 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
   const roomIds = doomed
     .filter((r) => r.contact_type === MESHCORE_CONTACT_TYPE_ROOM)
     .map((r) => r.node_id);
-  deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
   const ids = doomed.map((r) => r.node_id);
-  let deleted = 0;
-  const delStmt = d.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?');
-  for (const id of ids) {
-    deleted += Number(delStmt.run(id).changes);
-  }
-  deleteOrphanMeshcoreRoomMessagesOn(d);
-  return deleted;
+  return deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () => {
+    let deleted = 0;
+    const delStmt = d.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?');
+    for (const id of ids) {
+      deleted += Number(delStmt.run(id).changes);
+    }
+    return deleted;
+  });
 }
 
 export interface MeshcoreContactUpsertParams {

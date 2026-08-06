@@ -1805,8 +1805,8 @@
       "rnodeCommandTimeout": "Cihaz seri yanıt vermeyi durdurdu. Aynı seri portu kullanan diğer uygulamaları kapatın, kartın önyükleme işleminin bitmesini bekleyin ve yeniden deneyin.",
       "esp32FlashStalled": "Ürün yazılımı aktarımı ilerleme olmadan durdu. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (BOOT'a basılı tutun, RESET'e dokunun) ve yeniden flash yapın.",
       "unknown": "Beklenmedik bir hata oluştu.",
-      "provisionWipeRequired": "EEPROM geçersiz bir kimlikle kilitlendi. Önce EEPROM'u, ardından Provizyonu tekrar silin.",
-      "provisionVerifyFailed": "Provizyon yazma işlemi tamamlandı ancak cihaz hala provizyonsuz bir EEPROM bildiriyor. Kartı çalıştırın, önyükleme için bekleyin ve tekrar deneyin — veya önce EEPROM'u silin."
+      "provisionWipeRequired": "EEPROM geçersiz bir kimlikle kilitlendi. Önce EEPROM’u silin, ardından yeniden provisioning yapın.",
+      "provisionVerifyFailed": "Provisioning yazmaları tamamlandı ancak cihaz hâlâ provision edilmemiş bir EEPROM bildiriyor. Kartın gücünü kesip yeniden verin, önyüklemeyi bekleyin ve tekrar deneyin — veya önce EEPROM’u silin."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
@@ -2088,7 +2088,7 @@
       "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
       "pingFailed": "Ping başarısız oldu",
       "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin.",
-      "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact'ı reddetti. Kişi yenilendikten sonra yeniden görünebilir."
+      "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact’ı reddetti. Kişi yenilendikten sonra yeniden görünebilir."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",

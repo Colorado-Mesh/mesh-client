@@ -1805,8 +1805,8 @@
       "rnodeCommandTimeout": "Das Gerät antwortet nicht mehr über die serielle Schnittstelle. Schließen Sie andere Apps, die denselben seriellen Port verwenden, warten Sie, bis die Platine den Start abgeschlossen hat, und versuchen Sie es erneut.",
       "esp32FlashStalled": "Firmware-Übertragung ohne Fortschritt blockiert. Versuchen Sie ein anderes USB-Kabel oder einen anderen Anschluss, wechseln Sie in den Bootloader-Modus (BOOT gedrückt halten, RESET antippen) und flashen Sie erneut.",
       "unknown": "Ein unerwarteter Fehler ist aufgetreten.",
-      "provisionWipeRequired": "EEPROM ist mit einer ungültigen Identität gesperrt. Wischen Sie zuerst das EEPROM und dann die Bereitstellung erneut ab.",
-      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge beendet, aber das Gerät meldet immer noch einen nicht bereitgestellten EEPROM. Schalten Sie die Platine ein, warten Sie auf den Start und versuchen Sie es erneut — oder wischen Sie zuerst den EEPROM ab."
+      "provisionWipeRequired": "EEPROM ist mit einer ungültigen Identität gesperrt. Löschen Sie zuerst das EEPROM und führen Sie dann erneut die Bereitstellung durch.",
+      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge abgeschlossen, aber das Gerät meldet weiterhin ein nicht bereitgestelltes EEPROM. Schalten Sie die Platine aus und wieder ein, warten Sie auf den Start und versuchen Sie es erneut — oder löschen Sie zuerst das EEPROM."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",

@@ -1806,7 +1806,7 @@
       "esp32FlashStalled": "La transferencia de firmware se detuvo sin progreso. Pruebe otro cable o puerto USB, entre en modo bootloader (mantenga BOOT, pulse RESET) y vuelva a flashear.",
       "unknown": "Se produjo un error",
       "provisionWipeRequired": "EEPROM está bloqueada con una identidad no válida. Limpie la EEPROM primero, luego vuelva a aprovisionar.",
-      "provisionVerifyFailed": "Las escrituras de provisión finalizaron, pero el dispositivo aún informa una EEPROM no aprovisionada. Encienda la placa, espere a que arranque e inténtelo de nuevo, o limpie primero la EEPROM."
+      "provisionVerifyFailed": "Las escrituras de provisión finalizaron, pero el dispositivo aún informa una EEPROM no aprovisionada. Apague y encienda la placa, espere a que arranque e inténtelo de nuevo, o limpie primero la EEPROM."
     },
     "selectSerialPort": "Seleccionar porto serie",
     "noSerialPorts": "No se han encontrado puertos serie USB.",

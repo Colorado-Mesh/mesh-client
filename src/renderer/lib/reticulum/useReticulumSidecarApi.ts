@@ -292,6 +292,11 @@ export function useReticulumSidecarApi({
     void refreshIdentity();
     if (sidecarApiReady) {
       void refreshAppInfo();
+      void import('./reticulumGamesSession')
+        .then(({ refreshGamesSessions }) => refreshGamesSessions())
+        .catch((e: unknown) => {
+          console.debug('[useReticulumSidecarApi] refreshGamesSessions ' + String(e));
+        });
     }
   }, [sidecarStatus.running, sidecarApiReady, refreshIdentity, refreshAppInfo]);
 

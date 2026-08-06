@@ -1805,8 +1805,8 @@
       "rnodeCommandTimeout": "L'appareil ne répond plus en série. Fermez les autres applications qui utilisent le port série, attendez que la carte ait fini de démarrer, puis réessayez.",
       "esp32FlashStalled": "Le transfert du firmware est bloqué sans progression. Essayez un autre câble ou port USB, entrez en mode bootloader (maintenez BOOT, appuyez sur RESET) et flashez à nouveau.",
       "unknown": "Une erreur inattendue s'est produite.",
-      "provisionWipeRequired": "EEPROM est verrouillé avec une identité non valide. Effacez d'abord l'EEPROM, puis Provisionnez à nouveau.",
-      "provisionVerifyFailed": "Écritures de provision terminées, mais l'appareil signale toujours une EEPROM non provisionnée. Mettez la carte sous tension, attendez le démarrage et réessayez — ou effacez d'abord l'EEPROM."
+      "provisionWipeRequired": "EEPROM est verrouillé avec une identité non valide. Effacez d’abord l’EEPROM, puis provisionnez à nouveau.",
+      "provisionVerifyFailed": "Écritures de provision terminées, mais l’appareil signale toujours une EEPROM non provisionnée. Coupez puis rétablissez l’alimentation de la carte, attendez le démarrage et réessayez — ou effacez d’abord l’EEPROM."
     },
     "selectSerialPort": "Sélectionner le port série",
     "noSerialPorts": "Aucun port série USB trouvé.",

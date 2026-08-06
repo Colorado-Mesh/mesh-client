@@ -1809,8 +1809,8 @@
       "rnodeCommandTimeout": "Urządzenie przestało odpowiadać przez port szeregowy. Zamknij inne aplikacje korzystające z tego samego portu szeregowego, poczekaj na zakończenie uruchamiania płyty i spróbuj ponownie.",
       "esp32FlashStalled": "Transfer firmware utknął bez postępu. Wypróbuj inny kabel lub port USB, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESET) i wgraj ponownie.",
       "unknown": "Wystąpił nieoczekiwany błąd.",
-      "provisionWipeRequired": "Pamięć EEPROM jest zablokowana z nieprawidłową tożsamością. Najpierw wyczyść EEPROM, a następnie ponownie Provision.",
-      "provisionVerifyFailed": "Zapisywanie zakończone, ale urządzenie nadal zgłasza nieudostępnioną pamięć EEPROM. Włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM."
+      "provisionWipeRequired": "Pamięć EEPROM jest zablokowana z nieprawidłową tożsamością. Najpierw wyczyść EEPROM, a następnie ponownie wykonaj provisioning.",
+      "provisionVerifyFailed": "Zapisywanie provisioningu zakończone, ale urządzenie nadal zgłasza nieprzygotowaną pamięć EEPROM. Wyłącz i włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM."
     },
     "selectSerialPort": "Wybierz port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych USB.",

@@ -1807,8 +1807,8 @@
       "rnodeCommandTimeout": "Zařízení přestalo reagovat přes sériový port. Zavřete ostatní aplikace, které používají stejný sériový port, počkejte, až deska dokončí bootování, a zkuste to znovu.",
       "esp32FlashStalled": "Přenos firmwaru se zastavil bez pokroku. Zkuste jiný USB kabel nebo port, přejděte do režimu bootloaderu (podržte BOOT, klepněte RESET) a flashujte znovu.",
       "unknown": "Nastala neočekávaná chyba.",
-      "provisionWipeRequired": "EEPROM je uzamčena s neplatnou identitou. Nejprve otřete EEPROM a poté znovu vytvořte rezervu.",
-      "provisionVerifyFailed": "Zápisy rezervy dokončeny, ale zařízení stále hlásí nezabezpečenou EEPROM. Napájejte desku, počkejte na spuštění a zkuste to znovu — nebo nejprve vymažte EEPROM."
+      "provisionWipeRequired": "EEPROM je uzamčena s neplatnou identitou. Nejprve vymažte EEPROM a poté znovu proveďte provisioning.",
+      "provisionVerifyFailed": "Zápisy provisioningu byly dokončeny, ale zařízení stále hlásí nezřízenou EEPROM. Vypněte a zapněte desku, počkejte na start a zkuste to znovu — nebo nejprve vymažte EEPROM."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
@@ -2090,7 +2090,7 @@
       "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
       "pingFailed": "Ping selhal",
       "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti.",
-      "removeContactFailed": "Odebráno lokálně, ale rádio odmítlo odebratKontakt. Kontakt se může po obnovení znovu objevit."
+      "removeContactFailed": "Odebráno lokálně, ale rádio odmítlo removeContact. Kontakt se může po obnovení znovu objevit."
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",

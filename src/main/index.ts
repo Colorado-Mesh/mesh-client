@@ -65,6 +65,7 @@ import {
   createContactGroup,
   deleteAllMeshcorePathHistory,
   deleteContactGroup,
+  deleteMeshcoreContactOn,
   deleteMeshcoreContactsByAge,
   deleteMeshcoreContactsNeverAdvertised,
   deleteMeshcorePathHistoryForNode,
@@ -310,6 +311,8 @@ async function ensureTakServerManager(): Promise<TakServerManager> {
 
 /** Max bytes per MeshCore TCP IPC write (DoS guard). */
 const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
+/** Cap per-chunk IPC fan-out from SoftAP/companion TCP reads (align with write max). */
+const MESHCORE_TCP_DATA_MAX_BYTES = MESHCORE_TCP_WRITE_MAX_BYTES;
 /** Min node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 /** Max node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
@@ -5500,10 +5503,7 @@ ipcMain.handle('db:deleteMeshcoreContact', (event, nodeId: number) => {
     const db = getDbForIpc('db:deleteMeshcoreContact');
     if (!db) return { changes: 0 };
     const id = safeNonNegativeInt(nodeId);
-    // Room BBS posts are keyed by room_server_id; drop them with the contact so Rooms unread
-    // cannot outlive a deleted room server.
-    db.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?').run(id);
-    return db.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(id);
+    return deleteMeshcoreContactOn(db, id);
   } catch (err) {
     finishDbIpcHandler('db:deleteMeshcoreContact', err);
   }
@@ -6152,6 +6152,20 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     });
     socket.on('data', (data) => {
       const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (chunk.length > MESHCORE_TCP_DATA_MAX_BYTES) {
+        console.warn(
+          `[IPC] meshcore:tcp-data oversized chunk (${chunk.length} > ${MESHCORE_TCP_DATA_MAX_BYTES}); dropping socket`,
+        );
+        try {
+          socket.destroy();
+        } catch (e) {
+          console.debug(
+            '[IPC] meshcore:tcp-data destroy after oversize ' +
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        }
+        return;
+      }
       mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
@@ -6732,7 +6746,11 @@ void app
       });
       powerMonitor.on('resume', () => {
         console.debug('[main] System resumed');
-        rendererHeartbeatWatchdog.startResumeWatchdog();
+        rendererHeartbeatWatchdog.startResumeWatchdog(() => {
+          const win = mainWindow;
+          if (!win || win.isDestroyed()) return false;
+          return win.isVisible() && !win.isMinimized();
+        });
         mainWindow?.webContents.send('power:resume');
       });
     } catch (error) {
@@ -6788,6 +6806,8 @@ void app
   });
 
 app.on('before-quit', (event) => {
+  rendererHeartbeatWatchdog.stopStallWatchdog();
+  rendererHeartbeatWatchdog.clearResumeWatchdog();
   // Clean up any pending Bluetooth device selection to prevent callback leak
   if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.debug('[main] before-quit: cleaning up pending Bluetooth callback');

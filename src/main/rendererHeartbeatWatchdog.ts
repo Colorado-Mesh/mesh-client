@@ -19,7 +19,11 @@ export interface RendererHeartbeatLivenessSnapshot {
 
 export interface RendererHeartbeatWatchdog {
   recordHeartbeat: (ts?: number) => void;
-  startResumeWatchdog: () => void;
+  /**
+   * After system resume: warn if no heartbeat within 30s while the main window is
+   * actively visible (renderer pauses heartbeats while `document.hidden`).
+   */
+  startResumeWatchdog: (isWindowActivelyVisible?: () => boolean) => void;
   clearResumeWatchdog: () => void;
   /** Electron webContents `unresponsive` — sticky session flag + warn. */
   markRendererUnresponsive: () => void;
@@ -57,12 +61,14 @@ export function createRendererHeartbeatWatchdog(
     stallEpisodeActive = false;
   };
 
-  const startResumeWatchdog = (): void => {
+  const startResumeWatchdog = (isWindowActivelyVisible?: () => boolean): void => {
     clearResumeWatchdog();
     const resumeAt = Date.now();
     rendererResumeWatchdogTimer = setTimeout(() => {
       rendererResumeWatchdogTimer = null;
       if (lastRendererHeartbeatAt >= resumeAt) return;
+      // Hidden/minimized windows pause renderer heartbeats — do not sticky-flag a false hang.
+      if (isWindowActivelyVisible && !isWindowActivelyVisible()) return;
       rendererUnresponsiveSeen = true;
       warn('[main] renderer unresponsive after system resume (no heartbeat within 30s)');
     }, RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
@@ -75,7 +81,8 @@ export function createRendererHeartbeatWatchdog(
   };
 
   const markRendererResponsive = (): void => {
-    warn('[main] renderer webContents responsive again');
+    // Recovery is not an error — keep warn channel for true hangs only.
+    console.debug('[main] renderer webContents responsive again');
   };
 
   const stopStallWatchdog = (): void => {

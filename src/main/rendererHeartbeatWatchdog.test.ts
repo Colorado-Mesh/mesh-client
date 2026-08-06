@@ -147,8 +147,18 @@ describe('createRendererHeartbeatWatchdog', () => {
     expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
 
     watchdog.markRendererResponsive();
-    expect(warn).toHaveBeenCalledWith('[main] renderer webContents responsive again');
     expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
+  });
+
+  it('does not warn for resume when the window is not actively visible', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+
+    watchdog.startResumeWatchdog(() => false);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(false);
   });
 
   it('reports null heartbeat age before the first heartbeat', () => {

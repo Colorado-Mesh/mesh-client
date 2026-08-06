@@ -1,4 +1,5 @@
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { shouldApplyMeshcoreContact } from '../meshcoreLocallyDeletedContacts';
 import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreMergeChannelDisplayNameOntoNode,
@@ -23,6 +24,7 @@ export function ensureMeshcoreChatSenderInNodeStore(
   opts?: EnsureMeshcoreChatSenderOpts,
 ): void {
   if (nodeId <= 0 || nodeId === MESHCORE_UNKNOWN_SENDER_STUB_ID) return;
+  if (!shouldApplyMeshcoreContact(nodeId)) return;
   const nowSec = Math.floor(Date.now() / 1000);
   const incomingSec = lastHeardToUnixSeconds(opts?.lastHeardAtMs ?? Date.now());
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.

@@ -1,3 +1,4 @@
+import { CHAT_NOTIF_MUTED_STORAGE_KEY } from '@/renderer/lib/chatInactiveNotifications';
 import { playMessageNotification } from '@/renderer/lib/chatNotifications';
 import { isGamesSessionInitiator } from '@/renderer/lib/reticulum/reticulumGamesMetadata';
 
@@ -47,7 +48,7 @@ export function maybeNotifyInboundGamesChallenge(payload: unknown): void {
   if (!shouldNotifyInboundGamesChallenge(payload)) return;
   if (
     typeof localStorage !== 'undefined' &&
-    localStorage.getItem('mesh-client:notifMuted') === '1'
+    localStorage.getItem(CHAT_NOTIF_MUTED_STORAGE_KEY) === '1'
   ) {
     return;
   }

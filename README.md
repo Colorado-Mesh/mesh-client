@@ -160,7 +160,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 ### Desktop shell (all protocols)
 
-- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber); passive toast notifications when an inactive protocol receives traffic
+- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber — Reticulum amber = LXMF Chat + **RRC** unread, not Games; Games has its own sidebar badge); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
 - **Accessibility**: modal focus trap, screen reader labels, reduce-motion and **Use 24-hour time** toggles in App → Appearance — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`

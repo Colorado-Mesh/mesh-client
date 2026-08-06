@@ -9,6 +9,7 @@ const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf
 describe('IPC payload size limits (source contract)', () => {
   it('defines meshcore tcp-write, http:write, and noble-ble limits and uses them in handlers', () => {
     expect(INDEX_SOURCE).toContain('const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024');
+    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_DATA_MAX_BYTES');
     expect(INDEX_SOURCE).toContain('const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024');
     expect(INDEX_SOURCE).toContain('const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512');
     expect(INDEX_SOURCE).toMatch(/maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES/);

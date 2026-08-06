@@ -415,4 +415,89 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     expect(callOrder).not.toContain('getChannels:end');
     unmount();
   });
+
+  it('tcp: peer FIN before getContacts completes aborts init without getChannels', async () => {
+    const callOrder: string[] = [];
+    const gates = installSequentialInitGates(callOrder);
+    const discCallbacks: (() => void)[] = [];
+    vi.mocked(window.electronAPI.meshcore.tcp.onDisconnected).mockImplementation((cb) => {
+      discCallbacks.push(cb);
+      return () => {};
+    });
+
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('tcp', '10.0.0.9:5050');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(callOrder).toContain('getSelfInfo:start');
+    });
+    gates.selfInfoGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:start');
+    });
+    expect(callOrder).not.toContain('getContacts:end');
+
+    await act(async () => {
+      for (const cb of discCallbacks) cb();
+      await Promise.resolve();
+    });
+    // Unblock getContacts so initConn can observe the dead bridge and abort.
+    gates.contactsGate.resolve(undefined);
+
+    await act(async () => {
+      await expect(connectPromise).rejects.toBeTruthy();
+    });
+
+    expect(callOrder).not.toContain('getChannels:start');
+    expect(result.current.state.status).not.toBe('configured');
+    unmount();
+  });
+
+  it('tcp: burst-complete dead bridge enters reconnecting and skips getChannels', async () => {
+    const callOrder: string[] = [];
+    const gates = installSequentialInitGates(callOrder);
+    const discCallbacks: (() => void)[] = [];
+    vi.mocked(window.electronAPI.meshcore.tcp.onDisconnected).mockImplementation((cb) => {
+      discCallbacks.push(cb);
+      return () => {};
+    });
+
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('tcp', '10.0.0.8:5050');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(callOrder).toContain('getSelfInfo:start');
+    });
+    gates.selfInfoGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:start');
+    });
+    gates.contactsGate.resolve(undefined);
+    await waitFor(() => {
+      expect(callOrder).toContain('getContacts:end');
+    });
+
+    await act(async () => {
+      for (const cb of discCallbacks) cb();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await connectPromise;
+    });
+
+    expect(callOrder).not.toContain('getChannels:end');
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('reconnecting');
+    });
+    unmount();
+  });
 });

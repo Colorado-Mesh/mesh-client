@@ -21,11 +21,12 @@ describe('log-service source contracts', () => {
   it('initLogFile preserves a non-empty prior session log as .1 before truncating', () => {
     const initIdx = LOG_SERVICE_SOURCE.indexOf('export function initLogFile(');
     expect(initIdx).toBeGreaterThan(-1);
-    const body = LOG_SERVICE_SOURCE.slice(initIdx, initIdx + 1100);
-    expect(body).toContain('fs.renameSync(p, backup)');
+    const body = LOG_SERVICE_SOURCE.slice(initIdx, initIdx + 1600);
+    expect(body).toContain('fs.renameSync(p, staging)');
+    expect(body).toContain('fs.renameSync(staging, backup)');
     expect(body).toContain('LOG_BACKUP_FILENAME');
     expect(body).toContain('statSync');
-    const renameIdx = body.indexOf('fs.renameSync(p, backup)');
+    const renameIdx = body.indexOf('fs.renameSync(p, staging)');
     const truncateIdx = body.indexOf("fs.writeFileSync(p, '', { encoding: 'utf8' })");
     expect(renameIdx).toBeGreaterThan(-1);
     expect(truncateIdx).toBeGreaterThan(-1);
@@ -240,8 +241,13 @@ describe('initLogFile previous-session preserve', () => {
     initLogFile();
 
     expect(fs.unlinkSync).toHaveBeenCalled();
+    // Staging rename: current → .1.staging-* → .1 (avoids losing backup if promote fails).
     expect(fs.renameSync).toHaveBeenCalledWith(
       expect.stringMatching(/mesh-client\.log$/),
+      expect.stringMatching(/mesh-client\.log\.1\.staging-/),
+    );
+    expect(fs.renameSync).toHaveBeenCalledWith(
+      expect.stringMatching(/mesh-client\.log\.1\.staging-/),
       expect.stringMatching(/mesh-client\.log\.1$/),
     );
     expect(fs.writeFileSync).toHaveBeenCalledWith(

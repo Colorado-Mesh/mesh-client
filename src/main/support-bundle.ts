@@ -13,6 +13,8 @@ import { sanitizeLogMessage } from './sanitize-log-message';
 export type { SupportBundleMode };
 
 const MAX_DEBUG_SNAPSHOT_JSON_BYTES = 5 * 1024 * 1024;
+/** Tail-cap for preserved/rotated `mesh-client.log.1` in support zips (full file can be ~100 MB). */
+const MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES = 10 * 1024 * 1024;
 const LOG_BACKUP_FILENAME = 'mesh-client.log.1';
 const RETICULUM_CONFIG_REL = path.join('config', 'config');
 const RETICULUM_STACK_REL = path.join('storage', 'mesh_client_stack.json');
@@ -184,6 +186,27 @@ async function readFileOrEmpty(filePath: string): Promise<Buffer> {
   }
 }
 
+/** Read the last `maxBytes` of a file (or the whole file if smaller). */
+async function readFileTailOrEmpty(filePath: string, maxBytes: number): Promise<Buffer> {
+  try {
+    const st = await fs.promises.stat(filePath);
+    if (st.size <= maxBytes) {
+      return await fs.promises.readFile(filePath);
+    }
+    const fh = await fs.promises.open(filePath, 'r');
+    try {
+      const buf = Buffer.alloc(maxBytes);
+      const { bytesRead } = await fh.read(buf, 0, maxBytes, st.size - maxBytes);
+      return buf.subarray(0, bytesRead);
+    } finally {
+      await fh.close();
+    }
+  } catch {
+    // catch-no-log-ok missing/unreadable backup returns empty buffer for bundle export
+    return Buffer.alloc(0);
+  }
+}
+
 async function atomicWriteFile(destPath: string, data: Buffer): Promise<void> {
   const tmpPath = `${destPath}.tmp`;
   await fs.promises.writeFile(tmpPath, data);
@@ -231,7 +254,10 @@ export async function buildSupportBundleZip(
 
   const backupPath = path.join(logDir, LOG_BACKUP_FILENAME);
   if (fs.existsSync(backupPath)) {
-    zip.file(LOG_BACKUP_FILENAME, await fs.promises.readFile(backupPath));
+    zip.file(
+      LOG_BACKUP_FILENAME,
+      await readFileTailOrEmpty(backupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES),
+    );
   }
 
   zip.file('manifest.json', JSON.stringify(buildManifest(mode), null, 2));

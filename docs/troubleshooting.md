@@ -49,12 +49,18 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 
 **What to read first in `debug-snapshot.json` (ignore misleading `offline-*` ids):**
 
-| Field                                    | Healthy connected example | Meaning                           |
-| ---------------------------------------- | ------------------------- | --------------------------------- |
-| `sessionSummary.<protocol>.liveSession`  | `true`                    | RF/MQTT session is live           |
-| `sessionSummary.<protocol>.sessionState` | `"live"`                  | Not DB-hydrated-only              |
-| `activeTab.liveSession`                  | `true`                    | Active protocol tab is connected  |
-| `warnings`                               | `[]`                      | No stuck-chat signatures detected |
+| Field                                                                   | Healthy connected example | Meaning                                                                                                    |
+| ----------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `sessionSummary.<protocol>.liveSession`                                 | `true`                    | RF/MQTT session is live                                                                                    |
+| `sessionSummary.<protocol>.sessionState`                                | `"live"`                  | Not DB-hydrated-only                                                                                       |
+| `activeTab.liveSession`                                                 | `true`                    | Active protocol tab is connected                                                                           |
+| `warnings`                                                              | `[]`                      | No stuck-chat signatures detected                                                                          |
+| `mainLiveness` (top-level)                                              | object                    | `mainUptimeSec`, `lastRendererHeartbeatAgeMs`, `rendererUnresponsiveSeen`, `rss`, `heapUsed` — hang triage |
+| `meshcore.roomsUnreadEstimate`                                          | number                    | Computed Rooms sidebar badge (known room servers only)                                                     |
+| `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
+| `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
+
+Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups).
 
 The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
 
@@ -761,6 +767,24 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 ## MeshCore
 
+### MeshCore TCP connect stuck or reconnect loop on SoftAP/OpenHop
+
+**Symptoms**: TCP connect stuck on **Connecting**; empty/stale nodes; reconnect thrash on SoftAP / OpenHop / pyMC companions; log lines like `[IPC] meshcore:tcp socket closed … readableEnded=true` during `[useMeshcoreRuntime] initConn getContacts`.
+
+**Cause**: Companion closes TCP mid-handshake or after the contacts dump. Older builds thrashed reconnect before contacts were latched.
+
+**Fix**:
+
+1. Upgrade to a build with MeshCore TCP burst-complete init (peer FIN after `getContacts` latches configured then reconnects; mid-burst FIN aborts cleanly).
+2. **Disconnect → Connect** on the Connection panel.
+3. Confirm logs show `[useMeshcoreRuntime] initConn getContacts …` completing and nodes populating. Main uses `TCP_NODELAY` + keepalive on the `meshcore:tcp-*` bridge.
+
+### MeshCore contact delete and sticky Rooms badge
+
+- Deleting a contact from Chat/Contacts removes the SQLite contact row **and** room BBS messages for that `room_server_id` (so Rooms unread cannot outlive the room server).
+- Session-local tombstones (`meshcoreLocallyDeletedContacts`) suppress UI resurrection from MQTT/stub merges until a live radio `getContacts` re-adds the id.
+- If the radio still has the contact, it may reappear after the next contact dump — delete again on the radio or forget there too.
+
 ### MeshCore contact age prune and favorites
 
 Startup maintenance can delete stale MeshCore contacts by age. Important details:
@@ -868,7 +892,8 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Room unread badges**:
 
 - New room BBS posts increment the **Rooms** sidebar badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
-- The Rooms badge only counts posts for room servers still in your contact list. Clearing **Chat** channels does not clear Room messages — use App → Danger Zone → clear **Room messages** (or all MeshCore messages) if a badge remains after rooms are gone.
+- The Rooms badge only counts posts for room servers still in your contact list (`knownRoomServerIds`). Orphan BBS rows (deleted room server) no longer inflate the badge; deleting a room contact also cascades those messages from SQLite.
+- Clearing **Chat** channels does not clear Room messages — use App → Danger Zone → clear **Room messages** (or all MeshCore messages) if a badge remains after rooms are gone.
 
 **No room history after login**:
 
