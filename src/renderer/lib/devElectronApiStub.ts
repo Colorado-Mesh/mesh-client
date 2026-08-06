@@ -225,13 +225,15 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     onPowerResume: noopUnsub,
     sendRendererHeartbeat: async () => {},
     getProcessUptimeSec: async () => 0,
-    getRendererLiveness: async () => ({
-      mainUptimeSec: 0,
-      lastRendererHeartbeatAgeMs: null,
-      rendererUnresponsiveSeen: false,
-      rss: 0,
-      heapUsed: 0,
-    }),
+    app: {
+      getRendererLiveness: async () => ({
+        mainUptimeSec: 0,
+        lastRendererHeartbeatAgeMs: null,
+        rendererUnresponsiveSeen: false,
+        rss: 0,
+        heapUsed: 0,
+      }),
+    },
     onSpellcheckReplace: noopUnsub,
     meshcore: {
       tcp: {

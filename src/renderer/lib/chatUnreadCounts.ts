@@ -251,11 +251,12 @@ export function buildProtocolSwitcherUnreadByProtocol(
   meshcoreChatUnread: number,
   reticulumChatUnread: number,
   rrcUnread: number,
+  gamesUnread = 0,
 ): Record<MeshProtocol, number> {
   return {
     meshtastic: meshtasticChatUnread,
     meshcore: meshcoreChatUnread,
-    reticulum: reticulumChatUnread + rrcUnread,
+    reticulum: reticulumChatUnread + rrcUnread + gamesUnread,
   };
 }
 

@@ -9,6 +9,8 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
+#[cfg(test)]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use lrgp::apps::chess::ChessApp;
@@ -27,6 +29,9 @@ use tokio::sync::broadcast;
 
 /// Cap on `last_envelope` so abandoned sessions cannot retain resend bytes forever.
 const MAX_LAST_ENVELOPES: usize = 256;
+
+#[cfg(test)]
+static FORCE_HYDRATE_STORE_READ_ERR: AtomicBool = AtomicBool::new(false);
 
 /// A dispatched-but-not-yet-sent outgoing LRGP action. Callers (LiveBridge)
 /// must call [`GamesSessionManager::commit_action`] after a successful LXMF
@@ -143,12 +148,31 @@ impl GamesSessionManager {
     }
 
     /// Load one session from SQLite into memory when the router has no copy.
-    fn hydrate_session_from_store(&self, app_id: &str, session_id: &str) -> bool {
+    ///
+    /// Returns `Ok(true)` when hydrated, `Ok(false)` when the row is missing, and
+    /// `Err` when the store read fails (callers may retry / surface the failure).
+    fn hydrate_session_from_store(&self, app_id: &str, session_id: &str) -> Result<bool, String> {
+        #[cfg(test)]
+        if FORCE_HYDRATE_STORE_READ_ERR.load(Ordering::SeqCst) {
+            tracing::warn!(
+                target: "games",
+                "failed to read session {session_id} from store: injected"
+            );
+            return Err("store_read_failed:injected".to_string());
+        }
         let Some(store) = &self.store else {
-            return false;
+            return Ok(false);
         };
-        let Ok(Some(session)) = store.get_session(session_id, &self.identity_id) else {
-            return false;
+        let session = match store.get_session(session_id, &self.identity_id) {
+            Ok(Some(session)) => session,
+            Ok(None) => return Ok(false),
+            Err(e) => {
+                tracing::warn!(
+                    target: "games",
+                    "failed to read session {session_id} from store: {e}"
+                );
+                return Err(format!("store_read_failed:{e}"));
+            }
         };
         let app = if session.app_id.is_empty() {
             app_id.to_string()
@@ -159,13 +183,13 @@ impl GamesSessionManager {
             .router
             .rollback_outgoing(&app, session_id, &self.identity_id, Some(session))
         {
-            Ok(()) => true,
+            Ok(()) => Ok(true),
             Err(e) => {
                 tracing::warn!(
                     target: "games",
                     "failed to hydrate session {session_id} ({app}): {e}"
                 );
-                false
+                Ok(false)
             }
         }
     }
@@ -175,12 +199,11 @@ impl GamesSessionManager {
         if self.session_in_memory(app_id, session_id) {
             return Ok(());
         }
-        if self.hydrate_session_from_store(app_id, session_id)
-            && self.session_in_memory(app_id, session_id)
-        {
-            return Ok(());
+        match self.hydrate_session_from_store(app_id, session_id) {
+            Ok(true) if self.session_in_memory(app_id, session_id) => Ok(()),
+            Ok(_) => Err("unknown_session".to_string()),
+            Err(e) => Err(e),
         }
-        Err("unknown_session".to_string())
     }
 
     pub fn status(&self) -> JsonValue {
@@ -817,6 +840,26 @@ mod tests {
             .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
             .expect_err("expected unknown session");
         assert_eq!(err, "unknown_session");
+    }
+
+    #[test]
+    fn prepare_action_propagates_store_read_failure() {
+        let (_dir, manager) = test_manager();
+        let dest = "a".repeat(32);
+        FORCE_HYDRATE_STORE_READ_ERR.store(true, Ordering::SeqCst);
+        let err = manager
+            .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess-store-fail"), None)
+            .expect_err("expected store read failure");
+        FORCE_HYDRATE_STORE_READ_ERR.store(false, Ordering::SeqCst);
+        assert!(
+            err.starts_with("store_read_failed:"),
+            "expected store_read_failed prefix, got {err}"
+        );
+        // Manager remains usable for challenges that do not require hydrate.
+        let challenge = manager
+            .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
+            .expect("challenge still works without hydrate");
+        assert!(!challenge.session_id.is_empty());
     }
 
     #[test]

@@ -599,7 +599,7 @@ describe('buildDebugSnapshotAsync', () => {
       port: 0,
       pid: null,
     });
-    vi.mocked(window.electronAPI.getRendererLiveness).mockResolvedValue({
+    vi.mocked(window.electronAPI.app.getRendererLiveness).mockResolvedValue({
       mainUptimeSec: 3600,
       lastRendererHeartbeatAgeMs: 12_000,
       rendererUnresponsiveSeen: true,

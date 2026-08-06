@@ -98,6 +98,8 @@ export function initLogFile(): void {
   recentEntries.length = 0;
   const p = getLogFilePath();
   const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
+  /** When true, prior session bytes remain on `p` after a failed promote+restore — do not wipe. */
+  let skipFreshTruncate = false;
   try {
     if (fs.existsSync(p)) {
       const { size } = fs.statSync(p);
@@ -116,6 +118,7 @@ export function initLogFile(): void {
           try {
             if (!fs.existsSync(p) && fs.existsSync(staging)) {
               fs.renameSync(staging, p);
+              skipFreshTruncate = true;
             }
           } catch (restoreErr) {
             debugLogService('[log-service] initLogFile restore staging failed', restoreErr);
@@ -126,10 +129,16 @@ export function initLogFile(): void {
   } catch (e) {
     debugLogService('[log-service] initLogFile preserve previous session failed', e);
   }
-  try {
-    fs.writeFileSync(p, '', { encoding: 'utf8' });
-  } catch (e) {
-    debugLogService('[log-service] initLogFile truncate failed', e);
+  if (!skipFreshTruncate) {
+    try {
+      fs.writeFileSync(p, '', { encoding: 'utf8' });
+    } catch (e) {
+      debugLogService('[log-service] initLogFile truncate failed', e);
+    }
+  } else {
+    console.debug(
+      '[log-service] initLogFile skipped truncate; prior session log restored on current path',
+    );
   }
   flushPendingBuffer();
 }

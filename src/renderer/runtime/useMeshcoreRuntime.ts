@@ -211,6 +211,7 @@ import {
   clearMeshcoreLocallyDeletedContact,
   filterOutMeshcoreLocallyDeletedContacts,
   markMeshcoreLocallyDeletedContact,
+  restoreMeshcoreLocallyDeletedContactsFromStorage,
   shouldApplyMeshcoreContact,
 } from '../lib/meshcoreLocallyDeletedContacts';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
@@ -497,6 +498,8 @@ function meshcorePathUpdatedNodesMergeUpdater(
 }
 
 export function useMeshcoreRuntime() {
+  // Restore tombstones before any contact/message hydration in this session.
+  restoreMeshcoreLocallyDeletedContactsFromStorage();
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [queueStatus, setQueueStatus] = useState<{
     free: number;
@@ -2379,10 +2382,16 @@ export function useMeshcoreRuntime() {
                           clearInterval(id);
                           reject(new Error('meshcore:tcp-write: no active socket'));
                         }, 20);
-                        void channelsWork.finally(() => {
-                          settled = true;
-                          clearInterval(id);
-                        });
+                        // Attach .catch before finally cleanup so a losing race rejection
+                        // cannot become an unhandled rejection after Promise.race settles.
+                        void channelsWork
+                          .catch(() => {
+                            // catch-no-log-ok consumed; original rejection still races via channelsWork
+                          })
+                          .finally(() => {
+                            settled = true;
+                            clearInterval(id);
+                          });
                       })
                     : null;
                 return deadWatch
@@ -2737,6 +2746,9 @@ export function useMeshcoreRuntime() {
       if (type === 'tcp') {
         meshcoreTcpBridgeDeadRef.current = false;
         meshcoreTcpInitBurstCapturedRef.current = false;
+        if (!opts?.preserveReconnectState) {
+          meshcoreDeferredReconnectRef.current = false;
+        }
       }
       // Manual / new connect cancels background serial rediscovery.
       if (!opts?.preserveReconnectState) {
@@ -4072,6 +4084,8 @@ export function useMeshcoreRuntime() {
 
   const deleteNode = useCallback(
     async (nodeId: number) => {
+      // Tombstone first so concurrent MQTT/stub merges cannot resurrect during awaits.
+      markMeshcoreLocallyDeletedContact(nodeId);
       let pubKey = pubKeyMapRef.current.get(nodeId);
       if (!pubKey) {
         const dbContacts =
@@ -4100,8 +4114,6 @@ export function useMeshcoreRuntime() {
       } else {
         // no pubKey: skip radio removal
       }
-      // Tombstone before UI/DB so concurrent MQTT/stub merges cannot resurrect during await.
-      markMeshcoreLocallyDeletedContact(nodeId);
       pubKeyMapRef.current.delete(nodeId);
       // Remove the 6-byte prefix mapping too
       for (const [prefix, id] of pubKeyPrefixMapRef.current) {

@@ -54,9 +54,14 @@ describe('preload bridge contract', () => {
     expect(PRELOAD_SOURCE).toContain("'app:rendererHeartbeat'");
     expect(PRELOAD_SOURCE).toContain("'app:getRendererLiveness'");
     expect(PRELOAD_SOURCE).toContain("'support:exportBundle'");
+    // Namespaced under `app:` (4-space indent), not a root-level key (2-space).
+    expect(PRELOAD_SOURCE).toMatch(/\n {2}app: \{\n {4}getRendererLiveness:/);
+    expect(PRELOAD_SOURCE).not.toMatch(/\n {2}getRendererLiveness:/);
     expect(TYPES_SOURCE).toContain('exportBundle');
     expect(TYPES_SOURCE).toContain('sendRendererHeartbeat');
-    expect(TYPES_SOURCE).toContain('getRendererLiveness');
+    expect(TYPES_SOURCE).toContain('app: {');
+    expect(TYPES_SOURCE).toContain('getRendererLiveness:');
+    expect(TYPES_SOURCE).not.toMatch(/\n {2}getRendererLiveness:/);
     expect(TYPES_SOURCE).toContain('RendererLivenessSnapshot');
   });
 });

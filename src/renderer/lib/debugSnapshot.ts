@@ -662,7 +662,7 @@ export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   }
   let mainLiveness: RendererLivenessSnapshot | null = null;
   try {
-    mainLiveness = await window.electronAPI.getRendererLiveness();
+    mainLiveness = await window.electronAPI.app.getRendererLiveness();
   } catch (e: unknown) {
     console.warn('[debugSnapshot] getRendererLiveness failed ' + errLikeToLogString(e));
   }

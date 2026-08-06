@@ -26,6 +26,7 @@ describe('isMeshcoreSetupAbortError', () => {
 
 describe('isMeshcoreTcpTransportDeadError', () => {
   it('matches main-process no-active-socket and IPC invoke wrappers', () => {
+    expect(isMeshcoreTcpTransportDeadError('meshcore:tcp-write: no active socket')).toBe(true);
     expect(isMeshcoreTcpTransportDeadError(new Error('meshcore:tcp-write: no active socket'))).toBe(
       true,
     );

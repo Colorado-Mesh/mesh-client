@@ -545,4 +545,12 @@ describe('buildProtocolSwitcherUnreadByProtocol', () => {
       reticulum: 6,
     });
   });
+
+  it('includes games unread in the reticulum protocol-switcher total', () => {
+    expect(buildProtocolSwitcherUnreadByProtocol(0, 3, 1, 2, 4)).toEqual({
+      meshtastic: 0,
+      meshcore: 3,
+      reticulum: 7,
+    });
+  });
 });

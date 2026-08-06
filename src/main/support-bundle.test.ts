@@ -271,6 +271,25 @@ describe('buildSupportBundleZip', () => {
     await buildSupportBundleZip(dest, 'github', '{"ok":true}');
     const names = await zipEntryNames(dest);
     expect(names).toContain('mesh-client.log.1');
+    const buf = await fs.promises.readFile(dest);
+    const zip = await JSZip.loadAsync(buf);
+    const backup = await zip.file('mesh-client.log.1')!.async('string');
+    expect(backup).toBe('rotated\n');
+  });
+
+  it('tail-caps oversized backup log to the final 10 MiB', async () => {
+    const tenMiB = 10 * 1024 * 1024;
+    const oversized = Buffer.alloc(tenMiB + 4096, 0x61);
+    // Distinct trailing marker so we can prove the zip holds the end of the file.
+    oversized.write('TAIL-MARKER-END', tenMiB + 4096 - 15);
+    await fs.promises.writeFile(path.join(workDir, 'mesh-client.log.1'), oversized);
+    const dest = path.join(workDir, 'github-backup-tail.zip');
+    await buildSupportBundleZip(dest, 'github', '{"ok":true}');
+    const buf = await fs.promises.readFile(dest);
+    const zip = await JSZip.loadAsync(buf);
+    const entry = await zip.file('mesh-client.log.1')!.async('nodebuffer');
+    expect(entry.byteLength).toBe(tenMiB);
+    expect(entry.subarray(entry.byteLength - 15).toString('utf8')).toBe('TAIL-MARKER-END');
   });
 
   it('manifest records github kind and buildChannel', async () => {

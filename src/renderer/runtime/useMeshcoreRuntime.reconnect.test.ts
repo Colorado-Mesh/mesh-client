@@ -466,8 +466,8 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(RUNTIME_SOURCE).toContain('assertInitConnStillLive');
     expect(RUNTIME_SOURCE).toContain('rethrowMeshcoreSetupAbortFromTcpDead');
     expect(RUNTIME_SOURCE).toContain('isMeshcoreTcpTransportDeadError');
-    const deferConfiguredIdx = RUNTIME_SOURCE.indexOf(
-      "if (deferConfiguredUntilRadioInit) {\n        setState((prev) => ({\n          ...prev,\n          status: 'configured'",
+    const deferConfiguredIdx = RUNTIME_SOURCE.search(
+      /if\s*\(\s*deferConfiguredUntilRadioInit\s*\)\s*\{\s*setState\s*\(\s*\(prev\)\s*=>\s*\(\s*\{\s*\.\.\.prev\s*,\s*status:\s*'configured'/,
     );
     expect(deferConfiguredIdx).toBeGreaterThan(-1);
     const assertBeforeConfigured = RUNTIME_SOURCE.lastIndexOf(

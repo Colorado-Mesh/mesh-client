@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearMeshcoreLocallyDeletedContact,
@@ -6,11 +6,33 @@ import {
   isMeshcoreLocallyDeletedContact,
   markMeshcoreLocallyDeletedContact,
   resetMeshcoreLocallyDeletedContactsForTests,
+  restoreMeshcoreLocallyDeletedContactsFromStorage,
   shouldApplyMeshcoreContact,
 } from './meshcoreLocallyDeletedContacts';
 
+function stubLocalStorage(): void {
+  const store = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => {
+      store.clear();
+    },
+    key: () => null,
+    get length() {
+      return store.size;
+    },
+  } satisfies Storage);
+}
+
 describe('meshcoreLocallyDeletedContacts', () => {
   beforeEach(() => {
+    stubLocalStorage();
     resetMeshcoreLocallyDeletedContactsForTests();
   });
 
@@ -28,5 +50,20 @@ describe('meshcoreLocallyDeletedContacts', () => {
     expect(filtered.get(0xdef)?.name).toBe('keep');
     clearMeshcoreLocallyDeletedContact(0xabc);
     expect(isMeshcoreLocallyDeletedContact(0xabc)).toBe(false);
+  });
+
+  it('persists tombstones across restart so stale messages cannot recreate contacts', () => {
+    markMeshcoreLocallyDeletedContact(0x3456789a);
+    const saved = localStorage.getItem('mesh-client:meshcoreLocallyDeletedContacts');
+    expect(saved).toBeTruthy();
+    // Simulate cold start: wipe memory, keep storage.
+    resetMeshcoreLocallyDeletedContactsForTests();
+    localStorage.setItem('mesh-client:meshcoreLocallyDeletedContacts', saved!);
+    restoreMeshcoreLocallyDeletedContactsFromStorage();
+    expect(shouldApplyMeshcoreContact(0x3456789a)).toBe(false);
+    const stubbed = filterOutMeshcoreLocallyDeletedContacts(
+      new Map([[0x3456789a, { name: 'stale-from-message' }]]),
+    );
+    expect(stubbed.has(0x3456789a)).toBe(false);
   });
 });

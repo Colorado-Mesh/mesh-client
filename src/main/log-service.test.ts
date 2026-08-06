@@ -21,11 +21,12 @@ describe('log-service source contracts', () => {
   it('initLogFile preserves a non-empty prior session log as .1 before truncating', () => {
     const initIdx = LOG_SERVICE_SOURCE.indexOf('export function initLogFile(');
     expect(initIdx).toBeGreaterThan(-1);
-    const body = LOG_SERVICE_SOURCE.slice(initIdx, initIdx + 1600);
+    const body = LOG_SERVICE_SOURCE.slice(initIdx, initIdx + 2800);
     expect(body).toContain('fs.renameSync(p, staging)');
     expect(body).toContain('fs.renameSync(staging, backup)');
     expect(body).toContain('LOG_BACKUP_FILENAME');
     expect(body).toContain('statSync');
+    expect(body).toContain('skipFreshTruncate');
     const renameIdx = body.indexOf('fs.renameSync(p, staging)');
     const truncateIdx = body.indexOf("fs.writeFileSync(p, '', { encoding: 'utf8' })");
     expect(renameIdx).toBeGreaterThan(-1);
@@ -269,6 +270,71 @@ describe('initLogFile previous-session preserve', () => {
       '',
       expect.objectContaining({ encoding: 'utf8' }),
     );
+  });
+
+  it('does not rotate when the prior log exists but is empty (size 0)', async () => {
+    vi.mocked(fs.existsSync).mockImplementation((target) =>
+      String(target).endsWith('mesh-client.log'),
+    );
+    vi.mocked(fs.statSync).mockReturnValue({ size: 0 } as fs.Stats);
+
+    const { initLogFile } = await import('./log-service');
+    initLogFile();
+
+    expect(fs.renameSync).not.toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringMatching(/mesh-client\.log$/),
+      '',
+      expect.objectContaining({ encoding: 'utf8' }),
+    );
+  });
+
+  it('does not truncate prior log when staging→backup promote fails and restore succeeds', async () => {
+    const prior = 'PRIOR-SESSION-LOG-BYTES';
+    let currentExists = true;
+    let stagingPath: string | null = null;
+    const stagingContents = new Map<string, string>();
+
+    vi.mocked(fs.existsSync).mockImplementation((target) => {
+      const s = String(target);
+      if (s.endsWith('mesh-client.log.1')) return false;
+      if (s.includes('.staging-')) return stagingContents.has(s);
+      if (s.endsWith('mesh-client.log')) return currentExists;
+      return false;
+    });
+    vi.mocked(fs.statSync).mockReturnValue({ size: prior.length } as fs.Stats);
+    vi.mocked(fs.renameSync).mockImplementation((from, to) => {
+      const f = String(from);
+      const t = String(to);
+      if (f.endsWith('mesh-client.log') && t.includes('.staging-')) {
+        stagingPath = t;
+        stagingContents.set(t, prior);
+        currentExists = false;
+        return;
+      }
+      if (f.includes('.staging-') && t.endsWith('mesh-client.log.1')) {
+        throw new Error('promote failed');
+      }
+      if (f.includes('.staging-') && t.endsWith('mesh-client.log')) {
+        stagingContents.delete(f);
+        currentExists = true;
+        return;
+      }
+    });
+
+    const { initLogFile } = await import('./log-service');
+    initLogFile();
+
+    expect(stagingPath).toBeTruthy();
+    // Must restore staging → current and skip destructive truncate of prior content.
+    expect(fs.renameSync).toHaveBeenCalledWith(
+      expect.stringMatching(/mesh-client\.log\.1\.staging-/),
+      expect.stringMatching(/mesh-client\.log$/),
+    );
+    const truncatedCurrent = vi
+      .mocked(fs.writeFileSync)
+      .mock.calls.some((args) => String(args[0]).endsWith('mesh-client.log') && args[1] === '');
+    expect(truncatedCurrent).toBe(false);
   });
 });
 

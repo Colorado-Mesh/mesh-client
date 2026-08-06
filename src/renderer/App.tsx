@@ -1468,8 +1468,9 @@ function AppContent() {
         meshcoreChatUnread,
         reticulumChatUnread,
         rrcUnread,
+        gamesUnread,
       ),
-    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread],
+    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread, gamesUnread],
   );
   const roomsUnreadByProtocol = useMemo(
     () => protocolRecord(0, meshcoreRoomsUnread, 0),

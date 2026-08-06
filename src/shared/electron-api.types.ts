@@ -978,8 +978,13 @@ export interface ElectronAPI {
   sendRendererHeartbeat: (payload?: { ts: number }) => Promise<void>;
   /** Main-process uptime in seconds (for long-session restart nudge). */
   getProcessUptimeSec: () => Promise<number>;
-  /** Main-process liveness fields for support debug snapshots. */
-  getRendererLiveness: () => Promise<RendererLivenessSnapshot>;
+  /**
+   * App-process diagnostics (IPC `app:*`).
+   * Liveness fields for support debug snapshots — namespaced (not root).
+   */
+  app: {
+    getRendererLiveness: () => Promise<RendererLivenessSnapshot>;
+  };
 
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────
   meshcore: {

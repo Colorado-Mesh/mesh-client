@@ -4,6 +4,7 @@ import { LAST_SERIAL_PORT_KEY } from '@/renderer/lib/serialPortSignature';
 
 import {
   clearFlasherFlashSession,
+  clearFlasherProvisionCompleted,
   getFlasherSessionPortId,
   getFlasherSessionSerialPort,
   getPostFlashBootWaitMs,
@@ -84,6 +85,14 @@ describe('flasherSessionPort', () => {
     expect(hasFlasherProvisionCompleted()).toBe(true);
     clearFlasherFlashSession();
     expect(hasFlasherFlashCompleted()).toBe(false);
+    expect(hasFlasherProvisionCompleted()).toBe(false);
+  });
+
+  it('clearFlasherProvisionCompleted clears provision only', () => {
+    markFlasherFlashCompleted();
+    markFlasherProvisionCompleted();
+    clearFlasherProvisionCompleted();
+    expect(hasFlasherFlashCompleted()).toBe(true);
     expect(hasFlasherProvisionCompleted()).toBe(false);
   });
 });
