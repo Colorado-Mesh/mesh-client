@@ -36,6 +36,13 @@ describe('useReticulumRuntime inbound LXMF catch-up wiring (source contract)', (
     );
   });
 
+  it('catches up once after remote propagation sync Completes', () => {
+    expect(SOURCE).toMatch(
+      /wasSyncActive[\s\S]*?p\.active === false[\s\S]*?normalizedProgress >= 100[\s\S]*?catchUpRecentInboundLxmf\(\{ reason: 'propagation_sync' \}\)/,
+    );
+    expect(SOURCE).toContain('propagation-retrieve catch-up after sync Completes');
+  });
+
   it('schedules periodic catch-up while the stack is active', () => {
     expect(SOURCE).toMatch(/void catchUpRecentInboundLxmf\(\{/);
     expect(SOURCE).toContain("reason: 'periodic'");

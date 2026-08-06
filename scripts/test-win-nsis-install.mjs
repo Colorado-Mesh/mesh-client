@@ -16,6 +16,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { findAppArchive } from './find-nsis-app-archive.mjs';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { findWinSetupInstaller } from './win-setup-installer-names.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -33,12 +34,6 @@ function fail(msg) {
 function readVersion() {
   const packageJson = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8'));
   return packageJson.version;
-}
-
-/** @param {'x64' | 'arm64'} arch */
-function installerName(version, arch) {
-  const base = `Mesh-client Setup ${version}`;
-  return arch === 'arm64' ? `${base}-arm64.exe` : `${base}.exe`;
 }
 
 /** @param {string} label @param {string} filePath */
@@ -151,12 +146,18 @@ function main(arch, probe7z) {
   }
 
   const version = readVersion();
-  const installer = installerName(version, arch);
-  const installerPath = path.join(releaseDir, installer);
-  if (!existsSync(installerPath)) {
-    dumpDir('release dir (installer missing)', releaseDir, 2);
-    fail(`Installer not found: ${installerPath}`);
+  if (!existsSync(releaseDir)) {
+    fail(`Missing release directory: ${releaseDir}`);
   }
+  /** @type {string} */
+  let installer;
+  try {
+    installer = findWinSetupInstaller(version, arch, readdirSync(releaseDir));
+  } catch (e) {
+    dumpDir('release dir (installer missing)', releaseDir, 2);
+    fail(e instanceof Error ? e.message : String(e));
+  }
+  const installerPath = path.join(releaseDir, installer);
 
   if (probe7z) {
     probe7zExtract(installerPath, path.join(tmpdir(), 'mesh-client-7z-probe'), arch);

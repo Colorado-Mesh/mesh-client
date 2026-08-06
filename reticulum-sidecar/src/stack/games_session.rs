@@ -13,8 +13,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use lrgp::apps::chess::ChessApp;
-use lrgp::apps::tictactoe::TicTacToeApp;
+use lrgp::app_base::IncomingDispatch;
 use lrgp::constants::{
     CMD_CHALLENGE, CMD_MOVE, ERR_INVALID_MOVE, ERR_NOT_YOUR_TURN, KEY_APP, KEY_COMMAND,
     KEY_PAYLOAD, KEY_SESSION,
@@ -86,9 +85,7 @@ impl GamesSessionManager {
         identity_id: String,
         event_tx: broadcast::Sender<String>,
     ) -> Self {
-        let router = Arc::new(LrgpRouter::new());
-        router.register(Box::new(TicTacToeApp::new()));
-        router.register(Box::new(ChessApp::new()));
+        let router = Arc::new(LrgpRouter::with_builtin_apps());
 
         let games_dir = storage_dir.join("lrgp");
         let store = match std::fs::create_dir_all(&games_dir) {
@@ -178,12 +175,7 @@ impl GamesSessionManager {
         for session in sessions {
             let app_id = session.app_id.clone();
             let session_id = session.session_id.clone();
-            if let Err(e) = self.router.rollback_outgoing(
-                &app_id,
-                &session_id,
-                &self.identity_id,
-                Some(session),
-            ) {
+            if let Err(e) = self.router.restore_session(session) {
                 tracing::warn!(
                     target: "games",
                     "failed to hydrate session {session_id} ({app_id}): {e}"
@@ -233,10 +225,7 @@ impl GamesSessionManager {
         } else {
             session.app_id.clone()
         };
-        match self
-            .router
-            .rollback_outgoing(&app, session_id, &self.identity_id, Some(session))
-        {
+        match self.router.restore_session(session) {
             Ok(()) => Ok(true),
             Err(e) => {
                 tracing::warn!(
@@ -452,7 +441,34 @@ impl GamesSessionManager {
             .router
             .dispatch_incoming(&envelope, sender_hash, &self.identity_id)
         {
-            Ok(r) => r,
+            Ok(IncomingDispatch::Applied(r)) => r,
+            Ok(IncomingDispatch::Replay) => {
+                tracing::debug!(
+                    target: "games",
+                    "dropping in-process LRGP replay for app_id={app_id} session_id={session_id} command={command}"
+                );
+                return true;
+            }
+            Ok(IncomingDispatch::RemoteError(error)) => {
+                // Remote protocol errors are accepted LRGP actions; persist so
+                // transport replay after restart cannot resurface the same rejection.
+                self.schedule_persist_session(&error.app_id, &error.session_id);
+                let payload = serde_json::json!({
+                    "app_id": error.app_id,
+                    "session_id": error.session_id,
+                    "command": command,
+                    "sender_hash": sender_hash,
+                    "direction": "inbound",
+                    "session": JsonValue::Null,
+                    "error": {
+                        "code": error.code,
+                        "message": error.message,
+                        "reference": error.reference,
+                    },
+                });
+                self.emit("games.update", &payload);
+                return true;
+            }
             Err(e) => {
                 tracing::warn!(
                     target: "games",
@@ -573,30 +589,65 @@ impl GamesSessionManager {
             .router
             .snapshot_before_outgoing(app_id, &session_id, &self.identity_id);
 
-        let (envelope, fallback_text) = self
+        // Challenges must bind the remote peer before accept can succeed; use
+        // dispatch_outgoing_to for every outbound action (matches Ratspeak).
+        let prepared = self
             .router
-            .dispatch_outgoing(
+            .dispatch_outgoing_to(
                 app_id,
                 version,
                 command,
                 &session_id,
                 &payload,
                 &self.identity_id,
+                &dest_hash,
             )
             .map_err(|e| format!("dispatch_error: {e}"))?;
 
-        let fields =
-            transport::pack_into_fields(&envelope).map_err(|e| format!("encode_error: {e}"))?;
-        let envelope_bytes =
-            envelope::pack_to_bytes(&envelope).map_err(|e| format!("encode_error: {e}"))?;
+        let fields = match transport::pack_into_preencoded_fields(&prepared.envelope) {
+            Ok(fields) => fields,
+            Err(e) => {
+                let encode_error = format!("encode_error: {e}");
+                if let Err(rb) = self.router.rollback_outgoing(
+                    app_id,
+                    &prepared.session_id,
+                    &self.identity_id,
+                    snapshot,
+                ) {
+                    tracing::warn!(
+                        target: "games",
+                        "lrgp rollback_outgoing after encode failure: {rb}"
+                    );
+                }
+                return Err(encode_error);
+            }
+        };
+        let envelope_bytes = match envelope::pack_to_bytes(&prepared.envelope) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                let encode_error = format!("encode_error: {e}");
+                if let Err(rb) = self.router.rollback_outgoing(
+                    app_id,
+                    &prepared.session_id,
+                    &self.identity_id,
+                    snapshot,
+                ) {
+                    tracing::warn!(
+                        target: "games",
+                        "lrgp rollback_outgoing after encode failure: {rb}"
+                    );
+                }
+                return Err(encode_error);
+            }
+        };
 
         Ok(PreparedGameAction {
             app_id: app_id.to_string(),
-            session_id,
+            session_id: prepared.session_id,
             dest_hash,
             fields,
             envelope_bytes,
-            fallback_text,
+            fallback_text: prepared.fallback_text,
             snapshot,
         })
     }
@@ -657,7 +708,7 @@ impl GamesSessionManager {
             .router
             .with_app(&app_id, |app| app.render_fallback(&command, &payload))
             .unwrap_or_default();
-        let fields = transport::pack_into_fields(&envelope)
+        let fields = transport::pack_into_preencoded_fields(&envelope)
             .map_err(|e| format!("resend_encode_error: {e}"))?;
 
         Ok(PreparedResend {
@@ -984,6 +1035,9 @@ fn now_secs() -> f64 {
 /// Mirrors Ratspeak's `save_session_from_state` — persist the app's own
 /// in-memory `get_session_state()` JSON snapshot into the SQLite mirror after
 /// every dispatch (inbound or outbound) so list/detail endpoints stay current.
+///
+/// `LrgpStore::save_session` is insert-only (lrgp 0.4+); existing rows go through
+/// the mutable-column allowlist on `update_session`.
 fn save_session_from_state(
     store: &LrgpStore,
     session_id: &str,
@@ -1026,22 +1080,40 @@ fn save_session_from_state(
         .and_then(JsonValue::as_f64)
         .unwrap_or_else(now_secs);
 
-    store
-        .save_session(
-            session_id,
-            identity_id,
-            app_id,
-            app_version,
-            contact_hash,
-            initiator,
-            status,
-            &metadata,
-            unread,
-            created_at,
-            updated_at,
-            last_action_at,
-        )
-        .map_err(|e| e.to_string())
+    match store
+        .get_session(session_id, identity_id)
+        .map_err(|e| e.to_string())?
+    {
+        Some(_) => {
+            let meta_json =
+                serde_json::to_string(&metadata).map_err(|e| format!("metadata serialize: {e}"))?;
+            let mut updates = HashMap::new();
+            updates.insert("status".to_string(), status.to_string());
+            updates.insert("metadata".to_string(), meta_json);
+            updates.insert("unread".to_string(), unread.to_string());
+            updates.insert("updated_at".to_string(), updated_at.to_string());
+            updates.insert("last_action_at".to_string(), last_action_at.to_string());
+            store
+                .update_session(session_id, identity_id, &updates)
+                .map_err(|e| e.to_string())
+        }
+        None => store
+            .save_session(
+                session_id,
+                identity_id,
+                app_id,
+                app_version,
+                contact_hash,
+                initiator,
+                status,
+                &metadata,
+                unread,
+                created_at,
+                updated_at,
+                last_action_at,
+            )
+            .map_err(|e| e.to_string()),
+    }
 }
 
 fn json_to_rmpv(value: &JsonValue) -> rmpv::Value {
@@ -1104,8 +1176,9 @@ mod tests {
     }
 
     fn inbound_challenge_fields(session_id: &str) -> BTreeMap<u8, Vec<u8>> {
-        let env = envelope::pack_envelope("ttt", 1, CMD_CHALLENGE, session_id, None, None);
-        transport::pack_into_fields(&env)
+        let env = envelope::pack_envelope("ttt", 1, CMD_CHALLENGE, session_id, None, None)
+            .expect("pack challenge envelope");
+        transport::pack_into_preencoded_fields(&env)
             .expect("pack challenge")
             .into_iter()
             .collect()
@@ -1118,12 +1191,14 @@ mod tests {
         let ids: Vec<&str> = apps.iter().map(|m| m.app_id.as_str()).collect();
         assert!(ids.contains(&"ttt"));
         assert!(ids.contains(&"chess"));
+        assert!(ids.contains(&"four_in_a_row"));
     }
 
     #[test]
     fn pack_extract_roundtrip_via_transport() {
-        let env = envelope::pack_envelope("ttt", 1, "challenge", "abc123", None, None);
-        let fields = transport::pack_into_fields(&env).expect("pack");
+        let env = envelope::pack_envelope("ttt", 1, "challenge", "abcdef0123456789", None, None)
+            .expect("pack envelope");
+        let fields = transport::pack_into_preencoded_fields(&env).expect("pack");
         let recovered = transport::extract_envelope(&fields)
             .expect("extract")
             .expect("some");
@@ -1169,10 +1244,11 @@ mod tests {
     fn local_reject_maps_invalid_move_on_empty_payload() {
         let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
-        assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields("sess1"), &dest, ""));
+        let session_id = "cccccccccccccccc";
+        assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields(session_id), &dest, ""));
         let _guard = hydrate_err_test_guard();
         let err = manager
-            .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
+            .prepare_action(&dest, "ttt", CMD_MOVE, Some(session_id), None)
             .expect_err("expected local reject");
         assert_eq!(err, ERR_INVALID_MOVE);
     }
@@ -1182,7 +1258,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let identity = "selfidentityhash";
         let peer = "c".repeat(32);
-        let session_id = "sess-rehydrate";
+        let session_id = "aaaaaaaaaaaaaaaa";
         let (event_tx, _rx) = broadcast::channel(16);
 
         {
@@ -1206,44 +1282,55 @@ mod tests {
 
     #[test]
     fn local_reject_maps_not_your_turn() {
-        let (_dir, manager, _) = test_manager();
-        let dest = "b".repeat(32);
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (event_tx, _rx) = broadcast::channel(16);
+        // prepare_action requires 32-hex dest hashes; use the same shape for identity ids.
+        let self_id = "a".repeat(32);
+        let peer = "b".repeat(32);
+        let manager = GamesSessionManager::spawn(dir.path(), self_id.clone(), event_tx.clone());
+        let peer_manager =
+            GamesSessionManager::spawn(&dir.path().join("peer"), peer.clone(), event_tx);
 
-        // Our own outgoing challenge creates the session (turn unset yet).
         let challenge = manager
-            .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
+            .prepare_action(&peer, "ttt", CMD_CHALLENGE, None, None)
             .expect("challenge prepared");
+        let sid = challenge.session_id.clone();
+        let challenge_fields: BTreeMap<u8, Vec<u8>> =
+            challenge.fields.clone().into_iter().collect();
         manager.commit_action(&challenge, Some("testhash2"));
 
-        // Opponent's accept arrives inbound and hands the turn to them.
-        let mut payload = serde_json::Map::new();
-        payload.insert("b".into(), JsonValue::String("_________".into()));
-        payload.insert("t".into(), JsonValue::String(dest.clone()));
-        let accept_payload = json_payload_to_rmpv_map(Some(&JsonValue::Object(payload)));
-        let accept_env = envelope::pack_envelope(
-            "ttt",
-            1,
-            "accept",
-            &challenge.session_id,
-            Some(accept_payload),
-            None,
-        );
-        let accept_fields: BTreeMap<u8, Vec<u8>> = transport::pack_into_fields(&accept_env)
-            .expect("pack accept")
-            .into_iter()
-            .collect();
-        assert!(manager.handle_inbound_lxmf(&accept_fields, &dest, ""));
+        assert!(peer_manager.handle_inbound_lxmf(&challenge_fields, &self_id, ""));
+        let accept = peer_manager
+            .prepare_action(&self_id, "ttt", CMD_ACCEPT, Some(&sid), None)
+            .expect("peer accept");
+        let accept_fields: BTreeMap<u8, Vec<u8>> = accept.fields.clone().into_iter().collect();
+        assert!(manager.handle_inbound_lxmf(&accept_fields, &peer, ""));
 
         let _guard = hydrate_err_test_guard();
+        // Coin-flip first turn: hand off if we own it, then assert a single not-your-turn.
+        let detail = manager.session_detail(&sid);
+        let turn = detail["session"]["metadata"]["turn"].as_str().unwrap_or("");
+        if turn == self_id {
+            let action = manager
+                .prepare_action(
+                    &peer,
+                    "ttt",
+                    CMD_MOVE,
+                    Some(&sid),
+                    Some(&serde_json::json!({ "i": 0 })),
+                )
+                .expect("own-turn move should prepare");
+            manager.commit_action(&action, Some("move1"));
+        }
         let err = manager
             .prepare_action(
-                &dest,
+                &peer,
                 "ttt",
                 CMD_MOVE,
-                Some(&challenge.session_id),
-                Some(&serde_json::json!({ "i": 0 })),
+                Some(&sid),
+                Some(&serde_json::json!({ "i": 1 })),
             )
-            .expect_err("expected not_your_turn");
+            .expect_err("expected not_your_turn when peer owns the turn");
         assert_eq!(err, ERR_NOT_YOUR_TURN);
     }
 
@@ -1263,7 +1350,7 @@ mod tests {
     }
 
     #[test]
-    fn list_apps_includes_both_builtin_games() {
+    fn list_apps_includes_builtin_games() {
         let (_dir, manager, _) = test_manager();
         let apps = manager.list_apps();
         let ids: Vec<String> = apps["apps"]
@@ -1274,6 +1361,7 @@ mod tests {
             .collect();
         assert!(ids.contains(&"ttt".to_string()));
         assert!(ids.contains(&"chess".to_string()));
+        assert!(ids.contains(&"four_in_a_row".to_string()));
     }
 
     #[test]
@@ -1281,7 +1369,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let identity = "selfidentityhash";
         let peer = "d".repeat(32);
-        let session_id = "sess-env-persist";
+        let session_id = "bbbbbbbbbbbbbbbb";
         let (event_tx, _rx) = broadcast::channel(16);
         {
             let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx.clone());

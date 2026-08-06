@@ -19,6 +19,7 @@ const FIELD_REPLY_TO: u8 = 0x30;
 const FIELD_REPLY_QUOTE: u8 = 0x31;
 /// Cap wire quote length (matches renderer `REPLY_PREVIEW_MAX_LEN` without ellipsis).
 const REPLY_QUOTE_MAX_CHARS: usize = 50;
+use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
@@ -378,6 +379,20 @@ impl LiveBridge {
                 .get("message_hash")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
+            let transient_id_hex = msg
+                .transient_id
+                .as_ref()
+                .map(hex::encode)
+                .unwrap_or_default();
+            if msg.method == DeliveryMethod::Propagated {
+                tracing::info!(
+                    target: "propagation-retrieve",
+                    message_hash = %message_hash,
+                    transient_id = %transient_id_hex,
+                    from = %sender_hex,
+                    "inbound LXMF delivered via propagation"
+                );
+            }
             // Rate-limited warn so developer bundles can prove sidecar receipt without spam.
             rate_limited_inbound_lxmf_warn(&sender_hex, message_hash);
             // Contacts are manual-only in mesh-client; do not upsert on inbound LXMF.
@@ -2389,6 +2404,7 @@ impl LiveBridge {
         let event_tx = self.event_tx.clone();
         let propagation = self.propagation.clone();
         let config_dir = self.config_dir.clone();
+        let local_identity_hash = self.identity.hash;
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
@@ -2582,7 +2598,23 @@ impl LiveBridge {
                     }
                     driver.process_tick(&mut router, &event_tx);
                     let known_identities = driver.known_identities_for_propagation();
-                    propagation.tick(&known_identities);
+                    let terminal = propagation.tick(&known_identities);
+                    if terminal.is_some() {
+                        driver.set_propagation_sync_target(None);
+                    }
+                    // Local Host: push inventory to peered PNs when the sync task is idle
+                    // and no user Sync / deposit owns the PN Link (lxmd drive_pending parity).
+                    if propagation.is_local_serving()
+                        && !propagation.sync_active()
+                        && driver.propagation_sync_target().is_none()
+                    {
+                        drive_local_host_peer_sync(
+                            &propagation,
+                            &mut router,
+                            &mut driver,
+                            local_identity_hash,
+                        );
+                    }
                 }
                 // Skip tick when outbound is locked — never drain LRPROOF against an empty map.
             }
@@ -3016,7 +3048,10 @@ impl LiveBridge {
             method,
         );
         for (&field_id, bytes) in fields {
-            msg.set_field(field_id, bytes.clone());
+            // LRGP packs native MessagePack field values (0xFB string / 0xFD map).
+            // `set_field` would wrap those in BIN and break Python/Ratspeak peers.
+            msg.set_msgpack_field(field_id, bytes.clone())
+                .map_err(|e| format!("lxmf set_msgpack_field {field_id:#x}: {e}"))?;
         }
         let signing_key = self
             .identity
@@ -3278,7 +3313,8 @@ impl LiveBridge {
                 &self.handle.transport_tx,
                 &self.identity,
                 self.propagation.local_dest_hash_bytes(),
-                self.propagation.local_node(),
+                &self.propagation.local_node(),
+                &policy,
             ) {
                 tracing::error!(target: "propagation-serve", "failed to start serve: {e}");
                 let mut router = self.router.lock().await;
@@ -5264,6 +5300,81 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
 /// Pure announce classification for propagation sync targets.
 ///
 /// `entries` is `(dest_hash_hex, name_hash)` pairs from recent announces.
+/// While Host PN is on, push inventory to peered PNs (lxmd `drive_pending_peer_syncs` parity).
+///
+/// Skips when the shared sync task is busy or a user Sync/deposit owns the PN Link.
+fn drive_local_host_peer_sync(
+    propagation: &Arc<PropagationBridge>,
+    router: &mut LxmRouter,
+    driver: &mut LxmfOutboundDriver,
+    local_identity_hash: [u8; 16],
+) {
+    propagation.drain_peering_key_results(router);
+
+    let offer_generation = match propagation.local_node().lock() {
+        Ok(node) => node.offer_generation(),
+        Err(_) => return,
+    };
+
+    let policies = router.sync_peer_policies_for_store(offer_generation);
+    for policy in policies {
+        let peer_hash = policy.peer_hash;
+        let Some(peer) = router.peers.get(&peer_hash) else {
+            continue;
+        };
+        if !peer.stamp_costs_known() {
+            continue;
+        }
+        if peer.peering_cost > 0 && !peer.peering_key_ready() {
+            if propagation.peering_key_job_inflight(&peer_hash) {
+                continue;
+            }
+            let peer_hex = hex::encode(peer_hash);
+            let Some(pub_key) = driver.public_key_for(&peer_hex) else {
+                tracing::debug!(
+                    target: "propagation-sync",
+                    peer = %peer_hex,
+                    "host peer sync postponed until identity is known"
+                );
+                continue;
+            };
+            let Ok(peer_identity) = Identity::from_public_key(&pub_key) else {
+                continue;
+            };
+            let peering_cost = peer.peering_cost;
+            propagation.spawn_peering_key_job(
+                peer_hash,
+                peering_cost,
+                peer_identity.hash,
+                local_identity_hash,
+            );
+            continue;
+        }
+
+        if driver.has_inflight_delivery_to(&peer_hash) {
+            continue;
+        }
+
+        let ready_policy = OutboundOfferPolicy::from(peer);
+        if peer.peering_cost > 0 && ready_policy.peering_key.is_empty() {
+            continue;
+        }
+
+        if propagation.start_sync_with_policy(ready_policy) {
+            if let Some(peer) = router.peers.get_mut(&peer_hash) {
+                peer.begin_sync();
+            }
+            driver.set_propagation_sync_target(Some(peer_hash));
+            tracing::info!(
+                target: "propagation-sync",
+                peer = %hex::encode(peer_hash),
+                "local host queued outbound peer inventory sync"
+            );
+            return;
+        }
+    }
+}
+
 fn classify_propagation_target_name_hashes(
     destination_hex: &str,
     entries: &[(String, [u8; 10])],

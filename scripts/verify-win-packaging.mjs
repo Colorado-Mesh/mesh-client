@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { collectWinSetupInstallers } from './win-setup-installer-names.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -51,35 +52,12 @@ function collectSetupInstallers(version) {
     process.exit(1);
   }
 
-  const prefix = `Mesh-client Setup ${version}`;
-  const installers = readdirSync(releaseDir).filter((name) => {
-    if (name.includes('__uninstaller')) return false;
-    return name === `${prefix}.exe` || name === `${prefix}-arm64.exe`;
-  });
-
-  const x64 = installers.filter((name) => !name.endsWith('-arm64.exe'));
-  const arm64 = installers.filter((name) => name.endsWith('-arm64.exe'));
-
-  if (x64.length !== 1) {
-    console.error(
-      `[verify-win-packaging] Expected exactly one x64 NSIS installer, found ${x64.length}: ${x64.join(', ') || '(none)'}`,
-    );
-    process.exit(1);
+  try {
+    return collectWinSetupInstallers(version, readdirSync(releaseDir));
+  } catch (e) {
+    fail(e instanceof Error ? e.message : String(e));
+    throw e;
   }
-  if (arm64.length !== 1) {
-    console.error(
-      `[verify-win-packaging] Expected exactly one arm64 NSIS installer, found ${arm64.length}: ${arm64.join(', ') || '(none)'}`,
-    );
-    process.exit(1);
-  }
-  if (installers.length !== 2) {
-    console.error(
-      `[verify-win-packaging] Expected two per-arch installers (no universal build), found ${installers.length}: ${installers.join(', ')}`,
-    );
-    process.exit(1);
-  }
-
-  return { x64: x64[0], arm64: arm64[0] };
 }
 
 function main() {

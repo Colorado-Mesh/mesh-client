@@ -29,6 +29,8 @@ coverage/
 .rtk
 .githooks/bin/
 flatpak/generated-sources.json
+# Written by scripts/write-flatpak-ci-build-info.mjs in Flatpak CI
+flatpak/ci-build-info.json
 
 # Rust reticulum sidecar (cargo build output)
 reticulum-sidecar/target/

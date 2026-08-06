@@ -80,7 +80,7 @@ Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/me
 | -------------------------------- | -------------------------------------------------- | --------------- | -------------------------------- |
 | @axe-core/react                  | ^4.12.1                                            | MPL-2.0         | Accessibility testing            |
 | @eslint/js                       | ^10.0.1                                            | MIT             | ESLint flat-config helpers       |
-| @liamcottle/meshcore.js          | ^1.13.0                                            | MIT             | MeshCore JS library              |
+| @liamcottle/meshcore.js          | ^1.14.0                                            | MIT             | MeshCore JS library              |
 | @meshtastic/core                 | npm:@jsr/meshtastic\_\_core@^2.6.6                 | Apache-2.0      | Meshtastic core                  |
 | @meshtastic/transport-http       | npm:@jsr/meshtastic\_\_transport-http@^0.2.1       | Apache-2.0      | HTTP transport                   |
 | @meshtastic/transport-web-serial | npm:@jsr/meshtastic\_\_transport-web-serial@^0.2.5 | Apache-2.0      | Web Serial transport             |

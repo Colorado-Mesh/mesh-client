@@ -1,6 +1,6 @@
 //! Live propagation node serving and sync against remote propagation nodes.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -13,6 +13,12 @@ use lxmf_core::router::LxmRouter;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use tokio::sync::{broadcast, mpsc};
+
+/// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
+type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
+
+/// Cap concurrent host-peer peering-key PoW jobs (CPU-heavy stamp generation).
+const MAX_PEERING_KEY_JOBS: usize = 8;
 
 pub struct PropagationBridge {
     local_dest_hash: [u8; 16],
@@ -29,6 +35,9 @@ pub struct PropagationBridge {
     last_finished_ok: Mutex<Option<bool>>,
     /// Peak sync progress seen before tip collapses Complete/Failed → Idle.
     peak_progress: Mutex<f64>,
+    /// In-flight peering-key PoW jobs for local-host outbound peer sync.
+    peering_key_jobs: Mutex<HashSet<[u8; 16]>>,
+    peering_key_results: Mutex<Vec<PeeringKeyResult>>,
 }
 
 impl PropagationBridge {
@@ -67,7 +76,87 @@ impl PropagationBridge {
             last_establish_error: Mutex::new(None),
             last_finished_ok: Mutex::new(None),
             peak_progress: Mutex::new(0.0),
+            peering_key_jobs: Mutex::new(HashSet::new()),
+            peering_key_results: Mutex::new(Vec::new()),
         })
+    }
+
+    pub fn peering_key_job_inflight(&self, peer_hash: &[u8; 16]) -> bool {
+        self.peering_key_jobs
+            .lock()
+            .map(|jobs| jobs.contains(peer_hash))
+            .unwrap_or(false)
+    }
+
+    pub fn spawn_peering_key_job(
+        self: &Arc<Self>,
+        peer_hash: [u8; 16],
+        peering_cost: u8,
+        peer_identity_hash: [u8; 16],
+        local_identity_hash: [u8; 16],
+    ) {
+        {
+            let Ok(mut jobs) = self.peering_key_jobs.lock() else {
+                return;
+            };
+            if jobs.len() >= MAX_PEERING_KEY_JOBS {
+                return;
+            }
+            if !jobs.insert(peer_hash) {
+                return;
+            }
+        }
+        let bridge = Arc::clone(self);
+        tokio::spawn(async move {
+            let result = tokio::task::spawn_blocking(move || {
+                let mut peering_id = Vec::with_capacity(32);
+                peering_id.extend_from_slice(&peer_identity_hash);
+                peering_id.extend_from_slice(&local_identity_hash);
+                lxmf_core::stamper::generate_stamp(
+                    &peering_id,
+                    peering_cost,
+                    lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PEERING,
+                )
+                .map(|(stamp, value)| (peer_hash, stamp, value))
+            })
+            .await
+            .ok()
+            .flatten();
+            if let Ok(mut jobs) = bridge.peering_key_jobs.lock() {
+                jobs.remove(&peer_hash);
+            }
+            if let Some(result) = result {
+                if let Ok(mut slot) = bridge.peering_key_results.lock() {
+                    slot.push(result);
+                }
+            } else {
+                tracing::warn!(
+                    target: "propagation-sync",
+                    peer = %hex::encode(peer_hash),
+                    peering_cost,
+                    "host peer peering-key PoW failed"
+                );
+            }
+        });
+    }
+
+    pub fn drain_peering_key_results(&self, router: &mut LxmRouter) {
+        let results = self
+            .peering_key_results
+            .lock()
+            .map(|mut slot| std::mem::take(&mut *slot))
+            .unwrap_or_default();
+        for (peer_hash, stamp, value) in results {
+            if let Some(peer) = router.peers.get_mut(&peer_hash) {
+                peer.peering_key = Some((stamp, value));
+                tracing::info!(
+                    target: "propagation-sync",
+                    peer = %hex::encode(peer_hash),
+                    value,
+                    "host peer peering key ready"
+                );
+            }
+        }
     }
 
     /// Map rsLXMF sync-task state to UI / probe progress (single source of truth).
@@ -181,6 +270,15 @@ impl PropagationBridge {
         task.request_sync_now_with_policy(policy)
     }
 
+    /// Start outbound peer sync with a fully-built offer policy (local host peer loop).
+    pub fn start_sync_with_policy(&self, policy: OutboundOfferPolicy) -> bool {
+        let Ok(mut task) = self.sync_task.lock() else {
+            return false;
+        };
+        self.clear_sticky_errors();
+        task.request_sync_now_with_policy(policy)
+    }
+
     pub fn cancel_sync(&self) {
         // Tip `cancel_peer_sync` leaves Idle + clears terminal_result. Do not force
         // Failed afterward — that blocks the next `request_sync_now_*` (Idle required).
@@ -265,27 +363,44 @@ impl PropagationBridge {
         self.last_finished_ok.lock().ok().and_then(|slot| *slot)
     }
 
-    pub fn tick(&self, known_identities: &HashMap<String, [u8; 64]>) {
+    /// Drain sync events and return `Some((success, peer_hash))` when a peer sync just finished.
+    pub fn tick(&self, known_identities: &HashMap<String, [u8; 64]>) -> Option<(bool, [u8; 16])> {
         let terminal = if let Ok(mut task) = self.sync_task.lock() {
             // Sample before drain/tick: tip collapses Complete|Failed → Idle in tick().
             self.note_peak_progress(Self::progress_for_state(task.state));
             task.drain_events(known_identities);
             self.note_peak_progress(Self::progress_for_state(task.state));
             task.tick();
-            task.take_terminal_peer_result()
-                .map(|result| matches!(result.state, PeerSyncTerminalState::Complete))
+            task.take_terminal_peer_result().map(|result| {
+                (
+                    matches!(result.state, PeerSyncTerminalState::Complete),
+                    result.peer_hash,
+                )
+            })
         } else {
             None
         };
-        if let Some(ok) = terminal {
+        if let Some((ok, peer_hash)) = terminal {
             if let Ok(mut slot) = self.last_finished_ok.lock() {
                 *slot = Some(ok);
             }
-            if !ok {
+            if ok {
+                let peak = self.last_peak_progress();
+                // Peak ≥ Transferring (70) means WantSome/WantAll pulled blobs; lower ≈ HaveAll.
+                let retrieve_mode = if peak >= 70.0 { "transfer" } else { "have_all" };
+                tracing::info!(
+                    target: "propagation-retrieve",
+                    pn_hash = %hex::encode(peer_hash),
+                    peak_progress = peak,
+                    retrieve_mode,
+                    "remote/host PN sync Completes"
+                );
+            } else {
                 let peak = self.last_peak_progress();
                 self.stamp_terminal_failure_from_peak(peak);
             }
         }
+        terminal
     }
 
     pub fn spawn_sync_progress_emitter(
@@ -397,9 +512,13 @@ impl PropagationBridge {
                 }
                 if !active && (progress >= 99.0 || finished_ok.is_some()) {
                     if finished_ok == Some(true) {
+                        let peak = bridge.last_peak_progress();
+                        let retrieve_mode = if peak >= 70.0 { "transfer" } else { "have_all" };
                         tracing::info!(
-                            target: "propagation-sync",
+                            target: "propagation-retrieve",
                             progress,
+                            peak_progress = peak,
+                            retrieve_mode,
                             "propagation sync completed successfully"
                         );
                     } else if let Some(ref msg) = fail_message {
@@ -572,5 +691,33 @@ mod tests {
         assert_eq!(bridge.last_establish_error(), None);
         assert_eq!(bridge.last_offer_error(), None);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn source_host_peer_sync_idle_gate_and_policy_start() {
+        let live = include_str!("live.rs");
+        assert!(
+            live.contains("drive_local_host_peer_sync"),
+            "maintenance must drive host peer sync when serving"
+        );
+        assert!(
+            live.contains("is_local_serving()")
+                && live.contains("!propagation.sync_active()")
+                && live.contains("propagation_sync_target().is_none()"),
+            "peer sync tick must require serving + idle + no user sync target"
+        );
+        assert!(
+            live.contains("start_sync_with_policy"),
+            "host peer loop must start policy-aware sync"
+        );
+        let bridge = include_str!("propagation_bridge.rs");
+        assert!(
+            bridge.contains("start_sync_with_policy"),
+            "bridge must expose policy sync for host peer loop"
+        );
+        assert!(
+            bridge.contains("propagation-retrieve"),
+            "sync Completes must log retrieve telemetry"
+        );
     }
 }
