@@ -77,37 +77,74 @@ describe('useHostLinkMeter', () => {
     },
   );
 
-  it('returns ip-rtt with no data for Meshtastic raw TCP and never opens a competing probe connection', async () => {
-    // Meshtastic raw-TCP RTT probing used to open a second, separate connection to the
-    // exact same host:port as the live session every poll tick — confirmed via live
-    // packet capture to intermittently get the *real* session RST'd by the device
-    // (5/5 reproduced samples; unaffected by upstream PR #808's setNoDelay/setKeepAlive,
-    // which only touches the main session's socket). Do not re-enable this probe for
-    // 'meshtastic' + 'tcp' without deriving RTT from the already-open session instead.
-    //
-    // kind stays 'ip-rtt' (not 'unavailable') with null rttMs/level — same rendering as
-    // an HTTP probe failure ("—" + no-data bars). A dedicated 'unavailable' kind would
-    // incorrectly show ConnectionLinkMeter's Web-Bluetooth-specific copy on this
-    // WiFi/TCP-only transport.
-    vi.useFakeTimers();
-    const { result } = renderHook(() =>
-      useHostLinkMeter({
-        protocol: 'meshtastic',
-        connectionType: 'tcp',
-        status: 'configured',
-        hostAddress: '10.0.0.5:4403',
-        platform: 'darwin',
-      }),
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'returns ip-rtt with no data for Meshtastic raw TCP and never opens a competing probe connection on %s',
+    async (platform) => {
+      // Meshtastic raw-TCP RTT probing used to open a second, separate connection to the
+      // exact same host:port as the live session every poll tick — confirmed via live
+      // packet capture to intermittently get the *real* session RST'd by the device
+      // (5/5 reproduced samples; unaffected by upstream PR #808's setNoDelay/setKeepAlive,
+      // which only touches the main session's socket). Do not re-enable this probe for
+      // 'meshtastic' + 'tcp' without deriving RTT from the already-open session instead.
+      // Platform-independent behavior (no OS-specific mechanism involved), so covered on
+      // all three platforms per project convention rather than a single-platform case.
+      //
+      // kind stays 'ip-rtt' (not 'unavailable') with null rttMs/level — same rendering as
+      // an HTTP probe failure ("—" + no-data bars). A dedicated 'unavailable' kind would
+      // incorrectly show ConnectionLinkMeter's Web-Bluetooth-specific copy on this
+      // WiFi/TCP-only transport.
+      vi.useFakeTimers();
+      const { result } = renderHook(() =>
+        useHostLinkMeter({
+          protocol: 'meshtastic',
+          connectionType: 'tcp',
+          status: 'configured',
+          hostAddress: '10.0.0.5:4403',
+          platform,
+        }),
+      );
+      expect(result.current.kind).toBe('ip-rtt');
+      expect(result.current.rttMs).toBeNull();
+      expect(result.current.level).toBeNull();
+
+      // Advance well past several poll intervals to confirm no deferred/interval probe fires.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+    },
+  );
+
+  it('clears stale HTTP RTT when Meshtastic switches from HTTP to TCP', async () => {
+    // Render logic derives the displayed RTT from meshtasticTcpProbeUnsafe directly
+    // rather than trusting rttMs state, so a prior HTTP probe result can never render
+    // as if it were the (disabled) TCP link quality, without depending on the probe
+    // effect's cleanup (setRttMs(null)) having committed first. Verifies the settled
+    // end state; RTL's act()-wrapped rerender flushes that cleanup synchronously in
+    // this environment, so this does not exercise the specific single-render flash
+    // the derivation also guards against in a real browser (passive effects commit
+    // after paint there) — the render-time guard is defense in depth regardless.
+    const { result, rerender } = renderHook(
+      (props: { connectionType: 'http' | 'tcp' }) =>
+        useHostLinkMeter({
+          protocol: 'meshtastic',
+          connectionType: props.connectionType,
+          status: 'configured',
+          hostAddress: 'meshtastic.local',
+          platform: 'darwin',
+        }),
+      { initialProps: { connectionType: 'http' } },
     );
+
+    await waitFor(() => {
+      expect(result.current.rttMs).toBe(40);
+    });
+
+    rerender({ connectionType: 'tcp' });
+
     expect(result.current.kind).toBe('ip-rtt');
     expect(result.current.rttMs).toBeNull();
     expect(result.current.level).toBeNull();
-
-    // Advance well past several poll intervals to confirm no deferred/interval probe fires.
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(20_000);
-    });
-    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
   });
 
   it('returns ip-rtt for MeshCore TCP/IP (http transport) via probeTcpRtt', async () => {

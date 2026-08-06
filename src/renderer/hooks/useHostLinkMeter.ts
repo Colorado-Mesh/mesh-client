@@ -148,12 +148,17 @@ export function useHostLinkMeter(opts: {
   }
 
   if (connectionType === 'http' || connectionType === 'tcp') {
-    // meshtasticTcpProbeUnsafe: rttMs never gets set (probe effect above skips this
-    // combo entirely), so this naturally renders the same "—" / no-data state as an
-    // HTTP probe failure — not a separate 'unavailable' kind, which would incorrectly
-    // show ConnectionLinkMeter's Web-Bluetooth-specific copy for a WiFi/TCP transport.
-    const level = rttMs != null ? rttToSignalLevel(rttMs) : null;
-    return { kind: 'ip-rtt', rssi: null, rttMs, level };
+    // meshtasticTcpProbeUnsafe: force the displayed RTT to null rather than trusting
+    // rttMs state directly — on the render right after switching from Meshtastic HTTP
+    // to TCP, this branch runs before the probe effect's cleanup has cleared rttMs
+    // (effects commit after render), so a stale HTTP RTT value could otherwise flash
+    // as if it were the (disabled) TCP link quality. Same "—" / no-data rendering as
+    // an HTTP probe failure — not a separate 'unavailable' kind, which would
+    // incorrectly show ConnectionLinkMeter's Web-Bluetooth-specific copy on a
+    // WiFi/TCP-only transport.
+    const displayedRttMs = meshtasticTcpProbeUnsafe ? null : rttMs;
+    const level = displayedRttMs != null ? rttToSignalLevel(displayedRttMs) : null;
+    return { kind: 'ip-rtt', rssi: null, rttMs: displayedRttMs, level };
   }
 
   return IDLE;

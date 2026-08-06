@@ -141,30 +141,34 @@ describe('ConnectionPanel host link meter', () => {
     });
   });
 
-  it('shows Link quality with no data for Meshtastic TCP and never probes (device RST hazard)', () => {
-    // Meshtastic raw-TCP RTT probing opens a second connection to the same host:port as
-    // the live session — confirmed via live packet capture to get the device to RST the
-    // real session. See useHostLinkMeter.ts's meshtasticTcpProbeUnsafe comment.
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
-    vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(120);
-    render(
-      <ConnectionPanel
-        state={{
-          status: 'configured',
-          myNodeNum: 1,
-          connectionType: 'tcp',
-          firmwareVersion: '2.5.3',
-        }}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-        suppressMountAutoConnect
-      />,
-    );
-    expect(screen.getByText('Link quality')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument();
-    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
-  });
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'shows Link quality with no data for Meshtastic TCP and never probes on %s (device RST hazard)',
+    (platform) => {
+      // Meshtastic raw-TCP RTT probing opens a second connection to the same host:port as
+      // the live session — confirmed via live packet capture to get the device to RST the
+      // real session. See useHostLinkMeter.ts's meshtasticTcpProbeUnsafe comment.
+      // Platform-independent behavior, so covered on all three platforms per convention.
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(120);
+      render(
+        <ConnectionPanel
+          state={{
+            status: 'configured',
+            myNodeNum: 1,
+            connectionType: 'tcp',
+            firmwareVersion: '2.5.3',
+          }}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+          suppressMountAutoConnect
+        />,
+      );
+      expect(screen.getByText('Link quality')).toBeInTheDocument();
+      expect(screen.getByText('—')).toBeInTheDocument();
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+    },
+  );
 });
