@@ -78,11 +78,12 @@ function watchPrimaryAutoConnectAttempt(protocol: MeshProtocol, attempt: Promise
 }
 
 /**
- * Starts a remembered serial or Noble BLE RF connection once per mounted protocol.
+ * Starts a remembered serial, Noble BLE, or TCP/HTTP RF connection once per mounted protocol.
  *
- * Failure point: a remembered serial device may be unavailable, or BLE may never finish
- * connecting. Fallback: serial retries its remembered Noble BLE peripheral; the 30-second
- * timeout releases the attempt. Failures are logged because no panel-local UI is mounted.
+ * Failure point: a remembered serial device may be unavailable, BLE may never finish
+ * connecting, or a TCP/HTTP host may be unreachable. Fallback: serial retries its remembered
+ * Noble BLE peripheral; TCP/HTTP has no transport fallback. The 30-second timeout releases
+ * the attempt. Failures are logged because no panel-local UI is mounted.
  */
 export function useProtocolRfAutoConnect({
   protocol,
@@ -134,7 +135,10 @@ export function useProtocolRfAutoConnect({
         console.warn(`[useProtocolRfAutoConnect] ${protocol} auto-connect timed out after 30s`);
       }, 30_000);
     };
-    const onAutoConnectFailed = (error: unknown, transport: 'serial' | 'ble' = 'ble') => {
+    const onAutoConnectFailed = (
+      error: unknown,
+      transport: 'serial' | 'ble' | 'tcp' | 'http' = 'ble',
+    ) => {
       clearAutoConnectTimeout();
       console.warn(
         `[useProtocolRfAutoConnect] ${protocol} ${transport} auto-connect failed: ${errLikeToLogString(error)}`,
@@ -227,6 +231,13 @@ export function useProtocolRfAutoConnect({
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     };
 
+    const onTcpAutoConnectFailed = (error: unknown) => {
+      if (isCancelled()) return;
+      const transport = lastConnection.type === 'http' ? 'http' : 'tcp';
+      onAutoConnectFailed(error, transport);
+      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+    };
+
     const runStartupAutoConnect = async (): Promise<void> => {
       const ready = await waitForProtocolSession(protocol);
       if (isCancelled()) return;
@@ -254,6 +265,15 @@ export function useProtocolRfAutoConnect({
       if (lastConnection.type === 'ble' && lastBleId && !isLinux) {
         runBleAutoConnect(lastBleId).catch(onAutoConnectFailed);
         return;
+      }
+
+      if (lastConnection.type === 'http' || lastConnection.type === 'tcp') {
+        const addr = lastConnection.httpAddress?.trim();
+        if (addr) {
+          startAutoConnectTimeout();
+          connectAutomaticRef.current(lastConnection.type, addr).catch(onTcpAutoConnectFailed);
+          return;
+        }
       }
 
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);

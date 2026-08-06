@@ -1688,7 +1688,8 @@ export default function ConnectionPanel({
     } else {
       maybeNotifyPrimaryBleAutoConnectSettled();
     }
-    // HTTP: do not auto-trigger — show one-click reconnect card instead
+    // HTTP/TCP launch auto-connect is owned by ProtocolAutoConnectCoordinator /
+    // useProtocolRfAutoConnect; this panel path only settles (reconnect card if needed).
   }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig, suppressMountAutoConnect]);
 
   // Cleanup timeout on unmount
