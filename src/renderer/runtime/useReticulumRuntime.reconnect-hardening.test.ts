@@ -172,9 +172,16 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
   });
 
   it('latches bleBondRemoved to release Noble and set bond-desync sticky flag', () => {
-    expect(SOURCE).toMatch(/setReticulumBleBondDesyncActive\(bondDesync\)/);
+    expect(SOURCE).toMatch(/setReticulumBleBondDesyncActive\(true\)/);
     expect(SOURCE).toMatch(/releaseReticulumBleRnodeConnect\(\)/);
     expect(SOURCE).toMatch(/status\.interfaceIssueAlert\?\.bleBondRemoved/);
+  });
+
+  it('wires LXMF send rekey with replacesMessageHash for pending orphan cleanup', () => {
+    expect(SOURCE).toMatch(/shouldDeletePriorReticulumOutboundHash\(pendingId, hash\)/);
+    expect(SOURCE).toMatch(
+      /replacesMessageHash[\s\S]*?ingestReticulumLxmfPayloadWithSideEffects\([\s\S]*?replacesMessageHash/,
+    );
   });
 });
 

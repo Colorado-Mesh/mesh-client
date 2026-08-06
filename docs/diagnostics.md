@@ -429,7 +429,7 @@ SVG force-directed graph of nodes within direct reach (hops 0–1 from the conne
 
 On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticulum interface config** section (below continuous ping). It audits the sidecar rnsd config against the live RNS interface list and surfaces actionable repairs.
 
-Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are also folded into Diagnostics via `ReticulumDiagnosticEngine` — including TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation, **`bleBondRemoved`** (stale OS Bluetooth bond for an RNode; Forget/re-pair), and **`blePairingTimedOut`** (OS passkey not entered within the TX-read window).
+Runtime interface-issue rows from the sidecar latch (`interfaceIssueAlert`) are also folded into Diagnostics via `ReticulumDiagnosticEngine` — including TCP connect failures, TX queue drops (generic / **`txQueueDropsBle`** / **`txQueueDropsBleBondStale`** when the drop interface is a BLE RNode and optionally bond-stale), link-delivery timeouts, transport saturation, **`bleBondRemoved`** (stale OS Bluetooth bond for an RNode; Forget/Clear paired/re-pair — sticky until stack stop), and **`blePairingTimedOut`** (OS passkey not entered within the TX-read window).
 
 Additional runtime rows (refreshed from sidecar status + `reticulumPropagationStore`, not only the config audit poll):
 

@@ -10,6 +10,8 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 /// Cap rows so abandoned sessions cannot retain resend bytes forever.
 pub const MAX_OUTBOUND_ROWS: usize = 256;
+/// Cap a single resend envelope (align with LXMF / proxy body budgets).
+pub const MAX_OUTBOUND_ENVELOPE_BYTES: usize = 256 * 1024;
 
 #[derive(Debug, Clone)]
 pub struct OutboundRow {
@@ -71,6 +73,12 @@ impl GamesOutboundStore {
         delivery_state: &str,
         app_id: Option<&str>,
     ) -> Result<(), String> {
+        if envelope.len() > MAX_OUTBOUND_ENVELOPE_BYTES {
+            return Err(format!(
+                "games_outbound envelope too large ({} > {MAX_OUTBOUND_ENVELOPE_BYTES})",
+                envelope.len()
+            ));
+        }
         let updated_at = now_secs();
         let conn = self
             .conn
@@ -387,5 +395,16 @@ mod tests {
             rows.len()
         );
         assert!(rows.iter().any(|r| r.session_id == keep));
+    }
+
+    #[test]
+    fn upsert_rejects_oversized_envelope() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = GamesOutboundStore::open(dir.path().join("big.db")).expect("open");
+        let big = vec![0u8; MAX_OUTBOUND_ENVELOPE_BYTES + 1];
+        let err = store
+            .upsert("s1", "id1", &big, None, "pending", Some("chess"))
+            .expect_err("oversized");
+        assert!(err.contains("envelope too large"), "unexpected err: {err}");
     }
 }

@@ -2,9 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   isMeshcoreTcpBurstDeadBridge,
+  isMeshcoreTcpSoftApDeadAccepted,
+  notifyMeshcoreTcpLiveForUserTx,
   notifyMeshcoreTcpWriteDead,
+  rejectMeshcoreTcpLiveForUserTx,
+  setMeshcoreTcpSoftApDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
+  trackMeshcoreTcpUserTxSend,
+  waitForMeshcoreTcpLiveForUserTx,
+  yieldToMeshcoreTcpUserTxSends,
 } from './meshcoreTcpInitBurst';
 
 describe('isMeshcoreTcpBurstDeadBridge', () => {
@@ -104,6 +111,45 @@ describe('shouldDeferMeshcoreTcpReconnectAfterBurst', () => {
         deviceConfigured: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe('meshcoreTcpSoftApDeadAccepted', () => {
+  afterEach(() => {
+    setMeshcoreTcpSoftApDeadAccepted(false);
+  });
+
+  it('defaults false and toggles', () => {
+    expect(isMeshcoreTcpSoftApDeadAccepted()).toBe(false);
+    setMeshcoreTcpSoftApDeadAccepted(true);
+    expect(isMeshcoreTcpSoftApDeadAccepted()).toBe(true);
+    setMeshcoreTcpSoftApDeadAccepted(false);
+    expect(isMeshcoreTcpSoftApDeadAccepted()).toBe(false);
+  });
+});
+
+describe('SoftAP user-TX live window', () => {
+  afterEach(() => {
+    setMeshcoreTcpSoftApDeadAccepted(false);
+    rejectMeshcoreTcpLiveForUserTx(new Error('test cleanup'));
+  });
+
+  it('notifies waiters and yields tracked sends before continuing', async () => {
+    const order: string[] = [];
+    const live = waitForMeshcoreTcpLiveForUserTx(5_000).then(() => {
+      order.push('live');
+      const send = Promise.resolve().then(() => {
+        order.push('sent');
+      });
+      trackMeshcoreTcpUserTxSend(send);
+      return send;
+    });
+    await Promise.resolve();
+    notifyMeshcoreTcpLiveForUserTx();
+    await yieldToMeshcoreTcpUserTxSends();
+    order.push('after-yield');
+    await live;
+    expect(order).toEqual(['live', 'sent', 'after-yield']);
   });
 });
 

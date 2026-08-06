@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
+import { setMeshcoreTcpSoftApDeadAccepted } from '../lib/meshcore/meshcoreTcpInitBurst';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
@@ -52,6 +53,7 @@ describe('useSendMessage', () => {
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
     registerReticulumSession(null);
+    setMeshcoreTcpSoftApDeadAccepted(false);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useMessageStore.setState({ messages: {} });
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
@@ -348,7 +350,7 @@ describe('useSendMessage', () => {
   it('marks optimistic message failed when protocol send rejects', async () => {
     const sendSpy = vi
       .spyOn(meshcoreProtocol, 'sendMessage')
-      .mockRejectedValue(new Error('rf down'));
+      .mockImplementation(() => Promise.reject(new Error('rf down')));
     const handle = { kind: 'rf' };
     vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
     addIdentity({

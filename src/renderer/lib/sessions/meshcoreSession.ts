@@ -27,6 +27,11 @@ export interface MeshcoreSessionApi {
   ) => Promise<void>;
   /** RF contact pubkey for DM send when nodeStore has not been hydrated yet. */
   getDestinationPubKey?: (nodeId: number) => Uint8Array | undefined;
+  /**
+   * SoftAP/OpenHop: when the TCP bridge was accepted dead after contacts FIN, reopen a live
+   * socket (reconnect) and resolve once getSelfInfo completes — before getContacts / peer FIN.
+   */
+  ensureTcpLiveForUserTx?: () => Promise<void>;
 }
 
 let activeSession: MeshcoreSessionApi | null = null;

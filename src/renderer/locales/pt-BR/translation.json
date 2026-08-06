@@ -1290,7 +1290,7 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs.",
       "bleBondRemoved": "{{name}}: A ligação Bluetooth está obsoleta (o sistema operacional ainda mostra Emparelhado)",
-      "bleBondRemovedHint": "Esqueça este RNode em Configurações do sistema → Bluetooth, inicie o emparelhamento no rádio (Admin → Bluetooth ou mantenha o botão pressionado por ~ 7 s), reinicie a pilha e insira o novo PIN de 6 dígitos.",
+      "bleBondRemovedHint": "Esqueça primeiro este RNode em Ajustes do Sistema → Bluetooth (macOS não remove Paired automaticamente). Prefira USB serial ou Wi‑Fi (tcp://) quando possível para evitar vínculos BLE. Depois: Admin → Bluetooth → Limpar dispositivos emparelhados (USB, ESP32) se disponível, Iniciar emparelhamento, remova e adicione de novo esta interface BLE (Escolher dispositivo), reinicie a pilha e digite o novo PIN de 6 dígitos.",
       "blePairingTimedOut": "{{name}}: A troca de senha do Bluetooth expirou",
       "blePairingTimedOutHint": "Pare a pilha, comece o emparelhamento novamente (Admin → Bluetooth mostra o PIN no painel - o display do rádio pode ficar em branco - ou pressione o botão por aproximadamente 7 s para obter um PIN na tela), reinicie a pilha uma vez e insira esse PIN na caixa de diálogo do sistema operacional dentro de aproximadamente 60 segundos. Nunca use 123456 (padrão Meshtastic).",
       "bleBondRemovedStopStack": "Parar pilha",
@@ -1662,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX está falhando em {{ifaces}} — a descoberta de LAN local pode não funcionar até que isso seja corrigido.",
         "tcpUnreachable": "O hub TCP \"{{name}}\" está inacessível ({{host}}:{{port}})",
         "tcpConnectFailed": "Ligação TCP Hub \"{{name}}\" recusada ou tempo esgotado",
-        "txQueueDrops": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia)",
+        "txQueueDrops": "A interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — muitas vezes um hub TCP morto ainda habilitado",
         "linkDeliveryTimeout": "O link LXMF direto para {{hash}}… expirou ({{count}}×)",
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "RNS transport saturated ({{count}} path-request drops). Share instance is on — quit other Reticulum apps (MeshChatX, Ratspeak, rnsd) and restart the stack.",
@@ -1858,12 +1858,12 @@
     "pairingWaiting": "Aguardando o PIN de emparelhamento do rádio via USB…",
     "pairingPinLabel": "PIN de emparelhamento Bluetooth",
     "pairingPinEnterHint": "Insira este código na caixa de diálogo Bluetooth do sistema operacional quando a pilha se conectar. Não use 123456.",
-    "bluetoothHint": "Ative o Bluetooth no dispositivo e use Iniciar emparelhamento. O PIN de 6 dígitos aparece neste painel via USB – o display do rádio geralmente fica em branco. Insira esse PIN na caixa de diálogo Bluetooth do seu sistema operacional quando o Reticulum se conectar via BLE. RNode não tem PIN padrão (não use 123456 – isso é Meshtastic). Em painéis de exibição, pressionar o botão por aproximadamente 7 segundos também pode mostrar um PIN na tela. O RNode pode não aparecer em Configurações do sistema → Bluetooth até após uma ligação bem-sucedida.",
+    "bluetoothHint": "Ative o Bluetooth no dispositivo e use Iniciar emparelhamento. O PIN de 6 dígitos aparece neste painel via USB — a tela do rádio costuma ficar em branco. Digite esse PIN no diálogo Bluetooth do SO quando o Reticulum conectar por BLE. RNode não tem PIN padrão (não use 123456 — isso é Meshtastic). Em placas com tela, segurar o botão ~7 s também pode mostrar um PIN. O RNode pode não aparecer em Ajustes do Sistema → Bluetooth antes de um vínculo bem-sucedido. Limpar dispositivos emparelhados (ESP32) limpa a tabela de vínculos do rádio via USB antes de reemparelhar; você ainda deve Esquecer o dispositivo nos ajustes do sistema.",
     "clearPairedDevices": "Limpar dispositivos emparelhados",
     "clearPairedDevicesConfirmTitle": "Limpar ligações Bluetooth RNode?",
-    "clearPairedDevicesConfirmMessage": "Isso envia CMD_BT_UNPAIR por USB e limpa hosts vinculados em RNodes ESP32 (sem operação em algumas compilações nRF52). Você ainda deve Esquecer o dispositivo nas Configurações do Sistema → Bluetooth antes de emparelhar novamente.",
-    "clearPairedDevicesConfirm": "Limpar ligações",
-    "clearPairedDevicesSuccess": "Solicitada liberação da tabela de títulos de rádio."
+    "clearPairedDevicesConfirmMessage": "Isso envia CMD_BT_UNPAIR via USB e limpa hosts vinculados em RNodes ESP32 (sem efeito em alguns builds nRF52). Você ainda deve Esquecer o dispositivo em Ajustes do Sistema → Bluetooth antes de emparelhar de novo.",
+    "clearPairedDevicesConfirm": "Limpar vínculos Bluetooth",
+    "clearPairedDevicesSuccess": "Limpeza da tabela de vínculos Bluetooth do rádio solicitada."
   },
   "identityVault": {
     "title": "Identity Vault",
@@ -5311,7 +5311,7 @@
     "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito.",
     "claimThreefold": "Reivindicação tripla",
     "claimThreefoldAria": "Reivindicar triplo sorteio de repetição",
-    "claimFiftyMove": "Reivindicação 50-mover",
+    "claimFiftyMove": "Reivindicar regra dos 50 movimentos",
     "claimFiftyMoveAria": "Reivindicar sorteio de regra de cinquenta movimentos",
     "delivery": {
       "sending": "Enviando…",

@@ -31,6 +31,9 @@ const SLOW_TRANSPORT_LINE =
 const BLE_BOND_REMOVED_LINE =
   'BLE RNode connect failed name = RNode 41F4 error = send failed: BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information';
 
+const BLE_BOND_REMOVED_STOP_LINE =
+  'BLE RNode bond removed — stopping reconnect until stack restart (Forget OS bond + re-pair) name = RNode 41F4 error = send failed: BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information';
+
 const BLE_BOND_ATTEMPT_LINE =
   'BLE RNode connect attempt failed attempt = 1 error = Runtime Error: Peer removed pairing information';
 
@@ -61,8 +64,9 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     );
   });
 
-  it('parses BLE bond-removed interface names only from named connect-failed lines', () => {
+  it('parses BLE bond-removed interface names from connect-failed and halt-loop lines', () => {
     expect(parseBleBondRemovedIfaceForTests(BLE_BOND_REMOVED_LINE)).toBe('RNode 41F4');
+    expect(parseBleBondRemovedIfaceForTests(BLE_BOND_REMOVED_STOP_LINE)).toBe('RNode 41F4');
     expect(parseBleBondRemovedIfaceForTests(BLE_BOND_ATTEMPT_LINE)).toBeNull();
   });
 
@@ -77,6 +81,18 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     const alert = tracker.getAlert(1_500);
     expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
     expect(alert?.lastAtMs).toBe(1_000);
+  });
+
+  it('builds alert from bond-removed halt-loop log without connect-failed prefix', () => {
+    tracker.recordLine(BLE_BOND_REMOVED_STOP_LINE, 1_000);
+    const alert = tracker.getAlert(1_500);
+    expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
+  });
+
+  it('keeps bleBondRemoved sticky past the generic alert stale window', () => {
+    tracker.recordLine(BLE_BOND_REMOVED_STOP_LINE, 0);
+    const alert = tracker.getAlert(RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS + 60_000);
+    expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
   });
 
   it('builds alert with BLE pairing-timed-out issues', () => {

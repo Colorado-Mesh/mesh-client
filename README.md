@@ -132,7 +132,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 - **Single table** from `diagnosticRows` (routing trace rows + RF rows), searchable; rows persist across sessions with an optional restore banner; **max age** (1–168 hours) trims stale routing (24 h default) and RF (1 h default) rows
 - **Foreign LoRa overhear** (Meshtastic tab): MeshCore-heard, Reticulum RNS, other-Meshtastic, and unknown LoRa classes from decode-fail logs and dual-radio RX; 90-minute window; MeshCore repeater conflict escalation above 5 pkt/min
 - **Mesh congestion attribution**: orange banner when mesh-wide routing stress is present; duplicate-traffic block in node detail when relevant
-- Routing anomaly detection: **hop_goblin** (distance-proven over-hopping), **bad_route** (high duplication), **route_flapping** / **path_instability** (MeshCore PathUpdated events), **impossible_hop**, **weak_link** (MeshCore per-hop SNR from trace); with remediation suggestions and severity levels
+- Routing anomaly detection: **hop_goblin** (distance-proven over-hopping; **Meshtastic-only**), **bad_route** (high duplication; close-in distance variant Meshtastic-only), **route_flapping** / **path_instability** (MeshCore PathUpdated events), **impossible_hop**, **weak_link** (MeshCore per-hop SNR from trace); with remediation suggestions and severity levels
 - **Channel Utilization History**: 24h CU timeline chart for the connected node in DiagnosticsPanel (fed by LocalStats / device-metrics ingest, not only NodeInfo)
 - Anomaly badges inline in node list; status aura circles on the map; congestion halos toggle; global and per-node MQTT ignore
 - **Environment Profile** segmented control; Standard (3 km), City (1.6× threshold), Canyon (2.6× threshold)
@@ -163,6 +163,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 - **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber — Reticulum amber = LXMF Chat + **RRC** unread, not Games; Games has its own sidebar badge); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
 - **Accessibility**: modal focus trap, screen reader labels, reduce-motion and **Use 24-hour time** toggles in App → Appearance — see [Accessibility Checklist](docs/accessibility-checklist.md)
+- **Colors** (App → Appearance): customize theme tokens including chat/RRC **message action** bar and button hover colors; optional **Show background** on the action bar and **Always show message actions**
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
 - **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab; **Export for GitHub** (zip: debug snapshot + logs) and **Export for Developer** (includes full SQLite — share privately only)
 - **Updates & tray**: footer update status; system tray unread badge when the window is backgrounded
@@ -175,7 +176,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 - **Bluetooth LE**: pair wirelessly; on macOS/Windows, startup auto-reconnect can run without a user gesture (Noble backend). On Linux, Web Bluetooth requires user gesture and picker selection. **Reticulum** BLE (RNode / BLE Peer interfaces) uses the sidecar `btleplug` stack and may coexist on a **different** MAC while Meshtastic/MeshCore use Noble/Web Bluetooth — see [Reticulum BLE coexistence](docs/reticulum.md#interface-management-connection-tab).
 - **USB Serial**: plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
-- **WiFi / HTTP / TCP**: Meshtastic offers **WiFi/HTTP** (REST, one packet per request) and **WiFi/TCP (fast)** (native binary streaming on port **4403**, same framing as USB serial — much faster NodeDB sync on large networks); MeshCore uses TCP on port **5000** by default; saves last address for quick reconnect
+- **WiFi / HTTP / TCP**: Meshtastic offers **WiFi/HTTP** (REST, one packet per request) and **WiFi/TCP (fast)** (native binary streaming on port **4403**, same framing as USB serial — much faster NodeDB sync on large networks); MeshCore uses TCP on port **5000** by default; remembered addresses **auto-connect on launch** (same coordinator as serial/BLE) and support quick reconnect after drops
 - **Dual LoRa mode**: Meshtastic and MeshCore stay connected while you switch views; per-protocol unread badges; passive toasts on background traffic
 - **Connection status in header**: device, MQTT, and TAK indicators pulse **red** after an unexpected disconnect; manual stop/disconnect stays gray; in-progress connect keeps yellow
 
@@ -497,7 +498,7 @@ After a successful connection, Mesh-Client remembers your last device per protoc
 - **Serial**: auto-connects silently in the background (Meshtastic and MeshCore)
 - **Bluetooth (macOS/Windows)**: auto-scans on launch and reconnects when the last device is discovered (no user gesture required)
 - **Bluetooth (Linux)**: Web Bluetooth requires a user gesture; click **Reconnect** or **Connect** to open the picker. **MeshCore:** if the device is not paired in BlueZ, enter the PIN from the radio when prompted (OS pairing runs before the connection finishes).
-- **WiFi / TCP**: a one-click reconnect card appears; click **Reconnect**
+- **WiFi / HTTP / TCP**: remembered Meshtastic HTTP/TCP and MeshCore TCP addresses **auto-connect silently on launch** via `ProtocolAutoConnectCoordinator` (stays alive across tab switches). A one-click **Reconnect** card appears only when auto-connect fails or was cancelled by a manual Connect. Manual Connect cancels any in-flight auto-connect first (`cancelProtocolRfAutoConnect`).
 - **MQTT**: auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter; select transport when connecting)
 - **Reticulum**: with **Auto-start** enabled, the sidecar starts on launch; otherwise click **Start stack** on the Connection tab after opening the app
 

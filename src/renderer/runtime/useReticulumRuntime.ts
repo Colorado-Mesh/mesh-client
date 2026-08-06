@@ -1440,9 +1440,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       const bondRemoved = status.interfaceIssueAlert?.bleBondRemoved ?? [];
-      const bondDesync = bondRemoved.length > 0;
-      setReticulumBleBondDesyncActive(bondDesync);
-      if (bondDesync) {
+      // Sticky: set true when latched; clear only on sidecar stop / tearDown (not empty alert).
+      if (bondRemoved.length > 0) {
+        setReticulumBleBondDesyncActive(true);
         void releaseReticulumBleRnodeConnect().catch((e: unknown) => {
           console.debug(
             '[useReticulumRuntime] release Noble after bleBondRemoved ' + errLikeToLogString(e),

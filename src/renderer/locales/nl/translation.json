@@ -1289,13 +1289,13 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert.",
       "bleBondRemoved": "{{name}}: Bluetooth-verbinding is verouderd (OS toont nog steeds Gekoppeld)",
-      "bleBondRemovedHint": "Vergeet deze RNode in Systeeminstellingen → Bluetooth, begin met koppelen op de radio (Admin → Bluetooth of ~7 s knop ingedrukt houden), start de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in.",
+      "bleBondRemovedHint": "Vergeet deze RNode eerst in Systeeminstellingen → Bluetooth (macOS wist Paired niet automatisch). Geef waar mogelijk de voorkeur aan USB-serie of Wi‑Fi (tcp://) om BLE-koppelingen te vermijden. Daarna: Admin → Bluetooth → Gekoppelde apparaten wissen (USB, ESP32) indien beschikbaar, Koppeling starten, verwijder en voeg deze BLE-interface opnieuw toe (Apparaat kiezen), herstart de stack en voer de nieuwe 6-cijferige pincode in.",
       "blePairingTimedOut": "{{name}}: Time-out voor uitwisseling van Bluetooth-wachtwoord",
       "blePairingTimedOutHint": "Stop de stapel, begin opnieuw met koppelen (Beheer → Bluetooth toont de pincode in het paneel - het radiodisplay kan leeg blijven - of houd de knop ~7 seconden ingedrukt voor een pincode op het scherm), start de stapel opnieuw op en voer die pincode binnen ~60 seconden in het dialoogvenster van het besturingssysteem in. Gebruik nooit 123456 (standaard Meshtastic).",
       "bleBondRemovedStopStack": "Stop stack",
       "bleBondRemovedOpenAdmin": "Open Beheerder Bluetooth",
-      "txQueueDropsHintBle": "Deze BLE RNode kan zijn TX-wachtrij niet leegmaken (link zit vast of klappert). Geef de voorkeur aan USB-serieel of Wi-Fi (tcp://), of Stop stack en koppel opnieuw na Forget in System Settings → Bluetooth.",
-      "txQueueDropsHintBleBondStale": "TX-wachtrij is vol omdat de BLE-binding oud is. Vergeet deze RNode in Systeeminstellingen → Bluetooth en gebruik vervolgens Admin → Bluetooth (Clear paired / Start pairing) of schakel over naar USB.",
+      "txQueueDropsHintBle": "Deze BLE RNode kan zijn TX-wachtrij niet legen (link vast of flapperend). Geef de voorkeur aan USB-serie of Wi‑Fi (tcp://), of stop de stack en koppel opnieuw na Vergeten in Systeeminstellingen → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "TX-wachtrij is vol omdat de BLE-koppeling verouderd is. Vergeet deze RNode in Systeeminstellingen → Bluetooth en gebruik Admin → Bluetooth (Gekoppelde wissen / Koppeling starten) of schakel over naar USB.",
       "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
@@ -1662,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "AutoInterface-baken TX faalt op {{ifaces}} — lokale LAN-detectie werkt mogelijk niet totdat dit is opgelost.",
         "tcpUnreachable": "TCP-hub \"{{name}}\" is onbereikbaar ({{host}}:{{port}})",
         "tcpConnectFailed": "TCP-hub \"{{name}}\" -verbinding geweigerd of er is een time-out opgetreden",
-        "txQueueDrops": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol)",
+        "txQueueDrops": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — vaak een dode TCP-hub die nog aan staat",
         "linkDeliveryTimeout": "Directe LXMF-link naar {{hash}}… time-out ({{count}}×)",
         "transportSaturated": "RNS-transport verzadigd ({{count}} LXMF-pad-aanvraagdruppels)",
         "transportSaturatedShareInstance": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels). Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, rnsd) en start de stapel opnieuw.",
@@ -1858,12 +1858,12 @@
     "pairingWaiting": "Wachten op koppelingspincode van de radio via USB...",
     "pairingPinLabel": "Bluetooth-koppelingspincode",
     "pairingPinEnterHint": "Voer deze code in het OS Bluetooth-dialoogvenster in wanneer de stapel verbinding maakt. Gebruik 123456 niet.",
-    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppeling starten. De 6-cijferige pincode verschijnt in dit paneel via USB - het radiodisplay blijft vaak leeg. Voer die pincode in het Bluetooth-dialoogvenster van uw besturingssysteem in wanneer Reticulum verbinding maakt via BLE. RNode heeft geen standaardpincode (gebruik niet 123456 – dat is Meshtastic). Op displayborden kan het ingedrukt houden van de knop ~7 seconden ook een pincode op het scherm weergeven. De RNode verschijnt mogelijk pas in Systeeminstellingen → Bluetooth na een succesvolle verbinding.",
+    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik Koppeling starten. De 6-cijferige pincode verschijnt in dit paneel via USB — het radiodisplay blijft vaak leeg. Voer die pincode in het Bluetooth-dialoogvenster van uw OS in wanneer Reticulum via BLE verbindt. RNode heeft geen standaardpincode (gebruik niet 123456 — dat is Meshtastic). Op displayborden kan ~7 s knop vasthouden ook een pincode tonen. De RNode verschijnt mogelijk pas in Systeeminstellingen → Bluetooth na een geslaagde koppeling. Gekoppelde apparaten wissen (ESP32) wist de radiokoppelingstabel via USB vóór herkoppelen; u moet het apparaat nog steeds Vergeten in Systeeminstellingen.",
     "clearPairedDevices": "Gekoppelde apparaten wissen",
     "clearPairedDevicesConfirmTitle": "RNode Bluetooth-bindingen wissen?",
-    "clearPairedDevicesConfirmMessage": "Dit stuurt CMD_BT_UNPAIR via USB en wist gebonden hosts op ESP32 RNodes (no-op op sommige nRF52 builds). U moet het apparaat nog steeds vergeten in Systeeminstellingen → Bluetooth voordat u het opnieuw koppelt.",
-    "clearPairedDevicesConfirm": "Heldere obligaties",
-    "clearPairedDevicesSuccess": "Radiokoppelingstabel vrij aangevraagd."
+    "clearPairedDevicesConfirmMessage": "Dit stuurt CMD_BT_UNPAIR via USB en wist gekoppelde hosts op ESP32 RNodes (geen effect op sommige nRF52-builds). U moet het apparaat nog steeds Vergeten in Systeeminstellingen → Bluetooth voordat u opnieuw koppelt.",
+    "clearPairedDevicesConfirm": "Bluetooth-koppelingen wissen",
+    "clearPairedDevicesSuccess": "Wissen van radiokoppelingstabel aangevraagd."
   },
   "identityVault": {
     "title": "Identiteitskluis",
@@ -5295,7 +5295,7 @@
       "promotionChooserAria": "Promotiestuk kiezen",
       "promoteTo": {
         "q": "Promoveer tot koningin",
-        "r": "Promoot tot rook",
+        "r": "Promoveer tot toren",
         "b": "Promoveer tot bisschop",
         "n": "Promoveer tot ridder"
       }
@@ -5311,7 +5311,7 @@
     "deleteConfirmMessage": "Deze spelsessie uit je lijst verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "claimThreefold": "Claim drievoudig",
     "claimThreefoldAria": "Claim drievoudige herhalingstekening",
-    "claimFiftyMove": "Claim 50-move",
+    "claimFiftyMove": "Claim 50-zettenregel",
     "claimFiftyMoveAria": "Regeltrekking voor vijftig zetten claimen",
     "delivery": {
       "sending": "Versturen...",

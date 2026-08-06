@@ -255,13 +255,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
     expect(finallyBody).toContain('bleConnectInProgressRef.current = false');
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,400}bleConnectInProgressRef\.current = false/,
+      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,800}bleConnectInProgressRef\.current = false/,
     );
   });
 
   it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,500}escalateSerialReconnectExhaustion/,
+      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,900}escalateSerialReconnectExhaustion/,
     );
     expect(RUNTIME_SOURCE).toContain('serialNeedsReselect');
     expect(RUNTIME_SOURCE).toContain('attachMeshcoreSerialTransportLossWatch');
@@ -285,7 +285,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
       /window\.electronAPI\.meshcore\.tcp\.onDisconnected\(\(\) => \{[\s\S]*?latchTcpBridgeDeadForBurst\('ipc'\)/,
     );
     expect(RUNTIME_SOURCE).toContain("meshcoreConnectTypeRef.current === 'tcp'");
-    expect(RUNTIME_SOURCE).toContain("source === 'ipc'");
+    expect(RUNTIME_SOURCE).toContain("latchTcpBridgeDeadForBurst('write')");
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
   });
 
@@ -299,9 +299,18 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
       'TCP write-dead after init burst — latch bridge dead, defer reconnect',
     );
     expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpWriteDeadListener');
+    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpSoftApDeadAccepted');
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP write-dead on SoftAP-accepted dead bridge — keep configured',
+    );
+    expect(RUNTIME_SOURCE).toContain('ensureTcpLiveForUserTx');
+    expect(RUNTIME_SOURCE).toContain('notifyMeshcoreTcpLiveForUserTx');
+    expect(RUNTIME_SOURCE).toContain('yieldToMeshcoreTcpUserTxSends');
     expect(RUNTIME_SOURCE).toMatch(
       /shouldDeferMeshcoreTcpReconnectAfterBurst\(\{[\s\S]*?burstCaptured:[\s\S]*?everConfigured:[\s\S]*?deviceConfigured:[\s\S]*?\}\)[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
+    // SoftAP: accept dead bridge without immediate reconnect (avoid FIN-after-contacts loop).
+    // SoftAP-accepted suppresses background write-dead → lost; mid-session death still reconnects.
     expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — accepting dead bridge');
     expect(RUNTIME_SOURCE).toContain(
       'TCP burst-complete reconnect attach — accepting dead bridge (configured)',
@@ -558,18 +567,17 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
   it('triggers handleConnectionLost when an operational session drops', () => {
     expect(CONN_EVENTS_SOURCE).toMatch(/case 'device_status':[\s\S]{0,400}handleDisconnected\(\)/);
     expect(CONN_EVENTS_SOURCE).toMatch(
-      /handleDisconnected[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
+      /handleDisconnected[\s\S]{0,3000}handleConnectionLostRef\.current\(\)/,
     );
   });
 
-  it('skips handleConnectionLost on explicit user disconnect or MeshCore TCP', () => {
-    // TCP reconnect is owned by runtime meshcore.tcp.onDisconnected (avoid dual entry).
-    expect(CONN_EVENTS_SOURCE).toMatch(
-      /shouldReconnect &&\s*!meshcoreExplicitDisconnectRef\.current &&[\s\S]*?meshcoreConnectTypeRef\.current !== 'tcp'/,
-    );
+  it('skips TCP device_status disconnect teardown (runtime owns SoftAP bridge recovery)', () => {
+    // SoftAP FIN emits device_status via TcpOverIpc; tearing down the driver here left
+    // "accepting dead bridge" with no handle and no scheduled reconnect.
+    expect(CONN_EVENTS_SOURCE).toMatch(/meshcoreConnectTypeRef\.current === 'tcp'[\s\S]*?return;/);
   });
 
-  it('tears down ConnectionDriver on disconnect when driver path was active', () => {
+  it('tears down ConnectionDriver on non-TCP disconnect when driver path was active', () => {
     expect(CONN_EVENTS_SOURCE).toContain('meshcoreDriverConnectedRef.current');
     expect(CONN_EVENTS_SOURCE).toMatch(
       /teardownMeshcoreConnEventListeners\(\{ driverDisconnect: usedDriverConnect \}\)/,

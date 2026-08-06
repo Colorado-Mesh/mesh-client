@@ -417,6 +417,14 @@ flatpak run org.coloradomesh.MeshClient
 
 ## Database and local data
 
+### Database schema upgrade (forward — first launch after a newer build)
+
+**Symptom**: On first launch after installing a newer release, a blocking **Quit / Upgrade** dialog asks to confirm an irreversible SQLite schema upgrade. Packaged installers may also ship `SCHEMA-UPGRADE.txt` in the app resources.
+
+**Cause**: This build’s `user_version` is higher than the existing profile database.
+
+**Fix**: Choose **Upgrade** to migrate (cannot roll back with an older app against the same profile), or **Quit** and restore a backup / use a fresh profile. CI/E2E may set `MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE=1` to skip the dialog (dev/unpackaged only when restricted). See [release-process.md](release-process.md) for installer notice text.
+
 ### Database schema newer than this app (downgrade blocked)
 
 **Symptom**: On launch, a **Startup Error** dialog says the database was upgraded by a newer Mesh-Client, or **Import blocked** when merging a `.db` file.
@@ -783,6 +791,8 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 1. Upgrade to a build with MeshCore TCP burst-complete init (peer FIN after `getContacts` latches configured then reconnects; mid-burst FIN aborts cleanly).
 2. **Disconnect → Connect** on the Connection panel.
 3. Confirm logs show `[useMeshcoreRuntime] initConn getContacts …` completing and nodes populating. Main uses `TCP_NODELAY` + keepalive on the `meshcore:tcp-*` bridge.
+
+**Reconnect ownership:** TCP disconnect/reconnect is owned by `useMeshcoreRuntime` + `rfReconnectController` (single-owner scheduler). Conn side effects **skip** `handleConnectionLost` when `connectType === 'tcp'` so the runtime `meshcore:tcp-disconnected` listener does not double-enter the reconnect scheduler.
 
 ### MeshCore contact delete and sticky Rooms badge
 
@@ -1224,12 +1234,21 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Fix**:
 
-1. Forget the RNode in System Settings → Bluetooth.
-2. Start pairing on the radio (Admin → Bluetooth, or ~7 s button hold).
-3. **Remove and re-add** the BLE interface (**Pick device**) so the saved `ble://` id refreshes.
-4. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
+1. Forget the RNode in System Settings → Bluetooth (macOS will not clear Paired automatically).
+2. Prefer USB serial or Wi‑Fi (`tcp://`) when possible to avoid BLE bonds.
+3. On Admin → Bluetooth: **Clear paired devices** (USB `CMD_BT_UNPAIR`, ESP32) if available, then **Start pairing**. Connection issue banners also link to Admin Bluetooth.
+4. **Remove and re-add** the BLE interface (**Pick device**) so the saved `ble://` id refreshes.
+5. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
 
-### Reticulum attachment image not showing in Chat
+Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the same Forget / Clear paired / Start pairing path. Sidecar overlay `rsReticulum-ble-rnode-bond-desync` stops BLE reconnect until stack restart when bond removal is detected — see [reticulum-sidecar/patches/README.md](../reticulum-sidecar/patches/README.md). `bleBondRemoved` stays sticky until stack stop / interface remove (not only the generic 5‑minute log latch).
+
+### Reticulum LXMF duplicate Sending / orphaned pending rows
+
+**Symptoms**: Chat shows a stuck `reticulum-pending-*` Sending row beside the real LXMF hash row after send completes.
+
+**Cause**: Optimistic pending id was not deleted when the sidecar assigned `message_hash`.
+
+**Fix**: Upgrade to a build that passes `replaces_message_hash` on SQLite upsert (`db:saveReticulumMessage` deletes the prior pending hash atomically). Restarting the app also marks stale `sending` rows failed on startup.
 
 **Symptoms**: LXMF `[file:…:image/…]` bubble shows the filename label but no inline image.
 

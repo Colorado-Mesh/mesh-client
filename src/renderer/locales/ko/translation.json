@@ -1290,7 +1290,7 @@
       "slowTransportQueryHint": "사이드카 트랜스포트 액터에 쐐기를 박을 수 있습니다. Reticulum 스택을 다시 시작하십시오.",
       "shareInstanceHint": "공유 인스턴스가 활성화되었습니다. DM을 다시 시도하기 전에 다른 Reticulum 앱 (MeshChatX, Ratspeak, 독립 실행형 rnsd) 을 완전히 종료하고 이 스택을 다시 시작하십시오.",
       "bleBondRemoved": "{{name}}: Bluetooth 연결이 오래되었습니다(OS에 여전히 페어링됨이 표시됨).",
-      "bleBondRemovedHint": "시스템 설정 → Bluetooth에서 이 RNode를 삭제하고 무선에서 페어링을 시작한 다음(관리자 → Bluetooth 또는 ~7초 버튼 누르기) 스택을 다시 시작한 다음 새 6자리 PIN을 입력합니다.",
+      "bleBondRemovedHint": "먼저 시스템 설정 → Bluetooth에서 이 RNode를 잊으세요(macOS는 Paired를 자동으로 지우지 않음). 가능하면 BLE 본드를 피하기 위해 USB 시리얼 또는 Wi‑Fi(tcp://)를 우선하세요. 그다음: Admin → Bluetooth → 페어링된 장치 지우기(USB, ESP32, 가능한 경우), 페어링 시작, 이 BLE 인터페이스를 제거 후 다시 추가(장치 선택), 스택을 다시 시작하고 새 6자리 PIN을 입력하세요.",
       "blePairingTimedOut": "{{name}}: Bluetooth 암호 키 교환 시간이 초과되었습니다.",
       "blePairingTimedOutHint": "스택을 중지하고 페어링을 다시 시작하고(관리자 → Bluetooth는 패널에 PIN을 표시합니다. 라디오 디스플레이는 비어 있을 수 있습니다. 또는 화면 PIN을 보려면 ~7초 동안 버튼을 누르십시오.) 스택을 한 번 다시 시작하고 ~60초 내에 OS 대화 상자에 해당 PIN을 입력하십시오. 123456(Meshtastic 기본값)을 사용하지 마십시오.",
       "bleBondRemovedStopStack": "스택 중지",
@@ -1662,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "AutoInterface 비콘 TX가 {{ifaces}} 에서 실패하고 있습니다. 이 문제가 해결될 때까지 로컬 LAN 검색이 작동하지 않을 수 있습니다.",
         "tcpUnreachable": "TCP 허브 \"{{name}}\" 에 연결할 수 없습니다 ({{host}}: {{port}})",
         "tcpConnectFailed": "TCP 허브 \"{{name}}\" 연결이 거부되었거나 시간이 초과되었습니다",
-        "txQueueDrops": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참)",
+        "txQueueDrops": "인터페이스 \"{{name}}\"이(가) 송신 패킷 {{count}}개를 폐기했습니다(TX 큐 가득 참) — 종종 죽은 TCP 허브가 여전히 활성화됨",
         "linkDeliveryTimeout": "{{hash}} 에 대한 직접 LXMF 링크… 시간 초과 ({{count}} ×)",
         "transportSaturated": "RNS 전송 포화 ({{count}} LXMF 경로 요청 드롭)",
         "transportSaturatedShareInstance": "RNS 전송 포화 ({{count}} 경로 요청 드롭). 인스턴스 공유 켜짐 — 다른 Reticulum 앱 (MeshChatX, Ratspeak, rnsd) 을 종료하고 스택을 다시 시작합니다.",
@@ -1858,12 +1858,12 @@
     "pairingWaiting": "USB를 통해 라디오에서 PIN 페어링을 기다리는 중…",
     "pairingPinLabel": "블루투스 페어링 PIN",
     "pairingPinEnterHint": "스택이 연결되면 OS Bluetooth 대화 상자에 이 코드를 입력하세요. 123456을 사용하지 마십시오.",
-    "bluetoothHint": "장치에서 Bluetooth를 활성화한 다음 페어링 시작을 사용하십시오. 6자리 PIN은 USB를 통해 이 패널에 표시됩니다. 라디오 디스플레이는 종종 공백으로 유지됩니다. Reticulum이 BLE를 통해 연결되면 OS Bluetooth 대화 상자에 해당 PIN을 입력하세요. RNode에는 기본 PIN이 없습니다(123456을 사용하지 마십시오. 이는 Meshtastic입니다). 디스플레이 보드에서 버튼을 7초 정도 길게 누르면 화면에 PIN이 표시될 수도 있습니다. 연결이 성공적으로 완료될 때까지 RNode가 시스템 설정 → Bluetooth에 나타나지 않을 수 있습니다.",
+    "bluetoothHint": "장치에서 Bluetooth를 켠 뒤 페어링 시작을 사용하세요. 6자리 PIN은 USB로 이 패널에 표시됩니다 — 라디오 화면은 종종 비어 있습니다. Reticulum이 BLE로 연결될 때 OS Bluetooth 대화상자에 그 PIN을 입력하세요. RNode에는 기본 PIN이 없습니다(123456 사용 금지 — Meshtastic용). 디스플레이 보드에서는 ~7초 버튼 길게 누르기로도 PIN이 표시될 수 있습니다. 성공적인 본드 전에는 시스템 설정 → Bluetooth에 RNode가 나타나지 않을 수 있습니다. 페어링된 장치 지우기(ESP32)는 재페어링 전에 USB로 라디오 본드 테이블을 지웁니다. 시스템 설정에서 장치를 잊는 작업은 별도로 필요합니다.",
     "clearPairedDevices": "페어링된 장치 지우기",
     "clearPairedDevicesConfirmTitle": "RNode 블루투스 본드를 지우시겠습니까?",
-    "clearPairedDevicesConfirmMessage": "이렇게 하면 USB를 통해 CMD_BT_UNPAIR가 전송되고 ESP32 RNode에서 결합된 호스트를 지웁니다 (일부 nRF52 빌드에서는 작동하지 않음). 다시 페어링하기 전에 시스템 설정 → 블루투스에서 장치를 잊어 버려야합니다.",
-    "clearPairedDevicesConfirm": "클리어본드",
-    "clearPairedDevicesSuccess": "라디오 본드 테이블 클리어 요청됨."
+    "clearPairedDevicesConfirmMessage": "USB로 CMD_BT_UNPAIR를 보내고 ESP32 RNode의 본딩된 호스트를 지웁니다(일부 nRF52 빌드에서는 무효). 다시 페어링하기 전에 시스템 설정 → Bluetooth에서 장치를 여전히 잊어야 합니다.",
+    "clearPairedDevicesConfirm": "블루투스 본드 지우기",
+    "clearPairedDevicesSuccess": "라디오 블루투스 본드 테이블 지우기가 요청되었습니다."
   },
   "identityVault": {
     "title": "신원 정보 보관소",
@@ -5295,8 +5295,8 @@
       "promotionChooserAria": "프로모션 조각 선택",
       "promoteTo": {
         "q": "여왕으로 승급하기",
-        "r": "ROOK로 승격",
-        "b": "감독으로 승진",
+        "r": "룩으로 승급",
+        "b": "비숍으로 승급",
         "n": "기사로 승급하기"
       }
     },
@@ -5311,7 +5311,7 @@
     "deleteConfirmMessage": "목록에서 이 게임 세션을 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
     "claimThreefold": "3배 받기",
     "claimThreefoldAria": "3배 반복 추첨 요청",
-    "claimFiftyMove": "청구항 50-이동",
+    "claimFiftyMove": "50수 규칙 주장",
     "claimFiftyMoveAria": "오십이동 규칙 추첨 요청",
     "delivery": {
       "sending": "전송 중…",

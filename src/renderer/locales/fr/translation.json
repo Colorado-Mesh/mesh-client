@@ -1289,13 +1289,13 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "L'instance de partage est activée — quittez complètement les autres applications Reticulum (MeshChatX, Ratspeak, rnsd autonome) et redémarrez cette pile avant de réessayer les DM.",
       "bleBondRemoved": "{{name}} : la liaison Bluetooth est obsolète (le système d'exploitation affiche toujours \"Jumelé\")",
-      "bleBondRemovedHint": "Oubliez ce RNode dans Paramètres système → Bluetooth, démarrez l'appairage sur la radio (Admin → Bluetooth ou maintien du bouton ~ 7 s), redémarrez la pile et saisissez le nouveau code PIN à 6 chiffres.",
+      "bleBondRemovedHint": "Oubliez d’abord ce RNode dans Réglages Système → Bluetooth (macOS n’efface pas Paired automatiquement). Préférez si possible USB série ou Wi‑Fi (tcp://) pour éviter les liaisons BLE. Puis : Admin → Bluetooth → Effacer les appareils appairés (USB, ESP32) si disponible, Démarrer l’appairage, retirez et rajoutez cette interface BLE (Choisir l’appareil), redémarrez la pile et saisissez le nouveau PIN à 6 chiffres.",
       "blePairingTimedOut": "{{name}} : Échange de clé Bluetooth expiré",
       "blePairingTimedOutHint": "Arrêtez la pile, recommencez le couplage (Admin → Bluetooth affiche le CODE PIN dans le panneau — l'écran de la radio peut rester vide — ou maintenez le bouton enfoncé pendant ~7 s pour un CODE PIN à l'écran), redémarrez la pile une fois et entrez ce CODE PIN dans la boîte de dialogue du système d'exploitation dans ~60 secondes. N'utilisez jamais 123456 (Meshtastic par défaut).",
       "bleBondRemovedStopStack": "Arrêt de la pile",
       "bleBondRemovedOpenAdmin": "Ouvrir Admin Bluetooth",
       "txQueueDropsHintBle": "Ce RNode ble ne peut pas vider sa file d'attente TX (lien bloqué ou battement). Préférez USB série ou Wi-Fi (tcp ://), ou Arrêter la pile et réappairer après Oublier dans les paramètres système → Bluetooth.",
-      "txQueueDropsHintBleBondStale": "La file d'attente TX est pleine car la caution ble est périmée. Oubliez ce RNode dans les paramètres système → Bluetooth, puis utilisez Admin → Bluetooth (Effacer l'appairage appairé / Démarrer l'appairage) ou passez à USB.",
+      "txQueueDropsHintBleBondStale": "La file TX est pleine car la liaison BLE est obsolète. Oubliez ce RNode dans Réglages Système → Bluetooth, puis utilisez Admin → Bluetooth (Effacer appairés / Démarrer l’appairage) ou passez en USB.",
       "txQueueDropsHintNeutral": "Ce canal TX d'interface est plein. Vérifiez la santé du lien de cette interface (ou désactivez-la) pour arrêter les gouttes."
     },
     "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées.",
@@ -1662,7 +1662,7 @@
         "autoBeaconPhysicalFailures": "La balise AutoInterface TX échoue sur {{ifaces}} — la découverte du LAN local peut ne pas fonctionner tant que cela n'est pas corrigé.",
         "tcpUnreachable": "Le concentrateur TCP « {{name}} » est inaccessible ({{host}} :{{port}})",
         "tcpConnectFailed": "La connexion du concentrateur TCP « {{name}} » a été refusée ou a expiré",
-        "txQueueDrops": "L'interface « {{name}} » a supprimé {{count}} paquets sortants (file d'attente TX pleine)",
+        "txQueueDrops": "L’interface « {{name}} » a abandonné {{count}} paquets sortants (file TX pleine) — souvent un hub TCP mort encore activé",
         "linkDeliveryTimeout": "Lien LXMF direct vers {{hash}}… expiré ({{count}}×)",
         "transportSaturated": "Transport RNS saturé ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "RNS transport saturé ({{count}} path-request drops). L'instance de partage est activée — quittez les autres applications Reticulum (MeshChatX, Ratspeak, rnsd) et redémarrez la pile.",
@@ -1858,12 +1858,12 @@
     "pairingWaiting": "Attente du CODE PIN d'appairage de la radio sur USB…",
     "pairingPinLabel": "APPAIRAGE BLUETOOTH",
     "pairingPinEnterHint": "Entrez ce code dans la boîte de dialogue Bluetooth du système d'exploitation lorsque la pile se connecte. N'utilisez pas 123456.",
-    "bluetoothHint": "Activez le Bluetooth sur l'appareil, puis utilisez l'appairage Démarrer. Le code PIN à 6 chiffres apparaît dans ce panneau via USB — l'écran de la radio reste souvent vide. Entrez ce CODE PIN dans la boîte de dialogue Bluetooth de votre système d'exploitation lorsque Reticulum se connecte via ble. RNode n'a pas de CODE PIN par défaut (n'utilisez pas 123456 — c'est Meshtastic). Sur les tableaux d'affichage, un maintien de bouton de ~7 s peut également afficher un CODE PIN à l'écran. Le RNode peut ne pas apparaître dans les paramètres système → Bluetooth avant une liaison réussie.",
+    "bluetoothHint": "Activez le Bluetooth sur l’appareil, puis utilisez Démarrer l’appairage. Le PIN à 6 chiffres apparaît dans ce panneau via USB — l’écran radio reste souvent vide. Saisissez ce PIN dans la boîte de dialogue Bluetooth de l’OS lorsque Reticulum se connecte en BLE. RNode n’a pas de PIN par défaut (n’utilisez pas 123456 — c’est Meshtastic). Sur les cartes avec écran, un appui ~7 s peut aussi afficher un PIN. Le RNode peut ne pas apparaître dans Réglages Système → Bluetooth avant une liaison réussie. Effacer les appareils appairés (ESP32) efface la table de liaisons radio via USB avant réappariement ; vous devez toujours Oublier l’appareil dans les réglages système.",
     "clearPairedDevices": "Effacer les appareils appariés",
     "clearPairedDevicesConfirmTitle": "Effacer les liaisons Bluetooth RNode ?",
-    "clearPairedDevicesConfirmMessage": "Cela envoie CMD_BT_UNPAIR sur USB et efface les hôtes liés sur les nœuds R ESP32 (pas d'opération sur certaines versions de nRF52). Vous devez toujours oublier l'appareil dans les paramètres système → Bluetooth avant de le réappairer.",
-    "clearPairedDevicesConfirm": "Effacer les liens",
-    "clearPairedDevicesSuccess": "Tableau de cautionnement radio clair demandé."
+    "clearPairedDevicesConfirmMessage": "Envoie CMD_BT_UNPAIR via USB et efface les hôtes liés sur les RNodes ESP32 (sans effet sur certaines builds nRF52). Vous devez quand même Oublier l’appareil dans Réglages Système → Bluetooth avant de réapparier.",
+    "clearPairedDevicesConfirm": "Effacer les liaisons Bluetooth",
+    "clearPairedDevicesSuccess": "Effacement de la table de liaisons Bluetooth de la radio demandé."
   },
   "identityVault": {
     "title": "Coffre-fort d'identité",
@@ -5295,7 +5295,7 @@
       "promotionChooserAria": "Choisir un article promotionnel",
       "promoteTo": {
         "q": "Promouvoir en reine",
-        "r": "Promouvoir auprès de",
+        "r": "Promouvoir en tour",
         "b": "Promouvoir évêque",
         "n": "Promouvoir au rang de chevalier"
       }
@@ -5311,7 +5311,7 @@
     "deleteConfirmMessage": "Supprimer cette session de jeu de votre liste ? Cela ne peut pas être annulé.",
     "claimThreefold": "Réclamer trois fois",
     "claimThreefoldAria": "Réclamez trois fois le tirage de répétition",
-    "claimFiftyMove": "Revendication 50-move",
+    "claimFiftyMove": "Réclamer la règle des 50 coups",
     "claimFiftyMoveAria": "Réclamer le tirage au sort de la règle de",
     "delivery": {
       "sending": "Envoi en cours...",

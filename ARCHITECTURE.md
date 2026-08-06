@@ -87,7 +87,9 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 ### App lifecycle (mount once from `App.tsx`)
 
 - **`usePowerRecovery`** — sleep/wake IPC, MQTT power suspend/resume, staggered RF reconnect (Meshtastic ~4s, MeshCore ~8s, dual-Noble settle up to ~30s).
-- **`useRendererHeartbeat`** / **`useLongSessionMaintenance`** — renderer liveness after resume; long-uptime restart nudge.
+- **`useRendererHeartbeat`** / **`useLongSessionMaintenance`** — renderer pings main every 30s; main `rendererHeartbeatWatchdog` warns if no heartbeat within 30s after resume **while visible**, and polls for a **90s visible-window stall**; sticky `rendererUnresponsiveSeen` + `getRendererLiveness()` feed support snapshot `mainLiveness`; long-uptime restart nudge.
+- **`ProtocolAutoConnectCoordinator`** / **`useProtocolRfAutoConnect`** — silent launch auto-connect for remembered serial/BLE/TCP/HTTP (cancel gate before manual Connect).
+- **`rfReconnectController`** — LoRa single-owner reconnect scheduling shared by Meshtastic/MeshCore runtimes.
 - **Dual-radio Noble BLE startup** (Meshtastic + MeshCore different peripherals): `lib/meshcoreDualNobleBleInit.ts` initialized from `App.tsx` `useLayoutEffect`; primary order from `mesh-client:protocol` localStorage — see [AGENTS.md](AGENTS.md) **Dual-radio Noble BLE startup**.
 
 ### Database

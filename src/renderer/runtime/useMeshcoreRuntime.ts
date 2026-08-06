@@ -169,8 +169,14 @@ import {
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
   isMeshcoreTcpBurstDeadBridge,
+  isMeshcoreTcpSoftApDeadAccepted,
+  notifyMeshcoreTcpLiveForUserTx,
+  rejectMeshcoreTcpLiveForUserTx,
+  setMeshcoreTcpSoftApDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
+  waitForMeshcoreTcpLiveForUserTx,
+  yieldToMeshcoreTcpUserTxSends,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import {
   buildMeshcoreOutboundTapbackWire,
@@ -2292,6 +2298,13 @@ export function useMeshcoreRuntime() {
           });
         }
 
+        // SoftAP user TX: release waiters while the socket is still live — companions often
+        // FIN immediately after getContacts. Await tracked sends before starting the dump.
+        if (transportType === 'tcp' && !meshcoreTcpBridgeDeadRef.current) {
+          notifyMeshcoreTcpLiveForUserTx();
+          await yieldToMeshcoreTcpUserTxSends();
+        }
+
         const promoteConfiguredAfterContactsDump = (): void => {
           setState((prev) => ({
             ...prev,
@@ -2856,6 +2869,7 @@ export function useMeshcoreRuntime() {
         meshcoreTcpBridgeDeadRef.current = false;
         meshcoreTcpInitBurstCapturedRef.current = false;
         meshcoreTcpContactsDumpInFlightRef.current = false;
+        setMeshcoreTcpSoftApDeadAccepted(false);
         if (!opts?.preserveReconnectState) {
           meshcoreDeferredReconnectRef.current = false;
         }
@@ -3076,6 +3090,9 @@ export function useMeshcoreRuntime() {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreRfReconnectRef.current.markExhausted();
+      if (params.rfType === 'tcp') {
+        rejectMeshcoreTcpLiveForUserTx(new Error('MeshCore TCP reconnect exhausted'));
+      }
       if (params.rfType === 'ble') {
         bleConnectInProgressRef.current = false;
       }
@@ -3290,9 +3307,10 @@ export function useMeshcoreRuntime() {
       // Burst-complete attach left a dead bridge (OpenHop FIN after contacts). UI is configured
       // from the contacts burst — accept that session. Forcing an immediate live-socket retry
       // loops forever on companions that FIN after every contacts dump (WAN :5054 / SoftAP).
-      // Live recovery happens on write-fail / later tcp-disconnected once deviceConfigured.
+      // SoftAP-accepted: keep configured; background write-dead must not reconnect-loop.
       if (params.rfType === 'tcp' && meshcoreDeferredReconnectRef.current) {
         meshcoreDeferredReconnectRef.current = false;
+        setMeshcoreTcpSoftApDeadAccepted(true);
         console.debug(
           '[useMeshcoreRuntime] TCP burst-complete reconnect attach — accepting dead bridge (configured)',
         );
@@ -3306,7 +3324,10 @@ export function useMeshcoreRuntime() {
         serialNeedsReselect: false,
         connectionLoss: false,
       }));
-      requestChatOutboxDrain('meshcore');
+      // SoftAP dead bridge: outbox drain would tcp-write-fail → reconnect thrash.
+      if (!(params.rfType === 'tcp' && meshcoreTcpBridgeDeadRef.current)) {
+        requestChatOutboxDrain('meshcore');
+      }
     };
     const reconnectWork = runReconnectAttempt();
     void reconnectWork.catch((e: unknown) => {
@@ -3508,6 +3529,26 @@ export function useMeshcoreRuntime() {
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
 
+  const ensureTcpLiveForUserTx = useCallback(async (): Promise<void> => {
+    const bridgeDead = meshcoreTcpBridgeDeadRef.current;
+    const softAp = isMeshcoreTcpSoftApDeadAccepted();
+    if (!softAp && !bridgeDead) {
+      return;
+    }
+    // Already opening — just wait for the post-getSelfInfo gate.
+    if (
+      meshcoreConnectTypeRef.current === 'tcp' &&
+      (meshcoreInitConnInFlightRef.current || meshcoreIsReconnectingRef.current) &&
+      !meshcoreTcpBridgeDeadRef.current
+    ) {
+      await waitForMeshcoreTcpLiveForUserTx();
+      return;
+    }
+    setMeshcoreTcpSoftApDeadAccepted(false);
+    handleMeshcoreConnectionLostRef.current();
+    await waitForMeshcoreTcpLiveForUserTx();
+  }, []);
+
   const onPowerSuspend = useCallback(() => {
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreIsReconnectingRef.current = false;
@@ -3635,10 +3676,11 @@ export function useMeshcoreRuntime() {
         meshcoreEverConfiguredRef.current = true;
         // Neal OpenHop: peer FIN after contacts — initConn completed configured from the burst
         // with a dead bridge. Do not force an immediate live-socket reconnect (companions that
-        // FIN after every contacts dump would loop forever). Write-fail / later IPC close
-        // reconnect once deviceConfigured is latched.
+        // FIN after every contacts dump would loop forever). SoftAP-accepted suppresses
+        // background write-dead → reconnect (flood advert / outbox thrash).
         if (type === 'tcp' && meshcoreDeferredReconnectRef.current) {
           meshcoreDeferredReconnectRef.current = false;
+          setMeshcoreTcpSoftApDeadAccepted(true);
           console.debug(
             '[useMeshcoreRuntime] TCP burst-complete configure — accepting dead bridge',
           );
@@ -7420,6 +7462,7 @@ export function useMeshcoreRuntime() {
       meshcoreTcpBridgeDeadRef.current = true;
       // Post-configure contacts dump: keep the configured session; do not reconnect-loop.
       if (meshcoreTcpContactsDumpInFlightRef.current) {
+        setMeshcoreTcpSoftApDeadAccepted(true);
         console.debug(
           source === 'write'
             ? '[useMeshcoreRuntime] TCP write-dead during post-configure contacts dump — keep configured'
@@ -7435,8 +7478,16 @@ export function useMeshcoreRuntime() {
         deviceConfigured: meshcoreDeviceConfiguredRef.current,
         initConnInFlight: meshcoreInitConnInFlightRef.current,
       });
+      // SoftAP-accepted dead bridge: flood advert / outbox write-fail must not reconnect-loop.
+      const softApAccepted = isMeshcoreTcpSoftApDeadAccepted();
+      const suppressWriteLost = softApAccepted && source === 'write';
       if (defer) {
         meshcoreDeferredReconnectRef.current = true;
+        // Latch SoftAP-accepted as soon as configured+deferred so flood advert cannot
+        // write-dead→lost in the gap before connect() clears deferredReconnect.
+        if (meshcoreDeviceConfiguredRef.current && meshcoreEverConfiguredRef.current) {
+          setMeshcoreTcpSoftApDeadAccepted(true);
+        }
         console.debug(
           source === 'write'
             ? '[useMeshcoreRuntime] TCP write-dead after init burst — latch bridge dead, defer reconnect'
@@ -7444,11 +7495,15 @@ export function useMeshcoreRuntime() {
         );
         return;
       }
-      if (source === 'ipc') {
-        handleMeshcoreConnectionLostRef.current();
+      if (suppressWriteLost) {
+        console.debug(
+          '[useMeshcoreRuntime] TCP write-dead on SoftAP-accepted dead bridge — keep configured',
+        );
+        return;
       }
-      // write-dead while fully configured: leave reconnect to meshcore:tcp-disconnected IPC
-      // so we do not double-enter the owner.
+      // Mid-session TCP death (not SoftAP-accepted): ipc/write own recovery. SoftAP accept
+      // intentionally leaves a dead bridge — do not immediate-reconnect on accept.
+      handleMeshcoreConnectionLostRef.current();
     };
 
     setMeshcoreTcpWriteDeadListener(() => {
@@ -7472,6 +7527,7 @@ export function useMeshcoreRuntime() {
       finalizeDriverDisconnect,
       connectAutomatic,
       getDestinationPubKey: (nodeId) => pubKeyMapRef.current.get(nodeId),
+      ensureTcpLiveForUserTx,
     });
     return () => registerMeshcoreSession(null);
   }, [
@@ -7481,6 +7537,7 @@ export function useMeshcoreRuntime() {
     handleRfConnectFailure,
     finalizeDriverDisconnect,
     connectAutomatic,
+    ensureTcpLiveForUserTx,
   ]);
 
   return useMemo(

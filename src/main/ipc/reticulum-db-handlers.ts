@@ -25,6 +25,18 @@ const REMOTE_ADDRESS_SERVICES = new Set<RemoteAddressService>(['rnsh', 'rncp']);
 const REMOTE_INBOUND_DECISIONS = new Set<RemoteInboundDecision>(['allow', 'block']);
 const ALLOWED_DELIVERY_METHOD = new Set<string>(RETICULUM_DELIVERY_METHODS);
 
+/**
+ * Prior-row delete key for optimistic LXMF rekey: pending ids or hex message hashes only.
+ * Rejects arbitrary strings so a malformed save cannot DELETE an unintended row.
+ */
+export function sanitizeReplacesMessageHash(raw: unknown): string | null {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 128) return null;
+  if (/^reticulum-pending-[A-Za-z0-9_-]+$/.test(raw)) return raw;
+  const hex = raw.toLowerCase();
+  if (/^[0-9a-f]{32}$/.test(hex) || /^[0-9a-f]{64}$/.test(hex)) return hex;
+  return null;
+}
+
 interface ParsedRemoteAddressUpsert {
   id: string;
   label: string;
@@ -171,12 +183,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         m.next_delivery_attempt_at != null && Number.isFinite(Number(m.next_delivery_attempt_at))
           ? Math.trunc(Number(m.next_delivery_attempt_at))
           : null;
-      const replacesMessageHash =
-        typeof m.replaces_message_hash === 'string' &&
-        m.replaces_message_hash.length > 0 &&
-        m.replaces_message_hash.length <= 128
-          ? m.replaces_message_hash.slice(0, 128)
-          : null;
+      const replacesMessageHash = sanitizeReplacesMessageHash(m.replaces_message_hash);
 
       // Exact prior-hash delete + upsert must be atomic so a failed write rolls back cleanup.
       const run = db.transaction(() => {

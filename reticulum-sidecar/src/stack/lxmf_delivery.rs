@@ -281,13 +281,33 @@ pub fn spawn_lxmf_inbound_receiver(
 /// (`LinkDeliveryManager::set_inbound_packet_sender`). Peer replies on our outbound-initiated
 /// reusable Direct links are Ack'd (LinkProof) even when this sender is unset — without
 /// wiring, Chat never sees those payloads.
+///
+/// LinkDeliveryManager requires [`mpsc::UnboundedSender`]; we bridge into a bounded worker
+/// queue and drop newest on saturation (same policy as opportunistic inbound raw).
 pub fn spawn_lxmf_outbound_backchannel(
     lxmf_dest_hash: [u8; 16],
     router: Arc<TokioMutex<LxmRouter>>,
 ) -> mpsc::UnboundedSender<(Vec<u8>, [u8; 16])> {
-    let (tx, mut rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
+    let (outer_tx, mut outer_rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
+    let (inner_tx, mut inner_rx) =
+        mpsc::channel::<(Vec<u8>, [u8; 16])>(OUTBOUND_BACKCHANNEL_CAPACITY);
     tokio::spawn(async move {
-        while let Some((plaintext, link_id)) = rx.recv().await {
+        while let Some(pkt) = outer_rx.recv().await {
+            if let Err(e) = inner_tx.try_send(pkt) {
+                match e {
+                    mpsc::error::TrySendError::Full(_) => {
+                        tracing::warn!(
+                            capacity = OUTBOUND_BACKCHANNEL_CAPACITY,
+                            "LXMF outbound backchannel saturated — dropping newest packet"
+                        );
+                    }
+                    mpsc::error::TrySendError::Closed(_) => break,
+                }
+            }
+        }
+    });
+    tokio::spawn(async move {
+        while let Some((plaintext, link_id)) = inner_rx.recv().await {
             tracing::debug!(
                 link_id = %hex::encode(link_id),
                 len = plaintext.len(),
@@ -296,8 +316,11 @@ pub fn spawn_lxmf_outbound_backchannel(
             handle_link_delivered_data(&router, lxmf_dest_hash, &plaintext).await;
         }
     });
-    tx
+    outer_tx
 }
+
+/// Bounded worker capacity behind the UnboundedSender API required by LinkDeliveryManager.
+pub(crate) const OUTBOUND_BACKCHANNEL_CAPACITY: usize = 256;
 
 /// Capacity for opportunistic inbound raw frames (`LinkManager` `try_send`s into this queue).
 pub(crate) const INBOUND_RAW_CHANNEL_CAPACITY: usize = 256;

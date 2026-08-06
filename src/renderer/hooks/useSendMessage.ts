@@ -6,6 +6,10 @@ import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import {
+  isMeshcoreTcpSoftApDeadAccepted,
+  trackMeshcoreTcpUserTxSend,
+} from '../lib/meshcore/meshcoreTcpInitBurst';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
 import { sendReticulumChatMessage } from '../lib/reticulum/sendReticulumChatMessage';
@@ -200,72 +204,102 @@ export function useSendMessage(
 
       const wireText = resolvedOutbound.wireText;
 
-      void identity.protocol
-        .sendMessage(handle, {
+      const finishSend = (
+        sendHandle: NonNullable<typeof handle>,
+        opts?: { trackForSoftApLiveWindow?: boolean },
+      ): void => {
+        const sendPromise = identity.protocol.sendMessage(sendHandle, {
           text: wireText,
           channelIndex,
           destination,
           destinationPubKey,
           replyTo,
-        })
-        .then((res) => {
-          const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
-          if (res.packetId != null && resolvedId !== provisionalId) {
-            renameMessageId(identityId, provisionalId, resolvedId);
+        });
+        if (opts?.trackForSoftApLiveWindow) {
+          trackMeshcoreTcpUserTxSend(sendPromise);
+        }
+        void sendPromise.then(
+          (res) => {
+            const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+            if (res.packetId != null && resolvedId !== provisionalId) {
+              renameMessageId(identityId, provisionalId, resolvedId);
+              if (isMeshtastic && meshtasticTempPacketId != null) {
+                void window.electronAPI.db
+                  .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0, myNodeNum)
+                  .catch((e: unknown) => {
+                    console.debug(
+                      '[useSendMessage] updateMessagePacketId failed ' + errLikeToLogString(e),
+                    );
+                  });
+              }
+            }
+
+            updateMessageStatus(identityId, resolvedId, 'acked');
+            if (identity.protocol.type === 'meshcore') {
+              const rowForDb: MessageRecord = {
+                ...record,
+                id: resolvedId,
+                status: 'acked',
+              };
+              persistMeshcoreOutboundRow(
+                rowForDb,
+                myNodeNum,
+                meshcoreSenderName,
+                'acked',
+                res.packetId != null ? res.packetId >>> 0 : undefined,
+              );
+            }
             if (isMeshtastic && meshtasticTempPacketId != null) {
+              const rowPacketId = res.packetId ?? meshtasticTempPacketId;
               void window.electronAPI.db
-                .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0, myNodeNum)
+                .updateMessageStatus(rowPacketId, 'acked')
                 .catch((e: unknown) => {
                   console.debug(
-                    '[useSendMessage] updateMessagePacketId failed ' + errLikeToLogString(e),
+                    '[useSendMessage] updateMessageStatus failed ' + errLikeToLogString(e),
                   );
                 });
             }
-          }
+          },
+          (e: unknown) => {
+            const errMsg = errLikeToLogString(e);
+            console.warn('[useSendMessage] send failed ' + errMsg);
+            updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
+            if (identity.protocol.type === 'meshcore') {
+              persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+            }
+            if (isMeshtastic && meshtasticTempPacketId != null) {
+              void window.electronAPI.db
+                .updateMessageStatus(meshtasticTempPacketId, 'failed', errMsg)
+                .catch((dbErr: unknown) => {
+                  console.debug(
+                    '[useSendMessage] updateMessageStatus failed ' + errLikeToLogString(dbErr),
+                  );
+                });
+            }
+          },
+        );
+      };
 
-          updateMessageStatus(identityId, resolvedId, 'acked');
-          if (identity.protocol.type === 'meshcore') {
-            const rowForDb: MessageRecord = {
-              ...record,
-              id: resolvedId,
-              status: 'acked',
-            };
-            persistMeshcoreOutboundRow(
-              rowForDb,
-              myNodeNum,
-              meshcoreSenderName,
-              'acked',
-              res.packetId != null ? res.packetId >>> 0 : undefined,
-            );
-          }
-          if (isMeshtastic && meshtasticTempPacketId != null) {
-            const rowPacketId = res.packetId ?? meshtasticTempPacketId;
-            void window.electronAPI.db
-              .updateMessageStatus(rowPacketId, 'acked')
-              .catch((e: unknown) => {
-                console.debug(
-                  '[useSendMessage] updateMessageStatus failed ' + errLikeToLogString(e),
-                );
-              });
-          }
-        })
-        .catch((e: unknown) => {
-          const errMsg = errLikeToLogString(e);
-          console.warn('[useSendMessage] send failed ' + errMsg);
-          updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
-          if (identity.protocol.type === 'meshcore') {
+      if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
+        void (async () => {
+          try {
+            await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
+            const liveHandle = connectionDriver.getHandle(identityId);
+            if (!liveHandle) {
+              throw new Error('MeshCore TCP live reopen produced no handle');
+            }
+            finishSend(liveHandle, { trackForSoftApLiveWindow: true });
+          } catch (e: unknown) {
+            const errMsg = errLikeToLogString(e);
+            console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);
+            updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
             persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
           }
-          if (isMeshtastic && meshtasticTempPacketId != null) {
-            void window.electronAPI.db
-              .updateMessageStatus(meshtasticTempPacketId, 'failed', errMsg)
-              .catch((dbErr: unknown) => {
-                console.debug(
-                  '[useSendMessage] updateMessageStatus failed ' + errLikeToLogString(dbErr),
-                );
-              });
-          }
-        });
+        })();
+        return;
+      }
+
+      finishSend(handle);
     },
     [identityId, addToast, t],
   );

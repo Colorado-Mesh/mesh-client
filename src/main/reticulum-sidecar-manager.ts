@@ -173,6 +173,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   /** True after the first successful WS open for this sidecar process (reconnects set reconnect=true). */
   private wsEverConnected = false;
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
+  /** In-flight stop — start must await so a fresh spawn does not race SIGTERM exit. */
+  private stopPromise: Promise<void> | null = null;
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
@@ -266,6 +268,9 @@ export class ReticulumSidecarManager extends EventEmitter {
   private async startOnce(
     opts: ReticulumSidecarStartOptions = {},
   ): Promise<ReticulumSidecarStatus> {
+    if (this.stopPromise) {
+      await this.stopPromise;
+    }
     if (opts.reuseIfRunning && this._status.running && this.proc) {
       try {
         await pollSidecarHealth(this._status.port);
@@ -453,7 +458,13 @@ export class ReticulumSidecarManager extends EventEmitter {
         // catch-no-log-ok: in-flight start may fail; explicit stop still runs afterward
       });
     }
-    await this.stopProc();
+    if (this.stopPromise) {
+      return this.stopPromise;
+    }
+    this.stopPromise = this.stopProc().finally(() => {
+      this.stopPromise = null;
+    });
+    return this.stopPromise;
   }
 
   private async stopProc(): Promise<void> {
@@ -518,7 +529,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     } catch (e: unknown) {
       console.debug(
         '[ReticulumSidecar] prepare-stop failed — continuing with SIGTERM:',
-        e instanceof Error ? e.message : e,
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     }
   }
