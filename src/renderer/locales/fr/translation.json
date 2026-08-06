@@ -1187,7 +1187,8 @@
       "addDefaultHubsFailed": "Échec de l'ajout des backbones par défaut.",
       "backboneEnableGuidanceLead": "Activer 1 à 3 passerelles dorsales au maximum",
       "backboneEnableGuidanceBody": "—2 est l’optimum pour la redondance sans gaspiller la bande passante. Visez 1 hub mondial et 1 passerelle régionale, et activez les interfaces spécialisées (comme I2P ou Yggdrasil) seulement si besoin. Les RNodes connectés localement et les interfaces LAN locales ne comptent pas dans cette limite de backbone.",
-      "defaultHubsPickerHint": "Commencez par Primaire et mondial plus votre région. Activez au plus 1 à 3 passerelles backbone (2 est l’optimum). Les RNodes locaux et les interfaces LAN ne comptent pas. Les nouvelles entrées sont ajoutées désactivées pour révision. Sync désactive aussi les hubs de testnet officiels hors service restants (Amsterdam)."
+      "defaultHubsPickerHint": "Commencez par Primaire et mondial plus votre région. Activez au plus 1 à 3 passerelles backbone (2 est l’optimum). Les RNodes locaux et les interfaces LAN ne comptent pas. Les nouvelles entrées sont ajoutées désactivées pour révision. Sync désactive aussi les hubs de testnet officiels hors service restants (Amsterdam).",
+      "rnodeTransportBleHint": "Les liaisons ble peuvent se désynchroniser avec macOS (Forget + re-pair). Préférez USB série ou Wi-Fi (tcp ://) lorsque la radio est à proximité."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1290,7 +1291,12 @@
       "bleBondRemoved": "{{name}} : la liaison Bluetooth est obsolète (le système d'exploitation affiche toujours \"Jumelé\")",
       "bleBondRemovedHint": "Oubliez ce RNode dans Paramètres système → Bluetooth, démarrez l'appairage sur la radio (Admin → Bluetooth ou maintien du bouton ~ 7 s), redémarrez la pile et saisissez le nouveau code PIN à 6 chiffres.",
       "blePairingTimedOut": "{{name}} : Échange de clé Bluetooth expiré",
-      "blePairingTimedOutHint": "Arrêtez la pile, recommencez le couplage (Admin → Bluetooth affiche le CODE PIN dans le panneau — l'écran de la radio peut rester vide — ou maintenez le bouton enfoncé pendant ~7 s pour un CODE PIN à l'écran), redémarrez la pile une fois et entrez ce CODE PIN dans la boîte de dialogue du système d'exploitation dans ~60 secondes. N'utilisez jamais 123456 (Meshtastic par défaut)."
+      "blePairingTimedOutHint": "Arrêtez la pile, recommencez le couplage (Admin → Bluetooth affiche le CODE PIN dans le panneau — l'écran de la radio peut rester vide — ou maintenez le bouton enfoncé pendant ~7 s pour un CODE PIN à l'écran), redémarrez la pile une fois et entrez ce CODE PIN dans la boîte de dialogue du système d'exploitation dans ~60 secondes. N'utilisez jamais 123456 (Meshtastic par défaut).",
+      "bleBondRemovedStopStack": "Arrêt de la pile",
+      "bleBondRemovedOpenAdmin": "Ouvrir Admin Bluetooth",
+      "txQueueDropsHintBle": "Ce RNode ble ne peut pas vider sa file d'attente TX (lien bloqué ou battement). Préférez USB série ou Wi-Fi (tcp ://), ou Arrêter la pile et réappairer après Oublier dans les paramètres système → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "La file d'attente TX est pleine car la caution ble est périmée. Oubliez ce RNode dans les paramètres système → Bluetooth, puis utilisez Admin → Bluetooth (Effacer l'appairage appairé / Démarrer l'appairage) ou passez à USB.",
+      "txQueueDropsHintNeutral": "Ce canal TX d'interface est plein. Vérifiez la santé du lien de cette interface (ou désactivez-la) pour arrêter les gouttes."
     },
     "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées.",
     "radioMqttRootDivergesWarning": "Le sujet racine du MQTT radio est {{radioRoot}}, mais ce panneau est abonné à {{appPrefix}}. Faites correspondre la radio pour limiter le trafic des nœuds à l'échelle nationale — mettez à jour le préfixe du sujet et reconnectez le MQTT.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Hubs de frontière / dorsale activés : {{hubs}}.",
         "announceBusPressureTipTxSaturated": "La file d'attente TX tombe sur : {{names}} — cette interface peut être saturée.",
         "tooManyDefaultBackbones": "Vous avez activé les backbones par défaut {{count}}. Envisagez de désactiver les extras et de conserver environ 2 pour la redondance.",
-        "decommissionedHubEnabled": "Le hub hors service « {{name}} » est encore activé — mesh-client le désactive à chaque démarrage de la pile. Utilisez « Ajouter des backbones par défaut » ou le répertoire des backbones pour des points de terminaison actifs."
+        "decommissionedHubEnabled": "Le hub hors service « {{name}} » est encore activé — mesh-client le désactive à chaque démarrage de la pile. Utilisez « Ajouter des backbones par défaut » ou le répertoire des backbones pour des points de terminaison actifs.",
+        "txQueueDropsBle": "Interface \"{{name}}\" abandonnée {{count}} paquets sortants (file d'attente TX pleine) — liaison ble RNode bloquée ; préférez USB ou réappairer",
+        "txQueueDropsBleBondStale": "Interface \"{{name}}\" abandonnée {{count}} paquets sortants (file d'attente TX pleine) — ble bond stale ; Oubliez dans le système d'exploitation Bluetooth et réappareillez",
+        "txQueueDropsNeutral": "L'interface \"{{name}}\" a abandonné {{count}} paquets sortants (file d'attente TX pleine) — vérifiez le lien de cette interface"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "Attente du CODE PIN d'appairage de la radio sur USB…",
     "pairingPinLabel": "APPAIRAGE BLUETOOTH",
     "pairingPinEnterHint": "Entrez ce code dans la boîte de dialogue Bluetooth du système d'exploitation lorsque la pile se connecte. N'utilisez pas 123456.",
-    "bluetoothHint": "Activez le Bluetooth sur l'appareil, puis utilisez l'appairage Démarrer. Le code PIN à 6 chiffres apparaît dans ce panneau via USB — l'écran de la radio reste souvent vide. Entrez ce CODE PIN dans la boîte de dialogue Bluetooth de votre système d'exploitation lorsque Reticulum se connecte via ble. RNode n'a pas de CODE PIN par défaut (n'utilisez pas 123456 — c'est Meshtastic). Sur les tableaux d'affichage, un maintien de bouton de ~7 s peut également afficher un CODE PIN à l'écran. Le RNode peut ne pas apparaître dans les paramètres système → Bluetooth avant une liaison réussie."
+    "bluetoothHint": "Activez le Bluetooth sur l'appareil, puis utilisez l'appairage Démarrer. Le code PIN à 6 chiffres apparaît dans ce panneau via USB — l'écran de la radio reste souvent vide. Entrez ce CODE PIN dans la boîte de dialogue Bluetooth de votre système d'exploitation lorsque Reticulum se connecte via ble. RNode n'a pas de CODE PIN par défaut (n'utilisez pas 123456 — c'est Meshtastic). Sur les tableaux d'affichage, un maintien de bouton de ~7 s peut également afficher un CODE PIN à l'écran. Le RNode peut ne pas apparaître dans les paramètres système → Bluetooth avant une liaison réussie.",
+    "clearPairedDevices": "Effacer les appareils appariés",
+    "clearPairedDevicesConfirmTitle": "Effacer les liaisons Bluetooth RNode ?",
+    "clearPairedDevicesConfirmMessage": "Cela envoie CMD_BT_UNPAIR sur USB et efface les hôtes liés sur les nœuds R ESP32 (pas d'opération sur certaines versions de nRF52). Vous devez toujours oublier l'appareil dans les paramètres système → Bluetooth avant de le réappairer.",
+    "clearPairedDevicesConfirm": "Effacer les liens",
+    "clearPairedDevicesSuccess": "Tableau de cautionnement radio clair demandé."
   },
   "identityVault": {
     "title": "Coffre-fort d'identité",

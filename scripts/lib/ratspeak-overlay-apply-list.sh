@@ -9,6 +9,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-link-client-nomad.sh
   apply-rsReticulum-link-client-proof-budget.sh
   apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
+  apply-rsReticulum-ble-rnode-bond-desync.sh
   apply-rsReticulum-discovery-announce-egress.sh
   apply-rsReticulum-path-medium-slots.sh
   apply-rsReticulum-inbound-raw-saturation-log.sh

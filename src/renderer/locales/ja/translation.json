@@ -1188,7 +1188,8 @@
       "addDefaultHubsFailed": "デフォルトのバックボーンを追加できませんでした。",
       "backboneEnableGuidanceLead": "最大1〜3つのバックボーンゲートウェイを有効にする",
       "backboneEnableGuidanceBody": "—冗長性を保ちつつ不要な帯域を増やさない最適は 2 です。グローバルハブ 1 つと地域ゲートウェイ 1 つを目安にし、I2P や Yggdrasil などの特殊インターフェースは必要なときだけ有効にしてください。ローカル接続の RNode とローカル LAN インターフェースはこのバックボーン上限に数えません。",
-      "defaultHubsPickerHint": "プライマリおよびグローバルに加え、自分の地域から始めてください。バックボーンゲートウェイは最大 1〜3（最適は 2）まで有効にします。ローカル RNode と LAN インターフェースは数えません。新規エントリは確認しやすいよう無効で追加されます。Sync は残っている廃止済み公式テストネットハブ（アムステルダム）も無効化します。"
+      "defaultHubsPickerHint": "プライマリおよびグローバルに加え、自分の地域から始めてください。バックボーンゲートウェイは最大 1〜3（最適は 2）まで有効にします。ローカル RNode と LAN インターフェースは数えません。新規エントリは確認しやすいよう無効で追加されます。Sync は残っている廃止済み公式テストネットハブ（アムステルダム）も無効化します。",
+      "rnodeTransportBleHint": "BLEボンドはmacOSと同期ずれすることがあります（忘れる+再ペアリング）。ラジオが近くにある場合は、USBシリアルまたはWi-Fi（tcp://）を優先してください。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1291,7 +1292,12 @@
       "bleBondRemoved": "{{name}}: Bluetooth ボンディングが無効です (OS にはペアリング済みと表示されたままです)",
       "bleBondRemovedHint": "[システム設定] → [Bluetooth] でこの RNode を忘れ、無線でペアリングを開始し ([管理者] → [Bluetooth] または 7 秒ボタンを長押し)、スタックを再起動し、新しい 6 桁の PIN を入力します。",
       "blePairingTimedOut": "{{name}}: Bluetooth パスキー交換がタイムアウトしました",
-      "blePairingTimedOutHint": "スタックを停止し、ペアリングを再度開始し ([管理] → [Bluetooth] を選択すると、パネルに PIN が表示されます。無線ディスプレイは空白のままになる場合があります。または、画面上の PIN を表示するためにボタンを約 7 秒押し続けます)、スタックを 1 回再起動し、OS ダイアログに約 60 秒以内にその PIN を入力します。 123456 (Meshtastic のデフォルト) は決して使用しないでください。"
+      "blePairingTimedOutHint": "スタックを停止し、ペアリングを再度開始し ([管理] → [Bluetooth] を選択すると、パネルに PIN が表示されます。無線ディスプレイは空白のままになる場合があります。または、画面上の PIN を表示するためにボタンを約 7 秒押し続けます)、スタックを 1 回再起動し、OS ダイアログに約 60 秒以内にその PIN を入力します。 123456 (Meshtastic のデフォルト) は決して使用しないでください。",
+      "bleBondRemovedStopStack": "スタックを停止",
+      "bleBondRemovedOpenAdmin": "管理者Bluetoothを開く",
+      "txQueueDropsHintBle": "このBLE RNodeはTXキューを排出できません（リンクがスタックまたはフラッピング）。USBシリアルまたはWi-Fi (tcp://)を優先するか、システム設定→BluetoothでForgetした後にスタックを停止して再ペアリングしてください。",
+      "txQueueDropsHintBleBondStale": "BLEボンドが古くなっているため、TXキューがいっぱいです。システム設定→BluetoothでこのRNodeを忘れ、管理→Bluetooth （ペアリングを解除/ペアリングを開始）を使用するか、USBに切り替えます。",
+      "txQueueDropsHintNeutral": "このインターフェースTXチャネルは満杯です。ドロップを停止するには、そのインターフェイスのリンクの状態を確認するか、無効にします。"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
     "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "境界/バックボーンハブを有効にしました： {{hubs}}。",
         "announceBusPressureTipTxSaturated": "TXキューは次の日付にドロップします： {{names}} —そのインターフェイスが飽和している可能性があります。",
         "tooManyDefaultBackbones": "{{count}}デフォルトのバックボーンが有効になっています。余分なものを無効にし、冗長性を保つために約2つを保管することを検討してください。",
-        "decommissionedHubEnabled": "廃止されたハブ「{{name}}」がまだ有効です — mesh-client はスタック起動のたびにオフにします。稼働中のエンドポイントには「デフォルトのバックボーンを追加」またはバックボーン一覧を使ってください。"
+        "decommissionedHubEnabled": "廃止されたハブ「{{name}}」がまだ有効です — mesh-client はスタック起動のたびにオフにします。稼働中のエンドポイントには「デフォルトのバックボーンを追加」またはバックボーン一覧を使ってください。",
+        "txQueueDropsBle": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） — BLE RNodeリンクが固着しています。USBを使用するか、再ペアリングしてください",
+        "txQueueDropsBleBondStale": "インターフェース「{{name}}」が{{count}}個のアウトバウンドパケットをドロップしました（ TXキューがいっぱいです） — BLEボンドが古くなっています。OS Bluetoothで忘れてから再ペアリングしてください",
+        "txQueueDropsNeutral": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） —そのインターフェースのリンクを確認してください"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "USB 経由で無線からのペアリング PIN を待っています…",
     "pairingPinLabel": "Bluetooth ペアリング PIN",
     "pairingPinEnterHint": "スタックが接続するときに、OS の Bluetooth ダイアログにこのコードを入力します。 123456 は使用しないでください。",
-    "bluetoothHint": "デバイスで Bluetooth を有効にし、[ペアリングの開始] を使用します。 6 桁の PIN は USB 経由でこのパネルに表示されますが、無線ディスプレイは空白のままになることがよくあります。 Reticulum が BLE 経由で接続するときに、OS の Bluetooth ダイアログにその PIN を入力します。 RNode にはデフォルトの PIN がありません (123456、つまり Meshtastic を使用しないでください)。ディスプレイ ボードでは、ボタンを 7 秒間押し続けると、画面に PIN が表示されることもあります。 RNode は、結合が成功するまで [システム設定] → [Bluetooth] に表示されない場合があります。"
+    "bluetoothHint": "デバイスで Bluetooth を有効にし、[ペアリングの開始] を使用します。 6 桁の PIN は USB 経由でこのパネルに表示されますが、無線ディスプレイは空白のままになることがよくあります。 Reticulum が BLE 経由で接続するときに、OS の Bluetooth ダイアログにその PIN を入力します。 RNode にはデフォルトの PIN がありません (123456、つまり Meshtastic を使用しないでください)。ディスプレイ ボードでは、ボタンを 7 秒間押し続けると、画面に PIN が表示されることもあります。 RNode は、結合が成功するまで [システム設定] → [Bluetooth] に表示されない場合があります。",
+    "clearPairedDevices": "ペアリングされたデバイスをクリアする",
+    "clearPairedDevicesConfirmTitle": "RNode Bluetoothボンドをクリアしますか？",
+    "clearPairedDevicesConfirmMessage": "これにより、USB経由でCMD_BT_UNPAIRが送信され、ESP 32 RNode上のボンディングされたホストがクリアされます（一部のnRF 52ビルドでは操作不可）。再ペアリングする前に、システム設定→Bluetoothでデバイスを忘れておく必要があります。",
+    "clearPairedDevicesConfirm": "債券を消去する",
+    "clearPairedDevicesSuccess": "ラジオボンドテーブルクリアが要求されました。"
   },
   "identityVault": {
     "title": "アイデンティティ保管庫",

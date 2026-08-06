@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  getReticulumBleBondDesyncActive,
+  subscribeReticulumBleBondDesync,
+} from '@/renderer/lib/reticulum/reticulumBleBondDesync';
+import {
   beginReticulumBleConnectGrace,
   clearReticulumBleConnectGrace,
   getReticulumBleConnectGraceExpiresAt,
@@ -18,6 +22,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
   const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(() =>
     getReticulumBleConnectGraceExpiresAt(),
   );
+  const [bondDesyncActive, setBondDesyncActive] = useState(() => getReticulumBleBondDesyncActive());
   /** Synchronous mirror — React state lags a frame and can release a fresh suspend. */
   const graceExpiresAtRef = useRef(getReticulumBleConnectGraceExpiresAt());
   const yieldStateRef = useRef({ yieldActive: false });
@@ -28,6 +33,12 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
       const expires = getReticulumBleConnectGraceExpiresAt();
       graceExpiresAtRef.current = expires;
       setBleConnectGraceExpiresAt(expires);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeReticulumBleBondDesync(() => {
+      setBondDesyncActive(getReticulumBleBondDesyncActive());
     });
   }, []);
 
@@ -92,6 +103,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
             interfaces,
             nowMs: Date.now(),
             bleConnectGraceExpiresAt: graceExpiresAtRef.current,
+            bondDesyncActive: getReticulumBleBondDesyncActive(),
           },
           yieldStateRef.current,
         );
@@ -109,5 +121,5 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [sidecarActive, bleConnectGraceExpiresAt, nowMs]);
+  }, [sidecarActive, bleConnectGraceExpiresAt, nowMs, bondDesyncActive]);
 }

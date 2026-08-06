@@ -17,6 +17,8 @@ export interface SyncReticulumNobleBleYieldInput {
   interfaces: readonly ReticulumInterfaceRow[];
   nowMs: number;
   bleConnectGraceExpiresAt: number;
+  /** When true, never re-acquire Noble — stale OS bond must be Forget/re-paired first. */
+  bondDesyncActive?: boolean;
   /** When aborted (e.g. watcher flipped active again), skip releasing after awaits. */
   signal?: AbortSignal;
 }
@@ -38,7 +40,28 @@ export async function syncReticulumNobleBleYield(
   input: SyncReticulumNobleBleYieldInput,
   state: ReticulumNobleBleYieldMutableState,
 ): Promise<void> {
-  const { sidecarActive, interfaces, nowMs, bleConnectGraceExpiresAt, signal } = input;
+  const { sidecarActive, interfaces, nowMs, bleConnectGraceExpiresAt, bondDesyncActive, signal } =
+    input;
+
+  if (bondDesyncActive) {
+    if (state.yieldActive) {
+      if (signal?.aborted) {
+        return;
+      }
+      state.yieldActive = false;
+      state.lastPrepareFailedAtMs = undefined;
+      await releaseReticulumBleRnodeConnect();
+      return;
+    }
+    const coexist = await window.electronAPI.bleCoexistence.getState();
+    if (signal?.aborted) {
+      return;
+    }
+    if (coexist.scanOwner === 'reticulum') {
+      await releaseReticulumBleRnodeConnect();
+    }
+    return;
+  }
 
   if (!sidecarActive) {
     if (state.yieldActive) {

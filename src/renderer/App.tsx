@@ -3109,6 +3109,15 @@ function AppContent() {
                                 setActiveTab(appTabIdx);
                               }
                             }}
+                            onOpenAdminBluetooth={() => {
+                              const adminTabIdx = findFilteredTabIndexForPanel(
+                                selectByProtocol(tabsByProtocol, protocol),
+                                ADMIN_PANEL_INDEX,
+                              );
+                              if (adminTabIdx >= 0) {
+                                setActiveTab(adminTabIdx);
+                              }
+                            }}
                             suppressMountAutoConnect
                           />
                         )}

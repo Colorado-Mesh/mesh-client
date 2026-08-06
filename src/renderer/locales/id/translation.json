@@ -1188,7 +1188,8 @@
       "addDefaultHubsFailed": "Gagal menambahkan tulang punggung default.",
       "backboneEnableGuidanceLead": "Aktifkan 1 hingga 3 gateway backbone paling banyak",
       "backboneEnableGuidanceBody": "—2 adalah titik ideal untuk redundansi tanpa pemborosan bandwidth. Bidik 1 hub global dan 1 gateway regional, dan aktifkan antarmuka khusus (seperti I2P atau Yggdrasil) hanya jika diperlukan. RNode yang terhubung lokal dan antarmuka LAN lokal tidak dihitung dalam batas backbone ini.",
-      "defaultHubsPickerHint": "Mulai dengan Utama & Global plus wilayah Anda. Aktifkan paling banyak 1 hingga 3 gateway backbone (2 adalah titik ideal). RNode lokal dan antarmuka LAN tidak dihitung. Entri baru ditambahkan dalam keadaan nonaktif agar bisa ditinjau. Sync juga menonaktifkan sisa hub testnet resmi yang sudah dinonaktifkan (Amsterdam)."
+      "defaultHubsPickerHint": "Mulai dengan Utama & Global plus wilayah Anda. Aktifkan paling banyak 1 hingga 3 gateway backbone (2 adalah titik ideal). RNode lokal dan antarmuka LAN tidak dihitung. Entri baru ditambahkan dalam keadaan nonaktif agar bisa ditinjau. Sync juga menonaktifkan sisa hub testnet resmi yang sudah dinonaktifkan (Amsterdam).",
+      "rnodeTransportBleHint": "Ikatan BLE dapat desinkronisasi dengan macOS (Forget + re-pair). Lebih suka USB serial atau Wi-Fi (tcp://) saat radio ada di dekatnya."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1291,7 +1292,12 @@
       "bleBondRemoved": "{{name}}: Ikatan Bluetooth sudah basi (OS masih menunjukkan Dipasangkan)",
       "bleBondRemovedHint": "Lupakan RNode ini di Pengaturan Sistem → Bluetooth, mulai memasangkan di radio (Admin → Bluetooth atau tombol tahan ~7 detik), mulai ulang tumpukan, dan masukkan PIN 6 digit baru.",
       "blePairingTimedOut": "{{name}}: Waktu pertukaran kunci sandi Bluetooth habis",
-      "blePairingTimedOutHint": "Hentikan tumpukan, mulai memasangkan lagi (Admin → Bluetooth menampilkan PIN di panel — tampilan radio mungkin tetap kosong — atau tombol ~7 detik ditahan untuk PIN di layar), mulai ulang tumpukan satu kali, dan masukkan PIN tersebut dalam dialog OS dalam waktu ~60 detik. Jangan pernah menggunakan 123456 (default Meshtastic)."
+      "blePairingTimedOutHint": "Hentikan tumpukan, mulai memasangkan lagi (Admin → Bluetooth menampilkan PIN di panel — tampilan radio mungkin tetap kosong — atau tombol ~7 detik ditahan untuk PIN di layar), mulai ulang tumpukan satu kali, dan masukkan PIN tersebut dalam dialog OS dalam waktu ~60 detik. Jangan pernah menggunakan 123456 (default Meshtastic).",
+      "bleBondRemovedStopStack": "Hentikan tumpukan",
+      "bleBondRemovedOpenAdmin": "Buka Bluetooth Admin",
+      "txQueueDropsHintBle": "BLE RNode ini tidak dapat menguras antrean TX-nya (tautan macet atau flapping). Lebih suka USB serial atau Wi-Fi (tcp://), atau Stop stack dan re-pair setelah Forget di Pengaturan Sistem → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "Antrian TX penuh karena ikatan BLE sudah basi. Lupakan RNode ini di → Bluetooth Pengaturan Sistem, lalu gunakan Admin → Bluetooth (Clear paired / Start pairing) atau beralih ke USB.",
+      "txQueueDropsHintNeutral": "Saluran TX antarmuka ini penuh. Periksa kesehatan tautan antarmuka itu (atau nonaktifkan) untuk menghentikan tetesan."
     },
     "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi.",
     "radioMqttRootDivergesWarning": "Topik utama Radio MQTT adalah {{radioRoot}} tetapi panel ini berlangganan {{appPrefix}}. Cocokkan radio untuk membatasi lalu lintas simpul nasional — perbarui Prefiks Topik dan sambungkan kembali MQTT.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Mengaktifkan hub batas / tulang punggung: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "Antrean TX turun pada: {{names}} — antarmuka itu mungkin jenuh.",
         "tooManyDefaultBackbones": "Anda telah mengaktifkan {{count}} tulang punggung default. Pertimbangkan untuk menonaktifkan ekstra dan menyimpan sekitar 2 untuk redundansi.",
-        "decommissionedHubEnabled": "Hub yang dinonaktifkan «{{name}}» masih aktif — mesh-client mematikannya setiap kali stack dimulai. Gunakan «Tambahkan backbone default» atau direktori backbone untuk endpoint aktif."
+        "decommissionedHubEnabled": "Hub yang dinonaktifkan «{{name}}» masih aktif — mesh-client mematikannya setiap kali stack dimulai. Gunakan «Tambahkan backbone default» atau direktori backbone untuk endpoint aktif.",
+        "txQueueDropsBle": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — tautan BLE RNode macet; lebih suka USB atau pasang ulang",
+        "txQueueDropsBleBondStale": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — ikatan BLE basi; Lupakan di OS Bluetooth dan pasangkan kembali",
+        "txQueueDropsNeutral": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — periksa tautan antarmuka tersebut"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "Menunggu penyandingan PIN dari radio melalui USB…",
     "pairingPinLabel": "PIN penyandingan Bluetooth",
     "pairingPinEnterHint": "Masukkan kode ini dalam dialog OS Bluetooth ketika tumpukan terhubung. Jangan gunakan 123456.",
-    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di panel ini melalui USB — tampilan radio sering kali tetap kosong. Masukkan PIN tersebut dalam dialog Bluetooth OS Anda saat Reticulum terhubung melalui BLE. RNode tidak memiliki PIN default (jangan gunakan 123456 — yaitu Meshtastic). Pada papan tampilan, tombol yang ditahan ~7 detik juga dapat menampilkan PIN di layar. RNode mungkin tidak muncul di Pengaturan Sistem → Bluetooth sampai ikatan berhasil."
+    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di panel ini melalui USB — tampilan radio sering kali tetap kosong. Masukkan PIN tersebut dalam dialog Bluetooth OS Anda saat Reticulum terhubung melalui BLE. RNode tidak memiliki PIN default (jangan gunakan 123456 — yaitu Meshtastic). Pada papan tampilan, tombol yang ditahan ~7 detik juga dapat menampilkan PIN di layar. RNode mungkin tidak muncul di Pengaturan Sistem → Bluetooth sampai ikatan berhasil.",
+    "clearPairedDevices": "Bersihkan perangkat yang dipasangkan",
+    "clearPairedDevicesConfirmTitle": "Bersihkan ikatan Bluetooth RNode?",
+    "clearPairedDevicesConfirmMessage": "Ini mengirimkan cmd_BT_PLUNP melalui USB dan membersihkan host berikat di ESP32 RNodes (tidak ada pilihan pada beberapa build nRF52). Anda tetap harus melupakan perangkat di Pengaturan Sistem → Bluetooth sebelum memasangkannya kembali.",
+    "clearPairedDevicesConfirm": "Hapus obligasi",
+    "clearPairedDevicesSuccess": "Tabel ikatan radio jelas diminta."
   },
   "identityVault": {
     "title": "Kubah identitas",

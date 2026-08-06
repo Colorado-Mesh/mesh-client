@@ -50,6 +50,9 @@ import {
   recordReticulumPeerInterfaceSamplesFromPeersUpdated,
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
+import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { setReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
 import { refreshGamesSessions } from '@/renderer/lib/reticulum/reticulumGamesSession';
@@ -265,11 +268,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
   );
   const unsubEventRef = useRef<(() => void) | null>(null);
   const unsubVoiceAudioRef = useRef<(() => void) | null>(null);
-  const connectRef = useRef<(() => Promise<void>) | null>(null);
+  const connectRef = useRef<((opts?: { reuseIfRunning?: boolean }) => Promise<void>) | null>(null);
   const restartStackRef = useRef<(() => Promise<void>) | null>(null);
   const connectInFlightRef = useRef(false);
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
+  /** Set on power-suspend when an enabled BLE RNode was configured — wake must not reuseIfRunning. */
+  const powerSuspendHadBleRnodeRef = useRef(false);
   /**
    * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
    * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
@@ -1426,6 +1431,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setRawPackets([]);
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
+    setReticulumBleBondDesyncActive(false);
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -1433,6 +1439,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
+      const bondRemoved = status.interfaceIssueAlert?.bleBondRemoved ?? [];
+      const bondDesync = bondRemoved.length > 0;
+      setReticulumBleBondDesyncActive(bondDesync);
+      if (bondDesync) {
+        void releaseReticulumBleRnodeConnect().catch((e: unknown) => {
+          console.debug(
+            '[useReticulumRuntime] release Noble after bleBondRemoved ' + errLikeToLogString(e),
+          );
+        });
+      }
       if (status.interfaceIssueAlert || status.autoBeaconAlert || status.healthy === false) {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
@@ -1503,97 +1519,101 @@ export function useReticulumRuntime(): ProtocolRuntime {
     };
   }, []);
 
-  const connect = useCallback(async () => {
-    if (connectInFlightRef.current) {
-      const pending = connectInFlightDoneRef.current;
-      if (pending) {
-        await pending.catch((e: unknown) => {
+  const connect = useCallback(
+    async (opts?: { reuseIfRunning?: boolean }) => {
+      if (connectInFlightRef.current) {
+        const pending = connectInFlightDoneRef.current;
+        if (pending) {
+          await pending.catch((e: unknown) => {
+            console.debug(
+              '[useReticulumRuntime] coalesced connect waited on failed in-flight attempt ' +
+                errLikeToLogString(e),
+            );
+          });
+          return;
+        }
+        throw new Error('Reticulum connect already in progress');
+      }
+      // Defense in depth: AutostartCoordinator (or any stale caller) must not defeat Stop.
+      // Intentional Start clears this via notifyManualStackStart / clear helpers first.
+      if (isReticulumManualStackStopSuppress()) {
+        console.debug('[useReticulumRuntime] connect skipped — manual stack stop suppress');
+        return;
+      }
+      // Intentional Start / reconnect clears sticky user-disconnect suppress.
+      suppressReconnectRef.current = false;
+      connectInFlightRef.current = true;
+      const generation = resumeGenerationRef.current;
+      const reuseIfRunning = opts?.reuseIfRunning ?? true;
+      const flight = (async () => {
+        setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
+        syncConnectionStore({ status: 'connecting', connectionType: null });
+        await window.electronAPI.reticulum.start({ reuseIfRunning });
+        subscribeSidecarEventBridges();
+        const lxmfHash = await refreshIdentityFromSidecar();
+        const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
+        if (connectedNodeId > 0) {
+          syncConnectionStore({ myNodeNum: connectedNodeId });
+        }
+        await refreshContactsFromSidecar();
+        await refreshLocalInterfacesFromSidecar();
+        await syncDiagnosticsFromSidecar();
+        await hydrateRawPackets();
+        if (identityId) {
+          await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+          markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
+          // Merge — do not wipe live WS ingest whose fire-and-forget DB persist is still in flight.
+          await loadMessagesFromDb('merge');
+        }
+        // Catch up any inbound LXMF that arrived while WS was lagging or before subscribe.
+        await catchUpRecentInboundLxmf({ reason: 'connect' });
+        if (resumeGenerationRef.current !== generation) {
+          // A later power-suspend fired while this connect attempt was still in flight — the
+          // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
+          // now owns the UI state; applying this stale "configured" result could clobber it.
           console.debug(
-            '[useReticulumRuntime] coalesced connect waited on failed in-flight attempt ' +
-              errLikeToLogString(e),
+            '[useReticulumRuntime] connect superseded by newer power-suspend generation — skip applying stale configured state',
           );
+          return;
+        }
+        setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
+        syncConnectionStore({
+          status: 'configured',
+          connectionType: null,
+          myNodeNum: connectedNodeId,
         });
-        return;
+        scheduleLocalInterfaceStatusBurst();
+        void reconcileRncpListenerFromSidecar().catch((e: unknown) => {
+          console.debug('[useReticulumRuntime] rncp reconcile ' + errLikeToLogString(e));
+        });
+      })();
+      connectInFlightDoneRef.current = flight;
+      try {
+        await flight;
+      } catch (e) {
+        console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
+        setState(INITIAL_STATE);
+        syncConnectionStore(INITIAL_STATE);
+        throw e instanceof Error ? e : new Error(String(e));
+      } finally {
+        connectInFlightRef.current = false;
+        connectInFlightDoneRef.current = null;
       }
-      throw new Error('Reticulum connect already in progress');
-    }
-    // Defense in depth: AutostartCoordinator (or any stale caller) must not defeat Stop.
-    // Intentional Start clears this via notifyManualStackStart / clear helpers first.
-    if (isReticulumManualStackStopSuppress()) {
-      console.debug('[useReticulumRuntime] connect skipped — manual stack stop suppress');
-      return;
-    }
-    // Intentional Start / reconnect clears sticky user-disconnect suppress.
-    suppressReconnectRef.current = false;
-    connectInFlightRef.current = true;
-    const generation = resumeGenerationRef.current;
-    const flight = (async () => {
-      setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
-      syncConnectionStore({ status: 'connecting', connectionType: null });
-      await window.electronAPI.reticulum.start({ reuseIfRunning: true });
-      subscribeSidecarEventBridges();
-      const lxmfHash = await refreshIdentityFromSidecar();
-      const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
-      if (connectedNodeId > 0) {
-        syncConnectionStore({ myNodeNum: connectedNodeId });
-      }
-      await refreshContactsFromSidecar();
-      await refreshLocalInterfacesFromSidecar();
-      await syncDiagnosticsFromSidecar();
-      await hydrateRawPackets();
-      if (identityId) {
-        await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
-        markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
-        // Merge — do not wipe live WS ingest whose fire-and-forget DB persist is still in flight.
-        await loadMessagesFromDb('merge');
-      }
-      // Catch up any inbound LXMF that arrived while WS was lagging or before subscribe.
-      await catchUpRecentInboundLxmf({ reason: 'connect' });
-      if (resumeGenerationRef.current !== generation) {
-        // A later power-suspend fired while this connect attempt was still in flight — the
-        // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
-        // now owns the UI state; applying this stale "configured" result could clobber it.
-        console.debug(
-          '[useReticulumRuntime] connect superseded by newer power-suspend generation — skip applying stale configured state',
-        );
-        return;
-      }
-      setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
-      syncConnectionStore({
-        status: 'configured',
-        connectionType: null,
-        myNodeNum: connectedNodeId,
-      });
-      scheduleLocalInterfaceStatusBurst();
-      void reconcileRncpListenerFromSidecar().catch((e: unknown) => {
-        console.debug('[useReticulumRuntime] rncp reconcile ' + errLikeToLogString(e));
-      });
-    })();
-    connectInFlightDoneRef.current = flight;
-    try {
-      await flight;
-    } catch (e) {
-      console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
-      setState(INITIAL_STATE);
-      syncConnectionStore(INITIAL_STATE);
-      throw e instanceof Error ? e : new Error(String(e));
-    } finally {
-      connectInFlightRef.current = false;
-      connectInFlightDoneRef.current = null;
-    }
-  }, [
-    subscribeSidecarEventBridges,
-    refreshContactsFromSidecar,
-    refreshIdentityFromSidecar,
-    refreshLocalInterfacesFromSidecar,
-    loadMessagesFromDb,
-    syncDiagnosticsFromSidecar,
-    hydrateRawPackets,
-    catchUpRecentInboundLxmf,
-    identityId,
-    syncConnectionStore,
-    scheduleLocalInterfaceStatusBurst,
-  ]);
+    },
+    [
+      subscribeSidecarEventBridges,
+      refreshContactsFromSidecar,
+      refreshIdentityFromSidecar,
+      refreshLocalInterfacesFromSidecar,
+      loadMessagesFromDb,
+      syncDiagnosticsFromSidecar,
+      hydrateRawPackets,
+      catchUpRecentInboundLxmf,
+      identityId,
+      syncConnectionStore,
+      scheduleLocalInterfaceStatusBurst,
+    ],
+  );
 
   const disconnect = useCallback(async () => {
     suppressReconnectRef.current = true;
@@ -1622,6 +1642,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setRawPackets([]);
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
+    setReticulumBleBondDesyncActive(false);
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -2082,6 +2103,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
     // Pause shell auto-reconnect / transfer retry storms while the machine sleeps.
     useRnshSessionStore.getState().clearAll();
     useRncpTransferStore.getState().clearAll();
+    const hadBleRnode = localInterfacesRef.current.some(
+      (row) => row.enabled && isReticulumBleRnodeInterfaceRow(row),
+    );
+    powerSuspendHadBleRnodeRef.current = hadBleRnode;
+    if (!hadBleRnode) {
+      return;
+    }
+    // Stop the sidecar so CoreBluetooth/btleplug does not keep a zombie BLE RNode session
+    // across sleep (macOS tears GATT without a cooperative detach).
+    void window.electronAPI.reticulum.stop().catch((e: unknown) => {
+      console.debug('[useReticulumRuntime] power suspend stop ' + errLikeToLogString(e));
+    });
   }, []);
 
   const onPowerResume = useCallback(() => {
@@ -2089,7 +2122,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.debug('[useReticulumRuntime] power resume — skip reconnect (user disconnect)');
       return;
     }
-    void connect().catch((e: unknown) => {
+    const forceFresh = powerSuspendHadBleRnodeRef.current;
+    powerSuspendHadBleRnodeRef.current = false;
+    void connect({ reuseIfRunning: !forceFresh }).catch((e: unknown) => {
       console.warn('[useReticulumRuntime] power resume reconnect failed ' + errLikeToLogString(e));
     });
   }, [connect]);

@@ -1188,7 +1188,8 @@
       "addDefaultHubsFailed": "기본 백본을 추가하지 못했습니다.",
       "backboneEnableGuidanceLead": "최대 1 ~ 3개의 백본 게이트웨이 활성화",
       "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
-      "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다."
+      "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다.",
+      "rnodeTransportBleHint": "BLE 본드는 macOS와 비동기화할 수 있습니다 (Forget + re-pair). 라디오가 근처에 있을 때는 USB 직렬 또는 Wi-Fi (tcp://) 를 선호합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1291,7 +1292,12 @@
       "bleBondRemoved": "{{name}}: Bluetooth 연결이 오래되었습니다(OS에 여전히 페어링됨이 표시됨).",
       "bleBondRemovedHint": "시스템 설정 → Bluetooth에서 이 RNode를 삭제하고 무선에서 페어링을 시작한 다음(관리자 → Bluetooth 또는 ~7초 버튼 누르기) 스택을 다시 시작한 다음 새 6자리 PIN을 입력합니다.",
       "blePairingTimedOut": "{{name}}: Bluetooth 암호 키 교환 시간이 초과되었습니다.",
-      "blePairingTimedOutHint": "스택을 중지하고 페어링을 다시 시작하고(관리자 → Bluetooth는 패널에 PIN을 표시합니다. 라디오 디스플레이는 비어 있을 수 있습니다. 또는 화면 PIN을 보려면 ~7초 동안 버튼을 누르십시오.) 스택을 한 번 다시 시작하고 ~60초 내에 OS 대화 상자에 해당 PIN을 입력하십시오. 123456(Meshtastic 기본값)을 사용하지 마십시오."
+      "blePairingTimedOutHint": "스택을 중지하고 페어링을 다시 시작하고(관리자 → Bluetooth는 패널에 PIN을 표시합니다. 라디오 디스플레이는 비어 있을 수 있습니다. 또는 화면 PIN을 보려면 ~7초 동안 버튼을 누르십시오.) 스택을 한 번 다시 시작하고 ~60초 내에 OS 대화 상자에 해당 PIN을 입력하십시오. 123456(Meshtastic 기본값)을 사용하지 마십시오.",
+      "bleBondRemovedStopStack": "스택 중지",
+      "bleBondRemovedOpenAdmin": "관리자 블루투스 열기",
+      "txQueueDropsHintBle": "이 BLE RNode는 TX 대기열을 배출할 수 없습니다 (링크 정지 또는 플랩핑). USB 직렬 또는 Wi-Fi (tcp://) 를 선호하거나 시스템 설정 → 블루투스에서 잊어버린 후 스택을 중지하고 다시 페어링하십시오.",
+      "txQueueDropsHintBleBondStale": "BLE 결합이 오래되어 TX 대기열이 가득 찼습니다. 시스템 설정 → 블루투스에서 이 RNode를 지운 다음 관리자 → 블루투스를 사용하거나 (페어링 지우기/페어링 시작) USB로 전환하십시오.",
+      "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오."
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "활성화된 경계/백본 허브: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX 대기열 드롭: {{names}} — 해당 인터페이스가 포화 상태일 수 있습니다.",
         "tooManyDefaultBackbones": "기본 백본이 {{count}} 개 활성화되어 있습니다. 엑스트라를 비활성화하고 이중화를 위해 약 2 개를 유지하는 것이 좋습니다.",
-        "decommissionedHubEnabled": "폐기된 허브 «{{name}}»가 아직 사용 중입니다 — mesh-client는 스택을 시작할 때마다 끕니다. 활성 엔드포인트는 «기본 백본 추가» 또는 백본 목록을 사용하세요."
+        "decommissionedHubEnabled": "폐기된 허브 «{{name}}»가 아직 사용 중입니다 — mesh-client는 스택을 시작할 때마다 끕니다. 활성 엔드포인트는 «기본 백본 추가» 또는 백본 목록을 사용하세요.",
+        "txQueueDropsBle": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE RNode 링크가 중단됨, USB 또는 재페어링 선호",
+        "txQueueDropsBleBondStale": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE 본드 오래됨; OS 블루투스는 잊어버리고 다시 페어링",
+        "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "USB를 통해 라디오에서 PIN 페어링을 기다리는 중…",
     "pairingPinLabel": "블루투스 페어링 PIN",
     "pairingPinEnterHint": "스택이 연결되면 OS Bluetooth 대화 상자에 이 코드를 입력하세요. 123456을 사용하지 마십시오.",
-    "bluetoothHint": "장치에서 Bluetooth를 활성화한 다음 페어링 시작을 사용하십시오. 6자리 PIN은 USB를 통해 이 패널에 표시됩니다. 라디오 디스플레이는 종종 공백으로 유지됩니다. Reticulum이 BLE를 통해 연결되면 OS Bluetooth 대화 상자에 해당 PIN을 입력하세요. RNode에는 기본 PIN이 없습니다(123456을 사용하지 마십시오. 이는 Meshtastic입니다). 디스플레이 보드에서 버튼을 7초 정도 길게 누르면 화면에 PIN이 표시될 수도 있습니다. 연결이 성공적으로 완료될 때까지 RNode가 시스템 설정 → Bluetooth에 나타나지 않을 수 있습니다."
+    "bluetoothHint": "장치에서 Bluetooth를 활성화한 다음 페어링 시작을 사용하십시오. 6자리 PIN은 USB를 통해 이 패널에 표시됩니다. 라디오 디스플레이는 종종 공백으로 유지됩니다. Reticulum이 BLE를 통해 연결되면 OS Bluetooth 대화 상자에 해당 PIN을 입력하세요. RNode에는 기본 PIN이 없습니다(123456을 사용하지 마십시오. 이는 Meshtastic입니다). 디스플레이 보드에서 버튼을 7초 정도 길게 누르면 화면에 PIN이 표시될 수도 있습니다. 연결이 성공적으로 완료될 때까지 RNode가 시스템 설정 → Bluetooth에 나타나지 않을 수 있습니다.",
+    "clearPairedDevices": "페어링된 장치 지우기",
+    "clearPairedDevicesConfirmTitle": "RNode 블루투스 본드를 지우시겠습니까?",
+    "clearPairedDevicesConfirmMessage": "이렇게 하면 USB를 통해 CMD_BT_UNPAIR가 전송되고 ESP32 RNode에서 결합된 호스트를 지웁니다 (일부 nRF52 빌드에서는 작동하지 않음). 다시 페어링하기 전에 시스템 설정 → 블루투스에서 장치를 잊어 버려야합니다.",
+    "clearPairedDevicesConfirm": "클리어본드",
+    "clearPairedDevicesSuccess": "라디오 본드 테이블 클리어 요청됨."
   },
   "identityVault": {
     "title": "신원 정보 보관소",

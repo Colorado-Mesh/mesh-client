@@ -637,6 +637,50 @@ describe('ReticulumSidecarManager', () => {
     )?.[0];
     expect(stopProc).toBeDefined();
     expect(stopProc).toContain('finalizeStopped()');
+    expect(stopProc).toContain('prepareStopBestEffort()');
     expect(stopProc).not.toMatch(/\.start\(/);
+  });
+
+  it('stop calls prepare-stop HTTP before SIGTERM when sidecar is running', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          status: 'ok',
+          version: '0.1.0',
+          rns_ready: false,
+          lxmf_ready: false,
+        }),
+      text: () => Promise.resolve('ok'),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    await manager.start();
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('{"ok":true}'),
+    });
+
+    await manager.stop();
+
+    const prepareCall = fetchMock.mock.calls.find(
+      (args) => typeof args[0] === 'string' && args[0].includes('/api/v1/stack/prepare-stop'),
+    );
+    expect(prepareCall).toBeDefined();
+    expect(prepareCall?.[1]).toMatchObject({ method: 'POST' });
+    expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
   });
 });

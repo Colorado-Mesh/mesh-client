@@ -1,0 +1,165 @@
+diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
+index 1111111..2222222 100644
+--- a/crates/rns-interface/src/ble_rnode.rs
++++ b/crates/rns-interface/src/ble_rnode.rs
+@@ -190,6 +190,14 @@
+     )
+ }
+ 
++/// CoreBluetooth / WinRT: peripheral cleared LTK while the OS still shows Paired.
++fn is_bond_removed_error(error: &InterfaceError) -> bool {
++    matches!(
++        error,
++        InterfaceError::SendFailed(message) if message.contains("Peer removed pairing information")
++    )
++}
++
+ /// Android's native bridge can come up immediately after SMP completes, while
+ /// rsCardputer's RNode BLE stack is still settling. Probe detect a few times
+ /// inside one connection attempt so a single dropped early frame does not cost
+@@ -1319,6 +1327,7 @@
+ async fn connect_rnode(
+     adapter: &Adapter,
+     ble_uri: &str,
++    session_already_bonded: bool,
+ ) -> Result<BleRNodeConnection, InterfaceError> {
+     ble_diag(format!("[ble] connect_rnode start uri={ble_uri}"));
+     let peripheral = resolve_ble_target(adapter, ble_uri).await?;
+@@ -1403,20 +1412,68 @@
+     // kills any pending subscribe. iOS/macOS share CoreBluetooth; Windows
+     // (WinRT) and Android auto-prompt and retry on encrypted-char reads.
+     // Linux used explicit BlueZ pairing before `connect()`, above.
++    //
++    // When this process already completed a successful bond/session, skip the
++    // TX-char SMP probe on reconnect so we do not re-fire the OS passkey
++    // dialog (or stress fragile bonds). Fall back to pairing if subscribe
++    // fails with an auth/encryption error.
+     #[cfg(any(
+         target_os = "ios",
+         target_os = "macos",
+         target_os = "windows",
+         target_os = "android"
+     ))]
+-    desktop_trigger_pairing(&peripheral, &tx_char).await?;
++    if !session_already_bonded {
++        desktop_trigger_pairing(&peripheral, &tx_char).await?;
++    }
+ 
+     ble_diag("[ble] subscribe TX start");
+-    peripheral.subscribe(&tx_char).await.map_err(|e| {
+-        ble_diag(format!("[ble] subscribe TX err: {e}"));
+-        InterfaceError::SendFailed(format!("BLE subscribe TX: {e}"))
+-    })?;
+-    ble_diag("[ble] subscribe TX ok");
++    match peripheral.subscribe(&tx_char).await {
++        Ok(()) => {
++            ble_diag("[ble] subscribe TX ok");
++        }
++        Err(e) => {
++            #[cfg(any(
++                target_os = "ios",
++                target_os = "macos",
++                target_os = "windows",
++                target_os = "android"
++            ))]
++            if session_already_bonded {
++                let msg = format!("{e}");
++                let needs_pair = msg.to_lowercase().contains("auth")
++                    || msg.to_lowercase().contains("encrypt")
++                    || msg.to_lowercase().contains("insufficient");
++                if needs_pair {
++                    ble_diag(format!(
++                        "[ble] subscribe TX err after bonded session ({e}) — re-triggering SMP"
++                    ));
++                    desktop_trigger_pairing(&peripheral, &tx_char).await?;
++                    peripheral.subscribe(&tx_char).await.map_err(|e2| {
++                        ble_diag(format!("[ble] subscribe TX err after re-pair: {e2}"));
++                        InterfaceError::SendFailed(format!("BLE subscribe TX: {e2}"))
++                    })?;
++                    ble_diag("[ble] subscribe TX ok after re-pair");
++                } else {
++                    ble_diag(format!("[ble] subscribe TX err: {e}"));
++                    return Err(InterfaceError::SendFailed(format!("BLE subscribe TX: {e}")));
++                }
++            } else {
++                ble_diag(format!("[ble] subscribe TX err: {e}"));
++                return Err(InterfaceError::SendFailed(format!("BLE subscribe TX: {e}")));
++            }
++            #[cfg(not(any(
++                target_os = "ios",
++                target_os = "macos",
++                target_os = "windows",
++                target_os = "android"
++            )))]
++            {
++                ble_diag(format!("[ble] subscribe TX err: {e}"));
++                return Err(InterfaceError::SendFailed(format!("BLE subscribe TX: {e}")));
++            }
++        }
++    }
+ 
+     // 244 = ATT MTU 247 - 3-byte header. Larger writes silently drop on
+     // peripherals with smaller negotiated MTU; 512 (GATT ceiling) isn't
+@@ -1963,6 +2020,9 @@
+         let mut tries: usize = 0;
+         let mut backoff = RECONNECT_WAIT;
+         let mut initial_attempt = true;
++        // After one successful GATT+SMP session, skip TX-char pairing probe on
++        // reconnect unless subscribe fails with auth (desktop bond-aware path).
++        let mut session_already_bonded = false;
+ 
+         // Drop guard: every early return must clear the running-flag map
+         // entry, or stale entries confuse later spawns reusing the id.
+@@ -2009,9 +2069,25 @@
+                 }
+             };
+ 
+-            let conn = match connect_rnode(&adapter, &ble_uri).await {
+-                Ok(c) => c,
++            let conn = match connect_rnode(&adapter, &ble_uri, session_already_bonded).await {
++                Ok(c) => {
++                    session_already_bonded = true;
++                    c
++                }
+                 Err(e) => {
++                    if is_bond_removed_error(&e) {
++                        snapshot_publisher.connection_attempt_failed();
++                        tracing::warn!(
++                            name = %log_name,
++                            error = %e,
++                            "BLE RNode bond removed — stopping reconnect until stack restart (Forget OS bond + re-pair)"
++                        );
++                        ble_diag(format!(
++                            "[ble] connect_rnode bond-removed: {e} — exiting reconnect loop"
++                        ));
++                        snapshot_publisher.stopped(RNodeRuntimeReason::DriverTerminated);
++                        return;
++                    }
+                     let pairing_transition = is_pairing_transition_error(&e);
+                     let retry_wait = if pairing_transition {
+                         PAIRING_TRANSITION_RETRY_WAIT
+@@ -5432,7 +5508,7 @@
+     #[ignore]
+     async fn test_ble_connect_to_rnode() {
+         let adapter = get_adapter().await.expect("No BLE adapter");
+-        let conn = connect_rnode(&adapter, "ble://")
++        let conn = connect_rnode(&adapter, "ble://", false)
+             .await
+             .expect("No RNode found. Pair an RNode first.");
+         assert!(conn.peripheral.is_connected().await.unwrap_or(false));
+@@ -5466,4 +5542,15 @@
+             "BLE device not found: RNode".into()
+         )));
+     }
++
++    #[test]
++    fn test_bond_removed_error_detected() {
++        assert!(is_bond_removed_error(&InterfaceError::SendFailed(
++            "BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information"
++                .into()
++        )));
++        assert!(!is_bond_removed_error(&InterfaceError::SendFailed(
++            "BLE pairing in progress: Authentication required".into()
++        )));
++    }
+ }

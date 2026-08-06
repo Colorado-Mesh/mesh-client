@@ -122,7 +122,7 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
   it('connect captures the resume generation before starting the async flight', () => {
     const connectBody = extractUseCallbackBody(SOURCE, 'connect');
     expect(connectBody).toMatch(
-      /connectInFlightRef\.current = true;\s*const generation = resumeGenerationRef\.current;\s*const flight = \(async \(\) => \{/,
+      /connectInFlightRef\.current = true;\s*const generation = resumeGenerationRef\.current;\s*const reuseIfRunning = opts\?\.reuseIfRunning \?\? true;\s*const flight = \(async \(\) => \{/,
     );
   });
 
@@ -151,6 +151,30 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
     expect(resumeBody).toBeDefined();
     expect(resumeBody).toContain('suppressReconnectRef.current');
     expect(resumeBody).not.toContain('resumeGenerationRef');
+  });
+
+  it('onPowerSuspend stops the sidecar when an enabled BLE RNode is configured', () => {
+    expect(SOURCE).toMatch(/powerSuspendHadBleRnodeRef/);
+    expect(SOURCE).toMatch(/isReticulumBleRnodeInterfaceRow\(row\)/);
+    const suspendRe = /const onPowerSuspend = useCallback\([\s\S]*?\}, \[\]\);/;
+    const suspendBody = suspendRe.exec(SOURCE)?.[0];
+    expect(suspendBody).toBeDefined();
+    expect(suspendBody).toContain('electronAPI.reticulum.stop()');
+    expect(suspendBody).toContain('powerSuspendHadBleRnodeRef.current = hadBleRnode');
+  });
+
+  it('onPowerResume forces reuseIfRunning false after BLE RNode suspend', () => {
+    const resumeRe = /const onPowerResume = useCallback\([\s\S]*?\}, \[connect\]\);/;
+    const resumeBody = resumeRe.exec(SOURCE)?.[0];
+    expect(resumeBody).toBeDefined();
+    expect(resumeBody).toContain('reuseIfRunning: !forceFresh');
+    expect(resumeBody).toContain('powerSuspendHadBleRnodeRef.current');
+  });
+
+  it('latches bleBondRemoved to release Noble and set bond-desync sticky flag', () => {
+    expect(SOURCE).toMatch(/setReticulumBleBondDesyncActive\(bondDesync\)/);
+    expect(SOURCE).toMatch(/releaseReticulumBleRnodeConnect\(\)/);
+    expect(SOURCE).toMatch(/status\.interfaceIssueAlert\?\.bleBondRemoved/);
   });
 });
 

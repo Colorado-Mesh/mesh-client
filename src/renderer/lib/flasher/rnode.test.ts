@@ -28,6 +28,16 @@ describe('RNode WiFi payloads', () => {
   });
 });
 
+describe('RNode Bluetooth bond clear', () => {
+  it('exposes CMD_BT_UNPAIR 0x70 and clearBluetoothBonds in source', async () => {
+    expect(RNode.CMD_BT_UNPAIR).toBe(0x70);
+    const source = await import('./rnode?raw');
+    expect(source.default).toContain('CMD_BT_UNPAIR');
+    expect(source.default).toContain('clearBluetoothBonds');
+    expect(source.default).toMatch(/sendKissCommand\(\[RNode\.CMD_BT_UNPAIR,\s*0x01\]\)/);
+  });
+});
+
 describe('RNode.startBluetoothPairing', () => {
   beforeEach(() => {
     vi.useFakeTimers();

@@ -39,6 +39,8 @@ import { startSidecarWatchdog } from './reticulumSidecarWatchdog';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
+/** Wait for BLE RNode detach via POST /api/v1/stack/prepare-stop before SIGTERM. */
+const PREPARE_STOP_TIMEOUT_MS = 8 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** After yielding Noble BLE, allow CoreBluetooth/btleplug to settle before sidecar connect. */
 const RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS = 500;
@@ -457,6 +459,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   private async stopProc(): Promise<void> {
     this.stopWatchdog();
     this.teardownWs();
+    await this.prepareStopBestEffort();
     if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
       bleCoexistenceCoordinator.releaseScan('reticulum');
     }
@@ -492,6 +495,32 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
 
     this.finalizeStopped();
+  }
+
+  /** Ask the sidecar to detach BLE RNode before process kill (best-effort). */
+  private async prepareStopBestEffort(): Promise<void> {
+    const status = this.getStatus();
+    if (!status.running || status.port <= 0 || !this.proc) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/prepare-stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+        signal: AbortSignal.timeout(PREPARE_STOP_TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        console.debug(
+          `[ReticulumSidecar] prepare-stop HTTP ${res.status} — continuing with SIGTERM`,
+        );
+      }
+    } catch (e: unknown) {
+      console.debug(
+        '[ReticulumSidecar] prepare-stop failed — continuing with SIGTERM:',
+        e instanceof Error ? e.message : e,
+      );
+    }
   }
 
   async proxyGet(apiPath: string): Promise<unknown> {

@@ -6,7 +6,10 @@ import {
   collectReticulumLocalInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
   collectReticulumRemoteInterfaceAlerts,
+  resolveReticulumTxDropHintKind,
   reticulumLocalOfflineDisplayKind,
+  reticulumTxDropConnectionHintKey,
+  reticulumTxDropDiagnosticsCauseKey,
 } from './reticulumLocalInterfaceHealth';
 
 const heltec: Parameters<typeof classifyReticulumLocalInterface>[0] = {
@@ -209,5 +212,69 @@ describe('reticulumLocalInterfaceHealth', () => {
     );
     expect(alerts).toHaveLength(2);
     expect(alerts.map((a) => a.reason).sort()).toEqual(['enabled_down', 'tcp_unreachable']);
+  });
+});
+
+describe('resolveReticulumTxDropHintKind', () => {
+  const tcpHub = {
+    id: 'rmap',
+    name: 'RMAP World',
+    type: 'tcp',
+    enabled: true,
+    status: 'down',
+    host: 'rmap.world',
+    port: 4242,
+  };
+  const bleRnode = {
+    id: 'rnode-41f4',
+    name: 'RNode 41F4',
+    type: 'rnode',
+    enabled: true,
+    status: 'down',
+    serial_port: 'ble://eccf2847-e1fd-3f5f-0811-064db1639a3d',
+  };
+  const usbRnode = {
+    ...heltec,
+    name: 'Heltec USB',
+    serial_port: '/dev/cu.usbserial-7',
+  };
+  const wifiRnode = {
+    ...heltec,
+    name: 'RNode WiFi',
+    serial_port: 'tcp://192.168.1.10:7633',
+  };
+
+  it('classifies TCP hubs as tcp', () => {
+    expect(resolveReticulumTxDropHintKind('RMAP World', [tcpHub])).toBe('tcp');
+    expect(reticulumTxDropConnectionHintKey('tcp')).toBe('txQueueDropsHint');
+    expect(reticulumTxDropDiagnosticsCauseKey('tcp')).toBe('txQueueDrops');
+  });
+
+  it('classifies BLE RNodes as ble', () => {
+    expect(resolveReticulumTxDropHintKind('RNode 41F4', [bleRnode])).toBe('ble');
+    expect(reticulumTxDropConnectionHintKey('ble')).toBe('txQueueDropsHintBle');
+  });
+
+  it('prefers bleBondStale when name is in bleBondRemoved', () => {
+    expect(resolveReticulumTxDropHintKind('RNode 41F4', [bleRnode], ['RNode 41F4'])).toBe(
+      'bleBondStale',
+    );
+    expect(resolveReticulumTxDropHintKind('RNode 41F4', undefined, ['RNode 41F4'])).toBe(
+      'bleBondStale',
+    );
+    expect(resolveReticulumTxDropHintKind('RMAP World', [tcpHub], ['RMAP World'])).toBe(
+      'bleBondStale',
+    );
+  });
+
+  it('classifies USB and Wi-Fi RNodes as neutral', () => {
+    expect(resolveReticulumTxDropHintKind('Heltec USB', [usbRnode])).toBe('neutral');
+    expect(resolveReticulumTxDropHintKind('RNode WiFi', [wifiRnode])).toBe('neutral');
+  });
+
+  it('returns neutral when the row is missing or name mismatches', () => {
+    expect(resolveReticulumTxDropHintKind('Missing', [])).toBe('neutral');
+    expect(resolveReticulumTxDropHintKind('Missing', undefined)).toBe('neutral');
+    expect(resolveReticulumTxDropHintKind('Other', [tcpHub, bleRnode])).toBe('neutral');
   });
 });

@@ -2135,6 +2135,11 @@ function InterfacesSection({
                   {t('connectionPanel.reticulumInterfaces.rnodeTransportWifi')}
                 </option>
               </select>
+              {rnodeTransport === 'ble' ? (
+                <p className="text-muted mt-1 text-[11px]">
+                  {t('connectionPanel.reticulumInterfaces.rnodeTransportBleHint')}
+                </p>
+              ) : null}
             </label>
           ) : null}
           {showRnodeWifi ? (

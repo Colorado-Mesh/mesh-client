@@ -12,6 +12,14 @@ pub async fn stack_restart(State(stack): State<Arc<StackHandle>>) -> Json<serde_
     }
 }
 
+/// Detach BLE RNode GATT before the Electron host SIGTERM/SIGKILL's the process.
+pub async fn stack_prepare_stop(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.prepare_stop().await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn factory_reset(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     match stack.factory_reset().await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),

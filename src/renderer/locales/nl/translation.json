@@ -1187,7 +1187,8 @@
       "addDefaultHubsFailed": "Kan standaard backbones niet toevoegen.",
       "backboneEnableGuidanceLead": "Maximaal 1 tot 3 backbone-gateways inschakelen",
       "backboneEnableGuidanceBody": "—2 is ideaal voor redundantie zonder onnodige bandbreedte. Streef naar 1 globale hub en 1 regionale gateway, en schakel speciale interfaces (zoals I2P of Yggdrasil) alleen in als nodig. Lokaal verbonden RNodes en lokale LAN-interfaces tellen niet mee voor deze backbone-limiet.",
-      "defaultHubsPickerHint": "Begin met Primair & globaal plus uw regio. Schakel hoogstens 1 tot 3 backbone-gateways in (2 is ideaal). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe items worden uitgeschakeld toegevoegd zodat u ze kunt beoordelen. Sync schakelt ook resterende buiten gebruik gestelde officiële testnet-hubs uit (Amsterdam)."
+      "defaultHubsPickerHint": "Begin met Primair & globaal plus uw regio. Schakel hoogstens 1 tot 3 backbone-gateways in (2 is ideaal). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe items worden uitgeschakeld toegevoegd zodat u ze kunt beoordelen. Sync schakelt ook resterende buiten gebruik gestelde officiële testnet-hubs uit (Amsterdam).",
+      "rnodeTransportBleHint": "BLE-bindingen kunnen desynchroniseren met macOS (vergeten + opnieuw koppelen). Geef de voorkeur aan USB-serieel of Wi-Fi (tcp://) wanneer de radio in de buurt is."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1290,7 +1291,12 @@
       "bleBondRemoved": "{{name}}: Bluetooth-verbinding is verouderd (OS toont nog steeds Gekoppeld)",
       "bleBondRemovedHint": "Vergeet deze RNode in Systeeminstellingen → Bluetooth, begin met koppelen op de radio (Admin → Bluetooth of ~7 s knop ingedrukt houden), start de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in.",
       "blePairingTimedOut": "{{name}}: Time-out voor uitwisseling van Bluetooth-wachtwoord",
-      "blePairingTimedOutHint": "Stop de stapel, begin opnieuw met koppelen (Beheer → Bluetooth toont de pincode in het paneel - het radiodisplay kan leeg blijven - of houd de knop ~7 seconden ingedrukt voor een pincode op het scherm), start de stapel opnieuw op en voer die pincode binnen ~60 seconden in het dialoogvenster van het besturingssysteem in. Gebruik nooit 123456 (standaard Meshtastic)."
+      "blePairingTimedOutHint": "Stop de stapel, begin opnieuw met koppelen (Beheer → Bluetooth toont de pincode in het paneel - het radiodisplay kan leeg blijven - of houd de knop ~7 seconden ingedrukt voor een pincode op het scherm), start de stapel opnieuw op en voer die pincode binnen ~60 seconden in het dialoogvenster van het besturingssysteem in. Gebruik nooit 123456 (standaard Meshtastic).",
+      "bleBondRemovedStopStack": "Stop stack",
+      "bleBondRemovedOpenAdmin": "Open Beheerder Bluetooth",
+      "txQueueDropsHintBle": "Deze BLE RNode kan zijn TX-wachtrij niet leegmaken (link zit vast of klappert). Geef de voorkeur aan USB-serieel of Wi-Fi (tcp://), of Stop stack en koppel opnieuw na Forget in System Settings → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "TX-wachtrij is vol omdat de BLE-binding oud is. Vergeet deze RNode in Systeeminstellingen → Bluetooth en gebruik vervolgens Admin → Bluetooth (Clear paired / Start pairing) of schakel over naar USB.",
+      "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Ingeschakelde grens- / ruggengraathubs: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "TX-wachtrij valt op: {{names}} — die interface kan verzadigd zijn.",
         "tooManyDefaultBackbones": "Je hebt {{count}} standaard backbones ingeschakeld. Overweeg om extra's uit te schakelen en er ongeveer 2 te houden voor redundantie.",
-        "decommissionedHubEnabled": "Buiten gebruik gestelde hub „{{name}}” staat nog aan — mesh-client zet hem bij elke stackstart uit. Gebruik «Standaard backbones toevoegen» of de backbone-directory voor actieve eindpunten."
+        "decommissionedHubEnabled": "Buiten gebruik gestelde hub „{{name}}” staat nog aan — mesh-client zet hem bij elke stackstart uit. Gebruik «Standaard backbones toevoegen» of de backbone-directory voor actieve eindpunten.",
+        "txQueueDropsBle": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — BLE RNode-link vastgelopen; geef de voorkeur aan USB of opnieuw koppelen",
+        "txQueueDropsBleBondStale": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — BLE-binding verouderd; Vergeet in OS Bluetooth en koppel opnieuw",
+        "txQueueDropsNeutral": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — controleer de link van die interface"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "Wachten op koppelingspincode van de radio via USB...",
     "pairingPinLabel": "Bluetooth-koppelingspincode",
     "pairingPinEnterHint": "Voer deze code in het OS Bluetooth-dialoogvenster in wanneer de stapel verbinding maakt. Gebruik 123456 niet.",
-    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppeling starten. De 6-cijferige pincode verschijnt in dit paneel via USB - het radiodisplay blijft vaak leeg. Voer die pincode in het Bluetooth-dialoogvenster van uw besturingssysteem in wanneer Reticulum verbinding maakt via BLE. RNode heeft geen standaardpincode (gebruik niet 123456 – dat is Meshtastic). Op displayborden kan het ingedrukt houden van de knop ~7 seconden ook een pincode op het scherm weergeven. De RNode verschijnt mogelijk pas in Systeeminstellingen → Bluetooth na een succesvolle verbinding."
+    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppeling starten. De 6-cijferige pincode verschijnt in dit paneel via USB - het radiodisplay blijft vaak leeg. Voer die pincode in het Bluetooth-dialoogvenster van uw besturingssysteem in wanneer Reticulum verbinding maakt via BLE. RNode heeft geen standaardpincode (gebruik niet 123456 – dat is Meshtastic). Op displayborden kan het ingedrukt houden van de knop ~7 seconden ook een pincode op het scherm weergeven. De RNode verschijnt mogelijk pas in Systeeminstellingen → Bluetooth na een succesvolle verbinding.",
+    "clearPairedDevices": "Gekoppelde apparaten wissen",
+    "clearPairedDevicesConfirmTitle": "RNode Bluetooth-bindingen wissen?",
+    "clearPairedDevicesConfirmMessage": "Dit stuurt CMD_BT_UNPAIR via USB en wist gebonden hosts op ESP32 RNodes (no-op op sommige nRF52 builds). U moet het apparaat nog steeds vergeten in Systeeminstellingen → Bluetooth voordat u het opnieuw koppelt.",
+    "clearPairedDevicesConfirm": "Heldere obligaties",
+    "clearPairedDevicesSuccess": "Radiokoppelingstabel vrij aangevraagd."
   },
   "identityVault": {
     "title": "Identiteitskluis",

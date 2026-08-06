@@ -1188,7 +1188,8 @@
       "addDefaultHubsFailed": "Falha ao adicionar backbones padrão.",
       "backboneEnableGuidanceLead": "Habilite de 1 a 3 gateways de backbone no máximo",
       "backboneEnableGuidanceBody": "—2 é o ponto ideal para redundância sem inchaço desnecessário da largura de banda. Aponte para 1 hub global e 1 gateway regional e habilite interfaces especializadas (como I2P ou Yggdrasil) estritamente conforme necessário. Os RNodes conectados localmente e as interfaces de LAN locais não contam para esse limite de backbone.",
-      "defaultHubsPickerHint": "Comece com Primário e global mais sua região. Ative no máximo 1 a 3 gateways de backbone (2 é o ponto ideal). RNodes locais e interfaces LAN não contam. Novas entradas são adicionadas desativadas para revisão. Sync também desativa hubs de testnet oficiais desativados restantes (Amsterdã)."
+      "defaultHubsPickerHint": "Comece com Primário e global mais sua região. Ative no máximo 1 a 3 gateways de backbone (2 é o ponto ideal). RNodes locais e interfaces LAN não contam. Novas entradas são adicionadas desativadas para revisão. Sync também desativa hubs de testnet oficiais desativados restantes (Amsterdã).",
+      "rnodeTransportBleHint": "As ligações BLE podem dessincronizar com o macOS (Forget + re-pair). Prefira USB serial ou Wi-Fi (tcp://) quando o rádio estiver próximo."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1291,7 +1292,12 @@
       "bleBondRemoved": "{{name}}: A ligação Bluetooth está obsoleta (o sistema operacional ainda mostra Emparelhado)",
       "bleBondRemovedHint": "Esqueça este RNode em Configurações do sistema → Bluetooth, inicie o emparelhamento no rádio (Admin → Bluetooth ou mantenha o botão pressionado por ~ 7 s), reinicie a pilha e insira o novo PIN de 6 dígitos.",
       "blePairingTimedOut": "{{name}}: A troca de senha do Bluetooth expirou",
-      "blePairingTimedOutHint": "Pare a pilha, comece o emparelhamento novamente (Admin → Bluetooth mostra o PIN no painel - o display do rádio pode ficar em branco - ou pressione o botão por aproximadamente 7 s para obter um PIN na tela), reinicie a pilha uma vez e insira esse PIN na caixa de diálogo do sistema operacional dentro de aproximadamente 60 segundos. Nunca use 123456 (padrão Meshtastic)."
+      "blePairingTimedOutHint": "Pare a pilha, comece o emparelhamento novamente (Admin → Bluetooth mostra o PIN no painel - o display do rádio pode ficar em branco - ou pressione o botão por aproximadamente 7 s para obter um PIN na tela), reinicie a pilha uma vez e insira esse PIN na caixa de diálogo do sistema operacional dentro de aproximadamente 60 segundos. Nunca use 123456 (padrão Meshtastic).",
+      "bleBondRemovedStopStack": "Parar pilha",
+      "bleBondRemovedOpenAdmin": "Abrir Admin Bluetooth",
+      "txQueueDropsHintBle": "Este BLE RNode não pode drenar sua fila TX (link preso ou flapping). Prefira USB serial ou Wi-Fi (tcp://), ou Pare de empilhar e emparelhe novamente depois de Esquecer nas Configurações do Sistema → Bluetooth.",
+      "txQueueDropsHintBleBondStale": "A fila TX está cheia porque a ligação BLE está obsoleta. Esqueça este RNode nas Configurações do Sistema → Bluetooth e use Admin → Bluetooth (Limpar emparelhado / Iniciar emparelhamento) ou mude para USB.",
+      "txQueueDropsHintNeutral": "Este canal TX de interface está cheio. Verifique a integridade do link dessa interface (ou desative-a) para interromper as quedas."
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",
@@ -1676,7 +1682,10 @@
         "announceBusPressureTipBoundaryHubs": "Hubs de limite / backbone ativados: {{hubs}}.",
         "announceBusPressureTipTxSaturated": "A fila TX cai em: {{names}} — essa interface pode estar saturada.",
         "tooManyDefaultBackbones": "Você tem {{count}} backbones padrão ativados. Considere desativar extras e manter cerca de 2 para redundância.",
-        "decommissionedHubEnabled": "O hub desativado «{{name}}» ainda está habilitado — o mesh-client o desliga a cada início do stack. Use «Adicionar backbones padrão» ou o diretório de backbones para endpoints ativos."
+        "decommissionedHubEnabled": "O hub desativado «{{name}}» ainda está habilitado — o mesh-client o desliga a cada início do stack. Use «Adicionar backbones padrão» ou o diretório de backbones para endpoints ativos.",
+        "txQueueDropsBle": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — link BLE RNode travado; prefira USB ou emparelhe novamente",
+        "txQueueDropsBleBondStale": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — BLE Bond obsoleto; Esqueça no OS Bluetooth e emparelhe novamente",
+        "txQueueDropsNeutral": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — verifique o link dessa interface"
       }
     },
     "routingPort": {
@@ -1849,7 +1858,12 @@
     "pairingWaiting": "Aguardando o PIN de emparelhamento do rádio via USB…",
     "pairingPinLabel": "PIN de emparelhamento Bluetooth",
     "pairingPinEnterHint": "Insira este código na caixa de diálogo Bluetooth do sistema operacional quando a pilha se conectar. Não use 123456.",
-    "bluetoothHint": "Ative o Bluetooth no dispositivo e use Iniciar emparelhamento. O PIN de 6 dígitos aparece neste painel via USB – o display do rádio geralmente fica em branco. Insira esse PIN na caixa de diálogo Bluetooth do seu sistema operacional quando o Reticulum se conectar via BLE. RNode não tem PIN padrão (não use 123456 – isso é Meshtastic). Em painéis de exibição, pressionar o botão por aproximadamente 7 segundos também pode mostrar um PIN na tela. O RNode pode não aparecer em Configurações do sistema → Bluetooth até após uma ligação bem-sucedida."
+    "bluetoothHint": "Ative o Bluetooth no dispositivo e use Iniciar emparelhamento. O PIN de 6 dígitos aparece neste painel via USB – o display do rádio geralmente fica em branco. Insira esse PIN na caixa de diálogo Bluetooth do seu sistema operacional quando o Reticulum se conectar via BLE. RNode não tem PIN padrão (não use 123456 – isso é Meshtastic). Em painéis de exibição, pressionar o botão por aproximadamente 7 segundos também pode mostrar um PIN na tela. O RNode pode não aparecer em Configurações do sistema → Bluetooth até após uma ligação bem-sucedida.",
+    "clearPairedDevices": "Limpar dispositivos emparelhados",
+    "clearPairedDevicesConfirmTitle": "Limpar ligações Bluetooth RNode?",
+    "clearPairedDevicesConfirmMessage": "Isso envia CMD_BT_UNPAIR por USB e limpa hosts vinculados em RNodes ESP32 (sem operação em algumas compilações nRF52). Você ainda deve Esquecer o dispositivo nas Configurações do Sistema → Bluetooth antes de emparelhar novamente.",
+    "clearPairedDevicesConfirm": "Limpar ligações",
+    "clearPairedDevicesSuccess": "Solicitada liberação da tabela de títulos de rádio."
   },
   "identityVault": {
     "title": "Identity Vault",
