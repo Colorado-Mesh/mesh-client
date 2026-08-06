@@ -16,13 +16,21 @@ export function isMeshcoreTcpBurstDeadBridge(opts: {
  * Uses !everConfigured so a late tcp-disconnected after a premature deviceConfigured
  * (Neal: getChannels raced ahead of IPC) cannot abort before connect() latches everConfigured.
  * Uses !deviceConfigured so mid-reconnect opens (everConfigured already true) still defer.
+ * Mid-reconnect FIN often races getContacts resolve (burst flag not set yet) — defer whenever
+ * everConfigured && !deviceConfigured even without burstCaptured.
  */
 export function shouldDeferMeshcoreTcpReconnectAfterBurst(opts: {
   burstCaptured: boolean;
   everConfigured: boolean;
   deviceConfigured: boolean;
 }): boolean {
-  return opts.burstCaptured && (!opts.everConfigured || !opts.deviceConfigured);
+  if (opts.deviceConfigured && opts.everConfigured) {
+    return false;
+  }
+  if (opts.everConfigured && !opts.deviceConfigured) {
+    return true;
+  }
+  return opts.burstCaptured;
 }
 
 type MeshcoreTcpWriteDeadListener = () => void;

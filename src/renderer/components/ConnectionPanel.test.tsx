@@ -1577,6 +1577,64 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     }
   });
 
+  it('cancels deferred meshcore BLE auto-connect when user cancels before primary settle completes', async () => {
+    const { restore } = mockMacNoblePlatform();
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(protocolKey, 'meshtastic');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
+    localStorage.setItem(
+      mcConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
+    );
+    localStorage.setItem(
+      mtConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    dualNoble.resetNobleBleConnectMutexForTests();
+    dualNoble.initNobleBleDualRadioStartup();
+    let releaseSettle!: () => void;
+    vi.spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseSettle = resolve;
+        }),
+    );
+
+    const user = userEvent.setup();
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      // Secondary BLE waits on Meshtastic — connecting UI exposes Cancel.
+      const cancelBtn = await screen.findByRole('button', { name: /^Cancel$/i });
+      await user.click(cancelBtn);
+
+      releaseSettle();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(onAutoConnect).not.toHaveBeenCalled();
+    } finally {
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtConnKey);
+      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+      dualNoble.resetNobleBleConnectMutexForTests();
+      restore();
+    }
+  });
+
   it('shows shared-peripheral notice when meshcore is active and targets the same BLE device as meshtastic', async () => {
     const { restore } = mockMacNoblePlatform();
     const sharedId = 'shared-ble-peripheral';

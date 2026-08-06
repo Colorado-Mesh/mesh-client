@@ -187,4 +187,31 @@ describe('useProtocolRfAutoConnect cold-start skip paths', () => {
     });
     expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalledTimes(1);
   });
+
+  it('aborts deferred MeshCore BLE auto-connect when manual connect cancels the gate', async () => {
+    const { cancelProtocolRfAutoConnect } =
+      await import('@/renderer/lib/protocolRfAutoConnectGate');
+    mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'meshcore-ble' });
+    mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+    mocks.isNobleBleDualRadioSecondary.mockReturnValue(true);
+    mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
+    mocks.awaitNobleBleProtocolSettle.mockImplementation(() => {
+      cancelProtocolRfAutoConnect('meshcore');
+      return Promise.resolve();
+    });
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcore',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(mocks.awaitNobleBleProtocolSettle).toHaveBeenCalled();
+    });
+    expect(connectAutomatic).not.toHaveBeenCalled();
+  });
 });

@@ -18,6 +18,10 @@ import {
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   notifyNobleBlePrimaryAutoConnectSettled,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
+import {
+  isProtocolRfAutoConnectCancelled,
+  resetProtocolRfAutoConnectCancel,
+} from '@/renderer/lib/protocolRfAutoConnectGate';
 import { awaitReticulumBleCoexistenceClear } from '@/renderer/lib/reticulum/reticulumStartupAutostartGate';
 import type { RfConnectAutomaticFn } from '@/renderer/lib/rfConnectionTypes';
 import { tryGetMeshcoreSession } from '@/renderer/lib/sessions/meshcoreSession';
@@ -109,10 +113,14 @@ export function useProtocolRfAutoConnect({
       return;
     }
     firedRef.current = true;
+    // Fresh startup attempt — manual Connect may cancel later via cancelProtocolRfAutoConnect.
+    resetProtocolRfAutoConnectCancel(protocol);
 
     const lastBleId = lastConnection.bleDeviceId ?? loadLastBleDeviceId(protocol);
     const isLinux = window.electronAPI.getPlatform() === 'linux';
     let cancelled = false;
+
+    const isCancelled = () => cancelled || isProtocolRfAutoConnectCancelled(protocol);
 
     const clearAutoConnectTimeout = () => {
       if (timeoutRef.current) {
@@ -145,17 +153,49 @@ export function useProtocolRfAutoConnect({
       if (isRendererNobleBlePlatform()) {
         await awaitReticulumBleCoexistenceClear();
       }
+      if (isCancelled()) {
+        console.debug(
+          `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after coexistence wait`,
+        );
+        notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+        return;
+      }
 
       if (isNobleBleDualRadioSecondary(protocol)) {
         await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+        if (isCancelled()) {
+          console.debug(
+            `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after primary settle`,
+          );
+          notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+          return;
+        }
         const primary = getNobleBleDualRadioPrimaryProtocol();
         if (primary === 'meshtastic' || primary === 'meshcore') {
           // RfLinkReady unblocks too early — secondary GATT during primary configure drops both.
           await awaitNobleBleProtocolSettle(primary, POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
         }
+        if (isCancelled()) {
+          console.debug(
+            `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after protocol settle`,
+          );
+          notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+          return;
+        }
+      }
+
+      if (isCancelled()) {
+        console.debug(
+          `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled before connect`,
+        );
+        notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+        return;
       }
 
       await reconnectBleWithScan(protocol, bleId, () => {
+        if (isCancelled()) {
+          return Promise.reject(new DOMException('RF auto-connect cancelled', 'AbortError'));
+        }
         const attempt = connectAutomaticRef.current('ble', undefined, undefined, bleId);
         if (
           dualNobleBleBothRadiosConfigured() &&
@@ -169,7 +209,7 @@ export function useProtocolRfAutoConnect({
     };
 
     const onSerialAutoConnectFailed = (error: unknown) => {
-      if (cancelled) return;
+      if (isCancelled()) return;
       if (lastBleId && !isLinux) {
         console.warn(
           `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(error)}`,
@@ -189,11 +229,16 @@ export function useProtocolRfAutoConnect({
 
     const runStartupAutoConnect = async (): Promise<void> => {
       const ready = await waitForProtocolSession(protocol);
-      if (cancelled) return;
+      if (isCancelled()) return;
       if (!ready) {
         console.warn(
           `[useProtocolRfAutoConnect] ${protocol} auto-connect skipped — runtime session never registered`,
         );
+        notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+        return;
+      }
+
+      if (isCancelled()) {
         notifyPrimaryAutoConnectSettledIfNeeded(protocol);
         return;
       }
@@ -215,7 +260,7 @@ export function useProtocolRfAutoConnect({
     };
 
     runStartupAutoConnect().catch((error: unknown) => {
-      if (cancelled) return;
+      if (isCancelled()) return;
       onAutoConnectFailed(error);
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     });

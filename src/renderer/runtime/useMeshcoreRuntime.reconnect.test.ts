@@ -269,6 +269,12 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 
+  it('skips Noble BLE disconnect reconnect when connectType is not ble (TCP/serial switch)', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /onNobleBleDisconnected[\s\S]*?meshcoreConnectTypeRef\.current !== 'ble'[\s\S]*?skip \(connectType=/,
+    );
+  });
+
   it('notifies immediately on main-process TCP socket disconnect (regression)', () => {
     // Unlike serial, MeshCore's TCP transport has no fallback watchdog at all (see
     // startMeshcoreSerialWatchdog, gated on rfType === 'serial'), so meshcore.tcp.onDisconnected
@@ -294,7 +300,14 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /shouldDeferMeshcoreTcpReconnectAfterBurst\(\{[\s\S]*?burstCaptured:[\s\S]*?everConfigured:[\s\S]*?deviceConfigured:[\s\S]*?\}\)[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
-    expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — reconnecting dead bridge');
+    expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — accepting dead bridge');
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP burst-complete reconnect attach — accepting dead bridge (configured)',
+    );
+    expect(RUNTIME_SOURCE).not.toContain('TCP burst-complete configure — reconnecting dead bridge');
+    expect(RUNTIME_SOURCE).not.toContain(
+      'TCP burst-complete reconnect attach — continue for live socket',
+    );
     expect(RUNTIME_SOURCE).toContain(
       'initConn getChannels skipped (TCP burst-complete, bridge dead)',
     );
@@ -593,5 +606,33 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(prepareBody).toContain('meshcoreExplicitDisconnectRef.current = false');
     expect(prepareBody).toContain('meshcoreReconnectAttemptRef.current = 0');
     expect(prepareBody).toContain('meshcoreIsReconnectingRef.current = false');
+  });
+
+  it('always bumps setupGeneration and disconnects TCP bridge (BLE vs TCP race)', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toMatch(/meshcoreSetupGenerationRef\.current \+= 1/);
+    expect(prepareBody).toContain('window.electronAPI.meshcore.tcp.disconnect()');
+    expect(prepareBody).toContain('meshcorePendingDriverIdentityRef.current');
+  });
+
+  it('clears connection params on manual prepare and latches provisional params before open', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toMatch(
+      /if \(!opts\?\.preserveReconnectState\) \{\s*meshcoreConnectionParamsRef\.current = null;/,
+    );
+    const connectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'connect');
+    expect(connectBody).toMatch(
+      /await prepareRfConnect\(type\);[\s\S]*?meshcoreConnectionParamsRef\.current = \{[\s\S]*?rfType: type,/,
+    );
+  });
+
+  it('latches pending driver identity after open before attach (mid-open supersede)', () => {
+    const connectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'connect');
+    expect(connectBody).toMatch(
+      /meshcorePendingDriverIdentityRef\.current = opened\.driverIdentityId/,
+    );
+    expect(connectBody).toMatch(
+      /meshcoreSetupGenerationRef\.current !== connectSetupGen[\s\S]*?MESHCORE_SETUP_ABORT_MESSAGE/,
+    );
   });
 });

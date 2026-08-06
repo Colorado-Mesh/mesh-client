@@ -502,7 +502,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  it('tcp: burst-complete dead bridge enters reconnecting and skips getChannels', async () => {
+  it('tcp: burst-complete dead bridge stays configured and skips getChannels', async () => {
     const callOrder: string[] = [];
     const gates = installSequentialInitGates(callOrder);
     const discCallbacks: (() => void)[] = [];
@@ -541,7 +541,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
 
     expect(callOrder).not.toContain('getChannels:end');
     await waitFor(() => {
-      expect(result.current.state.status).toBe('reconnecting');
+      expect(result.current.state.status).toBe('configured');
     });
     unmount();
   });

@@ -1911,6 +1911,15 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
+      // prepareRfConnect(tcp|serial) disconnects Noble as intentional teardown. That async
+      // disconnect must not call handleMeshcoreConnectionLost — it bumps setupGeneration and
+      // aborts the in-flight TCP/serial connect (Mac: BLE auto then manual TCP).
+      if (meshcoreConnectTypeRef.current !== 'ble') {
+        console.debug(
+          `[useMeshcoreRuntime] Noble BLE disconnected — skip (connectType=${meshcoreConnectTypeRef.current ?? 'null'})`,
+        );
+        return;
+      }
       // Defer only before active configure (not meshcoreEverConfiguredRef). Once initConn has
       // marked the session configured, Noble drops must reach handleMeshcoreConnectionLost even
       // if bleConnectInProgress / reconnect open is still true for remaining init work.
@@ -2707,9 +2716,12 @@ export function useMeshcoreRuntime() {
       type: 'ble' | 'serial' | 'tcp',
       opts?: { preserveReconnectState?: boolean },
     ): Promise<void> => {
+      // Always bump: abort in-flight initConn/attach when another connect supersedes
+      // (BLE auto-connect vs manual TCP race — openMeshCoreTransport can leave a live
+      // meshcore:tcp socket before attachRfSession sets driverConnected).
+      meshcoreSetupGenerationRef.current += 1;
       if (type === 'ble' && bleConnectInProgressRef.current) {
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
-        meshcoreSetupGenerationRef.current += 1;
         bleConnectInProgressRef.current = false;
         meshcoreDeferredReconnectRef.current = false;
       }
@@ -2719,9 +2731,11 @@ export function useMeshcoreRuntime() {
         type === 'ble',
         resolveLastBlePeripheralId('meshcore') ?? null,
       );
-      const driverIdentity = meshcoreDriverConnectedRef.current
-        ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
-        : null;
+      // Prefer pending (set right after openMeshCoreTransport) so a mid-open supersede can
+      // disconnect the driver before attachRfSession latches driverConnected.
+      const driverIdentity =
+        meshcorePendingDriverIdentityRef.current ??
+        (meshcoreDriverConnectedRef.current ? meshcoreIdentityIdRef.current : null);
       const staleConn = connRef.current;
       connRef.current = null;
       if (driverIdentity) {
@@ -2742,7 +2756,20 @@ export function useMeshcoreRuntime() {
           console.debug('[useMeshcoreRuntime] prepareRfConnect close ' + errLikeToLogString(e));
         });
       }
+      // Always clear the main-process TCP bridge. openMeshCoreTransport can leave
+      // meshcoreTcpSocket live while driverConnected/connRef are still unset — a racing
+      // BLE prepare used to orphan that socket and let TCP init continue with connectType=ble.
+      await window.electronAPI.meshcore.tcp.disconnect().catch((e: unknown) => {
+        console.debug(
+          '[useMeshcoreRuntime] prepareRfConnect tcp.disconnect ' + errLikeToLogString(e),
+        );
+      });
       meshcoreConnectTypeRef.current = type;
+      // Manual / new connect: drop prior-session params so mid-open loss cannot rehydrate
+      // stale BLE and prepareRfConnect(ble) while TCP is still opening (Mac race after race-fix).
+      if (!opts?.preserveReconnectState) {
+        meshcoreConnectionParamsRef.current = null;
+      }
       if (type === 'tcp') {
         meshcoreTcpBridgeDeadRef.current = false;
         meshcoreTcpInitBurstCapturedRef.current = false;
@@ -3146,6 +3173,7 @@ export function useMeshcoreRuntime() {
         await lateTransport.cleanup(opened.driverIdentityId);
         throw new Error('MeshCore reconnect superseded after open');
       }
+      meshcorePendingDriverIdentityRef.current = opened.driverIdentityId;
       await attachRfSession(opened.driverIdentityId, params.rfType);
       if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
         await lateTransport.cleanup(opened.driverIdentityId);
@@ -3177,21 +3205,14 @@ export function useMeshcoreRuntime() {
         clearMeshcoreBleMacSuppression();
       }
       // Burst-complete attach left a dead bridge (OpenHop FIN after contacts). UI is configured
-      // from held contacts — keep the reconnect budget and retry for a live socket instead of
-      // markSuccess (which would reset attempts and loop forever).
+      // from the contacts burst — accept that session. Forcing an immediate live-socket retry
+      // loops forever on companions that FIN after every contacts dump (WAN :5054 / SoftAP).
+      // Live recovery happens on write-fail / later tcp-disconnected once deviceConfigured.
       if (params.rfType === 'tcp' && meshcoreDeferredReconnectRef.current) {
         meshcoreDeferredReconnectRef.current = false;
-        meshcoreIsReconnectingRef.current = true;
-        setState((s) => ({
-          ...s,
-          serialNeedsReselect: false,
-          connectionLoss: false,
-        }));
         console.debug(
-          '[useMeshcoreRuntime] TCP burst-complete reconnect attach — continue for live socket',
+          '[useMeshcoreRuntime] TCP burst-complete reconnect attach — accepting dead bridge (configured)',
         );
-        scheduleMeshcoreReconnectAttemptRef.current();
-        return;
       }
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
@@ -3456,6 +3477,16 @@ export function useMeshcoreRuntime() {
         type === 'ble' && navigator.userAgent.toLowerCase().includes('linux');
 
       await prepareRfConnect(type);
+      const connectSetupGen = meshcoreSetupGenerationRef.current;
+      // Provisional reconnect target for the intended transport before open/attach completes.
+      // Without this, a peer FIN mid-open used lastConnection BLE and tore down TCP.
+      meshcoreConnectionParamsRef.current = {
+        rfType: type,
+        httpAddress: type === 'tcp' ? tcpHost : undefined,
+        blePeripheralId: type === 'ble' ? blePeripheralId : undefined,
+        serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
+        serialPort: null,
+      };
 
       let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
       let connectSucceeded = false;
@@ -3472,6 +3503,25 @@ export function useMeshcoreRuntime() {
           type === 'ble' && isRendererNobleBlePlatform()
             ? await withNobleBleConnectMutex('meshcore', openTransport)
             : await openTransport();
+        // Latch pending before attach so a racing prepareRfConnect can driver-disconnect
+        // this open (attachRfSession previously left a gap where TCP stayed orphaned).
+        meshcorePendingDriverIdentityRef.current = opened.driverIdentityId;
+        if (meshcoreSetupGenerationRef.current !== connectSetupGen) {
+          meshcorePendingDriverIdentityRef.current = null;
+          await connectionDriver.disconnect(opened.driverIdentityId).catch((e: unknown) => {
+            console.debug(
+              '[useMeshcoreRuntime] connect superseded disconnect ' + errLikeToLogString(e),
+            );
+          });
+          if (type === 'tcp') {
+            await window.electronAPI.meshcore.tcp.disconnect().catch((e: unknown) => {
+              console.debug(
+                '[useMeshcoreRuntime] connect superseded tcp.disconnect ' + errLikeToLogString(e),
+              );
+            });
+          }
+          throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+        }
         await attachRfSession(opened.driverIdentityId, type);
         const bleIdentityOpts =
           type === 'ble'
@@ -3501,16 +3551,14 @@ export function useMeshcoreRuntime() {
         connectSucceeded = true;
         meshcoreEverConfiguredRef.current = true;
         // Neal OpenHop: peer FIN after contacts — initConn completed configured from the burst
-        // with a dead bridge; reconnect now that everConfigured is latched.
+        // with a dead bridge. Do not force an immediate live-socket reconnect (companions that
+        // FIN after every contacts dump would loop forever). Write-fail / later IPC close
+        // reconnect once deviceConfigured is latched.
         if (type === 'tcp' && meshcoreDeferredReconnectRef.current) {
           meshcoreDeferredReconnectRef.current = false;
-          queueMicrotask(() => {
-            if (meshcoreExplicitDisconnectRef.current) return;
-            console.debug(
-              '[useMeshcoreRuntime] TCP burst-complete configure — reconnecting dead bridge',
-            );
-            handleMeshcoreConnectionLostRef.current();
-          });
+          console.debug(
+            '[useMeshcoreRuntime] TCP burst-complete configure — accepting dead bridge',
+          );
         }
       } catch (err) {
         const isSetupAbort = isMeshcoreSetupAbortError(err);
@@ -7284,13 +7332,12 @@ export function useMeshcoreRuntime() {
       meshcoreTcpBridgeDeadRef.current = true;
       // Defer while this open can still finish from the contacts burst (!everConfigured covers
       // late IPC after premature deviceConfigured; !deviceConfigured covers mid-reconnect opens).
-      if (
-        shouldDeferMeshcoreTcpReconnectAfterBurst({
-          burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
-          everConfigured: meshcoreEverConfiguredRef.current,
-          deviceConfigured: meshcoreDeviceConfiguredRef.current,
-        })
-      ) {
+      const defer = shouldDeferMeshcoreTcpReconnectAfterBurst({
+        burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
+        everConfigured: meshcoreEverConfiguredRef.current,
+        deviceConfigured: meshcoreDeviceConfiguredRef.current,
+      });
+      if (defer) {
         meshcoreDeferredReconnectRef.current = true;
         console.debug(
           source === 'write'
