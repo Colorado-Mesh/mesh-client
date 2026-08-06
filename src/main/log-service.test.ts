@@ -18,6 +18,20 @@ describe('log-service source contracts', () => {
     expect(LOG_SERVICE_SOURCE).toContain("const LOG_BACKUP_FILENAME = 'mesh-client.log.1'");
   });
 
+  it('initLogFile preserves a non-empty prior session log as .1 before truncating', () => {
+    const initIdx = LOG_SERVICE_SOURCE.indexOf('export function initLogFile(');
+    expect(initIdx).toBeGreaterThan(-1);
+    const body = LOG_SERVICE_SOURCE.slice(initIdx, initIdx + 1100);
+    expect(body).toContain('fs.renameSync(p, backup)');
+    expect(body).toContain('LOG_BACKUP_FILENAME');
+    expect(body).toContain('statSync');
+    const renameIdx = body.indexOf('fs.renameSync(p, backup)');
+    const truncateIdx = body.indexOf("fs.writeFileSync(p, '', { encoding: 'utf8' })");
+    expect(renameIdx).toBeGreaterThan(-1);
+    expect(truncateIdx).toBeGreaterThan(-1);
+    expect(renameIdx).toBeLessThan(truncateIdx);
+  });
+
   it('calls rotateLogIfNeeded before appendFile in appendLine', () => {
     const appendLineIdx = LOG_SERVICE_SOURCE.indexOf('export function appendLine(');
     expect(appendLineIdx).toBeGreaterThan(-1);
@@ -124,6 +138,8 @@ vi.mock('fs', async (importOriginal) => {
       writeFileSync: vi.fn(),
       existsSync: vi.fn().mockReturnValue(false),
       unlinkSync: vi.fn(),
+      statSync: vi.fn().mockReturnValue({ size: 0 }),
+      renameSync: vi.fn(),
       promises: {
         appendFile: vi.fn().mockResolvedValue(undefined),
         stat: vi.fn().mockResolvedValue({ size: 0 }),
@@ -184,6 +200,8 @@ describe('appendLine disk write behavior', () => {
     vi.mocked(fs.writeFileSync).mockClear();
     vi.mocked(fs.existsSync).mockClear();
     vi.mocked(fs.unlinkSync).mockClear();
+    vi.mocked(fs.statSync).mockClear();
+    vi.mocked(fs.renameSync).mockClear();
     vi.mocked(fs.promises.appendFile).mockClear();
     vi.mocked(fs.promises.stat).mockClear();
     vi.mocked(fs.promises.rename).mockClear();
@@ -197,6 +215,54 @@ describe('appendLine disk write behavior', () => {
     const before = getRecentLines().length;
     appendLine('warn', 'test', 'should buffer');
     expect(getRecentLines().length).toBeGreaterThan(before);
+  });
+});
+
+describe('initLogFile previous-session preserve', () => {
+  beforeEach(() => {
+    vi.mocked(fs.writeFileSync).mockClear();
+    vi.mocked(fs.existsSync).mockReset();
+    vi.mocked(fs.unlinkSync).mockClear();
+    vi.mocked(fs.statSync).mockReset();
+    vi.mocked(fs.renameSync).mockClear();
+  });
+
+  it('renames a non-empty prior log to .1 then creates an empty current log', async () => {
+    vi.mocked(fs.existsSync).mockImplementation((target) => {
+      const s = String(target);
+      if (s.endsWith('mesh-client.log.1')) return true;
+      if (s.endsWith('mesh-client.log')) return true;
+      return false;
+    });
+    vi.mocked(fs.statSync).mockReturnValue({ size: 128 } as fs.Stats);
+
+    const { initLogFile } = await import('./log-service');
+    initLogFile();
+
+    expect(fs.unlinkSync).toHaveBeenCalled();
+    expect(fs.renameSync).toHaveBeenCalledWith(
+      expect.stringMatching(/mesh-client\.log$/),
+      expect.stringMatching(/mesh-client\.log\.1$/),
+    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringMatching(/mesh-client\.log$/),
+      '',
+      expect.objectContaining({ encoding: 'utf8' }),
+    );
+  });
+
+  it('does not rotate when the prior log is empty or missing', async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const { initLogFile } = await import('./log-service');
+    initLogFile();
+
+    expect(fs.renameSync).not.toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringMatching(/mesh-client\.log$/),
+      '',
+      expect.objectContaining({ encoding: 'utf8' }),
+    );
   });
 });
 

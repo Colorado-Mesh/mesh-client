@@ -89,11 +89,32 @@ function getLogFilePath(): string {
 }
 
 /**
- * Truncate log on app start; call from app.whenReady before other heavy init.
+ * Start a fresh session log. If the previous run left a non-empty `mesh-client.log`,
+ * rename it to {@link LOG_BACKUP_FILENAME} first so restart-then-export still keeps
+ * the hung/prior session (size rotation alone only kicks in at {@link LOG_MAX_BYTES}).
+ * Call from app.whenReady before other heavy init.
  */
 export function initLogFile(): void {
   recentEntries.length = 0;
   const p = getLogFilePath();
+  const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
+  try {
+    if (fs.existsSync(p)) {
+      const { size } = fs.statSync(p);
+      if (size > 0) {
+        try {
+          if (fs.existsSync(backup)) {
+            fs.unlinkSync(backup);
+          }
+        } catch (e) {
+          debugLogService('[log-service] initLogFile unlink backup failed', e);
+        }
+        fs.renameSync(p, backup);
+      }
+    }
+  } catch (e) {
+    debugLogService('[log-service] initLogFile preserve previous session failed', e);
+  }
   try {
     fs.writeFileSync(p, '', { encoding: 'utf8' });
   } catch (e) {

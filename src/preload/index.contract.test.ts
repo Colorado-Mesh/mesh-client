@@ -52,8 +52,11 @@ describe('preload bridge contract', () => {
 
   it('preload invokes renderer heartbeat and support export IPC', () => {
     expect(PRELOAD_SOURCE).toContain("'app:rendererHeartbeat'");
+    expect(PRELOAD_SOURCE).toContain("'app:getRendererLiveness'");
     expect(PRELOAD_SOURCE).toContain("'support:exportBundle'");
     expect(TYPES_SOURCE).toContain('exportBundle');
     expect(TYPES_SOURCE).toContain('sendRendererHeartbeat');
+    expect(TYPES_SOURCE).toContain('getRendererLiveness');
+    expect(TYPES_SOURCE).toContain('RendererLivenessSnapshot');
   });
 });

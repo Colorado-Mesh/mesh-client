@@ -955,6 +955,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendRendererHeartbeat: (payload?: { ts: number }) =>
     ipcRenderer.invoke('app:rendererHeartbeat', payload),
   getProcessUptimeSec: (): Promise<number> => ipcRenderer.invoke('app:getProcessUptimeSec'),
+  getRendererLiveness: () => ipcRenderer.invoke('app:getRendererLiveness'),
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => {
     const handler = (_: unknown, payload: SpellcheckReplacePayload) => {
       cb(payload);

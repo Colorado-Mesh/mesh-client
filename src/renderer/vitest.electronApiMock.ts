@@ -251,6 +251,13 @@ export function createElectronAPIMock(): ElectronAPI {
     onPowerResume: vi.fn().mockReturnValue(() => {}),
     sendRendererHeartbeat: vi.fn().mockResolvedValue(undefined),
     getProcessUptimeSec: vi.fn().mockResolvedValue(0),
+    getRendererLiveness: vi.fn().mockResolvedValue({
+      mainUptimeSec: 0,
+      lastRendererHeartbeatAgeMs: null,
+      rendererUnresponsiveSeen: false,
+      rss: 0,
+      heapUsed: 0,
+    }),
     onSpellcheckReplace: vi.fn().mockReturnValue(() => {}),
     meshcore: {
       tcp: {

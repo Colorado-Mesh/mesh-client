@@ -528,6 +528,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'appSettings:get',
     'appSettings:set',
     'app:rendererHeartbeat',
+    'app:getRendererLiveness',
     'db:saveNode',
     'db:saveNodePath',
     'db:getNodes',
@@ -655,6 +656,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:rendererHeartbeat'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
+  });
+
+  it('app:getRendererLiveness validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:getRendererLiveness'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
     expect(body).toContain('validateIpcSender(event)');
   });
 });

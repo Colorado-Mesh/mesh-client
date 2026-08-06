@@ -591,6 +591,32 @@ describe('buildDebugSnapshotAsync', () => {
     expect(snap.reticulum.sidecar.running).toBe(true);
     expect(snap.reticulum.stack?.status).toMatchObject({ rns_ready: true });
   });
+
+  it('includes mainLiveness from getRendererLiveness', async () => {
+    ensureOfflineProtocolIdentities();
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: false,
+      port: 0,
+      pid: null,
+    });
+    vi.mocked(window.electronAPI.getRendererLiveness).mockResolvedValue({
+      mainUptimeSec: 3600,
+      lastRendererHeartbeatAgeMs: 12_000,
+      rendererUnresponsiveSeen: true,
+      rss: 100,
+      heapUsed: 50,
+    });
+
+    const snap = await buildDebugSnapshotAsync();
+
+    expect(snap.mainLiveness).toEqual({
+      mainUptimeSec: 3600,
+      lastRendererHeartbeatAgeMs: 12_000,
+      rendererUnresponsiveSeen: true,
+      rss: 100,
+      heapUsed: 50,
+    });
+  });
 });
 
 describe('copyDebugSnapshotToClipboard', () => {

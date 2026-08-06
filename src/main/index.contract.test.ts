@@ -287,6 +287,10 @@ describe('MQTT IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain('createRendererHeartbeatWatchdog');
     expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.recordHeartbeat');
     expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.startResumeWatchdog');
+    expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.startStallWatchdog');
+    expect(INDEX_SOURCE).toContain("webContents.on('unresponsive'");
+    expect(INDEX_SOURCE).toContain("webContents.on('responsive'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('app:getRendererLiveness'");
   });
 
   it('registers support bundle export IPC', () => {

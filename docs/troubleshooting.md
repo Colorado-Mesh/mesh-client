@@ -633,9 +633,9 @@ If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE
 - **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
-- **Reporting a crash:** Export the app log (App tab → Export for GitHub), attach the `.ips` if available, and note app version, OS version, uptime (look for `[main] long-session health uptimeSec=…`), and whether MeshCore BLE was connected. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
+- **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
 
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age.
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age. While the window is visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`.
 
 ### App shows "disconnected" but device is still on
 

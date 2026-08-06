@@ -1,3 +1,5 @@
+import type { RendererLivenessSnapshot } from '@/shared/electron-api.types';
+
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import type { ConnectionStatus } from '../stores/connectionStore';
 import { getConnection } from '../stores/connectionStore';
@@ -170,6 +172,8 @@ export interface DebugSnapshot {
   meshtastic: DebugMeshtasticBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
   reticulum: DebugReticulumSnapshot;
+  /** Main-process uptime / heartbeat age (export path only). */
+  mainLiveness?: RendererLivenessSnapshot | null;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
   meshcoreContactPathDiagnostics?: MeshcoreContactPathDiagnosticRow[];
   warnings: DebugSnapshotWarning[];
@@ -656,10 +660,17 @@ export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   } catch (e: unknown) {
     console.warn('[debugSnapshot] mqtt.getChannelNameToIndex failed ' + errLikeToLogString(e));
   }
+  let mainLiveness: RendererLivenessSnapshot | null = null;
+  try {
+    mainLiveness = await window.electronAPI.getRendererLiveness();
+  } catch (e: unknown) {
+    console.warn('[debugSnapshot] getRendererLiveness failed ' + errLikeToLogString(e));
+  }
   const base = buildDebugSnapshotBase(reticulumSidecar);
   const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();
   return {
     ...base,
+    mainLiveness,
     meshcoreContactPathDiagnostics,
     warnings: analyzeDebugSnapshot(base),
   };

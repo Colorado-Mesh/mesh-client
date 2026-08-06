@@ -141,7 +141,7 @@ ${buildChannelReadmeLine()}
 Contents:
   debug-snapshot.json  — UI/session state for triage (Meshtastic, MeshCore, Reticulum sidecar)
   mesh-client.log      — Application log (current session)
-  mesh-client.log.1    — Rotated log backup (if present)
+  mesh-client.log.1    — Prior session log (preserved on restart) or size-rotated backup
   manifest.json        — App version, buildChannel, and platform metadata
   README.txt           — This file
 
@@ -169,7 +169,7 @@ Contents:
   reticulum/config              — rnsd interface config (if present)
   reticulum/mesh_client_stack.json — Sidecar stack state, mnemonic redacted (if present)
   mesh-client.log               — Application log (current session)
-  mesh-client.log.1             — Rotated log backup (if present)
+  mesh-client.log.1             — Prior session log (preserved on restart) or size-rotated backup
   manifest.json                 — App version, buildChannel, and platform metadata
   README.txt                    — This file
 `;

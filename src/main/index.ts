@@ -1912,6 +1912,13 @@ function createWindow() {
     }
   });
 
+  mainWindow.webContents.on('unresponsive', () => {
+    rendererHeartbeatWatchdog.markRendererUnresponsive();
+  });
+  mainWindow.webContents.on('responsive', () => {
+    rendererHeartbeatWatchdog.markRendererResponsive();
+  });
+
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDesc, validatedURL) => {
     console.error(
       '[main] Failed to load:',
@@ -3487,6 +3494,21 @@ ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
 
 // ─── IPC: Login item (launch at startup) ───────────────────────────
 ipcMain.handle('app:getProcessUptimeSec', () => Math.floor(process.uptime()));
+
+ipcMain.handle('app:getRendererLiveness', (event) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  const mem = process.memoryUsage();
+  const hb = rendererHeartbeatWatchdog.getLivenessSnapshot();
+  return {
+    mainUptimeSec: Math.floor(process.uptime()),
+    lastRendererHeartbeatAgeMs: hb.lastRendererHeartbeatAgeMs,
+    rendererUnresponsiveSeen: hb.rendererUnresponsiveSeen,
+    rss: mem.rss,
+    heapUsed: mem.heapUsed,
+  };
+});
 
 ipcMain.handle('app:getLoginItem', (event) => {
   assertIpcSender(event, 'app:getLoginItem');
@@ -6679,6 +6701,12 @@ void app
         app.dock?.setIcon(iconPath);
       }
       createWindow();
+
+      rendererHeartbeatWatchdog.startStallWatchdog(() => {
+        const win = mainWindow;
+        if (!win || win.isDestroyed()) return false;
+        return win.isVisible() && !win.isMinimized();
+      });
 
       const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
       const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createRendererHeartbeatWatchdog,
   RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS,
+  RENDERER_HEARTBEAT_STALL_MS,
+  RENDERER_HEARTBEAT_STALL_POLL_MS,
 } from './rendererHeartbeatWatchdog';
 
 describe('createRendererHeartbeatWatchdog', () => {
@@ -24,6 +26,7 @@ describe('createRendererHeartbeatWatchdog', () => {
     expect(warn).toHaveBeenCalledWith(
       '[main] renderer unresponsive after system resume (no heartbeat within 30s)',
     );
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
   });
 
   it('does not warn when heartbeat arrives after resume', async () => {
@@ -87,5 +90,72 @@ describe('createRendererHeartbeatWatchdog', () => {
     watchdog.recordHeartbeat(Number.NaN);
     await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns once per stall episode when window is visible and heartbeat is stale', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    const now = 5_000_000;
+    vi.setSystemTime(now);
+    watchdog.recordHeartbeat();
+    watchdog.startStallWatchdog(() => true);
+
+    vi.setSystemTime(now + RENDERER_HEARTBEAT_STALL_MS + 1);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_POLL_MS);
+
+    expect(warn).toHaveBeenCalledWith(
+      '[main] renderer heartbeat stalled (no heartbeat while window visible)',
+    );
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
+
+    warn.mockClear();
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_POLL_MS);
+    expect(warn).not.toHaveBeenCalled();
+
+    watchdog.recordHeartbeat();
+    vi.setSystemTime(Date.now() + RENDERER_HEARTBEAT_STALL_MS + 1);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_POLL_MS);
+    expect(warn).toHaveBeenCalledWith(
+      '[main] renderer heartbeat stalled (no heartbeat while window visible)',
+    );
+
+    watchdog.stopStallWatchdog();
+  });
+
+  it('does not warn for stall when the window is not actively visible', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    const now = 6_000_000;
+    vi.setSystemTime(now);
+    watchdog.recordHeartbeat();
+    watchdog.startStallWatchdog(() => false);
+
+    vi.setSystemTime(now + RENDERER_HEARTBEAT_STALL_MS + 1);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_POLL_MS);
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(false);
+    watchdog.stopStallWatchdog();
+  });
+
+  it('marks webContents unresponsive as a sticky session flag', () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+
+    watchdog.markRendererUnresponsive();
+    expect(warn).toHaveBeenCalledWith('[main] renderer webContents unresponsive');
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
+
+    watchdog.markRendererResponsive();
+    expect(warn).toHaveBeenCalledWith('[main] renderer webContents responsive again');
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
+  });
+
+  it('reports null heartbeat age before the first heartbeat', () => {
+    const watchdog = createRendererHeartbeatWatchdog(vi.fn());
+    expect(watchdog.getLivenessSnapshot()).toEqual({
+      lastRendererHeartbeatAgeMs: null,
+      rendererUnresponsiveSeen: false,
+    });
   });
 });
