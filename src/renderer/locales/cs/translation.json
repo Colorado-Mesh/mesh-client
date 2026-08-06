@@ -2087,7 +2087,8 @@
       "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
       "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
       "pingFailed": "Ping selhal",
-      "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti."
+      "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti.",
+      "removeContactFailed": "Odebráno lokálně, ale rádio odmítlo odebratKontakt. Kontakt se může po obnovení znovu objevit."
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",

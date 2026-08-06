@@ -648,4 +648,5 @@ export function removePersistedLastReadForChannel(protocol: MeshProtocol, channe
 
 export function clearPersistedRoomsLastRead(): void {
   savePersistedRoomsLastRead({});
+  notifyPersistedRoomsLastReadChanged();
 }

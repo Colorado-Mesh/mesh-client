@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "对此转发器的请求已在进行中",
       "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。",
       "pingFailed": "Ping失败",
-      "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。"
+      "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。",
+      "removeContactFailed": "本地删除，但收音机拒绝removeContact。刷新后，联系人可能会重新出现。"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",

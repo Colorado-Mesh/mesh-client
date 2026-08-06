@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "이 중계기에 대한 요청이 이미 진행 중입니다.",
       "cliDangerNotConfirmed": "파괴적인 CLI 명령은 반복기 패널에서 확인해야 합니다.",
       "pingFailed": "핑 실패",
-      "floodScopeBusy": "리피터 관리 또는 경로 추적이 진행 중인 동안에는 플러드 범위 재정의를 사용할 수 없습니다. 유휴 상태일 때 다시 시도하세요."
+      "floodScopeBusy": "리피터 관리 또는 경로 추적이 진행 중인 동안에는 플러드 범위 재정의를 사용할 수 없습니다. 유휴 상태일 때 다시 시도하세요.",
+      "removeContactFailed": "로컬로 제거되었지만 라디오가 removeContact를 거부했습니다. 새로 고침 후 연락처가 다시 나타날 수 있습니다."
     },
     "mqttHints": {
       "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",

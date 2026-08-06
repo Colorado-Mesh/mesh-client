@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
       "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
       "pingFailed": "Ping fehlgeschlagen",
-      "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut."
+      "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut.",
+      "removeContactFailed": "Lokal entfernt, aber das Radio hat removeContact abgelehnt. Der Kontakt kann nach einer Aktualisierung wieder angezeigt werden."
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",

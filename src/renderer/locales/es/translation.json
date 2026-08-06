@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor.",
       "cliDangerNotConfirmed": "Los comandos CLI destructivos requieren confirmación en el panel de repetidores.",
       "pingFailed": "Falló el ping",
-      "floodScopeBusy": "La anulación del alcance Flood no está disponible mientras la administración del repetidor o el traceroute están en curso. Inténtalo de nuevo cuando esté inactivo."
+      "floodScopeBusy": "La anulación del alcance Flood no está disponible mientras la administración del repetidor o el traceroute están en curso. Inténtalo de nuevo cuando esté inactivo.",
+      "removeContactFailed": "Eliminado localmente, pero la radio rechazó removeContact. El contacto puede reaparecer después de una actualización."
     },
     "mqttHints": {
       "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",

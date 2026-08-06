@@ -1343,11 +1343,13 @@ function AppContent() {
     void roomsLastReadRevision;
     void meshcoreMutedViewsRevision;
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
+    const knownRoomServerIds = meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values());
     const rawCount = totalRoomsUnreadCount(
       meshcoreUiMessages,
       roomsLastRead,
       meshcoreOwnNodeIdSet,
       loadMutedViews('meshcore'),
+      knownRoomServerIds,
     );
     const count =
       meshcoreRuntime.state.status === 'configured' || meshcoreOwnNodeIdSet.size > 0 ? rawCount : 0;
@@ -1357,6 +1359,7 @@ function AppContent() {
     roomsLastReadRevision,
     meshcoreOwnNodeIdSet,
     meshcoreUiMessages,
+    meshcoreUiNodes,
     meshcoreRuntime.state.status,
   ]);
 

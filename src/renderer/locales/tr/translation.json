@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor",
       "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
       "pingFailed": "Ping başarısız oldu",
-      "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin."
+      "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin.",
+      "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact'ı reddetti. Kişi yenilendikten sonra yeniden görünebilir."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",

@@ -19,6 +19,7 @@
  * channel dedup). MQTT does not carry room traffic.
  */
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { MESHCORE_CONTACT_TYPE_ROOM } from '@/shared/meshcoreContactHwLabels';
 
 import {
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
@@ -26,8 +27,7 @@ import {
 } from './meshcoreChannelText';
 import { sanitizeMeshcoreChatWireText } from './meshcoreUtils';
 
-/** MeshCore contact type for room BBS servers. */
-export const MESHCORE_CONTACT_TYPE_ROOM = 3;
+export { MESHCORE_CONTACT_TYPE_ROOM } from '@/shared/meshcoreContactHwLabels';
 
 const PRINTABLE_ASCII_MIN = 32;
 const PRINTABLE_ASCII_MAX = 126;

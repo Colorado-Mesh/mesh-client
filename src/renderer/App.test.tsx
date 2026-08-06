@@ -21,7 +21,7 @@ import type { ChatMessage } from './lib/types';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMessageStore } from './stores/messageStore';
-import { useNodeStore } from './stores/nodeStore';
+import { upsertNode, useNodeStore } from './stores/nodeStore';
 
 const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
 
@@ -45,6 +45,15 @@ function syncMeshcoreMessagesToStore(messages: ChatMessage[]): void {
   useMessageStore.setState((s) => ({
     messages: { ...s.messages, [OFFLINE_MESHCORE_IDENTITY_ID]: byId },
   }));
+}
+
+function ensureMeshcoreRoomNode(roomServerId: number): void {
+  ensureOfflineProtocolIdentities();
+  upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, {
+    nodeId: roomServerId,
+    longName: `Room ${roomServerId.toString(16)}`,
+    hwModel: 'Room',
+  });
 }
 
 const {
@@ -1221,6 +1230,7 @@ describe('App accessibility', () => {
       selfNodeId,
       messages,
     });
+    ensureMeshcoreRoomNode(0x1005);
     syncMeshcoreMessagesToStore(messages);
     setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
       status: 'configured',
@@ -1292,6 +1302,7 @@ describe('App accessibility', () => {
       ],
       messages: meshcoreMessages,
     });
+    ensureMeshcoreRoomNode(0x1005);
     syncMeshcoreMessagesToStore(meshcoreMessages);
     setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
       status: 'configured',

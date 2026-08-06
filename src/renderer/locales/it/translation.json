@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso",
       "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori.",
       "pingFailed": "Ping non eseguito correttamente!",
-      "floodScopeBusy": "La sostituzione dell'ambito del Flood non è disponibile mentre è in corso l'amministrazione del ripetitore o il traceroute. Riprovare quando è inattivo."
+      "floodScopeBusy": "La sostituzione dell'ambito del Flood non è disponibile mentre è in corso l'amministrazione del ripetitore o il traceroute. Riprovare quando è inattivo.",
+      "removeContactFailed": "Rimosso localmente, ma la radio ha rifiutato removeContact. Il contatto potrebbe riapparire dopo un aggiornamento."
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",

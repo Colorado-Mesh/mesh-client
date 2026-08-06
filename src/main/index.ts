@@ -5478,6 +5478,9 @@ ipcMain.handle('db:deleteMeshcoreContact', (event, nodeId: number) => {
     const db = getDbForIpc('db:deleteMeshcoreContact');
     if (!db) return { changes: 0 };
     const id = safeNonNegativeInt(nodeId);
+    // Room BBS posts are keyed by room_server_id; drop them with the contact so Rooms unread
+    // cannot outlive a deleted room server.
+    db.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?').run(id);
     return db.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(id);
   } catch (err) {
     finishDbIpcHandler('db:deleteMeshcoreContact', err);

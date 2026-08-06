@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento",
       "cliDangerNotConfirmed": "Comandos CLI destrutivos requerem confirmação no painel Repetidores.",
       "pingFailed": "Falha no ping",
-      "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo."
+      "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo.",
+      "removeContactFailed": "Removido localmente, mas o rádio rejeitou removeContact. O contato pode reaparecer após uma atualização."
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",

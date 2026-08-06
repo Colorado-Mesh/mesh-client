@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
       "pingFailed": "Ping gagal",
-      "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
+      "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",
+      "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak hapusHubungi. Kontak dapat muncul kembali setelah penyegaran."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",

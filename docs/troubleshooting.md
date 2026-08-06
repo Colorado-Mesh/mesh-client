@@ -867,6 +867,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Room unread badges**:
 
 - New room BBS posts increment the **Rooms** sidebar badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
+- The Rooms badge only counts posts for room servers still in your contact list. Clearing **Chat** channels does not clear Room messages — use App → Danger Zone → clear **Room messages** (or all MeshCore messages) if a badge remains after rooms are gone.
 
 **No room history after login**:
 

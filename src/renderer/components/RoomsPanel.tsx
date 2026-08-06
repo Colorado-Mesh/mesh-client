@@ -505,10 +505,16 @@ export default function RoomsPanel({
     return counts;
   }, [messages]);
 
-  const roomUnreadCounts = useMemo(
-    () => computeRoomUnreadCounts(messages, persistedRoomsLastRead, ownNodeIdSet, mutedViews),
-    [messages, mutedViews, ownNodeIdSet, persistedRoomsLastRead],
-  );
+  const roomUnreadCounts = useMemo(() => {
+    const knownRoomServerIds = new Set(roomServers.map((r) => r.node_id));
+    return computeRoomUnreadCounts(
+      messages,
+      persistedRoomsLastRead,
+      ownNodeIdSet,
+      mutedViews,
+      knownRoomServerIds,
+    );
+  }, [messages, mutedViews, ownNodeIdSet, persistedRoomsLastRead, roomServers]);
 
   const markSelectedRoomRead = useCallback(() => {
     if (selectedRoomId == null || roomPosts.length === 0) return;

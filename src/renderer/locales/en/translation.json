@@ -2195,6 +2195,7 @@
       "connectionFailed": "Connection failed",
       "notConnected": "Not connected to device",
       "nodeNotFound": "Node not found (no encryption key)",
+      "removeContactFailed": "Removed locally, but the radio rejected removeContact. The contact may reappear after a refresh.",
       "authenticationFailed": "Authentication failed",
       "requestFailed": "Failed: {{detail}}",
       "repeaterRpcInProgress": "A request for this repeater is already in progress",

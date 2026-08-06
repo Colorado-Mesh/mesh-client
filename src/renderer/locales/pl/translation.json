@@ -2089,7 +2089,8 @@
       "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku",
       "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Przemienniki.",
       "pingFailed": "PING nie powiódł się",
-      "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności."
+      "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności.",
+      "removeContactFailed": "Usunięto lokalnie, ale radio odrzuciło removeContact. Kontakt może pojawić się ponownie po odświeżeniu."
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",

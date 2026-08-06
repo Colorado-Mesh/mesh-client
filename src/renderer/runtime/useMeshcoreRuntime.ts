@@ -29,6 +29,7 @@ import {
   meshcorePathHashSizeFromTraceFlags,
 } from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
+import { pushAppToast } from '../components/Toast';
 import { attachMeshcoreConnSideEffects } from '../hooks/meshcore/meshcoreConnSideEffects';
 import type {
   MeshcoreConnSideEffectsCtx,
@@ -102,6 +103,7 @@ import {
   meshcoreHydratedMessageRecords,
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
+import i18n from '../lib/i18n';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import {
   getIdentityChatMessages,
@@ -200,6 +202,11 @@ import {
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
+import {
+  clearMeshcoreLocallyDeletedContact,
+  filterOutMeshcoreLocallyDeletedContacts,
+  markMeshcoreLocallyDeletedContact,
+} from '../lib/meshcoreLocallyDeletedContacts';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
@@ -425,6 +432,7 @@ import {
 import {
   patchMeshcoreNodeLastHeardAt,
   patchNodeFavorited,
+  removeNode,
   useNodeStore,
 } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -1567,8 +1575,18 @@ export function useMeshcoreRuntime() {
   }, [buildNodesFromContacts]);
 
   const applyMeshcoreNodesToUi = useCallback(
-    (nodeMap: Map<number, MeshNode>) => {
-      const mergedForStore = mergeMeshcoreChatStubNodes(readMeshcoreNodes(), nodeMap);
+    (nodeMap: Map<number, MeshNode>, opts?: { fromRadio?: boolean }) => {
+      // Only a live radio contact list may revive an explicitly deleted id.
+      if (opts?.fromRadio) {
+        for (const id of nodeMap.keys()) {
+          clearMeshcoreLocallyDeletedContact(id);
+        }
+      }
+      const incoming = filterOutMeshcoreLocallyDeletedContacts(nodeMap);
+      const prev = filterOutMeshcoreLocallyDeletedContacts(readMeshcoreNodes());
+      const mergedForStore = filterOutMeshcoreLocallyDeletedContacts(
+        mergeMeshcoreChatStubNodes(prev, incoming),
+      );
       setNodes(mergedForStore);
       if (mergedForStore.size > 0) meshcoreNodesAppliedRef.current = true;
       // Publish before React commits — connect-time side effects (room auto-login) filter on hw_model.
@@ -2272,7 +2290,7 @@ export function useMeshcoreRuntime() {
         }),
       );
       assertInitConnStillLive();
-      applyMeshcoreNodesToUi(newNodes);
+      applyMeshcoreNodesToUi(newNodes, { fromRadio: true });
       if (identityId) {
         repairMeshcoreChannelSenderIdsInStore(identityId);
       }
@@ -3786,7 +3804,7 @@ export function useMeshcoreRuntime() {
         deferDbMerge: true,
         deferPathHistory: true,
       });
-      applyMeshcoreNodesToUi(newNodes);
+      applyMeshcoreNodesToUi(newNodes, { fromRadio: true });
       const identityId = meshcoreIdentityIdRef.current;
       if (identityId) {
         repairMeshcoreChannelSenderIdsInStore(identityId);
@@ -3892,50 +3910,63 @@ export function useMeshcoreRuntime() {
     await disconnect();
   }, [disconnect]);
 
-  const deleteNode = useCallback(async (nodeId: number) => {
-    let pubKey = pubKeyMapRef.current.get(nodeId);
-    if (!pubKey) {
-      const dbContacts =
-        (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
-      const dbRow = dbContacts.find((c) => c.node_id === nodeId);
-      if (dbRow) {
-        const hex = dbRow.public_key.replace(/\s/g, '');
-        const pairs = hex.match(/.{2}/g);
-        if (pairs) {
-          pubKey = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+  const deleteNode = useCallback(
+    async (nodeId: number) => {
+      let pubKey = pubKeyMapRef.current.get(nodeId);
+      if (!pubKey) {
+        const dbContacts =
+          (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+        const dbRow = dbContacts.find((c) => c.node_id === nodeId);
+        if (dbRow) {
+          const hex = dbRow.public_key.replace(/\s/g, '');
+          const pairs = hex.match(/.{2}/g);
+          if (pairs) {
+            pubKey = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+          }
         }
       }
-    }
-    if (pubKey && connRef.current) {
-      try {
-        await connRef.current.removeContact(pubKey);
-      } catch (e) {
-        console.warn(
-          '[useMeshcoreRuntime] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
-        );
+      let radioRemoveFailed = false;
+      if (pubKey && connRef.current) {
+        try {
+          await connRef.current.removeContact(pubKey);
+        } catch (e) {
+          radioRemoveFailed = true;
+          console.warn(
+            '[useMeshcoreRuntime] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
+          );
+        }
+      } else if (meshcoreIsChatStubNodeId(nodeId)) {
+        // stub node: skip radio removal
+      } else {
+        // no pubKey: skip radio removal
       }
-    } else if (meshcoreIsChatStubNodeId(nodeId)) {
-      // stub node: skip radio removal
-    } else {
-      // no pubKey: skip radio removal
-    }
-    pubKeyMapRef.current.delete(nodeId);
-    // Remove the 6-byte prefix mapping too
-    for (const [prefix, id] of pubKeyPrefixMapRef.current) {
-      if (id === nodeId) {
-        pubKeyPrefixMapRef.current.delete(prefix);
-        break;
+      markMeshcoreLocallyDeletedContact(nodeId);
+      pubKeyMapRef.current.delete(nodeId);
+      // Remove the 6-byte prefix mapping too
+      for (const [prefix, id] of pubKeyPrefixMapRef.current) {
+        if (id === nodeId) {
+          pubKeyPrefixMapRef.current.delete(prefix);
+          break;
+        }
       }
-    }
-    setNodes((prev) => {
-      const next = new Map(prev);
-      next.delete(nodeId);
-      return next;
-    });
-    await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
-      console.warn('[useMeshcoreRuntime] deleteMeshcoreContact error ' + errLikeToLogString(e));
-    });
-  }, []);
+      setNodes((prev) => {
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      const storeId = resolveMeshcoreStoreIdentityId();
+      if (storeId) {
+        removeNode(storeId, nodeId);
+      }
+      await window.electronAPI.db.deleteMeshcoreContact(nodeId).catch((e: unknown) => {
+        console.warn('[useMeshcoreRuntime] deleteMeshcoreContact error ' + errLikeToLogString(e));
+      });
+      if (radioRemoveFailed) {
+        pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
+      }
+    },
+    [resolveMeshcoreStoreIdentityId],
+  );
 
   const clearRawPackets = useCallback(() => {
     setRawPackets([]);

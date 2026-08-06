@@ -4,6 +4,7 @@ import path from 'path';
 
 import { normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
+import { MESHCORE_CONTACT_TYPE_ROOM } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import {
   MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT,
@@ -200,13 +201,56 @@ export function prunePositionHistoryPerNode(maxPerNode: number): number {
   return Number(result.changes);
 }
 
+/** Delete room BBS rows for the given room-server node ids (FTS triggers keep search in sync). */
+export function deleteMeshcoreMessagesForRoomServerIds(
+  d: NodeSqliteDB,
+  roomServerIds: readonly number[],
+): number {
+  if (roomServerIds.length === 0) return 0;
+  let deleted = 0;
+  const stmt = d.prepareOnce('DELETE FROM meshcore_messages WHERE room_server_id = ?');
+  for (const id of roomServerIds) {
+    deleted += Number(stmt.run(id).changes);
+  }
+  return deleted;
+}
+
+/** Room posts whose room_server_id no longer has a Room contact row. */
+export function deleteOrphanMeshcoreRoomMessagesOn(d: NodeSqliteDB): number {
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_messages WHERE room_server_id IS NOT NULL AND room_server_id NOT IN (' +
+        'SELECT node_id FROM meshcore_contacts WHERE contact_type = ?' +
+        ')',
+    )
+    .run(MESHCORE_CONTACT_TYPE_ROOM);
+  return Number(result.changes);
+}
+
+/** Room posts whose room_server_id no longer has a Room contact row. */
+export function deleteOrphanMeshcoreRoomMessages(): number {
+  return deleteOrphanMeshcoreRoomMessagesOn(getDatabase());
+}
+
+function selectRoomContactIdsMatching(d: NodeSqliteDB, sql: string, params: unknown[]): number[] {
+  const rows = d.prepareOnce(sql).all(...params) as { node_id: number }[];
+  return rows.map((r) => r.node_id);
+}
+
 export function deleteMeshcoreContactsNeverAdvertised(): number {
   const d = getDatabase();
+  const roomIds = selectRoomContactIdsMatching(
+    d,
+    'SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
+    [MESHCORE_CONTACT_TYPE_ROOM],
+  );
+  deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
   const result = d
     .prepareOnce(
       'DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
     )
     .run();
+  deleteOrphanMeshcoreRoomMessagesOn(d);
   return Number(result.changes);
 }
 
@@ -216,11 +260,18 @@ export function deleteMeshcoreContactsByAge(days: number): number {
   const d = getDatabase();
   const cutoffSec = meshcoreContactsAgeCutoffSec(days);
   if (cutoffSec === null) return 0;
+  const roomIds = selectRoomContactIdsMatching(
+    d,
+    'SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+    [MESHCORE_CONTACT_TYPE_ROOM, MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec],
+  );
+  deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
   const result = d
     .prepareOnce(
       'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
     )
     .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec);
+  deleteOrphanMeshcoreRoomMessagesOn(d);
   return Number(result.changes);
 }
 
@@ -239,15 +290,27 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
   ).cnt;
   const toDelete = Math.min(total - maxCount, deletable);
   if (toDelete <= 0) return 0;
-  const result = d
+  const doomed = d
     .prepareOnce(
-      'DELETE FROM meshcore_contacts WHERE node_id IN (' +
-        'SELECT node_id FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) ' +
-        'ORDER BY CASE WHEN last_advert IS NULL OR last_advert < ? THEN 1 ELSE 0 END, COALESCE(last_advert, 0) ASC LIMIT ?' +
-        ')',
+      'SELECT node_id, contact_type FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) ' +
+        'ORDER BY CASE WHEN last_advert IS NULL OR last_advert < ? THEN 1 ELSE 0 END, COALESCE(last_advert, 0) ASC LIMIT ?',
     )
-    .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, toDelete);
-  return Number(result.changes);
+    .all(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, toDelete) as {
+    node_id: number;
+    contact_type: number;
+  }[];
+  const roomIds = doomed
+    .filter((r) => r.contact_type === MESHCORE_CONTACT_TYPE_ROOM)
+    .map((r) => r.node_id);
+  deleteMeshcoreMessagesForRoomServerIds(d, roomIds);
+  const ids = doomed.map((r) => r.node_id);
+  let deleted = 0;
+  const delStmt = d.prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?');
+  for (const id of ids) {
+    deleted += Number(delStmt.run(id).changes);
+  }
+  deleteOrphanMeshcoreRoomMessagesOn(d);
+  return deleted;
 }
 
 export interface MeshcoreContactUpsertParams {

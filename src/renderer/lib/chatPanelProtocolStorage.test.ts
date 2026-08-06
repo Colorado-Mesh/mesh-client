@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearDraft,
   clearFloodScopeOverride,
+  clearPersistedRoomsLastRead,
   draftsStorageKey,
   ensureMeshcoreChatLastReadSanitized,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
@@ -30,6 +31,7 @@ import {
   saveStarred,
   type StarredMessage,
   subscribeMutedViewsChanged,
+  subscribePersistedRoomsLastRead,
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, totalUnreadCount } from './chatUnreadCounts';
 import { effectiveMessageTimestampMs } from './nodeStatus';
@@ -513,5 +515,15 @@ describe('rooms last read storage', () => {
   it('mergeRoomLastReadWatermark only advances forward', () => {
     expect(mergeRoomLastReadWatermark({ 0xabc: 5000 }, 0xabc, 4000)).toEqual({ 0xabc: 5000 });
     expect(mergeRoomLastReadWatermark({ 0xabc: 5000 }, 0xabc, 6000)).toEqual({ 0xabc: 6000 });
+  });
+
+  it('clearPersistedRoomsLastRead notifies subscribers', () => {
+    savePersistedRoomsLastRead({ 0xabc: 5000 });
+    const listener = vi.fn();
+    const unsub = subscribePersistedRoomsLastRead(listener);
+    clearPersistedRoomsLastRead();
+    expect(loadPersistedRoomsLastRead()).toEqual({});
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsub();
   });
 });

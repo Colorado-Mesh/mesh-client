@@ -1,3 +1,4 @@
+import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import type { ConnectionStatus } from '../stores/connectionStore';
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
@@ -5,8 +6,10 @@ import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import {
   getSanitizedMeshcoreChatLastRead,
+  getSanitizedMeshcoreRoomsLastRead,
   lastReadStorageKey,
   loadPersistedLastReadInitial,
+  loadPersistedRoomsLastRead,
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
 import {
@@ -25,6 +28,9 @@ import {
   fetchMeshcoreContactPathDiagnostics,
   type MeshcoreContactPathDiagnosticRow,
 } from './meshcoreContactPathDiagnostics';
+import { meshcoreRoomServerIdsFromNodes } from './meshcoreDbCacheHydration';
+import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
+import { totalRoomsUnreadCount } from './meshcoreRoomsUnread';
 import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
@@ -34,7 +40,7 @@ import {
   type ReticulumDiagnosticSidecarSnapshot,
 } from './reticulum/reticulumDiagnosticSnapshot';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
-import { messageRecordsToChatMessages } from './storeRecordAdapters';
+import { messageRecordsToChatMessages, nodeRecordToMeshNode } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshProtocol, MQTTStatus } from './types';
 import { writeClipboardText } from './writeClipboardText';
 
@@ -100,6 +106,12 @@ export interface DebugIdentityBucketSnapshot {
   /** Per-channel unread triage: watermark vs newest non-self inbound (top channels by volume). */
   channelLastReadTriage: DebugChannelLastReadTriageRow[];
   connection: DebugConnectionSnapshot | null;
+  /** MeshCore Rooms badge triage (only populated for the meshcore bucket). */
+  roomNodeCount?: number;
+  roomMessageCount?: number;
+  roomsUnreadEstimate?: number;
+  orphanRoomMessageCount?: number;
+  roomsLastReadKeyCount?: number;
 }
 
 /** Meshtastic bucket adds channel layout for inbound/outbound channel triage (no PSK). */
@@ -355,6 +367,8 @@ function buildProtocolBucketSnapshot(protocol: MeshProtocol): DebugIdentityBucke
   const primaryTransportStatuses = connectRec?.transports.map((t) => t.status) ?? [];
   const lastReadByViewKey = loadLastReadByViewKey(protocol);
   const ownNodeId = connection?.myNodeNum ?? 0;
+  const roomsTriage =
+    protocol === 'meshcore' ? buildMeshcoreRoomsTriage(uiStoreIdentityId, ownNodeId) : undefined;
 
   return {
     hydrationSlotId,
@@ -395,6 +409,50 @@ function buildProtocolBucketSnapshot(protocol: MeshProtocol): DebugIdentityBucke
       ownNodeId,
     ),
     connection,
+    ...roomsTriage,
+  };
+}
+
+function buildMeshcoreRoomsTriage(
+  uiStoreIdentityId: IdentityId | null,
+  connectionOwnNodeId: number,
+): Pick<
+  DebugIdentityBucketSnapshot,
+  | 'roomNodeCount'
+  | 'roomMessageCount'
+  | 'roomsUnreadEstimate'
+  | 'orphanRoomMessageCount'
+  | 'roomsLastReadKeyCount'
+> {
+  const chatMessages = listChatMessagesForIdentity(uiStoreIdentityId);
+  const nodeBucket = uiStoreIdentityId
+    ? useNodeStore.getState().nodes[uiStoreIdentityId]
+    : undefined;
+  const meshNodes = nodeBucket ? Object.values(nodeBucket).map((r) => nodeRecordToMeshNode(r)) : [];
+  const knownRoomIds = meshcoreRoomServerIdsFromNodes(meshNodes);
+  const selfId = connectionOwnNodeId > 0 ? connectionOwnNodeId : loadPersistedMeshcoreSelfNodeId();
+  const ownNodeIds = new Set(selfId > 0 ? [selfId] : []);
+  let roomMessageCount = 0;
+  let orphanRoomMessageCount = 0;
+  for (const msg of chatMessages) {
+    if (!isMeshcoreRoomChatMessage(msg)) continue;
+    roomMessageCount += 1;
+    const roomId = msg.roomServerId ?? msg.to;
+    if (roomId == null || !knownRoomIds.has(roomId)) orphanRoomMessageCount += 1;
+  }
+  const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(chatMessages);
+  return {
+    roomNodeCount: knownRoomIds.size,
+    roomMessageCount,
+    roomsUnreadEstimate: totalRoomsUnreadCount(
+      chatMessages,
+      roomsLastRead,
+      ownNodeIds,
+      undefined,
+      knownRoomIds,
+    ),
+    orphanRoomMessageCount,
+    roomsLastReadKeyCount: Object.keys(loadPersistedRoomsLastRead()).length,
   };
 }
 

@@ -2085,7 +2085,8 @@
       "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
       "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
       "pingFailed": "Ping mislukt",
-      "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is."
+      "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is.",
+      "removeContactFailed": "Lokaal verwijderd, maar de radio heeft verwijdering geweigerdContact. Het contact kan opnieuw verschijnen na een verversing."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
