@@ -349,4 +349,43 @@ mod tests {
         store.delete("s1", "id1").expect("delete");
         assert!(store.get("s1", "id1").expect("get").is_none());
     }
+
+    #[test]
+    fn prune_to_cap_keeps_session_and_respects_limit() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = GamesOutboundStore::open(dir.path().join("prune.db")).expect("open");
+        let identity = "id-prune";
+        let keep = "keep-sess";
+        for i in 0..=MAX_OUTBOUND_ROWS {
+            let sid = if i == MAX_OUTBOUND_ROWS {
+                keep.to_string()
+            } else {
+                format!("s{i}")
+            };
+            store
+                .upsert(
+                    &sid,
+                    identity,
+                    b"e",
+                    Some(&format!("h{i}")),
+                    "sending",
+                    Some("ttt"),
+                )
+                .expect("upsert");
+        }
+        store
+            .prune_to_cap(identity, Some(keep))
+            .expect("prune_to_cap");
+        assert!(
+            store.get(keep, identity).expect("get keep").is_some(),
+            "keep_session must survive prune"
+        );
+        let rows = store.list_for_identity(identity).expect("list");
+        assert!(
+            rows.len() <= MAX_OUTBOUND_ROWS,
+            "expected <= {MAX_OUTBOUND_ROWS} rows, got {}",
+            rows.len()
+        );
+        assert!(rows.iter().any(|r| r.session_id == keep));
+    }
 }

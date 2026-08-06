@@ -8,8 +8,15 @@
  */
 const STORAGE_KEY = 'mesh-client:meshcoreLocallyDeletedContacts';
 
+/** Valid MeshCore contact node ids are uint32 in 1..=0xffffffff (not zero). */
+const MAX_MESHCORE_NODE_ID = 0xffffffff;
+
 const locallyDeleted = new Set<number>();
 let hydratedFromStorage = false;
+
+function isValidMeshcoreTombstoneId(id: unknown): id is number {
+  return typeof id === 'number' && Number.isInteger(id) && id >= 1 && id <= MAX_MESHCORE_NODE_ID;
+}
 
 function persistLocallyDeleted(): void {
   try {
@@ -34,8 +41,8 @@ export function restoreMeshcoreLocallyDeletedContactsFromStorage(): void {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return;
     for (const id of parsed) {
-      if (typeof id === 'number' && Number.isFinite(id) && id > 0) {
-        locallyDeleted.add(id >>> 0);
+      if (isValidMeshcoreTombstoneId(id)) {
+        locallyDeleted.add(id);
       }
     }
   } catch (e) {
@@ -45,21 +52,23 @@ export function restoreMeshcoreLocallyDeletedContactsFromStorage(): void {
 
 export function markMeshcoreLocallyDeletedContact(nodeId: number): void {
   restoreMeshcoreLocallyDeletedContactsFromStorage();
-  if (nodeId > 0) {
-    locallyDeleted.add(nodeId >>> 0);
+  if (isValidMeshcoreTombstoneId(nodeId)) {
+    locallyDeleted.add(nodeId);
     persistLocallyDeleted();
   }
 }
 
 export function clearMeshcoreLocallyDeletedContact(nodeId: number): void {
   restoreMeshcoreLocallyDeletedContactsFromStorage();
-  locallyDeleted.delete(nodeId >>> 0);
-  persistLocallyDeleted();
+  if (isValidMeshcoreTombstoneId(nodeId)) {
+    locallyDeleted.delete(nodeId);
+    persistLocallyDeleted();
+  }
 }
 
 export function isMeshcoreLocallyDeletedContact(nodeId: number): boolean {
   restoreMeshcoreLocallyDeletedContactsFromStorage();
-  return locallyDeleted.has(nodeId >>> 0);
+  return isValidMeshcoreTombstoneId(nodeId) && locallyDeleted.has(nodeId);
 }
 
 /** True when UI/DB upsert paths may apply this contact id (not user-tombstoned). */

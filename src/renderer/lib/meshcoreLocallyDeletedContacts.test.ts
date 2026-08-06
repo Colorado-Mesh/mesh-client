@@ -66,4 +66,18 @@ describe('meshcoreLocallyDeletedContacts', () => {
     );
     expect(stubbed.has(0x3456789a)).toBe(false);
   });
+
+  it('rejects decimal, zero, negative, and out-of-range ids on restore', () => {
+    localStorage.setItem(
+      'mesh-client:meshcoreLocallyDeletedContacts',
+      JSON.stringify([0, -1, 1.5, 0x100000000, '123', 0xabc]),
+    );
+    restoreMeshcoreLocallyDeletedContactsFromStorage();
+    expect(isMeshcoreLocallyDeletedContact(0)).toBe(false);
+    expect(isMeshcoreLocallyDeletedContact(-1)).toBe(false);
+    expect(isMeshcoreLocallyDeletedContact(1)).toBe(false);
+    expect(isMeshcoreLocallyDeletedContact(1.5)).toBe(false);
+    expect(isMeshcoreLocallyDeletedContact(0x100000000)).toBe(false);
+    expect(isMeshcoreLocallyDeletedContact(0xabc)).toBe(true);
+  });
 });

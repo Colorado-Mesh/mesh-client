@@ -5043,6 +5043,10 @@ fn spawn_games_lxmf_outbound_bridge(
         loop {
             match rx.recv().await {
                 Ok(frame) => {
+                    // Skip non-status frames before JSON parse (hot receive path).
+                    if !frame.contains("lxmf_outbound_status") {
+                        continue;
+                    }
                     let Ok(v) = serde_json::from_str::<serde_json::Value>(&frame) else {
                         continue;
                     };

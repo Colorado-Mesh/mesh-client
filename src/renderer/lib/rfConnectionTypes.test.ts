@@ -62,4 +62,15 @@ describe('protocolTransportParams', () => {
       }),
     ).toEqual({ type: 'tcp', host: '10.0.0.2:5050' });
   });
+
+  it('maps MeshCore tcp/http without httpAddress to localhost', () => {
+    expect(protocolTransportParams('meshcore', { type: 'tcp' })).toEqual({
+      type: 'tcp',
+      host: 'localhost',
+    });
+    expect(protocolTransportParams('meshcore', { type: 'http' })).toEqual({
+      type: 'tcp',
+      host: 'localhost',
+    });
+  });
 });

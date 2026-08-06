@@ -169,14 +169,36 @@ export function applyOptimisticChessMove(session: GameSession, uci: string): Gam
     piece = isWhite ? promo.toUpperCase() : promo;
   }
   const next = board.map((row) => [...row]);
+  // En passant: diagonal pawn move onto an empty square clears the captured pawn.
+  const isPawn = piece.toLowerCase() === 'p';
+  const fileDelta = toIdx.file - fromIdx.file;
+  const destEmpty = !(next[toIdx.rank][toIdx.file] ?? '');
+  if (isPawn && Math.abs(fileDelta) === 1 && destEmpty) {
+    next[fromIdx.rank][toIdx.file] = '';
+  }
   next[fromIdx.rank][fromIdx.file] = '';
   next[toIdx.rank][toIdx.file] = piece;
+  // Castling: king moves two files; relocate the rook.
+  if (piece.toLowerCase() === 'k' && Math.abs(fileDelta) === 2) {
+    const kingside = fileDelta > 0;
+    const rookFromFile = kingside ? 7 : 0;
+    const rookToFile = kingside ? 5 : 3;
+    const rook = next[fromIdx.rank][rookFromFile] ?? '';
+    if (rook.toLowerCase() === 'r') {
+      next[fromIdx.rank][rookFromFile] = '';
+      next[fromIdx.rank][rookToFile] = rook;
+    }
+  }
 
   const parts = fen.trim().split(/\s+/);
   const rest = parts.slice(1);
   // Flip side-to-move in FEN if present.
   if (rest.length > 0) {
     rest[0] = rest[0] === 'w' ? 'b' : 'w';
+  }
+  // Clear en-passant target after any move (optimistic; full EP rights come from server).
+  if (rest.length > 2) {
+    rest[2] = '-';
   }
   metadata.fen = [encodeFenPlacement(next), ...rest].join(' ');
   metadata.move_count = gamesMetaNum(metadata, 'move_count') + 1;

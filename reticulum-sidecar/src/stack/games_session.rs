@@ -34,6 +34,10 @@ const MAX_LAST_ENVELOPES: usize = 256;
 
 #[cfg(test)]
 static FORCE_HYDRATE_STORE_READ_ERR: AtomicBool = AtomicBool::new(false);
+/// Serializes tests that touch `FORCE_HYDRATE_STORE_READ_ERR` or call non-challenge
+/// `prepare_action` (which reads the flag) so parallel tests cannot observe a stale inject.
+#[cfg(test)]
+static FORCE_HYDRATE_STORE_READ_ERR_LOCK: Mutex<()> = Mutex::new(());
 
 /// A dispatched-but-not-yet-sent outgoing LRGP action. Callers (LiveBridge)
 /// must call [`GamesSessionManager::commit_action`] after a successful LXMF
@@ -109,7 +113,10 @@ impl GamesSessionManager {
                     None
                 }
             },
-            Err(_) => None,
+            Err(e) => {
+                tracing::warn!(target: "games", "failed to create games outbound storage dir: {e}");
+                None
+            }
         };
 
         let manager = Self {
@@ -284,6 +291,7 @@ impl GamesSessionManager {
             .map(str::trim)
             .filter(|p| !p.is_empty())
             .map(str::to_lowercase);
+        let delivery_by_session = self.delivery_states_for_identity();
         match store.list_sessions(Some(&self.identity_id), None, None) {
             Ok(sessions) => {
                 let rows: Vec<JsonValue> = sessions
@@ -292,7 +300,13 @@ impl GamesSessionManager {
                         Some(p) => s.contact_hash.eq_ignore_ascii_case(p),
                         None => true,
                     })
-                    .map(|s| self.session_to_json(&s))
+                    .map(|s| {
+                        let state = delivery_by_session
+                            .get(&s.session_id)
+                            .map(String::as_str)
+                            .unwrap_or("idle");
+                        Self::session_to_json_with_delivery(&s, state)
+                    })
                     .collect();
                 serde_json::json!({ "sessions": rows })
             }
@@ -313,14 +327,21 @@ impl GamesSessionManager {
         }
     }
 
-    /// Serialize a session and merge overlay `delivery_state` when present.
+    /// Serialize a session and merge overlay `delivery_state` when present (single-row lookup).
     fn session_to_json(&self, session: &Session) -> JsonValue {
+        let state = self
+            .delivery_state_for(&session.session_id)
+            .unwrap_or_else(|| "idle".into());
+        Self::session_to_json_with_delivery(session, &state)
+    }
+
+    fn session_to_json_with_delivery(session: &Session, delivery_state: &str) -> JsonValue {
         let mut value = serde_json::to_value(session).unwrap_or(JsonValue::Null);
         if let Some(obj) = value.as_object_mut() {
-            let state = self
-                .delivery_state_for(&session.session_id)
-                .unwrap_or_else(|| "idle".into());
-            obj.insert("delivery_state".into(), JsonValue::String(state));
+            obj.insert(
+                "delivery_state".into(),
+                JsonValue::String(delivery_state.to_string()),
+            );
         }
         value
     }
@@ -332,6 +353,23 @@ impl GamesSessionManager {
             .ok()
             .flatten()
             .map(|r| r.delivery_state)
+    }
+
+    /// One outbound list read for `list_sessions` (avoids N× `delivery_state_for`).
+    fn delivery_states_for_identity(&self) -> HashMap<String, String> {
+        let Some(outbound) = &self.outbound_store else {
+            return HashMap::new();
+        };
+        match outbound.list_for_identity(&self.identity_id) {
+            Ok(rows) => rows
+                .into_iter()
+                .map(|r| (r.session_id, r.delivery_state))
+                .collect(),
+            Err(e) => {
+                tracing::warn!(target: "games", "failed to list outbound delivery states: {e}");
+                HashMap::new()
+            }
+        }
     }
 
     pub fn mark_read(&self, session_id: &str) -> Result<(), String> {
@@ -660,21 +698,7 @@ impl GamesSessionManager {
             }
         }
         if let Some(hash) = message_hash {
-            if let Ok(mut map) = self.msg_to_session.lock() {
-                map.insert(
-                    hash.to_string(),
-                    (action.session_id.clone(), action.app_id.clone()),
-                );
-                while map.len() > MAX_LAST_ENVELOPES {
-                    let victim = map.keys().find(|k| *k != hash).cloned();
-                    match victim {
-                        Some(k) => {
-                            map.remove(&k);
-                        }
-                        None => break,
-                    }
-                }
-            }
+            self.insert_msg_to_session(hash, &action.session_id, &action.app_id);
         }
         if let Some(outbound) = &self.outbound_store {
             if let Err(e) = outbound.upsert(
@@ -772,15 +796,29 @@ impl GamesSessionManager {
         self.emit_update(app, &session_id, "outbound");
     }
 
+    /// Insert `message_hash → (session_id, app_id)` and evict oldest entries past the cap.
+    fn insert_msg_to_session(&self, hash: &str, session_id: &str, app_id: &str) {
+        if let Ok(mut map) = self.msg_to_session.lock() {
+            map.insert(
+                hash.to_string(),
+                (session_id.to_string(), app_id.to_string()),
+            );
+            while map.len() > MAX_LAST_ENVELOPES {
+                let victim = map.keys().find(|k| k.as_str() != hash).cloned();
+                match victim {
+                    Some(k) => {
+                        map.remove(&k);
+                    }
+                    None => break,
+                }
+            }
+        }
+    }
+
     /// After a successful resend, re-bind message_hash and set delivery_state=sending.
     pub fn note_resend_enqueued(&self, session_id: &str, app_id: &str, message_hash: Option<&str>) {
         if let Some(hash) = message_hash {
-            if let Ok(mut map) = self.msg_to_session.lock() {
-                map.insert(
-                    hash.to_string(),
-                    (session_id.to_string(), app_id.to_string()),
-                );
-            }
+            self.insert_msg_to_session(hash, session_id, app_id);
         }
         if let Some(outbound) = &self.outbound_store {
             let envelope = self
@@ -1046,6 +1084,13 @@ mod tests {
     use super::*;
     use lrgp::constants::{CMD_ACCEPT, CMD_CHALLENGE};
 
+    /// Hold while calling non-challenge `prepare_action`, or while injecting hydrate errors.
+    fn hydrate_err_test_guard() -> std::sync::MutexGuard<'static, ()> {
+        FORCE_HYDRATE_STORE_READ_ERR_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     fn test_manager() -> (
         tempfile::TempDir,
         GamesSessionManager,
@@ -1092,6 +1137,7 @@ mod tests {
     fn prepare_action_unknown_session_without_store_row() {
         let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
+        let _guard = hydrate_err_test_guard();
         let err = manager
             .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
             .expect_err("expected unknown session");
@@ -1102,6 +1148,7 @@ mod tests {
     fn prepare_action_propagates_store_read_failure() {
         let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
+        let _guard = hydrate_err_test_guard();
         FORCE_HYDRATE_STORE_READ_ERR.store(true, Ordering::SeqCst);
         let err = manager
             .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess-store-fail"), None)
@@ -1123,6 +1170,7 @@ mod tests {
         let (_dir, manager, _) = test_manager();
         let dest = "a".repeat(32);
         assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields("sess1"), &dest, ""));
+        let _guard = hydrate_err_test_guard();
         let err = manager
             .prepare_action(&dest, "ttt", CMD_MOVE, Some("sess1"), None)
             .expect_err("expected local reject");
@@ -1146,6 +1194,7 @@ mod tests {
 
         // Fresh manager: empty LrgpRouter memory, same SQLite file — spawn hydrates.
         let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx);
+        let _guard = hydrate_err_test_guard();
         let action = manager
             .prepare_action(&peer, "ttt", CMD_ACCEPT, Some(session_id), None)
             .expect("accept should work after SQLite hydrate");
@@ -1185,6 +1234,7 @@ mod tests {
             .collect();
         assert!(manager.handle_inbound_lxmf(&accept_fields, &dest, ""));
 
+        let _guard = hydrate_err_test_guard();
         let err = manager
             .prepare_action(
                 &dest,
@@ -1236,6 +1286,7 @@ mod tests {
         {
             let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx.clone());
             assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields(session_id), &peer, ""));
+            let _guard = hydrate_err_test_guard();
             let accept = manager
                 .prepare_action(&peer, "ttt", CMD_ACCEPT, Some(session_id), None)
                 .expect("accept");

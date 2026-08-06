@@ -122,6 +122,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   const promoOptions = promoBase ? promotionOptionsFor(promoBase, legalMoves) : [];
 
   function commitMove(uci: string) {
+    if (disabled || !isMyTurn) return;
     setSelected(null);
     setPromoBase(null);
     onMove(uci);
@@ -222,8 +223,9 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
                   <button
                     key={p}
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded text-2xl text-amber-100 hover:bg-amber-900/80"
+                    className="flex h-10 w-10 items-center justify-center rounded text-2xl text-amber-100 hover:bg-amber-900/80 disabled:cursor-default disabled:opacity-40"
                     aria-label={t(`gamesPanel.chess.promoteTo.${p}`)}
+                    disabled={disabled || !isMyTurn}
                     onClick={() => {
                       commitMove(`${promoBase}${p}`);
                     }}

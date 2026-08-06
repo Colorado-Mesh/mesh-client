@@ -264,6 +264,24 @@ describe('GamesPanel', () => {
     expect(screen.getByLabelText('Retry needed')).toBeInTheDocument();
   });
 
+  it.each([
+    ['pending', 'Sending…'],
+    ['sending', 'Sending…'],
+    ['propagating', 'Offline Inbox…'],
+    ['propagated', 'Stored'],
+    ['failed', 'Retry needed'],
+  ] as const)('has no axe violations for delivery badge state %s', async (state, label) => {
+    const session = makeSession({ delivery_state: state });
+    vi.mocked(window.electronAPI.reticulum.games.listSessions).mockResolvedValue({
+      sessions: [session],
+    });
+    const { container } = render(<GamesPanel isActive />);
+    const row = await screen.findByRole('button', { name: new RegExp(`game with`, 'i') });
+    await userEvent.click(row);
+    expect(await screen.findByLabelText(label)).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('shows claim threefold and sends draw_offer with r=3fr', async () => {
     await renderAndSelectSession(
       makeSession({

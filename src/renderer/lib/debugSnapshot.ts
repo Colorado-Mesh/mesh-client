@@ -36,6 +36,7 @@ import { totalRoomsUnreadCount } from './meshcoreRoomsUnread';
 import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
+import { getProtocolRegistration } from './protocols/protocolRegistry';
 import {
   buildReticulumDiagnosticSnapshotSync,
   fetchReticulumDiagnosticSnapshot,
@@ -371,8 +372,9 @@ function buildProtocolBucketSnapshot(protocol: MeshProtocol): DebugIdentityBucke
   const primaryTransportStatuses = connectRec?.transports.map((t) => t.status) ?? [];
   const lastReadByViewKey = loadLastReadByViewKey(protocol);
   const ownNodeId = connection?.myNodeNum ?? 0;
-  const roomsTriage =
-    protocol === 'meshcore' ? buildMeshcoreRoomsTriage(uiStoreIdentityId, ownNodeId) : undefined;
+  const roomsTriage = getProtocolRegistration(protocol)?.capabilities.hasRoomServersPanel
+    ? buildMeshcoreRoomsTriage(uiStoreIdentityId, ownNodeId)
+    : undefined;
 
   return {
     hydrationSlotId,
