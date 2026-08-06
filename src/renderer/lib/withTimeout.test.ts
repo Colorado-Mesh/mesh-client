@@ -40,4 +40,30 @@ describe('withTimeout', () => {
       vi.useRealTimers();
     }
   });
+
+  it('does not surface late promise reject as unhandled after timeout wins', async () => {
+    vi.useFakeTimers();
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      let rejectWrite!: (err: Error) => void;
+      const write = new Promise<never>((_, rej) => {
+        rejectWrite = rej;
+      });
+      const p = withTimeout(write, 1000, 'setChannel');
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- fire-and-forget timer advance
+      vi.advanceTimersByTimeAsync(1000);
+      await expect(p).rejects.toThrow(/setChannel timed out/);
+      rejectWrite(new Error('meshcore:tcp-write: no active socket'));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+      vi.useRealTimers();
+    }
+  });
 });

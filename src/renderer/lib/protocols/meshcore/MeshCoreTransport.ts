@@ -12,7 +12,10 @@ import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
-import { notifyMeshcoreTcpWriteDead } from '../../meshcore/meshcoreTcpInitBurst';
+import {
+  isMeshcoreTcpSoftApDeadAccepted,
+  notifyMeshcoreTcpWriteDead,
+} from '../../meshcore/meshcoreTcpInitBurst';
 import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { notifyNobleBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
@@ -155,7 +158,12 @@ class IpcTcpConnection {
           try {
             await window.electronAPI.meshcore.tcp.write(Array.from(bytes));
           } catch (e) {
-            console.error('[IpcTcpConnection] write error', e);
+            // SoftAP-accepted dead bridge: expected; keep noise at debug (stats/outbox thrash).
+            if (isMeshcoreTcpSoftApDeadAccepted()) {
+              console.debug('[IpcTcpConnection] write on SoftAP dead bridge', e);
+            } else {
+              console.error('[IpcTcpConnection] write error', e);
+            }
             // Fail closed so meshcore.js stops issuing RPCs after the bridge is gone
             // (n7eal: peer FIN → no active socket write storm).
             notifyDisconnectedOnce(this);

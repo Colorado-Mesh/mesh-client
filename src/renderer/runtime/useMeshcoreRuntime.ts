@@ -168,13 +168,22 @@ import {
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
+  clearMeshcoreSoftApPendingUserTx,
+  decideSoftApUserTxAfterEnsureFailure,
   isMeshcoreTcpBurstDeadBridge,
   isMeshcoreTcpSoftApDeadAccepted,
+  MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS,
   notifyMeshcoreTcpLiveForUserTx,
   rejectMeshcoreTcpLiveForUserTx,
+  runMeshcoreSoftApPendingUserTx,
+  runWithMeshcoreTcpDeadWriteRetry,
+  setMeshcoreSoftApPendingUserTx,
   setMeshcoreTcpSoftApDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
+  settleSoftApPendingResult,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
+  throwIfMeshcoreTcpBridgeDiedDuringSoftApOp,
+  trackMeshcoreTcpUserTxSend,
   waitForMeshcoreTcpLiveForUserTx,
   yieldToMeshcoreTcpUserTxSends,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
@@ -623,6 +632,11 @@ export function useMeshcoreRuntime() {
    */
   const meshcoreTcpContactsDumpInFlightRef = useRef(false);
   /**
+   * SoftAP/OpenHop user TX: true while `ensureTcpLiveForUserTx` has started a quiet `connect()`
+   * reopen (not handleMeshcoreConnectionLost). Concurrent sends await the same live window.
+   */
+  const meshcoreSoftApUserTxReopenInFlightRef = useRef(false);
+  /**
    * True for the duration of `initConn`. After configure-before-dump, peer FIN once the contacts
    * burst is held must defer reconnect (not bump setup gen) until init finishes.
    * Cleared in finally only when `meshcoreInitConnInFlightSetupGenRef` still matches the
@@ -760,8 +774,14 @@ export function useMeshcoreRuntime() {
 
   /** Fetch and update local radio stats (core, radio, packet). Called by requestRefresh and on connect. */
   const fetchAndUpdateLocalStats = useCallback(async () => {
+    // SoftAP/OpenHop accepted dead bridge — companion RPCs only reopen on user TX.
+    if (isMeshcoreTcpSoftApDeadAccepted()) return;
     const conn = connRef.current;
     if (!conn) return;
+    // SoftAP/OpenHop: peer FIN left a dead bridge — stats RPCs only spam tcp-write errors.
+    if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreTcpBridgeDeadRef.current) {
+      return;
+    }
     let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
     try {
       coreStats = await conn.getStatsCore();
@@ -976,6 +996,7 @@ export function useMeshcoreRuntime() {
       meshcoreStatsPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
         if (meshcoreInitConnInFlightRef.current) return;
+        if (isMeshcoreTcpSoftApDeadAccepted()) return;
         void fetchAndUpdateLocalStats().catch((e: unknown) => {
           console.warn('[useMeshcoreRuntime] periodic stats poll failed ' + errLikeToLogString(e));
         });
@@ -2175,6 +2196,94 @@ export function useMeshcoreRuntime() {
           })();
         }
 
+        // SoftAP user-TX reopen: skip getSelfInfo / contacts — run parked user command as the
+        // first companion RPC (peer FINs ~160ms after self-info; notify→setChannel always loses).
+        const softApUserTxReopen = meshcoreSoftApUserTxReopenInFlightRef.current;
+        if (softApUserTxReopen) {
+          console.debug(
+            '[useMeshcoreRuntime] SoftAP user-TX reopen — first-RPC path (skip getSelfInfo)',
+          );
+          const transportType = meshcoreConnectTypeRef.current;
+          const myNodeId = myNodeNumRef.current;
+          const priorSelf = selfInfoRef.current;
+          // Stay configured for the whole SoftAP reopen (no connected→configured header flicker).
+          setState((prev) => ({
+            ...prev,
+            myNodeNum: myNodeId || prev.myNodeNum,
+            status: 'configured',
+            connectionLoss: false,
+            serialNeedsReselect: false,
+          }));
+          meshcoreDeviceConfiguredRef.current = true;
+          meshcoreEverConfiguredRef.current = true;
+          const identityId = opts?.driverIdentityId ?? meshcoreIdentityIdRef.current;
+          if (identityId && priorSelf?.publicKey) {
+            finalizeMeshcoreDriverIdentity(identityId, meshcoreTransportParams(transportType, {}), {
+              myNodeNum: myNodeId,
+              publicKey: priorSelf.publicKey,
+            });
+            meshcoreIdentityIdRef.current = identityId;
+            setMeshcoreIdentityId(identityId);
+            setConnection(identityId, {
+              status: 'configured',
+              connectionType: transportType === 'tcp' ? 'http' : transportType,
+              myNodeNum: myNodeId,
+            });
+          }
+          const promoteConfiguredSoftAp = (): void => {
+            setState((prev) => ({
+              ...prev,
+              myNodeNum: myNodeId || prev.myNodeNum,
+              status: 'configured',
+              connectionLoss: false,
+              serialNeedsReselect: false,
+            }));
+            meshcoreDeviceConfiguredRef.current = true;
+            meshcoreEverConfiguredRef.current = true;
+            if (identityId) {
+              setConnection(identityId, {
+                status: 'configured',
+                connectionType: transportType === 'tcp' ? 'http' : transportType,
+                myNodeNum: myNodeId,
+              });
+            }
+          };
+          try {
+            const bridgeDeadBefore = meshcoreTcpBridgeDeadRef.current;
+            await runMeshcoreSoftApPendingUserTx();
+            // meshcore.js may resolve Ok while peer FIN latches write-dead — reject so SoftAP
+            // retry runs (do not notify live on this path).
+            throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(
+              bridgeDeadBefore,
+              meshcoreTcpBridgeDeadRef.current,
+            );
+            notifyMeshcoreTcpLiveForUserTx();
+          } catch (e: unknown) {
+            const err =
+              e instanceof Error
+                ? e
+                : new Error(errLikeToLogString(e) || 'SoftAP pending user TX failed');
+            console.warn(
+              '[useMeshcoreRuntime] SoftAP user-TX first-RPC failed ' + errLikeToLogString(err),
+            );
+            rejectMeshcoreTcpLiveForUserTx(err);
+          }
+          console.debug(
+            '[useMeshcoreRuntime] SoftAP user-TX reopen — skip contacts dump after live send',
+          );
+          // SoftAP-accept + configured before intentional disconnect (quiet teardown).
+          meshcoreTcpInitBurstCapturedRef.current = true;
+          meshcoreTcpBridgeDeadRef.current = true;
+          setMeshcoreTcpSoftApDeadAccepted(true);
+          promoteConfiguredSoftAp();
+          void window.electronAPI.meshcore.tcp.disconnect().catch((e: unknown) => {
+            console.debug(
+              '[useMeshcoreRuntime] SoftAP user-TX reopen tcp.disconnect ' + errLikeToLogString(e),
+            );
+          });
+          return;
+        }
+
         // Show persisted contacts immediately while the radio contact dump runs over BLE.
         const dbCacheStart = performance.now();
         let dbCacheNodeCount = 0;
@@ -2298,13 +2407,6 @@ export function useMeshcoreRuntime() {
           });
         }
 
-        // SoftAP user TX: release waiters while the socket is still live — companions often
-        // FIN immediately after getContacts. Await tracked sends before starting the dump.
-        if (transportType === 'tcp' && !meshcoreTcpBridgeDeadRef.current) {
-          notifyMeshcoreTcpLiveForUserTx();
-          await yieldToMeshcoreTcpUserTxSends();
-        }
-
         const promoteConfiguredAfterContactsDump = (): void => {
           setState((prev) => ({
             ...prev,
@@ -2323,6 +2425,14 @@ export function useMeshcoreRuntime() {
             });
           }
         };
+
+        // SoftAP user TX: release waiters while the socket is still live — companions often
+        // FIN immediately after getContacts. Await tracked sends before starting the dump.
+        // (SoftAP user-TX reopen returns earlier via first-RPC path above.)
+        if (transportType === 'tcp' && !meshcoreTcpBridgeDeadRef.current) {
+          notifyMeshcoreTcpLiveForUserTx();
+          await yieldToMeshcoreTcpUserTxSends();
+        }
 
         // TCP: after session latch, peer FIN during contacts dump is tolerated (do not abort initConn).
         // Before latch (should not happen for TCP now), dead bridge still aborts.
@@ -2881,13 +2991,24 @@ export function useMeshcoreRuntime() {
         serialRediscoveryStopRef.current?.();
         serialRediscoveryStopRef.current = null;
       }
-      setState({
-        status: 'connecting',
-        myNodeNum: 0,
-        connectionType: type === 'tcp' ? 'http' : type,
-        connectionLoss: false,
-        serialNeedsReselect: false,
-      });
+      // SoftAP chat reopen: keep configured UI (do not flash connecting / wipe myNodeNum).
+      // Full connect/reconnect still uses status=connecting below.
+      if (meshcoreSoftApUserTxReopenInFlightRef.current && type === 'tcp') {
+        setState((s) => ({
+          ...s,
+          connectionType: 'http',
+          connectionLoss: false,
+          serialNeedsReselect: false,
+        }));
+      } else {
+        setState({
+          status: 'connecting',
+          myNodeNum: 0,
+          connectionType: type === 'tcp' ? 'http' : type,
+          connectionLoss: false,
+          serialNeedsReselect: false,
+        });
+      }
       meshcoreDeviceConfiguredRef.current = false;
       if (type === 'ble') bleConnectInProgressRef.current = true;
       meshcoreExplicitDisconnectRef.current = false;
@@ -2959,6 +3080,33 @@ export function useMeshcoreRuntime() {
 
   const handleRfConnectFailure = useCallback(
     (type: 'ble' | 'serial' | 'tcp', driverIdentityId?: string): Promise<void> => {
+      // SoftAP chat reopen failed mid-handshake: restore accepted dead-bridge session.
+      // Leaving disconnected here stranded SoftAP TX with no reconnect owner (post-fix logs).
+      if (type === 'tcp' && meshcoreSoftApUserTxReopenInFlightRef.current) {
+        meshcoreTcpBridgeDeadRef.current = true;
+        setMeshcoreTcpSoftApDeadAccepted(true);
+        meshcoreDeferredReconnectRef.current = false;
+        meshcoreDeviceConfiguredRef.current = true;
+        meshcoreEverConfiguredRef.current = true;
+        const myNodeNum = myNodeNumRef.current;
+        setState((s) => ({
+          ...s,
+          status: 'configured',
+          connectionLoss: false,
+          connectionType: 'http',
+          myNodeNum: myNodeNum || s.myNodeNum,
+        }));
+        console.debug(
+          '[useMeshcoreRuntime] SoftAP user-TX reopen failed — restore SoftAP-accepted configured',
+        );
+        clearMeshcoreSoftApPendingUserTx(new Error('MeshCore SoftAP user-TX reopen failed'));
+        teardownMeshcoreConnEventListeners({
+          driverDisconnect: true,
+          driverIdentityId,
+        });
+        connRef.current = null;
+        return Promise.resolve();
+      }
       setState({ status: 'disconnected', myNodeNum: 0, connectionType: null });
       meshcoreDeviceConfiguredRef.current = false;
       // Keep sticky suppress across failed BLE open so NodeDB cannot revive Blue.
@@ -3531,26 +3679,117 @@ export function useMeshcoreRuntime() {
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
 
+  /** Set after `connect` is defined — SoftAP user TX reopen must not use connection-lost. */
+  const meshcoreConnectForSoftApTxRef = useRef<
+    | ((
+        type: 'ble' | 'serial' | 'tcp',
+        tcpHost?: string,
+        blePeripheralId?: string,
+      ) => Promise<void>)
+    | null
+  >(null);
+
   const ensureTcpLiveForUserTx = useCallback(async (): Promise<void> => {
     const bridgeDead = meshcoreTcpBridgeDeadRef.current;
     const softAp = isMeshcoreTcpSoftApDeadAccepted();
     if (!softAp && !bridgeDead) {
       return;
     }
-    // Already opening — just wait for the post-getSelfInfo gate.
+    // Already opening — wait for the post-getSelfInfo live window (SoftAP quiet reopen or
+    // reconnect). SoftAP reopen clears bridgeDead before connect settles; do not require live.
     if (
       meshcoreConnectTypeRef.current === 'tcp' &&
-      (meshcoreInitConnInFlightRef.current || meshcoreIsReconnectingRef.current) &&
-      !meshcoreTcpBridgeDeadRef.current
+      (meshcoreInitConnInFlightRef.current ||
+        meshcoreIsReconnectingRef.current ||
+        meshcoreSoftApUserTxReopenInFlightRef.current)
     ) {
       await waitForMeshcoreTcpLiveForUserTx();
       return;
     }
+    // SoftAP-accepted dead bridge: reopen via connect() — not handleMeshcoreConnectionLost.
+    // Connection-lost sets connectionLoss + 2s backoff and looks like a drop on every chat send.
+    if (softAp) {
+      const host = meshcoreConnectionParamsRef.current?.httpAddress?.trim();
+      const connectFn = meshcoreConnectForSoftApTxRef.current;
+      if (!host || !connectFn) {
+        throw new Error('MeshCore SoftAP user-TX reopen missing TCP host or connect');
+      }
+      // Keep SoftAP latch during settle so background writes stay suppressed. Immediate
+      // reconnect FINs in <200ms (post-fix); match reconnect attempt-1 backoff.
+      meshcoreSoftApUserTxReopenInFlightRef.current = true;
+      console.debug(
+        `[useMeshcoreRuntime] SoftAP user TX — settle ${MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS}ms before quiet reopen`,
+      );
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS);
+      });
+      if (meshcoreExplicitDisconnectRef.current) {
+        meshcoreSoftApUserTxReopenInFlightRef.current = false;
+        throw new Error('MeshCore SoftAP user-TX reopen aborted (user disconnect)');
+      }
+      setMeshcoreTcpSoftApDeadAccepted(false);
+      meshcoreTcpBridgeDeadRef.current = false;
+      console.debug('[useMeshcoreRuntime] SoftAP user TX — quiet TCP reopen (no connection-lost)');
+      void connectFn('tcp', host)
+        .catch((e: unknown) => {
+          console.warn(
+            '[useMeshcoreRuntime] SoftAP user-TX reopen failed ' + errLikeToLogString(e),
+          );
+          rejectMeshcoreTcpLiveForUserTx(
+            e instanceof Error ? e : new Error(errLikeToLogString(e) || 'SoftAP reopen failed'),
+          );
+        })
+        .finally(() => {
+          meshcoreSoftApUserTxReopenInFlightRef.current = false;
+        });
+      await waitForMeshcoreTcpLiveForUserTx();
+      return;
+    }
+    // Mid-session dead bridge (not SoftAP-accepted): normal reconnect recovery.
     setMeshcoreTcpSoftApDeadAccepted(false);
     handleMeshcoreConnectionLostRef.current();
     await waitForMeshcoreTcpLiveForUserTx();
   }, []);
 
+  /** SoftAP / dead-bridge user TX: park op for SoftAP first-RPC reopen; retry once on dead write. */
+  const runMeshcoreUserTxWithLiveTcp = useCallback(
+    async <T>(op: () => Promise<T>): Promise<T> => {
+      const softApIntent = isMeshcoreTcpSoftApDeadAccepted();
+      if (!softApIntent && !meshcoreTcpBridgeDeadRef.current) {
+        return op();
+      }
+      // Mid-session dead bridge (not SoftAP): reconnect then run op after live window.
+      if (!softApIntent) {
+        return runWithMeshcoreTcpDeadWriteRetry(ensureTcpLiveForUserTx, op);
+      }
+
+      let lastErr: unknown;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        // SoftAP quiet reopen must stay SoftAP across retries (clearing accepted mid-open
+        // sent attempt 2 into handleMeshcoreConnectionLost + discoverSelf reuse).
+        setMeshcoreTcpSoftApDeadAccepted(true);
+        const resultPromise = setMeshcoreSoftApPendingUserTx(op);
+        try {
+          await ensureTcpLiveForUserTx();
+          return await resultPromise;
+        } catch (e: unknown) {
+          clearMeshcoreSoftApPendingUserTx(
+            e instanceof Error ? e : new Error(errLikeToLogString(e) || 'SoftAP TX failed'),
+          );
+          // Late write-dead latch after meshcore.js Ok: resultPromise is already fulfilled —
+          // return that value. Re-parking would double-send chat.
+          const opSettlement = await settleSoftApPendingResult(resultPromise);
+          const decision = decideSoftApUserTxAfterEnsureFailure({ opSettlement });
+          if (decision.action === 'return') return decision.value;
+          if (decision.action === 'throw') throw decision.error;
+          lastErr = opSettlement.status === 'rejected' ? opSettlement.reason : e;
+          continue;
+        }
+      }
+      throw lastErr;
+    },
+    [ensureTcpLiveForUserTx],
+  );
   const onPowerSuspend = useCallback(() => {
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreIsReconnectingRef.current = false;
@@ -3624,6 +3863,7 @@ export function useMeshcoreRuntime() {
           openMeshCoreTransport(type, {
             blePeripheralId,
             host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
+            skipDiscoverSelf: meshcoreSoftApUserTxReopenInFlightRef.current,
           });
         opened =
           type === 'ble' && isRendererNobleBlePlatform()
@@ -3767,6 +4007,9 @@ export function useMeshcoreRuntime() {
     },
     [prepareRfConnect, attachRfSession, handleRfConnectFailure],
   );
+  useLayoutEffect(() => {
+    meshcoreConnectForSoftApTxRef.current = connect;
+  }, [connect]);
 
   /**
    * Gesture-free reconnect — called on startup when a last connection is remembered.
@@ -4066,9 +4309,23 @@ export function useMeshcoreRuntime() {
             ? replyId
             : undefined;
         try {
-          const channelConn = connRef.current;
-          if (channelConn) {
-            await channelConn.sendChannelTextMessage(channelIdx, textToSend);
+          const hadRadioConn =
+            connRef.current != null ||
+            isMeshcoreTcpSoftApDeadAccepted() ||
+            meshcoreTcpBridgeDeadRef.current;
+          if (hadRadioConn) {
+            await runMeshcoreUserTxWithLiveTcp(async () => {
+              const liveConn = connRef.current;
+              if (!liveConn) throw new Error('Not connected to radio');
+              const work = liveConn.sendChannelTextMessage(channelIdx, textToSend);
+              if (
+                isMeshcoreTcpSoftApDeadAccepted() ||
+                meshcoreSoftApUserTxReopenInFlightRef.current
+              ) {
+                trackMeshcoreTcpUserTxSend(work);
+              }
+              await work;
+            });
             markMeshcoreCompanionTx();
             void fetchAndUpdateLocalStats().catch((e: unknown) => {
               console.warn(
@@ -4130,7 +4387,13 @@ export function useMeshcoreRuntime() {
         }
       }
     },
-    [addMessage, readMeshcoreMessages, selfInfo, fetchAndUpdateLocalStats],
+    [
+      addMessage,
+      readMeshcoreMessages,
+      selfInfo,
+      fetchAndUpdateLocalStats,
+      runMeshcoreUserTxWithLiveTcp,
+    ],
   );
 
   const refreshContacts = useCallback(async () => {
@@ -6467,65 +6730,88 @@ export function useMeshcoreRuntime() {
     }
   }, []);
 
-  const setMeshcoreChannel = useCallback(async (idx: number, name: string, secret: Uint8Array) => {
-    if (!connRef.current) {
-      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: no connection');
-      return;
-    }
+  const setMeshcoreChannel = useCallback(
+    async (idx: number, name: string, secret: Uint8Array) => {
+      // Validate parameters before SoftAP reopen (avoid pointless TCP churn).
+      if (!Number.isInteger(idx) || idx < 0 || idx > 39) {
+        console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid channel index', idx);
+        throw new Error(`Invalid channel index: ${idx}. Must be 0-39.`);
+      }
 
-    // Validate parameters
-    if (!Number.isInteger(idx) || idx < 0 || idx > 39) {
-      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid channel index', idx);
-      throw new Error(`Invalid channel index: ${idx}. Must be 0-39.`);
-    }
+      if (typeof name !== 'string' || name.length === 0) {
+        console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid name', name);
+        throw new Error('Channel name must be a non-empty string');
+      }
 
-    if (typeof name !== 'string' || name.length === 0) {
-      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid name', name);
-      throw new Error('Channel name must be a non-empty string');
-    }
+      if (name.length > MESHCORE_CHANNEL_NAME_MAX_LEN) {
+        console.warn('[useMeshcoreRuntime] setMeshcoreChannel: name too long', name.length);
+        throw new Error(`Channel name must be at most ${MESHCORE_CHANNEL_NAME_MAX_LEN} characters`);
+      }
 
-    if (name.length > MESHCORE_CHANNEL_NAME_MAX_LEN) {
-      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: name too long', name.length);
-      throw new Error(`Channel name must be at most ${MESHCORE_CHANNEL_NAME_MAX_LEN} characters`);
-    }
+      if (!(secret instanceof Uint8Array) || secret.length === 0) {
+        console.warn(
+          `[useMeshcoreRuntime] setMeshcoreChannel: invalid secret length=${
+            secret instanceof Uint8Array ? secret.length : 'n/a'
+          }`,
+        );
+        throw new Error('Channel secret must be a non-empty Uint8Array');
+      }
 
-    if (!(secret instanceof Uint8Array) || secret.length === 0) {
-      console.warn(
-        '[useMeshcoreRuntime] setMeshcoreChannel: invalid secret ' + errLikeToLogString(secret),
-      );
-      throw new Error('Channel secret must be a non-empty Uint8Array');
-    }
+      try {
+        await runMeshcoreUserTxWithLiveTcp(async () => {
+          const liveConn = connRef.current;
+          if (!liveConn) {
+            console.warn('[useMeshcoreRuntime] setMeshcoreChannel: no connection');
+            throw new Error('Not connected to radio');
+          }
+          const work = withTimeout(liveConn.setChannel(idx, name, secret), 10_000, 'setChannel');
+          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+            trackMeshcoreTcpUserTxSend(work);
+          }
+          await work;
+        });
+        setChannels((prev) => {
+          const next = prev.filter((c) => c.index !== idx);
+          return [...next, { index: idx, name, secret }].sort((a, b) => a.index - b.index);
+        });
+      } catch (e) {
+        const error = normalizeMeshCoreError(e, 'Failed to save channel to device');
+        console.warn(
+          `[useMeshcoreRuntime] setMeshcoreChannel error ${formatStructuredLogDetail({
+            errorMessage: error.message,
+            errorType: typeof e,
+            idx,
+            name,
+            secretLength: secret?.length,
+          })}`,
+        );
+        throw error;
+      }
+    },
+    [runMeshcoreUserTxWithLiveTcp],
+  );
 
-    try {
-      await withTimeout(connRef.current.setChannel(idx, name, secret), 10_000, 'setChannel');
-      setChannels((prev) => {
-        const next = prev.filter((c) => c.index !== idx);
-        return [...next, { index: idx, name, secret }].sort((a, b) => a.index - b.index);
-      });
-    } catch (e) {
-      const error = normalizeMeshCoreError(e, 'Failed to save channel to device');
-      console.warn(
-        `[useMeshcoreRuntime] setMeshcoreChannel error ${formatStructuredLogDetail({
-          errorMessage: error.message,
-          errorType: typeof e,
-          idx,
-          name,
-          secretLength: secret?.length,
-        })}`,
-      );
-      throw error;
-    }
-  }, []);
-
-  const deleteMeshcoreChannel = useCallback(async (idx: number) => {
-    if (!connRef.current) return;
-    try {
-      await connRef.current.deleteChannel(idx);
-      setChannels((prev) => prev.filter((c) => c.index !== idx));
-    } catch (e) {
-      console.warn('[useMeshcoreRuntime] deleteMeshcoreChannel error ' + errLikeToLogString(e));
-    }
-  }, []);
+  const deleteMeshcoreChannel = useCallback(
+    async (idx: number) => {
+      try {
+        await runMeshcoreUserTxWithLiveTcp(async () => {
+          const liveConn = connRef.current;
+          if (!liveConn) {
+            throw new Error('Not connected to radio');
+          }
+          const work = liveConn.deleteChannel(idx);
+          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+            trackMeshcoreTcpUserTxSend(work);
+          }
+          await work;
+        });
+        setChannels((prev) => prev.filter((c) => c.index !== idx));
+      } catch (e) {
+        console.warn('[useMeshcoreRuntime] deleteMeshcoreChannel error ' + errLikeToLogString(e));
+      }
+    },
+    [runMeshcoreUserTxWithLiveTcp],
+  );
 
   const importContacts = useCallback(async (): Promise<{
     imported: number;
@@ -6778,7 +7064,11 @@ export function useMeshcoreRuntime() {
 
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {
-      if (!connRef.current) {
+      if (
+        !connRef.current &&
+        !isMeshcoreTcpSoftApDeadAccepted() &&
+        !meshcoreTcpBridgeDeadRef.current
+      ) {
         throw new Error('Not connected to radio');
       }
       const parsed = reactionGlyphFromPicker(glyph);
@@ -6800,7 +7090,6 @@ export function useMeshcoreRuntime() {
         : null;
       const tapbackText =
         openReactionWire ?? buildMeshcoreOutboundTapbackWire(targetName, parsed.glyph);
-      const conn = connRef.current;
       const me = myNodeNumRef.current;
 
       const publishTapback = (tapbackMsg: ChatMessage) => {
@@ -6816,8 +7105,15 @@ export function useMeshcoreRuntime() {
             'Cannot send reaction: no encryption key for this contact. Wait for a full contact exchange, refresh contacts, or remove name-only stubs.',
           );
         }
-        // Tapbacks are fire-and-forget; no ACK tracking or status UI for reactions
-        await conn.sendTextMessage(pubKey, tapbackText);
+        await runMeshcoreUserTxWithLiveTcp(async () => {
+          const liveConn = connRef.current;
+          if (!liveConn) throw new Error('Not connected to radio');
+          const work = liveConn.sendTextMessage(pubKey, tapbackText);
+          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+            trackMeshcoreTcpUserTxSend(work);
+          }
+          await work;
+        });
         markMeshcoreCompanionTx();
         const tapbackTs = Date.now();
         const tapbackMsg: ChatMessage = {
@@ -6839,8 +7135,15 @@ export function useMeshcoreRuntime() {
             : channel === -1
               ? 0
               : channel;
-        // Tapbacks are fire-and-forget; no ACK tracking or status UI for reactions
-        await conn.sendChannelTextMessage(outboundChannel, tapbackText);
+        await runMeshcoreUserTxWithLiveTcp(async () => {
+          const liveConn = connRef.current;
+          if (!liveConn) throw new Error('Not connected to radio');
+          const work = liveConn.sendChannelTextMessage(outboundChannel, tapbackText);
+          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+            trackMeshcoreTcpUserTxSend(work);
+          }
+          await work;
+        });
         markMeshcoreCompanionTx();
         publishTapback({
           sender_id: me,
@@ -6854,7 +7157,7 @@ export function useMeshcoreRuntime() {
         });
       }
     },
-    [addMessage, readMeshcoreMessages, selfInfo?.name],
+    [addMessage, readMeshcoreMessages, runMeshcoreUserTxWithLiveTcp, selfInfo?.name],
   );
 
   // ─── MeshCore Device Time ────────────────────────────────────────
@@ -7480,9 +7783,11 @@ export function useMeshcoreRuntime() {
         deviceConfigured: meshcoreDeviceConfiguredRef.current,
         initConnInFlight: meshcoreInitConnInFlightRef.current,
       });
-      // SoftAP-accepted dead bridge: flood advert / outbox write-fail must not reconnect-loop.
+      // SoftAP-accepted dead bridge: flood advert / outbox / intentional SoftAP reopen
+      // tcp.disconnect must not reconnect-loop (ipc or write). SoftAP user-TX reopen-in-flight
+      // must also stay quiet (accepted cleared mid-open; FIN must not flash connectionLoss).
       const softApAccepted = isMeshcoreTcpSoftApDeadAccepted();
-      const suppressWriteLost = softApAccepted && source === 'write';
+      const softApUserTxReopen = meshcoreSoftApUserTxReopenInFlightRef.current;
       if (defer) {
         meshcoreDeferredReconnectRef.current = true;
         // Latch SoftAP-accepted as soon as configured+deferred so flood advert cannot
@@ -7497,9 +7802,18 @@ export function useMeshcoreRuntime() {
         );
         return;
       }
-      if (suppressWriteLost) {
+      if (softApAccepted || softApUserTxReopen) {
+        if (softApUserTxReopen) {
+          setMeshcoreTcpSoftApDeadAccepted(true);
+        }
         console.debug(
-          '[useMeshcoreRuntime] TCP write-dead on SoftAP-accepted dead bridge — keep configured',
+          softApUserTxReopen
+            ? source === 'write'
+              ? '[useMeshcoreRuntime] TCP write-dead during SoftAP user-TX reopen — keep configured'
+              : '[useMeshcoreRuntime] TCP closed during SoftAP user-TX reopen — keep configured'
+            : source === 'write'
+              ? '[useMeshcoreRuntime] TCP write-dead on SoftAP-accepted dead bridge — keep configured'
+              : '[useMeshcoreRuntime] TCP closed on SoftAP-accepted dead bridge — keep configured',
         );
         return;
       }
@@ -7530,6 +7844,7 @@ export function useMeshcoreRuntime() {
       connectAutomatic,
       getDestinationPubKey: (nodeId) => pubKeyMapRef.current.get(nodeId),
       ensureTcpLiveForUserTx,
+      runMeshcoreUserTxWithLiveTcp,
     });
     return () => registerMeshcoreSession(null);
   }, [
@@ -7540,6 +7855,7 @@ export function useMeshcoreRuntime() {
     finalizeDriverDisconnect,
     connectAutomatic,
     ensureTcpLiveForUserTx,
+    runMeshcoreUserTxWithLiveTcp,
   ]);
 
   return useMemo(

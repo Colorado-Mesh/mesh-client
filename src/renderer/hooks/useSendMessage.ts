@@ -148,8 +148,11 @@ export function useSendMessage(
       }
 
       if (!handle) {
-        console.warn('[useSendMessage] no handle for', identityId);
-        return;
+        // SoftAP dead bridge may still send via quiet reopen (handle recreated on open).
+        if (!(identity.protocol.type === 'meshcore' && isMeshcoreTcpSoftApDeadAccepted())) {
+          console.warn('[useSendMessage] no handle for', identityId);
+          return;
+        }
       }
 
       const isMeshtastic = identity.protocol.type === 'meshtastic';
@@ -203,6 +206,72 @@ export function useSendMessage(
       }
 
       const wireText = resolvedOutbound.wireText;
+
+      if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
+        void (async () => {
+          try {
+            const applySoftApSendResult = (res: { packetId?: number }): void => {
+              const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+              if (res.packetId != null && resolvedId !== provisionalId) {
+                renameMessageId(identityId, provisionalId, resolvedId);
+              }
+              updateMessageStatus(identityId, resolvedId, 'acked');
+              persistMeshcoreOutboundRow(
+                { ...record, id: resolvedId, status: 'acked' },
+                myNodeNum,
+                meshcoreSenderName,
+                'acked',
+                res.packetId != null ? res.packetId >>> 0 : undefined,
+              );
+            };
+            const runTx = tryGetMeshcoreSession()?.runMeshcoreUserTxWithLiveTcp;
+            if (!runTx) {
+              await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
+              const liveHandle = connectionDriver.getHandle(identityId);
+              if (!liveHandle) {
+                throw new Error('MeshCore TCP live reopen produced no handle');
+              }
+              const sendPromise = identity.protocol.sendMessage(liveHandle, {
+                text: wireText,
+                channelIndex,
+                destination,
+                destinationPubKey,
+                replyTo,
+              });
+              trackMeshcoreTcpUserTxSend(sendPromise);
+              applySoftApSendResult(await sendPromise);
+              return;
+            }
+            const res = await runTx(async () => {
+              const liveHandle = connectionDriver.getHandle(identityId);
+              if (!liveHandle) {
+                throw new Error('MeshCore TCP live reopen produced no handle');
+              }
+              return identity.protocol.sendMessage(liveHandle, {
+                text: wireText,
+                channelIndex,
+                destination,
+                destinationPubKey,
+                replyTo,
+              });
+            });
+            // Only after SoftAP retry loop resolves — not inside the parked op (latch-retry
+            // may re-run the send; premature acked would stick if attempt 2 failed).
+            applySoftApSendResult(res);
+          } catch (e: unknown) {
+            const errMsg = errLikeToLogString(e);
+            console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);
+            updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
+            persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+          }
+        })();
+        return;
+      }
+
+      if (!handle) {
+        console.warn('[useSendMessage] no handle for', identityId);
+        return;
+      }
 
       const finishSend = (
         sendHandle: NonNullable<typeof handle>,
@@ -279,25 +348,6 @@ export function useSendMessage(
           },
         );
       };
-
-      if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
-        void (async () => {
-          try {
-            await tryGetMeshcoreSession()?.ensureTcpLiveForUserTx?.();
-            const liveHandle = connectionDriver.getHandle(identityId);
-            if (!liveHandle) {
-              throw new Error('MeshCore TCP live reopen produced no handle');
-            }
-            finishSend(liveHandle, { trackForSoftApLiveWindow: true });
-          } catch (e: unknown) {
-            const errMsg = errLikeToLogString(e);
-            console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);
-            updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
-            persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
-          }
-        })();
-        return;
-      }
 
       finishSend(handle);
     },
