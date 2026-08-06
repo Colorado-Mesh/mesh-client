@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
+import { isReticulumUsbSerialRnodeInterface } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 
 import { ConfirmModal } from './ConfirmModal';
@@ -14,6 +15,7 @@ interface ReticulumInterfaceRow {
   id: string;
   type: string;
   enabled: boolean;
+  serial_port?: string | null;
 }
 
 export interface ReticulumAdminPanelProps {
@@ -55,10 +57,8 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
     void refreshInterfaces();
   }, [sidecarApiReady, refreshInterfaces]);
 
-  const rnodeInterfaceActive =
-    sidecarApiReady &&
-    interfaces.some((iface) => iface.enabled && iface.type.toLowerCase().includes('rnode'));
-  const flasherPortBlocked = rnodeInterfaceActive;
+  const flasherPortBlocked =
+    sidecarApiReady && interfaces.some((iface) => isReticulumUsbSerialRnodeInterface(iface));
 
   const handleFactoryReset = async () => {
     setResetInFlight(true);

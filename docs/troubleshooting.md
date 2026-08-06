@@ -1400,7 +1400,9 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 | **`ESP32_FLASH_STALLED`**   | ESP32-S3 flash wrote no progress for **60 s**                                        | Different USB cable/port; hold **BOOT (0)**, tap **RESET (EN)**, release **BOOT** for bootloader mode; flash again.                                                                                                                                                    |
 | **`NRF52_DFU_STALLED`**     | nRF52 DFU wrote no progress for **60 s**                                             | Same cable/port/bootloader steps as ESP32; confirm you selected the DFU-capable port.                                                                                                                                                                                  |
 
-**Before flashing**: stop the Reticulum stack or disable the RNode interface — the sidecar holds the serial port while the stack runs (`flasher.errors.blockedByStack`). After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.
+**Before flashing**: stop the Reticulum stack or disable the **USB serial** RNode interface — the sidecar holds that port while the stack runs (`flasher.errors.blockedByStack`). Enabled BLE or Wi‑Fi RNodes do not block the USB flasher. After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.
+
+**Provision / Set firmware hash**: Flash success unlocks Provision for the rest of the app session (survives leaving and returning to Admin). Changing product, model, or firmware file clears that unlock. If EEPROM is locked with a bad checksum, wipe EEPROM first (`PROVISION_WIPE_REQUIRED`). If Provision reports success but Set hash still says not provisioned, power-cycle and retry — or wipe and provision again (`PROVISION_VERIFY_FAILED`).
 
 ### Reticulum Remote transfer fails or `path_constrained`
 

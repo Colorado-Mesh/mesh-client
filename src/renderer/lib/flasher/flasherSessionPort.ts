@@ -7,6 +7,7 @@ let sessionPortId: string | null = null;
 /** Web Serial handle from the last flash picker / requestPort (object identity, not portId). */
 let sessionSerialPort: SerialPort | null = null;
 let lastFlashCompletedAt: number | null = null;
+let provisionCompleted = false;
 
 export function setFlasherSessionPortId(portId: string): void {
   sessionPortId = portId;
@@ -45,10 +46,27 @@ export function hasFlasherSessionPort(): boolean {
 export function clearFlasherFlashSession(): void {
   sessionSerialPort = null;
   lastFlashCompletedAt = null;
+  provisionCompleted = false;
 }
 
 export function markFlasherFlashCompleted(): void {
   lastFlashCompletedAt = Date.now();
+}
+
+export function hasFlasherFlashCompleted(): boolean {
+  return lastFlashCompletedAt != null;
+}
+
+export function markFlasherProvisionCompleted(): void {
+  provisionCompleted = true;
+}
+
+export function hasFlasherProvisionCompleted(): boolean {
+  return provisionCompleted;
+}
+
+export function clearFlasherProvisionCompleted(): void {
+  provisionCompleted = false;
 }
 
 /** Milliseconds to wait so RNode firmware can boot after an ESP32 flash. */

@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Geen seriële USB-poorten gevonden. Sluit uw bord aan via USB en probeer het opnieuw.",
       "rnodeCommandTimeout": "Het apparaat reageert niet meer via serieel. Sluit andere apps die dezelfde seriële poort gebruiken, wacht tot het bord klaar is met opstarten en probeer het opnieuw.",
       "esp32FlashStalled": "Firmwareoverdracht vastgelopen zonder voortgang. Probeer een andere USB-kabel of poort, ga naar de bootloader-modus (houd BOOT ingedrukt, tik op RESET) en flash opnieuw.",
-      "unknown": "Er is een onverwachte fout opgetreden."
+      "unknown": "Er is een onverwachte fout opgetreden.",
+      "provisionWipeRequired": "EEPROM is vergrendeld met een ongeldige identiteit. Veeg eerst EEPROM af en daarna opnieuw Provision.",
+      "provisionVerifyFailed": "Voorziening schrijft voltooid, maar het apparaat rapporteert nog steeds een niet-voorziene EEPROM. Schakel het bord in, wacht op opstarten en probeer het opnieuw — of veeg eerst EEPROM af."
     },
     "selectSerialPort": "Seriële poort selecteren",
     "noSerialPorts": "Geen USB seriële poorten gevonden.",

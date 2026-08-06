@@ -1806,7 +1806,9 @@
       "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB. Připojte desku přes USB a zkuste to znovu.",
       "rnodeCommandTimeout": "Zařízení přestalo reagovat přes sériový port. Zavřete ostatní aplikace, které používají stejný sériový port, počkejte, až deska dokončí bootování, a zkuste to znovu.",
       "esp32FlashStalled": "Přenos firmwaru se zastavil bez pokroku. Zkuste jiný USB kabel nebo port, přejděte do režimu bootloaderu (podržte BOOT, klepněte RESET) a flashujte znovu.",
-      "unknown": "Nastala neočekávaná chyba."
+      "unknown": "Nastala neočekávaná chyba.",
+      "provisionWipeRequired": "EEPROM je uzamčena s neplatnou identitou. Nejprve otřete EEPROM a poté znovu vytvořte rezervu.",
+      "provisionVerifyFailed": "Zápisy rezervy dokončeny, ale zařízení stále hlásí nezabezpečenou EEPROM. Napájejte desku, počkejte na spuštění a zkuste to znovu — nebo nejprve vymažte EEPROM."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",

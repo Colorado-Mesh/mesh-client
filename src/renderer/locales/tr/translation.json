@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Hiçbir USB seri bağlantı noktası bulunamadı. Anakartınızı USB üzerinden bağlayın ve tekrar deneyin.",
       "rnodeCommandTimeout": "Cihaz seri yanıt vermeyi durdurdu. Aynı seri portu kullanan diğer uygulamaları kapatın, kartın önyükleme işleminin bitmesini bekleyin ve yeniden deneyin.",
       "esp32FlashStalled": "Ürün yazılımı aktarımı ilerleme olmadan durdu. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (BOOT'a basılı tutun, RESET'e dokunun) ve yeniden flash yapın.",
-      "unknown": "Beklenmedik bir hata oluştu."
+      "unknown": "Beklenmedik bir hata oluştu.",
+      "provisionWipeRequired": "EEPROM geçersiz bir kimlikle kilitlendi. Önce EEPROM'u, ardından Provizyonu tekrar silin.",
+      "provisionVerifyFailed": "Provizyon yazma işlemi tamamlandı ancak cihaz hala provizyonsuz bir EEPROM bildiriyor. Kartı çalıştırın, önyükleme için bekleyin ve tekrar deneyin — veya önce EEPROM'u silin."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",

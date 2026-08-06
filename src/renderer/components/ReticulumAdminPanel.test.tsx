@@ -25,7 +25,9 @@ vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
 }));
 
 vi.mock('./flasher/RNodeFlasherSection', () => ({
-  RNodeFlasherSection: () => <div data-testid="flasher-mock" />,
+  RNodeFlasherSection: ({ portBlocked }: { portBlocked: boolean }) => (
+    <div data-testid="flasher-mock" data-port-blocked={String(portBlocked)} />
+  ),
 }));
 
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
@@ -36,6 +38,11 @@ import { ToastProvider } from './Toast';
 describe('ReticulumAdminPanel', () => {
   beforeEach(() => {
     refreshIdentity.mockReset();
+    vi.mocked(useReticulumSidecarApi).mockReturnValue({
+      sidecarUiRunning: true,
+      sidecarApiReady: true,
+      refreshIdentity,
+    } as unknown as ReturnType<typeof useReticulumSidecarApi>);
     window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({ interfaces: [] });
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.factoryReset = vi.fn().mockResolvedValue({ ok: true });
@@ -54,9 +61,16 @@ describe('ReticulumAdminPanel', () => {
     expect(screen.getByText('adminPanel.reticulumFactoryReset.button')).toBeInTheDocument();
   });
 
-  it('passes portBlocked to flasher when enabled RNode interface is active', async () => {
+  it('blocks flasher when enabled USB serial RNode interface is active', async () => {
     window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
-      interfaces: [{ id: '1', type: 'RNode', enabled: true }],
+      interfaces: [
+        {
+          id: '1',
+          type: 'RNode',
+          enabled: true,
+          serial_port: '/dev/tty.usbserial-7',
+        },
+      ],
     });
 
     render(
@@ -66,7 +80,30 @@ describe('ReticulumAdminPanel', () => {
     );
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
+      expect(screen.getByTestId('flasher-mock')).toHaveAttribute('data-port-blocked', 'true');
+    });
+  });
+
+  it('does not block flasher for enabled BLE RNode interfaces', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
+      interfaces: [
+        {
+          id: 'rnode-ble',
+          type: 'rnode',
+          enabled: true,
+          serial_port: 'ble://eccf2847-e1fd-3f5f-0811-064db1639a3d',
+        },
+      ],
+    });
+
+    render(
+      <ToastProvider>
+        <ReticulumAdminPanel connecting={false} onStartStack={async () => {}} />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('flasher-mock')).toHaveAttribute('data-port-blocked', 'false');
     });
   });
 

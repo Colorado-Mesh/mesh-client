@@ -37,6 +37,12 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'FLASHER_NO_SERIAL_PORTS') {
     return i18n.t('flasher.errors.noSerialPorts');
   }
+  if (message === 'PROVISION_WIPE_REQUIRED') {
+    return i18n.t('flasher.errors.provisionWipeRequired');
+  }
+  if (message === 'PROVISION_VERIFY_FAILED') {
+    return i18n.t('flasher.errors.provisionVerifyFailed');
+  }
   if (message.includes('MD5 of file does not match')) {
     return i18n.t('flasher.errors.flashMd5Mismatch');
   }

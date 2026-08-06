@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Nessuna porta seriale USB trovata. Collega la scheda tramite USB e riprova.",
       "rnodeCommandTimeout": "Il dispositivo ha smesso di rispondere in seriale. Chiudere le altre app che usano la stessa porta seriale, attendere il completamento dell'avvio della scheda e riprovare.",
       "esp32FlashStalled": "Trasferimento firmware bloccato senza progressi. Provare un altro cavo o porta USB, entrare in modalità bootloader (tenere premuto BOOT, toccare RESET) e riflashare.",
-      "unknown": "Si è verificato un errore imprevisto."
+      "unknown": "Si è verificato un errore imprevisto.",
+      "provisionWipeRequired": "La EEPROM è bloccata con un'identità non valida. Pulire prima la EEPROM, quindi eseguire nuovamente il provisioning.",
+      "provisionVerifyFailed": "Le scritture di provisioning sono terminate ma il dispositivo segnala ancora una EEPROM senza provisioning. Spegnere e riaccendere la scheda, attendere l'avvio e riprovare, oppure pulire prima la EEPROM."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",

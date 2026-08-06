@@ -1804,7 +1804,9 @@
       "noSerialPorts": "Tidak ditemukan port serial USB. Hubungkan papan Anda melalui USB dan coba lagi.",
       "rnodeCommandTimeout": "Perangkat berhenti merespons melalui serial. Tutup aplikasi lain yang menggunakan port serial yang sama, tunggu hingga papan selesai boot, lalu coba lagi.",
       "esp32FlashStalled": "Transfer firmware terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan flash lagi.",
-      "unknown": "Kesalahan tak terduga terjadi."
+      "unknown": "Kesalahan tak terduga terjadi.",
+      "provisionWipeRequired": "EEPROM dikunci dengan identitas yang tidak valid. Bersihkan EEPROM terlebih dahulu, kemudian Provision lagi.",
+      "provisionVerifyFailed": "Penyediaan penulisan selesai tetapi perangkat masih melaporkan EEPROM yang tidak disediakan. Putar daya papan, tunggu boot, dan coba lagi — atau bersihkan EEPROM terlebih dahulu."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",

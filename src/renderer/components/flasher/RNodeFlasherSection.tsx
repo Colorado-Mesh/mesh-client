@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,13 +15,20 @@ import {
 } from '@/renderer/lib/flasher/flasherSerial';
 import {
   clearFlasherFlashSession,
+  clearFlasherProvisionCompleted,
+  hasFlasherFlashCompleted,
+  hasFlasherProvisionCompleted,
   hasFlasherSessionPort,
   markFlasherFlashCompleted,
+  markFlasherProvisionCompleted,
   setFlasherSessionPortId,
   setFlasherSessionSerialPort,
 } from '@/renderer/lib/flasher/flasherSessionPort';
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
-import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
+import {
+  provisionEepromAndVerify,
+  setFirmwareHashFromDevice,
+} from '@/renderer/lib/flasher/provision';
 import {
   RNODE_BT_PAIRING_TIMEOUT_MS,
   RNODE_POST_EEPROM_SETTLE_MS,
@@ -70,11 +76,14 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const [flashing, setFlashing] = useState(false);
   const [flashProgress, setFlashProgress] = useState(0);
   const [esp32Syncing, setEsp32Syncing] = useState(false);
-  const [flashSucceeded, setFlashSucceeded] = useState(false);
-  const [provisionSucceeded, setProvisionSucceeded] = useState(false);
+  const [flashSucceeded, setFlashSucceeded] = useState(() => hasFlasherFlashCompleted());
+  const [provisionSucceeded, setProvisionSucceeded] = useState(() =>
+    hasFlasherProvisionCompleted(),
+  );
   const [hashSetSucceeded, setHashSetSucceeded] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [settingHash, setSettingHash] = useState(false);
+  const skipNextSelectionResetRef = useRef(true);
   const [pairingPin, setPairingPin] = useState<number | null>(null);
   const [pairingPending, setPairingPending] = useState(false);
   const pairingSessionRef = useRef(
@@ -139,6 +148,13 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
         : 'disabled';
 
   useEffect(() => {
+    // Mount / first paint: keep session flash/provision marks across Admin remount.
+    if (skipNextSelectionResetRef.current) {
+      skipNextSelectionResetRef.current = false;
+      setFlashSucceeded(hasFlasherFlashCompleted());
+      setProvisionSucceeded(hasFlasherProvisionCompleted());
+      return;
+    }
     setFlashSucceeded(false);
     setProvisionSucceeded(false);
     setHashSetSucceeded(false);
@@ -220,6 +236,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     setFlashSucceeded(false);
     setProvisionSucceeded(false);
     setHashSetSucceeded(false);
+    clearFlasherFlashSession();
     setFlashing(true);
     setFlashProgress(0);
     setEsp32Syncing(selectedProduct.platform === ROM.PLATFORM_ESP32);
@@ -286,7 +303,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   ]);
 
   const handleProvision = useCallback(async () => {
-    if (!flashSucceeded) {
+    if (!flashSucceeded && !hasFlasherFlashCompleted()) {
       showStatus(t('flasher.provisionRequiresFlash'), true);
       return;
     }
@@ -301,28 +318,44 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     clearStatus();
     setProvisioning(true);
     showStatus(t('flasher.provisioning'));
+    console.warn('[RNodeFlasher] provision start', {
+      product: selectedProduct.catalogKey,
+      model: selectedModel.id,
+    });
     try {
-      await runWithRNode(async (rnode) => {
-        const rom = await rnode.getRomAsObject();
-        const details = rom.parse();
-        if (details?.is_provisioned) {
+      const ok = await runWithRNode(async (rnode) => {
+        const result = await provisionEepromAndVerify(rnode, {
+          product: selectedProduct,
+          model: selectedModel,
+        });
+        if (result === 'already_provisioned') {
+          markFlasherProvisionCompleted();
           setProvisionSucceeded(true);
           showStatus(t('flasher.provisionAlreadyDone'));
+          console.warn('[RNodeFlasher] provision already done', {
+            product: selectedProduct.catalogKey,
+          });
           return;
         }
-        await provisionEeprom(rnode, { product: selectedProduct, model: selectedModel });
         await new Promise((resolve) => setTimeout(resolve, RNODE_POST_EEPROM_SETTLE_MS));
         await rnode.reset();
+        markFlasherProvisionCompleted();
         setProvisionSucceeded(true);
         showStatus(t('flasher.provisionSuccess'));
+        console.warn('[RNodeFlasher] provision success', {
+          product: selectedProduct.catalogKey,
+        });
       });
+      if (!ok) {
+        console.error('[RNodeFlasher] provision failed');
+      }
     } finally {
       setProvisioning(false);
     }
   }, [flashSucceeded, runWithRNode, selectedModel, selectedProduct, showStatus, t, clearStatus]);
 
   const handleSetFirmwareHash = useCallback(async () => {
-    if (!provisionSucceeded) {
+    if (!provisionSucceeded && !hasFlasherProvisionCompleted()) {
       showStatus(t('flasher.firmwareHashNotProvisioned'), true);
       return;
     }
@@ -330,12 +363,14 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     clearStatus();
     setSettingHash(true);
     showStatus(t('flasher.settingFirmwareHash'));
+    console.warn('[RNodeFlasher] firmware hash start');
     try {
-      await runWithRNode(async (rnode) => {
+      const ok = await runWithRNode(async (rnode) => {
         const rom = await rnode.getRomAsObject();
         const details = rom.parse();
         if (!details?.is_provisioned) {
           showStatus(t('flasher.firmwareHashNotProvisioned'), true);
+          console.error('[RNodeFlasher] firmware hash aborted — not provisioned');
           return;
         }
         await setFirmwareHashFromDevice(rnode);
@@ -343,7 +378,11 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
         await rnode.reset();
         setHashSetSucceeded(true);
         showStatus(t('flasher.firmwareHashSuccess'));
+        console.warn('[RNodeFlasher] firmware hash success');
       });
+      if (!ok) {
+        console.error('[RNodeFlasher] firmware hash failed');
+      }
     } finally {
       setSettingHash(false);
     }
@@ -355,6 +394,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     await runWithRNode(async (rnode) => {
       await rnode.wipeRom();
       await rnode.reset();
+      clearFlasherProvisionCompleted();
       setProvisionSucceeded(false);
       setHashSetSucceeded(false);
       showStatus(t('flasher.wipeEepromSuccess'));

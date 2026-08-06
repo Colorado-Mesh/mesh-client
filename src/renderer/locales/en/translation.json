@@ -1890,7 +1890,9 @@
       "flashTransferTooSmall": "Firmware transfer did not complete — almost no data was written. Confirm you selected the correct USB port and that the board entered bootloader mode.",
       "flashMd5Mismatch": "Firmware verification failed after writing. Try again with a different USB cable or port; if it persists, re-download the firmware zip.",
       "rnodeCommandTimeout": "The device stopped responding over serial. Unplug other apps using the port, wait for the board to finish booting, then retry.",
-      "esp32FlashStalled": "Firmware transfer stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and flash again."
+      "esp32FlashStalled": "Firmware transfer stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and flash again.",
+      "provisionWipeRequired": "EEPROM is locked with an invalid identity. Wipe EEPROM first, then Provision again.",
+      "provisionVerifyFailed": "Provision writes finished but the device still reports an unprovisioned EEPROM. Power-cycle the board, wait for boot, and try again — or wipe EEPROM first."
     }
   },
   "gamesPanel": {

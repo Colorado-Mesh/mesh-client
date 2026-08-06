@@ -59,3 +59,21 @@ export function inferReticulumRnodeTransport(
   }
   return 'serial';
 }
+
+/**
+ * True when an enabled RNode interface is using USB serial (holds the flasher port).
+ * BLE and Wi‑Fi (`ble://` / `tcp://`) RNodes must not block Admin USB flashing.
+ */
+export function isReticulumUsbSerialRnodeInterface(iface: {
+  type: string;
+  enabled: boolean;
+  serial_port?: string | null;
+}): boolean {
+  if (!iface.enabled) {
+    return false;
+  }
+  if (!iface.type.toLowerCase().includes('rnode')) {
+    return false;
+  }
+  return inferReticulumRnodeTransport(iface.serial_port) === 'serial';
+}
