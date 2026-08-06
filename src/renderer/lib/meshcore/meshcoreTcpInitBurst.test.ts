@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isMeshcoreTcpTransportDeadError } from '../bleConnectErrors';
 import {
   clearMeshcoreSoftApPendingUserTx,
+  decideSoftApUserTxAfterEnsureFailure,
   hasMeshcoreSoftApPendingUserTx,
   isMeshcoreTcpBurstDeadBridge,
   isMeshcoreTcpSoftApDeadAccepted,
@@ -15,6 +16,7 @@ import {
   setMeshcoreSoftApPendingUserTx,
   setMeshcoreTcpSoftApDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
+  settleSoftApPendingResult,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
   throwIfMeshcoreTcpBridgeDiedDuringSoftApOp,
   trackMeshcoreTcpUserTxSend,
@@ -269,6 +271,53 @@ describe('throwIfMeshcoreTcpBridgeDiedDuringSoftApOp', () => {
     expect(() => {
       throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(true, false);
     }).not.toThrow();
+  });
+});
+
+describe('decideSoftApUserTxAfterEnsureFailure', () => {
+  it('returns the parked value when the op already fulfilled (late latch — no double-send)', () => {
+    expect(
+      decideSoftApUserTxAfterEnsureFailure({
+        opSettlement: { status: 'fulfilled', value: 42 },
+      }),
+    ).toEqual({ action: 'return', value: 42 });
+  });
+
+  it('retries only when the parked op rejected with transport-dead', () => {
+    expect(
+      decideSoftApUserTxAfterEnsureFailure({
+        opSettlement: {
+          status: 'rejected',
+          reason: new Error(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP),
+        },
+      }),
+    ).toEqual({ action: 'retry' });
+  });
+
+  it('rethrows non-transport parked-op failures without retry', () => {
+    const err = new Error('channel name too long');
+    expect(
+      decideSoftApUserTxAfterEnsureFailure({
+        opSettlement: { status: 'rejected', reason: err },
+      }),
+    ).toEqual({ action: 'throw', error: err });
+  });
+});
+
+describe('settleSoftApPendingResult', () => {
+  it('reports fulfilled and rejected settlements', async () => {
+    await expect(settleSoftApPendingResult(Promise.resolve('ok'))).resolves.toEqual({
+      status: 'fulfilled',
+      value: 'ok',
+    });
+    const boom = new Error('meshcore:tcp-write: no active socket');
+    const rejected = Promise.reject(boom);
+    // Attach early so vitest does not flag an unhandled rejection before settle.
+    void rejected.catch(() => undefined);
+    await expect(settleSoftApPendingResult(rejected)).resolves.toEqual({
+      status: 'rejected',
+      reason: boom,
+    });
   });
 });
 

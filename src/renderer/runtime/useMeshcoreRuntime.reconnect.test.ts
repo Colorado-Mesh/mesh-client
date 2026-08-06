@@ -396,6 +396,12 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
     // SoftAP retry must re-latch accepted so attempt 2 stays on quiet reopen.
     expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpSoftApDeadAccepted(true)');
+    // Late latch after Ok: return fulfilled parked result — do not re-park (double-send).
+    expect(RUNTIME_SOURCE).toContain('decideSoftApUserTxAfterEnsureFailure');
+    expect(RUNTIME_SOURCE).toContain('settleSoftApPendingResult');
+    expect(RUNTIME_SOURCE).toMatch(
+      /decideSoftApUserTxAfterEnsureFailure\([\s\S]*?decision\.action === 'return'[\s\S]*?return decision\.value/,
+    );
     const softApFirstRpcIdx = RUNTIME_SOURCE.indexOf(
       'SoftAP user-TX reopen — first-RPC path (skip getSelfInfo)',
     );

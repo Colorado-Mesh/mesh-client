@@ -271,8 +271,9 @@ export const MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP = 'meshcore:tcp-write: no
 
 /**
  * SoftAP first-RPC: if the write-dead latch flipped during the parked user op, throw a
- * transport-dead error so `runMeshcoreUserTxWithLiveTcp` retries once (meshcore.js may have
- * already resolved Ok while the FIN landed).
+ * transport-dead error so ensure's live wait rejects. {@link runMeshcoreUserTxWithLiveTcp}
+ * must still return a fulfilled parked result (no re-run) — late latch after Ok must not
+ * double-send chat.
  */
 export function throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(
   bridgeDeadBefore: boolean,
@@ -281,4 +282,40 @@ export function throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(
   if (bridgeDeadAfter && !bridgeDeadBefore) {
     throw new Error(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP);
   }
+}
+
+export type SoftApOpSettlement<T> =
+  { status: 'fulfilled'; value: T } | { status: 'rejected'; reason: unknown };
+
+/** Settle a parked SoftAP result without throwing (for ensure-failure decision). */
+export async function settleSoftApPendingResult<T>(
+  resultPromise: Promise<T>,
+): Promise<SoftApOpSettlement<T>> {
+  try {
+    return { status: 'fulfilled', value: await resultPromise };
+  } catch (reason: unknown) {
+    // catch-no-log-ok settle helper returns rejected status to caller for SoftAP retry decision
+    return { status: 'rejected', reason };
+  }
+}
+
+export type SoftApEnsureFailureDecision<T> =
+  { action: 'return'; value: T } | { action: 'retry' } | { action: 'throw'; error: unknown };
+
+/**
+ * After SoftAP `ensureTcpLiveForUserTx` fails: never re-run a parked op that already
+ * completed (would double-send). Retry only when the op never succeeded and rejected
+ * with a transport-dead error (including clear-with-ensure when ensure was transport-dead).
+ */
+export function decideSoftApUserTxAfterEnsureFailure<T>(opts: {
+  opSettlement: SoftApOpSettlement<T>;
+}): SoftApEnsureFailureDecision<T> {
+  if (opts.opSettlement.status === 'fulfilled') {
+    return { action: 'return', value: opts.opSettlement.value };
+  }
+  const opErr = opts.opSettlement.reason;
+  if (isMeshcoreTcpTransportDeadError(opErr)) {
+    return { action: 'retry' };
+  }
+  return { action: 'throw', error: opErr };
 }

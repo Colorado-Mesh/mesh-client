@@ -169,6 +169,7 @@ import {
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
   clearMeshcoreSoftApPendingUserTx,
+  decideSoftApUserTxAfterEnsureFailure,
   isMeshcoreTcpBurstDeadBridge,
   isMeshcoreTcpSoftApDeadAccepted,
   MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS,
@@ -179,6 +180,7 @@ import {
   setMeshcoreSoftApPendingUserTx,
   setMeshcoreTcpSoftApDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
+  settleSoftApPendingResult,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
   throwIfMeshcoreTcpBridgeDiedDuringSoftApOp,
   trackMeshcoreTcpUserTxSend,
@@ -3774,15 +3776,14 @@ export function useMeshcoreRuntime() {
           clearMeshcoreSoftApPendingUserTx(
             e instanceof Error ? e : new Error(errLikeToLogString(e) || 'SoftAP TX failed'),
           );
-          lastErr = e;
-          try {
-            await resultPromise;
-          } catch (opErr: unknown) {
-            lastErr = opErr;
-            if (!isMeshcoreTcpTransportDeadError(opErr)) throw opErr;
-            continue;
-          }
-          if (!isMeshcoreTcpTransportDeadError(e)) throw e;
+          // Late write-dead latch after meshcore.js Ok: resultPromise is already fulfilled —
+          // return that value. Re-parking would double-send chat.
+          const opSettlement = await settleSoftApPendingResult(resultPromise);
+          const decision = decideSoftApUserTxAfterEnsureFailure({ opSettlement });
+          if (decision.action === 'return') return decision.value;
+          if (decision.action === 'throw') throw decision.error;
+          lastErr = opSettlement.status === 'rejected' ? opSettlement.reason : e;
+          continue;
         }
       }
       throw lastErr;
