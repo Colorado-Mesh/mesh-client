@@ -255,6 +255,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     hostLink: {
       probeHttpRtt: async () => null,
       probeTcpRtt: async () => null,
+      getSessionMeter: async () => null,
     },
     meshtastic: {
       tcp: {

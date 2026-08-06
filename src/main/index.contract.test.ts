@@ -389,6 +389,18 @@ describe('Host link quality IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("webContents.send('noble-ble-link-rssi'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeHttpRtt'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeTcpRtt'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:getSessionMeter'");
+  });
+
+  it('wires live-session meters on both Meshtastic and MeshCore TCP bridges', () => {
+    expect(INDEX_SOURCE).toContain("resetLiveSessionMeter('meshtastic')");
+    expect(INDEX_SOURCE).toContain("resetLiveSessionMeter('meshcore')");
+    expect(INDEX_SOURCE).toContain("noteLiveSessionWrite('meshtastic')");
+    expect(INDEX_SOURCE).toContain("noteLiveSessionWrite('meshcore')");
+    expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshtastic')");
+    expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshcore')");
+    expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshtastic')");
+    expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshcore')");
   });
 });
 
@@ -399,6 +411,7 @@ describe('Host link quality preload surface (source contract)', () => {
     expect(PRELOAD_SOURCE).toContain('hostLink:');
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeHttpRtt'");
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeTcpRtt'");
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:getSessionMeter'");
   });
 });
 

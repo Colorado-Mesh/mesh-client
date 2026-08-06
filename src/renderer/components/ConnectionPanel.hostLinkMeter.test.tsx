@@ -116,9 +116,9 @@ describe('ConnectionPanel host link meter', () => {
     expect(screen.queryByText('Link quality')).not.toBeInTheDocument();
   });
 
-  it('shows Link quality for MeshCore TCP/IP on linux', async () => {
+  it('shows Link quality for MeshCore TCP/IP on linux via session meter', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(88);
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 88 });
     render(
       <ConnectionPanel
         state={{
@@ -137,13 +137,15 @@ describe('ConnectionPanel host link meter', () => {
     );
     expect(screen.getByText('Link quality')).toBeInTheDocument();
     await waitFor(() => {
-      expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalled();
+      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshcore');
+      expect(screen.getByText('88 ms')).toBeInTheDocument();
     });
+    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
   });
 
-  it('shows Link quality for Meshtastic TCP', async () => {
+  it('shows Link quality for Meshtastic TCP via session meter', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
-    vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(120);
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 120 });
     render(
       <ConnectionPanel
         state={{
@@ -162,7 +164,9 @@ describe('ConnectionPanel host link meter', () => {
     );
     expect(screen.getByText('Link quality')).toBeInTheDocument();
     await waitFor(() => {
-      expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalled();
+      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshtastic');
+      expect(screen.getByText('120 ms')).toBeInTheDocument();
     });
+    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
   });
 });

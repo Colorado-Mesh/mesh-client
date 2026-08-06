@@ -3,6 +3,7 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { parseMeshtasticTcpAddress } from './parseMeshtasticTcpAddress';
 import { parseTcpAddress } from './parseTcpAddress';
+import type { ConnectionType, MeshProtocol } from './types';
 
 /** Poll interval for host↔radio link quality (BLE RSSI / IP RTT). */
 export const HOST_LINK_QUALITY_POLL_MS = 4 * MS_PER_SECOND;
@@ -53,6 +54,9 @@ export interface ParsedTcpProbeTarget {
  * Parse a TCP probe target.
  * - `meshtastic`: default port 4403 (`parseMeshtasticTcpAddress`)
  * - `meshcore`: default port 5000 (`parseTcpAddress`)
+ *
+ * For Reticulum hubs / RMAP only. Do **not** use against Meshtastic/MeshCore live
+ * session ports — those use {@link probeSessionMeter} (competing connect causes RST).
  */
 export function parseTcpProbeTarget(
   address: string,
@@ -68,6 +72,20 @@ export function parseTcpProbeTarget(
     // catch-no-log-ok invalid address for link-quality probe
     return null;
   }
+}
+
+/**
+ * True when the Connection panel transport is a live TCP session socket in main
+ * (`meshtastic:tcp-*` / `meshcore:tcp-*`). MeshCore SoftAP is stored as `http`
+ * (legacy enum) but is TCP on the wire.
+ */
+export function isLiveTcpSession(
+  protocol: MeshProtocol,
+  connectionType: ConnectionType | null,
+): boolean {
+  if (protocol === 'meshtastic' && connectionType === 'tcp') return true;
+  if (protocol === 'meshcore' && connectionType === 'http') return true;
+  return false;
 }
 
 /** Probe Meshtastic HTTP `/json/report` RTT via main process. */
@@ -88,7 +106,11 @@ export async function probeHttpLinkRttMs(httpAddress: string): Promise<number | 
   }
 }
 
-/** Probe TCP connect RTT via main process (connect then destroy). */
+/**
+ * Probe TCP connect RTT via main process (connect then destroy).
+ * Reticulum hub / RMAP targets only — never Meshtastic/MeshCore live sessions
+ * (use {@link probeSessionMeter}).
+ */
 export async function probeTcpLinkRttMs(
   address: string,
   protocol: 'meshtastic' | 'meshcore' = 'meshtastic',
@@ -103,6 +125,26 @@ export async function probeTcpLinkRttMs(
   } catch (err) {
     console.debug(
       '[hostLinkQuality] TCP RTT probe failed:',
+      err instanceof Error ? err.message : String(err),
+    );
+    return null;
+  }
+}
+
+/** Read passive write→data EWMA from the live TCP session meter in main. */
+export async function probeSessionMeter(
+  protocol: 'meshtastic' | 'meshcore',
+): Promise<number | null> {
+  const api = window.electronAPI.hostLink.getSessionMeter;
+  if (typeof api !== 'function') return null;
+  try {
+    const snap = await api(protocol);
+    if (snap == null) return null;
+    const rtt = snap.rttMs;
+    return typeof rtt === 'number' && Number.isFinite(rtt) ? rtt : null;
+  } catch (err) {
+    console.debug(
+      '[hostLinkQuality] session meter read failed:',
       err instanceof Error ? err.message : String(err),
     );
     return null;

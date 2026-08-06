@@ -121,6 +121,13 @@ import {
 } from './linuxWebBluetoothDeviceSelection';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import {
+  clearLiveSessionMeter,
+  noteLiveSessionData,
+  noteLiveSessionWrite,
+  resetLiveSessionMeter,
+  snapshotLiveSessionMeter,
+} from './live-session-meter';
+import {
   clearLogFile,
   exportLogTo,
   flushLogBeforeQuit,
@@ -6123,6 +6130,7 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
       // meshcore:tcp-disconnected (renderer reconnect is driven by that event — #792).
       const prev = meshcoreTcpSocket;
       meshcoreTcpSocket = null;
+      clearLiveSessionMeter('meshcore');
       prev.destroy();
     }
     const socketHost = formatHostForSocket(host);
@@ -6135,7 +6143,10 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     const connectTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
+      if (meshcoreTcpSocket === socket) {
+        meshcoreTcpSocket = null;
+        clearLiveSessionMeter('meshcore');
+      }
       socket.destroy();
       reject(new Error('meshcore:tcp-connect: connection timeout'));
     }, MESHCORE_TCP_CONNECT_TIMEOUT_MS);
@@ -6145,6 +6156,7 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
       logDeviceConnection(
         `transport=tcp stack=meshcore host=${sanitizeLogMessage(socketHost)} port=${p}`,
       );
+      resetLiveSessionMeter('meshcore');
       if (!settled) {
         settled = true;
         resolve();
@@ -6166,6 +6178,7 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
         }
         return;
       }
+      noteLiveSessionData('meshcore');
       mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
@@ -6187,6 +6200,7 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
       // (renderer reconnect is driven by this event — see #792).
       if (meshcoreTcpSocket === socket) {
         meshcoreTcpSocket = null;
+        clearLiveSessionMeter('meshcore');
         mainWindow?.webContents.send('meshcore:tcp-disconnected');
       }
     });
@@ -6229,6 +6243,7 @@ ipcMain.handle('meshcore:tcp-write', (event, bytes: number[]) => {
         console.error('[IPC] meshcore:tcp-write error:', sanitizeLogMessage(err.message));
         reject(err);
       } else {
+        noteLiveSessionWrite('meshcore');
         resolve();
       }
     });
@@ -6242,6 +6257,7 @@ ipcMain.handle('meshcore:tcp-disconnect', (event) => {
     // Null before destroy so this teardown close is not reported as a live link drop.
     const prev = meshcoreTcpSocket;
     meshcoreTcpSocket = null;
+    clearLiveSessionMeter('meshcore');
     prev.destroy();
   }
 });
@@ -6272,6 +6288,7 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
       // meshtastic:tcp-disconnected (renderer reconnect is driven by that event — #792).
       const prev = meshtasticTcpSocket;
       meshtasticTcpSocket = null;
+      clearLiveSessionMeter('meshtastic');
       prev.destroy();
     }
     const socketHost = formatHostForSocket(host);
@@ -6282,7 +6299,10 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
     const connectTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      if (meshtasticTcpSocket === socket) {
+        meshtasticTcpSocket = null;
+        clearLiveSessionMeter('meshtastic');
+      }
       socket.destroy();
       reject(new Error('meshtastic:tcp-connect: connection timeout'));
     }, MESHTASTIC_TCP_CONNECT_TIMEOUT_MS);
@@ -6292,6 +6312,7 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
       logDeviceConnection(
         `transport=tcp stack=meshtastic host=${sanitizeLogMessage(socketHost)} port=${p}`,
       );
+      resetLiveSessionMeter('meshtastic');
       if (!settled) {
         settled = true;
         resolve();
@@ -6313,6 +6334,7 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
         }
         return;
       }
+      noteLiveSessionData('meshtastic');
       mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
@@ -6323,6 +6345,7 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
       // (renderer reconnect is driven by this event — see #792).
       if (meshtasticTcpSocket === socket) {
         meshtasticTcpSocket = null;
+        clearLiveSessionMeter('meshtastic');
         mainWindow?.webContents.send('meshtastic:tcp-disconnected');
       }
     });
@@ -6365,6 +6388,7 @@ ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
         console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
         reject(err);
       } else {
+        noteLiveSessionWrite('meshtastic');
         resolve();
       }
     });
@@ -6378,6 +6402,7 @@ ipcMain.handle('meshtastic:tcp-disconnect', (event) => {
     // Null before destroy so this teardown close is not reported as a live link drop.
     const prev = meshtasticTcpSocket;
     meshtasticTcpSocket = null;
+    clearLiveSessionMeter('meshtastic');
     prev.destroy();
   }
 });
@@ -6514,6 +6539,14 @@ ipcMain.handle('hostLink:probeTcpRtt', async (event, host: unknown, port: unknow
     throw new Error('Invalid port');
   }
   return probeTcpRttMs(host, port as number);
+});
+
+ipcMain.handle('hostLink:getSessionMeter', (event, protocol: unknown) => {
+  assertIpcSender(event, 'hostLink:getSessionMeter');
+  if (protocol !== 'meshtastic' && protocol !== 'meshcore') {
+    throw new Error('Invalid protocol');
+  }
+  return snapshotLiveSessionMeter(protocol);
 });
 
 ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {

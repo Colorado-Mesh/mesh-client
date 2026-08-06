@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { probeHttpLinkRttMs, probeTcpLinkRttMs } from '../lib/hostLinkQuality';
+import { probeHttpLinkRttMs, probeSessionMeter, probeTcpLinkRttMs } from '../lib/hostLinkQuality';
 
-describe('probeHttpLinkRttMs / probeTcpLinkRttMs', () => {
+describe('probeHttpLinkRttMs / probeTcpLinkRttMs / probeSessionMeter', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.hostLink.probeHttpRtt).mockResolvedValue(33);
     vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(90);
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 55 });
   });
 
   afterEach(() => {
@@ -40,5 +41,27 @@ describe('probeHttpLinkRttMs / probeTcpLinkRttMs', () => {
   it('returns null when TCP probe returns non-finite', async () => {
     vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(Number.NaN);
     await expect(probeTcpLinkRttMs('10.0.0.8', 'meshtastic')).resolves.toBeNull();
+  });
+
+  it('reads session meter via getSessionMeter', async () => {
+    await expect(probeSessionMeter('meshtastic')).resolves.toBe(55);
+    expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshtastic');
+  });
+
+  it('returns null when session meter is absent', async () => {
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue(null);
+    await expect(probeSessionMeter('meshcore')).resolves.toBeNull();
+  });
+
+  it('returns null when session meter throws', async () => {
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockRejectedValue(new Error('boom'));
+    await expect(probeSessionMeter('meshtastic')).resolves.toBeNull();
+  });
+
+  it('returns null when session meter rttMs is non-finite', async () => {
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({
+      rttMs: Number.NaN,
+    });
+    await expect(probeSessionMeter('meshcore')).resolves.toBeNull();
   });
 });
