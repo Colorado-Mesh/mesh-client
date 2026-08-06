@@ -55,6 +55,23 @@ export function useHostLinkMeter(opts: {
     isConnectedStatus(status) &&
     (connectionType === 'ble' || connectionType === 'http' || connectionType === 'tcp');
 
+  // Meshtastic raw-TCP RTT probing opens a second, separate socket to the exact same
+  // host:port as the live protocol session every poll tick. Captured via live packet
+  // capture: the device intermittently RSTs the *real* session within ~15-210ms of a
+  // probe cycle overlapping a real outbound write (5/5 reproduced samples, both before
+  // and after PR #808's setNoDelay/setKeepAlive change — unaffected, since that only
+  // touches the main session's socket). Meshtastic WiFi/TCP firmware likely tracks very
+  // few concurrent API connections; a second churn-y connection to the same port
+  // destabilizes it. Do not reintroduce a competing connect for this transport without
+  // deriving RTT from the already-open session instead.
+  //
+  // Deliberate blunt/interim tradeoff: this disables the probe (and the signal-bars UI)
+  // for *every* Meshtastic TCP session, not only ones that hit the collision, because
+  // there is no cheap signal here for "is a competing probe currently unsafe" short of
+  // the real fix above. A previously-working, cosmetic-only feature regressing is an
+  // acceptable cost against dropping the live connection.
+  const meshtasticTcpProbeUnsafe = protocol === 'meshtastic' && connectionType === 'tcp';
+
   // BLE RSSI via Noble (macOS / Windows)
   useEffect(() => {
     if (!active || connectionType !== 'ble') {
@@ -78,7 +95,11 @@ export function useHostLinkMeter(opts: {
 
   // HTTP / TCP RTT probe
   useEffect(() => {
-    if (!active || (connectionType !== 'http' && connectionType !== 'tcp')) {
+    if (
+      !active ||
+      (connectionType !== 'http' && connectionType !== 'tcp') ||
+      meshtasticTcpProbeUnsafe
+    ) {
       setRttMs(null);
       return;
     }
@@ -98,8 +119,6 @@ export function useHostLinkMeter(opts: {
       let next: number | null = null;
       if (protocol === 'meshtastic' && connectionType === 'http') {
         next = await probeHttpLinkRttMs(address);
-      } else if (protocol === 'meshtastic' && connectionType === 'tcp') {
-        next = await probeTcpLinkRttMs(address, 'meshtastic');
       } else if (protocol === 'meshcore' && connectionType === 'http') {
         // MeshCore "http" transport is TCP/IP host:port
         next = await probeTcpLinkRttMs(address, 'meshcore');
@@ -117,7 +136,7 @@ export function useHostLinkMeter(opts: {
       if (timer) clearInterval(timer);
       setRttMs(null);
     };
-  }, [active, connectionType, hostAddress, protocol]);
+  }, [active, connectionType, hostAddress, protocol, meshtasticTcpProbeUnsafe]);
 
   if (!active || !connectionType) return IDLE;
 
@@ -129,6 +148,10 @@ export function useHostLinkMeter(opts: {
   }
 
   if (connectionType === 'http' || connectionType === 'tcp') {
+    // meshtasticTcpProbeUnsafe: rttMs never gets set (probe effect above skips this
+    // combo entirely), so this naturally renders the same "—" / no-data state as an
+    // HTTP probe failure — not a separate 'unavailable' kind, which would incorrectly
+    // show ConnectionLinkMeter's Web-Bluetooth-specific copy for a WiFi/TCP transport.
     const level = rttMs != null ? rttToSignalLevel(rttMs) : null;
     return { kind: 'ip-rtt', rssi: null, rttMs, level };
   }

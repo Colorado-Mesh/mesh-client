@@ -141,7 +141,10 @@ describe('ConnectionPanel host link meter', () => {
     });
   });
 
-  it('shows Link quality for Meshtastic TCP', async () => {
+  it('shows Link quality with no data for Meshtastic TCP and never probes (device RST hazard)', () => {
+    // Meshtastic raw-TCP RTT probing opens a second connection to the same host:port as
+    // the live session — confirmed via live packet capture to get the device to RST the
+    // real session. See useHostLinkMeter.ts's meshtasticTcpProbeUnsafe comment.
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(120);
     render(
@@ -161,8 +164,7 @@ describe('ConnectionPanel host link meter', () => {
       />,
     );
     expect(screen.getByText('Link quality')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalled();
-    });
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
   });
 });

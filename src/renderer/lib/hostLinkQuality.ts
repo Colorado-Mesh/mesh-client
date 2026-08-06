@@ -53,6 +53,12 @@ export interface ParsedTcpProbeTarget {
  * Parse a TCP probe target.
  * - `meshtastic`: default port 4403 (`parseMeshtasticTcpAddress`)
  * - `meshcore`: default port 5000 (`parseTcpAddress`)
+ *
+ * The `'meshtastic'` branch is currently unreachable from any production call site —
+ * `useHostLinkMeter.ts` deliberately never probes Meshtastic raw TCP (opening a second
+ * connection to the same host:port as the live session has been confirmed to get the
+ * device to RST the real connection). Do not wire a new call site for it without reading
+ * that hook's `meshtasticTcpProbeUnsafe` comment first.
  */
 export function parseTcpProbeTarget(
   address: string,
