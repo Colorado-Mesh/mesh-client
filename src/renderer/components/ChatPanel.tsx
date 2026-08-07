@@ -42,6 +42,7 @@ import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
+import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
 import {
   MeshtasticHybridPathIcons,
   MeshtasticMqttPathIcon,
@@ -614,7 +615,7 @@ function ChatPanel({
 
   const meshcoreExcludeDmPeer = useMemo((): ChatUnreadDmOptions['excludeDmPeer'] | undefined => {
     if (protocol !== 'meshcore') return undefined;
-    return (peer: number) => nodes.get(peer)?.hw_model === 'Room';
+    return (peer: number) => isMeshcoreDmExcludedHwModel(nodes.get(peer)?.hw_model);
   }, [nodes, protocol]);
 
   const chatUnreadDmOptions = useMemo(
@@ -3026,27 +3027,33 @@ function ChatPanel({
                                   />
                                 </button>
                                 {/* Quick DM */}
-                                {!isOwn && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      openDmTo(msg.sender_id);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="message-action rounded p-1 text-xs text-gray-600"
-                                    aria-label={t('chatPanel.directMessage', {
-                                      name: msg.sender_name,
-                                    })}
-                                    title={t('chatPanel.directMessage', { name: msg.sender_name })}
-                                  >
-                                    <Mail
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
+                                {!isOwn &&
+                                  !(
+                                    protocol === 'meshcore' &&
+                                    isMeshcoreDmExcludedHwModel(nodes.get(msg.sender_id)?.hw_model)
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        openDmTo(msg.sender_id);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="message-action rounded p-1 text-xs text-gray-600"
+                                      aria-label={t('chatPanel.directMessage', {
+                                        name: msg.sender_name,
+                                      })}
+                                      title={t('chatPanel.directMessage', {
+                                        name: msg.sender_name,
+                                      })}
+                                    >
+                                      <Mail
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                 {/* Star message */}
                                 {(() => {
                                   const starId = msgStarId(msg);

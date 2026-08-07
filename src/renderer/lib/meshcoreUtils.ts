@@ -372,6 +372,11 @@ export function isMeshcoreContactEligibleForUserGroup(node: Pick<MeshNode, 'hw_m
   return !MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hw);
 }
 
+/** MeshCore roles that must not appear as Chat DM peers (Repeater + Room; Sensor stays eligible). */
+export function isMeshcoreDmExcludedHwModel(hwModel: string | undefined): boolean {
+  return hwModel != null && MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hwModel);
+}
+
 interface MeshCoreContact {
   publicKey: Uint8Array;
   type: number;

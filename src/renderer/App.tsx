@@ -215,7 +215,7 @@ import {
   saveMeshcoreFloodScopePresets,
 } from './lib/meshcoreFloodScopePresetsStorage';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
-import { pubkeyToNodeId } from './lib/meshcoreUtils';
+import { isMeshcoreDmExcludedHwModel, pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
 import {
   shouldAutoLaunchMeshtasticMqtt,
@@ -1280,7 +1280,8 @@ function AppContent() {
 
   const meshcoreChatUnreadDmOptions = useMemo(
     () => ({
-      excludeDmPeer: (peer: number) => meshcoreUiNodes.get(peer)?.hw_model === 'Room',
+      excludeDmPeer: (peer: number) =>
+        isMeshcoreDmExcludedHwModel(meshcoreUiNodes.get(peer)?.hw_model),
     }),
     [meshcoreUiNodes],
   );
@@ -4525,7 +4526,11 @@ function AppContent() {
                 : undefined
             }
             onMessageNode={
-              selectedNode?.node_id !== detailMyNodeNum && selectedNode?.hw_model !== 'Room'
+              selectedNode?.node_id !== detailMyNodeNum &&
+              !(
+                detailModalProtocol === 'meshcore' &&
+                isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
+              )
                 ? handleMessageNode
                 : undefined
             }

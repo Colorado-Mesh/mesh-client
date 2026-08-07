@@ -52,7 +52,11 @@ import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
 } from '../lib/meshcoreOffload';
-import { MESHCORE_CONTACTS_WARNING_THRESHOLD, MESHCORE_MAX_CONTACTS } from '../lib/meshcoreUtils';
+import {
+  isMeshcoreDmExcludedHwModel,
+  MESHCORE_CONTACTS_WARNING_THRESHOLD,
+  MESHCORE_MAX_CONTACTS,
+} from '../lib/meshcoreUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
   MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS,
@@ -266,17 +270,17 @@ export default function NodeListPanel({
   const identityId = getIdentityIdForProtocol(mode) ?? getOfflineIdentityIdForProtocol(mode);
   const identityMessages = useMessages(identityId);
   const ownNodeIdSet = useMemo(() => new Set([myNodeNum >>> 0]), [myNodeNum]);
-  const meshcoreRoomPeerIds = useMemo(() => {
+  const meshcoreExcludedDmPeerIds = useMemo(() => {
     if (mode !== 'meshcore') return null;
-    const roomIds = new Set<number>();
+    const excludedIds = new Set<number>();
     for (const [peerId, node] of nodes) {
-      if (node.hw_model === 'Room') roomIds.add(peerId);
+      if (isMeshcoreDmExcludedHwModel(node.hw_model)) excludedIds.add(peerId);
     }
-    return roomIds;
+    return excludedIds;
   }, [mode, nodes]);
   const excludeDmPeer = useCallback(
-    (peer: number) => meshcoreRoomPeerIds?.has(peer) === true,
-    [meshcoreRoomPeerIds],
+    (peer: number) => meshcoreExcludedDmPeerIds?.has(peer) === true,
+    [meshcoreExcludedDmPeerIds],
   );
   const chatUnreadDmOptions = useMemo(
     () => (mode === 'meshcore' ? { excludeDmPeer } : undefined),
@@ -311,13 +315,20 @@ export default function NodeListPanel({
     const chatMessages = messageRecordsToChatMessages(identityMessages);
     const fromMemory = buildChatDmPeerIndex(chatMessages, ownNodeIdSet, mode, chatUnreadDmOptions);
     const merged = mergeChatDmPeerDbRows(fromMemory, dbDmPeers);
-    if (mode !== 'meshcore' || !meshcoreRoomPeerIds) return merged;
-    // Drop Room servers even if SQLite still has DM-shaped rows.
+    if (mode !== 'meshcore' || !meshcoreExcludedDmPeerIds) return merged;
+    // Drop Room/Repeater peers even if SQLite still has DM-shaped rows.
     for (const peer of [...merged.keys()]) {
-      if (meshcoreRoomPeerIds.has(peer)) merged.delete(peer);
+      if (meshcoreExcludedDmPeerIds.has(peer)) merged.delete(peer);
     }
     return merged;
-  }, [chatUnreadDmOptions, dbDmPeers, identityMessages, meshcoreRoomPeerIds, mode, ownNodeIdSet]);
+  }, [
+    chatUnreadDmOptions,
+    dbDmPeers,
+    identityMessages,
+    meshcoreExcludedDmPeerIds,
+    mode,
+    ownNodeIdSet,
+  ]);
   const {
     contactCount,
     loading: offloadLoading,

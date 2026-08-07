@@ -937,6 +937,34 @@ describe('NodeListPanel History tab', () => {
     expect(screen.queryByText('RoomServer')).not.toBeInTheDocument();
   });
 
+  it('excludes MeshCore Repeater nodes from History even if listed by SQLite', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.db.listMeshcoreDmPeers).mockResolvedValue([
+      { node_id: 21, last_message_at: 1_700_000_100_000 },
+      { node_id: 22, last_message_at: 1_700_000_200_000 },
+    ]);
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', hw_model: 'Chat' })],
+      [21, makeNode({ node_id: 21, long_name: 'RepeaterAlpha', hw_model: 'Repeater' })],
+      [22, makeNode({ node_id: 22, long_name: 'DmPeer', hw_model: 'Chat' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'History' }));
+    await waitFor(() => {
+      expect(screen.getByText('DmPeer')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('RepeaterAlpha')).not.toBeInTheDocument();
+  });
+
   it('shows a stub History row when the DM peer is missing from NodeDB', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.db.listMeshtasticDmPeers).mockResolvedValue([

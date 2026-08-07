@@ -305,19 +305,20 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('enables Message when live store has pubkey but DB contact row does not', async () => {
+    const chatNode: MeshNode = { ...meshcoreRepeaterNode, hw_model: 'Chat' };
     const pubKey = new Uint8Array(32).fill(0xab);
     useNodeStore.setState({
       nodes: {
         [OFFLINE_MESHCORE_IDENTITY_ID]: {
-          [meshcoreRepeaterNode.node_id]: {
-            nodeId: meshcoreRepeaterNode.node_id,
+          [chatNode.node_id]: {
+            nodeId: chatNode.node_id,
             publicKey: pubKey,
           },
         },
       },
     });
 
-    renderMeshcoreModal();
+    renderMeshcoreModal({ node: chatNode });
 
     expect(await screen.findByRole('button', { name: '💬 Message' })).not.toBeDisabled();
   });
@@ -364,17 +365,13 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(onTraceRoute).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
 
-  it('invokes message handler and closes modal when Message is clicked', async () => {
+  it('hides Message button for MeshCore Repeater nodes', () => {
     seedMeshcoreContactPubkey();
-    const user = userEvent.setup();
     const onMessageNode = vi.fn();
-    const onClose = vi.fn();
-    renderMeshcoreModal({ onMessageNode, onClose });
+    renderMeshcoreModal({ onMessageNode });
 
-    await user.click(await screen.findByRole('button', { name: '💬 Message' }));
-
-    expect(onMessageNode).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
-    expect(onClose).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: '💬 Message' })).not.toBeInTheDocument();
+    expect(onMessageNode).not.toHaveBeenCalled();
   });
 
   it('invokes requestRepeaterStatus after repeater auth is skipped', async () => {
