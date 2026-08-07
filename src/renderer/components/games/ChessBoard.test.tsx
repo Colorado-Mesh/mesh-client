@@ -358,4 +358,57 @@ describe('ChessBoard', () => {
     expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
     expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
   });
+
+  it('shows the opponent banner for legacy draw_offered without owner', () => {
+    render(
+      <ChessBoard
+        session={makeSession({
+          metadata: {
+            fen: STARTING_FEN,
+            moves: [],
+            my_color: 'w',
+            first_turn: 'me',
+            turn: 'me',
+            move_count: 0,
+            winner: '',
+            terminal: '',
+            draw_offered: true,
+            in_check: false,
+            legal_moves: [],
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+  });
+
+  it('hides draw banners when the session is not active', () => {
+    render(
+      <ChessBoard
+        session={makeSession({
+          status: 'completed',
+          metadata: {
+            fen: STARTING_FEN,
+            moves: [],
+            my_color: 'w',
+            first_turn: 'me',
+            turn: 'me',
+            move_count: 0,
+            winner: 'me',
+            terminal: 'win',
+            draw_offered: true,
+            draw_offered_by: 'me',
+            in_check: false,
+            legal_moves: [],
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Draw offer sent. Waiting for opponent…')).not.toBeInTheDocument();
+  });
 });

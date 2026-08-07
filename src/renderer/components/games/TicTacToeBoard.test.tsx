@@ -172,4 +172,51 @@ describe('TicTacToeBoard', () => {
     expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
     expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
   });
+
+  it('shows the opponent banner for legacy draw_offered without owner', () => {
+    render(
+      <TicTacToeBoard
+        session={makeSession({
+          metadata: {
+            board: '_________',
+            turn: 'me',
+            first_turn: 'me',
+            my_marker: 'X',
+            move_count: 0,
+            winner: '',
+            terminal: '',
+            draw_offered: true,
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+  });
+
+  it('hides draw banners when the session is not active', () => {
+    render(
+      <TicTacToeBoard
+        session={makeSession({
+          status: 'completed',
+          metadata: {
+            board: 'XXX______',
+            turn: 'me',
+            first_turn: 'me',
+            my_marker: 'X',
+            move_count: 3,
+            winner: 'me',
+            terminal: 'win',
+            draw_offered: true,
+            draw_offered_by: 'peer',
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Draw offer sent. Waiting for opponent…')).not.toBeInTheDocument();
+  });
 });
