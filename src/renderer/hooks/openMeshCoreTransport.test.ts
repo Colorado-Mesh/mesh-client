@@ -35,6 +35,27 @@ describe('openMeshCoreTransport', () => {
     await connectionDriver.disconnect(driverIdentityId);
   });
 
+  it('forwards skipDiscoverSelf to ConnectionDriver.connect', async () => {
+    const fakeConn = { kind: 'meshcore-mock' } as unknown as Connection;
+    vi.spyOn(meshcoreProtocol, 'createDevice').mockResolvedValue(fakeConn);
+    vi.spyOn(meshcoreProtocol, 'subscribe').mockReturnValue(() => {});
+    vi.spyOn(meshcoreProtocol, 'destroyDevice').mockResolvedValue(undefined);
+    const discoverSelf = vi.spyOn(meshcoreProtocol, 'discoverSelf').mockResolvedValue({
+      publicKey: new Uint8Array(32).fill(7),
+    });
+    const connectSpy = vi.spyOn(connectionDriver, 'connect');
+
+    await openMeshCoreTransport('tcp', {
+      host: '127.0.0.1:5000',
+      skipDiscoverSelf: true,
+    });
+
+    expect(connectSpy).toHaveBeenCalledWith('meshcore', expect.objectContaining({ type: 'tcp' }), {
+      skipDiscoverSelf: true,
+    });
+    expect(discoverSelf).not.toHaveBeenCalled();
+  });
+
   it('disconnects driver slot when connect succeeds but getHandle is null', async () => {
     const fakeConn = { kind: 'meshcore-mock' } as unknown as Connection;
     vi.spyOn(meshcoreProtocol, 'createDevice').mockResolvedValue(fakeConn);

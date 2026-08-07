@@ -96,7 +96,12 @@ import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatI
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
-import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
+import {
+  hasStoredStaticGps,
+  persistStoredStaticGps,
+  readStoredStaticGps,
+  resolveOurPosition,
+} from '../lib/gpsSource';
 import {
   loadMeshcoreMessagesForHydration,
   loadMeshcoreSavedHopRowsForHydration,
@@ -115,6 +120,7 @@ import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSen
 import {
   rehydrateMeshcoreConnectionParamsFromStorage,
   resolveLastBlePeripheralId,
+  resolveLastHttpAddress,
 } from '../lib/lastConnectionStorage';
 import {
   meshcoreIdentityHasFullKeyPair,
@@ -4085,24 +4091,7 @@ export function useMeshcoreRuntime() {
           throw err;
         }
       } else if (type === 'http') {
-        let addr = httpAddress;
-        if (!addr?.trim()) {
-          try {
-            const raw = localStorage.getItem('mesh-client:lastConnection:meshcore');
-            const parsed = raw
-              ? (JSON.parse(raw) as { type?: string; httpAddress?: string })
-              : null;
-            if (
-              parsed?.type === 'http' &&
-              typeof parsed.httpAddress === 'string' &&
-              parsed.httpAddress.trim()
-            ) {
-              addr = parsed.httpAddress;
-            }
-          } catch {
-            // catch-no-log-ok corrupt lastConnection JSON
-          }
-        }
+        const addr = httpAddress?.trim() ? httpAddress : resolveLastHttpAddress('meshcore');
         await connect('tcp', addr);
       }
       // BLE: requires user gesture — not supported for auto-connect
@@ -4779,21 +4768,7 @@ export function useMeshcoreRuntime() {
         const selfNodeId = myNodeNumRef.current;
         const nowSec = Math.floor(Date.now() / 1000);
         setOurPosition({ lat, lon, source: 'static' });
-        try {
-          const existing =
-            parseStoredJson<Record<string, unknown>>(
-              localStorage.getItem('mesh-client:gpsSettings'),
-              'useMeshcoreRuntime sendPositionToDeviceMeshCore persist static',
-            ) ?? {};
-          const refreshInterval =
-            typeof existing.refreshInterval === 'number' ? existing.refreshInterval : 0;
-          localStorage.setItem(
-            'mesh-client:gpsSettings',
-            JSON.stringify({ ...existing, staticLat: lat, staticLon: lon, refreshInterval }),
-          );
-        } catch {
-          // catch-no-log-ok localStorage quota or private mode
-        }
+        persistStoredStaticGps(lat, lon);
         if (selfNodeId > 0) {
           setNodes((prev) => {
             const next = new Map(prev);

@@ -1,8 +1,10 @@
+import type { Connection } from '@liamcottle/meshcore.js';
 import type { MeshDevice } from '@meshtastic/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useConnectionStore } from '../../stores/connectionStore';
 import { addIdentity, getIdentity, useIdentityStore } from '../../stores/identityStore';
+import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { TransportParams } from '../types';
 import { connectionDriver } from './ConnectionDriver';
@@ -83,6 +85,27 @@ describe('ConnectionDriver', () => {
     await connectionDriver.disconnect(identityId);
     expect(connectionDriver.getHandle(identityId)).toBeNull();
     expect(useConnectionStore.getState().connections[identityId].status).toBe('disconnected');
+  });
+
+  it('connect with skipDiscoverSelf skips protocol.discoverSelf', async () => {
+    const host = `softap-skip-${Date.now()}`;
+    const params: TransportParams = { type: 'tcp', host };
+    const fakeHandle = { kind: 'mock-meshcore-tcp' } as unknown as Connection;
+
+    vi.spyOn(meshcoreProtocol, 'createDevice').mockResolvedValue(fakeHandle);
+    vi.spyOn(meshcoreProtocol, 'subscribe').mockReturnValue(() => {});
+    vi.spyOn(meshcoreProtocol, 'destroyDevice').mockResolvedValue(undefined);
+    const discoverSelf = vi.spyOn(meshcoreProtocol, 'discoverSelf').mockResolvedValue({
+      publicKey: new Uint8Array(32).fill(9),
+    });
+
+    const identityId = await connectionDriver.connect('meshcore', params, {
+      skipDiscoverSelf: true,
+    });
+    expect(discoverSelf).not.toHaveBeenCalled();
+    expect(connectionDriver.getHandle(identityId)).toBe(fakeHandle);
+
+    await connectionDriver.disconnect(identityId);
   });
 
   it('connect maps a tcp transport to a tcp connectionType, not null', async () => {

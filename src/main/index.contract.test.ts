@@ -152,11 +152,11 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'meshcoreLastSelfNodeId'");
     expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
-    expect(INDEX_SOURCE).toContain('meshtasticRemoteAdminKey:');
-    expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
-    expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
-    expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');
-    expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
+    expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_LAST_POST_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain('isAppSettingsKeyAllowed');
   });
 
@@ -556,6 +556,21 @@ describe('Native Electron call guards (source contract)', () => {
   it('reads meshcore import JSON via fs.promises.readFile', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('meshcore:openJsonFile'[\s\S]*?fs\.promises\.readFile/,
+    );
+  });
+
+  it('validates IPC sender for meshcore:openJsonFile and device-connected listeners', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('meshcore:openJsonFile'[\s\S]*?assertIpcSender\(event, 'meshcore:openJsonFile'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.on\('device-connected'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.on\('device-disconnected'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('app:getProcessUptimeSec'[\s\S]*?assertIpcSender\(event, 'app:getProcessUptimeSec'\)/,
     );
   });
 });

@@ -27,6 +27,13 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import {
+  MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX,
+  MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
+  MESHCORE_ROOM_LAST_POST_SETTING_PREFIX,
+  MESHCORE_ROOM_SYNC_SETTING_PREFIX,
+  MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX,
+} from '../shared/appSettingsKeyPrefixes';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
@@ -2620,12 +2627,20 @@ ipcMain.on('ble-reset-pairing-retry-count', (_event, sessionKind?: unknown) => {
 });
 
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─
-ipcMain.on('device-connected', () => {
+ipcMain.on('device-connected', (event) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] device-connected: unauthorized sender');
+    return;
+  }
   console.debug('[main] device-connected: isConnected = true');
   isConnected = true;
   startPowerSaveBlocker();
 });
-ipcMain.on('device-disconnected', () => {
+ipcMain.on('device-disconnected', (event) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] device-disconnected: unauthorized sender');
+    return;
+  }
   console.debug('[main] device-disconnected: isConnected = false');
   isConnected = false;
   stopPowerSaveBlocker();
@@ -3503,7 +3518,10 @@ ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
 });
 
 // ─── IPC: Login item (launch at startup) ───────────────────────────
-ipcMain.handle('app:getProcessUptimeSec', () => Math.floor(process.uptime()));
+ipcMain.handle('app:getProcessUptimeSec', (event) => {
+  assertIpcSender(event, 'app:getProcessUptimeSec');
+  return Math.floor(process.uptime());
+});
 
 ipcMain.handle('app:getRendererLiveness', (event) => {
   if (!validateIpcSender(event)) {
@@ -3580,13 +3598,6 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticRemoteAdminKeyByNode',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
-const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
-/** MeshCore Rooms tab — must match renderer meshcoreRoomSyncStorage / meshcoreRoomCredentialStorage. */
-const MESHCORE_ROOM_SYNC_SETTING_PREFIX = 'meshcoreRoomSync:';
-const MESHCORE_ROOM_LAST_POST_SETTING_PREFIX = 'meshcoreRoomLastPost:';
-const MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX = 'meshcoreRoomCredential:';
-/** MeshCore Repeaters tab — must match renderer meshcoreRepeaterCredentialStorage. */
-const MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX = 'meshcoreRepeaterCredential:';
 
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
@@ -5394,7 +5405,8 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('meshcore:openJsonFile', async () => {
+ipcMain.handle('meshcore:openJsonFile', async (event) => {
+  assertIpcSender(event, 'meshcore:openJsonFile');
   try {
     if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, {

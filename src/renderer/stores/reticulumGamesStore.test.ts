@@ -92,6 +92,23 @@ describe('reticulumGamesStore', () => {
     expect(sessions[0].status).toBe('active');
   });
 
+  it('applyGamesUpdate preserves draw_offered_by on outbound self offers', () => {
+    useReticulumGamesStore.getState().setSessions([makeSession({ status: 'active' })]);
+    useReticulumGamesStore.getState().applyGamesUpdate({
+      app_id: 'ttt',
+      session_id: 's1',
+      direction: 'outbound',
+      session: makeSession({
+        status: 'active',
+        metadata: { draw_offered: true, draw_offered_by: 'me' },
+        updated_at: 2,
+      }),
+    });
+    const meta = useReticulumGamesStore.getState().sessions[0].metadata;
+    expect(meta.draw_offered).toBe(true);
+    expect(meta.draw_offered_by).toBe('me');
+  });
+
   it('applyGamesUpdate ignores payloads with no session', () => {
     useReticulumGamesStore.getState().setSessions([makeSession()]);
     useReticulumGamesStore.getState().applyGamesUpdate({

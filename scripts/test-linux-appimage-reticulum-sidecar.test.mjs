@@ -43,6 +43,19 @@ describe('test-linux-appimage-reticulum-sidecar', () => {
     }
   });
 
+  it('prepareAppImageExtractDir preserves an existing unique extract directory', () => {
+    const extractDir = mkdtempSync(path.join(tmpdir(), 'mesh-appimage-unique-'));
+    const marker = path.join(extractDir, 'keep-me.txt');
+    try {
+      writeFileSync(marker, 'ok');
+      prepareAppImageExtractDir(extractDir);
+      expect(existsSync(extractDir)).toBe(true);
+      expect(existsSync(marker)).toBe(true);
+    } finally {
+      rmSync(extractDir, { recursive: true, force: true });
+    }
+  });
+
   it('readElfMachineFromHeader reads e_machine from ELF header bytes', () => {
     expect(readElfMachineFromHeader(makeElfHeader(EM_X86_64))).toBe(EM_X86_64);
     expect(readElfMachineFromHeader(makeElfHeader(EM_AARCH64))).toBe(EM_AARCH64);

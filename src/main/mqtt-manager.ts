@@ -23,6 +23,7 @@ import {
   resolveMeshtasticTextMessagePayload,
 } from '../shared/meshtasticTextMessagePayload';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
+import { mqttUsesTls } from '../shared/mqttTls';
 import { isTransientNetworkError } from '../shared/networkTransientErrors';
 import {
   formatMeshtasticNodeId,
@@ -576,24 +577,15 @@ export class MQTTManager extends EventEmitter {
     this.meshtasticConnectT0 = Date.now();
     const hostTrim = settings.server.trim();
 
-    const useTls =
-      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
     const wsEnabled = settings.useWebSocket === true;
-    const wsTlsEnabled =
-      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
-    const rejectUnauthorized = wsEnabled
-      ? wsTlsEnabled
-        ? !settings.tlsInsecure
-        : false
-      : useTls
-        ? !settings.tlsInsecure
-        : false;
+    const usesTls = mqttUsesTls(settings);
+    const rejectUnauthorized = usesTls ? !settings.tlsInsecure : false;
     const wsPath = settings.wsPath ?? '/mqtt';
-    const wsScheme = wsTlsEnabled ? 'wss' : 'ws';
+    const wsScheme = usesTls ? 'wss' : 'ws';
 
     const logUrl = wsEnabled
       ? `${wsScheme}://${hostTrim}:${settings.port}${wsPath}`
-      : useTls
+      : usesTls
         ? `mqtts://${hostTrim}:${settings.port}`
         : `mqtt://${hostTrim}:${settings.port}`;
     console.debug('[Meshtastic MQTT] connect start', sanitizeLogMessage(logUrl), 'ws:', wsEnabled); // log-filter-ok Meshtastic MQTT logs → App log panel
@@ -622,7 +614,7 @@ export class MQTTManager extends EventEmitter {
       connectOpts = {
         host: hostTrim,
         port: settings.port,
-        protocol: useTls ? 'mqtts' : 'mqtt',
+        protocol: usesTls ? 'mqtts' : 'mqtt',
         protocolVersion: 4, // force MQTT 3.1.1; avoids v5 negotiation issues
         clientId,
         username: settings.username || undefined,

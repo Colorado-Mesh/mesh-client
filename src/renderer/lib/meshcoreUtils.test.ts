@@ -5,6 +5,7 @@ import {
   coerceMeshcoreExportPrivateKeyResult,
   formatMeshcoreAdvertisedPositionDegrees,
   isMeshcoreContactEligibleForUserGroup,
+  isMeshcoreDmExcludedHwModel,
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
@@ -327,6 +328,23 @@ describe('isMeshcoreContactEligibleForUserGroup', () => {
 
   it('treats empty hw_model as eligible', () => {
     expect(isMeshcoreContactEligibleForUserGroup({ hw_model: '' })).toBe(true);
+  });
+});
+
+describe('isMeshcoreDmExcludedHwModel', () => {
+  it('excludes Repeater and Room', () => {
+    expect(isMeshcoreDmExcludedHwModel('Repeater')).toBe(true);
+    expect(isMeshcoreDmExcludedHwModel('Room')).toBe(true);
+  });
+
+  it('allows Chat and Sensor', () => {
+    expect(isMeshcoreDmExcludedHwModel('Chat')).toBe(false);
+    expect(isMeshcoreDmExcludedHwModel('Sensor')).toBe(false);
+  });
+
+  it('treats undefined and empty as not excluded', () => {
+    expect(isMeshcoreDmExcludedHwModel(undefined)).toBe(false);
+    expect(isMeshcoreDmExcludedHwModel('')).toBe(false);
   });
 });
 

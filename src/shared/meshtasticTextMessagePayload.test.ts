@@ -7,6 +7,7 @@ import {
 } from './meshtasticProtobufSchemas';
 import {
   isLikelyReadableChatText,
+  parseStoreForwardPacket,
   resolveMeshtasticTextMessagePayload,
 } from './meshtasticTextMessagePayload';
 
@@ -33,5 +34,13 @@ describe('meshtasticTextMessagePayload', () => {
   it('returns null for store-forward text variant with empty or whitespace-only payload', () => {
     expect(resolveMeshtasticTextMessagePayload(sfTextPacket(''))).toBeNull();
     expect(resolveMeshtasticTextMessagePayload(sfTextPacket('   '))).toBeNull();
+  });
+
+  it('parseStoreForwardPacket returns null for empty/malformed bytes and decodes text variants', () => {
+    expect(parseStoreForwardPacket(new Uint8Array())).toBeNull();
+    expect(parseStoreForwardPacket(new Uint8Array([0xff, 0xfe, 0xfd]))).toBeNull();
+    const parsed = parseStoreForwardPacket(sfTextPacket('sf hello'));
+    expect(parsed?.variant.case).toBe('text');
+    expect(parsed?.rr).toBe(meshtasticStoreForwardRequestResponse.ROUTER_TEXT_BROADCAST);
   });
 });

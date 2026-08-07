@@ -5,7 +5,7 @@
  * Flags console.log/warn/error in src/main that pass raw error-like variables
  * (err, e, error, reason) or error-derived content (e.message, String(e), etc.)
  * without sanitizeLogMessage() at the call site.
- * See CONTRIBUTING.md § Log injection (CodeQL js/log-injection).
+ * See AGENTS.md §3 (Log injection / sanitizeLogMessage; CodeQL js/log-injection).
  *
  * To suppress a false positive, add // log-injection-ok with a short reason
  * on the same line as the console call.
@@ -71,7 +71,7 @@ function main() {
     console.error('');
   }
   console.error(
-    'See CONTRIBUTING.md § Log injection (CodeQL js/log-injection). To suppress, add // log-injection-ok with a reason.',
+    'See AGENTS.md §3 (Log injection / sanitizeLogMessage). To suppress, add // log-injection-ok with a reason.',
   );
   process.exit(1);
 }

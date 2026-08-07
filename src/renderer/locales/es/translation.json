@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión",
     "tabAll": "Todos",
     "tabHistory": "Historial",
-    "emptyHistory": "Aún no hay mensajes directos: envíe o reciba un DM para ver a los peers aquí."
+    "emptyHistory": "Aún no hay mensajes directos: envíe o reciba un DM para ver a los peers aquí.",
+    "meshcoreTypeSensor": "Sensor",
+    "meshcoreTypeNone": "Ninguno",
+    "meshcoreTypeUnknown": "Desconocido"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5318,6 +5321,7 @@
       "propagating": "Bandeja de entrada sin conexión...",
       "propagated": "Almacenado",
       "failed": "Se necesita volver a intentarlo"
-    }
+    },
+    "drawOfferWaitingBanner": "Oferta de sorteo enviada. Esperando al oponente..."
   }
 }

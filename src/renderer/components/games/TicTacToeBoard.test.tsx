@@ -125,7 +125,55 @@ describe('TicTacToeBoard', () => {
     expect(screen.getByText('You won!')).toBeInTheDocument();
   });
 
-  it('shows the draw-offered banner when active and a draw was offered', () => {
+  it('shows the opponent draw-offered banner when peer offered', () => {
+    render(
+      <TicTacToeBoard
+        session={makeSession({
+          metadata: {
+            board: '_________',
+            turn: 'me',
+            first_turn: 'me',
+            my_marker: 'X',
+            move_count: 0,
+            winner: '',
+            terminal: '',
+            draw_offered: true,
+            draw_offered_by: 'peer',
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+    expect(screen.queryByText('Draw offer sent. Waiting for opponent…')).not.toBeInTheDocument();
+  });
+
+  it('shows the waiting banner when local player offered a draw', () => {
+    render(
+      <TicTacToeBoard
+        session={makeSession({
+          metadata: {
+            board: '_________',
+            turn: 'me',
+            first_turn: 'me',
+            my_marker: 'X',
+            move_count: 0,
+            winner: '',
+            terminal: '',
+            draw_offered: true,
+            draw_offered_by: 'me',
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
+    expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
+  });
+
+  it('shows the opponent banner for legacy draw_offered without owner', () => {
     render(
       <TicTacToeBoard
         session={makeSession({
@@ -145,5 +193,30 @@ describe('TicTacToeBoard', () => {
     );
 
     expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+  });
+
+  it('hides draw banners when the session is not active', () => {
+    render(
+      <TicTacToeBoard
+        session={makeSession({
+          status: 'completed',
+          metadata: {
+            board: 'XXX______',
+            turn: 'me',
+            first_turn: 'me',
+            my_marker: 'X',
+            move_count: 3,
+            winner: 'me',
+            terminal: 'win',
+            draw_offered: true,
+            draw_offered_by: 'peer',
+          },
+        })}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Draw offer sent. Waiting for opponent…')).not.toBeInTheDocument();
   });
 });

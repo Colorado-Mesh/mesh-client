@@ -1,11 +1,11 @@
+import { MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX } from '@/shared/appSettingsKeyPrefixes';
 import { hexToBytesExact } from '@/shared/hexBytes';
 
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
 import { parseStoredJson } from './parseStoredJson';
 
-/** Per-node SQLite/localStorage key: meshtasticRemoteAdminKey:<nodeNum> */
-export const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
+export { MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX };
 
 /** Legacy JSON blob key (read for migration only). */
 export const MESHTASTIC_REMOTE_ADMIN_KEY_BY_NODE_SETTING = 'meshtasticRemoteAdminKeyByNode';

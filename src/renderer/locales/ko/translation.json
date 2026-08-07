@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}} % 연결 상태",
     "tabAll": "전체",
     "tabHistory": "기록",
-    "emptyHistory": "아직 다이렉트 메시지가 없습니다. DM을 보내거나 받아 피어를 확인하세요."
+    "emptyHistory": "아직 다이렉트 메시지가 없습니다. DM을 보내거나 받아 피어를 확인하세요.",
+    "meshcoreTypeSensor": "검지기",
+    "meshcoreTypeNone": "없음",
+    "meshcoreTypeUnknown": "미상"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5318,6 +5321,7 @@
       "propagating": "오프라인 수신함...",
       "propagated": "저장량",
       "failed": "다시 시도 필요"
-    }
+    },
+    "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중..."
   }
 }

@@ -21,8 +21,8 @@ Thank you for your interest in contributing.
 
 See [Test harness setup and local quality checks](docs/development-environment.md#4-test-harness-setup-and-local-quality-checks) for Vitest projects, pre-PR commands, and browser dev stub behavior.
 
-- Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
-- **Reticulum sidecar (Rust):** when editing `reticulum-sidecar/**`, run `pnpm run reticulum:sidecar:clippy:full` before PR; CI enforces line coverage in `tests.yaml` when sidecar paths change (see [development-environment.md](development-environment.md#lint-and-coverage-sidecar)).
+- Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main (node project): `src/main/**/*.test.ts`, plus `src/shared/**`, `src/preload/**`, `src/architecture/**`, `scripts/**/*.test.mjs`, and `vitest.harness.test.ts` (see `vitest.config.mts`).
+- **Reticulum sidecar (Rust):** when editing `reticulum-sidecar/**`, run `pnpm run reticulum:sidecar:clippy:full` before PR; CI enforces line coverage in `tests.yaml` when sidecar paths change (see [docs/development-environment.md](docs/development-environment.md#lint-and-coverage-sidecar)).
 - Mock console before spying logged errors (e.g. `vi.spyOn(console, 'warn').mockImplementation(() => {})`; use `beforeEach` when shared).
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 - Accessibility: vitest-axe in component tests; see **Accessibility / axe** in [AGENTS.md](AGENTS.md#5-testing).

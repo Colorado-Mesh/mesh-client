@@ -468,19 +468,19 @@ Sidecar APIs: `GET /api/v1/config/audit`, `POST /api/v1/config/repair` (see [`re
 
 For contributors who want to modify or extend the diagnostics system:
 
-| File                                                                                                                     | Purpose                                                                                |
-| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| [`src/renderer/stores/diagnosticsStore.ts`](src/renderer/stores/diagnosticsStore.ts)                                     | Zustand store: anomaly state, persistence, MQTT ignore sets, foreign LoRa records      |
-| [`src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts)     | Hop anomaly detection (hop_goblin, bad_route, impossible_hop, route_flapping)          |
-| [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RFDiagnosticEngine.ts)               | RF signal analysis (connected node + remote node findings)                             |
-| [`src/renderer/lib/diagnostics/diagnosticRows.ts`](src/renderer/lib/diagnostics/diagnosticRows.ts)                       | Row merge/prune utilities, `filterDiagnosticRowsForProtocol`, default max-age values   |
-| [`src/renderer/lib/foreignLoraDetection.ts`](src/renderer/lib/foreignLoraDetection.ts)                                   | Foreign LoRa packet classification, Reticulum overhear heuristic, proximity scoring    |
-| [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx)                           | Diagnostics tab UI: health band + counts, anomaly table, foreign LoRa tables, settings |
-| [`src/renderer/components/ReticulumDiagnosticsSection.tsx`](src/renderer/components/ReticulumDiagnosticsSection.tsx)     | Reticulum config audit table + repair actions                                          |
-| [`src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts`](src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts) | Reticulum-native diagnostic rows (interfaces, audit merge)                             |
-| [`src/renderer/lib/reticulum/reticulumConfigAudit.ts`](src/renderer/lib/reticulum/reticulumConfigAudit.ts)               | Config audit/repair IPC client                                                         |
-| [`src/renderer/components/NodeDetailModal.tsx`](src/renderer/components/NodeDetailModal.tsx)                             | Per-node detail overlay: routing health, MQTT ignore toggle                            |
-| [`src/renderer/components/NodeInfoBody.tsx`](src/renderer/components/NodeInfoBody.tsx)                                   | RF findings section, redundancy path history, congestion block                         |
+| File                                                                                                                        | Purpose                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [`src/renderer/stores/diagnosticsStore.ts`](../src/renderer/stores/diagnosticsStore.ts)                                     | Zustand store: anomaly state, persistence, MQTT ignore sets, foreign LoRa records      |
+| [`src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts`](../src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts)     | Hop anomaly detection (hop_goblin, bad_route, impossible_hop, route_flapping)          |
+| [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](../src/renderer/lib/diagnostics/RFDiagnosticEngine.ts)               | RF signal analysis (connected node + remote node findings)                             |
+| [`src/renderer/lib/diagnostics/diagnosticRows.ts`](../src/renderer/lib/diagnostics/diagnosticRows.ts)                       | Row merge/prune utilities, `filterDiagnosticRowsForProtocol`, default max-age values   |
+| [`src/renderer/lib/foreignLoraDetection.ts`](../src/renderer/lib/foreignLoraDetection.ts)                                   | Foreign LoRa packet classification, Reticulum overhear heuristic, proximity scoring    |
+| [`src/renderer/components/DiagnosticsPanel.tsx`](../src/renderer/components/DiagnosticsPanel.tsx)                           | Diagnostics tab UI: health band + counts, anomaly table, foreign LoRa tables, settings |
+| [`src/renderer/components/ReticulumDiagnosticsSection.tsx`](../src/renderer/components/ReticulumDiagnosticsSection.tsx)     | Reticulum config audit table + repair actions                                          |
+| [`src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts`](../src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts) | Reticulum-native diagnostic rows (interfaces, audit merge)                             |
+| [`src/renderer/lib/reticulum/reticulumConfigAudit.ts`](../src/renderer/lib/reticulum/reticulumConfigAudit.ts)               | Config audit/repair IPC client                                                         |
+| [`src/renderer/components/NodeDetailModal.tsx`](../src/renderer/components/NodeDetailModal.tsx)                             | Per-node detail overlay: routing health, MQTT ignore toggle                            |
+| [`src/renderer/components/NodeInfoBody.tsx`](../src/renderer/components/NodeInfoBody.tsx)                                   | RF findings section, redundancy path history, congestion block                         |
 
 ---
 

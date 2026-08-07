@@ -94,7 +94,11 @@ import {
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { matchForeignLoraFromMeshtasticLog } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
-import { readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
+import {
+  readGpsRefreshIntervalSecs,
+  readStoredStaticGps,
+  resolveOurPosition,
+} from '../lib/gpsSource';
 import {
   hydrateMeshtasticMessagesFromDb,
   syncNodesMapToIdentityStore,
@@ -921,25 +925,17 @@ export function useMeshtasticRuntime() {
 
   const startGpsInterval = useCallback(() => {
     stopGpsInterval();
-    try {
-      const gpsParsed = parseStoredJson<{ refreshInterval?: number }>(
-        localStorage.getItem('mesh-client:gpsSettings'),
-        'useMeshtasticRuntime startGpsInterval',
-      );
-      const intervalSecs = gpsParsed?.refreshInterval ?? 0;
-      if (intervalSecs > 0) {
-        gpsIntervalRef.current = setInterval(() => {
-          // Dual-protocol: avoid host IP/geo refresh churn while MeshCore is the active UI protocol.
-          if (getStoredMeshProtocol() !== 'meshtastic') return;
-          refreshOurPositionRef.current().catch((err: unknown) => {
-            console.error(
-              '[useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
-            );
-          });
-        }, intervalSecs * 1000);
-      }
-    } catch {
-      // catch-no-log-ok localStorage read for GPS interval setting — ignore parse errors
+    const intervalSecs = readGpsRefreshIntervalSecs();
+    if (intervalSecs > 0) {
+      gpsIntervalRef.current = setInterval(() => {
+        // Dual-protocol: avoid host IP/geo refresh churn while MeshCore is the active UI protocol.
+        if (getStoredMeshProtocol() !== 'meshtastic') return;
+        refreshOurPositionRef.current().catch((err: unknown) => {
+          console.error(
+            '[useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
+          );
+        });
+      }, intervalSecs * 1000);
     }
   }, [stopGpsInterval]);
 
@@ -4022,7 +4018,12 @@ export function useMeshtasticRuntime() {
             void hydrateMeshtasticMessagesFromDb(
               storeId,
               opts?.replaceFromDb ? 'replace' : 'upsert',
-            );
+            ).catch((err: unknown) => {
+              console.warn(
+                '[useMeshtasticRuntime] refreshMessagesFromDb identity hydrate failed ' +
+                  errLikeToLogString(err),
+              );
+            });
           }
         })
         .catch((err: unknown) => {

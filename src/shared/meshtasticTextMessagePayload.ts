@@ -10,7 +10,8 @@ export interface ResolvedMeshtasticTextPayload {
   viaStoreForward?: boolean;
 }
 
-function parseStoreForwardPacket(data: Uint8Array): {
+/** Decode StoreAndForward protobuf; null on empty/malformed bytes. */
+export function parseStoreForwardPacket(data: Uint8Array): {
   rr: number;
   variant: { case?: string; value?: unknown };
 } | null {

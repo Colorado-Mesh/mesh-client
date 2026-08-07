@@ -3029,7 +3029,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% zdraví připojení",
     "tabAll": "Vše",
     "tabHistory": "Historie",
-    "emptyHistory": "Zatím žádné přímé zprávy — odešlete nebo přijměte DM, abyste zde viděli peery."
+    "emptyHistory": "Zatím žádné přímé zprávy — odešlete nebo přijměte DM, abyste zde viděli peery.",
+    "meshcoreTypeSensor": "Snímač",
+    "meshcoreTypeNone": "neuvedeny",
+    "meshcoreTypeUnknown": "Neznámo"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5320,6 +5323,7 @@
       "propagating": "Offline doručené zprávy...",
       "propagated": "Doručená na Vyzvedni.to a připravená k výdeji",
       "failed": "Je třeba to zkusit znovu"
-    }
+    },
+    "drawOfferWaitingBanner": "Nabídka byla odeslána. Čeká se na soupeře..."
   }
 }

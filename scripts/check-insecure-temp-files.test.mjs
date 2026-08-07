@@ -61,4 +61,28 @@ export const mock = () => path.join(os.tmpdir(), 'mesh-client-support-test-userd
 `);
     expect(result.status).toBe(0);
   });
+
+  it('fails on mkdirSync to predictable tmpdir path', () => {
+    const result = runCheckOnSnippet(`
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+const dir = path.join(os.tmpdir(), 'mesh-client-appimage-x64-1');
+fs.mkdirSync(dir, { recursive: true });
+`);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/insecure-temporary-file|predictable/);
+  });
+
+  it('fails on async fs.mkdir to predictable tmpdir path', () => {
+    const result = runCheckOnSnippet(`
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+const dir = path.join(os.tmpdir(), 'mesh-client-appimage-x64-async');
+await fs.promises.mkdir(dir, { recursive: true });
+`);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/insecure-temporary-file|predictable/);
+  });
 });

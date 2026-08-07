@@ -41,6 +41,7 @@ import {
 } from '../lib/meshcorePathChainDisplay';
 import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '../lib/meshcoreRoomSession';
 import {
+  isMeshcoreDmExcludedHwModel,
   MESHCORE_CHAT_STUB_ID_MAX,
   MESHCORE_CHAT_STUB_ID_MIN,
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
@@ -2029,24 +2030,25 @@ export default function NodeDetailModal({
                     {t('nodeDetailModal.openRoomButton')}
                   </button>
                 )}
-                {onMessageNode && !(protocol === 'meshcore' && node.hw_model === 'Room') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onMessageNode(node.node_id);
-                      onClose();
-                    }}
-                    disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
-                    title={
-                      protocol === 'meshcore' && !contactPubkey
-                        ? t('nodeDetailModal.messageNoKeyTitle')
-                        : undefined
-                    }
-                    className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {t('nodeDetailModal.messageButton')}
-                  </button>
-                )}
+                {onMessageNode &&
+                  !(protocol === 'meshcore' && isMeshcoreDmExcludedHwModel(node.hw_model)) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onMessageNode(node.node_id);
+                        onClose();
+                      }}
+                      disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
+                      title={
+                        protocol === 'meshcore' && !contactPubkey
+                          ? t('nodeDetailModal.messageNoKeyTitle')
+                          : undefined
+                      }
+                      className="min-w-[8rem] flex-1 rounded-lg bg-purple-700/50 px-3 py-2 text-sm font-medium text-purple-300 transition-colors hover:bg-purple-600/50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {t('nodeDetailModal.messageButton')}
+                    </button>
+                  )}
                 {protocol === 'meshcore' && onExportContact && (
                   <button
                     type="button"

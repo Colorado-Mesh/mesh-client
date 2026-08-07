@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}} %连接健康",
     "tabAll": "全部",
     "tabHistory": "历史",
-    "emptyHistory": "还没有私信—发送或接收 DM 以在此处查看对等节点。"
+    "emptyHistory": "还没有私信—发送或接收 DM 以在此处查看对等节点。",
+    "meshcoreTypeSensor": "测传",
+    "meshcoreTypeNone": "无",
+    "meshcoreTypeUnknown": "未知"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5318,6 +5321,7 @@
       "propagating": "离线收件箱…",
       "propagated": "已存储",
       "failed": "需要重试"
-    }
+    },
+    "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……"
   }
 }

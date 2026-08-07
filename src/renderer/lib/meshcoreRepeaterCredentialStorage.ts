@@ -1,11 +1,12 @@
+import { MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX } from '@/shared/appSettingsKeyPrefixes';
+
 import {
   createMeshcorePerNodeCredentialStorage,
   type MeshcorePerNodeCredentialStorage,
   parseLegacyCredentialRaw,
 } from './meshcorePerNodeCredentialStorage';
 
-/** Per-repeater admin passwords in app_settings (local SQLite via IPC). */
-export const MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX = 'meshcoreRepeaterCredential:';
+export { MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX };
 
 export interface MeshcoreRepeaterStoredCredential {
   password: string;

@@ -7,6 +7,8 @@ import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
 import { draftsStorageKey, lastReadStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
 import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
+import i18n from '../lib/i18n';
+import { ensureLocaleLoaded } from '../lib/localeResources';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import type { MessageRecord } from '../stores/messageStore';
@@ -435,6 +437,73 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByTitle('Received via MQTT')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Received via MQTT' })).toBeInTheDocument();
   });
+
+  it('localizes MeshCore Unknown sender sentinel via common.unknown', async () => {
+    await ensureLocaleLoaded(i18n, 'es');
+    await i18n.changeLanguage('es');
+    try {
+      expect(i18n.t('common.unknown')).toBe('Desconocido');
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol="meshcore"
+            myNodeNum={1}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Unknown',
+                payload: 'hola',
+                channel: 0,
+                timestamp: Date.now(),
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+      expect(screen.getByRole('button', { name: 'Desconocido' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Unknown' })).not.toBeInTheDocument();
+    } finally {
+      await i18n.changeLanguage('en');
+    }
+  });
+
+  it.each(['meshtastic', 'reticulum'] as const)(
+    'preserves literal Unknown sender name for %s',
+    async (protocol) => {
+      await ensureLocaleLoaded(i18n, 'es');
+      await i18n.changeLanguage('es');
+      try {
+        render(
+          <ToastProvider>
+            <ChatPanel
+              {...defaultProps}
+              protocol={protocol}
+              myNodeNum={1}
+              {...(protocol === 'reticulum'
+                ? { dmOnlyChat: true, ownNodeIds: [1], initialDmTarget: 2 }
+                : {})}
+              messages={[
+                {
+                  sender_id: 2,
+                  sender_name: 'Unknown',
+                  payload: 'hello',
+                  channel: 0,
+                  timestamp: Date.now(),
+                  status: 'acked',
+                },
+              ]}
+            />
+          </ToastProvider>,
+        );
+        expect(screen.getByRole('button', { name: 'Unknown' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Desconocido' })).not.toBeInTheDocument();
+      } finally {
+        await i18n.changeLanguage('en');
+      }
+    },
+  );
 
   it('shows Reticulum RF/TCP/network transport badges for incoming messages', async () => {
     const { rerender } = render(

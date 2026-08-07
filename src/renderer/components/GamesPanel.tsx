@@ -6,8 +6,9 @@ import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBa
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
 import {
-  gamesMetaBool,
   gamesMetaStr,
+  isGamesDrawOfferFromOpponent,
+  isGamesDrawOfferFromSelf,
   isGamesSessionInitiator,
 } from '@/renderer/lib/reticulum/reticulumGamesMetadata';
 import {
@@ -133,9 +134,11 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
       (lastActionResult != null &&
         !lastActionResult.ok &&
         lastActionResult.session_id === selectedSession.session_id));
-  const drawOffered = selectedSession
-    ? gamesMetaBool(selectedSession.metadata, 'draw_offered')
+  const drawOfferedByOpponent = selectedSession
+    ? isGamesDrawOfferFromOpponent(selectedSession)
     : false;
+  const drawOfferedBySelf = selectedSession ? isGamesDrawOfferFromSelf(selectedSession) : false;
+  const drawPending = drawOfferedByOpponent || drawOfferedBySelf;
   const drawClaimReason =
     selectedSession?.app_id === 'chess'
       ? gamesMetaStr(selectedSession.metadata, 'draw_offer_reason')
@@ -350,7 +353,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   >
                     {t('gamesPanel.resign')}
                   </button>
-                  {drawOffered ? (
+                  {drawOfferedByOpponent ? (
                     <>
                       <button
                         type="button"
@@ -375,7 +378,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                         {t('gamesPanel.declineDraw')}
                       </button>
                     </>
-                  ) : drawClaimReason === GAMES_DRAW_CLAIM.THREEFOLD ? (
+                  ) : drawPending ? null : drawClaimReason === GAMES_DRAW_CLAIM.THREEFOLD ? (
                     <button
                       type="button"
                       className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"

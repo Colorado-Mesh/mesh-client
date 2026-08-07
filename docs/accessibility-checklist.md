@@ -7,7 +7,7 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 ## Screen Reader Compatibility
 
 - [ ] App title announced on launch
-- [ ] Tab labels (Chat, Nodes, Config…) read correctly
+- [ ] Tab labels (Connection, Chat, Nodes, Radio, …) read correctly
 - [x] Connection status changes announced (`aria-live="polite"`) — device status in `App.tsx` header (`role="status" aria-live="polite"`); MQTT/TAK indicators still optional follow-up
 - [ ] Modal open/close announced as "dialog"
 - [x] Confirmation dialogs announced as "alert dialog" — `ConfirmModal` uses `role="alertdialog"` + `aria-describedby`

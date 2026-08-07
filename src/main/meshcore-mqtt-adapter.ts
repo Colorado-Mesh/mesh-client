@@ -11,6 +11,7 @@ import {
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '../shared/meshtasticMqttReconnect';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
+import { mqttUsesTls } from '../shared/mqttTls';
 import { sanitizeLogMessage } from './log-service';
 import { forceEndMqttClient } from './mqtt-client-teardown';
 
@@ -24,16 +25,13 @@ function normalizePrefix(prefix: string): string {
 /** For debug logs only — actual connect uses the same option-object shape as MQTTManager. */
 function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
   const host = settings.server.trim();
+  const usesTls = mqttUsesTls(settings);
   if (settings.useWebSocket === true) {
-    const wsTlsEnabled =
-      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
     const wsPath = settings.wsPath ?? '/mqtt';
-    const scheme = wsTlsEnabled ? 'wss' : 'ws';
+    const scheme = usesTls ? 'wss' : 'ws';
     return `${scheme}://${host}:${settings.port}${wsPath}`;
   }
-  const useTls =
-    settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
-  return useTls ? `mqtts://${host}:${settings.port}` : `mqtt://${host}:${settings.port}`;
+  return usesTls ? `mqtts://${host}:${settings.port}` : `mqtt://${host}:${settings.port}`;
 }
 
 /** Time allowed for TCP/TLS/WebSocket + MQTT CONNACK (slow networks, captive portals). */
@@ -254,9 +252,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const clientId = isV1Username
       ? settings.username
       : settings.clientId?.trim() || `meshcore-mqtt-${randomBytes(4).toString('hex')}`;
-    const useTls =
-      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 8883);
-    const rejectUnauthorizedTls = useTls ? !settings.tlsInsecure : false;
+    const usesTls = mqttUsesTls(settings);
+    const rejectUnauthorizedTls = usesTls ? !settings.tlsInsecure : false;
     const logUrl = buildMeshcoreUrlForLog(settings);
 
     // Match MQTTManager: WebSocket uses mqtt.connect({ protocol, host, port, path, … }) — not
@@ -266,10 +263,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     // WebSocket-level pings (MESHCORE_MQTT_WSS_PING_MS) additionally keep LB/proxy paths alive.
     const keepaliveSec = settings.keepalive ?? 30;
     const wsEnabled = settings.useWebSocket === true;
-    const wsTlsEnabled =
-      settings.tlsEnabled === true || (settings.tlsEnabled !== false && settings.port === 443);
     const wsPath = settings.wsPath ?? '/mqtt';
-    const wsScheme = wsTlsEnabled ? 'wss' : 'ws';
+    const wsScheme = usesTls ? 'wss' : 'ws';
     let connectOpts: mqtt.IClientOptions = {
       clientId,
       username: settings.username || undefined,
@@ -296,7 +291,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         ...connectOpts,
         host: settings.server.trim(),
         port: settings.port,
-        protocol: useTls ? 'mqtts' : 'mqtt',
+        protocol: usesTls ? 'mqtts' : 'mqtt',
         rejectUnauthorized: rejectUnauthorizedTls,
       };
     }
@@ -306,8 +301,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       sanitizeLogMessage(logUrl),
       'ws:',
       settings.useWebSocket,
-      'wsTlsEnabled:',
-      wsTlsEnabled,
+      'usesTls:',
+      usesTls,
       'wsPath:',
       wsPath,
       'keepaliveSec:',

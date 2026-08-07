@@ -88,6 +88,7 @@ import {
   getMeshcoreRoomSyncConfig,
   setMeshcoreRoomSyncConfig,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
+import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
 import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/lib/nodeStatus';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
@@ -204,7 +205,7 @@ function canDmMeshcorePoster(
 ): boolean {
   if (senderId === 0 || senderId === myNodeNum) return false;
   const node = nodes.get(senderId);
-  if (!node || node.hw_model === 'Room') return false;
+  if (!node || isMeshcoreDmExcludedHwModel(node.hw_model)) return false;
   return Boolean(node.public_key_hex?.trim());
 }
 

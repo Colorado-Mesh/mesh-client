@@ -193,7 +193,65 @@ describe('GamesPanel', () => {
     });
   });
 
-  it('sends draw accept and decline when draw_offered metadata is set', async () => {
+  it('sends draw accept and decline when opponent offered a draw', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          first_turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: true,
+          draw_offered_by: peerHash,
+        },
+      }),
+    );
+
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Accept draw offer' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({ command: 'draw_accept', session_id: 's1' }),
+      );
+    });
+
+    vi.mocked(window.electronAPI.reticulum.games.sendAction).mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'Decline draw offer' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({ command: 'draw_decline', session_id: 's1' }),
+      );
+    });
+  });
+
+  it('shows waiting banner and hides Accept when local player offered a draw', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          first_turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: true,
+          draw_offered_by: 'me',
+        },
+      }),
+    );
+
+    expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
+    expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept draw offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline draw offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).not.toBeInTheDocument();
+  });
+
+  it('treats legacy draw_offered without draw_offered_by as an opponent offer', async () => {
     await renderAndSelectSession(
       makeSession({
         metadata: {
@@ -209,20 +267,105 @@ describe('GamesPanel', () => {
       }),
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Accept draw offer' }));
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept draw offer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Decline draw offer' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).not.toBeInTheDocument();
+  });
+
+  it('sends draw_offer when Offer draw is clicked', async () => {
+    await renderAndSelectSession(makeSession());
+    await userEvent.click(screen.getByRole('button', { name: 'Offer draw' }));
     await waitFor(() => {
       expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
-        expect.objectContaining({ command: 'draw_accept', session_id: 's1' }),
+        expect.objectContaining({ command: 'draw_offer', session_id: 's1' }),
       );
+    });
+  });
+
+  it('switches to waiting UI when games.update stamps local player as draw owner', async () => {
+    const session = makeSession();
+    await renderAndSelectSession(session);
+    expect(screen.getByRole('button', { name: 'Offer draw' })).toBeInTheDocument();
+
+    act(() => {
+      useReticulumGamesStore.getState().applyGamesUpdate({
+        app_id: session.app_id,
+        session_id: session.session_id,
+        direction: 'outbound',
+        session: {
+          ...session,
+          metadata: {
+            ...session.metadata,
+            draw_offered: true,
+            draw_offered_by: 'me',
+          },
+          updated_at: 2,
+        },
+      });
     });
 
-    vi.mocked(window.electronAPI.reticulum.games.sendAction).mockClear();
-    await userEvent.click(screen.getByRole('button', { name: 'Decline draw offer' }));
-    await waitFor(() => {
-      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
-        expect.objectContaining({ command: 'draw_decline', session_id: 's1' }),
-      );
+    expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
+    expect(screen.queryByText('Your opponent offered a draw.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept draw offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).not.toBeInTheDocument();
+  });
+
+  it('switches to Accept/Decline when games.update stamps opponent as draw owner', async () => {
+    const session = makeSession();
+    await renderAndSelectSession(session);
+
+    act(() => {
+      useReticulumGamesStore.getState().applyGamesUpdate({
+        app_id: session.app_id,
+        session_id: session.session_id,
+        direction: 'inbound',
+        session: {
+          ...session,
+          metadata: {
+            ...session.metadata,
+            draw_offered: true,
+            draw_offered_by: peerHash,
+          },
+          updated_at: 2,
+        },
+      });
     });
+
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept draw offer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Decline draw offer' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).not.toBeInTheDocument();
+  });
+
+  it('hides chess claim buttons while a self draw offer is pending', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        app_id: 'chess',
+        metadata: {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          turn: 'me',
+          my_color: 'w',
+          first_turn: 'me',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: true,
+          draw_offered_by: 'me',
+          draw_offer_reason: '3fr',
+          in_check: false,
+          legal_moves: [],
+          moves: [],
+        },
+      }),
+    );
+
+    expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Claim threefold repetition draw' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept draw offer' })).not.toBeInTheDocument();
   });
 
   it('shows resend after a failed action and triggers resend', async () => {

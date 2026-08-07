@@ -1,8 +1,9 @@
-import type { BrowserWindow } from 'electron';
+import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { app, ipcMain, shell } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 
 import { sanitizeLogMessage } from './log-service';
+import { assertIpcSender } from './validate-ipc-sender';
 
 // electron-updater is a runtime dependency only in the packaged app path
 // We do a dynamic require so the dev path still works without it installed
@@ -44,8 +45,9 @@ async function openAppReleasePage(send: SendFn): Promise<void> {
     await shell.openExternal(lastAppReleaseUrl ?? RELEASES_URL);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.warn('[updater] open release page failed:', sanitizeLogMessage(msg));
-    send('update:error', { message: msg });
+    const safe = sanitizeLogMessage(msg);
+    console.warn('[updater] open release page failed:', safe);
+    send('update:error', { message: safe });
   }
 }
 
@@ -99,17 +101,20 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
     void doCheck();
   };
 
-  ipcMain.handle('update:check', async () => {
+  ipcMain.handle('update:check', async (event: IpcMainInvokeEvent) => {
+    assertIpcSender(event, 'update:check');
     send('update:checking', { notifyOnSettled: false });
     await doCheck();
   });
 
-  ipcMain.handle('update:download', async () => {
+  ipcMain.handle('update:download', async (event: IpcMainInvokeEvent) => {
+    assertIpcSender(event, 'update:download');
     if (!uiReportsPackaged) return;
     await openAppReleasePage(send);
   });
 
-  ipcMain.handle('update:install', () => {
+  ipcMain.handle('update:install', (event: IpcMainInvokeEvent) => {
+    assertIpcSender(event, 'update:install');
     /* no-op — no downloaded artifact in this path */
   });
 }
@@ -154,8 +159,9 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
   });
 
   updater.on('error', (err: Error) => {
+    const safe = sanitizeLogMessage(err.message);
     console.error('[updater] error:', sanitizeLogMessage(err.message));
-    send('update:error', { message: err.message });
+    send('update:error', { message: safe });
   });
 
   const doCheck = async () => {
@@ -163,8 +169,9 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
       await updater.checkForUpdates();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn('[updater] checkForUpdates failed:', sanitizeLogMessage(msg));
-      send('update:error', { message: msg });
+      const safe = sanitizeLogMessage(msg);
+      console.warn('[updater] checkForUpdates failed:', safe);
+      send('update:error', { message: safe });
     }
   };
 
@@ -176,12 +183,14 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     void doCheck();
   };
 
-  ipcMain.handle('update:check', async () => {
+  ipcMain.handle('update:check', async (event: IpcMainInvokeEvent) => {
+    assertIpcSender(event, 'update:check');
     send('update:checking', { notifyOnSettled: false });
     await doCheck();
   });
 
-  ipcMain.handle('update:download', async () => {
+  ipcMain.handle('update:download', async (event: IpcMainInvokeEvent) => {
+    assertIpcSender(event, 'update:download');
     if (process.platform === 'darwin') {
       await openAppReleasePage(send);
       return;
@@ -190,12 +199,14 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
       await updater.downloadUpdate();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn('[updater] update:download failed:', sanitizeLogMessage(msg));
-      send('update:error', { message: msg });
+      const safe = sanitizeLogMessage(msg);
+      console.warn('[updater] update:download failed:', safe);
+      send('update:error', { message: safe });
     }
   });
 
-  ipcMain.handle('update:install', () => {
+  ipcMain.handle('update:install', (event: IpcMainInvokeEvent) => {
+    assertIpcSender(event, 'update:install');
     if (process.platform === 'darwin') return;
     updater.quitAndInstall(false, true);
   });
@@ -222,7 +233,8 @@ export function initUpdater(win: BrowserWindow): void {
   const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
   setInterval(() => checkNow?.(), CHECK_INTERVAL_MS).unref();
 
-  ipcMain.handle('update:open-releases', async (_event, url?: string) => {
+  ipcMain.handle('update:open-releases', async (event: IpcMainInvokeEvent, url?: string) => {
+    assertIpcSender(event, 'update:open-releases');
     try {
       console.debug('[IPC] update:open-releases');
       let parsedUrl: URL | null = null;

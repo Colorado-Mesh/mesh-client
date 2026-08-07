@@ -27,6 +27,9 @@ const WRITE_FNS = [
   'createWriteStream',
   'copyFileSync',
   'copyFile',
+  // mkdirSync on a predictable tmpdir path is the same class of issue (extract dirs, probes).
+  'mkdirSync',
+  'mkdir',
 ];
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'dist-electron', 'coverage', '.git']);

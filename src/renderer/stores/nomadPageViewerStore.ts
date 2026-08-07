@@ -552,9 +552,15 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     if (!get().panelActive) {
       const label = node?.display_name?.trim() || hash.slice(0, 8);
       // Lazy import avoids pulling i18n into panel unit-test graphs.
-      void import('@/renderer/lib/i18n').then(({ default: i18n }) => {
-        pushAppToast(i18n.t('nomadNetwork.pageReadyToast', { name: label }), 'success', 6_000);
-      });
+      void import('@/renderer/lib/i18n')
+        .then(({ default: i18n }) => {
+          pushAppToast(i18n.t('nomadNetwork.pageReadyToast', { name: label }), 'success', 6_000);
+        })
+        .catch((err: unknown) => {
+          console.warn(
+            '[nomadPageViewerStore] pageReadyToast i18n import failed ' + errLikeToLogString(err),
+          );
+        });
     }
   },
 }));
