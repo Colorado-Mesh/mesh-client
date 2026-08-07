@@ -49,13 +49,12 @@ export function configuredPropagationDestinationHashes(
 }
 
 /**
- * Ranking helper for UI (e.g. “Add closest”) and diagnostics.
+ * Ranking helper for UI (e.g. “Add closest”), diagnostics, and Auto sync order.
  *
  * Ordering: **best active discovered** (lowest hops) → else **best enabled configured
  * remote** → else enabled `local-prop` → else `null`.
  *
- * Auto mode sync uses configured remotes → local only; it does **not** add discovered
- * rows or write Preferred from this pick.
+ * Auto one-time-syncs a discovered hash without adding it or writing Preferred.
  */
 export type AutoPropagationTarget =
   | { kind: 'configured'; id: string }
@@ -142,19 +141,23 @@ export function pickAutoPropagationNodeId(nodes: PropagationNodeRow[]): string |
 }
 
 /**
- * Node id that Sync / periodic auto-sync may target for the given mode.
+ * Sync target hint for UI enablement.
  *
- * Auto selects among **already configured** remotes (else local); discovered-only is
- * not a sync target until the user adds the node. Manual uses Preferred (including
- * `local-prop`). Off → null.
+ * Auto: best discovered destination hash (one-time sync), else best configured remote,
+ * else local-prop. Manual uses Preferred (including `local-prop`). Off → null.
  */
 export function resolvePropagationSyncTargetId(
   mode: ReticulumPropagationMode,
   nodes: PropagationNodeRow[],
   preferredId: string | null,
+  discovered: readonly DiscoveredPropagationRow[] = [],
 ): string | null {
   if (mode === 'off') return null;
   if (mode === 'manual') return preferredId;
+  const discoveredBest = listDiscoveredPropagationTargets(nodes, discovered).at(0);
+  if (discoveredBest != null) {
+    return discoveredBest.destinationHash.toLowerCase();
+  }
   const configured = listConfiguredRemotePropagationIds(nodes).at(0);
   if (configured != null) return configured;
   if (hasEnabledLocalPropagationNode(nodes)) return 'local-prop';

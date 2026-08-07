@@ -295,6 +295,17 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
+  it('startSync posts destination_hash for a 32-hex one-time sync', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: true });
+    const hash = 'deadbeef'.repeat(4);
+    await expect(useReticulumPropagationStore.getState().startSync(hash)).resolves.toBe(true);
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/sync', {
+      destination_hash: hash,
+    });
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+  });
+
   it('older success completion does not clear a newer failed attempt stamp', () => {
     const olderAttempt = 1_000;
     const newerAttempt = 2_000;

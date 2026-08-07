@@ -346,7 +346,9 @@ describe('ReticulumPropagationSection', () => {
 
     await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
 
-    expect(setPreferredOnSidecar).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(setPreferredOnSidecar).not.toHaveBeenCalled();
+    });
     for (const btn of screen.getAllByRole('button', {
       name: 'reticulumPropagation.setPreferred',
     })) {
@@ -354,7 +356,7 @@ describe('ReticulumPropagationSection', () => {
     }
   });
 
-  it('Auto does not soft-upsert discovered nodes', async () => {
+  it('Auto one-time syncs best discovered by hash without Add or Preferred', async () => {
     const user = userEvent.setup();
     const hash = 'deadbeef'.repeat(4);
     useReticulumPropagationStore.setState({
@@ -382,11 +384,21 @@ describe('ReticulumPropagationSection', () => {
     const setPreferredOnSidecar = vi.mocked(
       useReticulumPropagationStore.getState().setPreferredOnSidecar,
     );
+    const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);
+    // Cascade probes interfaces; report one enabled so discovered sync is attempted.
+    vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({ interfaces: [{ id: 'tcp1', enabled: true }] });
+      }
+      return Promise.resolve({ status: 'ok' });
+    });
     render(<ReticulumPropagationSection embedded />);
 
     await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
-    await Promise.resolve();
 
+    await waitFor(() => {
+      expect(startSync).toHaveBeenCalledWith(hash.toLowerCase());
+    });
     expect(addFromDiscovered).not.toHaveBeenCalled();
     expect(setPreferredOnSidecar).not.toHaveBeenCalled();
   });
@@ -413,14 +425,13 @@ describe('ReticulumPropagationSection', () => {
 
   it('Sync Now in Auto syncs configured remote without Preferred write', async () => {
     const user = userEvent.setup();
+    // Start in Auto so mode change does not auto-kick an extra cascade before the click.
+    localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, 'auto');
     const setPreferredOnSidecar = vi.mocked(
       useReticulumPropagationStore.getState().setPreferredOnSidecar,
     );
     const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);
     render(<ReticulumPropagationSection embedded />);
-
-    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
-    expect(setPreferredOnSidecar).not.toHaveBeenCalled();
 
     const syncBtn = screen.getByRole('button', {
       name: 'reticulumPropagation.syncNowPreferredAria',

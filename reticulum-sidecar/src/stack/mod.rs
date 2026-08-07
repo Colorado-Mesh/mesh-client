@@ -1429,6 +1429,45 @@ impl StackHandle {
         Ok(())
     }
 
+    /// One-time remote sync by destination hash. Does not add a configured row or change Preferred.
+    pub async fn start_propagation_sync_by_hash(
+        &self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        let prop_hash = destination_hash.trim().to_lowercase();
+        if prop_hash.len() != 32 || !prop_hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("destination_hash must be 32 hex characters".into());
+        }
+        let lxmf = {
+            let inner = self.inner.read().await;
+            inner.identity.lxmf_hash.clone()
+        };
+        let local_prop_hash = {
+            #[cfg(feature = "rns-stack")]
+            {
+                self.live
+                    .get()
+                    .map(|live| live.propagation_local_hash())
+                    .unwrap_or_default()
+            }
+            #[cfg(not(feature = "rns-stack"))]
+            {
+                String::new()
+            }
+        };
+        if prop_hash.eq_ignore_ascii_case(&lxmf)
+            || (!local_prop_hash.is_empty() && prop_hash.eq_ignore_ascii_case(&local_prop_hash))
+        {
+            return Err("LOCAL_PROPAGATION_SYNC_UNSUPPORTED".into());
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.start_propagation_sync(&prop_hash).await?;
+            return Ok(());
+        }
+        Err("RNS stack not live".into())
+    }
+
     pub async fn cancel_propagation_sync(&self) -> Result<(), String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
@@ -3454,6 +3493,48 @@ mod tests {
         .await;
         handle.clear_announces().await.expect("clear announces");
         assert!(handle.list_peers().await.is_empty());
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn start_propagation_sync_by_hash_rejects_invalid_and_leaves_list_unchanged() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        let before = handle.list_propagation().await;
+        let preferred_before = before
+            .get("preferred_id")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        let err = handle
+            .start_propagation_sync_by_hash("dead")
+            .await
+            .expect_err("short hash");
+        assert!(err.contains("32 hex"), "unexpected error: {err}");
+        let after = handle.list_propagation().await;
+        assert_eq!(
+            after
+                .get("preferred_id")
+                .cloned()
+                .unwrap_or(serde_json::Value::Null),
+            preferred_before
+        );
+        assert_eq!(
+            after
+                .get("propagation")
+                .and_then(|n| n.as_array())
+                .map(Vec::len),
+            before
+                .get("propagation")
+                .and_then(|n| n.as_array())
+                .map(Vec::len)
+        );
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }

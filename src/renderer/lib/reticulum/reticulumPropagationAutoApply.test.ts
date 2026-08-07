@@ -26,6 +26,27 @@ describe('reticulumPropagationAutoApply', () => {
         store.clear();
       },
     });
+    vi.stubGlobal('electronAPI', {
+      reticulum: {
+        proxyGet: vi.fn().mockResolvedValue({
+          interfaces: [{ id: 'tcp1', enabled: true }],
+        }),
+      },
+    });
+    // electronAPI is on window in renderer
+    Object.defineProperty(globalThis, 'window', {
+      value: {
+        electronAPI: {
+          reticulum: {
+            proxyGet: vi.fn().mockResolvedValue({
+              interfaces: [{ id: 'tcp1', enabled: true }],
+            }),
+          },
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
     writeReticulumPropagationMode('auto');
     useReticulumPropagationStore.setState({
       nodes: [
@@ -57,13 +78,21 @@ describe('reticulumPropagationAutoApply', () => {
     vi.unstubAllGlobals();
   });
 
-  it('Auto syncs configured remotes without adding discovered or writing Preferred', async () => {
+  it('Auto one-time syncs best discovered by hash without Add or Preferred', async () => {
     const hash = 'dead'.repeat(8);
     const addFromDiscovered = vi.fn().mockResolvedValue(true);
     const setPreferred = vi.fn().mockResolvedValue(true);
     const startSync = vi.fn().mockResolvedValue(true);
     useReticulumPropagationStore.setState({
       preferredId: null,
+      nodes: [
+        {
+          id: 'local-prop',
+          name: 'Local',
+          enabled: true,
+          status: 'known',
+        },
+      ],
       discovered: [
         {
           destination_hash: hash,
@@ -76,7 +105,48 @@ describe('reticulumPropagationAutoApply', () => {
       setPreferredOnSidecar: setPreferred,
       startSync,
     });
-    await expect(startPropagationSyncCascade()).resolves.toBe(true);
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync).toHaveBeenCalledWith(hash);
+    expect(addFromDiscovered).not.toHaveBeenCalled();
+    expect(setPreferred).not.toHaveBeenCalled();
+    expect(startSync).not.toHaveBeenCalledWith('local-prop');
+  });
+
+  it('Auto with no enabled interfaces settles local only', async () => {
+    const hash = 'dead'.repeat(8);
+    const addFromDiscovered = vi.fn().mockResolvedValue(true);
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      nodes: [
+        {
+          id: 'local-prop',
+          name: 'Local',
+          enabled: true,
+          status: 'known',
+        },
+      ],
+      discovered: [
+        {
+          destination_hash: hash,
+          node_state: true,
+          peering_cost: 0,
+          hops: 0,
+        },
+      ],
+      addFromDiscovered,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: false })).resolves.toBe(true);
+    expect(startSync).toHaveBeenCalledWith('local-prop');
+    expect(startSync).toHaveBeenCalledTimes(1);
+    expect(addFromDiscovered).not.toHaveBeenCalled();
+  });
+
+  it('Auto syncs configured remote without Preferred write when no discoveries', async () => {
+    const setPreferred = vi.mocked(useReticulumPropagationStore.getState().setPreferredOnSidecar);
+    const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);
+    const addFromDiscovered = vi.mocked(useReticulumPropagationStore.getState().addFromDiscovered);
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
     expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
     expect(addFromDiscovered).not.toHaveBeenCalled();
     expect(setPreferred).not.toHaveBeenCalled();
@@ -88,30 +158,9 @@ describe('reticulumPropagationAutoApply', () => {
       preferredId: 'pn-aabb1111',
       startSync,
     });
-    await expect(ensurePreferredThenStartSync('pn-aabb1111')).resolves.toBe(true);
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
     expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
     expect(startSync).toHaveBeenCalledWith('local-prop');
-  });
-
-  it('Auto with only local settles local without Preferred write', async () => {
-    const startSync = vi.fn().mockResolvedValue(true);
-    const setPreferred = vi.fn().mockResolvedValue(true);
-    useReticulumPropagationStore.setState({
-      nodes: [
-        {
-          id: 'local-prop',
-          name: 'Local',
-          enabled: true,
-          status: 'known',
-        },
-      ],
-      preferredId: null,
-      startSync,
-      setPreferredOnSidecar: setPreferred,
-    });
-    await expect(startPropagationSyncCascade()).resolves.toBe(true);
-    expect(startSync).toHaveBeenCalledWith('local-prop');
-    expect(setPreferred).not.toHaveBeenCalled();
   });
 
   it('Manual Preferred local-prop syncs local settle', async () => {

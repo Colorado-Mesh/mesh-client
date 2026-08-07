@@ -87,11 +87,12 @@ describe('reticulumPropagationMode', () => {
     expect(resolvePropagationSyncTargetId('auto', nodes, null)).toBe('pn-aaaa');
   });
 
-  it('Auto sync target uses local when only discovered remotes exist (no auto-add)', () => {
+  it('Auto sync target prefers discovered destination hash over local-only', () => {
+    const hash = 'dead'.repeat(8);
     const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0 })];
-    const rows = [discovered({ destination_hash: 'dead'.repeat(8), hops: 1 })];
+    const rows = [discovered({ destination_hash: hash, hops: 1 })];
     expect(pickAutoPropagationTarget(nodes, rows)?.kind).toBe('discovered');
-    expect(resolvePropagationSyncTargetId('auto', nodes, null)).toBe('local-prop');
+    expect(resolvePropagationSyncTargetId('auto', nodes, null, rows)).toBe(hash);
   });
 
   it('pickAutoPropagationTarget prefers discovered over configured (Add-closest ranking)', () => {

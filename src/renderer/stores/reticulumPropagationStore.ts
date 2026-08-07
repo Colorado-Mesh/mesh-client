@@ -287,6 +287,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   startSync: async (id) => {
     const propId = id ?? get().preferredId;
     if (!propId) return false;
+    const isDestHash = /^[0-9a-fA-F]{32}$/.test(propId);
     // Avoid overlapping renderer starts so a late success cannot clear a newer attempt.
     if (get().sync.active) {
       await get().cancelSync();
@@ -304,9 +305,13 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       schedulePropagationSyncStallWatchdog();
     }
     try {
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync', {
-        propagation_id: propId,
-      })) as { ok?: boolean; error?: string };
+      const body = isDestHash
+        ? { destination_hash: propId.toLowerCase() }
+        : { propagation_id: propId };
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/sync',
+        body,
+      )) as { ok?: boolean; error?: string };
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
         // Soft defer: outbound LXMF deposit owns the PN Link — retry on next auto-sync tick.

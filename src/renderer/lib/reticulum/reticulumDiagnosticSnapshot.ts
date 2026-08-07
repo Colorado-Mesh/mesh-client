@@ -97,7 +97,12 @@ export function getReticulumPropagationClientSnapshot(): ReticulumPropagationCli
   return {
     mode,
     preferredId: s.preferredId,
-    resolvedSyncTargetId: resolvePropagationSyncTargetId(mode, s.nodes, s.preferredId),
+    resolvedSyncTargetId: resolvePropagationSyncTargetId(
+      mode,
+      s.nodes,
+      s.preferredId,
+      s.discovered,
+    ),
     autoTarget: formatAutoPropagationTargetLabel(auto),
     lastSyncError: s.lastSyncError,
     lastPropagationSyncAt: s.lastPropagationSyncAt,

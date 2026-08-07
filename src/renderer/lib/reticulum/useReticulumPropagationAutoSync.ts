@@ -4,6 +4,7 @@ import { startPropagationSyncCascade } from '@/renderer/lib/reticulum/reticulumP
 import {
   hasEnabledLocalPropagationNode,
   listConfiguredRemotePropagationIds,
+  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -87,12 +88,14 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
         autoSyncIntervalSec,
         preferredId,
         nodes,
+        discovered,
         sync,
         lastPropagationSyncAt,
         lastPropagationSyncAttemptAt,
       } = useReticulumPropagationStore.getState();
 
       const hasAutoCascadeCandidate =
+        listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
         listConfiguredRemotePropagationIds(nodes).length > 0 ||
         hasEnabledLocalPropagationNode(nodes);
 

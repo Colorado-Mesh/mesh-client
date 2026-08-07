@@ -9,6 +9,7 @@ import {
   hasEnabledLocalPropagationNode,
   isReticulumPropagationMode,
   listConfiguredRemotePropagationIds,
+  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
   type ReticulumPropagationMode,
@@ -208,6 +209,11 @@ export default function ReticulumPropagationSection({
     if (!isReticulumPropagationMode(next)) return;
     setMode(next);
     writeReticulumPropagationMode(next);
+    if (next !== 'auto') return;
+    // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
+    const target =
+      resolvePropagationSyncTargetId('auto', nodes, preferredId, discovered) ?? 'local-prop';
+    handleSyncNow(target);
   };
 
   const handleRefresh = async () => {
@@ -258,9 +264,11 @@ export default function ReticulumPropagationSection({
         ? 'reticulumPropagation.modeHelpManual'
         : 'reticulumPropagation.modeHelpOff';
 
-  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId);
+  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId, discovered);
   const autoHasCascadeCandidate =
-    listConfiguredRemotePropagationIds(nodes).length > 0 || hasEnabledLocalPropagationNode(nodes);
+    listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
+    listConfiguredRemotePropagationIds(nodes).length > 0 ||
+    hasEnabledLocalPropagationNode(nodes);
   // Manual/Auto may Sync local-prop (settle); Off disables bottom Sync.
   const bottomSyncDisabled =
     sync.active ||
