@@ -21,6 +21,29 @@ describe('updater source contracts', () => {
     expect(UPDATER_SOURCE).toContain('getCheckNowFromMenu');
   });
 
+  it('validates IPC sender on update invoke channels', () => {
+    for (const channel of [
+      'update:check',
+      'update:download',
+      'update:install',
+      'update:open-releases',
+    ] as const) {
+      const needle = `ipcMain.handle('${channel}'`;
+      expect(UPDATER_SOURCE).toContain(needle);
+      const idx = UPDATER_SOURCE.indexOf(needle);
+      expect(UPDATER_SOURCE.slice(idx, idx + 250)).toContain(
+        `assertIpcSender(event, '${channel}')`,
+      );
+    }
+  });
+
+  it('sanitizes updater error payloads before logging and notifying the renderer', () => {
+    expect(UPDATER_SOURCE).toMatch(/send\('update:error',\s*\{\s*message:\s*safe\s*\}\)/);
+    expect(UPDATER_SOURCE).toContain(
+      "console.error('[updater] error:', sanitizeLogMessage(err.message))",
+    );
+  });
+
   it('declares builder-util-runtime so electron-updater resolves in packaged Windows builds', () => {
     expect(PACKAGE_JSON.dependencies?.['builder-util-runtime']).toBeTruthy();
   });

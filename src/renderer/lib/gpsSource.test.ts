@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   GPS_SETTINGS_STORAGE_KEY,
   hasStoredStaticGps,
+  persistStoredStaticGps,
+  readGpsRefreshIntervalSecs,
   readStoredStaticGps,
   resolveOurPosition,
   shouldPreserveStaticGpsForSelfNode,
@@ -26,6 +28,44 @@ describe('readStoredStaticGps', () => {
     );
     expect(readStoredStaticGps()).toEqual({ lat: 39.7392, lon: -104.9903 });
     expect(hasStoredStaticGps()).toBe(true);
+  });
+});
+
+describe('readGpsRefreshIntervalSecs / persistStoredStaticGps', () => {
+  afterEach(() => {
+    localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
+  });
+
+  it('returns 0 when refreshInterval is missing or non-positive', () => {
+    expect(readGpsRefreshIntervalSecs()).toBe(0);
+    localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ refreshInterval: 0 }));
+    expect(readGpsRefreshIntervalSecs()).toBe(0);
+    localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ refreshInterval: -5 }));
+    expect(readGpsRefreshIntervalSecs()).toBe(0);
+  });
+
+  it('returns a positive refresh interval when configured', () => {
+    localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ refreshInterval: 30 }));
+    expect(readGpsRefreshIntervalSecs()).toBe(30);
+  });
+
+  it('persists static coords while preserving refreshInterval', () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ refreshInterval: 45, extra: 'keep' }),
+    );
+    persistStoredStaticGps(39.1, -104.2);
+    const stored = JSON.parse(localStorage.getItem(GPS_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(stored).toMatchObject({
+      staticLat: 39.1,
+      staticLon: -104.2,
+      refreshInterval: 45,
+      extra: 'keep',
+    });
+    expect(readStoredStaticGps()).toEqual({ lat: 39.1, lon: -104.2 });
   });
 });
 

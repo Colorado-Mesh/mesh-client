@@ -174,4 +174,18 @@ describe('lastConnectionStorage reconnect rehydrate', () => {
     );
     expect(resolveLastSerialPortId('meshtastic')).toBe('ttyUSB0');
   });
+
+  it('resolveLastHttpAddress accepts tcp type and ignores ble leftovers', () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshcore',
+      JSON.stringify({ type: 'tcp', httpAddress: '192.168.4.1:5000' }),
+    );
+    expect(resolveLastHttpAddress('meshcore')).toBe('192.168.4.1:5000');
+
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshcore',
+      JSON.stringify({ type: 'ble', bleDeviceId: 'aa:bb', httpAddress: '10.0.0.9:5000' }),
+    );
+    expect(resolveLastHttpAddress('meshcore')).toBeUndefined();
+  });
 });

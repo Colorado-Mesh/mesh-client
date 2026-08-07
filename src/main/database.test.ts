@@ -442,9 +442,9 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionCount');
     expect(INDEX_SOURCE).toContain('reduceMotion');
     expect(INDEX_SOURCE).toContain('use24HourTime');
-    expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
-    expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
-    expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_LAST_POST_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain('reticulumLastSelfLxmfHash');
     expect(INDEX_SOURCE).toContain('reticulumRmapAnnounceIntervalMin');
     expect(INDEX_SOURCE).toContain('reticulumRmapReachableOn');

@@ -9,6 +9,7 @@ import {
   meshtasticStoreForwardContentMatch,
   normalizeMeshtasticDedupPayload,
 } from './meshtasticMessageDedup';
+import { MESHTASTIC_DEDUP_WINDOW_MS, MESHTASTIC_PACKET_DEDUP_TTL_MS } from './timeConstants';
 import type { ChatMessage } from './types';
 
 function baseMsg(overrides: Partial<ChatMessage> = {}): ChatMessage {
@@ -26,6 +27,13 @@ describe('normalizeMeshtasticDedupPayload', () => {
   it('strips placeholder "0" payloads', () => {
     expect(normalizeMeshtasticDedupPayload('0')).toBe('');
     expect(normalizeMeshtasticDedupPayload('hello')).toBe('hello');
+  });
+});
+
+describe('Meshtastic 10-minute dedup window aliases', () => {
+  it('keeps cross-transport and packet TTL aliases on the canonical constant', () => {
+    expect(MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS).toBe(MESHTASTIC_DEDUP_WINDOW_MS);
+    expect(MESHTASTIC_PACKET_DEDUP_TTL_MS).toBe(MESHTASTIC_DEDUP_WINDOW_MS);
   });
 });
 
