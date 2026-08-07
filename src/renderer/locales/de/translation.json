@@ -5321,6 +5321,7 @@
       "propagating": "Offline-Posteingang...",
       "propagated": "Gespeichert",
       "failed": "Erneuter Versuch erforderlich"
-    }
+    },
+    "drawOfferWaitingBanner": "Angebot ziehen gesendet. Warten auf Gegner..."
   }
 }

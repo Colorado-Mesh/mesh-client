@@ -5321,6 +5321,7 @@
       "propagating": "Offline inbox...",
       "propagated": "Opgeslagen",
       "failed": "Opnieuw proberen nodig"
-    }
+    },
+    "drawOfferWaitingBanner": "Tekenaanbod verzonden. Wachten op tegenstander..."
   }
 }

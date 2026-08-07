@@ -5321,6 +5321,7 @@
       "propagating": "Posta in arrivo offline...",
       "propagated": "Memorizzato",
       "failed": "Nuovo tentativo necessario"
-    }
+    },
+    "drawOfferWaitingBanner": "Offerta di pareggio inviata. In attesa dell'avversario..."
   }
 }

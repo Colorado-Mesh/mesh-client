@@ -5321,6 +5321,7 @@
       "propagating": "Bandeja de entrada sin conexión...",
       "propagated": "Almacenado",
       "failed": "Se necesita volver a intentarlo"
-    }
+    },
+    "drawOfferWaitingBanner": "Oferta de sorteo enviada. Esperando al oponente..."
   }
 }

@@ -5321,6 +5321,7 @@
       "propagating": "オフライン受信トレイ…",
       "propagated": "格納されています",
       "failed": "再試行が必要です"
-    }
+    },
+    "drawOfferWaitingBanner": "抽選オファーが送信されました。対戦相手を待っています…"
   }
 }

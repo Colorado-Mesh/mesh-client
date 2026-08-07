@@ -88,6 +88,8 @@ export interface GamesTttMetadata {
   winner: string;
   terminal: string;
   draw_offered: boolean;
+  /** Hash of who offered the pending draw (local `identity_id` or peer). */
+  draw_offered_by?: string;
 }
 
 /** `lrgp-rs` ChessApp session metadata (see `default_metadata` in chess.rs). */
@@ -101,6 +103,8 @@ export interface GamesChessMetadata {
   winner: string;
   terminal: string;
   draw_offered: boolean;
+  /** Hash of who offered the pending draw (local `identity_id` or peer). */
+  draw_offered_by?: string;
   draw_offer_reason?: string;
   in_check: boolean;
   legal_moves: string[];

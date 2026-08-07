@@ -39,3 +39,29 @@ export function isGamesSessionInitiator(session: {
     session.initiator && session.identity_id && session.initiator === session.identity_id,
   );
 }
+
+/** Hash of who offered the pending draw (`metadata.draw_offered_by`), or empty. */
+export function gamesDrawOfferedBy(metadata: Record<string, unknown> | undefined): string {
+  return gamesMetaStr(metadata, 'draw_offered_by');
+}
+
+/** True when a draw is pending and the local player offered it. */
+export function isGamesDrawOfferFromSelf(session: {
+  identity_id: string;
+  metadata?: Record<string, unknown>;
+}): boolean {
+  if (!gamesMetaBool(session.metadata, 'draw_offered')) return false;
+  const owner = gamesDrawOfferedBy(session.metadata);
+  return Boolean(owner && session.identity_id && owner === session.identity_id);
+}
+
+/**
+ * True when a draw is pending and Accept/Decline should be shown.
+ * Missing `draw_offered_by` (older clients) is treated as an opponent offer.
+ */
+export function isGamesDrawOfferFromOpponent(session: {
+  identity_id: string;
+  metadata?: Record<string, unknown>;
+}): boolean {
+  return gamesMetaBool(session.metadata, 'draw_offered') && !isGamesDrawOfferFromSelf(session);
+}

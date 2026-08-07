@@ -5321,6 +5321,7 @@
       "propagating": "Çevrimdışı Gelen Kutusu…",
       "propagated": "ve saklanmalı.",
       "failed": "Yeniden deneme gerekli"
-    }
+    },
+    "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…"
   }
 }

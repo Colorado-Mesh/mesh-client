@@ -193,7 +193,7 @@ describe('GamesPanel', () => {
     });
   });
 
-  it('sends draw accept and decline when draw_offered metadata is set', async () => {
+  it('sends draw accept and decline when opponent offered a draw', async () => {
     await renderAndSelectSession(
       makeSession({
         metadata: {
@@ -205,10 +205,12 @@ describe('GamesPanel', () => {
           winner: '',
           terminal: '',
           draw_offered: true,
+          draw_offered_by: peerHash,
         },
       }),
     );
 
+    expect(screen.getByText('Your opponent offered a draw.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Accept draw offer' }));
     await waitFor(() => {
       expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
@@ -223,6 +225,29 @@ describe('GamesPanel', () => {
         expect.objectContaining({ command: 'draw_decline', session_id: 's1' }),
       );
     });
+  });
+
+  it('shows waiting banner and hides Accept when local player offered a draw', async () => {
+    await renderAndSelectSession(
+      makeSession({
+        metadata: {
+          board: '_________',
+          turn: 'me',
+          first_turn: 'me',
+          my_marker: 'X',
+          move_count: 0,
+          winner: '',
+          terminal: '',
+          draw_offered: true,
+          draw_offered_by: 'me',
+        },
+      }),
+    );
+
+    expect(screen.getByText('Draw offer sent. Waiting for opponent…')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept draw offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline draw offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).not.toBeInTheDocument();
   });
 
   it('shows resend after a failed action and triggers resend', async () => {

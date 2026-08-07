@@ -5321,6 +5321,7 @@
       "propagating": "오프라인 수신함...",
       "propagated": "저장량",
       "failed": "다시 시도 필요"
-    }
+    },
+    "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중..."
   }
 }

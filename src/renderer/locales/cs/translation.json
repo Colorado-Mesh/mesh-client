@@ -5323,6 +5323,7 @@
       "propagating": "Offline doručené zprávy...",
       "propagated": "Doručená na Vyzvedni.to a připravená k výdeji",
       "failed": "Je třeba to zkusit znovu"
-    }
+    },
+    "drawOfferWaitingBanner": "Nabídka byla odeslána. Čeká se na soupeře..."
   }
 }

@@ -5321,6 +5321,7 @@
       "propagating": "离线收件箱…",
       "propagated": "已存储",
       "failed": "需要重试"
-    }
+    },
+    "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……"
   }
 }

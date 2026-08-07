@@ -5325,6 +5325,7 @@
       "propagating": "Skrzynka odbiorcza offline...",
       "propagated": "Przechowywane",
       "failed": "Wymagana ponowna próba"
-    }
+    },
+    "drawOfferWaitingBanner": "Oferta losowania wysłana. Oczekiwanie na przeciwnika…"
   }
 }

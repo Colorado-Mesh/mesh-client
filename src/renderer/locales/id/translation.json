@@ -5321,6 +5321,7 @@
       "propagating": "Kotak Masuk Offline…",
       "propagated": "Disimpan",
       "failed": "Coba lagi yang diperlukan"
-    }
+    },
+    "drawOfferWaitingBanner": "Penawaran undian terkirim. Menunggu lawan…"
   }
 }

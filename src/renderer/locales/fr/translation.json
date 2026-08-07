@@ -5321,6 +5321,7 @@
       "propagating": "Boîte de réception hors ligne…",
       "propagated": "emmagasiné, rangé, conservé, entreposé, stocké",
       "failed": "Réessayer nécessaire"
-    }
+    },
+    "drawOfferWaitingBanner": "Offre de tirage envoyée. En attente de l'adversaire…"
   }
 }

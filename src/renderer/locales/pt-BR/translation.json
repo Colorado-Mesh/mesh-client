@@ -5321,6 +5321,7 @@
       "propagating": "Caixa de entrada offline...",
       "propagated": "Armazenada",
       "failed": "Tentativa necessária"
-    }
+    },
+    "drawOfferWaitingBanner": "Oferta de empate enviada. Aguardando oponente..."
   }
 }

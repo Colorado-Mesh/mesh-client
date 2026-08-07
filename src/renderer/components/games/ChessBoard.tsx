@@ -5,6 +5,8 @@ import {
   gamesMetaBool,
   gamesMetaStr,
   gamesMetaStrArray,
+  isGamesDrawOfferFromOpponent,
+  isGamesDrawOfferFromSelf,
 } from '@/renderer/lib/reticulum/reticulumGamesMetadata';
 import type { GameSession } from '@/shared/games-types';
 
@@ -78,7 +80,8 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
   const terminal = gamesMetaStr(metadata, 'terminal');
   const winner = gamesMetaStr(metadata, 'winner');
   const inCheck = gamesMetaBool(metadata, 'in_check');
-  const drawOffered = gamesMetaBool(metadata, 'draw_offered');
+  const drawOfferedByOpponent = isGamesDrawOfferFromOpponent(session);
+  const drawOfferedBySelf = isGamesDrawOfferFromSelf(session);
   const legalMoves = gamesMetaStrArray(metadata, 'legal_moves');
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -256,8 +259,11 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
           ))}
         </div>
       )}
-      {drawOffered && isActive && (
+      {drawOfferedByOpponent && isActive && (
         <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferedBanner')}</div>
+      )}
+      {drawOfferedBySelf && isActive && (
+        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
       )}
     </div>
   );
