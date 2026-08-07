@@ -3029,7 +3029,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% исправности соединения",
     "tabAll": "Все",
     "tabHistory": "История",
-    "emptyHistory": "Прямых сообщений пока нет — отправьте или получите DM, чтобы увидеть пиры здесь."
+    "emptyHistory": "Прямых сообщений пока нет — отправьте или получите DM, чтобы увидеть пиры здесь.",
+    "meshcoreTypeSensor": "Датчик",
+    "meshcoreTypeNone": "Нет",
+    "meshcoreTypeUnknown": "Неизвестно"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

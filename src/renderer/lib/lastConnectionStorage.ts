@@ -50,7 +50,8 @@ export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | und
 /** Meshtastic HTTP/TCP or MeshCore TCP host (stored as `http`/`tcp` connection type). */
 export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefined {
   const last = loadLastConnection(protocol);
-  const addr = last?.httpAddress?.trim();
+  if (last?.type !== 'http' && last?.type !== 'tcp') return undefined;
+  const addr = last.httpAddress?.trim();
   return addr || undefined;
 }
 

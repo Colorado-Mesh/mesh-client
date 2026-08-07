@@ -8,7 +8,7 @@ import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
 import { registerReticulumDestinationHash } from '../lib/reticulum/destHash';
-import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
+import { type MeshcoreSessionApi, registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import {
   type MeshtasticSessionApi,
   registerMeshtasticSession,
@@ -44,6 +44,20 @@ function createMeshtasticSessionStub(): MeshtasticSessionApi {
     finalizeDriverDisconnect: vi.fn(),
     connectAutomatic: vi.fn(),
     sendChatMessage: vi.fn(),
+  };
+}
+
+function createMeshcoreSessionStub(
+  overrides: Partial<MeshcoreSessionApi> = {},
+): MeshcoreSessionApi {
+  return {
+    connect: vi.fn(),
+    prepareRfConnect: vi.fn(),
+    attachRfSession: vi.fn(),
+    handleRfConnectFailure: vi.fn(),
+    finalizeDriverDisconnect: vi.fn(),
+    connectAutomatic: vi.fn(),
+    ...overrides,
   };
 }
 
@@ -276,6 +290,123 @@ describe('useSendMessage', () => {
     });
     mergeAppSetting('meshcoreOpenWireCompatEnabled', false, 'useSendMessage.test');
     sendSpy.mockRestore();
+  });
+
+  it('SoftAP dead-accepted: sends via runMeshcoreUserTxWithLiveTcp without RF handle', async () => {
+    setMeshcoreTcpSoftApDeadAccepted(true);
+    const liveHandle = { kind: 'softap-live' };
+    let runTxCalls = 0;
+    const runTx: NonNullable<MeshcoreSessionApi['runMeshcoreUserTxWithLiveTcp']> = async (op) => {
+      runTxCalls += 1;
+      vi.mocked(connectionDriver.getHandle).mockReturnValue(liveHandle);
+      return op();
+    };
+    registerMeshcoreSession(
+      createMeshcoreSessionStub({
+        runMeshcoreUserTxWithLiveTcp: runTx,
+      }),
+    );
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({
+      packetId: 0xbeef01,
+    });
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('softap hi', 1);
+
+    await vi.waitFor(() => {
+      expect(runTxCalls).toBe(1);
+      expect(sendSpy).toHaveBeenCalledWith(
+        liveHandle,
+        expect.objectContaining({ text: 'softap hi', channelIndex: 1 }),
+      );
+      const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('acked');
+      expect(rows[0]?.id).toBe(String(0xbeef01));
+    });
+    sendSpy.mockRestore();
+  });
+
+  it('SoftAP dead-accepted: falls back to ensureTcpLiveForUserTx when runTx missing', async () => {
+    setMeshcoreTcpSoftApDeadAccepted(true);
+    const liveHandle = { kind: 'softap-ensure' };
+    const ensureTcpLiveForUserTx = vi.fn(() => {
+      vi.mocked(connectionDriver.getHandle).mockReturnValue(liveHandle);
+      return Promise.resolve();
+    });
+    registerMeshcoreSession(
+      createMeshcoreSessionStub({
+        ensureTcpLiveForUserTx,
+      }),
+    );
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({
+      packetId: 0xbeef2,
+    });
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('softap ensure', 2);
+
+    await vi.waitFor(() => {
+      expect(ensureTcpLiveForUserTx).toHaveBeenCalledTimes(1);
+      expect(sendSpy).toHaveBeenCalledWith(
+        liveHandle,
+        expect.objectContaining({ text: 'softap ensure', channelIndex: 2 }),
+      );
+      const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+      expect(rows[0]?.status).toBe('acked');
+    });
+    sendSpy.mockRestore();
+  });
+
+  it('SoftAP dead-accepted: marks failed when live reopen yields no handle', async () => {
+    setMeshcoreTcpSoftApDeadAccepted(true);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    registerMeshcoreSession(
+      createMeshcoreSessionStub({
+        runMeshcoreUserTxWithLiveTcp: vi.fn((op) => op()),
+      }),
+    );
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('softap fail', 1);
+
+    await vi.waitFor(() => {
+      const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('failed');
+    });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('SoftAP live reopen failed'));
+    warn.mockRestore();
   });
 
   it('marks MeshCore DM acked when send resolves with packetId', async () => {

@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}} %接続状態",
     "tabAll": "すべて",
     "tabHistory": "履歴",
-    "emptyHistory": "ダイレクトメッセージはまだありません—ここでピアを見るためにDMを送受信します。"
+    "emptyHistory": "ダイレクトメッセージはまだありません—ここでピアを見るためにDMを送受信します。",
+    "meshcoreTypeSensor": "センサー",
+    "meshcoreTypeNone": "なし",
+    "meshcoreTypeUnknown": "不明"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

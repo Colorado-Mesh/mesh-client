@@ -3029,7 +3029,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% zdraví připojení",
     "tabAll": "Vše",
     "tabHistory": "Historie",
-    "emptyHistory": "Zatím žádné přímé zprávy — odešlete nebo přijměte DM, abyste zde viděli peery."
+    "emptyHistory": "Zatím žádné přímé zprávy — odešlete nebo přijměte DM, abyste zde viděli peery.",
+    "meshcoreTypeSensor": "Snímač",
+    "meshcoreTypeNone": "neuvedeny",
+    "meshcoreTypeUnknown": "Neznámo"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

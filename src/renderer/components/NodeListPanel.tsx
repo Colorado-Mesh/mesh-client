@@ -142,6 +142,9 @@ function meshcoreContactTypeLabel(
   if (hw_model === 'Chat') return t('nodeListPanel.meshcoreTypeChat');
   if (hw_model === 'Repeater') return t('nodeListPanel.meshcoreTypeRepeater');
   if (hw_model === 'Room') return t('nodeListPanel.meshcoreTypeRoom');
+  if (hw_model === 'Sensor') return t('nodeListPanel.meshcoreTypeSensor');
+  if (hw_model === 'None') return t('nodeListPanel.meshcoreTypeNone');
+  if (hw_model === 'Unknown') return t('nodeListPanel.meshcoreTypeUnknown');
   return hw_model?.trim() || t('common.emDash');
 }
 

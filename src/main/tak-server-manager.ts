@@ -76,10 +76,11 @@ export class TakServerManager extends EventEmitter {
 
     this.server.on('error', (err) => {
       const msg = `Server error: ${String(err)}`;
-      console.error('[TakServer]', msg);
-      this._status = { running: false, port: settings.port, clientCount: 0, error: msg };
+      const safe = sanitizeLogMessage(msg);
+      console.error('[TakServer]', safe);
+      this._status = { running: false, port: settings.port, clientCount: 0, error: safe };
       this.emit('status', this.getStatus());
-      this.emit('error', msg);
+      this.emit('error', safe);
     });
 
     await new Promise<void>((resolve, reject) => {

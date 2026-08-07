@@ -3029,7 +3029,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% здоров'я з'єднання",
     "tabAll": "Всі",
     "tabHistory": "Історія",
-    "emptyHistory": "Поки немає прямих повідомлень — надішліть або отримайте DM, щоб побачити вузли тут."
+    "emptyHistory": "Поки немає прямих повідомлень — надішліть або отримайте DM, щоб побачити вузли тут.",
+    "meshcoreTypeSensor": "Прилад виявлення",
+    "meshcoreTypeNone": "None (Немає)",
+    "meshcoreTypeUnknown": "Невідомо"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

@@ -10,7 +10,15 @@
  *   node scripts/test-win-nsis-install.mjs --arch arm64 [--probe-7z]
  */
 import { spawnSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -160,7 +168,12 @@ function main(arch, probe7z) {
   const installerPath = path.join(releaseDir, installer);
 
   if (probe7z) {
-    probe7zExtract(installerPath, path.join(tmpdir(), 'mesh-client-7z-probe'), arch);
+    const probeDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-7z-probe-'));
+    try {
+      probe7zExtract(installerPath, probeDir, arch);
+    } finally {
+      rmSync(probeDir, { recursive: true, force: true });
+    }
   }
 
   const localAppData = process.env.LOCALAPPDATA;
@@ -168,10 +181,10 @@ function main(arch, probe7z) {
     fail('LOCALAPPDATA is not set');
   }
   const instDir = path.join(localAppData, 'Programs', 'Mesh-client');
-  const logPath = path.join(tmpdir(), `mesh-client-install-${arch}.log`);
+  const workDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-install-'));
+  const logPath = path.join(workDir, `mesh-client-install-${arch}.log`);
 
   rmSync(instDir, { recursive: true, force: true });
-  rmSync(logPath, { force: true });
 
   console.debug(`[test-win-nsis-install] Installing ${installer} → ${instDir}`);
   const installStatus = run(installerPath, ['/S', `/LOG=${logPath}`]);

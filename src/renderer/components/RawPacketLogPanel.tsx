@@ -479,10 +479,12 @@ function MeshcoreExpandedDetails({
   );
 }
 
-function meshtasticTransportSourceLabel(p: MeshtasticRawPacketEntry): 'LOCAL' | 'MQTT' | 'RF' {
-  if (p.isLocal) return 'LOCAL';
-  if (p.viaMqtt) return 'MQTT';
-  return 'RF';
+function meshtasticTransportSourceKey(
+  p: MeshtasticRawPacketEntry,
+): 'rawPacketLog.filterChipLocal' | 'rawPacketLog.filterChipMqtt' | 'rawPacketLog.filterChipRf' {
+  if (p.isLocal) return 'rawPacketLog.filterChipLocal';
+  if (p.viaMqtt) return 'rawPacketLog.filterChipMqtt';
+  return 'rawPacketLog.filterChipRf';
 }
 
 function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
@@ -490,21 +492,21 @@ function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
   const parsed = parseMeshtasticRawPacketExpand(p.raw, { viaMqtt: p.viaMqtt });
   if (!parsed.ok) return null;
 
-  const transport = meshtasticTransportSourceLabel(p);
-  const hopLine =
-    transport === 'MQTT' ? (
-      <p className="text-muted/90">{t('rawPacketLog.hopsAbsentMqtt')}</p>
-    ) : parsed.hopsAway != null && parsed.hopStart != null && parsed.hopLimit != null ? (
-      <p>{`hops=${parsed.hopsAway} (hopStart=${parsed.hopStart} hopLimit=${parsed.hopLimit})`}</p>
-    ) : parsed.hopStart != null || parsed.hopLimit != null ? (
-      <p>{`hopStart=${parsed.hopStart ?? '?'} hopLimit=${parsed.hopLimit ?? '?'}`}</p>
-    ) : null;
+  const transportKey = meshtasticTransportSourceKey(p);
+  const hopLine = p.viaMqtt ? (
+    <p className="text-muted/90">{t('rawPacketLog.hopsAbsentMqtt')}</p>
+  ) : parsed.hopsAway != null && parsed.hopStart != null && parsed.hopLimit != null ? (
+    <p>{`hops=${parsed.hopsAway} (hopStart=${parsed.hopStart} hopLimit=${parsed.hopLimit})`}</p>
+  ) : parsed.hopStart != null || parsed.hopLimit != null ? (
+    <p>{`hopStart=${parsed.hopStart ?? '?'} hopLimit=${parsed.hopLimit ?? '?'}`}</p>
+  ) : null;
 
   return (
     <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
       <p>
         <span className="text-muted">{t('rawPacketLog.portLabel')}:</span> {p.portLabel}{' '}
-        <span className="text-muted">{t('rawPacketLog.transportSourceLabel')}:</span> {transport}
+        <span className="text-muted">{t('rawPacketLog.transportSourceLabel')}:</span>{' '}
+        {t(transportKey)}
       </p>
       {hopLine}
       <p>{formatMeshtasticRawPacketExpandDebugLine(parsed)}</p>
@@ -1525,7 +1527,7 @@ function MeshtasticRow({
   const label = p.fromNodeId != null ? getNodeLabel(p.fromNodeId) : null;
   const relativeTime = formatRawPacketRelativeTime(p.ts, t);
   const absoluteTime = formatTs(p.ts);
-  const transportLabel = p.isLocal ? 'LOCAL' : p.viaMqtt ? 'MQTT' : 'RF';
+  const transportLabel = t(meshtasticTransportSourceKey(p));
   const transportTooltip = p.isLocal
     ? t('rawPacketLog.transportBadgeLocalTooltip')
     : p.viaMqtt

@@ -11,6 +11,7 @@ import {
   existsSync,
   fstatSync,
   mkdirSync,
+  mkdtempSync,
   openSync,
   readSync,
   readdirSync,
@@ -195,15 +196,18 @@ function extractAppImage(appImagePath, extractDir) {
 
 /** @param {'x64' | 'arm64'} arch @param {string} appImagePath */
 function assertSidecarInAppImage(arch, appImagePath) {
-  const extractDir = path.join(tmpdir(), `mesh-client-appimage-${arch}-${process.pid}`);
-  const payloadRoot = extractAppImage(appImagePath, extractDir);
-  assertBundledReticulumSidecarInBundle({
-    label: `${arch} AppImage Reticulum sidecar`,
-    platform: 'linux',
-    bundleRoot: payloadRoot,
-    fail,
-  });
-  rmSync(extractDir, { recursive: true, force: true });
+  const extractDir = mkdtempSync(path.join(tmpdir(), `mesh-client-appimage-${arch}-`));
+  try {
+    const payloadRoot = extractAppImage(appImagePath, extractDir);
+    assertBundledReticulumSidecarInBundle({
+      label: `${arch} AppImage Reticulum sidecar`,
+      platform: 'linux',
+      bundleRoot: payloadRoot,
+      fail,
+    });
+  } finally {
+    rmSync(extractDir, { recursive: true, force: true });
+  }
   console.debug(
     `[test-linux-appimage-reticulum-sidecar] OK — sidecar present in ${path.basename(appImagePath)}`,
   );

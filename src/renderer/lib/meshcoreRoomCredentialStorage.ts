@@ -1,11 +1,12 @@
+import { MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX } from '@/shared/appSettingsKeyPrefixes';
+
 import {
   createMeshcorePerNodeCredentialStorage,
   type MeshcorePerNodeCredentialStorage,
   parseLegacyCredentialRaw,
 } from './meshcorePerNodeCredentialStorage';
 
-/** Per-room guest/admin passwords in app_settings (local SQLite via IPC). */
-export const MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX = 'meshcoreRoomCredential:';
+export { MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX };
 
 export interface MeshcoreRoomStoredCredential {
   guestPassword: string;

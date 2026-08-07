@@ -7,6 +7,7 @@ import { formatHostForUrl, parseConnectHostPort } from '../shared/connectHost';
 import { isValidHttpHostname } from './httpHostValidation';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
+const UPDATER_SOURCE = readFileSync(join(__dirname, 'updater.ts'), 'utf-8');
 const SUPPORT_BUNDLE_SOURCE = readFileSync(join(__dirname, 'support-bundle.ts'), 'utf-8');
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
@@ -593,6 +594,8 @@ describe('privileged IPC sender validation (source contract)', () => {
     'appSettings:set',
     'app:rendererHeartbeat',
     'app:getRendererLiveness',
+    'app:getProcessUptimeSec',
+    'meshcore:openJsonFile',
     'db:saveNode',
     'db:saveNodePath',
     'db:getNodes',
@@ -633,6 +636,34 @@ describe('privileged IPC sender validation (source contract)', () => {
         handlerBody.includes('validateIpcSender(event)'),
     ).toBe(true);
   });
+
+  it.each(['device-connected', 'device-disconnected'] as const)(
+    '%s validates the IPC sender',
+    (channel) => {
+      const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.on('${channel}'`);
+      expect(handlerIdx).toBeGreaterThan(-1);
+      const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+      expect(body).toContain('validateIpcSender(event)');
+    },
+  );
+
+  it.each(['update:check', 'update:download', 'update:install', 'update:open-releases'] as const)(
+    '%s calls assertIpcSender',
+    (channel) => {
+      const needle = `ipcMain.handle('${channel}'`;
+      let from = 0;
+      let found = 0;
+      while (from < UPDATER_SOURCE.length) {
+        const idx = UPDATER_SOURCE.indexOf(needle, from);
+        if (idx < 0) break;
+        found += 1;
+        const body = UPDATER_SOURCE.slice(idx, idx + 250);
+        expect(body).toContain(`assertIpcSender(event, '${channel}')`);
+        from = idx + needle.length;
+      }
+      expect(found).toBeGreaterThan(0);
+    },
+  );
 
   it('http fromradio poll uses AbortSignal.timeout', () => {
     expect(INDEX_SOURCE).toContain('HTTP_FETCH_TIMEOUT_MS');
@@ -705,7 +736,8 @@ describe('privileged IPC sender validation (source contract)', () => {
   });
 
   it('appSettings allows meshcore repeater credential prefix', () => {
-    expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
+    expect(INDEX_SOURCE).toContain('MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain("from '../shared/appSettingsKeyPrefixes'");
     expect(INDEX_SOURCE).toContain('appSettingsMaxValueLengthForKey');
   });
 

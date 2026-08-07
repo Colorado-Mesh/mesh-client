@@ -135,12 +135,18 @@ export const MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 /** Same DM body re-heard on RF (multi-path / repeater echo) within this window. */
 export const MESHCORE_DM_RF_DEDUP_WINDOW_MS = 2 * MS_PER_MINUTE;
 
+/**
+ * Canonical Meshtastic 10-minute dedup window (cross-transport merge, MQTT-only packet TTL,
+ * PacketRouter tapback optimistic match). Keep a single definition so these cannot drift.
+ */
+export const MESHTASTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
+
 /** PacketRouter tapback optimistic row match before Meshtastic RF echo re-key (temp packet_id → real id).
  * Wider than room post dedup (1 min) because client Date.now vs radio rxTime can skew several minutes. */
-export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
+export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = MESHTASTIC_DEDUP_WINDOW_MS;
 
 /** RF/MQTT packet-id dedup TTL (MQTT-only fallback map and ingest session). */
-export const MESHTASTIC_PACKET_DEDUP_TTL_MS = 10 * MS_PER_MINUTE;
+export const MESHTASTIC_PACKET_DEDUP_TTL_MS = MESHTASTIC_DEDUP_WINDOW_MS;
 
 /** Hard cap for the MQTT-only packet dedup fallback map after TTL sweep. */
 export const MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES = 5_000;

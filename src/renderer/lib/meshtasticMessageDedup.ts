@@ -1,10 +1,10 @@
 import { meshtasticWireUint32AllowZero } from '@/shared/reactionEmoji';
-import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
+import { MESHTASTIC_DEDUP_WINDOW_MS } from './timeConstants';
 import type { ChatMessage } from './types';
 
 /** Align with seenPacketIds TTL in useMeshtasticRuntime. */
-export const MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
+export const MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS = MESHTASTIC_DEDUP_WINDOW_MS;
 
 const CROSS_TRANSPORT_SCAN_LIMIT = 200;
 

@@ -3031,7 +3031,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% stan połączenia",
     "tabAll": "Wszystko",
     "tabHistory": "Historia rozmów",
-    "emptyHistory": "Nie ma jeszcze bezpośrednich wiadomości — wyślij lub otrzymaj DM, aby zobaczyć peerów tutaj."
+    "emptyHistory": "Nie ma jeszcze bezpośrednich wiadomości — wyślij lub otrzymaj DM, aby zobaczyć peerów tutaj.",
+    "meshcoreTypeSensor": "Czujnik",
+    "meshcoreTypeNone": "Brak",
+    "meshcoreTypeUnknown": "Nieznany"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

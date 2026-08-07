@@ -2527,10 +2527,13 @@ function ChatPanel({
                 const pickerOpensAbove = i >= filteredMessages.length - 3;
 
                 const senderNode = nodes.get(msg.sender_id);
-                const displaySenderName =
+                const rawSenderName =
                   nodeDisplayName(senderNode, protocol) ||
                   msg.sender_name.trim() ||
                   (msg.sender_id > 0 ? getDmLabel(msg.sender_id) : '');
+                // MeshCore wire/ingest uses English "Unknown" as a sentinel; localize for display.
+                const displaySenderName =
+                  rawSenderName === 'Unknown' ? t('common.unknown') : rawSenderName;
 
                 // Day separator
                 const daySeparator = daySeparatorIndices.has(i) ? (

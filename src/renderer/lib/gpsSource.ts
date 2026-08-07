@@ -8,16 +8,44 @@ export type GpsSource = 'device' | 'browser' | 'ip' | 'static';
 interface StoredGpsSettings {
   staticLat?: number;
   staticLon?: number;
+  refreshInterval?: number;
+}
+
+function readStoredGpsSettings(): StoredGpsSettings {
+  if (typeof localStorage === 'undefined') return {};
+  return (
+    parseStoredJson<StoredGpsSettings>(
+      localStorage.getItem(GPS_SETTINGS_STORAGE_KEY),
+      'gpsSource readStoredGpsSettings',
+    ) ?? {}
+  );
+}
+
+/** Host GPS poll interval in seconds (0 = disabled). */
+export function readGpsRefreshIntervalSecs(): number {
+  const interval = readStoredGpsSettings().refreshInterval;
+  return typeof interval === 'number' && Number.isFinite(interval) && interval > 0 ? interval : 0;
+}
+
+/** Persist static coordinates while preserving other GPS settings keys. */
+export function persistStoredStaticGps(lat: number, lon: number): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const existing = readStoredGpsSettings();
+    const refreshInterval =
+      typeof existing.refreshInterval === 'number' ? existing.refreshInterval : 0;
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ ...existing, staticLat: lat, staticLon: lon, refreshInterval }),
+    );
+  } catch {
+    // catch-no-log-ok localStorage quota or private mode
+  }
 }
 
 /** User-configured static coordinates from App tab GPS settings. */
 export function readStoredStaticGps(): { lat: number; lon: number } | null {
-  if (typeof localStorage === 'undefined') return null;
-  const s =
-    parseStoredJson<StoredGpsSettings>(
-      localStorage.getItem(GPS_SETTINGS_STORAGE_KEY),
-      'gpsSource readStoredStaticGps',
-    ) ?? {};
+  const s = readStoredGpsSettings();
   const { staticLat: lat, staticLon: lon } = s;
   if (
     typeof lat === 'number' &&

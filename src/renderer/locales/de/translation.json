@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% Verbindungszustand",
     "tabAll": "Alle",
     "tabHistory": "Verlauf",
-    "emptyHistory": "Noch keine Direktnachrichten — senden oder empfangen Sie einen DM, um Peers hier zu sehen."
+    "emptyHistory": "Noch keine Direktnachrichten — senden oder empfangen Sie einen DM, um Peers hier zu sehen.",
+    "meshcoreTypeSensor": "Sensor",
+    "meshcoreTypeNone": "None",
+    "meshcoreTypeUnknown": "Unbekannt"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

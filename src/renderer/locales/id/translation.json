@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi",
     "tabAll": "Semua",
     "tabHistory": "Riwayat",
-    "emptyHistory": "Belum ada pesan langsung — kirim atau terima DM untuk melihat peer di sini."
+    "emptyHistory": "Belum ada pesan langsung — kirim atau terima DM untuk melihat peer di sini.",
+    "meshcoreTypeSensor": "Sensor",
+    "meshcoreTypeNone": "Tidak Ada",
+    "meshcoreTypeUnknown": "Tidak Diketahui"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

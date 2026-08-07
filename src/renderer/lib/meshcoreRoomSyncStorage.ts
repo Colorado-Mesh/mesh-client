@@ -1,3 +1,8 @@
+import {
+  MESHCORE_ROOM_LAST_POST_SETTING_PREFIX,
+  MESHCORE_ROOM_SYNC_SETTING_PREFIX,
+} from '@/shared/appSettingsKeyPrefixes';
+
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
@@ -7,9 +12,7 @@ import {
 import { parseStoredJson } from './parseStoredJson';
 import { MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES } from './timeConstants';
 
-/** Per-room background sync + last-post metadata in app_settings. */
-export const MESHCORE_ROOM_SYNC_SETTING_PREFIX = 'meshcoreRoomSync:';
-export const MESHCORE_ROOM_LAST_POST_SETTING_PREFIX = 'meshcoreRoomLastPost:';
+export { MESHCORE_ROOM_LAST_POST_SETTING_PREFIX, MESHCORE_ROOM_SYNC_SETTING_PREFIX };
 
 /** Coerce MeshCore node id to unsigned 32-bit for stable setting keys. */
 function toUnsignedNodeId(nodeId: number): number {

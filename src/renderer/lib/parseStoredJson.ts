@@ -1,7 +1,7 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 /**
  * Parse persisted JSON (e.g. localStorage); warn on parse failure.
- * See CONTRIBUTING.md — Error boundaries and logging.
+ * See AGENTS.md §3 (Security & Error Handling) for logging expectations.
  */
 // Generic is only for call-site inference (return is still `as T`); keep the ergonomic API.
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T is for caller inference only

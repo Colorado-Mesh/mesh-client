@@ -291,9 +291,9 @@ Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sand
 | `reticulum:rncpSend` / `rncpFetch` / `setRncpListener`             | Picker-gated rncp send/fetch/listener (path must match `reticulum-remote-paths` allowlist)                                 |
 | `reticulum:showRncpOpenFileDialog` / `showRncpSaveDirectoryDialog` | Native pickers that seed the rncp send-file / save-dir+fetch-jail allowlists                                               |
 | `reticulum:revealInFolder`                                         | Reveal a path in the OS file manager when it matches an rncp picker allowlist                                              |
-| `reticulum:onEvent` / `onStatus`                                   | Shared `/ws` events and sidecar status                                                                                     |
+| `reticulum:event` / `reticulum:status`                             | Shared `/ws` events and sidecar status (preload: `onEvent` / `onStatus`)                                                   |
 | `reticulum:voiceSendAudio`                                         | Dedicated PCM TX ingest (`POST /api/v1/voice/audio`); own ~2000/min budget (not generic `proxyPost`)                       |
-| `reticulum:onVoiceAudio`                                           | Dedicated `/ws/voice` → `reticulum:voiceAudio` PCM frames (`voice.audio`)                                                  |
+| `reticulum:voiceAudio`                                             | Dedicated `/ws/voice` PCM frames (`voice.audio`; preload: `onVoiceAudio`)                                                  |
 | `electronAPI.reticulum.voice.*`                                    | Preload surface: `getStatus` / `call` / `answer` / `reject` / `hangup` / `mute` / `sendAudio`                              |
 | `reticulum:gamesStatus` / `gamesApps` / `gamesSessions` / …        | Dedicated LRGP games IPC (~600/min); generic proxy rejects `/api/v1/games/*`                                               |
 | `electronAPI.reticulum.games.*`                                    | Preload: `getStatus` / `listApps` / `listSessions` / `getSession` / `sendAction` / `resend` / `markRead` / `deleteSession` |

@@ -3027,7 +3027,10 @@
     "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı",
     "tabAll": "Tümü",
     "tabHistory": "Geçmiş",
-    "emptyHistory": "Henüz doğrudan mesaj yok — buradaki eşleri görmek için bir DM gönderin veya alın."
+    "emptyHistory": "Henüz doğrudan mesaj yok — buradaki eşleri görmek için bir DM gönderin veya alın.",
+    "meshcoreTypeSensor": "Sensörü",
+    "meshcoreTypeNone": "Yok",
+    "meshcoreTypeUnknown": "Bilinmiyor"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
