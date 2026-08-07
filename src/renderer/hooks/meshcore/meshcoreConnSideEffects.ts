@@ -294,10 +294,13 @@ async function drainWaitingMessagesIncremental(
     const item = normalizeMeshcoreWaitingMessageItem(raw);
     if (!item) break;
     await ingestMeshcoreWaitingMessageItem(item, state, deps);
+    // Re-check after await — unmount during ingest must not flush / chain follow-ups.
+    if (!deps.meshcoreHookMountedRef.current) return;
     if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
       silentDrainExhaustedCap = true;
     }
   }
+  if (!deps.meshcoreHookMountedRef.current) return;
   if (silentDrainExhaustedCap) {
     requestMeshcoreWaitingMessagesFollowUp();
   }
@@ -343,9 +346,12 @@ async function drainWaitingMessagesSilent(
     state.progressActive = true;
     deps.setWaitingMessagesSyncProgress({ processed: 0, total: arr.length });
     for (const m of arr) {
-      if (!deps.meshcoreHookMountedRef.current) break;
-      if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) break;
+      if (!deps.meshcoreHookMountedRef.current) return;
+      if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) return;
       await ingestMeshcoreWaitingMessageItem(m, state, deps);
+      // Re-check after await — unmount/supersession must not flush partial state.
+      if (!deps.meshcoreHookMountedRef.current) return;
+      if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) return;
       if (
         state.processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
         state.pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
@@ -353,6 +359,8 @@ async function drainWaitingMessagesSilent(
         flushMeshcoreWaitingState(state, deps);
       }
     }
+    if (!deps.meshcoreHookMountedRef.current) return;
+    if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) return;
     flushMeshcoreWaitingState(state, deps);
     return;
   } catch (e: unknown) {
@@ -365,7 +373,11 @@ async function drainWaitingMessagesSilent(
       isMeshcoreWaitingMessagesBulkFallbackError(e) ||
       isMeshcoreGetWaitingMessagesTimeoutError(e)
     ) {
+      // Lifecycle reset / a newer drain may have already superseded this attempt.
+      const stillOwner = isMeshcoreSilentBulkAttemptCurrent(attemptId);
+      // Abandon bulk ownership so a late getWaitingMessages resolve cannot ingest.
       abandonMeshcoreSilentBulkAttempt(attemptId);
+      if (!stillOwner || !deps.meshcoreHookMountedRef.current) return;
       logMeshcoreWaitingMessagesDrainError('silent bulk fallback to syncNextMessage', e, false);
       state.syncTotal = 0;
       state.progressActive = true;
@@ -378,6 +390,7 @@ async function drainWaitingMessagesSilent(
             mode: 'silent-fallback',
           }),
       );
+      if (!deps.meshcoreHookMountedRef.current) return;
       await drainWaitingMessagesIncremental(conn, state, deps);
       return;
     }

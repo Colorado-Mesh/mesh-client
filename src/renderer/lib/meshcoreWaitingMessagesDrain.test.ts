@@ -266,6 +266,18 @@ describe('silent bulk error classifiers', () => {
     abandonMeshcoreSilentBulkAttempt(staleId);
     expect(isMeshcoreSilentBulkAttemptCurrent(currentId)).toBe(true);
   });
+
+  it('does not recycle silent bulk attempt ids across lifecycle reset', () => {
+    resetMeshcoreWaitingMessagesDrainState(0);
+    const oldId = beginMeshcoreSilentBulkAttempt();
+    expect(isMeshcoreSilentBulkAttemptCurrent(oldId)).toBe(true);
+    resetMeshcoreWaitingMessagesDrainState(0);
+    expect(isMeshcoreSilentBulkAttemptCurrent(oldId)).toBe(false);
+    const newId = beginMeshcoreSilentBulkAttempt();
+    expect(newId).not.toBe(oldId);
+    expect(isMeshcoreSilentBulkAttemptCurrent(oldId)).toBe(false);
+    expect(isMeshcoreSilentBulkAttemptCurrent(newId)).toBe(true);
+  });
 });
 
 describe('shouldRunMeshcoreWaitingMessagesPeriodicPoll', () => {
