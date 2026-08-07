@@ -627,6 +627,22 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
+  it('defers post-connect self telemetry once when waiting-message drain is busy', () => {
+    expect(RUNTIME_SOURCE).toContain('schedulePostConnectSelfTelemetry');
+    expect(RUNTIME_SOURCE).toContain(
+      'post-connect self telemetry deferred (waiting-message drain busy)',
+    );
+    expect(RUNTIME_SOURCE).toContain(
+      'post-connect self telemetry skipped (waiting-message drain still busy)',
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /schedulePostConnectSelfTelemetry = \(allowReschedule: boolean\)[\s\S]*?waitingMessagesDrainBusyRef\.current[\s\S]*?schedulePostConnectSelfTelemetry\(false\)/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /if \(waitingMessagesDrainBusyRef\.current\) \{[\s\S]*?schedulePostConnectSelfTelemetry\(false\);[\s\S]*?\} else \{[\s\S]*?schedulePostConnectSelfTelemetry\(true\);/,
+    );
+  });
+
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
     assertPowerResumeSkipsOnExplicitDisconnect(
       RUNTIME_SOURCE,

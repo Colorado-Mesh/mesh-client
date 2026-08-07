@@ -25,7 +25,11 @@ export function markMeshcoreCompanionTx(): void {
   lastCompanionTxAt = Date.now();
 }
 
-/** Test hook — reset module state between unit tests. */
+/**
+ * Test hook — reset debounce/TX stamps between unit tests.
+ * Invalidates in-flight silent bulk attempts by bumping the monotonic counter (never
+ * recycles a prior id back to 0, so late pre-reset results stay stale).
+ */
 export function resetMeshcoreWaitingMessagesDrainState(now = 0): void {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
@@ -33,7 +37,7 @@ export function resetMeshcoreWaitingMessagesDrainState(now = 0): void {
   }
   lastCompanionTxAt = now;
   lastMsgWaitingEventAt = now;
-  silentBulkAttemptId = 0;
+  silentBulkAttemptId += 1;
 }
 
 /** Start a silent bulk getWaitingMessages attempt; return id used by {@link isMeshcoreSilentBulkAttemptCurrent}. */

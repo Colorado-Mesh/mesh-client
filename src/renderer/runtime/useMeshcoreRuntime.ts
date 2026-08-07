@@ -2698,20 +2698,26 @@ export function useMeshcoreRuntime() {
                   '[useMeshcoreRuntime] post-connect refreshOurPosition ' + errLikeToLogString(e),
                 );
               });
-              if (waitingMessagesDrainBusyRef.current) {
-                console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain busy)',
-                );
-              } else {
-                // Give proactive MsgWaiting drain a head start so telemetry does not seize the
-                // companion RPC lane during a large backlog (Neil: 120s telemetry vs sync).
+              // Give MsgWaiting drain a head start; if the lane is still busy, defer once
+              // more after the same window (do not drop telemetry on first busy sighting).
+              const postConnectTelemetryDelayMs =
+                MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS +
+                MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS;
+              const schedulePostConnectSelfTelemetry = (allowReschedule: boolean): void => {
                 window.setTimeout(() => {
                   if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
                     return;
                   }
                   if (waitingMessagesDrainBusyRef.current) {
+                    if (allowReschedule) {
+                      console.debug(
+                        '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
+                      );
+                      schedulePostConnectSelfTelemetry(false);
+                      return;
+                    }
                     console.debug(
-                      '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain busy)',
+                      '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
                     );
                     return;
                   }
@@ -2722,7 +2728,15 @@ export function useMeshcoreRuntime() {
                         errLikeToLogString(e),
                     );
                   });
-                }, MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS + MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS);
+                }, postConnectTelemetryDelayMs);
+              };
+              if (waitingMessagesDrainBusyRef.current) {
+                console.debug(
+                  '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
+                );
+                schedulePostConnectSelfTelemetry(false);
+              } else {
+                schedulePostConnectSelfTelemetry(true);
               }
             });
           });

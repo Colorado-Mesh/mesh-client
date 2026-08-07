@@ -7,7 +7,10 @@ import type {
   MeshCoreConnection,
   RxPacketEntry,
 } from '@/renderer/lib/meshcore/meshcoreHookTypes';
-import { resetMeshcoreWaitingMessagesDrainState } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
+import {
+  beginMeshcoreSilentBulkAttempt,
+  resetMeshcoreWaitingMessagesDrainState,
+} from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '@/renderer/lib/protocols/Protocol';
 import {
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
@@ -448,6 +451,73 @@ describe('attachMeshcoreConnSideEffects', () => {
     await drainPromise;
 
     expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.ctx.addMessagesBatch).not.toHaveBeenCalled();
+    expect(h.handleConnectionLost).not.toHaveBeenCalled();
+  });
+
+  it('does not flush silent bulk when unmounted during ingest await', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([
+      {
+        channelMessage: {
+          channelIdx: 0,
+          text: 'UnmountPeer: queued',
+          senderTimestamp: 1_700_000_000,
+        },
+      },
+    ]);
+    vi.mocked(h.ctx.setWaitingMessagesSyncProgress).mockImplementation(() => {
+      h.ctx.meshcoreHookMountedRef.current = false;
+    });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+
+    expect(h.ctx.addMessagesBatch).not.toHaveBeenCalled();
+  });
+
+  it('does not flush silent bulk when superseded during ingest await', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([
+      {
+        channelMessage: {
+          channelIdx: 0,
+          text: 'StalePeer: queued',
+          senderTimestamp: 1_700_000_000,
+        },
+      },
+    ]);
+    vi.mocked(h.ctx.setWaitingMessagesSyncProgress).mockImplementation(() => {
+      beginMeshcoreSilentBulkAttempt();
+    });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+
+    expect(h.ctx.addMessagesBatch).not.toHaveBeenCalled();
+  });
+
+  it('does not fallback after silent bulk timeout when lifecycle reset superseded the attempt', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(
+      () => new Promise(() => undefined), // hang until withTimeout
+    );
+    h.syncNextMessage.mockResolvedValue(null);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await Promise.resolve();
+    resetMeshcoreWaitingMessagesDrainState(0);
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+    await vi.runAllTimersAsync();
+    await drainPromise;
+
+    expect(h.syncNextMessage).not.toHaveBeenCalled();
     expect(h.ctx.addMessagesBatch).not.toHaveBeenCalled();
     expect(h.handleConnectionLost).not.toHaveBeenCalled();
   });
