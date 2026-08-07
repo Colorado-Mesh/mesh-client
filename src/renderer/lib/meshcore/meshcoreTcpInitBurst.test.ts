@@ -2,23 +2,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { isMeshcoreTcpTransportDeadError } from '../bleConnectErrors';
 import {
-  clearMeshcoreSoftApPendingUserTx,
-  decideSoftApUserTxAfterEnsureFailure,
-  hasMeshcoreSoftApPendingUserTx,
+  clearMeshcoreOpenHopPendingUserTx,
+  decideOpenHopUserTxAfterEnsureFailure,
+  hasMeshcoreOpenHopPendingUserTx,
   isMeshcoreTcpBurstDeadBridge,
-  isMeshcoreTcpSoftApDeadAccepted,
-  MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP,
+  isMeshcoreTcpOpenHopDeadAccepted,
+  MESHCORE_TCP_OPENHOP_BRIDGE_DIED_DURING_OP,
   notifyMeshcoreTcpLiveForUserTx,
   notifyMeshcoreTcpWriteDead,
   rejectMeshcoreTcpLiveForUserTx,
-  runMeshcoreSoftApPendingUserTx,
+  runMeshcoreOpenHopPendingUserTx,
   runWithMeshcoreTcpDeadWriteRetry,
-  setMeshcoreSoftApPendingUserTx,
-  setMeshcoreTcpSoftApDeadAccepted,
+  setMeshcoreOpenHopPendingUserTx,
+  setMeshcoreTcpOpenHopDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
-  settleSoftApPendingResult,
+  settleOpenHopPendingResult,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
-  throwIfMeshcoreTcpBridgeDiedDuringSoftApOp,
+  throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp,
   trackMeshcoreTcpUserTxSend,
   waitForMeshcoreTcpLiveForUserTx,
   yieldToMeshcoreTcpUserTxSends,
@@ -124,23 +124,23 @@ describe('shouldDeferMeshcoreTcpReconnectAfterBurst', () => {
   });
 });
 
-describe('meshcoreTcpSoftApDeadAccepted', () => {
+describe('meshcoreTcpOpenHopDeadAccepted', () => {
   afterEach(() => {
-    setMeshcoreTcpSoftApDeadAccepted(false);
+    setMeshcoreTcpOpenHopDeadAccepted(false);
   });
 
   it('defaults false and toggles', () => {
-    expect(isMeshcoreTcpSoftApDeadAccepted()).toBe(false);
-    setMeshcoreTcpSoftApDeadAccepted(true);
-    expect(isMeshcoreTcpSoftApDeadAccepted()).toBe(true);
-    setMeshcoreTcpSoftApDeadAccepted(false);
-    expect(isMeshcoreTcpSoftApDeadAccepted()).toBe(false);
+    expect(isMeshcoreTcpOpenHopDeadAccepted()).toBe(false);
+    setMeshcoreTcpOpenHopDeadAccepted(true);
+    expect(isMeshcoreTcpOpenHopDeadAccepted()).toBe(true);
+    setMeshcoreTcpOpenHopDeadAccepted(false);
+    expect(isMeshcoreTcpOpenHopDeadAccepted()).toBe(false);
   });
 });
 
-describe('SoftAP user-TX live window', () => {
+describe('OpenHop user-TX live window', () => {
   afterEach(() => {
-    setMeshcoreTcpSoftApDeadAccepted(false);
+    setMeshcoreTcpOpenHopDeadAccepted(false);
     rejectMeshcoreTcpLiveForUserTx(new Error('test cleanup'));
   });
 
@@ -162,7 +162,7 @@ describe('SoftAP user-TX live window', () => {
     expect(order).toEqual(['live', 'sent', 'after-yield']);
   });
 
-  it('waits for nested ensureTcpLive→send track (SoftAP chat reopen race)', async () => {
+  it('waits for nested ensureTcpLive→send track (OpenHop chat reopen race)', async () => {
     const order: string[] = [];
     // Mirrors useSendMessage: await ensureTcpLive (wait), then another async hop, then track.
     const ensureTcpLive = waitForMeshcoreTcpLiveForUserTx(5_000);
@@ -222,61 +222,61 @@ describe('runWithMeshcoreTcpDeadWriteRetry', () => {
   });
 });
 
-describe('SoftAP pending user TX slot', () => {
+describe('OpenHop pending user TX slot', () => {
   afterEach(() => {
-    clearMeshcoreSoftApPendingUserTx();
+    clearMeshcoreOpenHopPendingUserTx();
   });
 
-  it('runs parked op as first SoftAP RPC and settles the result promise', async () => {
+  it('runs parked op as first OpenHop RPC and settles the result promise', async () => {
     const order: string[] = [];
-    const resultPromise = setMeshcoreSoftApPendingUserTx(() => {
+    const resultPromise = setMeshcoreOpenHopPendingUserTx(() => {
       order.push('op');
       return Promise.resolve(42);
     });
-    expect(hasMeshcoreSoftApPendingUserTx()).toBe(true);
-    const ran = await runMeshcoreSoftApPendingUserTx();
+    expect(hasMeshcoreOpenHopPendingUserTx()).toBe(true);
+    const ran = await runMeshcoreOpenHopPendingUserTx();
     expect(ran).toBe(true);
     await expect(resultPromise).resolves.toBe(42);
     expect(order).toEqual(['op']);
-    expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
+    expect(hasMeshcoreOpenHopPendingUserTx()).toBe(false);
   });
 
   it('runs concurrent parked ops in FIFO order', async () => {
     const order: string[] = [];
-    const first = setMeshcoreSoftApPendingUserTx(() => {
+    const first = setMeshcoreOpenHopPendingUserTx(() => {
       order.push('a');
       return Promise.resolve(1);
     });
-    const second = setMeshcoreSoftApPendingUserTx(() => {
+    const second = setMeshcoreOpenHopPendingUserTx(() => {
       order.push('b');
       return Promise.resolve(2);
     });
-    expect(hasMeshcoreSoftApPendingUserTx()).toBe(true);
-    const ran = await runMeshcoreSoftApPendingUserTx();
+    expect(hasMeshcoreOpenHopPendingUserTx()).toBe(true);
+    const ran = await runMeshcoreOpenHopPendingUserTx();
     expect(ran).toBe(true);
     await expect(first).resolves.toBe(1);
     await expect(second).resolves.toBe(2);
     expect(order).toEqual(['a', 'b']);
-    expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
+    expect(hasMeshcoreOpenHopPendingUserTx()).toBe(false);
   });
 
   it('clear rejects all parked TX that never ran', async () => {
-    const first = setMeshcoreSoftApPendingUserTx(() => Promise.resolve('never-a'));
-    const second = setMeshcoreSoftApPendingUserTx(() => Promise.resolve('never-b'));
-    clearMeshcoreSoftApPendingUserTx(new Error('aborted'));
+    const first = setMeshcoreOpenHopPendingUserTx(() => Promise.resolve('never-a'));
+    const second = setMeshcoreOpenHopPendingUserTx(() => Promise.resolve('never-b'));
+    clearMeshcoreOpenHopPendingUserTx(new Error('aborted'));
     await expect(first).rejects.toThrow('aborted');
     await expect(second).rejects.toThrow('aborted');
-    expect(hasMeshcoreSoftApPendingUserTx()).toBe(false);
+    expect(hasMeshcoreOpenHopPendingUserTx()).toBe(false);
   });
 });
 
-describe('throwIfMeshcoreTcpBridgeDiedDuringSoftApOp', () => {
+describe('throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp', () => {
   it('throws a transport-dead error when the latch flips during the parked op', () => {
     expect(() => {
-      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(false, true);
-    }).toThrow(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP);
+      throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(false, true);
+    }).toThrow(MESHCORE_TCP_OPENHOP_BRIDGE_DIED_DURING_OP);
     try {
-      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(false, true);
+      throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(false, true);
     } catch (e: unknown) {
       expect(isMeshcoreTcpTransportDeadError(e)).toBe(true);
     }
@@ -284,21 +284,21 @@ describe('throwIfMeshcoreTcpBridgeDiedDuringSoftApOp', () => {
 
   it('is a no-op when the latch was already dead or stayed live', () => {
     expect(() => {
-      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(true, true);
+      throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(true, true);
     }).not.toThrow();
     expect(() => {
-      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(false, false);
+      throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(false, false);
     }).not.toThrow();
     expect(() => {
-      throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(true, false);
+      throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(true, false);
     }).not.toThrow();
   });
 });
 
-describe('decideSoftApUserTxAfterEnsureFailure', () => {
+describe('decideOpenHopUserTxAfterEnsureFailure', () => {
   it('returns the parked value when the op already fulfilled (late latch — no double-send)', () => {
     expect(
-      decideSoftApUserTxAfterEnsureFailure({
+      decideOpenHopUserTxAfterEnsureFailure({
         opSettlement: { status: 'fulfilled', value: 42 },
       }),
     ).toEqual({ action: 'return', value: 42 });
@@ -306,10 +306,10 @@ describe('decideSoftApUserTxAfterEnsureFailure', () => {
 
   it('retries only when the parked op rejected with transport-dead', () => {
     expect(
-      decideSoftApUserTxAfterEnsureFailure({
+      decideOpenHopUserTxAfterEnsureFailure({
         opSettlement: {
           status: 'rejected',
-          reason: new Error(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP),
+          reason: new Error(MESHCORE_TCP_OPENHOP_BRIDGE_DIED_DURING_OP),
         },
       }),
     ).toEqual({ action: 'retry' });
@@ -318,16 +318,16 @@ describe('decideSoftApUserTxAfterEnsureFailure', () => {
   it('rethrows non-transport parked-op failures without retry', () => {
     const err = new Error('channel name too long');
     expect(
-      decideSoftApUserTxAfterEnsureFailure({
+      decideOpenHopUserTxAfterEnsureFailure({
         opSettlement: { status: 'rejected', reason: err },
       }),
     ).toEqual({ action: 'throw', error: err });
   });
 });
 
-describe('settleSoftApPendingResult', () => {
+describe('settleOpenHopPendingResult', () => {
   it('reports fulfilled and rejected settlements', async () => {
-    await expect(settleSoftApPendingResult(Promise.resolve('ok'))).resolves.toEqual({
+    await expect(settleOpenHopPendingResult(Promise.resolve('ok'))).resolves.toEqual({
       status: 'fulfilled',
       value: 'ok',
     });
@@ -335,7 +335,7 @@ describe('settleSoftApPendingResult', () => {
     const rejected = Promise.reject(boom);
     // Attach early so vitest does not flag an unhandled rejection before settle.
     void rejected.catch(() => undefined);
-    await expect(settleSoftApPendingResult(rejected)).resolves.toEqual({
+    await expect(settleOpenHopPendingResult(rejected)).resolves.toEqual({
       status: 'rejected',
       reason: boom,
     });

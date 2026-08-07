@@ -2,7 +2,7 @@ import type { MeshCoreSelfInfoWire } from '../meshcoreTelemetryPrivacy';
 
 /**
  * ConnectionDriver calls {@link MeshCoreProtocol.discoverSelf} (getSelfInfo) before
- * `initConn`. TCP SoftAP/OpenHop companions often FIN under duplicate self-info RPCs —
+ * `initConn`. TCP OpenHop companions often FIN under duplicate self-info RPCs —
  * stash the wire payload so sequential TCP init can skip a second getSelfInfo.
  */
 const cache = new WeakMap<object, MeshCoreSelfInfoWire>();

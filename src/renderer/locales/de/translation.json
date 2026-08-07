@@ -674,7 +674,8 @@
     "scanPaperHint": "Fügen Sie einen Papier-QR ein oder scannen Sie ihn, um ihn in den Chat zu entschlüsseln.",
     "shareAsPaperMessageLabel": "Nachricht zum Verschlüsseln",
     "shareAsPaperGenerate": "Papier-QR erstellen",
-    "shareAsPaperCopyFailed": "Papierlink konnte nicht kopiert werden"
+    "shareAsPaperCopyFailed": "Papierlink konnte nicht kopiert werden",
+    "waitingMessagesSilentFetched": "{{processed}} vom Funkgerät abgerufen…"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

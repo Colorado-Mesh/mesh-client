@@ -3,8 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as meshcoreRepeaterRpcInFlight from './meshcoreRepeaterRpcInFlight';
 import * as meshcoreTracePathMultiplex from './meshcoreTracePathMultiplex';
 import {
+  abandonMeshcoreSilentBulkAttempt,
+  beginMeshcoreSilentBulkAttempt,
   isMeshcoreCompanionDrainDeferred,
+  isMeshcoreSilentBulkAttemptCurrent,
   isMeshcoreSyncNextMessageTimeoutError,
+  isMeshcoreWaitingMessagesBulkFallbackError,
+  isMeshcoreWaitingMessagesTransportDeadError,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
   markMeshcoreMsgWaitingEvent,
@@ -216,6 +221,40 @@ describe('isMeshcoreSyncNextMessageTimeoutError', () => {
     expect(isMeshcoreSyncNextMessageTimeoutError(new Error('getWaitingMessages timed out'))).toBe(
       false,
     );
+  });
+});
+
+describe('silent bulk error classifiers', () => {
+  it('treats tcp-write dead as transport-dead (no fallback)', () => {
+    expect(
+      isMeshcoreWaitingMessagesTransportDeadError(
+        new Error('meshcore:tcp-write: no active socket'),
+      ),
+    ).toBe(true);
+    expect(
+      isMeshcoreWaitingMessagesBulkFallbackError(new Error('meshcore:tcp-write: no active socket')),
+    ).toBe(false);
+  });
+
+  it('treats getWaitingMessages timeout as fallback-safe', () => {
+    expect(
+      isMeshcoreWaitingMessagesBulkFallbackError(
+        new Error('MeshCore getWaitingMessages timed out after 45000ms'),
+      ),
+    ).toBe(true);
+    expect(
+      isMeshcoreWaitingMessagesTransportDeadError(
+        new Error('MeshCore getWaitingMessages timed out after 45000ms'),
+      ),
+    ).toBe(false);
+  });
+
+  it('bumps silent bulk attempt id on abandon so late results are stale', () => {
+    resetMeshcoreWaitingMessagesDrainState(0);
+    const id = beginMeshcoreSilentBulkAttempt();
+    expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(true);
+    abandonMeshcoreSilentBulkAttempt(id);
+    expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(false);
   });
 });
 

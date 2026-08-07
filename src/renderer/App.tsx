@@ -52,7 +52,7 @@ import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
-import { isMeshcoreTcpSoftApDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
+import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
 import {
   meshcoreConfiguredChannelIndexSet,
   meshcoreConfiguredChatChannels,
@@ -2510,11 +2510,11 @@ function AppContent() {
     if (!meshcoreIdentityId || !connectionDriver.getHandle(meshcoreIdentityId)) return;
 
     const sendScheduledAdvert = () => {
-      // SoftAP/OpenHop: configured session may have a dead TCP bridge after contacts FIN.
+      // OpenHop: configured session may have a dead TCP bridge after contacts FIN.
       // Flood advert would tcp-write-fail and thrash reconnect.
-      const softAp = isMeshcoreTcpSoftApDeadAccepted();
-      if (softAp) {
-        console.debug('[App] auto flood advert skipped (SoftAP dead bridge)');
+      const openHop = isMeshcoreTcpOpenHopDeadAccepted();
+      if (openHop) {
+        console.debug('[App] auto flood advert skipped (OpenHop dead bridge)');
         return;
       }
       const action =

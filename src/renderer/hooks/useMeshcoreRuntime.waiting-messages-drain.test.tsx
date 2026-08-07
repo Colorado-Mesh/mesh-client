@@ -237,11 +237,10 @@ describe('useMeshcoreRuntime waiting messages drain', () => {
     expect(syncNextMessageMock).not.toHaveBeenCalled();
   });
 
-  it('event 131 schedules silent syncNextMessage drain', async () => {
-    syncNextMessageMock.mockResolvedValueOnce({
-      channelMessage: { channelIdx: 0, senderTimestamp: 1, text: 'queued' },
-    });
-    syncNextMessageMock.mockResolvedValue(null);
+  it('event 131 schedules silent bulk getWaitingMessages drain', async () => {
+    getWaitingMessagesMock.mockResolvedValueOnce([
+      { channelMessage: { channelIdx: 0, senderTimestamp: 1, text: 'queued' } },
+    ]);
 
     await connectSerialConfigured();
     const conn = lastMeshSerialMock.current;
@@ -253,14 +252,17 @@ describe('useMeshcoreRuntime waiting messages drain', () => {
 
     await waitFor(
       () => {
-        expect(syncNextMessageMock).toHaveBeenCalled();
+        expect(getWaitingMessagesMock).toHaveBeenCalled();
       },
       { timeout: 8_000 },
     );
-    expect(getWaitingMessagesMock).not.toHaveBeenCalled();
+    expect(syncNextMessageMock).not.toHaveBeenCalled();
   }, 15_000);
 
-  it('event 131 silent drain treats syncNextMessage timeout as empty queue', async () => {
+  it('event 131 silent drain falls back on bulk timeout then ends on syncNextMessage timeout', async () => {
+    getWaitingMessagesMock.mockRejectedValue(
+      new Error('MeshCore getWaitingMessages timed out after 15000ms'),
+    );
     syncNextMessageMock.mockRejectedValue(
       new Error('MeshCore syncNextMessage timed out after 12000ms'),
     );
@@ -275,6 +277,7 @@ describe('useMeshcoreRuntime waiting messages drain', () => {
 
     await waitFor(
       () => {
+        expect(getWaitingMessagesMock).toHaveBeenCalled();
         expect(syncNextMessageMock).toHaveBeenCalled();
       },
       { timeout: 8_000 },

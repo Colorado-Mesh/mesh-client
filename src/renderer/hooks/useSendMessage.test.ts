@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
-import { setMeshcoreTcpSoftApDeadAccepted } from '../lib/meshcore/meshcoreTcpInitBurst';
+import { setMeshcoreTcpOpenHopDeadAccepted } from '../lib/meshcore/meshcoreTcpInitBurst';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
@@ -68,7 +68,7 @@ describe('useSendMessage', () => {
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
     registerReticulumSession(null);
-    setMeshcoreTcpSoftApDeadAccepted(false);
+    setMeshcoreTcpOpenHopDeadAccepted(false);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useMessageStore.setState({ messages: {} });
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
@@ -293,9 +293,9 @@ describe('useSendMessage', () => {
     sendSpy.mockRestore();
   });
 
-  it('SoftAP dead-accepted: sends via runMeshcoreUserTxWithLiveTcp without RF handle', async () => {
-    setMeshcoreTcpSoftApDeadAccepted(true);
-    const liveHandle = { kind: 'softap-live' };
+  it('OpenHop dead-accepted: sends via runMeshcoreUserTxWithLiveTcp without RF handle', async () => {
+    setMeshcoreTcpOpenHopDeadAccepted(true);
+    const liveHandle = { kind: 'openhop-live' };
     let runTxCalls = 0;
     const runTx: NonNullable<MeshcoreSessionApi['runMeshcoreUserTxWithLiveTcp']> = async (op) => {
       runTxCalls += 1;
@@ -322,13 +322,13 @@ describe('useSendMessage', () => {
     setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
 
     const { result } = renderHook(() => useSendMessage(ID_MC));
-    result.current('softap hi', 1);
+    result.current('openhop hi', 1);
 
     await vi.waitFor(() => {
       expect(runTxCalls).toBe(1);
       expect(sendSpy).toHaveBeenCalledWith(
         liveHandle,
-        expect.objectContaining({ text: 'softap hi', channelIndex: 1 }),
+        expect.objectContaining({ text: 'openhop hi', channelIndex: 1 }),
       );
       const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
       expect(rows).toHaveLength(1);
@@ -338,9 +338,9 @@ describe('useSendMessage', () => {
     sendSpy.mockRestore();
   });
 
-  it('SoftAP dead-accepted: falls back to ensureTcpLiveForUserTx when runTx missing', async () => {
-    setMeshcoreTcpSoftApDeadAccepted(true);
-    const liveHandle = { kind: 'softap-ensure' };
+  it('OpenHop dead-accepted: falls back to ensureTcpLiveForUserTx when runTx missing', async () => {
+    setMeshcoreTcpOpenHopDeadAccepted(true);
+    const liveHandle = { kind: 'openhop-ensure' };
     const ensureTcpLiveForUserTx = vi.fn(() => {
       vi.mocked(connectionDriver.getHandle).mockReturnValue(liveHandle);
       return Promise.resolve();
@@ -365,13 +365,13 @@ describe('useSendMessage', () => {
     setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
 
     const { result } = renderHook(() => useSendMessage(ID_MC));
-    result.current('softap ensure', 2);
+    result.current('openhop ensure', 2);
 
     await vi.waitFor(() => {
       expect(ensureTcpLiveForUserTx).toHaveBeenCalledTimes(1);
       expect(sendSpy).toHaveBeenCalledWith(
         liveHandle,
-        expect.objectContaining({ text: 'softap ensure', channelIndex: 2 }),
+        expect.objectContaining({ text: 'openhop ensure', channelIndex: 2 }),
       );
       const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
       expect(rows[0]?.status).toBe('acked');
@@ -379,8 +379,8 @@ describe('useSendMessage', () => {
     sendSpy.mockRestore();
   });
 
-  it('SoftAP dead-accepted: marks failed when live reopen yields no handle', async () => {
-    setMeshcoreTcpSoftApDeadAccepted(true);
+  it('OpenHop dead-accepted: marks failed when live reopen yields no handle', async () => {
+    setMeshcoreTcpOpenHopDeadAccepted(true);
     const { spy: warn, restore } = mockConsoleWarn();
     try {
       registerMeshcoreSession(
@@ -400,14 +400,14 @@ describe('useSendMessage', () => {
       setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
 
       const { result } = renderHook(() => useSendMessage(ID_MC));
-      result.current('softap fail', 1);
+      result.current('openhop fail', 1);
 
       await vi.waitFor(() => {
         const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
         expect(rows).toHaveLength(1);
         expect(rows[0]?.status).toBe('failed');
       });
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('SoftAP live reopen failed'));
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('OpenHop live reopen failed'));
     } finally {
       restore();
     }

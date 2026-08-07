@@ -48,28 +48,28 @@ type MeshcoreTcpWriteDeadListener = () => void;
 let meshcoreTcpWriteDeadListener: MeshcoreTcpWriteDeadListener | null = null;
 
 /**
- * SoftAP/OpenHop: peer FIN after contacts dump left a configured session with a dead bridge.
+ * OpenHop: peer FIN after contacts dump left a configured session with a dead bridge.
  * Background writes (flood advert, outbox) must not call handleConnectionLost — that reconnects,
  * companion FINs again after contacts, and loops forever.
  */
-let meshcoreTcpSoftApDeadAccepted = false;
+let meshcoreTcpOpenHopDeadAccepted = false;
 
-export function setMeshcoreTcpSoftApDeadAccepted(accepted: boolean): void {
-  meshcoreTcpSoftApDeadAccepted = accepted;
+export function setMeshcoreTcpOpenHopDeadAccepted(accepted: boolean): void {
+  meshcoreTcpOpenHopDeadAccepted = accepted;
 }
 
-export function isMeshcoreTcpSoftApDeadAccepted(): boolean {
-  return meshcoreTcpSoftApDeadAccepted;
+export function isMeshcoreTcpOpenHopDeadAccepted(): boolean {
+  return meshcoreTcpOpenHopDeadAccepted;
 }
 
-/** SoftAP user TX: wait for getSelfInfo live window before getContacts / peer FIN. */
+/** OpenHop user TX: wait for getSelfInfo live window before getContacts / peer FIN. */
 export const MESHCORE_TCP_USER_TX_LIVE_TIMEOUT_MS = 20 * MS_PER_SECOND;
 
 /**
- * SoftAP/OpenHop often FINs a reconnect that starts immediately after the prior session.
+ * OpenHop often FINs a reconnect that starts immediately after the prior session.
  * Match reconnect attempt-1 backoff so the companion accepts a new TCP live window for chat TX.
  */
-export const MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS = 2 * MS_PER_SECOND;
+export const MESHCORE_TCP_OPENHOP_USER_TX_REOPEN_DELAY_MS = 2 * MS_PER_SECOND;
 
 interface TcpLiveWaiter {
   resolve: () => void;
@@ -80,7 +80,7 @@ interface TcpLiveWaiter {
 let tcpLiveWaiters: TcpLiveWaiter[] = [];
 let inFlightUserTxSends: Promise<unknown>[] = [];
 
-/** Chat send waits here until initConn releases the SoftAP live window (post-getSelfInfo). */
+/** Chat send waits here until initConn releases the OpenHop live window (post-getSelfInfo). */
 export function waitForMeshcoreTcpLiveForUserTx(
   timeoutMs: number = MESHCORE_TCP_USER_TX_LIVE_TIMEOUT_MS,
 ): Promise<void> {
@@ -105,7 +105,7 @@ export function waitForMeshcoreTcpLiveForUserTx(
   });
 }
 
-/** initConn: unblock SoftAP user-TX waiters while the TCP socket is still live. */
+/** initConn: unblock OpenHop user-TX waiters while the TCP socket is still live. */
 export function notifyMeshcoreTcpLiveForUserTx(): void {
   const waiters = tcpLiveWaiters;
   tcpLiveWaiters = [];
@@ -123,7 +123,7 @@ export function rejectMeshcoreTcpLiveForUserTx(err: Error): void {
   }
 }
 
-/** Track an in-flight SoftAP user send so initConn can await it before getContacts. */
+/** Track an in-flight OpenHop user send so initConn can await it before getContacts. */
 export function trackMeshcoreTcpUserTxSend(sendPromise: Promise<unknown>): void {
   // Attach immediately so mockRejectedValue / sync rejects are not unhandled before await.
   void sendPromise.then(
@@ -138,18 +138,18 @@ export function trackMeshcoreTcpUserTxSend(sendPromise: Promise<unknown>): void 
 
 /**
  * After notifying live waiters, yield microtasks then await any tracked user sends.
- * SoftAP companions often FIN immediately after getContacts — send must finish first.
+ * OpenHop companions often FIN immediately after getContacts — send must finish first.
  *
  * Ordering vs `ensureTcpLiveForUserTx` / `useSendMessage`:
  * 1. initConn calls `notifyMeshcoreTcpLiveForUserTx()` (resolves waiters),
  * 2. then `yieldToMeshcoreTcpUserTxSends()`.
  * Waiters resume in `ensureTcpLiveForUserTx`, which returns into a nested `useSendMessage`
  * async IIFE that only then calls `trackMeshcoreTcpUserTxSend`. That is **three** microtask
- * hops (notify → ensureTcpLive → useSendMessage), not two — SoftAP reopen used to snapshot
+ * hops (notify → ensureTcpLive → useSendMessage), not two — OpenHop reopen used to snapshot
  * an empty send list and start getContacts before track registered.
  */
 export async function yieldToMeshcoreTcpUserTxSends(opts?: {
-  /** SoftAP user-TX reopen: wait briefly for a late-tracked send after the microtask hops. */
+  /** OpenHop user-TX reopen: wait briefly for a late-tracked send after the microtask hops. */
   waitForFirstSendMs?: number;
 }): Promise<void> {
   await Promise.resolve();
@@ -186,7 +186,7 @@ export function notifyMeshcoreTcpWriteDead(): void {
 }
 
 /**
- * SoftAP user TX: ensure live TCP, run op, retry once on dead-bridge write errors.
+ * OpenHop user TX: ensure live TCP, run op, retry once on dead-bridge write errors.
  * Non-transport failures are not retried.
  */
 export async function runWithMeshcoreTcpDeadWriteRetry<T>(
@@ -206,19 +206,19 @@ export async function runWithMeshcoreTcpDeadWriteRetry<T>(
   throw lastErr;
 }
 
-interface SoftApPendingUserTx {
+interface OpenHopPendingUserTx {
   run: () => Promise<void>;
   reject: (reason?: unknown) => void;
 }
 
-/** FIFO parked SoftAP user commands (concurrent sends share one quiet reopen). */
-const softApPendingUserTxQueue: SoftApPendingUserTx[] = [];
+/** FIFO parked OpenHop user commands (concurrent sends share one quiet reopen). */
+const openHopPendingUserTxQueue: OpenHopPendingUserTx[] = [];
 
 /**
- * Park a SoftAP user command so SoftAP `initConn` can run it (FIFO) as companion RPC(s)
+ * Park a OpenHop user command so OpenHop `initConn` can run it (FIFO) as companion RPC(s)
  * before getSelfInfo / contacts. Returns a promise that settles when that run completes.
  */
-export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise<T> {
+export function setMeshcoreOpenHopPendingUserTx<T>(op: () => Promise<T>): Promise<T> {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
   const resultPromise = new Promise<T>((res, rej) => {
@@ -230,7 +230,7 @@ export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise
     () => undefined,
     () => undefined,
   );
-  softApPendingUserTxQueue.push({
+  openHopPendingUserTxQueue.push({
     reject,
     run: async () => {
       try {
@@ -245,11 +245,11 @@ export function setMeshcoreSoftApPendingUserTx<T>(op: () => Promise<T>): Promise
   return resultPromise;
 }
 
-/** SoftAP initConn: run and clear all parked user TX in FIFO order (if any). */
-export async function runMeshcoreSoftApPendingUserTx(): Promise<boolean> {
+/** OpenHop initConn: run and clear all parked user TX in FIFO order (if any). */
+export async function runMeshcoreOpenHopPendingUserTx(): Promise<boolean> {
   let ran = false;
-  while (softApPendingUserTxQueue.length > 0) {
-    const pending = softApPendingUserTxQueue.shift();
+  while (openHopPendingUserTxQueue.length > 0) {
+    const pending = openHopPendingUserTxQueue.shift();
     if (!pending) break;
     await pending.run();
     ran = true;
@@ -257,64 +257,64 @@ export async function runMeshcoreSoftApPendingUserTx(): Promise<boolean> {
   return ran;
 }
 
-/** Clear parked SoftAP TX that will never run (open aborted / ensure failed). */
-export function clearMeshcoreSoftApPendingUserTx(err?: Error): void {
-  const batch = softApPendingUserTxQueue.splice(0);
+/** Clear parked OpenHop TX that will never run (open aborted / ensure failed). */
+export function clearMeshcoreOpenHopPendingUserTx(err?: Error): void {
+  const batch = openHopPendingUserTxQueue.splice(0);
   if (batch.length === 0) return;
-  const reason = err ?? new Error('MeshCore SoftAP pending TX cleared');
+  const reason = err ?? new Error('MeshCore OpenHop pending TX cleared');
   for (const pending of batch) {
     pending.reject(reason);
   }
 }
 
-export function hasMeshcoreSoftApPendingUserTx(): boolean {
-  return softApPendingUserTxQueue.length > 0;
+export function hasMeshcoreOpenHopPendingUserTx(): boolean {
+  return openHopPendingUserTxQueue.length > 0;
 }
 
-/** Error message matching {@link isMeshcoreTcpTransportDeadError} for SoftAP latch-retry. */
-export const MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP = 'meshcore:tcp-write: no active socket';
+/** Error message matching {@link isMeshcoreTcpTransportDeadError} for OpenHop latch-retry. */
+export const MESHCORE_TCP_OPENHOP_BRIDGE_DIED_DURING_OP = 'meshcore:tcp-write: no active socket';
 
 /**
- * SoftAP first-RPC: if the write-dead latch flipped during the parked user op, throw a
+ * OpenHop first-RPC: if the write-dead latch flipped during the parked user op, throw a
  * transport-dead error so ensure's live wait rejects. {@link runMeshcoreUserTxWithLiveTcp}
  * must still return a fulfilled parked result (no re-run) — late latch after Ok must not
  * double-send chat.
  */
-export function throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(
+export function throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(
   bridgeDeadBefore: boolean,
   bridgeDeadAfter: boolean,
 ): void {
   if (bridgeDeadAfter && !bridgeDeadBefore) {
-    throw new Error(MESHCORE_TCP_SOFTAP_BRIDGE_DIED_DURING_OP);
+    throw new Error(MESHCORE_TCP_OPENHOP_BRIDGE_DIED_DURING_OP);
   }
 }
 
-export type SoftApOpSettlement<T> =
+export type OpenHopOpSettlement<T> =
   { status: 'fulfilled'; value: T } | { status: 'rejected'; reason: unknown };
 
-/** Settle a parked SoftAP result without throwing (for ensure-failure decision). */
-export async function settleSoftApPendingResult<T>(
+/** Settle a parked OpenHop result without throwing (for ensure-failure decision). */
+export async function settleOpenHopPendingResult<T>(
   resultPromise: Promise<T>,
-): Promise<SoftApOpSettlement<T>> {
+): Promise<OpenHopOpSettlement<T>> {
   try {
     return { status: 'fulfilled', value: await resultPromise };
   } catch (reason: unknown) {
-    // catch-no-log-ok settle helper returns rejected status to caller for SoftAP retry decision
+    // catch-no-log-ok settle helper returns rejected status to caller for OpenHop retry decision
     return { status: 'rejected', reason };
   }
 }
 
-export type SoftApEnsureFailureDecision<T> =
+export type OpenHopEnsureFailureDecision<T> =
   { action: 'return'; value: T } | { action: 'retry' } | { action: 'throw'; error: unknown };
 
 /**
- * After SoftAP `ensureTcpLiveForUserTx` fails: never re-run a parked op that already
+ * After OpenHop `ensureTcpLiveForUserTx` fails: never re-run a parked op that already
  * completed (would double-send). Retry only when the op never succeeded and rejected
  * with a transport-dead error (including clear-with-ensure when ensure was transport-dead).
  */
-export function decideSoftApUserTxAfterEnsureFailure<T>(opts: {
-  opSettlement: SoftApOpSettlement<T>;
-}): SoftApEnsureFailureDecision<T> {
+export function decideOpenHopUserTxAfterEnsureFailure<T>(opts: {
+  opSettlement: OpenHopOpSettlement<T>;
+}): OpenHopEnsureFailureDecision<T> {
   if (opts.opSettlement.status === 'fulfilled') {
     return { action: 'return', value: opts.opSettlement.value };
   }

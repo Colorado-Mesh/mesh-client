@@ -299,31 +299,33 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
       'TCP write-dead after init burst — latch bridge dead, defer reconnect',
     );
     expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpWriteDeadListener');
-    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpSoftApDeadAccepted');
+    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpOpenHopDeadAccepted');
     expect(RUNTIME_SOURCE).toContain(
-      'TCP write-dead on SoftAP-accepted dead bridge — keep configured',
+      'TCP write-dead on OpenHop-accepted dead bridge — keep configured',
     );
     expect(RUNTIME_SOURCE).toContain('ensureTcpLiveForUserTx');
     expect(RUNTIME_SOURCE).toContain('notifyMeshcoreTcpLiveForUserTx');
     expect(RUNTIME_SOURCE).toContain('yieldToMeshcoreTcpUserTxSends');
-    // SoftAP chat send must quiet-reopen via connect() — not connection-lost (disconnect UI).
-    expect(RUNTIME_SOURCE).toContain('SoftAP user TX — quiet TCP reopen (no connection-lost)');
-    expect(RUNTIME_SOURCE).toContain('meshcoreSoftApUserTxReopenInFlightRef');
-    expect(RUNTIME_SOURCE).toContain('meshcoreConnectForSoftApTxRef');
+    // OpenHop chat send must quiet-reopen via connect() — not connection-lost (disconnect UI).
+    expect(RUNTIME_SOURCE).toContain('OpenHop user TX — quiet TCP reopen (no connection-lost)');
+    expect(RUNTIME_SOURCE).toContain('meshcoreOpenHopUserTxReopenInFlightRef');
+    expect(RUNTIME_SOURCE).toContain('meshcoreConnectForOpenHopTxRef');
     expect(RUNTIME_SOURCE).toMatch(
-      /useLayoutEffect\(\(\) => \{\s*meshcoreConnectForSoftApTxRef\.current = connect;/,
+      /useLayoutEffect\(\(\) => \{\s*meshcoreConnectForOpenHopTxRef\.current = connect;/,
     );
-    expect(RUNTIME_SOURCE).toContain('MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS');
+    expect(RUNTIME_SOURCE).toContain('MESHCORE_TCP_OPENHOP_USER_TX_REOPEN_DELAY_MS');
     expect(RUNTIME_SOURCE).toContain(
-      'SoftAP user-TX reopen failed — restore SoftAP-accepted configured',
+      'OpenHop user-TX reopen failed — restore OpenHop-accepted configured',
     );
-    expect(RUNTIME_SOURCE).toContain('SoftAP user-TX reopen — skip contacts dump after live send');
-    expect(RUNTIME_SOURCE).toContain('TCP closed on SoftAP-accepted dead bridge — keep configured');
+    expect(RUNTIME_SOURCE).toContain('OpenHop user-TX reopen — skip contacts dump after live send');
+    expect(RUNTIME_SOURCE).toContain(
+      'TCP closed on OpenHop-accepted dead bridge — keep configured',
+    );
     expect(RUNTIME_SOURCE).toMatch(
       /shouldDeferMeshcoreTcpReconnectAfterBurst\(\{[\s\S]*?burstCaptured:[\s\S]*?everConfigured:[\s\S]*?deviceConfigured:[\s\S]*?\}\)[\s\S]*?meshcoreDeferredReconnectRef\.current = true;[\s\S]*?return;[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
     );
-    // SoftAP: accept dead bridge without immediate reconnect (avoid FIN-after-contacts loop).
-    // SoftAP-accepted suppresses background write-dead → lost; mid-session death still reconnects.
+    // OpenHop: accept dead bridge without immediate reconnect (avoid FIN-after-contacts loop).
+    // OpenHop-accepted suppresses background write-dead → lost; mid-session death still reconnects.
     expect(RUNTIME_SOURCE).toContain('TCP burst-complete configure — accepting dead bridge');
     expect(RUNTIME_SOURCE).toContain(
       'TCP burst-complete reconnect attach — accepting dead bridge (configured)',
@@ -337,7 +339,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
-  it('registers runtime connect on MeshcoreSessionApi for UI Connect path (Neal SoftAP)', () => {
+  it('registers runtime connect on MeshcoreSessionApi for UI Connect path (Neal OpenHop)', () => {
     // Manual Connect must use session.connect → runtime connect so TCP burst-complete
     // deferred reconnect and connectionParams latch run (useProtocolConnect must not
     // reassemble prepare/driver/attach alone — #792 params gate + burst-complete).
@@ -383,60 +385,63 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /takeMeshcoreDiscoverSelfCache\(conn\)[\s\S]*?conn\.getSelfInfo\(5000\)/,
     );
-    // SoftAP user-TX reopen: first companion RPC is the parked user command (skip getSelfInfo).
-    expect(RUNTIME_SOURCE).toContain('SoftAP user-TX reopen — first-RPC path (skip getSelfInfo)');
-    expect(RUNTIME_SOURCE).toContain('runMeshcoreSoftApPendingUserTx');
-    expect(RUNTIME_SOURCE).toContain('skipDiscoverSelf: meshcoreSoftApUserTxReopenInFlightRef');
-    expect(RUNTIME_SOURCE).not.toContain('SoftAP user-TX fresh');
-    expect(RUNTIME_SOURCE).not.toContain('SoftAP user-TX reopen — bridge dead before live window');
-    // Late SoftAP post-TX getChannels latched write-dead after Ok and skipped SoftAP retry.
-    expect(RUNTIME_SOURCE).not.toContain('SoftAP post-TX getChannels');
-    expect(RUNTIME_SOURCE).toContain('throwIfMeshcoreTcpBridgeDiedDuringSoftApOp');
-    expect(RUNTIME_SOURCE).toContain('setMeshcoreSoftApPendingUserTx');
+    // OpenHop user-TX reopen: first companion RPC is the parked user command (skip getSelfInfo).
+    expect(RUNTIME_SOURCE).toContain('OpenHop user-TX reopen — first-RPC path (skip getSelfInfo)');
+    expect(RUNTIME_SOURCE).toContain('runMeshcoreOpenHopPendingUserTx');
+    expect(RUNTIME_SOURCE).toContain('skipDiscoverSelf: meshcoreOpenHopUserTxReopenInFlightRef');
+    expect(RUNTIME_SOURCE).not.toContain('OpenHop user-TX fresh');
+    expect(RUNTIME_SOURCE).not.toContain('OpenHop user-TX reopen — bridge dead before live window');
+    // Late OpenHop post-TX getChannels latched write-dead after Ok and skipped OpenHop retry.
+    expect(RUNTIME_SOURCE).not.toContain('OpenHop post-TX getChannels');
+    expect(RUNTIME_SOURCE).toContain('throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp');
+    expect(RUNTIME_SOURCE).toContain('setMeshcoreOpenHopPendingUserTx');
     expect(RUNTIME_SOURCE).toContain('runMeshcoreUserTxWithLiveTcp');
     expect(RUNTIME_SOURCE).toMatch(
       /runMeshcoreUserTxWithLiveTcp\(async \(\) => \{[\s\S]*?sendChannelTextMessage/,
     );
-    // SoftAP retry must re-latch accepted so attempt 2 stays on quiet reopen.
-    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpSoftApDeadAccepted(true)');
+    // OpenHop retry must re-latch accepted so attempt 2 stays on quiet reopen.
+    expect(RUNTIME_SOURCE).toContain('setMeshcoreTcpOpenHopDeadAccepted(true)');
     // Late latch after Ok: return fulfilled parked result — do not re-park (double-send).
-    expect(RUNTIME_SOURCE).toContain('decideSoftApUserTxAfterEnsureFailure');
-    expect(RUNTIME_SOURCE).toContain('settleSoftApPendingResult');
+    expect(RUNTIME_SOURCE).toContain('decideOpenHopUserTxAfterEnsureFailure');
+    expect(RUNTIME_SOURCE).toContain('settleOpenHopPendingResult');
     expect(RUNTIME_SOURCE).toMatch(
-      /decideSoftApUserTxAfterEnsureFailure\([\s\S]*?decision\.action === 'return'[\s\S]*?return decision\.value/,
+      /decideOpenHopUserTxAfterEnsureFailure\([\s\S]*?decision\.action === 'return'[\s\S]*?return decision\.value/,
     );
-    const softApFirstRpcIdx = RUNTIME_SOURCE.indexOf(
-      'SoftAP user-TX reopen — first-RPC path (skip getSelfInfo)',
+    const openHopFirstRpcIdx = RUNTIME_SOURCE.indexOf(
+      'OpenHop user-TX reopen — first-RPC path (skip getSelfInfo)',
     );
-    expect(softApFirstRpcIdx).toBeGreaterThan(-1);
+    expect(openHopFirstRpcIdx).toBeGreaterThan(-1);
     const pendingIdx = RUNTIME_SOURCE.indexOf(
-      'runMeshcoreSoftApPendingUserTx()',
-      softApFirstRpcIdx,
+      'runMeshcoreOpenHopPendingUserTx()',
+      openHopFirstRpcIdx,
     );
     const latchIdx = RUNTIME_SOURCE.indexOf(
-      'throwIfMeshcoreTcpBridgeDiedDuringSoftApOp',
-      softApFirstRpcIdx,
+      'throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp',
+      openHopFirstRpcIdx,
     );
-    const notifyIdx = RUNTIME_SOURCE.indexOf('notifyMeshcoreTcpLiveForUserTx()', softApFirstRpcIdx);
-    const softApAcceptIdx = RUNTIME_SOURCE.indexOf(
-      'setMeshcoreTcpSoftApDeadAccepted(true)',
-      softApFirstRpcIdx,
+    const notifyIdx = RUNTIME_SOURCE.indexOf(
+      'notifyMeshcoreTcpLiveForUserTx()',
+      openHopFirstRpcIdx,
     );
-    const disconnectIdx = RUNTIME_SOURCE.indexOf('meshcore.tcp.disconnect()', softApFirstRpcIdx);
-    expect(pendingIdx).toBeGreaterThan(softApFirstRpcIdx);
+    const openHopAcceptIdx = RUNTIME_SOURCE.indexOf(
+      'setMeshcoreTcpOpenHopDeadAccepted(true)',
+      openHopFirstRpcIdx,
+    );
+    const disconnectIdx = RUNTIME_SOURCE.indexOf('meshcore.tcp.disconnect()', openHopFirstRpcIdx);
+    expect(pendingIdx).toBeGreaterThan(openHopFirstRpcIdx);
     expect(latchIdx).toBeGreaterThan(pendingIdx);
     expect(notifyIdx).toBeGreaterThan(latchIdx);
-    // SoftAP-accept + configured before intentional disconnect (quiet teardown).
-    expect(softApAcceptIdx).toBeGreaterThan(notifyIdx);
-    expect(disconnectIdx).toBeGreaterThan(softApAcceptIdx);
-    expect(RUNTIME_SOURCE).toContain('TCP closed during SoftAP user-TX reopen — keep configured');
-    // SoftAP first-RPC must not dip status to connected (header flicker).
-    const softApBlock = RUNTIME_SOURCE.slice(
-      softApFirstRpcIdx,
-      RUNTIME_SOURCE.indexOf('// Show persisted contacts immediately', softApFirstRpcIdx),
+    // OpenHop-accept + configured before intentional disconnect (quiet teardown).
+    expect(openHopAcceptIdx).toBeGreaterThan(notifyIdx);
+    expect(disconnectIdx).toBeGreaterThan(openHopAcceptIdx);
+    expect(RUNTIME_SOURCE).toContain('TCP closed during OpenHop user-TX reopen — keep configured');
+    // OpenHop first-RPC must not dip status to connected (header flicker).
+    const openHopBlock = RUNTIME_SOURCE.slice(
+      openHopFirstRpcIdx,
+      RUNTIME_SOURCE.indexOf('// Show persisted contacts immediately', openHopFirstRpcIdx),
     );
-    expect(softApBlock).not.toMatch(/status:\s*'connected'/);
-    expect(softApBlock).toMatch(/status:\s*'configured'/);
+    expect(openHopBlock).not.toMatch(/status:\s*'connected'/);
+    expect(openHopBlock).toMatch(/status:\s*'configured'/);
   });
 });
 
@@ -638,8 +643,8 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
     );
   });
 
-  it('skips TCP device_status disconnect teardown (runtime owns SoftAP bridge recovery)', () => {
-    // SoftAP FIN emits device_status via TcpOverIpc; tearing down the driver here left
+  it('skips TCP device_status disconnect teardown (runtime owns OpenHop bridge recovery)', () => {
+    // OpenHop FIN emits device_status via TcpOverIpc; tearing down the driver here left
     // "accepting dead bridge" with no handle and no scheduled reconnect.
     expect(CONN_EVENTS_SOURCE).toMatch(/meshcoreConnectTypeRef\.current === 'tcp'[\s\S]*?return;/);
   });
@@ -691,15 +696,15 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(prepareBody).toContain('meshcorePendingDriverIdentityRef.current');
   });
 
-  it('clears SoftAP dead-bridge latch on every prepareRfConnect (not TCP-only)', () => {
+  it('clears OpenHop dead-bridge latch on every prepareRfConnect (not TCP-only)', () => {
     const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
-    const softApClearIdx = prepareBody.indexOf('setMeshcoreTcpSoftApDeadAccepted(false)');
+    const openHopClearIdx = prepareBody.indexOf('setMeshcoreTcpOpenHopDeadAccepted(false)');
     const bridgeClearIdx = prepareBody.indexOf('meshcoreTcpBridgeDeadRef.current = false');
     const tcpGuardIdx = prepareBody.indexOf("if (type === 'tcp')");
-    expect(softApClearIdx).toBeGreaterThan(-1);
+    expect(openHopClearIdx).toBeGreaterThan(-1);
     expect(bridgeClearIdx).toBeGreaterThan(-1);
     expect(tcpGuardIdx).toBeGreaterThan(-1);
-    expect(softApClearIdx).toBeLessThan(tcpGuardIdx);
+    expect(openHopClearIdx).toBeLessThan(tcpGuardIdx);
     expect(bridgeClearIdx).toBeLessThan(tcpGuardIdx);
   });
 

@@ -674,7 +674,8 @@
     "scanPaperHint": "Pegue o escanee un QR en papel para descifrar en el chat.",
     "shareAsPaperMessageLabel": "Mensaje a cifrar",
     "shareAsPaperGenerate": "Crear QR en papel",
-    "shareAsPaperCopyFailed": "No se ha podido copiar el enlace en papel"
+    "shareAsPaperCopyFailed": "No se ha podido copiar el enlace en papel",
+    "waitingMessagesSilentFetched": "Obtenido {{processed}} de la radio..."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

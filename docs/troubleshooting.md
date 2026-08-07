@@ -71,7 +71,7 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
 - `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy snapshots only** (current builds always emit `chatPanelFrozen: false`; the freeze path was removed). Ignore unless analyzing an older export.
-- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (queued backlog visible on any protocol tab; **active sync spinner and paused/deferred** state only on the MeshCore tab), not Chat/Rooms panel strips.
+- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore waiting-message drain in progress or paused behind admin/trace. Auto-drain prefers bulk `getWaitingMessages` (header shows **X / Y** when the radio returns a queue); on bulk timeout it falls back to one-at-a-time `syncNextMessage` (header shows **Fetched N…**, no fake total). Serial may still feel batchy. UI: **header status indicator** (queued backlog visible on any protocol tab; **active sync spinner and paused/deferred** state only on the MeshCore tab), not Chat/Rooms panel strips.
 - `meshcoreContactPathDiagnostics` — redacted MeshCore contact rows with `pubKeyPrefixHex` (12 hex chars), `hopsAway`, and best known `bestPathBytes` / `bestPathHopCount` from SQLite path history (useful for ping/no-route reports).
 
 **Meshtastic-only extension** (under `meshtastic` bucket):
@@ -607,7 +607,7 @@ IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi
 
 ### Connection panel Link quality (TCP) shows "—" or unexpected latency
 
-**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP SoftAP**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). Reticulum hub/RMAP rows still use a short-lived TCP connect probe (different risk profile).
+**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). Reticulum hub/RMAP rows still use a short-lived TCP connect probe (different risk profile).
 
 **Why not a second TCP connect?** Probing the same `host:port` as the live session every few seconds can RST ESP32/lwIP-class devices (see PR discussion around competing connections).
 
@@ -788,9 +788,9 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 ## MeshCore
 
-### MeshCore TCP connect stuck or reconnect loop on SoftAP/OpenHop
+### MeshCore TCP connect stuck or reconnect loop on OpenHop
 
-**Symptoms**: TCP connect stuck on **Connecting**; empty/stale nodes; reconnect thrash on SoftAP / OpenHop / pyMC companions; log lines like `[IPC] meshcore:tcp socket closed … readableEnded=true` during `[useMeshcoreRuntime] initConn getContacts`.
+**Symptoms**: TCP connect stuck on **Connecting**; empty/stale nodes; reconnect thrash on OpenHop / pyMC companions; log lines like `[IPC] meshcore:tcp socket closed … readableEnded=true` during `[useMeshcoreRuntime] initConn getContacts`.
 
 **Cause**: Companion closes TCP mid-handshake or after the contacts dump. Older builds thrashed reconnect before contacts were latched.
 
@@ -824,7 +824,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 **Common causes**:
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
-- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind repeater admin/trace work. The determinate progress state appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the indicator to finish before switching tabs during heavy sync.
+- **Queued public messages (Sync now)** — MsgWaiting backlog is drained in the background after connect and when the radio pushes event 131 (including after you send). Auto-drain prefers a bulk `getWaitingMessages` pull (header shows **Syncing X / Y…**); if that times out it falls back to one-at-a-time `syncNextMessage` without disconnecting (header shows **Fetched N…**). The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind repeater admin/trace work. Manual **Sync now** still uses bulk with determinate progress. Wait for the indicator to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each. **Load more** on a neighbor list is another full Neighbors RPC (~120s) — prefer it over re-clicking **Neighbors** (which replaces the first page). Page request size is 50, but firmware reply buffers often return fewer rows.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
@@ -1619,18 +1619,18 @@ Chat used a freeze-on-leave snapshot: `messagesForUnread` stayed live for badges
 
 **Cause**
 
-The companion radio queues public messages behind a **single serialized USB serial lane** shared with repeater admin, init RPCs, and MsgWaiting drains. Older builds bulk-fetched the whole queue before updating the UI.
+The companion radio queues public messages behind a **single serialized USB serial lane** shared with repeater admin, init RPCs, and MsgWaiting drains. Auto-drain tries bulk `getWaitingMessages` first (shorter silent timeout on serial); on timeout it falls back to `syncNextMessage` without tearing down the link.
 
 **In-app status**
 
-The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind admin/trace work. On serial, messages may arrive in small batches without a Chat/Rooms panel banner.
+The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain (**X / Y** on bulk success, **Fetched N…** on fallback) or deferred drain behind admin/trace work. On serial, messages may still arrive in small batches without a Chat/Rooms panel banner.
 
 **Fix / workaround**
 
 1. Pause repeater **Status / Neighbors / ping** while monitoring live chat on serial.
-2. Prefer **BLE** or **TCP** when available for lower-latency chat.
+2. Prefer **BLE** or **TCP** (including OpenHop) when available for lower-latency chat.
 3. If drains stall, **Disconnect → Connect** or quit and reopen after repeated timeouts in the log.
-4. Use **Sync now** from the **header waiting-messages indicator** for a large backlog (determinate progress in the header tooltip/status).
+4. Use **Sync now** from the **header waiting-messages indicator** for a large backlog (determinate **X / Y** progress in the header tooltip/status). Auto-drain now also shows progress when bulk succeeds.
 
 ### Chat or Rooms: scroll jumps when switching tabs
 

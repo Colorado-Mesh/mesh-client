@@ -674,7 +674,8 @@
     "scanPaperHint": "紙のQRを貼り付けるかスキャンして、チャットに復号します。",
     "shareAsPaperMessageLabel": "暗号化するメッセージ",
     "shareAsPaperGenerate": "紙のQRを作成する",
-    "shareAsPaperCopyFailed": "用紙リンクをコピーできませんでした"
+    "shareAsPaperCopyFailed": "用紙リンクをコピーできませんでした",
+    "waitingMessagesSilentFetched": "ラジオから{{processed}}を取得しました…"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

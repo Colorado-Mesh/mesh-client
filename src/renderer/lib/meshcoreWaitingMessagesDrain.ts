@@ -1,3 +1,4 @@
+import { isMeshcoreTcpTransportDeadError } from '@/renderer/lib/bleConnectErrors';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { isMeshcoreFloodScopeOverrideActive } from './meshcoreFloodScopeSend';
@@ -16,6 +17,8 @@ import {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let lastCompanionTxAt = 0;
 let lastMsgWaitingEventAt = 0;
+/** Bumped when silent bulk is abandoned so a late getWaitingMessages resolve is ignored. */
+let silentBulkAttemptId = 0;
 
 /** Record outbound companion RF TX so auto-drains can defer until the radio settles. */
 export function markMeshcoreCompanionTx(): void {
@@ -30,6 +33,25 @@ export function resetMeshcoreWaitingMessagesDrainState(now = 0): void {
   }
   lastCompanionTxAt = now;
   lastMsgWaitingEventAt = now;
+  silentBulkAttemptId = 0;
+}
+
+/** Start a silent bulk getWaitingMessages attempt; return id used by {@link isMeshcoreSilentBulkAttemptCurrent}. */
+export function beginMeshcoreSilentBulkAttempt(): number {
+  silentBulkAttemptId += 1;
+  return silentBulkAttemptId;
+}
+
+/** Abandon the current silent bulk attempt (timeout/fallback) so late results are ignored. */
+export function abandonMeshcoreSilentBulkAttempt(attemptId: number): void {
+  if (attemptId === silentBulkAttemptId) {
+    silentBulkAttemptId += 1;
+  }
+}
+
+/** True when `attemptId` is still the active silent bulk attempt. */
+export function isMeshcoreSilentBulkAttemptCurrent(attemptId: number): boolean {
+  return attemptId === silentBulkAttemptId;
 }
 
 /** Record MsgWaiting (event 131) so periodic safety-net polls can skip idle queues. */
@@ -50,6 +72,37 @@ export function shouldRunMeshcoreWaitingMessagesPeriodicPoll(
 export function isMeshcoreSyncNextMessageTimeoutError(error: unknown): boolean {
   const errMsg = errLikeToLogString(error).toLowerCase();
   return errMsg.includes('syncnextmessage') && errMsg.includes('timed out');
+}
+
+/**
+ * True when the companion link is already dead — silent drain must not start syncNextMessage
+ * fallback (reconnect / OpenHop dead-bridge paths own recovery). Never disconnects from here.
+ */
+export function isMeshcoreWaitingMessagesTransportDeadError(error: unknown): boolean {
+  if (isMeshcoreTcpTransportDeadError(error)) return true;
+  const msg = errLikeToLogString(error).toLowerCase();
+  return (
+    msg.includes('no active socket') ||
+    msg.includes('gatt server is disconnected') ||
+    msg.includes('device disconnected') ||
+    msg.includes('not connected')
+  );
+}
+
+/**
+ * True when silent bulk getWaitingMessages failed in a way that is safe to fall back to
+ * syncNextMessage (timeout / transient). Transport-dead is never a fallback candidate.
+ */
+export function isMeshcoreWaitingMessagesBulkFallbackError(error: unknown): boolean {
+  if (isMeshcoreWaitingMessagesTransportDeadError(error)) return false;
+  const msg = errLikeToLogString(error).toLowerCase();
+  return msg.includes('timed out') || msg.includes('timeout') || msg.includes('busy');
+}
+
+/** getWaitingMessages timeout label used by silent bulk withTimeout. */
+export function isMeshcoreGetWaitingMessagesTimeoutError(error: unknown): boolean {
+  const errMsg = errLikeToLogString(error).toLowerCase();
+  return errMsg.includes('getwaitingmessages') && errMsg.includes('timed out');
 }
 
 export function resetMeshcoreWaitingMessagesDrainSchedule(): void {

@@ -676,7 +676,8 @@
     "scanPaperHint": "Вставте або відскануйте паперовий QR-код, щоб розшифрувати його в чаті.",
     "shareAsPaperMessageLabel": "Повідомлення для шифрування",
     "shareAsPaperGenerate": "Створити паперовий QR-код",
-    "shareAsPaperCopyFailed": "Не вдалося скопіювати посилання на папір"
+    "shareAsPaperCopyFailed": "Не вдалося скопіювати посилання на папір",
+    "waitingMessagesSilentFetched": "Отримано {{processed}} з радіо…"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

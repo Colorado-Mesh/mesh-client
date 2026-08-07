@@ -678,7 +678,8 @@
     "scanPaperHint": "Wklej lub zeskanuj papierowy kod QR, aby odszyfrować go na czacie.",
     "shareAsPaperMessageLabel": "Wiadomość do zaszyfrowania",
     "shareAsPaperGenerate": "Utwórz papierowy QR",
-    "shareAsPaperCopyFailed": "Nie można skopiować papierowego linku"
+    "shareAsPaperCopyFailed": "Nie można skopiować papierowego linku",
+    "waitingMessagesSilentFetched": "Pobrano {{processed}} z radia…"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

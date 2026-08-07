@@ -25,6 +25,9 @@ const t = ((key: string, opts?: Record<string, unknown>) => {
   if (key === 'chatPanel.waitingMessagesQueued') {
     return `${opts?.count} queued`;
   }
+  if (key === 'chatPanel.waitingMessagesSilentFetched') {
+    return `Fetched ${opts?.processed}`;
+  }
   const labels: Record<string, string> = {
     'chatPanel.waitingMessagesSyncProgressIndeterminate': 'Syncing…',
     'chatPanel.waitingMessagesSilentDrain': 'Silent drain',
@@ -57,6 +60,35 @@ describe('meshcoreWaitingMessagesStatusText', () => {
       waitingMessagesSyncProgress: { processed: 2, total: 5 },
     };
     expect(meshcoreWaitingMessagesStatusText(t, input)).toBe('Sync 2/5');
+  });
+
+  it('reports X/Y during silent bulk when progress has a total', () => {
+    const input: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesSilentDrainActive: true,
+      waitingMessagesSyncProgress: { processed: 3, total: 10 },
+    };
+    expect(meshcoreWaitingMessagesStatusText(t, input)).toBe('Sync 3/10');
+  });
+
+  it('reports processed-only during silent fallback', () => {
+    const input: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesSilentDrainActive: true,
+      waitingMessagesSyncProgress: { processed: 7, total: 0 },
+      connectionType: 'ble',
+    };
+    expect(meshcoreWaitingMessagesStatusText(t, input)).toBe('Fetched 7');
+  });
+
+  it('appends serial hint on silent fallback', () => {
+    const input: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesSilentDrainActive: true,
+      waitingMessagesSyncProgress: { processed: 2, total: 0 },
+      connectionType: 'serial',
+    };
+    expect(meshcoreWaitingMessagesStatusText(t, input)).toBe('Fetched 2 (serial hint)');
   });
 
   it('appends serial hint during silent drain on serial transport', () => {

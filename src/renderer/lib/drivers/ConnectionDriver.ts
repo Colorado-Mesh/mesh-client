@@ -199,7 +199,7 @@ export class ConnectionDriver {
       }
 
       let info: DiscoveryInfo | undefined;
-      // SoftAP user-TX reopen: skip getSelfInfo so the parked user command is the first RPC.
+      // OpenHop user-TX reopen: skip getSelfInfo so the parked user command is the first RPC.
       if (protocol.discoverSelf && !opts?.skipDiscoverSelf) {
         try {
           info = await protocol.discoverSelf(handle);

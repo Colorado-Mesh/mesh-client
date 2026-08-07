@@ -325,7 +325,7 @@ async function ensureTakServerManager(): Promise<TakServerManager> {
 
 /** Max bytes per MeshCore TCP IPC write (DoS guard). */
 const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
-/** Cap per-chunk IPC fan-out from SoftAP/companion TCP reads (align with write max). */
+/** Cap per-chunk IPC fan-out from OpenHop/companion TCP reads (align with write max). */
 const MESHCORE_TCP_DATA_MAX_BYTES = MESHCORE_TCP_WRITE_MAX_BYTES;
 /** Min node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
@@ -6148,7 +6148,7 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
     // MeshCore Open / official companion TCP clients use TCP_NODELAY; Node defaults can
-    // Nagle-batch small companion RPCs and SoftAP/OpenHop peers often FIN mid-init.
+    // Nagle-batch small companion RPCs and OpenHop peers often FIN mid-init.
     socket.setNoDelay(true);
     socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS);
     meshcoreTcpSocket = socket;
