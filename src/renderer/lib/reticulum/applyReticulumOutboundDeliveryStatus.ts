@@ -21,7 +21,13 @@ import {
   useMessageStore,
 } from '@/renderer/stores/messageStore';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
-import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
+import {
+  isPnCascadeDeliveryMethod,
+  parseReticulumDeliveryMethod,
+} from '@/shared/reticulumDeliveryMethod';
+
+/** Cap for sidecar `delivery_attempts` before store/SQLite patch. */
+export const MAX_RETICULUM_DELIVERY_ATTEMPTS = 64;
 
 /** Map sidecar `lxmf_outbound_status` wire status to UI store status. Unknown → null. */
 export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | null {
@@ -29,6 +35,10 @@ export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | n
   if (wireStatus === 'failed') return 'failed';
   if (wireStatus === 'sending') return 'sending';
   return null;
+}
+
+function clampDeliveryAttempts(value: number): number {
+  return Math.min(MAX_RETICULUM_DELIVERY_ATTEMPTS, Math.max(0, Math.trunc(value)));
 }
 
 /** Resolve LXMF peer dest hash from a chat node id (peer store, then dest registry). */
@@ -155,11 +165,11 @@ export function persistReticulumOutboundMessageStatus(
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!before) return false;
   // Link-timeout failure bridge can mark Failed before WS Direct→PN fallback arrives.
-  // Authoritative sending+propagated must revive so the badge is not stuck as PN ✗.
+  // Authoritative sending+propagated/stored_locally must revive so the badge is not stuck as PN ✗.
   if (
     before.status === 'failed' &&
     status === 'sending' &&
-    (deliveryMethod === 'propagated' || deliveryMethod === 'stored_locally')
+    isPnCascadeDeliveryMethod(deliveryMethod)
   ) {
     const revived: MessageRecord = {
       ...before,
@@ -225,9 +235,9 @@ export function persistReticulumOutboundMessageStatus(
   if (
     deliveryAttempts != null &&
     Number.isFinite(deliveryAttempts) &&
-    deliveryAttempts !== record.reticulumDeliveryAttempts
+    clampDeliveryAttempts(deliveryAttempts) !== record.reticulumDeliveryAttempts
   ) {
-    record = { ...record, reticulumDeliveryAttempts: Math.trunc(deliveryAttempts) };
+    record = { ...record, reticulumDeliveryAttempts: clampDeliveryAttempts(deliveryAttempts) };
     patched = true;
   }
   if (patched) {
@@ -293,7 +303,7 @@ export function applyReticulumOutboundDeliveryStatus(
   const deliveryMethod = parseReticulumDeliveryMethod(opts?.deliveryMethod);
   const deliveryAttempts =
     opts?.deliveryAttempts != null && Number.isFinite(opts.deliveryAttempts)
-      ? Math.trunc(opts.deliveryAttempts)
+      ? clampDeliveryAttempts(opts.deliveryAttempts)
       : undefined;
   const applied = persistReticulumOutboundMessageStatus(
     identityId,

@@ -678,9 +678,9 @@
     "shareAsPaperGenerate": "Створити паперовий QR-код",
     "shareAsPaperCopyFailed": "Не вдалося скопіювати посилання на папір",
     "waitingMessagesSilentFetched": "Отримано {{processed}} з радіо…",
-    "reticulumSendStoringLocally": "Збереження до вашої локальної папки «Вхідні» …",
-    "reticulumSendStoredLocally": "Зберігається у вашій локальній папці «Вхідні» (не доставляється одноранговому користувачеві)",
-    "sentViaLocalPropagation": "Вхідні повідомлення про локальне поширення"
+    "reticulumSendStoringLocally": "Збереження до локальної скриньки поширення…",
+    "reticulumSendStoredLocally": "Зберігається у локальній скриньці поширення (не доставлено одноранговому вузлу)",
+    "sentViaLocalPropagation": "Локальна скринька поширення"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -4244,7 +4244,7 @@
     "syncLocalNotSupported": "Локальний хост-вузол поширення не можна синхронізувати через мережу, як віддалений вузол поширення LXMF.",
     "enableFailed": "Не вдалося ввімкнути вузол розповсюдження.",
     "disableFailed": "Не вдалося вимкнути вузол розповсюдження.",
-    "syncOutboundBusy": "Синхронізація поширення відкладена — вихідне повідомлення передається на цей вузол."
+    "syncOutboundBusy": "Синхронізація поширення відкладена — вихідне повідомлення зберігається на цьому вузлі."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим поширення",

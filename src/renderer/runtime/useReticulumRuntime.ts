@@ -293,6 +293,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
   /** Defer link-timeout failure bridge until first propagation store refresh completes. */
   const propagationHydratedForBridgeRef = useRef(false);
+  const identityIdRef = useRef(identityId);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
   // Include `connecting`: main suspends Noble at sidecar start before status reaches
@@ -308,6 +309,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    identityIdRef.current = identityId;
+  }, [identityId]);
+
+  useEffect(() => {
+    processedLinkTimeoutDestsRef.current.clear();
+    propagationHydratedForBridgeRef.current = false;
+  }, [identityId]);
 
   const selfNodeId = useMemo(
     () => (selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : null),
@@ -1488,8 +1498,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {
+          const bridgeIdentityId = identityId;
           void (async () => {
             if (!propagationHydratedForBridgeRef.current) {
+              const stampBefore = useReticulumPropagationStore.getState().lastRefreshedAt;
               try {
                 await useReticulumPropagationStore.getState().refreshFromSidecar();
               } catch (e: unknown) {
@@ -1498,9 +1510,30 @@ export function useReticulumRuntime(): ProtocolRuntime {
                     errLikeToLogString(e),
                 );
               }
+              if (identityIdRef.current !== bridgeIdentityId) return;
+              const stampAfter = useReticulumPropagationStore.getState().lastRefreshedAt;
+              const hydratedOk = stampAfter != null && stampAfter !== stampBefore;
+              if (!hydratedOk) {
+                console.debug(
+                  '[useReticulumRuntime] link-timeout bridge skip — propagation hydrate failed/uncertain',
+                );
+                return;
+              }
               propagationHydratedForBridgeRef.current = true;
             }
+            if (identityIdRef.current !== bridgeIdentityId) return;
             const propState = useReticulumPropagationStore.getState();
+            // Empty + no preferred + never refreshed: cascade capacity unknown — do not fail DMs.
+            if (
+              propState.nodes.length === 0 &&
+              propState.preferredId == null &&
+              propState.lastRefreshedAt == null
+            ) {
+              console.debug(
+                '[useReticulumRuntime] link-timeout bridge skip — propagation state uncertain',
+              );
+              return;
+            }
             const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
               propState.nodes,
               propState.preferredId,
@@ -1509,9 +1542,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
               `[useReticulumRuntime] link-timeout bridge apply=${applyBridge} preferred=${propState.preferredId ?? 'none'} nodes=${propState.nodes.length}`,
             );
             for (const { destinationHash } of timeouts) {
+              if (identityIdRef.current !== bridgeIdentityId) return;
               const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
               if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
-              processedLinkTimeoutDestsRef.current.add(norm);
               // PN cascade (remote or local-prop): sidecar owns outcome via WS.
               if (!applyBridge) {
                 console.debug(
@@ -1519,8 +1552,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 );
                 continue;
               }
+              processedLinkTimeoutDestsRef.current.add(norm);
               failReticulumSendingOutboundToDestHash(
-                identityId,
+                bridgeIdentityId,
                 norm,
                 i18n.t('chatPanel.reticulumSendFailed'),
               );

@@ -4242,7 +4242,7 @@
     "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
     "enableFailed": "伝播ノードを有効にできませんでした。",
     "disableFailed": "伝播ノードを無効にできませんでした。",
-    "syncOutboundBusy": "伝播同期が延期されました—アウトバウンドメッセージがこのノードにデポジットされています。"
+    "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

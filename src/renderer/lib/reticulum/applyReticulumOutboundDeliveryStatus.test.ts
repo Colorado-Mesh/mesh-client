@@ -27,8 +27,9 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     window.electronAPI = createElectronAPIMock();
   });
 
-  it('maps delivered/failed/sending; drops unknown wire statuses', () => {
+  it('maps delivered/failed/sending/stored_locally; drops unknown wire statuses', () => {
     expect(mapLxmfOutboundWireStatus('delivered')).toBe('acked');
+    expect(mapLxmfOutboundWireStatus('stored_locally')).toBe('acked');
     expect(mapLxmfOutboundWireStatus('failed')).toBe('failed');
     expect(mapLxmfOutboundWireStatus('sending')).toBe('sending');
     expect(mapLxmfOutboundWireStatus('queued')).toBeNull();
@@ -366,6 +367,74 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
         delivery_method: 'propagated',
       }),
     );
+  });
+
+  it('revives Failed to sending for stored_locally cascade after link-timeout bridge', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: selfNodeId,
+            to: toNodeId,
+            senderName: 'Me',
+            payload: 'race',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'failed',
+            error: 'Failed to send',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'stored_locally',
+    });
+
+    const row = useMessageStore.getState().messages[identityId][messageHash];
+    expect(row.status).toBe('sending');
+    expect(row.reticulumDeliveryMethod).toBe('stored_locally');
+    expect(row.error).toBeUndefined();
+  });
+
+  it('clamps delivery_attempts when patching outbound status', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: selfNodeId,
+            to: toNodeId,
+            payload: 'x',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'direct',
+      deliveryAttempts: 999,
+    });
+    expect(
+      useMessageStore.getState().messages[identityId][messageHash].reticulumDeliveryAttempts,
+    ).toBe(64);
   });
 
   it('drops invalid message_hash and unknown wire status', () => {

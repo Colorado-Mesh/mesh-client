@@ -4242,7 +4242,7 @@
     "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
     "disableFailed": "Yayılma düğümü devre dışı bırakılamadı.",
-    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — bu düğüme giden bir mesaj gönderiliyor."
+    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

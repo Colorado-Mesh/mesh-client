@@ -7,6 +7,7 @@ import {
   noteReticulumProxyErrorIfRateLimited,
   reticulumProxyRateLimitBackoffRemainingMs,
 } from '@/renderer/lib/reticulum/reticulumProxyRateLimitBackoff';
+import { RETICULUM_LXMF_RECENT_API_PATH } from '@/shared/reticulumApiPaths';
 
 export interface FetchRecentInboundLxmfOpts {
   /**
@@ -42,8 +43,8 @@ export async function fetchRecentInboundLxmf(
 export async function fetchRecentInboundLxmfDetailed(
   opts: FetchRecentInboundLxmfOpts = {},
 ): Promise<FetchRecentInboundLxmfResult> {
-  if (isReticulumProxyRateLimitBackoffActive()) {
-    const remaining = reticulumProxyRateLimitBackoffRemainingMs();
+  if (isReticulumProxyRateLimitBackoffActive('lxmfRecent')) {
+    const remaining = reticulumProxyRateLimitBackoffRemainingMs('lxmfRecent');
     console.warn(
       `[fetchRecentInboundLxmf] skipped — proxy rate-limit backoff remaining=${remaining}ms`,
     );
@@ -65,13 +66,13 @@ export async function fetchRecentInboundLxmfDetailed(
     params.set('limit', String(Math.max(1, Math.min(500, Math.floor(opts.limit)))));
   }
   const qs = params.toString();
-  const path = qs ? `/api/v1/lxmf/recent?${qs}` : '/api/v1/lxmf/recent';
+  const path = qs ? `${RETICULUM_LXMF_RECENT_API_PATH}?${qs}` : RETICULUM_LXMF_RECENT_API_PATH;
   try {
     const body = (await window.electronAPI.reticulum.proxyGet(path)) as {
       messages?: unknown;
       ring_len?: unknown;
     };
-    clearReticulumProxyRateLimitBackoff();
+    clearReticulumProxyRateLimitBackoff('lxmfRecent');
     const ringLen =
       typeof body.ring_len === 'number' && Number.isFinite(body.ring_len)
         ? Math.trunc(body.ring_len)
@@ -85,7 +86,7 @@ export async function fetchRecentInboundLxmfDetailed(
       ringLen,
     };
   } catch (e) {
-    const rateLimited = noteReticulumProxyErrorIfRateLimited(e);
+    const rateLimited = noteReticulumProxyErrorIfRateLimited(e, 'lxmfRecent');
     console.warn('[fetchRecentInboundLxmf] ' + errLikeToLogString(e));
     return { messages: [], ringLen: null, rateLimited };
   }

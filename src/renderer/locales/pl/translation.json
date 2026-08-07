@@ -681,7 +681,7 @@
     "shareAsPaperCopyFailed": "Nie można skopiować papierowego linku",
     "waitingMessagesSilentFetched": "Pobrano {{processed}} z radia…",
     "reticulumSendStoringLocally": "Zapisywanie w skrzynce odbiorczej lokalnej propagacji…",
-    "reticulumSendStoredLocally": "Przechowywane w skrzynce odbiorczej lokalnej propagacji (niedostarczone do partnera)",
+    "reticulumSendStoredLocally": "Przechowywane w skrzynce odbiorczej lokalnej propagacji (niedostarczone do peera)",
     "sentViaLocalPropagation": "Skrzynka odbiorcza propagacji lokalnej"
   },
   "chatPayload": {
@@ -4246,7 +4246,7 @@
     "syncLocalNotSupported": "Lokalny węzeł propagacji hosta nie może być synchronizowany przez sieć jak zdalny węzeł propagacji LXMF.",
     "enableFailed": "Nie można włączyć węzła propagacji.",
     "disableFailed": "Nie można wyłączyć węzła propagacji.",
-    "syncOutboundBusy": "Propagation sync deferred — wiadomość wychodząca jest deponowana w tym węźle."
+    "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

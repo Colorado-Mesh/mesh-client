@@ -119,6 +119,33 @@ describe('failReticulumSendingOutboundToDestHash', () => {
     expect(useMessageStore.getState().messages[identityId]['msg-hash'].status).toBe('sending');
   });
 
+  it('skips outbound rows already on stored_locally (local-prop cascade)', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          'msg-hash': {
+            id: 'msg-hash',
+            from: 1,
+            senderName: 'self',
+            payload: 'hello',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            to: toNodeId,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'stored_locally',
+          },
+        },
+      },
+    });
+
+    const count = failReticulumSendingOutboundToDestHash(identityId, DEST, 'link timeout');
+    expect(count).toBe(0);
+    expect(useMessageStore.getState().messages[identityId]['msg-hash'].status).toBe('sending');
+  });
+
   it('requires full 32-hex equality (prefix must not fail unrelated peers)', () => {
     const peerA = DEST;
     const peerB = `${DEST.slice(0, 8)}${'ff'.repeat(12)}`;

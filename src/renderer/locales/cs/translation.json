@@ -678,9 +678,9 @@
     "shareAsPaperGenerate": "Vytvořit papírové QR",
     "shareAsPaperCopyFailed": "Nelze zkopírovat papírový odkaz",
     "waitingMessagesSilentFetched": "Načteno {{processed}} z rádia…",
-    "reticulumSendStoringLocally": "Ukládání do doručené pošty místní propagace...",
-    "reticulumSendStoredLocally": "Uchovává se ve vaší místní propagační doručené poště (nedoručuje se kolegovi)",
-    "sentViaLocalPropagation": "Doručená pošta pro místní propagaci"
+    "reticulumSendStoringLocally": "Ukládání do místní doručené pošty šíření…",
+    "reticulumSendStoredLocally": "Uloženo ve vaší místní doručené poště šíření (nedoručeno peerovi)",
+    "sentViaLocalPropagation": "Místní doručená pošta šíření"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

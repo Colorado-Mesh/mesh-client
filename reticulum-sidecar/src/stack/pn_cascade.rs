@@ -60,21 +60,11 @@ pub fn build_pn_cascade_order(
         let bh = b.hops.unwrap_or(u8::MAX);
         ah.cmp(&bh).then_with(|| a.id.cmp(&b.id))
     });
+    // Only reorder among enabled candidates — never synthesize a disabled/stale preferred.
     if let Some(pref) = preferred_hash {
         if let Some(idx) = remotes.iter().position(|c| c.hash == pref) {
             let preferred = remotes.remove(idx);
             remotes.insert(0, preferred);
-        } else {
-            // Preferred hash not in enabled list — still try it first if we know the hash.
-            remotes.insert(
-                0,
-                PnCascadeCandidate {
-                    hash: pref,
-                    is_local: false,
-                    hops: None,
-                    id: format!("pn-{}", hex::encode(&pref[..4])),
-                },
-            );
         }
     }
     let mut out = remotes;
@@ -275,5 +265,23 @@ mod tests {
             Some("stored_locally")
         );
         assert_eq!(PnCascadePick::Exhausted.delivery_method_label(), None);
+    }
+
+    #[test]
+    fn order_skips_preferred_not_in_enabled_list() {
+        let candidates = vec![remote(0x11, Some(1), "pn-a"), local(0x99)];
+        let stale_preferred = [0xee; 16];
+        let ordered = build_pn_cascade_order(&candidates, Some(stale_preferred));
+        assert_eq!(ordered[0].hash, [0x11; 16]);
+        assert!(!ordered.iter().any(|c| c.hash == stale_preferred));
+    }
+
+    #[test]
+    fn is_self_lxmf_hash_case_insensitive() {
+        let hash = [0xaa; 16];
+        let hex = hex::encode(hash);
+        assert!(is_self_lxmf_hash(&hash, &hex));
+        assert!(is_self_lxmf_hash(&hash, &hex.to_uppercase()));
+        assert!(!is_self_lxmf_hash(&hash, &"bb".repeat(16)));
     }
 }

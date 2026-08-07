@@ -677,7 +677,7 @@
     "shareAsPaperCopyFailed": "无法复制纸质链接",
     "waitingMessagesSilentFetched": "已从收音机获取{{processed}} …",
     "reticulumSendStoringLocally": "正在保存到本地传播收件箱…",
-    "reticulumSendStoredLocally": "保存在您的本地传播收件箱中（未发送给同行）",
+    "reticulumSendStoredLocally": "保存在您的本地传播收件箱中（未送达对端）",
     "sentViaLocalPropagation": "本地传播收件箱"
   },
   "chatPayload": {

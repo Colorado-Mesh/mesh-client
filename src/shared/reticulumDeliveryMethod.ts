@@ -20,3 +20,8 @@ export function parseReticulumDeliveryMethod(
   const normalized = value.trim().toLowerCase();
   return ALLOWED.has(normalized) ? (normalized as ReticulumDeliveryMethod) : undefined;
 }
+
+/** Direct→PN cascade in flight / stored (remote PN or local-prop inbox). */
+export function isPnCascadeDeliveryMethod(m: ReticulumDeliveryMethod | undefined): boolean {
+  return m === 'propagated' || m === 'stored_locally';
+}

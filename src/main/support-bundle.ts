@@ -178,6 +178,11 @@ Contents:
 `;
 }
 
+/** Truncate long hex ids in exported log lines (keep triage prefix only). */
+function redactLxmfOutboundLogLine(line: string): string {
+  return line.replace(/\b([0-9a-fA-F]{16,})\b/g, (hex) => `${hex.slice(0, 8)}…`);
+}
+
 /** Extract LXMF outbound / PN cascade diagnostic lines for developer triage. */
 export function extractLxmfOutboundLogSlice(...logChunks: Buffer[]): Buffer {
   const patterns = [
@@ -195,7 +200,7 @@ export function extractLxmfOutboundLogSlice(...logChunks: Buffer[]): Buffer {
     const text = chunk.toString('utf8');
     for (const line of text.split(/\r?\n/)) {
       if (patterns.some((re) => re.test(line))) {
-        lines.push(line);
+        lines.push(redactLxmfOutboundLogLine(line));
       }
     }
   }

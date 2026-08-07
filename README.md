@@ -339,7 +339,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **LXST voice Call** on DM headers and Peers rows — live telephony over rsLXST (not an LXMF voice-note clip)
 - **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs); @mentions badge Chat + the amber protocol pill
 - **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch), saved addresses and inbound-policy controls; Chat DM send-file convenience (distinct from Meshtastic remote admin)
-- **Delivery:** **Direct** when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered
+- **Delivery:** **Direct** when the destination is in the path table; after Direct exhausts, **multi-PN cascade** (preferred remote → other enabled remotes hop-sorted → local-prop last). Remote PN Completes show **Stored at propagation node** (`delivered`); local-prop Completes as local inbox (`stored_locally`) — neither is recipient Delivered
 
 **Games (LRGP)**
 
@@ -393,7 +393,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **Map tiles; OpenStreetMap Referer requirement**: Packaged desktop builds load the UI from the local filesystem. The main process now loads the renderer with an explicit HTTP referrer so OpenStreetMap tile requests include a valid `Referer` header and comply with the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). If you point the app at a different tile server, ensure its usage policy permits this client.
 - **Reticulum — no LoRa companion parity**: Reticulum does not use Meshtastic/MeshCore `ConnectionDriver`, MQTT hybrid, channel pills, Rooms BBS, or Hop Goblins diagnostics. The **Chat** tab is **DM-only**; hub room chat lives on the **RRC** tab. Interface add/edit/delete updates config on disk — **restart the stack** after changes under `rns-stack`.
 - **Reticulum — sidecar license**: The spawned `mesh-client-reticulum` binary is **AGPL-3.0** (separate process from the MIT Electron shell). See [docs/reticulum.md](docs/reticulum.md) and [docs/credits.md](docs/credits.md#bundled-binaries).
-- **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no preferred **remote** propagation node is set. Local inbox ≠ remote store-and-forward. When a path exists, Direct is tried first; Direct fail with a remote preferred PN triggers one-shot PN deposit.
+- **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no cascade candidates exist (enabled remotes or local-prop). Local inbox Completes (`stored_locally`) ≠ peer delivery at a remote PN. When a path exists, Direct is tried first; on Direct fail the sidecar cascades preferred remote → other enabled remotes (hop-sorted) → local-prop last.
 
 ---
 

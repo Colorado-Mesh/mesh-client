@@ -19,6 +19,68 @@ export interface CatchUpRecentInboundLxmfOutcome {
   watermarkSeq: number | null;
 }
 
+/** Single-flight + trailing coalesce for concurrent catch-up callers. */
+let catchUpInFlight: Promise<CatchUpRecentInboundLxmfOutcome | null> | null = null;
+let catchUpInFlightOpts: CatchUpRecentInboundLxmfOpts | null = null;
+let catchUpPending: CatchUpRecentInboundLxmfOpts | null = null;
+
+/** Prefer latest cursor; merge reason labels; last ingest/identity wins. */
+function mergeCatchUpOpts(
+  base: CatchUpRecentInboundLxmfOpts,
+  next: CatchUpRecentInboundLxmfOpts,
+): CatchUpRecentInboundLxmfOpts {
+  const reasons = [base.reason, next.reason].filter(
+    (r): r is string => typeof r === 'string' && r.length > 0,
+  );
+  const uniqueReasons = [...new Set(reasons)];
+  const sinceTs =
+    next.sinceTs != null && Number.isFinite(next.sinceTs)
+      ? next.sinceTs
+      : base.sinceTs != null && Number.isFinite(base.sinceTs)
+        ? base.sinceTs
+        : undefined;
+  const sinceSeq =
+    next.sinceSeq != null && Number.isFinite(next.sinceSeq)
+      ? next.sinceSeq
+      : base.sinceSeq != null && Number.isFinite(base.sinceSeq)
+        ? base.sinceSeq
+        : undefined;
+  // When both cursors present, prefer the later (ts, seq) pair from `next` if it advances.
+  let chosenSinceTs = sinceTs;
+  let chosenSinceSeq = sinceSeq;
+  if (
+    base.sinceTs != null &&
+    Number.isFinite(base.sinceTs) &&
+    next.sinceTs != null &&
+    Number.isFinite(next.sinceTs)
+  ) {
+    if (next.sinceTs > base.sinceTs) {
+      chosenSinceTs = next.sinceTs;
+      chosenSinceSeq = next.sinceSeq;
+    } else if (next.sinceTs < base.sinceTs) {
+      chosenSinceTs = base.sinceTs;
+      chosenSinceSeq = base.sinceSeq;
+    } else {
+      const baseSeq = base.sinceSeq ?? -1;
+      const nextSeq = next.sinceSeq ?? -1;
+      if (nextSeq >= baseSeq) {
+        chosenSinceTs = next.sinceTs;
+        chosenSinceSeq = next.sinceSeq;
+      } else {
+        chosenSinceTs = base.sinceTs;
+        chosenSinceSeq = base.sinceSeq;
+      }
+    }
+  }
+  return {
+    identityId: next.identityId || base.identityId,
+    ingest: next.ingest,
+    ...(chosenSinceTs != null ? { sinceTs: chosenSinceTs } : {}),
+    ...(chosenSinceSeq != null ? { sinceSeq: chosenSinceSeq } : {}),
+    ...(uniqueReasons.length > 0 ? { reason: uniqueReasons.join('+') } : {}),
+  };
+}
+
 function rowAlreadyInMessageStore(identityId: string, p: ReticulumLxmfPayload): boolean {
   const hash = typeof p.message_hash === 'string' ? p.message_hash.trim() : '';
   if (!hash) return false;
@@ -46,23 +108,22 @@ function isCursorAfter(
   return maxSeq == null || seq > maxSeq;
 }
 
-/**
- * Fetch recent inbound LXMF, ingest unknown rows, and compute the catch-up watermark.
- * Caller applies diagnostics (`noteReticulumInboundCatchUp` / watermark advance).
- *
- * Sidecar cursor is exclusive `(since_ts, since_seq)`; returned watermarks are the max
- * `(timestamp, ring_seq)` among fetched rows and are safe for the next periodic fetch.
- */
-export async function catchUpRecentInboundLxmf(
+async function catchUpRecentInboundLxmfOnce(
   opts: CatchUpRecentInboundLxmfOpts,
 ): Promise<CatchUpRecentInboundLxmfOutcome | null> {
   if (!opts.identityId) return null;
 
-  const { messages: rows } = await fetchRecentInboundLxmfDetailed({
+  const { messages: rows, rateLimited } = await fetchRecentInboundLxmfDetailed({
     limit: 200,
     ...(opts.sinceTs != null ? { sinceTs: opts.sinceTs } : {}),
     ...(opts.sinceSeq != null ? { sinceSeq: opts.sinceSeq } : {}),
   });
+  if (rateLimited) {
+    console.warn(
+      `[catchUpRecentInboundLxmf] rateLimited reason=${opts.reason ?? 'catch-up'} — skipped (not empty inbox)`,
+    );
+    return null;
+  }
   if (rows.length === 0) return null;
 
   const knownFlags = rows.map((p) => rowAlreadyInMessageStore(opts.identityId, p));
@@ -95,4 +156,53 @@ export async function catchUpRecentInboundLxmf(
     watermarkTs: maxTs > 0 ? maxTs : null,
     watermarkSeq: maxTs > 0 ? maxSeq : null,
   };
+}
+
+/**
+ * Fetch recent inbound LXMF, ingest unknown rows, and compute the catch-up watermark.
+ * Caller applies diagnostics (`noteReticulumInboundCatchUp` / watermark advance).
+ *
+ * Sidecar cursor is exclusive `(since_ts, since_seq)`; returned watermarks are the max
+ * `(timestamp, ring_seq)` among fetched rows and are safe for the next periodic fetch.
+ *
+ * Concurrent callers share one in-flight promise; later opts coalesce (latest cursor, merged reasons)
+ * into a trailing rerun when needed.
+ */
+export async function catchUpRecentInboundLxmf(
+  opts: CatchUpRecentInboundLxmfOpts,
+): Promise<CatchUpRecentInboundLxmfOutcome | null> {
+  if (!opts.identityId) return null;
+
+  if (catchUpInFlight) {
+    const base = catchUpPending ?? catchUpInFlightOpts ?? opts;
+    catchUpPending = mergeCatchUpOpts(base, opts);
+    return catchUpInFlight;
+  }
+
+  catchUpInFlightOpts = opts;
+  catchUpInFlight = (async () => {
+    try {
+      let current = opts;
+      let result = await catchUpRecentInboundLxmfOnce(current);
+      while (catchUpPending) {
+        current = catchUpPending;
+        catchUpPending = null;
+        catchUpInFlightOpts = current;
+        result = await catchUpRecentInboundLxmfOnce(current);
+      }
+      return result;
+    } finally {
+      catchUpInFlight = null;
+      catchUpInFlightOpts = null;
+    }
+  })();
+
+  return catchUpInFlight;
+}
+
+/** Test-only reset of single-flight coalesce state. */
+export function resetCatchUpRecentInboundLxmfSingleFlightForTests(): void {
+  catchUpInFlight = null;
+  catchUpInFlightOpts = null;
+  catchUpPending = null;
 }

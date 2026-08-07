@@ -677,7 +677,7 @@
     "shareAsPaperCopyFailed": "용지 링크를 복사할 수 없습니다",
     "waitingMessagesSilentFetched": "라디오에서 {{processed}} 을 (를) 가져왔습니다...",
     "reticulumSendStoringLocally": "로컬 전파 받은 편지함에 저장 중...",
-    "reticulumSendStoredLocally": "로컬 전파 받은 편지함에 보관 (동료에게 전달되지 않음)",
+    "reticulumSendStoredLocally": "로컬 전파 받은 편지함에 보관됨 (피어에게 전달되지 않음)",
     "sentViaLocalPropagation": "로컬 전파 메시지함"
   },
   "chatPayload": {
@@ -4242,7 +4242,7 @@
     "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다.",
     "enableFailed": "전파 노드를 활성화할 수 없습니다.",
     "disableFailed": "전파 노드를 비활성화할 수 없습니다.",
-    "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 입금됩니다."
+    "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

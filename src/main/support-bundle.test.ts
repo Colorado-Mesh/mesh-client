@@ -118,6 +118,17 @@ describe('extractLxmfOutboundLogSlice', () => {
     expect(slice).not.toContain('hello world');
     expect(slice).not.toContain('peer refresh ok');
   });
+
+  it('truncates long hex ids in kept lines', () => {
+    const dest = 'ab'.repeat(16);
+    const chunk = Buffer.from(
+      `info target=lxmf-outbound dest=${dest} LXMF advancing PN cascade\n`,
+      'utf8',
+    );
+    const slice = extractLxmfOutboundLogSlice(chunk).toString('utf8');
+    expect(slice).toContain('dest=abababab…');
+    expect(slice).not.toContain(dest);
+  });
 });
 
 describe('redactMnemonicFromStackJson', () => {

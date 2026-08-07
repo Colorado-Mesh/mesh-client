@@ -675,9 +675,9 @@
     "shareAsPaperMessageLabel": "Mensaje a cifrar",
     "shareAsPaperGenerate": "Crear QR en papel",
     "shareAsPaperCopyFailed": "No se ha podido copiar el enlace en papel",
-    "waitingMessagesSilentFetched": "Obtenido {{processed}} de la radio...",
+    "waitingMessagesSilentFetched": "Obtenidos {{processed}} de la radio…",
     "reticulumSendStoringLocally": "Guardando en su bandeja de entrada de propagación local...",
-    "reticulumSendStoredLocally": "Se mantiene en su bandeja de entrada de propagación local (no se entrega a los compañeros)",
+    "reticulumSendStoredLocally": "Se mantiene en su bandeja de entrada de propagación local (no se entrega al peer)",
     "sentViaLocalPropagation": "Bandeja de entrada de propagación local"
   },
   "chatPayload": {

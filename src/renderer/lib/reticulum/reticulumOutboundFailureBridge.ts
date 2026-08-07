@@ -10,6 +10,7 @@ import {
 import type { IdentityId } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
+import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 function normalizeDestHash(hash: string): string {
   return hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
@@ -49,10 +50,7 @@ export function failReticulumSendingOutboundToDestHash(
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (msg.status !== 'sending' || msg.to == null) continue;
     // Cascade re-queues as Propagated / stored_locally and emits sending — do not fail those.
-    if (
-      msg.reticulumDeliveryMethod === 'propagated' ||
-      msg.reticulumDeliveryMethod === 'stored_locally'
-    ) {
+    if (isPnCascadeDeliveryMethod(msg.reticulumDeliveryMethod)) {
       continue;
     }
     const destHash = resolveReticulumOutboundDestHash(msg.to);

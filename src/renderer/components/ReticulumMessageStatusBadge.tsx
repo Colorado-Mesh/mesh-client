@@ -8,6 +8,7 @@ import {
   type ReticulumVia,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import type { MessageRecord, MessageTransport } from '@/renderer/stores/messageStore';
+import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 export interface ReticulumMessageStatusBadgeProps {
   status: 'sending' | 'acked' | 'failed';
@@ -132,12 +133,11 @@ export function ReticulumMessageStatusBadge({
   const { t } = useTranslation();
   const atoms = parseReticulumViaAtoms(via);
   const viasLabel = formatReticulumViaBadgeLabel(via ?? 'network');
-  const label =
-    deliveryMethod === 'propagated' || deliveryMethod === 'stored_locally'
-      ? t('chatPanel.reticulumPnAbbrev')
-      : deliveryMethod === 'paper'
-        ? t('chatPanel.reticulumSendPaper')
-        : viasLabel;
+  const label = isPnCascadeDeliveryMethod(deliveryMethod)
+    ? t('chatPanel.reticulumPnAbbrev')
+    : deliveryMethod === 'paper'
+      ? t('chatPanel.reticulumSendPaper')
+      : viasLabel;
   const statusLabel = statusLabelText(t, status, deliveryMethod, error);
   const viaPrefix = viaPrefixText(t, deliveryMethod, atoms, viasLabel);
   // Completed paper: paper-only prefix. Failed/sending paper keep status suffix (incl. error text).

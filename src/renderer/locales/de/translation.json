@@ -676,9 +676,9 @@
     "shareAsPaperGenerate": "Papier-QR erstellen",
     "shareAsPaperCopyFailed": "Papierlink konnte nicht kopiert werden",
     "waitingMessagesSilentFetched": "{{processed}} vom Funkgerät abgerufen…",
-    "reticulumSendStoringLocally": "Wird in Ihrem lokalen Ausbreitungs-Posteingang gespeichert...",
-    "reticulumSendStoredLocally": "Wird in Ihrem lokalen Propagationsposteingang aufbewahrt (nicht an Kollegen geliefert)",
-    "sentViaLocalPropagation": "Lokaler Ausbreitungseingang"
+    "reticulumSendStoringLocally": "Wird in Ihrem lokalen Propagations-Posteingang gespeichert…",
+    "reticulumSendStoredLocally": "Wird in Ihrem lokalen Propagations-Posteingang aufbewahrt (nicht an den Peer geliefert)",
+    "sentViaLocalPropagation": "Lokaler Propagations-Posteingang"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

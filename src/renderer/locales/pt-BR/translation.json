@@ -675,9 +675,9 @@
     "shareAsPaperMessageLabel": "Mensagem para encriptar",
     "shareAsPaperGenerate": "Criar QR de papel",
     "shareAsPaperCopyFailed": "Não foi possível copiar o link do papel",
-    "waitingMessagesSilentFetched": "Buscou {{processed}} no rádio...",
+    "waitingMessagesSilentFetched": "Obtidas {{processed}} mensagem(ns) do rádio…",
     "reticulumSendStoringLocally": "Salvando na sua caixa de entrada de propagação local...",
-    "reticulumSendStoredLocally": "Mantido em sua caixa de entrada de propagação local (não entregue ao colega)",
+    "reticulumSendStoredLocally": "Mantido na sua caixa de entrada de propagação local (não entregue ao peer)",
     "sentViaLocalPropagation": "Caixa de entrada de propagação local"
   },
   "chatPayload": {

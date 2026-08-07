@@ -15,6 +15,11 @@ import {
   getReticulumInboundLxmfDiagnostics,
   resetReticulumInboundLxmfDiagnosticsForTests,
 } from './reticulumInboundLxmfDiagnostics';
+import {
+  isReticulumProxyRateLimitBackoffActive,
+  noteReticulumProxyRateLimitHit,
+  resetReticulumProxyRateLimitBackoffForTests,
+} from './reticulumProxyRateLimitBackoff';
 
 describe('fetchRecentInboundLxmf', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -23,6 +28,7 @@ describe('fetchRecentInboundLxmf', () => {
     proxyGet.mockReset();
     warnSpy.mockClear();
     resetReticulumInboundLxmfDiagnosticsForTests();
+    resetReticulumProxyRateLimitBackoffForTests();
   });
 
   it('returns inbound rows from sidecar recent API', async () => {
@@ -58,5 +64,47 @@ describe('fetchRecentInboundLxmf', () => {
     expect(warnSpy).toHaveBeenCalled();
     const detailed = await fetchRecentInboundLxmfDetailed();
     expect(detailed).toEqual({ messages: [], ringLen: null, rateLimited: false });
+  });
+
+  it('skips proxyGet when lxmfRecent backoff is active', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    noteReticulumProxyRateLimitHit('lxmfRecent');
+    const detailed = await fetchRecentInboundLxmfDetailed();
+    expect(proxyGet).not.toHaveBeenCalled();
+    expect(detailed).toEqual({ messages: [], ringLen: null, rateLimited: true });
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('skipped'));
+  });
+
+  it('does not skip when only shared backoff is active', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    noteReticulumProxyRateLimitHit('shared');
+    proxyGet.mockResolvedValue({ messages: [], ring_len: 0 });
+    await fetchRecentInboundLxmfDetailed();
+    expect(proxyGet).toHaveBeenCalled();
+  });
+
+  it('arms lxmfRecent backoff on rate-limit error', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    proxyGet.mockRejectedValue(new Error('reticulum:proxy: rate limit exceeded'));
+    const detailed = await fetchRecentInboundLxmfDetailed();
+    expect(detailed.rateLimited).toBe(true);
+    // Second call should skip without hitting proxy again.
+    proxyGet.mockClear();
+    const skipped = await fetchRecentInboundLxmfDetailed();
+    expect(proxyGet).not.toHaveBeenCalled();
+    expect(skipped.rateLimited).toBe(true);
+  });
+
+  it('clears lxmfRecent backoff after success', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const now = 1_000_000;
+    noteReticulumProxyRateLimitHit('lxmfRecent', now);
+    expect(isReticulumProxyRateLimitBackoffActive('lxmfRecent', now)).toBe(true);
+    proxyGet.mockResolvedValue({ messages: [], ring_len: 0 });
+    vi.spyOn(Date, 'now').mockReturnValue(now + 120_000);
+    await fetchRecentInboundLxmfDetailed();
+    expect(proxyGet).toHaveBeenCalled();
+    expect(isReticulumProxyRateLimitBackoffActive('lxmfRecent', now)).toBe(false);
   });
 });

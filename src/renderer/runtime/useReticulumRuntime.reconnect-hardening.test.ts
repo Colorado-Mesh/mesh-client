@@ -280,8 +280,13 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
       /shouldApplyLinkDeliveryTimeoutFailureBridge\(\s*propState\.nodes,\s*propState\.preferredId,\s*\)/,
     );
     expect(SOURCE).toContain('propagationHydratedForBridgeRef');
+    expect(SOURCE).toContain('identityIdRef');
     expect(SOURCE).toMatch(/if \(!applyBridge\) \{/);
     expect(SOURCE).toContain('cascade eligible');
+    expect(SOURCE).toContain('propagation hydrate failed/uncertain');
+    expect(SOURCE).toMatch(
+      /processedLinkTimeoutDestsRef\.current\.add\(norm\);\s*failReticulumSendingOutboundToDestHash/,
+    );
   });
 
   it('wires propagation store + sidecar health into Reticulum diagnostics', () => {
