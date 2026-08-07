@@ -463,13 +463,17 @@ impl LiveBridge {
             path_peer_cache_fetched_at,
             display_name_cache,
             outbound,
-            propagation: Arc::new(PropagationBridge::new(
-                handle.transport_tx.clone(),
-                lxmf_propagation_dest_hash,
-                storage_dir.join("propagation"),
-                &identity,
-                &pn_hosting_policy,
-            )?),
+            propagation: {
+                let prop = Arc::new(PropagationBridge::new(
+                    handle.transport_tx.clone(),
+                    lxmf_propagation_dest_hash,
+                    storage_dir.join("propagation"),
+                    &identity,
+                    &pn_hosting_policy,
+                )?);
+                prop.spawn_messagestore_load();
+                prop
+            },
             prop_serve: Arc::new(PropagationServeHandle::new()),
             prop_announce: Arc::new(PropagationAnnounceLoop::new()),
             pn_hosting_policy: Arc::new(Mutex::new(pn_hosting_policy)),
@@ -560,9 +564,7 @@ impl LiveBridge {
         }
         bridge.refresh_pn_cascade_candidates().await;
 
-        if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {
-            let _ = bridge.sync_ble_peer_interfaces(&ifaces).await;
-        }
+        // BLE Peer sync is started from StackHandle::attach_live after HTTP is up.
 
         {
             let mut state = inner.write().await;
@@ -4363,7 +4365,10 @@ impl LiveBridge {
     }
 
     #[cfg(feature = "rns-ble")]
-    async fn sync_ble_peer_interfaces(&self, interfaces: &[InterfaceRow]) -> Result<(), String> {
+    pub(crate) async fn sync_ble_peer_interfaces(
+        &self,
+        interfaces: &[InterfaceRow],
+    ) -> Result<(), String> {
         let desired: HashMap<String, &InterfaceRow> = interfaces
             .iter()
             .filter(|i| i.iface_type == "ble_peer" && i.enabled)

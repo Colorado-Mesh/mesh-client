@@ -5,6 +5,7 @@
 import { useEffect, useRef } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { isRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { loadRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
@@ -17,11 +18,23 @@ import {
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
 
+/** While hubs still need linking, poll quickly so we do not miss the HTTP-ready window by 4s. */
+const RRC_AUTO_CONNECT_FAST_MS = 500;
+/** Steady poll once hubs are linked (or none configured). */
+const RRC_AUTO_CONNECT_STEADY_MS = 4_000;
+
+export { RETICULUM_CONFIGURED_EVENT };
 let hubAutoConnectBusy = false;
 
 function isRrcHubLinkedNow(hub: string): boolean {
   const s = useRrcSessionStore.getState().sessionsByHub.get(hub);
   return !!s && isRrcHubLinked(s.status);
+}
+
+function pendingRrcAutoJoinHubs(): string[] {
+  return loadRrcHubAutoJoin().filter(
+    (hub) => !isRrcHubLinkedNow(hub) && !isRrcHubDisconnectSuppressed(hub),
+  );
 }
 
 /** Roll a hub session back to idle when a connect attempt fails mid-handshake. */
@@ -107,21 +120,48 @@ export function useRrcStartupAutoConnect(): void {
 
   useEffect(() => {
     let cancelled = false;
-    const tick = (): void => {
-      void isReticulumSidecarRunning()
-        .then((running) => {
-          if (cancelled || !running) return;
-          return runRrcHubAutoConnectBatch(readRrcNickname());
-        })
-        .catch((e: unknown) => {
-          console.debug('[useRrcStartupAutoConnect] ' + errLikeToLogString(e));
-        });
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearTimer = (): void => {
+      if (timer != null) {
+        clearTimeout(timer);
+        timer = null;
+      }
     };
-    tick();
-    const id = setInterval(tick, 4000);
+
+    const schedule = (ms: number): void => {
+      clearTimer();
+      timer = setTimeout(() => {
+        void tick();
+      }, ms);
+    };
+
+    const tick = async (): Promise<void> => {
+      if (cancelled) return;
+      try {
+        if (!cancelled && (await isReticulumSidecarRunning())) {
+          await runRrcHubAutoConnectBatch(readRrcNickname());
+        }
+      } catch (e: unknown) {
+        console.debug('[useRrcStartupAutoConnect] ' + errLikeToLogString(e));
+      }
+      if (cancelled) return;
+      const pending = pendingRrcAutoJoinHubs();
+      // Fast retry while waiting for live attach / first successful hub link.
+      schedule(pending.length > 0 ? RRC_AUTO_CONNECT_FAST_MS : RRC_AUTO_CONNECT_STEADY_MS);
+    };
+
+    const onConfigured = (): void => {
+      // Stack just became usable — do not wait for the next poll slot.
+      void tick();
+    };
+
+    void tick();
+    window.addEventListener(RETICULUM_CONFIGURED_EVENT, onConfigured);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      clearTimer();
+      window.removeEventListener(RETICULUM_CONFIGURED_EVENT, onConfigured);
     };
   }, []);
 

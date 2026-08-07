@@ -1300,7 +1300,7 @@ export default function ConnectionPanel({
     }
   }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
 
-  const handleCancelConnection = useCallback(async () => {
+  const handleCancelConnection = useCallback(() => {
     autoConnectCancelRef.current = true;
     cancelProtocolRfAutoConnect(protocol);
     isAutoConnectingRef.current = false;
@@ -1327,7 +1327,7 @@ export default function ConnectionPanel({
         if (webBluetoothDevice) {
           setWebBluetoothDevice(null);
         }
-      } else {
+      } else if (protocol === 'meshtastic' || protocol === 'meshcore') {
         void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
           console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
         });
@@ -1341,13 +1341,11 @@ export default function ConnectionPanel({
     bleLinuxPickerSelectionResolvedRef.current = false;
     setConnecting(false);
     setConnectionStage('');
-    // Ensure the underlying connection attempt is properly torn down
-    try {
-      console.debug('[ConnectionPanel] handleCancelConnection onDisconnect');
-      await onDisconnect();
-    } catch (e) {
+    // Tear down connection without blocking Cancel UI on sidecar cargo/BLE start.
+    console.debug('[ConnectionPanel] handleCancelConnection onDisconnect');
+    void onDisconnect().catch((e: unknown) => {
       console.debug('[ConnectionPanel] onDisconnect best-effort cleanup ' + errLikeToLogString(e));
-    }
+    });
   }, [
     showBlePicker,
     showSerialPicker,
@@ -1927,7 +1925,7 @@ export default function ConnectionPanel({
     async (variant: 'connected' | 'idle' | 'connecting') => {
       try {
         if (variant === 'connecting') {
-          await handleCancelConnection();
+          handleCancelConnection();
         } else if (isConnected) {
           await Promise.race([
             onDisconnect(),

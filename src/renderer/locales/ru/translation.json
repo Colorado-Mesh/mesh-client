@@ -680,7 +680,8 @@
     "waitingMessagesSilentFetched": "Получено {{processed}} из радио…",
     "reticulumSendStoringLocally": "Сохранение в локальный почтовый ящик распространения...",
     "reticulumSendStoredLocally": "Хранится в локальном почтовом ящике распространения (не доставляется одноранговому узлу)",
-    "sentViaLocalPropagation": "Локальный почтовый ящик распространения"
+    "sentViaLocalPropagation": "Локальный почтовый ящик распространения",
+    "reticulumSendTimeout": "Время ожидания отправки истекло. Стек Reticulum, возможно, запускается или занят — повторите попытку."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -4879,7 +4880,9 @@
     "clearHistoryConfirm": "Удалить всю сохраненную историю сообщений для {{room}}? Это невозможно отменить.",
     "clearHistoryConfirmAction": "Удалить историю",
     "whisperReplyPlaceholder": "Ответить на {{name}} или /msg…",
-    "jumpToLatest": "Перейти к последнему"
+    "jumpToLatest": "Перейти к последнему",
+    "sendTimeout": "Время ожидания отправки истекло. Стек Reticulum, возможно, запускается или занят — повторите попытку.",
+    "stackNotReady": "Стек Reticulum ещё не готов. Дождитесь подключения и повторите попытку."
   },
   "signalMeter": {
     "rssi": "РССИ",

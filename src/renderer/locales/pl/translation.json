@@ -682,7 +682,8 @@
     "waitingMessagesSilentFetched": "Pobrano {{processed}} z radia…",
     "reticulumSendStoringLocally": "Zapisywanie w skrzynce odbiorczej lokalnej propagacji…",
     "reticulumSendStoredLocally": "Przechowywane w skrzynce odbiorczej lokalnej propagacji (niedostarczone do peera)",
-    "sentViaLocalPropagation": "Skrzynka odbiorcza propagacji lokalnej"
+    "sentViaLocalPropagation": "Skrzynka odbiorcza propagacji lokalnej",
+    "reticulumSendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -4881,7 +4882,9 @@
     "clearHistoryConfirm": "Usunąć całą zapisaną historię wiadomości dla {{room}}? Tego nie można cofnąć.",
     "clearHistoryConfirmAction": "Usuń historię",
     "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
-    "jumpToLatest": "Przejdź do najnowszych"
+    "jumpToLatest": "Przejdź do najnowszych",
+    "sendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie.",
+    "stackNotReady": "Stos Reticulum nie jest jeszcze gotowy. Poczekaj na połączenie, a następnie spróbuj ponownie."
   },
   "signalMeter": {
     "rssi": "RSSI",

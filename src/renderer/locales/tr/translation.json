@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "Radyodan {{processed}} alındı…",
     "reticulumSendStoringLocally": "Yerel yayılım gelen kutunuza kaydediliyor…",
     "reticulumSendStoredLocally": "Yerel yayılım gelen kutunuzda tutulur (akranınıza teslim edilmez)",
-    "sentViaLocalPropagation": "Yerel yayılım gelen kutusu"
+    "sentViaLocalPropagation": "Yerel yayılım gelen kutusu",
+    "reticulumSendTimeout": "Gönderim zaman aşımına uğradı. Reticulum yığını başlıyor veya meşgul olabilir — tekrar deneyin."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "{{room}} için kayıtlı tüm mesaj geçmişi silinsin mi? Bu geri alınamaz.",
     "clearHistoryConfirmAction": "Geçmişi sil",
     "whisperReplyPlaceholder": "{{name}} veya /msg'ye yanıt verin…",
-    "jumpToLatest": "En Yeniye Atla"
+    "jumpToLatest": "En Yeniye Atla",
+    "sendTimeout": "Gönderim zaman aşımına uğradı. Reticulum yığını başlıyor veya meşgul olabilir — tekrar deneyin.",
+    "stackNotReady": "Reticulum yığını henüz hazır değil. Bağlanmayı bekleyin, ardından tekrar deneyin."
   },
   "signalMeter": {
     "rssi": "RSSI",

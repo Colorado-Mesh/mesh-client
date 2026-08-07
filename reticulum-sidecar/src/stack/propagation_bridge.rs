@@ -57,8 +57,10 @@ impl PropagationBridge {
             max_message_size: policy.propagation_limit_kb.saturating_mul(1024),
             max_offer_size: policy.sync_limit_kb.saturating_mul(1000),
         };
+        // Defer messagestore scan — large local PN stores can take many seconds and must
+        // not gate TCP/LXMF/RRC live attach. New writes still go to `storage_dir`.
         let local_node = Arc::new(Mutex::new(
-            PropagationNode::with_storage(node_config, local_dest_hash, storage_dir)
+            PropagationNode::with_storage_unloaded(node_config, local_dest_hash, storage_dir)
                 .map_err(|e| format!("propagation storage init: {e}"))?,
         ));
         let mut sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
@@ -79,6 +81,38 @@ impl PropagationBridge {
             peering_key_jobs: Mutex::new(HashSet::new()),
             peering_key_results: Mutex::new(Vec::new()),
         })
+    }
+
+    /// Load historical PN messages off the live-ready path (spawn_blocking).
+    pub fn spawn_messagestore_load(self: &Arc<Self>) {
+        let node = Arc::clone(&self.local_node);
+        tokio::spawn(async move {
+            let load_started = Instant::now();
+            let result = tokio::task::spawn_blocking(move || {
+                let mut guard = node
+                    .lock()
+                    .map_err(|e| format!("propagation node lock poisoned: {e}"))?;
+                guard
+                    .load_messagestore_from_disk()
+                    .map_err(|e| e.to_string())?;
+                Ok::<(), String>(())
+            })
+            .await;
+            match result {
+                Ok(Ok(())) => {
+                    tracing::info!(
+                        elapsed_ms = load_started.elapsed().as_millis() as u64,
+                        "propagation messagestore loaded in background"
+                    );
+                }
+                Ok(Err(e)) => {
+                    tracing::warn!(error = %e, "background propagation messagestore load failed");
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "background propagation messagestore load join failed");
+                }
+            }
+        });
     }
 
     pub fn peering_key_job_inflight(&self, peer_hash: &[u8; 16]) -> bool {

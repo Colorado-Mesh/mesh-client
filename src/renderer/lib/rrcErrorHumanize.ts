@@ -11,6 +11,12 @@ export function rrcErrorToI18nKey(message: string): string | null {
   if (lower.includes('timed out waiting for welcome')) {
     return 'rrc.errors.welcomeTimeout';
   }
+  if (lower.includes('reticulum_ipc_send_timeout') || lower.includes('rrc_send_timeout')) {
+    return 'rrc.sendTimeout';
+  }
+  if (lower.includes('sidecar_not_running') || lower.includes('stack_not_ready')) {
+    return 'rrc.stackNotReady';
+  }
   return null;
 }
 

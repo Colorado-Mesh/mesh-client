@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "ラジオから{{processed}}を取得しました…",
     "reticulumSendStoringLocally": "ローカルの伝播受信トレイに保存しています…",
     "reticulumSendStoredLocally": "ローカルの伝播受信トレイに保存されています（ピアには配信されません）",
-    "sentViaLocalPropagation": "ローカル伝播受信トレイ"
+    "sentViaLocalPropagation": "ローカル伝播受信トレイ",
+    "reticulumSendTimeout": "送信がタイムアウトしました。Reticulum スタックが起動中またはビジーの可能性があります — 再試行してください。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
     "clearHistoryConfirmAction": "履歴の削除",
     "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
-    "jumpToLatest": "最新へジャンプ"
+    "jumpToLatest": "最新へジャンプ",
+    "sendTimeout": "送信がタイムアウトしました。Reticulum スタックが起動中またはビジーの可能性があります — 再試行してください。",
+    "stackNotReady": "Reticulum スタックはまだ準備ができていません。接続を待ってから再試行してください。"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -308,3 +308,9 @@ export const MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS = 2.5 * MS_PER_SECOND;
  * Slightly above rsLXST `outgoing_call_timeout` (70s).
  */
 export const RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS = 75 * MS_PER_SECOND;
+
+/**
+ * Bound LXMF / RRC proxy sends so a stuck sidecar IPC cannot hang Chat/RRC UI forever.
+ * Stack TCP features should already be up; this is a safety net during connect races.
+ */
+export const RETICULUM_IPC_SEND_TIMEOUT_MS = 15 * MS_PER_SECOND;

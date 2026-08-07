@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "{{processed}} message(s) récupéré(s) de la radio…",
     "reticulumSendStoringLocally": "Enregistrement dans votre boîte de réception de propagation locale…",
     "reticulumSendStoredLocally": "Conservé dans votre boîte de réception de propagation locale (non livré à l'homologue)",
-    "sentViaLocalPropagation": "Boîte de réception de propagation locale"
+    "sentViaLocalPropagation": "Boîte de réception de propagation locale",
+    "reticulumSendTimeout": "Envoi expiré. La pile Reticulum peut démarrer ou être occupée — réessayez."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
     "clearHistoryConfirmAction": "Supprimer l'historique",
     "whisperReplyPlaceholder": "Répondre à {{name}} ou /msg…",
-    "jumpToLatest": "Aller au dernier"
+    "jumpToLatest": "Aller au dernier",
+    "sendTimeout": "Envoi expiré. La pile Reticulum peut démarrer ou être occupée — réessayez.",
+    "stackNotReady": "La pile Reticulum n'est pas encore prête. Attendez la connexion, puis réessayez."
   },
   "signalMeter": {
     "rssi": "RSSI",

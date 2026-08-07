@@ -230,6 +230,23 @@ export function sidecarBinaryIsStale(binaryPath: string, projectDir: string): bo
   return newestReticulumSidecarSourceMtimeMs(projectDir) > binaryMtime;
 }
 
+export type DevSidecarEnsureAction = 'await-build' | 'background-build' | 'noop';
+
+/**
+ * Decide whether connect must wait on cargo, can refresh in the background, or skip.
+ * Missing / featureless binaries block; mtime-stale full-feature binaries do not.
+ */
+export function resolveDevSidecarEnsureAction(opts: {
+  missing: boolean;
+  stale: boolean;
+  lacksRnsStack: boolean;
+  lacksRnsBle: boolean;
+}): DevSidecarEnsureAction {
+  if (opts.missing || opts.lacksRnsStack || opts.lacksRnsBle) return 'await-build';
+  if (opts.stale) return 'background-build';
+  return 'noop';
+}
+
 async function runDevSidecarCargoBuild(projectDir: string, reason: string): Promise<void> {
   if (!devBuildInFlight) {
     console.debug(`[ReticulumSidecar] ${reason}; running cargo build…`);
@@ -245,7 +262,7 @@ async function runDevSidecarCargoBuild(projectDir: string, reason: string): Prom
   await devBuildInFlight;
 }
 
-/** Dev-only: compile the sidecar when the debug binary is missing or stale. */
+/** Dev-only: compile the sidecar when the debug binary is missing or unusable. */
 export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> {
   if (app.isPackaged) return;
 
@@ -262,10 +279,28 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
     !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsStack(binaryPath);
   const lacksRnsBle =
     !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsBle(binaryPath);
+  const action = resolveDevSidecarEnsureAction({ missing, stale, lacksRnsStack, lacksRnsBle });
+
+  if (action === 'noop') {
+    return;
+  }
+  if (action === 'background-build') {
+    // Prefer availability: start TCP/LXMF/RRC on the existing binary while cargo
+    // refreshes in the background for the next start.
+    void runDevSidecarCargoBuild(
+      projectDir,
+      'sidecar sources newer than binary (background refresh)',
+    ).catch((e: unknown) => {
+      console.warn(
+        '[ReticulumSidecar] background cargo rebuild failed:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    });
+    return;
+  }
+
   if (missing) {
     await runDevSidecarCargoBuild(projectDir, 'debug binary missing');
-  } else if (stale) {
-    await runDevSidecarCargoBuild(projectDir, 'sidecar sources newer than binary');
   } else if (lacksRnsStack) {
     await runDevSidecarCargoBuild(
       projectDir,
@@ -276,8 +311,6 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
       projectDir,
       'debug binary lacks rns-ble; rebuilding with BLE interface support',
     );
-  } else {
-    return;
   }
 
   if (!fs.existsSync(binaryPath)) {

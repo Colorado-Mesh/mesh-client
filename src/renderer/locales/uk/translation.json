@@ -680,7 +680,8 @@
     "waitingMessagesSilentFetched": "Отримано {{processed}} з радіо…",
     "reticulumSendStoringLocally": "Збереження до локальної скриньки поширення…",
     "reticulumSendStoredLocally": "Зберігається у локальній скриньці поширення (не доставлено одноранговому вузлу)",
-    "sentViaLocalPropagation": "Локальна скринька поширення"
+    "sentViaLocalPropagation": "Локальна скринька поширення",
+    "reticulumSendTimeout": "Тайм-аут надсилання. Стек Reticulum може запускатися або бути зайнятий — спробуйте ще раз."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -4879,7 +4880,9 @@
     "clearHistoryConfirm": "Видалити всю збережену історію повідомлень для {{room}}? Це неможливо скасувати.",
     "clearHistoryConfirmAction": "Видалити історію",
     "whisperReplyPlaceholder": "Відповісти на {{name}} або /msg…",
-    "jumpToLatest": "Перейти до останнього"
+    "jumpToLatest": "Перейти до останнього",
+    "sendTimeout": "Тайм-аут надсилання. Стек Reticulum може запускатися або бути зайнятий — спробуйте ще раз.",
+    "stackNotReady": "Стек Reticulum ще не готовий. Зачекайте на підключення, а потім повторіть спробу."
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

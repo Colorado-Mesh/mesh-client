@@ -18,6 +18,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
 RS_LXMF_APPLY_SCRIPTS=(
   apply-rsLXMF-propagation-sync-peering.sh
   apply-rsLXMF-propagation-node-policy-setters.sh
+  apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
   apply-rsLXMF-link-delivery-has-pending-to.sh
 )
 

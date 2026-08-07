@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "已从收音机获取{{processed}} …",
     "reticulumSendStoringLocally": "正在保存到本地传播收件箱…",
     "reticulumSendStoredLocally": "保存在您的本地传播收件箱中（未送达对端）",
-    "sentViaLocalPropagation": "本地传播收件箱"
+    "sentViaLocalPropagation": "本地传播收件箱",
+    "reticulumSendTimeout": "发送超时。Reticulum 堆栈可能正在启动或忙碌—请重试。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "删除 {{room}} 的所有已保存消息历史记录？此操作无法撤消。",
     "clearHistoryConfirmAction": "删除历史记录",
     "whisperReplyPlaceholder": "回复{{name}}或/msg…",
-    "jumpToLatest": "跳到最新"
+    "jumpToLatest": "跳到最新",
+    "sendTimeout": "发送超时。Reticulum 堆栈可能正在启动或忙碌—请重试。",
+    "stackNotReady": "Reticulum 堆栈尚未就绪。请等待连接，然后重试。"
   },
   "signalMeter": {
     "rssi": "RSSI",

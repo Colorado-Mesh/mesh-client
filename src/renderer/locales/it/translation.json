@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "Recuperati {{processed}} dalla radio…",
     "reticulumSendStoringLocally": "Salvataggio nella tua casella di posta di propagazione locale in corso...",
     "reticulumSendStoredLocally": "Conservato nella tua casella di posta di propagazione locale (non consegnato al peer)",
-    "sentViaLocalPropagation": "Posta in arrivo propagazione locale"
+    "sentViaLocalPropagation": "Posta in arrivo propagazione locale",
+    "reticulumSendTimeout": "Timeout dell'invio. Lo stack Reticulum potrebbe essere in avvio o occupato. Riprova."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
     "clearHistoryConfirmAction": "Elimina la cronologia",
     "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
-    "jumpToLatest": "Passa all'ultimo"
+    "jumpToLatest": "Passa all'ultimo",
+    "sendTimeout": "Timeout dell'invio. Lo stack Reticulum potrebbe essere in avvio o occupato. Riprova.",
+    "stackNotReady": "Lo stack Reticulum non è ancora pronto. Attendere la connessione, quindi riprovare."
   },
   "signalMeter": {
     "rssi": "RSSI",

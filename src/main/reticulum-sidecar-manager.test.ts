@@ -578,10 +578,16 @@ describe('ReticulumSidecarManager', () => {
     expect(wsInstance.handlers.has('error')).toBe(true);
   });
 
-  it('yields Noble BLE when config has enabled ble RNode before spawn', async () => {
+  it('starts Noble BLE yield in parallel with spawn (does not block start on yield)', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
+
+    let resolveYield!: () => void;
+    const yieldGate = new Promise<void>((resolve) => {
+      resolveYield = resolve;
+    });
+    suspendNobleMock.mockImplementationOnce(() => yieldGate);
 
     const proc = mockSidecarProc();
     proc.kill.mockImplementation(() => {
@@ -590,17 +596,24 @@ describe('ReticulumSidecarManager', () => {
     spawnMock.mockReturnValue(proc);
 
     const manager = new ReticulumSidecarManager();
-    await manager.start();
-
-    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
+    const started = await manager.start();
+    expect(started.running).toBe(true);
     expect(spawnMock).toHaveBeenCalledTimes(1);
+    // Yield started but must not gate TCP/API readiness.
+    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
+
+    resolveYield();
+    await yieldGate;
+    await vi.waitFor(() => {
+      expect(suspendNobleMock).toHaveBeenCalledTimes(1);
+    });
 
     await manager.stop();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
   });
 
-  it('releases Noble scan lock when sidecar binary ensure fails after yield', async () => {
+  it('does not yield Noble when sidecar binary ensure fails before spawn', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
@@ -608,8 +621,36 @@ describe('ReticulumSidecarManager', () => {
 
     const manager = new ReticulumSidecarManager();
     await expect(manager.start()).rejects.toThrow('missing rust toolchain');
-    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
-    expect(releaseScanMock).toHaveBeenCalledWith('reticulum');
+    expect(suspendNobleMock).not.toHaveBeenCalled();
+    expect(spawnMock).not.toHaveBeenCalled();
+
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('stop during pre-spawn cargo does not await the startPromise', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    let resolveCargo!: () => void;
+    const cargoGate = new Promise<void>((resolve) => {
+      resolveCargo = () => {
+        resolve();
+      };
+    });
+    vi.mocked(ensureDevSidecarBinary).mockImplementationOnce(() => cargoGate);
+
+    const manager = new ReticulumSidecarManager();
+    const startP = manager.start();
+    await vi.waitFor(() => {
+      expect(ensureDevSidecarBinary).toHaveBeenCalled();
+    });
+
+    const stopT0 = Date.now();
+    await manager.stop();
+    expect(Date.now() - stopT0).toBeLessThan(500);
+
+    resolveCargo();
+    await expect(startP).rejects.toThrow(/START_ABORTED|aborted/i);
 
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
