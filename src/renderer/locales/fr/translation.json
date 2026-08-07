@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud.",
     "modeLabel": "mode de propagation",
     "modeAria": "Mode de synchronisation de la propagation",
-    "autoApplyFailed": "Impossible d'appliquer le nœud de propagation Auto Preferred.",
     "modeAuto": "Auto",
     "modeManual": "Manuel",
     "modeOff": "Arrêt",
     "modeHelpOff": "Désactivé : pas de modifications automatiques des préférences et pas de synchronisation périodique. Vous pouvez toujours définir manuellement un nœud Préféré pour la cascade sortante.",
     "modeHelpAuto": "Auto : le meilleur nœud de propagation est choisi automatiquement à ce moment-là (découvert ou configuré, sinon votre nœud local) et Preferred est géré pour vous. Les commandes préférées manuelles sont désactivées.",
     "modeHelpManual": "Manuel : vous épinglez le nœud Preferred. La synchronisation utilise ce nœud ; les autres nœuds distants activés restent en tant que sauvegardes en cascade.",
-    "autoManagedHint": "Le mode automatique gère le nœud Préféré. Passez en mode manuel pour l'épingler vous-même."
+    "syncStarting": "Lancer la synchronisation",
+    "syncLocalSettled": "Synchronisé avec la boîte de réception locale."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

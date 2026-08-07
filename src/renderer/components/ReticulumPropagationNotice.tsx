@@ -26,7 +26,6 @@ export function ReticulumPropagationNotice({
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const mode = readReticulumPropagationMode();
-  const isAuto = mode === 'auto';
 
   useEffect(() => {
     if (!stackLive) return;
@@ -51,7 +50,7 @@ export function ReticulumPropagationNotice({
   }
 
   const discoveryCount = unconfiguredDiscovered.length;
-  // Align "Add closest" with Auto pick when Auto is off (Auto soft-upserts itself).
+  // Rank discovered for “Add closest”; Auto never soft-upserts — user must add explicitly.
   const closestTarget = pickAutoPropagationTarget(nodes, discovered);
   const closestHash =
     closestTarget?.kind === 'discovered'
@@ -69,7 +68,7 @@ export function ReticulumPropagationNotice({
           : t('reticulumPropagation.notice.body')}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-3">
-        {closestHash && !isAuto ? (
+        {closestHash ? (
           <button
             type="button"
             className="font-medium text-amber-200 underline hover:text-amber-100"

@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다.",
     "modeLabel": "전파 모드",
     "modeAria": "전파 동기화 모드",
-    "autoApplyFailed": "자동 기본 설정 전파 노드를 적용할 수 없습니다.",
     "modeAuto": "자동",
     "modeManual": "수동",
     "modeOff": "해제",
     "modeHelpOff": "꺼짐: 자동 기본 설정 변경 없음 및 주기적 동기화 없음. 아웃바운드 캐스케이드에 대해 선호 노드를 수동으로 설정할 수 있습니다.",
     "modeHelpAuto": "자동: 가장 좋은 전파 노드는 시간에 자동으로 선택되고 (검색 또는 구성, 그렇지 않으면 로컬 노드) 선호는 당신을 위해 관리됩니다. 수동 기본 설정 컨트롤이 비활성화되었습니다.",
     "modeHelpManual": "수동: 선호하는 노드를 고정합니다. 동기화는 해당 노드를 사용합니다. 활성화된 다른 원격 노드는 캐스케이드 백업으로 유지됩니다.",
-    "autoManagedHint": "자동 모드는 기본 설정 노드를 관리합니다. 수동으로 전환하여 직접 고정하세요."
+    "syncStarting": "동기화 시작하기",
+    "syncLocalSettled": "로컬 받은 편지함과 동기화되었습니다."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",

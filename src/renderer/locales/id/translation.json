@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "Sinkronisasi propagasi ditangguhkan — pesan keluar disetorkan ke simpul ini.",
     "modeLabel": "Mode propagasi",
     "modeAria": "Mode sinkronisasi propagasi",
-    "autoApplyFailed": "Tidak dapat menerapkan simpul propagasi Preferensi Otomatis.",
     "modeAuto": "Otomatis",
     "modeManual": "Manual",
     "modeOff": "Tidak aktif",
     "modeHelpOff": "Mati: tidak ada perubahan Preferred otomatis dan tidak ada sinkronisasi berkala. Anda masih dapat mengatur simpul Pilihan secara manual untuk kaskade keluar.",
     "modeHelpAuto": "Otomatis: simpul propagasi terbaik dipilih secara otomatis pada saat itu (ditemukan atau dikonfigurasi, jika tidak simpul lokal Anda) dan Preferred dikelola untuk Anda. Kontrol Pilihan Manual dinonaktifkan.",
     "modeHelpManual": "Manual: Anda menyematkan simpul Pilihan. Sinkronisasi menggunakan simpul itu; simpul jarak jauh lain yang diaktifkan tetap sebagai cadangan kaskade.",
-    "autoManagedHint": "Mode otomatis mengelola simpul Pilihan. Beralih ke Manual untuk menyematkannya sendiri."
+    "syncStarting": "Memulai sinkronisasi",
+    "syncLocalSettled": "Disinkronkan dengan kotak masuk lokal."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

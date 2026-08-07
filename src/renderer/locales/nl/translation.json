@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "Propagatiesynchronisatie uitgesteld — een uitgaand bericht wordt op dit knooppunt gedeponeerd.",
     "modeLabel": "voortplantingsmodus",
     "modeAria": "Voortplantingssynchronisatiemodus",
-    "autoApplyFailed": "Kan het Auto Preferred voortplantingsknooppunt niet toepassen.",
     "modeAuto": "Auto",
     "modeManual": "Handmatig",
     "modeOff": "Uit",
     "modeHelpOff": "Uit: geen automatische voorkeurswijzigingen en geen periodieke synchronisatie. U kunt nog steeds handmatig een voorkeursknooppunt instellen voor de uitgaande cascade.",
     "modeHelpAuto": "Auto: het beste propagatieknooppunt wordt op dat moment automatisch gekozen (ontdekt of geconfigureerd, anders wordt uw lokale knooppunt) en Preferred voor u beheerd. Handmatige voorkeursbesturingselementen zijn uitgeschakeld.",
     "modeHelpManual": "Handmatig: u pint het voorkeursknooppunt. Sync gebruikt dat knooppunt; andere ingeschakelde externe knooppunten blijven als cascadeback-ups.",
-    "autoManagedHint": "De automatische modus beheert het voorkeursknooppunt. Schakel over naar Handmatig om het zelf vast te pinnen."
+    "syncStarting": "Synchronisatie aan het starten",
+    "syncLocalSettled": "Gesynchroniseerd met lokale inbox."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

@@ -39,7 +39,7 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
     expect(hasEffectiveReticulumPropagationTarget([remoteNode], null, 'auto')).toBe(true);
   });
 
-  it('returns true in auto when only an active discovered remote exists', () => {
+  it('returns false in auto when only discovered remotes exist (no auto-add)', () => {
     const localOnly = {
       id: 'local-prop',
       name: 'Local',
@@ -55,7 +55,7 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
       },
     ];
     expect(hasEffectiveReticulumPropagationTarget([localOnly], null, 'auto', discovered)).toBe(
-      true,
+      false,
     );
   });
 

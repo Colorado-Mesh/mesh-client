@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor.",
     "modeLabel": "Yayılma modu",
     "modeAria": "Yayılma senkronizasyon modu",
-    "autoApplyFailed": "Otomatik Tercih Edilen yayılma düğümü uygulanamadı.",
     "modeAuto": "Otomatik",
     "modeManual": "Manuel",
     "modeOff": "Kapalı",
     "modeHelpOff": "Kapalı: otomatik Tercih edilen değişiklik ve periyodik senkronizasyon yok. Giden basamak için yine de Tercih edilen düğümü manuel olarak ayarlayabilirsiniz.",
     "modeHelpAuto": "Otomatik: En iyi yayılım düğümü o anda otomatik olarak seçilir (keşfedilir veya yapılandırılır, aksi takdirde yerel düğümünüz) ve Tercih Edilen sizin için yönetilir. Manuel Tercih edilen kontroller devre dışıdır.",
     "modeHelpManual": "Manuel: Tercih edilen düğümü sabitlersiniz. Senkronizasyon bu düğümü kullanır; diğer etkinleştirilmiş uzak düğümler kademeli yedekleme olarak kalır.",
-    "autoManagedHint": "Otomatik mod, Tercih Edilen düğümü yönetir. Kendiniz sabitlemek için Manuel'e geçin."
+    "syncStarting": "Eşitleme başlatılıyor",
+    "syncLocalSettled": "Yerel gelen kutusuyla senkronize edildi."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

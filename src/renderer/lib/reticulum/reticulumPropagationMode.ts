@@ -49,13 +49,13 @@ export function configuredPropagationDestinationHashes(
 }
 
 /**
- * What Auto should apply as the Preferred propagation node at this moment.
+ * Ranking helper for UI (e.g. “Add closest”) and diagnostics.
  *
  * Ordering: **best active discovered** (lowest hops) → else **best enabled configured
  * remote** → else enabled `local-prop` → else `null`.
  *
- * A `discovered` result must be soft-upserted (added + preferred) so the sidecar
- * Preferred/sync/cascade APIs, which require a configured row, keep working.
+ * Auto mode sync uses configured remotes → local only; it does **not** add discovered
+ * rows or write Preferred from this pick.
  */
 export type AutoPropagationTarget =
   | { kind: 'configured'; id: string }
@@ -144,27 +144,20 @@ export function pickAutoPropagationNodeId(nodes: PropagationNodeRow[]): string |
 /**
  * Node id that Sync / periodic auto-sync may target for the given mode.
  *
- * Auto uses {@link pickAutoPropagationTarget}: discovered pending soft-upsert returns
- * `null` until configured (cascade helper soft-upserts first). Manual uses Preferred
- * (including `local-prop`). Off → null.
+ * Auto selects among **already configured** remotes (else local); discovered-only is
+ * not a sync target until the user adds the node. Manual uses Preferred (including
+ * `local-prop`). Off → null.
  */
 export function resolvePropagationSyncTargetId(
   mode: ReticulumPropagationMode,
   nodes: PropagationNodeRow[],
   preferredId: string | null,
-  discovered: readonly DiscoveredPropagationRow[] = [],
 ): string | null {
   if (mode === 'off') return null;
   if (mode === 'manual') return preferredId;
-  const target = pickAutoPropagationTarget(nodes, discovered);
-  if (!target) return null;
-  if (target.kind === 'configured') return target.id;
-  if (target.kind === 'local') return 'local-prop';
-  // Discovered pending soft-upsert: sync once Preferred already points at a remote row.
-  if (preferredId && preferredId !== 'local-prop') {
-    const preferred = nodes.find((n) => n.id === preferredId || n.destination_hash === preferredId);
-    if (!preferred || preferred.enabled) return preferredId;
-  }
+  const configured = listConfiguredRemotePropagationIds(nodes).at(0);
+  if (configured != null) return configured;
+  if (hasEnabledLocalPropagationNode(nodes)) return 'local-prop';
   return null;
 }
 

@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "传播同步已延迟—出站消息正在存入此节点。",
     "modeLabel": "传播模式",
     "modeAria": "传播同步模式",
-    "autoApplyFailed": "无法应用自动首选传播节点。",
     "modeAuto": "自动",
     "modeManual": "手动",
     "modeOff": "关闭",
     "modeHelpOff": "关闭：无自动首选更改，无周期性同步。您仍然可以为出站级联手动设置首选节点。",
     "modeHelpAuto": "自动：自动选择最佳传播节点（发现或配置，否则为本地节点） ，并为您管理首选节点。手动首选控件已禁用。",
     "modeHelpManual": "手动：固定首选节点。同步使用该节点；其他启用的远程节点保留为级联备份。",
-    "autoManagedHint": "自动模式管理首选节点。切换到手动以自行固定。"
+    "syncStarting": "开始同步",
+    "syncLocalSettled": "已与本地收件箱同步。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

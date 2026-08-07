@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo.",
     "modeLabel": "modo de propagación",
     "modeAria": "Modo de sincronización de propagación",
-    "autoApplyFailed": "No se ha podido aplicar el nodo de propagación Auto Preferred.",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Apagado",
     "modeHelpOff": "Apagado: sin cambios automáticos de Preferido y sin sincronización periódica. Todavía puede configurar un nodo preferido manualmente para la cascada de salida.",
     "modeHelpAuto": "Automático: el mejor nodo de propagación se selecciona automáticamente en el momento (descubierto o configurado, de lo contrario, su nodo local) y Preferred se gestiona por usted. Los controles preferidos manuales están desactivados.",
     "modeHelpManual": "Manual: fijas el nodo Preferido. Sync utiliza ese nodo; otros nodos remotos habilitados permanecen como copias de seguridad en cascada.",
-    "autoManagedHint": "El modo automático gestiona el nodo Preferido. Cambie a Manual para fijarlo usted mismo."
+    "syncStarting": "Iniciando sincronización",
+    "syncLocalSettled": "Sincronizado con la bandeja de entrada local."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

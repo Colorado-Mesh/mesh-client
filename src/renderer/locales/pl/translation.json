@@ -4247,14 +4247,14 @@
     "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle.",
     "modeLabel": "Tryb propagacji:",
     "modeAria": "Tryb synchronizacji propagacji",
-    "autoApplyFailed": "Nie można zastosować węzła propagacji preferowanej automatycznie.",
     "modeAuto": "Automatyczne",
     "modeManual": "Ręczny",
     "modeOff": "Wył.",
     "modeHelpOff": "Wył.: brak automatycznych preferowanych zmian i brak okresowej synchronizacji. Nadal możesz ręcznie ustawić preferowany węzeł dla kaskady wychodzącej.",
     "modeHelpAuto": "Auto: najlepszy węzeł propagacji jest wybierany automatycznie w danym momencie (odkryty lub skonfigurowany, w przeciwnym razie węzeł lokalny), a Preferred jest zarządzany za Ciebie. Ręczne preferowane elementy sterujące są wyłączone.",
     "modeHelpManual": "Ręczny: przypinasz preferowany węzeł. Synchronizacja wykorzystuje ten węzeł; inne włączone węzły zdalne pozostają jako kaskadowe kopie zapasowe.",
-    "autoManagedHint": "Tryb automatyczny zarządza preferowanym węzłem. Przełącz na tryb ręczny, aby przypiąć go samodzielnie."
+    "syncStarting": "Start synch.",
+    "syncLocalSettled": "Zsynchronizowane z lokalną skrzynką odbiorczą."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

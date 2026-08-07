@@ -4496,6 +4496,8 @@
     "setPreferredFailed": "Could not set preferred propagation node.",
     "syncNow": "Sync messages",
     "syncNowFor": "Sync messages from {{name}}",
+    "syncStarting": "Starting sync…",
+    "syncLocalSettled": "Synced with local inbox.",
     "cancelSync": "Cancel sync",
     "autoSyncIntervalLabel": "Auto sync interval",
     "autoSyncIntervalAria": "Propagation auto sync interval",
@@ -4591,10 +4593,8 @@
     "modeManual": "Manual",
     "modeOff": "Off",
     "modeHelpOff": "Off: no automatic Preferred changes and no periodic sync. You can still set a Preferred node manually for the outbound cascade.",
-    "modeHelpAuto": "Auto: the best propagation node is picked automatically at the time (discovered or configured, else your local node) and Preferred is managed for you. Manual Preferred controls are disabled.",
-    "modeHelpManual": "Manual: you pin the Preferred node. Sync uses that node; other enabled remote nodes stay as cascade backups.",
-    "autoManagedHint": "Auto mode manages the Preferred node. Switch to Manual to pin it yourself.",
-    "autoApplyFailed": "Could not apply the Auto Preferred propagation node."
+    "modeHelpAuto": "Auto: periodically syncs your already-configured remote propagation nodes (best hops first), then settles the local inbox. Does not add discovered nodes or change Preferred — use Manual or Add for that.",
+    "modeHelpManual": "Manual: you pin the Preferred node. Sync uses that node; other enabled remote nodes stay as cascade backups."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 discovery",

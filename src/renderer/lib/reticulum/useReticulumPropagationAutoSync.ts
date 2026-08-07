@@ -1,13 +1,9 @@
 import { useEffect } from 'react';
 
-import {
-  applyAutoPropagationPreferredIfNeeded,
-  startPropagationSyncCascade,
-} from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import { startPropagationSyncCascade } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import {
   hasEnabledLocalPropagationNode,
   listConfiguredRemotePropagationIds,
-  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -27,7 +23,7 @@ export function shouldRunPropagationAutoSync(args: {
   nowMs: number;
   /** Propagation mode; `off` never runs periodic sync. */
   mode?: ReticulumPropagationMode;
-  /** Auto may run with null Preferred when discovered/configured/local candidates exist. */
+  /** Auto may run with null Preferred when configured remotes or local exist. */
   hasAutoCascadeCandidate?: boolean;
 }): boolean {
   const {
@@ -75,8 +71,8 @@ export function shouldRunPropagationAutoSync(args: {
 const AUTO_SYNC_CHECK_MS = 30 * MS_PER_SECOND;
 
 /**
- * Keep Preferred aligned in Auto mode (even when Network tab is unmounted) and
- * periodically sync the preferred remote propagation node when auto-sync is enabled.
+ * Periodically sync configured remotes (Auto) or Preferred (Manual) when the interval
+ * is enabled. Auto does not add discovered nodes or rewrite Preferred.
  */
 export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
   useEffect(() => {
@@ -87,22 +83,16 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
 
     const tick = async () => {
       const mode = readReticulumPropagationMode();
-      if (mode === 'auto') {
-        await applyAutoPropagationPreferredIfNeeded();
-      }
-
       const {
         autoSyncIntervalSec,
         preferredId,
         nodes,
-        discovered,
         sync,
         lastPropagationSyncAt,
         lastPropagationSyncAttemptAt,
       } = useReticulumPropagationStore.getState();
 
       const hasAutoCascadeCandidate =
-        listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
         listConfiguredRemotePropagationIds(nodes).length > 0 ||
         hasEnabledLocalPropagationNode(nodes);
 
@@ -125,7 +115,6 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
       );
     };
 
-    // Immediate Auto apply on sidecar ready (do not wait for first interval).
     // floating-ok: tick catches store failures via Result/toast paths
     void tick();
 

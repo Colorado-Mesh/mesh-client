@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt.",
     "modeLabel": "Ausbreitungsmodus",
     "modeAria": "Ausbreitungssynchronisationsmodus",
-    "autoApplyFailed": "Der automatisch bevorzugte Ausbreitungsknoten konnte nicht angewendet werden.",
     "modeAuto": "Automatisch",
     "modeManual": "Manuell",
     "modeOff": "Aus",
     "modeHelpOff": "Aus: keine automatischen bevorzugten Änderungen und keine periodische Synchronisierung. Sie können weiterhin manuell einen bevorzugten Knoten für die ausgehende Kaskade festlegen.",
     "modeHelpAuto": "Auto: Der jeweils beste Ausbreitungsknoten wird automatisch ausgewählt (erkannt oder konfiguriert, ansonsten wird Ihr lokaler Knoten verwaltet) und Preferred wird für Sie verwaltet. Manuelle Bevorzugte Steuerelemente sind deaktiviert.",
     "modeHelpManual": "Manuell: Sie heften den bevorzugten Knoten an. Sync verwendet diesen Knoten; andere aktivierte Remote-Knoten bleiben als Kaskaden-Backups erhalten.",
-    "autoManagedHint": "Im Auto-Modus wird der bevorzugte Knoten verwaltet. Wechseln Sie zu Manuell, um es selbst anzuheften."
+    "syncStarting": "Synchronisierung wird gestartet",
+    "syncLocalSettled": "Synchronisiert mit dem lokalen Posteingang."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

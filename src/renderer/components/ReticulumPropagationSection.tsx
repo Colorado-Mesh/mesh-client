@@ -3,18 +3,12 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
-import {
-  applyAutoPropagationPreferredIfNeeded,
-  bumpPropagationModeGeneration,
-  ensurePreferredThenStartSync,
-  getPropagationModeGeneration,
-} from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import { ensurePreferredThenStartSync } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import {
   configuredPropagationDestinationHashes,
   hasEnabledLocalPropagationNode,
   isReticulumPropagationMode,
   listConfiguredRemotePropagationIds,
-  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
   type ReticulumPropagationMode,
@@ -59,8 +53,6 @@ interface DiscoveredPropagationListProps {
   configuredHashes: ReadonlySet<string>;
   onAdd: (destinationHash: string, prefer?: boolean) => void;
   adding?: boolean;
-  /** When Auto manages Preferred, hide the explicit "Add & prefer" action. */
-  hidePrefer?: boolean;
 }
 
 function DiscoveredPropagationList({
@@ -68,7 +60,6 @@ function DiscoveredPropagationList({
   configuredHashes,
   onAdd,
   adding = false,
-  hidePrefer = false,
 }: Readonly<DiscoveredPropagationListProps>) {
   const { t } = useTranslation();
   const visibleDiscovered = discovered.filter(
@@ -124,21 +115,19 @@ function DiscoveredPropagationList({
                   >
                     {t('reticulumPropagation.discoveredAdd')}
                   </button>
-                  {!hidePrefer ? (
-                    <button
-                      type="button"
-                      disabled={adding}
-                      className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
-                      aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
-                        name: label,
-                      })}
-                      onClick={() => {
-                        onAdd(row.destination_hash, true);
-                      }}
-                    >
-                      {t('reticulumPropagation.discoveredAddPrefer')}
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    disabled={adding}
+                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
+                    aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
+                      name: label,
+                    })}
+                    onClick={() => {
+                      onAdd(row.destination_hash, true);
+                    }}
+                  >
+                    {t('reticulumPropagation.discoveredAddPrefer')}
+                  </button>
                 </div>
               </li>
             );
@@ -183,37 +172,42 @@ export default function ReticulumPropagationSection({
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [syncStarting, setSyncStarting] = useState(false);
   const [mode, setMode] = useState<ReticulumPropagationMode>(() => readReticulumPropagationMode());
 
-  const isAuto = mode === 'auto';
+  const handleSyncNow = (targetId: string) => {
+    if (syncStarting || sync.active) return;
+    setSyncStarting(true);
+    void ensurePreferredThenStartSync(targetId)
+      .then((ok) => {
+        setSyncStarting(false);
+        if (!ok) {
+          const errKey =
+            useReticulumPropagationStore.getState().lastSyncError ??
+            'reticulumPropagation.syncFailed';
+          addToast(t(errKey), 'error');
+          return;
+        }
+        // Local settle finishes inside startSync with no progress bar; remote leaves sync.active.
+        if (!useReticulumPropagationStore.getState().sync.active) {
+          addToast(t('reticulumPropagation.syncLocalSettled'), 'success');
+        }
+      })
+      .catch((err: unknown) => {
+        setSyncStarting(false);
+        console.warn('[ReticulumPropagationSection] sync cascade rejected', err);
+        addToast(t('reticulumPropagation.syncFailed'), 'error');
+      });
+  };
 
   useEffect(() => {
     void refreshFromSidecar();
   }, [refreshFromSidecar]);
 
-  // Topology / Preferred changes while Auto (mode entry is owned by handleModeChange).
-  useEffect(() => {
-    if (!isAuto) return;
-    // floating-ok: apply returns Result; failures toast after retry
-    void applyAutoPropagationPreferredIfNeeded();
-  }, [isAuto, nodes, discovered, preferredId]);
-
   const handleModeChange = (next: ReticulumPropagationMode) => {
     if (!isReticulumPropagationMode(next)) return;
-    if (mode === 'auto' && next !== 'auto') {
-      bumpPropagationModeGeneration();
-    }
     setMode(next);
     writeReticulumPropagationMode(next);
-    if (next !== 'auto') return;
-    // floating-ok: refresh then apply; bump after refresh so we do not rejoin a pre-hydrate flight
-    void (async () => {
-      await refreshFromSidecar();
-      bumpPropagationModeGeneration();
-      await applyAutoPropagationPreferredIfNeeded({
-        generation: getPropagationModeGeneration(),
-      });
-    })();
   };
 
   const handleRefresh = async () => {
@@ -264,14 +258,13 @@ export default function ReticulumPropagationSection({
         ? 'reticulumPropagation.modeHelpManual'
         : 'reticulumPropagation.modeHelpOff';
 
-  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId, discovered);
+  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId);
   const autoHasCascadeCandidate =
-    listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
-    listConfiguredRemotePropagationIds(nodes).length > 0 ||
-    hasEnabledLocalPropagationNode(nodes);
+    listConfiguredRemotePropagationIds(nodes).length > 0 || hasEnabledLocalPropagationNode(nodes);
   // Manual/Auto may Sync local-prop (settle); Off disables bottom Sync.
   const bottomSyncDisabled =
     sync.active ||
+    syncStarting ||
     mode === 'off' ||
     (mode === 'manual' && !bottomSyncTargetId) ||
     (mode === 'auto' && !autoHasCascadeCandidate);
@@ -389,8 +382,6 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  disabled={isAuto}
-                  title={isAuto ? t('reticulumPropagation.autoManagedHint') : undefined}
                   onClick={() => {
                     void setPreferredOnSidecar(node.id)
                       .then((ok) => {
@@ -411,15 +402,15 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  disabled={sync.active || isAuto}
-                  title={isAuto ? t('reticulumPropagation.autoManagedHint') : undefined}
+                  disabled={sync.active || syncStarting}
                   onClick={() => {
-                    // floating-ok: cascade never rejects; Manual remote fail → local
-                    void ensurePreferredThenStartSync(node.id);
+                    handleSyncNow(node.id);
                   }}
                   aria-label={t('reticulumPropagation.syncNowFor', { name: node.name })}
                 >
-                  {t('reticulumPropagation.syncNow')}
+                  {syncStarting
+                    ? t('reticulumPropagation.syncStarting')
+                    : t('reticulumPropagation.syncNow')}
                 </button>
                 <button
                   type="button"
@@ -554,12 +545,14 @@ export default function ReticulumPropagationSection({
           disabled={bottomSyncDisabled}
           className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
           aria-label={t('reticulumPropagation.syncNowPreferredAria')}
+          aria-busy={syncStarting}
           onClick={() => {
-            // floating-ok: cascade never rejects; local Preferred is a valid target
-            void ensurePreferredThenStartSync(bottomSyncTargetId ?? 'local-prop');
+            handleSyncNow(bottomSyncTargetId ?? 'local-prop');
           }}
         >
-          {t('reticulumPropagation.syncNow')}
+          {syncStarting
+            ? t('reticulumPropagation.syncStarting')
+            : t('reticulumPropagation.syncNow')}
         </button>
       </div>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.localHostHint')}</p>
@@ -579,7 +572,6 @@ export default function ReticulumPropagationSection({
         configuredHashes={configuredHashes}
         onAdd={handleAddFromDiscovered}
         adding={adding}
-        hidePrefer={isAuto}
       />
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">

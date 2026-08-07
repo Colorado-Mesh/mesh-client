@@ -24,7 +24,7 @@ function findPropagationNode(
  *
  * Preferred sidecar outbound node wins over sync mode — Mode "Off" only
  * disables periodic sync, not the presence of an outbound propagation target.
- * Auto mode also counts an active discovered remote (soft-upsert pending).
+ * Auto without Preferred counts enabled **configured** remotes only (not discovered).
  */
 export function hasEffectiveReticulumPropagationTarget(
   nodes: PropagationNodeRow[],
@@ -48,7 +48,7 @@ export function hasEffectiveReticulumPropagationTarget(
   if (mode === 'manual') return false;
 
   const target = pickAutoPropagationTarget(nodes, discovered);
-  return target?.kind === 'configured' || target?.kind === 'discovered';
+  return target?.kind === 'configured';
 }
 
 /** True when local-prop is enabled (cascade last resort / offline inbox). */

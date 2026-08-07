@@ -4243,14 +4243,14 @@
     "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。",
     "modeLabel": "伝播モード",
     "modeAria": "伝播同期モード",
-    "autoApplyFailed": "Auto Preferred伝播ノードを適用できませんでした。",
     "modeAuto": "自動",
     "modeManual": "手動",
     "modeOff": "オフ",
     "modeHelpOff": "オフ：自動優先変更なし、定期的な同期なし。アウトバウンドカスケードの優先ノードを手動で設定することもできます。",
     "modeHelpAuto": "自動：最適な伝播ノードがその時点で自動的に選択され（検出または構成され、それ以外はローカルノード）、Preferredが管理されます。手動優先コントロールは無効になっています。",
     "modeHelpManual": "手動： Preferredノードをピン留めします。同期はそのノードを使用します。他の有効なリモートノードはカスケードバックアップとして残ります。",
-    "autoManagedHint": "自動モードは、Preferredノードを管理します。自分でピン留めするには、手動に切り替えてください。"
+    "syncStarting": "同期を開始しています",
+    "syncLocalSettled": "ローカルの受信トレイと同期しました。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",
