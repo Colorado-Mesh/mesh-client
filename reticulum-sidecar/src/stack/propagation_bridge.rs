@@ -12,7 +12,7 @@ use lxmf_core::propagation_sync::{PeerSyncTerminalState, PropagationSyncTask, Sy
 use lxmf_core::router::LxmRouter;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{Notify, broadcast, mpsc};
 
 /// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
 type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
@@ -25,6 +25,9 @@ pub struct PropagationBridge {
     local_node: Arc<Mutex<PropagationNode>>,
     sync_task: Mutex<PropagationSyncTask>,
     local_serving: AtomicBool,
+    /// Set when background `load_messagestore_from_disk` finishes (ok or err).
+    messagestore_loaded: AtomicBool,
+    messagestore_notify: Notify,
     /// Serializes sync-run generation changes with emitter cancel / pin / event side effects.
     sync_lifecycle: Mutex<()>,
     /// Sticky offer failure label (rsLXMF tip keeps terminal state on the task, not these fields).
@@ -73,6 +76,8 @@ impl PropagationBridge {
             local_node,
             sync_task: Mutex::new(sync_task),
             local_serving: AtomicBool::new(false),
+            messagestore_loaded: AtomicBool::new(false),
+            messagestore_notify: Notify::new(),
             sync_lifecycle: Mutex::new(()),
             last_offer_error: Mutex::new(None),
             last_establish_error: Mutex::new(None),
@@ -85,6 +90,7 @@ impl PropagationBridge {
 
     /// Load historical PN messages off the live-ready path (spawn_blocking).
     pub fn spawn_messagestore_load(self: &Arc<Self>) {
+        let this = Arc::clone(self);
         let node = Arc::clone(&self.local_node);
         tokio::spawn(async move {
             let load_started = Instant::now();
@@ -112,7 +118,21 @@ impl PropagationBridge {
                     tracing::warn!(error = %e, "background propagation messagestore load join failed");
                 }
             }
+            this.messagestore_loaded.store(true, Ordering::SeqCst);
+            this.messagestore_notify.notify_waiters();
         });
+    }
+
+    /// Wait until background messagestore load has finished (success or failure).
+    pub async fn wait_messagestore_loaded(&self) {
+        if self.messagestore_loaded.load(Ordering::SeqCst) {
+            return;
+        }
+        let notified = self.messagestore_notify.notified();
+        if self.messagestore_loaded.load(Ordering::SeqCst) {
+            return;
+        }
+        notified.await;
     }
 
     pub fn peering_key_job_inflight(&self, peer_hash: &[u8; 16]) -> bool {

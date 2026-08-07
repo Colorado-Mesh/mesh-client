@@ -519,31 +519,21 @@ impl LiveBridge {
             })),
         };
 
-        let (preferred_prop_hash, local_prop_enabled) = {
+        let preferred_prop_hash = {
             let state = inner.read().await;
-            let preferred = state.preferred_propagation_id.as_ref().and_then(|id| {
+            state.preferred_propagation_id.as_ref().and_then(|id| {
                 state
                     .propagation
                     .iter()
                     .find(|p| p.id == *id)
                     .and_then(|p| p.destination_hash.clone())
-            });
-            let local_enabled = state
-                .propagation
-                .iter()
-                .find(|p| p.id == "local-prop")
-                .map(|p| p.enabled)
-                .unwrap_or(false);
-            (preferred, local_enabled)
+            })
         };
 
         bridge.spawn_maintenance(event_tx);
 
-        // Persisted local-prop.enabled must drive live serving; otherwise UI always
-        // shows disabled until the user toggles Enable (AtomicBool defaults false).
-        if local_prop_enabled {
-            bridge.set_local_propagation_serving(true).await;
-        }
+        // Local-prop serve/announce is deferred until messagestore load finishes
+        // (see StackHandle::attach_live) so we do not advertise an empty PN.
         bridge.rehydrate_propagation_identities_from_persisted();
         // Keep persisted local-prop hash on lxmf.propagation (legacy rows stored delivery).
         {
@@ -3722,6 +3712,10 @@ impl LiveBridge {
 
     pub fn propagation_is_local_serving(&self) -> bool {
         self.propagation.is_local_serving()
+    }
+
+    pub async fn wait_propagation_messagestore_loaded(&self) {
+        self.propagation.wait_messagestore_loaded().await;
     }
 
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API

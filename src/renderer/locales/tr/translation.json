@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "Geçmişi sil",
     "whisperReplyPlaceholder": "{{name}} veya /msg'ye yanıt verin…",
     "jumpToLatest": "En Yeniye Atla",
-    "sendTimeout": "Gönderim zaman aşımına uğradı. Reticulum yığını başlıyor veya meşgul olabilir — tekrar deneyin.",
-    "stackNotReady": "Reticulum yığını henüz hazır değil. Bağlanmayı bekleyin, ardından tekrar deneyin."
+    "stackNotReady": "Reticulum yığını henüz hazır değil. Bağlanana kadar bekleyin, ardından tekrar deneyin.",
+    "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünde yığını başlatın, sonra tekrar deneyin."
   },
   "signalMeter": {
     "rssi": "RSSI",

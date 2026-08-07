@@ -263,6 +263,15 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async start(opts: ReticulumSidecarStartOptions = {}): Promise<ReticulumSidecarStatus> {
+    // After Cancel/stop aborts an in-flight start, do not rejoin that doomed promise —
+    // wait for it to clear, then start fresh.
+    if (this.startPromise && this.startAbortRequested) {
+      try {
+        await this.startPromise;
+      } catch {
+        // catch-no-log-ok: previous start aborted or failed; continue with a new start
+      }
+    }
     if (this.startPromise) {
       return this.startPromise;
     }
@@ -335,9 +344,9 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
 
     this.throwIfStartAborted();
-    // BLE RNode Noble yield runs in parallel with spawn/health so TCP hubs, LXMF, RRC, and
-    // Nomad become usable without waiting on CoreBluetooth disconnect (macOS/Windows).
-    const bleYieldPromise = needsBleRnodeNobleYield ? this.yieldNobleForEnabledBleRnode() : null;
+    // Kick Noble yield only after health succeeds (below) so Cancel during cargo/spawn
+    // never suspends Meshtastic/MeshCore, while TCP/API readiness still does not await BLE.
+    const needsBleYieldAfterHealth = needsBleRnodeNobleYield;
     const args = [
       '--headless',
       '--host',
@@ -424,9 +433,10 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.connectWs(port);
     this.startWatchdog();
     this.emit('status', this.getStatus());
-    // Do not await BLE yield — TCP/LXMF/RRC/Nomad are already usable.
-    if (bleYieldPromise) {
-      void bleYieldPromise.catch((e: unknown) => {
+    // Do not await BLE yield — TCP/LXMF/RRC/Nomad are already usable. Start yield only
+    // after health so Cancel during cargo never yanks Meshtastic/MeshCore.
+    if (needsBleYieldAfterHealth) {
+      void this.yieldNobleForEnabledBleRnode().catch((e: unknown) => {
         console.warn(
           '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),

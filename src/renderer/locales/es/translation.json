@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "Eliminar historial",
     "whisperReplyPlaceholder": "Responder a {{name}} o /msg...",
     "jumpToLatest": "Saltar a lo último",
-    "sendTimeout": "El envío ha caducado. La pila Reticulum puede estar iniciándose o ocupada; inténtelo de nuevo.",
-    "stackNotReady": "La pila Reticulum aún no está lista. Espera a que se conecte y vuelve a intentarlo."
+    "stackNotReady": "La pila Reticulum aún no está lista. Espere a que esté conectada e inténtelo de nuevo.",
+    "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila en Conexión e inténtelo de nuevo."
   },
   "signalMeter": {
     "rssi": "RSSI",

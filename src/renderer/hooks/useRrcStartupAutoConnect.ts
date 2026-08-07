@@ -81,12 +81,7 @@ async function connectRrcHubForAutoJoin(hub: string, nickname: string): Promise<
 /** Connect hubs marked for auto-join (no focus steal). Safe to call from panel + App. */
 export async function runRrcHubAutoConnectBatch(nickname: string): Promise<void> {
   if (hubAutoConnectBusy) return;
-  const wanted = loadRrcHubAutoJoin();
-  if (wanted.length === 0) return;
-
-  const pending = wanted.filter(
-    (hub) => !isRrcHubLinkedNow(hub) && !isRrcHubDisconnectSuppressed(hub),
-  );
+  const pending = pendingRrcAutoJoinHubs();
   if (pending.length === 0) return;
 
   hubAutoConnectBusy = true;

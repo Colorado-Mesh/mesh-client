@@ -1,5 +1,10 @@
 /** Map sidecar/hub RRC errors to i18n keys when we recognize them. */
 
+import {
+  formatReticulumProxyErrorMessage,
+  reticulumProxyErrorToI18nKey,
+} from '@/renderer/lib/reticulum/reticulumProxyErrorHumanize';
+
 export function rrcErrorToI18nKey(message: string): string | null {
   const lower = message.toLowerCase();
   if (lower.includes('link proof') || lower.includes('timed out waiting for link')) {
@@ -11,16 +16,13 @@ export function rrcErrorToI18nKey(message: string): string | null {
   if (lower.includes('timed out waiting for welcome')) {
     return 'rrc.errors.welcomeTimeout';
   }
-  if (lower.includes('reticulum_ipc_send_timeout') || lower.includes('rrc_send_timeout')) {
-    return 'rrc.sendTimeout';
-  }
-  if (lower.includes('sidecar_not_running') || lower.includes('stack_not_ready')) {
-    return 'rrc.stackNotReady';
-  }
+  const proxyKey = reticulumProxyErrorToI18nKey(message);
+  if (proxyKey) return proxyKey;
   return null;
 }
 
 export function formatRrcErrorMessage(message: string, t: (key: string) => string): string {
   const key = rrcErrorToI18nKey(message);
-  return key ? t(key) : message;
+  if (key) return t(key);
+  return formatReticulumProxyErrorMessage(message, t);
 }

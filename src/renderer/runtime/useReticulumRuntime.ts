@@ -90,6 +90,7 @@ import {
   normalizePropagationSyncProgress,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
+import { reticulumProxyErrorToI18nKey } from '@/renderer/lib/reticulum/reticulumProxyErrorHumanize';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   resolveReticulumSelfFullLabel,
@@ -2128,11 +2129,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
       } catch (e) {
         if (pendingId) {
           const errStr = errLikeToLogString(e);
+          const proxyKey = reticulumProxyErrorToI18nKey(errStr);
           const userMessage = errStr.includes('no_propagation_node')
             ? i18n.t('chatPanel.reticulumNoPropagationNode')
-            : isReticulumIpcSendTimeout(e)
-              ? i18n.t('chatPanel.reticulumSendTimeout')
-              : i18n.t('chatPanel.reticulumSendFailed');
+            : proxyKey
+              ? i18n.t(proxyKey)
+              : isReticulumIpcSendTimeout(e)
+                ? i18n.t('chatPanel.reticulumSendTimeout')
+                : i18n.t('chatPanel.reticulumSendFailed');
           updateMessageStatus(identityId, pendingId, 'failed', userMessage);
         }
         throw e;

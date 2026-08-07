@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "删除历史记录",
     "whisperReplyPlaceholder": "回复{{name}}或/msg…",
     "jumpToLatest": "跳到最新",
-    "sendTimeout": "发送超时。Reticulum 堆栈可能正在启动或忙碌—请重试。",
-    "stackNotReady": "Reticulum 堆栈尚未就绪。请等待连接，然后重试。"
+    "stackNotReady": "Reticulum 堆栈尚未就绪。请等到已连接后再重试。",
+    "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -4883,8 +4883,8 @@
     "clearHistoryConfirmAction": "Usuń historię",
     "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
     "jumpToLatest": "Przejdź do najnowszych",
-    "sendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie.",
-    "stackNotReady": "Stos Reticulum nie jest jeszcze gotowy. Poczekaj na połączenie, a następnie spróbuj ponownie."
+    "stackNotReady": "Stos Reticulum nie jest jeszcze gotowy. Poczekaj, aż połączenie zostanie nawiązane, a następnie spróbuj ponownie.",
+    "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos w Połączeniu, a następnie spróbuj ponownie."
   },
   "signalMeter": {
     "rssi": "RSSI",

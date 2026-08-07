@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "Hapus riwayat",
     "whisperReplyPlaceholder": "Balas {{name}} atau /msg…",
     "jumpToLatest": "Langsung ke Terbaru",
-    "sendTimeout": "Waktu pengiriman habis. Stack Reticulum mungkin sedang mulai atau sibuk — coba lagi.",
-    "stackNotReady": "Stack Reticulum belum siap. Tunggu sambungan, lalu coba lagi."
+    "stackNotReady": "Stack Reticulum belum siap. Tunggu hingga terhubung, lalu coba lagi.",
+    "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi."
   },
   "signalMeter": {
     "rssi": "RSSI",

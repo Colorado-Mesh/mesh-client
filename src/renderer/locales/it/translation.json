@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "Elimina la cronologia",
     "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
     "jumpToLatest": "Passa all'ultimo",
-    "sendTimeout": "Timeout dell'invio. Lo stack Reticulum potrebbe essere in avvio o occupato. Riprova.",
-    "stackNotReady": "Lo stack Reticulum non è ancora pronto. Attendere la connessione, quindi riprovare."
+    "stackNotReady": "Lo stack Reticulum non è ancora pronto. Attendere fino alla connessione, quindi riprovare.",
+    "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack su Connessione, quindi riprovare."
   },
   "signalMeter": {
     "rssi": "RSSI",

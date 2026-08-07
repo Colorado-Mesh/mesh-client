@@ -1016,17 +1016,35 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 
 **Symptoms**: Connection tab **Start stack** fails; logs show `[ReticulumSidecar]` health poll timeout; `reticulum:getStatus` reports `lastError`. Identity **Generate** / **Import** errors with `Reticulum sidecar is not running`.
 
+**Health vs live ready:** Electron health only requires `GET /api/v1/status` → `status: "ok"` (HTTP listening). That is **not** the same as `rns_ready` / `lxmf_ready` (true only after live RNS/LXMF attach). A green/configured Connection after Start means the API is up + identity known; Chat LXMF and RRC may still need a few seconds for live attach. Diagnostics may show `reticulum/rns-not-ready` / `reticulum/lxmf-not-ready` briefly — see [requires live right after start](#reticulum-rrclxmf-requires-live-rns-stack-right-after-start).
+
 **Checks**:
 
 0. **Identity wizard**: click **Start stack** at the top of the Reticulum Connection panel before generating or importing a mnemonic. The sidecar must be running for `reticulum:proxyGet` / `proxyPost` identity routes.
 1. **Dev — binary missing**: build once from repo root: `pnpm run reticulum:sidecar:build` (requires [Rust](https://rustup.rs/); see [development-environment.md](development-environment.md#reticulum-sidecar-optional)). Electron **Start stack** can auto-run `cargo build` on first click, but you need `cargo` on `PATH`. Error text `sidecar binary not found` means `reticulum-sidecar/target/debug/mesh-client-reticulum` does not exist yet.
-2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` or confirm `curl http://127.0.0.1:19437/api/v1/status` after **Start stack**.
+2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` or confirm `curl http://127.0.0.1:19437/api/v1/status` after **Start stack** (`status` should be `ok`; `rns_ready`/`lxmf_ready` may still be `false` for a short window).
 3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client Setup {version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
 4. **Packaged app — verify install**: confirm `mesh-client-reticulum` (or `.exe` on Windows) exists under the app resources (`reticulum-sidecar/` beside the executable).
 5. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
 6. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
+
+### Reticulum RRC/LXMF requires live rns-stack right after start
+
+**Symptoms**: For the first few seconds after **Start stack**, Chat DM send/reaction or RRC hub connect fails with `lxmf send requires live rns-stack sidecar`, `lxmf reaction requires live rns-stack sidecar`, or `rrc connect requires live rns-stack sidecar` (humanized toasts). Connection may already show **configured**.
+
+**Cause**: Listen-first startup — HTTP is up (`status: ok`) and the UI marks configured when identity is known, but `attach_live` has not finished. LXMF/RRC fail closed until the live bridge is ready. RRC auto-connect retries about every **500 ms** while hubs are pending and wakes on the configured event.
+
+**What to do**: Wait a few seconds and retry (or let RRC auto-join settle). If errors persist after `rns_ready`/`lxmf_ready` are true in `/api/v1/status`, treat as a real stack failure (restart stack; check logs).
+
+### Reticulum Cancel then Connect stuck on START_ABORTED
+
+**Symptoms**: Click **Cancel** during **Start stack** (especially while cargo is building), then **Connect** / **Start** again; UI or logs show `RETICULUM_SIDECAR_START_ABORTED` and the stack never comes up.
+
+**Cause (fixed):** Older builds rejoined the aborted start promise. Current builds set an abort flag and return from **Cancel** without waiting on cargo/BLE; the next **start** waits for the doomed promise to clear, then starts fresh. Noble yield for BLE RNode runs only after health, so Cancel during cargo does not suspend Meshtastic/MeshCore.
+
+**What to do**: Upgrade to a build with listen-first Cancel fix. If you still see `START_ABORTED` after Cancel+Connect on a current build, quit the app fully and **Start stack** once.
 
 ### Reticulum sidecar cargo build fails (`register_packet_tap` / `RETICULUM_CARGO_BUILD_FAILED`)
 

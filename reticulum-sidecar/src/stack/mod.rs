@@ -314,6 +314,26 @@ impl StackHandle {
                 if self.live.set(bridge).is_err() {
                     tracing::warn!("live bridge already attached");
                 } else {
+                    // Restore local PN serving only after messagestore load so peers do not
+                    // sync against an empty store while the background scan runs.
+                    {
+                        let live = self.live.get().expect("live just set").clone();
+                        let local_prop_enabled = {
+                            let state = self.inner.read().await;
+                            state
+                                .propagation
+                                .iter()
+                                .find(|p| p.id == "local-prop")
+                                .map(|p| p.enabled)
+                                .unwrap_or(false)
+                        };
+                        if local_prop_enabled {
+                            tokio::spawn(async move {
+                                live.wait_propagation_messagestore_loaded().await;
+                                live.set_local_propagation_serving(true).await;
+                            });
+                        }
+                    }
                     // BLE Peer bring-up is slow (adapter/scan); keep it off the HTTP-ready path.
                     #[cfg(feature = "rns-ble")]
                     {
@@ -2463,13 +2483,23 @@ impl StackHandle {
                 "sent_via": res.get("sent_via"),
             }));
         }
-        let mut inner = self.inner.write().await;
-        let res = inner.send_lxmf_local(&req)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        let payload = res.clone();
-        drop(inner);
-        self.emit_event("lxmf_message", payload);
-        Ok(res)
+        // Fail closed while listen-first HTTP is up but live attach has not finished.
+        // Local persistence fallback would report ok without a wire send.
+        #[cfg(feature = "rns-stack")]
+        {
+            let _ = req;
+            Err("lxmf send requires live rns-stack sidecar".into())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let mut inner = self.inner.write().await;
+            let res = inner.send_lxmf_local(&req)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            let payload = res.clone();
+            drop(inner);
+            self.emit_event("lxmf_message", payload);
+            Ok(res)
+        }
     }
 
     pub async fn lxmf_paper_create(
@@ -2521,12 +2551,20 @@ impl StackHandle {
             self.emit_event("lxmf_message", res.clone());
             return Ok(res);
         }
-        let mut inner = self.inner.write().await;
-        let res = inner.send_reaction(&req)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        drop(inner);
-        self.emit_event("lxmf_message", res.clone());
-        Ok(res)
+        #[cfg(feature = "rns-stack")]
+        {
+            let _ = req;
+            Err("lxmf reaction requires live rns-stack sidecar".into())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let mut inner = self.inner.write().await;
+            let res = inner.send_reaction(&req)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            drop(inner);
+            self.emit_event("lxmf_message", res.clone());
+            Ok(res)
+        }
     }
 
     #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
@@ -3392,6 +3430,38 @@ mod tests {
         .await;
         handle.clear_announces().await.expect("clear announces");
         assert!(handle.list_peers().await.is_empty());
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn bootstrap_clears_persisted_rns_and_lxmf_ready_until_attach_live() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let mut stale = PersistedState::load(&config_dir, &storage_dir);
+        stale.rns_ready = true;
+        stale.lxmf_ready = true;
+        stale
+            .save(&config_dir, &storage_dir)
+            .expect("save stale ready flags");
+        let reloaded = PersistedState::load(&config_dir, &storage_dir);
+        assert!(reloaded.rns_ready);
+        assert!(reloaded.lxmf_ready);
+
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+
+        // diagnostics_snapshot reads inner flags (not the live-gate on rns_ready()).
+        let snap = handle.diagnostics_snapshot().await;
+        assert_eq!(snap["rns_ready"], false);
+        assert_eq!(snap["lxmf_ready"], false);
+        assert!(!handle.rns_ready().await);
+        assert!(!handle.lxmf_ready().await);
+
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }

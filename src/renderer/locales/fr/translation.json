@@ -679,7 +679,7 @@
     "reticulumSendStoringLocally": "Enregistrement dans votre boîte de réception de propagation locale…",
     "reticulumSendStoredLocally": "Conservé dans votre boîte de réception de propagation locale (non livré à l'homologue)",
     "sentViaLocalPropagation": "Boîte de réception de propagation locale",
-    "reticulumSendTimeout": "Envoi expiré. La pile Reticulum peut démarrer ou être occupée — réessayez."
+    "reticulumSendTimeout": "Envoi expiré. La pile Reticulum est peut-être en cours de démarrage ou occupée — réessayez."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "Supprimer l'historique",
     "whisperReplyPlaceholder": "Répondre à {{name}} ou /msg…",
     "jumpToLatest": "Aller au dernier",
-    "sendTimeout": "Envoi expiré. La pile Reticulum peut démarrer ou être occupée — réessayez.",
-    "stackNotReady": "La pile Reticulum n'est pas encore prête. Attendez la connexion, puis réessayez."
+    "stackNotReady": "La pile Reticulum n'est pas encore prête. Attendez d'être connecté, puis réessayez.",
+    "sidecarNotRunning": "Le sidecar Reticulum n'est pas en cours d'exécution. Démarrez la pile sur Connexion, puis réessayez."
   },
   "signalMeter": {
     "rssi": "RSSI",

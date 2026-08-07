@@ -4881,8 +4881,8 @@
     "clearHistoryConfirmAction": "Видалити історію",
     "whisperReplyPlaceholder": "Відповісти на {{name}} або /msg…",
     "jumpToLatest": "Перейти до останнього",
-    "sendTimeout": "Тайм-аут надсилання. Стек Reticulum може запускатися або бути зайнятий — спробуйте ще раз.",
-    "stackNotReady": "Стек Reticulum ще не готовий. Зачекайте на підключення, а потім повторіть спробу."
+    "stackNotReady": "Стек Reticulum ще не готовий. Зачекайте, доки буде підключено, а потім повторіть спробу.",
+    "sidecarNotRunning": "Sidecar Reticulum не працює. Запустіть стек на Підключенні, а потім спробуйте ще раз."
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

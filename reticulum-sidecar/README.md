@@ -64,6 +64,8 @@ curl -s http://127.0.0.1:19437/api/v1/status
 
 Or **Reticulum tab → Connection → Start stack** (sidecar must be running before identity or Network configuration).
 
+**Startup order (listen-first):** bootstrap persist → bind HTTP → accept `/api/v1/status` (`status: ok`) → `attach_live` (RNS/LXMF; sets `rns_ready` / `lxmf_ready`). PN messagestore loads in the background; local-prop serve waits for that load. Electron health polls `status: ok` only — not the ready flags.
+
 ## Lint and coverage
 
 Toolchain components (`clippy`, `rustfmt`, `llvm-tools-preview`) come from [`rust-toolchain.toml`](rust-toolchain.toml).

@@ -4879,8 +4879,8 @@
     "clearHistoryConfirmAction": "履歴の削除",
     "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
     "jumpToLatest": "最新へジャンプ",
-    "sendTimeout": "送信がタイムアウトしました。Reticulum スタックが起動中またはビジーの可能性があります — 再試行してください。",
-    "stackNotReady": "Reticulum スタックはまだ準備ができていません。接続を待ってから再試行してください。"
+    "stackNotReady": "Reticulum スタックはまだ準備ができていません。接続されるまで待ってから再試行してください。",
+    "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続でスタックを開始してから、もう一度お試しください。"
   },
   "signalMeter": {
     "rssi": "RSSI",

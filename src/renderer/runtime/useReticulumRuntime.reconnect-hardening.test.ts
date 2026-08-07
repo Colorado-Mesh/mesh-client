@@ -263,6 +263,16 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
   });
 });
 
+describe('useReticulumRuntime chat LXMF send timeout wiring', () => {
+  it('maps IPC send timeout and proxy readiness errors via shared humanize', () => {
+    expect(SOURCE).toContain('withReticulumIpcSendDeadline');
+    expect(SOURCE).toContain('isReticulumIpcSendTimeout');
+    expect(SOURCE).toContain('reticulumProxyErrorToI18nKey');
+    expect(SOURCE).toContain("i18n.t('chatPanel.reticulumSendTimeout')");
+    expect(SOURCE).toMatch(/withReticulumIpcSendDeadline\(\s*[\s\S]*?proxyPost\(/);
+  });
+});
+
 describe('useReticulumRuntime outbound delivery persistence', () => {
   it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
     expect(SOURCE).toMatch(
