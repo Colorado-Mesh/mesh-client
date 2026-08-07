@@ -37,17 +37,28 @@ import {
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
 import { parseEnabledInterfaceNames } from '../reticulumInterfaceIssueScope';
 import { assertIpcSender } from '../validate-ipc-sender';
+import { isLxmfRecentApiPath } from './reticulumLxmfRecentPath';
 
 /** Shared rolling window for all reticulum proxy verbs (Get/Post/Put/Delete). */
 const reticulumProxyIpcRateLimit = createIpcRateLimiter({
-  max: 300,
+  max: 900,
   windowMs: MS_PER_MINUTE,
   label: 'reticulum:proxy',
 });
 
 /**
+ * Inbound LXMF catch-up (`GET /api/v1/lxmf/recent`). Own bucket so WS-lag recovery
+ * cannot be starved by peer/interface polls — and cannot monopolize the shared ceiling.
+ */
+const reticulumLxmfRecentIpcRateLimit = createIpcRateLimiter({
+  max: 120,
+  windowMs: MS_PER_MINUTE,
+  label: 'reticulum:lxmfRecent',
+});
+
+/**
  * Realtime LXST PCM ingest: QualityHigh is ~16.7 frames/s (~1000/min).
- * Separate from the shared 300/min proxy bucket so calls do not starve mesh control IPC.
+ * Separate from the shared 900/min proxy bucket so calls do not starve mesh control IPC.
  */
 const reticulumVoiceAudioIpcRateLimit = createIpcRateLimiter({
   max: 2000,
@@ -57,7 +68,7 @@ const reticulumVoiceAudioIpcRateLimit = createIpcRateLimiter({
 
 /**
  * LRGP games control/poll traffic. Own bucket so session polls + moves do not
- * starve the shared 300/min reticulum proxy ceiling.
+ * starve the shared 900/min reticulum proxy ceiling.
  */
 const reticulumGamesIpcRateLimit = createIpcRateLimiter({
   max: 600,
@@ -213,10 +224,14 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyGet');
-    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     if (isGamesApiPath(pathArg)) {
       throw new Error('LRGP games require reticulum:games* IPC channels');
+    }
+    if (isLxmfRecentApiPath(pathArg)) {
+      reticulumLxmfRecentIpcRateLimit.checkOrThrow();
+    } else {
+      reticulumProxyIpcRateLimit.checkOrThrow();
     }
     try {
       const m = ensureManager();
@@ -252,7 +267,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   });
 
   /**
-   * Realtime LXST PCM frames. Uses a dedicated rate limit (not the shared 300/min
+   * Realtime LXST PCM frames. Uses a dedicated rate limit (not the shared 900/min
    * proxy ceiling) so voice TX does not starve control-plane proxy IPC.
    */
   ipcMain.handle('reticulum:voiceSendAudio', async (event, opts: unknown) => {

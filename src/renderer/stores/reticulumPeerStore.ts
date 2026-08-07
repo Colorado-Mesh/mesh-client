@@ -14,6 +14,12 @@ import {
   activeReticulumPathSlot,
   type ReticulumPathSlot,
 } from '@/renderer/lib/reticulum/reticulumPathSlots';
+import {
+  clearReticulumProxyRateLimitBackoff,
+  isReticulumProxyRateLimitBackoffActive,
+  noteReticulumProxyErrorIfRateLimited,
+  reticulumProxyRateLimitBackoffRemainingMs,
+} from '@/renderer/lib/reticulum/reticulumProxyRateLimitBackoff';
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import {
@@ -1277,24 +1283,39 @@ export function refreshReticulumPeersFromSidecar(
 
   peerRefreshInFlight = (async () => {
     try {
+      if (isReticulumProxyRateLimitBackoffActive('shared')) {
+        // Keep coalesce flags so a force refresh is not dropped while backoff is active.
+        if (opts.forceRefresh) peerRefreshPendingForce = true;
+        if (!opts.skipNomad) peerRefreshPendingSkipNomad = false;
+        peerRefreshPendingRerun = true;
+        console.debug(
+          `[reticulumPeerStore] refresh skipped — proxy rate-limit backoff remaining=${reticulumProxyRateLimitBackoffRemainingMs('shared')}ms`,
+        );
+        return [...useReticulumPeerStore.getState().contacts.values()];
+      }
       let forceRefresh = Boolean(opts.forceRefresh) || peerRefreshPendingForce;
       let skipNomad = Boolean(opts.skipNomad) && peerRefreshPendingSkipNomad;
       peerRefreshPendingForce = false;
       peerRefreshPendingSkipNomad = true;
       peerRefreshPendingRerun = false;
       let result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh, skipNomad });
+      clearReticulumProxyRateLimitBackoff('shared');
       while (peerRefreshPendingRerun) {
+        // Leave peerRefreshPendingRerun / force / skipNomad set so the next refresh
+        // after backoff still honors a coalesced force refresh.
+        if (isReticulumProxyRateLimitBackoffActive('shared')) break;
         peerRefreshPendingRerun = false;
         forceRefresh = peerRefreshPendingForce;
         skipNomad = peerRefreshPendingSkipNomad;
         peerRefreshPendingForce = false;
         peerRefreshPendingSkipNomad = true;
         result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh, skipNomad });
+        clearReticulumProxyRateLimitBackoff('shared');
       }
       return result;
     } catch (e) {
       const msg = errLikeToLogString(e);
-      if (msg.toLowerCase().includes('rate limit exceeded')) {
+      if (noteReticulumProxyErrorIfRateLimited(e, 'shared')) {
         console.debug('[reticulumPeerStore] refresh ' + msg);
         throw e instanceof Error ? e : new Error(msg);
       }
@@ -1302,8 +1323,11 @@ export function refreshReticulumPeersFromSidecar(
       return [];
     } finally {
       peerRefreshInFlight = null;
-      peerRefreshPendingForce = false;
-      peerRefreshPendingSkipNomad = true;
+      // Preserve coalesce intent when we broke out for shared-bucket backoff.
+      if (!peerRefreshPendingRerun) {
+        peerRefreshPendingForce = false;
+        peerRefreshPendingSkipNomad = true;
+      }
     }
   })();
 

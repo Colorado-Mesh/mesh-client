@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "要加密的消息",
     "shareAsPaperGenerate": "创建纸质二维码",
     "shareAsPaperCopyFailed": "无法复制纸质链接",
-    "waitingMessagesSilentFetched": "已从收音机获取{{processed}} …"
+    "waitingMessagesSilentFetched": "已从收音机获取{{processed}} …",
+    "reticulumSendStoringLocally": "正在保存到本地传播收件箱…",
+    "reticulumSendStoredLocally": "保存在您的本地传播收件箱中（未送达对端）",
+    "sentViaLocalPropagation": "本地传播收件箱"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -4238,7 +4241,8 @@
     "addProbing": "正在检查 /offer 支持…",
     "syncLocalNotSupported": "本地主机传播节点无法像远程 LXMF 传播节点一样通过网络同步。",
     "enableFailed": "无法启用传播节点。",
-    "disableFailed": "无法禁用传播节点。"
+    "disableFailed": "无法禁用传播节点。",
+    "syncOutboundBusy": "传播同步已延迟—出站消息正在存入此节点。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

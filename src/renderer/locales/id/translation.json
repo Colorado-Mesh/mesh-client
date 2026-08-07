@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "Pesan untuk dienkripsi",
     "shareAsPaperGenerate": "Buat QR kertas",
     "shareAsPaperCopyFailed": "Tidak dapat menyalin tautan kertas",
-    "waitingMessagesSilentFetched": "Mengambil {{processed}} dari radio…"
+    "waitingMessagesSilentFetched": "Mengambil {{processed}} dari radio…",
+    "reticulumSendStoringLocally": "Menyimpan ke kotak masuk propagasi lokal Anda…",
+    "reticulumSendStoredLocally": "Disimpan di kotak masuk propagasi lokal Anda (tidak dikirim ke peer)",
+    "sentViaLocalPropagation": "Kotak masuk propagasi lokal"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -4238,7 +4241,8 @@
     "addProbing": "Memeriksa dukungan /offer…",
     "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "enableFailed": "Tidak dapat mengaktifkan node propagasi.",
-    "disableFailed": "Tidak dapat menonaktifkan node propagasi."
+    "disableFailed": "Tidak dapat menonaktifkan node propagasi.",
+    "syncOutboundBusy": "Sinkronisasi propagasi ditangguhkan — pesan keluar disetorkan ke simpul ini."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

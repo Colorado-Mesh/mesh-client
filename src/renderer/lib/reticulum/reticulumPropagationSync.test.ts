@@ -117,6 +117,9 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('propagation offer rejected: Unknown')).toBe(
       'reticulumPropagation.syncOfferUnknown',
     );
+    expect(mapPropagationSyncError('PROPAGATION_SYNC_OUTBOUND_BUSY')).toBe(
+      'reticulumPropagation.syncOutboundBusy',
+    );
     expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
   });
 

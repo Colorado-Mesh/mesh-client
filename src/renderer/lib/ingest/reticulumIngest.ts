@@ -398,6 +398,10 @@ export function persistReticulumOutboundRecord(
       ...(record.reticulumDeliveryMethod
         ? { delivery_method: record.reticulumDeliveryMethod }
         : {}),
+      ...(typeof record.reticulumDeliveryAttempts === 'number' &&
+      Number.isFinite(record.reticulumDeliveryAttempts)
+        ? { delivery_attempts: Math.trunc(record.reticulumDeliveryAttempts) }
+        : {}),
     })
     .catch((e: unknown) => {
       console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));

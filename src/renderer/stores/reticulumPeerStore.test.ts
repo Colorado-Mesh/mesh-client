@@ -4,6 +4,10 @@ import type { ReticulumContact } from '@/shared/reticulum-types';
 
 import { reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import {
+  noteReticulumProxyRateLimitHit,
+  resetReticulumProxyRateLimitBackoffForTests,
+} from '../lib/reticulum/reticulumProxyRateLimitBackoff';
+import {
   applyReticulumAnnounceReceivedOptimistic,
   applyReticulumPeerPatchesNow,
   applyReticulumPeersUpdatedPatches,
@@ -349,6 +353,7 @@ describe('reticulumPeerStore', () => {
   beforeEach(() => {
     resetReticulumPeerRefreshSingleFlightForTests();
     resetReticulumPeerPatchBufferForTests();
+    resetReticulumProxyRateLimitBackoffForTests();
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),
@@ -964,6 +969,34 @@ describe('reticulumPeerStore', () => {
     await expect(refreshReticulumPeersFromSidecar()).rejects.toThrow('rate limit exceeded');
     expect(debug).toHaveBeenCalled();
     debug.mockRestore();
+  });
+
+  it('refreshReticulumPeersFromSidecar skips only on shared backoff (not lxmfRecent)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const proxyGet = vi.fn((path: string) => {
+      if (path.startsWith('/api/v1/peers')) return Promise.resolve({ peers: [] });
+      if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+      if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+      return Promise.resolve({});
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    noteReticulumProxyRateLimitHit('lxmfRecent');
+    await refreshReticulumPeersFromSidecar();
+    expect(proxyGet).toHaveBeenCalled();
+
+    proxyGet.mockClear();
+    resetReticulumProxyRateLimitBackoffForTests();
+    noteReticulumProxyRateLimitHit('shared');
+    await refreshReticulumPeersFromSidecar({ forceRefresh: true });
+    expect(proxyGet).not.toHaveBeenCalled();
   });
 
   it('refreshReticulumPeersFromSidecar OR-accumulates forceRefresh across coalesced callers', async () => {

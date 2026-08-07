@@ -677,7 +677,10 @@
     "shareAsPaperMessageLabel": "Zpráva k zašifrování",
     "shareAsPaperGenerate": "Vytvořit papírové QR",
     "shareAsPaperCopyFailed": "Nelze zkopírovat papírový odkaz",
-    "waitingMessagesSilentFetched": "Načteno {{processed}} z rádia…"
+    "waitingMessagesSilentFetched": "Načteno {{processed}} z rádia…",
+    "reticulumSendStoringLocally": "Ukládání do místní doručené pošty šíření…",
+    "reticulumSendStoredLocally": "Uloženo ve vaší místní doručené poště šíření (nedoručeno peerovi)",
+    "sentViaLocalPropagation": "Místní doručená pošta šíření"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -4240,7 +4243,8 @@
     "addProbing": "Kontrola podpory /offer…",
     "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
     "enableFailed": "Uzel šíření nelze povolit.",
-    "disableFailed": "Uzel šíření nelze zakázat."
+    "disableFailed": "Uzel šíření nelze zakázat.",
+    "syncOutboundBusy": "Synchronizace propagace odložena — do tohoto uzlu se ukládá odchozí zpráva."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

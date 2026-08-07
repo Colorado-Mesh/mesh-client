@@ -4,6 +4,8 @@ export const RETICULUM_DELIVERY_METHODS = [
   'propagated',
   'opportunistic',
   'paper',
+  /** Offline local-prop inbox — not peer-delivered. */
+  'stored_locally',
 ] as const;
 
 export type ReticulumDeliveryMethod = (typeof RETICULUM_DELIVERY_METHODS)[number];
@@ -17,4 +19,9 @@ export function parseReticulumDeliveryMethod(
   if (value == null || value === '') return undefined;
   const normalized = value.trim().toLowerCase();
   return ALLOWED.has(normalized) ? (normalized as ReticulumDeliveryMethod) : undefined;
+}
+
+/** Direct→PN cascade in flight / stored (remote PN or local-prop inbox). */
+export function isPnCascadeDeliveryMethod(m: ReticulumDeliveryMethod | undefined): boolean {
+  return m === 'propagated' || m === 'stored_locally';
 }

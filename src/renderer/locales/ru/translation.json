@@ -677,7 +677,10 @@
     "shareAsPaperMessageLabel": "Сообщение для шифрования",
     "shareAsPaperGenerate": "Создать бумажный QR-код",
     "shareAsPaperCopyFailed": "Не удалось скопировать ссылку на бумагу",
-    "waitingMessagesSilentFetched": "Получено {{processed}} из радио…"
+    "waitingMessagesSilentFetched": "Получено {{processed}} из радио…",
+    "reticulumSendStoringLocally": "Сохранение в локальный почтовый ящик распространения...",
+    "reticulumSendStoredLocally": "Хранится в локальном почтовом ящике распространения (не доставляется одноранговому узлу)",
+    "sentViaLocalPropagation": "Локальный почтовый ящик распространения"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -4240,7 +4243,8 @@
     "addProbing": "Проверка поддержки /offer…",
     "syncLocalNotSupported": "Локальный узел распространения хоста не может быть синхронизирован по сети, как удаленный узел распространения LXMF.",
     "enableFailed": "Не удалось включить узел распространения.",
-    "disableFailed": "Не удалось отключить узел распространения."
+    "disableFailed": "Не удалось отключить узел распространения.",
+    "syncOutboundBusy": "Синхронизация распространения отложена — исходящее сообщение сохраняется на этом узле."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим распространения",

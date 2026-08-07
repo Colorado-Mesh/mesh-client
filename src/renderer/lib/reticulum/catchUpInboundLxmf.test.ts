@@ -8,7 +8,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ingestReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { OFFLINE_RETICULUM_IDENTITY_ID } from '@/renderer/lib/offlineProtocolIdentities';
-import { catchUpRecentInboundLxmf } from '@/renderer/lib/reticulum/catchUpRecentInboundLxmf';
+import {
+  catchUpRecentInboundLxmf,
+  resetCatchUpRecentInboundLxmfSingleFlightForTests,
+} from '@/renderer/lib/reticulum/catchUpRecentInboundLxmf';
 import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
 import {
   getReticulumInboundLxmfDiagnostics,
@@ -59,6 +62,7 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
     useMessageStore.setState({ messages: {} });
     resetReticulumManualStackStopSuppressForTests();
     resetReticulumInboundLxmfDiagnosticsForTests();
+    resetCatchUpRecentInboundLxmfSingleFlightForTests();
     eventHandler = null;
     warnSpy.mockClear();
     vi.mocked(fetchRecentInboundLxmfDetailed).mockReset();

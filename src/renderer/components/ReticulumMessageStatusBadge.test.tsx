@@ -68,4 +68,41 @@ describe('ReticulumMessageStatusBadge', () => {
       screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.reticulumSendPropagated'),
     ).toBeTruthy();
   });
+
+  it('shows PN with house icon for local-prop stored_locally (not green check)', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="stored_locally" />,
+    );
+    expect(
+      screen.getByLabelText(
+        'chatPanel.sentViaLocalPropagation: chatPanel.reticulumSendStoredLocally',
+      ),
+    ).toBeTruthy();
+    // Label PN + house emoji — not a delivery checkmark.
+    expect(screen.getByText(/reticulumPnAbbrev\s+\u{1F3E0}/u)).toBeTruthy();
+    expect(screen.queryByText(/✓/)).toBeNull();
+  });
+
+  it('shows storing-locally tooltip while sending with stored_locally', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="sending" via="tcp" deliveryMethod="stored_locally" />,
+    );
+    expect(
+      screen.getByLabelText(
+        'chatPanel.sentViaLocalPropagation: chatPanel.reticulumSendStoringLocally',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/reticulumPnAbbrev\s+\u{1F3E0}/u)).toBeTruthy();
+  });
+
+  it('shows red X (not house) for failed stored_locally', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="failed" via="tcp" deliveryMethod="stored_locally" />,
+    );
+    expect(
+      screen.getByLabelText('chatPanel.sentViaLocalPropagation: chatPanel.reticulumSendFailed'),
+    ).toBeTruthy();
+    expect(screen.getByText(/reticulumPnAbbrev\s+\u2717/)).toBeTruthy();
+    expect(screen.queryByText(/\u{1F3E0}/u)).toBeNull();
+  });
 });

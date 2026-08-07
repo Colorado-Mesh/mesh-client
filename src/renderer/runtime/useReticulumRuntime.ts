@@ -291,6 +291,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
+  /** Defer link-timeout failure bridge until first propagation store refresh completes. */
+  const propagationHydratedForBridgeRef = useRef(false);
+  /** Bumped on identity change / tearDown / disconnect to abort stale bridge IIFEs. */
+  const linkTimeoutBridgeGenerationRef = useRef(0);
+  const identityIdRef = useRef(identityId);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
   // Include `connecting`: main suspends Noble at sidecar start before status reaches
@@ -306,6 +311,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    identityIdRef.current = identityId;
+  }, [identityId]);
+
+  useEffect(() => {
+    processedLinkTimeoutDestsRef.current.clear();
+    propagationHydratedForBridgeRef.current = false;
+    linkTimeoutBridgeGenerationRef.current += 1;
+  }, [identityId]);
 
   const selfNodeId = useMemo(
     () => (selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : null),
@@ -819,11 +834,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
           status?: string;
           sent_via?: string;
           delivery_method?: string;
+          delivery_attempts?: number;
         };
         if (identityId && p.message_hash && p.status) {
           applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
             sentVia: p.sent_via,
             deliveryMethod: p.delivery_method,
+            deliveryAttempts: p.delivery_attempts,
           });
         }
       }
@@ -1461,6 +1478,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setRawPackets([]);
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
+    propagationHydratedForBridgeRef.current = false;
+    linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
@@ -1483,23 +1502,87 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {
-          const propState = useReticulumPropagationStore.getState();
-          const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
-            propState.nodes,
-            propState.preferredId,
-          );
-          for (const { destinationHash } of timeouts) {
-            const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-            if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
-            processedLinkTimeoutDestsRef.current.add(norm);
-            // Remote preferred PN: sidecar Direct→PN fallback owns the outcome via WS.
-            if (!applyBridge) continue;
-            failReticulumSendingOutboundToDestHash(
-              identityId,
-              norm,
-              i18n.t('chatPanel.reticulumSendFailed'),
+          const bridgeIdentityId = identityId;
+          const bridgeGeneration = linkTimeoutBridgeGenerationRef.current;
+          void (async () => {
+            if (!propagationHydratedForBridgeRef.current) {
+              const stampBefore = useReticulumPropagationStore.getState().lastRefreshedAt;
+              try {
+                await useReticulumPropagationStore.getState().refreshFromSidecar();
+              } catch (e: unknown) {
+                console.debug(
+                  '[useReticulumRuntime] propagation hydrate for link-timeout bridge ' +
+                    errLikeToLogString(e),
+                );
+              }
+              if (
+                identityIdRef.current !== bridgeIdentityId ||
+                linkTimeoutBridgeGenerationRef.current !== bridgeGeneration
+              ) {
+                console.debug(
+                  '[useReticulumRuntime] link-timeout bridge abort — generation stale after hydrate',
+                );
+                return;
+              }
+              const stampAfter = useReticulumPropagationStore.getState().lastRefreshedAt;
+              const hydratedOk = stampAfter != null && stampAfter !== stampBefore;
+              if (!hydratedOk) {
+                console.debug(
+                  '[useReticulumRuntime] link-timeout bridge skip — propagation hydrate failed/uncertain',
+                );
+                return;
+              }
+              propagationHydratedForBridgeRef.current = true;
+            }
+            if (
+              identityIdRef.current !== bridgeIdentityId ||
+              linkTimeoutBridgeGenerationRef.current !== bridgeGeneration
+            ) {
+              return;
+            }
+            const propState = useReticulumPropagationStore.getState();
+            // Empty + no preferred + never refreshed: cascade capacity unknown — do not fail DMs.
+            if (
+              propState.nodes.length === 0 &&
+              propState.preferredId == null &&
+              propState.lastRefreshedAt == null
+            ) {
+              console.debug(
+                '[useReticulumRuntime] link-timeout bridge skip — propagation state uncertain',
+              );
+              return;
+            }
+            const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
+              propState.nodes,
+              propState.preferredId,
             );
-          }
+            console.debug(
+              `[useReticulumRuntime] link-timeout bridge apply=${applyBridge} preferred=${propState.preferredId ?? 'none'} nodes=${propState.nodes.length}`,
+            );
+            for (const { destinationHash } of timeouts) {
+              if (
+                identityIdRef.current !== bridgeIdentityId ||
+                linkTimeoutBridgeGenerationRef.current !== bridgeGeneration
+              ) {
+                return;
+              }
+              const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+              if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
+              // PN cascade (remote or local-prop): sidecar owns outcome via WS.
+              if (!applyBridge) {
+                console.debug(
+                  `[useReticulumRuntime] link-timeout bridge skip dest=${norm.slice(0, 8)}… (cascade eligible)`,
+                );
+                continue;
+              }
+              processedLinkTimeoutDestsRef.current.add(norm);
+              failReticulumSendingOutboundToDestHash(
+                bridgeIdentityId,
+                norm,
+                i18n.t('chatPanel.reticulumSendFailed'),
+              );
+            }
+          })();
         }
       }
       if (status.running) return;
@@ -1677,6 +1760,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setRawPackets([]);
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
+    propagationHydratedForBridgeRef.current = false;
+    linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);

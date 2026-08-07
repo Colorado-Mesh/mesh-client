@@ -3,6 +3,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
+import { isLxmfRecentApiPath } from './reticulumLxmfRecentPath';
+
 const HANDLERS_SOURCE = readFileSync(join(__dirname, 'reticulum-handlers.ts'), 'utf-8');
 const SIDECAR_STACK_SOURCE = readFileSync(
   join(__dirname, '../../../reticulum-sidecar/src/stack/mod.rs'),
@@ -14,8 +16,8 @@ const SIDECAR_LIVE_SOURCE = readFileSync(
 );
 
 describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', () => {
-  it('caps shared proxy IPC at 300/min and treats rate-limit as expected', () => {
-    expect(HANDLERS_SOURCE).toMatch(/max:\s*300/);
+  it('caps shared proxy IPC at 900/min and treats rate-limit as expected', () => {
+    expect(HANDLERS_SOURCE).toMatch(/max:\s*900/);
     expect(HANDLERS_SOURCE).toContain("label: 'reticulum:proxy'");
     expect(HANDLERS_SOURCE).toContain('isExpectedReticulumProxyError');
     expect(HANDLERS_SOURCE).toContain("from '../../shared/reticulumProxyIpcError'");
@@ -26,9 +28,20 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     expect(sharedSource).toContain("lower.includes('rate limit exceeded')");
   });
 
+  it('routes LXMF recent catch-up onto a dedicated 120/min bucket', () => {
+    expect(HANDLERS_SOURCE).toMatch(
+      /const reticulumLxmfRecentIpcRateLimit = createIpcRateLimiter\(\{\s*max:\s*120,[\s\S]*?label:\s*'reticulum:lxmfRecent'/,
+    );
+    expect(HANDLERS_SOURCE).toContain('isLxmfRecentApiPath');
+    expect(HANDLERS_SOURCE).toContain('reticulumLxmfRecentIpcRateLimit.checkOrThrow()');
+    expect(isLxmfRecentApiPath('/api/v1/lxmf/recent')).toBe(true);
+    expect(isLxmfRecentApiPath('/api/v1/lxmf/recent?since_ts=1')).toBe(true);
+    expect(isLxmfRecentApiPath('/api/v1/lxmf/send')).toBe(false);
+  });
+
   it('applies the shared proxy rate limit to picker-gated RNCP handlers', () => {
     // Dedicated rncpSend/Fetch/setRncpListener bypass generic proxyPost gating but must
-    // still share the 300/min ceiling so a compromised renderer cannot storm the sidecar.
+    // still share the 900/min ceiling so a compromised renderer cannot storm the sidecar.
     for (const channel of [
       'reticulum:rncpSend',
       'reticulum:rncpFetch',

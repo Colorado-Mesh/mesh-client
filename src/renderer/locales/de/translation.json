@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "Nachricht zum Verschlüsseln",
     "shareAsPaperGenerate": "Papier-QR erstellen",
     "shareAsPaperCopyFailed": "Papierlink konnte nicht kopiert werden",
-    "waitingMessagesSilentFetched": "{{processed}} vom Funkgerät abgerufen…"
+    "waitingMessagesSilentFetched": "{{processed}} vom Funkgerät abgerufen…",
+    "reticulumSendStoringLocally": "Wird in Ihrem lokalen Propagations-Posteingang gespeichert…",
+    "reticulumSendStoredLocally": "Wird in Ihrem lokalen Propagations-Posteingang aufbewahrt (nicht an den Peer geliefert)",
+    "sentViaLocalPropagation": "Lokaler Propagations-Posteingang"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -4238,7 +4241,8 @@
     "addProbing": "Prüfe /offer-Unterstützung…",
     "syncLocalNotSupported": "Der lokale Host-Verbreitungsknoten kann nicht wie ein entfernter LXMF-Verbreitungsknoten über das Netzwerk synchronisiert werden.",
     "enableFailed": "Der Ausbreitungsknoten konnte nicht aktiviert werden.",
-    "disableFailed": "Der Ausbreitungsknoten konnte nicht deaktiviert werden."
+    "disableFailed": "Der Ausbreitungsknoten konnte nicht deaktiviert werden.",
+    "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

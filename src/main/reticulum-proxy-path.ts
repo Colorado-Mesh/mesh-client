@@ -1,3 +1,4 @@
+import { RETICULUM_LXMF_RECENT_API_PATH } from '../shared/reticulumApiPaths';
 import { nomadPageProxyTimeoutMsFromApiPath } from '../shared/reticulumNomadTimeouts';
 
 /** Allowed Reticulum sidecar HTTP paths for renderer IPC proxy. */
@@ -16,7 +17,7 @@ const TRANSPORT_QUERY_GET_PATHS = [
   '/api/v1/interfaces',
   '/api/v1/topology',
   '/api/v1/packets',
-  '/api/v1/lxmf/recent',
+  RETICULUM_LXMF_RECENT_API_PATH,
 ] as const;
 
 function isReticulumTransportQueryGetPath(normalized: string): boolean {

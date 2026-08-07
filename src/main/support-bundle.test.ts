@@ -42,6 +42,7 @@ import { app } from 'electron';
 import {
   buildSupportBundleZip,
   defaultSupportBundleFilename,
+  extractLxmfOutboundLogSlice,
   isSupportBundleMode,
   readReticulumDeveloperArtifacts,
   redactMnemonicFromStackJson,
@@ -95,6 +96,40 @@ describe('defaultSupportBundleFilename', () => {
   it('uses mode-specific prefixes', () => {
     expect(defaultSupportBundleFilename('github')).toMatch(/^mesh-client-github-report-/);
     expect(defaultSupportBundleFilename('developer')).toMatch(/^mesh-client-developer-bundle-/);
+  });
+});
+
+describe('extractLxmfOutboundLogSlice', () => {
+  it('keeps LXMF outbound / PN cascade lines and drops unrelated noise', () => {
+    const chunk = Buffer.from(
+      [
+        'info hello world',
+        'info target=lxmf-outbound LXMF advancing PN cascade',
+        'warn DeliverPropagated: deferring — PN link busy',
+        'debug peer refresh ok',
+        'info target=propagation-deposit outbound PN deposit Completes',
+        'info target=propagation-retrieve sync transfer progress',
+      ].join('\n'),
+      'utf8',
+    );
+    const slice = extractLxmfOutboundLogSlice(chunk).toString('utf8');
+    expect(slice).toContain('LXMF advancing PN cascade');
+    expect(slice).toContain('DeliverPropagated');
+    expect(slice).toContain('propagation-deposit');
+    expect(slice).toContain('propagation-retrieve');
+    expect(slice).not.toContain('hello world');
+    expect(slice).not.toContain('peer refresh ok');
+  });
+
+  it('truncates long hex ids in kept lines', () => {
+    const dest = 'ab'.repeat(16);
+    const chunk = Buffer.from(
+      `info target=lxmf-outbound dest=${dest} LXMF advancing PN cascade\n`,
+      'utf8',
+    );
+    const slice = extractLxmfOutboundLogSlice(chunk).toString('utf8');
+    expect(slice).toContain('dest=abababab…');
+    expect(slice).not.toContain(dest);
   });
 });
 

@@ -119,6 +119,33 @@ describe('failReticulumSendingOutboundToDestHash', () => {
     expect(useMessageStore.getState().messages[identityId]['msg-hash'].status).toBe('sending');
   });
 
+  it('skips outbound rows already on stored_locally (local-prop cascade)', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          'msg-hash': {
+            id: 'msg-hash',
+            from: 1,
+            senderName: 'self',
+            payload: 'hello',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            to: toNodeId,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'stored_locally',
+          },
+        },
+      },
+    });
+
+    const count = failReticulumSendingOutboundToDestHash(identityId, DEST, 'link timeout');
+    expect(count).toBe(0);
+    expect(useMessageStore.getState().messages[identityId]['msg-hash'].status).toBe('sending');
+  });
+
   it('requires full 32-hex equality (prefix must not fail unrelated peers)', () => {
     const peerA = DEST;
     const peerB = `${DEST.slice(0, 8)}${'ff'.repeat(12)}`;
@@ -215,7 +242,7 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
     );
   });
 
-  it('returns true when only local-prop is available', () => {
+  it('returns false when only local-prop is enabled (cascade last resort)', () => {
     const localOnly: PropagationNodeRow = {
       id: 'local-prop',
       name: 'Local',
@@ -224,11 +251,11 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
       preferred: true,
     };
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([localOnly], 'local-prop', 'auto')).toBe(
-      true,
+      false,
     );
   });
 
-  it('returns true when no remote PN target exists', () => {
+  it('returns true when no remote PN and local-prop disabled', () => {
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'off')).toBe(true);
   });
 });
