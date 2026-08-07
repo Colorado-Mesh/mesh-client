@@ -557,7 +557,9 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           pushAppToast(i18n.t('nomadNetwork.pageReadyToast', { name: label }), 'success', 6_000);
         })
         .catch((err: unknown) => {
-          console.warn('[nomadPageViewerStore] pageReadyToast i18n import failed ' + String(err));
+          console.warn(
+            '[nomadPageViewerStore] pageReadyToast i18n import failed ' + errLikeToLogString(err),
+          );
         });
     }
   },

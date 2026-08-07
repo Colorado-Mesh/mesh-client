@@ -60,10 +60,12 @@ describe('audit hardening source contracts', () => {
       /import\('@\/renderer\/lib\/i18n'\)[\s\S]*?\.catch\(\(err: unknown\) =>/,
     );
     expect(NOMAD_PAGE_VIEWER).toContain('pageReadyToast i18n import failed');
+    expect(NOMAD_PAGE_VIEWER).toContain('errLikeToLogString(err)');
   });
 
-  it('ChatPanel localizes MeshCore Unknown sender sentinel', () => {
-    expect(CHAT_PANEL).toContain("rawSenderName === 'Unknown' ? t('common.unknown')");
+  it('ChatPanel localizes MeshCore Unknown sender sentinel only', () => {
+    expect(CHAT_PANEL).toContain("protocol === 'meshcore' && rawSenderName === 'Unknown'");
+    expect(CHAT_PANEL).toContain("t('common.unknown')");
   });
 
   it('NodeListPanel maps Sensor/None/Unknown hw_model through i18n keys', () => {

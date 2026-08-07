@@ -135,9 +135,11 @@ export function findSquashfsOffset(appImagePath) {
   return null;
 }
 
-/** Prepare a clean extract directory for AppImage --appimage-extract (spawnSync needs existing cwd). */
+/**
+ * Ensure extract cwd exists for AppImage --appimage-extract (spawnSync needs existing cwd).
+ * Does not delete/recreate `extractDir` — callers pass a unique mkdtemp path that must be preserved.
+ */
 export function prepareAppImageExtractDir(extractDir) {
-  rmSync(extractDir, { recursive: true, force: true });
   mkdirSync(extractDir, { recursive: true });
 }
 

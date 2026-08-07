@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import type tls from 'tls';
+import fs from 'fs';
+import tls from 'tls';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
@@ -8,9 +9,10 @@ vi.mock('electron', () => ({
   },
 }));
 
-vi.mock('./log-service', () => ({
-  sanitizeLogMessage: (s: string) => s,
-}));
+vi.mock('./log-service', async () => {
+  const { sanitizeLogMessage } = await import('./sanitize-log-message');
+  return { sanitizeLogMessage };
+});
 
 vi.mock('./tak/certificate-manager', () => ({
   loadOrGenerateCerts: vi.fn().mockResolvedValue({
@@ -110,6 +112,47 @@ describe('TakServerManager client limits', () => {
     expect(clients.clients.size).toBe(1);
     vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1);
     expect(socket.destroy).toHaveBeenCalled();
+  });
+});
+
+describe('TakServerManager server error sanitization', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sanitizes CR/LF in server error before console, status, and error event', async () => {
+    const fakeServer = new EventEmitter() as EventEmitter & {
+      listen: (port: number, cb: () => void) => void;
+      close: () => void;
+    };
+    fakeServer.listen = (_port, cb) => {
+      cb();
+    };
+    fakeServer.close = () => {};
+
+    vi.spyOn(tls, 'createServer').mockReturnValue(fakeServer as unknown as tls.Server);
+    vi.spyOn(fs, 'writeFileSync').mockImplementation(() => undefined);
+
+    const manager = new TakServerManager();
+    await manager.start({
+      enabled: true,
+      autoStart: false,
+      serverName: 'mesh-client-test',
+      port: 8089,
+      requireClientCert: false,
+    });
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.fn();
+    manager.on('error', errorSpy);
+
+    fakeServer.emit('error', new Error('boom\r\ninjected'));
+
+    const logged = consoleSpy.mock.calls.find((c) => c[0] === '[TakServer]')?.[1];
+    expect(typeof logged).toBe('string');
+    expect(logged).not.toMatch(/[\r\n]/);
+    expect(manager.getStatus().error).toBe(logged);
+    expect(errorSpy).toHaveBeenCalledWith(logged);
   });
 });
 

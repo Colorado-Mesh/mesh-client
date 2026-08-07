@@ -17,6 +17,7 @@ import {
   registerReticulumSession,
   type ReticulumSessionApi,
 } from '../lib/sessions/reticulumSession';
+import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import { addMessage, useMessageStore } from '../stores/messageStore';
@@ -380,33 +381,36 @@ describe('useSendMessage', () => {
 
   it('SoftAP dead-accepted: marks failed when live reopen yields no handle', async () => {
     setMeshcoreTcpSoftApDeadAccepted(true);
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    registerMeshcoreSession(
-      createMeshcoreSessionStub({
-        runMeshcoreUserTxWithLiveTcp: vi.fn((op) => op()),
-      }),
-    );
-    vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
-    addIdentity({
-      id: ID_MC,
-      protocol: meshcoreProtocol,
-      signature: 'sig-mc',
-      transports: [],
-      createdAt: 1,
-      lastSeenAt: 1,
-    });
-    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+    const { spy: warn, restore } = mockConsoleWarn();
+    try {
+      registerMeshcoreSession(
+        createMeshcoreSessionStub({
+          runMeshcoreUserTxWithLiveTcp: vi.fn((op) => op()),
+        }),
+      );
+      vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
+      addIdentity({
+        id: ID_MC,
+        protocol: meshcoreProtocol,
+        signature: 'sig-mc',
+        transports: [],
+        createdAt: 1,
+        lastSeenAt: 1,
+      });
+      setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
 
-    const { result } = renderHook(() => useSendMessage(ID_MC));
-    result.current('softap fail', 1);
+      const { result } = renderHook(() => useSendMessage(ID_MC));
+      result.current('softap fail', 1);
 
-    await vi.waitFor(() => {
-      const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
-      expect(rows).toHaveLength(1);
-      expect(rows[0]?.status).toBe('failed');
-    });
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('SoftAP live reopen failed'));
-    warn.mockRestore();
+      await vi.waitFor(() => {
+        const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+        expect(rows).toHaveLength(1);
+        expect(rows[0]?.status).toBe('failed');
+      });
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('SoftAP live reopen failed'));
+    } finally {
+      restore();
+    }
   });
 
   it('marks MeshCore DM acked when send resolves with packetId', async () => {

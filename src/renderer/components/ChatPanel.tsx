@@ -2532,8 +2532,11 @@ function ChatPanel({
                   msg.sender_name.trim() ||
                   (msg.sender_id > 0 ? getDmLabel(msg.sender_id) : '');
                 // MeshCore wire/ingest uses English "Unknown" as a sentinel; localize for display.
+                // Other protocols may use a legitimate node/display name "Unknown" — leave as-is.
                 const displaySenderName =
-                  rawSenderName === 'Unknown' ? t('common.unknown') : rawSenderName;
+                  protocol === 'meshcore' && rawSenderName === 'Unknown'
+                    ? t('common.unknown')
+                    : rawSenderName;
 
                 // Day separator
                 const daySeparator = daySeparatorIndices.has(i) ? (
