@@ -1327,7 +1327,7 @@ export default function ConnectionPanel({
         if (webBluetoothDevice) {
           setWebBluetoothDevice(null);
         }
-      } else if (protocol === 'meshtastic' || protocol === 'meshcore') {
+      } else if (capabilities.hasNobleBleScanning) {
         void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
           console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
         });
@@ -1354,6 +1354,7 @@ export default function ConnectionPanel({
     protocol,
     isLinux,
     webBluetoothDevice,
+    capabilities.hasNobleBleScanning,
   ]);
 
   const handleSelectBleDevice = useCallback(
@@ -1405,9 +1406,11 @@ export default function ConnectionPanel({
         // Don't call onConnect again - the original onConnect will continue from requestDevice()
         // and proceed to connect(), which triggers the pairing handler.
       } else {
-        void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
-          console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
-        });
+        if (capabilities.hasNobleBleScanning) {
+          void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
+            console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
+          });
+        }
         // Trigger the actual connection with the peripheral ID
         onConnect('ble', undefined, deviceId).catch((err: unknown) => {
           const errMsg = err instanceof Error ? err.message : String(err);
@@ -1419,7 +1422,7 @@ export default function ConnectionPanel({
         });
       }
     },
-    [bleDevices, isLinux, onConnect, protocol, t],
+    [bleDevices, isLinux, onConnect, protocol, t, capabilities.hasNobleBleScanning],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {

@@ -3714,8 +3714,8 @@ impl LiveBridge {
         self.propagation.is_local_serving()
     }
 
-    pub async fn wait_propagation_messagestore_loaded(&self) {
-        self.propagation.wait_messagestore_loaded().await;
+    pub async fn wait_propagation_messagestore_loaded(&self) -> Result<(), String> {
+        self.propagation.wait_messagestore_loaded().await
     }
 
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API

@@ -44,6 +44,7 @@ Prefer `./scripts/clone-ratspeak-stack.sh` (or `./scripts/ensure-rsReticulum-pat
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ./scripts/apply-rsLXMF-propagation-sync-peering.sh
 ./scripts/apply-rsLXMF-propagation-node-policy-setters.sh
+./scripts/apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
 ```
 
 See [patches/README.md](patches/README.md) for overlay regen against floated `origin/main` (record the short SHA in the PR).

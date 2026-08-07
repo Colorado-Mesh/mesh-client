@@ -145,6 +145,9 @@ pub struct StackHandle {
     #[cfg(feature = "rns-stack")]
     /// Set once after HTTP is already listening (TCP usable before BLE finishes).
     live: std::sync::OnceLock<Arc<live::LiveBridge>>,
+    /// Serializes attach_live so concurrent callers cannot spawn duplicate live bridges.
+    #[cfg(feature = "rns-stack")]
+    attach_live_lock: Mutex<()>,
     /// Test-only: next preference/pin apply returns this error after persist (exercises rollback).
     #[cfg(test)]
     test_path_medium_apply_error: Mutex<Option<String>>,
@@ -246,6 +249,7 @@ impl StackHandle {
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
             live: std::sync::OnceLock::new(),
+            attach_live_lock: Mutex::new(()),
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
         };
@@ -272,6 +276,7 @@ impl StackHandle {
     /// Finish live RNS/LXMF bring-up after the HTTP server is already accepting connections.
     #[cfg(feature = "rns-stack")]
     pub async fn attach_live(self: &Arc<Self>) {
+        let _attach_guard = self.attach_live_lock.lock().await;
         if self.live.get().is_some() {
             return;
         }
@@ -318,8 +323,9 @@ impl StackHandle {
                     // sync against an empty store while the background scan runs.
                     {
                         let live = self.live.get().expect("live just set").clone();
+                        let inner = self.inner.clone();
                         let local_prop_enabled = {
-                            let state = self.inner.read().await;
+                            let state = inner.read().await;
                             state
                                 .propagation
                                 .iter()
@@ -329,8 +335,25 @@ impl StackHandle {
                         };
                         if local_prop_enabled {
                             tokio::spawn(async move {
-                                live.wait_propagation_messagestore_loaded().await;
-                                live.set_local_propagation_serving(true).await;
+                                if let Err(e) = live.wait_propagation_messagestore_loaded().await {
+                                    tracing::warn!(
+                                        error = %e,
+                                        "skipping local-prop serve restore: messagestore load failed"
+                                    );
+                                    return;
+                                }
+                                let still_enabled = {
+                                    let state = inner.read().await;
+                                    state
+                                        .propagation
+                                        .iter()
+                                        .find(|p| p.id == "local-prop")
+                                        .map(|p| p.enabled)
+                                        .unwrap_or(false)
+                                };
+                                if still_enabled {
+                                    live.set_local_propagation_serving(true).await;
+                                }
                             });
                         }
                     }

@@ -271,6 +271,13 @@ describe('useReticulumRuntime chat LXMF send timeout wiring', () => {
     expect(SOURCE).toContain("i18n.t('chatPanel.reticulumSendTimeout')");
     expect(SOURCE).toMatch(/withReticulumIpcSendDeadline\(\s*[\s\S]*?proxyPost\(/);
   });
+
+  it('bounds LXMF reaction sends with the same IPC deadline', () => {
+    expect(SOURCE).toMatch(
+      /withReticulumIpcSendDeadline\(\s*[\s\S]*?proxyPost\('\/api\/v1\/lxmf\/reaction'/,
+    );
+    expect(SOURCE).toMatch(/res\?\.ok === false/);
+  });
 });
 
 describe('useReticulumRuntime outbound delivery persistence', () => {

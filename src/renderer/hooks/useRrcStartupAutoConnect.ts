@@ -17,11 +17,12 @@ import {
   RRC_NICKNAME_STORAGE_KEY,
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
+import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 /** While hubs still need linking, poll quickly so we do not miss the HTTP-ready window by 4s. */
-const RRC_AUTO_CONNECT_FAST_MS = 500;
+export const RRC_AUTO_CONNECT_FAST_MS = MS_PER_SECOND / 2;
 /** Steady poll once hubs are linked (or none configured). */
-const RRC_AUTO_CONNECT_STEADY_MS = 4_000;
+export const RRC_AUTO_CONNECT_STEADY_MS = 4 * MS_PER_SECOND;
 
 export { RETICULUM_CONFIGURED_EVENT };
 let hubAutoConnectBusy = false;
@@ -134,7 +135,9 @@ export function useRrcStartupAutoConnect(): void {
     const tick = async (): Promise<void> => {
       if (cancelled) return;
       try {
-        if (!cancelled && (await isReticulumSidecarRunning())) {
+        const running = await isReticulumSidecarRunning();
+        if (cancelled) return;
+        if (running) {
           await runRrcHubAutoConnectBatch(readRrcNickname());
         }
       } catch (e: unknown) {

@@ -182,6 +182,11 @@ export class ReticulumSidecarManager extends EventEmitter {
    * spawning after cargo/BLE yield. Lets Cancel/Disconnect return without waiting on cargo.
    */
   private startAbortRequested = false;
+  /**
+   * Bumped on stop and each new start so a late Noble yield from an aborted attempt
+   * cannot observe a cleared startAbortRequested from a newer start.
+   */
+  private startAttemptGeneration = 0;
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
@@ -276,6 +281,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       return this.startPromise;
     }
     this.startAbortRequested = false;
+    this.startAttemptGeneration += 1;
     this.startPromise = this.startOnce(opts).finally(() => {
       this.startPromise = null;
     });
@@ -448,12 +454,13 @@ export class ReticulumSidecarManager extends EventEmitter {
 
   /**
    * Yield CoreBluetooth/Noble to the sidecar for BLE RNode (macOS/Windows).
-   * Runs beside spawn/health so stack TCP features are not gated on BLE.
+   * Runs after health so stack TCP features are not gated on BLE.
    */
   private async yieldNobleForEnabledBleRnode(): Promise<void> {
+    const attemptGeneration = this.startAttemptGeneration;
     if (this.startAbortRequested) return;
     await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
-    if (this.startAbortRequested) {
+    if (this.startAbortRequested || attemptGeneration !== this.startAttemptGeneration) {
       if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
         bleCoexistenceCoordinator.releaseScan('reticulum');
       }
@@ -494,6 +501,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   async stop(): Promise<void> {
     // Abort in-flight start at checkpoints (cargo/BLE) so Cancel does not wait on build.
     this.startAbortRequested = true;
+    this.startAttemptGeneration += 1;
     if (this.startPromise && !this.proc) {
       // Pre-spawn: do not await cargo — startOnce throws at next checkpoint.
       void this.startPromise.catch(() => {

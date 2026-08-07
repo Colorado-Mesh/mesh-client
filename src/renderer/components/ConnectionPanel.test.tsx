@@ -2267,7 +2267,7 @@ describe('ConnectionPanel Reticulum', () => {
     // handleCancelConnection is shared by Cancel + Disconnect&Quit-while-connecting.
     expect(CONNECTION_PANEL_SOURCE).toMatch(/void onDisconnect\(\)\.catch\(\(e: unknown\) => \{/);
     expect(CONNECTION_PANEL_SOURCE).toMatch(
-      /else if \(protocol === 'meshtastic' \|\| protocol === 'meshcore'\) \{\s*void window\.electronAPI\.stopNobleBleScanning\(protocol\)/,
+      /else if \(capabilities\.hasNobleBleScanning\) \{\s*void window\.electronAPI\.stopNobleBleScanning\(protocol\)/,
     );
 
     const lastConnKey = 'mesh-client:lastConnection:reticulum';

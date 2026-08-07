@@ -239,14 +239,20 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
           ? activeRoom
           : undefined;
-      await rrcSendBounded({
-        hub_dest_hash: hubDestHash,
-        room: hubRoom,
-        body,
-        type: 'msg',
-      });
+      try {
+        await rrcSendBounded({
+          hub_dest_hash: hubDestHash,
+          room: hubRoom,
+          body,
+          type: 'msg',
+        });
+      } catch (e: unknown) {
+        const msg = errLikeToLogString(e);
+        console.debug('[RrcPanel] sendHubCommand failed ' + msg);
+        setError(formatRrcErrorMessage(msg, t), hubDestHash);
+      }
     },
-    [activeRoom, hubDestHash, status],
+    [activeRoom, hubDestHash, setError, status, t],
   );
 
   useEffect(() => {

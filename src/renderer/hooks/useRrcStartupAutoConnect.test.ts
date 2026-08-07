@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
+import * as sidecarReads from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
   resetRrcHubDisconnectSuppressForTests,
   setRrcHubDisconnectSuppressed,
@@ -10,9 +10,19 @@ import {
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
-import { runRrcHubAutoConnectBatch } from './useRrcStartupAutoConnect';
+import {
+  RRC_AUTO_CONNECT_FAST_MS,
+  RRC_AUTO_CONNECT_STEADY_MS,
+  runRrcHubAutoConnectBatch,
+  useRrcStartupAutoConnect,
+} from './useRrcStartupAutoConnect';
 
-const HOOK_SOURCE = readFileSync(join(__dirname, 'useRrcStartupAutoConnect.ts'), 'utf-8');
+async function flushMicrotasks(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
 
 describe('runRrcHubAutoConnectBatch', () => {
   beforeEach(() => {
@@ -51,12 +61,11 @@ describe('runRrcHubAutoConnectBatch', () => {
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
-  it('skips already-linked hubs via pendingRrcAutoJoinHubs', async () => {
-    const linked = 'aabbccddeeff00112233445566778899';
-    const pending = '112233445566778899aabbccddeeff00';
+  it('skips hubs that are already linked', async () => {
+    const linked = '11112222333344445555666677778888';
+    const pending = 'aabbccddeeff00112233445566778899';
     saveRrcHubAutoJoin([linked, pending]);
-    useRrcSessionStore.getState().applyStatus('active', linked, 'Linked Hub');
-
+    useRrcSessionStore.getState().applyStatus('active', linked, null);
     await runRrcHubAutoConnectBatch('tester');
 
     expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
@@ -67,19 +76,93 @@ describe('runRrcHubAutoConnectBatch', () => {
   });
 });
 
-describe('useRrcStartupAutoConnect poll timing (source contract)', () => {
-  it('uses 500ms fast / 4000ms steady poll and RETICULUM_CONFIGURED_EVENT', () => {
-    expect(HOOK_SOURCE).toMatch(/RRC_AUTO_CONNECT_FAST_MS\s*=\s*500/);
-    expect(HOOK_SOURCE).toMatch(/RRC_AUTO_CONNECT_STEADY_MS\s*=\s*4_000/);
-    expect(HOOK_SOURCE).toContain('RETICULUM_CONFIGURED_EVENT');
-    expect(HOOK_SOURCE).toMatch(
-      /schedule\(pending\.length > 0 \? RRC_AUTO_CONNECT_FAST_MS : RRC_AUTO_CONNECT_STEADY_MS\)/,
+describe('useRrcStartupAutoConnect poll timing', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetRrcHubDisconnectSuppressForTests();
+    useRrcSessionStore.setState({
+      sessionsByHub: new Map(),
+      focusedHubHash: null,
+    });
+    vi.useFakeTimers();
+    vi.spyOn(sidecarReads, 'isReticulumSidecarRunning').mockResolvedValue(true);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+  });
+
+  it('derives fast/steady intervals from MS_PER_SECOND', () => {
+    expect(RRC_AUTO_CONNECT_FAST_MS).toBe(500);
+    expect(RRC_AUTO_CONNECT_STEADY_MS).toBe(4000);
+  });
+
+  it('polls at the fast interval while hubs are pending', async () => {
+    // Keep hubs pending: failed connect rolls status back so linked-check stays false.
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({
+      ok: false,
+      error: 'rrc connect requires live rns-stack sidecar',
+    });
+    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+    renderHook(() => {
+      useRrcStartupAutoConnect();
+    });
+    await flushMicrotasks();
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(RRC_AUTO_CONNECT_FAST_MS);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalled();
+  });
+
+  it('wakes immediately on RETICULUM_CONFIGURED_EVENT', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({
+      ok: false,
+      error: 'rrc connect requires live rns-stack sidecar',
+    });
+    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+    renderHook(() => {
+      useRrcStartupAutoConnect();
+    });
+    await flushMicrotasks();
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent(RETICULUM_CONFIGURED_EVENT));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalled();
+  });
+
+  it('does not start a batch when unmounted while status await is pending', async () => {
+    let resolveStatus!: (v: boolean) => void;
+    vi.spyOn(sidecarReads, 'isReticulumSidecarRunning').mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveStatus = resolve;
+        }),
     );
-    expect(HOOK_SOURCE).toMatch(
-      /window\.addEventListener\(RETICULUM_CONFIGURED_EVENT, onConfigured\)/,
-    );
-    expect(HOOK_SOURCE).toMatch(
-      /window\.removeEventListener\(RETICULUM_CONFIGURED_EVENT, onConfigured\)/,
-    );
+    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+    const { unmount } = renderHook(() => {
+      useRrcStartupAutoConnect();
+    });
+    await flushMicrotasks();
+    expect(sidecarReads.isReticulumSidecarRunning).toHaveBeenCalled();
+    unmount();
+    await act(async () => {
+      resolveStatus(true);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 });

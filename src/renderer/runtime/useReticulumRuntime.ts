@@ -1702,13 +1702,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void (async () => {
           try {
             await refreshContactsFromSidecar();
+            if (resumeGenerationRef.current !== generation) return;
             await refreshLocalInterfacesFromSidecar();
+            if (resumeGenerationRef.current !== generation) return;
             await syncDiagnosticsFromSidecar();
+            if (resumeGenerationRef.current !== generation) return;
             await hydrateRawPackets();
+            if (resumeGenerationRef.current !== generation) return;
             if (identityId) {
               await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+              if (resumeGenerationRef.current !== generation) return;
               markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
               await loadMessagesFromDb('merge');
+              if (resumeGenerationRef.current !== generation) return;
             }
             await catchUpRecentInboundLxmf({ reason: 'connect' });
           } catch (e: unknown) {
@@ -1748,6 +1754,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const disconnect = useCallback(async () => {
     suppressReconnectRef.current = true;
+    // Invalidate in-flight connect hydrate / configured apply across stop paths.
+    resumeGenerationRef.current += 1;
     // Same latch as Stop button — covers any disconnect path (panel, protocol facade, etc.).
     setReticulumManualStackStopSuppress(true);
     if (peerRefreshDebounceRef.current) {
@@ -2159,11 +2167,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
           ? resolveReticulumDestinationHash(targetMsg.to)
           : targetMsg.reticulumSenderHash;
       if (!peerHash) return;
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/reaction', {
-        destination_hash: peerHash,
-        target_hash: targetMsg.reticulumMessageHash,
-        emoji: glyph,
-      })) as { ok?: boolean; message?: ReticulumLxmfPayload };
+      const res = (await withReticulumIpcSendDeadline(
+        window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/reaction', {
+          destination_hash: peerHash,
+          target_hash: targetMsg.reticulumMessageHash,
+          emoji: glyph,
+        }),
+      )) as { ok?: boolean; message?: ReticulumLxmfPayload; error?: string };
+      if (res?.ok === false) {
+        throw new Error(res.error ?? 'LXMF reaction failed');
+      }
       if (res?.message) {
         const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
         if (payload) ingestLxmfPayload(payload);

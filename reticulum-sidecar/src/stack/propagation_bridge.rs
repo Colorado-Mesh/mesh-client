@@ -25,8 +25,8 @@ pub struct PropagationBridge {
     local_node: Arc<Mutex<PropagationNode>>,
     sync_task: Mutex<PropagationSyncTask>,
     local_serving: AtomicBool,
-    /// Set when background `load_messagestore_from_disk` finishes (ok or err).
-    messagestore_loaded: AtomicBool,
+    /// Terminal result of background `load_messagestore_from_disk` (`None` while in flight).
+    messagestore_result: Mutex<Option<Result<(), String>>>,
     messagestore_notify: Notify,
     /// Serializes sync-run generation changes with emitter cancel / pin / event side effects.
     sync_lifecycle: Mutex<()>,
@@ -76,7 +76,7 @@ impl PropagationBridge {
             local_node,
             sync_task: Mutex::new(sync_task),
             local_serving: AtomicBool::new(false),
-            messagestore_loaded: AtomicBool::new(false),
+            messagestore_result: Mutex::new(None),
             messagestore_notify: Notify::new(),
             sync_lifecycle: Mutex::new(()),
             last_offer_error: Mutex::new(None),
@@ -104,35 +104,47 @@ impl PropagationBridge {
                 Ok::<(), String>(())
             })
             .await;
-            match result {
+            let terminal = match result {
                 Ok(Ok(())) => {
                     tracing::info!(
                         elapsed_ms = load_started.elapsed().as_millis() as u64,
                         "propagation messagestore loaded in background"
                     );
+                    Ok(())
                 }
                 Ok(Err(e)) => {
                     tracing::warn!(error = %e, "background propagation messagestore load failed");
+                    Err(e)
                 }
                 Err(e) => {
+                    let msg = format!("background propagation messagestore load join failed: {e}");
                     tracing::warn!(error = %e, "background propagation messagestore load join failed");
+                    Err(msg)
                 }
+            };
+            if let Ok(mut slot) = this.messagestore_result.lock() {
+                *slot = Some(terminal);
             }
-            this.messagestore_loaded.store(true, Ordering::SeqCst);
             this.messagestore_notify.notify_waiters();
         });
     }
 
-    /// Wait until background messagestore load has finished (success or failure).
-    pub async fn wait_messagestore_loaded(&self) {
-        if self.messagestore_loaded.load(Ordering::SeqCst) {
-            return;
+    /// Wait until background messagestore load has finished; returns the stored terminal result.
+    pub async fn wait_messagestore_loaded(&self) -> Result<(), String> {
+        loop {
+            if let Ok(guard) = self.messagestore_result.lock() {
+                if let Some(result) = guard.as_ref() {
+                    return result.clone();
+                }
+            }
+            let notified = self.messagestore_notify.notified();
+            if let Ok(guard) = self.messagestore_result.lock() {
+                if let Some(result) = guard.as_ref() {
+                    return result.clone();
+                }
+            }
+            notified.await;
         }
-        let notified = self.messagestore_notify.notified();
-        if self.messagestore_loaded.load(Ordering::SeqCst) {
-            return;
-        }
-        notified.await;
     }
 
     pub fn peering_key_job_inflight(&self, peer_hash: &[u8; 16]) -> bool {
