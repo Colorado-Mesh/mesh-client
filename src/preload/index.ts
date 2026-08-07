@@ -1014,6 +1014,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('hostLink:probeHttpRtt', host, tls),
     probeTcpRtt: (host: string, port: number): Promise<number | null> =>
       ipcRenderer.invoke('hostLink:probeTcpRtt', host, port),
+    getSessionMeter: (
+      protocol: 'meshtastic' | 'meshcore',
+    ): Promise<{ rttMs: number | null } | null> =>
+      ipcRenderer.invoke('hostLink:getSessionMeter', protocol),
   },
 
   // ─── Meshtastic TCP bridge ────────────────────────────────────────

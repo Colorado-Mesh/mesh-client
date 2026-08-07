@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import {
   type ConnectionLinkMeterKind,
   HOST_LINK_QUALITY_POLL_MS,
+  isLiveTcpSession,
   probeHttpLinkRttMs,
-  probeTcpLinkRttMs,
+  probeSessionMeter,
   rttToSignalLevel,
   type SignalBarLevel,
 } from '../lib/hostLinkQuality';
@@ -36,7 +37,8 @@ function isConnectedStatus(status: ConnectionStatus): boolean {
 
 /**
  * Host↔radio link meter state for Meshtastic / MeshCore Connection panels.
- * BLE (darwin/win32): Noble link RSSI. BLE (linux): unavailable. HTTP/TCP: RTT probe.
+ * BLE (darwin/win32): Noble link RSSI. BLE (linux): unavailable.
+ * Live TCP sessions: passive session meter. Meshtastic HTTP: `/json/report` RTT.
  */
 export function useHostLinkMeter(opts: {
   protocol: MeshProtocol;
@@ -54,6 +56,9 @@ export function useHostLinkMeter(opts: {
     protocol !== 'reticulum' &&
     isConnectedStatus(status) &&
     (connectionType === 'ble' || connectionType === 'http' || connectionType === 'tcp');
+
+  const liveTcp = isLiveTcpSession(protocol, connectionType);
+  const meshtasticHttp = protocol === 'meshtastic' && connectionType === 'http';
 
   // BLE RSSI via Noble (macOS / Windows)
   useEffect(() => {
@@ -76,14 +81,14 @@ export function useHostLinkMeter(opts: {
     };
   }, [active, connectionType, platform, protocol]);
 
-  // HTTP / TCP RTT probe
+  // HTTP probe or live-TCP session meter
   useEffect(() => {
-    if (!active || (connectionType !== 'http' && connectionType !== 'tcp')) {
+    if (!active || (!liveTcp && !meshtasticHttp)) {
       setRttMs(null);
       return;
     }
-    const address = hostAddress?.trim();
-    if (!address) {
+    const httpAddress = hostAddress?.trim() ?? '';
+    if (meshtasticHttp && !httpAddress) {
       setRttMs(null);
       return;
     }
@@ -96,17 +101,16 @@ export function useHostLinkMeter(opts: {
       probeGeneration += 1;
       const generation = probeGeneration;
       let next: number | null = null;
-      if (protocol === 'meshtastic' && connectionType === 'http') {
-        next = await probeHttpLinkRttMs(address);
-      } else if (protocol === 'meshtastic' && connectionType === 'tcp') {
-        next = await probeTcpLinkRttMs(address, 'meshtastic');
-      } else if (protocol === 'meshcore' && connectionType === 'http') {
-        // MeshCore "http" transport is TCP/IP host:port
-        next = await probeTcpLinkRttMs(address, 'meshcore');
+      if (liveTcp && (protocol === 'meshtastic' || protocol === 'meshcore')) {
+        next = await probeSessionMeter(protocol);
+      } else if (meshtasticHttp) {
+        next = await probeHttpLinkRttMs(httpAddress);
       }
       if (!cancelled && generation === probeGeneration) setRttMs(next);
     };
 
+    // Clear immediately on transport switch so a prior HTTP RTT cannot flash as TCP quality.
+    setRttMs(null);
     void run();
     timer = setInterval(() => {
       void run();
@@ -117,7 +121,7 @@ export function useHostLinkMeter(opts: {
       if (timer) clearInterval(timer);
       setRttMs(null);
     };
-  }, [active, connectionType, hostAddress, protocol]);
+  }, [active, hostAddress, liveTcp, meshtasticHttp, protocol]);
 
   if (!active || !connectionType) return IDLE;
 

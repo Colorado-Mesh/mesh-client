@@ -281,6 +281,7 @@ export function createElectronAPIMock(): ElectronAPI {
     hostLink: {
       probeHttpRtt: vi.fn().mockResolvedValue(null),
       probeTcpRtt: vi.fn().mockResolvedValue(null),
+      getSessionMeter: vi.fn().mockResolvedValue(null),
     },
     meshtastic: {
       tcp: {

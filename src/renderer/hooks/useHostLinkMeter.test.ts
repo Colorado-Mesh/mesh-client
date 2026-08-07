@@ -11,6 +11,7 @@ describe('useHostLinkMeter', () => {
     vi.mocked(window.electronAPI.onNobleBleLinkRssi).mockReturnValue(() => {});
     vi.mocked(window.electronAPI.hostLink.probeHttpRtt).mockResolvedValue(40);
     vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(80);
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 80 });
   });
 
   afterEach(() => {
@@ -74,42 +75,99 @@ describe('useHostLinkMeter', () => {
         expect(result.current.level).toBe(4);
       });
       expect(window.electronAPI.hostLink.probeHttpRtt).toHaveBeenCalled();
+      expect(window.electronAPI.hostLink.getSessionMeter).not.toHaveBeenCalled();
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
     },
   );
 
-  it('returns ip-rtt for Meshtastic TCP via probeTcpRtt', async () => {
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'returns ip-rtt for Meshtastic TCP via getSessionMeter on %s',
+    async (platform) => {
+      const { result } = renderHook(() =>
+        useHostLinkMeter({
+          protocol: 'meshtastic',
+          connectionType: 'tcp',
+          status: 'configured',
+          hostAddress: '10.0.0.5:4403',
+          platform,
+        }),
+      );
+      expect(result.current.kind).toBe('ip-rtt');
+      await waitFor(() => {
+        expect(result.current.rttMs).toBe(80);
+        expect(result.current.level).toBe(3);
+      });
+      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshtastic');
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'returns ip-rtt for MeshCore TCP/IP via getSessionMeter on %s',
+    async (platform) => {
+      const { result } = renderHook(() =>
+        useHostLinkMeter({
+          protocol: 'meshcore',
+          connectionType: 'http',
+          status: 'configured',
+          hostAddress: '192.168.1.20:5000',
+          platform,
+        }),
+      );
+      expect(result.current.kind).toBe('ip-rtt');
+      await waitFor(() => {
+        expect(result.current.rttMs).toBe(80);
+      });
+      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshcore');
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps ip-rtt kind with null RTT when session meter has no sample', async () => {
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue(null);
     const { result } = renderHook(() =>
       useHostLinkMeter({
         protocol: 'meshtastic',
         connectionType: 'tcp',
         status: 'configured',
         hostAddress: '10.0.0.5:4403',
-        platform: 'darwin',
-      }),
-    );
-    expect(result.current.kind).toBe('ip-rtt');
-    await waitFor(() => {
-      expect(result.current.rttMs).toBe(80);
-      expect(result.current.level).toBe(3);
-    });
-    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalledWith('10.0.0.5', 4403);
-  });
-
-  it('returns ip-rtt for MeshCore TCP/IP (http transport) via probeTcpRtt', async () => {
-    const { result } = renderHook(() =>
-      useHostLinkMeter({
-        protocol: 'meshcore',
-        connectionType: 'http',
-        status: 'configured',
-        hostAddress: '192.168.1.20:5000',
         platform: 'linux',
       }),
     );
     expect(result.current.kind).toBe('ip-rtt');
     await waitFor(() => {
-      expect(result.current.rttMs).toBe(80);
+      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalled();
     });
-    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalledWith('192.168.1.20', 5000);
+    expect(result.current.rttMs).toBeNull();
+    expect(result.current.level).toBeNull();
+    expect(result.current.kind).toBe('ip-rtt');
+  });
+
+  it('clears stale HTTP RTT when switching Meshtastic HTTP→TCP', async () => {
+    const { result, rerender } = renderHook(
+      (props: { connectionType: 'http' | 'tcp' }) =>
+        useHostLinkMeter({
+          protocol: 'meshtastic',
+          connectionType: props.connectionType,
+          status: 'configured',
+          hostAddress: '10.0.0.5',
+          platform: 'darwin',
+        }),
+      { initialProps: { connectionType: 'http' as 'http' | 'tcp' } },
+    );
+    await waitFor(() => {
+      expect(result.current.rttMs).toBe(40);
+    });
+
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 120 });
+    rerender({ connectionType: 'tcp' });
+    // Must not keep the prior HTTP RTT as TCP quality after the switch.
+    await waitFor(() => {
+      expect(result.current.rttMs).not.toBe(40);
+      expect(result.current.rttMs).toBe(120);
+    });
+    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+    expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshtastic');
   });
 
   it.each(['darwin', 'win32'] as const)('returns ble-rssi on %s', (platform) => {
@@ -267,5 +325,83 @@ describe('useHostLinkMeter', () => {
       await Promise.resolve();
     });
     expect(result.current.rttMs).toBe(25);
+  });
+
+  it('ignores stale session-meter results when a newer poll finishes first', async () => {
+    vi.useFakeTimers();
+    let resolveSlow: ((value: { rttMs: number | null } | null) => void) | null = null;
+    let resolveFast: ((value: { rttMs: number | null } | null) => void) | null = null;
+    vi.mocked(window.electronAPI.hostLink.getSessionMeter)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSlow = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFast = resolve;
+          }),
+      );
+
+    const { result } = renderHook(() =>
+      useHostLinkMeter({
+        protocol: 'meshcore',
+        connectionType: 'http',
+        status: 'configured',
+        hostAddress: '192.168.1.20:5000',
+        platform: 'darwin',
+      }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(resolveSlow).not.toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    expect(resolveFast).not.toBeNull();
+
+    await act(async () => {
+      resolveFast?.({ rttMs: 30 });
+      await Promise.resolve();
+    });
+    expect(result.current.rttMs).toBe(30);
+
+    await act(async () => {
+      resolveSlow?.({ rttMs: 800 });
+      await Promise.resolve();
+    });
+    expect(result.current.rttMs).toBe(30);
+  });
+
+  it('stops polling getSessionMeter after disconnect', async () => {
+    const { rerender } = renderHook(
+      (props: { status: 'configured' | 'disconnected' }) =>
+        useHostLinkMeter({
+          protocol: 'meshtastic',
+          connectionType: 'tcp',
+          status: props.status,
+          hostAddress: '10.0.0.5:4403',
+          platform: 'darwin',
+        }),
+      { initialProps: { status: 'configured' as 'configured' | 'disconnected' } },
+    );
+    await waitFor(() => {
+      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalled();
+    });
+    const callsAfterConnect = vi.mocked(window.electronAPI.hostLink.getSessionMeter).mock.calls
+      .length;
+
+    rerender({ status: 'disconnected' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(vi.mocked(window.electronAPI.hostLink.getSessionMeter).mock.calls.length).toBe(
+      callsAfterConnect,
+    );
   });
 });

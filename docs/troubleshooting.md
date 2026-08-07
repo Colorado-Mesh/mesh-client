@@ -605,6 +605,14 @@ IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi
 
 **Address examples:** `192.168.1.10:4403`, `meshtastic.local:4403`, `[fd00::1]:4403`.
 
+### Connection panel Link quality (TCP) shows "—" or unexpected latency
+
+**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP SoftAP**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). Reticulum hub/RMAP rows still use a short-lived TCP connect probe (different risk profile).
+
+**Why not a second TCP connect?** Probing the same `host:port` as the live session every few seconds can RST ESP32/lwIP-class devices (see PR discussion around competing connections).
+
+**Fix:** Exercise the link (chat, NodeDB traffic, companion RPCs). If bars stay empty while the session is healthy, that is expected during idle gaps; reconnect if the session itself drops.
+
 ### Meshtastic HTTP fails immediately with "Invalid host format"
 
 **Cause:** Builds before v5.21.x validated the hostname incorrectly when the address included a port (`192.168.1.10:443`), rejecting every HTTP connect.

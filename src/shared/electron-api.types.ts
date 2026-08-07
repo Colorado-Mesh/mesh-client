@@ -1009,11 +1009,15 @@ export interface ElectronAPI {
 
   /**
    * Host↔radio link-quality probes (Connection panel meter).
-   * Returns RTT in ms, or null when the probe fails / times out.
+   * HTTP/TCP connect probes return RTT in ms, or null when the probe fails / times out.
+   * Live TCP sessions use getSessionMeter (passive write→data EWMA) — never a second connect.
    */
   hostLink: {
     probeHttpRtt: (host: string, tls: boolean) => Promise<number | null>;
     probeTcpRtt: (host: string, port: number) => Promise<number | null>;
+    getSessionMeter: (
+      protocol: 'meshtastic' | 'meshcore',
+    ) => Promise<{ rttMs: number | null } | null>;
   };
 
   // ─── Meshtastic TCP bridge ────────────────────────────────────────────────────

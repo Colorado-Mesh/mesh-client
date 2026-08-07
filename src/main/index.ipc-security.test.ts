@@ -116,11 +116,11 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
   it('destroys prior socket before opening a new meshtastic tcp connection', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1400);
     // Null the active ref before destroy so the superseded close does not emit
     // meshtastic:tcp-disconnected against a healthy replacement (#792).
     expect(handlerBody).toMatch(
-      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*prev\.destroy\(\)/,
+      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*clearLiveSessionMeter\('meshtastic'\);\s*prev\.destroy\(\)/,
     );
   });
 
@@ -131,7 +131,7 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
     expect(closeIdx).toBeGreaterThan(handlerIdx);
-    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 600);
+    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 900);
     expect(closeBody).toContain('if (meshtasticTcpSocket === socket)');
     expect(closeBody).toContain("mainWindow?.webContents.send('meshtastic:tcp-disconnected')");
     // Emit must be inside the active-socket guard (not before it).
@@ -146,9 +146,9 @@ describe('meshtastic:tcp-write byte validation (source contract)', () => {
   it('nulls meshtasticTcpSocket before destroy on disconnect (PR #792)', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-disconnect'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
     expect(handlerBody).toMatch(
-      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*prev\.destroy\(\)/,
+      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*clearLiveSessionMeter\('meshtastic'\);\s*prev\.destroy\(\)/,
     );
   });
 
@@ -393,16 +393,16 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
   it('nulls meshcoreTcpSocket before destroy on connect-replace and disconnect (PR #792)', () => {
     const connectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
     expect(connectIdx).toBeGreaterThan(-1);
-    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1200);
+    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1400);
     expect(connectBody).toMatch(
-      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*prev\.destroy\(\)/,
+      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*clearLiveSessionMeter\('meshcore'\);\s*prev\.destroy\(\)/,
     );
 
     const disconnectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-disconnect'");
     expect(disconnectIdx).toBeGreaterThan(-1);
-    const disconnectBody = INDEX_SOURCE.slice(disconnectIdx, disconnectIdx + 400);
+    const disconnectBody = INDEX_SOURCE.slice(disconnectIdx, disconnectIdx + 500);
     expect(disconnectBody).toMatch(
-      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*prev\.destroy\(\)/,
+      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*clearLiveSessionMeter\('meshcore'\);\s*prev\.destroy\(\)/,
     );
   });
 
@@ -430,6 +430,19 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
     expect(errorBody).not.toMatch(/meshcoreTcpSocket\s*=\s*null/);
     expect(errorBody).toContain('Do not null meshcoreTcpSocket');
+  });
+});
+
+describe('hostLink:getSessionMeter validation (source contract)', () => {
+  it('rejects protocols other than meshtastic/meshcore', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('hostLink:getSessionMeter'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain("assertIpcSender(event, 'hostLink:getSessionMeter')");
+    expect(handlerBody).toContain("protocol !== 'meshtastic'");
+    expect(handlerBody).toContain("protocol !== 'meshcore'");
+    expect(handlerBody).toContain("throw new Error('Invalid protocol')");
+    expect(handlerBody).toContain('snapshotLiveSessionMeter(');
   });
 });
 
@@ -568,6 +581,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'meshtastic:tcp-connect',
     'meshtastic:tcp-write',
     'meshtastic:tcp-disconnect',
+    'hostLink:getSessionMeter',
     'noble-ble-connect',
     'noble-ble-disconnect',
     'notify:message',
@@ -637,7 +651,7 @@ describe('privileged IPC sender validation (source contract)', () => {
   it('meshtastic tcp-connect uses connect timeout', () => {
     expect(INDEX_SOURCE).toContain('MESHTASTIC_TCP_CONNECT_TIMEOUT_MS');
     expect(INDEX_SOURCE).toMatch(
-      /meshtastic:tcp-connect[\s\S]{0,1200}meshtastic:tcp-connect: connection timeout/,
+      /meshtastic:tcp-connect[\s\S]{0,1800}meshtastic:tcp-connect: connection timeout/,
     );
   });
 
