@@ -6178,7 +6178,10 @@ ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
         }
         return;
       }
-      noteLiveSessionData('meshcore');
+      // Superseded sockets must not update the live session meter (#792 connect-replace).
+      if (meshcoreTcpSocket === socket) {
+        noteLiveSessionData('meshcore');
+      }
       mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
@@ -6243,7 +6246,10 @@ ipcMain.handle('meshcore:tcp-write', (event, bytes: number[]) => {
         console.error('[IPC] meshcore:tcp-write error:', sanitizeLogMessage(err.message));
         reject(err);
       } else {
-        noteLiveSessionWrite('meshcore');
+        // Ignore write completions from a superseded socket.
+        if (meshcoreTcpSocket === sock) {
+          noteLiveSessionWrite('meshcore');
+        }
         resolve();
       }
     });
@@ -6334,7 +6340,10 @@ ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => 
         }
         return;
       }
-      noteLiveSessionData('meshtastic');
+      // Superseded sockets must not update the live session meter (#792 connect-replace).
+      if (meshtasticTcpSocket === socket) {
+        noteLiveSessionData('meshtastic');
+      }
       mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
@@ -6388,7 +6397,10 @@ ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
         console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
         reject(err);
       } else {
-        noteLiveSessionWrite('meshtastic');
+        // Ignore write completions from a superseded socket.
+        if (meshtasticTcpSocket === sock) {
+          noteLiveSessionWrite('meshtastic');
+        }
         resolve();
       }
     });

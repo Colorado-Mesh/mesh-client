@@ -1,9 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 import type { NobleBleLinkRssiPayload } from '@/shared/electron-api.types';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import ConnectionPanel from './ConnectionPanel';
 
 describe('ConnectionPanel host link meter', () => {
@@ -116,57 +118,67 @@ describe('ConnectionPanel host link meter', () => {
     expect(screen.queryByText('Link quality')).not.toBeInTheDocument();
   });
 
-  it('shows Link quality for MeshCore TCP/IP on linux via session meter', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 88 });
-    render(
-      <ConnectionPanel
-        state={{
-          status: 'configured',
-          myNodeNum: 1,
-          connectionType: 'http',
-          firmwareVersion: '1.0.0',
-        }}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshcore"
-        suppressMountAutoConnect
-      />,
-    );
-    expect(screen.getByText('Link quality')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshcore');
-      expect(screen.getByText('88 ms')).toBeInTheDocument();
-    });
-    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
-  });
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'shows Link quality for MeshCore TCP/IP via session meter on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 88 });
+      const { container } = render(
+        <ConnectionPanel
+          state={{
+            status: 'configured',
+            myNodeNum: 1,
+            connectionType: 'http',
+            firmwareVersion: '1.0.0',
+          }}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+          suppressMountAutoConnect
+        />,
+      );
+      expect(screen.getByText('Link quality')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshcore');
+        expect(screen.getByText('88 ms')).toBeInTheDocument();
+      });
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
 
-  it('shows Link quality for Meshtastic TCP via session meter', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
-    vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 120 });
-    render(
-      <ConnectionPanel
-        state={{
-          status: 'configured',
-          myNodeNum: 1,
-          connectionType: 'tcp',
-          firmwareVersion: '2.5.3',
-        }}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-        suppressMountAutoConnect
-      />,
-    );
-    expect(screen.getByText('Link quality')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshtastic');
-      expect(screen.getByText('120 ms')).toBeInTheDocument();
-    });
-    expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
-  });
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'shows Link quality for Meshtastic TCP via session meter on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 120 });
+      const { container } = render(
+        <ConnectionPanel
+          state={{
+            status: 'configured',
+            myNodeNum: 1,
+            connectionType: 'tcp',
+            firmwareVersion: '2.5.3',
+          }}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+          suppressMountAutoConnect
+        />,
+      );
+      expect(screen.getByText('Link quality')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(window.electronAPI.hostLink.getSessionMeter).toHaveBeenCalledWith('meshtastic');
+        expect(screen.getByText('120 ms')).toBeInTheDocument();
+      });
+      expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
 });

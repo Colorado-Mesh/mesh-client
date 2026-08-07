@@ -401,6 +401,19 @@ describe('Host link quality IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshcore')");
     expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshtastic')");
     expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshcore')");
+    // Accounting must ignore superseded sockets (same active-ref guard as #792 disconnect IPC).
+    expect(INDEX_SOURCE).toMatch(
+      /if \(meshcoreTcpSocket === socket\) \{\s*noteLiveSessionData\('meshcore'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /if \(meshtasticTcpSocket === socket\) \{\s*noteLiveSessionData\('meshtastic'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /if \(meshcoreTcpSocket === sock\) \{\s*noteLiveSessionWrite\('meshcore'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /if \(meshtasticTcpSocket === sock\) \{\s*noteLiveSessionWrite\('meshtastic'\)/,
+    );
   });
 });
 
