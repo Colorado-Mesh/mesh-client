@@ -789,7 +789,7 @@ export function useMeshcoreRuntime() {
     const conn = connRef.current;
     if (!conn) return;
     // OpenHop: peer FIN left a dead bridge — stats RPCs only spam tcp-write errors.
-    if (isMeshcoreTcpOpenHopDeadAccepted() || meshcoreTcpBridgeDeadRef.current) {
+    if (meshcoreTcpBridgeDeadRef.current) {
       return;
     }
     let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
@@ -2700,7 +2700,7 @@ export function useMeshcoreRuntime() {
               });
               if (waitingMessagesDrainBusyRef.current) {
                 console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
+                  '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain busy)',
                 );
               } else {
                 // Give proactive MsgWaiting drain a head start so telemetry does not seize the

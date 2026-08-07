@@ -9,7 +9,11 @@ import type {
 } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import { resetMeshcoreWaitingMessagesDrainState } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '@/renderer/lib/protocols/Protocol';
-import { MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS } from '@/renderer/lib/timeConstants';
+import {
+  MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
+  MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+  MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+} from '@/renderer/lib/timeConstants';
 import type { ChatMessage, DeviceState, TelemetryPoint } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
@@ -399,8 +403,8 @@ describe('attachMeshcoreConnSideEffects', () => {
       const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
       await vi.advanceTimersByTimeAsync(
         connectionType === 'serial'
-          ? 15_000 // MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS
-          : 45_000,
+          ? MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS
+          : MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
       );
       await vi.runAllTimersAsync();
       await drainPromise;

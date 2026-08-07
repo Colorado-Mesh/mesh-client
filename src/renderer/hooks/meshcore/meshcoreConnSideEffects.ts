@@ -357,7 +357,7 @@ async function drainWaitingMessagesSilent(
     return;
   } catch (e: unknown) {
     if (isMeshcoreWaitingMessagesTransportDeadError(e)) {
-      // catch-no-log-ok transport dead — reconnect owns link; do not fallback or disconnect here
+      // Transport dead — reconnect owns link; do not fallback or disconnect here.
       logMeshcoreWaitingMessagesDrainError('silent bulk transport dead', e, false);
       return;
     }

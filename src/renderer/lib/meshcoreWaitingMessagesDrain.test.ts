@@ -256,6 +256,16 @@ describe('silent bulk error classifiers', () => {
     abandonMeshcoreSilentBulkAttempt(id);
     expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(false);
   });
+
+  it('ignores abandon of a stale attempt id so the newer attempt stays current', () => {
+    resetMeshcoreWaitingMessagesDrainState(0);
+    const staleId = beginMeshcoreSilentBulkAttempt();
+    const currentId = beginMeshcoreSilentBulkAttempt();
+    expect(isMeshcoreSilentBulkAttemptCurrent(staleId)).toBe(false);
+    expect(isMeshcoreSilentBulkAttemptCurrent(currentId)).toBe(true);
+    abandonMeshcoreSilentBulkAttempt(staleId);
+    expect(isMeshcoreSilentBulkAttemptCurrent(currentId)).toBe(true);
+  });
 });
 
 describe('shouldRunMeshcoreWaitingMessagesPeriodicPoll', () => {
