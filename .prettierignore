@@ -8,12 +8,16 @@ coverage
 # Dependencies
 node_modules
 
+# Repo-local Ratspeak overlay workspace (cloned upstream repos; gitignored)
+.rsstack
+
 # Logs & temp
 *.log
 tmp/
 
 # Files unsupported by prettier parser
 .npmrc
+.yamllint
 .editorconfig
 .gitattributes
 patches/

@@ -33,7 +33,7 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/..
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
         run: bash scripts/clone-ratspeak-stack.sh
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -41,11 +41,11 @@ jobs:
       - name: Install Linux BLE build deps
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
       - name: cargo fmt --check (rsNomad)
-        working-directory: ${{ github.workspace }}/../rsNomad
+        working-directory: ${{ github.workspace }}/.rsstack/rsNomad
         # Format only workspace members — `--all` also walks path deps into rsReticulum.
         run: cargo fmt -p nomad-core -- --check
       - name: cargo clippy (rsNomad)
-        working-directory: ${{ github.workspace }}/../rsNomad
+        working-directory: ${{ github.workspace }}/.rsstack/rsNomad
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: cargo fmt --check
         working-directory: reticulum-sidecar
@@ -74,11 +74,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
-      # checkout@v6 only allows paths under GITHUB_WORKSPACE; Cargo expects Ratspeak siblings.
+      # Repo-local .rsstack workspace must stay under GITHUB_WORKSPACE so Cargo path deps resolve.
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/..
         run: bash scripts/clone-ratspeak-stack.sh
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -116,7 +114,7 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/..
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
         run: bash scripts/clone-ratspeak-stack.sh
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -147,7 +145,7 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/..
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
         run: bash scripts/clone-ratspeak-stack.sh
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -172,7 +170,7 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/..
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
         run: bash scripts/clone-ratspeak-stack.sh
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:

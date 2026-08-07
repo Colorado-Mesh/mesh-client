@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Zatím nejsou uloženy žádné barvy — pomocí tlačítka Uložit vytvořte kontrolní bod",
     "saveThemeButton": "Uložit",
     "restoreThemeButton": "Obnovit",
-    "reticulumPropagationHelp": "Nakonfigurujte vzdálené uzly šíření LXMF pro offline DM. Místní propagace je pouze schránka tohoto zařízení — nenahrazuje vzdálený uzel.",
     "use24HourTime": "24hodinový čas",
     "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému.",
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
     "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
     "themeResetFailed": "Obnovení barev se nezdařilo.",
-    "messageActionsBarBgVisible": "Zobrazit pozadí"
+    "messageActionsBarBgVisible": "Zobrazit pozadí",
+    "reticulumPropagationMoved": "Nastavení propagačního uzlu a režim synchronizace (Vypnuto / Automaticky / Ručně) se přesunuly do uzlů → propagace sítě."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -4245,18 +4245,16 @@
     "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
     "enableFailed": "Uzel šíření nelze povolit.",
     "disableFailed": "Uzel šíření nelze zakázat.",
-    "syncOutboundBusy": "Synchronizace propagace odložena — do tohoto uzlu se ukládá odchozí zpráva."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Synchronizace propagace odložena — do tohoto uzlu se ukládá odchozí zpráva.",
     "modeLabel": "Režim propagace",
     "modeAria": "Režim synchronizace propagace",
     "modeAuto": "Auto",
     "modeManual": "Manuální",
     "modeOff": "Vypnuto",
-    "sync": "Synchronizace",
-    "syncAria": "Synchronizovat propagační zprávy",
-    "cancelSync": "Zrušit",
-    "cancelSyncAria": "Zrušit synchronizaci propagace"
+    "modeHelpOff": "Vypnuto: žádné automatické preferované změny a žádná pravidelná synchronizace. Pro odchozí kaskádu můžete stále ručně nastavit preferovaný uzel.",
+    "modeHelpAuto": "Auto: nejlepší propagační uzel je vybrán automaticky v daném okamžiku (objevený nebo nakonfigurovaný, jinak váš místní uzel) a je spravován za vás. Nastavit preferované a Přidat a preferovat jsou zakázány.",
+    "modeHelpManual": "Příručka: připnete preferovaný uzel. Synchronizace používá tento uzel; další povolené dálkové ovladače zůstávají jako kaskádové zálohy.",
+    "autoManagedHint": "Automatický režim spravuje preferovaný uzel. Přepni na Manuál a připni si ho sám."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

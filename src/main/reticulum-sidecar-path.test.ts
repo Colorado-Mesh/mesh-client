@@ -101,14 +101,18 @@ describe('reticulum-sidecar-path', () => {
     );
   });
 
-  it('sidecarCargoBuildArgs uses rns-stack when Ratspeak siblings exist', () => {
+  it('sidecarCargoBuildArgs uses rns-stack when the repo-local .rsstack exists', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-siblings-'));
     const meshRoot = path.join(tmpDir, 'mesh-client');
     const projectDir = path.join(meshRoot, 'reticulum-sidecar');
-    fs.mkdirSync(path.join(tmpDir, 'rsReticulum', 'crates', 'rns-runtime'), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, 'rsLXMF', 'crates', 'lxmf-core'), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, 'rsReticulum/crates/rns-runtime/Cargo.toml'), '[package]\n');
-    fs.writeFileSync(path.join(tmpDir, 'rsLXMF/crates/lxmf-core/Cargo.toml'), '[package]\n');
+    const stackRoot = path.join(meshRoot, '.rsstack');
+    fs.mkdirSync(path.join(stackRoot, 'rsReticulum', 'crates', 'rns-runtime'), { recursive: true });
+    fs.mkdirSync(path.join(stackRoot, 'rsLXMF', 'crates', 'lxmf-core'), { recursive: true });
+    fs.writeFileSync(
+      path.join(stackRoot, 'rsReticulum/crates/rns-runtime/Cargo.toml'),
+      '[package]\n',
+    );
+    fs.writeFileSync(path.join(stackRoot, 'rsLXMF/crates/lxmf-core/Cargo.toml'), '[package]\n');
     fs.mkdirSync(projectDir, { recursive: true });
     fs.writeFileSync(path.join(projectDir, 'Cargo.toml'), '[package]\nname = "test"\n');
 

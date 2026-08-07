@@ -85,6 +85,7 @@ function runEnsureRepo({ remoteUrl, destDir, pinRef = '' }) {
 
 describe('clone-ratspeak-stack.sh float policy', () => {
   it('floats rsReticulum and rsLXMF to origin/main by default', () => {
+    expect(cloneScript).toContain('WORKSPACE_ROOT="${WORKSPACE_ROOT:-${REPO_ROOT}/.rsstack}"');
     expect(cloneScript).toContain("target_ref='origin/main'");
     expect(cloneScript).toContain('checkout --quiet --detach');
     expect(cloneScript).toMatch(/RS_RETICULUM_REF="\$\{RS_RETICULUM_REF:-\}"/);

@@ -1076,6 +1076,15 @@ impl LxmfOutboundDriver {
                     self.direct_path_failovers.remove(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
                     if let Some((pn_hash, transient_id)) = pending_deposit {
+                        // cascade_step disambiguates which island the deposit landed on:
+                        // local inbox, a cascade fallback remote, or the first/preferred remote.
+                        let cascade_step = if was_local {
+                            "local"
+                        } else if was_cascade {
+                            "cascade_remote"
+                        } else {
+                            "preferred_remote"
+                        };
                         tracing::info!(
                             target: "propagation-deposit",
                             message_hash = %hex::encode(hash),
@@ -1085,6 +1094,8 @@ impl LxmfOutboundDriver {
                                 .unwrap_or_default(),
                             pn_hash = %hex::encode(pn_hash),
                             stored_locally = was_local,
+                            cascade_step,
+                            delivery_method = method.unwrap_or("propagated"),
                             "outbound PN deposit Completes"
                         );
                     }

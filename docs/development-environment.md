@@ -119,9 +119,9 @@ pnpm run reticulum:sidecar:build
 
 This writes `reticulum-sidecar/target/debug/mesh-client-reticulum` (macOS/Linux) or `.exe` on Windows.
 
-**First-time / recover siblings:** from the mesh-client repo root, run `./scripts/clone-ratspeak-stack.sh`. That script clones (or updates) sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, `../rsLXST`, and `../lrgp-rs`, floats each to **`origin/main`** by default, and applies mesh-client overlays (fails if a patch will not apply). For bisect or a known-good pin, set `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` to a SHA or ref before running the clone script.
+**First-time / recover the stack workspace:** from the mesh-client repo root, run `./scripts/clone-ratspeak-stack.sh`. That script clones (or updates) the repo-local `.rsstack/` workspace checkouts `rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, and `lrgp-rs`, floats each to **`origin/main`** by default, and applies mesh-client overlays (fails if a patch will not apply). For bisect or a known-good pin, set `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` to a SHA or ref before running the clone script.
 
-When those siblings already exist, `pnpm run reticulum:sidecar:build` applies required overlays via `scripts/ensure-rsReticulum-patches.sh` before compiling with `rns-stack,rns-ble,rns-rnode-tcp`. See [`reticulum-sidecar/patches/README.md`](../reticulum-sidecar/patches/README.md) for overlay details.
+When those `.rsstack/` checkouts already exist, `pnpm run reticulum:sidecar:build` applies required overlays via `scripts/ensure-rsReticulum-patches.sh` before compiling with `rns-stack,rns-ble,rns-rnode-tcp`. See [`reticulum-sidecar/patches/README.md`](../reticulum-sidecar/patches/README.md) for overlay details.
 
 **First run in Electron dev:** **Reticulum** → **Connection** → **Start stack** will run `cargo build` automatically if that binary is missing (first compile can take a few minutes). Pre-build with the command above to avoid waiting on the first click.
 
@@ -472,7 +472,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `reticulum:sidecar:dev`         | Run sidecar standalone on `127.0.0.1:19437`                                                                                     |
 | `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                                                                             |
 | `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                                                                             |
-| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones Ratspeak siblings if needed)                                                                  |
+| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones the `.rsstack/` workspace if needed)                                                          |
 | `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                                                                                              |
 | `setup:actionlint`              | Install actionlint for GitHub workflow linting                                                                                  |
 | `setup:build-deps`              | Install native build dependencies                                                                                               |

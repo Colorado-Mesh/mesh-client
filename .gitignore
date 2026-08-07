@@ -27,6 +27,8 @@ coverage/
 .context-os
 .hermes/
 .rtk
+# Repo-local Ratspeak overlay workspace (clone-ratspeak-stack.sh target)
+.rsstack/
 .githooks/bin/
 flatpak/generated-sources.json
 # Written by scripts/write-flatpak-ci-build-info.mjs in Flatpak CI

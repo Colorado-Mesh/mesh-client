@@ -63,6 +63,7 @@ describe('ReticulumPropagationSection', () => {
 
   beforeEach(() => {
     addToast.mockReset();
+    localStorage.clear();
     useReticulumPropagationStore.setState({
       nodes: [
         {
@@ -278,6 +279,90 @@ describe('ReticulumPropagationSection', () => {
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('reticulumPropagation.offerUnsupported', 'error');
+    });
+  });
+
+  it('defaults to Off: no auto preferred write and Set preferred enabled', () => {
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+
+    const modeSelect = screen.getByLabelText<HTMLSelectElement>('reticulumPropagation.modeAria');
+    expect(modeSelect.value).toBe('off');
+    expect(setPreferredOnSidecar).not.toHaveBeenCalled();
+    for (const btn of screen.getAllByRole('button', {
+      name: 'reticulumPropagation.setPreferred',
+    })) {
+      expect(btn).not.toBeDisabled();
+    }
+    expect(
+      screen.getByRole('button', { name: 'reticulumPropagation.syncNowPreferredAria' }),
+    ).toBeDisabled();
+  });
+
+  it('Auto picks the best remote and gates manual preferred controls', async () => {
+    const user = userEvent.setup();
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
+
+    await waitFor(() => {
+      expect(setPreferredOnSidecar).toHaveBeenCalledWith('pn-aabb1111');
+    });
+    for (const btn of screen.getAllByRole('button', {
+      name: 'reticulumPropagation.setPreferred',
+    })) {
+      expect(btn).toBeDisabled();
+    }
+  });
+
+  it('Auto falls back to local when no remote is enabled', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      nodes: [
+        {
+          id: 'local-prop',
+          name: 'Host propagation node',
+          enabled: true,
+          status: 'known',
+          hops: 0,
+        },
+      ],
+      preferredId: null,
+    });
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
+
+    await waitFor(() => {
+      expect(setPreferredOnSidecar).toHaveBeenCalledWith('local-prop');
+    });
+  });
+
+  it('Manual keeps Set preferred usable and does not auto-write', async () => {
+    const user = userEvent.setup();
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    expect(setPreferredOnSidecar).not.toHaveBeenCalled();
+
+    const remotePrefer = screen
+      .getAllByRole('button', { name: 'reticulumPropagation.setPreferred' })
+      .at(-1);
+    if (!remotePrefer) throw new Error('expected a Set preferred control');
+    await user.click(remotePrefer);
+    await waitFor(() => {
+      expect(setPreferredOnSidecar).toHaveBeenCalledWith('pn-aabb1111');
     });
   });
 });

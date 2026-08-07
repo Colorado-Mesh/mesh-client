@@ -49,7 +49,7 @@ Runs on every push and pull request to `main`:
 1. Checkout code, setup pnpm + Node 22, install dependencies
 2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
 3. **Merge job** — downloads blob artifacts, runs `pnpm run test:coverage:merge` (enforces global coverage thresholds)
-4. **`reticulum-sidecar-coverage`** (when `reticulum-sidecar/**` or related scripts change, via `paths-filter`) — clones Ratspeak siblings, runs `cargo llvm-cov --fail-under-lines 45` on ubuntu-latest; uploads `lcov.info` artifact (no Codecov upload on free org plan)
+4. **`reticulum-sidecar-coverage`** (when `reticulum-sidecar/**` or related scripts change, via `paths-filter`) — clones the `.rsstack/` workspace, runs `cargo llvm-cov --fail-under-lines 45` on ubuntu-latest; uploads `lcov.info` artifact (no Codecov upload on free org plan)
 5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
 6. Upload merged test results artifact (retained 7 days)
 
@@ -76,7 +76,7 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
-CI clones Ratspeak siblings via `scripts/clone-ratspeak-stack.sh` and **no longer hardcodes `RS_RETICULUM_REF`** — rsReticulum / rsLXMF / rsNomad / rsLXST / lrgp-rs float to `origin/main` (overlays must apply). Override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` only for local bisect.
+CI clones the `.rsstack/` workspace via `scripts/clone-ratspeak-stack.sh` and **no longer hardcodes `RS_RETICULUM_REF`** — rsReticulum / rsLXMF / rsNomad / rsLXST / lrgp-rs float to `origin/main` (overlays must apply). Override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` only for local bisect.
 
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 

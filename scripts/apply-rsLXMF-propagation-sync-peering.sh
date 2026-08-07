@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source=lib/apply-ratspeak-overlay.sh
 source "${SCRIPT_DIR}/lib/apply-ratspeak-overlay.sh"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsLXMF-propagation-sync-peering.patch"
-LXMF_DIR="${RS_LXMF_DIR:-$(cd "${REPO_ROOT}/.." && pwd)/rsLXMF}"
+LXMF_DIR="${RS_LXMF_DIR:-${REPO_ROOT}/.rsstack/rsLXMF}"
 SYNC_RS="${LXMF_DIR}/crates/lxmf-core/src/propagation_sync.rs"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then

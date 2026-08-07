@@ -1,23 +1,23 @@
 # rsReticulum / rsLXMF overlays
 
-Patches applied on top of [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) / [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) checkouts for mesh-client `rns-stack` builds (sibling [Colorado-Mesh/rsNomad](https://github.com/Colorado-Mesh/rsNomad) is also required for Nomad hosting; no mesh-client overlay today).
+Patches applied on top of [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) / [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) checkouts for mesh-client `rns-stack` builds (sibling [Colorado-Mesh/rsNomad](https://github.com/Colorado-Mesh/rsNomad) is also required for Nomad hosting; no mesh-client overlay today). Checkouts live in the repo-local `.rsstack/` gitignored workspace, keeping a standalone `rsReticulum` mirror (if present) pristine.
 
-By default `scripts/clone-ratspeak-stack.sh` floats siblings to **`origin/main`** and applies these overlays (fails loud if a patch will not apply). Use `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` to pin a known-good SHA for bisect. Per-overlay **Base commit** tables below record the last regeneration baseline, not a permanent pin — when regenerating, prefer floated `origin/main` and record the short SHA in the PR.
+By default `scripts/clone-ratspeak-stack.sh` floats the `.rsstack/` checkouts to **`origin/main`** and applies these overlays (fails loud if a patch will not apply). Use `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` to pin a known-good SHA for bisect. Per-overlay **Base commit** tables below record the last regeneration baseline, not a permanent pin — when regenerating, prefer floated `origin/main` and record the short SHA in the PR.
 
 ## Development — overlays/patches
 
-Overlays require **git checkouts** of sibling repos next to this clone (not a bare Cargo cache path):
+Overlays require **git checkouts** in the repo-local `.rsstack/` workspace (not a bare Cargo cache path):
 
-- `../rsReticulum` — floated to `origin/main` unless `RS_RETICULUM_REF` is set
-- `../rsLXMF` — floated to `origin/main` unless `RS_LXMF_REF` is set
-- `../rsNomad` — floated to `origin/main` unless `RS_NOMAD_REF` is set
+- `.rsstack/rsReticulum` — floated to `origin/main` unless `RS_RETICULUM_REF` is set
+- `.rsstack/rsLXMF` — floated to `origin/main` unless `RS_LXMF_REF` is set
+- `.rsstack/rsNomad` — floated to `origin/main` unless `RS_NOMAD_REF` is set
 
 **First-time setup:**
 
 ```bash
-# From mesh-client repo root — clones/floats siblings and applies known overlays
+# From mesh-client repo root — clones/floats the .rsstack workspace and applies known overlays
 ./scripts/clone-ratspeak-stack.sh
-# Or ensure patches on an existing sibling tree:
+# Or ensure patches on an existing .rsstack tree:
 ./scripts/ensure-rsReticulum-patches.sh
 ```
 
@@ -25,7 +25,7 @@ Apply a single overlay when developing that patch:
 
 ```bash
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
-git -C ../rsReticulum status --short
+git -C .rsstack/rsReticulum status --short
 ```
 
 If a patch is skipped or conflicts after an upstream bump, CI/`ensure-rsReticulum-patches.sh` will fail. Rebase the overlay, regenerate the `.patch` file per the section below, then re-run the apply script.
@@ -48,7 +48,7 @@ Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSock
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsReticulum` required):
+From mesh-client repo root (`.rsstack/rsReticulum` required):
 
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
@@ -59,7 +59,7 @@ From mesh-client repo root (sibling `../rsReticulum` required):
 Regenerate against floated `origin/main` (record the short SHA in the PR):
 
 ```bash
-cd ../rsReticulum
+cd .rsstack/rsReticulum
 git fetch origin && git checkout --detach origin/main
 # apply local packet-tap edits, then:
 git diff -- \
@@ -67,11 +67,11 @@ git diff -- \
   crates/rns-transport/src/messages.rs \
   crates/rns-transport/src/actor/mod.rs \
   crates/rns-transport/src/actor/inbound.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+  > ../../reticulum-sidecar/patches/rsReticulum-packet-tap.patch
 # smoke-check on a clean tip clone:
 git -C /tmp/rsReticulum-patch-test fetch origin
 git -C /tmp/rsReticulum-patch-test checkout --detach origin/main
-git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+git -C /tmp/rsReticulum-patch-test apply --check ../../reticulum-sidecar/patches/rsReticulum-packet-tap.patch
 ```
 
 ### Sunset
@@ -93,7 +93,7 @@ Skip macOS/iOS VPN tunnel interfaces (`utun*`, `ipsec*`, `ppp*`) for AutoInterfa
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsReticulum` required):
+From mesh-client repo root (`.rsstack/rsReticulum` required):
 
 ```bash
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
@@ -111,14 +111,14 @@ Apply after the packet-tap patch when both overlays are needed:
 Regenerate against floated `origin/main` (record the short SHA in the PR):
 
 ```bash
-cd ../rsReticulum
+cd .rsstack/rsReticulum
 git fetch origin && git checkout --detach origin/main
 # after implementing the utun filter/backoff, then:
 git diff -- crates/rns-interface/src/auto.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
+  > ../../reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
 git -C /tmp/rsReticulum-patch-test fetch origin
 git -C /tmp/rsReticulum-patch-test checkout --detach origin/main
-git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
+git -C /tmp/rsReticulum-patch-test apply --check ../../reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
 ```
 
 ### Sunset
@@ -143,7 +143,7 @@ Recall cached destination public keys in `LinkClient` before waiting on path-res
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsReticulum` required):
+From mesh-client repo root (`.rsstack/rsReticulum` required):
 
 ```bash
 ./scripts/apply-rsReticulum-link-client-nomad.sh
@@ -211,7 +211,7 @@ Debounce BLE RNode reconnect after mid-SMP disconnect (`BLE pairing in progress`
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsReticulum` required):
+From mesh-client repo root (`.rsstack/rsReticulum` required):
 
 ```bash
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
@@ -232,11 +232,11 @@ Apply after the other rsReticulum overlays when rebuilding against floated `orig
 Regenerate against floated `origin/main` (record the short SHA in the PR):
 
 ```bash
-cd ../rsReticulum
+cd .rsstack/rsReticulum
 git fetch origin && git checkout --detach origin/main
 # apply local debounce edit, then:
 git diff -- crates/rns-interface/src/ble_rnode.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-ble-rnode-pairing-transition-debounce.patch
+  > ../../reticulum-sidecar/patches/rsReticulum-ble-rnode-pairing-transition-debounce.patch
 ```
 
 ### Sunset
@@ -280,7 +280,7 @@ Register `rnstransport.discovery.interface` as a local destination before announ
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsReticulum` required):
+From mesh-client repo root (`.rsstack/rsReticulum` required):
 
 ```bash
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
@@ -302,13 +302,13 @@ Regenerate against floated `origin/main` (record the short SHA in the PR):
 
 ```bash
 # After applying prior overlays on tip, implement the discovery fix, then:
-cd ../rsReticulum
+cd .rsstack/rsReticulum
 git fetch origin && git checkout --detach origin/main
 git diff -- \
   crates/rns-runtime/src/reticulum.rs \
   crates/rns-transport/src/actor/mod.rs \
   crates/rns-transport/src/discovery/announcer.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-discovery-announce-egress.patch
+  > ../../reticulum-sidecar/patches/rsReticulum-discovery-announce-egress.patch
 ```
 
 ### Sunset
@@ -330,7 +330,7 @@ LinkIdentify + peering stamp before LXMF `/offer`, sticky offer/finish fields, p
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsLXMF` required):
+From mesh-client repo root (`.rsstack/rsLXMF` required):
 
 ```bash
 ./scripts/apply-rsLXMF-propagation-sync-peering.sh
@@ -343,11 +343,11 @@ From mesh-client repo root (sibling `../rsLXMF` required):
 On current floated `origin/main`, the apply script **no-ops** when `set_identity` is already present — regenerate only if you still need the overlay for an older pin:
 
 ```bash
-cd ../rsLXMF
+cd .rsstack/rsLXMF
 git fetch origin && git checkout --detach origin/main
 # only needed for older pins without set_identity / send_identify:
 git diff -- crates/lxmf-core/src/propagation_sync.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsLXMF-propagation-sync-peering.patch
+  > ../../reticulum-sidecar/patches/rsLXMF-propagation-sync-peering.patch
 ```
 
 ### Sunset
@@ -369,7 +369,7 @@ Live mutators for local PN hosting policy updates (`set_peering_cost`, `set_max_
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsLXMF` required):
+From mesh-client repo root (`.rsstack/rsLXMF` required):
 
 ```bash
 ./scripts/apply-rsLXMF-propagation-node-policy-setters.sh
@@ -380,11 +380,11 @@ From mesh-client repo root (sibling `../rsLXMF` required):
 ### Regenerate
 
 ```bash
-cd ../rsLXMF
+cd .rsstack/rsLXMF
 git fetch origin && git checkout --detach origin/main
 # apply local setter edits, then:
 git diff -- crates/lxmf-core/src/propagation_node.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsLXMF-propagation-node-policy-setters.patch
+  > ../../reticulum-sidecar/patches/rsLXMF-propagation-node-policy-setters.patch
 ```
 
 ### Sunset
@@ -406,7 +406,7 @@ When [ratspeak/rsLXMF#6](https://github.com/ratspeak/rsLXMF/pull/6) merges and f
 
 ### Apply locally
 
-From mesh-client repo root (sibling `../rsLXMF` required; apply policy-setters first):
+From mesh-client repo root (`.rsstack/rsLXMF` required; apply policy-setters first):
 
 ```bash
 ./scripts/apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
@@ -442,11 +442,11 @@ Expose `LinkDeliveryManager::has_pending_to` so the sidecar can serialize packed
 ### Regenerate
 
 ```bash
-cd ../rsLXMF
+cd .rsstack/rsLXMF
 git fetch origin && git checkout --detach origin/main
 # apply local has_pending_to edit, then:
 git diff -- crates/lxmf-core/src/link_delivery.rs \
-  > ../mesh-client/reticulum-sidecar/patches/rsLXMF-link-delivery-has-pending-to.patch
+  > ../../reticulum-sidecar/patches/rsLXMF-link-delivery-has-pending-to.patch
 ```
 
 ### Sunset

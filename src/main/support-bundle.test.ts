@@ -300,6 +300,36 @@ describe('buildSupportBundleZip', () => {
     expect(names).toContain('reticulum/config');
   });
 
+  it('developer bundle always includes stack json and lxmf-outbound slice with placeholders', async () => {
+    const userDataDir = path.join(workDir, 'userdata-empty');
+    vi.mocked(app.getPath).mockImplementation((key: string) => {
+      if (key === 'userData') return userDataDir;
+      if (key === 'temp') return path.join(workDir, 'temp');
+      return userDataDir;
+    });
+    // No reticulum artifacts and no matching log lines on disk.
+    const dest = path.join(workDir, 'developer-placeholders.zip');
+    exportDatabase.mockImplementation((destPath: string) => {
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      fs.writeFileSync(destPath, 'sqlite-bytes');
+    });
+
+    await buildSupportBundleZip(dest, 'developer', '{"ok":true}');
+
+    const names = await zipEntryNames(dest);
+    expect(names).toContain('reticulum/mesh_client_stack.json');
+    expect(names).toContain('reticulum/lxmf-outbound.log');
+
+    const buf = await fs.promises.readFile(dest);
+    const zip = await JSZip.loadAsync(buf);
+    const stack = JSON.parse(
+      await zip.file('reticulum/mesh_client_stack.json')!.async('string'),
+    ) as { note?: string };
+    expect(stack.note).toMatch(/not found or unreadable/);
+    const slice = await zip.file('reticulum/lxmf-outbound.log')!.async('string');
+    expect(slice).toMatch(/No LXMF outbound \/ PN cascade lines matched/);
+  });
+
   it('includes rotated log backup when present', async () => {
     await fs.promises.writeFile(path.join(workDir, 'mesh-client.log.1'), 'rotated\n', 'utf8');
     const dest = path.join(workDir, 'github-with-backup.zip');

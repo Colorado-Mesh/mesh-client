@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Brak zapisanych kolorów — użyj przycisku Zapisz, aby utworzyć punkt kontrolny",
     "saveThemeButton": "Zapisz",
     "restoreThemeButton": "Przywróć",
-    "reticulumPropagationHelp": "Skonfiguruj zdalne węzły propagacji LXMF dla wiadomości DM offline. Lokalna propagacja to tylko skrzynka odbiorcza tego urządzenia — nie zastępuje zdalnego węzła.",
     "use24HourTime": "Format 24-godzinny",
     "use24HourTimeDesc": "Wymuś wyświetlanie zegarów, takich jak znaczniki czasu czatu, w formacie 24-godzinnym. Gdy jest wyłączony, postępuje zgodnie z ustawieniami regionalnymi systemu.",
     "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
     "themeRestoreFailed": "Nie udało się przywrócić punktu kontrolnego koloru.",
     "themeResetFailed": "Nie udało się zresetować kolorów.",
-    "messageActionsBarBgVisible": "Pokaż tło"
+    "messageActionsBarBgVisible": "Pokaż tło",
+    "reticulumPropagationMoved": "Konfiguracja i tryb synchronizacji węzła propagacji (wyłączony / automatyczny / ręczny) zostały przeniesione do węzłów → propagacji sieci."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -4247,18 +4247,16 @@
     "syncLocalNotSupported": "Lokalny węzeł propagacji hosta nie może być synchronizowany przez sieć jak zdalny węzeł propagacji LXMF.",
     "enableFailed": "Nie można włączyć węzła propagacji.",
     "disableFailed": "Nie można wyłączyć węzła propagacji.",
-    "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle.",
     "modeLabel": "Tryb propagacji:",
     "modeAria": "Tryb synchronizacji propagacji",
     "modeAuto": "Automatyczne",
     "modeManual": "Instrukcja obsługi",
     "modeOff": "Wył.",
-    "sync": "Synchronizuj",
-    "syncAria": "Synchronizuj komunikaty propagacji",
-    "cancelSync": "Anuluj",
-    "cancelSyncAria": "Anuluj synchronizację propagacji"
+    "modeHelpOff": "Wył.: brak automatycznych preferowanych zmian i brak okresowej synchronizacji. Nadal możesz ręcznie ustawić preferowany węzeł dla kaskady wychodzącej.",
+    "modeHelpAuto": "Auto: najlepszy węzeł propagacji jest wybierany automatycznie w danym momencie (odkryty lub skonfigurowany, w przeciwnym razie węzeł lokalny), a Preferred jest zarządzany za Ciebie. Ustaw preferencje, a opcja Dodaj i preferuj jest wyłączona.",
+    "modeHelpManual": "Ręczny: przypinasz preferowany węzeł. SYNC używa tego węzła; inne włączone piloty pozostają jako kaskadowe kopie zapasowe.",
+    "autoManagedHint": "Tryb automatyczny zarządza preferowanym węzłem. Przełącz na tryb ręczny, aby przypiąć go samodzielnie."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

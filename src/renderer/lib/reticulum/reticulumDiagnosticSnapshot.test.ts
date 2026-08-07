@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { useReticulumPropagationStore } from '../../stores/reticulumPropagationStore';
 import type { DiagnosticRow } from '../types';
 import {
   buildReticulumDiagnosticSnapshotSync,
   fetchReticulumDiagnosticSnapshot,
 } from './reticulumDiagnosticSnapshot';
+import { RETICULUM_PROPAGATION_MODE_KEY } from './reticulumPropagationMode';
 
 function reticulumRow(condition: string): DiagnosticRow {
   return {
@@ -79,6 +81,10 @@ describe('fetchReticulumDiagnosticSnapshot', () => {
 });
 
 describe('buildReticulumDiagnosticSnapshotSync', () => {
+  afterEach(() => {
+    localStorage.removeItem(RETICULUM_PROPAGATION_MODE_KEY);
+  });
+
   it('includes diagnostic rows without sidecar IPC', () => {
     useDiagnosticsStore.setState({ diagnosticRows: [reticulumRow('runtime/rnsNotReady')] });
 
@@ -88,5 +94,28 @@ describe('buildReticulumDiagnosticSnapshotSync', () => {
     expect(snap.stack).toBeNull();
     expect(snap.diagnosticRows).toHaveLength(1);
     expect(snap.fetchErrors).toEqual({});
+  });
+
+  it('captures renderer propagation client state for PN island diagnosis', () => {
+    localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, 'manual');
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known', hops: 0 },
+        { id: 'pn-0e972735', name: 'Remote', enabled: true, status: 'known', hops: 2 },
+      ],
+      discovered: [],
+      preferredId: 'pn-0e972735',
+      lastSyncError: 'reticulumPropagation.syncFailed',
+      autoSyncIntervalSec: 3600,
+    });
+
+    const snap = buildReticulumDiagnosticSnapshotSync();
+
+    expect(snap.propagationClient?.mode).toBe('manual');
+    expect(snap.propagationClient?.preferredId).toBe('pn-0e972735');
+    expect(snap.propagationClient?.resolvedSyncTargetId).toBe('pn-0e972735');
+    expect(snap.propagationClient?.autoTarget).toBe('configured:pn-0e972735');
+    expect(snap.propagationClient?.lastSyncError).toBe('reticulumPropagation.syncFailed');
+    expect(snap.propagationClient?.nodeCount).toBe(2);
   });
 });

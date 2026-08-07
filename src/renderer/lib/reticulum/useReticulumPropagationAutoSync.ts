@@ -1,5 +1,9 @@
 import { useEffect } from 'react';
 
+import {
+  readReticulumPropagationMode,
+  type ReticulumPropagationMode,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
@@ -13,6 +17,8 @@ export function shouldRunPropagationAutoSync(args: {
   lastPropagationSyncAt: number | null;
   lastPropagationSyncAttemptAt: number | null;
   nowMs: number;
+  /** Propagation mode; `off` never runs periodic sync. Defaults to auto/manual behavior. */
+  mode?: ReticulumPropagationMode;
 }): boolean {
   const {
     autoSyncIntervalSec,
@@ -21,7 +27,10 @@ export function shouldRunPropagationAutoSync(args: {
     lastPropagationSyncAt,
     lastPropagationSyncAttemptAt,
     nowMs,
+    mode,
   } = args;
+  // Mode "off" disables all periodic sync (no automatic PN retrieval).
+  if (mode === 'off') return false;
   // Local inbox is served in-process; auto-sync must target a remote PN only.
   if (!preferredId || preferredId === 'local-prop' || autoSyncIntervalSec <= 0 || syncActive) {
     return false;
@@ -75,6 +84,7 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
           lastPropagationSyncAt,
           lastPropagationSyncAttemptAt,
           nowMs: Date.now(),
+          mode: readReticulumPropagationMode(),
         })
       ) {
         return;

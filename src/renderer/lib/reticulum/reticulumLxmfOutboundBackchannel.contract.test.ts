@@ -11,7 +11,7 @@ const REPO_ROOT = join(__dirname, '../../../..');
 const LIVE = join(REPO_ROOT, 'reticulum-sidecar/src/stack/live.rs');
 const OUTBOUND = join(REPO_ROOT, 'reticulum-sidecar/src/stack/lxmf_outbound.rs');
 const DELIVERY = join(REPO_ROOT, 'reticulum-sidecar/src/stack/lxmf_delivery.rs');
-const LXMF_LINK = join(REPO_ROOT, '../rsLXMF/crates/lxmf-core/src/link_delivery.rs');
+const LXMF_LINK = join(REPO_ROOT, '.rsstack/rsLXMF/crates/lxmf-core/src/link_delivery.rs');
 
 describe('reticulum LXMF outbound Direct backchannel contracts', () => {
   it('sidecar outbound driver exposes set_inbound_packet_sender', () => {

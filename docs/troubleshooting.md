@@ -1050,20 +1050,20 @@ Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the 
 
 **Symptoms**: **Start stack** fails; logs show `RETICULUM_CARGO_BUILD_FAILED` or Rust errors such as `method not found in ReticulumHandle`, `register_packet_tap`, or `PacketTapEvent`. Electron may surface `RETICULUM_RNS_PATCH_MISSING` after upgrading mesh-client.
 
-**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies overlays via `clone-ratspeak-stack.sh`; a sibling `../rsReticulum` checkout without the overlay fails to compile.
+**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies overlays via `clone-ratspeak-stack.sh`; a `.rsstack/rsReticulum` checkout without the overlay fails to compile.
 
 **Fix** (canonical recover path):
 
-1. From mesh-client repo root, re-float siblings and re-apply overlays:
+1. From mesh-client repo root, re-float the `.rsstack/` workspace and re-apply overlays:
    ```bash
    ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
    `clone-ratspeak-stack.sh` floats `rsReticulum` / `rsLXMF` / `rsNomad` to `origin/main` (override with `RS_*_REF` for bisect) and fails if an overlay will not apply.
-2. If siblings already exist and you only need overlays: `./scripts/ensure-rsReticulum-patches.sh` then `pnpm run reticulum:sidecar:build`.
+2. If the `.rsstack/` checkouts already exist and you only need overlays: `./scripts/ensure-rsReticulum-patches.sh` then `pnpm run reticulum:sidecar:build`.
 3. **Manual apply** (single overlay):
    ```bash
-   git -C ../rsReticulum apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+   git -C .rsstack/rsReticulum apply ../../reticulum-sidecar/patches/rsReticulum-packet-tap.patch
    pnpm run reticulum:sidecar:build
    ```
 4. On **newer rsReticulum** checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — `apply-rsReticulum-auto-beacon-utun.sh` is a no-op.
@@ -1105,6 +1105,31 @@ Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
 Healthy Auto is left preferred (RNS default). Public hubs are never chosen by the health preempt.
 
 **Manual workaround**: Connection → Interfaces → disable **Auto** → restart stack if prompted. Keep the private hub up; confirm it is not `ECONNREFUSED` in the log (`hostLink` TCP probe).
+
+### Reticulum DM shows "Stored at propagation node" but the reply never arrives (PN island / preferred mismatch)
+
+**Symptoms**: A propagated DM Completes as **Stored at propagation node** on the sender, and the sender's periodic **Propagation sync** also Completes, yet the reply never lands in Chat. Direct (path-based) DMs between the same two apps work; only store-and-forward replies go missing. Often seen when two peers each prefer a **different** PN (e.g. one on `0e972735…`, the other syncing `11111111…`), or when an external app (Sideband, Columba, Retichat) reports "single checkmark / parked at PN".
+
+**Cause**: "Stored at PN" only means the message was deposited on the **sender's** chosen deposit node. The recipient only receives it if they **sync (or peer) that same PN island**. If the recipient's Preferred / sync target is a different PN, and those PNs are not peered/replicating, a successful sync on the recipient's node retrieves nothing for that deposit. Sync **Completing ≠ retrieving that specific deposit**. Shared, enabled backup PNs (e.g. both have `deadbeef` enabled) do **not** help when the cascade already succeeded on the first preferred remote and stopped there.
+
+**Diagnose**:
+
+1. On both sides, note the **Preferred** PN hash in **Network → Propagation nodes** (and mode: Off / Auto / Manual). For external apps, ask the peer for **their** preferred/inbox PN hash.
+2. In a **Developer** support bundle: `debug-snapshot.json` → `propagationClient` shows each side's `mode`, `preferredId`, `resolvedSyncTargetId`, `autoTarget`, and `lastSyncError`; `reticulum/lxmf-outbound.log` shows `propagation-deposit … pn_hash=… cascade_step=… delivery_method=…` (the **actual deposit island**) and `propagation-retrieve` lines for what sync pulled.
+3. Compare the sender's deposit `pn_hash` against the recipient's `resolvedSyncTargetId`. A mismatch with non-peered PNs is the island gap.
+
+**Fix**: Put both peers on a **shared** propagation node (same Preferred hash, or PNs known to peer/replicate), or switch mode to **Auto** so each side tracks the best commonly-reachable PN. When testing against external apps, record their preferred PN hash and align it with mesh-client's Preferred.
+
+**Repro matrix** (sender deposit island vs recipient sync target):
+
+| Sender Preferred     | Recipient sync target | PNs peered? | Reply retrieved?      |
+| -------------------- | --------------------- | ----------- | --------------------- |
+| `0e972735…`          | `11111111…`           | no          | **No** (island gap)   |
+| `0e972735…`          | `11111111…`           | yes         | Yes (peers replicate) |
+| `deadbeef…` (shared) | `deadbeef…` (shared)  | n/a         | Yes (same island)     |
+| `0e972735…`          | `0e972735…`           | n/a         | Yes (same node)       |
+
+Force the propagated path (peer offline / Direct disabled) and compare the sender's `propagation-deposit … pn_hash` against the recipient's `propagation-retrieve` / `propagationClient.resolvedSyncTargetId` in a Developer bundle to confirm which row applies.
 
 ### Reticulum Nomad Network or topology API returns 404
 
@@ -1388,7 +1413,7 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 1. Open **Network → Propagation** (Chat notice **Set up propagation** jumps there).
 2. Add a **32-character LXMF destination hash** from whoever runs the propagation node you trust.
-3. Set **Preferred** (manual mode) or leave **Auto** when multiple nodes are listed.
+3. Pick a **Propagation mode** in the same section (moved here from the App panel). The default is **Off** (no automatic Preferred, no periodic sync) — set **Preferred** manually, or switch to **Manual** to pin it, or **Auto** to let mesh-client track the best discovered/configured node (Auto soft-upserts it as Preferred without a manual Add and disables the manual Set preferred / Add & prefer controls). See [PN island / preferred mismatch](#reticulum-dm-shows-stored-at-propagation-node-but-the-reply-never-arrives-pn-island--preferred-mismatch) if both peers use different PNs.
 4. **Local propagation hosting** stores messages for peers that sync with you and is **last** in the Direct→PN cascade (`stored_locally` — local inbox, not peer-delivered). Preferring Local shows a warning toast; it does **not** replace a remote PN for peer store-and-forward.
 
 **Stale path + Failed via TCP:** When a path exists, mesh-client tries **Direct** first. If Direct fails, the sidecar **cascades** preferred remote → other enabled remotes (hop-sorted) → local-prop last. Remote deposits Complete as `delivered` (**Stored at propagation node**); local-prop Completes as `stored_locally` (inbox only). The renderer link-timeout Failed bridge skips while cascade capacity remains. Without any cascade candidates, the row stays **Failed**. Check developer-bundle `reticulum/lxmf-outbound.log` for cascade lines. Persistent `proxyGet`/`proxyPost` storms may hit the shared **900/min** proxy ceiling (LXMF recent catch-up uses a dedicated **120/min** bucket; renderer backs off on rate-limit errors).

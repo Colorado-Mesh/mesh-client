@@ -5,7 +5,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-WORKSPACE_ROOT="${WORKSPACE_ROOT:-$(cd "${REPO_ROOT}/.." && pwd)}"
+# Repo-local workspace (gitignored .rsstack/) so upstream mirror checkouts stay clean.
+WORKSPACE_ROOT="${WORKSPACE_ROOT:-${REPO_ROOT}/.rsstack}"
 # shellcheck source=lib/ratspeak-overlay-apply-list.sh
 source "${SCRIPT_DIR}/lib/ratspeak-overlay-apply-list.sh"
 

@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "尚未保存颜色—使用“保存”创建检查点",
     "saveThemeButton": "保存",
     "restoreThemeButton": "恢复",
-    "reticulumPropagationHelp": "为离线DM配置远程LXMF传播节点。本地传播仅是此设备的收件箱—它不会替换远程节点。",
     "use24HourTime": "24小时时间",
     "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。",
     "themeSaveFailed": "无法保存颜色检查点。",
     "themeRestoreFailed": "无法还原颜色检查点。",
     "themeResetFailed": "无法重置颜色。",
-    "messageActionsBarBgVisible": "显示背景"
+    "messageActionsBarBgVisible": "显示背景",
+    "reticulumPropagationMoved": "传播节点设置和同步模式（关闭/自动/手动）已移至网络→传播节点。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "本地主机传播节点无法像远程 LXMF 传播节点一样通过网络同步。",
     "enableFailed": "无法启用传播节点。",
     "disableFailed": "无法禁用传播节点。",
-    "syncOutboundBusy": "传播同步已延迟—出站消息正在存入此节点。"
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "传播同步已延迟—出站消息正在存入此节点。",
     "modeLabel": "传播模式",
     "modeAria": "传播同步模式",
     "modeAuto": "推荐加点",
     "modeManual": "说明书",
     "modeOff": "关闭",
-    "sync": "同步",
-    "syncAria": "同步传播消息",
-    "cancelSync": "取消推荐",
-    "cancelSyncAria": "取消传播同步"
+    "modeHelpOff": "关闭：无自动首选更改，无周期性同步。您仍然可以为出站级联手动设置首选节点。",
+    "modeHelpAuto": "自动：自动选择最佳传播节点（发现或配置，否则为本地节点） ，并为您管理首选节点。设置首选和添加和首选被禁用。",
+    "modeHelpManual": "手动：固定首选节点。同步使用该节点；其他启用的远程将保留为级联备份。",
+    "autoManagedHint": "自动模式管理首选节点。切换到手动以自行固定。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

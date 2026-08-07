@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = join(__dirname, '../../../..');
 const OUTBOUND = join(REPO_ROOT, 'reticulum-sidecar/src/stack/lxmf_outbound.rs');
-const LXMF_LINK = join(REPO_ROOT, '../rsLXMF/crates/lxmf-core/src/link_delivery.rs');
+const LXMF_LINK = join(REPO_ROOT, '.rsstack/rsLXMF/crates/lxmf-core/src/link_delivery.rs');
 const HAS_PENDING_PATCH = join(
   REPO_ROOT,
   'reticulum-sidecar/patches/rsLXMF-link-delivery-has-pending-to.patch',

@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Aún no hay colores guardados: use Guardar para crear un punto de control",
     "saveThemeButton": "Guardar",
     "restoreThemeButton": "Restaurar",
-    "reticulumPropagationHelp": "Configurar nodos de propagación LXMF remotos para DM sin conexión. La propagación local es solo la bandeja de entrada de este dispositivo: no reemplaza a un nodo remoto.",
     "use24HourTime": "Modo 24 horas",
     "use24HourTimeDesc": "Forza los relojes, como las marcas de tiempo del chat, al formato de 24 horas. Cuando esté apagado, siga la configuración regional de su sistema.",
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
     "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
     "themeResetFailed": "Error al restablecer los colores.",
-    "messageActionsBarBgVisible": "Mostrar fondo"
+    "messageActionsBarBgVisible": "Mostrar fondo",
+    "reticulumPropagationMoved": "La configuración del nodo de propagación y el modo de sincronización (Apagado / Automático / Manual) se han movido a los nodos de → propagación de red."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
     "enableFailed": "No se pudo habilitar el nodo de propagación.",
     "disableFailed": "No se pudo deshabilitar el nodo de propagación.",
-    "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo.",
     "modeLabel": "modo de propagación",
     "modeAria": "Modo de sincronización de propagación",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Apagado",
-    "sync": "Sincronizar",
-    "syncAria": "Sincronizar mensajes de propagación",
-    "cancelSync": "Cancelar",
-    "cancelSyncAria": "Cancelar sincronización de propagación"
+    "modeHelpOff": "Apagado: sin cambios automáticos de Preferido y sin sincronización periódica. Todavía puede configurar un nodo preferido manualmente para la cascada de salida.",
+    "modeHelpAuto": "Automático: el mejor nodo de propagación se selecciona automáticamente en el momento (descubierto o configurado, de lo contrario, su nodo local) y Preferred se gestiona por usted. Establecer preferido y Añadir y preferir están deshabilitados.",
+    "modeHelpManual": "Manual: fijas el nodo Preferido. Sync utiliza ese nodo; otros controles remotos habilitados permanecen como copias de seguridad en cascada.",
+    "autoManagedHint": "El modo automático gestiona el nodo Preferido. Cambie a Manual para fijarlo usted mismo."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Ainda não há cores salvas — use Salvar para criar um ponto de verificação",
     "saveThemeButton": "Salvar",
     "restoreThemeButton": "Restaurar",
-    "reticulumPropagationHelp": "Configurar nós de propagação LXMF remotos para DMs offline. A propagação local é apenas a caixa de entrada deste dispositivo — ela não substitui um nó remoto.",
     "use24HourTime": "Use o tempo de 24 horas",
     "use24HourTimeDesc": "Forçar relógios como carimbos de data e hora de bate-papo para o formato de 24 horas. Quando desligado, segue a localidade do seu sistema.",
     "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
     "themeRestoreFailed": "Falha ao restaurar o ponto de verificação de cores.",
     "themeResetFailed": "Falha ao redefinir as cores.",
-    "messageActionsBarBgVisible": "Mostrar fundo"
+    "messageActionsBarBgVisible": "Mostrar fundo",
+    "reticulumPropagationMoved": "A configuração do nó de propagação e o modo de sincronização (Desligado / Automático / Manual) foram movidos para os nós de → Propagação de Rede."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "O nó de propagação do host local não pode ser sincronizado pela rede como um nó de propagação LXMF remoto.",
     "enableFailed": "Não foi possível ativar o nó de propagação.",
     "disableFailed": "Não foi possível desativar o nó de propagação.",
-    "syncOutboundBusy": "Sincronização de propagação adiada — uma mensagem de saída está sendo depositada neste nó."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Sincronização de propagação adiada — uma mensagem de saída está sendo depositada neste nó.",
     "modeLabel": "Modo de propagação",
     "modeAria": "Modo de sincronização de propagação",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Desligado",
-    "sync": "Sincronizar",
-    "syncAria": "Sincronizar mensagens de propagação",
-    "cancelSync": "Cancelar",
-    "cancelSyncAria": "Cancelar sincronização de propagação"
+    "modeHelpOff": "Desligado: sem alterações preferenciais automáticas e sem sincronização periódica. Você ainda pode definir um nó Preferred manualmente para a cascata de saída.",
+    "modeHelpAuto": "Auto: o melhor nó de propagação é escolhido automaticamente no momento (descoberto ou configurado, caso contrário, seu nó local) e o Preferred é gerenciado para você. Definir como preferido e Adicionar e preferir estão desativados.",
+    "modeHelpManual": "Manual: você fixa o nó Preferred. A sincronização usa esse nó; outros controles remotos habilitados permanecem como backups em cascata.",
+    "autoManagedHint": "O modo automático gerencia o nó Preferred. Mude para Manual para fixar você mesmo."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

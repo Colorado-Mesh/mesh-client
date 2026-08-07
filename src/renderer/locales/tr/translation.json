@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Henüz kaydedilmiş renk yok — bir kontrol noktası oluşturmak için Kaydet'i kullanın",
     "saveThemeButton": "Kaydet",
     "restoreThemeButton": "Geri Yükle",
-    "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz.",
     "use24HourTime": "24-Saat Zaman",
     "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin.",
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
     "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
     "themeResetFailed": "Renkler sıfırlanamadı.",
-    "messageActionsBarBgVisible": "Arka planı göster"
+    "messageActionsBarBgVisible": "Arka planı göster",
+    "reticulumPropagationMoved": "Yayılım düğümü kurulumu ve senkronizasyon modu (Kapalı / Otomatik / Manuel) Ağ → Yayılım düğümlerine taşındı."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
     "disableFailed": "Yayılma düğümü devre dışı bırakılamadı.",
-    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor.",
     "modeLabel": "Yayılma modu",
     "modeAria": "Yayılma senkronizasyon modu",
     "modeAuto": "Otomatik",
     "modeManual": "Manuel",
     "modeOff": "Kapalı",
-    "sync": "Senkronizasyon",
-    "syncAria": "Yayılma mesajlarını senkronize et",
-    "cancelSync": "İptal",
-    "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
+    "modeHelpOff": "Kapalı: otomatik Tercih edilen değişiklik ve periyodik senkronizasyon yok. Giden basamak için yine de Tercih edilen düğümü manuel olarak ayarlayabilirsiniz.",
+    "modeHelpAuto": "Otomatik: En iyi yayılım düğümü o anda otomatik olarak seçilir (keşfedilir veya yapılandırılır, aksi takdirde yerel düğümünüz) ve Tercih Edilen sizin için yönetilir. Tercih edilen ayarla ve Ekle ve tercih et devre dışı bırakıldı.",
+    "modeHelpManual": "Manuel: Tercih edilen düğümü sabitlersiniz. Senkronizasyon bu düğümü kullanır; diğer etkin uzaktan kumandalar kademeli yedekleme olarak kalır.",
+    "autoManagedHint": "Otomatik mod, Tercih Edilen düğümü yönetir. Kendiniz sabitlemek için Manuel'e geçin."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

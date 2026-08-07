@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Nog geen opgeslagen kleuren — gebruik Opslaan om een controlepunt te maken",
     "saveThemeButton": "Opslaan",
     "restoreThemeButton": "Herstellen",
-    "reticulumPropagationHelp": "Configureer externe LXMF-voortplantingsknooppunten voor offline DM's. Lokale verspreiding is alleen de inbox van dit apparaat — het vervangt geen extern knooppunt.",
     "use24HourTime": "24-uursaanduiding",
     "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem.",
     "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
     "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
     "themeResetFailed": "Kan kleuren niet resetten.",
-    "messageActionsBarBgVisible": "Achtergrond tonen"
+    "messageActionsBarBgVisible": "Achtergrond tonen",
+    "reticulumPropagationMoved": "De installatie- en synchronisatiemodus van het propagatieknooppunt (Uit / Automatisch / Handmatig) zijn verplaatst naar → de knooppunten voor netwerkpropagatie."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "Het lokale hostvoortplantingsknooppunt kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-voortplantingsknooppunt.",
     "enableFailed": "Kan het voortplantingsknooppunt niet inschakelen.",
     "disableFailed": "Kan het voortplantingsknooppunt niet uitschakelen.",
-    "syncOutboundBusy": "Propagatiesynchronisatie uitgesteld — een uitgaand bericht wordt op dit knooppunt gedeponeerd."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Propagatiesynchronisatie uitgesteld — een uitgaand bericht wordt op dit knooppunt gedeponeerd.",
     "modeLabel": "voortplantingsmodus",
     "modeAria": "Voortplantingssynchronisatiemodus",
     "modeAuto": "Auto",
     "modeManual": "Handmatig",
     "modeOff": "Off",
-    "sync": "Synchroniseren",
-    "syncAria": "Voortplantingsberichten synchroniseren",
-    "cancelSync": "Annuleren",
-    "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
+    "modeHelpOff": "Uit: geen automatische voorkeurswijzigingen en geen periodieke synchronisatie. U kunt nog steeds handmatig een voorkeursknooppunt instellen voor de uitgaande cascade.",
+    "modeHelpAuto": "Auto: het beste propagatieknooppunt wordt op dat moment automatisch gekozen (ontdekt of geconfigureerd, anders wordt uw lokale knooppunt) en Preferred voor u beheerd. Stel voorkeur in en Toevoegen en voorkeur zijn uitgeschakeld.",
+    "modeHelpManual": "Handmatig: u pint het voorkeursknooppunt. Sync gebruikt dat knooppunt; andere ingeschakelde afstandsbedieningen blijven als cascadeback-ups.",
+    "autoManagedHint": "De automatische modus beheert het voorkeursknooppunt. Schakel over naar Handmatig om het zelf vast te pinnen."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

@@ -68,7 +68,7 @@ function cloneRatspeakStack() {
     stdio: 'inherit',
     env: {
       ...process.env,
-      WORKSPACE_ROOT: process.env.WORKSPACE_ROOT ?? path.join(projectRoot, '..'),
+      WORKSPACE_ROOT: process.env.WORKSPACE_ROOT ?? path.join(projectRoot, '.rsstack'),
     },
   });
   if (result.error) {

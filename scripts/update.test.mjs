@@ -45,9 +45,9 @@ describe('update.sh Reticulum stack functionality check', () => {
 
     expect(rebuildFunction).toBeDefined();
     expect(rebuildFunction).toContain('bash scripts/clone-ratspeak-stack.sh');
-    expect(rebuildFunction).toContain('../../rsReticulum/crates/rns-runtime/Cargo.toml');
-    expect(rebuildFunction).toContain('../../rsLXMF/crates/lxmf-core/Cargo.toml');
-    expect(rebuildFunction).toContain('../../rsNomad/crates/nomad-core/Cargo.toml');
+    expect(rebuildFunction).toContain('../.rsstack/rsReticulum/crates/rns-runtime/Cargo.toml');
+    expect(rebuildFunction).toContain('../.rsstack/rsLXMF/crates/lxmf-core/Cargo.toml');
+    expect(rebuildFunction).toContain('../.rsstack/rsNomad/crates/nomad-core/Cargo.toml');
     expect(rebuildFunction).toContain('cargo build --features rns-stack,rns-ble,rns-rnode-tcp');
     expect(rebuildFunction).not.toMatch(/['"]\.\.\/rs(?:Reticulum|LXMF|Nomad)\//);
     expect(rebuildFunction).not.toContain('cargo build)');
@@ -281,7 +281,8 @@ exit 0
 });
 
 /**
- * Temp layout matching Ratspeak siblings: mesh-client/reticulum-sidecar + ../../rs*.
+ * Temp layout matching the repo-local .rsstack workspace: mesh-client/reticulum-sidecar +
+ * .rsstack/{rsReticulum,rsLXMF,rsNomad,rsLXST,lrgp-rs}.
  * @param {{ buildExit: number }} opts
  */
 function prepareRebuildFixture(opts) {
@@ -320,7 +321,7 @@ exit 0
     path.join(work, 'reticulum-sidecar', 'Cargo.toml'),
     '[package]\nname = "mesh-client-reticulum"\n',
   );
-  // Path deps are ../../rs* / ../../lrgp-rs from reticulum-sidecar → siblings of mesh-client.
+  // Path deps are ../.rsstack/rs* from reticulum-sidecar → repo-local .rsstack workspace.
   for (const rel of [
     'rsReticulum/crates/rns-runtime/Cargo.toml',
     'rsLXMF/crates/lxmf-core/Cargo.toml',
@@ -328,7 +329,7 @@ exit 0
     'rsLXST/crates/lxst-telephony/Cargo.toml',
     'lrgp-rs/Cargo.toml',
   ]) {
-    const abs = path.join(root, rel);
+    const abs = path.join(work, '.rsstack', rel);
     mkdirSync(path.dirname(abs), { recursive: true });
     writeFileSync(abs, '[package]\nname = "stub"\n');
   }

@@ -109,7 +109,7 @@
     "floodAdvertSection": "Flood Advert",
     "reticulumSection": "Reticulum stack",
     "reticulumAnnounceHelp": "How often your identity is announced on the network (default 3600 s / 1 h when unset; 0 = startup-only), and tools to clear stored announces.",
-    "reticulumPropagationHelp": "Configure remote LXMF propagation nodes for offline DMs. Local propagation is this device’s inbox only — it does not replace a remote node.",
+    "reticulumPropagationMoved": "Propagation node setup and sync mode (Off / Auto / Manual) have moved to Network → Propagation nodes.",
     "floodAdvertScheduleLabel": "Automatically send a flood advert on a schedule:",
     "floodAdvertEvery12h": "Every 12 hours",
     "floodAdvertEvery24h": "Every 24 hours",
@@ -4587,18 +4587,16 @@
     "discoveredAddAria": "Add discovered propagation node {{name}}",
     "discoveredAddPrefer": "Add & prefer",
     "discoveredAddPreferAria": "Add discovered propagation node {{name}} and set as preferred",
-    "discoveredHash": "{{hash}}"
-  },
-  "reticulumPropagationHeader": {
+    "discoveredHash": "{{hash}}",
     "modeLabel": "Propagation mode",
     "modeAria": "Propagation sync mode",
     "modeAuto": "Auto",
     "modeManual": "Manual",
     "modeOff": "Off",
-    "sync": "Sync",
-    "syncAria": "Sync propagation messages",
-    "cancelSync": "Cancel",
-    "cancelSyncAria": "Cancel propagation sync"
+    "modeHelpOff": "Off: no automatic Preferred changes and no periodic sync. You can still set a Preferred node manually for the outbound cascade.",
+    "modeHelpAuto": "Auto: the best propagation node is picked automatically at the time (discovered or configured, else your local node) and Preferred is managed for you. Set preferred and Add & prefer are disabled.",
+    "modeHelpManual": "Manual: you pin the Preferred node. Sync uses that node; other enabled remotes stay as cascade backups.",
+    "autoManagedHint": "Auto mode manages the Preferred node. Switch to Manual to pin it yourself."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 discovery",

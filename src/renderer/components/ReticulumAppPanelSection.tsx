@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
-import { ReticulumPropagationControls } from './ReticulumPropagationControls';
 
 export interface ReticulumAppPanelSectionProps {
   sidecarReady?: boolean;
@@ -20,7 +19,7 @@ export function ReticulumAppPanelSection({
       <div className="bg-secondary-dark space-y-2 rounded-lg p-4">
         <p className="text-muted text-xs">{t('appPanel.reticulumAnnounceHelp')}</p>
         <ReticulumAnnounceControls disabled={disabled || !sidecarReady} embedded />
-        <ReticulumPropagationControls sidecarReady={sidecarReady} disabled={disabled} />
+        <p className="text-muted text-xs">{t('appPanel.reticulumPropagationMoved')}</p>
       </div>
     </div>
   );

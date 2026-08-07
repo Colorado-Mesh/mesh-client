@@ -538,7 +538,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Windows  | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 | Linux    | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 
-Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack needs sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, `../rsLXST`, and `../lrgp-rs` — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
+Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack lives in the repo-local `.rsstack/` workspace (`rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, `lrgp-rs`) — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
 
 ### Tech Stack
 

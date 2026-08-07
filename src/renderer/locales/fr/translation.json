@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Pas encore de couleurs enregistrées — utilisez Enregistrer pour créer un point de contrôle",
     "saveThemeButton": "Sauvegarder",
     "restoreThemeButton": "Restaurer",
-    "reticulumPropagationHelp": "Configurez les nœuds de propagation LXMF distants pour les DM hors ligne. La propagation locale est la boîte de réception de cet appareil uniquement — elle ne remplace pas un nœud distant.",
     "use24HourTime": "Heure (format 24 heures)",
     "use24HourTimeDesc": "Forcer les horloges comme les horodatages de chat au format 24 heures. Lorsqu'il est désactivé, suit les paramètres régionaux de votre système.",
     "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
     "themeRestoreFailed": "Échec de la restauration du point de contrôle des couleurs.",
     "themeResetFailed": "Impossible de réinitialiser les couleurs.",
-    "messageActionsBarBgVisible": "Afficher l'arrière-plan"
+    "messageActionsBarBgVisible": "Afficher l'arrière-plan",
+    "reticulumPropagationMoved": "La configuration du nœud de propagation et le mode de synchronisation (Off / Auto / Manuel) ont été déplacés vers les nœuds de → propagation du réseau."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "Le nœud de propagation de l'hôte local ne peut pas être synchronisé sur le réseau comme un nœud de propagation LXMF distant.",
     "enableFailed": "Impossible d'activer le nœud de propagation.",
     "disableFailed": "Impossible de désactiver le nœud de propagation.",
-    "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud.",
     "modeLabel": "mode de propagation",
     "modeAria": "Mode de synchronisation de la propagation",
     "modeAuto": "Auto",
     "modeManual": "Manuel",
     "modeOff": "Arrêt",
-    "sync": "Synchronisation",
-    "syncAria": "Synchroniser les messages de propagation",
-    "cancelSync": "Annuler",
-    "cancelSyncAria": "Annuler la synchronisation de la propagation"
+    "modeHelpOff": "Désactivé : pas de modifications automatiques des préférences et pas de synchronisation périodique. Vous pouvez toujours définir manuellement un nœud Préféré pour la cascade sortante.",
+    "modeHelpAuto": "Auto : le meilleur nœud de propagation est choisi automatiquement à ce moment-là (découvert ou configuré, sinon votre nœud local) et Preferred est géré pour vous. Set preferred et Add & prefer sont désactivés.",
+    "modeHelpManual": "Manuel : vous épinglez le nœud Preferred. La synchronisation utilise ce nœud ; les autres télécommandes activées restent en tant que sauvegardes en cascade.",
+    "autoManagedHint": "Le mode automatique gère le nœud Préféré. Passez en mode manuel pour l'épingler vous-même."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

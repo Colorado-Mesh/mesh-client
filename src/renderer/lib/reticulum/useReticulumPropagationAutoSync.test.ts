@@ -43,6 +43,50 @@ describe('shouldRunPropagationAutoSync', () => {
     ).toBe(false);
   });
 
+  it('returns false when mode is off even with a remote preferred', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 3600,
+        preferredId: 'pn-test',
+        syncActive: false,
+        lastPropagationSyncAt: null,
+        lastPropagationSyncAttemptAt: null,
+        nowMs: 4_000_000,
+        mode: 'off',
+      }),
+    ).toBe(false);
+  });
+
+  it('syncs a remote preferred in auto and manual modes', () => {
+    for (const mode of ['auto', 'manual'] as const) {
+      expect(
+        shouldRunPropagationAutoSync({
+          autoSyncIntervalSec: 3600,
+          preferredId: 'pn-test',
+          syncActive: false,
+          lastPropagationSyncAt: null,
+          lastPropagationSyncAttemptAt: null,
+          nowMs: 4_000_000,
+          mode,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it('skips local-prop even in auto mode', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 3600,
+        preferredId: 'local-prop',
+        syncActive: false,
+        lastPropagationSyncAt: null,
+        lastPropagationSyncAttemptAt: null,
+        nowMs: 4_000_000,
+        mode: 'auto',
+      }),
+    ).toBe(false);
+  });
+
   it('returns false when preferredId is local-prop', () => {
     expect(
       shouldRunPropagationAutoSync({

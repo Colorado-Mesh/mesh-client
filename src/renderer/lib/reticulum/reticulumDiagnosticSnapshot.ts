@@ -1,11 +1,18 @@
 import type { ReticulumSidecarStatus, ReticulumStatusResponse } from '@/shared/reticulum-types';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { useReticulumPropagationStore } from '../../stores/reticulumPropagationStore';
 import { isReticulumDiagnosticRow } from '../diagnostics/ReticulumDiagnosticEngine';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { DiagnosticRow } from '../types';
 import type { ReticulumConfigAuditIssue } from './reticulumConfigAudit';
 import { getReticulumInboundLxmfDiagnostics } from './reticulumInboundLxmfDiagnostics';
+import {
+  pickAutoPropagationTarget,
+  readReticulumPropagationMode,
+  resolvePropagationSyncTargetId,
+  type ReticulumPropagationMode,
+} from './reticulumPropagationMode';
 
 const RETICULUM_PROXY_ROUTES = [
   '/api/v1/status',
@@ -59,6 +66,52 @@ export interface ReticulumDiagnosticSidecarSnapshot {
     inboundCatchUpWatermarkTs: number | null;
     inboundCatchUpWatermarkSeq: number | null;
     lastInboundRingLen: number | null;
+  };
+  /**
+   * Renderer-side propagation client state for PN island diagnosis: which node the app
+   * would sync (mode-resolved), the mode, last sync error, and preferred/attempt timing.
+   */
+  propagationClient?: ReticulumPropagationClientSnapshot;
+}
+
+export interface ReticulumPropagationClientSnapshot {
+  mode: ReticulumPropagationMode;
+  preferredId: string | null;
+  resolvedSyncTargetId: string | null;
+  /** What Auto would apply as Preferred right now (kind:id) — helps spot island drift. */
+  autoTarget: string | null;
+  lastSyncError: string | null;
+  lastPropagationSyncAt: number | null;
+  lastPropagationSyncAttemptAt: number | null;
+  autoSyncIntervalSec: number;
+  nodeCount: number;
+  discoveredCount: number;
+}
+
+/** Snapshot the renderer propagation store (preferred, sync target, mode, last error). */
+export function getReticulumPropagationClientSnapshot(): ReticulumPropagationClientSnapshot {
+  const s = useReticulumPropagationStore.getState();
+  const mode = readReticulumPropagationMode();
+  const auto = pickAutoPropagationTarget(s.nodes, s.discovered);
+  const autoTarget =
+    auto == null
+      ? null
+      : auto.kind === 'configured'
+        ? `configured:${auto.id}`
+        : auto.kind === 'discovered'
+          ? `discovered:${auto.destinationHash.slice(0, 12)}`
+          : 'local';
+  return {
+    mode,
+    preferredId: s.preferredId,
+    resolvedSyncTargetId: resolvePropagationSyncTargetId(mode, s.nodes, s.preferredId),
+    autoTarget,
+    lastSyncError: s.lastSyncError,
+    lastPropagationSyncAt: s.lastPropagationSyncAt,
+    lastPropagationSyncAttemptAt: s.lastPropagationSyncAttemptAt,
+    autoSyncIntervalSec: s.autoSyncIntervalSec,
+    nodeCount: s.nodes.length,
+    discoveredCount: s.discovered.length,
   };
 }
 
@@ -121,6 +174,7 @@ export function buildReticulumDiagnosticSnapshotSync(): ReticulumDiagnosticSidec
     diagnosticRows: selectReticulumDiagnosticRows(),
     fetchErrors: {},
     inboundLxmf: getReticulumInboundLxmfDiagnostics(),
+    propagationClient: getReticulumPropagationClientSnapshot(),
   };
 }
 
@@ -165,5 +219,6 @@ export async function fetchReticulumDiagnosticSnapshot(): Promise<ReticulumDiagn
     diagnosticRows,
     fetchErrors,
     inboundLxmf: getReticulumInboundLxmfDiagnostics(),
+    propagationClient: getReticulumPropagationClientSnapshot(),
   };
 }

@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Belum ada warna yang disimpan — gunakan Simpan untuk membuat pos pemeriksaan",
     "saveThemeButton": "Simpan",
     "restoreThemeButton": "Pulihkan",
-    "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh.",
     "use24HourTime": "Gunakan waktu 24 jam",
     "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda.",
     "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
     "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
     "themeResetFailed": "Gagal mengatur ulang warna.",
-    "messageActionsBarBgVisible": "Tampilkan latar belakang"
+    "messageActionsBarBgVisible": "Tampilkan latar belakang",
+    "reticulumPropagationMoved": "Penyiapan simpul propagasi dan mode sinkronisasi (Mati / Otomatis / Manual) telah pindah ke simpul → Propagasi Jaringan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "enableFailed": "Tidak dapat mengaktifkan node propagasi.",
     "disableFailed": "Tidak dapat menonaktifkan node propagasi.",
-    "syncOutboundBusy": "Sinkronisasi propagasi ditangguhkan — pesan keluar disetorkan ke simpul ini."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Sinkronisasi propagasi ditangguhkan — pesan keluar disetorkan ke simpul ini.",
     "modeLabel": "Mode propagasi",
     "modeAria": "Mode sinkronisasi propagasi",
     "modeAuto": "Otomatis",
     "modeManual": "Panduan",
     "modeOff": "Tidak aktif",
-    "sync": "Sinkronkan",
-    "syncAria": "Sinkronkan pesan propagasi",
-    "cancelSync": "Batal",
-    "cancelSyncAria": "Batalkan sinkronisasi propagasi"
+    "modeHelpOff": "Mati: tidak ada perubahan Preferred otomatis dan tidak ada sinkronisasi berkala. Anda masih dapat mengatur simpul Pilihan secara manual untuk kaskade keluar.",
+    "modeHelpAuto": "Otomatis: simpul propagasi terbaik dipilih secara otomatis pada saat itu (ditemukan atau dikonfigurasi, jika tidak simpul lokal Anda) dan Preferred dikelola untuk Anda. Atur prefer dan Add & prefer dinonaktifkan.",
+    "modeHelpManual": "Manual: Anda menyematkan simpul Pilihan. Sinkronisasi menggunakan simpul itu; remote lain yang diaktifkan tetap sebagai cadangan kaskade.",
+    "autoManagedHint": "Mode otomatis mengelola simpul Pilihan. Beralih ke Manual untuk menyematkannya sendiri."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

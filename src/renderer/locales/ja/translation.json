@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "保存された色はまだありません—保存を使用してチェックポイントを作成します",
     "saveThemeButton": "保存",
     "restoreThemeButton": "リストア",
-    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
     "use24HourTime": "24時間制を使用する",
     "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。",
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
     "themeResetFailed": "色をリセットできませんでした。",
-    "messageActionsBarBgVisible": "背景を表示"
+    "messageActionsBarBgVisible": "背景を表示",
+    "reticulumPropagationMoved": "伝播ノードの設定と同期モード（オフ/自動/手動）は、ネットワーク→伝播ノードに移動しました。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
     "enableFailed": "伝播ノードを有効にできませんでした。",
     "disableFailed": "伝播ノードを無効にできませんでした。",
-    "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。"
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。",
     "modeLabel": "伝播モード",
     "modeAria": "伝播同期モード",
     "modeAuto": "自動",
     "modeManual": "手動",
-    "modeOff": "OFF",
-    "sync": "同期",
-    "syncAria": "伝播メッセージを同期",
-    "cancelSync": "取り消す",
-    "cancelSyncAria": "伝播の同期をキャンセル"
+    "modeOff": "オフ",
+    "modeHelpOff": "オフ：自動優先変更なし、定期的な同期なし。アウトバウンドカスケードの優先ノードを手動で設定することもできます。",
+    "modeHelpAuto": "自動：最適な伝播ノードがその時点で自動的に選択され（検出または構成され、それ以外はローカルノード）、Preferredが管理されます。[優先設定]と[追加と優先]が無効になっています。",
+    "modeHelpManual": "手動： Preferredノードをピン留めします。同期はそのノードを使用します。他の有効なリモートはカスケードバックアップとして残ります。",
+    "autoManagedHint": "自動モードは、Preferredノードを管理します。自分でピン留めするには、手動に切り替えてください。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",

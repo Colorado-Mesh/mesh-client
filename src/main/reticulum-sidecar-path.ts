@@ -59,15 +59,15 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
 
 export function hasRnsStackSiblings(projectDir: string): boolean {
   const rnsRuntime = path.normalize(
-    path.join(projectDir, '../../rsReticulum/crates/rns-runtime/Cargo.toml'),
+    path.join(projectDir, '../.rsstack/rsReticulum/crates/rns-runtime/Cargo.toml'),
   );
   const lxmfCore = path.normalize(
-    path.join(projectDir, '../../rsLXMF/crates/lxmf-core/Cargo.toml'),
+    path.join(projectDir, '../.rsstack/rsLXMF/crates/lxmf-core/Cargo.toml'),
   );
   return fs.existsSync(rnsRuntime) && fs.existsSync(lxmfCore);
 }
 
-/** Cargo build args: full RNS stack (+ BLE) when Ratspeak siblings are present. */
+/** Cargo build args: full RNS stack (+ BLE) when the repo-local .rsstack is present. */
 export function sidecarCargoBuildArgs(projectDir: string): string[] {
   if (hasRnsStackSiblings(projectDir)) {
     return ['build', '--features', 'rns-stack,rns-ble,rns-rnode-tcp'];
@@ -133,7 +133,7 @@ export function ensureRsReticulumPatchesScriptPath(projectDir: string): string {
   );
 }
 
-/** Apply rsReticulum overlays when Ratspeak siblings exist (no-op for stub builds). */
+/** Apply rsReticulum overlays when the repo-local .rsstack workspace exists (no-op for stub builds). */
 export function ensureRsReticulumPatches(projectDir: string): void {
   if (!hasRnsStackSiblings(projectDir)) return;
 

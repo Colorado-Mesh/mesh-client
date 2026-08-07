@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "Noch keine gespeicherten Farben — verwenden Sie Speichern, um einen Kontrollpunkt zu erstellen",
     "saveThemeButton": "Speichern",
     "restoreThemeButton": "Wiederherstellen",
-    "reticulumPropagationHelp": "Konfigurieren Sie Remote-LXMF-Verbreitungsknoten für Offline-DMS. Die lokale Ausbreitung ist nur der Posteingang dieses Geräts — sie ersetzt keinen Remote-Knoten.",
     "use24HourTime": "24-Stunden-Zeitformat",
     "use24HourTimeDesc": "Erzwinge Uhren wie Chat-Zeitstempel im 24-Stunden-Format. Wenn diese Option deaktiviert ist, folgt sie Ihrem Systemgebietsschema.",
     "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
     "themeRestoreFailed": "Farbprüfpunkt konnte nicht wiederhergestellt werden.",
     "themeResetFailed": "Farben konnten nicht zurückgesetzt werden.",
-    "messageActionsBarBgVisible": "Zeige Hintergrund"
+    "messageActionsBarBgVisible": "Zeige Hintergrund",
+    "reticulumPropagationMoved": "Die Einrichtung des Ausbreitungsknotens und der Synchronisierungsmodus (Aus / Auto / Manuell) wurden zu den → Netzwerkverbreitungsknoten verschoben."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "Der lokale Host-Verbreitungsknoten kann nicht wie ein entfernter LXMF-Verbreitungsknoten über das Netzwerk synchronisiert werden.",
     "enableFailed": "Der Ausbreitungsknoten konnte nicht aktiviert werden.",
     "disableFailed": "Der Ausbreitungsknoten konnte nicht deaktiviert werden.",
-    "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt.",
     "modeLabel": "Ausbreitungsmodus",
     "modeAria": "Ausbreitungssynchronisationsmodus",
     "modeAuto": "Automatisch",
     "modeManual": "Hand",
     "modeOff": "Aus",
-    "sync": "Sync",
-    "syncAria": "Ausbreitungsnachrichten synchronisieren",
-    "cancelSync": "Abbrechen",
-    "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
+    "modeHelpOff": "Aus: keine automatischen bevorzugten Änderungen und keine periodische Synchronisierung. Sie können weiterhin manuell einen bevorzugten Knoten für die ausgehende Kaskade festlegen.",
+    "modeHelpAuto": "Auto: Der jeweils beste Ausbreitungsknoten wird automatisch ausgewählt (erkannt oder konfiguriert, ansonsten wird Ihr lokaler Knoten verwaltet) und Preferred wird für Sie verwaltet. Set preferred und Add & prefer sind deaktiviert.",
+    "modeHelpManual": "Manuell: Sie heften den bevorzugten Knoten an. Sync verwendet diesen Knoten; andere aktivierte Fernbedienungen bleiben als Kaskaden-Backups erhalten.",
+    "autoManagedHint": "Im Auto-Modus wird der bevorzugte Knoten verwaltet. Wechseln Sie zu Manuell, um es selbst anzuheften."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

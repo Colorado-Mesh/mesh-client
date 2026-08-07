@@ -381,13 +381,13 @@
     "noSavedThemeTooltip": "아직 저장된 색상이 없습니다. 저장 을 사용하여 체크포인트를 만드세요.",
     "saveThemeButton": "저장",
     "restoreThemeButton": "복원",
-    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다.",
     "use24HourTime": "24시간 사용",
     "use24HourTimeDesc": "채팅 타임스탬프와 같은 시계를 24시간 형식으로 강제 설정합니다. 꺼지면 시스템 로케일을 따릅니다.",
     "themeSaveFailed": "색상 체크포인트를 저장하지 못했습니다.",
     "themeRestoreFailed": "색상 체크포인트를 복원하지 못했습니다.",
     "themeResetFailed": "색상을 재설정하지 못했습니다.",
-    "messageActionsBarBgVisible": "배경 표시"
+    "messageActionsBarBgVisible": "배경 표시",
+    "reticulumPropagationMoved": "전파 노드 설정 및 동기화 모드 (꺼짐/자동/수동) 가 네트워크 → 전파 노드로 이동했습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -4243,18 +4243,16 @@
     "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다.",
     "enableFailed": "전파 노드를 활성화할 수 없습니다.",
     "disableFailed": "전파 노드를 비활성화할 수 없습니다.",
-    "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다.",
     "modeLabel": "전파 모드",
     "modeAria": "전파 동기화 모드",
     "modeAuto": "자동",
     "modeManual": "수동",
     "modeOff": "해제",
-    "sync": "동기화",
-    "syncAria": "전파 메시지 동기화",
-    "cancelSync": "취소",
-    "cancelSyncAria": "전파 동기화 취소"
+    "modeHelpOff": "꺼짐: 자동 기본 설정 변경 없음 및 주기적 동기화 없음. 아웃바운드 캐스케이드에 대해 선호 노드를 수동으로 설정할 수 있습니다.",
+    "modeHelpAuto": "자동: 가장 좋은 전파 노드는 시간에 자동으로 선택되고 (검색 또는 구성, 그렇지 않으면 로컬 노드) 선호는 당신을 위해 관리됩니다. 기본 설정 및 추가 및 기본 설정이 비활성화되어 있습니다.",
+    "modeHelpManual": "수동: 선호하는 노드를 고정합니다. 동기화는 해당 노드를 사용합니다. 활성화된 다른 리모컨은 캐스케이드 백업으로 유지됩니다.",
+    "autoManagedHint": "자동 모드는 기본 설정 노드를 관리합니다. 수동으로 전환하여 직접 고정하세요."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",

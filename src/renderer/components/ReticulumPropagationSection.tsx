@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import {
+  pickAutoPropagationTarget,
+  readReticulumPropagationMode,
+  resolvePropagationSyncTargetId,
+  type ReticulumPropagationMode,
+  writeReticulumPropagationMode,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
   type DiscoveredPropagationRow,
@@ -42,6 +49,8 @@ interface DiscoveredPropagationListProps {
   configuredHashes: ReadonlySet<string>;
   onAdd: (destinationHash: string, prefer?: boolean) => void;
   adding?: boolean;
+  /** When Auto manages Preferred, hide the explicit "Add & prefer" action. */
+  hidePrefer?: boolean;
 }
 
 function DiscoveredPropagationList({
@@ -49,6 +58,7 @@ function DiscoveredPropagationList({
   configuredHashes,
   onAdd,
   adding = false,
+  hidePrefer = false,
 }: Readonly<DiscoveredPropagationListProps>) {
   const { t } = useTranslation();
   const visibleDiscovered = discovered.filter(
@@ -104,19 +114,21 @@ function DiscoveredPropagationList({
                   >
                     {t('reticulumPropagation.discoveredAdd')}
                   </button>
-                  <button
-                    type="button"
-                    disabled={adding}
-                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
-                    aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
-                      name: label,
-                    })}
-                    onClick={() => {
-                      onAdd(row.destination_hash, true);
-                    }}
-                  >
-                    {t('reticulumPropagation.discoveredAddPrefer')}
-                  </button>
+                  {!hidePrefer ? (
+                    <button
+                      type="button"
+                      disabled={adding}
+                      className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
+                      aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
+                        name: label,
+                      })}
+                      onClick={() => {
+                        onAdd(row.destination_hash, true);
+                      }}
+                    >
+                      {t('reticulumPropagation.discoveredAddPrefer')}
+                    </button>
+                  ) : null}
                 </div>
               </li>
             );
@@ -162,10 +174,40 @@ export default function ReticulumPropagationSection({
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [mode, setMode] = useState<ReticulumPropagationMode>(() => readReticulumPropagationMode());
+
+  const isAuto = mode === 'auto';
 
   useEffect(() => {
     void refreshFromSidecar();
   }, [refreshFromSidecar]);
+
+  const applyAutoPreferred = useCallback(async () => {
+    const target = pickAutoPropagationTarget(nodes, discovered);
+    if (!target) return;
+    if (target.kind === 'configured') {
+      if (target.id === preferredId) return;
+      await setPreferredOnSidecar(target.id);
+    } else if (target.kind === 'local') {
+      if (preferredId === 'local-prop') return;
+      await setPreferredOnSidecar('local-prop');
+    } else {
+      // Discovered but not yet configured: soft-upsert (add + prefer) so the sidecar
+      // Preferred/sync/cascade APIs work — no manual Add click required.
+      await addFromDiscovered(target.destinationHash, { prefer: true });
+    }
+  }, [nodes, discovered, preferredId, setPreferredOnSidecar, addFromDiscovered]);
+
+  useEffect(() => {
+    if (!isAuto) return;
+    // floating-ok: setPreferredOnSidecar/addFromDiscovered never reject (return false on failure)
+    void applyAutoPreferred();
+  }, [isAuto, applyAutoPreferred]);
+
+  const handleModeChange = (next: ReticulumPropagationMode) => {
+    setMode(next);
+    writeReticulumPropagationMode(next);
+  };
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -211,6 +253,17 @@ export default function ReticulumPropagationSection({
       .map((n) => n.destination_hash?.toLowerCase())
       .filter((h): h is string => typeof h === 'string' && h.length > 0),
   );
+
+  const modeHelpKey =
+    mode === 'auto'
+      ? 'reticulumPropagation.modeHelpAuto'
+      : mode === 'manual'
+        ? 'reticulumPropagation.modeHelpManual'
+        : 'reticulumPropagation.modeHelpOff';
+
+  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId);
+  const bottomSyncDisabled =
+    sync.active || mode === 'off' || !bottomSyncTargetId || bottomSyncTargetId === 'local-prop';
 
   const body = (
     <>
@@ -324,7 +377,9 @@ export default function ReticulumPropagationSection({
               <span className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline"
+                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                  disabled={isAuto}
+                  title={isAuto ? t('reticulumPropagation.autoManagedHint') : undefined}
                   onClick={() => {
                     void setPreferredOnSidecar(node.id)
                       .then((ok) => {
@@ -423,6 +478,35 @@ export default function ReticulumPropagationSection({
         })}
       </ul>
       <div className="mt-3 space-y-1">
+        <label htmlFor="reticulum-propagation-mode" className="text-muted text-xs">
+          {t('reticulumPropagation.modeLabel')}
+        </label>
+        <select
+          id="reticulum-propagation-mode"
+          value={mode}
+          disabled={sync.active}
+          onChange={(e) => {
+            handleModeChange(e.target.value as ReticulumPropagationMode);
+          }}
+          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          aria-label={t('reticulumPropagation.modeAria')}
+          aria-describedby="reticulum-propagation-mode-help"
+        >
+          <option value="off" title={t('reticulumPropagation.modeHelpOff')}>
+            {t('reticulumPropagation.modeOff')}
+          </option>
+          <option value="auto" title={t('reticulumPropagation.modeHelpAuto')}>
+            {t('reticulumPropagation.modeAuto')}
+          </option>
+          <option value="manual" title={t('reticulumPropagation.modeHelpManual')}>
+            {t('reticulumPropagation.modeManual')}
+          </option>
+        </select>
+        <p id="reticulum-propagation-mode-help" className="text-muted text-xs">
+          {t(modeHelpKey)}
+        </p>
+      </div>
+      <div className="mt-3 space-y-1">
         <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">
           {t('reticulumPropagation.autoSyncIntervalLabel')}
         </label>
@@ -454,11 +538,13 @@ export default function ReticulumPropagationSection({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={!preferredId || sync.active}
+          disabled={bottomSyncDisabled}
           className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
           aria-label={t('reticulumPropagation.syncNowPreferredAria')}
           onClick={() => {
-            void startSync();
+            if (bottomSyncTargetId) {
+              void startSync(bottomSyncTargetId);
+            }
           }}
         >
           {t('reticulumPropagation.syncNow')}
@@ -481,6 +567,7 @@ export default function ReticulumPropagationSection({
         configuredHashes={configuredHashes}
         onAdd={handleAddFromDiscovered}
         adding={adding}
+        hidePrefer={isAuto}
       />
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">
