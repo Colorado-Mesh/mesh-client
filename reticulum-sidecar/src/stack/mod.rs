@@ -24,6 +24,8 @@ mod persistence;
 #[cfg(feature = "rns-stack")]
 mod pn_hosting_apply;
 mod pn_hosting_policy;
+#[cfg(feature = "rns-stack")]
+mod pn_inbound;
 pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;

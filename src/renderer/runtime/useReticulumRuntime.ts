@@ -82,6 +82,7 @@ import {
 import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
 import {
   applyPropagationSyncEvent,
+  normalizePropagationSyncProgress,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
@@ -698,7 +699,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const catchUpRecentInboundLxmf = useCallback(
     async (opts?: { sinceTs?: number; sinceSeq?: number; reason?: string }) => {
-      if (!identityId) return;
+      if (!identityId) return null;
       const outcome = await runInboundLxmfCatchUp({
         identityId,
         ingest: ingestLxmfPayload,
@@ -706,11 +707,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ...(opts?.sinceSeq != null ? { sinceSeq: opts.sinceSeq } : {}),
         ...(opts?.reason != null ? { reason: opts.reason } : {}),
       });
-      if (!outcome) return;
+      if (!outcome) return null;
       noteReticulumInboundCatchUp(outcome.count);
       if (outcome.watermarkTs != null) {
         advanceReticulumInboundCatchUpWatermark(outcome.watermarkTs, outcome.watermarkSeq);
       }
+      return outcome;
     },
     [identityId, ingestLxmfPayload],
   );
@@ -831,8 +833,36 @@ export function useReticulumRuntime(): ProtocolRuntime {
         typeof evt.payload === 'object'
       ) {
         const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
+        const wasSyncActive = useReticulumPropagationStore.getState().sync.active;
         applyPropagationSyncEvent(p);
         scheduleDebouncedDiagnosticsRefresh();
+        // Sync Completes can leave inbound LXMF only in the sidecar ring until the next
+        // periodic catch-up — pull immediately so Chat updates without waiting ~60s.
+        const normalizedProgress = normalizePropagationSyncProgress(
+          typeof p.progress === 'number' ? p.progress : 0,
+        );
+        if (
+          wasSyncActive &&
+          p.active === false &&
+          normalizedProgress >= 100 &&
+          (p.message == null || p.message === '')
+        ) {
+          void catchUpRecentInboundLxmf({ reason: 'propagation_sync' })
+            .then((outcome) => {
+              // null = empty ring / no watermark advance (HaveAll with no new mail).
+              const count = outcome?.count ?? 0;
+              console.debug(
+                `[useReticulumRuntime] propagation-retrieve catch-up after sync Completes count=${count}${
+                  outcome == null ? ' (empty ring)' : ''
+                }`,
+              );
+            })
+            .catch((e: unknown) => {
+              console.warn(
+                '[useReticulumRuntime] propagation_sync catch-up failed ' + errLikeToLogString(e),
+              );
+            });
+        }
       }
       if (evt.type === 'propagation.discovered' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as {

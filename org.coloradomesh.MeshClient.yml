@@ -57,8 +57,12 @@ modules:
       # .npmrc (older) runs outside the sandbox, so $PWD there is the host cache
       # path, not the in-sandbox /run/build/mesh-client path.
       - node scripts/flatpak-pnpm-install.mjs
-      # Build renderer, main, and preload
-      - pnpm run build
+      # Build renderer, main, and preload (optional CI stamp from flatpak/ci-build-info.json)
+      - |
+        if [ -f flatpak/ci-build-info.json ]; then
+          export MESH_CLIENT_BUILD_INFO="$(cat flatpak/ci-build-info.json)"
+        fi
+        pnpm run build
       # Rebuild native addons (noble BLE, sqlite) against the bundled Electron ABI
       - pnpm run rebuild
       # Install app payload (Electron binary + app roots; zypak needs a real Chromium binary)

@@ -1,5 +1,6 @@
 name: Build Flatpak
-run-name: Build Flatpak${{ github.event_name == 'workflow_dispatch' && ' (no release)' || '' }}
+# Dual-purpose: manual dispatch = test (no release); tag push = publish to GitHub Release.
+run-name: ${{ github.event_name == 'workflow_dispatch' && 'Build Flatpak (no release)' || 'Build Flatpak' }}
 
 on:
   workflow_dispatch:
@@ -27,9 +28,13 @@ jobs:
         id: compare
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_LABEL: >-
+            ${{ github.event_name == 'workflow_dispatch'
+            && 'Build Flatpak (no release)'
+            || 'Build Flatpak' }}
         run: >
           node scripts/ci-schema-release-compare.mjs
-          --workflow-label "Build Flatpak"
+          --workflow-label "${WORKFLOW_LABEL}"
           --write-readme READ-ME-FIRST-flatpak.md
 
       - name: Upload READ-ME-FIRST warning
@@ -157,8 +162,22 @@ jobs:
           console.log('generated-sources storeDir YAML: ok');
           EOF
 
+      # Embed buildChannel=test|release + Actions runUrl into the Flatpak main bundle.
+      - name: Stamp CI build info
+        env:
+          MESH_CLIENT_BUILD_CHANNEL: ${{ github.event_name == 'workflow_dispatch' && 'test' || 'release' }}
+          MESH_CLIENT_BUILD_WORKFLOW: >-
+            ${{ github.event_name == 'workflow_dispatch'
+            && 'Build Flatpak (no release)'
+            || 'Build Flatpak' }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-write-build-info-env.mjs
+          node scripts/write-flatpak-ci-build-info.mjs
+
       # flatpak/flatpak-github-actions v6 appends -${arch} to the artifact name on upload;
       # keep bundle arch-agnostic here to avoid org.coloradomesh.MeshClient-aarch64-aarch64.flatpak.
+      # upload-artifact: false — we upload once after smoke (+ optional -run{N} rename on dispatch).
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
         with:
           bundle: org.coloradomesh.MeshClient.flatpak
@@ -166,7 +185,7 @@ jobs:
           arch: ${{ matrix.arch }}
           branch: stable
           cache-key: flatpak-builder-${{ matrix.arch }}-${{ github.sha }}
-          upload-artifact: true
+          upload-artifact: false
 
       - name: Smoke test Flatpak install
         run: |
@@ -195,8 +214,22 @@ jobs:
             exit 1
           fi
 
-      # flatpak-builder already uploaded the .flatpak; attach the schema warning beside it
-      # for workflow_dispatch test builds (and tag runs) downloading Actions artifacts.
+      # Test (dispatch) only: stamp downloadable basename with -run{N}. Tag releases stay clean.
+      - name: Rename test Flatpak bundle with run number
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/rename-test-build-artifacts.mjs --flatpak .
+
+      # Artifact name ends with .flatpak so publish flatten → flatpak-dist/*.flatpak matches.
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: org.coloradomesh.MeshClient.flatpak-${{ matrix.arch }}.flatpak
+          path: |
+            org.coloradomesh.MeshClient*.flatpak
+          if-no-files-found: error
+          retention-days: 30
+
+      # Schema warning beside the bundle for Actions downloads.
       - name: Upload READ-ME-FIRST with Flatpak artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -219,7 +252,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: 'org.coloradomesh.MeshClient-*'
+          pattern: 'org.coloradomesh.MeshClient.flatpak-*.flatpak'
           path: flatpak-dist
 
       - name: Flatten arch-suffixed bundles for release

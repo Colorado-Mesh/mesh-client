@@ -169,8 +169,8 @@ Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars
 
 1. **`schema-release-compare`** — compares this SHA’s schema to the last published release; uploads `READ-ME-FIRST-flatpak.md` (included again beside Flatpak Actions artifacts)
 2. **`reticulum-sidecar`** — builds `mesh-client-reticulum` per arch (x86_64 on `ubuntu-latest`, aarch64 on `ubuntu-24.04-arm`) with full RNS stack features
-3. **`flatpak`** — writes schema upgrade notice into `resources/` when bumped, generates offline pnpm sources, builds `org.coloradomesh.MeshClient.flatpak` per arch inside the Flathub freedesktop 24.08 container, smoke-installs the bundle
-4. **`publish`** — attaches both `.flatpak` files to the GitHub Release with **`draft: true`** (does not auto-publish an existing draft)
+3. **`flatpak`** — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds `org.coloradomesh.MeshClient.flatpak` per arch inside the Flathub freedesktop 24.08 container, smoke-installs the unstamped bundle (manual **Build Flatpak (no release)** dispatch also renames downloadable artifacts to `…-run{N}.flatpak`; tag runs keep clean names)
+4. **`publish`** (tag only) — attaches both clean-named `.flatpak` files to the GitHub Release with **`draft: true`** (does not auto-publish an existing draft)
 
 Both tag-triggered workflows must complete before the release is fully populated. Flatpak bundles often arrive a few minutes after the Electron artifacts.
 
