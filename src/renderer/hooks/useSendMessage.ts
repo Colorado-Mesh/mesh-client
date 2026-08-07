@@ -7,7 +7,7 @@ import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import {
-  isMeshcoreTcpSoftApDeadAccepted,
+  isMeshcoreTcpOpenHopDeadAccepted,
   trackMeshcoreTcpUserTxSend,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
@@ -148,8 +148,8 @@ export function useSendMessage(
       }
 
       if (!handle) {
-        // SoftAP dead bridge may still send via quiet reopen (handle recreated on open).
-        if (!(identity.protocol.type === 'meshcore' && isMeshcoreTcpSoftApDeadAccepted())) {
+        // OpenHop dead bridge may still send via quiet reopen (handle recreated on open).
+        if (!(identity.protocol.type === 'meshcore' && isMeshcoreTcpOpenHopDeadAccepted())) {
           console.warn('[useSendMessage] no handle for', identityId);
           return;
         }
@@ -207,10 +207,10 @@ export function useSendMessage(
 
       const wireText = resolvedOutbound.wireText;
 
-      if (isMeshcore && isMeshcoreTcpSoftApDeadAccepted()) {
+      if (isMeshcore && isMeshcoreTcpOpenHopDeadAccepted()) {
         void (async () => {
           try {
-            const applySoftApSendResult = (res: { packetId?: number }): void => {
+            const applyOpenHopSendResult = (res: { packetId?: number }): void => {
               const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
               if (res.packetId != null && resolvedId !== provisionalId) {
                 renameMessageId(identityId, provisionalId, resolvedId);
@@ -239,7 +239,7 @@ export function useSendMessage(
                 replyTo,
               });
               trackMeshcoreTcpUserTxSend(sendPromise);
-              applySoftApSendResult(await sendPromise);
+              applyOpenHopSendResult(await sendPromise);
               return;
             }
             const res = await runTx(async () => {
@@ -255,12 +255,12 @@ export function useSendMessage(
                 replyTo,
               });
             });
-            // Only after SoftAP retry loop resolves — not inside the parked op (latch-retry
+            // Only after OpenHop retry loop resolves — not inside the parked op (latch-retry
             // may re-run the send; premature acked would stick if attempt 2 failed).
-            applySoftApSendResult(res);
+            applyOpenHopSendResult(res);
           } catch (e: unknown) {
             const errMsg = errLikeToLogString(e);
-            console.warn('[useSendMessage] SoftAP live reopen failed ' + errMsg);
+            console.warn('[useSendMessage] OpenHop live reopen failed ' + errMsg);
             updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
             persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
           }
@@ -275,7 +275,7 @@ export function useSendMessage(
 
       const finishSend = (
         sendHandle: NonNullable<typeof handle>,
-        opts?: { trackForSoftApLiveWindow?: boolean },
+        opts?: { trackForOpenHopLiveWindow?: boolean },
       ): void => {
         const sendPromise = identity.protocol.sendMessage(sendHandle, {
           text: wireText,
@@ -284,7 +284,7 @@ export function useSendMessage(
           destinationPubKey,
           replyTo,
         });
-        if (opts?.trackForSoftApLiveWindow) {
+        if (opts?.trackForOpenHopLiveWindow) {
           trackMeshcoreTcpUserTxSend(sendPromise);
         }
         void sendPromise.then(

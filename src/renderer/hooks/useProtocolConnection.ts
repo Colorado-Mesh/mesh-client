@@ -62,7 +62,7 @@ export function useProtocolConnect(): (
       blePeripheralId?: string,
     ) => {
       if (protocol === 'meshcore') {
-        // Delegate to runtime connect — do not reassemble prepare/driver/attach here (Neal SoftAP:
+        // Delegate to runtime connect — do not reassemble prepare/driver/attach here (Neal OpenHop:
         // that skipped session params + TCP deferred-reconnect after #792 / burst-complete).
         const mcType = meshcoreConnectionType(type);
         await getMeshcoreSession().connect(mcType, httpAddress, blePeripheralId);

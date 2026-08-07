@@ -43,13 +43,33 @@ export function meshcoreWaitingMessagesStatusText(
   const syncBusy = waitingMessagesSyncActive || waitingMessagesSilentDrainActive;
 
   if (syncBusy) {
+    if (waitingMessagesSyncProgress && waitingMessagesSyncProgress.total > 0) {
+      return appendSerialHint(
+        t,
+        t('chatPanel.waitingMessagesSyncProgress', {
+          processed: waitingMessagesSyncProgress.processed,
+          total: waitingMessagesSyncProgress.total,
+        }),
+        connectionType,
+        waitingMessagesSilentDrainActive && !waitingMessagesSyncActive,
+      );
+    }
+    if (
+      waitingMessagesSilentDrainActive &&
+      !waitingMessagesSyncActive &&
+      waitingMessagesSyncProgress?.total === 0
+    ) {
+      return appendSerialHint(
+        t,
+        t('chatPanel.waitingMessagesSilentFetched', {
+          processed: waitingMessagesSyncProgress.processed,
+        }),
+        connectionType,
+        true,
+      );
+    }
     const primary = waitingMessagesSyncActive
-      ? waitingMessagesSyncProgress && waitingMessagesSyncProgress.total > 0
-        ? t('chatPanel.waitingMessagesSyncProgress', {
-            processed: waitingMessagesSyncProgress.processed,
-            total: waitingMessagesSyncProgress.total,
-          })
-        : t('chatPanel.waitingMessagesSyncProgressIndeterminate')
+      ? t('chatPanel.waitingMessagesSyncProgressIndeterminate')
       : t('chatPanel.waitingMessagesSilentDrain');
     return appendSerialHint(
       t,

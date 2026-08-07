@@ -88,7 +88,7 @@ describe('ConnectionDriver', () => {
   });
 
   it('connect with skipDiscoverSelf skips protocol.discoverSelf', async () => {
-    const host = `softap-skip-${Date.now()}`;
+    const host = `openhop-skip-${Date.now()}`;
     const params: TransportParams = { type: 'tcp', host };
     const fakeHandle = { kind: 'mock-meshcore-tcp' } as unknown as Connection;
 

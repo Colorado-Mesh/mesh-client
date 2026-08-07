@@ -174,21 +174,21 @@ import {
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
-  clearMeshcoreSoftApPendingUserTx,
-  decideSoftApUserTxAfterEnsureFailure,
+  clearMeshcoreOpenHopPendingUserTx,
+  decideOpenHopUserTxAfterEnsureFailure,
   isMeshcoreTcpBurstDeadBridge,
-  isMeshcoreTcpSoftApDeadAccepted,
-  MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS,
+  isMeshcoreTcpOpenHopDeadAccepted,
+  MESHCORE_TCP_OPENHOP_USER_TX_REOPEN_DELAY_MS,
   notifyMeshcoreTcpLiveForUserTx,
   rejectMeshcoreTcpLiveForUserTx,
-  runMeshcoreSoftApPendingUserTx,
+  runMeshcoreOpenHopPendingUserTx,
   runWithMeshcoreTcpDeadWriteRetry,
-  setMeshcoreSoftApPendingUserTx,
-  setMeshcoreTcpSoftApDeadAccepted,
+  setMeshcoreOpenHopPendingUserTx,
+  setMeshcoreTcpOpenHopDeadAccepted,
   setMeshcoreTcpWriteDeadListener,
-  settleSoftApPendingResult,
+  settleOpenHopPendingResult,
   shouldDeferMeshcoreTcpReconnectAfterBurst,
-  throwIfMeshcoreTcpBridgeDiedDuringSoftApOp,
+  throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp,
   trackMeshcoreTcpUserTxSend,
   waitForMeshcoreTcpLiveForUserTx,
   yieldToMeshcoreTcpUserTxSends,
@@ -435,6 +435,8 @@ import {
   MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_STATS_POLL_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+  MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
+  MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
@@ -589,6 +591,8 @@ export function useMeshcoreRuntime() {
   } | null>(null);
   const [waitingMessagesSilentDrainActive, setWaitingMessagesSilentDrainActive] = useState(false);
   const [waitingMessagesDrainDeferred, setWaitingMessagesDrainDeferred] = useState(false);
+  /** True while silent or manual waiting-message drain holds the companion RPC lane. */
+  const waitingMessagesDrainBusyRef = useRef(false);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
@@ -623,7 +627,7 @@ export function useMeshcoreRuntime() {
   /**
    * Set when main emits meshcore:tcp-disconnected (or write fail-closed). Cleared on prepareRfConnect
    * for a new TCP open. Lets initConn abort before contacts→UI / getChannels even if the IPC
-   * event arrives a tick before setup-generation bump is observed (Fuzzy SoftAP write storms).
+   * event arrives a tick before setup-generation bump is observed (Fuzzy OpenHop write storms).
    */
   const meshcoreTcpBridgeDeadRef = useRef(false);
   /**
@@ -638,10 +642,10 @@ export function useMeshcoreRuntime() {
    */
   const meshcoreTcpContactsDumpInFlightRef = useRef(false);
   /**
-   * SoftAP/OpenHop user TX: true while `ensureTcpLiveForUserTx` has started a quiet `connect()`
+   * OpenHop user TX: true while `ensureTcpLiveForUserTx` has started a quiet `connect()`
    * reopen (not handleMeshcoreConnectionLost). Concurrent sends await the same live window.
    */
-  const meshcoreSoftApUserTxReopenInFlightRef = useRef(false);
+  const meshcoreOpenHopUserTxReopenInFlightRef = useRef(false);
   /**
    * True for the duration of `initConn`. After configure-before-dump, peer FIN once the contacts
    * burst is held must defer reconnect (not bump setup gen) until init finishes.
@@ -780,12 +784,12 @@ export function useMeshcoreRuntime() {
 
   /** Fetch and update local radio stats (core, radio, packet). Called by requestRefresh and on connect. */
   const fetchAndUpdateLocalStats = useCallback(async () => {
-    // SoftAP/OpenHop accepted dead bridge — companion RPCs only reopen on user TX.
-    if (isMeshcoreTcpSoftApDeadAccepted()) return;
+    // OpenHop accepted dead bridge — companion RPCs only reopen on user TX.
+    if (isMeshcoreTcpOpenHopDeadAccepted()) return;
     const conn = connRef.current;
     if (!conn) return;
-    // SoftAP/OpenHop: peer FIN left a dead bridge — stats RPCs only spam tcp-write errors.
-    if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreTcpBridgeDeadRef.current) {
+    // OpenHop: peer FIN left a dead bridge — stats RPCs only spam tcp-write errors.
+    if (meshcoreTcpBridgeDeadRef.current) {
       return;
     }
     let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
@@ -988,6 +992,11 @@ export function useMeshcoreRuntime() {
   }, [waitingMessagesCount]);
 
   useEffect(() => {
+    waitingMessagesDrainBusyRef.current =
+      waitingMessagesSyncActive || waitingMessagesSilentDrainActive;
+  }, [waitingMessagesSyncActive, waitingMessagesSilentDrainActive]);
+
+  useEffect(() => {
     rawPacketsRef.current = rawPackets;
   }, [rawPackets]);
 
@@ -1002,7 +1011,7 @@ export function useMeshcoreRuntime() {
       meshcoreStatsPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
         if (meshcoreInitConnInFlightRef.current) return;
-        if (isMeshcoreTcpSoftApDeadAccepted()) return;
+        if (isMeshcoreTcpOpenHopDeadAccepted()) return;
         void fetchAndUpdateLocalStats().catch((e: unknown) => {
           console.warn('[useMeshcoreRuntime] periodic stats poll failed ' + errLikeToLogString(e));
         });
@@ -2202,17 +2211,17 @@ export function useMeshcoreRuntime() {
           })();
         }
 
-        // SoftAP user-TX reopen: skip getSelfInfo / contacts — run parked user command as the
+        // OpenHop user-TX reopen: skip getSelfInfo / contacts — run parked user command as the
         // first companion RPC (peer FINs ~160ms after self-info; notify→setChannel always loses).
-        const softApUserTxReopen = meshcoreSoftApUserTxReopenInFlightRef.current;
-        if (softApUserTxReopen) {
+        const openHopUserTxReopen = meshcoreOpenHopUserTxReopenInFlightRef.current;
+        if (openHopUserTxReopen) {
           console.debug(
-            '[useMeshcoreRuntime] SoftAP user-TX reopen — first-RPC path (skip getSelfInfo)',
+            '[useMeshcoreRuntime] OpenHop user-TX reopen — first-RPC path (skip getSelfInfo)',
           );
           const transportType = meshcoreConnectTypeRef.current;
           const myNodeId = myNodeNumRef.current;
           const priorSelf = selfInfoRef.current;
-          // Stay configured for the whole SoftAP reopen (no connected→configured header flicker).
+          // Stay configured for the whole OpenHop reopen (no connected→configured header flicker).
           setState((prev) => ({
             ...prev,
             myNodeNum: myNodeId || prev.myNodeNum,
@@ -2236,7 +2245,7 @@ export function useMeshcoreRuntime() {
               myNodeNum: myNodeId,
             });
           }
-          const promoteConfiguredSoftAp = (): void => {
+          const promoteConfiguredOpenHop = (): void => {
             setState((prev) => ({
               ...prev,
               myNodeNum: myNodeId || prev.myNodeNum,
@@ -2256,10 +2265,10 @@ export function useMeshcoreRuntime() {
           };
           try {
             const bridgeDeadBefore = meshcoreTcpBridgeDeadRef.current;
-            await runMeshcoreSoftApPendingUserTx();
-            // meshcore.js may resolve Ok while peer FIN latches write-dead — reject so SoftAP
+            await runMeshcoreOpenHopPendingUserTx();
+            // meshcore.js may resolve Ok while peer FIN latches write-dead — reject so OpenHop
             // retry runs (do not notify live on this path).
-            throwIfMeshcoreTcpBridgeDiedDuringSoftApOp(
+            throwIfMeshcoreTcpBridgeDiedDuringOpenHopOp(
               bridgeDeadBefore,
               meshcoreTcpBridgeDeadRef.current,
             );
@@ -2268,23 +2277,23 @@ export function useMeshcoreRuntime() {
             const err =
               e instanceof Error
                 ? e
-                : new Error(errLikeToLogString(e) || 'SoftAP pending user TX failed');
+                : new Error(errLikeToLogString(e) || 'OpenHop pending user TX failed');
             console.warn(
-              '[useMeshcoreRuntime] SoftAP user-TX first-RPC failed ' + errLikeToLogString(err),
+              '[useMeshcoreRuntime] OpenHop user-TX first-RPC failed ' + errLikeToLogString(err),
             );
             rejectMeshcoreTcpLiveForUserTx(err);
           }
           console.debug(
-            '[useMeshcoreRuntime] SoftAP user-TX reopen — skip contacts dump after live send',
+            '[useMeshcoreRuntime] OpenHop user-TX reopen — skip contacts dump after live send',
           );
-          // SoftAP-accept + configured before intentional disconnect (quiet teardown).
+          // OpenHop-accept + configured before intentional disconnect (quiet teardown).
           meshcoreTcpInitBurstCapturedRef.current = true;
           meshcoreTcpBridgeDeadRef.current = true;
-          setMeshcoreTcpSoftApDeadAccepted(true);
-          promoteConfiguredSoftAp();
+          setMeshcoreTcpOpenHopDeadAccepted(true);
+          promoteConfiguredOpenHop();
           void window.electronAPI.meshcore.tcp.disconnect().catch((e: unknown) => {
             console.debug(
-              '[useMeshcoreRuntime] SoftAP user-TX reopen tcp.disconnect ' + errLikeToLogString(e),
+              '[useMeshcoreRuntime] OpenHop user-TX reopen tcp.disconnect ' + errLikeToLogString(e),
             );
           });
           return;
@@ -2325,7 +2334,7 @@ export function useMeshcoreRuntime() {
         );
 
         // TCP: ConnectionDriver.discoverSelf already ran getSelfInfo — reuse to avoid a second
-        // companion RPC that SoftAP/OpenHop often FINs after (Neal/Fuzzy).
+        // companion RPC that OpenHop often FINs after (Neal/Fuzzy).
         const reusedDiscoverSelf =
           sequentialRadioInit && meshcoreConnectTypeRef.current === 'tcp'
             ? takeMeshcoreDiscoverSelfCache(conn)
@@ -2352,7 +2361,7 @@ export function useMeshcoreRuntime() {
         // Latch session readiness after self-info (reconnect / FIN races), but keep UI status at
         // `connected` until the contacts dump settles. Promoting `configured` early starts App
         // flood-advert, stats poll, and static-GPS writes that interleave with getContacts —
-        // SoftAP then FINs mid-dump and meshcore.js Ok/Err listeners race (first-connect hang).
+        // OpenHop then FINs mid-dump and meshcore.js Ok/Err listeners race (first-connect hang).
         const configureBeforeContactsDump = true;
         setState((prev) => ({
           ...prev,
@@ -2432,9 +2441,9 @@ export function useMeshcoreRuntime() {
           }
         };
 
-        // SoftAP user TX: release waiters while the socket is still live — companions often
+        // OpenHop user TX: release waiters while the socket is still live — companions often
         // FIN immediately after getContacts. Await tracked sends before starting the dump.
-        // (SoftAP user-TX reopen returns earlier via first-RPC path above.)
+        // (OpenHop user-TX reopen returns earlier via first-RPC path above.)
         if (transportType === 'tcp' && !meshcoreTcpBridgeDeadRef.current) {
           notifyMeshcoreTcpLiveForUserTx();
           await yieldToMeshcoreTcpUserTxSends();
@@ -2475,7 +2484,7 @@ export function useMeshcoreRuntime() {
             : await parallelContactsPromise!;
           contactsDumpOk = true;
         } catch (e) {
-          // Soft-fail is TCP SoftAP/OpenHop only — BLE/serial getContacts failures must abort.
+          // Soft-fail is TCP OpenHop only — BLE/serial getContacts failures must abort.
           if (
             transportType === 'tcp' &&
             configureBeforeContactsDump &&
@@ -2503,7 +2512,7 @@ export function useMeshcoreRuntime() {
         if (transportType === 'tcp') {
           meshcoreTcpInitBurstCapturedRef.current = true;
         }
-        // Fuzzy SoftAP: peer FIN often lands between getContacts resolve and contacts→UI —
+        // Fuzzy OpenHop: peer FIN often lands between getContacts resolve and contacts→UI —
         // abort before DB/UI work when burst was not yet captured (pre-TCP path above).
         assertInitConnStillLive();
         // Do not mark-all-off-radio + apply an empty dump on soft-fail — that would wipe the
@@ -2689,13 +2698,46 @@ export function useMeshcoreRuntime() {
                   '[useMeshcoreRuntime] post-connect refreshOurPosition ' + errLikeToLogString(e),
                 );
               });
-              void requestTelemetryMeshCoreRef.current(myNodeId).catch((e: unknown) => {
-                if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+              // Give MsgWaiting drain a head start; if the lane is still busy, defer once
+              // more after the same window (do not drop telemetry on first busy sighting).
+              const postConnectTelemetryDelayMs =
+                MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS +
+                MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS;
+              const schedulePostConnectSelfTelemetry = (allowReschedule: boolean): void => {
+                window.setTimeout(() => {
+                  if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
+                    return;
+                  }
+                  if (waitingMessagesDrainBusyRef.current) {
+                    if (allowReschedule) {
+                      console.debug(
+                        '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
+                      );
+                      schedulePostConnectSelfTelemetry(false);
+                      return;
+                    }
+                    console.debug(
+                      '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
+                    );
+                    return;
+                  }
+                  void requestTelemetryMeshCoreRef.current(myNodeId).catch((e: unknown) => {
+                    if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+                    console.debug(
+                      '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
+                        errLikeToLogString(e),
+                    );
+                  });
+                }, postConnectTelemetryDelayMs);
+              };
+              if (waitingMessagesDrainBusyRef.current) {
                 console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
-                    errLikeToLogString(e),
+                  '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
                 );
-              });
+                schedulePostConnectSelfTelemetry(false);
+              } else {
+                schedulePostConnectSelfTelemetry(true);
+              }
             });
           });
 
@@ -2981,10 +3023,10 @@ export function useMeshcoreRuntime() {
       // and reconnect deferral cannot stick after BLE/serial prepare aborts a prior open.
       meshcoreInitConnInFlightRef.current = false;
       meshcoreInitConnInFlightSetupGenRef.current = null;
-      // SoftAP dead-bridge latch can outlive a TCP session — clear on every prepare so
+      // OpenHop dead-bridge latch can outlive a TCP session — clear on every prepare so
       // BLE/serial opens do not inherit a stale "accepted dead bridge" TX path.
       meshcoreTcpBridgeDeadRef.current = false;
-      setMeshcoreTcpSoftApDeadAccepted(false);
+      setMeshcoreTcpOpenHopDeadAccepted(false);
       if (type === 'tcp') {
         meshcoreTcpInitBurstCapturedRef.current = false;
         meshcoreTcpContactsDumpInFlightRef.current = false;
@@ -2997,9 +3039,9 @@ export function useMeshcoreRuntime() {
         serialRediscoveryStopRef.current?.();
         serialRediscoveryStopRef.current = null;
       }
-      // SoftAP chat reopen: keep configured UI (do not flash connecting / wipe myNodeNum).
+      // OpenHop chat reopen: keep configured UI (do not flash connecting / wipe myNodeNum).
       // Full connect/reconnect still uses status=connecting below.
-      if (meshcoreSoftApUserTxReopenInFlightRef.current && type === 'tcp') {
+      if (meshcoreOpenHopUserTxReopenInFlightRef.current && type === 'tcp') {
         setState((s) => ({
           ...s,
           connectionType: 'http',
@@ -3086,11 +3128,11 @@ export function useMeshcoreRuntime() {
 
   const handleRfConnectFailure = useCallback(
     (type: 'ble' | 'serial' | 'tcp', driverIdentityId?: string): Promise<void> => {
-      // SoftAP chat reopen failed mid-handshake: restore accepted dead-bridge session.
-      // Leaving disconnected here stranded SoftAP TX with no reconnect owner (post-fix logs).
-      if (type === 'tcp' && meshcoreSoftApUserTxReopenInFlightRef.current) {
+      // OpenHop chat reopen failed mid-handshake: restore accepted dead-bridge session.
+      // Leaving disconnected here stranded OpenHop TX with no reconnect owner (post-fix logs).
+      if (type === 'tcp' && meshcoreOpenHopUserTxReopenInFlightRef.current) {
         meshcoreTcpBridgeDeadRef.current = true;
-        setMeshcoreTcpSoftApDeadAccepted(true);
+        setMeshcoreTcpOpenHopDeadAccepted(true);
         meshcoreDeferredReconnectRef.current = false;
         meshcoreDeviceConfiguredRef.current = true;
         meshcoreEverConfiguredRef.current = true;
@@ -3103,9 +3145,9 @@ export function useMeshcoreRuntime() {
           myNodeNum: myNodeNum || s.myNodeNum,
         }));
         console.debug(
-          '[useMeshcoreRuntime] SoftAP user-TX reopen failed — restore SoftAP-accepted configured',
+          '[useMeshcoreRuntime] OpenHop user-TX reopen failed — restore OpenHop-accepted configured',
         );
-        clearMeshcoreSoftApPendingUserTx(new Error('MeshCore SoftAP user-TX reopen failed'));
+        clearMeshcoreOpenHopPendingUserTx(new Error('MeshCore OpenHop user-TX reopen failed'));
         teardownMeshcoreConnEventListeners({
           driverDisconnect: true,
           driverIdentityId,
@@ -3462,11 +3504,11 @@ export function useMeshcoreRuntime() {
       }
       // Burst-complete attach left a dead bridge (OpenHop FIN after contacts). UI is configured
       // from the contacts burst — accept that session. Forcing an immediate live-socket retry
-      // loops forever on companions that FIN after every contacts dump (WAN :5054 / SoftAP).
-      // SoftAP-accepted: keep configured; background write-dead must not reconnect-loop.
+      // loops forever on companions that FIN after every contacts dump (WAN :5054 / OpenHop).
+      // OpenHop-accepted: keep configured; background write-dead must not reconnect-loop.
       if (params.rfType === 'tcp' && meshcoreDeferredReconnectRef.current) {
         meshcoreDeferredReconnectRef.current = false;
-        setMeshcoreTcpSoftApDeadAccepted(true);
+        setMeshcoreTcpOpenHopDeadAccepted(true);
         console.debug(
           '[useMeshcoreRuntime] TCP burst-complete reconnect attach — accepting dead bridge (configured)',
         );
@@ -3480,7 +3522,7 @@ export function useMeshcoreRuntime() {
         serialNeedsReselect: false,
         connectionLoss: false,
       }));
-      // SoftAP dead bridge: outbox drain would tcp-write-fail → reconnect thrash.
+      // OpenHop dead bridge: outbox drain would tcp-write-fail → reconnect thrash.
       if (!(params.rfType === 'tcp' && meshcoreTcpBridgeDeadRef.current)) {
         requestChatOutboxDrain('meshcore');
       }
@@ -3685,8 +3727,8 @@ export function useMeshcoreRuntime() {
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
 
-  /** Set after `connect` is defined — SoftAP user TX reopen must not use connection-lost. */
-  const meshcoreConnectForSoftApTxRef = useRef<
+  /** Set after `connect` is defined — OpenHop user TX reopen must not use connection-lost. */
+  const meshcoreConnectForOpenHopTxRef = useRef<
     | ((
         type: 'ble' | 'serial' | 'tcp',
         tcpHost?: string,
@@ -3697,95 +3739,95 @@ export function useMeshcoreRuntime() {
 
   const ensureTcpLiveForUserTx = useCallback(async (): Promise<void> => {
     const bridgeDead = meshcoreTcpBridgeDeadRef.current;
-    const softAp = isMeshcoreTcpSoftApDeadAccepted();
-    if (!softAp && !bridgeDead) {
+    const openHop = isMeshcoreTcpOpenHopDeadAccepted();
+    if (!openHop && !bridgeDead) {
       return;
     }
-    // Already opening — wait for the post-getSelfInfo live window (SoftAP quiet reopen or
-    // reconnect). SoftAP reopen clears bridgeDead before connect settles; do not require live.
+    // Already opening — wait for the post-getSelfInfo live window (OpenHop quiet reopen or
+    // reconnect). OpenHop reopen clears bridgeDead before connect settles; do not require live.
     if (
       meshcoreConnectTypeRef.current === 'tcp' &&
       (meshcoreInitConnInFlightRef.current ||
         meshcoreIsReconnectingRef.current ||
-        meshcoreSoftApUserTxReopenInFlightRef.current)
+        meshcoreOpenHopUserTxReopenInFlightRef.current)
     ) {
       await waitForMeshcoreTcpLiveForUserTx();
       return;
     }
-    // SoftAP-accepted dead bridge: reopen via connect() — not handleMeshcoreConnectionLost.
+    // OpenHop-accepted dead bridge: reopen via connect() — not handleMeshcoreConnectionLost.
     // Connection-lost sets connectionLoss + 2s backoff and looks like a drop on every chat send.
-    if (softAp) {
+    if (openHop) {
       const host = meshcoreConnectionParamsRef.current?.httpAddress?.trim();
-      const connectFn = meshcoreConnectForSoftApTxRef.current;
+      const connectFn = meshcoreConnectForOpenHopTxRef.current;
       if (!host || !connectFn) {
-        throw new Error('MeshCore SoftAP user-TX reopen missing TCP host or connect');
+        throw new Error('MeshCore OpenHop user-TX reopen missing TCP host or connect');
       }
-      // Keep SoftAP latch during settle so background writes stay suppressed. Immediate
+      // Keep OpenHop latch during settle so background writes stay suppressed. Immediate
       // reconnect FINs in <200ms (post-fix); match reconnect attempt-1 backoff.
-      meshcoreSoftApUserTxReopenInFlightRef.current = true;
+      meshcoreOpenHopUserTxReopenInFlightRef.current = true;
       console.debug(
-        `[useMeshcoreRuntime] SoftAP user TX — settle ${MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS}ms before quiet reopen`,
+        `[useMeshcoreRuntime] OpenHop user TX — settle ${MESHCORE_TCP_OPENHOP_USER_TX_REOPEN_DELAY_MS}ms before quiet reopen`,
       );
       await new Promise<void>((resolve) => {
-        setTimeout(resolve, MESHCORE_TCP_SOFTAP_USER_TX_REOPEN_DELAY_MS);
+        setTimeout(resolve, MESHCORE_TCP_OPENHOP_USER_TX_REOPEN_DELAY_MS);
       });
       if (meshcoreExplicitDisconnectRef.current) {
-        meshcoreSoftApUserTxReopenInFlightRef.current = false;
-        throw new Error('MeshCore SoftAP user-TX reopen aborted (user disconnect)');
+        meshcoreOpenHopUserTxReopenInFlightRef.current = false;
+        throw new Error('MeshCore OpenHop user-TX reopen aborted (user disconnect)');
       }
-      setMeshcoreTcpSoftApDeadAccepted(false);
+      setMeshcoreTcpOpenHopDeadAccepted(false);
       meshcoreTcpBridgeDeadRef.current = false;
-      console.debug('[useMeshcoreRuntime] SoftAP user TX — quiet TCP reopen (no connection-lost)');
+      console.debug('[useMeshcoreRuntime] OpenHop user TX — quiet TCP reopen (no connection-lost)');
       void connectFn('tcp', host)
         .catch((e: unknown) => {
           console.warn(
-            '[useMeshcoreRuntime] SoftAP user-TX reopen failed ' + errLikeToLogString(e),
+            '[useMeshcoreRuntime] OpenHop user-TX reopen failed ' + errLikeToLogString(e),
           );
           rejectMeshcoreTcpLiveForUserTx(
-            e instanceof Error ? e : new Error(errLikeToLogString(e) || 'SoftAP reopen failed'),
+            e instanceof Error ? e : new Error(errLikeToLogString(e) || 'OpenHop reopen failed'),
           );
         })
         .finally(() => {
-          meshcoreSoftApUserTxReopenInFlightRef.current = false;
+          meshcoreOpenHopUserTxReopenInFlightRef.current = false;
         });
       await waitForMeshcoreTcpLiveForUserTx();
       return;
     }
-    // Mid-session dead bridge (not SoftAP-accepted): normal reconnect recovery.
-    setMeshcoreTcpSoftApDeadAccepted(false);
+    // Mid-session dead bridge (not OpenHop-accepted): normal reconnect recovery.
+    setMeshcoreTcpOpenHopDeadAccepted(false);
     handleMeshcoreConnectionLostRef.current();
     await waitForMeshcoreTcpLiveForUserTx();
   }, []);
 
-  /** SoftAP / dead-bridge user TX: park op for SoftAP first-RPC reopen; retry once on dead write. */
+  /** OpenHop / dead-bridge user TX: park op for OpenHop first-RPC reopen; retry once on dead write. */
   const runMeshcoreUserTxWithLiveTcp = useCallback(
     async <T>(op: () => Promise<T>): Promise<T> => {
-      const softApIntent = isMeshcoreTcpSoftApDeadAccepted();
-      if (!softApIntent && !meshcoreTcpBridgeDeadRef.current) {
+      const openHopIntent = isMeshcoreTcpOpenHopDeadAccepted();
+      if (!openHopIntent && !meshcoreTcpBridgeDeadRef.current) {
         return op();
       }
-      // Mid-session dead bridge (not SoftAP): reconnect then run op after live window.
-      if (!softApIntent) {
+      // Mid-session dead bridge (not OpenHop): reconnect then run op after live window.
+      if (!openHopIntent) {
         return runWithMeshcoreTcpDeadWriteRetry(ensureTcpLiveForUserTx, op);
       }
 
       let lastErr: unknown;
       for (let attempt = 0; attempt < 2; attempt++) {
-        // SoftAP quiet reopen must stay SoftAP across retries (clearing accepted mid-open
+        // OpenHop quiet reopen must stay OpenHop across retries (clearing accepted mid-open
         // sent attempt 2 into handleMeshcoreConnectionLost + discoverSelf reuse).
-        setMeshcoreTcpSoftApDeadAccepted(true);
-        const resultPromise = setMeshcoreSoftApPendingUserTx(op);
+        setMeshcoreTcpOpenHopDeadAccepted(true);
+        const resultPromise = setMeshcoreOpenHopPendingUserTx(op);
         try {
           await ensureTcpLiveForUserTx();
           return await resultPromise;
         } catch (e: unknown) {
-          clearMeshcoreSoftApPendingUserTx(
-            e instanceof Error ? e : new Error(errLikeToLogString(e) || 'SoftAP TX failed'),
+          clearMeshcoreOpenHopPendingUserTx(
+            e instanceof Error ? e : new Error(errLikeToLogString(e) || 'OpenHop TX failed'),
           );
           // Late write-dead latch after meshcore.js Ok: resultPromise is already fulfilled —
           // return that value. Re-parking would double-send chat.
-          const opSettlement = await settleSoftApPendingResult(resultPromise);
-          const decision = decideSoftApUserTxAfterEnsureFailure({ opSettlement });
+          const opSettlement = await settleOpenHopPendingResult(resultPromise);
+          const decision = decideOpenHopUserTxAfterEnsureFailure({ opSettlement });
           if (decision.action === 'return') return decision.value;
           if (decision.action === 'throw') throw decision.error;
           lastErr = opSettlement.status === 'rejected' ? opSettlement.reason : e;
@@ -3869,7 +3911,7 @@ export function useMeshcoreRuntime() {
           openMeshCoreTransport(type, {
             blePeripheralId,
             host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
-            skipDiscoverSelf: meshcoreSoftApUserTxReopenInFlightRef.current,
+            skipDiscoverSelf: meshcoreOpenHopUserTxReopenInFlightRef.current,
           });
         opened =
           type === 'ble' && isRendererNobleBlePlatform()
@@ -3924,11 +3966,11 @@ export function useMeshcoreRuntime() {
         meshcoreEverConfiguredRef.current = true;
         // Neal OpenHop: peer FIN after contacts — initConn completed configured from the burst
         // with a dead bridge. Do not force an immediate live-socket reconnect (companions that
-        // FIN after every contacts dump would loop forever). SoftAP-accepted suppresses
+        // FIN after every contacts dump would loop forever). OpenHop-accepted suppresses
         // background write-dead → reconnect (flood advert / outbox thrash).
         if (type === 'tcp' && meshcoreDeferredReconnectRef.current) {
           meshcoreDeferredReconnectRef.current = false;
-          setMeshcoreTcpSoftApDeadAccepted(true);
+          setMeshcoreTcpOpenHopDeadAccepted(true);
           console.debug(
             '[useMeshcoreRuntime] TCP burst-complete configure — accepting dead bridge',
           );
@@ -4014,7 +4056,7 @@ export function useMeshcoreRuntime() {
     [prepareRfConnect, attachRfSession, handleRfConnectFailure],
   );
   useLayoutEffect(() => {
-    meshcoreConnectForSoftApTxRef.current = connect;
+    meshcoreConnectForOpenHopTxRef.current = connect;
   }, [connect]);
 
   /**
@@ -4300,7 +4342,7 @@ export function useMeshcoreRuntime() {
         try {
           const hadRadioConn =
             connRef.current != null ||
-            isMeshcoreTcpSoftApDeadAccepted() ||
+            isMeshcoreTcpOpenHopDeadAccepted() ||
             meshcoreTcpBridgeDeadRef.current;
           if (hadRadioConn) {
             await runMeshcoreUserTxWithLiveTcp(async () => {
@@ -4308,8 +4350,8 @@ export function useMeshcoreRuntime() {
               if (!liveConn) throw new Error('Not connected to radio');
               const work = liveConn.sendChannelTextMessage(channelIdx, textToSend);
               if (
-                isMeshcoreTcpSoftApDeadAccepted() ||
-                meshcoreSoftApUserTxReopenInFlightRef.current
+                isMeshcoreTcpOpenHopDeadAccepted() ||
+                meshcoreOpenHopUserTxReopenInFlightRef.current
               ) {
                 trackMeshcoreTcpUserTxSend(work);
               }
@@ -6707,7 +6749,7 @@ export function useMeshcoreRuntime() {
 
   const setMeshcoreChannel = useCallback(
     async (idx: number, name: string, secret: Uint8Array) => {
-      // Validate parameters before SoftAP reopen (avoid pointless TCP churn).
+      // Validate parameters before OpenHop reopen (avoid pointless TCP churn).
       if (!Number.isInteger(idx) || idx < 0 || idx > 39) {
         console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid channel index', idx);
         throw new Error(`Invalid channel index: ${idx}. Must be 0-39.`);
@@ -6740,7 +6782,10 @@ export function useMeshcoreRuntime() {
             throw new Error('Not connected to radio');
           }
           const work = withTimeout(liveConn.setChannel(idx, name, secret), 10_000, 'setChannel');
-          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+          if (
+            isMeshcoreTcpOpenHopDeadAccepted() ||
+            meshcoreOpenHopUserTxReopenInFlightRef.current
+          ) {
             trackMeshcoreTcpUserTxSend(work);
           }
           await work;
@@ -6775,7 +6820,10 @@ export function useMeshcoreRuntime() {
             throw new Error('Not connected to radio');
           }
           const work = liveConn.deleteChannel(idx);
-          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+          if (
+            isMeshcoreTcpOpenHopDeadAccepted() ||
+            meshcoreOpenHopUserTxReopenInFlightRef.current
+          ) {
             trackMeshcoreTcpUserTxSend(work);
           }
           await work;
@@ -7041,7 +7089,7 @@ export function useMeshcoreRuntime() {
     async (glyph: string, replyId: number, channel: number) => {
       if (
         !connRef.current &&
-        !isMeshcoreTcpSoftApDeadAccepted() &&
+        !isMeshcoreTcpOpenHopDeadAccepted() &&
         !meshcoreTcpBridgeDeadRef.current
       ) {
         throw new Error('Not connected to radio');
@@ -7084,7 +7132,10 @@ export function useMeshcoreRuntime() {
           const liveConn = connRef.current;
           if (!liveConn) throw new Error('Not connected to radio');
           const work = liveConn.sendTextMessage(pubKey, tapbackText);
-          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+          if (
+            isMeshcoreTcpOpenHopDeadAccepted() ||
+            meshcoreOpenHopUserTxReopenInFlightRef.current
+          ) {
             trackMeshcoreTcpUserTxSend(work);
           }
           await work;
@@ -7114,7 +7165,10 @@ export function useMeshcoreRuntime() {
           const liveConn = connRef.current;
           if (!liveConn) throw new Error('Not connected to radio');
           const work = liveConn.sendChannelTextMessage(outboundChannel, tapbackText);
-          if (isMeshcoreTcpSoftApDeadAccepted() || meshcoreSoftApUserTxReopenInFlightRef.current) {
+          if (
+            isMeshcoreTcpOpenHopDeadAccepted() ||
+            meshcoreOpenHopUserTxReopenInFlightRef.current
+          ) {
             trackMeshcoreTcpUserTxSend(work);
           }
           await work;
@@ -7480,7 +7534,7 @@ export function useMeshcoreRuntime() {
       }
 
       if (pos.source === 'static' && connRef.current) {
-        // Do not write SetAdvertLatLon during initConn contacts dump — SoftAP FINs mid-dump when
+        // Do not write SetAdvertLatLon during initConn contacts dump — OpenHop FINs mid-dump when
         // GPS/stats/advert RPCs interleave with getContacts (meshcore.js shared Ok/Err).
         if (meshcoreInitConnInFlightRef.current) {
           return pos;
@@ -7742,7 +7796,7 @@ export function useMeshcoreRuntime() {
       meshcoreTcpBridgeDeadRef.current = true;
       // Post-configure contacts dump: keep the configured session; do not reconnect-loop.
       if (meshcoreTcpContactsDumpInFlightRef.current) {
-        setMeshcoreTcpSoftApDeadAccepted(true);
+        setMeshcoreTcpOpenHopDeadAccepted(true);
         console.debug(
           source === 'write'
             ? '[useMeshcoreRuntime] TCP write-dead during post-configure contacts dump — keep configured'
@@ -7758,17 +7812,17 @@ export function useMeshcoreRuntime() {
         deviceConfigured: meshcoreDeviceConfiguredRef.current,
         initConnInFlight: meshcoreInitConnInFlightRef.current,
       });
-      // SoftAP-accepted dead bridge: flood advert / outbox / intentional SoftAP reopen
-      // tcp.disconnect must not reconnect-loop (ipc or write). SoftAP user-TX reopen-in-flight
+      // OpenHop-accepted dead bridge: flood advert / outbox / intentional OpenHop reopen
+      // tcp.disconnect must not reconnect-loop (ipc or write). OpenHop user-TX reopen-in-flight
       // must also stay quiet (accepted cleared mid-open; FIN must not flash connectionLoss).
-      const softApAccepted = isMeshcoreTcpSoftApDeadAccepted();
-      const softApUserTxReopen = meshcoreSoftApUserTxReopenInFlightRef.current;
+      const openHopAccepted = isMeshcoreTcpOpenHopDeadAccepted();
+      const openHopUserTxReopen = meshcoreOpenHopUserTxReopenInFlightRef.current;
       if (defer) {
         meshcoreDeferredReconnectRef.current = true;
-        // Latch SoftAP-accepted as soon as configured+deferred so flood advert cannot
+        // Latch OpenHop-accepted as soon as configured+deferred so flood advert cannot
         // write-dead→lost in the gap before connect() clears deferredReconnect.
         if (meshcoreDeviceConfiguredRef.current && meshcoreEverConfiguredRef.current) {
-          setMeshcoreTcpSoftApDeadAccepted(true);
+          setMeshcoreTcpOpenHopDeadAccepted(true);
         }
         console.debug(
           source === 'write'
@@ -7777,22 +7831,22 @@ export function useMeshcoreRuntime() {
         );
         return;
       }
-      if (softApAccepted || softApUserTxReopen) {
-        if (softApUserTxReopen) {
-          setMeshcoreTcpSoftApDeadAccepted(true);
+      if (openHopAccepted || openHopUserTxReopen) {
+        if (openHopUserTxReopen) {
+          setMeshcoreTcpOpenHopDeadAccepted(true);
         }
         console.debug(
-          softApUserTxReopen
+          openHopUserTxReopen
             ? source === 'write'
-              ? '[useMeshcoreRuntime] TCP write-dead during SoftAP user-TX reopen — keep configured'
-              : '[useMeshcoreRuntime] TCP closed during SoftAP user-TX reopen — keep configured'
+              ? '[useMeshcoreRuntime] TCP write-dead during OpenHop user-TX reopen — keep configured'
+              : '[useMeshcoreRuntime] TCP closed during OpenHop user-TX reopen — keep configured'
             : source === 'write'
-              ? '[useMeshcoreRuntime] TCP write-dead on SoftAP-accepted dead bridge — keep configured'
-              : '[useMeshcoreRuntime] TCP closed on SoftAP-accepted dead bridge — keep configured',
+              ? '[useMeshcoreRuntime] TCP write-dead on OpenHop-accepted dead bridge — keep configured'
+              : '[useMeshcoreRuntime] TCP closed on OpenHop-accepted dead bridge — keep configured',
         );
         return;
       }
-      // Mid-session TCP death (not SoftAP-accepted): ipc/write own recovery. SoftAP accept
+      // Mid-session TCP death (not OpenHop-accepted): ipc/write own recovery. OpenHop accept
       // intentionally leaves a dead bridge — do not immediate-reconnect on accept.
       handleMeshcoreConnectionLostRef.current();
     };

@@ -28,8 +28,14 @@ import {
   normalizeMeshcoreWaitingMessageItem,
 } from '../../lib/meshcoreWaitingMessageItem';
 import {
+  abandonMeshcoreSilentBulkAttempt,
+  beginMeshcoreSilentBulkAttempt,
   isMeshcoreCompanionDrainDeferred,
+  isMeshcoreGetWaitingMessagesTimeoutError,
+  isMeshcoreSilentBulkAttemptCurrent,
   isMeshcoreSyncNextMessageTimeoutError,
+  isMeshcoreWaitingMessagesBulkFallbackError,
+  isMeshcoreWaitingMessagesTransportDeadError,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreMsgWaitingEvent,
   resetMeshcoreWaitingMessagesDrainSchedule,
@@ -93,6 +99,9 @@ interface MeshcoreWaitingMessagesDrainDeps {
 interface MeshcoreWaitingMessagesDrainState {
   processed: number;
   bannerActive: boolean;
+  /** Silent bulk X/Y or Sync-now banner; fallback uses processed-only (syncTotal 0). */
+  progressActive: boolean;
+  /** When progressActive and syncTotal > 0 → X/Y; when syncTotal === 0 → processed-only. */
   syncTotal: number;
   /** Mutated in place (pushed/cleared) rather than reassigned so helpers can share the reference. */
   pendingMessages: ChatMessage[];
@@ -197,8 +206,11 @@ async function ingestMeshcoreWaitingMessageItem(
       state.pendingMessages.push(...result.pendingMessages);
     }
     state.processed += 1;
-    if (state.bannerActive) {
-      deps.setWaitingMessagesSyncProgress({ processed: state.processed, total: state.syncTotal });
+    if (state.progressActive) {
+      deps.setWaitingMessagesSyncProgress({
+        processed: state.processed,
+        total: state.syncTotal,
+      });
     }
   } catch (e: unknown) {
     console.warn(
@@ -225,6 +237,7 @@ async function drainWaitingMessagesManual(
   state.syncTotal = total;
   if (shouldActivateWaitingMessagesBanner(true, total)) {
     state.bannerActive = true;
+    state.progressActive = true;
     deps.setWaitingMessagesSyncActive(true);
     deps.setWaitingMessagesSyncProgress(null);
     deps.setWaitingMessagesCount(total);
@@ -233,10 +246,15 @@ async function drainWaitingMessagesManual(
     console.debug('[meshcoreConnSideEffects] processWaitingMessages empty queue (manual sync)');
     return;
   }
-  console.debug('[meshcoreConnSideEffects] processWaitingMessages start', {
-    count: total,
-    showSyncBanner: true,
-  });
+  console.debug(
+    '[meshcoreConnSideEffects] processWaitingMessages start ' +
+      JSON.stringify({
+        count: total,
+        showSyncBanner: true,
+        connectionType: deps.connectionType,
+        mode: 'manual',
+      }),
+  );
   for (const m of arr) {
     if (!deps.meshcoreHookMountedRef.current) break;
     await ingestMeshcoreWaitingMessageItem(m, state, deps);
@@ -250,15 +268,12 @@ async function drainWaitingMessagesManual(
   flushMeshcoreWaitingState(state, deps);
 }
 
-/** Silent/incremental drain (message-waiting push 131) — no banner, capped per-drain. */
-async function drainWaitingMessagesSilent(
+/** Pull queued messages via syncNextMessage (fallback / empty-queue end). */
+async function drainWaitingMessagesIncremental(
   conn: MeshCoreConnection,
   state: MeshcoreWaitingMessagesDrainState,
   deps: MeshcoreWaitingMessagesDrainDeps,
 ): Promise<void> {
-  console.debug('[meshcoreConnSideEffects] processWaitingMessages start (incremental)', {
-    showSyncBanner: false,
-  });
   let silentDrainExhaustedCap = false;
   for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
     if (!deps.meshcoreHookMountedRef.current) break;
@@ -279,14 +294,108 @@ async function drainWaitingMessagesSilent(
     const item = normalizeMeshcoreWaitingMessageItem(raw);
     if (!item) break;
     await ingestMeshcoreWaitingMessageItem(item, state, deps);
+    // Re-check after await — unmount during ingest must not flush / chain follow-ups.
+    if (!deps.meshcoreHookMountedRef.current) return;
     if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
       silentDrainExhaustedCap = true;
     }
   }
+  if (!deps.meshcoreHookMountedRef.current) return;
   if (silentDrainExhaustedCap) {
     requestMeshcoreWaitingMessagesFollowUp();
   }
   flushMeshcoreWaitingState(state, deps);
+}
+
+/**
+ * Silent auto-drain (event 131): prefer bulk getWaitingMessages for speed; on timeout/transient
+ * fall back to syncNextMessage. Never tears down the connection from this path.
+ */
+async function drainWaitingMessagesSilent(
+  conn: MeshCoreConnection,
+  state: MeshcoreWaitingMessagesDrainState,
+  deps: MeshcoreWaitingMessagesDrainDeps,
+): Promise<void> {
+  const attemptId = beginMeshcoreSilentBulkAttempt();
+  console.debug(
+    '[meshcoreConnSideEffects] processWaitingMessages start ' +
+      JSON.stringify({
+        showSyncBanner: false,
+        connectionType: deps.connectionType,
+        mode: 'silent-bulk',
+      }),
+  );
+
+  try {
+    const msgs = await withTimeout(
+      conn.getWaitingMessages(),
+      waitingMessagesDrainTimeoutMs(false, deps.connectionType),
+      'MeshCore getWaitingMessages',
+    );
+    if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) {
+      // catch-no-log-ok late bulk after abandon — ignore without disconnect
+      return;
+    }
+    if (!deps.meshcoreHookMountedRef.current) return;
+    const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
+    if (arr.length === 0) {
+      console.debug('[meshcoreConnSideEffects] processWaitingMessages empty queue (silent bulk)');
+      return;
+    }
+    state.syncTotal = arr.length;
+    state.progressActive = true;
+    deps.setWaitingMessagesSyncProgress({ processed: 0, total: arr.length });
+    for (const m of arr) {
+      if (!deps.meshcoreHookMountedRef.current) return;
+      if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) return;
+      await ingestMeshcoreWaitingMessageItem(m, state, deps);
+      // Re-check after await — unmount/supersession must not flush partial state.
+      if (!deps.meshcoreHookMountedRef.current) return;
+      if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) return;
+      if (
+        state.processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
+        state.pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
+      ) {
+        flushMeshcoreWaitingState(state, deps);
+      }
+    }
+    if (!deps.meshcoreHookMountedRef.current) return;
+    if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) return;
+    flushMeshcoreWaitingState(state, deps);
+    return;
+  } catch (e: unknown) {
+    if (isMeshcoreWaitingMessagesTransportDeadError(e)) {
+      // Transport dead — reconnect owns link; do not fallback or disconnect here.
+      logMeshcoreWaitingMessagesDrainError('silent bulk transport dead', e, false);
+      return;
+    }
+    if (
+      isMeshcoreWaitingMessagesBulkFallbackError(e) ||
+      isMeshcoreGetWaitingMessagesTimeoutError(e)
+    ) {
+      // Lifecycle reset / a newer drain may have already superseded this attempt.
+      const stillOwner = isMeshcoreSilentBulkAttemptCurrent(attemptId);
+      // Abandon bulk ownership so a late getWaitingMessages resolve cannot ingest.
+      abandonMeshcoreSilentBulkAttempt(attemptId);
+      if (!stillOwner || !deps.meshcoreHookMountedRef.current) return;
+      logMeshcoreWaitingMessagesDrainError('silent bulk fallback to syncNextMessage', e, false);
+      state.syncTotal = 0;
+      state.progressActive = true;
+      deps.setWaitingMessagesSyncProgress({ processed: 0, total: 0 });
+      console.debug(
+        '[meshcoreConnSideEffects] processWaitingMessages start ' +
+          JSON.stringify({
+            showSyncBanner: false,
+            connectionType: deps.connectionType,
+            mode: 'silent-fallback',
+          }),
+      );
+      if (!deps.meshcoreHookMountedRef.current) return;
+      await drainWaitingMessagesIncremental(conn, state, deps);
+      return;
+    }
+    throw e;
+  }
 }
 
 /**
@@ -303,6 +412,7 @@ async function runMeshcoreWaitingMessagesDrain(
   const state: MeshcoreWaitingMessagesDrainState = {
     processed: 0,
     bannerActive: false,
+    progressActive: false,
     syncTotal: 0,
     pendingMessages: [],
     dirtyNodeIds: new Set<number>(),
@@ -319,11 +429,22 @@ async function runMeshcoreWaitingMessagesDrain(
     } else {
       await drainWaitingMessagesSilent(conn, state, deps);
     }
-    console.debug('[meshcoreConnSideEffects] processWaitingMessages done', {
-      count: state.processed,
-      durationMs: Date.now() - startedAt,
-      showSyncBanner: options.showSyncBanner,
-    });
+    console.debug(
+      '[meshcoreConnSideEffects] processWaitingMessages done ' +
+        JSON.stringify({
+          count: state.processed,
+          durationMs: Date.now() - startedAt,
+          showSyncBanner: options.showSyncBanner,
+          connectionType: deps.connectionType,
+          mode: options.showSyncBanner
+            ? 'manual'
+            : state.syncTotal > 0
+              ? 'silent-bulk'
+              : state.processed > 0 || state.progressActive
+                ? 'silent-fallback'
+                : 'silent',
+        }),
+    );
   } finally {
     if (silentDrainUiActive) {
       deps.setWaitingMessagesSilentDrainActive(false);
@@ -331,6 +452,8 @@ async function runMeshcoreWaitingMessagesDrain(
     if (state.bannerActive) {
       deps.setWaitingMessagesCount(0);
       deps.setWaitingMessagesSyncActive(false);
+      deps.setWaitingMessagesSyncProgress(null);
+    } else if (state.progressActive) {
       deps.setWaitingMessagesSyncProgress(null);
     }
   }
@@ -644,7 +767,7 @@ export function attachMeshcoreConnSideEffects(
 
   const handleDisconnected = () => {
     // TCP: runtime meshcore.tcp.onDisconnected / write-dead own bridge-dead + reconnect (#792).
-    // SoftAP/OpenHop often FINs after contacts; TcpOverIpc still emits device_status disconnected.
+    // OpenHop often FINs after contacts; TcpOverIpc still emits device_status disconnected.
     // Tearing down the driver here left "accepting dead bridge" with no ConnectionDriver handle
     // and no scheduled reconnect (deferred flag cleared without schedule) — send then logs
     // "no handle for offline-meshcore" and never reaches write-dead recovery.

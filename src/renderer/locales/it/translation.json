@@ -674,7 +674,8 @@
     "scanPaperHint": "Incolla o scansiona un QR cartaceo per decifrarlo in Chat.",
     "shareAsPaperMessageLabel": "Messaggio da crittografare",
     "shareAsPaperGenerate": "Crea QR cartaceo",
-    "shareAsPaperCopyFailed": "Impossibile copiare il link cartaceo"
+    "shareAsPaperCopyFailed": "Impossibile copiare il link cartaceo",
+    "waitingMessagesSilentFetched": "Recuperato {{processed}} dalla radio..."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

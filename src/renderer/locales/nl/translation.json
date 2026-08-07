@@ -674,7 +674,8 @@
     "scanPaperHint": "Plak of scan een papieren QR-code om te ontsleutelen in Chat.",
     "shareAsPaperMessageLabel": "Bericht om te versleutelen",
     "shareAsPaperGenerate": "Maak papieren QR",
-    "shareAsPaperCopyFailed": "Kon papieren link niet kopiëren"
+    "shareAsPaperCopyFailed": "Kon papieren link niet kopiëren",
+    "waitingMessagesSilentFetched": "{{processed}} van de radio gehaald..."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

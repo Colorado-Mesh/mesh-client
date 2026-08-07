@@ -674,7 +674,8 @@
     "scanPaperHint": "Sohbetin şifresini çözmek için basılı bir QR'yi yapıştırın veya tarayın.",
     "shareAsPaperMessageLabel": "Şifrelenecek mesaj",
     "shareAsPaperGenerate": "Kağıt QR oluştur",
-    "shareAsPaperCopyFailed": "Kağıt bağlantısı kopyalanamadı"
+    "shareAsPaperCopyFailed": "Kağıt bağlantısı kopyalanamadı",
+    "waitingMessagesSilentFetched": "Radyodan {{processed}} alındı…"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

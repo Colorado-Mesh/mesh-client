@@ -674,7 +674,8 @@
     "scanPaperHint": "Tempel atau pindai QR kertas untuk mendekripsi ke Chat.",
     "shareAsPaperMessageLabel": "Pesan untuk dienkripsi",
     "shareAsPaperGenerate": "Buat QR kertas",
-    "shareAsPaperCopyFailed": "Tidak dapat menyalin tautan kertas"
+    "shareAsPaperCopyFailed": "Tidak dapat menyalin tautan kertas",
+    "waitingMessagesSilentFetched": "Mengambil {{processed}} dari radio…"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

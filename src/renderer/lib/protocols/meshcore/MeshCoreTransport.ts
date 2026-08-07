@@ -13,7 +13,7 @@ import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
 import {
-  isMeshcoreTcpSoftApDeadAccepted,
+  isMeshcoreTcpOpenHopDeadAccepted,
   notifyMeshcoreTcpWriteDead,
 } from '../../meshcore/meshcoreTcpInitBurst';
 import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
@@ -158,9 +158,9 @@ class IpcTcpConnection {
           try {
             await window.electronAPI.meshcore.tcp.write(Array.from(bytes));
           } catch (e) {
-            // SoftAP-accepted dead bridge: expected; keep noise at debug (stats/outbox thrash).
-            if (isMeshcoreTcpSoftApDeadAccepted()) {
-              console.debug('[IpcTcpConnection] write on SoftAP dead bridge', e);
+            // OpenHop-accepted dead bridge: expected; keep noise at debug (stats/outbox thrash).
+            if (isMeshcoreTcpOpenHopDeadAccepted()) {
+              console.debug('[IpcTcpConnection] write on OpenHop dead bridge', e);
             } else {
               console.error('[IpcTcpConnection] write error', e);
             }

@@ -76,7 +76,7 @@ export function parseTcpProbeTarget(
 
 /**
  * True when the Connection panel transport is a live TCP session socket in main
- * (`meshtastic:tcp-*` / `meshcore:tcp-*`). MeshCore SoftAP is stored as `http`
+ * (`meshtastic:tcp-*` / `meshcore:tcp-*`). MeshCore OpenHop is stored as `http`
  * (legacy enum) but is TCP on the wire.
  */
 export function isLiveTcpSession(

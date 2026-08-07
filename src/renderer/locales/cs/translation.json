@@ -676,7 +676,8 @@
     "scanPaperHint": "Vložte nebo naskenujte papírový QR kód pro dešifrování do chatu.",
     "shareAsPaperMessageLabel": "Zpráva k zašifrování",
     "shareAsPaperGenerate": "Vytvořit papírové QR",
-    "shareAsPaperCopyFailed": "Nelze zkopírovat papírový odkaz"
+    "shareAsPaperCopyFailed": "Nelze zkopírovat papírový odkaz",
+    "waitingMessagesSilentFetched": "Načteno {{processed}} z rádia…"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

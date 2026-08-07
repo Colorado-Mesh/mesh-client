@@ -674,7 +674,8 @@
     "scanPaperHint": "粘贴或扫描纸质二维码以解密到聊天中。",
     "shareAsPaperMessageLabel": "要加密的消息",
     "shareAsPaperGenerate": "创建纸质二维码",
-    "shareAsPaperCopyFailed": "无法复制纸质链接"
+    "shareAsPaperCopyFailed": "无法复制纸质链接",
+    "waitingMessagesSilentFetched": "已从收音机获取{{processed}} …"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

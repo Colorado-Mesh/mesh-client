@@ -7,7 +7,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): 
     }, ms);
   });
   // Swallow late rejects from the loser of the race so they cannot surface as
-  // Unhandled rejection (SoftAP: tcp-write fails after timeout already won).
+  // Unhandled rejection (OpenHop: tcp-write fails after timeout already won).
   void promise.then(
     () => undefined,
     () => undefined,

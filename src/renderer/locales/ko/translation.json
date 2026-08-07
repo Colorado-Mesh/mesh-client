@@ -674,7 +674,8 @@
     "scanPaperHint": "용지 QR을 붙여넣거나 스캔하여 채팅에 암호를 해독합니다.",
     "shareAsPaperMessageLabel": "암호화할 메시지",
     "shareAsPaperGenerate": "용지 QR 생성",
-    "shareAsPaperCopyFailed": "용지 링크를 복사할 수 없습니다"
+    "shareAsPaperCopyFailed": "용지 링크를 복사할 수 없습니다",
+    "waitingMessagesSilentFetched": "라디오에서 {{processed}} 을 (를) 가져왔습니다..."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

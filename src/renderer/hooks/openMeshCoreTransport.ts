@@ -19,7 +19,7 @@ export async function openMeshCoreTransport(
     blePeripheralId?: string;
     host?: string;
     portSignature?: string | null;
-    /** SoftAP user-TX reopen: skip ConnectionDriver discoverSelf so user RPC is first. */
+    /** OpenHop user-TX reopen: skip ConnectionDriver discoverSelf so user RPC is first. */
     skipDiscoverSelf?: boolean;
   },
 ): Promise<OpenMeshCoreTransportResult> {

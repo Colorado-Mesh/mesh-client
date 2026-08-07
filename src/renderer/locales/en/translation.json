@@ -473,6 +473,7 @@
     "waitingMessagesSyncProgressIndeterminate": "Syncing queued messages from radio…",
     "waitingMessagesSyncNow": "Sync now",
     "waitingMessagesSilentDrain": "Fetching messages queued on the radio…",
+    "waitingMessagesSilentFetched": "Fetched {{processed}} from radio…",
     "waitingMessagesDrainDeferred": "Message sync paused while the radio is busy (admin/trace)…",
     "waitingMessagesSerialHint": "USB serial handles one command at a time; messages may arrive in small batches.",
     "waitingMessagesSyncFailed": "Failed to sync queued messages: {{message}}",
