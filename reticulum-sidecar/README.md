@@ -44,6 +44,7 @@ Prefer `./scripts/clone-ratspeak-stack.sh` (or `./scripts/ensure-rsReticulum-pat
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ./scripts/apply-rsLXMF-propagation-sync-peering.sh
 ./scripts/apply-rsLXMF-propagation-node-policy-setters.sh
+./scripts/apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
 ```
 
 See [patches/README.md](patches/README.md) for overlay regen against floated `origin/main` (record the short SHA in the PR).
@@ -63,6 +64,8 @@ curl -s http://127.0.0.1:19437/api/v1/status
 ```
 
 Or **Reticulum tab → Connection → Start stack** (sidecar must be running before identity or Network configuration).
+
+**Startup order (listen-first):** bootstrap persist → bind HTTP → accept `/api/v1/status` (`status: ok`) → `attach_live` (RNS/LXMF; sets `rns_ready` / `lxmf_ready`). PN messagestore loads in the background; local-prop serve waits for that load. Electron health polls `status: ok` only — not the ready flags.
 
 ## Lint and coverage
 

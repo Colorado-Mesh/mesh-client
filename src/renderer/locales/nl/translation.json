@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "{{processed}} van de radio gehaald...",
     "reticulumSendStoringLocally": "Opslaan in uw lokale propagatie-inbox…",
     "reticulumSendStoredLocally": "Bewaard in uw lokale propagatie-inbox (niet afgeleverd bij de peer)",
-    "sentViaLocalPropagation": "Lokale propagatie-inbox"
+    "sentViaLocalPropagation": "Lokale propagatie-inbox",
+    "reticulumSendTimeout": "Time-out voor verzenden. De Reticulum-stack is mogelijk aan het starten of bezet — probeer het opnieuw."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "clearHistoryConfirmAction": "Geschiedenis verwijderen",
     "whisperReplyPlaceholder": "Reageer op {{name}} of /msg...",
-    "jumpToLatest": "Spring naar de laatste"
+    "jumpToLatest": "Spring naar de laatste",
+    "stackNotReady": "De Reticulum-stack is nog niet klaar. Wacht tot deze verbonden is en probeer het opnieuw.",
+    "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack op Verbinding en probeer het opnieuw."
   },
   "signalMeter": {
     "rssi": "RSSI",

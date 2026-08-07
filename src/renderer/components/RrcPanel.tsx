@@ -11,6 +11,7 @@ import { RrcTopicBar } from '@/renderer/components/rrc/RrcTopicBar';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { withReticulumIpcSendDeadline } from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
   isRrcDmRoom,
@@ -78,6 +79,14 @@ function persistCollapsed(key: string, next: boolean) {
   } catch {
     // catch-no-log-ok localStorage may be unavailable
   }
+}
+
+type RrcSendArgs = Parameters<typeof window.electronAPI.reticulum.rrc.send>[0];
+type RrcSendResult = Awaited<ReturnType<typeof window.electronAPI.reticulum.rrc.send>>;
+
+/** Bound RRC send so a stuck proxy cannot hang the composer. */
+function rrcSendBounded(args: RrcSendArgs): Promise<RrcSendResult> {
+  return withReticulumIpcSendDeadline(window.electronAPI.reticulum.rrc.send(args));
 }
 
 export interface RrcPanelProps {
@@ -230,14 +239,20 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
           ? activeRoom
           : undefined;
-      await window.electronAPI.reticulum.rrc.send({
-        hub_dest_hash: hubDestHash,
-        room: hubRoom,
-        body,
-        type: 'msg',
-      });
+      try {
+        await rrcSendBounded({
+          hub_dest_hash: hubDestHash,
+          room: hubRoom,
+          body,
+          type: 'msg',
+        });
+      } catch (e: unknown) {
+        const msg = errLikeToLogString(e);
+        console.debug('[RrcPanel] sendHubCommand failed ' + msg);
+        setError(formatRrcErrorMessage(msg, t), hubDestHash);
+      }
     },
-    [activeRoom, hubDestHash, status],
+    [activeRoom, hubDestHash, setError, status, t],
   );
 
   useEffect(() => {
@@ -710,7 +725,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
               return;
             }
-            const res = await window.electronAPI.reticulum.rrc.send({
+            const res = await rrcSendBounded({
               hub_dest_hash: hubDestHash,
               room: activeRoom,
               body: parsed.action,
@@ -739,7 +754,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               useRrcSessionStore.getState().setError(t('rrc.slash.msgTargetNotFound'));
               return;
             }
-            const res = await window.electronAPI.reticulum.rrc.send({
+            const res = await rrcSendBounded({
               hub_dest_hash: hubDestHash,
               body: parsed.text,
               type: 'notice',
@@ -788,7 +803,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
             return;
           }
-          const res = await window.electronAPI.reticulum.rrc.send({
+          const res = await rrcSendBounded({
             hub_dest_hash: hubDestHash,
             room:
               activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
@@ -816,7 +831,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
             return;
           }
-          const res = await window.electronAPI.reticulum.rrc.send({
+          const res = await rrcSendBounded({
             hub_dest_hash: hubDestHash,
             body: parsed.body,
             type: 'notice',
@@ -847,7 +862,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
           useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
           return;
         }
-        const res = await window.electronAPI.reticulum.rrc.send({
+        const res = await rrcSendBounded({
           hub_dest_hash: hubDestHash,
           room: activeRoom,
           body: parsed.body,

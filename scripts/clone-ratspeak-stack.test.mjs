@@ -175,5 +175,6 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     const listScript = readFileSync(listPath, 'utf8');
     expect(listScript).toContain('apply-rsReticulum-packet-tap.sh');
     expect(listScript).toContain('apply-rsLXMF-propagation-node-policy-setters.sh');
+    expect(listScript).toContain('apply-rsLXMF-propagation-node-deferred-messagestore-load.sh');
   });
 });

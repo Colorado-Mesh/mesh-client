@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "Mengambil {{processed}} dari radio…",
     "reticulumSendStoringLocally": "Menyimpan ke kotak masuk propagasi lokal Anda…",
     "reticulumSendStoredLocally": "Disimpan di kotak masuk propagasi lokal Anda (tidak dikirim ke peer)",
-    "sentViaLocalPropagation": "Kotak masuk propagasi lokal"
+    "sentViaLocalPropagation": "Kotak masuk propagasi lokal",
+    "reticulumSendTimeout": "Waktu pengiriman habis. Stack Reticulum mungkin sedang mulai atau sibuk — coba lagi."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "Hapus semua riwayat pesan tersimpan untuk {{room}}? Hal ini tidak dapat dibatalkan.",
     "clearHistoryConfirmAction": "Hapus riwayat",
     "whisperReplyPlaceholder": "Balas {{name}} atau /msg…",
-    "jumpToLatest": "Langsung ke Terbaru"
+    "jumpToLatest": "Langsung ke Terbaru",
+    "stackNotReady": "Stack Reticulum belum siap. Tunggu hingga terhubung, lalu coba lagi.",
+    "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi."
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -391,6 +391,33 @@ git diff -- crates/lxmf-core/src/propagation_node.rs \
 
 When [ratspeak/rsLXMF#6](https://github.com/ratspeak/rsLXMF/pull/6) merges and floated `origin/main` includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
+## rsLXMF-propagation-node-deferred-messagestore-load.patch
+
+`PropagationNode::with_storage_unloaded` + `load_messagestore_from_disk` so mesh-client can mark live/RRC ready before scanning a large on-disk PN messagestore (tens of thousands of files). `with_storage` remains eager (loads immediately) for callers that need a full store up front.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | tip of `ratspeak/rsLXMF` `main` + `rsLXMF-propagation-node-policy-setters` overlay |
+| **Upstream PR** | (none yet — mesh-client local API) |
+
+**Modifies (1 file):**
+
+- `crates/lxmf-core/src/propagation_node.rs` — deferred messagestore open/load APIs
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsLXMF` required; apply policy-setters first):
+
+```bash
+./scripts/apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
+```
+
+`clone-ratspeak-stack.sh` and `ensure-rsReticulum-patches.sh` invoke this automatically after policy-setters.
+
+### Sunset
+
+When upstream grows an equivalent deferred-load API, remove this patch and drop the apply step.
+
 ## rsLXMF-link-delivery-has-pending-to.patch
 
 Expose `LinkDeliveryManager::has_pending_to` so the sidecar can serialize packed Propagated deposits (and propagation sync) against an in-flight Link to the same PN. Floated rsLXMF tip only has `delivery_link_available` (reusable idle link), which is the wrong predicate for one-shot packed sessions.

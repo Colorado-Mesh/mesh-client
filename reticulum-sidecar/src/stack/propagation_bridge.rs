@@ -12,7 +12,7 @@ use lxmf_core::propagation_sync::{PeerSyncTerminalState, PropagationSyncTask, Sy
 use lxmf_core::router::LxmRouter;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{Notify, broadcast, mpsc};
 
 /// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
 type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
@@ -25,6 +25,9 @@ pub struct PropagationBridge {
     local_node: Arc<Mutex<PropagationNode>>,
     sync_task: Mutex<PropagationSyncTask>,
     local_serving: AtomicBool,
+    /// Terminal result of background `load_messagestore_from_disk` (`None` while in flight).
+    messagestore_result: Mutex<Option<Result<(), String>>>,
+    messagestore_notify: Notify,
     /// Serializes sync-run generation changes with emitter cancel / pin / event side effects.
     sync_lifecycle: Mutex<()>,
     /// Sticky offer failure label (rsLXMF tip keeps terminal state on the task, not these fields).
@@ -57,8 +60,10 @@ impl PropagationBridge {
             max_message_size: policy.propagation_limit_kb.saturating_mul(1024),
             max_offer_size: policy.sync_limit_kb.saturating_mul(1000),
         };
+        // Defer messagestore scan — large local PN stores can take many seconds and must
+        // not gate TCP/LXMF/RRC live attach. New writes still go to `storage_dir`.
         let local_node = Arc::new(Mutex::new(
-            PropagationNode::with_storage(node_config, local_dest_hash, storage_dir)
+            PropagationNode::with_storage_unloaded(node_config, local_dest_hash, storage_dir)
                 .map_err(|e| format!("propagation storage init: {e}"))?,
         ));
         let mut sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
@@ -71,6 +76,8 @@ impl PropagationBridge {
             local_node,
             sync_task: Mutex::new(sync_task),
             local_serving: AtomicBool::new(false),
+            messagestore_result: Mutex::new(None),
+            messagestore_notify: Notify::new(),
             sync_lifecycle: Mutex::new(()),
             last_offer_error: Mutex::new(None),
             last_establish_error: Mutex::new(None),
@@ -79,6 +86,65 @@ impl PropagationBridge {
             peering_key_jobs: Mutex::new(HashSet::new()),
             peering_key_results: Mutex::new(Vec::new()),
         })
+    }
+
+    /// Load historical PN messages off the live-ready path (spawn_blocking).
+    pub fn spawn_messagestore_load(self: &Arc<Self>) {
+        let this = Arc::clone(self);
+        let node = Arc::clone(&self.local_node);
+        tokio::spawn(async move {
+            let load_started = Instant::now();
+            let result = tokio::task::spawn_blocking(move || {
+                let mut guard = node
+                    .lock()
+                    .map_err(|e| format!("propagation node lock poisoned: {e}"))?;
+                guard
+                    .load_messagestore_from_disk()
+                    .map_err(|e| e.to_string())?;
+                Ok::<(), String>(())
+            })
+            .await;
+            let terminal = match result {
+                Ok(Ok(())) => {
+                    tracing::info!(
+                        elapsed_ms = load_started.elapsed().as_millis() as u64,
+                        "propagation messagestore loaded in background"
+                    );
+                    Ok(())
+                }
+                Ok(Err(e)) => {
+                    tracing::warn!(error = %e, "background propagation messagestore load failed");
+                    Err(e)
+                }
+                Err(e) => {
+                    let msg = format!("background propagation messagestore load join failed: {e}");
+                    tracing::warn!(error = %e, "background propagation messagestore load join failed");
+                    Err(msg)
+                }
+            };
+            if let Ok(mut slot) = this.messagestore_result.lock() {
+                *slot = Some(terminal);
+            }
+            this.messagestore_notify.notify_waiters();
+        });
+    }
+
+    /// Wait until background messagestore load has finished; returns the stored terminal result.
+    pub async fn wait_messagestore_loaded(&self) -> Result<(), String> {
+        loop {
+            if let Ok(guard) = self.messagestore_result.lock() {
+                if let Some(result) = guard.as_ref() {
+                    return result.clone();
+                }
+            }
+            let notified = self.messagestore_notify.notified();
+            if let Ok(guard) = self.messagestore_result.lock() {
+                if let Some(result) = guard.as_ref() {
+                    return result.clone();
+                }
+            }
+            notified.await;
+        }
     }
 
     pub fn peering_key_job_inflight(&self, peer_hash: &[u8; 16]) -> bool {

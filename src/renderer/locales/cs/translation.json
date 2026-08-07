@@ -680,7 +680,8 @@
     "waitingMessagesSilentFetched": "Načteno {{processed}} z rádia…",
     "reticulumSendStoringLocally": "Ukládání do místní doručené pošty šíření…",
     "reticulumSendStoredLocally": "Uloženo ve vaší místní doručené poště šíření (nedoručeno peerovi)",
-    "sentViaLocalPropagation": "Místní doručená pošta šíření"
+    "sentViaLocalPropagation": "Místní doručená pošta šíření",
+    "reticulumSendTimeout": "Odeslání vypršelo. Zásobník Reticulum se možná spouští nebo je zaneprázdněný — zkuste to znovu."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -4879,7 +4880,9 @@
     "clearHistoryConfirm": "Smazat veškerou uloženou historii zpráv pro {{room}}? Toto nelze vrátit zpět.",
     "clearHistoryConfirmAction": "Smazat historii",
     "whisperReplyPlaceholder": "Odpověz uživateli {{name}} nebo /msg…",
-    "jumpToLatest": "Přejít na nejnovější"
+    "jumpToLatest": "Přejít na nejnovější",
+    "stackNotReady": "Zásobník Reticulum ještě není připraven. Počkejte, až bude připojen, a zkuste to znovu.",
+    "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník na Připojení a zkuste to znovu."
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

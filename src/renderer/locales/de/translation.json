@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "{{processed}} vom Funkgerät abgerufen…",
     "reticulumSendStoringLocally": "Wird in Ihrem lokalen Propagations-Posteingang gespeichert…",
     "reticulumSendStoredLocally": "Wird in Ihrem lokalen Propagations-Posteingang aufbewahrt (nicht an den Peer geliefert)",
-    "sentViaLocalPropagation": "Lokaler Propagations-Posteingang"
+    "sentViaLocalPropagation": "Lokaler Propagations-Posteingang",
+    "reticulumSendTimeout": "Senden abgelaufen. Der Reticulum-Stack startet möglicherweise oder ist beschäftigt — bitte erneut versuchen."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "Gesamten gespeicherten Nachrichtenverlauf für {{room}} löschen? Dies kann nicht rückgängig gemacht werden.",
     "clearHistoryConfirmAction": "Verlauf löschen",
     "whisperReplyPlaceholder": "Antworte auf {{name}} oder /msg…",
-    "jumpToLatest": "Zum neuesten Stand springen"
+    "jumpToLatest": "Zum neuesten Stand springen",
+    "stackNotReady": "Der Reticulum-Stack ist noch nicht bereit. Warten Sie, bis die Verbindung hergestellt ist, und versuchen Sie es erneut.",
+    "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut."
   },
   "signalMeter": {
     "rssi": "RSSI",

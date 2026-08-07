@@ -157,6 +157,8 @@ export interface ProtocolCapabilities {
   hasLxstVoice: boolean;
   /** Reticulum: LRGP games (Games tab, Peers / Chat DM Challenge) */
   hasLrgpGames: boolean;
+  /** Whether Cancel/disconnect should stop Noble BLE scanning (Meshtastic/MeshCore on macOS/Windows). */
+  hasNobleBleScanning: boolean;
   /** Reticulum: LXMF encrypted paper message share/scan (Chat DM) */
   hasLxmfPaper: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
@@ -237,6 +239,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: false,
   hasLxstVoice: false,
   hasLrgpGames: false,
+  hasNobleBleScanning: true,
   hasLxmfPaper: false,
 };
 
@@ -315,6 +318,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: false,
   hasLxstVoice: false,
   hasLrgpGames: false,
+  hasNobleBleScanning: true,
   hasLxmfPaper: false,
 };
 
@@ -392,6 +396,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: true,
   hasLxstVoice: true,
   hasLrgpGames: true,
+  hasNobleBleScanning: false,
   hasLxmfPaper: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

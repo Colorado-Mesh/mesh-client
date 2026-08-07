@@ -714,6 +714,8 @@ impl PersistedState {
         self.upsert_contact(&hash, resolved);
     }
 
+    /// Offline/stub LXMF send used when the `rns-stack` feature is off.
+    #[cfg_attr(feature = "rns-stack", allow(dead_code))]
     pub fn send_lxmf_local(&mut self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
         if !self.identity.configured {
             return Err("identity not configured".into());
@@ -751,6 +753,7 @@ impl PersistedState {
     }
 
     #[allow(clippy::unnecessary_wraps)] // Result matches other LXMF send helpers for uniform ? handling
+    #[cfg_attr(feature = "rns-stack", allow(dead_code))]
     pub fn send_reaction(
         &mut self,
         req: &LxmfReactionRequest,
@@ -785,6 +788,7 @@ impl PersistedState {
     }
 }
 
+#[cfg_attr(feature = "rns-stack", allow(dead_code))]
 pub(crate) fn stable_hash(s: &str) -> u128 {
     let mut h: u128 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {

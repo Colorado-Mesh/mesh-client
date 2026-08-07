@@ -678,7 +678,8 @@
     "waitingMessagesSilentFetched": "Obtidas {{processed}} mensagem(ns) do rádio…",
     "reticulumSendStoringLocally": "Salvando na sua caixa de entrada de propagação local...",
     "reticulumSendStoredLocally": "Mantido na sua caixa de entrada de propagação local (não entregue ao peer)",
-    "sentViaLocalPropagation": "Caixa de entrada de propagação local"
+    "sentViaLocalPropagation": "Caixa de entrada de propagação local",
+    "reticulumSendTimeout": "O envio expirou. A pilha Reticulum pode estar iniciando ou ocupada — tente novamente."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -4877,7 +4878,9 @@
     "clearHistoryConfirm": "Excluir todo o histórico de mensagens salvas para {{room}}? Isto não pode ser desfeito.",
     "clearHistoryConfirmAction": "Excluir histórico",
     "whisperReplyPlaceholder": "Responder a {{name}} ou /msg…",
-    "jumpToLatest": "Ir para as últimas"
+    "jumpToLatest": "Ir para as últimas",
+    "stackNotReady": "A pilha Reticulum ainda não está pronta. Aguarde até conectar e tente novamente.",
+    "sidecarNotRunning": "O sidecar Reticulum não está em execução. Inicie a pilha em Conexão e tente novamente."
   },
   "signalMeter": {
     "rssi": "RSSI",

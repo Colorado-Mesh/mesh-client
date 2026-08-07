@@ -160,9 +160,10 @@ async fn main() -> ExitCode {
     info!(config_dir = %config_dir.display(), storage_dir = %storage_dir.display(), "data dirs");
 
     let (event_tx, _) = broadcast::channel::<String>(256);
+    // Persist + HTTP shell first — do not await live RNS/BLE before binding.
     let stack = Arc::new(Box::pin(StackHandle::bootstrap(config_dir, storage_dir, event_tx)).await);
 
-    let app = api::router(stack);
+    let app = api::router(stack.clone());
 
     let addr: SocketAddr = match format!("{}:{}", cli.host, cli.port).parse() {
         Ok(addr) => addr,
@@ -179,9 +180,15 @@ async fn main() -> ExitCode {
             return ExitCode::from(1);
         }
     };
-    if let Err(e) = axum::serve(listener, app).await {
-        error!(error = %e, "HTTP server exited with error");
-        return ExitCode::from(1);
-    }
+
+    // Accept /api/v1/status (and other routes) while live RNS attach continues.
+    let serve = tokio::spawn(async move {
+        if let Err(e) = axum::serve(listener, app).await {
+            error!(error = %e, "HTTP server exited with error");
+        }
+    });
+    // attach_live's future is large (PropagationBridge / LXMF setup); pin to satisfy clippy.
+    Box::pin(stack.attach_live()).await;
+    let _ = serve.await;
     ExitCode::SUCCESS
 }

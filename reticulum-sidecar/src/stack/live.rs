@@ -463,13 +463,17 @@ impl LiveBridge {
             path_peer_cache_fetched_at,
             display_name_cache,
             outbound,
-            propagation: Arc::new(PropagationBridge::new(
-                handle.transport_tx.clone(),
-                lxmf_propagation_dest_hash,
-                storage_dir.join("propagation"),
-                &identity,
-                &pn_hosting_policy,
-            )?),
+            propagation: {
+                let prop = Arc::new(PropagationBridge::new(
+                    handle.transport_tx.clone(),
+                    lxmf_propagation_dest_hash,
+                    storage_dir.join("propagation"),
+                    &identity,
+                    &pn_hosting_policy,
+                )?);
+                prop.spawn_messagestore_load();
+                prop
+            },
             prop_serve: Arc::new(PropagationServeHandle::new()),
             prop_announce: Arc::new(PropagationAnnounceLoop::new()),
             pn_hosting_policy: Arc::new(Mutex::new(pn_hosting_policy)),
@@ -515,31 +519,21 @@ impl LiveBridge {
             })),
         };
 
-        let (preferred_prop_hash, local_prop_enabled) = {
+        let preferred_prop_hash = {
             let state = inner.read().await;
-            let preferred = state.preferred_propagation_id.as_ref().and_then(|id| {
+            state.preferred_propagation_id.as_ref().and_then(|id| {
                 state
                     .propagation
                     .iter()
                     .find(|p| p.id == *id)
                     .and_then(|p| p.destination_hash.clone())
-            });
-            let local_enabled = state
-                .propagation
-                .iter()
-                .find(|p| p.id == "local-prop")
-                .map(|p| p.enabled)
-                .unwrap_or(false);
-            (preferred, local_enabled)
+            })
         };
 
         bridge.spawn_maintenance(event_tx);
 
-        // Persisted local-prop.enabled must drive live serving; otherwise UI always
-        // shows disabled until the user toggles Enable (AtomicBool defaults false).
-        if local_prop_enabled {
-            bridge.set_local_propagation_serving(true).await;
-        }
+        // Local-prop serve/announce is deferred until messagestore load finishes
+        // (see StackHandle::attach_live) so we do not advertise an empty PN.
         bridge.rehydrate_propagation_identities_from_persisted();
         // Keep persisted local-prop hash on lxmf.propagation (legacy rows stored delivery).
         {
@@ -560,9 +554,7 @@ impl LiveBridge {
         }
         bridge.refresh_pn_cascade_candidates().await;
 
-        if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {
-            let _ = bridge.sync_ble_peer_interfaces(&ifaces).await;
-        }
+        // BLE Peer sync is started from StackHandle::attach_live after HTTP is up.
 
         {
             let mut state = inner.write().await;
@@ -3722,6 +3714,10 @@ impl LiveBridge {
         self.propagation.is_local_serving()
     }
 
+    pub async fn wait_propagation_messagestore_loaded(&self) -> Result<(), String> {
+        self.propagation.wait_messagestore_loaded().await
+    }
+
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.
@@ -4363,7 +4359,10 @@ impl LiveBridge {
     }
 
     #[cfg(feature = "rns-ble")]
-    async fn sync_ble_peer_interfaces(&self, interfaces: &[InterfaceRow]) -> Result<(), String> {
+    pub(crate) async fn sync_ble_peer_interfaces(
+        &self,
+        interfaces: &[InterfaceRow],
+    ) -> Result<(), String> {
         let desired: HashMap<String, &InterfaceRow> = interfaces
             .iter()
             .filter(|i| i.iface_type == "ble_peer" && i.enabled)

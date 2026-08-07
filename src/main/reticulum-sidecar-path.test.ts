@@ -156,6 +156,34 @@ describe('reticulum-sidecar-path', () => {
     expect(msg).toContain('pnpm run reticulum:sidecar:build');
   });
 
+  it('resolveDevSidecarEnsureAction backgrounds mtime-stale full builds', async () => {
+    const { resolveDevSidecarEnsureAction } = await import('./reticulum-sidecar-path');
+    expect(
+      resolveDevSidecarEnsureAction({
+        missing: false,
+        stale: true,
+        lacksRnsStack: false,
+        lacksRnsBle: false,
+      }),
+    ).toBe('background-build');
+    expect(
+      resolveDevSidecarEnsureAction({
+        missing: true,
+        stale: false,
+        lacksRnsStack: false,
+        lacksRnsBle: false,
+      }),
+    ).toBe('await-build');
+    expect(
+      resolveDevSidecarEnsureAction({
+        missing: false,
+        stale: false,
+        lacksRnsStack: false,
+        lacksRnsBle: false,
+      }),
+    ).toBe('noop');
+  });
+
   it('formatReticulumCargoBuildError keeps generic RETICULUM_CARGO_BUILD_FAILED for other errors', () => {
     const msg = formatReticulumCargoBuildError(101, 'error: linker command failed');
     expect(msg).toContain('RETICULUM_CARGO_BUILD_FAILED');

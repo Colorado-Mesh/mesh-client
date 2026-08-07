@@ -1,0 +1,42 @@
+--- a/crates/lxmf-core/src/propagation_node.rs
++++ b/crates/lxmf-core/src/propagation_node.rs
+@@ -333,8 +333,21 @@
+         dest_hash: [u8; 16],
+         storage_path: PathBuf,
+     ) -> std::io::Result<Self> {
++        let mut node = Self::with_storage_unloaded(config, dest_hash, storage_path)?;
++        node.load_messagestore_from_disk()?;
++        Ok(node)
++    }
++
++    /// Disk-backed node that keeps `storage_path` for new writes but does **not**
++    /// scan/load the existing messagestore yet. Call [`load_messagestore_from_disk`]
++    /// (ideally off the HTTP-ready path) before relying on historical PN messages.
++    pub fn with_storage_unloaded(
++        config: PropagationNodeConfig,
++        dest_hash: [u8; 16],
++        storage_path: PathBuf,
++    ) -> std::io::Result<Self> {
+         std::fs::create_dir_all(&storage_path)?;
+-        let mut node = Self {
++        Ok(Self {
+             config,
+             store: PropagationStore::new(),
+             sync_sessions: HashMap::new(),
+@@ -342,9 +355,13 @@
+             storage_path: Some(storage_path),
+             last_offer_times: HashMap::new(),
+             offer_generation: 0,
+-        };
+-        node.load_from_disk()?;
+-        Ok(node)
++        })
++    }
++
++    /// Load messagestore entries from `storage_path`. Intended after
++    /// [`with_storage_unloaded`]; safe no-op when storage is unset.
++    pub fn load_messagestore_from_disk(&mut self) -> std::io::Result<()> {
++        self.load_from_disk()
+     }
+ 
+     /// Returns `true` if the message was stored, `false` on duplicate, overflow,

@@ -54,6 +54,7 @@ import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticu
 import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { setReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
 import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
 import { refreshGamesSessions } from '@/renderer/lib/reticulum/reticulumGamesSession';
 import {
@@ -62,6 +63,10 @@ import {
   noteReticulumEventsLagged,
   noteReticulumInboundCatchUp,
 } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
+import {
+  isReticulumIpcSendTimeout,
+  withReticulumIpcSendDeadline,
+} from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import {
   logReticulumInterfaceStateEvent,
   logReticulumLocalInterfaceHealthChanges,
@@ -85,6 +90,7 @@ import {
   normalizePropagationSyncProgress,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
+import { reticulumProxyErrorToI18nKey } from '@/renderer/lib/reticulum/reticulumProxyErrorHumanize';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   resolveReticulumSelfFullLabel,
@@ -1673,22 +1679,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (connectedNodeId > 0) {
           syncConnectionStore({ myNodeNum: connectedNodeId });
         }
-        await refreshContactsFromSidecar();
-        await refreshLocalInterfacesFromSidecar();
-        await syncDiagnosticsFromSidecar();
-        await hydrateRawPackets();
-        if (identityId) {
-          await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
-          markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
-          // Merge — do not wipe live WS ingest whose fire-and-forget DB persist is still in flight.
-          await loadMessagesFromDb('merge');
-        }
-        // Catch up any inbound LXMF that arrived while WS was lagging or before subscribe.
-        await catchUpRecentInboundLxmf({ reason: 'connect' });
+        // Mark usable as soon as the sidecar HTTP API is up + identity is known.
+        // Peer/DB hydration and live RNS/BLE attach continue in the background so
+        // Chat/RRC/Nomad are not gated on a large path table or BLE RNode.
         if (resumeGenerationRef.current !== generation) {
-          // A later power-suspend fired while this connect attempt was still in flight — the
-          // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
-          // now owns the UI state; applying this stale "configured" result could clobber it.
           console.debug(
             '[useReticulumRuntime] connect superseded by newer power-suspend generation — skip applying stale configured state',
           );
@@ -1704,6 +1698,31 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void reconcileRncpListenerFromSidecar().catch((e: unknown) => {
           console.debug('[useReticulumRuntime] rncp reconcile ' + errLikeToLogString(e));
         });
+        window.dispatchEvent(new CustomEvent(RETICULUM_CONFIGURED_EVENT));
+        void (async () => {
+          try {
+            await refreshContactsFromSidecar();
+            if (resumeGenerationRef.current !== generation) return;
+            await refreshLocalInterfacesFromSidecar();
+            if (resumeGenerationRef.current !== generation) return;
+            await syncDiagnosticsFromSidecar();
+            if (resumeGenerationRef.current !== generation) return;
+            await hydrateRawPackets();
+            if (resumeGenerationRef.current !== generation) return;
+            if (identityId) {
+              await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+              if (resumeGenerationRef.current !== generation) return;
+              markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
+              await loadMessagesFromDb('merge');
+              if (resumeGenerationRef.current !== generation) return;
+            }
+            await catchUpRecentInboundLxmf({ reason: 'connect' });
+          } catch (e: unknown) {
+            console.debug(
+              '[useReticulumRuntime] background connect hydrate ' + errLikeToLogString(e),
+            );
+          }
+        })();
       })();
       connectInFlightDoneRef.current = flight;
       try {
@@ -1735,6 +1754,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const disconnect = useCallback(async () => {
     suppressReconnectRef.current = true;
+    // Invalidate in-flight connect hydrate / configured apply across stop paths.
+    resumeGenerationRef.current += 1;
     // Same latch as Stop button — covers any disconnect path (panel, protocol facade, etc.).
     setReticulumManualStackStopSuppress(true);
     if (peerRefreshDebounceRef.current) {
@@ -2055,7 +2076,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         body.reply_preview_text = quote;
       }
       try {
-        const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body)) as {
+        const res = (await withReticulumIpcSendDeadline(
+          window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body),
+        )) as {
           ok?: boolean;
           error?: string;
           message?: ReticulumLxmfPayload;
@@ -2114,9 +2137,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
       } catch (e) {
         if (pendingId) {
           const errStr = errLikeToLogString(e);
+          const proxyKey = reticulumProxyErrorToI18nKey(errStr);
           const userMessage = errStr.includes('no_propagation_node')
             ? i18n.t('chatPanel.reticulumNoPropagationNode')
-            : i18n.t('chatPanel.reticulumSendFailed');
+            : proxyKey
+              ? i18n.t(proxyKey)
+              : isReticulumIpcSendTimeout(e)
+                ? i18n.t('chatPanel.reticulumSendTimeout')
+                : i18n.t('chatPanel.reticulumSendFailed');
           updateMessageStatus(identityId, pendingId, 'failed', userMessage);
         }
         throw e;
@@ -2139,11 +2167,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
           ? resolveReticulumDestinationHash(targetMsg.to)
           : targetMsg.reticulumSenderHash;
       if (!peerHash) return;
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/reaction', {
-        destination_hash: peerHash,
-        target_hash: targetMsg.reticulumMessageHash,
-        emoji: glyph,
-      })) as { ok?: boolean; message?: ReticulumLxmfPayload };
+      const res = (await withReticulumIpcSendDeadline(
+        window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/reaction', {
+          destination_hash: peerHash,
+          target_hash: targetMsg.reticulumMessageHash,
+          emoji: glyph,
+        }),
+      )) as { ok?: boolean; message?: ReticulumLxmfPayload; error?: string };
+      if (res?.ok === false) {
+        throw new Error(res.error ?? 'LXMF reaction failed');
+      }
       if (res?.message) {
         const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
         if (payload) ingestLxmfPayload(payload);

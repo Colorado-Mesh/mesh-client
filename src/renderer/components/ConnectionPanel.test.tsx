@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
@@ -13,6 +16,8 @@ import { MESHCORE_IDENTITY_STORAGE_KEY } from '../lib/letsMeshJwt';
 import type { DeviceState } from '../lib/types';
 import { mockConsoleWarn, withMockedConsoleWarn } from '../lib/vitestConsoleMock';
 import ConnectionPanel from './ConnectionPanel';
+
+const CONNECTION_PANEL_SOURCE = readFileSync(join(__dirname, 'ConnectionPanel.tsx'), 'utf-8');
 
 const disconnectedState: DeviceState = {
   status: 'disconnected',
@@ -2254,6 +2259,62 @@ describe('ConnectionPanel Reticulum', () => {
       expect(screen.queryByText(/Auto-connecting/i)).not.toBeInTheDocument();
       expect(onAutoConnect).not.toHaveBeenCalled();
     } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('Cancel fire-and-forgets onDisconnect and does not stopNobleBleScanning for reticulum', async () => {
+    // handleCancelConnection is shared by Cancel + Disconnect&Quit-while-connecting.
+    expect(CONNECTION_PANEL_SOURCE).toMatch(/void onDisconnect\(\)\.catch\(\(e: unknown\) => \{/);
+    expect(CONNECTION_PANEL_SOURCE).toMatch(
+      /else if \(capabilities\.hasNobleBleScanning\) \{\s*void window\.electronAPI\.stopNobleBleScanning\(protocol\)/,
+    );
+
+    const lastConnKey = 'mesh-client:lastConnection:reticulum';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'saved-reticulum-ble' }),
+    );
+    let resolveDisconnect!: () => void;
+    const onDisconnect = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDisconnect = resolve;
+        }),
+    );
+    vi.mocked(window.electronAPI.stopNobleBleScanning).mockClear();
+    vi.mocked(window.electronAPI.quitApp).mockClear();
+
+    try {
+      const user = userEvent.setup();
+      render(
+        <ConnectionPanel
+          state={{ ...disconnectedState, status: 'connecting' }}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={onDisconnect}
+          mqttStatus="disconnected"
+          protocol="reticulum"
+          onStartReticulumStack={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Reticulum stack')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: /Disconnect & Quit/i }));
+
+      await waitFor(() => {
+        expect(onDisconnect).toHaveBeenCalledTimes(1);
+      });
+      // Fire-and-forget: hung onDisconnect must not block quitApp.
+      await waitFor(() => {
+        expect(window.electronAPI.quitApp).toHaveBeenCalled();
+      });
+      expect(window.electronAPI.stopNobleBleScanning).not.toHaveBeenCalled();
+    } finally {
+      resolveDisconnect?.();
       localStorage.removeItem(lastConnKey);
     }
   });
