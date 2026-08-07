@@ -272,7 +272,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
       set({
         lastHostingPolicyError: res.error
-          ? mapPnHostingPolicyError(res.error) || mapPropagationSyncError(res.error)
+          ? mapPnHostingPolicyError(res.error) ||
+            mapPropagationSyncError(res.error) ||
+            'networkPanel.reticulumPnHosting.saveFailed'
           : 'networkPanel.reticulumPnHosting.saveFailed',
       });
     } catch (e) {
@@ -370,7 +372,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
       if (res.ok === false || res.error) {
         const mapped = mapPropagationSyncError(res.error);
-        applyCancelIdle(resolveCancelError(get().lastSyncError, mapped));
+        applyCancelIdle(
+          resolveCancelError(get().lastSyncError, mapped ?? PROPAGATION_SYNC_USER_CANCEL_KEY),
+        );
         return false;
       }
       applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
@@ -396,7 +400,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
       if (res.error) {
-        set({ lastAddError: mapPropagationSyncError(res.error) });
+        set({
+          lastAddError: mapPropagationSyncError(res.error) ?? 'reticulumPropagation.addFailed',
+        });
       }
     } catch (e) {
       console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
@@ -414,8 +420,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     if (!ok) return false;
     if (opts?.prefer) {
       const id = `pn-${destinationHash.toLowerCase().slice(0, 8)}`;
-      await get().setPreferredOnSidecar(id);
+      const preferredOk = await get().setPreferredOnSidecar(id);
       await get().refreshFromSidecar();
+      if (!preferredOk) return false;
     }
     return true;
   },

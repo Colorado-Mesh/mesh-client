@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Effacer les messages directs",
     "clearReticulumMessagesConfirm": "Cela supprimera définitivement tous les messages directs Reticulum {{count}} stockés localement. Cela ne peut pas être annulé.",
     "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}",
-    "reticulumSection": "Reticulum — Empilement de réticulum",
-    "reticulumAnnounceHelp": "La fréquence à laquelle votre identité est annoncée sur le réseau et les outils pour effacer les annonces stockées.",
     "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Dans l’onglet Reticulum, les lignes de périphériques incluent la sortie side-car et l’état de l’interface locale. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal.",
     "autoPruneUnheardContactsDaysAria": "Élague automatiquement les contacts non entendus au démarrage, datant de plus de {{days}} jours",
     "capTotalContactsCountAria": "Limiter le nombre total de contacts, conserver les contacts {{count}} les plus récemment vus",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
     "themeRestoreFailed": "Échec de la restauration du point de contrôle des couleurs.",
     "themeResetFailed": "Impossible de réinitialiser les couleurs.",
-    "messageActionsBarBgVisible": "Afficher l'arrière-plan",
-    "reticulumPropagationMoved": "La configuration du nœud de propagation et le mode de synchronisation (Off / Auto / Manuel) ont été déplacés vers les nœuds de → propagation du réseau."
+    "messageActionsBarBgVisible": "Afficher l'arrière-plan"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud.",
     "modeLabel": "mode de propagation",
     "modeAria": "Mode de synchronisation de la propagation",
+    "autoApplyFailed": "Impossible d'appliquer le nœud de propagation Auto Preferred.",
     "modeAuto": "Auto",
     "modeManual": "Manuel",
     "modeOff": "Arrêt",
     "modeHelpOff": "Désactivé : pas de modifications automatiques des préférences et pas de synchronisation périodique. Vous pouvez toujours définir manuellement un nœud Préféré pour la cascade sortante.",
-    "modeHelpAuto": "Auto : le meilleur nœud de propagation est choisi automatiquement à ce moment-là (découvert ou configuré, sinon votre nœud local) et Preferred est géré pour vous. Set preferred et Add & prefer sont désactivés.",
-    "modeHelpManual": "Manuel : vous épinglez le nœud Preferred. La synchronisation utilise ce nœud ; les autres télécommandes activées restent en tant que sauvegardes en cascade.",
+    "modeHelpAuto": "Auto : le meilleur nœud de propagation est choisi automatiquement à ce moment-là (découvert ou configuré, sinon votre nœud local) et Preferred est géré pour vous. Les commandes préférées manuelles sont désactivées.",
+    "modeHelpManual": "Manuel : vous épinglez le nœud Preferred. La synchronisation utilise ce nœud ; les autres nœuds distants activés restent en tant que sauvegardes en cascade.",
     "autoManagedHint": "Le mode automatique gère le nœud Préféré. Passez en mode manuel pour l'épingler vous-même."
   },
   "reticulumRmapDiscovery": {

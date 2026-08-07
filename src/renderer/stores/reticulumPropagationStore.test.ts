@@ -116,6 +116,42 @@ describe('reticulumPropagationStore', () => {
     expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/pn-aabbccdd/preferred', {});
   });
 
+  it('addFromDiscovered with prefer returns false when Preferred POST fails', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({
+      discovered: [
+        {
+          destination_hash: 'aabbccddeeff00112233445566778899',
+          display_name: 'Heard PN',
+          hops: 1,
+          node_state: true,
+          peering_cost: 0,
+        },
+      ],
+    });
+    proxyPost
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: false, error: 'not_ready' });
+    proxyGet.mockResolvedValue({
+      propagation: [
+        {
+          id: 'pn-aabbccdd',
+          name: 'Heard PN',
+          enabled: true,
+          status: 'known',
+          destination_hash: 'aabbccddeeff00112233445566778899',
+        },
+      ],
+      preferred_id: null,
+    });
+
+    await expect(
+      useReticulumPropagationStore
+        .getState()
+        .addFromDiscovered('aabbccddeeff00112233445566778899', { prefer: true }),
+    ).resolves.toBe(false);
+  });
+
   it('refreshFromSidecar skips when sidecar is down', async () => {
     getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
     await useReticulumPropagationStore.getState().refreshFromSidecar();

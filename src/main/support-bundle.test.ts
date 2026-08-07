@@ -131,6 +131,25 @@ describe('extractLxmfOutboundLogSlice', () => {
     expect(slice).toContain('dest=abababab…');
     expect(slice).not.toContain(dest);
   });
+
+  it('keeps PN island diagnosis lines (deposit/preferred/sync_target/HaveAll)', () => {
+    const chunk = Buffer.from(
+      [
+        'info deposit_pn=aabb preferred_pn=ccdd sync_target=eeff',
+        'info pn_island mismatch detected',
+        'info HaveAll empty_offer completed',
+        'info unrelated chat toast',
+      ].join('\n'),
+      'utf8',
+    );
+    const slice = extractLxmfOutboundLogSlice(chunk).toString('utf8');
+    expect(slice).toContain('deposit_pn');
+    expect(slice).toContain('preferred_pn');
+    expect(slice).toContain('sync_target');
+    expect(slice).toContain('pn_island');
+    expect(slice).toContain('HaveAll');
+    expect(slice).not.toContain('unrelated chat toast');
+  });
 });
 
 describe('redactMnemonicFromStackJson', () => {

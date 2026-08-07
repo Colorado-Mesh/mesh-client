@@ -2,7 +2,11 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
-import { readReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
+import {
+  configuredPropagationDestinationHashes,
+  pickAutoPropagationTarget,
+  readReticulumPropagationMode,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
 export interface ReticulumPropagationNoticeProps {
@@ -21,21 +25,15 @@ export function ReticulumPropagationNotice({
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
+  const mode = readReticulumPropagationMode();
+  const isAuto = mode === 'auto';
 
   useEffect(() => {
     if (!stackLive) return;
     void refreshFromSidecar();
   }, [stackLive, refreshFromSidecar]);
 
-  const configuredHashes = useMemo(
-    () =>
-      new Set(
-        nodes
-          .map((n) => n.destination_hash?.toLowerCase())
-          .filter((h): h is string => typeof h === 'string' && h.length > 0),
-      ),
-    [nodes],
-  );
+  const configuredHashes = useMemo(() => configuredPropagationDestinationHashes(nodes), [nodes]);
 
   const unconfiguredDiscovered = useMemo(
     () =>
@@ -48,12 +46,17 @@ export function ReticulumPropagationNotice({
   );
 
   if (!stackLive) return null;
-  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, readReticulumPropagationMode())) {
+  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) {
     return null;
   }
 
   const discoveryCount = unconfiguredDiscovered.length;
-  const closest = unconfiguredDiscovered[0];
+  // Align "Add closest" with Auto pick when Auto is off (Auto soft-upserts itself).
+  const closestTarget = pickAutoPropagationTarget(nodes, discovered);
+  const closestHash =
+    closestTarget?.kind === 'discovered'
+      ? closestTarget.destinationHash
+      : unconfiguredDiscovered[0]?.destination_hash;
 
   return (
     <div
@@ -66,13 +69,13 @@ export function ReticulumPropagationNotice({
           : t('reticulumPropagation.notice.body')}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-3">
-        {closest ? (
+        {closestHash && !isAuto ? (
           <button
             type="button"
             className="font-medium text-amber-200 underline hover:text-amber-100"
             aria-label={t('reticulumPropagation.notice.addClosestAria')}
             onClick={() => {
-              void addFromDiscovered(closest.destination_hash, { prefer: true });
+              void addFromDiscovered(closestHash, { prefer: true });
             }}
           >
             {t('reticulumPropagation.notice.addClosest')}

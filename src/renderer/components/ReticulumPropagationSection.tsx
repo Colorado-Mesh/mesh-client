@@ -1,10 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import {
-  pickAutoPropagationTarget,
+  applyAutoPropagationPreferredIfNeeded,
+  bumpPropagationModeGeneration,
+  ensurePreferredThenStartSync,
+  getPropagationModeGeneration,
+} from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import {
+  configuredPropagationDestinationHashes,
+  hasEnabledLocalPropagationNode,
+  isReticulumPropagationMode,
+  listConfiguredRemotePropagationIds,
+  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
   type ReticulumPropagationMode,
@@ -162,7 +172,6 @@ export default function ReticulumPropagationSection({
   const setAutoSyncIntervalOnSidecar = useReticulumPropagationStore(
     (s) => s.setAutoSyncIntervalOnSidecar,
   );
-  const startSync = useReticulumPropagationStore((s) => s.startSync);
   const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const removePropagationNode = useReticulumPropagationStore((s) => s.removePropagationNode);
@@ -182,31 +191,29 @@ export default function ReticulumPropagationSection({
     void refreshFromSidecar();
   }, [refreshFromSidecar]);
 
-  const applyAutoPreferred = useCallback(async () => {
-    const target = pickAutoPropagationTarget(nodes, discovered);
-    if (!target) return;
-    if (target.kind === 'configured') {
-      if (target.id === preferredId) return;
-      await setPreferredOnSidecar(target.id);
-    } else if (target.kind === 'local') {
-      if (preferredId === 'local-prop') return;
-      await setPreferredOnSidecar('local-prop');
-    } else {
-      // Discovered but not yet configured: soft-upsert (add + prefer) so the sidecar
-      // Preferred/sync/cascade APIs work — no manual Add click required.
-      await addFromDiscovered(target.destinationHash, { prefer: true });
-    }
-  }, [nodes, discovered, preferredId, setPreferredOnSidecar, addFromDiscovered]);
-
+  // Topology / Preferred changes while Auto (mode entry is owned by handleModeChange).
   useEffect(() => {
     if (!isAuto) return;
-    // floating-ok: setPreferredOnSidecar/addFromDiscovered never reject (return false on failure)
-    void applyAutoPreferred();
-  }, [isAuto, applyAutoPreferred]);
+    // floating-ok: apply returns Result; failures toast after retry
+    void applyAutoPropagationPreferredIfNeeded();
+  }, [isAuto, nodes, discovered, preferredId]);
 
   const handleModeChange = (next: ReticulumPropagationMode) => {
+    if (!isReticulumPropagationMode(next)) return;
+    if (mode === 'auto' && next !== 'auto') {
+      bumpPropagationModeGeneration();
+    }
     setMode(next);
     writeReticulumPropagationMode(next);
+    if (next !== 'auto') return;
+    // floating-ok: refresh then apply; bump after refresh so we do not rejoin a pre-hydrate flight
+    void (async () => {
+      await refreshFromSidecar();
+      bumpPropagationModeGeneration();
+      await applyAutoPropagationPreferredIfNeeded({
+        generation: getPropagationModeGeneration(),
+      });
+    })();
   };
 
   const handleRefresh = async () => {
@@ -248,11 +255,7 @@ export default function ReticulumPropagationSection({
       });
   };
 
-  const configuredHashes = new Set(
-    nodes
-      .map((n) => n.destination_hash?.toLowerCase())
-      .filter((h): h is string => typeof h === 'string' && h.length > 0),
-  );
+  const configuredHashes = configuredPropagationDestinationHashes(nodes);
 
   const modeHelpKey =
     mode === 'auto'
@@ -261,9 +264,17 @@ export default function ReticulumPropagationSection({
         ? 'reticulumPropagation.modeHelpManual'
         : 'reticulumPropagation.modeHelpOff';
 
-  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId);
+  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId, discovered);
+  const autoHasCascadeCandidate =
+    listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
+    listConfiguredRemotePropagationIds(nodes).length > 0 ||
+    hasEnabledLocalPropagationNode(nodes);
+  // Manual/Auto may Sync local-prop (settle); Off disables bottom Sync.
   const bottomSyncDisabled =
-    sync.active || mode === 'off' || !bottomSyncTargetId || bottomSyncTargetId === 'local-prop';
+    sync.active ||
+    mode === 'off' ||
+    (mode === 'manual' && !bottomSyncTargetId) ||
+    (mode === 'auto' && !autoHasCascadeCandidate);
 
   const body = (
     <>
@@ -400,9 +411,11 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  disabled={sync.active}
+                  disabled={sync.active || isAuto}
+                  title={isAuto ? t('reticulumPropagation.autoManagedHint') : undefined}
                   onClick={() => {
-                    void startSync(node.id);
+                    // floating-ok: cascade never rejects; Manual remote fail → local
+                    void ensurePreferredThenStartSync(node.id);
                   }}
                   aria-label={t('reticulumPropagation.syncNowFor', { name: node.name })}
                 >
@@ -542,9 +555,8 @@ export default function ReticulumPropagationSection({
           className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
           aria-label={t('reticulumPropagation.syncNowPreferredAria')}
           onClick={() => {
-            if (bottomSyncTargetId) {
-              void startSync(bottomSyncTargetId);
-            }
+            // floating-ok: cascade never rejects; local Preferred is a valid target
+            void ensurePreferredThenStartSync(bottomSyncTargetId ?? 'local-prop');
           }}
         >
           {t('reticulumPropagation.syncNow')}

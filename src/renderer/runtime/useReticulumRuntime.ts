@@ -85,6 +85,7 @@ import {
   shouldApplyLinkDeliveryTimeoutFailureBridge,
 } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
 import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
+import { readReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   applyPropagationSyncEvent,
   normalizePropagationSyncProgress,
@@ -1561,6 +1562,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
             const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
               propState.nodes,
               propState.preferredId,
+              readReticulumPropagationMode(),
+              propState.discovered,
             );
             console.debug(
               `[useReticulumRuntime] link-timeout bridge apply=${applyBridge} preferred=${propState.preferredId ?? 'none'} nodes=${propState.nodes.length}`,

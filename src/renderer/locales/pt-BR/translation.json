@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Limpar mensagens diretas",
     "clearReticulumMessagesConfirm": "Isso excluirá permanentemente todas as {{count}} mensagens diretas Reticulum armazenadas localmente. Isso não pode ser desfeito.",
     "clearReticulumMessagesConfirmButton": "Limpar mensagens {{count}}",
-    "reticulumSection": "Reticulum — Pilha de Reticulum",
-    "reticulumAnnounceHelp": "Com que frequência sua identidade é anunciada na rede e ferramentas para limpar anúncios armazenados.",
     "logPanelHelp": "Quando ativado, um fluxo de log ao vivo aparece à direita. Na guia Reticulum, as linhas do dispositivo incluem saída secundária e integridade da interface local. As linhas de depuração exigem a caixa de seleção dentro do painel de log.",
     "autoPruneUnheardContactsDaysAria": "Remover automaticamente contatos não ouvidos na inicialização, com mais de {{days}} dias",
     "capTotalContactsCountAria": "Limite o total de contatos, mantenha os contatos {{count}} vistos mais recentemente",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
     "themeRestoreFailed": "Falha ao restaurar o ponto de verificação de cores.",
     "themeResetFailed": "Falha ao redefinir as cores.",
-    "messageActionsBarBgVisible": "Mostrar fundo",
-    "reticulumPropagationMoved": "A configuração do nó de propagação e o modo de sincronização (Desligado / Automático / Manual) foram movidos para os nós de → Propagação de Rede."
+    "messageActionsBarBgVisible": "Mostrar fundo"
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Sincronização de propagação adiada — uma mensagem de saída está sendo depositada neste nó.",
     "modeLabel": "Modo de propagação",
     "modeAria": "Modo de sincronização de propagação",
+    "autoApplyFailed": "Não foi possível aplicar o nó de propagação Auto Preferred.",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Desligado",
     "modeHelpOff": "Desligado: sem alterações preferenciais automáticas e sem sincronização periódica. Você ainda pode definir um nó Preferred manualmente para a cascata de saída.",
-    "modeHelpAuto": "Auto: o melhor nó de propagação é escolhido automaticamente no momento (descoberto ou configurado, caso contrário, seu nó local) e o Preferred é gerenciado para você. Definir como preferido e Adicionar e preferir estão desativados.",
-    "modeHelpManual": "Manual: você fixa o nó Preferred. A sincronização usa esse nó; outros controles remotos habilitados permanecem como backups em cascata.",
+    "modeHelpAuto": "Auto: o melhor nó de propagação é escolhido automaticamente no momento (descoberto ou configurado, caso contrário, seu nó local) e o Preferred é gerenciado para você. Os controles manuais preferenciais estão desativados.",
+    "modeHelpManual": "Manual: você fixa o nó Preferred. A sincronização usa esse nó; outros nós remotos habilitados permanecem como backups em cascata.",
     "autoManagedHint": "O modo automático gerencia o nó Preferred. Mude para Manual para fixar você mesmo."
   },
   "reticulumRmapDiscovery": {

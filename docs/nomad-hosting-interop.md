@@ -4,7 +4,7 @@ Manual verification that mesh-client’s static Nomad host interops with other N
 
 ## Prerequisites
 
-- Sibling `rsReticulum` / `rsLXMF` / `rsNomad` checkouts and an `rns-stack` sidecar build
+- Repo-local `.rsstack/` checkouts (`./scripts/clone-ratspeak-stack.sh`) and an `rns-stack` sidecar build
 - Reticulum stack running in mesh-client (Connection → Reticulum)
 - Shared path to peers: TCP hub, I2P/Ygg, or RF — same network as the peer client
 - Optional: a site folder such as sibling `nomad-page` with `pages/*.mu`

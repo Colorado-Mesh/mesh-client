@@ -1,9 +1,12 @@
 import {
-  pickAutoPropagationNodeId,
+  pickAutoPropagationTarget,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
-import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
+import type {
+  DiscoveredPropagationRow,
+  PropagationNodeRow,
+} from '@/renderer/stores/reticulumPropagationStore';
 
 function isRemotePropagationId(id: string | null | undefined): id is string {
   return Boolean(id && id !== 'local-prop');
@@ -19,13 +22,15 @@ function findPropagationNode(
 /**
  * True when a remote (non-local-prop) propagation node can carry offline LXMF.
  *
- * Preferred sidecar outbound node wins over App sync mode — Mode "Off" only
+ * Preferred sidecar outbound node wins over sync mode — Mode "Off" only
  * disables periodic sync, not the presence of an outbound propagation target.
+ * Auto mode also counts an active discovered remote (soft-upsert pending).
  */
 export function hasEffectiveReticulumPropagationTarget(
   nodes: PropagationNodeRow[],
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
+  discovered: readonly DiscoveredPropagationRow[] = [],
 ): boolean {
   if (isRemotePropagationId(preferredId)) {
     const preferred = findPropagationNode(nodes, preferredId);
@@ -38,12 +43,12 @@ export function hasEffectiveReticulumPropagationTarget(
     return true;
   }
 
-  // Auto / manual without preferred: any enabled remote counts for offline fallback
-  // capacity. Mode "off" skips inventing a target when none is preferred.
+  // Auto / manual without preferred: Mode "off"/"manual" skip inventing a target.
   if (mode === 'off') return false;
   if (mode === 'manual') return false;
 
-  return pickAutoPropagationNodeId(nodes) != null;
+  const target = pickAutoPropagationTarget(nodes, discovered);
+  return target?.kind === 'configured' || target?.kind === 'discovered';
 }
 
 /** True when local-prop is enabled (cascade last resort / offline inbox). */
@@ -59,7 +64,8 @@ export function hasReticulumPnCascadeCapacity(
   nodes: PropagationNodeRow[],
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
+  discovered: readonly DiscoveredPropagationRow[] = [],
 ): boolean {
-  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode)) return true;
+  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) return true;
   return hasEnabledLocalPropagation(nodes);
 }

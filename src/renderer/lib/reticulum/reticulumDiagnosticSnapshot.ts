@@ -8,6 +8,7 @@ import type { DiagnosticRow } from '../types';
 import type { ReticulumConfigAuditIssue } from './reticulumConfigAudit';
 import { getReticulumInboundLxmfDiagnostics } from './reticulumInboundLxmfDiagnostics';
 import {
+  formatAutoPropagationTargetLabel,
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
@@ -93,19 +94,16 @@ export function getReticulumPropagationClientSnapshot(): ReticulumPropagationCli
   const s = useReticulumPropagationStore.getState();
   const mode = readReticulumPropagationMode();
   const auto = pickAutoPropagationTarget(s.nodes, s.discovered);
-  const autoTarget =
-    auto == null
-      ? null
-      : auto.kind === 'configured'
-        ? `configured:${auto.id}`
-        : auto.kind === 'discovered'
-          ? `discovered:${auto.destinationHash.slice(0, 12)}`
-          : 'local';
   return {
     mode,
     preferredId: s.preferredId,
-    resolvedSyncTargetId: resolvePropagationSyncTargetId(mode, s.nodes, s.preferredId),
-    autoTarget,
+    resolvedSyncTargetId: resolvePropagationSyncTargetId(
+      mode,
+      s.nodes,
+      s.preferredId,
+      s.discovered,
+    ),
+    autoTarget: formatAutoPropagationTargetLabel(auto),
     lastSyncError: s.lastSyncError,
     lastPropagationSyncAt: s.lastPropagationSyncAt,
     lastPropagationSyncAttemptAt: s.lastPropagationSyncAttemptAt,

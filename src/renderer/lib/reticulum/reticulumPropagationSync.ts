@@ -41,7 +41,19 @@ export function isPropagationSyncEstablishingStuck(
 
 const SYNC_FAILED_KEY = 'reticulumPropagation.syncFailed';
 const SYNC_TIMED_OUT_KEY = 'reticulumPropagation.syncTimedOut';
+const SYNC_CANCELLED_KEY = 'reticulumPropagation.syncCancelled';
 const SYNC_LOCAL_UNSUPPORTED_KEY = 'reticulumPropagation.syncLocalNotSupported';
+
+/** Sidecar cancel when replacing/deleting a PN — not a user-visible failure. */
+export const PROPAGATION_SYNC_SUPERSEDED = 'PROPAGATION_SYNC_SUPERSEDED';
+
+export function isPropagationSyncSupersedeMessage(message: string | null | undefined): boolean {
+  return message === PROPAGATION_SYNC_SUPERSEDED;
+}
+
+export function isPropagationSyncCancelledMessage(message: string | null | undefined): boolean {
+  return typeof message === 'string' && /propagation sync cancelled/i.test(message);
+}
 const SYNC_IDENTITY_UNKNOWN_KEY = 'reticulumPropagation.syncIdentityUnknown';
 const SYNC_TARGET_NOT_PN_KEY = 'reticulumPropagation.syncTargetNotPropagationNode';
 const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFailed';
@@ -116,9 +128,14 @@ function mapPropagationSyncErrorBySubstring(error: string): string | null {
   return null;
 }
 
-/** Map sidecar/API sync error codes or WS failure messages to i18n keys. */
-export function mapPropagationSyncError(error: string | null | undefined): string {
+/**
+ * Map sidecar/API sync error codes or WS failure messages to i18n keys.
+ * Returns `null` for quiet supersede (delete/replace) — caller must not show unreachable.
+ */
+export function mapPropagationSyncError(error: string | null | undefined): string | null {
+  if (isPropagationSyncSupersedeMessage(error)) return null;
   if (!error) return SYNC_FAILED_KEY;
+  if (isPropagationSyncCancelledMessage(error)) return SYNC_CANCELLED_KEY;
   if (error === 'LOCAL_PROPAGATION_SYNC_UNSUPPORTED') return SYNC_LOCAL_UNSUPPORTED_KEY;
   const byPrefix = mapPropagationSyncErrorByPrefix(error);
   if (byPrefix) return byPrefix;
@@ -189,13 +206,28 @@ export function applyPropagationSyncEvent(payload: {
   message?: string | null;
 }): void {
   const normalizedProgress = normalizePropagationSyncProgress(payload.progress ?? 0);
-  const wasActive = useReticulumPropagationStore.getState().sync.active;
+  const state = useReticulumPropagationStore.getState();
+  const wasActive = state.sync.active;
+  const quietSupersede = isPropagationSyncSupersedeMessage(payload.message);
+  const cancelMessage = isPropagationSyncCancelledMessage(payload.message);
+
+  // Late cancel/supersede after we already settled (e.g. local-prop) must not re-fail UI.
+  if (
+    payload.active === false &&
+    normalizedProgress === 0 &&
+    !wasActive &&
+    (quietSupersede || cancelMessage)
+  ) {
+    return;
+  }
 
   if (payload.active === false && normalizedProgress === 0 && wasActive) {
     clearPropagationSyncStallWatchdog();
+    const mapped = mapPropagationSyncError(payload.message);
     useReticulumPropagationStore.setState({
       sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-      lastSyncError: mapPropagationSyncError(payload.message),
+      // Supersede clears; cancel/fail set keys. Never leave a prior success as unreachable.
+      lastSyncError: quietSupersede ? null : mapped,
       activePropagationSyncAttemptAt: null,
     });
     return;
@@ -203,9 +235,9 @@ export function applyPropagationSyncEvent(payload: {
 
   if (payload.active === false && normalizedProgress >= 100) {
     clearPropagationSyncStallWatchdog();
-    const state = useReticulumPropagationStore.getState();
-    const hadError = state.lastSyncError;
-    const forAttemptAt = state.activePropagationSyncAttemptAt;
+    const current = useReticulumPropagationStore.getState();
+    const hadError = current.lastSyncError;
+    const forAttemptAt = current.activePropagationSyncAttemptAt;
     // Ignore late "complete" frames after user cancel / failure already cleared active.
     if (!wasActive && hadError) {
       return;

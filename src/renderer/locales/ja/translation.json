@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "ダイレクトメッセージを消去",
     "clearReticulumMessagesConfirm": "これにより、ローカルに保存されているすべての{{count}} Reticulumダイレクトメッセージが完全に削除されます。これは元に戻せません。",
     "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去",
-    "reticulumSection": "Reticulum — レティキュラム・スタック",
-    "reticulumAnnounceHelp": "あなたの身元がネットワーク上で発表される頻度と、保存されているアナウンスをクリアするためのツール。",
     "logPanelHelp": "有効にすると、ライブ ログ ストリームが右側に表示されます。 Reticulum タブのデバイス行には、サイドカー出力とローカル インターフェイスの状態が含まれます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
     "autoPruneUnheardContactsDaysAria": "起動時に、{{days}} 日より古い、聞いていない連絡先を自動的に削除します",
     "capTotalContactsCountAria": "連絡先の総数を制限し、最近確認された {{count}} 連絡先を保持します",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
     "themeResetFailed": "色をリセットできませんでした。",
-    "messageActionsBarBgVisible": "背景を表示",
-    "reticulumPropagationMoved": "伝播ノードの設定と同期モード（オフ/自動/手動）は、ネットワーク→伝播ノードに移動しました。"
+    "messageActionsBarBgVisible": "背景を表示"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。",
     "modeLabel": "伝播モード",
     "modeAria": "伝播同期モード",
+    "autoApplyFailed": "Auto Preferred伝播ノードを適用できませんでした。",
     "modeAuto": "自動",
     "modeManual": "手動",
     "modeOff": "オフ",
     "modeHelpOff": "オフ：自動優先変更なし、定期的な同期なし。アウトバウンドカスケードの優先ノードを手動で設定することもできます。",
-    "modeHelpAuto": "自動：最適な伝播ノードがその時点で自動的に選択され（検出または構成され、それ以外はローカルノード）、Preferredが管理されます。[優先設定]と[追加と優先]が無効になっています。",
-    "modeHelpManual": "手動： Preferredノードをピン留めします。同期はそのノードを使用します。他の有効なリモートはカスケードバックアップとして残ります。",
+    "modeHelpAuto": "自動：最適な伝播ノードがその時点で自動的に選択され（検出または構成され、それ以外はローカルノード）、Preferredが管理されます。手動優先コントロールは無効になっています。",
+    "modeHelpManual": "手動： Preferredノードをピン留めします。同期はそのノードを使用します。他の有効なリモートノードはカスケードバックアップとして残ります。",
     "autoManagedHint": "自動モードは、Preferredノードを管理します。自分でピン留めするには、手動に切り替えてください。"
   },
   "reticulumRmapDiscovery": {

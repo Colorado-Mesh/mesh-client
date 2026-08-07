@@ -39,6 +39,26 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
     expect(hasEffectiveReticulumPropagationTarget([remoteNode], null, 'auto')).toBe(true);
   });
 
+  it('returns true in auto when only an active discovered remote exists', () => {
+    const localOnly = {
+      id: 'local-prop',
+      name: 'Local',
+      enabled: true,
+      status: 'online' as const,
+    };
+    const discovered = [
+      {
+        destination_hash: 'dead'.repeat(8),
+        node_state: true,
+        peering_cost: 0,
+        hops: 1,
+      },
+    ];
+    expect(hasEffectiveReticulumPropagationTarget([localOnly], null, 'auto', discovered)).toBe(
+      true,
+    );
+  });
+
   it('returns true when preferred id is set before the node list loads', () => {
     expect(hasEffectiveReticulumPropagationTarget([], 'remote-1', 'auto')).toBe(true);
   });

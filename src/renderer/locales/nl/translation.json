@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Directe berichten wissen",
     "clearReticulumMessagesConfirm": "Hiermee worden alle {{count}} lokaal opgeslagen Reticulum-directe berichten permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen",
-    "reticulumSection": "Reticulum stack",
-    "reticulumAnnounceHelp": "Hoe vaak uw identiteit wordt aangekondigd op het netwerk en tools om opgeslagen aankondigingen te wissen.",
     "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Op het tabblad Reticulum omvatten apparaatregels zijspanuitvoer en lokale interfacestatus. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "autoPruneUnheardContactsDaysAria": "Ongehoorde contacten automatisch opschonen bij het opstarten, ouder dan {{days}} dagen",
     "capTotalContactsCountAria": "Beperk het totale aantal contacten, bewaar de meest recent geziene {{count}} contacten",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
     "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
     "themeResetFailed": "Kan kleuren niet resetten.",
-    "messageActionsBarBgVisible": "Achtergrond tonen",
-    "reticulumPropagationMoved": "De installatie- en synchronisatiemodus van het propagatieknooppunt (Uit / Automatisch / Handmatig) zijn verplaatst naar → de knooppunten voor netwerkpropagatie."
+    "messageActionsBarBgVisible": "Achtergrond tonen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Propagatiesynchronisatie uitgesteld — een uitgaand bericht wordt op dit knooppunt gedeponeerd.",
     "modeLabel": "voortplantingsmodus",
     "modeAria": "Voortplantingssynchronisatiemodus",
+    "autoApplyFailed": "Kan het Auto Preferred voortplantingsknooppunt niet toepassen.",
     "modeAuto": "Auto",
     "modeManual": "Handmatig",
-    "modeOff": "Off",
+    "modeOff": "Uit",
     "modeHelpOff": "Uit: geen automatische voorkeurswijzigingen en geen periodieke synchronisatie. U kunt nog steeds handmatig een voorkeursknooppunt instellen voor de uitgaande cascade.",
-    "modeHelpAuto": "Auto: het beste propagatieknooppunt wordt op dat moment automatisch gekozen (ontdekt of geconfigureerd, anders wordt uw lokale knooppunt) en Preferred voor u beheerd. Stel voorkeur in en Toevoegen en voorkeur zijn uitgeschakeld.",
-    "modeHelpManual": "Handmatig: u pint het voorkeursknooppunt. Sync gebruikt dat knooppunt; andere ingeschakelde afstandsbedieningen blijven als cascadeback-ups.",
+    "modeHelpAuto": "Auto: het beste propagatieknooppunt wordt op dat moment automatisch gekozen (ontdekt of geconfigureerd, anders wordt uw lokale knooppunt) en Preferred voor u beheerd. Handmatige voorkeursbesturingselementen zijn uitgeschakeld.",
+    "modeHelpManual": "Handmatig: u pint het voorkeursknooppunt. Sync gebruikt dat knooppunt; andere ingeschakelde externe knooppunten blijven als cascadeback-ups.",
     "autoManagedHint": "De automatische modus beheert het voorkeursknooppunt. Schakel over naar Handmatig om het zelf vast te pinnen."
   },
   "reticulumRmapDiscovery": {

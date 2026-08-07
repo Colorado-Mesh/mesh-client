@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Vymazat přímé zprávy",
     "clearReticulumMessagesConfirm": "Tím trvale odstraníte všechny {{count}} lokálně uložené přímé zprávy Reticulum. Tuto akci nelze vrátit zpět.",
     "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
-    "reticulumSection": "Reticulum — Zásobník retikula",
-    "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
     "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Na kartě Reticulum řádky zařízení zahrnují výstup postranního vozíku a stav místního rozhraní. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "autoPruneUnheardContactsDaysAria": "Automaticky oříznout neslyšené kontakty při spuštění, starší než {{days}} dnů",
     "capTotalContactsCountAria": "Omezit celkový počet kontaktů, ponechat naposledy zobrazené {{count}} kontakty",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
     "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
     "themeResetFailed": "Obnovení barev se nezdařilo.",
-    "messageActionsBarBgVisible": "Zobrazit pozadí",
-    "reticulumPropagationMoved": "Nastavení propagačního uzlu a režim synchronizace (Vypnuto / Automaticky / Ručně) se přesunuly do uzlů → propagace sítě."
+    "messageActionsBarBgVisible": "Zobrazit pozadí"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -4248,12 +4245,13 @@
     "syncOutboundBusy": "Synchronizace propagace odložena — do tohoto uzlu se ukládá odchozí zpráva.",
     "modeLabel": "Režim propagace",
     "modeAria": "Režim synchronizace propagace",
+    "autoApplyFailed": "Nelze použít uzel Automaticky preferované šíření.",
     "modeAuto": "Auto",
     "modeManual": "Manuální",
     "modeOff": "Vypnuto",
     "modeHelpOff": "Vypnuto: žádné automatické preferované změny a žádná pravidelná synchronizace. Pro odchozí kaskádu můžete stále ručně nastavit preferovaný uzel.",
-    "modeHelpAuto": "Auto: nejlepší propagační uzel je vybrán automaticky v daném okamžiku (objevený nebo nakonfigurovaný, jinak váš místní uzel) a je spravován za vás. Nastavit preferované a Přidat a preferovat jsou zakázány.",
-    "modeHelpManual": "Příručka: připnete preferovaný uzel. Synchronizace používá tento uzel; další povolené dálkové ovladače zůstávají jako kaskádové zálohy.",
+    "modeHelpAuto": "Auto: nejlepší propagační uzel je vybrán automaticky v daném okamžiku (objevený nebo nakonfigurovaný, jinak váš místní uzel) a je spravován za vás. Ruční upřednostňované ovládací prvky jsou zakázány.",
+    "modeHelpManual": "Manuální: připnete preferovaný uzel. Synchronizace používá tento uzel; ostatní povolené vzdálené uzly zůstávají jako kaskádové zálohy.",
     "autoManagedHint": "Automatický režim spravuje preferovaný uzel. Přepni na Manuál a připni si ho sám."
   },
   "reticulumRmapDiscovery": {

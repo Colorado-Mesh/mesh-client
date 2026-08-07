@@ -73,31 +73,35 @@ describe('shouldRunPropagationAutoSync', () => {
     }
   });
 
-  it('skips local-prop even in auto mode', () => {
+  it('allows local-prop Preferred in auto and manual (final settle / only-local)', () => {
+    for (const mode of ['auto', 'manual'] as const) {
+      expect(
+        shouldRunPropagationAutoSync({
+          autoSyncIntervalSec: 3600,
+          preferredId: 'local-prop',
+          syncActive: false,
+          lastPropagationSyncAt: null,
+          lastPropagationSyncAttemptAt: null,
+          nowMs: 4_000_000,
+          mode,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it('allows Auto with null Preferred when cascade candidates exist', () => {
     expect(
       shouldRunPropagationAutoSync({
         autoSyncIntervalSec: 3600,
-        preferredId: 'local-prop',
+        preferredId: null,
         syncActive: false,
         lastPropagationSyncAt: null,
         lastPropagationSyncAttemptAt: null,
         nowMs: 4_000_000,
         mode: 'auto',
+        hasAutoCascadeCandidate: true,
       }),
-    ).toBe(false);
-  });
-
-  it('returns false when preferredId is local-prop', () => {
-    expect(
-      shouldRunPropagationAutoSync({
-        autoSyncIntervalSec: 3600,
-        preferredId: 'local-prop',
-        syncActive: false,
-        lastPropagationSyncAt: null,
-        lastPropagationSyncAttemptAt: null,
-        nowMs: 4_000_000,
-      }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('allows first sync when never attempted or succeeded', () => {

@@ -25,7 +25,7 @@ vi.mock('child_process', () => ({
 import {
   findReticulumSidecarProjectDir,
   formatReticulumCargoBuildError,
-  hasRnsStackSiblings,
+  hasRsstackWorkspace,
   newestReticulumSidecarSourceMtimeMs,
   resolveSidecarBinaryPath,
   reticulumCargoStderrMissingPacketTap,
@@ -102,7 +102,7 @@ describe('reticulum-sidecar-path', () => {
   });
 
   it('sidecarCargoBuildArgs uses rns-stack when the repo-local .rsstack exists', () => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-siblings-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-rsstack-'));
     const meshRoot = path.join(tmpDir, 'mesh-client');
     const projectDir = path.join(meshRoot, 'reticulum-sidecar');
     const stackRoot = path.join(meshRoot, '.rsstack');
@@ -116,12 +116,20 @@ describe('reticulum-sidecar-path', () => {
     fs.mkdirSync(projectDir, { recursive: true });
     fs.writeFileSync(path.join(projectDir, 'Cargo.toml'), '[package]\nname = "test"\n');
 
-    expect(hasRnsStackSiblings(projectDir)).toBe(true);
+    expect(hasRsstackWorkspace(projectDir)).toBe(true);
     expect(sidecarCargoBuildArgs(projectDir)).toEqual([
       'build',
       '--features',
       'rns-stack,rns-ble,rns-rnode-tcp',
     ]);
+  });
+
+  it('hasRsstackWorkspace is false without repo-local .rsstack', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-nostack-'));
+    const projectDir = path.join(tmpDir, 'mesh-client', 'reticulum-sidecar');
+    fs.mkdirSync(projectDir, { recursive: true });
+    expect(hasRsstackWorkspace(projectDir)).toBe(false);
+    expect(sidecarCargoBuildArgs(projectDir)).toEqual(['build']);
   });
 
   it('sidecarBinaryLacksRnsBle detects sidecars built without rns-ble', () => {

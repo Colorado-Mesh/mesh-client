@@ -45,7 +45,15 @@ vi.mock('./ConfirmModal', () => ({
 const addToast = vi.fn();
 vi.mock('./Toast', () => ({
   useToast: () => ({ addToast }),
+  pushAppToast: vi.fn(),
 }));
+
+vi.mock('@/renderer/lib/i18n', () => ({
+  default: { t: (key: string) => key },
+}));
+
+import { resetPropagationAutoApplyForTests } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import { RETICULUM_PROPAGATION_MODE_KEY } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 
@@ -64,6 +72,7 @@ describe('ReticulumPropagationSection', () => {
   beforeEach(() => {
     addToast.mockReset();
     localStorage.clear();
+    resetPropagationAutoApplyForTests();
     useReticulumPropagationStore.setState({
       nodes: [
         {
@@ -282,6 +291,35 @@ describe('ReticulumPropagationSection', () => {
     });
   });
 
+  it('Manual with Preferred local enables bottom Sync and settles local', async () => {
+    const user = userEvent.setup();
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      nodes: [
+        {
+          id: 'local-prop',
+          name: 'Host propagation node',
+          enabled: true,
+          status: 'known',
+          hops: 0,
+        },
+      ],
+      preferredId: 'local-prop',
+      startSync,
+    });
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    const bottomSync = screen.getByRole('button', {
+      name: 'reticulumPropagation.syncNowPreferredAria',
+    });
+    expect(bottomSync).not.toBeDisabled();
+    await user.click(bottomSync);
+    await waitFor(() => {
+      expect(startSync).toHaveBeenCalledWith('local-prop');
+    });
+  });
+
   it('defaults to Off: no auto preferred write and Set preferred enabled', () => {
     const setPreferredOnSidecar = vi.mocked(
       useReticulumPropagationStore.getState().setPreferredOnSidecar,
@@ -306,11 +344,15 @@ describe('ReticulumPropagationSection', () => {
     const setPreferredOnSidecar = vi.mocked(
       useReticulumPropagationStore.getState().setPreferredOnSidecar,
     );
+    const refreshFromSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().refreshFromSidecar,
+    );
     render(<ReticulumPropagationSection embedded />);
 
     await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
 
     await waitFor(() => {
+      expect(refreshFromSidecar).toHaveBeenCalled();
       expect(setPreferredOnSidecar).toHaveBeenCalledWith('pn-aabb1111');
     });
     for (const btn of screen.getAllByRole('button', {
@@ -364,5 +406,105 @@ describe('ReticulumPropagationSection', () => {
     await waitFor(() => {
       expect(setPreferredOnSidecar).toHaveBeenCalledWith('pn-aabb1111');
     });
+  });
+
+  it('Auto soft-upserts discovered best target via addFromDiscovered', async () => {
+    const user = userEvent.setup();
+    const hash = 'deadbeef'.repeat(4);
+    useReticulumPropagationStore.setState({
+      nodes: [
+        {
+          id: 'local-prop',
+          name: 'Host propagation node',
+          enabled: true,
+          status: 'known',
+          hops: 0,
+        },
+      ],
+      preferredId: null,
+      discovered: [
+        {
+          destination_hash: hash,
+          display_name: 'Discovered PN',
+          node_state: true,
+          peering_cost: 0,
+          hops: 1,
+        },
+      ],
+    });
+    const addFromDiscovered = vi.mocked(useReticulumPropagationStore.getState().addFromDiscovered);
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
+
+    await waitFor(() => {
+      expect(addFromDiscovered).toHaveBeenCalledWith(hash, { prefer: true });
+    });
+    expect(setPreferredOnSidecar).not.toHaveBeenCalled();
+  });
+
+  it('Sync Now in Auto aligns Preferred then calls startSync', async () => {
+    const user = userEvent.setup();
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    setPreferredOnSidecar.mockImplementation((id: string) => {
+      useReticulumPropagationStore.setState({ preferredId: id });
+      return Promise.resolve(true);
+    });
+    const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
+    await waitFor(() => {
+      expect(setPreferredOnSidecar).toHaveBeenCalledWith('pn-aabb1111');
+    });
+
+    const syncBtn = screen.getByRole('button', {
+      name: 'reticulumPropagation.syncNowPreferredAria',
+    });
+    expect(syncBtn).not.toBeDisabled();
+    await user.click(syncBtn);
+
+    await waitFor(() => {
+      expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
+    });
+  });
+
+  it('Auto hides Add & prefer and shows auto mode help', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      discovered: [
+        {
+          destination_hash: 'dead'.repeat(8),
+          display_name: 'Seen',
+          node_state: true,
+          peering_cost: 0,
+          hops: 1,
+        },
+      ],
+    });
+    render(<ReticulumPropagationSection embedded />);
+
+    expect(
+      screen.getByRole('button', { name: 'reticulumPropagation.discoveredAddPreferAria:Seen' }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'auto');
+
+    expect(screen.getByText('reticulumPropagation.modeHelpAuto')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'reticulumPropagation.discoveredAddPreferAria:Seen' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('persists mode to localStorage on change', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumPropagationSection embedded />);
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    expect(localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY)).toBe('manual');
   });
 });

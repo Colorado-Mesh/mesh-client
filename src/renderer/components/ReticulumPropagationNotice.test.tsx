@@ -10,6 +10,7 @@ describe('ReticulumPropagationNotice', () => {
   const originalRefresh = useReticulumPropagationStore.getState().refreshFromSidecar;
 
   beforeEach(() => {
+    localStorage.clear();
     useReticulumPropagationStore.setState({
       nodes: [],
       discovered: [],

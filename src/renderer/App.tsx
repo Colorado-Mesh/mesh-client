@@ -4167,7 +4167,6 @@ function AppContent() {
                                 reticulumSidecarReady={
                                   reticulumRuntime.state.status !== 'disconnected'
                                 }
-                                reticulumControlsDisabled={!isConnectedOrOperational}
                               />
                             </div>
                           </Suspense>

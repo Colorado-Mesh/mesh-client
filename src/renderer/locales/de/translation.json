@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Direktnachrichten löschen",
     "clearReticulumMessagesConfirm": "Dadurch werden alle {{count}} lokal gespeicherten Reticulum-Direktnachrichten dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "clearReticulumMessagesConfirmButton": "{{count}} Nachrichten löschen",
-    "reticulumSection": "Reticulum-Stack",
-    "reticulumAnnounceHelp": "Wie oft Ihre Identität im Netzwerk bekannt gegeben wird, und Tools zum Löschen gespeicherter Ankündigungen.",
     "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Auf der Registerkarte „Reticulum“ umfassen die Gerätezeilen die Sidecar-Ausgabe und den Zustand der lokalen Schnittstelle. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich.",
     "autoPruneUnheardContactsDaysAria": "Ungehörte Kontakte, die älter als {{days}} Tage sind, werden beim Start automatisch bereinigt",
     "capTotalContactsCountAria": "Begrenzen Sie die Gesamtzahl der Kontakte und behalten Sie die zuletzt gesehenen {{count}}-Kontakte bei",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
     "themeRestoreFailed": "Farbprüfpunkt konnte nicht wiederhergestellt werden.",
     "themeResetFailed": "Farben konnten nicht zurückgesetzt werden.",
-    "messageActionsBarBgVisible": "Zeige Hintergrund",
-    "reticulumPropagationMoved": "Die Einrichtung des Ausbreitungsknotens und der Synchronisierungsmodus (Aus / Auto / Manuell) wurden zu den → Netzwerkverbreitungsknoten verschoben."
+    "messageActionsBarBgVisible": "Zeige Hintergrund"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt.",
     "modeLabel": "Ausbreitungsmodus",
     "modeAria": "Ausbreitungssynchronisationsmodus",
+    "autoApplyFailed": "Der automatisch bevorzugte Ausbreitungsknoten konnte nicht angewendet werden.",
     "modeAuto": "Automatisch",
-    "modeManual": "Hand",
+    "modeManual": "Manuell",
     "modeOff": "Aus",
     "modeHelpOff": "Aus: keine automatischen bevorzugten Änderungen und keine periodische Synchronisierung. Sie können weiterhin manuell einen bevorzugten Knoten für die ausgehende Kaskade festlegen.",
-    "modeHelpAuto": "Auto: Der jeweils beste Ausbreitungsknoten wird automatisch ausgewählt (erkannt oder konfiguriert, ansonsten wird Ihr lokaler Knoten verwaltet) und Preferred wird für Sie verwaltet. Set preferred und Add & prefer sind deaktiviert.",
-    "modeHelpManual": "Manuell: Sie heften den bevorzugten Knoten an. Sync verwendet diesen Knoten; andere aktivierte Fernbedienungen bleiben als Kaskaden-Backups erhalten.",
+    "modeHelpAuto": "Auto: Der jeweils beste Ausbreitungsknoten wird automatisch ausgewählt (erkannt oder konfiguriert, ansonsten wird Ihr lokaler Knoten verwaltet) und Preferred wird für Sie verwaltet. Manuelle Bevorzugte Steuerelemente sind deaktiviert.",
+    "modeHelpManual": "Manuell: Sie heften den bevorzugten Knoten an. Sync verwendet diesen Knoten; andere aktivierte Remote-Knoten bleiben als Kaskaden-Backups erhalten.",
     "autoManagedHint": "Im Auto-Modus wird der bevorzugte Knoten verwaltet. Wechseln Sie zu Manuell, um es selbst anzuheften."
   },
   "reticulumRmapDiscovery": {

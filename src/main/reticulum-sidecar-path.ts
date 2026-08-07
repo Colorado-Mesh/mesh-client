@@ -57,7 +57,8 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
   return path.join(app.getAppPath(), 'reticulum-sidecar', 'target', 'debug', name);
 }
 
-export function hasRnsStackSiblings(projectDir: string): boolean {
+/** True when repo-local `.rsstack` has the minimal rns-stack path deps (rsReticulum + rsLXMF). */
+export function hasRsstackWorkspace(projectDir: string): boolean {
   const rnsRuntime = path.normalize(
     path.join(projectDir, '../.rsstack/rsReticulum/crates/rns-runtime/Cargo.toml'),
   );
@@ -67,9 +68,12 @@ export function hasRnsStackSiblings(projectDir: string): boolean {
   return fs.existsSync(rnsRuntime) && fs.existsSync(lxmfCore);
 }
 
+/** @deprecated Use {@link hasRsstackWorkspace}. */
+export const hasRnsStackSiblings = hasRsstackWorkspace;
+
 /** Cargo build args: full RNS stack (+ BLE) when the repo-local .rsstack is present. */
 export function sidecarCargoBuildArgs(projectDir: string): string[] {
-  if (hasRnsStackSiblings(projectDir)) {
+  if (hasRsstackWorkspace(projectDir)) {
     return ['build', '--features', 'rns-stack,rns-ble,rns-rnode-tcp'];
   }
   return ['build'];
@@ -135,7 +139,7 @@ export function ensureRsReticulumPatchesScriptPath(projectDir: string): string {
 
 /** Apply rsReticulum overlays when the repo-local .rsstack workspace exists (no-op for stub builds). */
 export function ensureRsReticulumPatches(projectDir: string): void {
-  if (!hasRnsStackSiblings(projectDir)) return;
+  if (!hasRsstackWorkspace(projectDir)) return;
 
   const repoRoot = reticulumSidecarRepoRoot(projectDir);
   const scriptPath = ensureRsReticulumPatchesScriptPath(projectDir);
@@ -276,9 +280,9 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
   const missing = !fs.existsSync(binaryPath);
   const stale = !missing && sidecarBinaryIsStale(binaryPath, projectDir);
   const lacksRnsStack =
-    !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsStack(binaryPath);
+    !missing && hasRsstackWorkspace(projectDir) && sidecarBinaryLacksRnsStack(binaryPath);
   const lacksRnsBle =
-    !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsBle(binaryPath);
+    !missing && hasRsstackWorkspace(projectDir) && sidecarBinaryLacksRnsBle(binaryPath);
   const action = resolveDevSidecarEnsureAction({ missing, stale, lacksRnsStack, lacksRnsBle });
 
   if (action === 'noop') {

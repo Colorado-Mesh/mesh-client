@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Doğrudan mesajları temizle",
     "clearReticulumMessagesConfirm": "Bu, yerel olarak depolanan tüm {{count}} Reticulum doğrudan mesajlarını kalıcı olarak silecektir. Bu işlem geri alınamaz.",
     "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle",
-    "reticulumSection": "Reticulum — Reticulum yığını",
-    "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
     "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "autoPruneUnheardContactsDaysAria": "Başlangıçta {{days}} günden eski, duyulmamış kişileri otomatik olarak buda",
     "capTotalContactsCountAria": "Toplam kişileri sınırlandırın, en son görülen {{count}} kişileri koruyun",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
     "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
     "themeResetFailed": "Renkler sıfırlanamadı.",
-    "messageActionsBarBgVisible": "Arka planı göster",
-    "reticulumPropagationMoved": "Yayılım düğümü kurulumu ve senkronizasyon modu (Kapalı / Otomatik / Manuel) Ağ → Yayılım düğümlerine taşındı."
+    "messageActionsBarBgVisible": "Arka planı göster"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor.",
     "modeLabel": "Yayılma modu",
     "modeAria": "Yayılma senkronizasyon modu",
+    "autoApplyFailed": "Otomatik Tercih Edilen yayılma düğümü uygulanamadı.",
     "modeAuto": "Otomatik",
     "modeManual": "Manuel",
     "modeOff": "Kapalı",
     "modeHelpOff": "Kapalı: otomatik Tercih edilen değişiklik ve periyodik senkronizasyon yok. Giden basamak için yine de Tercih edilen düğümü manuel olarak ayarlayabilirsiniz.",
-    "modeHelpAuto": "Otomatik: En iyi yayılım düğümü o anda otomatik olarak seçilir (keşfedilir veya yapılandırılır, aksi takdirde yerel düğümünüz) ve Tercih Edilen sizin için yönetilir. Tercih edilen ayarla ve Ekle ve tercih et devre dışı bırakıldı.",
-    "modeHelpManual": "Manuel: Tercih edilen düğümü sabitlersiniz. Senkronizasyon bu düğümü kullanır; diğer etkin uzaktan kumandalar kademeli yedekleme olarak kalır.",
+    "modeHelpAuto": "Otomatik: En iyi yayılım düğümü o anda otomatik olarak seçilir (keşfedilir veya yapılandırılır, aksi takdirde yerel düğümünüz) ve Tercih Edilen sizin için yönetilir. Manuel Tercih edilen kontroller devre dışıdır.",
+    "modeHelpManual": "Manuel: Tercih edilen düğümü sabitlersiniz. Senkronizasyon bu düğümü kullanır; diğer etkinleştirilmiş uzak düğümler kademeli yedekleme olarak kalır.",
     "autoManagedHint": "Otomatik mod, Tercih Edilen düğümü yönetir. Kendiniz sabitlemek için Manuel'e geçin."
   },
   "reticulumRmapDiscovery": {

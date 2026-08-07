@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Perfeccionar mensajes claros y directos",
     "clearReticulumMessagesConfirm": "Esto eliminará de forma permanente todos los {{count}} mensajes directos de Reticulum almacenados localmente. Esto no se puede deshacer.",
     "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes",
-    "reticulumSection": "Reticulum — Pila de Reticulum",
-    "reticulumAnnounceHelp": "Con qué frecuencia se anuncia su identidad en la red y herramientas para borrar los anuncios almacenados.",
     "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. En la pestaña Reticulum, las líneas de dispositivos incluyen la salida del sidecar y el estado de la interfaz local. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "autoPruneUnheardContactsDaysAria": "Eliminación automática de contactos no escuchados al inicio, con más de {{days}} días",
     "capTotalContactsCountAria": "Limitar el total de contactos, mantener los contactos {{count}} vistos más recientemente",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
     "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
     "themeResetFailed": "Error al restablecer los colores.",
-    "messageActionsBarBgVisible": "Mostrar fondo",
-    "reticulumPropagationMoved": "La configuración del nodo de propagación y el modo de sincronización (Apagado / Automático / Manual) se han movido a los nodos de → propagación de red."
+    "messageActionsBarBgVisible": "Mostrar fondo"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo.",
     "modeLabel": "modo de propagación",
     "modeAria": "Modo de sincronización de propagación",
+    "autoApplyFailed": "No se ha podido aplicar el nodo de propagación Auto Preferred.",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Apagado",
     "modeHelpOff": "Apagado: sin cambios automáticos de Preferido y sin sincronización periódica. Todavía puede configurar un nodo preferido manualmente para la cascada de salida.",
-    "modeHelpAuto": "Automático: el mejor nodo de propagación se selecciona automáticamente en el momento (descubierto o configurado, de lo contrario, su nodo local) y Preferred se gestiona por usted. Establecer preferido y Añadir y preferir están deshabilitados.",
-    "modeHelpManual": "Manual: fijas el nodo Preferido. Sync utiliza ese nodo; otros controles remotos habilitados permanecen como copias de seguridad en cascada.",
+    "modeHelpAuto": "Automático: el mejor nodo de propagación se selecciona automáticamente en el momento (descubierto o configurado, de lo contrario, su nodo local) y Preferred se gestiona por usted. Los controles preferidos manuales están desactivados.",
+    "modeHelpManual": "Manual: fijas el nodo Preferido. Sync utiliza ese nodo; otros nodos remotos habilitados permanecen como copias de seguridad en cascada.",
     "autoManagedHint": "El modo automático gestiona el nodo Preferido. Cambie a Manual para fijarlo usted mismo."
   },
   "reticulumRmapDiscovery": {

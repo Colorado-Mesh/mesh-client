@@ -7,14 +7,21 @@ export const RETICULUM_PROPAGATION_MODE_KEY = 'mesh-client:reticulumPropagationM
 
 export type ReticulumPropagationMode = 'auto' | 'manual' | 'off';
 
+const PROPAGATION_MODES = new Set<ReticulumPropagationMode>(['auto', 'manual', 'off']);
+
+export function isReticulumPropagationMode(value: unknown): value is ReticulumPropagationMode {
+  return typeof value === 'string' && PROPAGATION_MODES.has(value as ReticulumPropagationMode);
+}
+
 /**
  * Default mode is **off** (MeshChatX parity): no automatic Preferred changes and no
- * periodic sync until the user opts into Auto/Manual. Persisted values are honored.
+ * periodic sync until the user opts into Auto/Manual. Persisted values are honored
+ * (including legacy `auto` saved when App-panel default was Auto).
  */
 export function readReticulumPropagationMode(): ReticulumPropagationMode {
   try {
     const raw = localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY);
-    if (raw === 'auto' || raw === 'manual' || raw === 'off') return raw;
+    if (isReticulumPropagationMode(raw)) return raw;
   } catch {
     // catch-no-log-ok localStorage unavailable in private mode
   }
@@ -22,6 +29,7 @@ export function readReticulumPropagationMode(): ReticulumPropagationMode {
 }
 
 export function writeReticulumPropagationMode(mode: ReticulumPropagationMode): void {
+  if (!isReticulumPropagationMode(mode)) return;
   try {
     localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, mode);
   } catch {
@@ -29,35 +37,22 @@ export function writeReticulumPropagationMode(mode: ReticulumPropagationMode): v
   }
 }
 
-/** Pick the enabled remote propagation node with the lowest hop count (excludes local-prop). */
-export function pickAutoPropagationNodeId(nodes: PropagationNodeRow[]): string | null {
-  const candidates = nodes.filter((n) => n.id !== 'local-prop' && n.enabled);
-  if (candidates.length === 0) return null;
-  const sorted = [...candidates].sort((a, b) => {
-    const ha = a.hops ?? Number.POSITIVE_INFINITY;
-    const hb = b.hops ?? Number.POSITIVE_INFINITY;
-    if (ha !== hb) return ha - hb;
-    return a.name.localeCompare(b.name);
-  });
-  return sorted[0]?.id ?? null;
-}
-
-export function resolvePropagationSyncTargetId(
-  mode: ReticulumPropagationMode,
+/** Destination hashes already present as configured propagation rows. */
+export function configuredPropagationDestinationHashes(
   nodes: PropagationNodeRow[],
-  preferredId: string | null,
-): string | null {
-  if (mode === 'off') return null;
-  if (mode === 'auto') return pickAutoPropagationNodeId(nodes);
-  return preferredId;
+): ReadonlySet<string> {
+  return new Set(
+    nodes
+      .map((n) => n.destination_hash?.toLowerCase())
+      .filter((h): h is string => typeof h === 'string' && h.length > 0),
+  );
 }
 
 /**
- * What Auto should apply as the Preferred propagation node at this moment, considering
- * both configured nodes and live discovered announces (no manual Add required).
+ * What Auto should apply as the Preferred propagation node at this moment.
  *
- * Ordering: lowest-hop remote among enabled configured remotes ∪ active discovered
- * (configured wins ties, then name/hash); else enabled `local-prop`; else `null`.
+ * Ordering: **best active discovered** (lowest hops) → else **best enabled configured
+ * remote** → else enabled `local-prop` → else `null`.
  *
  * A `discovered` result must be soft-upserted (added + preferred) so the sidecar
  * Preferred/sync/cascade APIs, which require a configured row, keep working.
@@ -67,57 +62,120 @@ export type AutoPropagationTarget =
   | { kind: 'discovered'; destinationHash: string }
   | { kind: 'local' };
 
-interface AutoCandidate {
+interface RankedRemote {
   hops: number;
-  configured: boolean;
   sortKey: string;
-  target: AutoPropagationTarget;
+}
+
+function sortByHopsThenKey<T extends RankedRemote>(a: T, b: T): number {
+  if (a.hops !== b.hops) return a.hops - b.hops;
+  return a.sortKey.localeCompare(b.sortKey);
+}
+
+/** Active discovered remotes not already configured, best (lowest hops) first. */
+export function listDiscoveredPropagationTargets(
+  nodes: PropagationNodeRow[],
+  discovered: readonly DiscoveredPropagationRow[],
+): { destinationHash: string; hops: number }[] {
+  const configuredHashes = configuredPropagationDestinationHashes(nodes);
+  const rows: { destinationHash: string; hops: number; sortKey: string }[] = [];
+  for (const row of discovered) {
+    if (!row.node_state) continue;
+    const hash = row.destination_hash.toLowerCase();
+    if (configuredHashes.has(hash)) continue;
+    rows.push({
+      destinationHash: row.destination_hash,
+      hops: row.hops ?? Number.POSITIVE_INFINITY,
+      sortKey: row.display_name?.trim() || row.destination_hash,
+    });
+  }
+  rows.sort(sortByHopsThenKey);
+  return rows.map(({ destinationHash, hops }) => ({ destinationHash, hops }));
+}
+
+/** Enabled configured remotes (excludes local-prop), best (lowest hops) first. */
+export function listConfiguredRemotePropagationIds(nodes: PropagationNodeRow[]): string[] {
+  const rows: { id: string; hops: number; sortKey: string }[] = [];
+  for (const node of nodes) {
+    if (node.id === 'local-prop' || !node.enabled) continue;
+    rows.push({
+      id: node.id,
+      hops: node.hops ?? Number.POSITIVE_INFINITY,
+      sortKey: node.name,
+    });
+  }
+  rows.sort(sortByHopsThenKey);
+  return rows.map((r) => r.id);
+}
+
+export function hasEnabledLocalPropagationNode(nodes: PropagationNodeRow[]): boolean {
+  return nodes.some((n) => n.id === 'local-prop' && n.enabled);
 }
 
 export function pickAutoPropagationTarget(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[] = [],
 ): AutoPropagationTarget | null {
-  const configuredHashes = new Set(
-    nodes
-      .map((n) => n.destination_hash?.toLowerCase())
-      .filter((h): h is string => typeof h === 'string' && h.length > 0),
-  );
-
-  const candidates: AutoCandidate[] = [];
-
-  for (const node of nodes) {
-    if (node.id === 'local-prop' || !node.enabled) continue;
-    candidates.push({
-      hops: node.hops ?? Number.POSITIVE_INFINITY,
-      configured: true,
-      sortKey: node.name,
-      target: { kind: 'configured', id: node.id },
-    });
+  const discoveredBest = listDiscoveredPropagationTargets(nodes, discovered).at(0);
+  if (discoveredBest != null) {
+    return { kind: 'discovered', destinationHash: discoveredBest.destinationHash };
   }
 
-  for (const row of discovered) {
-    if (!row.node_state) continue;
-    if (configuredHashes.has(row.destination_hash.toLowerCase())) continue;
-    candidates.push({
-      hops: row.hops ?? Number.POSITIVE_INFINITY,
-      configured: false,
-      sortKey: row.display_name?.trim() || row.destination_hash,
-      target: { kind: 'discovered', destinationHash: row.destination_hash },
-    });
+  const configuredBest = listConfiguredRemotePropagationIds(nodes).at(0);
+  if (configuredBest != null) {
+    return { kind: 'configured', id: configuredBest };
   }
 
-  if (candidates.length > 0) {
-    candidates.sort((a, b) => {
-      if (a.hops !== b.hops) return a.hops - b.hops;
-      if (a.configured !== b.configured) return a.configured ? -1 : 1;
-      return a.sortKey.localeCompare(b.sortKey);
-    });
-    return candidates[0].target;
-  }
-
-  if (nodes.some((n) => n.id === 'local-prop' && n.enabled)) {
+  if (hasEnabledLocalPropagationNode(nodes)) {
     return { kind: 'local' };
   }
   return null;
+}
+
+/**
+ * Lowest-hop enabled configured remote (excludes local-prop and discovered).
+ * Thin wrapper over {@link pickAutoPropagationTarget} with an empty discovery list.
+ */
+export function pickAutoPropagationNodeId(nodes: PropagationNodeRow[]): string | null {
+  const target = pickAutoPropagationTarget(nodes, []);
+  return target?.kind === 'configured' ? target.id : null;
+}
+
+/**
+ * Node id that Sync / periodic auto-sync may target for the given mode.
+ *
+ * Auto uses {@link pickAutoPropagationTarget}: discovered pending soft-upsert returns
+ * `null` until configured (cascade helper soft-upserts first). Manual uses Preferred
+ * (including `local-prop`). Off → null.
+ */
+export function resolvePropagationSyncTargetId(
+  mode: ReticulumPropagationMode,
+  nodes: PropagationNodeRow[],
+  preferredId: string | null,
+  discovered: readonly DiscoveredPropagationRow[] = [],
+): string | null {
+  if (mode === 'off') return null;
+  if (mode === 'manual') return preferredId;
+  const target = pickAutoPropagationTarget(nodes, discovered);
+  if (!target) return null;
+  if (target.kind === 'configured') return target.id;
+  if (target.kind === 'local') return 'local-prop';
+  // Discovered pending soft-upsert: sync once Preferred already points at a remote row.
+  if (preferredId && preferredId !== 'local-prop') {
+    const preferred = nodes.find((n) => n.id === preferredId || n.destination_hash === preferredId);
+    if (!preferred || preferred.enabled) return preferredId;
+  }
+  return null;
+}
+
+/** Compact diagnostic label for an Auto target (kind:id). */
+export function formatAutoPropagationTargetLabel(
+  target: AutoPropagationTarget | null,
+): string | null {
+  if (target == null) return null;
+  if (target.kind === 'configured') return `configured:${target.id}`;
+  if (target.kind === 'discovered') {
+    return `discovered:${target.destinationHash.slice(0, 12)}`;
+  }
+  return 'local';
 }

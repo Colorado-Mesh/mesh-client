@@ -1,6 +1,6 @@
 # rsReticulum / rsLXMF overlays
 
-Patches applied on top of [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) / [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) checkouts for mesh-client `rns-stack` builds (sibling [Colorado-Mesh/rsNomad](https://github.com/Colorado-Mesh/rsNomad) is also required for Nomad hosting; no mesh-client overlay today). Checkouts live in the repo-local `.rsstack/` gitignored workspace, keeping a standalone `rsReticulum` mirror (if present) pristine.
+Patches applied on top of [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) / [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) checkouts for mesh-client `rns-stack` builds (`.rsstack/rsNomad` from [Colorado-Mesh/rsNomad](https://github.com/Colorado-Mesh/rsNomad) is also required for Nomad hosting; no mesh-client overlay today). Checkouts live in the repo-local `.rsstack/` gitignored workspace, keeping a standalone `rsReticulum` mirror (if present) pristine.
 
 By default `scripts/clone-ratspeak-stack.sh` floats the `.rsstack/` checkouts to **`origin/main`** and applies these overlays (fails loud if a patch will not apply). Use `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` to pin a known-good SHA for bisect. Per-overlay **Base commit** tables below record the last regeneration baseline, not a permanent pin — when regenerating, prefer floated `origin/main` and record the short SHA in the PR.
 

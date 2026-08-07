@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Przejrzyste komunikaty bezpośrednie",
     "clearReticulumMessagesConfirm": "Spowoduje to trwałe usunięcie wszystkich przechowywanych lokalnie wiadomości bezpośrednich Reticulum {{count}}. Tej czynności nie można cofnąć.",
     "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}",
-    "reticulumSection": "Reticulum — Stos siateczkowy",
-    "reticulumAnnounceHelp": "Jak często Twoja tożsamość jest ogłaszana w sieci i narzędzia do czyszczenia przechowywanych ogłoszeń.",
     "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Na karcie Reticulum linie urządzeń obejmują wyjście wózka bocznego i stan interfejsu lokalnego. Linie debugowania wymagają pola wyboru w panelu dziennika.",
     "autoPruneUnheardContactsDaysAria": "Automatycznie usuwaj niesłyszane kontakty przy uruchomieniu, starsze niż {{days}} dni",
     "capTotalContactsCountAria": "Ogranicz wszystkie kontakty, zachowaj ostatnio widziane kontakty {{count}}",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
     "themeRestoreFailed": "Nie udało się przywrócić punktu kontrolnego koloru.",
     "themeResetFailed": "Nie udało się zresetować kolorów.",
-    "messageActionsBarBgVisible": "Pokaż tło",
-    "reticulumPropagationMoved": "Konfiguracja i tryb synchronizacji węzła propagacji (wyłączony / automatyczny / ręczny) zostały przeniesione do węzłów → propagacji sieci."
+    "messageActionsBarBgVisible": "Pokaż tło"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -4250,12 +4247,13 @@
     "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle.",
     "modeLabel": "Tryb propagacji:",
     "modeAria": "Tryb synchronizacji propagacji",
+    "autoApplyFailed": "Nie można zastosować węzła propagacji preferowanej automatycznie.",
     "modeAuto": "Automatyczne",
-    "modeManual": "Instrukcja obsługi",
+    "modeManual": "Ręczny",
     "modeOff": "Wył.",
     "modeHelpOff": "Wył.: brak automatycznych preferowanych zmian i brak okresowej synchronizacji. Nadal możesz ręcznie ustawić preferowany węzeł dla kaskady wychodzącej.",
-    "modeHelpAuto": "Auto: najlepszy węzeł propagacji jest wybierany automatycznie w danym momencie (odkryty lub skonfigurowany, w przeciwnym razie węzeł lokalny), a Preferred jest zarządzany za Ciebie. Ustaw preferencje, a opcja Dodaj i preferuj jest wyłączona.",
-    "modeHelpManual": "Ręczny: przypinasz preferowany węzeł. SYNC używa tego węzła; inne włączone piloty pozostają jako kaskadowe kopie zapasowe.",
+    "modeHelpAuto": "Auto: najlepszy węzeł propagacji jest wybierany automatycznie w danym momencie (odkryty lub skonfigurowany, w przeciwnym razie węzeł lokalny), a Preferred jest zarządzany za Ciebie. Ręczne preferowane elementy sterujące są wyłączone.",
+    "modeHelpManual": "Ręczny: przypinasz preferowany węzeł. Synchronizacja wykorzystuje ten węzeł; inne włączone węzły zdalne pozostają jako kaskadowe kopie zapasowe.",
     "autoManagedHint": "Tryb automatyczny zarządza preferowanym węzłem. Przełącz na tryb ręczny, aby przypiąć go samodzielnie."
   },
   "reticulumRmapDiscovery": {

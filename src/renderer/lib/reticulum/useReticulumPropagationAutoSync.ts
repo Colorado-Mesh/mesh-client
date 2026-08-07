@@ -1,6 +1,13 @@
 import { useEffect } from 'react';
 
 import {
+  applyAutoPropagationPreferredIfNeeded,
+  startPropagationSyncCascade,
+} from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import {
+  hasEnabledLocalPropagationNode,
+  listConfiguredRemotePropagationIds,
+  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -12,13 +19,16 @@ export const PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS = 120_000;
 
 export function shouldRunPropagationAutoSync(args: {
   autoSyncIntervalSec: number;
+  /** Preferred or resolved sync target; may be `local-prop` for Manual/Auto final settle. */
   preferredId: string | null;
   syncActive: boolean;
   lastPropagationSyncAt: number | null;
   lastPropagationSyncAttemptAt: number | null;
   nowMs: number;
-  /** Propagation mode; `off` never runs periodic sync. Defaults to auto/manual behavior. */
+  /** Propagation mode; `off` never runs periodic sync. */
   mode?: ReticulumPropagationMode;
+  /** Auto may run with null Preferred when discovered/configured/local candidates exist. */
+  hasAutoCascadeCandidate?: boolean;
 }): boolean {
   const {
     autoSyncIntervalSec,
@@ -28,11 +38,16 @@ export function shouldRunPropagationAutoSync(args: {
     lastPropagationSyncAttemptAt,
     nowMs,
     mode,
+    hasAutoCascadeCandidate,
   } = args;
   // Mode "off" disables all periodic sync (no automatic PN retrieval).
   if (mode === 'off') return false;
-  // Local inbox is served in-process; auto-sync must target a remote PN only.
-  if (!preferredId || preferredId === 'local-prop' || autoSyncIntervalSec <= 0 || syncActive) {
+  if (autoSyncIntervalSec <= 0 || syncActive) return false;
+
+  if (mode === 'auto') {
+    if (!preferredId && !hasAutoCascadeCandidate) return false;
+  } else if (!preferredId) {
+    // Manual: need an explicit Preferred (including local-prop).
     return false;
   }
 
@@ -59,7 +74,10 @@ export function shouldRunPropagationAutoSync(args: {
 
 const AUTO_SYNC_CHECK_MS = 30 * MS_PER_SECOND;
 
-/** Periodically sync the preferred propagation node when auto-sync is enabled. */
+/**
+ * Keep Preferred aligned in Auto mode (even when Network tab is unmounted) and
+ * periodically sync the preferred remote propagation node when auto-sync is enabled.
+ */
 export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
   useEffect(() => {
     if (!sidecarReady) return;
@@ -67,15 +85,27 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
     // Keep preferred/nodes fresh for Chat notice + auto-sync even if Network tab was never opened.
     void useReticulumPropagationStore.getState().refreshFromSidecar();
 
-    const tick = () => {
+    const tick = async () => {
+      const mode = readReticulumPropagationMode();
+      if (mode === 'auto') {
+        await applyAutoPropagationPreferredIfNeeded();
+      }
+
       const {
         autoSyncIntervalSec,
         preferredId,
+        nodes,
+        discovered,
         sync,
         lastPropagationSyncAt,
         lastPropagationSyncAttemptAt,
-        startSync,
       } = useReticulumPropagationStore.getState();
+
+      const hasAutoCascadeCandidate =
+        listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
+        listConfiguredRemotePropagationIds(nodes).length > 0 ||
+        hasEnabledLocalPropagationNode(nodes);
+
       if (
         !shouldRunPropagationAutoSync({
           autoSyncIntervalSec,
@@ -84,15 +114,24 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
           lastPropagationSyncAt,
           lastPropagationSyncAttemptAt,
           nowMs: Date.now(),
-          mode: readReticulumPropagationMode(),
+          mode,
+          hasAutoCascadeCandidate,
         })
       ) {
         return;
       }
-      void startSync(preferredId!);
+      await startPropagationSyncCascade(
+        mode === 'manual' ? { firstTargetId: preferredId } : undefined,
+      );
     };
 
-    const id = window.setInterval(tick, AUTO_SYNC_CHECK_MS);
+    // Immediate Auto apply on sidecar ready (do not wait for first interval).
+    // floating-ok: tick catches store failures via Result/toast paths
+    void tick();
+
+    const id = window.setInterval(() => {
+      void tick();
+    }, AUTO_SYNC_CHECK_MS);
     return () => {
       window.clearInterval(id);
     };

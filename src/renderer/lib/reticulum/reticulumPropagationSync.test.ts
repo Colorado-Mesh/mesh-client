@@ -7,6 +7,7 @@ import {
   clearPropagationSyncStallWatchdog,
   mapPropagationSyncError,
   normalizePropagationSyncProgress,
+  PROPAGATION_SYNC_SUPERSEDED,
   schedulePropagationSyncStallWatchdog,
 } from './reticulumPropagationSync';
 
@@ -120,7 +121,53 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_SYNC_OUTBOUND_BUSY')).toBe(
       'reticulumPropagation.syncOutboundBusy',
     );
+    expect(mapPropagationSyncError('propagation sync cancelled')).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
+    expect(mapPropagationSyncError(PROPAGATION_SYNC_SUPERSEDED)).toBeNull();
     expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
+  });
+
+  it('supersede clears active sync without unreachable error', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+      lastSyncError: null,
+    });
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: PROPAGATION_SYNC_SUPERSEDED,
+    });
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+  });
+
+  it('maps cancel message to syncCancelled not syncFailed', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+    });
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: 'propagation sync cancelled',
+    });
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
+  });
+
+  it('ignores late cancel after local settle already idle', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: false, progress: 0, message: null },
+      lastSyncError: null,
+      lastPropagationSyncAt: Date.now(),
+    });
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: 'propagation sync cancelled',
+    });
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
   });
 
   it('maps WS failure message when sync ends with zero progress', () => {

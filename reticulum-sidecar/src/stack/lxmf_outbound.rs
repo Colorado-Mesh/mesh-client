@@ -1095,7 +1095,7 @@ impl LxmfOutboundDriver {
                             pn_hash = %hex::encode(pn_hash),
                             stored_locally = was_local,
                             cascade_step,
-                            delivery_method = method.unwrap_or("propagated"),
+                            delivery_method = method.unwrap_or("unknown"),
                             "outbound PN deposit Completes"
                         );
                     }

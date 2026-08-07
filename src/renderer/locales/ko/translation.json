@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "다이렉트 메시지 지우기",
     "clearReticulumMessagesConfirm": "이렇게 하면 로컬로 저장된 모든 {{count}} 개의 Reticulum 다이렉트 메시지가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
     "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기",
-    "reticulumSection": "Reticulum — 레티큘럼 스택",
-    "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
     "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "autoPruneUnheardContactsDaysAria": "시작 시 {{days}}일 이상 경과한 확인되지 않은 연락처 자동 정리",
     "capTotalContactsCountAria": "총 연락처 수를 제한하고 가장 최근에 본 연락처를 {{count}}개로 유지합니다.",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "색상 체크포인트를 저장하지 못했습니다.",
     "themeRestoreFailed": "색상 체크포인트를 복원하지 못했습니다.",
     "themeResetFailed": "색상을 재설정하지 못했습니다.",
-    "messageActionsBarBgVisible": "배경 표시",
-    "reticulumPropagationMoved": "전파 노드 설정 및 동기화 모드 (꺼짐/자동/수동) 가 네트워크 → 전파 노드로 이동했습니다."
+    "messageActionsBarBgVisible": "배경 표시"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다.",
     "modeLabel": "전파 모드",
     "modeAria": "전파 동기화 모드",
+    "autoApplyFailed": "자동 기본 설정 전파 노드를 적용할 수 없습니다.",
     "modeAuto": "자동",
     "modeManual": "수동",
     "modeOff": "해제",
     "modeHelpOff": "꺼짐: 자동 기본 설정 변경 없음 및 주기적 동기화 없음. 아웃바운드 캐스케이드에 대해 선호 노드를 수동으로 설정할 수 있습니다.",
-    "modeHelpAuto": "자동: 가장 좋은 전파 노드는 시간에 자동으로 선택되고 (검색 또는 구성, 그렇지 않으면 로컬 노드) 선호는 당신을 위해 관리됩니다. 기본 설정 및 추가 및 기본 설정이 비활성화되어 있습니다.",
-    "modeHelpManual": "수동: 선호하는 노드를 고정합니다. 동기화는 해당 노드를 사용합니다. 활성화된 다른 리모컨은 캐스케이드 백업으로 유지됩니다.",
+    "modeHelpAuto": "자동: 가장 좋은 전파 노드는 시간에 자동으로 선택되고 (검색 또는 구성, 그렇지 않으면 로컬 노드) 선호는 당신을 위해 관리됩니다. 수동 기본 설정 컨트롤이 비활성화되었습니다.",
+    "modeHelpManual": "수동: 선호하는 노드를 고정합니다. 동기화는 해당 노드를 사용합니다. 활성화된 다른 원격 노드는 캐스케이드 백업으로 유지됩니다.",
     "autoManagedHint": "자동 모드는 기본 설정 노드를 관리합니다. 수동으로 전환하여 직접 고정하세요."
   },
   "reticulumRmapDiscovery": {

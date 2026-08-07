@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Cancella messaggi diretti",
     "clearReticulumMessagesConfirm": "In questo modo verranno eliminati definitivamente tutti i messaggi diretti {{count}} memorizzati localmente su Reticulum. Questa operazione non può essere annullata.",
     "clearReticulumMessagesConfirmButton": "Cancella messaggi {{count}}",
-    "reticulumSection": "Reticulum — Stack Reticulum",
-    "reticulumAnnounceHelp": "Con quale frequenza la tua identità viene annunciata sulla rete e gli strumenti per cancellare gli annunci memorizzati.",
     "logPanelHelp": "Se abilitato, sulla destra viene visualizzato un flusso di registro in tempo reale. Nella scheda Reticulum, le righe del dispositivo includono l'output collaterale e l'integrità dell'interfaccia locale. Le righe di debug richiedono la casella di controllo all'interno del pannello di registro.",
     "autoPruneUnheardContactsDaysAria": "Elimina automaticamente i contatti non ascoltati all'avvio, più vecchi di {{days}} giorni",
     "capTotalContactsCountAria": "Limita i contatti totali, conserva i contatti {{count}} visti più di recente",
@@ -386,8 +384,7 @@
     "themeSaveFailed": "Impossibile salvare il checkpoint del colore.",
     "themeRestoreFailed": "Impossibile ripristinare il checkpoint del colore.",
     "themeResetFailed": "Impossibile reimpostare i colori.",
-    "messageActionsBarBgVisible": "Mostra lo sfondo",
-    "reticulumPropagationMoved": "La configurazione del nodo di propagazione e la modalità di sincronizzazione (Off / Auto / Manuale) sono state spostate ai nodi di → propagazione di rete."
+    "messageActionsBarBgVisible": "Mostra lo sfondo"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -4246,12 +4243,13 @@
     "syncOutboundBusy": "Sincronizzazione di propagazione differita — un messaggio in uscita sta venendo depositato su questo nodo.",
     "modeLabel": "Modalità di propagazione",
     "modeAria": "Modalità di sincronizzazione della propagazione",
+    "autoApplyFailed": "Impossibile applicare il nodo di propagazione Auto Preferred.",
     "modeAuto": "Auto",
     "modeManual": "Manuale",
     "modeOff": "Disattivato",
     "modeHelpOff": "OFF: nessuna modifica automatica Preferred e nessuna sincronizzazione periodica. È comunque possibile impostare manualmente un nodo preferito per la cascata in uscita.",
-    "modeHelpAuto": "Auto: il nodo di propagazione migliore viene selezionato automaticamente al momento (rilevato o configurato, altrimenti il nodo locale) e Preferred viene gestito automaticamente. Imposta preferito e Aggiungi & preferisci sono disabilitati.",
-    "modeHelpManual": "Manuale: si aggiunge il nodo Preferred. La sincronizzazione utilizza quel nodo; altri telecomandi abilitati rimangono come backup a cascata.",
+    "modeHelpAuto": "Auto: il nodo di propagazione migliore viene selezionato automaticamente al momento (rilevato o configurato, altrimenti il nodo locale) e Preferred viene gestito automaticamente. I comandi manuali preferiti sono disabilitati.",
+    "modeHelpManual": "Manuale: si fissa il nodo Preferred. La sincronizzazione utilizza quel nodo; altri nodi remoti abilitati rimangono come backup a cascata.",
     "autoManagedHint": "La modalità automatica gestisce il nodo Preferred. Passa al manuale per bloccarlo da solo."
   },
   "reticulumRmapDiscovery": {

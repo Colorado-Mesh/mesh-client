@@ -8,33 +8,34 @@ Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See
 
 ## Build
 
-**First-time setup** — from the mesh-client repo root, clone/float siblings and apply overlays:
+**First-time setup** — from the mesh-client repo root, clone/float the repo-local `.rsstack/` workspace and apply overlays:
 
 ```bash
 ./scripts/clone-ratspeak-stack.sh
 ```
 
-That floats `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` / `lrgp-rs` to `origin/main` (override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect). Peer default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) in the **renderer** (`src/renderer/lib/reticulum/lxmface.ts`), not this sidecar.
+That floats `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` / `lrgp-rs` under `.rsstack/` to `origin/main` (override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect). Peer default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) in the **renderer** (`src/renderer/lib/reticulum/lxmface.ts`), not this sidecar.
 
-**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, and `lrgp-rs` directories on disk (CI runs `clone-ratspeak-stack.sh`; locally use the script above):
+**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires the `.rsstack/` checkouts on disk (CI runs `clone-ratspeak-stack.sh`; locally use the script above):
 
 ```bash
 pnpm run reticulum:sidecar:build
 ```
 
-**Full rsReticulum + rsLXMF + rsNomad + rsLXST + lrgp-rs** — sibling checkout (Ratspeak layout + Colorado-Mesh rsNomad + LXST voice + LRGP games):
+**Full rsReticulum + rsLXMF + rsNomad + rsLXST + lrgp-rs** — repo-local workspace (Ratspeak crates + Colorado-Mesh rsNomad + LXST voice + LRGP games):
 
 ```
-parent/
-  rsReticulum/
-  rsLXMF/
-  rsLXST/
-  lrgp-rs/
-  rsNomad/
-  mesh-client/reticulum-sidecar/
+mesh-client/
+  .rsstack/
+    rsReticulum/
+    rsLXMF/
+    rsLXST/
+    lrgp-rs/
+    rsNomad/
+  reticulum-sidecar/
 ```
 
-Prefer `./scripts/clone-ratspeak-stack.sh` (or `./scripts/ensure-rsReticulum-patches.sh` on an existing tree). Individual apply scripts remain for single-overlay work:
+Prefer `./scripts/clone-ratspeak-stack.sh` (or `./scripts/ensure-rsReticulum-patches.sh` on an existing `.rsstack` tree). Individual apply scripts remain for single-overlay work:
 
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh

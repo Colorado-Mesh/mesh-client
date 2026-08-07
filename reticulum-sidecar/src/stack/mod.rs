@@ -1529,12 +1529,13 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
             live.cancel_propagation_sync().await;
+            // Quiet supersede — renderer must not map this to "node unreachable".
             self.emit_event(
                 "propagation_sync",
                 serde_json::json!({
                     "active": false,
                     "progress": 0.0,
-                    "message": "propagation sync cancelled",
+                    "message": "PROPAGATION_SYNC_SUPERSEDED",
                 }),
             );
         }
