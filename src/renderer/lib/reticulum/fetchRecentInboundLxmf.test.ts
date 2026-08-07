@@ -57,6 +57,6 @@ describe('fetchRecentInboundLxmf', () => {
     await expect(fetchRecentInboundLxmf()).resolves.toEqual([]);
     expect(warnSpy).toHaveBeenCalled();
     const detailed = await fetchRecentInboundLxmfDetailed();
-    expect(detailed).toEqual({ messages: [], ringLen: null });
+    expect(detailed).toEqual({ messages: [], ringLen: null, rateLimited: false });
   });
 });

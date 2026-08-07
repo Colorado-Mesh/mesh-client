@@ -215,7 +215,7 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
     );
   });
 
-  it('returns true when only local-prop is available', () => {
+  it('returns false when only local-prop is enabled (cascade last resort)', () => {
     const localOnly: PropagationNodeRow = {
       id: 'local-prop',
       name: 'Local',
@@ -224,11 +224,11 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
       preferred: true,
     };
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([localOnly], 'local-prop', 'auto')).toBe(
-      true,
+      false,
     );
   });
 
-  it('returns true when no remote PN target exists', () => {
+  it('returns true when no remote PN and local-prop disabled', () => {
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'off')).toBe(true);
   });
 });

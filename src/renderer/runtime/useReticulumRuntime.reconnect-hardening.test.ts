@@ -266,7 +266,7 @@ describe('useReticulumRuntime contact → nodeStore label preservation', () => {
 describe('useReticulumRuntime outbound delivery persistence', () => {
   it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
     expect(SOURCE).toMatch(
-      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*deliveryMethod: p\.delivery_method,\s*\}\)/,
+      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status,\s*\{\s*sentVia: p\.sent_via,\s*deliveryMethod: p\.delivery_method,\s*deliveryAttempts: p\.delivery_attempts,\s*\}\)/,
     );
   });
 
@@ -274,12 +274,14 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
     expect(SOURCE).toMatch(/flushPendingReticulumOutboundDeliveryStatus\(identityId, hash\)/);
   });
 
-  it('skips link-timeout failure bridge when remote PN fallback is available', () => {
+  it('skips link-timeout failure bridge when PN cascade is available', () => {
     expect(SOURCE).toContain('shouldApplyLinkDeliveryTimeoutFailureBridge');
     expect(SOURCE).toMatch(
       /shouldApplyLinkDeliveryTimeoutFailureBridge\(\s*propState\.nodes,\s*propState\.preferredId,\s*\)/,
     );
-    expect(SOURCE).toMatch(/if \(!applyBridge\) continue/);
+    expect(SOURCE).toContain('propagationHydratedForBridgeRef');
+    expect(SOURCE).toMatch(/if \(!applyBridge\) \{/);
+    expect(SOURCE).toContain('cascade eligible');
   });
 
   it('wires propagation store + sidecar health into Reticulum diagnostics', () => {

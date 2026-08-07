@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
 
-import { hasEffectiveReticulumPropagationTarget } from './reticulumPropagationEffective';
+import {
+  hasEffectiveReticulumPropagationTarget,
+  hasEnabledLocalPropagation,
+  hasReticulumPnCascadeCapacity,
+} from './reticulumPropagationEffective';
 
 const remoteNode: PropagationNodeRow = {
   id: 'remote-1',
@@ -61,5 +65,24 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
 
   it('returns true when manual mode has a preferred remote node', () => {
     expect(hasEffectiveReticulumPropagationTarget([remoteNode], 'remote-1', 'manual')).toBe(true);
+  });
+});
+
+describe('hasReticulumPnCascadeCapacity', () => {
+  it('is true for preferred remote or enabled local-prop', () => {
+    const localEnabled: PropagationNodeRow = {
+      id: 'local-prop',
+      name: 'Local',
+      enabled: true,
+      status: 'active',
+      preferred: false,
+    };
+    expect(hasReticulumPnCascadeCapacity([remoteNode], 'remote-1', 'off')).toBe(true);
+    expect(hasReticulumPnCascadeCapacity([localEnabled], 'local-prop', 'off')).toBe(true);
+    expect(hasEnabledLocalPropagation([localEnabled])).toBe(true);
+  });
+
+  it('is false when nothing is available', () => {
+    expect(hasReticulumPnCascadeCapacity([], null, 'off')).toBe(false);
   });
 });

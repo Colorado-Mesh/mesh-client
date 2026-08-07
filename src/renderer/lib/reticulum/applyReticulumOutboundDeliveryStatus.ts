@@ -25,7 +25,7 @@ import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 /** Map sidecar `lxmf_outbound_status` wire status to UI store status. Unknown → null. */
 export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | null {
-  if (wireStatus === 'delivered') return 'acked';
+  if (wireStatus === 'delivered' || wireStatus === 'stored_locally') return 'acked';
   if (wireStatus === 'failed') return 'failed';
   if (wireStatus === 'sending') return 'sending';
   return null;
@@ -148,6 +148,7 @@ export function persistReticulumOutboundMessageStatus(
   errorMessage?: string,
   sentVia?: MessageTransport,
   deliveryMethod?: MessageRecord['reticulumDeliveryMethod'],
+  deliveryAttempts?: number,
 ): boolean {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const before = useMessageStore.getState().messages[identityId]?.[messageId];
@@ -155,12 +156,16 @@ export function persistReticulumOutboundMessageStatus(
   if (!before) return false;
   // Link-timeout failure bridge can mark Failed before WS Direct→PN fallback arrives.
   // Authoritative sending+propagated must revive so the badge is not stuck as PN ✗.
-  if (before.status === 'failed' && status === 'sending' && deliveryMethod === 'propagated') {
+  if (
+    before.status === 'failed' &&
+    status === 'sending' &&
+    (deliveryMethod === 'propagated' || deliveryMethod === 'stored_locally')
+  ) {
     const revived: MessageRecord = {
       ...before,
       status: 'sending',
       error: undefined,
-      reticulumDeliveryMethod: 'propagated',
+      reticulumDeliveryMethod: deliveryMethod,
       ...(sentVia != null ? { receivedVia: sentVia } : {}),
     };
     upsertMessage(identityId, revived);
@@ -217,6 +222,14 @@ export function persistReticulumOutboundMessageStatus(
     record = { ...record, reticulumDeliveryMethod: deliveryMethod };
     patched = true;
   }
+  if (
+    deliveryAttempts != null &&
+    Number.isFinite(deliveryAttempts) &&
+    deliveryAttempts !== record.reticulumDeliveryAttempts
+  ) {
+    record = { ...record, reticulumDeliveryAttempts: Math.trunc(deliveryAttempts) };
+    patched = true;
+  }
   if (patched) {
     upsertMessage(identityId, record);
   }
@@ -252,6 +265,7 @@ export function persistReticulumOutboundMessageStatus(
 export interface ApplyReticulumOutboundDeliveryStatusOpts {
   sentVia?: string | null;
   deliveryMethod?: string | null;
+  deliveryAttempts?: number | null;
 }
 
 /** Apply sidecar Completes/Fails (and optional egress `sent_via`): store + SQLite. */
@@ -277,6 +291,10 @@ export function applyReticulumOutboundDeliveryStatus(
   }
   const sentVia = parseWireSentVia(opts?.sentVia);
   const deliveryMethod = parseReticulumDeliveryMethod(opts?.deliveryMethod);
+  const deliveryAttempts =
+    opts?.deliveryAttempts != null && Number.isFinite(opts.deliveryAttempts)
+      ? Math.trunc(opts.deliveryAttempts)
+      : undefined;
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
     normalizedHash,
@@ -284,6 +302,7 @@ export function applyReticulumOutboundDeliveryStatus(
     undefined,
     sentVia,
     deliveryMethod,
+    deliveryAttempts,
   );
   if (applied) {
     pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, normalizedHash));

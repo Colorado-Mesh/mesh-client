@@ -14,6 +14,11 @@ import {
   activeReticulumPathSlot,
   type ReticulumPathSlot,
 } from '@/renderer/lib/reticulum/reticulumPathSlots';
+import {
+  isReticulumProxyRateLimitBackoffActive,
+  noteReticulumProxyErrorIfRateLimited,
+  reticulumProxyRateLimitBackoffRemainingMs,
+} from '@/renderer/lib/reticulum/reticulumProxyRateLimitBackoff';
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import {
@@ -1277,6 +1282,12 @@ export function refreshReticulumPeersFromSidecar(
 
   peerRefreshInFlight = (async () => {
     try {
+      if (isReticulumProxyRateLimitBackoffActive()) {
+        console.debug(
+          `[reticulumPeerStore] refresh skipped — proxy rate-limit backoff remaining=${reticulumProxyRateLimitBackoffRemainingMs()}ms`,
+        );
+        return [...useReticulumPeerStore.getState().contacts.values()];
+      }
       let forceRefresh = Boolean(opts.forceRefresh) || peerRefreshPendingForce;
       let skipNomad = Boolean(opts.skipNomad) && peerRefreshPendingSkipNomad;
       peerRefreshPendingForce = false;
@@ -1284,6 +1295,7 @@ export function refreshReticulumPeersFromSidecar(
       peerRefreshPendingRerun = false;
       let result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh, skipNomad });
       while (peerRefreshPendingRerun) {
+        if (isReticulumProxyRateLimitBackoffActive()) break;
         peerRefreshPendingRerun = false;
         forceRefresh = peerRefreshPendingForce;
         skipNomad = peerRefreshPendingSkipNomad;
@@ -1294,7 +1306,10 @@ export function refreshReticulumPeersFromSidecar(
       return result;
     } catch (e) {
       const msg = errLikeToLogString(e);
-      if (msg.toLowerCase().includes('rate limit exceeded')) {
+      if (
+        noteReticulumProxyErrorIfRateLimited(e) ||
+        msg.toLowerCase().includes('rate limit exceeded')
+      ) {
         console.debug('[reticulumPeerStore] refresh ' + msg);
         throw e instanceof Error ? e : new Error(msg);
       }

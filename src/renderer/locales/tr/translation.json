@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "Şifrelenecek mesaj",
     "shareAsPaperGenerate": "Kağıt QR oluştur",
     "shareAsPaperCopyFailed": "Kağıt bağlantısı kopyalanamadı",
-    "waitingMessagesSilentFetched": "Radyodan {{processed}} alındı…"
+    "waitingMessagesSilentFetched": "Radyodan {{processed}} alındı…",
+    "reticulumSendStoringLocally": "Yerel yayılım gelen kutunuza kaydediliyor…",
+    "reticulumSendStoredLocally": "Yerel yayılım gelen kutunuzda tutulur (akranınıza teslim edilmez)",
+    "sentViaLocalPropagation": "Yerel yayılım gelen kutusu"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -4238,7 +4241,8 @@
     "addProbing": "/offer desteği kontrol ediliyor…",
     "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
-    "disableFailed": "Yayılma düğümü devre dışı bırakılamadı."
+    "disableFailed": "Yayılma düğümü devre dışı bırakılamadı.",
+    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — bu düğüme giden bir mesaj gönderiliyor."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

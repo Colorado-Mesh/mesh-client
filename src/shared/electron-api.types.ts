@@ -1160,7 +1160,7 @@ export interface ElectronAPI {
     };
     /**
      * LRGP games (lrgp-rs). Dedicated IPC channels — generic `proxyGet`/`proxyPost`
-     * reject `/api/v1/games/*` so session polls/moves do not share the 300/min proxy bucket.
+     * reject `/api/v1/games/*` so session polls/moves do not share the 900/min proxy bucket.
      */
     games: {
       getStatus: () => Promise<GamesStatusResponse>;

@@ -29,6 +29,9 @@ use super::super::path_failover::{
 };
 use super::super::types::InterfaceRow;
 use super::super::via::classify_interface;
+use super::pn_cascade::{
+    PnCascadeCandidate, build_pn_cascade_order, cascade_has_capacity, pick_next_pn_cascade,
+};
 use super::{lxmf_payload_from_message, parse_hash16};
 
 const PATH_REQUEST_BACKOFF_SECS: f64 = 20.0;
@@ -115,8 +118,10 @@ impl PathRequestGate {
     }
 }
 
-/// Bound on Direct→PN fallback hash tracking (one entry per outbound message).
-const PN_FALLBACK_ATTEMPTED_MAX: usize = 256;
+/// Bound on per-message PN cascade tried-set tracking.
+const PN_CASCADE_TRIED_MAX: usize = 256;
+/// After this many sync/pending PN-link deferrals, advance to the next cascade PN.
+const PN_DEPOSIT_DEFER_ADVANCE_AFTER: u32 = 8;
 
 /// Correlatable ids for an in-flight Propagated deposit (`pn_hash`, optional `transient_id`).
 type PendingPnDeposit = ([u8; 16], Option<[u8; 32]>);
@@ -140,8 +145,15 @@ pub struct LxmfOutboundDriver {
     /// (Auto status may still report "up" after a Direct failure on Auto).
     auto_delivery_degraded_until: f64,
     path_request_gate: PathRequestGate,
-    /// Message hashes that already consumed the one-shot Direct→PN fallback.
-    pn_fallback_attempted: HashSet<[u8; 32]>,
+    /// Per-message PN hashes already tried in the Direct→Propagated cascade.
+    pn_cascade_tried: HashMap<[u8; 32], HashSet<[u8; 16]>>,
+    /// Message hashes whose current cascade step is a local-prop (offline) deposit.
+    pn_cascade_local: HashSet<[u8; 32]>,
+    /// Enabled PN candidates + preferred hash for cascade ordering.
+    pn_cascade_candidates: Vec<PnCascadeCandidate>,
+    preferred_pn_hash: Option<[u8; 16]>,
+    /// Consecutive DeliverPropagated deferrals while PN link busy (per message).
+    pn_deposit_defer_counts: HashMap<[u8; 32], u32>,
     /// Direct link failures still exhausting alternate path slots / ifaces.
     direct_path_failovers: HashMap<[u8; 32], DirectPathFailoverState>,
     /// When set, remote propagation sync holds a Link to this dest — do not race deposits.
@@ -176,7 +188,11 @@ impl LxmfOutboundDriver {
             interfaces: Vec::new(),
             auto_delivery_degraded_until: 0.0,
             path_request_gate: PathRequestGate::new(),
-            pn_fallback_attempted: HashSet::new(),
+            pn_cascade_tried: HashMap::new(),
+            pn_cascade_local: HashSet::new(),
+            pn_cascade_candidates: Vec::new(),
+            preferred_pn_hash: None,
+            pn_deposit_defer_counts: HashMap::new(),
             direct_path_failovers: HashMap::new(),
             propagation_sync_target: None,
             pending_pn_deposits: HashMap::new(),
@@ -254,7 +270,22 @@ impl LxmfOutboundDriver {
 
     #[allow(clippy::unused_self)] // method slot mirrors other LxmfOutboundDriver mutators
     pub fn set_propagation_node(&mut self, router: &mut LxmRouter, hash: Option<[u8; 16]>) {
+        self.preferred_pn_hash = hash;
         router.set_outbound_propagation_node(hash);
+    }
+
+    /// Refresh enabled PN candidates used after Direct path failover exhausts.
+    pub fn set_pn_cascade_candidates(&mut self, candidates: Vec<PnCascadeCandidate>) {
+        tracing::info!(
+            target: "lxmf-outbound",
+            count = candidates.len(),
+            preferred = %self
+                .preferred_pn_hash
+                .map(hex::encode)
+                .unwrap_or_else(|| "none".into()),
+            "PN cascade candidates updated"
+        );
+        self.pn_cascade_candidates = candidates;
     }
 
     /// Refresh local path cache from transport GetPathTable rows.
@@ -424,9 +455,38 @@ impl LxmfOutboundDriver {
         let sync_blocks = self.propagation_sync_target == Some(prop_hash);
         let pending_blocks = self.link_delivery.has_pending_to(&prop_hash);
         if should_defer_propagated_for_pn_link(sync_blocks, pending_blocks) {
+            if let Some(msg_hash) = message.hash.or(message.message_id) {
+                let defer_count = self
+                    .pn_deposit_defer_counts
+                    .entry(msg_hash)
+                    .and_modify(|c| *c = c.saturating_add(1))
+                    .or_insert(1);
+                if *defer_count >= PN_DEPOSIT_DEFER_ADVANCE_AFTER {
+                    tracing::warn!(
+                        target: "lxmf-outbound",
+                        prop = %prop_hex,
+                        dest = %hex::encode(message.destination_hash),
+                        msg = %hex::encode(msg_hash),
+                        defer_count = *defer_count,
+                        sync_blocks,
+                        pending_blocks,
+                        "DeliverPropagated: PN link busy too long — advancing PN cascade"
+                    );
+                    self.pn_deposit_defer_counts.remove(&msg_hash);
+                    self.mark_pn_tried(msg_hash, prop_hash);
+                    match self.try_advance_pn_cascade(router, event_tx, message) {
+                        Ok(()) => return,
+                        Err(message) => {
+                            self.emit_outbound_failed(router, event_tx, *message);
+                            return;
+                        }
+                    }
+                }
+            }
             let now = now_f64();
             message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
             tracing::debug!(
+                target: "lxmf-outbound",
                 prop = %prop_hex,
                 dest = %hex::encode(message.destination_hash),
                 sync_blocks,
@@ -435,17 +495,25 @@ impl LxmfOutboundDriver {
                 "DeliverPropagated: deferring — PN link busy"
             );
             if let Some(hash) = message.hash.or(message.message_id) {
+                let method = if self.pn_cascade_local.contains(&hash) {
+                    "stored_locally"
+                } else {
+                    "propagated"
+                };
                 emit_outbound_status_with_via(
                     event_tx,
                     Some(serde_json::Value::String(hex::encode(hash))),
                     None,
                     "sending",
-                    Some("propagated"),
-                    None,
+                    Some(method),
+                    Some(prop_hex.clone()),
                 );
             }
             router.send(message);
             return;
+        }
+        if let Some(hash) = message.hash.or(message.message_id) {
+            self.pn_deposit_defer_counts.remove(&hash);
         }
         if !self.known_identities.contains_key(&prop_hex.to_lowercase()) {
             tracing::debug!(
@@ -700,7 +768,7 @@ impl LxmfOutboundDriver {
         event_tx: &broadcast::Sender<String>,
         message: LxMessage,
     ) {
-        match self.try_requeue_via_propagation(router, event_tx, message) {
+        match self.try_advance_pn_cascade(router, event_tx, message) {
             Ok(()) => {}
             Err(message) => self.emit_outbound_failed(router, event_tx, *message),
         }
@@ -713,19 +781,40 @@ impl LxmfOutboundDriver {
         mut message: LxMessage,
     ) {
         message.mark_failed();
-        let method = delivery_method_label(message.method);
+        let method = if message
+            .hash
+            .or(message.message_id)
+            .is_some_and(|h| self.pn_cascade_local.contains(&h))
+        {
+            "stored_locally"
+        } else {
+            delivery_method_label(message.method)
+        };
         tracing::warn!(
+            target: "lxmf-outbound",
             dest = %hex::encode(message.destination_hash),
             method,
             attempts = message.delivery_attempts,
             "LXMF outbound delivery failed"
         );
         if let Some(hash) = message.hash.or(message.message_id) {
-            self.pn_fallback_attempted.remove(&hash);
+            let attempts = message.delivery_attempts;
+            self.clear_pn_cascade_state(hash);
             self.direct_path_failovers.remove(&hash);
             self.pending_pn_deposits.remove(&hash);
+            self.pn_deposit_defer_counts.remove(&hash);
             let _ = router.mark_outbound_failed(&hash);
-            emit_outbound_status_by_hash(event_tx, &hash, "failed", Some(method));
+            emit_outbound_status_detailed_with_attempts(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(hash))),
+                None,
+                "failed",
+                Some(method),
+                None,
+                None,
+                None,
+                Some(attempts),
+            );
         }
         let payload = lxmf_payload_from_message(
             &message,
@@ -739,41 +828,92 @@ impl LxmfOutboundDriver {
         emit_outbound_status(event_tx, &payload, "failed", method);
     }
 
-    /// After Direct link failure, deposit once via preferred remote PN (Ratspeak parity).
-    /// Returns `Ok(())` when re-queued as Propagated; `Err(message)` when caller should fail.
-    fn try_requeue_via_propagation(
+    fn ordered_pn_cascade(&self) -> Vec<PnCascadeCandidate> {
+        build_pn_cascade_order(&self.pn_cascade_candidates, self.preferred_pn_hash)
+    }
+
+    fn mark_pn_tried(&mut self, msg_hash: [u8; 32], pn_hash: [u8; 16]) {
+        if self.pn_cascade_tried.len() >= PN_CASCADE_TRIED_MAX
+            && !self.pn_cascade_tried.contains_key(&msg_hash)
+        {
+            if let Some(oldest) = self.pn_cascade_tried.keys().next().copied() {
+                self.pn_cascade_tried.remove(&oldest);
+                self.pn_cascade_local.remove(&oldest);
+            }
+        }
+        self.pn_cascade_tried
+            .entry(msg_hash)
+            .or_default()
+            .insert(pn_hash);
+    }
+
+    fn clear_pn_cascade_state(&mut self, msg_hash: [u8; 32]) {
+        self.pn_cascade_tried.remove(&msg_hash);
+        self.pn_cascade_local.remove(&msg_hash);
+        self.pn_deposit_defer_counts.remove(&msg_hash);
+    }
+
+    /// Advance Direct→Propagated cascade: preferred remote → other remotes → local-prop.
+    /// Returns `Ok(())` when re-queued; `Err(message)` when cascade is exhausted.
+    fn try_advance_pn_cascade(
         &mut self,
         router: &mut LxmRouter,
         event_tx: &broadcast::Sender<String>,
         mut message: LxMessage,
     ) -> Result<(), Box<LxMessage>> {
-        if !should_fallback_direct_to_pn(
-            message.method,
-            router.outbound_propagation_node,
-            &self.self_lxmf_hash,
-            message
-                .hash
-                .or(message.message_id)
-                .is_some_and(|h| self.pn_fallback_attempted.contains(&h)),
-        ) {
-            return Err(Box::new(message));
-        }
         let Some(msg_hash) = message.hash.or(message.message_id) else {
             return Err(Box::new(message));
         };
-        // Quietly drop any leftover Direct queue entry (already removed for most Fail paths).
+        // Direct may enter cascade; Propagated advances to the next PN after a deposit fail.
+        if message.method != DeliveryMethod::Direct && message.method != DeliveryMethod::Propagated
+        {
+            return Err(Box::new(message));
+        }
+        let ordered = self.ordered_pn_cascade();
+        let tried = self
+            .pn_cascade_tried
+            .get(&msg_hash)
+            .cloned()
+            .unwrap_or_default();
+        if !cascade_has_capacity(&ordered, &tried) {
+            tracing::warn!(
+                target: "lxmf-outbound",
+                dest = %hex::encode(message.destination_hash),
+                msg = %hex::encode(msg_hash),
+                tried = tried.len(),
+                candidates = ordered.len(),
+                "PN cascade exhausted — marking outbound failed"
+            );
+            return Err(Box::new(message));
+        }
+        let pick = pick_next_pn_cascade(&ordered, &tried);
+        let Some(pn_hash) = pick.hash() else {
+            return Err(Box::new(message));
+        };
+        let method_label = pick.delivery_method_label().unwrap_or("propagated");
         router
             .pending_outbound
             .retain(|m| m.hash != Some(msg_hash) && m.message_id != Some(msg_hash));
-        self.remember_pn_fallback(msg_hash);
+        self.mark_pn_tried(msg_hash, pn_hash);
         self.direct_path_failovers.remove(&msg_hash);
+        self.pn_deposit_defer_counts.remove(&msg_hash);
+        if pick.is_local() {
+            self.pn_cascade_local.insert(msg_hash);
+        } else {
+            self.pn_cascade_local.remove(&msg_hash);
+        }
+        router.set_outbound_propagation_node(Some(pn_hash));
         message.method = DeliveryMethod::Propagated;
         message.delivery_attempts = 0;
         message.next_delivery_attempt = 0.0;
         tracing::info!(
+            target: "lxmf-outbound",
             dest = %hex::encode(message.destination_hash),
             msg = %hex::encode(msg_hash),
-            "LXMF Direct failed; falling back to preferred remote propagation node"
+            pn = %hex::encode(pn_hash),
+            cascade_step = method_label,
+            is_local = pick.is_local(),
+            "LXMF advancing PN cascade"
         );
         router.send(message);
         emit_outbound_status_with_via(
@@ -781,20 +921,10 @@ impl LxmfOutboundDriver {
             Some(serde_json::Value::String(hex::encode(msg_hash))),
             None,
             "sending",
-            Some("propagated"),
-            None,
+            Some(method_label),
+            Some(hex::encode(pn_hash)),
         );
         Ok(())
-    }
-
-    fn remember_pn_fallback(&mut self, msg_hash: [u8; 32]) {
-        if self.pn_fallback_attempted.len() >= PN_FALLBACK_ATTEMPTED_MAX {
-            // Evict an arbitrary entry so floods cannot grow unbounded.
-            if let Some(oldest) = self.pn_fallback_attempted.iter().next().copied() {
-                self.pn_fallback_attempted.remove(&oldest);
-            }
-        }
-        self.pn_fallback_attempted.insert(msg_hash);
     }
 
     fn pack_for_propagation(
@@ -849,14 +979,17 @@ impl LxmfOutboundDriver {
         match result {
             DeliveryResult::Complete { msg_hash, .. } => {
                 if let Some(hash) = msg_hash {
-                    let was_pn_fallback = self.pn_fallback_attempted.contains(&hash);
+                    let was_local = self.pn_cascade_local.contains(&hash);
                     let pending_deposit = self.pending_pn_deposits.remove(&hash);
-                    let method = if was_pn_fallback || pending_deposit.is_some() {
+                    let was_cascade = self.pn_cascade_tried.contains_key(&hash);
+                    let method = if was_local {
+                        Some("stored_locally")
+                    } else if was_cascade || pending_deposit.is_some() {
                         Some("propagated")
                     } else {
                         None
                     };
-                    self.pn_fallback_attempted.remove(&hash);
+                    self.clear_pn_cascade_state(hash);
                     self.direct_path_failovers.remove(&hash);
                     let _ = router.mark_outbound_delivered(&hash);
                     if let Some((pn_hash, transient_id)) = pending_deposit {
@@ -868,11 +1001,17 @@ impl LxmfOutboundDriver {
                                 .map(hex::encode)
                                 .unwrap_or_default(),
                             pn_hash = %hex::encode(pn_hash),
-                            pn_fallback = was_pn_fallback,
+                            stored_locally = was_local,
                             "outbound PN deposit Completes"
                         );
                     }
-                    emit_outbound_status_by_hash(event_tx, &hash, "delivered", method);
+                    // Local-prop is offline inbox — not peer-delivered Complete.
+                    let status = if was_local {
+                        "stored_locally"
+                    } else {
+                        "delivered"
+                    };
+                    emit_outbound_status_by_hash(event_tx, &hash, status, method);
                 }
             }
             DeliveryResult::Rejected {
@@ -887,8 +1026,17 @@ impl LxmfOutboundDriver {
                     reason = %reason,
                     "LXMF delivery Rejected"
                 );
-                // Peer/PN rejected the resource — do not retry; only Direct→PN once.
-                match self.try_requeue_via_propagation(router, event_tx, message) {
+                // Peer/PN rejected — advance cascade (next remote or local-prop).
+                if message.method == DeliveryMethod::Propagated {
+                    if let Some(hash) = message.hash.or(message.message_id) {
+                        // Mark the PN that rejected if we know it from pending deposit clear above.
+                        // dest is not in Rejected; mark current outbound PN if set.
+                        if let Some(pn) = router.outbound_propagation_node {
+                            self.mark_pn_tried(hash, pn);
+                        }
+                    }
+                }
+                match self.try_advance_pn_cascade(router, event_tx, message) {
                     Ok(()) => {}
                     Err(message) => self.emit_outbound_failed(router, event_tx, *message),
                 }
@@ -934,7 +1082,13 @@ impl LxmfOutboundDriver {
                 } else {
                     message
                 };
-                match self.try_requeue_via_propagation(router, event_tx, message) {
+                // Propagated deposit failed after retries — mark this PN tried and advance.
+                if message.method == DeliveryMethod::Propagated {
+                    if let Some(hash) = message.hash.or(message.message_id) {
+                        self.mark_pn_tried(hash, dest_hash);
+                    }
+                }
+                match self.try_advance_pn_cascade(router, event_tx, message) {
                     Ok(()) => {}
                     Err(message) => self.emit_outbound_failed(router, event_tx, *message),
                 }
@@ -1136,6 +1290,8 @@ pub(crate) fn choose_lxmf_send_route(
 }
 
 /// Whether a failed Direct attempt may be re-queued once via preferred remote PN.
+/// Retained for unit coverage of the preferred-remote gate; live path uses PN cascade.
+#[cfg(test)]
 pub(crate) fn should_fallback_direct_to_pn(
     method: DeliveryMethod,
     preferred_pn: Option<[u8; 16]>,
@@ -1209,6 +1365,31 @@ fn emit_outbound_status_detailed(
     tried_interfaces: Option<Vec<String>>,
     failover_rounds: Option<u8>,
 ) {
+    emit_outbound_status_detailed_with_attempts(
+        event_tx,
+        message_hash,
+        to_hash,
+        status,
+        delivery_method,
+        sent_via,
+        tried_interfaces,
+        failover_rounds,
+        None,
+    );
+}
+
+#[allow(clippy::too_many_arguments)] // status frame fields travel together
+fn emit_outbound_status_detailed_with_attempts(
+    event_tx: &broadcast::Sender<String>,
+    message_hash: Option<serde_json::Value>,
+    to_hash: Option<serde_json::Value>,
+    status: &str,
+    delivery_method: Option<&str>,
+    sent_via: Option<String>,
+    tried_interfaces: Option<Vec<String>>,
+    failover_rounds: Option<u8>,
+    delivery_attempts: Option<u32>,
+) {
     let mut payload = serde_json::Map::new();
     if let Some(h) = message_hash {
         payload.insert("message_hash".into(), h);
@@ -1231,6 +1412,9 @@ fn emit_outbound_status_detailed(
     }
     if let Some(rounds) = failover_rounds {
         payload.insert("failover_rounds".into(), serde_json::json!(rounds));
+    }
+    if let Some(attempts) = delivery_attempts {
+        payload.insert("delivery_attempts".into(), serde_json::json!(attempts));
     }
     let frame = serde_json::json!({
         "type": "lxmf_outbound_status",
@@ -1904,6 +2088,27 @@ mod tests {
         let (payload, got_link) = inbound_rx.try_recv().expect("probe");
         assert_eq!(payload, b"probe");
         assert_eq!(got_link, link_id);
+    }
+
+    #[test]
+    fn pn_cascade_source_contract_replaces_one_shot_fallback() {
+        let src = include_str!("lxmf_outbound.rs");
+        assert!(
+            src.contains("fn try_advance_pn_cascade"),
+            "outbound driver must advance multi-PN cascade after Direct exhaust"
+        );
+        assert!(
+            src.contains("match self.try_advance_pn_cascade"),
+            "delivery fail paths must call try_advance_pn_cascade"
+        );
+        assert!(
+            src.contains("stored_locally"),
+            "local-prop cascade step must emit stored_locally"
+        );
+        assert!(
+            src.contains("PN_DEPOSIT_DEFER_ADVANCE_AFTER"),
+            "sync/pending PN-link deferral must eventually advance cascade"
+        );
     }
 
     #[test]

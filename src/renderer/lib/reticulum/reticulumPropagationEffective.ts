@@ -45,3 +45,21 @@ export function hasEffectiveReticulumPropagationTarget(
 
   return pickAutoPropagationNodeId(nodes) != null;
 }
+
+/** True when local-prop is enabled (cascade last resort / offline inbox). */
+export function hasEnabledLocalPropagation(nodes: PropagationNodeRow[]): boolean {
+  return nodes.some((n) => n.id === 'local-prop' && n.enabled);
+}
+
+/**
+ * True when Direct→PN cascade can still run (remote preferred/auto OR local-prop).
+ * Link-timeout failure bridge must skip while this is true.
+ */
+export function hasReticulumPnCascadeCapacity(
+  nodes: PropagationNodeRow[],
+  preferredId: string | null,
+  mode: ReticulumPropagationMode = readReticulumPropagationMode(),
+): boolean {
+  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode)) return true;
+  return hasEnabledLocalPropagation(nodes);
+}

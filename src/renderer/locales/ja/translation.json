@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "暗号化するメッセージ",
     "shareAsPaperGenerate": "紙のQRを作成する",
     "shareAsPaperCopyFailed": "用紙リンクをコピーできませんでした",
-    "waitingMessagesSilentFetched": "ラジオから{{processed}}を取得しました…"
+    "waitingMessagesSilentFetched": "ラジオから{{processed}}を取得しました…",
+    "reticulumSendStoringLocally": "ローカルの伝播受信トレイに保存しています…",
+    "reticulumSendStoredLocally": "ローカルの伝播受信トレイに保存されています（ピアには配信されません）",
+    "sentViaLocalPropagation": "ローカル伝播受信トレイ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -4238,7 +4241,8 @@
     "addProbing": "/offer サポートを確認中…",
     "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
     "enableFailed": "伝播ノードを有効にできませんでした。",
-    "disableFailed": "伝播ノードを無効にできませんでした。"
+    "disableFailed": "伝播ノードを無効にできませんでした。",
+    "syncOutboundBusy": "伝播同期が延期されました—アウトバウンドメッセージがこのノードにデポジットされています。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

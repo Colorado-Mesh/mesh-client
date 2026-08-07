@@ -18,6 +18,9 @@ export interface ReticulumMessageStatusBadgeProps {
 
 type OutboundStatus = ReticulumMessageStatusBadgeProps['status'];
 
+/** House mark for local-prop (own PN) offline storage — not a peer-delivery check. */
+const LOCAL_PN_HOUSE_ICON = '\u{1F3E0}';
+
 function tooltipKeyForVia(via: ReticulumVia | undefined): string {
   switch (via) {
     case 'rf':
@@ -33,7 +36,14 @@ function tooltipKeyForVia(via: ReticulumVia | undefined): string {
   }
 }
 
-function statusIcon(status: OutboundStatus): string {
+function statusIcon(
+  status: OutboundStatus,
+  deliveryMethod: MessageRecord['reticulumDeliveryMethod'] | undefined,
+): string {
+  // Local-prop cascade last resort: show house instead of green check / red X.
+  if (deliveryMethod === 'stored_locally' && status !== 'failed') {
+    return LOCAL_PN_HOUSE_ICON;
+  }
   switch (status) {
     case 'sending':
       return '\u23F3';
@@ -44,7 +54,13 @@ function statusIcon(status: OutboundStatus): string {
   }
 }
 
-function statusColorClass(status: OutboundStatus): string {
+function statusColorClass(
+  status: OutboundStatus,
+  deliveryMethod: MessageRecord['reticulumDeliveryMethod'] | undefined,
+): string {
+  if (deliveryMethod === 'stored_locally' && status !== 'failed') {
+    return 'text-amber-400';
+  }
   switch (status) {
     case 'sending':
       return 'text-muted';
@@ -63,11 +79,17 @@ function statusLabelText(
 ): string {
   switch (status) {
     case 'sending':
+      if (deliveryMethod === 'stored_locally') {
+        return t('chatPanel.reticulumSendStoringLocally');
+      }
       if (deliveryMethod === 'propagated') {
         return t('chatPanel.reticulumSendPropagated');
       }
       return t('chatPanel.reticulumSendSending');
     case 'acked':
+      if (deliveryMethod === 'stored_locally') {
+        return t('chatPanel.reticulumSendStoredLocally');
+      }
       if (deliveryMethod === 'propagated') {
         return t('chatPanel.reticulumSendStoredAtPn');
       }
@@ -86,6 +108,9 @@ function viaPrefixText(
   atoms: ReticulumVia[],
   viasLabel: string,
 ): string {
+  if (deliveryMethod === 'stored_locally') {
+    return t('chatPanel.sentViaLocalPropagation');
+  }
   if (deliveryMethod === 'propagated') {
     return t('chatPanel.sentViaPropagation');
   }
@@ -108,7 +133,7 @@ export function ReticulumMessageStatusBadge({
   const atoms = parseReticulumViaAtoms(via);
   const viasLabel = formatReticulumViaBadgeLabel(via ?? 'network');
   const label =
-    deliveryMethod === 'propagated'
+    deliveryMethod === 'propagated' || deliveryMethod === 'stored_locally'
       ? t('chatPanel.reticulumPnAbbrev')
       : deliveryMethod === 'paper'
         ? t('chatPanel.reticulumSendPaper')
@@ -121,8 +146,8 @@ export function ReticulumMessageStatusBadge({
   return (
     <DeliveryStatusBadgeFrame
       label={label}
-      icon={statusIcon(status)}
-      colorClass={statusColorClass(status)}
+      icon={statusIcon(status, deliveryMethod)}
+      colorClass={statusColorClass(status, deliveryMethod)}
       tooltip={tooltip}
     />
   );

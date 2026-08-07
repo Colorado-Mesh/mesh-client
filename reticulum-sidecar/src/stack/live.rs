@@ -2,6 +2,8 @@
 
 #[path = "lxmf_outbound.rs"]
 mod lxmf_outbound;
+#[path = "pn_cascade.rs"]
+mod pn_cascade;
 
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
@@ -550,7 +552,13 @@ impl LiveBridge {
 
         if let Some(hash_hex) = preferred_prop_hash {
             bridge.set_outbound_propagation_node(Some(&hash_hex)).await;
+        } else {
+            tracing::warn!(
+                target: "lxmf-outbound",
+                "no preferred propagation destination_hash at stack start — Direct→PN cascade remotes may be empty"
+            );
         }
+        bridge.refresh_pn_cascade_candidates().await;
 
         if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {
             let _ = bridge.sync_ble_peer_interfaces(&ifaces).await;
@@ -3739,6 +3747,31 @@ impl LiveBridge {
         drop(router);
         if let Some(hex) = destination_hash {
             let _ = self.refresh_pn_announce_costs(hex).await;
+        }
+    }
+
+    /// Rebuild Direct→PN cascade candidate list from persisted propagation rows.
+    pub async fn refresh_pn_cascade_candidates(&self) {
+        use pn_cascade::candidates_from_propagation_rows;
+        let (rows, self_hash, local_enabled) = {
+            let state = self.persisted.read().await;
+            let rows: Vec<(String, bool, Option<String>, Option<u8>)> = state
+                .propagation
+                .iter()
+                .map(|p| (p.id.clone(), p.enabled, p.destination_hash.clone(), p.hops))
+                .collect();
+            let self_hash = state.identity.lxmf_hash.clone();
+            let local_enabled = state
+                .propagation
+                .iter()
+                .find(|p| p.id == "local-prop")
+                .map(|p| p.enabled)
+                .unwrap_or(false);
+            (rows, self_hash, local_enabled)
+        };
+        let candidates = candidates_from_propagation_rows(&rows, &self_hash, local_enabled);
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.set_pn_cascade_candidates(candidates);
         }
     }
 

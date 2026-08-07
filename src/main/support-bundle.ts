@@ -170,11 +170,38 @@ Contents:
   mesh-client.db                — SQLite database backup (contains secrets)
   reticulum/config              — rnsd interface config (if present)
   reticulum/mesh_client_stack.json — Sidecar stack state, mnemonic redacted (if present)
+  reticulum/lxmf-outbound.log   — Filtered LXMF outbound / PN cascade lines from app logs
   mesh-client.log               — Application log (current session)
   mesh-client.log.1             — Prior session log (preserved on restart) or size-rotated backup
   manifest.json                 — App version, buildChannel, and platform metadata
   README.txt                    — This file
 `;
+}
+
+/** Extract LXMF outbound / PN cascade diagnostic lines for developer triage. */
+export function extractLxmfOutboundLogSlice(...logChunks: Buffer[]): Buffer {
+  const patterns = [
+    /lxmf-outbound/i,
+    /propagation-deposit/i,
+    /LXMF advancing PN cascade/i,
+    /LXMF outbound delivery failed/i,
+    /Direct path failover/i,
+    /PN cascade/i,
+    /DeliverPropagated/i,
+  ];
+  const lines: string[] = [];
+  for (const chunk of logChunks) {
+    if (!chunk.length) continue;
+    const text = chunk.toString('utf8');
+    for (const line of text.split(/\r?\n/)) {
+      if (patterns.some((re) => re.test(line))) {
+        lines.push(line);
+      }
+    }
+  }
+  // Cap slice so huge logs cannot bloat the zip.
+  const capped = lines.length > 4000 ? lines.slice(-4000) : lines;
+  return Buffer.from(capped.join('\n') + (capped.length ? '\n' : ''), 'utf8');
 }
 
 async function readFileOrEmpty(filePath: string): Promise<Buffer> {
@@ -251,14 +278,14 @@ export async function buildSupportBundleZip(
 
   const logPath = getLogPath();
   const logDir = path.dirname(logPath);
-  zip.file('mesh-client.log', await readFileOrEmpty(logPath));
+  const currentLog = await readFileOrEmpty(logPath);
+  zip.file('mesh-client.log', currentLog);
 
   const backupPath = path.join(logDir, LOG_BACKUP_FILENAME);
+  let backupLog: Buffer = Buffer.alloc(0);
   if (fs.existsSync(backupPath)) {
-    zip.file(
-      LOG_BACKUP_FILENAME,
-      await readFileTailOrEmpty(backupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES),
-    );
+    backupLog = await readFileTailOrEmpty(backupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES);
+    zip.file(LOG_BACKUP_FILENAME, backupLog);
   }
 
   zip.file('manifest.json', JSON.stringify(buildManifest(mode), null, 2));
@@ -282,6 +309,10 @@ export async function buildSupportBundleZip(
     }
     if (reticulumArtifacts.stackJson) {
       zip.file('reticulum/mesh_client_stack.json', reticulumArtifacts.stackJson);
+    }
+    const lxmfSlice = extractLxmfOutboundLogSlice(backupLog, currentLog);
+    if (lxmfSlice.length > 0) {
+      zip.file('reticulum/lxmf-outbound.log', lxmfSlice);
     }
   }
 

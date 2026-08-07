@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReticulumContact } from '@/shared/reticulum-types';
 
 import { reticulumHashToNodeId } from '../lib/reticulum/destHash';
+import { resetReticulumProxyRateLimitBackoffForTests } from '../lib/reticulum/reticulumProxyRateLimitBackoff';
 import {
   applyReticulumAnnounceReceivedOptimistic,
   applyReticulumPeerPatchesNow,
@@ -349,6 +350,7 @@ describe('reticulumPeerStore', () => {
   beforeEach(() => {
     resetReticulumPeerRefreshSingleFlightForTests();
     resetReticulumPeerPatchBufferForTests();
+    resetReticulumProxyRateLimitBackoffForTests();
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),

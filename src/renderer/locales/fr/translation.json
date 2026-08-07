@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "Message à crypter",
     "shareAsPaperGenerate": "Créer un QR papier",
     "shareAsPaperCopyFailed": "Impossible de copier le lien papier",
-    "waitingMessagesSilentFetched": "Récupéré {{processed}} de la radio…"
+    "waitingMessagesSilentFetched": "Récupéré {{processed}} de la radio…",
+    "reticulumSendStoringLocally": "Enregistrement dans votre boîte de réception de propagation locale…",
+    "reticulumSendStoredLocally": "Conservé dans votre boîte de réception de propagation locale (non livré à l'homologue)",
+    "sentViaLocalPropagation": "Boîte de réception de propagation locale"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -4238,7 +4241,8 @@
     "addProbing": "Vérification de la prise en charge de /offer…",
     "syncLocalNotSupported": "Le nœud de propagation de l'hôte local ne peut pas être synchronisé sur le réseau comme un nœud de propagation LXMF distant.",
     "enableFailed": "Impossible d'activer le nœud de propagation.",
-    "disableFailed": "Impossible de désactiver le nœud de propagation."
+    "disableFailed": "Impossible de désactiver le nœud de propagation.",
+    "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

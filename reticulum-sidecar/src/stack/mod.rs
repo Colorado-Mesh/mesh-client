@@ -1237,6 +1237,14 @@ impl StackHandle {
         if let Some(live) = &self.live {
             live.set_outbound_propagation_node(prop_hash.as_deref())
                 .await;
+            live.refresh_pn_cascade_candidates().await;
+            if prop_hash.is_none() {
+                tracing::warn!(
+                    target: "lxmf-outbound",
+                    preferred_id = %id,
+                    "set_preferred_propagation: preferred row has no destination_hash"
+                );
+            }
         }
         Ok(())
     }
@@ -1347,9 +1355,15 @@ impl StackHandle {
                 live.set_local_propagation_serving(enabled).await;
             }
         }
-        let mut inner = self.inner.write().await;
-        inner.set_propagation_enabled(id, enabled)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
+        {
+            let mut inner = self.inner.write().await;
+            inner.set_propagation_enabled(id, enabled)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.refresh_pn_cascade_candidates().await;
+        }
         Ok(())
     }
 
@@ -1407,6 +1421,11 @@ impl StackHandle {
             }
         }
         inner.save(&self.config_dir, &self.storage_dir)?;
+        drop(inner);
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.refresh_pn_cascade_candidates().await;
+        }
         Ok(serde_json::json!({ "ok": true, "node": row }))
     }
 
@@ -1446,6 +1465,10 @@ impl StackHandle {
             if let Some(live) = &self.live {
                 live.set_outbound_propagation_node(None).await;
             }
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.refresh_pn_cascade_candidates().await;
         }
         Ok(())
     }

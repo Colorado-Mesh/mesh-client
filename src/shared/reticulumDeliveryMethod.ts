@@ -4,6 +4,8 @@ export const RETICULUM_DELIVERY_METHODS = [
   'propagated',
   'opportunistic',
   'paper',
+  /** Offline local-prop inbox — not peer-delivered. */
+  'stored_locally',
 ] as const;
 
 export type ReticulumDeliveryMethod = (typeof RETICULUM_DELIVERY_METHODS)[number];

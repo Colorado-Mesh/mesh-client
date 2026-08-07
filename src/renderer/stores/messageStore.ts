@@ -51,8 +51,10 @@ export interface MessageRecord {
   reticulumSenderHash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulumReplyToHash?: string;
-  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic / paper). */
+  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic / paper / stored_locally). */
   reticulumDeliveryMethod?: ReticulumDeliveryMethod;
+  /** Sidecar outbound delivery_attempts (for triage dumps; optional). */
+  reticulumDeliveryAttempts?: number;
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
@@ -95,6 +97,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumSenderHash',
   'reticulumReplyToHash',
   'reticulumDeliveryMethod',
+  'reticulumDeliveryAttempts',
   'reticulumAttachmentPath',
   'viaStoreForward',
 ];

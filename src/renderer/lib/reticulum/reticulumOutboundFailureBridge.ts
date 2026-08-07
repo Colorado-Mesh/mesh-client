@@ -2,7 +2,7 @@ import {
   persistReticulumOutboundMessageStatus,
   resolveReticulumOutboundDestHash,
 } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
-import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
+import { hasReticulumPnCascadeCapacity } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
 import {
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
@@ -16,15 +16,16 @@ function normalizeDestHash(hash: string): string {
 }
 
 /**
- * When a remote preferred PN is available, sidecar owns Direct timeout via
- * one-shot PN fallback + `lxmf_outbound_status`. Skip the premature Failed bridge.
+ * When PN cascade can still run (remote preferred/auto or enabled local-prop),
+ * sidecar owns Direct timeout via multi-PN fallback + `lxmf_outbound_status`.
+ * Skip the premature Failed bridge.
  */
 export function shouldApplyLinkDeliveryTimeoutFailureBridge(
   nodes: PropagationNodeRow[],
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
 ): boolean {
-  return !hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode);
+  return !hasReticulumPnCascadeCapacity(nodes, preferredId, mode);
 }
 
 function destHashMatchesPeer(storedHash: string, targetNorm: string): boolean {
@@ -47,8 +48,13 @@ export function failReticulumSendingOutboundToDestHash(
   for (const msg of Object.values(bucket)) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
     if (msg.status !== 'sending' || msg.to == null) continue;
-    // Direct→PN fallback re-queues as Propagated and emits sending — do not fail those rows.
-    if (msg.reticulumDeliveryMethod === 'propagated') continue;
+    // Cascade re-queues as Propagated / stored_locally and emits sending — do not fail those.
+    if (
+      msg.reticulumDeliveryMethod === 'propagated' ||
+      msg.reticulumDeliveryMethod === 'stored_locally'
+    ) {
+      continue;
+    }
     const destHash = resolveReticulumOutboundDestHash(msg.to);
     if (!destHash || !destHashMatchesPeer(destHash, targetNorm)) continue;
     if (persistReticulumOutboundMessageStatus(identityId, msg.id, 'failed', errorMessage)) {

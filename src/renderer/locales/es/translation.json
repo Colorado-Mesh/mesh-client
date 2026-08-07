@@ -675,7 +675,10 @@
     "shareAsPaperMessageLabel": "Mensaje a cifrar",
     "shareAsPaperGenerate": "Crear QR en papel",
     "shareAsPaperCopyFailed": "No se ha podido copiar el enlace en papel",
-    "waitingMessagesSilentFetched": "Obtenido {{processed}} de la radio..."
+    "waitingMessagesSilentFetched": "Obtenido {{processed}} de la radio...",
+    "reticulumSendStoringLocally": "Guardando en su bandeja de entrada de propagación local...",
+    "reticulumSendStoredLocally": "Se mantiene en su bandeja de entrada de propagación local (no se entrega a los compañeros)",
+    "sentViaLocalPropagation": "Bandeja de entrada de propagación local"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -4238,7 +4241,8 @@
     "addProbing": "Comprobando compatibilidad con /offer…",
     "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
     "enableFailed": "No se pudo habilitar el nodo de propagación.",
-    "disableFailed": "No se pudo deshabilitar el nodo de propagación."
+    "disableFailed": "No se pudo deshabilitar el nodo de propagación.",
+    "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",

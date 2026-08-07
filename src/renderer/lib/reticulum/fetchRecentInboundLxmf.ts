@@ -1,6 +1,12 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { noteReticulumInboundRingLen } from '@/renderer/lib/reticulum/reticulumInboundLxmfDiagnostics';
+import {
+  clearReticulumProxyRateLimitBackoff,
+  isReticulumProxyRateLimitBackoffActive,
+  noteReticulumProxyErrorIfRateLimited,
+  reticulumProxyRateLimitBackoffRemainingMs,
+} from '@/renderer/lib/reticulum/reticulumProxyRateLimitBackoff';
 
 export interface FetchRecentInboundLxmfOpts {
   /**
@@ -17,6 +23,8 @@ export interface FetchRecentInboundLxmfOpts {
 export interface FetchRecentInboundLxmfResult {
   messages: ReticulumLxmfPayload[];
   ringLen: number | null;
+  /** Set when the call was skipped or failed due to proxy rate limiting. */
+  rateLimited?: boolean;
 }
 
 /**
@@ -34,6 +42,13 @@ export async function fetchRecentInboundLxmf(
 export async function fetchRecentInboundLxmfDetailed(
   opts: FetchRecentInboundLxmfOpts = {},
 ): Promise<FetchRecentInboundLxmfResult> {
+  if (isReticulumProxyRateLimitBackoffActive()) {
+    const remaining = reticulumProxyRateLimitBackoffRemainingMs();
+    console.warn(
+      `[fetchRecentInboundLxmf] skipped — proxy rate-limit backoff remaining=${remaining}ms`,
+    );
+    return { messages: [], ringLen: null, rateLimited: true };
+  }
   const params = new URLSearchParams();
   if (opts.sinceTs != null && Number.isFinite(opts.sinceTs)) {
     params.set('since_ts', String(Math.floor(opts.sinceTs)));
@@ -56,6 +71,7 @@ export async function fetchRecentInboundLxmfDetailed(
       messages?: unknown;
       ring_len?: unknown;
     };
+    clearReticulumProxyRateLimitBackoff();
     const ringLen =
       typeof body.ring_len === 'number' && Number.isFinite(body.ring_len)
         ? Math.trunc(body.ring_len)
@@ -69,8 +85,9 @@ export async function fetchRecentInboundLxmfDetailed(
       ringLen,
     };
   } catch (e) {
+    const rateLimited = noteReticulumProxyErrorIfRateLimited(e);
     console.warn('[fetchRecentInboundLxmf] ' + errLikeToLogString(e));
-    return { messages: [], ringLen: null };
+    return { messages: [], ringLen: null, rateLimited };
   }
 }
 
