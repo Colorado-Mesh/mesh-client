@@ -3753,7 +3753,7 @@ impl LiveBridge {
     /// Rebuild Direct→PN cascade candidate list from persisted propagation rows.
     pub async fn refresh_pn_cascade_candidates(&self) {
         use pn_cascade::candidates_from_propagation_rows;
-        let (rows, self_hash, local_enabled) = {
+        let (rows, self_hash) = {
             let state = self.persisted.read().await;
             let rows: Vec<(String, bool, Option<String>, Option<u8>)> = state
                 .propagation
@@ -3761,15 +3761,9 @@ impl LiveBridge {
                 .map(|p| (p.id.clone(), p.enabled, p.destination_hash.clone(), p.hops))
                 .collect();
             let self_hash = state.identity.lxmf_hash.clone();
-            let local_enabled = state
-                .propagation
-                .iter()
-                .find(|p| p.id == "local-prop")
-                .map(|p| p.enabled)
-                .unwrap_or(false);
-            (rows, self_hash, local_enabled)
+            (rows, self_hash)
         };
-        let candidates = candidates_from_propagation_rows(&rows, &self_hash, local_enabled);
+        let candidates = candidates_from_propagation_rows(&rows, &self_hash);
         if let Ok(mut driver) = self.outbound.lock() {
             driver.set_pn_cascade_candidates(candidates);
         }

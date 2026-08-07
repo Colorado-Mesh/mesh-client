@@ -206,4 +206,49 @@ describe('catchUpRecentInboundLxmf', () => {
     expect(ingestB).toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('connect+ws_reconnect'));
   });
+
+  it('keeps independent single-flight state across two identities', async () => {
+    let releaseA!: () => void;
+    let releaseB!: () => void;
+    const gateA = new Promise<void>((resolve) => {
+      releaseA = resolve;
+    });
+    const gateB = new Promise<void>((resolve) => {
+      releaseB = resolve;
+    });
+    const ingestA = vi.fn();
+    const ingestB = vi.fn();
+    vi.mocked(fetchRecentInboundLxmfDetailed).mockImplementation(async (opts = {}) => {
+      if (opts.sinceTs === 1) {
+        await gateA;
+        return { messages: [sample('aa'.repeat(32), 1_000, 1)], ringLen: 1 };
+      }
+      await gateB;
+      return { messages: [sample('bb'.repeat(32), 2_000, 2)], ringLen: 1 };
+    });
+
+    const pA = catchUpRecentInboundLxmf({
+      identityId: 'id-a',
+      ingest: ingestA,
+      sinceTs: 1,
+      reason: 'a',
+    });
+    const pB = catchUpRecentInboundLxmf({
+      identityId: 'id-b',
+      ingest: ingestB,
+      sinceTs: 2,
+      reason: 'b',
+    });
+
+    expect(fetchRecentInboundLxmfDetailed).toHaveBeenCalledTimes(2);
+    releaseB();
+    const rB = await pB;
+    expect(rB?.count).toBe(1);
+    expect(ingestB).toHaveBeenCalled();
+    expect(ingestA).not.toHaveBeenCalled();
+    releaseA();
+    const rA = await pA;
+    expect(rA?.count).toBe(1);
+    expect(ingestA).toHaveBeenCalled();
+  });
 });

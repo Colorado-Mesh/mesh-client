@@ -85,4 +85,15 @@ describe('hasReticulumPnCascadeCapacity', () => {
   it('is false when nothing is available', () => {
     expect(hasReticulumPnCascadeCapacity([], null, 'off')).toBe(false);
   });
+
+  it('is false when local-prop is present but disabled', () => {
+    const localDisabled: PropagationNodeRow = {
+      id: 'local-prop',
+      name: 'Local',
+      enabled: false,
+      status: 'inactive',
+      preferred: false,
+    };
+    expect(hasReticulumPnCascadeCapacity([localDisabled], null, 'off')).toBe(false);
+  });
 });

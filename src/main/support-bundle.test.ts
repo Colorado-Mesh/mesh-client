@@ -108,6 +108,7 @@ describe('extractLxmfOutboundLogSlice', () => {
         'warn DeliverPropagated: deferring — PN link busy',
         'debug peer refresh ok',
         'info target=propagation-deposit outbound PN deposit Completes',
+        'info target=propagation-retrieve sync transfer progress',
       ].join('\n'),
       'utf8',
     );
@@ -115,6 +116,7 @@ describe('extractLxmfOutboundLogSlice', () => {
     expect(slice).toContain('LXMF advancing PN cascade');
     expect(slice).toContain('DeliverPropagated');
     expect(slice).toContain('propagation-deposit');
+    expect(slice).toContain('propagation-retrieve');
     expect(slice).not.toContain('hello world');
     expect(slice).not.toContain('peer refresh ok');
   });

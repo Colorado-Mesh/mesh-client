@@ -289,6 +289,15 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
     );
   });
 
+  it('aborts link-timeout bridge after delayed hydrate when generation is stale', () => {
+    expect(SOURCE).toContain('linkTimeoutBridgeGenerationRef');
+    expect(SOURCE).toMatch(/const bridgeGeneration = linkTimeoutBridgeGenerationRef\.current/);
+    expect(SOURCE).toContain('generation stale after hydrate');
+    // Generation bumps on identity change, tearDown, and disconnect.
+    const bumps = SOURCE.match(/linkTimeoutBridgeGenerationRef\.current \+= 1/g) ?? [];
+    expect(bumps.length).toBeGreaterThanOrEqual(3);
+  });
+
   it('wires propagation store + sidecar health into Reticulum diagnostics', () => {
     expect(SOURCE).toMatch(/sidecarUnhealthySince:\s*sidecarStatus\.unhealthySince/);
     expect(SOURCE).toMatch(/useReticulumPropagationStore\.subscribe/);

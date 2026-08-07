@@ -524,7 +524,31 @@ impl LxmfOutboundDriver {
             self.pn_deposit_defer_counts.remove(&hash);
             self.pending_pn_targets.insert(hash, prop_hash);
         }
+        // Local-prop cascade uses lxmf.propagation dest (not self LXMF). Identity should
+        // already be pinned via rehydrate; if missing, advance rather than path-hunt Nomad.
+        let is_local_cascade = message
+            .hash
+            .or(message.message_id)
+            .is_some_and(|h| self.pn_cascade_local.contains(&h));
         if !self.known_identities.contains_key(&prop_hex.to_lowercase()) {
+            if is_local_cascade {
+                tracing::warn!(
+                    target: "lxmf-outbound",
+                    prop = %prop_hex,
+                    dest = %hex::encode(message.destination_hash),
+                    "DeliverPropagated: local-prop identity unknown — advancing PN cascade"
+                );
+                if let Some(hash) = message.hash.or(message.message_id) {
+                    self.mark_pn_tried(hash, prop_hash);
+                }
+                match self.try_advance_pn_cascade(router, event_tx, message) {
+                    Ok(()) => return,
+                    Err(message) => {
+                        self.emit_outbound_failed(router, event_tx, *message);
+                        return;
+                    }
+                }
+            }
             tracing::debug!(
                 prop = %prop_hex,
                 dest = %hex::encode(message.destination_hash),
@@ -859,6 +883,7 @@ impl LxmfOutboundDriver {
                 self.pn_cascade_tried.remove(&oldest);
                 self.pn_cascade_local.remove(&oldest);
                 self.pending_pn_targets.remove(&oldest);
+                self.pn_deposit_defer_counts.remove(&oldest);
             }
         }
         self.pn_cascade_tried
@@ -2081,6 +2106,80 @@ mod tests {
         let (payload, got_link) = inbound_rx.try_recv().expect("probe");
         assert_eq!(payload, b"probe");
         assert_eq!(got_link, link_id);
+    }
+
+    #[test]
+    fn try_advance_pn_cascade_orders_preferred_remote_local_then_exhausts() {
+        use lxmf_core::constants::DeliveryMethod;
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig};
+        use tokio::sync::broadcast;
+
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(32);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let preferred = [0x11u8; 16];
+        let next_remote = [0x22u8; 16];
+        let local = [0x99u8; 16];
+        let dest_hash = dest(0xcd);
+        let msg_hash = [0x42u8; 32];
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, _event_rx) = broadcast::channel(8);
+        driver.set_propagation_node(&mut router, Some(preferred));
+        driver.set_pn_cascade_candidates(vec![
+            PnCascadeCandidate {
+                hash: preferred,
+                is_local: false,
+                hops: Some(1),
+                id: "pn-a".into(),
+            },
+            PnCascadeCandidate {
+                hash: next_remote,
+                is_local: false,
+                hops: Some(2),
+                id: "pn-b".into(),
+            },
+            PnCascadeCandidate {
+                hash: local,
+                is_local: true,
+                hops: Some(0),
+                id: "local-prop".into(),
+            },
+        ]);
+
+        let make_direct = || {
+            let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Direct);
+            msg.hash = Some(msg_hash);
+            msg
+        };
+
+        assert!(
+            driver
+                .try_advance_pn_cascade(&mut router, &event_tx, make_direct())
+                .is_ok()
+        );
+        assert_eq!(driver.pending_pn_targets.get(&msg_hash), Some(&preferred));
+        assert!(!driver.pn_cascade_local.contains(&msg_hash));
+
+        assert!(
+            driver
+                .try_advance_pn_cascade(&mut router, &event_tx, make_direct())
+                .is_ok()
+        );
+        assert_eq!(driver.pending_pn_targets.get(&msg_hash), Some(&next_remote));
+        assert!(!driver.pn_cascade_local.contains(&msg_hash));
+
+        assert!(
+            driver
+                .try_advance_pn_cascade(&mut router, &event_tx, make_direct())
+                .is_ok()
+        );
+        assert_eq!(driver.pending_pn_targets.get(&msg_hash), Some(&local));
+        assert!(driver.pn_cascade_local.contains(&msg_hash));
+
+        let exhausted = driver.try_advance_pn_cascade(&mut router, &event_tx, make_direct());
+        assert!(exhausted.is_err(), "cascade must exhaust after local-prop");
     }
 
     #[test]

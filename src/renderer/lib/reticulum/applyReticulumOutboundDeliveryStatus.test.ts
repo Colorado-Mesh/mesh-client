@@ -397,12 +397,48 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
 
     applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
       deliveryMethod: 'stored_locally',
+      deliveryAttempts: 3,
     });
 
     const row = useMessageStore.getState().messages[identityId][messageHash];
     expect(row.status).toBe('sending');
     expect(row.reticulumDeliveryMethod).toBe('stored_locally');
+    expect(row.reticulumDeliveryAttempts).toBe(3);
     expect(row.error).toBeUndefined();
+  });
+
+  it('buffers deliveryAttempts for pending-before-rekey flush', () => {
+    const pendingId = 'reticulum-pending-attempts';
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [pendingId]: {
+            id: pendingId,
+            from: selfNodeId,
+            to: toNodeId,
+            payload: 'race',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumSenderHash: SELF,
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+      deliveryAttempts: 4,
+    });
+    renameMessageId(identityId, pendingId, messageHash);
+    expect(flushPendingReticulumOutboundDeliveryStatus(identityId, messageHash)).toBe(true);
+    expect(
+      useMessageStore.getState().messages[identityId][messageHash].reticulumDeliveryAttempts,
+    ).toBe(4);
   });
 
   it('clamps delivery_attempts when patching outbound status', () => {

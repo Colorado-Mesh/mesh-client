@@ -105,27 +105,24 @@ pub fn is_self_lxmf_hash(hash: &[u8; 16], self_lxmf_hash_hex: &str) -> bool {
 }
 
 /// Parse enabled propagation rows into cascade candidates.
+///
+/// Local-prop eligibility uses the row `enabled` flag only (single source of truth).
+/// Local-prop hash must be the lxmf.propagation destination — never fall back to self LXMF.
 pub fn candidates_from_propagation_rows(
     rows: &[(String, bool, Option<String>, Option<u8>)],
     self_lxmf_hash_hex: &str,
-    local_prop_enabled: bool,
 ) -> Vec<PnCascadeCandidate> {
     let self_norm = self_lxmf_hash_hex.trim().to_lowercase();
     let mut out = Vec::new();
     for (id, enabled, dest_hash, hops) in rows {
         if id == "local-prop" {
-            if !local_prop_enabled && !*enabled {
+            if !*enabled {
                 continue;
             }
-            let enabled_local = local_prop_enabled || *enabled;
-            if !enabled_local {
+            // Require the real lxmf.propagation dest — self LXMF is Nomad/delivery identity.
+            let Some(hash) = dest_hash.as_ref().and_then(|h| parse_hash16(h)) else {
                 continue;
-            }
-            let hash = dest_hash
-                .as_ref()
-                .and_then(|h| parse_hash16(h))
-                .or_else(|| parse_hash16(&self_norm));
-            let Some(hash) = hash else { continue };
+            };
             out.push(PnCascadeCandidate {
                 hash,
                 is_local: true,
@@ -243,15 +240,31 @@ mod tests {
     #[test]
     fn candidates_from_rows_skips_disabled_and_self_remote() {
         let self_hex = "aa".repeat(16);
+        let prop_dest = "dd".repeat(16);
         let rows = vec![
             ("pn-a".into(), true, Some("bb".repeat(16)), Some(1u8)),
             ("pn-self".into(), true, Some(self_hex.clone()), Some(0u8)),
             ("pn-off".into(), false, Some("cc".repeat(16)), None),
-            ("local-prop".into(), true, Some(self_hex.clone()), Some(0)),
+            ("local-prop".into(), true, Some(prop_dest.clone()), Some(0)),
         ];
-        let c = candidates_from_propagation_rows(&rows, &self_hex, true);
+        let c = candidates_from_propagation_rows(&rows, &self_hex);
         assert_eq!(c.iter().filter(|x| !x.is_local).count(), 1);
         assert_eq!(c.iter().filter(|x| x.is_local).count(), 1);
+        assert_eq!(
+            hex::encode(c.iter().find(|x| x.is_local).unwrap().hash),
+            prop_dest
+        );
+    }
+
+    #[test]
+    fn candidates_skip_disabled_local_and_missing_prop_dest() {
+        let self_hex = "aa".repeat(16);
+        let rows = vec![
+            ("local-prop".into(), false, Some("dd".repeat(16)), Some(0)),
+            ("local-prop".into(), true, None, Some(0)),
+        ];
+        let c = candidates_from_propagation_rows(&rows, &self_hex);
+        assert!(c.is_empty());
     }
 
     #[test]

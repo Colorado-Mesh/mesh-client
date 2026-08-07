@@ -67,4 +67,21 @@ describe('reticulumProxyRateLimitBackoff', () => {
     clearReticulumProxyRateLimitBackoff();
     expect(isReticulumProxyRateLimitBackoffActive()).toBe(false);
   });
+
+  it('clamps jittered delay between DEFAULT and MAX backoff', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const now = 1_000_000;
+    // random=0 → factor 0.9; first hit base=5000 → 4500, clamped up to DEFAULT (5000)
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const low = noteReticulumProxyRateLimitHit('shared', now);
+    expect(low).toBe(5_000);
+    resetReticulumProxyRateLimitBackoffForTests();
+    // Drive hits to MAX base then jitter above MAX (factor 1.1)
+    vi.spyOn(Math, 'random').mockReturnValue(1);
+    let delay = 0;
+    for (let i = 0; i < 6; i++) {
+      delay = noteReticulumProxyRateLimitHit('shared', now);
+    }
+    expect(delay).toBe(60_000);
+  });
 });

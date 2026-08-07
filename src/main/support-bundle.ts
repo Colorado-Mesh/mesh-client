@@ -188,6 +188,7 @@ export function extractLxmfOutboundLogSlice(...logChunks: Buffer[]): Buffer {
   const patterns = [
     /lxmf-outbound/i,
     /propagation-deposit/i,
+    /propagation-retrieve/i,
     /LXMF advancing PN cascade/i,
     /LXMF outbound delivery failed/i,
     /Direct path failover/i,

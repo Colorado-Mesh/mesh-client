@@ -19,12 +19,16 @@ export interface CatchUpRecentInboundLxmfOutcome {
   watermarkSeq: number | null;
 }
 
-/** Single-flight + trailing coalesce for concurrent catch-up callers. */
-let catchUpInFlight: Promise<CatchUpRecentInboundLxmfOutcome | null> | null = null;
-let catchUpInFlightOpts: CatchUpRecentInboundLxmfOpts | null = null;
-let catchUpPending: CatchUpRecentInboundLxmfOpts | null = null;
+interface CatchUpFlight {
+  promise: Promise<CatchUpRecentInboundLxmfOutcome | null>;
+  opts: CatchUpRecentInboundLxmfOpts;
+  pending: CatchUpRecentInboundLxmfOpts | null;
+}
 
-/** Prefer latest cursor; merge reason labels; last ingest/identity wins. */
+/** Per-identity single-flight + trailing coalesce (never share across identityIds). */
+const catchUpByIdentity = new Map<string, CatchUpFlight>();
+
+/** Prefer latest cursor; merge reason labels; last ingest wins (same identity). */
 function mergeCatchUpOpts(
   base: CatchUpRecentInboundLxmfOpts,
   next: CatchUpRecentInboundLxmfOpts,
@@ -73,7 +77,7 @@ function mergeCatchUpOpts(
     }
   }
   return {
-    identityId: next.identityId || base.identityId,
+    identityId: base.identityId,
     ingest: next.ingest,
     ...(chosenSinceTs != null ? { sinceTs: chosenSinceTs } : {}),
     ...(chosenSinceSeq != null ? { sinceSeq: chosenSinceSeq } : {}),
@@ -165,44 +169,46 @@ async function catchUpRecentInboundLxmfOnce(
  * Sidecar cursor is exclusive `(since_ts, since_seq)`; returned watermarks are the max
  * `(timestamp, ring_seq)` among fetched rows and are safe for the next periodic fetch.
  *
- * Concurrent callers share one in-flight promise; later opts coalesce (latest cursor, merged reasons)
- * into a trailing rerun when needed.
+ * Concurrent callers for the **same** identity share one in-flight promise; later opts
+ * coalesce (latest cursor, merged reasons) into a trailing rerun. Different identities
+ * never share flight state.
  */
 export async function catchUpRecentInboundLxmf(
   opts: CatchUpRecentInboundLxmfOpts,
 ): Promise<CatchUpRecentInboundLxmfOutcome | null> {
   if (!opts.identityId) return null;
+  const identityId = opts.identityId;
 
-  if (catchUpInFlight) {
-    const base = catchUpPending ?? catchUpInFlightOpts ?? opts;
-    catchUpPending = mergeCatchUpOpts(base, opts);
-    return catchUpInFlight;
+  const existing = catchUpByIdentity.get(identityId);
+  if (existing) {
+    const base = existing.pending ?? existing.opts;
+    existing.pending = mergeCatchUpOpts(base, opts);
+    return existing.promise;
   }
 
-  catchUpInFlightOpts = opts;
-  catchUpInFlight = (async () => {
+  const flight: CatchUpFlight = { opts, pending: null, promise: Promise.resolve(null) };
+  const promise = (async () => {
     try {
       let current = opts;
       let result = await catchUpRecentInboundLxmfOnce(current);
-      while (catchUpPending) {
-        current = catchUpPending;
-        catchUpPending = null;
-        catchUpInFlightOpts = current;
+      while (flight.pending) {
+        current = flight.pending;
+        flight.pending = null;
+        flight.opts = current;
         result = await catchUpRecentInboundLxmfOnce(current);
       }
       return result;
     } finally {
-      catchUpInFlight = null;
-      catchUpInFlightOpts = null;
+      catchUpByIdentity.delete(identityId);
     }
   })();
+  flight.promise = promise;
+  catchUpByIdentity.set(identityId, flight);
 
-  return catchUpInFlight;
+  return promise;
 }
 
 /** Test-only reset of single-flight coalesce state. */
 export function resetCatchUpRecentInboundLxmfSingleFlightForTests(): void {
-  catchUpInFlight = null;
-  catchUpInFlightOpts = null;
-  catchUpPending = null;
+  catchUpByIdentity.clear();
 }

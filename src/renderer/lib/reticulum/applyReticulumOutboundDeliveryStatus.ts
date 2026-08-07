@@ -76,7 +76,13 @@ const PENDING_DELIVERY_STATUS_TTL_MS = 60_000;
 const PENDING_DELIVERY_STATUS_MAX = 64;
 const pendingDeliveryByKey = new Map<
   string,
-  { wireStatus: string; sentVia?: string; deliveryMethod?: string; receivedAt: number }
+  {
+    wireStatus: string;
+    sentVia?: string;
+    deliveryMethod?: string;
+    deliveryAttempts?: number;
+    receivedAt: number;
+  }
 >();
 
 function pendingDeliveryKey(identityId: IdentityId, messageHash: string): string {
@@ -102,12 +108,14 @@ function bufferPendingDeliveryStatus(
   wireStatus: string,
   sentVia?: string,
   deliveryMethod?: string,
+  deliveryAttempts?: number,
 ): void {
   prunePendingDeliveryStatuses();
   pendingDeliveryByKey.set(pendingDeliveryKey(identityId, messageHash), {
     wireStatus,
     sentVia,
     deliveryMethod,
+    deliveryAttempts,
     receivedAt: Date.now(),
   });
 }
@@ -135,6 +143,7 @@ export function flushPendingReticulumOutboundDeliveryStatus(
     undefined,
     parseWireSentVia(pending.sentVia),
     parseReticulumDeliveryMethod(pending.deliveryMethod),
+    pending.deliveryAttempts,
   );
   if (applied) pendingDeliveryByKey.delete(key);
   return applied;
@@ -177,6 +186,9 @@ export function persistReticulumOutboundMessageStatus(
       error: undefined,
       reticulumDeliveryMethod: deliveryMethod,
       ...(sentVia != null ? { receivedVia: sentVia } : {}),
+      ...(deliveryAttempts != null
+        ? { reticulumDeliveryAttempts: clampDeliveryAttempts(deliveryAttempts) }
+        : {}),
     };
     upsertMessage(identityId, revived);
     const senderHash = resolveOutboundSenderHash(revived);
@@ -319,13 +331,19 @@ export function applyReticulumOutboundDeliveryStatus(
     return;
   }
   // Terminal status, or egress/method upgrade before rekey for later flush.
-  if (isTerminalStatus(status) || sentVia != null || deliveryMethod != null) {
+  if (
+    isTerminalStatus(status) ||
+    sentVia != null ||
+    deliveryMethod != null ||
+    deliveryAttempts != null
+  ) {
     bufferPendingDeliveryStatus(
       identityId,
       normalizedHash,
       wireStatus,
       opts?.sentVia ?? undefined,
       opts?.deliveryMethod ?? undefined,
+      deliveryAttempts,
     );
   }
 }

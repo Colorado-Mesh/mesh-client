@@ -293,6 +293,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const processedLinkTimeoutDestsRef = useRef(new Set<string>());
   /** Defer link-timeout failure bridge until first propagation store refresh completes. */
   const propagationHydratedForBridgeRef = useRef(false);
+  /** Bumped on identity change / tearDown / disconnect to abort stale bridge IIFEs. */
+  const linkTimeoutBridgeGenerationRef = useRef(0);
   const identityIdRef = useRef(identityId);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
@@ -317,6 +319,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     processedLinkTimeoutDestsRef.current.clear();
     propagationHydratedForBridgeRef.current = false;
+    linkTimeoutBridgeGenerationRef.current += 1;
   }, [identityId]);
 
   const selfNodeId = useMemo(
@@ -1476,6 +1479,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
     propagationHydratedForBridgeRef.current = false;
+    linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
@@ -1499,6 +1503,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {
           const bridgeIdentityId = identityId;
+          const bridgeGeneration = linkTimeoutBridgeGenerationRef.current;
           void (async () => {
             if (!propagationHydratedForBridgeRef.current) {
               const stampBefore = useReticulumPropagationStore.getState().lastRefreshedAt;
@@ -1510,7 +1515,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
                     errLikeToLogString(e),
                 );
               }
-              if (identityIdRef.current !== bridgeIdentityId) return;
+              if (
+                identityIdRef.current !== bridgeIdentityId ||
+                linkTimeoutBridgeGenerationRef.current !== bridgeGeneration
+              ) {
+                console.debug(
+                  '[useReticulumRuntime] link-timeout bridge abort — generation stale after hydrate',
+                );
+                return;
+              }
               const stampAfter = useReticulumPropagationStore.getState().lastRefreshedAt;
               const hydratedOk = stampAfter != null && stampAfter !== stampBefore;
               if (!hydratedOk) {
@@ -1521,7 +1534,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
               }
               propagationHydratedForBridgeRef.current = true;
             }
-            if (identityIdRef.current !== bridgeIdentityId) return;
+            if (
+              identityIdRef.current !== bridgeIdentityId ||
+              linkTimeoutBridgeGenerationRef.current !== bridgeGeneration
+            ) {
+              return;
+            }
             const propState = useReticulumPropagationStore.getState();
             // Empty + no preferred + never refreshed: cascade capacity unknown — do not fail DMs.
             if (
@@ -1542,7 +1560,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
               `[useReticulumRuntime] link-timeout bridge apply=${applyBridge} preferred=${propState.preferredId ?? 'none'} nodes=${propState.nodes.length}`,
             );
             for (const { destinationHash } of timeouts) {
-              if (identityIdRef.current !== bridgeIdentityId) return;
+              if (
+                identityIdRef.current !== bridgeIdentityId ||
+                linkTimeoutBridgeGenerationRef.current !== bridgeGeneration
+              ) {
+                return;
+              }
               const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
               if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
               // PN cascade (remote or local-prop): sidecar owns outcome via WS.
@@ -1738,6 +1761,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     clearReticulumSessionStores();
     processedLinkTimeoutDestsRef.current.clear();
     propagationHydratedForBridgeRef.current = false;
+    linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);

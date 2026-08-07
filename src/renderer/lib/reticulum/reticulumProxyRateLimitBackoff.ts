@@ -56,12 +56,12 @@ export function reticulumProxyRateLimitBackoffRemainingMs(
 /** Optional ±10% jitter so concurrent clients do not retry in lockstep. */
 function applyJitter(delayMs: number): number {
   const factor = 0.9 + Math.random() * 0.2;
-  return Math.max(1, Math.round(delayMs * factor));
+  return Math.round(delayMs * factor);
 }
 
 /**
  * Record a rate-limit error and arm exponential backoff so callers do not tight-loop.
- * Returns the backoff duration applied (ms, after jitter).
+ * Returns the backoff duration applied (ms, after jitter, clamped to [DEFAULT, MAX]).
  */
 export function noteReticulumProxyRateLimitHit(
   bucket: ReticulumProxyRateLimitBucket,
@@ -70,7 +70,7 @@ export function noteReticulumProxyRateLimitHit(
   const state = buckets[bucket];
   state.consecutiveHits = Math.min(state.consecutiveHits + 1, 6);
   const base = Math.min(DEFAULT_BACKOFF_MS * 2 ** (state.consecutiveHits - 1), MAX_BACKOFF_MS);
-  const delay = applyJitter(base);
+  const delay = Math.min(MAX_BACKOFF_MS, Math.max(DEFAULT_BACKOFF_MS, applyJitter(base)));
   state.backoffUntilMs = Math.max(state.backoffUntilMs, now + delay);
   console.warn(
     `[reticulumProxyRateLimit] bucket=${bucket} backoff ${delay}ms hits=${state.consecutiveHits} until=${new Date(state.backoffUntilMs).toISOString()}`,
