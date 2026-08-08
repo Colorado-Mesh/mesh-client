@@ -1,0 +1,2348 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../accessibility-checklist/">
+      
+      
+        <link rel="next" href="../release-process/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>CI/CD - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cicd-workflows" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CI/CD
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci-build-ciyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI Build (ci.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests-testsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests (tests.yaml)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tests (tests.yaml)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#electron-e2e-e2eyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electron E2E (e2e.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reticulum-sidecar-reticulum-sidecaryaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar (reticulum-sidecar.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coderabbit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CodeRabbit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-releaseyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release (release.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flatpak-flatpakyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flatpak (flatpak.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docs-docsyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs (docs.yml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependabot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependabot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dependabot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#testing-dependabot-prs-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Dependabot PRs locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-ci-locally-with-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running CI Locally with act
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running CI Locally with act">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#package-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package scripts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-runs-locally-vs-native-os-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What runs locally vs native OS only
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#required-status-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Status Checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-commit-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-commit Hook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ci-fails-but-passes-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI fails but passes locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release-workflow-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release workflow fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs-deployment-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs deployment fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#packaging-smoke-builds-buildyaml-flatpakyaml-releaseyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packaging smoke builds (build.yaml / flatpak.yaml / release.yaml)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Packaging smoke builds (build.yaml / flatpak.yaml / release.yaml)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-channel-stamp-test-vs-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build channel stamp (test vs release)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-build-installer-filenames-runn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test-build installer filenames (-run{N})
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-compare-vs-last-official-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema compare vs last official release
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-packaging-verify-verify-mac-packagingmjs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS packaging verify (verify-mac-packaging.mjs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic & MeshCore Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-sidecar-ipc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Sidecar IPC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci-build-ciyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI Build (ci.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests-testsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests (tests.yaml)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tests (tests.yaml)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#electron-e2e-e2eyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electron E2E (e2e.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reticulum-sidecar-reticulum-sidecaryaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar (reticulum-sidecar.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coderabbit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CodeRabbit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-releaseyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release (release.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flatpak-flatpakyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flatpak (flatpak.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docs-docsyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs (docs.yml)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependabot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependabot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dependabot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#testing-dependabot-prs-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Dependabot PRs locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-ci-locally-with-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running CI Locally with act
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running CI Locally with act">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#package-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package scripts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-runs-locally-vs-native-os-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What runs locally vs native OS only
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#required-status-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Status Checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-commit-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-commit Hook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ci-fails-but-passes-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI fails but passes locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release-workflow-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release workflow fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs-deployment-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs deployment fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#packaging-smoke-builds-buildyaml-flatpakyaml-releaseyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packaging smoke builds (build.yaml / flatpak.yaml / release.yaml)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Packaging smoke builds (build.yaml / flatpak.yaml / release.yaml)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-channel-stamp-test-vs-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build channel stamp (test vs release)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-build-installer-filenames-runn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test-build installer filenames (-run{N})
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-compare-vs-last-official-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema compare vs last official release
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-packaging-verify-verify-mac-packagingmjs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS packaging verify (verify-mac-packaging.mjs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cicd-workflows">CI/CD Workflows</h1>
+<p>Mesh-Client uses GitHub Actions for continuous integration and deployment.</p>
+<hr />
+<h2 id="workflows">Workflows</h2>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Trigger</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ci.yaml</code></td>
+<td>Push/PR to <code>main</code></td>
+<td>Lint, typecheck, build, Flatpak manifest validation</td>
+</tr>
+<tr>
+<td><code>tests.yaml</code></td>
+<td>Push/PR to <code>main</code></td>
+<td>Vitest coverage + merge; Reticulum sidecar <code>llvm-cov</code> when sidecar paths change</td>
+</tr>
+<tr>
+<td><code>e2e.yaml</code></td>
+<td>Daily on <code>main</code> + manual <code>workflow_dispatch</code></td>
+<td>Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)</td>
+</tr>
+<tr>
+<td><code>build.yaml</code></td>
+<td>Manual <code>workflow_dispatch</code></td>
+<td>Native 3-OS packaging smoke build (+ schema compare vs last official)</td>
+</tr>
+<tr>
+<td><code>reticulum-sidecar.yaml</code></td>
+<td>Path-filtered push/PR to <code>main</code></td>
+<td>Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test</td>
+</tr>
+<tr>
+<td><code>release.yaml</code></td>
+<td>Version tags (<code>v*</code>)</td>
+<td>Build &amp; publish releases (AppImage/deb/rpm)</td>
+</tr>
+<tr>
+<td><code>flatpak.yaml</code></td>
+<td>Version tags (<code>v*</code>), manual</td>
+<td>Build Flatpak (+ schema compare vs last official); publish to release on tags</td>
+</tr>
+<tr>
+<td><code>docs.yml</code></td>
+<td>Push to <code>main</code></td>
+<td>Deploy MkDocs to GitHub Pages</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="ci-build-ciyaml">CI Build (<code>ci.yaml</code>)</h2>
+<p>Runs on every push and pull request to <code>main</code> (and <code>workflow_dispatch</code>):</p>
+<ol>
+<li>Checkout code</li>
+<li>Setup pnpm</li>
+<li>Setup Node 22</li>
+<li>Install dependencies (<code>pnpm install --frozen-lockfile</code>)</li>
+<li>Format check (<code>pnpm run format:check</code>)</li>
+<li>Markdown lint (<code>pnpm run lint:md</code>)</li>
+<li>Run lint (<code>pnpm run lint</code>)</li>
+<li>License check (<code>pnpm run check:licenses</code>)</li>
+<li>actionlint (via <code>pnpm run setup:actionlint</code>)</li>
+<li><code>pnpm audit --audit-level=high</code> (non-blocking warning)</li>
+<li>Run <code>yamllint</code> on workflow/config YAML</li>
+<li>Run typecheck (<code>pnpm run typecheck</code>)</li>
+<li>Run build (<code>pnpm run build</code>)</li>
+<li>Run <code>check:flatpak</code>, <code>check:flatpak-offline-pnpm</code> (needs <code>flatpak-node-generator</code>), <code>desktop-file-validate</code>, and <code>appstreamcli validate</code> on Flatpak metadata</li>
+</ol>
+<p>All blocking steps must pass before a PR can be merged.</p>
+<hr />
+<h2 id="tests-testsyaml">Tests (<code>tests.yaml</code>)</h2>
+<p>Runs on every push and pull request to <code>main</code>:</p>
+<ol>
+<li>Checkout code, setup pnpm + Node 22, install dependencies</li>
+<li><strong>Parallel matrix</strong> — coverage per Vitest project (<code>renderer-ui</code>, <code>renderer-logic</code>, <code>main</code>) with blob reporter (<code>VITEST_COVERAGE_SHARD=1</code> skips per-shard threshold checks)</li>
+<li><strong>Merge job</strong> — downloads blob artifacts, runs <code>pnpm run test:coverage:merge</code> (enforces global coverage thresholds)</li>
+<li><strong><code>reticulum-sidecar-coverage</code></strong> (when <code>reticulum-sidecar/**</code> or related scripts change, via <code>paths-filter</code>) — clones the <code>.rsstack/</code> workspace, runs <code>cargo llvm-cov --fail-under-lines 45</code> on ubuntu-latest; uploads <code>lcov.info</code> artifact (no Codecov upload on free org plan)</li>
+<li>Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only</li>
+<li>Upload merged test results artifact (retained 7 days)</li>
+</ol>
+<p>Static analysis on PRs is <strong>CodeQL</strong> (security) plus ESLint, Clippy, and pre-commit <code>check:*</code> scanners. AI PR review is <strong>CodeRabbit</strong> (see <a href="#coderabbit">CodeRabbit</a> below). SonarQube Cloud is not used.</p>
+<p>Test results are available as a downloadable artifact from the workflow run.</p>
+<h3 id="electron-e2e-e2eyaml">Electron E2E (<code>e2e.yaml</code>)</h3>
+<p>Not a PR gate. Runs on a <strong>daily schedule</strong> (default branch only) and on <strong>manual</strong> <code>workflow_dispatch</code>:</p>
+<ol>
+<li>Checkout (<code>persist-credentials: false</code>), setup pnpm + Node 22, <code>node scripts/check-environment.mjs --skip-node-modules</code>, <code>pnpm install --frozen-lockfile</code>, then <code>pnpm run check:environment</code> (<code>PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1</code>)</li>
+<li>Linux (<code>ubuntu-24.04</code>): install Electron runtime libraries (<code>libatk-bridge2.0-0t64</code>, <code>libgtk-3-0t64</code>, <code>libasound2t64</code>, …) + <code>xvfb</code></li>
+<li><code>pnpm run build</code> (unpackaged <code>dist-electron</code> + renderer)</li>
+<li><code>pnpm run test:e2e</code> (Linux under <code>xvfb-run -a</code>; macOS/Windows plain) — Playwright launches the local Electron binary via <code>resolveLocalElectronBin()</code> with an isolated <code>--user-data-dir</code></li>
+<li>On failure, upload <code>test-results/</code> + <code>playwright-report/</code> (7-day retention)</li>
+</ol>
+<p>Local: <code>pnpm run test:e2e:build</code>. See <a href="../development-environment/#playwright-electron-e2e">development-environment.md</a>.</p>
+<h3 id="reticulum-sidecar-reticulum-sidecaryaml">Reticulum sidecar (<code>reticulum-sidecar.yaml</code>)</h3>
+<p>Path-filtered on <code>reticulum-sidecar/**</code> and related scripts:</p>
+<ol>
+<li><strong><code>lint</code> job (ubuntu-latest)</strong> — <code>cargo fmt --check</code> + <code>cargo clippy</code> with <code>rns-stack,rns-ble,rns-rnode-tcp</code> (<code>-D warnings</code>)</li>
+<li><strong>Build matrix</strong> — stub + full-stack <code>cargo test</code> and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)</li>
+</ol>
+<p>CI and local <strong>dev</strong> clones float the <code>.rsstack/</code> workspace via <code>scripts/clone-ratspeak-stack.sh</code> to <code>origin/main</code> (overlays must apply; override with <code>RS_RETICULUM_REF</code> / <code>RS_LXMF_REF</code> / <code>RS_NOMAD_REF</code> / <code>RS_LXST_REF</code> / <code>RS_LRGP_REF</code> for bisect). <strong>Release</strong> packaging (<code>scripts/build-reticulum-sidecar-release.mjs</code>) runs the same clone and records the resolved commit SHAs for all five crates in <code>.rsstack/RESOLVED_SHAS.txt</code> so artifacts retain the exact source revisions used — pin via <code>RS_*_REF</code> when a release must not float.</p>
+<p>Local parity: <code>pnpm run reticulum:sidecar:clippy:full</code>, <code>pnpm run check:reticulum-sidecar</code> (pre-commit full-feature). See <a href="../development-environment/#reticulum-sidecar-optional">development-environment.md</a>.</p>
+<hr />
+<h2 id="coderabbit">CodeRabbit</h2>
+<p>PR review comments come from <a href="https://docs.coderabbit.ai/">CodeRabbit</a> via <a href="../.coderabbit.yaml"><code>.coderabbit.yaml</code></a> (quiet profile, path filters, auto-pause after two reviewed commits).</p>
+<ul>
+<li>Prefer opening as a <strong>draft</strong> until the feature diff is ready, then mark ready for review.</li>
+<li>Free plan: about <strong>1 PR review per developer per hour</strong>; each auto-incremental push counts. After auto-pause, request another pass with <code>@coderabbitai review</code>.</li>
+<li>Batch actionable findings via the <strong>Prompt for AI Agents</strong> block into one local commit (Autofix requires Pro).</li>
+<li>Check remaining allowance with <code>@coderabbitai rate limit</code>.</li>
+</ul>
+<hr />
+<h2 id="release-releaseyaml">Release (<code>release.yaml</code>)</h2>
+<p>Triggered by pushing a version tag (e.g., <code>v1.2.3</code>):</p>
+<ol>
+<li><strong><code>schema-release-compare</code></strong> — first job; compares this SHA’s <code>CURRENT_SCHEMA_VERSION</code> to the last <strong>published</strong> GitHub Release, writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.</li>
+<li><strong><code>prepare-github-release</code></strong> — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads), then prepends the schema compare note to the draft body. On <code>workflow_dispatch</code>, the tag is resolved in the workflow from <code>package.json</code> and passed as <code>RELEASE_TAG</code> (not read inside the release API script — avoids CodeQL <code>js/file-access-to-http</code>). The schema note is rebuilt from <code>schema-release-compare</code> job outputs (<code>MESH_CLIENT_SCHEMA_*</code>), not from a downloaded markdown artifact (same CodeQL rule).</li>
+<li>Installs Linux build dependencies (<code>libudev-dev</code>, <code>rpm</code>, …) on <code>ubuntu-latest</code> runners</li>
+<li>Rebuilds native dependencies (<code>pnpm run rebuild</code>)</li>
+<li><strong>Stamp CI build info</strong> — <code>scripts/ci-write-build-info-env.mjs</code> writes <code>MESH_CLIENT_BUILD_INFO</code> (<code>buildChannel=release</code> + tag + Actions <code>runUrl</code>) into <code>$GITHUB_ENV</code> before <code>dist:*:publish</code> so support-bundle <code>manifest.json</code> and startup logs identify an official release build (see <a href="#build-channel-stamp-test-vs-release">Build channel stamp</a>).</li>
+<li>Builds for all three platforms in parallel (or a filtered subset on <code>workflow_dispatch</code>):</li>
+<li><code>macos-latest</code> → <code>pnpm run dist:mac:publish</code></li>
+<li><code>ubuntu-latest</code> → <code>pnpm run dist:linux:publish</code></li>
+<li><code>windows-latest</code> → <code>pnpm run dist:win:publish</code></li>
+<li>Publishes artifacts to GitHub Releases</li>
+</ol>
+<p>Linux packaging smoke (<code>verify-linux-packaging.mjs</code>) asserts <code>.deb</code> <strong>Description</strong> metadata is ASCII-only. See <a href="../release-process/">Release Process</a>.</p>
+<p>See <a href="../release-process/">Release Process</a> for the maintainer workflow.</p>
+<hr />
+<h2 id="flatpak-flatpakyaml">Flatpak (<code>flatpak.yaml</code>)</h2>
+<p>Builds Flatpak bundles using <a href="https://github.com/flatpak/flatpak-github-actions"><code>flatpak/flatpak-github-actions</code></a>.</p>
+<p><strong>Triggers:</strong> version tags (<code>v*</code>) and manual <code>workflow_dispatch</code> (<strong>Build Flatpak (no release)</strong>).</p>
+<p>A matrix builds <strong>x86_64</strong> and <strong>aarch64</strong> in parallel. Both use the same privileged <code>ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08</code> container (Flathub remote, <code>flatpak-builder</code>, and system-scope runtime installs). <strong>x86_64</strong> runs on <code>ubuntu-latest</code>; <strong>aarch64</strong> runs on <code>ubuntu-24.04-arm</code> (native ARM runners — not QEMU on bare Ubuntu).</p>
+<ol>
+<li><strong><code>schema-release-compare</code></strong> — same compare as Build Binaries / Release; uploads <code>READ-ME-FIRST-flatpak.md</code> and feeds <code>write-schema-upgrade-notice.mjs</code> so bumped schemas embed <code>SCHEMA-UPGRADE.txt</code> under Flatpak <code>resources/</code></li>
+<li>Builds the Reticulum sidecar on bare Ubuntu runners, then generates <code>flatpak/generated-sources.json</code> via <code>flatpak-node-generator</code></li>
+<li>Stamps CI build info (<code>test</code> on dispatch / <code>release</code> on tag), builds from <code>org.coloradomesh.MeshClient.yml</code> with offline pnpm sources</li>
+<li>Smoke-installs the unstamped local bundle; on <strong>dispatch only</strong>, renames to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code></li>
+<li>Uploads <code>org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak</code> artifacts (file basename stamped on test builds) plus per-arch <code>flatpak-schema-warning-*</code></li>
+</ol>
+<p>On <strong>version tag pushes</strong>, a <code>publish</code> job attaches both <strong>clean-named</strong> bundles to the GitHub Release. aarch64 is the primary ARM Linux install path (release <code>build.yaml</code> only produces x86_64 AppImage/deb/rpm).</p>
+<p><code>flatpak/generated-sources.json</code> is generated automatically in CI by <code>flatpak-node-generator</code> before each build — it does not need to be committed to the repo. For local builds, generate it manually; see <a href="../development-environment/">development-environment.md</a> for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.</p>
+<hr />
+<h2 id="docs-docsyml">Docs (<code>docs.yml</code>)</h2>
+<p>Deploys documentation to GitHub Pages on every push to <code>main</code>:</p>
+<ol>
+<li>Checkout code</li>
+<li>Setup Python 3.x</li>
+<li>Install MkDocs dependencies (<code>docs/requirements.txt</code>)</li>
+<li>Copy <code>README.md</code> → <code>docs/index.md</code> and <code>CONTRIBUTING.md</code> → <code>docs/contributing.md</code></li>
+<li>Rewrite doc links for MkDocs</li>
+<li>Deploy with <code>mkdocs gh-deploy --force</code></li>
+</ol>
+<hr />
+<h2 id="dependabot">Dependabot</h2>
+<p>Automated dependency updates are configured in <code>.github/dependabot.yml</code>:</p>
+<ul>
+<li><strong>Schedule:</strong> Weekly on Saturdays</li>
+<li><strong>npm dependencies:</strong> Grouped PRs (Electron separate, all other deps together)</li>
+<li><strong>GitHub Actions:</strong> Grouped into one PR</li>
+<li><strong>Open PRs:</strong> <code>open-pull-requests-limit: 0</code> — Dependabot scans but does <strong>not</strong> open PRs.
+  Dependency bumps are applied manually via <code>pnpm run update</code> (<code>scripts/update.sh</code>), which
+  also runs dedupe, Ratspeak overlay PR checks, and an upstream release / new-org-repo watch
+  (rsLXST, lrgp-rs, Ratspeak with Games-parity nudge, LXMFace). Sibling <strong>rsReticulum</strong> /
+  <strong>rsLXMF</strong> / <strong>rsNomad</strong> / <strong>rsLXST</strong> / <strong>lrgp-rs</strong> float to <code>origin/main</code> via
+  <code>clone-ratspeak-stack.sh</code> (overlays must apply). See AGENTS.md §6.</li>
+</ul>
+<h3 id="testing-dependabot-prs-locally">Testing Dependabot PRs locally</h3>
+<p>Use <strong>pnpm</strong> (not npm) to test dependabot PRs:</p>
+<pre><code class="language-bash">git checkout &lt;dependabot-branch&gt;
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm run test:run
+</code></pre>
+<p>Do not use <code>npm install</code>; it will create a <code>package-lock.json</code> and may not respect pnpm's lockfile format.</p>
+<hr />
+<h2 id="running-ci-locally-with-act">Running CI Locally with <code>act</code></h2>
+<p><strong>Optional tooling:</strong> You can run local CI in two ways:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Command prefix</th>
+<th>Requires</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Container</strong> (default)</td>
+<td><code>pnpm run act:ci</code>, <code>pnpm run act:tests</code>, …</td>
+<td>Docker-compatible engine + <a href="https://github.com/nektos/act">act</a></td>
+<td>Runs GitHub Actions jobs inside Linux containers (closest to CI)</td>
+</tr>
+<tr>
+<td><strong>Host / native</strong></td>
+<td><code>pnpm run act:ci:native</code>, <code>pnpm run act:tests:native</code>, …</td>
+<td>Node/pnpm only</td>
+<td>Runs the same pnpm/cargo steps directly on your machine (no container engine)</td>
+</tr>
+</tbody>
+</table>
+<p>Container mode runs GitHub Actions jobs inside Linux containers using a Docker-compatible engine (Podman preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon. <code>pnpm run check:environment</code> warns if no container engine or act is missing but does not block commits. Use <strong>native</strong> scripts when no Docker-compatible engine is available or act cannot reach the daemon.</p>
+<p><strong>macOS note:</strong> <a href="https://podman.io/">Podman Desktop</a> is the preferred Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at <code>/var/run/docker.sock</code>; pass that path to <code>act</code> via <code>ACT_DOCKER_SOCKET</code>, or let <code>act</code> detect it automatically if Podman created the symlink. If you use Docker Desktop instead, its socket is typically under <code>~/.docker/run/docker.sock</code>.</p>
+<p>Install act (container mode only):</p>
+<pre><code class="language-bash"># macOS
+brew install act
+
+# Linux / Windows
+# https://github.com/nektos/act/releases
+</code></pre>
+<p>On Windows, Podman Desktop with Docker compatibility is preferred. If you use Docker Desktop instead, use the WSL2 backend. On Apple Silicon, <code>act</code> uses <code>--container-architecture linux/amd64</code> automatically for x86_64 CI parity.</p>
+<p><strong>Podman:</strong> <code>scripts/run-act.mjs</code> passes <code>--container-daemon-socket</code> to <code>act</code> (auto-detects <code>/var/run/docker.sock</code> on macOS). If <code>act</code> still cannot connect, set <code>ACT_DOCKER_SOCKET</code> to your socket path or use native mode. If you use Docker Desktop instead, its socket is typically under <code>~/.docker/run/docker.sock</code>.</p>
+<h3 id="package-scripts">Package scripts</h3>
+<pre><code class="language-bash"># One-time (container mode)
+pnpm run act:pull-images
+
+# List targets
+pnpm run act:list
+
+# PR parity — container (act + Podman/Docker)
+pnpm run act:ci
+pnpm run act:tests
+pnpm run act:pr
+
+# PR parity — host (no container engine)
+pnpm run act:ci:native
+pnpm run act:tests:native
+pnpm run act:pr:native
+
+# Linux packaging
+pnpm run act:build:linux        # container
+pnpm run act:build:linux:native # host (best on Linux)
+
+# Heavier workflows (container only unless noted)
+pnpm run act:reticulum
+pnpm run act:reticulum:native # stub sidecar cargo test/build on host
+pnpm run act:flatpak          # docker only
+
+# Override mode on one invocation
+node scripts/run-act.mjs ci --native
+node scripts/run-act.mjs ci --docker
+MESH_CLIENT_ACT_MODE=native pnpm run act:ci
+
+# Dry-run passthrough (container mode)
+node scripts/run-act.mjs ci -- -n
+</code></pre>
+<h3 id="what-runs-locally-vs-native-os-only">What runs locally vs native OS only</h3>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Container (<code>act:*</code>)</th>
+<th>Host (<code>act:*:native</code>)</th>
+<th>macOS host only</th>
+<th>Windows host only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PR checks (lint / test / build)</td>
+<td><code>act:ci</code> + <code>act:tests</code></td>
+<td><code>act:ci:native</code> + <code>:native</code></td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td>Linux installers (AppImage / deb / rpm)</td>
+<td><code>act:build:linux</code></td>
+<td><code>act:build:linux:native</code></td>
+<td>cross-build may differ</td>
+<td>cross-build may differ</td>
+</tr>
+<tr>
+<td>macOS <code>.dmg</code> / <code>.zip</code></td>
+<td>—</td>
+<td>—</td>
+<td><code>pnpm run dist:mac</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Windows <code>.exe</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>pnpm run dist:win</code></td>
+</tr>
+<tr>
+<td>Flatpak x86_64</td>
+<td><code>act:flatpak</code></td>
+<td>use local Flatpak docs</td>
+<td>same</td>
+<td>same</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not run locally via act:</strong> <code>docs.yml</code> (<code>mkdocs gh-deploy</code>), release publish legs, <code>macos-latest</code> / <code>windows-latest</code> / <code>windows-11-arm</code> matrix jobs, and <code>ubuntu-24.04-arm</code> Flatpak builds (no faithful local emulation).</p>
+<p>Note: The test results artifact upload step is automatically skipped when running under <code>act</code> (detected by actor <code>nektos/act</code> in <a href="../.github/workflows/tests.yaml"><code>tests.yaml</code></a>).</p>
+<hr />
+<h2 id="required-status-checks">Required Status Checks</h2>
+<p>All PRs to <code>main</code> must pass:</p>
+<ul>
+<li>Lint (<code>pnpm run lint</code>)</li>
+<li>Typecheck (<code>pnpm run typecheck</code>)</li>
+<li>Build (<code>pnpm run build</code>)</li>
+<li>Tests with coverage (<code>pnpm run test:coverage</code> — same as CI; <code>locale-quality.test.ts</code> runs <code>check:i18n</code> as part of the Vitest suite)</li>
+</ul>
+<p>Branch protection is configured to require these checks before merging.</p>
+<hr />
+<h2 id="pre-commit-hook">Pre-commit Hook</h2>
+<p>The pre-commit hook (<code>.githooks/pre-commit</code>) runs checks beyond what GitHub Actions runs directly:</p>
+<ul>
+<li><strong>Staged-file</strong> Prettier + markdownlint (not a full-tree <code>pnpm run format</code> / <code>lint:md</code>)</li>
+<li><code>pnpm dedupe</code> when dependency manifests are staged</li>
+<li><code>pnpm run i18n:auto-translate</code> when <code>en/translation.json</code> is staged (fills new English keys vs <code>HEAD</code>) + re-stages locales</li>
+<li>Staged ESLint (<code>--cache</code>) + full <code>typecheck</code>; path-gated <code>typecheck:strict-shared</code> when shared paths staged; always-on cheap <code>check:*</code> scanners; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires <code>cargo</code> on <code>PATH</code> when sidecar paths are staged; <code>check:i18n</code> when English locale staged, else <code>check:i18n:branch</code>)</li>
+<li>Before PR: <code>pnpm run check:pr</code> (full lint + typecheck + strict-shared + <code>test:run</code> + path-aware sidecar)</li>
+<li><code>pnpm audit</code> only when dependency manifests staged; <code>actionlint</code> / <code>yamllint</code> only when relevant files are staged</li>
+<li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
+</ul>
+<p><strong>PR CI</strong> (<a href="../.github/workflows/tests.yaml"><code>tests.yaml</code></a>) and <strong><code>pnpm run release</code></strong> always run the <strong>full</strong> Vitest suite (<code>pnpm run test:run</code>). Green pre-commit does not replace those gates.</p>
+<p>CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (<code>locale-quality.test.ts</code>).</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="ci-fails-but-passes-locally">CI fails but passes locally</h3>
+<ul>
+<li>Ensure you're using Node 22 (same as CI)</li>
+<li>Run <code>pnpm install --frozen-lockfile</code> to match CI's exact dependency versions</li>
+<li>Check for platform-specific differences (paths, case sensitivity)</li>
+</ul>
+<h3 id="release-workflow-fails">Release workflow fails</h3>
+<ul>
+<li>Verify the tag follows semantic versioning (<code>v1.2.3</code>)</li>
+<li>Ensure <code>GH_TOKEN</code> secret is set in repository settings</li>
+<li>Check that <code>dist:*:publish</code> scripts exist in <code>package.json</code></li>
+</ul>
+<h3 id="docs-deployment-fails">Docs deployment fails</h3>
+<ul>
+<li>Verify <code>docs/requirements.txt</code> dependencies are valid</li>
+<li>Check MkDocs configuration in <code>mkdocs.yml</code></li>
+<li>Ensure all referenced doc files exist</li>
+</ul>
+<hr />
+<h2 id="packaging-smoke-builds-buildyaml-flatpakyaml-releaseyaml">Packaging smoke builds (<code>build.yaml</code> / <code>flatpak.yaml</code> / <code>release.yaml</code>)</h2>
+<h3 id="build-channel-stamp-test-vs-release">Build channel stamp (test vs release)</h3>
+<p><strong>Build Binaries</strong> (<code>build.yaml</code>), <strong>Release</strong> (<code>release.yaml</code>), and <strong>Build Flatpak</strong> (<code>flatpak.yaml</code>) run <code>scripts/ci-write-build-info-env.mjs</code> before packaging. That writes a JSON <code>MESH_CLIENT_BUILD_INFO</code> blob into <code>$GITHUB_ENV</code>, which <code>scripts/esbuild-main-build.mjs</code> embeds via esbuild <code>--define</code> into the main process. Flatpak also writes <code>flatpak/ci-build-info.json</code> (gitignored) so the sandbox <code>pnpm run build</code> sees the same env.</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Workflow</th>
+<th>Support-bundle <code>manifest.json</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test</code></td>
+<td>Build Binaries (no release); Build Flatpak (no release)</td>
+<td><code>buildChannel: "test"</code> + <code>buildInfo.runUrl</code> (Actions run)</td>
+</tr>
+<tr>
+<td><code>release</code></td>
+<td>Build/Release Electron App; Build Flatpak (tag)</td>
+<td><code>buildChannel: "release"</code> + <code>tag</code> + <code>buildInfo.runUrl</code></td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>unmarked <code>pnpm run dist</code> / dev / local Flatpak</td>
+<td><code>buildChannel: "local"</code> only</td>
+</tr>
+</tbody>
+</table>
+<p><code>appVersion</code> remains <code>package.json</code> semver (unchanged). Use <code>buildChannel</code> + <code>buildInfo.runUrl</code> when triaging Export for GitHub / Developer zips so a test binary is not mistaken for an official release. Startup logs include a compact fragment (<code>buildChannel=… run=… runId=… sha=…</code>).</p>
+<p><strong>Which binary am I running?</strong> If a tester says they downloaded Actions run N but the app reports a different run, open <strong>Export for GitHub</strong> → <code>manifest.json</code> → <code>buildInfo.runUrl</code> (authoritative), or the <code>[Startup] runtime … run=…</code> line in the app log. Same-semver test installers used to share identical filenames across runs; test builds now stamp <code>-run{N}</code> into downloadable basenames (see below).</p>
+<h3 id="test-build-installer-filenames-runn">Test-build installer filenames (<code>-run{N}</code>)</h3>
+<p><strong>Test / one-off only</strong> — never official GitHub Release assets:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>When</th>
+<th>Filename stamp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build.yaml</code></td>
+<td>Always (dispatch-only)</td>
+<td>After <code>dist:*</code>, <code>scripts/rename-test-build-artifacts.mjs</code> renames AppImage/deb/rpm/DMG/ZIP/Setup under <code>release/</code> to include <code>-run{GITHUB_RUN_NUMBER}</code> (e.g. <code>Mesh-client-5.26.0-run214.AppImage</code>, <code>Mesh-client Setup 5.26.0-run214.exe</code>)</td>
+</tr>
+<tr>
+<td><code>flatpak.yaml</code></td>
+<td><code>workflow_dispatch</code> only</td>
+<td>After in-job smoke, rename to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code>, then upload</td>
+</tr>
+<tr>
+<td><code>flatpak.yaml</code></td>
+<td>tag <code>v*</code> (release publish)</td>
+<td>Clean <code>org.coloradomesh.MeshClient.flatpak</code> (no <code>-run{N}</code>)</td>
+</tr>
+<tr>
+<td><code>release.yaml</code></td>
+<td>tag publish</td>
+<td>Clean electron-builder names (no rename step)</td>
+</tr>
+</tbody>
+</table>
+<p><code>packaging-smoke</code> on Build Binaries downloads <strong>stamped</strong> names (Windows Setup matcher accepts default or <code>-run{N}</code>). Flatpak smoke always uses the unstamped local path <strong>before</strong> rename. Manual Flatpak runs use Actions run title <strong><code>Build Flatpak (no release)</code></strong>; tag runs use <strong><code>Build Flatpak</code></strong>.</p>
+<h3 id="schema-compare-vs-last-official-release">Schema compare vs last official release</h3>
+<p><strong>Build Binaries</strong>, <strong>Build Flatpak</strong>, and <strong>Release</strong> start with a <strong><code>schema-release-compare</code></strong> job (<code>scripts/ci-schema-release-compare.mjs</code>) that:</p>
+<ol>
+<li>Labels <strong>Build Binaries</strong> / <strong>Build Flatpak (no release)</strong> runs as a <strong>test build</strong> (not an official release) in <code>$GITHUB_STEP_SUMMARY</code></li>
+<li>Compares this tree’s <code>CURRENT_SCHEMA_VERSION</code> to the last published (non-draft) GitHub Release tag</li>
+<li>Uploads <code>READ-ME-FIRST-test-build.md</code> (build) / <code>READ-ME-FIRST-flatpak.md</code> (flatpak) / <code>READ-ME-FIRST-schema.md</code> (release). <strong>Build Binaries</strong> stages the note into <code>release/</code> before platform uploads so <code>upload-artifact</code>’s least-common-ancestor stays under <code>release/</code> (mixing <code>release-warnings/</code> nests installers as <code>release/release/*.exe</code> and breaks <code>packaging-smoke</code>). Flatpak keeps a separate per-arch <code>flatpak-schema-warning-*</code> artifact beside the bundle</li>
+<li>Exposes <code>schema_bumped</code> / <code>curr_schema</code> / <code>prev_schema</code> / <code>prev_tag</code> for packaging</li>
+</ol>
+<p>When schema is bumped, packaging runs <code>scripts/write-schema-upgrade-notice.mjs</code> so Windows NSIS can show a MessageBox and macOS/Linux/Flatpak bundles can include <code>SCHEMA-UPGRADE.txt</code> in app resources (<code>electron-builder-before-pack.mjs</code> / Flatpak <code>resources/</code> copy).</p>
+<p>On first launch after a schema bump against an existing database, the app shows a blocking <strong>Quit / Upgrade</strong> dialog before mutating SQLite (see <a href="../release-process/#database-schema-upgrades">Release Process — Database schema upgrades</a>).</p>
+<p>Linux arm64 cross-builds on Ubuntu 24.04 runners use <code>scripts/ci-setup-linux-arm64-apt.sh</code> before <code>dpkg --add-architecture arm64</code>. The script pins <code>Architectures: amd64</code> only on deb822 stanzas in <code>ubuntu.sources</code> that lack an <code>Architectures</code> field, writes arm64 ports mirrors as deb822 <code>arm64.sources</code> (not legacy <code>.list</code>), and is idempotent across workflow re-runs.</p>
+<p>Reticulum sidecar staging before <code>electron-builder</code>:</p>
+<ul>
+<li><code>scripts/build-reticulum-sidecar-release.mjs</code> — compile/copy sidecar per target OS/arch</li>
+<li><code>scripts/verify-reticulum-sidecar-staged.mjs</code> — size/assert checks</li>
+<li><code>scripts/electron-builder-before-pack.mjs</code> — copy into <code>resources/reticulum-sidecar/</code></li>
+</ul>
+<p>Post-build smoke tests:</p>
+<h3 id="macos-packaging-verify-verify-mac-packagingmjs">macOS packaging verify (<code>verify-mac-packaging.mjs</code>)</h3>
+<ul>
+<li><strong><code>scripts/verify-mac-packaging.mjs</code></strong> — macOS packaging guard (runs after <code>dist:mac</code> / <code>dist:mac:publish</code> and in <code>packaging-smoke</code> on tag releases). Validates:</li>
+<li><strong><code>.dmg</code> and <code>.zip</code></strong> artifacts exist under <code>release/</code> with minimum size thresholds</li>
+<li>Bundle layout via <strong>direct <code>.app</code></strong> (local dist), <strong><code>ditto -xk</code> ZIP extract</strong> (CI artifact path — preserves symlinks), and <strong><code>hdiutil attach</code> DMG mount</strong></li>
+<li>DMG mount root includes an <strong><code>Applications</code> → <code>/Applications</code> symlink</strong> (drag-to-install layout from <code>electron-builder.yml</code> <code>dmg.contents</code>)</li>
+<li><strong>Electron Framework symlinks</strong> (<code>Versions/Current</code>, root <code>Electron Framework</code>) remain symlinks — <code>upload-artifact</code> dereferences them and breaks the bundle (~3× framework bloat)</li>
+<li>Thin <strong>MacOS launcher</strong> + full <strong>Electron Framework</strong> binary sizes; bundled <strong>Reticulum sidecar</strong> present</li>
+<li>CI uploads <strong>DMG/ZIP only</strong> — never raw <code>Mesh-client.app</code> (see comment in <code>release.yaml</code> <strong>Upload macOS Artifact</strong>)</li>
+<li>Optional signing env (<code>CSC_LINK</code>, <code>CSC_KEY_PASSWORD</code>, <code>APPLE_ID</code>, <code>APPLE_APP_SPECIFIC_PASSWORD</code>, <code>APPLE_TEAM_ID</code>, <code>CSC_IDENTITY_AUTO_DISCOVERY</code>) is passed through from workflow secrets on <code>macos-latest</code>; verify script does not require them</li>
+<li><code>scripts/test-linux-appimage-reticulum-sidecar.mjs</code> — x64 uses <code>--appimage-extract</code>; arm64 on x64 runners uses <code>unsquashfs</code> for cross-arch extract</li>
+<li><code>scripts/test-win-nsis-install.mjs</code> — NSIS + 7z sidecar probe on WoA</li>
+</ul>
+<p>Local packaging parity: see <a href="../development-environment/#reticulum-sidecar-optional">development-environment.md</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
