@@ -685,14 +685,14 @@ After **24 hours** of uptime, the main process logs periodic **long-session heal
 
 ### MQTT keeps disconnecting
 
-**Cause**: Wireless interference, broker downtime, token issues (LetsMesh/Colorado Mesh), or normal reconnect backoff after a failed attempt.
+**Cause**: Wireless interference, broker downtime, token issues (device-signing brokers: LetsMesh / MeshMapper / Colorado Mesh / Waev / Meshat.se / MeshCore.CA / EastMesh), or normal reconnect backoff after a failed attempt.
 
 **Fix**:
 
 - Check your WiFi/signal strength
 - Verify the broker is online
 - Expect **exponential reconnect backoff** (60s base, capped at 45 minutes per `src/shared/mqttReconnectSchedule.ts`); connack timeouts retry faster (~250ms)
-- For LetsMesh/Colorado Mesh: mesh-client refreshes JWT automatically when MeshCore identity is already cached (including after a successful MeshCore radio session). If you never imported identity and have not connected a MeshCore radio yet, import under **Radio** or use **Custom** credentials; if refresh still fails, try re-importing MeshCore config JSON to replace a corrupt cache
+- For device-signing brokers (LetsMesh / MeshMapper / Colorado Mesh / Waev / Meshat.se / MeshCore.CA / EastMesh): mesh-client refreshes the JWT automatically when MeshCore identity is already cached (including after a successful MeshCore radio session). If you never imported identity and have not connected a MeshCore radio yet, import under **Radio** or use **Custom** credentials; if refresh still fails, try re-importing MeshCore config JSON to replace a corrupt cache
 - Enable debug logs to see the disconnect reason
 
 ### MQTT connected but no messages from other nodes
@@ -701,9 +701,9 @@ After **24 hours** of uptime, the main process logs periodic **long-session heal
 
 **Fix**: Expected behavior for public brokers. For two-way MQTT, use a different broker or connect via BLE/Serial.
 
-### "Token expired" on LetsMesh/Colorado Mesh
+### "Token expired" on a device-signing broker
 
-**Cause**: JWT tokens expire after 1 hour.
+**Cause**: JWT tokens expire after 1 hour (LetsMesh / MeshMapper / Colorado Mesh / Waev / Meshat.se / MeshCore.CA / EastMesh). The JWT `aud` always matches the broker hostname you connect to.
 
 **Fix**: The client refreshes tokens proactively before expiry when identity is present. If you still see expiry errors, connect or re-import MeshCore so `public_key` / `private_key` are cached (Radio-tab JSON import, or automatic persistence after a successful MeshCore radio session). As a fallback, paste your `v1_<public key>` MQTT username and a manually generated token under **Custom** if your broker expects a different workflow.
 
@@ -1370,9 +1370,9 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Symptoms**: MeshCore MQTT preset worked before upgrade; broker connection fails on port **1883** or wrong topic.
 
-**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic. Malformed topic prefixes (not `meshcore/{IATA}` or `meshcore/test`) also block Connect on device-signing brokers.
+**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic. Malformed topic prefixes (not `meshcore/{IATA}` or `meshcore/test`) also block Connect on device-signing brokers. A **stale WebSocket path** blocks Connect too: LetsMesh / MeshMapper / Colorado use `/ws`, while Waev / Meshat.se / MeshCore.CA / EastMesh use `/mqtt` — a mismatch gives a clear "requires WebSocket path …" error plus the amber deviation banner.
 
-**Fix**: Re-select the preset on the Connection tab, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts` (port/topic repair + IATA shape normalize).
+**Fix**: Re-select the preset on the Connection tab (or, for MeshCore.CA/LetsMesh, click the broker/region toggle) to repair `wsPath`/`tlsEnabled`, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts` (port/topic repair + IATA shape normalize + preset reconcile).
 
 ### MeshCore Colorado Mesh one-time region prompt
 

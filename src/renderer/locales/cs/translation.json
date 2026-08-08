@@ -1276,8 +1276,8 @@
       "hasPrivateKey": "Auth token (formát meshcore-decoder) bude vygenerován, když se připojíte. Uživatelské jméno je v1_ plus váš 64místný veřejný klíč (hex). Publikum JWT odpovídá názvu hostitele serveru.",
       "noPrivateKey": "Žádná úplná identita – importujte svou konfiguraci MeshCore do panelu Rádio (veřejné a soukromé klíče) nebo vložte uživatelské jméno (v1_<veřejný klíč>) a token ručně. Publikum JWT v tokenu musí odpovídat názvu hostitele serveru.",
       "publicKeyMissing": "V identitě chybí veřejný klíč. Importujte svůj JSON konfigurace MeshCore na panelu Rádio (musí obsahovat veřejný a soukromý klíč) nebo vložte token zprostředkovatele do pole hesla.",
-      "usernameBuildFailed": "Uživatelské jméno LetsMesh se nepodařilo vytvořit. Importujte svůj konfigurační JSON MeshCore do panelu Rádio nebo vložte uživatelské jméno (v1_<veřejný klíč>) a token ručně.",
-      "noIdentity": "Nebyla nalezena žádná identita zařízení. Importujte svůj JSON konfigurace MeshCore na panelu Rádio nebo vložte uživatelské jméno a token ručně."
+      "noIdentity": "Nebyla nalezena žádná identita zařízení. Importujte svůj JSON konfigurace MeshCore na panelu Rádio nebo vložte uživatelské jméno a token ručně.",
+      "usernameBuildFailed": "Nelze vytvořit uživatelské jméno MeshCore MQTT. Importujte konfiguraci MeshCore JSON na panelu Rádio nebo vložte uživatelské jméno (v1_<public key>) a token ručně."
     },
     "meshcorePacketLogger": {
       "label": "Záznamník paketů – po připojení k rádiu a MQTT přepošle souhrny paketů RX do {{topic}} ve stejném tvaru JSON jako meshcoretomqtt. Ve výchozím nastavení vypnuto; povolit pouze v případě, že máte v úmyslu sdílet slyšený letový provoz s analyzátorem paketů."
@@ -1347,9 +1347,6 @@
       "disableShareAria": "Vypněte možnost Sdílet instanci a restartujte zásobník",
       "disableFailed": "Sdílení instance se nezdařilo vypnout."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh vyžaduje WebSocket transport.",
-    "letsMeshRequiresPort": "LetsMesh vyžaduje port {{port}}.",
-    "letsMeshKnownBrokersOnly": "Přednastavení LetsMesh /MeshMapper podporuje pouze známé makléře podepisující zařízení. Použít vlastní pro ostatní makléře.",
     "letsMeshUsernameV1Hex": "Uživatelské jméno musí být v1_ následované 64 hexadecimálními znaky (veřejný klíč).",
     "bleWeakSignalWarning": "Signál Bluetooth je slabý ({{rssi}} dBm). Přibližte se pro stabilní připojení.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1362,7 +1359,14 @@
     "meshcoreCaBroker": "Makléř MeshCore.CA",
     "meshcoreCaPrimary": "Primární",
     "meshcoreCaBackup": "Záloha",
-    "broker": "Makléř"
+    "broker": "Makléř",
+    "letsMeshRequiresTls": "Tato předvolba makléře vyžaduje TLS (wss). Povolit TLS nebo přepnout na vlastní.",
+    "letsMeshRequiresWsPath": "Tato předvolba makléře vyžaduje cestu WebSocket {{wsPath}}. Resetujte předvolbu nebo přepněte na vlastní.",
+    "letsMeshRegionUs": "U.S.A.",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "Tato předvolba makléře vyžaduje přenos WebSocket (wss).",
+    "letsMeshRequiresPort": "Tato předvolba makléře vyžaduje port {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Tato předvolba podporuje pouze známé veřejné makléře MeshCore MQTT. Přepnout na vlastní pro ostatní makléře."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

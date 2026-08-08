@@ -40,22 +40,33 @@ export const EASTMESH_HOST = 'mqtt2.eastmesh.au';
 /** @deprecated Use {@link LETSMESH_HOST_US} */
 export const LETSMESH_HOST = LETSMESH_HOST_US;
 
-/** All device-signing MQTT brokers (WebSocket TLS on 443, JWT auth). */
-const DEVICE_SIGNING_HOSTS = new Set([
-  LETSMESH_HOST_US,
-  LETSMESH_HOST_EU,
-  MESHMAPPER_HOST,
-  MESHMAPPER_HOST_LEGACY_CC,
-  COLORADO_MESH_HOST,
-  WAEV_HOST,
-  MESHATSE_HOST,
-  MESHCORE_CA_HOST_PRIMARY,
-  MESHCORE_CA_HOST_BACKUP,
-  EASTMESH_HOST,
-]);
+/**
+ * All device-signing MQTT brokers (WebSocket TLS on 443, JWT auth) mapped to their required
+ * WebSocket path. Single source of truth for both the host allowlist ({@link isLetsMeshSettings})
+ * and the expected `wsPath` ({@link deviceSigningWsPathForHost}) so the two never drift.
+ */
+const DEVICE_SIGNING_HOST_WS_PATHS: Record<string, '/ws' | '/mqtt'> = {
+  [LETSMESH_HOST_US]: '/ws',
+  [LETSMESH_HOST_EU]: '/ws',
+  [MESHMAPPER_HOST]: '/ws',
+  [MESHMAPPER_HOST_LEGACY_CC]: '/ws',
+  [COLORADO_MESH_HOST]: '/ws',
+  [WAEV_HOST]: '/mqtt',
+  [MESHATSE_HOST]: '/mqtt',
+  [MESHCORE_CA_HOST_PRIMARY]: '/mqtt',
+  [MESHCORE_CA_HOST_BACKUP]: '/mqtt',
+  [EASTMESH_HOST]: '/mqtt',
+};
+
+const DEVICE_SIGNING_HOSTS = new Set(Object.keys(DEVICE_SIGNING_HOST_WS_PATHS));
 
 export function isLetsMeshSettings(server: string): boolean {
   return DEVICE_SIGNING_HOSTS.has(server.trim());
+}
+
+/** Required WebSocket path for a device-signing broker host, or null when host is not device-signing. */
+export function deviceSigningWsPathForHost(server: string): '/ws' | '/mqtt' | null {
+  return DEVICE_SIGNING_HOST_WS_PATHS[server.trim()] ?? null;
 }
 
 /** Rewrite legacy MeshMapper `.cc` host to the canonical `.net` broker. */

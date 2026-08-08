@@ -1275,8 +1275,8 @@
       "hasPrivateKey": "Token autentikasi (format meshcore-decoder) akan dibuat saat Anda terhubung. Nama pengguna adalah v1_ ditambah kunci publik 64 karakter Anda (hex). Audiens JWT cocok dengan nama host Server.",
       "noPrivateKey": "Tidak ada identitas lengkap — impor konfigurasi MeshCore Anda di panel Radio (kunci publik dan pribadi), atau tempelkan nama pengguna (v1_<kunci publik>) dan beri token secara manual. Audiens JWT dalam token harus cocok dengan nama host Server.",
       "publicKeyMissing": "Kunci publik hilang dari identitas. Impor JSON konfigurasi MeshCore Anda di panel Radio (harus menyertakan kunci publik dan pribadi), atau tempelkan token broker di bidang kata sandi.",
-      "usernameBuildFailed": "Tidak dapat membuat nama pengguna LetsMesh. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempelkan nama pengguna (v1_<kunci publik>) dan beri token secara manual.",
-      "noIdentity": "Tidak ada identitas perangkat yang ditemukan. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempelkan nama pengguna dan token secara manual."
+      "noIdentity": "Tidak ada identitas perangkat yang ditemukan. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempelkan nama pengguna dan token secara manual.",
+      "usernameBuildFailed": "Tidak dapat membuat nama pengguna MQTT MeshCore. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempel nama pengguna (v1_<public key>) dan token secara manual."
     },
     "meshcorePacketLogger": {
       "label": "Pencatat paket — saat terhubung ke radio dan MQTT Anda, teruskan ringkasan paket RX ke {{topic}} dalam bentuk JSON yang sama dengan meshcoretomqtt. Mati secara default; hanya aktifkan jika Anda ingin berbagi lalu lintas udara yang didengar dengan penganalisis paket."
@@ -1345,9 +1345,6 @@
       "disableShareAria": "Nonaktifkan Bagikan instance dan mulai ulang tumpukan",
       "disableFailed": "Gagal menonaktifkan Bagikan instance."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh membutuhkan transportasi WebSocket.",
-    "letsMeshRequiresPort": "LetsMesh membutuhkan port {{port}}.",
-    "letsMeshKnownBrokersOnly": "Preset LetsMesh/ MeshMapper hanya mendukung broker penandatanganan perangkat yang dikenal. Gunakan Custom untuk broker lain.",
     "letsMeshUsernameV1Hex": "Nama pengguna harus v1_disusul oleh 64 karakter hex (kunci publik).",
     "bleWeakSignalWarning": "Sinyal Bluetooth lemah ({{rssi}} dBm). Bergerak lebih dekat untuk koneksi yang stabil.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "Broker MeshCore.CA",
     "meshcoreCaPrimary": "Primer",
     "meshcoreCaBackup": "Cadangan",
-    "broker": "Broker"
+    "broker": "Broker",
+    "letsMeshRequiresTls": "Prasetel broker ini membutuhkan TLS (wss). Aktifkan TLS atau beralih ke Kustom.",
+    "letsMeshRequiresWsPath": "Prasetel broker ini membutuhkan jalur WebSocket {{wsPath}}. Atur ulang preset atau beralih ke Kustom.",
+    "letsMeshRegionUs": "AS",
+    "letsMeshRegionEu": "UE",
+    "letsMeshRequiresWebSocket": "Prasetel broker ini membutuhkan transportasi WebSocket (wss).",
+    "letsMeshRequiresPort": "Prasetel broker ini membutuhkan port {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Preset ini hanya mendukung broker MQTT MeshCore publik yang dikenal. Beralih ke Custom untuk broker lain."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

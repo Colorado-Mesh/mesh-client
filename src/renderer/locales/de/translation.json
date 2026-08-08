@@ -1273,8 +1273,8 @@
       "hasPrivateKey": "Auth-Token (Meshcore-Decoder-Format) wird generiert, wenn Sie eine Verbindung herstellen. Der Benutzername ist v1_ plus Ihr 64-stelliger öffentlicher Schlüssel (hex). Die JWT-Zielgruppe entspricht dem Server-Hostnamen.",
       "noPrivateKey": "Keine vollständige Identität – importieren Sie Ihre MeshCore-Konfiguration im Radio-Panel (öffentliche und private Schlüssel) oder fügen Sie Benutzernamen (v1_<öffentlicher Schlüssel>) und Token manuell ein. Die JWT-Zielgruppe im Token muss mit dem Server-Hostnamen übereinstimmen.",
       "publicKeyMissing": "Öffentlicher Schlüssel fehlt in der Identität. Importieren Sie Ihre MeshCore-Konfigurations-JSON im Radio-Panel (muss öffentliche und private Schlüssel enthalten) oder fügen Sie ein Broker-Token in das Passwortfeld ein.",
-      "usernameBuildFailed": "Der LetsMesh-Benutzername konnte nicht erstellt werden. Importieren Sie Ihre MeshCore-Konfigurations-JSON in das Radio-Bedienfeld oder fügen Sie den Benutzernamen (v1_<öffentlicher Schlüssel>) und das Token manuell ein.",
-      "noIdentity": "Keine Geräteidentität gefunden. Importieren Sie Ihre MeshCore-Konfigurations-JSON in das Radio-Bedienfeld oder fügen Sie Benutzernamen und Token manuell ein."
+      "noIdentity": "Keine Geräteidentität gefunden. Importieren Sie Ihre MeshCore-Konfigurations-JSON in das Radio-Bedienfeld oder fügen Sie Benutzernamen und Token manuell ein.",
+      "usernameBuildFailed": "Der MeshCore MQTT-Benutzername konnte nicht erstellt werden. Importieren Sie Ihre MeshCore-Konfiguration json in das Radio-Panel oder fügen Sie den Benutzernamen (v1_<public key>) und das Token manuell ein."
     },
     "meshcorePacketLogger": {
       "label": "Paketlogger – wenn Sie mit Ihrem Radio und MQTT verbunden sind, leiten Sie RX-Paketzusammenfassungen an {{topic}} in derselben JSON-Form wie meshcoretomqtt weiter. Standardmäßig deaktiviert; Aktivieren Sie diese Funktion nur, wenn Sie den abgehörten Flugverkehr mit einem Paketanalysator teilen möchten."
@@ -1345,9 +1345,6 @@
       "disableShareAria": "Deaktivieren Sie die Share-Instanz und starten Sie den Stack neu",
       "disableFailed": "Fehler beim Deaktivieren der Share-Instanz."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh erfordert WebSocket-Transport.",
-    "letsMeshRequiresPort": "LetsMesh erfordert Port {{port}}.",
-    "letsMeshKnownBrokersOnly": "Die LetsMesh /MeshMapper-Voreinstellung unterstützt nur bekannte Gerätesignatur-Broker. Verwenden Sie Custom für andere Broker.",
     "letsMeshUsernameV1Hex": "Der Benutzername muss v1_ gefolgt von 64 Hexadezimalzeichen (öffentlicher Schlüssel) sein.",
     "bleWeakSignalWarning": "Bluetooth-Signal ist schwach ({{rssi}} dBm). Nähern Sie sich für eine stabile Verbindung.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "MeshCore.CA Broker",
     "meshcoreCaPrimary": "Hauptversicherter",
     "meshcoreCaBackup": "Backup",
-    "broker": "Makler"
+    "broker": "Makler",
+    "letsMeshRequiresTls": "Diese Broker-Voreinstellung erfordert TLS (wss). Aktivieren Sie TLS oder wechseln Sie zu Benutzerdefiniert.",
+    "letsMeshRequiresWsPath": "Diese Broker-Voreinstellung erfordert WebSocket-Pfad {{wsPath}}. Setzen Sie die Voreinstellung zurück oder wechseln Sie zu Benutzerdefiniert.",
+    "letsMeshRegionUs": "USA",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "Diese Broker-Voreinstellung erfordert WebSocket-Transport (wss).",
+    "letsMeshRequiresPort": "Diese Broker-Voreinstellung erfordert Port {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Diese Voreinstellung unterstützt nur bekannte öffentliche MeshCore MQTT-Broker. Wechseln Sie für andere Broker zu Benutzerdefiniert."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

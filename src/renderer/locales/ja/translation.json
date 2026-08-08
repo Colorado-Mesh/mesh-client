@@ -1275,8 +1275,8 @@
       "hasPrivateKey": "接続時に認証トークン(meshcore-decoder形式)が生成されます。ユーザー名は v1_ に 64 文字の公開キー (16 進数) を加えたものです。 JWT オーディエンスはサーバーのホスト名と一致します。",
       "noPrivateKey": "完全な ID なし — MeshCore 設定を Radio パネル (公開キーと秘密キー) にインポートするか、ユーザー名 (v1_<公開キー>) とトークンを手動で貼り付けます。トークン内の JWT オーディエンスはサーバーのホスト名と一致する必要があります。",
       "publicKeyMissing": "ID に公開キーがありません。 [Radio] パネルに MeshCore 構成 JSON をインポートするか (公開キーと秘密キーを含める必要があります)、パスワード フィールドにブローカー トークンを貼り付けます。",
-      "usernameBuildFailed": "LetsMesh ユーザー名を構築できませんでした。 MeshCore 設定 JSON を [Radio] パネルにインポートするか、ユーザー名 (v1_<public key>) とトークンを手動で貼り付けます。",
-      "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。"
+      "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。",
+      "usernameBuildFailed": "MeshCore MQTTユーザー名を作成できませんでした。Radioパネルで MeshCore 設定JSONをインポートするか、ユーザー名（v1_<public key>）とトークンを手動で貼り付けてください。"
     },
     "meshcorePacketLogger": {
       "label": "パケット ロガー — 無線および MQTT に接続すると、RX パケットの概要を Meshcoretomqtt と同じ JSON 形式で {{topic}} に転送します。デフォルトではオフです。聞いた航空交通量をパケット アナライザーと共有する場合にのみ有効にします。"
@@ -1345,9 +1345,6 @@
       "disableShareAria": "共有インスタンスをオフにして、スタックを再起動します",
       "disableFailed": "共有インスタンスをオフにできませんでした。"
     },
-    "letsMeshRequiresWebSocket": "LetsMeshにはWebSocketトランスポートが必要です。",
-    "letsMeshRequiresPort": "LetsMeshにはポート{{port}}が必要です。",
-    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapperプリセットは、既知のデバイス署名ブローカーのみをサポートします。他のブローカーにはカスタムを使用します。",
     "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。",
     "bleWeakSignalWarning": "Bluetooth信号が弱い（ {{rssi}} dBm ）。安定した接続のために近づいてください。",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "MeshCore.CAブローカー",
     "meshcoreCaPrimary": "第一",
     "meshcoreCaBackup": "バックアップ",
-    "broker": "ブローカー"
+    "broker": "ブローカー",
+    "letsMeshRequiresTls": "このブローカープリセットにはTLS （ wss ）が必要です。TLSを有効にするか、カスタムに切り替えます。",
+    "letsMeshRequiresWsPath": "このブローカープリセットには、WebSocketパス{{wsPath}}が必要です。プリセットをリセットするか、カスタムに切り替えます。",
+    "letsMeshRegionUs": "US",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "このブローカープリセットには、WebSocketトランスポート（ WSS ）が必要です。",
+    "letsMeshRequiresPort": "このブローカープリセットにはポート{{port}} (WebSocket TLS)が必要です。",
+    "letsMeshKnownBrokersOnly": "このプリセットは、既知のパブリックMeshCore MQTTブローカーのみをサポートします。他のブローカーの場合はカスタムに切り替えます。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

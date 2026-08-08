@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   COLORADO_MESH_PORT_MIGRATION_KEY,
+  COLORADO_MQTT_REGION_ACK_KEY,
   LEGACY_MQTT_SETTINGS_KEY,
   MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY,
   MESHCORE_MQTT_SETTINGS_KEY,
   MESHCORE_TOPIC_IATA_MIGRATION_KEY,
   MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY,
+  meshcoreMqttNeedsColoradoRegionAck,
   MESHMAPPER_HOST_LEGACY_CC,
   MESHMAPPER_HOST_NET_MIGRATION_KEY,
   runConnectionPanelStorageMigrations,
@@ -340,5 +342,36 @@ describe('runConnectionPanelStorageMigrations', () => {
       server?: string;
     };
     expect(parsed.server).toBe(MESHMAPPER_HOST);
+  });
+});
+
+describe('meshcoreMqttNeedsColoradoRegionAck', () => {
+  it('is false once the region ack key is set', () => {
+    localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    expect(meshcoreMqttNeedsColoradoRegionAck()).toBe(false);
+  });
+
+  it('is true for the Colorado preset before the gate is answered', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    expect(meshcoreMqttNeedsColoradoRegionAck()).toBe(true);
+  });
+
+  it('is true when a custom preset points at the Colorado host', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({ server: COLORADO_MESH_HOST, topicPrefix: 'meshcore/DEN', port: 443 }),
+    );
+    expect(meshcoreMqttNeedsColoradoRegionAck()).toBe(true);
+  });
+
+  it('is false for a non-Colorado device-signing preset', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({ server: LETSMESH_HOST_US, topicPrefix: 'meshcore/test', port: 443 }),
+    );
+    expect(meshcoreMqttNeedsColoradoRegionAck()).toBe(false);
   });
 });

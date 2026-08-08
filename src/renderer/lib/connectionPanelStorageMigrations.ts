@@ -7,6 +7,7 @@ import {
 } from './letsMeshJwt';
 import {
   applyMeshcoreMqttPreset,
+  DEVICE_SIGNING_MESHCORE_PRESETS,
   MESHCORE_MQTT_PRESET_STORAGE_KEY,
   type MeshcoreMqttPreset,
   meshcoreMqttPresetFields,
@@ -34,15 +35,7 @@ export function meshcoreMqttNeedsColoradoRegionAck(): boolean {
   return readMeshcoreMqttSettingsFromStorage().server.trim() === COLORADO_MESH_HOST;
 }
 
-const PRESET_RECONCILE_PRESETS = new Set<MeshcoreMqttPreset>([
-  'letsmesh',
-  'coloradomesh',
-  'meshmapper',
-  'waev',
-  'meshatse',
-  'meshcoreca',
-  'eastmesh',
-]);
+const PRESET_RECONCILE_PRESETS = DEVICE_SIGNING_MESHCORE_PRESETS;
 
 function meshcorePresetFieldsDiffer(preset: MeshcoreMqttPreset, settings: MQTTSettings): boolean {
   const fields = meshcoreMqttPresetFields(preset, settings);

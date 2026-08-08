@@ -806,9 +806,11 @@
   "connectionPanel": {
     "maxReconnectAttempts": "Max MQTT reconnect attempts",
     "letsMeshRegion": "LetsMesh region",
-    "letsMeshRequiresWebSocket": "LetsMesh requires WebSocket transport.",
-    "letsMeshRequiresPort": "LetsMesh requires port {{port}}.",
-    "letsMeshKnownBrokersOnly": "LetsMesh / MeshMapper preset only supports known device-signing brokers. Use Custom for other brokers.",
+    "letsMeshRequiresWebSocket": "This broker preset requires WebSocket transport (wss).",
+    "letsMeshRequiresPort": "This broker preset requires port {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "This preset only supports known public MeshCore MQTT brokers. Switch to Custom for other brokers.",
+    "letsMeshRequiresTls": "This broker preset requires TLS (wss). Enable TLS or switch to Custom.",
+    "letsMeshRequiresWsPath": "This broker preset requires WebSocket path {{wsPath}}. Reset the preset or switch to Custom.",
     "letsMeshUsernameV1Hex": "Username must be v1_ followed by 64 hex characters (public key).",
     "ripplePresetConfirm": "The Ripple preset uses shared community credentials and disables TLS certificate verification. Only use this on a trusted network. Continue?",
     "coloradoPresetConfirm": "Colorado Mesh MQTT is for Colorado-area mesh users. The preset publishes under meshcore/DEN (Denver IATA). If you are not in Colorado, use LetsMesh or MeshMapper instead. Continue?",
@@ -857,6 +859,8 @@
     "quit": "Quit",
     "networkPreset": "Network Preset",
     "region": "Region",
+    "letsMeshRegionUs": "US",
+    "letsMeshRegionEu": "EU",
     "port": "Port",
     "useWebSocket": "Use WebSocket transport",
     "wsRequired": "(required for port 443)",
@@ -1297,16 +1301,16 @@
       "letsmesh": "LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.",
       "coloradomesh": "Colorado Mesh needs WebSocket on port 443 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.",
       "meshmapper": "MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.net. Reset the preset or switch to Custom for other brokers.",
-      "waev": "Waev needs WebSocket on port 443 with TLS enabled, server mqtt.waev.app. Reset the preset or switch to Custom for other brokers.",
-      "meshatse": "Meshat.se needs WebSocket on port 443 with TLS enabled, server meshcore-mqtt.meshat.se. Reset the preset or switch to Custom for other brokers.",
-      "meshcoreca": "MeshCore.CA needs WebSocket on port 443 with TLS enabled, server mqtt1.meshcore.ca or mqtt2.meshcore.ca. Use Broker (Primary/Backup), or switch to Custom for other brokers.",
-      "eastmesh": "EastMesh needs WebSocket on port 443 with TLS enabled, server mqtt2.eastmesh.au. Reset the preset or switch to Custom for other brokers."
+      "waev": "Waev needs WebSocket on port 443 with TLS enabled, server mqtt.waev.app, path /mqtt. Reset the preset or switch to Custom for other brokers.",
+      "meshatse": "Meshat.se needs WebSocket on port 443 with TLS enabled, server meshcore-mqtt.meshat.se, path /mqtt. Reset the preset or switch to Custom for other brokers.",
+      "meshcoreca": "MeshCore.CA needs WebSocket on port 443 with TLS enabled, server mqtt1.meshcore.ca or mqtt2.meshcore.ca, path /mqtt. Use Broker (Primary/Backup), or switch to Custom for other brokers.",
+      "eastmesh": "EastMesh needs WebSocket on port 443 with TLS enabled, server mqtt2.eastmesh.au, path /mqtt. Reset the preset or switch to Custom for other brokers."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.",
       "noPrivateKey": "No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.",
       "publicKeyMissing": "Public key missing from identity. Import your MeshCore config JSON in the Radio panel (must include public and private keys), or paste a broker token in the password field.",
-      "usernameBuildFailed": "Could not build LetsMesh username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.",
+      "usernameBuildFailed": "Could not build the MeshCore MQTT username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.",
       "noIdentity": "No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually."
     },
     "meshcorePacketLogger": {

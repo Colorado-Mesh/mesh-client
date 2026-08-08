@@ -1275,8 +1275,8 @@
       "hasPrivateKey": "Bağlandığınızda kimlik doğrulama jetonu (meshcore-kod çözücü formatı) oluşturulacaktır. Kullanıcı adı v1_ artı 64 karakterlik genel anahtarınızdan (onaltılık) oluşur. JWT izleyicisi Sunucu ana bilgisayar adıyla eşleşir.",
       "noPrivateKey": "Tam kimlik yok — MeshCore yapılandırmanızı Radyo paneline (genel ve özel anahtarlar) içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın. Belirteçteki JWT hedef kitlesi, Sunucu ana bilgisayar adıyla eşleşmelidir.",
       "publicKeyMissing": "Kimlikte genel anahtar eksik. MeshCore config JSON'unuzu Radyo paneline içe aktarın (genel ve özel anahtarlar içermelidir) veya şifre alanına bir aracı belirteci yapıştırın.",
-      "usernameBuildFailed": "LetsMesh kullanıcı adı oluşturulamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın.",
-      "noIdentity": "Cihaz kimliği bulunamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını ve belirteci manuel olarak yapıştırın."
+      "noIdentity": "Cihaz kimliği bulunamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını ve belirteci manuel olarak yapıştırın.",
+      "usernameBuildFailed": "MeshCore MQTT kullanıcı adı oluşturulamadı. MeshCore yapılandırma JSON'unuzu Radyo panelinden içe aktarın veya kullanıcı adını (v1_<public key>) ve belirteci manuel olarak yapıştırın."
     },
     "meshcorePacketLogger": {
       "label": "Paket kaydedici — radyonuza ve MQTT'nize bağlandığında, RX paket özetlerini meshcoretomqtt ile aynı JSON biçiminde {{topic}}'ye iletin. Varsayılan olarak kapalı; yalnızca duyulan hava trafiğini bir paket analizörüyle paylaşmak istiyorsanız etkinleştirin."
@@ -1345,9 +1345,6 @@
       "disableShareAria": "Paylaşım örneğini kapat ve yığını yeniden başlat",
       "disableFailed": "Paylaşım örneği kapatılamadı."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh, WebSocket taşımacılığı gerektirir.",
-    "letsMeshRequiresPort": "LetsMesh, {{port}} numaralı bağlantı noktasını gerektirir.",
-    "letsMeshKnownBrokersOnly": "LetsMesh /MeshMapper ön ayarı yalnızca bilinen cihaz imzalama aracılarını destekler. Diğer brokerler için Özel'i kullanın.",
     "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır.",
     "bleWeakSignalWarning": "Bluetooth sinyali zayıf ({{rssi}} dBm). Sabit bir bağlantı için yaklaşın.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "MeshCore.CA brokeri",
     "meshcoreCaPrimary": "Birincil",
     "meshcoreCaBackup": "Yedekleme",
-    "broker": "Aracı Kurum"
+    "broker": "Aracı Kurum",
+    "letsMeshRequiresTls": "Bu broker ön ayarı TLS (wss) gerektirir. TLS'yi etkinleştirin veya Özel'e geçin.",
+    "letsMeshRequiresWsPath": "Bu aracı kurum ön ayarı WebSocket yolu {{wsPath}} gerektirir. Ön ayarı sıfırlayın veya Özel'e geçin.",
+    "letsMeshRegionUs": "ABD",
+    "letsMeshRegionEu": "AB",
+    "letsMeshRequiresWebSocket": "Bu broker ön ayarı WebSocket taşımacılığı (wss) gerektirir.",
+    "letsMeshRequiresPort": "Bu aracı kurum ön ayarı {{port}} (WebSocket TLS) bağlantı noktasını gerektirir.",
+    "letsMeshKnownBrokersOnly": "Bu ön ayar yalnızca bilinen genel MeshCore MQTT brokerlerini destekler. Diğer brokerler için Özel'e geçin."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -323,6 +323,64 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/^Port$/i).value).toBe('443');
   });
 
+  function renderLetsMeshMeshcorePanel() {
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+  }
+
+  it('normalizes an IATA topic prefix on blur without leaving the preset', async () => {
+    const user = userEvent.setup();
+    renderLetsMeshMeshcorePanel();
+
+    const topic = screen.getByLabelText<HTMLInputElement>(/^Topic Prefix$/i);
+    await user.clear(topic);
+    await user.type(topic, 'meshcore/den');
+    fireEvent.blur(topic);
+
+    expect(topic.value).toBe('meshcore/DEN');
+    expect(screen.getByRole('combobox', { name: 'Network Preset' })).toHaveValue('letsmesh');
+  });
+
+  it('disables Connect and flags an invalid IATA topic prefix', async () => {
+    const user = userEvent.setup();
+    renderLetsMeshMeshcorePanel();
+
+    const topic = screen.getByLabelText<HTMLInputElement>(/^Topic Prefix$/i);
+    await user.clear(topic);
+    await user.type(topic, 'meshcore/zzzz');
+
+    expect(topic).toHaveAttribute('aria-invalid', 'true');
+    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
+    const connectBtn = within(mqttCard as HTMLElement).getByRole('button', { name: 'Connect' });
+    expect(connectBtn).toBeDisabled();
+  });
+
   it('offers MeshCore.CA Primary/Backup broker toggle that switches the server', async () => {
     const user = userEvent.setup();
     localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
@@ -439,6 +497,48 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Switch to LetsMesh' }));
     expect(localStorage.getItem('mesh-client:coloradoMqttRegionAck-v1')).toBe('1');
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
+    expect(
+      screen.queryByRole('alertdialog', { name: 'Colorado Mesh MQTT' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps Colorado Mesh when the region gate is acknowledged with Stay', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+        password: '',
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Colorado Mesh MQTT' });
+    await user.click(within(dialog).getByRole('button', { name: 'I am in Colorado' }));
+    expect(localStorage.getItem('mesh-client:coloradoMqttRegionAck-v1')).toBe('1');
+    expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('coloradomesh');
+    expect(screen.getByLabelText(/^Server$/i)).toHaveValue('mqtt.meshcore.coloradomesh.org');
     expect(
       screen.queryByRole('alertdialog', { name: 'Colorado Mesh MQTT' }),
     ).not.toBeInTheDocument();

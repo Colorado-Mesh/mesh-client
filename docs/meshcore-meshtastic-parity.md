@@ -219,20 +219,22 @@ When MeshCore firmware/SDK defines official MQTT topics and payloads, replace or
 
 ## MeshCore MQTT Authentication
 
-### LetsMesh JWT authentication
+### Device-signing JWT authentication
 
-LetsMesh uses WebSocket (`wss`) with JWT authentication. The implementation matches [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker):
+The **LetsMesh**, **MeshMapper**, **Colorado Mesh**, **Waev**, **Meshat.se**, **MeshCore.CA**, and **EastMesh** presets all use WebSocket (`wss`) with the same device-signed JWT authentication (Custom settings pointed at those hosts use it too). The implementation matches [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker):
 
 - **MQTT username**: `v1_<64-hex public key>` (uppercase hex)
 - **MQTT password**: A token from `@michaelhart/meshcore-decoder` `createAuthToken` with:
   - `publicKey`: 64-character hex public key
   - `iat`: Issued-at timestamp
   - `exp`: Expiration timestamp
-  - JWT `aud` (audience): The **regional broker hostname** (same as the Server field)
+  - JWT `aud` (audience): The **broker hostname you connect to** (same as the Server field), via `letsMeshJwtAudience()`
 
-The JWT audience must match the regional broker hostname (`mqtt-us-v1.letsmesh.net` or `mqtt-eu-v1.letsmesh.net`).
+The JWT audience always matches the connect hostname — e.g. `mqtt-us-v1.letsmesh.net`, `mqtt.waev.app`, `mqtt1.meshcore.ca`. The broker allowlist and each broker's WebSocket path (`/ws` for LetsMesh/MeshMapper/Colorado, `/mqtt` for Waev/Meshat.se/MeshCore.CA/EastMesh) live together in [`letsMeshJwt.ts`](../src/renderer/lib/letsMeshJwt.ts) (`DEVICE_SIGNING_HOST_WS_PATHS`); connect/deviation guards enforce port 443, TLS, and the expected `wsPath` in [`letsMeshConnectionGuards.ts`](../src/renderer/lib/letsMeshConnectionGuards.ts).
 
 Signing uses cached **private key** material from either a **Radio**-tab MeshCore JSON import or **automatic persistence** after a successful MeshCore radio session (same storage shape as import).
+
+On upgrade, the legacy MeshMapper host `mqtt.meshmapper.cc` is rewritten to `mqtt.meshmapper.net` (TLS on `.cc` fails with alert 80) by [`connectionPanelStorageMigrations.ts`](../src/renderer/lib/connectionPanelStorageMigrations.ts).
 
 ### Configuration
 

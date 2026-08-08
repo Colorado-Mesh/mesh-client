@@ -1,5 +1,5 @@
 import { isLetsMeshSettings } from './letsMeshJwt';
-import type { MeshcoreMqttPreset } from './meshcoreMqttPresets';
+import { DEVICE_SIGNING_MESHCORE_PRESETS, type MeshcoreMqttPreset } from './meshcoreMqttPresets';
 import type { MQTTSettings } from './types';
 
 /** i18n key used when an IATA-scoped MeshCore topic prefix is malformed. */
@@ -19,22 +19,12 @@ export interface MeshcoreIataTopicPrefixParseErr {
 export type MeshcoreIataTopicPrefixParseResult =
   MeshcoreIataTopicPrefixParseOk | MeshcoreIataTopicPrefixParseErr;
 
-const IATA_SCOPED_PRESETS = new Set<MeshcoreMqttPreset>([
-  'letsmesh',
-  'coloradomesh',
-  'meshmapper',
-  'waev',
-  'meshatse',
-  'meshcoreca',
-  'eastmesh',
-]);
-
 /** Presets / device-signing hosts that expect `meshcore/{IATA}` or `meshcore/test`. */
 export function isIataScopedMeshcoreMqtt(
   preset: MeshcoreMqttPreset | null | undefined,
   settings: Pick<MQTTSettings, 'server'> | null | undefined,
 ): boolean {
-  if (preset && IATA_SCOPED_PRESETS.has(preset)) return true;
+  if (preset && DEVICE_SIGNING_MESHCORE_PRESETS.has(preset)) return true;
   const server = settings?.server.trim() ?? '';
   return server.length > 0 && isLetsMeshSettings(server);
 }

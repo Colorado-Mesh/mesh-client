@@ -1275,8 +1275,8 @@
       "hasPrivateKey": "连接时将生成身份验证令牌（meshcore-decoder 格式）。用户名是 v1_ 加上您的 64 字符公钥（十六进制）。 JWT 受众与服务器主机名匹配。",
       "noPrivateKey": "没有完整的身份 - 在无线电面板中导入您的 MeshCore 配置（公钥和私钥），或手动粘贴用户名 (v1_<公钥>) 和令牌。令牌中的 JWT 受众必须与服务器主机名匹配。",
       "publicKeyMissing": "身份中缺少公钥。在无线电面板中导入 MeshCore 配置 JSON（必须包括公钥和私钥），或将代理令牌粘贴到密码字段中。",
-      "usernameBuildFailed": "无法构建 LetsMesh 用户名。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名 (v1_<public key>) 和令牌。",
-      "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。"
+      "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。",
+      "usernameBuildFailed": "无法构建MeshCore MQTT用户名。在Radio面板中导入您的MeshCore配置JSON ，或<public key>手动粘贴用户名(v1_)和令牌。"
     },
     "meshcorePacketLogger": {
       "label": "数据包记录器 — 当连接到无线电和 MQTT 时，将 RX 数据包摘要转发到 {{topic}}，其 JSON 形状与 meshcoretomqtt 相同。默认关闭；仅当您打算与数据包分析器共享听到的空中交通时才启用。"
@@ -1345,9 +1345,6 @@
       "disableShareAria": "关闭共享实例并重新启动堆栈",
       "disableFailed": "无法关闭共享实例。"
     },
-    "letsMeshRequiresWebSocket": "LetsMesh需要WebSocket传输。",
-    "letsMeshRequiresPort": "LetsMesh需要端口{{port}}。",
-    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper预设仅支持已知的设备签名代理。对其他经纪商使用自定义。",
     "letsMeshUsernameV1Hex": "用户名必须为v1_后跟64个十六进制字符（公钥）。",
     "bleWeakSignalWarning": "蓝牙信号弱（ {{rssi}} dBm ）。靠近一点，以获得稳定的连接。",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "MeshCore.CA代理",
     "meshcoreCaPrimary": "首先",
     "meshcoreCaBackup": "后援",
-    "broker": "经纪商"
+    "broker": "经纪商",
+    "letsMeshRequiresTls": "此Broker预设需要TLS (wss)。启用TLS或切换到自定义。",
+    "letsMeshRequiresWsPath": "此Broker预设需要WebSocket路径{{wsPath}}。重置预设或切换到“自定义”。",
+    "letsMeshRegionUs": "美国",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "此Broker预设需要WebSocket传输(wss)。",
+    "letsMeshRequiresPort": "此代理预设需要端口{{port}} （ WebSocket TLS ）。",
+    "letsMeshKnownBrokersOnly": "此预设仅支持已知的公共MeshCore MQTT代理。对于其他经纪商，请切换到自定义。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

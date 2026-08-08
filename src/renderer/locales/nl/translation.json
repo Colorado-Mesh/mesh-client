@@ -1274,8 +1274,8 @@
       "hasPrivateKey": "Auth-token (meshcore-decoder-indeling) wordt gegenereerd wanneer u verbinding maakt. De gebruikersnaam is v1_ plus uw openbare sleutel van 64 tekens (hexadecimaal). JWT-doelgroep komt overeen met de hostnaam van de server.",
       "noPrivateKey": "Geen volledige identiteit: importeer uw MeshCore-configuratie in het Radio-paneel (openbare en privésleutels), of plak de gebruikersnaam (v1_<openbare sleutel>) en token handmatig. JWT-doelgroep in het token moet overeenkomen met de hostnaam van de server.",
       "publicKeyMissing": "Openbare sleutel ontbreekt in identiteit. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel (moet openbare en privésleutels bevatten) of plak een makelaartoken in het wachtwoordveld.",
-      "usernameBuildFailed": "Kon LetsMesh-gebruikersnaam niet opbouwen. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam (v1_<openbare sleutel>) en het token handmatig.",
-      "noIdentity": "Geen apparaatidentiteit gevonden. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam en het token handmatig."
+      "noIdentity": "Geen apparaatidentiteit gevonden. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam en het token handmatig.",
+      "usernameBuildFailed": "Kon de MeshCore MQTT-gebruikersnaam niet aanmaken. Importeer uw MeshCore config JSON in het radiopaneel of plak gebruikersnaam (v1_<public key>) en token handmatig."
     },
     "meshcorePacketLogger": {
       "label": "Pakketlogger: wanneer verbonden met uw radio en MQTT, stuurt u RX-pakketsamenvattingen door naar {{topic}} in dezelfde JSON-vorm als meshcoretomqtt. Standaard uitgeschakeld; alleen inschakelen als u van plan bent om gehoord luchtverkeer te delen met een pakketanalysator."
@@ -1345,9 +1345,6 @@
       "disableShareAria": "Schakel de instantie Delen uit en start de stapel opnieuw",
       "disableFailed": "Kan de instantie Delen niet uitschakelen."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh vereist WebSocket transport.",
-    "letsMeshRequiresPort": "LetsMesh vereist poort {{port}}.",
-    "letsMeshKnownBrokersOnly": "LetsMesh / MeshMapper preset ondersteunt alleen bekende apparaatondertekenende makelaars. Gebruik Aangepast voor andere makelaars.",
     "letsMeshUsernameV1Hex": "Gebruikersnaam moet v1_zijn, gevolgd door 64 hexadecimale tekens (openbare sleutel).",
     "bleWeakSignalWarning": "Bluetooth-signaal is zwak ({{rssi}} dBm). Kom dichterbij voor een stabiele verbinding.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "MeshCore.CA-makelaar",
     "meshcoreCaPrimary": "Primair",
     "meshcoreCaBackup": "Back-up",
-    "broker": "Makelaar:"
+    "broker": "Makelaar:",
+    "letsMeshRequiresTls": "Deze makelaarspreset vereist TLS (wss). Schakel TLS in of schakel over naar Aangepast.",
+    "letsMeshRequiresWsPath": "Deze makelaarspreset vereist WebSocket-pad {{wsPath}}. Reset de voorinstelling of schakel over naar Aangepast.",
+    "letsMeshRegionUs": "US",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "Deze broker preset vereist WebSocket transport (wss).",
+    "letsMeshRequiresPort": "Deze makelaarspreset vereist poort {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Deze preset ondersteunt alleen bekende openbare MeshCore MQTT-makelaars. Schakel over naar Aangepast voor andere makelaars."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

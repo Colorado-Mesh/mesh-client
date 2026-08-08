@@ -1274,8 +1274,8 @@
       "hasPrivateKey": "Le jeton d'authentification (format meshcore-decoder) sera généré lors de votre connexion. Le nom d'utilisateur est v1_ plus votre clé publique de 64 caractères (hexadécimal). L'audience JWT correspond au nom d'hôte du serveur.",
       "noPrivateKey": "Pas d'identité complète : importez votre configuration MeshCore dans le panneau Radio (clés publiques et privées) ou collez le nom d'utilisateur (v1_<clé publique>) et le jeton manuellement. L'audience JWT dans le jeton doit correspondre au nom d'hôte du serveur.",
       "publicKeyMissing": "Clé publique manquante dans l'identité. Importez votre JSON de configuration MeshCore dans le panneau Radio (doit inclure des clés publiques et privées) ou collez un jeton de courtier dans le champ du mot de passe.",
-      "usernameBuildFailed": "Impossible de créer le nom d'utilisateur LetsMesh. Importez votre configuration JSON MeshCore dans le panneau Radio ou collez le nom d'utilisateur (v1_<public key>) et le jeton manuellement.",
-      "noIdentity": "Aucune identité d'appareil trouvée. Importez votre configuration JSON MeshCore dans le panneau Radio ou collez le nom d'utilisateur et le jeton manuellement."
+      "noIdentity": "Aucune identité d'appareil trouvée. Importez votre configuration JSON MeshCore dans le panneau Radio ou collez le nom d'utilisateur et le jeton manuellement.",
+      "usernameBuildFailed": "Impossible de construire le nom d'utilisateur MeshCore MQTT. Importez votre configuration MeshCore JSON dans le panneau Radio ou collez<public key> manuellement le nom d'utilisateur (v1_) et le jeton."
     },
     "meshcorePacketLogger": {
       "label": "Enregistreur de paquets — lorsqu'il est connecté à votre radio et à MQTT, transférez les résumés des paquets RX à {{topic}} dans la même forme JSON que meshcoretomqtt. Désactivé par défaut ; activez-la uniquement si vous avez l'intention de partager le trafic aérien entendu avec un analyseur de paquets."
@@ -1345,9 +1345,6 @@
       "disableShareAria": "Désactiver l'instance de partage et redémarrer la pile",
       "disableFailed": "Impossible de désactiver l'instance de partage."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh nécessite le transport WebSocket.",
-    "letsMeshRequiresPort": "LetsMesh nécessite le port {{port}}.",
-    "letsMeshKnownBrokersOnly": "Le préréglage LetsMesh/ MeshMapper ne prend en charge que les courtiers de signature d'appareils connus. Utilisez Personnalisé pour les autres courtiers.",
     "letsMeshUsernameV1Hex": "Le nom d'utilisateur doit être v1_ suivi de 64 caractères hexadécimaux (clé publique).",
     "bleWeakSignalWarning": "Le signal Bluetooth est faible ({{rssi}} dBm). Rapprochez-vous pour une connexion stable.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1360,7 +1357,14 @@
     "meshcoreCaBroker": "Courtier MeshCore.CA",
     "meshcoreCaPrimary": "Principal bénéficiaire",
     "meshcoreCaBackup": "Sauvegarde",
-    "broker": "Mandant /"
+    "broker": "Mandant /",
+    "letsMeshRequiresTls": "Ce préréglage de courtier nécessite TLS (wss). Activez TLS ou passez à Personnalisé.",
+    "letsMeshRequiresWsPath": "Ce préréglage de courtier nécessite le chemin WebSocket {{wsPath}}. Réinitialisez le préréglage ou passez à Personnalisé.",
+    "letsMeshRegionUs": "États-Unis",
+    "letsMeshRegionEu": "UE",
+    "letsMeshRequiresWebSocket": "Ce préréglage de courtier nécessite le transport WebSocket (wss).",
+    "letsMeshRequiresPort": "Ce préréglage de courtier nécessite le port {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Ce préréglage ne prend en charge que les courtiers MeshCore MQTT publics connus. Passez à Personnalisé pour les autres courtiers."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
