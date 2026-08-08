@@ -4193,7 +4193,8 @@
       "known": "已知的",
       "pending": "等待中",
       "unknown": "未知",
-      "online": "在线"
+      "online": "在线",
+      "loading": "加载中…"
     },
     "syncIdentityUnknown": "传播节点身份未知 - 等待公告或路径响应，然后重试。",
     "syncTargetNotPropagationNode": "该目的地在 Reticulum 上可到达，但不是 LXMF 传播节点（TCP 集线器仅是传输路径）。添加一个声明为 lxmf.propagation 的目标来同步离线消息。",
@@ -4250,7 +4251,9 @@
     "syncStarting": "开始同步",
     "syncLocalSettled": "已与本地收件箱同步。",
     "modeHelpOff": "关闭：不支持传播节点。任何同步和离线消息都不会存放在任何传播节点上。首选节点保持保存但未使用，直到您选择“自动”或“手动”。",
-    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地收件箱。"
+    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地收件箱。",
+    "syncNoTarget": "没有可用的传播节点—没有发现任何节点，并且您没有添加任何节点。一旦可用，同步将自行运行。",
+    "syncLocalLoading": "本地传播节点仍在加载其存储的消息。同步完成后自行运行。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

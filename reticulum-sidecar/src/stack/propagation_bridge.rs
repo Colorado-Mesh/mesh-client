@@ -129,6 +129,15 @@ impl PropagationBridge {
         });
     }
 
+    /// True while the background messagestore load has not produced a terminal result.
+    /// Non-blocking counterpart of [`Self::wait_messagestore_loaded`] for status reads.
+    pub fn messagestore_load_pending(&self) -> bool {
+        self.messagestore_result
+            .lock()
+            .map(|guard| guard.is_none())
+            .unwrap_or(true)
+    }
+
     /// Wait until background messagestore load has finished; returns the stored terminal result.
     pub async fn wait_messagestore_loaded(&self) -> Result<(), String> {
         loop {

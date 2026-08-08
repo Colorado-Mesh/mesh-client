@@ -4193,7 +4193,8 @@
       "known": "bekend",
       "pending": "in behandeling",
       "unknown": "onbekend",
-      "online": "online"
+      "online": "online",
+      "loading": "Aan het laden…"
     },
     "syncIdentityUnknown": "De identiteit van het voortplantingsknooppunt is onbekend: wacht op een aankondiging of padreactie en probeer het vervolgens opnieuw.",
     "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Synchronisatie aan het starten",
     "syncLocalSettled": "Gesynchroniseerd met lokale inbox.",
     "modeHelpOff": "Uit: geen ondersteuning voor propagatieknooppunten. Niets synchroniseert en offline berichten worden niet gedeponeerd op een propagatieknooppunt. Een voorkeursknooppunt blijft opgeslagen maar ongebruikt totdat u Auto of Handmatig kiest.",
-    "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens de lokale inbox."
+    "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens de lokale inbox.",
+    "syncNoTarget": "Er is nog geen propagatieknooppunt beschikbaar — er is er geen ontdekt en u hebt geen toegevoegde knooppunten. Sync draait op zichzelf zodra er een beschikbaar is.",
+    "syncLocalLoading": "Het lokale propagatieknooppunt laadt nog steeds de opgeslagen berichten. Sync draait op zichzelf zodra het klaar is."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

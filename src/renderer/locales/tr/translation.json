@@ -4193,7 +4193,8 @@
       "known": "bilinen",
       "pending": "askıda olması",
       "unknown": "bilinmiyor",
-      "online": "çevrimiçi"
+      "online": "çevrimiçi",
+      "loading": "yükleniyor"
     },
     "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
     "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Eşitleme başlatılıyor",
     "syncLocalSettled": "Yerel gelen kutusuyla senkronize edildi.",
     "modeHelpOff": "Kapalı: Yayılma düğümü desteği yok. Hiçbir şey senkronize edilmez ve çevrimdışı mesajlar herhangi bir yayılma düğümüne yatırılmaz. Tercih edilen bir düğüm, Otomatik veya Manuel'i seçene kadar kaydedilmiş ancak kullanılmamış olarak kalır.",
-    "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel gelen kutusu denenir."
+    "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel gelen kutusu denenir.",
+    "syncNoTarget": "Henüz yayılma düğümü mevcut değil — hiçbiri keşfedilmedi ve ek düğümünüz yok. Senkronizasyon, hazır olur olmaz kendi kendine çalışır.",
+    "syncLocalLoading": "Yerel yayılım düğümü hala depolanan mesajlarını yüklemektedir. Senkronizasyon bittiğinde kendi kendine çalışır."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

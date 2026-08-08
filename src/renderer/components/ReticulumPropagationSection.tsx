@@ -37,6 +37,7 @@ const PROPAGATION_NODE_STATUS_KEYS = new Set([
   'active',
   'idle',
   'known',
+  'loading',
   'pending',
   'unknown',
   'online',
@@ -313,6 +314,7 @@ export default function ReticulumPropagationSection({
       >
         {nodes.map((node) => {
           const isLocal = node.id === 'local-prop';
+          const isLoading = node.status === 'loading';
           const isRenaming = renamingId === node.id;
           return (
             <li
@@ -413,7 +415,8 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  disabled={sync.active || syncStarting || mode === 'off'}
+                  // Local inbox cannot settle until its messagestore finishes loading.
+                  disabled={sync.active || syncStarting || mode === 'off' || isLoading}
                   onClick={() => {
                     handleSyncNow(node.id);
                   }}

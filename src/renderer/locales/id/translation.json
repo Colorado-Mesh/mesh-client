@@ -4193,7 +4193,8 @@
       "known": "diketahui",
       "pending": "tertunda",
       "unknown": "tidak dikenal",
-      "online": "online"
+      "online": "online",
+      "loading": "sedang memuat"
     },
     "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
     "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Memulai sinkronisasi",
     "syncLocalSettled": "Disinkronkan dengan kotak masuk lokal.",
     "modeHelpOff": "Mati: tidak ada dukungan simpul propagasi. Tidak ada sinkronisasi dan pesan offline yang tidak disimpan pada simpul propagasi apa pun. Simpul Pilihan tetap disimpan tetapi tidak digunakan sampai Anda memilih Otomatis atau Manual.",
-    "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, lalu kotak masuk lokal."
+    "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, lalu kotak masuk lokal.",
+    "syncNoTarget": "Belum ada simpul propagasi yang tersedia — tidak ada yang ditemukan, dan Anda tidak memiliki simpul tambahan. Sinkronisasi berjalan sendiri segera setelah tersedia.",
+    "syncLocalLoading": "Simpul propagasi lokal masih memuat pesan yang disimpan. Sinkronisasi berjalan sendiri setelah selesai."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

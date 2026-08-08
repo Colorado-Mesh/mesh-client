@@ -508,6 +508,30 @@ describe('ReticulumPropagationSection', () => {
     ).toBeDisabled();
   });
 
+  it('shows the local inbox as loading and blocks its Sync until the store is read', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      nodes: [
+        {
+          id: 'local-prop',
+          name: 'Host propagation node',
+          enabled: false,
+          status: 'loading',
+          hops: 0,
+        },
+      ],
+    });
+    render(<ReticulumPropagationSection embedded />);
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+
+    expect(screen.getByText(/reticulumPropagation\.nodeStatus\.loading/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'reticulumPropagation.syncNowFor:Host propagation node',
+      }),
+    ).toBeDisabled();
+  });
+
   it('Manual without Preferred syncs the closest added remote', async () => {
     const user = userEvent.setup();
     const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);

@@ -4193,7 +4193,8 @@
       "known": "conhecido",
       "pending": "pendente",
       "unknown": "desconhecido",
-      "online": "on-line"
+      "online": "on-line",
+      "loading": "Carregando..."
     },
     "syncIdentityUnknown": "A identidade do nó de propagação é desconhecida — aguarde um anúncio ou resposta do caminho e tente novamente.",
     "syncTargetNotPropagationNode": "Esse destino pode ser alcançado no Reticulum, mas não é um nó de propagação LXMF (os hubs TCP são apenas caminhos de transporte). Adicione um destino anunciado como lxmf.propagation para sincronizar mensagens offline.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Iniciando sincronização",
     "syncLocalSettled": "Sincronizado com a caixa de entrada local.",
     "modeHelpOff": "Desligado: sem suporte de nó de propagação. Nada é sincronizado e as mensagens offline não são depositadas em nenhum nó de propagação. Um nó Preferred permanece salvo, mas não usado, até que você escolha Auto ou Manual.",
-    "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, a caixa de entrada local."
+    "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, a caixa de entrada local.",
+    "syncNoTarget": "Nenhum nó de propagação está disponível ainda — nenhum foi descoberto e você não tem nós adicionados. A sincronização é executada por conta própria assim que uma estiver disponível.",
+    "syncLocalLoading": "O nó de propagação local ainda está carregando suas mensagens armazenadas. A sincronização é executada por conta própria quando termina."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

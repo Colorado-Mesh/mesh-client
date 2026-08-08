@@ -4195,7 +4195,8 @@
       "known": "známý",
       "pending": "čeká na vyřízení",
       "unknown": "neznámý",
-      "online": "online"
+      "online": "online",
+      "loading": "načítání..."
     },
     "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
     "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation.",
@@ -4252,7 +4253,9 @@
     "syncStarting": "Spuštění synchronizace",
     "syncLocalSettled": "Synchronizováno s místní doručenou poštou.",
     "modeHelpOff": "Vypnuto: žádná podpora propagačního uzlu. Nic se nesynchronizuje a offline zprávy nejsou uloženy v žádném propagačním uzlu. Upřednostňovaný uzel zůstane uložený, ale nepoužitý, dokud nevyberete možnost Automaticky nebo Ručně.",
-    "modeHelpManual": "Příručka: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud se to nepodaří, jsou vyzkoušeny další přidané uzly, pak místní doručená pošta."
+    "modeHelpManual": "Příručka: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud se to nepodaří, jsou vyzkoušeny další přidané uzly, pak místní doručená pošta.",
+    "syncNoTarget": "Zatím není k dispozici žádný propagační uzel — žádný nebyl objeven a nemáte žádné přidané uzly. Synchronizace se spustí sama, jakmile je k dispozici.",
+    "syncLocalLoading": "Lokální propagační uzel stále načítá uložené zprávy. Jakmile synchronizace skončí, spustí se sama."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

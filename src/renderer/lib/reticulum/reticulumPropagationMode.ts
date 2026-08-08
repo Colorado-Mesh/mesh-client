@@ -111,6 +111,31 @@ export function hasEnabledLocalPropagationNode(nodes: PropagationNodeRow[]): boo
   return nodes.some((n) => n.id === 'local-prop' && n.enabled);
 }
 
+/**
+ * True when the local inbox is enabled but the sidecar is still reading its messagestore
+ * (`status: 'loading'`). Serving — and therefore sync — is deferred until that finishes.
+ */
+export function isLocalPropagationLoading(nodes: PropagationNodeRow[]): boolean {
+  return nodes.some((n) => n.id === 'local-prop' && n.status === 'loading');
+}
+
+/**
+ * True when this mode has anything to sync with: Auto may use a discovered node, both
+ * Auto and Manual may use an added remote or the enabled local inbox. Off never syncs.
+ */
+export function hasPropagationCascadeCandidate(
+  mode: ReticulumPropagationMode,
+  nodes: PropagationNodeRow[],
+  discovered: readonly DiscoveredPropagationRow[] = [],
+): boolean {
+  if (mode === 'off') return false;
+  return (
+    (mode === 'auto' && listDiscoveredPropagationTargets(nodes, discovered).length > 0) ||
+    listConfiguredRemotePropagationIds(nodes).length > 0 ||
+    hasEnabledLocalPropagationNode(nodes)
+  );
+}
+
 export function pickAutoPropagationTarget(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[] = [],

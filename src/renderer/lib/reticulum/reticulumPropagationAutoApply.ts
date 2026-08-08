@@ -1,5 +1,6 @@
 import {
   hasEnabledLocalPropagationNode,
+  isLocalPropagationLoading,
   listConfiguredRemotePropagationIds,
   listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
@@ -12,16 +13,44 @@ import {
 /** Cap Auto discovered one-time sync attempts so a long failure chain cannot hang Sync. */
 const MAX_DISCOVERED_SYNC_ATTEMPTS = 3;
 
+/** No discovered PN, no reachable configured remote, and no usable local inbox. */
+export const PROPAGATION_SYNC_NO_TARGET_KEY = 'reticulumPropagation.syncNoTarget';
+/** Local inbox is enabled but its messagestore is still loading, so it cannot settle yet. */
+export const PROPAGATION_SYNC_LOCAL_LOADING_KEY = 'reticulumPropagation.syncLocalLoading';
+
 const DESTINATION_HASH_RE = /^[0-9a-fA-F]{32}$/;
 
-async function startSyncId(id: string): Promise<boolean> {
+/** Tracks whether any node was actually contacted, so a real error is never overwritten. */
+interface CascadeAttempts {
+  any: boolean;
+}
+
+async function startSyncId(id: string, attempts: CascadeAttempts): Promise<boolean> {
+  attempts.any = true;
   return useReticulumPropagationStore.getState().startSync(id);
 }
 
-async function tryLocalSettleIfEnabled(): Promise<boolean> {
+/**
+ * Nothing was reachable. When no node was contacted at all, replace the generic
+ * "node may be unreachable" error with why there was no target in the first place.
+ */
+function finishWithoutTarget(attempts: CascadeAttempts): boolean {
+  if (attempts.any) return false;
   const { nodes } = useReticulumPropagationStore.getState();
-  if (!hasEnabledLocalPropagationNode(nodes)) return false;
-  return startSyncId('local-prop');
+  useReticulumPropagationStore
+    .getState()
+    .setLastSyncError(
+      isLocalPropagationLoading(nodes)
+        ? PROPAGATION_SYNC_LOCAL_LOADING_KEY
+        : PROPAGATION_SYNC_NO_TARGET_KEY,
+    );
+  return false;
+}
+
+async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boolean> {
+  const { nodes } = useReticulumPropagationStore.getState();
+  if (!hasEnabledLocalPropagationNode(nodes)) return finishWithoutTarget(attempts);
+  return startSyncId('local-prop', attempts);
 }
 
 /**
@@ -69,12 +98,13 @@ export async function startPropagationSyncCascade(opts?: {
   const state = useReticulumPropagationStore.getState();
   const { nodes, preferredId, discovered } = state;
   const first = opts?.firstTargetId ?? null;
+  const attempts: CascadeAttempts = { any: false };
 
   if (mode === 'auto') {
     const hasInterfaces =
       opts?.hasEnabledInterfaces ?? (await fetchHasEnabledReticulumInterfaces());
     if (!hasInterfaces) {
-      return tryLocalSettleIfEnabled();
+      return tryLocalSettleIfEnabled(attempts);
     }
 
     const triedHashes = new Set<string>();
@@ -87,7 +117,7 @@ export async function startPropagationSyncCascade(opts?: {
       if (readReticulumPropagationMode() !== 'auto') return false;
       const hash = target.destinationHash.toLowerCase();
       triedHashes.add(hash);
-      if (await startSyncId(hash)) return true;
+      if (await startSyncId(hash, attempts)) return true;
     }
 
     for (const id of listConfiguredRemotePropagationIds(
@@ -96,10 +126,10 @@ export async function startPropagationSyncCascade(opts?: {
       const row = useReticulumPropagationStore.getState().nodes.find((n) => n.id === id);
       const hash = row?.destination_hash?.toLowerCase();
       if (hash != null && triedHashes.has(hash)) continue;
-      if (await startSyncId(id)) return true;
+      if (await startSyncId(id, attempts)) return true;
     }
 
-    return tryLocalSettleIfEnabled();
+    return tryLocalSettleIfEnabled(attempts);
   }
 
   // Manual: explicit first target → Preferred → picked remote → other remotes → local.
@@ -111,13 +141,13 @@ export async function startPropagationSyncCascade(opts?: {
         : (listConfiguredRemotePropagationIds(nodes).at(0) ?? null);
 
   if (seed === 'local-prop' || seed == null) {
-    return tryLocalSettleIfEnabled();
+    return tryLocalSettleIfEnabled(attempts);
   }
 
   const tried = new Set<string>([seed]);
   const seedHash = propagationTargetHash(nodes, seed);
   if (seedHash) tried.add(seedHash);
-  if (await startSyncId(seed)) return true;
+  if (await startSyncId(seed, attempts)) return true;
 
   for (const id of listConfiguredRemotePropagationIds(
     useReticulumPropagationStore.getState().nodes,
@@ -129,10 +159,10 @@ export async function startPropagationSyncCascade(opts?: {
     if (rowHash && tried.has(rowHash)) continue;
     tried.add(id);
     if (rowHash) tried.add(rowHash);
-    if (await startSyncId(id)) return true;
+    if (await startSyncId(id, attempts)) return true;
   }
 
-  return tryLocalSettleIfEnabled();
+  return tryLocalSettleIfEnabled(attempts);
 }
 
 /**

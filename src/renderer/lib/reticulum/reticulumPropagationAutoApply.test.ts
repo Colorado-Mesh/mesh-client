@@ -4,6 +4,8 @@ import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropaga
 
 import {
   ensurePreferredThenStartSync,
+  PROPAGATION_SYNC_LOCAL_LOADING_KEY,
+  PROPAGATION_SYNC_NO_TARGET_KEY,
   startPropagationSyncCascade,
 } from './reticulumPropagationAutoApply';
 import {
@@ -252,6 +254,62 @@ describe('reticulumPropagationAutoApply', () => {
     await expect(ensurePreferredThenStartSync('pn-aabb1111')).resolves.toBe(false);
     await expect(ensurePreferredThenStartSync('local-prop')).resolves.toBe(false);
     expect(startSync).not.toHaveBeenCalled();
+  });
+
+  it('Auto with nothing available reports no target instead of an unreachable node', async () => {
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'idle' }],
+      discovered: [],
+      preferredId: null,
+      lastSyncError: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(startSync).not.toHaveBeenCalled();
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      PROPAGATION_SYNC_NO_TARGET_KEY,
+    );
+  });
+
+  it('Auto reports the local inbox as loading while its messagestore is read', async () => {
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'loading' }],
+      discovered: [],
+      preferredId: null,
+      lastSyncError: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(startSync).not.toHaveBeenCalled();
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      PROPAGATION_SYNC_LOCAL_LOADING_KEY,
+    );
+  });
+
+  it('keeps the real sync error when a node was actually contacted', async () => {
+    const startSync = vi.fn().mockImplementation(() => {
+      useReticulumPropagationStore.setState({
+        lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
+      });
+      return Promise.resolve(false);
+    });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: false, status: 'idle' },
+        { id: 'pn-aabb1111', name: 'Remote', enabled: true, status: 'known', hops: 2 },
+      ],
+      discovered: [],
+      preferredId: null,
+      lastSyncError: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncEstablishNoLinkProof',
+    );
   });
 
   it('honors persisted Auto mode key', () => {

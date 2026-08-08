@@ -6,6 +6,8 @@ import type {
 } from '@/renderer/stores/reticulumPropagationStore';
 
 import {
+  hasPropagationCascadeCandidate,
+  isLocalPropagationLoading,
   pickAutoPropagationNodeId,
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
@@ -53,6 +55,39 @@ describe('reticulumPropagationMode', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('reports no cascade candidate for a fresh stack with a loading local inbox', () => {
+    const loadingLocal = [
+      row({ id: 'local-prop', name: 'Local', enabled: false, status: 'loading' }),
+    ];
+    expect(hasPropagationCascadeCandidate('auto', loadingLocal, [])).toBe(false);
+    expect(hasPropagationCascadeCandidate('manual', loadingLocal, [])).toBe(false);
+
+    // Announce lands → Auto has a discovered target; Manual still has nothing.
+    const found = [discovered({ destination_hash: 'ab'.repeat(16), hops: 1 })];
+    expect(hasPropagationCascadeCandidate('auto', loadingLocal, found)).toBe(true);
+    expect(hasPropagationCascadeCandidate('manual', loadingLocal, found)).toBe(false);
+
+    // Local inbox finishes loading → both modes can settle locally.
+    const servingLocal = [row({ id: 'local-prop', name: 'Local', status: 'active' })];
+    expect(hasPropagationCascadeCandidate('auto', servingLocal, [])).toBe(true);
+    expect(hasPropagationCascadeCandidate('manual', servingLocal, [])).toBe(true);
+    expect(hasPropagationCascadeCandidate('off', servingLocal, found)).toBe(false);
+  });
+
+  it('detects the local inbox still loading its messagestore', () => {
+    expect(
+      isLocalPropagationLoading([row({ id: 'local-prop', name: 'Local', enabled: false })]),
+    ).toBe(false);
+    expect(
+      isLocalPropagationLoading([
+        row({ id: 'local-prop', name: 'Local', enabled: false, status: 'loading' }),
+      ]),
+    ).toBe(true);
+    expect(
+      isLocalPropagationLoading([row({ id: 'pn-a', name: 'Remote', status: 'loading' })]),
+    ).toBe(false);
   });
 
   it('defaults to off when nothing is persisted', () => {

@@ -4531,6 +4531,7 @@
       "active": "active",
       "idle": "idle",
       "known": "known",
+      "loading": "loading…",
       "pending": "pending",
       "unknown": "unknown",
       "online": "online"
@@ -4554,6 +4555,8 @@
     "syncStatusNegotiating": "Negotiating sync with propagation node…",
     "syncStatusTransferring": "Transferring messages from propagation node…",
     "syncFailed": "Propagation sync failed — the node may be unreachable.",
+    "syncNoTarget": "No propagation node is available yet — none has been discovered, and you have no added nodes. Sync runs on its own as soon as one is available.",
+    "syncLocalLoading": "The local propagation node is still loading its stored messages. Sync runs on its own once it finishes.",
     "syncOutboundBusy": "Propagation sync deferred — an outbound message is depositing to this node.",
     "syncTimedOut": "Propagation sync timed out — the node may be unreachable.",
     "syncLocalNotSupported": "The local host propagation node cannot be synced over the network like a remote LXMF propagation node.",

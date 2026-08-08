@@ -86,6 +86,37 @@ pub use types::{
 const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
 const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
 
+/// Live view of the local propagation node for the `local-prop` list row.
+#[cfg(feature = "rns-stack")]
+struct LocalPropagationStats {
+    count: usize,
+    bytes: usize,
+    /// Router is serving the local PN (deferred until the messagestore finishes loading).
+    serving: bool,
+    /// Background messagestore load has not finished yet.
+    load_pending: bool,
+    hash: String,
+}
+
+/// Status label for the `local-prop` row.
+///
+/// `loading` distinguishes "enabled but the messagestore is still being read from disk"
+/// from a user-disabled node, so the renderer can say so instead of reporting a sync failure.
+#[cfg(any(feature = "rns-stack", test))]
+fn local_propagation_status(
+    serving: bool,
+    load_pending: bool,
+    persisted_enabled: bool,
+) -> &'static str {
+    if serving {
+        return "active";
+    }
+    if load_pending && persisted_enabled {
+        return "loading";
+    }
+    "idle"
+}
+
 /// Parse Columba register-known inputs and require dest == LXMF delivery hash of the key.
 #[cfg(feature = "rns-stack")]
 fn validated_known_identity_key(
@@ -1252,8 +1283,13 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         let local_stats = if let Some(live) = self.live.get() {
             let (count, bytes) = live.propagation_local_stats();
-            let serving = live.propagation_is_local_serving();
-            Some((count, bytes, serving, live.propagation_local_hash()))
+            Some(LocalPropagationStats {
+                count,
+                bytes,
+                serving: live.propagation_is_local_serving(),
+                load_pending: live.propagation_messagestore_load_pending(),
+                hash: live.propagation_local_hash(),
+            })
         } else {
             None
         };
@@ -1273,28 +1309,31 @@ impl StackHandle {
                 });
                 #[cfg(feature = "rns-stack")]
                 if p.id == "local-prop" {
-                    if let Some((count, bytes, serving, hash)) = &local_stats {
+                    if let Some(stats) = &local_stats {
                         if let Some(obj) = row.as_object_mut() {
                             obj.insert(
                                 "message_count".into(),
-                                serde_json::Value::Number((*count).into()),
+                                serde_json::Value::Number(stats.count.into()),
                             );
                             obj.insert(
                                 "storage_bytes".into(),
-                                serde_json::Value::Number((*bytes).into()),
+                                serde_json::Value::Number(stats.bytes.into()),
                             );
-                            obj.insert("enabled".into(), serde_json::Value::Bool(*serving));
+                            obj.insert("enabled".into(), serde_json::Value::Bool(stats.serving));
                             obj.insert(
                                 "status".into(),
-                                if *serving {
-                                    serde_json::Value::String("active".into())
-                                } else {
-                                    serde_json::Value::String("idle".into())
-                                },
+                                serde_json::Value::String(
+                                    local_propagation_status(
+                                        stats.serving,
+                                        stats.load_pending,
+                                        p.enabled,
+                                    )
+                                    .into(),
+                                ),
                             );
                             obj.insert(
                                 "destination_hash".into(),
-                                serde_json::Value::String(hash.clone()),
+                                serde_json::Value::String(stats.hash.clone()),
                             );
                         }
                     }
@@ -3377,6 +3416,17 @@ mod tests {
         std::fs::create_dir_all(&config).expect("config dir");
         std::fs::create_dir_all(&storage).expect("storage dir");
         (config, storage)
+    }
+
+    #[test]
+    fn local_propagation_status_reports_loading_only_while_enabled_and_unloaded() {
+        assert_eq!(local_propagation_status(true, false, true), "active");
+        // Serving wins even if a later load is still pending.
+        assert_eq!(local_propagation_status(true, true, true), "active");
+        assert_eq!(local_propagation_status(false, true, true), "loading");
+        // Disabled by the user — not loading, just off.
+        assert_eq!(local_propagation_status(false, true, false), "idle");
+        assert_eq!(local_propagation_status(false, false, true), "idle");
     }
 
     #[test]

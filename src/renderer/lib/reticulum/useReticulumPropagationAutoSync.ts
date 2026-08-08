@@ -2,9 +2,7 @@ import { useEffect } from 'react';
 
 import { startPropagationSyncCascade } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import {
-  hasEnabledLocalPropagationNode,
-  listConfiguredRemotePropagationIds,
-  listDiscoveredPropagationTargets,
+  hasPropagationCascadeCandidate,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -80,23 +78,26 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
     // Re-push the mode so a restarted sidecar gates its outbound PN cascade the same way.
     void useReticulumPropagationStore.getState().setModeOnSidecar(readReticulumPropagationMode());
 
+    const cascadeCandidate = (mode: ReticulumPropagationMode): boolean => {
+      const { nodes, discovered } = useReticulumPropagationStore.getState();
+      return hasPropagationCascadeCandidate(mode, nodes, discovered);
+    };
+
     const tick = async () => {
       const mode = readReticulumPropagationMode();
+      // Nothing to sync with yet (fresh stack: no announces, local messagestore still
+      // loading). Re-read the sidecar so Auto/Manual recover on a later tick.
+      if (mode !== 'off' && !cascadeCandidate(mode)) {
+        await useReticulumPropagationStore.getState().refreshFromSidecar();
+      }
+
       const {
         autoSyncIntervalSec,
         preferredId,
-        nodes,
-        discovered,
         sync,
         lastPropagationSyncAt,
         lastPropagationSyncAttemptAt,
       } = useReticulumPropagationStore.getState();
-
-      // Manual never syncs a discovered-only node; it picks from configured remotes or local.
-      const hasCascadeCandidate =
-        (mode === 'auto' && listDiscoveredPropagationTargets(nodes, discovered).length > 0) ||
-        listConfiguredRemotePropagationIds(nodes).length > 0 ||
-        hasEnabledLocalPropagationNode(nodes);
 
       if (
         !shouldRunPropagationAutoSync({
@@ -107,7 +108,7 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
           lastPropagationSyncAttemptAt,
           nowMs: Date.now(),
           mode,
-          hasCascadeCandidate,
+          hasCascadeCandidate: cascadeCandidate(mode),
         })
       ) {
         return;

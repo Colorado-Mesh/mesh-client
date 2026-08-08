@@ -4193,7 +4193,8 @@
       "known": "conocido",
       "pending": "pendiente",
       "unknown": "desconocido",
-      "online": "en línea"
+      "online": "en línea",
+      "loading": "cargando"
     },
     "syncIdentityUnknown": "Se desconoce la identidad del nodo de propagación: espere un anuncio o una respuesta de ruta y vuelva a intentarlo.",
     "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Iniciando sincronización",
     "syncLocalSettled": "Sincronizado con la bandeja de entrada local.",
     "modeHelpOff": "Apagado: sin soporte de nodo de propagación. Nada se sincroniza y los mensajes sin conexión no se depositan en ningún nodo de propagación. Un nodo preferido permanece guardado pero sin usar hasta que elija Auto o Manual.",
-    "modeHelpManual": "Manual: sincroniza su nodo preferido o elige el nodo añadido más cercano para esa sincronización cuando no se prefiere ninguno. Si falla, se prueban los otros nodos añadidos, luego la bandeja de entrada local."
+    "modeHelpManual": "Manual: sincroniza su nodo preferido o elige el nodo añadido más cercano para esa sincronización cuando no se prefiere ninguno. Si falla, se prueban los otros nodos añadidos, luego la bandeja de entrada local.",
+    "syncNoTarget": "Todavía no hay ningún nodo de propagación disponible; no se ha descubierto ninguno y no tiene nodos añadidos. Sync se ejecuta por sí solo tan pronto como uno está disponible.",
+    "syncLocalLoading": "El nodo de propagación local todavía está cargando sus mensajes almacenados. La sincronización se ejecuta por sí sola una vez que termina."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

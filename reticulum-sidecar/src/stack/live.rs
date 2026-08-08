@@ -3729,6 +3729,11 @@ impl LiveBridge {
         self.propagation.wait_messagestore_loaded().await
     }
 
+    /// True while the local PN messagestore is still loading (serve is deferred until then).
+    pub fn propagation_messagestore_load_pending(&self) -> bool {
+        self.propagation.messagestore_load_pending()
+    }
+
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.

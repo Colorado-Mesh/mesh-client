@@ -4193,7 +4193,8 @@
       "known": "conosciuto",
       "pending": "in attesa",
       "unknown": "sconosciuto",
-      "online": "in linea"
+      "online": "in linea",
+      "loading": "caricamento ..."
     },
     "syncIdentityUnknown": "L'identità del nodo di propagazione è sconosciuta: attendi un annuncio o una risposta sul percorso, quindi riprova.",
     "syncTargetNotPropagationNode": "Quella destinazione è raggiungibile su Reticulum ma non è un nodo di propagazione LXMF (gli hub TCP sono solo percorsi di trasporto). Aggiungi una destinazione annunciata come lxmf.propagation per sincronizzare i messaggi offline.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Avvio sincronizzazione",
     "syncLocalSettled": "Sincronizzato con la casella di posta locale.",
     "modeHelpOff": "OFF: nessun supporto del nodo di propagazione. Nulla si sincronizza e i messaggi offline non vengono depositati su alcun nodo di propagazione. Un nodo preferito rimane salvato ma inutilizzato fino a quando non si sceglie Auto o Manuale.",
-    "modeHelpManual": "Manuale: sincronizza il tuo nodo preferito o sceglie il nodo aggiunto più vicino per quella sincronizzazione quando nessuno è preferito. Se fallisce, vengono provati gli altri nodi aggiunti, quindi la casella di posta locale."
+    "modeHelpManual": "Manuale: sincronizza il tuo nodo preferito o sceglie il nodo aggiunto più vicino per quella sincronizzazione quando nessuno è preferito. Se fallisce, vengono provati gli altri nodi aggiunti, quindi la casella di posta locale.",
+    "syncNoTarget": "Nessun nodo di propagazione è ancora disponibile: nessuno è stato rilevato e non sono stati aggiunti nodi. La sincronizzazione viene eseguita da sola non appena ne è disponibile una.",
+    "syncLocalLoading": "Il nodo di propagazione locale sta ancora caricando i suoi messaggi memorizzati. La sincronizzazione viene eseguita da sola al termine."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Scoperta RMAP v4",

@@ -4193,7 +4193,8 @@
       "known": "bekannt",
       "pending": "ausstehend",
       "unknown": "unbekannt",
-      "online": "online"
+      "online": "online",
+      "loading": "Wird geladen..."
     },
     "syncIdentityUnknown": "Die Identität des Ausbreitungsknotens ist unbekannt – warten Sie auf eine Ankündigung oder eine Pfadantwort und versuchen Sie es dann erneut.",
     "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren.",
@@ -4250,7 +4251,9 @@
     "syncStarting": "Synchronisierung wird gestartet",
     "syncLocalSettled": "Synchronisiert mit dem lokalen Posteingang.",
     "modeHelpOff": "Aus: keine Unterstützung für Ausbreitungsknoten. Nichts synchronisiert und Offline-Nachrichten werden auf keinem Ausbreitungsknoten abgelegt. Ein bevorzugter Knoten bleibt gespeichert, aber nicht verwendet, bis Sie Auto oder Manuell wählen.",
-    "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn dies fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Posteingang."
+    "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn dies fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Posteingang.",
+    "syncNoTarget": "Es ist noch kein Ausbreitungsknoten verfügbar — keiner wurde entdeckt und Sie haben keine zusätzlichen Knoten hinzugefügt. Sync läuft von selbst, sobald eines verfügbar ist.",
+    "syncLocalLoading": "Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung läuft von selbst, sobald sie abgeschlossen ist."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",
