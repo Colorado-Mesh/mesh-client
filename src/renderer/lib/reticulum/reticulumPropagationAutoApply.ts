@@ -44,6 +44,8 @@ function finishWithoutTarget(attempts: CascadeAttempts): boolean {
         ? PROPAGATION_SYNC_LOCAL_LOADING_KEY
         : PROPAGATION_SYNC_NO_TARGET_KEY,
     );
+  // No node was called, so nothing may be named alongside this error.
+  useReticulumPropagationStore.getState().setSyncTargetId(null);
   return false;
 }
 

@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "No hay ningún nodo de propagación configurado. {{count}} descubierta en la red: añade una a continuación o abre Configuración de red.",
       "addClosest": "Añade el más cercano descubierto",
-      "addClosestAria": "Añada el nodo de propagación descubierto más cercano y configúrelo como preferido"
+      "addClosestAria": "Añada el nodo de propagación descubierto más cercano y configúrelo como preferido",
+      "dismiss": "No volver a mostrar",
+      "dismissAria": "Dejar de mostrar el recordatorio del nodo de propagación en el chat"
     },
     "rename": "Renombrar",
     "renameLabel": "Nombre del nodo de propagación",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "Apagado: sin soporte de nodo de propagación. Nada se sincroniza y los mensajes sin conexión no se depositan en ningún nodo de propagación. Un nodo preferido permanece guardado pero sin usar hasta que elija Auto o Manual.",
     "modeHelpManual": "Manual: sincroniza su nodo preferido o elige el nodo añadido más cercano para esa sincronización cuando no se prefiere ninguno. Si falla, se prueban los otros nodos añadidos, luego la bandeja de entrada local.",
     "syncNoTarget": "Todavía no hay ningún nodo de propagación disponible; no se ha descubierto ninguno y no tiene nodos añadidos. Sync se ejecuta por sí solo tan pronto como uno está disponible.",
-    "syncLocalLoading": "El nodo de propagación local todavía está cargando sus mensajes almacenados. La sincronización se ejecuta por sí sola una vez que termina."
+    "syncLocalLoading": "El nodo de propagación local todavía está cargando sus mensajes almacenados. La sincronización se ejecuta por sí sola una vez que termina.",
+    "syncLocalSettledFor": "Sincronizado con {{name}}.",
+    "syncStartedWith": "Sincronizando con {{name}}...",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Mostrar recordatorio de propagación en el chat",
+    "showChatNoticeAria": "Mostrar el banner de recordatorio del nodo de propagación en el chat",
+    "showChatNoticeHint": "Desactive esta opción para ocultar el banner de chat que aparece cuando no hay ningún nodo de propagación disponible."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

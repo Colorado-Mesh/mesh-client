@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Nenhum nó de propagação está configurado. {{count}} descoberto na rede — adicione um abaixo ou abra as configurações de rede.",
       "addClosest": "Adicionar descoberto mais próximo",
-      "addClosestAria": "Adicione o nó de propagação descoberto mais próximo e defina-o como preferido"
+      "addClosestAria": "Adicione o nó de propagação descoberto mais próximo e defina-o como preferido",
+      "dismiss": "Não mostrar novamente",
+      "dismissAria": "Parar de mostrar o lembrete do nó de propagação no Chat"
     },
     "rename": "Renomear",
     "renameLabel": "Nome do nó de propagação",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "Desligado: sem suporte de nó de propagação. Nada é sincronizado e as mensagens offline não são depositadas em nenhum nó de propagação. Um nó Preferred permanece salvo, mas não usado, até que você escolha Auto ou Manual.",
     "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, a caixa de entrada local.",
     "syncNoTarget": "Nenhum nó de propagação está disponível ainda — nenhum foi descoberto e você não tem nós adicionados. A sincronização é executada por conta própria assim que uma estiver disponível.",
-    "syncLocalLoading": "O nó de propagação local ainda está carregando suas mensagens armazenadas. A sincronização é executada por conta própria quando termina."
+    "syncLocalLoading": "O nó de propagação local ainda está carregando suas mensagens armazenadas. A sincronização é executada por conta própria quando termina.",
+    "syncLocalSettledFor": "Sincronizado com {{name}}.",
+    "syncStartedWith": "Sincronizando com {{name}}…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Mostrar lembrete de propagação no chat",
+    "showChatNoticeAria": "Mostrar o banner de lembrete do nó de propagação no Chat",
+    "showChatNoticeHint": "Desative isso para ocultar o banner de bate-papo que aparece quando nenhum nó de propagação está disponível."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

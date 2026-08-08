@@ -4173,7 +4173,9 @@
       "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum",
       "bodyWithDiscoveries": "Není nakonfigurován žádný propagační uzel. {{count}} objeveno v síti — přidej ho níže nebo otevři Nastavení sítě.",
       "addClosest": "Přidat nejblíže objevené",
-      "addClosestAria": "Přidejte nejbližší objevený propagační uzel a nastavte jej jako preferovaný"
+      "addClosestAria": "Přidejte nejbližší objevený propagační uzel a nastavte jej jako preferovaný",
+      "dismiss": "Znovu nezobrazovat",
+      "dismissAria": "Zastavit zobrazování připomenutí propagačního uzlu v chatu"
     },
     "rename": "Přejmenovat",
     "renameLabel": "Název uzlu šíření",
@@ -4255,7 +4257,14 @@
     "modeHelpOff": "Vypnuto: žádná podpora propagačního uzlu. Nic se nesynchronizuje a offline zprávy nejsou uloženy v žádném propagačním uzlu. Upřednostňovaný uzel zůstane uložený, ale nepoužitý, dokud nevyberete možnost Automaticky nebo Ručně.",
     "modeHelpManual": "Příručka: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud se to nepodaří, jsou vyzkoušeny další přidané uzly, pak místní doručená pošta.",
     "syncNoTarget": "Zatím není k dispozici žádný propagační uzel — žádný nebyl objeven a nemáte žádné přidané uzly. Synchronizace se spustí sama, jakmile je k dispozici.",
-    "syncLocalLoading": "Lokální propagační uzel stále načítá uložené zprávy. Jakmile synchronizace skončí, spustí se sama."
+    "syncLocalLoading": "Lokální propagační uzel stále načítá uložené zprávy. Jakmile synchronizace skončí, spustí se sama.",
+    "syncLocalSettledFor": "Synchronizováno s {{name}}.",
+    "syncStartedWith": "Synchronizace s {{name}}…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Zobrazit připomenutí propagace v chatu",
+    "showChatNoticeAria": "Zobrazit banner připomenutí propagačního uzlu v chatu",
+    "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

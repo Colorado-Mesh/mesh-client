@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagatie-instellingen",
       "bodyWithDiscoveries": "Er is geen propagatieknooppunt geconfigureerd. {{count}} ontdekt op het netwerk. Voeg er hieronder een toe of open Netwerkinstellingen.",
       "addClosest": "Dichtstbijzijnde toevoegen ontdekt",
-      "addClosestAria": "Voeg het dichtstbijzijnde ontdekte propagatieknooppunt toe en stel dit in als voorkeur"
+      "addClosestAria": "Voeg het dichtstbijzijnde ontdekte propagatieknooppunt toe en stel dit in als voorkeur",
+      "dismiss": "Niet meer laten zien",
+      "dismissAria": "Stop met het weergeven van de herinnering voor het propagatieknooppunt in Chat"
     },
     "rename": "Hernoemen",
     "renameLabel": "Naam van het voortplantingsknooppunt",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "Uit: geen ondersteuning voor propagatieknooppunten. Niets synchroniseert en offline berichten worden niet gedeponeerd op een propagatieknooppunt. Een voorkeursknooppunt blijft opgeslagen maar ongebruikt totdat u Auto of Handmatig kiest.",
     "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens de lokale inbox.",
     "syncNoTarget": "Er is nog geen propagatieknooppunt beschikbaar — er is er geen ontdekt en u hebt geen toegevoegde knooppunten. Sync draait op zichzelf zodra er een beschikbaar is.",
-    "syncLocalLoading": "Het lokale propagatieknooppunt laadt nog steeds de opgeslagen berichten. Sync draait op zichzelf zodra het klaar is."
+    "syncLocalLoading": "Het lokale propagatieknooppunt laadt nog steeds de opgeslagen berichten. Sync draait op zichzelf zodra het klaar is.",
+    "syncLocalSettledFor": "Gesynchroniseerd met {{name}}.",
+    "syncStartedWith": "Synchroniseren met {{name}}…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Toon propagatieherinnering in Chat",
+    "showChatNoticeAria": "Toon de herinneringsbanner voor het propagatieknooppunt in Chat",
+    "showChatNoticeHint": "Schakel dit uit om de chatbanner te verbergen die verschijnt als er geen propagatieknooppunt beschikbaar is."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

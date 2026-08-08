@@ -1919,6 +1919,7 @@ impl LiveBridge {
         let router = Arc::clone(&self.router);
         let propagation = Arc::clone(&self.propagation);
         let pn_hosting_policy = Arc::clone(&self.pn_hosting_policy);
+        let persisted = Arc::clone(&self.persisted);
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
@@ -1978,11 +1979,17 @@ impl LiveBridge {
                     node_state: parsed.node_state,
                     peering_cost: parsed.peering_cost,
                 };
-                let payload = {
+                let (payload, cascade_fields_changed) = {
                     let Ok(mut cache) = discovered.lock() else {
                         continue;
                     };
-                    cache.insert(hash_hex.clone(), row.clone());
+                    let previous = cache.insert(hash_hex.clone(), row.clone());
+                    // Only rebuild when this announce can change the Auto cascade shortlist.
+                    let changed = previous.is_none_or(|prev| {
+                        prev.node_state != row.node_state
+                            || prev.hops != row.hops
+                            || prev.peering_cost != row.peering_cost
+                    });
                     while cache.len() > MAX_DISCOVERED_PROPAGATION {
                         // Evict oldest last_seen.
                         let oldest = cache
@@ -1995,7 +2002,7 @@ impl LiveBridge {
                             break;
                         }
                     }
-                    serde_json::json!({
+                    let payload = serde_json::json!({
                         "destination_hash": hash_hex,
                         "identity_hash": identity_hash_hex,
                         "public_key": public_key_hex,
@@ -2004,11 +2011,22 @@ impl LiveBridge {
                         "last_seen": last_seen,
                         "node_state": parsed.node_state,
                         "peering_cost": parsed.peering_cost,
-                    })
+                    });
+                    (payload, changed)
                 };
                 let frame =
                     serde_json::json!({ "type": "propagation.discovered", "payload": payload });
                 let _ = event_tx.send(frame.to_string());
+
+                if cascade_fields_changed {
+                    rebuild_pn_cascade_candidates(
+                        &persisted,
+                        &discovered,
+                        &outbound,
+                        &pn_hosting_policy,
+                    )
+                    .await;
+                }
 
                 // Autopeer only while hosting a local PN (lxmd parity).
                 if propagation.is_local_serving() {
@@ -3767,21 +3785,13 @@ impl LiveBridge {
     /// Propagation mode `Off` yields an empty list, so Direct failures never deposit on a
     /// remote PN or the local inbox.
     pub async fn refresh_pn_cascade_candidates(&self) {
-        use pn_cascade::candidates_for_propagation_mode;
-        let (rows, self_hash, mode) = {
-            let state = self.persisted.read().await;
-            let rows: Vec<(String, bool, Option<String>, Option<u8>)> = state
-                .propagation
-                .iter()
-                .map(|p| (p.id.clone(), p.enabled, p.destination_hash.clone(), p.hops))
-                .collect();
-            let self_hash = state.identity.lxmf_hash.clone();
-            (rows, self_hash, state.propagation_mode)
-        };
-        let candidates = candidates_for_propagation_mode(&rows, &self_hash, mode);
-        if let Ok(mut driver) = self.outbound.lock() {
-            driver.set_pn_cascade_candidates(candidates);
-        }
+        rebuild_pn_cascade_candidates(
+            &self.persisted,
+            &self.discovered_propagation,
+            &self.outbound,
+            &self.pn_hosting_policy,
+        )
+        .await;
     }
 
     pub async fn fetch_interfaces(&self) -> Result<Vec<InterfaceRow>, String> {
@@ -5331,6 +5341,49 @@ fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>
         added.truncate(MAX_PEERS_UPDATED_ADDED);
     }
     added
+}
+
+/// Rebuild the Direct→PN cascade list from persisted rows plus, in Auto, heard announces.
+///
+/// Takes the shared Arcs rather than `&self` so the propagation announce task can refresh
+/// the list as soon as a new PN is heard — otherwise a discovered node would only become
+/// cascade-eligible after a settings write or a stack restart.
+async fn rebuild_pn_cascade_candidates(
+    persisted: &Arc<RwLock<PersistedState>>,
+    discovered_propagation: &Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
+    outbound: &Arc<Mutex<LxmfOutboundDriver>>,
+    pn_hosting_policy: &Arc<Mutex<PnHostingPolicy>>,
+) {
+    use pn_cascade::{auto_discovered_candidates, candidates_for_propagation_mode};
+    let (rows, self_hash, mode) = {
+        let state = persisted.read().await;
+        let rows: Vec<(String, bool, Option<String>, Option<u8>)> = state
+            .propagation
+            .iter()
+            .map(|p| (p.id.clone(), p.enabled, p.destination_hash.clone(), p.hops))
+            .collect();
+        let self_hash = state.identity.lxmf_hash.clone();
+        (rows, self_hash, state.propagation_mode)
+    };
+    let mut candidates = candidates_for_propagation_mode(&rows, &self_hash, mode);
+    let discovered_rows: Vec<super::DiscoveredPropagationRow> = discovered_propagation
+        .lock()
+        .map(|cache| cache.values().cloned().collect())
+        .unwrap_or_default();
+    let max_peering_cost = pn_hosting_policy
+        .lock()
+        .map(|p| p.max_peering_cost)
+        .unwrap_or(super::pn_hosting_policy::DEFAULT_MAX_PEERING_COST);
+    candidates.extend(auto_discovered_candidates(
+        &discovered_rows,
+        &candidates,
+        &self_hash,
+        mode,
+        max_peering_cost,
+    ));
+    if let Ok(mut driver) = outbound.lock() {
+        driver.set_pn_cascade_candidates(candidates);
+    }
 }
 
 /// Compare route-relevant fields (ignore `last_seen` / display_name churn).

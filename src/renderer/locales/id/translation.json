@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Tidak ada simpul propagasi yang dikonfigurasi. {{count}} ditemukan di jaringan — tambahkan satu di bawah ini atau buka pengaturan Jaringan.",
       "addClosest": "Tambahkan yang terdekat ditemukan",
-      "addClosestAria": "Tambahkan simpul propagasi terdekat yang ditemukan dan atur sesuai keinginan"
+      "addClosestAria": "Tambahkan simpul propagasi terdekat yang ditemukan dan atur sesuai keinginan",
+      "dismiss": "Jangan tampilkan lagi",
+      "dismissAria": "Berhenti menampilkan pengingat simpul propagasi di Obrolan"
     },
     "rename": "Ganti nama",
     "renameLabel": "Nama node propagasi",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "Mati: tidak ada dukungan simpul propagasi. Tidak ada sinkronisasi dan pesan offline yang tidak disimpan pada simpul propagasi apa pun. Simpul Pilihan tetap disimpan tetapi tidak digunakan sampai Anda memilih Otomatis atau Manual.",
     "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, lalu kotak masuk lokal.",
     "syncNoTarget": "Belum ada simpul propagasi yang tersedia — tidak ada yang ditemukan, dan Anda tidak memiliki simpul tambahan. Sinkronisasi berjalan sendiri segera setelah tersedia.",
-    "syncLocalLoading": "Simpul propagasi lokal masih memuat pesan yang disimpan. Sinkronisasi berjalan sendiri setelah selesai."
+    "syncLocalLoading": "Simpul propagasi lokal masih memuat pesan yang disimpan. Sinkronisasi berjalan sendiri setelah selesai.",
+    "syncLocalSettledFor": "Disinkronkan dengan {{name}}.",
+    "syncStartedWith": "Menyinkronkan dengan {{name}}…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Tampilkan pengingat propagasi di Obrolan",
+    "showChatNoticeAria": "Tampilkan spanduk pengingat simpul propagasi di Obrolan",
+    "showChatNoticeHint": "Nonaktifkan ini untuk menyembunyikan spanduk Obrolan yang muncul ketika tidak ada node propagasi yang tersedia."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

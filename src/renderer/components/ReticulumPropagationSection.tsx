@@ -12,6 +12,7 @@ import {
   listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
+  resolveReticulumPropagationTargetLabel,
   type ReticulumPropagationMode,
   writeReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -158,6 +159,8 @@ export default function ReticulumPropagationSection({
   const lastPropagationSyncAt = useReticulumPropagationStore((s) => s.lastPropagationSyncAt);
   const sync = useReticulumPropagationStore((s) => s.sync);
   const lastSyncError = useReticulumPropagationStore((s) => s.lastSyncError);
+  const chatNoticeDismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
+  const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const setPreferredOnSidecar = useReticulumPropagationStore((s) => s.setPreferredOnSidecar);
   const setAutoSyncIntervalOnSidecar = useReticulumPropagationStore(
@@ -178,22 +181,53 @@ export default function ReticulumPropagationSection({
   const [syncStarting, setSyncStarting] = useState(false);
   const [mode, setMode] = useState<ReticulumPropagationMode>(() => readReticulumPropagationMode());
 
+  /** Name of the node the cascade actually reached, or null when it contacted nobody. */
+  const resolveAttemptedName = (): string | null => {
+    const {
+      nodes: current,
+      discovered: currentDiscovered,
+      syncTargetId,
+    } = useReticulumPropagationStore.getState();
+    if (syncTargetId == null || syncTargetId.length === 0) return null;
+    return resolveReticulumPropagationTargetLabel(
+      current,
+      currentDiscovered,
+      syncTargetId,
+      t('reticulumPropagation.localHostName'),
+    );
+  };
+
   const handleSyncNow = (targetId: string) => {
     if (syncStarting || sync.active) return;
     setSyncStarting(true);
     void ensurePreferredThenStartSync(targetId)
       .then((ok) => {
         setSyncStarting(false);
+        const name = resolveAttemptedName();
         if (!ok) {
           const errKey =
             useReticulumPropagationStore.getState().lastSyncError ??
             'reticulumPropagation.syncFailed';
-          addToast(t(errKey), 'error');
+          addToast(
+            name
+              ? t('reticulumPropagation.syncErrorWithTarget', { name, message: t(errKey) })
+              : t(errKey),
+            'error',
+          );
           return;
         }
         // Local settle finishes inside startSync with no progress bar; remote leaves sync.active.
         if (!useReticulumPropagationStore.getState().sync.active) {
-          addToast(t('reticulumPropagation.syncLocalSettled'), 'success');
+          addToast(
+            name
+              ? t('reticulumPropagation.syncLocalSettledFor', { name })
+              : t('reticulumPropagation.syncLocalSettled'),
+            'success',
+          );
+          return;
+        }
+        if (name) {
+          addToast(t('reticulumPropagation.syncStartedWith', { name }), 'info');
         }
       })
       .catch((err: unknown) => {
@@ -523,6 +557,19 @@ export default function ReticulumPropagationSection({
         <p id="reticulum-propagation-mode-help" className="text-muted text-xs">
           {t(modeHelpKey)}
         </p>
+        <label className="flex items-center gap-2 pt-1 text-xs text-gray-300">
+          <input
+            type="checkbox"
+            checked={!chatNoticeDismissed}
+            onChange={(e) => {
+              setChatNoticeDismissed(!e.target.checked);
+            }}
+            className="accent-brand-green"
+            aria-label={t('reticulumPropagation.showChatNoticeAria')}
+          />
+          {t('reticulumPropagation.showChatNotice')}
+        </label>
+        <p className="text-muted text-xs">{t('reticulumPropagation.showChatNoticeHint')}</p>
       </div>
       <div className="mt-3 space-y-1">
         <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">

@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Reticulum Network 전파 설정 열기",
       "bodyWithDiscoveries": "전파 노드가 구성되지 않았습니다. {{count}} 이 (가) 네트워크에서 발견되었습니다. 아래에 추가하거나 네트워크 설정을 엽니다.",
       "addClosest": "발견된 것 중 가장 가까운 것 추가",
-      "addClosestAria": "발견된 가장 가까운 전파 노드를 추가하고 선호하는 것으로 설정"
+      "addClosestAria": "발견된 가장 가까운 전파 노드를 추가하고 선호하는 것으로 설정",
+      "dismiss": "다시 표시하지 않음",
+      "dismissAria": "Chat에서 전파 노드 알림 표시 중지"
     },
     "rename": "이름 바꾸기",
     "renameLabel": "전파 노드 이름",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "OFF: 전파 노드 지원 없음. 동기화 및 오프라인 메시지는 전파 노드에 저장되지 않습니다. 기본 설정 노드는 자동 또는 수동을 선택할 때까지 저장되지만 사용되지 않습니다.",
     "modeHelpManual": "수동: 선호하는 노드를 동기화하거나, 선호하는 노드가 없을 때 해당 동기화에 대해 가장 가까운 추가된 노드를 선택합니다. 실패하면 다른 추가된 노드를 시도한 다음 로컬 받은 편지함을 시도합니다.",
     "syncNoTarget": "아직 사용할 수 있는 전파 노드가 없습니다. 발견된 노드가 없으며 추가된 노드가 없습니다. 동기화는 사용 가능한 즉시 자체적으로 실행됩니다.",
-    "syncLocalLoading": "로컬 전파 노드가 여전히 저장된 메시지를 로드하고 있습니다. 동기화는 완료되면 자체적으로 실행됩니다."
+    "syncLocalLoading": "로컬 전파 노드가 여전히 저장된 메시지를 로드하고 있습니다. 동기화는 완료되면 자체적으로 실행됩니다.",
+    "syncLocalSettledFor": "{{name}}과(와) 동기화되었습니다.",
+    "syncStartedWith": "{{name}}과(와) 동기화 중…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Chat에 전파 알림 표시",
+    "showChatNoticeAria": "Chat에 전파 노드 알림 배너 표시",
+    "showChatNoticeHint": "전파 노드를 사용할 수 없을 때 나타나는 채팅 배너를 숨기려면 이 옵션을 끄십시오."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",

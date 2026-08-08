@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getStatus = vi.fn();
 const proxyGet = vi.fn();
@@ -21,7 +21,10 @@ vi.stubGlobal('window', {
   },
 });
 
-import { useReticulumPropagationStore } from './reticulumPropagationStore';
+import {
+  RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY,
+  useReticulumPropagationStore,
+} from './reticulumPropagationStore';
 
 describe('reticulumPropagationStore', () => {
   beforeEach(() => {
@@ -44,6 +47,8 @@ describe('reticulumPropagationStore', () => {
       lastPropagationSyncAt: null,
       lastPropagationSyncAttemptAt: null,
       activePropagationSyncAttemptAt: null,
+      syncTargetId: null,
+      chatNoticeDismissed: false,
     });
   });
 
@@ -207,6 +212,20 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncCancelled',
     );
+  });
+
+  it('startSync records the target each attempt so progress and errors can name it', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
+    await expect(useReticulumPropagationStore.getState().startSync('pn-aabb')).resolves.toBe(false);
+    // Kept past the failure so the error can be attributed to the node it came from.
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-aabb');
+
+    proxyPost.mockResolvedValueOnce({ ok: true });
+    await expect(useReticulumPropagationStore.getState().startSync('local-prop')).resolves.toBe(
+      true,
+    );
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('local-prop');
   });
 
   it('cancelSync keeps a prior sidecar establish failure over timeout reason', async () => {
@@ -512,5 +531,47 @@ describe('reticulumPropagationStore', () => {
     await useReticulumPropagationStore.getState().refreshFromSidecar();
 
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(attemptAt);
+  });
+});
+
+describe('chat notice dismissal', () => {
+  // renderer-logic runs in node (no jsdom); provide a minimal localStorage stub.
+  function stubLocalStorage(initial?: Record<string, string>): Map<string, string> {
+    const store = new Map<string, string>(Object.entries(initial ?? {}));
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        store.set(k, v);
+      },
+      removeItem: (k: string) => {
+        store.delete(k);
+      },
+    });
+    return store;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.stubGlobal('window', {
+      electronAPI: { reticulum: { getStatus, proxyGet, proxyPost, proxyPut, proxyDelete } },
+    });
+  });
+
+  it('setChatNoticeDismissed round-trips through localStorage', () => {
+    const store = stubLocalStorage();
+    useReticulumPropagationStore.getState().setChatNoticeDismissed(true);
+    expect(store.get(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBe('1');
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(true);
+
+    useReticulumPropagationStore.getState().setChatNoticeDismissed(false);
+    expect(store.has(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBe(false);
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(false);
+  });
+
+  it('hydrates the dismissal from a previous session', async () => {
+    stubLocalStorage({ [RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY]: '1' });
+    vi.resetModules();
+    const fresh = await import('./reticulumPropagationStore');
+    expect(fresh.useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(true);
   });
 });

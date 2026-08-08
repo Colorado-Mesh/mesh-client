@@ -24,7 +24,9 @@ function findPropagationNode(
  *
  * Mode "Off" means no propagation support at all: a saved Preferred node stays on the
  * sidecar but is never used, so there is no effective target.
- * Auto without Preferred counts enabled **configured** remotes only (not discovered).
+ * Auto without Preferred also counts **discovered** nodes, because the sidecar cascades
+ * onto the best heard PN without adding it (`auto_discovered_candidates` in `pn_cascade.rs`).
+ * Manual only counts nodes the user added.
  */
 export function hasEffectiveReticulumPropagationTarget(
   nodes: PropagationNodeRow[],
@@ -51,7 +53,7 @@ export function hasEffectiveReticulumPropagationTarget(
   }
 
   const target = pickAutoPropagationTarget(nodes, discovered);
-  return target?.kind === 'configured';
+  return target?.kind === 'configured' || target?.kind === 'discovered';
 }
 
 /** True when local-prop is enabled (cascade last resort / offline inbox). */

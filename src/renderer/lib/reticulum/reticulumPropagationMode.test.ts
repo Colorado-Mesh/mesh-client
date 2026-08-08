@@ -12,6 +12,7 @@ import {
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
+  resolveReticulumPropagationTargetLabel,
   RETICULUM_PROPAGATION_MODE_KEY,
 } from './reticulumPropagationMode';
 
@@ -211,6 +212,51 @@ describe('reticulumPropagationMode', () => {
         row({ id: 'pn-aaaa', name: 'Near', hops: 1, enabled: false }),
       ];
       expect(pickAutoPropagationTarget(nodes)).toBeNull();
+    });
+  });
+
+  describe('resolveReticulumPropagationTargetLabel', () => {
+    const hash = 'aabb'.repeat(8);
+    const nodes = [
+      row({ id: 'local-prop', name: 'Local propagation node' }),
+      row({ id: 'pn-aabb', name: 'Hub PN', destination_hash: hash }),
+    ];
+
+    it('uses the translated local name for the local inbox', () => {
+      expect(resolveReticulumPropagationTargetLabel(nodes, [], 'local-prop', 'Host node')).toBe(
+        'Host node',
+      );
+    });
+
+    it('names a configured node by row id or destination hash', () => {
+      expect(resolveReticulumPropagationTargetLabel(nodes, [], 'pn-aabb', 'Host node')).toBe(
+        'Hub PN',
+      );
+      expect(
+        resolveReticulumPropagationTargetLabel(nodes, [], hash.toUpperCase(), 'Host node'),
+      ).toBe('Hub PN');
+    });
+
+    it('names a discovered node from its announce, else a hash prefix', () => {
+      const named = discovered({ destination_hash: 'ccdd'.repeat(8), display_name: ' Ratspeak ' });
+      const anonymous = discovered({ destination_hash: 'eeff'.repeat(8) });
+      expect(
+        resolveReticulumPropagationTargetLabel([], [named, anonymous], named.destination_hash, 'L'),
+      ).toBe('Ratspeak');
+      expect(
+        resolveReticulumPropagationTargetLabel(
+          [],
+          [named, anonymous],
+          anonymous.destination_hash,
+          'L',
+        ),
+      ).toBe('eeffeeffeeff');
+    });
+
+    it('falls back to a hash prefix for an unknown target', () => {
+      expect(resolveReticulumPropagationTargetLabel(nodes, [], '99'.repeat(16), 'Host node')).toBe(
+        '999999999999',
+      );
     });
   });
 });

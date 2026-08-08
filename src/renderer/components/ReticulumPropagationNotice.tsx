@@ -25,6 +25,8 @@ export function ReticulumPropagationNotice({
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
+  const dismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
+  const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
   const mode = readReticulumPropagationMode();
 
   useEffect(() => {
@@ -47,6 +49,8 @@ export function ReticulumPropagationNotice({
   if (!stackLive) return null;
   // Off is a deliberate "no propagation node" choice — do not nag to add one.
   if (mode === 'off') return null;
+  // Re-enable from Network → Propagation nodes.
+  if (dismissed) return null;
   if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) {
     return null;
   }
@@ -92,6 +96,16 @@ export function ReticulumPropagationNotice({
             {t('reticulumPropagation.notice.openSettings')}
           </button>
         ) : null}
+        <button
+          type="button"
+          className="font-medium text-amber-200 underline hover:text-amber-100"
+          aria-label={t('reticulumPropagation.notice.dismissAria')}
+          onClick={() => {
+            setChatNoticeDismissed(true);
+          }}
+        >
+          {t('reticulumPropagation.notice.dismiss')}
+        </button>
       </div>
     </div>
   );

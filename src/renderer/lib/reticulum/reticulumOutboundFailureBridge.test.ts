@@ -264,4 +264,14 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
   it('returns true when no remote PN and local-prop disabled', () => {
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'off')).toBe(true);
   });
+
+  // Auto deposits on heard PNs, so the sidecar is still cascading with nothing configured.
+  it('returns false in auto with only a discovered node', () => {
+    const discovered = [
+      { destination_hash: 'ab'.repeat(16), node_state: true, peering_cost: 0, hops: 1 },
+    ];
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'auto', discovered)).toBe(false);
+    // Manual never uses a node the user did not add, so the timeout is terminal there.
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'manual', discovered)).toBe(true);
+  });
 });

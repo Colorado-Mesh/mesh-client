@@ -195,6 +195,32 @@ export function resolvePropagationSyncTargetId(
   return null;
 }
 
+/** Hash prefix shown when a sync target has no name yet (matches the discovered list). */
+const PROPAGATION_HASH_LABEL_CHARS = 12;
+
+/**
+ * Display name for a sync target id — a configured row id, `local-prop`, or the bare
+ * destination hash Auto uses for a one-time discovered sync.
+ *
+ * Discovered nodes are never in `nodes`, so fall back to the announce name and finally a
+ * hash prefix. `localLabel` is passed in so this stays pure (callers translate).
+ */
+export function resolveReticulumPropagationTargetLabel(
+  nodes: PropagationNodeRow[],
+  discovered: readonly DiscoveredPropagationRow[],
+  id: string,
+  localLabel: string,
+): string {
+  if (id === 'local-prop') return localLabel;
+  const key = id.toLowerCase();
+  const node = nodes.find((n) => n.id === id || n.destination_hash?.toLowerCase() === key);
+  if (node) return node.id === 'local-prop' ? localLabel : node.name;
+  const row = discovered.find((d) => d.destination_hash.toLowerCase() === key);
+  const announced = row?.display_name?.trim();
+  if (announced) return announced;
+  return id.slice(0, PROPAGATION_HASH_LABEL_CHARS);
+}
+
 /** Compact diagnostic label for an Auto target (kind:id). */
 export function formatAutoPropagationTargetLabel(
   target: AutoPropagationTarget | null,

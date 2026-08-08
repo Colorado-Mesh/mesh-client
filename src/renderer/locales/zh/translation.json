@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "未配置传播节点。在网络上发现{{count}} —在下面添加一个或打开网络设置。",
       "addClosest": "添加最近发现的",
-      "addClosestAria": "添加最近发现的传播节点并将其设置为首选"
+      "addClosestAria": "添加最近发现的传播节点并将其设置为首选",
+      "dismiss": "不再显示",
+      "dismissAria": "停止在聊天中显示传播节点提醒"
     },
     "rename": "重命名",
     "renameLabel": "传播节点名称",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "关闭：不支持传播节点。任何同步和离线消息都不会存放在任何传播节点上。首选节点保持保存但未使用，直到您选择“自动”或“手动”。",
     "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地收件箱。",
     "syncNoTarget": "没有可用的传播节点—没有发现任何节点，并且您没有添加任何节点。一旦可用，同步将自行运行。",
-    "syncLocalLoading": "本地传播节点仍在加载其存储的消息。同步完成后自行运行。"
+    "syncLocalLoading": "本地传播节点仍在加载其存储的消息。同步完成后自行运行。",
+    "syncLocalSettledFor": "已与{{name}}同步。",
+    "syncStartedWith": "正在与{{name}}同步……",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}} ： {{message}}",
+    "showChatNotice": "在聊天中显示传播提醒",
+    "showChatNoticeAria": "在聊天中显示传播节点提醒横幅",
+    "showChatNoticeHint": "关闭此选项可隐藏在没有可用传播节点时显示的聊天横幅。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

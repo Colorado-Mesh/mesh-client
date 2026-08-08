@@ -24,6 +24,31 @@ import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumP
 /** i18n key written when the user cancels an in-flight propagation sync. */
 export const PROPAGATION_SYNC_USER_CANCEL_KEY = 'reticulumPropagation.syncCancelled';
 
+/** Persists "stop reminding me in Chat to set up a propagation node". */
+export const RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY =
+  'mesh-client:reticulumPropagationNoticeDismissed';
+
+function readChatNoticeDismissed(): boolean {
+  try {
+    return localStorage.getItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY) === '1';
+  } catch {
+    // catch-no-log-ok localStorage unavailable in private mode
+    return false;
+  }
+}
+
+function writeChatNoticeDismissed(dismissed: boolean): void {
+  try {
+    if (dismissed) {
+      localStorage.setItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY, '1');
+    } else {
+      localStorage.removeItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY);
+    }
+  } catch {
+    // catch-no-log-ok localStorage quota or private mode
+  }
+}
+
 export interface PropagationNodeRow {
   id: string;
   name: string;
@@ -74,12 +99,22 @@ interface ReticulumPropagationStoreState {
   lastPropagationSyncAttemptAt: number | null;
   /** Attempt timestamp for the in-flight sync run (WS complete scopes clear to this). */
   activePropagationSyncAttemptAt: number | null;
+  /**
+   * Target of the most recent sync attempt (row id, `local-prop`, or destination hash),
+   * so progress and errors can name the node. Survives the sync going idle — the cascade
+   * re-stamps it per attempt, and it is cleared only when no node was contacted at all.
+   */
+  syncTargetId: string | null;
+  /** True while the user has dismissed the Chat "no propagation node" reminder. */
+  chatNoticeDismissed: boolean;
   replaceNodes: (nodes: PropagationNodeRow[]) => void;
   upsertDiscovered: (row: DiscoveredPropagationRow) => void;
   replaceDiscovered: (rows: DiscoveredPropagationRow[]) => void;
   setPreferredId: (id: string | null) => void;
   setSyncState: (patch: Partial<PropagationSyncState>) => void;
   setLastSyncError: (message: string | null) => void;
+  setSyncTargetId: (id: string | null) => void;
+  setChatNoticeDismissed: (dismissed: boolean) => void;
   /**
    * Record last successful sync time. When `forAttemptAt` matches the current attempt stamp,
    * clear it (and the active run stamp); a mismatched/older completion leaves a newer attempt alone.
@@ -115,6 +150,8 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   lastPropagationSyncAt: null,
   lastPropagationSyncAttemptAt: null,
   activePropagationSyncAttemptAt: null,
+  syncTargetId: null,
+  chatNoticeDismissed: readChatNoticeDismissed(),
 
   replaceNodes: (nodes) => {
     set({ nodes });
@@ -142,6 +179,15 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
 
   setLastSyncError: (message) => {
     set({ lastSyncError: message });
+  },
+
+  setSyncTargetId: (id) => {
+    set({ syncTargetId: id });
+  },
+
+  setChatNoticeDismissed: (dismissed) => {
+    writeChatNoticeDismissed(dismissed);
+    set({ chatNoticeDismissed: dismissed });
   },
 
   setLastPropagationSyncAt: (atMs, forAttemptAt) => {
@@ -314,6 +360,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       lastSyncError: null,
       lastPropagationSyncAttemptAt: attemptAt,
       activePropagationSyncAttemptAt: attemptAt,
+      syncTargetId: propId,
     });
     // Local inbox settles in-process (no Establishing stall); remotes need the watchdog.
     if (propId !== 'local-prop') {

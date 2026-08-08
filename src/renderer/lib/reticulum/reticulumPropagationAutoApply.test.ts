@@ -312,6 +312,39 @@ describe('reticulumPropagationAutoApply', () => {
     );
   });
 
+  it('leaves the sync target naming the last node tried', async () => {
+    const startSync = vi.fn().mockImplementation((id: string) => {
+      useReticulumPropagationStore.setState({ syncTargetId: id });
+      return Promise.resolve(false);
+    });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        { id: 'pn-aabb1111', name: 'Remote', enabled: true, status: 'known', hops: 2 },
+      ],
+      discovered: [],
+      preferredId: null,
+      syncTargetId: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(startSync).toHaveBeenLastCalledWith('local-prop');
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('local-prop');
+  });
+
+  it('clears the sync target when the cascade contacts nobody', async () => {
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'idle' }],
+      discovered: [],
+      preferredId: null,
+      // Stale target from an earlier sync must not be blamed for "nothing to sync with".
+      syncTargetId: 'pn-aabb1111',
+      startSync: vi.fn().mockResolvedValue(true),
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBeNull();
+  });
+
   it('honors persisted Auto mode key', () => {
     expect(localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY)).toBe('auto');
   });

@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Reticulumネットワーク伝播設定を開く",
       "bodyWithDiscoveries": "伝播ノードが設定されていません。{{count}}がネットワーク上で検出されました—以下に1つ追加するか、ネットワーク設定を開きます。",
       "addClosest": "見つかった最も近いものを追加",
-      "addClosestAria": "最も近い検出された伝播ノードを追加し、優先として設定します"
+      "addClosestAria": "最も近い検出された伝播ノードを追加し、優先として設定します",
+      "dismiss": "今後表示しない",
+      "dismissAria": "チャットでの伝播ノードのリマインダーの表示を停止する"
     },
     "rename": "名前の変更",
     "renameLabel": "伝播ノード名",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "オフ：伝播ノードはサポートされていません。同期およびオフラインメッセージは、どの伝播ノードにもデポジットされません。Preferredノードは保存されたままですが、自動または手動を選択するまで使用されません。",
     "modeHelpManual": "手動：優先ノードを同期するか、優先されない場合はその同期に最も近い追加ノードを選択します。失敗した場合、追加された他のノードが試行され、ローカル受信トレイが試行されます。",
     "syncNoTarget": "まだ利用可能な伝播ノードはありません—何も検出されておらず、追加されたノードはありません。同期は、利用可能になるとすぐに単独で実行されます。",
-    "syncLocalLoading": "ローカル伝播ノードは、保存されたメッセージを読み込んでいます。同期が完了すると、単独で実行されます。"
+    "syncLocalLoading": "ローカル伝播ノードは、保存されたメッセージを読み込んでいます。同期が完了すると、単独で実行されます。",
+    "syncLocalSettledFor": "{{name}}と同期しました。",
+    "syncStartedWith": "{{name}}と同期しています…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}} ： {{message}}",
+    "showChatNotice": "チャットに伝播リマインダーを表示",
+    "showChatNoticeAria": "チャットで伝播ノードのリマインダーバナーを表示する",
+    "showChatNoticeHint": "これをオフにすると、伝播ノードが利用できないときに表示されるチャットバナーが非表示になります。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",

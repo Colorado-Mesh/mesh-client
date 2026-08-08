@@ -4489,7 +4489,9 @@
       "addClosest": "Add closest discovered",
       "addClosestAria": "Add the closest discovered propagation node and set it as preferred",
       "openSettings": "Set up propagation",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "dismiss": "Don't show again",
+      "dismissAria": "Stop showing the propagation node reminder in Chat"
     },
     "preferred": "Preferred",
     "setPreferred": "Set preferred",
@@ -4498,6 +4500,10 @@
     "syncNowFor": "Sync messages from {{name}}",
     "syncStarting": "Starting sync…",
     "syncLocalSettled": "Synced with local inbox.",
+    "syncLocalSettledFor": "Synced with {{name}}.",
+    "syncStartedWith": "Syncing with {{name}}…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
     "cancelSync": "Cancel sync",
     "autoSyncIntervalLabel": "Auto sync interval",
     "autoSyncIntervalAria": "Propagation auto sync interval",
@@ -4597,7 +4603,10 @@
     "modeOff": "Off",
     "modeHelpOff": "Off: no propagation node support. Nothing syncs and offline messages are not deposited on any propagation node. A Preferred node stays saved but unused until you choose Auto or Manual.",
     "modeHelpAuto": "Auto: one-time syncs the best Discovered propagation node (does not add it or change Preferred), then configured remotes, then the local inbox. With no network interfaces, settles local only.",
-    "modeHelpManual": "Manual: syncs your Preferred node, or picks the closest added node for that sync when none is preferred. If it fails, the other added nodes are tried, then the local inbox."
+    "modeHelpManual": "Manual: syncs your Preferred node, or picks the closest added node for that sync when none is preferred. If it fails, the other added nodes are tried, then the local inbox.",
+    "showChatNotice": "Show propagation reminder in Chat",
+    "showChatNoticeAria": "Show the propagation node reminder banner in Chat",
+    "showChatNoticeHint": "Turn this off to hide the Chat banner that appears when no propagation node is available."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 discovery",

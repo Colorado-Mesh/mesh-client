@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç",
       "bodyWithDiscoveries": "Hiçbir yayılma düğümü yapılandırılmamış. {{count}} ağda keşfedildi — aşağıya bir tane ekleyin veya Ağ ayarlarını açın.",
       "addClosest": "En yakın bulunanları ekle",
-      "addClosestAria": "En yakın keşfedilen yayılma düğümünü ekleyin ve tercih edilen olarak ayarlayın"
+      "addClosestAria": "En yakın keşfedilen yayılma düğümünü ekleyin ve tercih edilen olarak ayarlayın",
+      "dismiss": "Bir daha gösterme",
+      "dismissAria": "Chat'te yayılım düğümü hatırlatıcısının gösterilmesini durdurma"
     },
     "rename": "Yeniden adlandır",
     "renameLabel": "Yayılma düğümü adı",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "Kapalı: Yayılma düğümü desteği yok. Hiçbir şey senkronize edilmez ve çevrimdışı mesajlar herhangi bir yayılma düğümüne yatırılmaz. Tercih edilen bir düğüm, Otomatik veya Manuel'i seçene kadar kaydedilmiş ancak kullanılmamış olarak kalır.",
     "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel gelen kutusu denenir.",
     "syncNoTarget": "Henüz yayılma düğümü mevcut değil — hiçbiri keşfedilmedi ve ek düğümünüz yok. Senkronizasyon, hazır olur olmaz kendi kendine çalışır.",
-    "syncLocalLoading": "Yerel yayılım düğümü hala depolanan mesajlarını yüklemektedir. Senkronizasyon bittiğinde kendi kendine çalışır."
+    "syncLocalLoading": "Yerel yayılım düğümü hala depolanan mesajlarını yüklemektedir. Senkronizasyon bittiğinde kendi kendine çalışır.",
+    "syncLocalSettledFor": "{{name}} ile senkronize edildi.",
+    "syncStartedWith": "{{name}} ile senkronize ediliyor…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Chat'te yayılma hatırlatıcısını göster",
+    "showChatNoticeAria": "Yayılma düğümü hatırlatma banner'ını Sohbet'te göster",
+    "showChatNoticeHint": "Yayılma düğümü bulunmadığında görünen Sohbet başlığını gizlemek için bunu kapatın."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

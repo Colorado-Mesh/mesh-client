@@ -4175,7 +4175,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Brak skonfigurowanego węzła propagacji. {{count}} wykryte w sieci — dodaj poniżej lub otwórz ustawienia sieci.",
       "addClosest": "Dodaj najbliższe odkryte",
-      "addClosestAria": "Dodaj najbliższy odkryty węzeł propagacji i ustaw go jako preferowany"
+      "addClosestAria": "Dodaj najbliższy odkryty węzeł propagacji i ustaw go jako preferowany",
+      "dismiss": "Nie pokazuj więcej",
+      "dismissAria": "Zatrzymaj wyświetlanie przypomnienia o węźle propagacji na czacie"
     },
     "rename": "Zmień nazwę",
     "renameLabel": "Nazwa węzła propagacji",
@@ -4257,7 +4259,14 @@
     "modeHelpOff": "OFF: brak obsługi węzła propagacji. Nic nie synchronizuje się i wiadomości offline nie są deponowane w żadnym węźle propagacji. Preferowany węzeł pozostaje zapisany, ale nieużywany, dopóki nie wybierzesz trybu automatycznego lub ręcznego.",
     "modeHelpManual": "Ręcznie: synchronizuje preferowany węzeł lub wybiera najbliższy dodany węzeł dla tej synchronizacji, gdy żaden nie jest preferowany. Jeśli się nie powiedzie, wypróbowywane są inne dodane węzły, a następnie lokalna skrzynka odbiorcza.",
     "syncNoTarget": "Żaden węzeł propagacji nie jest jeszcze dostępny — żaden nie został odkryty, a Ty nie masz dodanych węzłów. Synchronizacja działa samodzielnie, gdy tylko jest dostępna.",
-    "syncLocalLoading": "Lokalny węzeł propagacji nadal ładuje zapisane komunikaty. Synchronizacja działa samodzielnie po jej zakończeniu."
+    "syncLocalLoading": "Lokalny węzeł propagacji nadal ładuje zapisane komunikaty. Synchronizacja działa samodzielnie po jej zakończeniu.",
+    "syncLocalSettledFor": "Zsynchronizowano z {{name}}.",
+    "syncStartedWith": "Synchronizacja z {{name}}…",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Pokaż przypomnienie o propagacji na czacie",
+    "showChatNoticeAria": "Pokaż baner przypominający o węźle propagacji na czacie",
+    "showChatNoticeHint": "Wyłącz tę opcję, aby ukryć baner czatu, który pojawia się, gdy żaden węzeł propagacji nie jest dostępny."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

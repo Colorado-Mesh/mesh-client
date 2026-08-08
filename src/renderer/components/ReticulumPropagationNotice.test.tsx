@@ -1,11 +1,23 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { writeReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
-import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+import {
+  RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY,
+  useReticulumPropagationStore,
+} from '@/renderer/stores/reticulumPropagationStore';
 
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
+
+const activeDiscovered = {
+  destination_hash: 'ab'.repeat(16),
+  node_state: true,
+  peering_cost: 0,
+  hops: 1,
+};
 
 describe('ReticulumPropagationNotice', () => {
   const originalRefresh = useReticulumPropagationStore.getState().refreshFromSidecar;
@@ -18,6 +30,7 @@ describe('ReticulumPropagationNotice', () => {
       nodes: [],
       discovered: [],
       preferredId: null,
+      chatNoticeDismissed: false,
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       addFromDiscovered: vi.fn().mockResolvedValue(true),
     });
@@ -28,6 +41,7 @@ describe('ReticulumPropagationNotice', () => {
       nodes: [],
       discovered: [],
       preferredId: null,
+      chatNoticeDismissed: false,
       refreshFromSidecar: originalRefresh,
     });
   });
@@ -89,7 +103,57 @@ describe('ReticulumPropagationNotice', () => {
     useReticulumPropagationStore.setState({ nodes: [], preferredId: null });
     const onOpen = vi.fn();
     render(<ReticulumPropagationNotice stackLive onOpenPropagationSettings={onOpen} />);
-    await userEvent.click(screen.getByRole('button', { name: /propagation/i }));
+    await userEvent.click(screen.getByRole('button', { name: /open reticulum network/i }));
     expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  // Auto deposits on the best heard node, so a discovery is a real propagation target.
+  it('hides in auto when only discovered nodes exist but still shows in manual', () => {
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'online' }],
+      discovered: [activeDiscovered],
+      preferredId: null,
+    });
+    const { container, unmount } = render(<ReticulumPropagationNotice stackLive />);
+    expect(container).toBeEmptyDOMElement();
+    unmount();
+
+    writeReticulumPropagationMode('manual');
+    render(<ReticulumPropagationNotice stackLive />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/propagation node/i);
+  });
+
+  it('dismiss hides the notice and persists the choice', async () => {
+    useReticulumPropagationStore.setState({ nodes: [], preferredId: null });
+    const { container } = render(<ReticulumPropagationNotice stackLive />);
+    await userEvent.click(screen.getByRole('button', { name: /stop showing/i }));
+    expect(container).toBeEmptyDOMElement();
+    expect(localStorage.getItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBe('1');
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(true);
+  });
+
+  it('stays hidden when dismissal was restored from a previous session', () => {
+    useReticulumPropagationStore.setState({
+      nodes: [],
+      preferredId: null,
+      chatNoticeDismissed: true,
+    });
+    const { container } = render(<ReticulumPropagationNotice stackLive />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('has no axe violations', async () => {
+    writeReticulumPropagationMode('manual');
+    useReticulumPropagationStore.setState({
+      nodes: [],
+      discovered: [activeDiscovered],
+      preferredId: null,
+    });
+    const { container } = render(
+      <ReticulumPropagationNotice stackLive onOpenPropagationSettings={vi.fn()} />,
+    );
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

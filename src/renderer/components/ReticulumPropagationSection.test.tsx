@@ -2,7 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+import {
+  RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY,
+  useReticulumPropagationStore,
+} from '@/renderer/stores/reticulumPropagationStore';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -92,6 +95,9 @@ describe('ReticulumPropagationSection', () => {
       preferredId: null,
       discovered: [],
       sync: { active: false, progress: 0, message: null },
+      syncTargetId: null,
+      lastSyncError: null,
+      chatNoticeDismissed: false,
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       removePropagationNode: vi.fn().mockResolvedValue(true),
       renamePropagationNode: vi.fn().mockResolvedValue(true),
@@ -551,5 +557,108 @@ describe('ReticulumPropagationSection', () => {
       expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
     });
     expect(setPreferredOnSidecar).not.toHaveBeenCalled();
+  });
+
+  it('toggles the Chat propagation reminder and persists the choice', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumPropagationSection embedded />);
+
+    const checkbox = screen.getByLabelText<HTMLInputElement>(
+      'reticulumPropagation.showChatNoticeAria',
+    );
+    expect(checkbox.checked).toBe(true);
+
+    await user.click(checkbox);
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(true);
+    expect(localStorage.getItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBe('1');
+
+    await user.click(checkbox);
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(false);
+    expect(localStorage.getItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBeNull();
+  });
+
+  it('names the node the cascade reached in the sync toast', async () => {
+    const user = userEvent.setup();
+    // Real startSync is mocked, so mirror the target stamp it would write.
+    useReticulumPropagationStore.setState({
+      startSync: vi.fn().mockImplementation((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          sync: { active: true, progress: 5, message: null },
+        });
+        return Promise.resolve(true);
+      }),
+    });
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    await user.click(
+      screen.getByRole('button', { name: 'reticulumPropagation.syncNowFor:Remote hub' }),
+    );
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith(
+        'reticulumPropagation.syncStartedWith:Remote hub',
+        'info',
+      );
+    });
+  });
+
+  it('names the last node the cascade tried in the failure toast', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      nodes: [
+        {
+          id: 'pn-aabb1111',
+          name: 'Remote hub',
+          enabled: true,
+          status: 'known',
+          destination_hash: 'aabb1111222233334444555566667777',
+        },
+      ],
+      startSync: vi.fn().mockImplementation((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: 'reticulumPropagation.syncFailed',
+        });
+        return Promise.resolve(false);
+      }),
+    });
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    await user.click(
+      screen.getByRole('button', { name: 'reticulumPropagation.syncNowFor:Remote hub' }),
+    );
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith(
+        'reticulumPropagation.syncErrorWithTarget:Remote hub',
+        'error',
+      );
+    });
+  });
+
+  it('leaves the failure toast unprefixed when no node was contacted', async () => {
+    const user = userEvent.setup();
+    const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Host propagation node', enabled: false, status: 'unknown' },
+      ],
+    });
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    await user.click(
+      screen.getByRole('button', {
+        name: 'reticulumPropagation.syncNowFor:Host propagation node',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.syncNoTarget', 'error');
+    });
+    expect(startSync).not.toHaveBeenCalled();
   });
 });

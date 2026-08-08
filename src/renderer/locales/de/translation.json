@@ -4171,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Es ist kein Ausbreitungsknoten konfiguriert. {{count}} im Netzwerk entdeckt — füge unten eine hinzu oder öffne die Netzwerkeinstellungen.",
       "addClosest": "Am nächsten entdeckte hinzufügen",
-      "addClosestAria": "Fügen Sie den nächstgelegenen entdeckten Ausbreitungsknoten hinzu und legen Sie ihn als bevorzugt"
+      "addClosestAria": "Fügen Sie den nächstgelegenen entdeckten Ausbreitungsknoten hinzu und legen Sie ihn als bevorzugt",
+      "dismiss": "Nicht erneut anzeigen",
+      "dismissAria": "Die Erinnerung an den Ausbreitungsknoten im Chat nicht mehr anzeigen"
     },
     "rename": "Umbenennen",
     "renameLabel": "Name des Ausbreitungsknotens",
@@ -4253,7 +4255,14 @@
     "modeHelpOff": "Aus: keine Unterstützung für Ausbreitungsknoten. Nichts synchronisiert und Offline-Nachrichten werden auf keinem Ausbreitungsknoten abgelegt. Ein bevorzugter Knoten bleibt gespeichert, aber nicht verwendet, bis Sie Auto oder Manuell wählen.",
     "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn dies fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Posteingang.",
     "syncNoTarget": "Es ist noch kein Ausbreitungsknoten verfügbar — keiner wurde entdeckt und Sie haben keine zusätzlichen Knoten hinzugefügt. Sync läuft von selbst, sobald eines verfügbar ist.",
-    "syncLocalLoading": "Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung läuft von selbst, sobald sie abgeschlossen ist."
+    "syncLocalLoading": "Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung läuft von selbst, sobald sie abgeschlossen ist.",
+    "syncLocalSettledFor": "Synchronisiert mit {{name}}.",
+    "syncStartedWith": "Wird mit {{name}} synchronisiert...",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Ausbreitungserinnerung im Chat anzeigen",
+    "showChatNoticeAria": "Verbreitungsknoten-Erinnerungsbanner im Chat anzeigen",
+    "showChatNoticeHint": "Deaktivieren Sie diese Option, um das Chat-Banner auszublenden, das angezeigt wird, wenn kein Ausbreitungsknoten verfügbar ist."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

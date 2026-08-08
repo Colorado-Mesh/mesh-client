@@ -2142,18 +2142,21 @@ mod tests {
             PnCascadeCandidate {
                 hash: preferred,
                 is_local: false,
+                is_discovered: false,
                 hops: Some(1),
                 id: "pn-a".into(),
             },
             PnCascadeCandidate {
                 hash: next_remote,
                 is_local: false,
+                is_discovered: false,
                 hops: Some(2),
                 id: "pn-b".into(),
             },
             PnCascadeCandidate {
                 hash: local,
                 is_local: true,
+                is_discovered: false,
                 hops: Some(0),
                 id: "local-prop".into(),
             },
