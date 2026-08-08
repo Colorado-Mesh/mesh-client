@@ -85,12 +85,14 @@ import { playMessageNotification } from '../lib/chatNotifications';
 import {
   dismissedDmTabsStorageKey,
   lastReadStorageKey,
+  loadActiveDmInitial,
   loadMutedViews,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
   loadStarred,
   notifyPersistedLastReadChanged,
   openDmTabsStorageKey,
+  saveActiveDm,
   saveMutedViews,
   saveStarred,
   type StarredMessage,
@@ -738,7 +740,9 @@ function ChatPanel({
   const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => loadOpenDmTabsInitial(protocol));
   const openDmTabsRef = useRef(openDmTabs);
   openDmTabsRef.current = openDmTabs;
-  const [activeDmNode, setActiveDmNode] = useState<number | null>(null);
+  const [activeDmNode, setActiveDmNode] = useState<number | null>(() =>
+    loadActiveDmInitial(protocol),
+  );
   const [dmAddressInput, setDmAddressInput] = useState('');
   const [dmAddressError, setDmAddressError] = useState<string | null>(null);
   const [dismissedDmTabs, setDismissedDmTabs] = useState<Record<number, number>>(() => {
@@ -766,6 +770,11 @@ function ChatPanel({
       console.warn('[ChatPanel] persist openDmTabs failed ' + errLikeToLogString(e));
     }
   }, [openDmTabs, protocol]);
+
+  // Persist last-focused DM so remount/autofocus does not jump to another open tab.
+  useEffect(() => {
+    saveActiveDm(protocol, activeDmNode);
+  }, [activeDmNode, protocol]);
 
   useEffect(() => {
     try {
@@ -922,24 +931,21 @@ function ChatPanel({
     });
   }, [activeDmNode, isOwnNode, ownNodeIdSet, protocol]);
 
-  // Reticulum DM-only: auto-focus the conversation with the most history when none selected.
+  // Reticulum DM-only: when none selected, restore last-focused open tab (not
+  // "most message history" — that jumped users to an older/busier peer).
   useEffect(() => {
     if (!dmOnlyChat || activeDmNode != null || visibleDmTabs.length === 0) return;
     // Wait until own identity is known so we never autofocus a misattributed self tab.
     if (protocol === 'reticulum' && ownNodeIdSet.size === 0) return;
-    let bestTab = visibleDmTabs[0];
-    let bestCount = inferredDmTabs.get(bestTab) ?? 0;
-    for (const [nodeNum, count] of inferredDmTabs) {
-      if (!visibleDmTabs.includes(nodeNum)) continue;
-      if (count > bestCount) {
-        bestCount = count;
-        bestTab = nodeNum;
-      }
-    }
-    if (protocol === 'reticulum' && isOwnNode(bestTab)) return;
-    setActiveDmNode(bestTab);
+    const stored = loadActiveDmInitial(protocol);
+    const preferred =
+      (stored != null && visibleDmTabs.includes(stored) ? stored : null) ??
+      [...openDmTabsRef.current].reverse().find((id) => visibleDmTabs.includes(id)) ??
+      visibleDmTabs[0];
+    if (protocol === 'reticulum' && isOwnNode(preferred)) return;
+    setActiveDmNode(preferred);
     setViewMode('dm');
-  }, [activeDmNode, dmOnlyChat, inferredDmTabs, isOwnNode, ownNodeIdSet, protocol, visibleDmTabs]);
+  }, [activeDmNode, dmOnlyChat, isOwnNode, ownNodeIdSet, protocol, visibleDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 

@@ -686,4 +686,42 @@ describe('DiagnosticsPanel reticulum scope', () => {
     expect(screen.getByText('Reticulum interface config')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Repair config' })).toBeInTheDocument();
   });
+
+  it('does not list Reticulum TX-queue rows in the LoRa mesh Node/Offense table', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'rf',
+        id: 'rf:0:reticulum/tx-queue-drops/RNode 41F4',
+        nodeId: 0,
+        condition: 'reticulum/tx-queue-drops',
+        cause: 'Interface "RNode 41F4" dropped 128 outbound packets (TX queue full)',
+        severity: 'error',
+        detectedAt: Date.now(),
+        causeI18n: {
+          key: 'diagnosticsPanel.reticulum.runtime.txQueueDropsBle',
+          params: { name: 'RNode 41F4', count: '128' },
+        },
+        reticulumInterfaceId: 'rnode-41f4',
+        reticulumRepairKind: 'edit',
+      },
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0xabcd}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Me')}
+        protocol="reticulum"
+        capabilities={RETICULUM_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.queryByText('Mesh diagnostics (1)')).not.toBeInTheDocument();
+    expect(screen.queryByText('!00000000')).not.toBeInTheDocument();
+    expect(screen.getAllByText(/RNode 41F4/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /edit interface/i })).toBeInTheDocument();
+  });
 });

@@ -3795,6 +3795,106 @@ describe('ChatPanel reticulum dm-only chat', () => {
     });
   });
 
+  it('restores last-focused DM instead of the peer with the most history', async () => {
+    const lastFocusedId = 0x201;
+    const busierPeerId = 0x202;
+    localStorage.setItem(
+      'mesh-client:openDmTabs:reticulum',
+      JSON.stringify([lastFocusedId, busierPeerId]),
+    );
+    localStorage.setItem('mesh-client:activeDm:reticulum', String(lastFocusedId));
+    const nodes = new Map<number, MeshNode>([
+      [
+        lastFocusedId,
+        {
+          node_id: lastFocusedId,
+          reticulum_destination_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          long_name: 'Last Focused',
+          short_name: 'LF',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+      [
+        busierPeerId,
+        {
+          node_id: busierPeerId,
+          reticulum_destination_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          long_name: 'Busier Peer',
+          short_name: 'BP',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    const messages: ChatMessage[] = [
+      {
+        sender_id: lastFocusedId,
+        sender_name: 'Last Focused',
+        payload: 'one message',
+        channel: 0,
+        to: 1,
+        reticulum_sender_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        timestamp: Date.now() - 1000,
+        status: 'acked',
+      },
+      {
+        sender_id: busierPeerId,
+        sender_name: 'Busier Peer',
+        payload: 'many one',
+        channel: 0,
+        to: 1,
+        reticulum_sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: Date.now() - 500,
+        status: 'acked',
+      },
+      {
+        sender_id: busierPeerId,
+        sender_name: 'Busier Peer',
+        payload: 'many two',
+        channel: 0,
+        to: 1,
+        reticulum_sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: Date.now() - 400,
+        status: 'acked',
+      },
+      {
+        sender_id: busierPeerId,
+        sender_name: 'Busier Peer',
+        payload: 'many three',
+        channel: 0,
+        to: 1,
+        reticulum_sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: Date.now() - 300,
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} nodes={nodes} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('one message')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('many one')).not.toBeInTheDocument();
+    const lastFocusedBtn = screen.getAllByRole('button', { name: 'Last Focused' })[0];
+    expect(lastFocusedBtn.className).toMatch(/text-white/);
+    expect(localStorage.getItem('mesh-client:activeDm:reticulum')).toBe(String(lastFocusedId));
+  });
+
   it('promotes DM pills into the channel grid column with flex-wrap (no separate DM row)', () => {
     const peerIds = [0x101, 0x102, 0x103, 0x104, 0x105, 0x106];
     localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify(peerIds));

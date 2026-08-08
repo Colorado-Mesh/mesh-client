@@ -51,6 +51,7 @@ import {
   getRecommendedAction,
   getRecommendedActionForRfCondition,
 } from '../lib/diagnostics/RemediationEngine';
+import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
@@ -193,7 +194,9 @@ export default function DiagnosticsPanel({
     [t],
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
-  const showLoRaMeshDiagnostics = capabilities?.hasHopCount !== false;
+  // LoRa Node/Offense tables are Meshtastic/MeshCore only. On Reticulum, native
+  // rows already render in ReticulumDiagnosticsSection — never as !00000000 peers.
+  const showLoRaMeshDiagnostics = protocol !== 'reticulum' && capabilities?.hasHopCount !== false;
   const showForeignLoraDiagnostics = capabilities?.hasDiagnosticsPanel !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
@@ -484,14 +487,20 @@ export default function DiagnosticsPanel({
     return order(a.severity) - order(b.severity);
   });
 
-  const selfRows = anomalyList.filter((r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r));
+  const selfRows = anomalyList.filter(
+    (r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r) && !isReticulumDiagnosticRow(r),
+  );
   const foreignLoraListenerId =
     foreignLoraListenerNodeId > 0 ? foreignLoraListenerNodeId : myNodeNum;
   const otherCrossProtocolRows = anomalyList.filter(
     (r) =>
       r.nodeId === foreignLoraListenerId && isForeignLoraRfRow(r) && !isMeshCoreInterferenceRow(r),
   );
-  const meshRows = anomalyList.filter((r) => r.nodeId !== myNodeNum);
+  // Reticulum interface/stack rows belong in ReticulumDiagnosticsSection only —
+  // never as peer Node/Offense rows (avoids !00000000 self placeholders).
+  const meshRows = anomalyList.filter(
+    (r) => r.nodeId !== myNodeNum && !isReticulumDiagnosticRow(r),
+  );
 
   const errorCount = visibleDiagnosticRows.filter(
     (r) => r.kind === 'routing' && r.severity === 'error',
