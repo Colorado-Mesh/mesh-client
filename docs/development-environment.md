@@ -589,7 +589,6 @@ Other useful commands:
 - `pnpm run test:staged` (pre-commit helper: Vitest related to **staged** files only)
 - `pnpm run test:changed` (one-shot tests for working-tree edits vs `HEAD`, including unstaged WIP)
 - `pnpm run check:pr` (before opening/updating a PR: full lint + typecheck + `typecheck:strict-shared` + full `test:run`)
-- Pre-push hook: `vitest run --changed` vs merge-base with `origin/main` (branch-scoped; not full suite)
 - `pnpm run test:ui` / `test:logic` / `test:main` (single Vitest project)
 - `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
 - `pnpm run test:coverage:merge` (merge sharded CI blob reports locally)
@@ -649,7 +648,7 @@ After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prep
 
 ESLint: production `src/**` enforces `no-unsafe-*`; test files keep those off. `no-unnecessary-condition` is enforced for `src/shared/**` and `src/renderer/lib/**` only.
 
-Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage. Use `pnpm run check:pr` before opening a PR. Pre-push runs branch `--changed` Vitest when `origin/main` is available.
+Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage. Use `pnpm run check:pr` before opening a PR.
 
 Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
 
@@ -664,8 +663,6 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
-
-**Pre-push:** [`.githooks/pre-push`](../.githooks/pre-push) runs `vitest run --changed <merge-base-with-origin/main>` when `origin/main` exists.
 
 **Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the same Vitest/lint/typecheck surface locally before a PR.
 
