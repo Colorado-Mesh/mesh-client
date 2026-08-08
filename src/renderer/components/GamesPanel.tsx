@@ -5,7 +5,11 @@ import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
-import { burstConfetti, type ConfettiBurstOptions } from '@/renderer/lib/confettiBurst';
+import {
+  burstConfetti,
+  type ConfettiBurstOptions,
+  shouldSkipConfetti,
+} from '@/renderer/lib/confettiBurst';
 import {
   gamesMetaStr,
   isGamesDrawOfferFromOpponent,
@@ -43,6 +47,8 @@ type GamesFilter = 'all' | 'active' | 'pending' | 'completed';
 const GAMES_FILTERS: GamesFilter[] = ['all', 'active', 'pending', 'completed'];
 const COMPLETED_STATUSES = new Set(['completed', 'expired', 'declined']);
 const CHALLENGE_APPS: GamesAppId[] = ['ttt', 'chess'];
+/** Delay before retrying a win celebration that was skipped because a burst was already animating. */
+export const CELEBRATION_RETRY_MS = 400;
 
 function matchesFilter(session: GameSession, filter: GamesFilter): boolean {
   if (filter === 'all') return true;
@@ -95,6 +101,10 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const celebratedWinsRef = useRef<Set<string>>(new Set());
+  const celebrationRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped to re-run the celebration effect after an in-flight burst finishes (retry a win that
+  // was selected while confetti for an earlier win was still animating).
+  const [celebrationRetryTick, setCelebrationRetryTick] = useState(0);
 
   useEffect(() => {
     if (!isActive) return;
@@ -114,16 +124,46 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
     }
   }, [isActive, selectedSession]);
 
-  // One-shot confetti when the viewed session is a completed local win. Deduped
-  // per session_id so re-renders / re-selection do not re-fire (burstConfetti
-  // itself skips under reduced motion and is single-flight).
+  // One-shot confetti when the viewed session is a completed local win. Deduped per session_id so
+  // re-renders / re-selection do not re-fire. A win is only recorded as celebrated once a burst
+  // actually starts (or is intentionally skipped under reduced motion); if a burst is already
+  // animating (single-flight), the win is retried after that burst finishes so a second win
+  // selected mid-celebration is not silently dropped.
   useEffect(() => {
     if (!isActive || !selectedSession) return;
     if (!isGamesWinForSelf(selectedSession)) return;
-    if (celebratedWinsRef.current.has(selectedSession.session_id)) return;
-    celebratedWinsRef.current.add(selectedSession.session_id);
-    burstConfetti(winCelebrationOptions(selectedSession, boardWrapRef.current));
-  }, [isActive, selectedSession]);
+    const sessionId = selectedSession.session_id;
+    if (celebratedWinsRef.current.has(sessionId)) return;
+
+    // Reduced motion: the burst is intentionally suppressed, so mark celebrated (don't retry).
+    if (shouldSkipConfetti()) {
+      celebratedWinsRef.current.add(sessionId);
+      return;
+    }
+
+    const started = burstConfetti(winCelebrationOptions(selectedSession, boardWrapRef.current));
+    if (started) {
+      celebratedWinsRef.current.add(sessionId);
+      return;
+    }
+
+    // A burst is already in flight — retry once it finishes.
+    if (celebrationRetryTimerRef.current) return;
+    celebrationRetryTimerRef.current = setTimeout(() => {
+      celebrationRetryTimerRef.current = null;
+      setCelebrationRetryTick((n) => n + 1);
+    }, CELEBRATION_RETRY_MS);
+  }, [isActive, selectedSession, celebrationRetryTick]);
+
+  useEffect(
+    () => () => {
+      if (celebrationRetryTimerRef.current) {
+        clearTimeout(celebrationRetryTimerRef.current);
+        celebrationRetryTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   const filteredSessions = useMemo(
     () => sessions.filter((row) => matchesFilter(row, filter)),

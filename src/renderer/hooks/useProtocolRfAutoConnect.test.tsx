@@ -487,6 +487,14 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
         'meshtastic',
         expect.any(Number),
       );
+
+      // Order matters: primary settle → protocol settle → BLE connect. Assert the actual call
+      // sequence, not merely that each was invoked.
+      const primaryOrder = mocks.awaitNobleBlePrimaryAutoConnectSettled.mock.invocationCallOrder[0];
+      const protocolOrder = mocks.awaitNobleBleProtocolSettle.mock.invocationCallOrder[0];
+      const connectOrder = connectAutomatic.mock.invocationCallOrder[0];
+      expect(primaryOrder).toBeLessThan(protocolOrder);
+      expect(protocolOrder).toBeLessThan(connectOrder);
     },
   );
 });

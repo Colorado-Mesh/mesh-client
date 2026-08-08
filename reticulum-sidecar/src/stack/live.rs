@@ -3303,6 +3303,11 @@ impl LiveBridge {
         // clients that ignore 0x40 still show something. An unparsable target_hash is
         // treated as absent (send content-only) rather than poisoning the message.
         let reaction_target = parse_optional_reply_to_hash(Some(&req.target_hash));
+        // Only surface structured reaction metadata to the renderer when the target hash parsed
+        // cleanly. The content-only fallback below must omit `reaction_target` so downstream
+        // consumers do not treat a plain-emoji send as a structured tapback.
+        let reaction_target_out: Option<String> =
+            reaction_target.as_ref().map(|_| req.target_hash.clone());
         let (msg, message_hash_hex) = if let Some(target) = reaction_target {
             let mut fields = HashMap::new();
             fields.insert(FIELD_REACTION, encode_reaction_field(&target, &req.emoji));
@@ -3336,7 +3341,7 @@ impl LiveBridge {
             "text": req.emoji,
             "timestamp": ts_ms,
             "to_hash": req.destination_hash,
-            "reaction_target": req.target_hash,
+            "reaction_target": reaction_target_out,
             "direction": "outbound",
             "message_hash": message_hash_hex,
             "delivery_status": "sending"
@@ -4760,7 +4765,13 @@ fn reaction_content_text(value: &rmpv::Value) -> Option<String> {
 /// `None` so the message ingests as normal text/reply.
 fn reaction_fields_from_message(msg: &LxMessage) -> Option<LxmfReactionFields> {
     let raw = msg.get_field(FIELD_REACTION)?;
-    let value = rmpv::decode::read_value(&mut Cursor::new(raw.as_slice())).ok()?;
+    let mut cursor = Cursor::new(raw.as_slice());
+    let value = rmpv::decode::read_value(&mut cursor).ok()?;
+    // A conformant FIELD_REACTION is exactly one msgpack map. Trailing bytes after the map mean
+    // the field is malformed, so fail open (ingest as normal text/reply) rather than trust it.
+    if cursor.position() as usize != raw.len() {
+        return None;
+    }
     let map = value.as_map()?;
     let mut reaction_target: Option<String> = None;
     let mut emoji: Option<String> = None;
@@ -6503,5 +6514,27 @@ mod reply_field_tests {
         // A reaction must not also render as a reply bubble.
         assert!(payload.get("reply_to_hash").is_none());
         assert!(payload.get("reply_preview_text").is_none());
+    }
+
+    #[test]
+    fn reaction_field_with_trailing_bytes_is_rejected() {
+        // A well-formed reaction map that is followed by extra bytes must fail open: the field
+        // is malformed, so decoding returns None (ingest as normal text) rather than trust it.
+        let target = [0x44u8; 32];
+        let mut buf = encode_reaction_field(&target, "🔥");
+        buf.push(0x00); // trailing byte after the complete msgpack map
+        // Use the raw field setter: set_msgpack_field itself rejects trailing bytes, but a hostile
+        // or buggy peer can still place raw bytes in the field, which decode must reject.
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
+        msg.set_field(FIELD_REACTION, buf);
+        assert!(reaction_fields_from_message(&msg).is_none());
+
+        // Sanity: the same map without trailing bytes still decodes.
+        let mut ok_msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
+        ok_msg
+            .set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "🔥"))
+            .expect("set field");
+        let decoded = reaction_fields_from_message(&ok_msg).expect("reaction fields");
+        assert_eq!(decoded.reaction_target, hex::encode(target));
     }
 }

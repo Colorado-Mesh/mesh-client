@@ -86,6 +86,9 @@ export function readStoredMeshcoreMqttPreset(): MeshcoreMqttPreset {
 /**
  * Common field block for a device-signing broker (WSS + TLS on 443, JWT auth).
  * Defaults the topic prefix to `meshcore/test`; callers override it per preset (e.g. Colorado DEN).
+ *
+ * `tlsInsecure` is explicitly reset to `false` so switching from Ripple (which enables it) restores
+ * certificate verification instead of leaking an insecure TLS setting into a JWT broker connection.
  */
 function deviceSigningWssFields(server: string, wsPath: '/ws' | '/mqtt'): Partial<MQTTSettings> {
   return {
@@ -94,6 +97,7 @@ function deviceSigningWssFields(server: string, wsPath: '/ws' | '/mqtt'): Partia
     topicPrefix: 'meshcore/test',
     useWebSocket: true,
     tlsEnabled: true,
+    tlsInsecure: false,
     wsPath,
     keepalive: 30,
     password: '',

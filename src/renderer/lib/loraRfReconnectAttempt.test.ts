@@ -6,6 +6,7 @@ import {
   runLoraRfReconnectAttempt,
 } from './loraRfReconnectAttempt';
 import { createRfReconnectController } from './rfReconnectController';
+import { loadRendererLibSource } from './sourceContractTestHelpers';
 import { setSystemSuspended } from './systemPowerState';
 import { NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
 
@@ -291,10 +292,8 @@ describe('runLoraRfReconnectAttempt', () => {
 });
 
 describe('loraRfReconnectAttempt source contracts', () => {
-  it('owns raceWithDeadline budget and finally schedule flush', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const source = readFileSync(join(__dirname, 'loraRfReconnectAttempt.ts'), 'utf8');
+  it('owns raceWithDeadline budget and finally schedule flush', () => {
+    const source = loadRendererLibSource('loraRfReconnectAttempt.ts');
     expect(source).toContain('raceWithDeadline');
     expect(source).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(source).toContain('Reconnect attempt timed out after');

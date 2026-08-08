@@ -6,7 +6,6 @@ import {
 } from './letsMeshConnectionGuards';
 import {
   generateLetsMeshAuthToken,
-  isLetsMeshSettings,
   letsMeshMqttUsernameFromIdentity,
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentityAsync,
@@ -31,7 +30,10 @@ export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
   const settings = readMeshcoreMqttSettingsFromStorage();
   if (!settings.autoLaunch) return false;
   if (meshcoreMqttNeedsColoradoRegionAck()) return false;
-  if (isLetsMeshSettings(settings.server)) {
+  // Device-signing gate follows the shared predicate (named preset OR device-signing host), so a
+  // Waev/EastMesh preset with a stale server still defers on the imported key rather than a password.
+  const preset = readStoredMeshcoreMqttPreset();
+  if (usesMeshcoreDeviceSigningMqtt(preset, settings)) {
     return meshcoreIdentityHasPrivateKey();
   }
   return Boolean(settings.password.trim());

@@ -129,6 +129,10 @@ describe('validateLetsMeshPresetConnect', () => {
       }),
     ).toContain('/ws');
   });
+
+  it('rejects an omitted wsPath for a /ws broker (stale settings)', () => {
+    expect(validateLetsMeshPresetConnect({ ...base, wsPath: undefined })).toContain('/ws');
+  });
 });
 
 describe('validateLetsMeshManualCredentials', () => {

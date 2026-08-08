@@ -16,6 +16,7 @@ import {
   applyMeshcoreMqttPreset,
   isDeviceSigningMeshcorePreset,
   readStoredMeshcoreMqttPreset,
+  usesMeshcoreDeviceSigningMqtt,
 } from './meshcoreMqttPresets';
 import type { MQTTSettings } from './types';
 
@@ -132,6 +133,34 @@ describe('applyMeshcoreMqttPreset', () => {
     });
     expect(next.server).toBe(MESHCORE_CA_HOST_BACKUP);
     expect(MESHCORE_CA_HOST_BACKUP).toBe('mqtt2.meshcore.ca');
+  });
+
+  it('restores certificate verification when switching from Ripple (tlsInsecure) to a device-signing preset', () => {
+    // Ripple leaves tlsInsecure=true; a device-signing preset must reset it so the JWT WSS
+    // connection verifies certificates again.
+    const fromRipple: MQTTSettings = {
+      ...base,
+      server: 'mqtt.ripplenetworks.com.au',
+      tlsInsecure: true,
+    };
+    const next = applyMeshcoreMqttPreset('waev', fromRipple);
+    expect(next.tlsInsecure).toBe(false);
+    expect(next.server).toBe(WAEV_HOST);
+    expect(next.tlsEnabled).toBe(true);
+  });
+});
+
+describe('usesMeshcoreDeviceSigningMqtt', () => {
+  it('is true for a named device-signing preset (Waev)', () => {
+    expect(usesMeshcoreDeviceSigningMqtt('waev', { server: WAEV_HOST })).toBe(true);
+  });
+
+  it('is true for Custom settings pointed at a device-signing host (mqtt.waev.app)', () => {
+    expect(usesMeshcoreDeviceSigningMqtt('custom', { server: WAEV_HOST })).toBe(true);
+  });
+
+  it('is false for Custom settings pointed at an unmatched host', () => {
+    expect(usesMeshcoreDeviceSigningMqtt('custom', { server: 'mqtt.example.com' })).toBe(false);
   });
 });
 

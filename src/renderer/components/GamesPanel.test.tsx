@@ -9,10 +9,11 @@ import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import type { GameSession } from '@/shared/games-types';
 
-import GamesPanel from './GamesPanel';
+import GamesPanel, { CELEBRATION_RETRY_MS } from './GamesPanel';
 
 vi.mock('@/renderer/lib/confettiBurst', () => ({
-  burstConfetti: vi.fn(),
+  burstConfetti: vi.fn(() => true),
+  shouldSkipConfetti: vi.fn(() => false),
 }));
 
 function makeWinSession(overrides: Partial<GameSession> = {}): GameSession {
@@ -441,6 +442,46 @@ describe('GamesPanel', () => {
       seedPeerDisplayName('Zeva');
     });
     expect(burstConfetti).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a win selected while an earlier burst is still animating', async () => {
+    const winA = makeWinSession({ session_id: 'win-a' });
+    const winB = makeWinSession({ session_id: 'win-b' });
+    vi.mocked(window.electronAPI.reticulum.games.listSessions).mockResolvedValue({
+      sessions: [winA, winB],
+    });
+
+    render(<GamesPanel isActive />);
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.listSessions).toHaveBeenCalled();
+    });
+
+    // First win: a burst starts immediately and the win is recorded as celebrated.
+    act(() => {
+      useReticulumGamesStore.getState().selectSession('win-a');
+    });
+    await waitFor(() => {
+      expect(burstConfetti).toHaveBeenCalledTimes(1);
+    });
+
+    vi.useFakeTimers();
+    try {
+      // Second win selected while the first burst is still animating: the burst is skipped once
+      // (single-flight), so the win must NOT be marked celebrated yet.
+      vi.mocked(burstConfetti).mockReturnValueOnce(false);
+      act(() => {
+        useReticulumGamesStore.getState().selectSession('win-b');
+      });
+      expect(burstConfetti).toHaveBeenCalledTimes(2);
+
+      // Once the earlier burst finishes, the queued win retries and celebrates.
+      act(() => {
+        vi.advanceTimersByTime(CELEBRATION_RETRY_MS);
+      });
+      expect(burstConfetti).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not fire confetti when the opponent won', async () => {

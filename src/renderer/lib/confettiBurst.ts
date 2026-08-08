@@ -110,16 +110,20 @@ export function isConfettiActive(): boolean {
 /**
  * Fire a one-shot confetti burst. No-op when reduced motion is preferred, when a
  * burst is already in flight, or when no canvas 2D context is available.
+ *
+ * @returns `true` when a burst actually started, `false` when it was skipped (single-flight,
+ * reduced motion, or no canvas). Callers can retry a `false` caused by single-flight once the
+ * active burst finishes.
  */
-export function burstConfetti(opts: ConfettiBurstOptions = {}): void {
-  if (active) return;
-  if (typeof document === 'undefined') return;
-  if (typeof requestAnimationFrame !== 'function') return;
-  if (shouldSkipConfetti()) return;
+export function burstConfetti(opts: ConfettiBurstOptions = {}): boolean {
+  if (active) return false;
+  if (typeof document === 'undefined') return false;
+  if (typeof requestAnimationFrame !== 'function') return false;
+  if (shouldSkipConfetti()) return false;
 
   const w = typeof window !== 'undefined' ? window.innerWidth : 0;
   const h = typeof window !== 'undefined' ? window.innerHeight : 0;
-  if (w <= 0 || h <= 0) return;
+  if (w <= 0 || h <= 0) return false;
 
   const count = clampConfettiCount(opts.count);
   const duration = clampConfettiDuration(opts.duration);
@@ -134,7 +138,7 @@ export function burstConfetti(opts: ConfettiBurstOptions = {}): void {
   canvas.setAttribute('aria-hidden', 'true');
 
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) return false;
 
   document.body.appendChild(canvas);
   active = true;
@@ -191,4 +195,5 @@ export function burstConfetti(opts: ConfettiBurstOptions = {}): void {
   };
 
   requestAnimationFrame(frame);
+  return true;
 }

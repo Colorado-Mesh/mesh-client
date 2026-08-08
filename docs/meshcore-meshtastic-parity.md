@@ -177,7 +177,7 @@ In **Meshtastic** mode, [`ConnectionPanel.tsx`](../src/renderer/components/Conne
 | -------- | -------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Official | `mqtt.meshtastic.org`            | 1883 | Plaintext; may be blocked on some networks                                                                                   |
 | Liam's   | `mqtt.meshtastic.liamcottle.net` | 1883 | **Uplink-only** (puts your node on Liam Cottle's map; no downlink). No TLS. Useful when `mqtt.meshtastic.org` is unreachable |
-| Custom   | (user)                           | ;    | No automatic changes; use for private brokers                                                                                |
+| Custom   | (user)                           | —    | No automatic changes; use for private brokers                                                                                |
 
 Topic prefix defaults to `msh/US/`; users can edit fields after choosing a preset. Defined in [`meshtasticMqttTlsMigration.ts`](../src/renderer/lib/meshtasticMqttTlsMigration.ts).
 

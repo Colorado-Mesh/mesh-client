@@ -472,6 +472,9 @@ export default function ConnectionPanel({
   const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() =>
     readStoredMeshcoreMqttPreset(),
   );
+  // Bumped when a preset selection is cancelled (Ripple / Colorado confirm) so the controlled
+  // <select> remounts and re-applies `meshcorePreset`, discarding the user's cancelled choice.
+  const [meshcorePresetSelectNonce, setMeshcorePresetSelectNonce] = useState(0);
   const [coloradoRegionGateOpen, setColoradoRegionGateOpen] = useState(false);
   const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
     () => {
@@ -710,8 +713,6 @@ export default function ConnectionPanel({
     loadLastConnection(protocol),
   );
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Set when the user starts a manual connect so deferred BLE reconnect must not call onAutoConnect. */
-  const autoConnectCancelRef = useRef(false);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   const [autoConnectBleTarget, setAutoConnectBleTarget] = useState<string | null>(null);
@@ -1174,7 +1175,6 @@ export default function ConnectionPanel({
     // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
     // a manual TCP/serial/HTTP connect (orphan TCP socket + connectType flip).
     // Mount auto-connect lives in ProtocolAutoConnectCoordinator — cancel that gate too.
-    autoConnectCancelRef.current = true;
     cancelProtocolRfAutoConnect(protocol);
     if (isAutoConnectingRef.current) {
       console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for manual connect');
@@ -1301,7 +1301,6 @@ export default function ConnectionPanel({
   }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
 
   const handleCancelConnection = useCallback(() => {
-    autoConnectCancelRef.current = true;
     cancelProtocolRfAutoConnect(protocol);
     isAutoConnectingRef.current = false;
     setIsAutoConnecting(false);
@@ -1447,7 +1446,6 @@ export default function ConnectionPanel({
     if (!lastConnection) return;
     // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
     // BLE/serial auto-connect (orphan socket / connectType flip).
-    autoConnectCancelRef.current = true;
     cancelProtocolRfAutoConnect(protocol);
     if (isAutoConnectingRef.current) {
       console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
@@ -2198,6 +2196,7 @@ export default function ConnectionPanel({
                 {t('connectionPanel.networkPreset')}
               </p>
               <MqttNetworkPresetSelect
+                key={`meshcore-preset-${meshcorePresetSelectNonce}`}
                 id="conn-meshcore-network-preset-select"
                 labelledById="conn-meshcore-network-preset"
                 value={meshcorePreset}
@@ -2222,10 +2221,17 @@ export default function ConnectionPanel({
                     return;
                   }
                   if (id === 'ripple') {
-                    if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
+                    if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) {
+                      // Cancelled: force the controlled select to snap back to the current preset.
+                      setMeshcorePresetSelectNonce((n) => n + 1);
+                      return;
+                    }
                   }
                   if (id === 'coloradomesh') {
-                    if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) return;
+                    if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) {
+                      setMeshcorePresetSelectNonce((n) => n + 1);
+                      return;
+                    }
                     localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
                   }
                   setMeshcorePreset(id);
@@ -2437,7 +2443,7 @@ export default function ConnectionPanel({
             </label>
           </div>
           {protocol === 'meshcore' &&
-            isDeviceSigningMeshcorePreset(meshcorePreset) &&
+            usesMeshcoreDeviceSigningMqtt(meshcorePreset, meshcoreMqttSettings) &&
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
                 {meshcorePresetDeviationText(t, meshcorePreset)}

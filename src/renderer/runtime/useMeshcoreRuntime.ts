@@ -3482,6 +3482,9 @@ export function useMeshcoreRuntime() {
           // what finally's deferred restart and delayUnlessSuspended use to keep the cycle alive.
           // Clearing it here left status=reconnecting with no further attempts (n7eal TCP #792).
           console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
+          // Clean up any transport this (now-doomed) attempt opened before deferring, otherwise a
+          // late-opened driver leaks while the deferred restart brings up a fresh one.
+          await lateTransport.cleanup(openedDriverIdentityId);
           if (meshcoreIsReconnectingRef.current) {
             meshcoreDeferredReconnectRef.current = true;
           }

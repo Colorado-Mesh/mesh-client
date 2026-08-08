@@ -458,6 +458,9 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     expect(window.confirm).toHaveBeenCalled();
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
     expect(screen.getByLabelText(/^Server$/i)).toHaveValue('mqtt-us-v1.letsmesh.net');
+    // The controlled select must snap back to the current preset after a cancelled confirm
+    // (re-query: cancelling remounts the select so the original node is detached).
+    expect(screen.getByRole('combobox', { name: 'Network Preset' })).toHaveValue('letsmesh');
   });
 
   it('shows one-time Colorado region gate and switches to LetsMesh on cancel', async () => {

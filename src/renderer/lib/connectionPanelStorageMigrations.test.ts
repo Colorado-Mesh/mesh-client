@@ -181,6 +181,44 @@ describe('runConnectionPanelStorageMigrations', () => {
     expect(parsed.autoLaunch).toBe(true);
   });
 
+  it('preserves a manually stored password while reconciling Waev transport fields', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'waev');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({
+        server: WAEV_HOST,
+        topicPrefix: 'meshcore/test',
+        port: 1883, // stale transport → triggers reconcile
+        useWebSocket: false,
+        tlsEnabled: false,
+        username: 'v1_' + 'a'.repeat(64),
+        password: 'my-manual-secret',
+        autoLaunch: true,
+      }),
+    );
+    // Skip unrelated one-time migrations so only the preset reconcile runs.
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+    localStorage.setItem(COLORADO_MESH_PORT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHMAPPER_HOST_NET_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      port?: number;
+      tlsEnabled?: boolean;
+      password?: string;
+      username?: string;
+    };
+    // Transport fields reconciled...
+    expect(parsed.port).toBe(443);
+    expect(parsed.tlsEnabled).toBe(true);
+    // ...but the user's manual credentials are left untouched.
+    expect(parsed.password).toBe('my-manual-secret');
+    expect(parsed.username).toBe('v1_' + 'a'.repeat(64));
+  });
+
   it('does not overwrite custom preset settings', () => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
     const custom = JSON.stringify({
