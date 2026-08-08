@@ -34,4 +34,13 @@ describe('reticulumInterfaceChangeRequiresStackRestart', () => {
     );
     expect(reticulumInterfaceChangeRequiresStackRestart(undefined, { name: 'new' })).toBe(false);
   });
+
+  it('requires restart when flow_control changes alone', () => {
+    expect(reticulumInterfaceChangeRequiresStackRestart(undefined, { flow_control: false })).toBe(
+      true,
+    );
+    expect(reticulumInterfaceChangeRequiresStackRestart(undefined, { flow_control: true })).toBe(
+      true,
+    );
+  });
 });

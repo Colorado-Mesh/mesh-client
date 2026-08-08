@@ -303,6 +303,7 @@ mod tests {
             reachable_on,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::default(),
         }
     }

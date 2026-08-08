@@ -1198,7 +1198,8 @@
       "backboneEnableGuidanceLead": "Habilite de 1 a 3 puertas de enlace troncales como máximo",
       "backboneEnableGuidanceBody": "—2 es el punto óptimo para la redundancia sin una saturación innecesaria del ancho de banda. Apunte a 1 centro global y 1 puerta de enlace regional, y habilite interfaces especializadas (como I2P o Yggdrasil) estrictamente según sea necesario. Los RNodes conectados localmente y las interfaces LAN locales no cuentan para este límite de red troncal.",
       "defaultHubsPickerHint": "Empiece con Primario y global más su región. Active como máximo 1 a 3 puertas de enlace de backbone (2 es el punto óptimo). Los RNodes locales y las interfaces LAN no cuentan. Las entradas nuevas se añaden desactivadas para que pueda revisarlas. Sync también desactiva hubs de testnet oficiales fuera de servicio restantes (Ámsterdam).",
-      "rnodeTransportBleHint": "Los enlaces ble pueden desincronizarse con macOS (olvidar + volver a emparejar). Prefiera USB serie o Wi-Fi (tcp://) cuando la radio esté cerca."
+      "rnodeTransportBleHint": "Los enlaces ble pueden desincronizarse con macOS (olvidar + volver a emparejar). Prefiera USB serie o Wi-Fi (tcp://) cuando la radio esté cerca.",
+      "flowControl": "Control de flujo (puerta lista para TX)"
     },
     "reticulumPeers": {
       "hops": "Hops",

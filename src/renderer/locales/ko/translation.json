@@ -1198,7 +1198,8 @@
       "backboneEnableGuidanceLead": "최대 1 ~ 3개의 백본 게이트웨이 활성화",
       "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
       "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다.",
-      "rnodeTransportBleHint": "BLE 본드는 macOS와 비동기화할 수 있습니다 (Forget + re-pair). 라디오가 근처에 있을 때는 USB 직렬 또는 Wi-Fi (tcp://) 를 선호합니다."
+      "rnodeTransportBleHint": "BLE 본드는 macOS와 비동기화할 수 있습니다 (Forget + re-pair). 라디오가 근처에 있을 때는 USB 직렬 또는 Wi-Fi (tcp://) 를 선호합니다.",
+      "flowControl": "흐름 제어(TX Ready-Gate)"
     },
     "reticulumPeers": {
       "hops": "Hops",

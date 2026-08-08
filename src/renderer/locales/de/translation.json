@@ -1196,7 +1196,8 @@
       "backboneEnableGuidanceLead": "Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways",
       "backboneEnableGuidanceBody": "—2 ist optimal für Redundanz ohne unnötigen Bandbreitenverbrauch. Streben Sie 1 globalen Hub und 1 regionales Gateway an, und aktivieren Sie Spezialschnittstellen (wie I2P oder Yggdrasil) nur bei Bedarf. Lokal verbundene RNodes und lokale LAN-Schnittstellen zählen nicht zu diesem Backbone-Limit.",
       "defaultHubsPickerHint": "Beginnen Sie mit Primär & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist optimal). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie prüfen können. Sync deaktiviert außerdem verbleibende außer Betrieb genommene offizielle Testnet-Hubs (Amsterdam).",
-      "rnodeTransportBleHint": "BLE-Bindungen können mit macOS desynchronisiert werden (Forget + Re-Pair). Bevorzugen Sie USB seriell oder Wi-Fi (tcp://), wenn das Radio in der Nähe ist."
+      "rnodeTransportBleHint": "BLE-Bindungen können mit macOS desynchronisiert werden (Forget + Re-Pair). Bevorzugen Sie USB seriell oder Wi-Fi (tcp://), wenn das Radio in der Nähe ist.",
+      "flowControl": "Flusskontrolle (TX Ready-Gate)"
     },
     "reticulumPeers": {
       "hops": "Hops",

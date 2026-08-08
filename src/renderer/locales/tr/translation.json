@@ -1198,7 +1198,8 @@
       "backboneEnableGuidanceLead": "En fazla 1 ila 3 omurga ağ geçidini etkinleştirin",
       "backboneEnableGuidanceBody": "—2 gereksiz bant genişliği şişmesi olmadan fazlalık için en uygun noktadır. 1 küresel merkez ve 1 bölgesel ağ geçidini hedefleyin ve kesinlikle gerektiğinde özel arayüzleri (I2P veya Yggdrasil gibi) etkinleştirin. Yerel olarak bağlı RNode'lar ve yerel lan arayüzleri bu omurga sınırına dahil edilmez.",
       "defaultHubsPickerHint": "Birincil ve küresel omurga ile bölgenizden başlayın. En fazla 1–3 omurga ağ geçidi etkinleştirin (2 idealdir). Yerel RNode ve LAN arayüzleri sayılmaz. Yeni girdiler inceleme için kapalı eklenir. Sync ayrıca kalan kullanım dışı resmi testnet hub’larını da kapatır (Amsterdam).",
-      "rnodeTransportBleHint": "BLE bağları macOS ile senkronize olmayabilir (Forget + re-pair). Radyo yakındayken USB seri veya Wi-Fi (tcp://) tercih edin."
+      "rnodeTransportBleHint": "BLE bağları macOS ile senkronize olmayabilir (Forget + re-pair). Radyo yakındayken USB seri veya Wi-Fi (tcp://) tercih edin.",
+      "flowControl": "Akış kontrolü (TX hazır kapısı)"
     },
     "reticulumPeers": {
       "hops": "Hops",

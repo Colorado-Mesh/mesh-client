@@ -1199,7 +1199,8 @@
       "backboneEnableGuidanceLead": "Povolit maximálně 1 až 3 páteřní brány",
       "backboneEnableGuidanceBody": "—2 je ideální místo pro redundanci bez zbytečného nafukování šířky pásma. Zaměřte se na 1 globální rozbočovač a 1 regionální bránu a povolte speciální rozhraní (jako je I2P nebo Yggdrasil) přesně podle potřeby. Lokálně připojené RNodes a místní LAN rozhraní se do tohoto limitu páteřní sítě nezapočítávají.",
       "defaultHubsPickerHint": "Začněte primární a globální páteří plus svým regionem. Zapněte nejvýše 1 až 3 páteřní brány (2 je optimum). Místní RNode a LAN rozhraní se nepočítají. Nové položky se přidávají vypnuté ke kontrole. Sync také vypne zbývající vyřazené oficiální testnet huby (Amsterdam).",
-      "rnodeTransportBleHint": "Ble vazby se mohou desynchronizovat s macOS (Forget + re-pair). Preferujte USB sériové nebo Wi-Fi (tcp://), pokud je rádio v blízkosti."
+      "rnodeTransportBleHint": "Ble vazby se mohou desynchronizovat s macOS (Forget + re-pair). Preferujte USB sériové nebo Wi-Fi (tcp://), pokud je rádio v blízkosti.",
+      "flowControl": "Řízení toku (TX ready-gate)"
     },
     "reticulumPeers": {
       "hops": "Hops",

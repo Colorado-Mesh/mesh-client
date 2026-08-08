@@ -212,6 +212,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         };
         assert!(!row_params_match_preset(&row));

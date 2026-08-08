@@ -1183,6 +1183,7 @@
       "passphraseAria": "IFAC passphrase",
       "showPassphrase": "Show passphrase",
       "hidePassphrase": "Hide passphrase",
+      "flowControl": "Flow control (TX ready-gate)",
       "advanced": "Advanced",
       "advancedHint": "Additional key=value pairs for this interface, one per line. Known fields (host, mode, network name, …) stay in the form above.",
       "advancedAria": "Advanced interface key-value options",

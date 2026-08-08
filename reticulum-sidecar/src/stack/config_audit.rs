@@ -658,6 +658,7 @@ target_port = 4242
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         });
         let settings = StackSettings {

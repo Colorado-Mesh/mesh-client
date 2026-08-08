@@ -38,6 +38,7 @@ export function reticulumInterfaceChangeRequiresStackRestart(
     'host' in patch ||
     'port' in patch ||
     'command' in patch ||
-    'mode' in patch
+    'mode' in patch ||
+    'flow_control' in patch
   );
 }

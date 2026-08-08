@@ -215,6 +215,8 @@ export function ReticulumInterfacesPanel({
   });
   const [selectedPreset, setSelectedPreset] = useState('rnode_us');
   const [addRfFields, setAddRfFields] = useState<RnodeRfFieldValues>(defaultAddRnodeRfFields);
+  // RF interfaces default flow control on (TX ready-gate) to avoid BLE buffer bursts.
+  const [addFlowControl, setAddFlowControl] = useState(true);
   const [auditByInterfaceId, setAuditByInterfaceId] = useState<
     Map<string, ReticulumConfigAuditIssue[]>
   >(() => new Map());
@@ -430,6 +432,7 @@ export function ReticulumInterfacesPanel({
         } else {
           body.serial_port = serialPort.trim();
         }
+        body.flow_control = addFlowControl;
       }
       if (ifaceType === 'ble_peer') {
         const seeds = seedAddresses
@@ -523,6 +526,9 @@ export function ReticulumInterfacesPanel({
       if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
         setRnodeDeviceName('');
         setIfaceCallsign('');
+      }
+      if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
+        setAddFlowControl(true);
       }
     } catch (e) {
       // catch-no-log-ok: interface add failure shown via interfaceError
@@ -954,6 +960,8 @@ export function ReticulumInterfacesPanel({
         rnodeWifiHost={rnodeWifiHost}
         rnodeWifiPort={rnodeWifiPort}
         seedAddresses={seedAddresses}
+        addFlowControl={addFlowControl}
+        onAddFlowControlChange={setAddFlowControl}
         onIfaceTypeChange={handleIfaceTypeChange}
         onIfaceModeChange={setIfaceMode}
         onIfaceHostChange={setIfaceHost}
@@ -1185,6 +1193,7 @@ function buildInterfaceEditPatch(draft: {
   mode: string;
   networkName: string;
   passphrase: string;
+  flowControl: boolean;
   extraConfig: Record<string, string>;
   rf: RnodeRfFieldValues;
 }): Record<string, unknown> | null {
@@ -1201,6 +1210,7 @@ function buildInterfaceEditPatch(draft: {
   }
   if (draft.type === 'rnode' || draft.type === 'rnode_multi' || draft.type === 'kiss') {
     body.serial_port = draft.serialPort.trim() || null;
+    body.flow_control = draft.flowControl;
   }
   if (draft.type === 'ble_peer') {
     body.seed_addresses = draft.seedAddresses
@@ -1503,6 +1513,8 @@ function InterfaceEditPanel({
   const [networkName, setNetworkName] = useState(iface.network_name ?? '');
   const [passphrase, setPassphrase] = useState(iface.passphrase ?? '');
   const [showPassphrase, setShowPassphrase] = useState(false);
+  // RF-only TX ready-gate; default on when the stored row omits the key.
+  const [flowControl, setFlowControl] = useState<boolean>(() => iface.flow_control ?? true);
   const [advancedText, setAdvancedText] = useState(() =>
     formatInterfaceExtraConfig(iface.extra_config ?? undefined),
   );
@@ -1665,6 +1677,18 @@ function InterfaceEditPanel({
                 setRfFields((prev) => ({ ...prev, ...patch }));
               }}
             />
+            <label className="flex items-center gap-2 text-xs text-gray-400">
+              <input
+                type="checkbox"
+                checked={flowControl}
+                onChange={(e) => {
+                  setFlowControl(e.target.checked);
+                }}
+                className="h-3.5 w-3.5"
+                aria-label={t('connectionPanel.reticulumInterfaces.flowControl')}
+              />
+              {t('connectionPanel.reticulumInterfaces.flowControl')}
+            </label>
           </>
         ) : null}
         {editRequiresCallsign ? (
@@ -1796,6 +1820,7 @@ function InterfaceEditPanel({
               mode,
               networkName,
               passphrase,
+              flowControl,
               extraConfig: parsedExtra.extraConfig,
               rf: rfFields,
             });
@@ -1854,6 +1879,8 @@ function InterfacesSection({
   rnodeWifiHost,
   rnodeWifiPort,
   seedAddresses,
+  addFlowControl,
+  onAddFlowControlChange,
   onIfaceTypeChange,
   onIfaceModeChange,
   onIfaceHostChange,
@@ -1919,6 +1946,8 @@ function InterfacesSection({
   rnodeWifiHost: string;
   rnodeWifiPort: string;
   seedAddresses: string;
+  addFlowControl: boolean;
+  onAddFlowControlChange: (v: boolean) => void;
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
   onIfaceModeChange: (v: string) => void;
   onIfaceHostChange: (v: string) => void;
@@ -2336,6 +2365,21 @@ function InterfacesSection({
             >
               {t('connectionPanel.reticulumInterfaces.pickDevice')}
             </button>
+          ) : null}
+          {showSerial ? (
+            <label className="flex items-center gap-2 text-xs text-gray-400">
+              <input
+                type="checkbox"
+                checked={addFlowControl}
+                disabled={actionsDisabled}
+                onChange={(e) => {
+                  onAddFlowControlChange(e.target.checked);
+                }}
+                className="h-3.5 w-3.5"
+                aria-label={t('connectionPanel.reticulumInterfaces.flowControl')}
+              />
+              {t('connectionPanel.reticulumInterfaces.flowControl')}
+            </label>
           ) : null}
           <ReticulumIfacFields
             idPrefix="add-ifac"

@@ -1198,7 +1198,8 @@
       "backboneEnableGuidanceLead": "Habilite de 1 a 3 gateways de backbone no máximo",
       "backboneEnableGuidanceBody": "—2 é o ponto ideal para redundância sem inchaço desnecessário da largura de banda. Aponte para 1 hub global e 1 gateway regional e habilite interfaces especializadas (como I2P ou Yggdrasil) estritamente conforme necessário. Os RNodes conectados localmente e as interfaces de LAN locais não contam para esse limite de backbone.",
       "defaultHubsPickerHint": "Comece com Primário e global mais sua região. Ative no máximo 1 a 3 gateways de backbone (2 é o ponto ideal). RNodes locais e interfaces LAN não contam. Novas entradas são adicionadas desativadas para revisão. Sync também desativa hubs de testnet oficiais desativados restantes (Amsterdã).",
-      "rnodeTransportBleHint": "As ligações BLE podem dessincronizar com o macOS (Forget + re-pair). Prefira USB serial ou Wi-Fi (tcp://) quando o rádio estiver próximo."
+      "rnodeTransportBleHint": "As ligações BLE podem dessincronizar com o macOS (Forget + re-pair). Prefira USB serial ou Wi-Fi (tcp://) quando o rádio estiver próximo.",
+      "flowControl": "Controle de fluxo (portão pronto para TX)"
     },
     "reticulumPeers": {
       "hops": "Hops",

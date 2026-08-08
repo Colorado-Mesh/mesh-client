@@ -60,12 +60,30 @@ const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "reachable_on",
     "network_name",
     "passphrase",
+    "flow_control",
 ];
 
 fn is_known_iface_config_key(key: &str) -> bool {
     KNOWN_IFACE_CONFIG_KEYS
         .iter()
         .any(|k| k.eq_ignore_ascii_case(key))
+}
+
+/// RF interface types whose RNode driver honors the `flow_control` TX ready-gate.
+/// Matches `SERIAL_PORT_IFACE_TYPES` (rnode / rnode_multi / kiss), covering USB,
+/// `ble://`, and `tcp://` RNode ports.
+fn iface_type_supports_flow_control(iface_type: &str) -> bool {
+    SERIAL_PORT_IFACE_TYPES.contains(&iface_type)
+}
+
+/// Default `flow_control` when adding/repairing an interface with the key absent.
+/// RF interfaces default on; all other types leave it unset.
+pub(crate) fn default_flow_control_for_iface_type(iface_type: &str) -> Option<bool> {
+    if iface_type_supports_flow_control(iface_type) {
+        Some(true)
+    } else {
+        None
+    }
 }
 
 /// Normalize optional IFAC / free-text fields: whitespace-only → None.
@@ -445,6 +463,13 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         reachable_on: block.get("reachable_on").map(str::to_string),
         network_name: nonempty_opt_string(block.get("network_name")),
         passphrase: nonempty_opt_string(block.get("passphrase")),
+        // Only RF types honor flow control; non-RF blocks keep it unset so a
+        // stray key is not surfaced as a typed field.
+        flow_control: if iface_type_supports_flow_control(iface_type) {
+            block.get_bool("flow_control")
+        } else {
+            None
+        },
         extra_config: {
             let mut extras = HashMap::new();
             for key in &block.order {
@@ -524,6 +549,13 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     if let Some(v) = &row.passphrase {
         if !v.trim().is_empty() {
             block.set("passphrase", v);
+        }
+    }
+
+    // Flow control is RF-only; never emit it for TCP/UDP/I2P/Auto blocks.
+    if iface_type_supports_flow_control(&row.iface_type) {
+        if let Some(v) = row.flow_control {
+            block.set("flow_control", &bool_to_ini(v));
         }
     }
 
@@ -802,6 +834,10 @@ pub fn add_interface_to_config(
         reachable_on: req.reachable_on.clone(),
         network_name: nonempty_opt_string(req.network_name.as_deref()),
         passphrase: nonempty_opt_string(req.passphrase.as_deref()),
+        // RF interfaces default flow control on unless the request overrides it.
+        flow_control: req
+            .flow_control
+            .or_else(|| default_flow_control_for_iface_type(&req.iface_type)),
         extra_config: req.extra_config.clone(),
     };
 
@@ -904,6 +940,9 @@ pub fn update_interface_in_config(
     if let Some(ref passphrase) = patch.passphrase {
         validate_ini_scalar("passphrase", passphrase)?;
         row.passphrase = nonempty_opt_string(Some(passphrase.as_str()));
+    }
+    if patch.flow_control.is_some() {
+        row.flow_control = patch.flow_control;
     }
     if let Some(ref extra) = patch.extra_config {
         validate_extra_config(extra)?;
@@ -1013,6 +1052,9 @@ pub struct UpdateInterfacePatch {
     pub reachable_on: Option<String>,
     pub network_name: Option<String>,
     pub passphrase: Option<String>,
+    /// RNode/KISS TX ready-gate toggle. `None` leaves the current value.
+    #[serde(default)]
+    pub flow_control: Option<bool>,
     /// When `Some`, replaces the interface's preserved unknown keys.
     /// When `None` (omitted), existing `extra_config` is kept.
     #[serde(default)]
@@ -1032,6 +1074,35 @@ pub fn repair_rnode_radio_fields_in_config(config_dir: &Path) -> Result<bool, St
             continue;
         }
         apply_preset_defaults(&mut row);
+        *block = interface_row_to_block(&row);
+        changed = true;
+    }
+    if changed {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(changed)
+}
+
+/// One-time migration: enable `flow_control` on RF interfaces that omit the key,
+/// so existing configs get TX backpressure. Explicit `False`/`No` is preserved.
+/// Non-RF blocks are never touched (no key injected).
+pub fn repair_flow_control_defaults_in_config(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed = false;
+    for block in &mut parsed.interfaces {
+        let Some(mut row) = interface_block_to_row(block) else {
+            continue;
+        };
+        if !iface_type_supports_flow_control(&row.iface_type) {
+            continue;
+        }
+        // `interface_block_to_row` parses an existing (even explicit `No`) value;
+        // only a missing/unparseable key yields `None`, which we default on.
+        if row.flow_control.is_some() {
+            continue;
+        }
+        row.flow_control = Some(true);
         *block = interface_row_to_block(&row);
         changed = true;
     }
@@ -2525,6 +2596,7 @@ target_port = 4242
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: {
                 let mut m = HashMap::new();
                 m.insert("ok".into(), "1".into());
@@ -2870,6 +2942,260 @@ mode = Boundry
         assert_eq!(updated.mode.as_deref(), Some("Boundry"));
         let disk = read_config(&dir).unwrap();
         assert!(disk.contains("mode = Boundry"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    fn fresh_config_dir() -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+[logging]
+loglevel = 4
+[interfaces]
+"#,
+        )
+        .unwrap();
+        dir
+    }
+
+    #[test]
+    fn flow_control_key_is_known_config_key() {
+        assert!(is_known_iface_config_key("flow_control"));
+    }
+
+    #[test]
+    fn add_rnode_defaults_flow_control_on() {
+        for serial in ["/dev/ttyUSB0", "ble://Heltec V3", "tcp://192.168.1.50:4242"] {
+            let dir = fresh_config_dir();
+            let row = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "rnode".into(),
+                    name: Some("RNode".into()),
+                    serial_port: Some(serial.into()),
+                    callsign: Some("N0CALL".into()),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert_eq!(row.flow_control, Some(true), "serial={serial}");
+            let disk = read_config(&dir).unwrap();
+            assert!(
+                disk.contains("flow_control = Yes"),
+                "serial={serial}\n{disk}"
+            );
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn add_kiss_defaults_flow_control_on() {
+        let dir = fresh_config_dir();
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "kiss".into(),
+                name: Some("KISS TNC".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.flow_control, Some(true));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("flow_control = Yes"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_tcp_omits_flow_control() {
+        let dir = fresh_config_dir();
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "tcp".into(),
+                name: Some("Hub".into()),
+                host: Some("example.org".into()),
+                port: Some(4242),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.flow_control, None);
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("flow_control"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_rnode_explicit_false_not_overwritten() {
+        let dir = fresh_config_dir();
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "rnode".into(),
+                name: Some("RNode".into()),
+                serial_port: Some("/dev/ttyUSB0".into()),
+                callsign: Some("N0CALL".into()),
+                flow_control: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.flow_control, Some(false));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("flow_control = No"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn flow_control_round_trips_and_stays_typed() {
+        for (value, expected_ini) in [(true, "flow_control = Yes"), (false, "flow_control = No")] {
+            let dir = fresh_config_dir();
+            let added = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "rnode".into(),
+                    name: Some("RNode".into()),
+                    serial_port: Some("/dev/ttyUSB0".into()),
+                    callsign: Some("N0CALL".into()),
+                    flow_control: Some(value),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            // Update an unrelated field to force a read→modify→write cycle.
+            update_interface_in_config(
+                &dir,
+                &added.id,
+                &UpdateInterfacePatch {
+                    enabled: Some(false),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            let disk = read_config(&dir).unwrap();
+            assert!(disk.contains(expected_ini), "{disk}");
+            let rows = interfaces_from_config_dir(&dir).unwrap();
+            let row = rows.iter().find(|r| r.id == added.id).unwrap();
+            assert_eq!(row.flow_control, Some(value));
+            // Typed promotion: never left dangling in extra_config.
+            assert!(!row.extra_config.contains_key("flow_control"));
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn update_toggles_flow_control_off() {
+        let dir = fresh_config_dir();
+        let added = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "rnode".into(),
+                name: Some("RNode".into()),
+                serial_port: Some("/dev/ttyUSB0".into()),
+                callsign: Some("N0CALL".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(added.flow_control, Some(true));
+        let updated = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                flow_control: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.flow_control, Some(false));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("flow_control = No"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn flow_control_parsed_as_typed_not_extra_config() {
+        let content = r#"
+[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+flow_control = Yes
+"#;
+        let rows = interfaces_from_parsed(&parse_config(content).unwrap());
+        let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode.flow_control, Some(true));
+        assert!(!rnode.extra_config.contains_key("flow_control"));
+    }
+
+    #[test]
+    fn repair_flow_control_enables_missing_rf_key() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+"#,
+        )
+        .unwrap();
+        assert!(repair_flow_control_defaults_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("flow_control = Yes"), "{disk}");
+        // Idempotent: second pass makes no change.
+        assert!(!repair_flow_control_defaults_in_config(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_flow_control_preserves_explicit_no() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+flow_control = No
+"#,
+        )
+        .unwrap();
+        assert!(!repair_flow_control_defaults_in_config(&dir).unwrap());
+        let rows = interfaces_from_config_dir(&dir).unwrap();
+        assert_eq!(rows[0].flow_control, Some(false));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_flow_control_ignores_non_rf_blocks() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[Hub]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Hub
+target_host = example.org
+target_port = 4242
+"#,
+        )
+        .unwrap();
+        assert!(!repair_flow_control_defaults_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("flow_control"), "{disk}");
         let _ = fs::remove_dir_all(&dir);
     }
 }
