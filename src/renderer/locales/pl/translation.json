@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Przejrzyste komunikaty bezpośrednie",
     "clearReticulumMessagesConfirm": "Spowoduje to trwałe usunięcie wszystkich przechowywanych lokalnie wiadomości bezpośrednich Reticulum {{count}}. Tej czynności nie można cofnąć.",
     "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}",
-    "reticulumSection": "Reticulum — Stos siateczkowy",
-    "reticulumAnnounceHelp": "Jak często Twoja tożsamość jest ogłaszana w sieci i narzędzia do czyszczenia przechowywanych ogłoszeń.",
     "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Na karcie Reticulum linie urządzeń obejmują wyjście wózka bocznego i stan interfejsu lokalnego. Linie debugowania wymagają pola wyboru w panelu dziennika.",
     "autoPruneUnheardContactsDaysAria": "Automatycznie usuwaj niesłyszane kontakty przy uruchomieniu, starsze niż {{days}} dni",
     "capTotalContactsCountAria": "Ogranicz wszystkie kontakty, zachowaj ostatnio widziane kontakty {{count}}",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Brak zapisanych kolorów — użyj przycisku Zapisz, aby utworzyć punkt kontrolny",
     "saveThemeButton": "Zapisz",
     "restoreThemeButton": "Przywróć",
-    "reticulumPropagationHelp": "Skonfiguruj zdalne węzły propagacji LXMF dla wiadomości DM offline. Lokalna propagacja to tylko skrzynka odbiorcza tego urządzenia — nie zastępuje zdalnego węzła.",
     "use24HourTime": "Format 24-godzinny",
     "use24HourTimeDesc": "Wymuś wyświetlanie zegarów, takich jak znaczniki czasu czatu, w formacie 24-godzinnym. Gdy jest wyłączony, postępuje zgodnie z ustawieniami regionalnymi systemu.",
     "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
@@ -4178,7 +4175,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Brak skonfigurowanego węzła propagacji. {{count}} wykryte w sieci — dodaj poniżej lub otwórz ustawienia sieci.",
       "addClosest": "Dodaj najbliższe odkryte",
-      "addClosestAria": "Dodaj najbliższy odkryty węzeł propagacji i ustaw go jako preferowany"
+      "addClosestAria": "Dodaj najbliższy odkryty węzeł propagacji i ustaw go jako preferowany",
+      "dismiss": "Nie pokazuj więcej",
+      "dismissAria": "Zatrzymaj wyświetlanie przypomnienia o węźle propagacji na czacie"
     },
     "rename": "Zmień nazwę",
     "renameLabel": "Nazwa węzła propagacji",
@@ -4200,7 +4199,8 @@
       "known": "znany",
       "pending": "oczekujący",
       "unknown": "nieznany",
-      "online": "online"
+      "online": "online",
+      "loading": "ładowanie…"
     },
     "syncIdentityUnknown": "Tożsamość węzła propagacji jest nieznana — poczekaj na ogłoszenie lub odpowiedź dotyczącą ścieżki, a następnie spróbuj ponownie.",
     "syncTargetNotPropagationNode": "Miejsce docelowe jest osiągalne na Reticulum, ale nie jest węzłem propagacji LXMF (węzły TCP są jedynie ścieżkami transportowymi). Dodaj miejsce docelowe ogłaszające się jako lxmf.propagation, aby synchronizować wiadomości offline.",
@@ -4247,18 +4247,25 @@
     "syncLocalNotSupported": "Lokalny węzeł propagacji hosta nie może być synchronizowany przez sieć jak zdalny węzeł propagacji LXMF.",
     "enableFailed": "Nie można włączyć węzła propagacji.",
     "disableFailed": "Nie można wyłączyć węzła propagacji.",
-    "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Synchronizacja propagacji odroczona — wiadomość wychodząca jest deponowana w tym węźle.",
     "modeLabel": "Tryb propagacji:",
     "modeAria": "Tryb synchronizacji propagacji",
     "modeAuto": "Automatyczne",
-    "modeManual": "Instrukcja obsługi",
+    "modeManual": "Ręczny",
     "modeOff": "Wył.",
-    "sync": "Synchronizuj",
-    "syncAria": "Synchronizuj komunikaty propagacji",
-    "cancelSync": "Anuluj",
-    "cancelSyncAria": "Anuluj synchronizację propagacji"
+    "modeHelpAuto": "Auto: jednorazowo synchronizuje najlepszy odkryty węzeł propagacji (nie dodaje go ani nie zmienia Preferred), potem skonfigurowane zdalne, potem lokalną skrzynkę. Bez interfejsów sieciowych kończy tylko lokalnie.",
+    "syncStarting": "Start synch.",
+    "syncLocalSettled": "Zsynchronizowane z lokalną skrzynką odbiorczą.",
+    "modeHelpOff": "OFF: brak obsługi węzła propagacji. Nic nie synchronizuje się i wiadomości offline nie są deponowane w żadnym węźle propagacji. Preferowany węzeł pozostaje zapisany, ale nieużywany, dopóki nie wybierzesz trybu automatycznego lub ręcznego.",
+    "modeHelpManual": "Ręcznie: synchronizuje preferowany węzeł lub wybiera najbliższy dodany węzeł dla tej synchronizacji, gdy żaden nie jest preferowany. Jeśli się nie powiedzie, wypróbowywane są inne dodane węzły, a następnie lokalna skrzynka odbiorcza.",
+    "syncNoTarget": "Żaden węzeł propagacji nie jest jeszcze dostępny — żaden nie został odkryty, a Ty nie masz dodanych węzłów. Synchronizacja działa samodzielnie, gdy tylko jest dostępna.",
+    "syncLocalLoading": "Lokalny węzeł propagacji nadal ładuje zapisane wiadomości. Synchronizacja uruchomi się sama po zakończeniu ładowania.",
+    "syncLocalSettledFor": "Zsynchronizowano z {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Pokaż przypomnienie o propagacji na czacie",
+    "showChatNoticeAria": "Pokaż baner przypominający o węźle propagacji na czacie",
+    "showChatNoticeHint": "Wyłącz tę opcję, aby ukryć baner czatu, który pojawia się, gdy żaden węzeł propagacji nie jest dostępny."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

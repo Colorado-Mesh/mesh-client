@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WORKSPACE_ROOT="${WORKSPACE_ROOT:-$(cd "${REPO_ROOT}/.." && pwd)}"
+WORKSPACE_ROOT="${WORKSPACE_ROOT:-${REPO_ROOT}/.rsstack}"
 NOMAD_DIR="${WORKSPACE_ROOT}/rsNomad"
 
 if ! command -v cargo > /dev/null 2>&1; then

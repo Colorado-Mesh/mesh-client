@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Doğrudan mesajları temizle",
     "clearReticulumMessagesConfirm": "Bu, yerel olarak depolanan tüm {{count}} Reticulum doğrudan mesajlarını kalıcı olarak silecektir. Bu işlem geri alınamaz.",
     "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle",
-    "reticulumSection": "Reticulum — Reticulum yığını",
-    "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
     "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "autoPruneUnheardContactsDaysAria": "Başlangıçta {{days}} günden eski, duyulmamış kişileri otomatik olarak buda",
     "capTotalContactsCountAria": "Toplam kişileri sınırlandırın, en son görülen {{count}} kişileri koruyun",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Henüz kaydedilmiş renk yok — bir kontrol noktası oluşturmak için Kaydet'i kullanın",
     "saveThemeButton": "Kaydet",
     "restoreThemeButton": "Geri Yükle",
-    "reticulumPropagationHelp": "Çevrimdışı DM'ler için uzak LXMF yayılım düğümlerini yapılandırın. Yerel yayılım yalnızca bu cihazın gelen kutusudur — uzak bir düğümün yerini almaz.",
     "use24HourTime": "24-Saat Zaman",
     "use24HourTimeDesc": "Sohbet zaman damgaları gibi saatleri 24 saat biçimine zorlayın. Kapalıyken, sisteminizin yerel ayarını takip edin.",
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç",
       "bodyWithDiscoveries": "Hiçbir yayılma düğümü yapılandırılmamış. {{count}} ağda keşfedildi — aşağıya bir tane ekleyin veya Ağ ayarlarını açın.",
       "addClosest": "En yakın bulunanları ekle",
-      "addClosestAria": "En yakın keşfedilen yayılma düğümünü ekleyin ve tercih edilen olarak ayarlayın"
+      "addClosestAria": "En yakın keşfedilen yayılma düğümünü ekleyin ve tercih edilen olarak ayarlayın",
+      "dismiss": "Bir daha gösterme",
+      "dismissAria": "Chat'te yayılım düğümü hatırlatıcısının gösterilmesini durdurma"
     },
     "rename": "Yeniden adlandır",
     "renameLabel": "Yayılma düğümü adı",
@@ -4196,7 +4195,8 @@
       "known": "bilinen",
       "pending": "askıda olması",
       "unknown": "bilinmiyor",
-      "online": "çevrimiçi"
+      "online": "çevrimiçi",
+      "loading": "yükleniyor"
     },
     "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
     "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "Yerel ana bilgisayar yayılım düğümü, uzak LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "enableFailed": "Yayılma düğümü etkinleştirilemedi.",
     "disableFailed": "Yayılma düğümü devre dışı bırakılamadı.",
-    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Yayılım senkronizasyonu ertelendi — giden bir mesaj bu düğüme bırakılıyor.",
     "modeLabel": "Yayılma modu",
     "modeAria": "Yayılma senkronizasyon modu",
     "modeAuto": "Otomatik",
     "modeManual": "Manuel",
     "modeOff": "Kapalı",
-    "sync": "Senkronizasyon",
-    "syncAria": "Yayılma mesajlarını senkronize et",
-    "cancelSync": "İptal",
-    "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
+    "modeHelpAuto": "Otomatik: en iyi keşfedilen yayılım düğümünü bir kez senkronize eder (eklemez ve Preferred’ı değiştirmez), sonra yapılandırılmış uzak düğümler, sonra yerel gelen kutusu. Ağ arayüzü yoksa yalnızca yerelde tamamlar.",
+    "syncStarting": "Eşitleme başlatılıyor",
+    "syncLocalSettled": "Yerel gelen kutusuyla senkronize edildi.",
+    "modeHelpOff": "Kapalı: Yayılma düğümü desteği yok. Hiçbir şey senkronize edilmez ve çevrimdışı mesajlar herhangi bir yayılma düğümüne yatırılmaz. Tercih edilen bir düğüm, Otomatik veya Manuel'i seçene kadar kaydedilmiş ancak kullanılmamış olarak kalır.",
+    "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel gelen kutusu denenir.",
+    "syncNoTarget": "Henüz yayılma düğümü mevcut değil — hiçbiri keşfedilmedi ve ek düğümünüz yok. Senkronizasyon, hazır olur olmaz kendi kendine çalışır.",
+    "syncLocalLoading": "Yerel yayılım düğümü hâlâ saklanan iletilerini yüklüyor. Senkronizasyon, yükleme bitince kendiliğinden çalışır.",
+    "syncLocalSettledFor": "{{name}} ile senkronize edildi.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Chat'te yayılma hatırlatıcısını göster",
+    "showChatNoticeAria": "Yayılma düğümü hatırlatma banner'ını Sohbet'te göster",
+    "showChatNoticeHint": "Yayılma düğümü bulunmadığında görünen Sohbet başlığını gizlemek için bunu kapatın."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

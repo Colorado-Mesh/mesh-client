@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "清除直接消息",
     "clearReticulumMessagesConfirm": "这将永久删除所有{{count}}本地存储的Reticulum直接消息。此操作无法撤消。",
     "clearReticulumMessagesConfirmButton": "清除{{count}}消息",
-    "reticulumSection": "Reticulum — 网状堆栈",
-    "reticulumAnnounceHelp": "您的身份在网络上公布的频率，以及清除存储的公告的工具。",
     "logPanelHelp": "启用后，实时日志流将显示在右侧。在 Reticulum 选项卡上，设备行包括 sidecar 输出和本地接口运行状况。调试行需要日志面板内的复选框。",
     "autoPruneUnheardContactsDaysAria": "启动时自动删除未听过的、超过 {{days}} 天的联系人",
     "capTotalContactsCountAria": "联系人总数上限，保留最近查看的 {{count}} 联系人",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "尚未保存颜色—使用“保存”创建检查点",
     "saveThemeButton": "保存",
     "restoreThemeButton": "恢复",
-    "reticulumPropagationHelp": "为离线DM配置远程LXMF传播节点。本地传播仅是此设备的收件箱—它不会替换远程节点。",
     "use24HourTime": "24小时时间",
     "use24HourTimeDesc": "强制将聊天时间戳等时钟设置为24小时格式。关闭时，请遵循您的系统区域设置。",
     "themeSaveFailed": "无法保存颜色检查点。",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "未配置传播节点。在网络上发现{{count}} —在下面添加一个或打开网络设置。",
       "addClosest": "添加最近发现的",
-      "addClosestAria": "添加最近发现的传播节点并将其设置为首选"
+      "addClosestAria": "添加最近发现的传播节点并将其设置为首选",
+      "dismiss": "不再显示",
+      "dismissAria": "停止在聊天中显示传播节点提醒"
     },
     "rename": "重命名",
     "renameLabel": "传播节点名称",
@@ -4196,7 +4195,8 @@
       "known": "已知的",
       "pending": "等待中",
       "unknown": "未知",
-      "online": "在线"
+      "online": "在线",
+      "loading": "加载中…"
     },
     "syncIdentityUnknown": "传播节点身份未知 - 等待公告或路径响应，然后重试。",
     "syncTargetNotPropagationNode": "该目的地在 Reticulum 上可到达，但不是 LXMF 传播节点（TCP 集线器仅是传输路径）。添加一个声明为 lxmf.propagation 的目标来同步离线消息。",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "本地主机传播节点无法像远程 LXMF 传播节点一样通过网络同步。",
     "enableFailed": "无法启用传播节点。",
     "disableFailed": "无法禁用传播节点。",
-    "syncOutboundBusy": "传播同步已延迟—出站消息正在存入此节点。"
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "传播同步已延迟—出站消息正在存入此节点。",
     "modeLabel": "传播模式",
     "modeAria": "传播同步模式",
-    "modeAuto": "推荐加点",
-    "modeManual": "说明书",
+    "modeAuto": "自动",
+    "modeManual": "手动",
     "modeOff": "关闭",
-    "sync": "同步",
-    "syncAria": "同步传播消息",
-    "cancelSync": "取消推荐",
-    "cancelSyncAria": "取消传播同步"
+    "modeHelpAuto": "自动：一次性同步最佳已发现的传播节点（不添加也不更改 Preferred），然后是已配置的远程节点，最后是本地收件箱。没有网络接口时仅完成本地。",
+    "syncStarting": "开始同步",
+    "syncLocalSettled": "已与本地收件箱同步。",
+    "modeHelpOff": "关闭：不支持传播节点。任何同步和离线消息都不会存放在任何传播节点上。首选节点保持保存但未使用，直到您选择“自动”或“手动”。",
+    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地收件箱。",
+    "syncNoTarget": "没有可用的传播节点—没有发现任何节点，并且您没有添加任何节点。一旦可用，同步将自行运行。",
+    "syncLocalLoading": "本地传播节点仍在加载其已存储的消息。加载完成后同步会自行运行。",
+    "syncLocalSettledFor": "已与{{name}}同步。",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}} ： {{message}}",
+    "showChatNotice": "在聊天中显示传播提醒",
+    "showChatNoticeAria": "在聊天中显示传播节点提醒横幅",
+    "showChatNoticeHint": "关闭此选项可隐藏在没有可用传播节点时显示的聊天横幅。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

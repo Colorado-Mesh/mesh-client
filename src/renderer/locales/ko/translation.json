@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "다이렉트 메시지 지우기",
     "clearReticulumMessagesConfirm": "이렇게 하면 로컬로 저장된 모든 {{count}} 개의 Reticulum 다이렉트 메시지가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
     "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기",
-    "reticulumSection": "Reticulum — 레티큘럼 스택",
-    "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
     "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "autoPruneUnheardContactsDaysAria": "시작 시 {{days}}일 이상 경과한 확인되지 않은 연락처 자동 정리",
     "capTotalContactsCountAria": "총 연락처 수를 제한하고 가장 최근에 본 연락처를 {{count}}개로 유지합니다.",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "아직 저장된 색상이 없습니다. 저장 을 사용하여 체크포인트를 만드세요.",
     "saveThemeButton": "저장",
     "restoreThemeButton": "복원",
-    "reticulumPropagationHelp": "오프라인 DM에 대한 원격 LXMF 전파 노드를 구성합니다. 로컬 전파는 이 장치의 받은 편지함일 뿐이며 원격 노드를 대체하지 않습니다.",
     "use24HourTime": "24시간 사용",
     "use24HourTimeDesc": "채팅 타임스탬프와 같은 시계를 24시간 형식으로 강제 설정합니다. 꺼지면 시스템 로케일을 따릅니다.",
     "themeSaveFailed": "색상 체크포인트를 저장하지 못했습니다.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Reticulum Network 전파 설정 열기",
       "bodyWithDiscoveries": "전파 노드가 구성되지 않았습니다. {{count}} 이 (가) 네트워크에서 발견되었습니다. 아래에 추가하거나 네트워크 설정을 엽니다.",
       "addClosest": "발견된 것 중 가장 가까운 것 추가",
-      "addClosestAria": "발견된 가장 가까운 전파 노드를 추가하고 선호하는 것으로 설정"
+      "addClosestAria": "발견된 가장 가까운 전파 노드를 추가하고 선호하는 것으로 설정",
+      "dismiss": "다시 표시하지 않음",
+      "dismissAria": "Chat에서 전파 노드 알림 표시 중지"
     },
     "rename": "이름 바꾸기",
     "renameLabel": "전파 노드 이름",
@@ -4196,7 +4195,8 @@
       "known": "알려진",
       "pending": "보류 중",
       "unknown": "알려지지 않은",
-      "online": "온라인"
+      "online": "온라인",
+      "loading": "로드 중…"
     },
     "syncIdentityUnknown": "전파 노드 ID를 알 수 없습니다. 알림 또는 경로 응답을 기다린 후 다시 시도하십시오.",
     "syncTargetNotPropagationNode": "해당 대상은 Reticulum에서 도달할 수 있지만 LXMF 전파 노드는 아닙니다(TCP 허브는 전송 경로일 뿐입니다). 오프라인 메시지를 동기화하려면 lxmf.propagation으로 알리는 대상을 추가하세요.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "로컬 호스트 전파 노드는 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화될 수 없습니다.",
     "enableFailed": "전파 노드를 활성화할 수 없습니다.",
     "disableFailed": "전파 노드를 비활성화할 수 없습니다.",
-    "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "전파 동기화 지연 — 아웃바운드 메시지가 이 노드에 저장되는 중입니다.",
     "modeLabel": "전파 모드",
     "modeAria": "전파 동기화 모드",
     "modeAuto": "자동",
     "modeManual": "수동",
     "modeOff": "해제",
-    "sync": "동기화",
-    "syncAria": "전파 메시지 동기화",
-    "cancelSync": "취소",
-    "cancelSyncAria": "전파 동기화 취소"
+    "modeHelpAuto": "자동: 최상의 검색된 전파 노드를 한 번 동기화합니다(추가하지 않으며 Preferred를 변경하지 않음). 그다음 구성된 원격, 마지막으로 로컬 받은편지함입니다. 네트워크 인터페이스가 없으면 로컬만 완료합니다.",
+    "syncStarting": "동기화 시작하기",
+    "syncLocalSettled": "로컬 받은 편지함과 동기화되었습니다.",
+    "modeHelpOff": "OFF: 전파 노드 지원 없음. 동기화 및 오프라인 메시지는 전파 노드에 저장되지 않습니다. 기본 설정 노드는 자동 또는 수동을 선택할 때까지 저장되지만 사용되지 않습니다.",
+    "modeHelpManual": "수동: 선호하는 노드를 동기화하거나, 선호하는 노드가 없을 때 해당 동기화에 대해 가장 가까운 추가된 노드를 선택합니다. 실패하면 다른 추가된 노드를 시도한 다음 로컬 받은 편지함을 시도합니다.",
+    "syncNoTarget": "아직 사용할 수 있는 전파 노드가 없습니다. 발견된 노드가 없으며 추가된 노드가 없습니다. 동기화는 사용 가능한 즉시 자체적으로 실행됩니다.",
+    "syncLocalLoading": "로컬 전파 노드가 저장된 메시지를 아직 로드 중입니다. 로드가 끝나면 동기화가 자동으로 실행됩니다.",
+    "syncLocalSettledFor": "{{name}}과(와) 동기화되었습니다.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Chat에 전파 알림 표시",
+    "showChatNoticeAria": "Chat에 전파 노드 알림 배너 표시",
+    "showChatNoticeHint": "전파 노드를 사용할 수 없을 때 나타나는 채팅 배너를 숨기려면 이 옵션을 끄십시오."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",

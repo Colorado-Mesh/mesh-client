@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = join(__dirname, '../../../..');
 const SIDECAR_LIVE = join(REPO_ROOT, 'reticulum-sidecar/src/stack/live.rs');
-const RNS_RETICULUM = join(REPO_ROOT, '../rsReticulum/crates/rns-runtime/src/reticulum.rs');
+const RNS_RETICULUM = join(REPO_ROOT, '.rsstack/rsReticulum/crates/rns-runtime/src/reticulum.rs');
 const DISCOVERY_PATCH = join(
   REPO_ROOT,
   'reticulum-sidecar/patches/rsReticulum-discovery-announce-egress.patch',

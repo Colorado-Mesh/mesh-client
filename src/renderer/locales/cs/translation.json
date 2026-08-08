@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Vymazat přímé zprávy",
     "clearReticulumMessagesConfirm": "Tím trvale odstraníte všechny {{count}} lokálně uložené přímé zprávy Reticulum. Tuto akci nelze vrátit zpět.",
     "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
-    "reticulumSection": "Reticulum — Zásobník retikula",
-    "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
     "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Na kartě Reticulum řádky zařízení zahrnují výstup postranního vozíku a stav místního rozhraní. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "autoPruneUnheardContactsDaysAria": "Automaticky oříznout neslyšené kontakty při spuštění, starší než {{days}} dnů",
     "capTotalContactsCountAria": "Omezit celkový počet kontaktů, ponechat naposledy zobrazené {{count}} kontakty",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Zatím nejsou uloženy žádné barvy — pomocí tlačítka Uložit vytvořte kontrolní bod",
     "saveThemeButton": "Uložit",
     "restoreThemeButton": "Obnovit",
-    "reticulumPropagationHelp": "Nakonfigurujte vzdálené uzly šíření LXMF pro offline DM. Místní propagace je pouze schránka tohoto zařízení — nenahrazuje vzdálený uzel.",
     "use24HourTime": "24hodinový čas",
     "use24HourTimeDesc": "Vynutit hodiny, jako jsou časová razítka chatu, do 24hodinového formátu. Když je vypnuto, postupuje podle místního nastavení systému.",
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
@@ -4176,7 +4173,9 @@
       "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum",
       "bodyWithDiscoveries": "Není nakonfigurován žádný propagační uzel. {{count}} objeveno v síti — přidej ho níže nebo otevři Nastavení sítě.",
       "addClosest": "Přidat nejblíže objevené",
-      "addClosestAria": "Přidejte nejbližší objevený propagační uzel a nastavte jej jako preferovaný"
+      "addClosestAria": "Přidejte nejbližší objevený propagační uzel a nastavte jej jako preferovaný",
+      "dismiss": "Znovu nezobrazovat",
+      "dismissAria": "Zastavit zobrazování připomenutí propagačního uzlu v chatu"
     },
     "rename": "Přejmenovat",
     "renameLabel": "Název uzlu šíření",
@@ -4198,7 +4197,8 @@
       "known": "známý",
       "pending": "čeká na vyřízení",
       "unknown": "neznámý",
-      "online": "online"
+      "online": "online",
+      "loading": "načítání..."
     },
     "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
     "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation.",
@@ -4245,18 +4245,25 @@
     "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
     "enableFailed": "Uzel šíření nelze povolit.",
     "disableFailed": "Uzel šíření nelze zakázat.",
-    "syncOutboundBusy": "Synchronizace propagace odložena — do tohoto uzlu se ukládá odchozí zpráva."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Synchronizace propagace odložena — do tohoto uzlu se ukládá odchozí zpráva.",
     "modeLabel": "Režim propagace",
     "modeAria": "Režim synchronizace propagace",
     "modeAuto": "Auto",
     "modeManual": "Manuální",
     "modeOff": "Vypnuto",
-    "sync": "Synchronizace",
-    "syncAria": "Synchronizovat propagační zprávy",
-    "cancelSync": "Zrušit",
-    "cancelSyncAria": "Zrušit synchronizaci propagace"
+    "modeHelpAuto": "Auto: jednorázově synchronizuje nejlepší objevený šířící uzel (nepřidá ho ani nezmění Preferred), pak nakonfigurované vzdálené a nakonec místní schránku. Bez síťových rozhraní dokončí jen místně.",
+    "syncStarting": "Spuštění synchronizace",
+    "syncLocalSettled": "Synchronizováno s místní doručenou poštou.",
+    "modeHelpOff": "Vypnuto: žádná podpora propagačního uzlu. Nic se nesynchronizuje a offline zprávy nejsou uloženy v žádném propagačním uzlu. Upřednostňovaný uzel zůstane uložený, ale nepoužitý, dokud nevyberete možnost Automaticky nebo Ručně.",
+    "modeHelpManual": "Ručně: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud se to nepodaří, jsou vyzkoušeny další přidané uzly, pak místní schránku.",
+    "syncNoTarget": "Zatím není k dispozici žádný propagační uzel — žádný nebyl objeven a nemáte žádné přidané uzly. Synchronizace se spustí sama, jakmile je k dispozici.",
+    "syncLocalLoading": "Místní šířící uzel stále načítá uložené zprávy. Synchronizace se spustí sama, jakmile načítání skončí.",
+    "syncLocalSettledFor": "Synchronizováno s {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Zobrazit připomenutí propagace v chatu",
+    "showChatNoticeAria": "Zobrazit banner připomenutí propagačního uzlu v chatu",
+    "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

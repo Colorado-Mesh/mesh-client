@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source=lib/apply-ratspeak-overlay.sh
 source "${SCRIPT_DIR}/lib/apply-ratspeak-overlay.sh"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsReticulum-discovery-announce-egress.patch"
-RNS_DIR="${RS_RETICULUM_DIR:-$(cd "${REPO_ROOT}/.." && pwd)/rsReticulum}"
+RNS_DIR="${RS_RETICULUM_DIR:-${REPO_ROOT}/.rsstack/rsReticulum}"
 RETICULUM_RS="${RNS_DIR}/crates/rns-runtime/src/reticulum.rs"
 
 if [[ ! -d "${RNS_DIR}/.git" ]]; then

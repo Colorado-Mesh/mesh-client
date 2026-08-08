@@ -43,15 +43,80 @@ describe('shouldRunPropagationAutoSync', () => {
     ).toBe(false);
   });
 
-  it('returns false when preferredId is local-prop', () => {
+  it('returns false when mode is off even with a remote preferred', () => {
     expect(
       shouldRunPropagationAutoSync({
         autoSyncIntervalSec: 3600,
-        preferredId: 'local-prop',
+        preferredId: 'pn-test',
         syncActive: false,
         lastPropagationSyncAt: null,
         lastPropagationSyncAttemptAt: null,
         nowMs: 4_000_000,
+        mode: 'off',
+      }),
+    ).toBe(false);
+  });
+
+  it('syncs a remote preferred in auto and manual modes', () => {
+    for (const mode of ['auto', 'manual'] as const) {
+      expect(
+        shouldRunPropagationAutoSync({
+          autoSyncIntervalSec: 3600,
+          preferredId: 'pn-test',
+          syncActive: false,
+          lastPropagationSyncAt: null,
+          lastPropagationSyncAttemptAt: null,
+          nowMs: 4_000_000,
+          mode,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it('allows local-prop Preferred in auto and manual (final settle / only-local)', () => {
+    for (const mode of ['auto', 'manual'] as const) {
+      expect(
+        shouldRunPropagationAutoSync({
+          autoSyncIntervalSec: 3600,
+          preferredId: 'local-prop',
+          syncActive: false,
+          lastPropagationSyncAt: null,
+          lastPropagationSyncAttemptAt: null,
+          nowMs: 4_000_000,
+          mode,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it('allows Auto and Manual with null Preferred when cascade candidates exist', () => {
+    for (const mode of ['auto', 'manual'] as const) {
+      expect(
+        shouldRunPropagationAutoSync({
+          autoSyncIntervalSec: 3600,
+          preferredId: null,
+          syncActive: false,
+          lastPropagationSyncAt: null,
+          lastPropagationSyncAttemptAt: null,
+          nowMs: 4_000_000,
+          mode,
+          hasCascadeCandidate: true,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it('returns false in Manual with null Preferred and no cascade candidate', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 3600,
+        preferredId: null,
+        syncActive: false,
+        lastPropagationSyncAt: null,
+        lastPropagationSyncAttemptAt: null,
+        nowMs: 4_000_000,
+        mode: 'manual',
+        hasCascadeCandidate: false,
       }),
     ).toBe(false);
   });

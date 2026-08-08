@@ -26,6 +26,7 @@ mod pn_hosting_apply;
 mod pn_hosting_policy;
 #[cfg(feature = "rns-stack")]
 mod pn_inbound;
+mod propagation_mode;
 pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;
@@ -73,6 +74,7 @@ use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 pub use path_medium::{PathMediumPreferenceSetting, PathMediumSetting};
 use persistence::PersistedState;
 pub use pn_hosting_policy::PnHostingPolicy;
+pub use propagation_mode::parse_propagation_mode;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow,
@@ -83,6 +85,37 @@ pub use types::{
 #[cfg(not(feature = "rns-stack"))]
 const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
 const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
+
+/// Live view of the local propagation node for the `local-prop` list row.
+#[cfg(feature = "rns-stack")]
+struct LocalPropagationStats {
+    count: usize,
+    bytes: usize,
+    /// Router is serving the local PN (deferred until the messagestore finishes loading).
+    serving: bool,
+    /// Background messagestore load has not finished yet.
+    load_pending: bool,
+    hash: String,
+}
+
+/// Status label for the `local-prop` row.
+///
+/// `loading` distinguishes "enabled but the messagestore is still being read from disk"
+/// from a user-disabled node, so the renderer can say so instead of reporting a sync failure.
+#[cfg(any(feature = "rns-stack", test))]
+fn local_propagation_status(
+    serving: bool,
+    load_pending: bool,
+    persisted_enabled: bool,
+) -> &'static str {
+    if serving {
+        return "active";
+    }
+    if load_pending && persisted_enabled {
+        return "loading";
+    }
+    "idle"
+}
 
 /// Parse Columba register-known inputs and require dest == LXMF delivery hash of the key.
 #[cfg(feature = "rns-stack")]
@@ -1245,12 +1278,18 @@ impl StackHandle {
         let inner = self.inner.read().await;
         let preferred_id = inner.preferred_propagation_id.clone();
         let auto_sync_interval_sec = inner.auto_sync_interval_sec;
+        let propagation_mode = inner.propagation_mode;
         let pn_hosting_policy = inner.pn_hosting_policy.clone();
         #[cfg(feature = "rns-stack")]
         let local_stats = if let Some(live) = self.live.get() {
             let (count, bytes) = live.propagation_local_stats();
-            let serving = live.propagation_is_local_serving();
-            Some((count, bytes, serving, live.propagation_local_hash()))
+            Some(LocalPropagationStats {
+                count,
+                bytes,
+                serving: live.propagation_is_local_serving(),
+                load_pending: live.propagation_messagestore_load_pending(),
+                hash: live.propagation_local_hash(),
+            })
         } else {
             None
         };
@@ -1270,28 +1309,31 @@ impl StackHandle {
                 });
                 #[cfg(feature = "rns-stack")]
                 if p.id == "local-prop" {
-                    if let Some((count, bytes, serving, hash)) = &local_stats {
+                    if let Some(stats) = &local_stats {
                         if let Some(obj) = row.as_object_mut() {
                             obj.insert(
                                 "message_count".into(),
-                                serde_json::Value::Number((*count).into()),
+                                serde_json::Value::Number(stats.count.into()),
                             );
                             obj.insert(
                                 "storage_bytes".into(),
-                                serde_json::Value::Number((*bytes).into()),
+                                serde_json::Value::Number(stats.bytes.into()),
                             );
-                            obj.insert("enabled".into(), serde_json::Value::Bool(*serving));
+                            obj.insert("enabled".into(), serde_json::Value::Bool(stats.serving));
                             obj.insert(
                                 "status".into(),
-                                if *serving {
-                                    serde_json::Value::String("active".into())
-                                } else {
-                                    serde_json::Value::String("idle".into())
-                                },
+                                serde_json::Value::String(
+                                    local_propagation_status(
+                                        stats.serving,
+                                        stats.load_pending,
+                                        p.enabled,
+                                    )
+                                    .into(),
+                                ),
                             );
                             obj.insert(
                                 "destination_hash".into(),
-                                serde_json::Value::String(hash.clone()),
+                                serde_json::Value::String(stats.hash.clone()),
                             );
                         }
                     }
@@ -1303,6 +1345,7 @@ impl StackHandle {
             "propagation": propagation,
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
+            "propagation_mode": propagation_mode.as_str(),
             "pn_hosting_policy": pn_hosting_policy,
         })
     }
@@ -1316,7 +1359,7 @@ impl StackHandle {
     }
 
     pub async fn set_preferred_propagation(&self, id: &str) -> Result<(), String> {
-        let prop_hash = {
+        let (prop_hash, mode) = {
             let mut inner = self.inner.write().await;
             inner.set_preferred_propagation(id)?;
             let hash = inner
@@ -1324,13 +1367,19 @@ impl StackHandle {
                 .iter()
                 .find(|p| p.id == id)
                 .and_then(|p| p.destination_hash.clone());
+            let mode = inner.propagation_mode;
             inner.save(&self.config_dir, &self.storage_dir)?;
-            hash
+            (hash, mode)
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            live.set_outbound_propagation_node(prop_hash.as_deref())
-                .await;
+            // Mode Off keeps Preferred on disk but never arms it for outbound.
+            let armed = if mode.is_off() {
+                None
+            } else {
+                prop_hash.as_deref()
+            };
+            live.set_outbound_propagation_node(armed).await;
             live.refresh_pn_cascade_candidates().await;
             if prop_hash.is_none() {
                 tracing::warn!(
@@ -1340,6 +1389,45 @@ impl StackHandle {
                 );
             }
         }
+        #[cfg(not(feature = "rns-stack"))]
+        let _ = mode;
+        Ok(())
+    }
+
+    /// Apply the renderer propagation mode. `Off` disarms the outbound PN and empties the
+    /// Direct→PN cascade so nothing is deposited on any propagation node.
+    pub async fn set_propagation_mode(&self, mode: &str) -> Result<(), String> {
+        let mode = parse_propagation_mode(mode)?;
+        let prop_hash = {
+            let mut inner = self.inner.write().await;
+            // Snapshot for rollback if durable save fails after in-memory mutate.
+            let snapshot = inner.propagation_mode;
+            inner.set_propagation_mode(mode);
+            let hash = inner.preferred_propagation_id.as_ref().and_then(|id| {
+                inner
+                    .propagation
+                    .iter()
+                    .find(|p| p.id == *id)
+                    .and_then(|p| p.destination_hash.clone())
+            });
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                inner.set_propagation_mode(snapshot);
+                return Err(e);
+            }
+            hash
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            let armed = if mode.is_off() {
+                None
+            } else {
+                prop_hash.as_deref()
+            };
+            live.set_outbound_propagation_node(armed).await;
+            live.refresh_pn_cascade_candidates().await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        let _ = prop_hash;
         Ok(())
     }
 
@@ -1427,6 +1515,45 @@ impl StackHandle {
         inner.save(&self.config_dir, &self.storage_dir)?;
         self.emit_event("propagation_sync", inner.propagation_sync.clone());
         Ok(())
+    }
+
+    /// One-time remote sync by destination hash. Does not add a configured row or change Preferred.
+    pub async fn start_propagation_sync_by_hash(
+        &self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        let prop_hash = destination_hash.trim().to_lowercase();
+        if prop_hash.len() != 32 || !prop_hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("destination_hash must be 32 hex characters".into());
+        }
+        let lxmf = {
+            let inner = self.inner.read().await;
+            inner.identity.lxmf_hash.clone()
+        };
+        let local_prop_hash = {
+            #[cfg(feature = "rns-stack")]
+            {
+                self.live
+                    .get()
+                    .map(|live| live.propagation_local_hash())
+                    .unwrap_or_default()
+            }
+            #[cfg(not(feature = "rns-stack"))]
+            {
+                String::new()
+            }
+        };
+        if prop_hash.eq_ignore_ascii_case(&lxmf)
+            || (!local_prop_hash.is_empty() && prop_hash.eq_ignore_ascii_case(&local_prop_hash))
+        {
+            return Err("LOCAL_PROPAGATION_SYNC_UNSUPPORTED".into());
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.start_propagation_sync(&prop_hash).await?;
+            return Ok(());
+        }
+        Err("RNS stack not live".into())
     }
 
     pub async fn cancel_propagation_sync(&self) -> Result<(), String> {
@@ -1529,12 +1656,13 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
             live.cancel_propagation_sync().await;
+            // Quiet supersede — renderer must not map this to "node unreachable".
             self.emit_event(
                 "propagation_sync",
                 serde_json::json!({
                     "active": false,
                     "progress": 0.0,
-                    "message": "propagation sync cancelled",
+                    "message": "PROPAGATION_SYNC_SUPERSEDED",
                 }),
             );
         }
@@ -3296,6 +3424,17 @@ mod tests {
     }
 
     #[test]
+    fn local_propagation_status_reports_loading_only_while_enabled_and_unloaded() {
+        assert_eq!(local_propagation_status(true, false, true), "active");
+        // Serving wins even if a later load is still pending.
+        assert_eq!(local_propagation_status(true, true, true), "active");
+        assert_eq!(local_propagation_status(false, true, true), "loading");
+        // Disabled by the user — not loading, just off.
+        assert_eq!(local_propagation_status(false, true, false), "idle");
+        assert_eq!(local_propagation_status(false, false, true), "idle");
+    }
+
+    #[test]
     fn with_rncp_listener_ok_stamps_ok_true_on_status() {
         let status = serde_json::json!({
             "enabled": false,
@@ -3453,6 +3592,48 @@ mod tests {
         .await;
         handle.clear_announces().await.expect("clear announces");
         assert!(handle.list_peers().await.is_empty());
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn start_propagation_sync_by_hash_rejects_invalid_and_leaves_list_unchanged() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        let before = handle.list_propagation().await;
+        let preferred_before = before
+            .get("preferred_id")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        let err = handle
+            .start_propagation_sync_by_hash("dead")
+            .await
+            .expect_err("short hash");
+        assert!(err.contains("32 hex"), "unexpected error: {err}");
+        let after = handle.list_propagation().await;
+        assert_eq!(
+            after
+                .get("preferred_id")
+                .cloned()
+                .unwrap_or(serde_json::Value::Null),
+            preferred_before
+        );
+        assert_eq!(
+            after
+                .get("propagation")
+                .and_then(|n| n.as_array())
+                .map(Vec::len),
+            before
+                .get("propagation")
+                .and_then(|n| n.as_array())
+                .map(Vec::len)
+        );
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }
@@ -3764,6 +3945,50 @@ mod tests {
             serde_json::json!({ hash: "rf" })
         );
 
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    #[cfg(unix)]
+    async fn set_propagation_mode_rolls_back_when_save_fails() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        handle.set_propagation_mode("auto").await.expect("set auto");
+        assert_eq!(handle.list_propagation().await["propagation_mode"], "auto");
+
+        // Directory 555 still allows rewriting an existing writable file; lock the state file.
+        let state_path = storage_dir.join("mesh_client_stack.json");
+        let mut perms = std::fs::metadata(&state_path)
+            .expect("state meta")
+            .permissions();
+        perms.set_mode(0o444);
+        std::fs::set_permissions(&state_path, perms).expect("lock state file");
+
+        let err = handle
+            .set_propagation_mode("manual")
+            .await
+            .expect_err("save must fail");
+        assert!(!err.is_empty());
+        assert_eq!(
+            handle.list_propagation().await["propagation_mode"],
+            "auto",
+            "in-memory mode must roll back when save fails"
+        );
+
+        let mut restore = std::fs::metadata(&state_path)
+            .expect("state meta")
+            .permissions();
+        restore.set_mode(0o644);
+        std::fs::set_permissions(&state_path, restore).expect("unlock state file");
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = join(__dirname, '../../../..');
 const PN_APPLY = join(REPO_ROOT, 'reticulum-sidecar/src/stack/pn_hosting_apply.rs');
-const LXMF_NODE = join(REPO_ROOT, '../rsLXMF/crates/lxmf-core/src/propagation_node.rs');
+const LXMF_NODE = join(REPO_ROOT, '.rsstack/rsLXMF/crates/lxmf-core/src/propagation_node.rs');
 const POLICY_SETTERS_PATCH = join(
   REPO_ROOT,
   'reticulum-sidecar/patches/rsLXMF-propagation-node-policy-setters.patch',

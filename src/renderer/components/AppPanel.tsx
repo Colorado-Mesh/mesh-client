@@ -59,7 +59,6 @@ import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
-import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
 import { useToast } from './Toast';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
@@ -222,7 +221,6 @@ interface Props {
   /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
   reticulumIdentityId?: string | null;
   reticulumSidecarReady?: boolean;
-  reticulumControlsDisabled?: boolean;
 }
 
 interface PendingAction {
@@ -261,7 +259,6 @@ export default function AppPanel({
   onApplyMeshcorePathHashMode,
   reticulumIdentityId = null,
   reticulumSidecarReady = false,
-  reticulumControlsDisabled = false,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') !== '1',
@@ -818,13 +815,6 @@ export default function AppPanel({
           </div>
         </div>
       )}
-
-      {protocol === 'reticulum' ? (
-        <ReticulumAppPanelSection
-          sidecarReady={reticulumSidecarReady}
-          disabled={reticulumControlsDisabled}
-        />
-      ) : null}
 
       {/* GPS / Location */}
       <div className="space-y-3">

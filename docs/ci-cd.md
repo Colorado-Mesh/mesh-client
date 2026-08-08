@@ -49,7 +49,7 @@ Runs on every push and pull request to `main`:
 1. Checkout code, setup pnpm + Node 22, install dependencies
 2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
 3. **Merge job** — downloads blob artifacts, runs `pnpm run test:coverage:merge` (enforces global coverage thresholds)
-4. **`reticulum-sidecar-coverage`** (when `reticulum-sidecar/**` or related scripts change, via `paths-filter`) — clones Ratspeak siblings, runs `cargo llvm-cov --fail-under-lines 45` on ubuntu-latest; uploads `lcov.info` artifact (no Codecov upload on free org plan)
+4. **`reticulum-sidecar-coverage`** (when `reticulum-sidecar/**` or related scripts change, via `paths-filter`) — clones the `.rsstack/` workspace, runs `cargo llvm-cov --fail-under-lines 45` on ubuntu-latest; uploads `lcov.info` artifact (no Codecov upload on free org plan)
 5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
 6. Upload merged test results artifact (retained 7 days)
 
@@ -76,7 +76,7 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
-CI clones Ratspeak siblings via `scripts/clone-ratspeak-stack.sh` and **no longer hardcodes `RS_RETICULUM_REF`** — rsReticulum / rsLXMF / rsNomad / rsLXST / lrgp-rs float to `origin/main` (overlays must apply). Override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` only for local bisect.
+CI and local **dev** clones float the `.rsstack/` workspace via `scripts/clone-ratspeak-stack.sh` to `origin/main` (overlays must apply; override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect). **Release** packaging (`scripts/build-reticulum-sidecar-release.mjs`) runs the same clone and records the resolved commit SHAs for all five crates in `.rsstack/RESOLVED_SHAS.txt` so artifacts retain the exact source revisions used — pin via `RS_*_REF` when a release must not float.
 
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 
@@ -277,7 +277,6 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - `pnpm dedupe` when dependency manifests are staged
 - `pnpm run i18n:auto-translate` when `en/translation.json` is staged (fills new English keys vs `HEAD`) + re-stages locales
 - Staged ESLint (`--cache`) + full `typecheck`; path-gated `typecheck:strict-shared` when shared paths staged; always-on cheap `check:*` scanners; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
-- Pre-push: `vitest run --changed` vs merge-base with `origin/main` when available
 - Before PR: `pnpm run check:pr` (full lint + typecheck + strict-shared + `test:run` + path-aware sidecar)
 - `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` only when relevant files are staged
 - `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)

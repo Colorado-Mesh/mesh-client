@@ -194,6 +194,12 @@ export function extractLxmfOutboundLogSlice(...logChunks: Buffer[]): Buffer {
     /Direct path failover/i,
     /PN cascade/i,
     /DeliverPropagated/i,
+    // PN island diagnosis: actual deposit PN hash vs preferred, and sync target counts.
+    /deposit[_ ]?pn/i,
+    /preferred[_ ]?pn/i,
+    /sync[_ ]?target/i,
+    /pn[_ ]?island/i,
+    /HaveAll|empty[_ ]?offer/i,
   ];
   const lines: string[] = [];
   for (const chunk of logChunks) {
@@ -313,13 +319,32 @@ export async function buildSupportBundleZip(
     if (reticulumArtifacts.config) {
       zip.file('reticulum/config', reticulumArtifacts.config);
     }
-    if (reticulumArtifacts.stackJson) {
-      zip.file('reticulum/mesh_client_stack.json', reticulumArtifacts.stackJson);
-    }
+    // Always include stack state so a missing PN preferred/config is unambiguous
+    // (present-but-placeholder vs silently omitted, as in the w0rmt dump).
+    zip.file(
+      'reticulum/mesh_client_stack.json',
+      reticulumArtifacts.stackJson ??
+        Buffer.from(
+          JSON.stringify(
+            { note: 'mesh_client_stack.json not found or unreadable at export time' },
+            null,
+            2,
+          ) + '\n',
+          'utf8',
+        ),
+    );
+    // Always include the cascade/outbound slice, even when empty, with a header note so
+    // the absence of PN deposit lines is explicit rather than a missing file.
     const lxmfSlice = extractLxmfOutboundLogSlice(backupLog, currentLog);
-    if (lxmfSlice.length > 0) {
-      zip.file('reticulum/lxmf-outbound.log', lxmfSlice);
-    }
+    zip.file(
+      'reticulum/lxmf-outbound.log',
+      lxmfSlice.length > 0
+        ? lxmfSlice
+        : Buffer.from(
+            '# No LXMF outbound / PN cascade lines matched in the exported logs at capture time.\n',
+            'utf8',
+          ),
+    );
   }
 
   const buf = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });

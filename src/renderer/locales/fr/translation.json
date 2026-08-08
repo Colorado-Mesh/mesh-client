@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Effacer les messages directs",
     "clearReticulumMessagesConfirm": "Cela supprimera définitivement tous les messages directs Reticulum {{count}} stockés localement. Cela ne peut pas être annulé.",
     "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}",
-    "reticulumSection": "Reticulum — Empilement de réticulum",
-    "reticulumAnnounceHelp": "La fréquence à laquelle votre identité est annoncée sur le réseau et les outils pour effacer les annonces stockées.",
     "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Dans l’onglet Reticulum, les lignes de périphériques incluent la sortie side-car et l’état de l’interface locale. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal.",
     "autoPruneUnheardContactsDaysAria": "Élague automatiquement les contacts non entendus au démarrage, datant de plus de {{days}} jours",
     "capTotalContactsCountAria": "Limiter le nombre total de contacts, conserver les contacts {{count}} les plus récemment vus",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Pas encore de couleurs enregistrées — utilisez Enregistrer pour créer un point de contrôle",
     "saveThemeButton": "Sauvegarder",
     "restoreThemeButton": "Restaurer",
-    "reticulumPropagationHelp": "Configurez les nœuds de propagation LXMF distants pour les DM hors ligne. La propagation locale est la boîte de réception de cet appareil uniquement — elle ne remplace pas un nœud distant.",
     "use24HourTime": "Heure (format 24 heures)",
     "use24HourTimeDesc": "Forcer les horloges comme les horodatages de chat au format 24 heures. Lorsqu'il est désactivé, suit les paramètres régionaux de votre système.",
     "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Aucun nœud de propagation n'est configuré. {{count}} découvert sur le réseau — ajoutez-en un ci-dessous ou ouvrez les paramètres réseau.",
       "addClosest": "Ajouter le plus proche découvert",
-      "addClosestAria": "Ajoutez le nœud de propagation découvert le plus proche et définissez-le comme préféré"
+      "addClosestAria": "Ajoutez le nœud de propagation découvert le plus proche et définissez-le comme préféré",
+      "dismiss": "Ne plus afficher",
+      "dismissAria": "Arrêter d'afficher le rappel du nœud de propagation dans le chat"
     },
     "rename": "Renommer",
     "renameLabel": "Nom du nœud de propagation",
@@ -4196,7 +4195,8 @@
       "known": "connu",
       "pending": "en attente",
       "unknown": "inconnu",
-      "online": "en ligne"
+      "online": "en ligne",
+      "loading": "chargement…"
     },
     "syncIdentityUnknown": "L'identité du nœud de propagation est inconnue : attendez une annonce ou une réponse de chemin, puis réessayez.",
     "syncTargetNotPropagationNode": "Cette destination est accessible sur Reticulum mais n'est pas un nœud de propagation LXMF (les hubs TCP sont uniquement des chemins de transport). Ajoutez une destination qui s'annonce comme lxmf.propagation pour synchroniser les messages hors ligne.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "Le nœud de propagation de l'hôte local ne peut pas être synchronisé sur le réseau comme un nœud de propagation LXMF distant.",
     "enableFailed": "Impossible d'activer le nœud de propagation.",
     "disableFailed": "Impossible de désactiver le nœud de propagation.",
-    "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Synchronisation de la propagation différée — un message sortant se dépose sur ce nœud.",
     "modeLabel": "mode de propagation",
     "modeAria": "Mode de synchronisation de la propagation",
     "modeAuto": "Auto",
     "modeManual": "Manuel",
     "modeOff": "Arrêt",
-    "sync": "Synchronisation",
-    "syncAria": "Synchroniser les messages de propagation",
-    "cancelSync": "Annuler",
-    "cancelSyncAria": "Annuler la synchronisation de la propagation"
+    "modeHelpAuto": "Auto : synchronise une seule fois le meilleur nœud de propagation découvert (ne l’ajoute pas et ne modifie pas Preferred), puis les nœuds distants configurés, puis la boîte de réception locale. Sans interfaces réseau, ne règle que le local.",
+    "syncStarting": "Lancer la synchronisation",
+    "syncLocalSettled": "Synchronisé avec la boîte de réception locale.",
+    "modeHelpOff": "Désactivé : pas de support de nœud de propagation. Aucune synchronisation et aucun message hors ligne ne sont déposés sur aucun nœud de propagation. Un nœud Préféré reste enregistré mais inutilisé jusqu'à ce que vous choisissiez Auto ou Manuel.",
+    "modeHelpManual": "Manuel : synchronise votre nœud préféré ou sélectionne le nœud ajouté le plus proche pour cette synchronisation lorsqu'aucun n'est préféré. S'il échoue, les autres nœuds ajoutés sont essayés, puis la boîte de réception locale.",
+    "syncNoTarget": "Aucun nœud de propagation n'est encore disponible — aucun n'a été découvert et vous n'avez aucun nœud ajouté. La synchronisation s'exécute d'elle-même dès qu'elle est disponible.",
+    "syncLocalLoading": "Le nœud de propagation local charge encore ses messages stockés. La synchronisation se lance toute seule une fois le chargement terminé.",
+    "syncLocalSettledFor": "Synchronisé avec {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}} : {{message}}",
+    "showChatNotice": "Afficher le rappel de propagation dans le chat",
+    "showChatNoticeAria": "Afficher la bannière de rappel du nœud de propagation dans le chat",
+    "showChatNoticeHint": "Désactivez cette option pour masquer la bannière de chat qui apparaît lorsqu'aucun nœud de propagation n'est disponible."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

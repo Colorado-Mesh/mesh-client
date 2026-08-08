@@ -3,6 +3,14 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import { startPropagationSyncWithTarget } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import {
+  configuredPropagationDestinationHashes,
+  hasPropagationCascadeCandidate,
+  isReticulumPropagationMode,
+  resolvePropagationSyncTargetId,
+  type ReticulumPropagationMode,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
   type DiscoveredPropagationRow,
@@ -15,6 +23,7 @@ import {
 
 import { ConfirmModal } from './ConfirmModal';
 import {
+  getReticulumPropagationSyncTargetName,
   ReticulumPropagationLastRefreshed,
   ReticulumPropagationRefreshButton,
   ReticulumPropagationSyncProgress,
@@ -25,6 +34,7 @@ const PROPAGATION_NODE_STATUS_KEYS = new Set([
   'active',
   'idle',
   'known',
+  'loading',
   'pending',
   'unknown',
   'online',
@@ -145,12 +155,16 @@ export default function ReticulumPropagationSection({
   const lastPropagationSyncAt = useReticulumPropagationStore((s) => s.lastPropagationSyncAt);
   const sync = useReticulumPropagationStore((s) => s.sync);
   const lastSyncError = useReticulumPropagationStore((s) => s.lastSyncError);
+  const chatNoticeDismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
+  const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const setPreferredOnSidecar = useReticulumPropagationStore((s) => s.setPreferredOnSidecar);
   const setAutoSyncIntervalOnSidecar = useReticulumPropagationStore(
     (s) => s.setAutoSyncIntervalOnSidecar,
   );
-  const startSync = useReticulumPropagationStore((s) => s.startSync);
+  const setModeOnSidecar = useReticulumPropagationStore((s) => s.setModeOnSidecar);
+  const mode = useReticulumPropagationStore((s) => s.propagationMode);
+  const setPropagationMode = useReticulumPropagationStore((s) => s.setPropagationMode);
   const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const removePropagationNode = useReticulumPropagationStore((s) => s.removePropagationNode);
@@ -162,10 +176,67 @@ export default function ReticulumPropagationSection({
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [syncStarting, setSyncStarting] = useState(false);
+
+  const handleSyncNow = (targetId: string) => {
+    if (syncStarting || sync.active) return;
+    setSyncStarting(true);
+    void startPropagationSyncWithTarget(targetId)
+      .then((ok) => {
+        setSyncStarting(false);
+        const name = getReticulumPropagationSyncTargetName(t('reticulumPropagation.localHostName'));
+        if (!ok) {
+          const errKey =
+            useReticulumPropagationStore.getState().lastSyncError ??
+            'reticulumPropagation.syncFailed';
+          addToast(
+            name
+              ? t('reticulumPropagation.syncErrorWithTarget', { name, message: t(errKey) })
+              : t(errKey),
+            'error',
+          );
+          return;
+        }
+        // The cascade waits for the attempt to settle, so success names whichever node
+        // actually completed — a discovered/configured remote or the local inbox.
+        addToast(
+          name
+            ? t('reticulumPropagation.syncLocalSettledFor', { name })
+            : t('reticulumPropagation.syncLocalSettled'),
+          'success',
+        );
+      })
+      .catch((err: unknown) => {
+        setSyncStarting(false);
+        console.warn('[ReticulumPropagationSection] sync cascade rejected', err);
+        addToast(t('reticulumPropagation.syncFailed'), 'error');
+      });
+  };
 
   useEffect(() => {
     void refreshFromSidecar();
   }, [refreshFromSidecar]);
+
+  const handleModeChange = (next: ReticulumPropagationMode) => {
+    if (!isReticulumPropagationMode(next)) return;
+    setPropagationMode(next);
+    // Sidecar gates its outbound Direct→PN cascade on the same mode.
+    void setModeOnSidecar(next)
+      .then((ok) => {
+        if (!ok) {
+          console.warn('[ReticulumPropagationSection] setModeOnSidecar failed', next);
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn('[ReticulumPropagationSection] setModeOnSidecar rejected', err);
+      });
+    if (next !== 'auto') return;
+    // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
+    if (!hasPropagationCascadeCandidate('auto', nodes, discovered)) return;
+    const target = resolvePropagationSyncTargetId('auto', nodes, preferredId, discovered);
+    if (target == null) return;
+    handleSyncNow(target);
+  };
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -206,11 +277,24 @@ export default function ReticulumPropagationSection({
       });
   };
 
-  const configuredHashes = new Set(
-    nodes
-      .map((n) => n.destination_hash?.toLowerCase())
-      .filter((h): h is string => typeof h === 'string' && h.length > 0),
-  );
+  const configuredHashes = configuredPropagationDestinationHashes(nodes);
+
+  const modeHelpKey =
+    mode === 'auto'
+      ? 'reticulumPropagation.modeHelpAuto'
+      : mode === 'manual'
+        ? 'reticulumPropagation.modeHelpManual'
+        : 'reticulumPropagation.modeHelpOff';
+
+  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId, discovered);
+  // Manual resolves Preferred, else a picked remote, else local settle; Off disables Sync.
+  // Auto Sync (bottom or per-row) runs the full cascade — ignore firstTargetId.
+  const bottomSyncDisabled =
+    sync.active ||
+    syncStarting ||
+    mode === 'off' ||
+    (mode === 'manual' && !bottomSyncTargetId) ||
+    (mode === 'auto' && !hasPropagationCascadeCandidate('auto', nodes, discovered));
 
   const body = (
     <>
@@ -234,6 +318,21 @@ export default function ReticulumPropagationSection({
           }}
         />
       )}
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-xs text-gray-300">
+          <input
+            type="checkbox"
+            checked={!chatNoticeDismissed}
+            onChange={(e) => {
+              setChatNoticeDismissed(!e.target.checked);
+            }}
+            className="accent-brand-green"
+            aria-label={t('reticulumPropagation.showChatNoticeAria')}
+          />
+          {t('reticulumPropagation.showChatNotice')}
+        </label>
+        <p className="text-muted text-xs">{t('reticulumPropagation.showChatNoticeHint')}</p>
+      </div>
       <ReticulumPropagationLastRefreshed />
       <ReticulumPropagationSyncProgress
         cancelLabel={t('reticulumPropagation.cancelSync')}
@@ -245,6 +344,7 @@ export default function ReticulumPropagationSection({
       >
         {nodes.map((node) => {
           const isLocal = node.id === 'local-prop';
+          const isLoading = node.status === 'loading';
           const isRenaming = renamingId === node.id;
           return (
             <li
@@ -324,7 +424,7 @@ export default function ReticulumPropagationSection({
               <span className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline"
+                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
                   onClick={() => {
                     void setPreferredOnSidecar(node.id)
                       .then((ok) => {
@@ -334,7 +434,8 @@ export default function ReticulumPropagationSection({
                           addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
                         }
                       })
-                      .catch(() => {
+                      .catch((err: unknown) => {
+                        console.warn('[ReticulumPropagationSection] setPreferred rejected', err);
                         addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
                       });
                   }}
@@ -345,13 +446,16 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  disabled={sync.active}
+                  // Local inbox cannot settle until its messagestore finishes loading.
+                  disabled={sync.active || syncStarting || mode === 'off' || isLoading}
                   onClick={() => {
-                    void startSync(node.id);
+                    handleSyncNow(node.id);
                   }}
                   aria-label={t('reticulumPropagation.syncNowFor', { name: node.name })}
                 >
-                  {t('reticulumPropagation.syncNow')}
+                  {syncStarting
+                    ? t('reticulumPropagation.syncStarting')
+                    : t('reticulumPropagation.syncNow')}
                 </button>
                 <button
                   type="button"
@@ -423,6 +527,35 @@ export default function ReticulumPropagationSection({
         })}
       </ul>
       <div className="mt-3 space-y-1">
+        <label htmlFor="reticulum-propagation-mode" className="text-muted text-xs">
+          {t('reticulumPropagation.modeLabel')}
+        </label>
+        <select
+          id="reticulum-propagation-mode"
+          value={mode}
+          disabled={sync.active}
+          onChange={(e) => {
+            handleModeChange(e.target.value as ReticulumPropagationMode);
+          }}
+          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          aria-label={t('reticulumPropagation.modeAria')}
+          aria-describedby="reticulum-propagation-mode-help"
+        >
+          <option value="off" title={t('reticulumPropagation.modeHelpOff')}>
+            {t('reticulumPropagation.modeOff')}
+          </option>
+          <option value="auto" title={t('reticulumPropagation.modeHelpAuto')}>
+            {t('reticulumPropagation.modeAuto')}
+          </option>
+          <option value="manual" title={t('reticulumPropagation.modeHelpManual')}>
+            {t('reticulumPropagation.modeManual')}
+          </option>
+        </select>
+        <p id="reticulum-propagation-mode-help" className="text-muted text-xs">
+          {t(modeHelpKey)}
+        </p>
+      </div>
+      <div className="mt-3 space-y-1">
         <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">
           {t('reticulumPropagation.autoSyncIntervalLabel')}
         </label>
@@ -432,7 +565,21 @@ export default function ReticulumPropagationSection({
           disabled={sync.active}
           onChange={(e) => {
             const sec = Number(e.target.value);
-            void setAutoSyncIntervalOnSidecar(sec);
+            void setAutoSyncIntervalOnSidecar(sec)
+              .then((ok) => {
+                if (!ok) {
+                  console.warn(
+                    '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar failed',
+                    sec,
+                  );
+                }
+              })
+              .catch((err: unknown) => {
+                console.warn(
+                  '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar rejected',
+                  err,
+                );
+              });
           }}
           className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
           aria-label={t('reticulumPropagation.autoSyncIntervalAria')}
@@ -454,14 +601,17 @@ export default function ReticulumPropagationSection({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={!preferredId || sync.active}
+          disabled={bottomSyncDisabled}
           className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
           aria-label={t('reticulumPropagation.syncNowPreferredAria')}
+          aria-busy={syncStarting}
           onClick={() => {
-            void startSync();
+            handleSyncNow(bottomSyncTargetId ?? 'local-prop');
           }}
         >
-          {t('reticulumPropagation.syncNow')}
+          {syncStarting
+            ? t('reticulumPropagation.syncStarting')
+            : t('reticulumPropagation.syncNow')}
         </button>
       </div>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.localHostHint')}</p>

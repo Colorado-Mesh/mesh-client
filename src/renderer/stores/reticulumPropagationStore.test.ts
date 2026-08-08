@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getStatus = vi.fn();
 const proxyGet = vi.fn();
@@ -21,7 +21,10 @@ vi.stubGlobal('window', {
   },
 });
 
-import { useReticulumPropagationStore } from './reticulumPropagationStore';
+import {
+  RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY,
+  useReticulumPropagationStore,
+} from './reticulumPropagationStore';
 
 describe('reticulumPropagationStore', () => {
   beforeEach(() => {
@@ -44,6 +47,8 @@ describe('reticulumPropagationStore', () => {
       lastPropagationSyncAt: null,
       lastPropagationSyncAttemptAt: null,
       activePropagationSyncAttemptAt: null,
+      syncTargetId: null,
+      chatNoticeDismissed: false,
     });
   });
 
@@ -116,6 +121,42 @@ describe('reticulumPropagationStore', () => {
     expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/pn-aabbccdd/preferred', {});
   });
 
+  it('addFromDiscovered with prefer returns false when Preferred POST fails', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({
+      discovered: [
+        {
+          destination_hash: 'aabbccddeeff00112233445566778899',
+          display_name: 'Heard PN',
+          hops: 1,
+          node_state: true,
+          peering_cost: 0,
+        },
+      ],
+    });
+    proxyPost
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: false, error: 'not_ready' });
+    proxyGet.mockResolvedValue({
+      propagation: [
+        {
+          id: 'pn-aabbccdd',
+          name: 'Heard PN',
+          enabled: true,
+          status: 'known',
+          destination_hash: 'aabbccddeeff00112233445566778899',
+        },
+      ],
+      preferred_id: null,
+    });
+
+    await expect(
+      useReticulumPropagationStore
+        .getState()
+        .addFromDiscovered('aabbccddeeff00112233445566778899', { prefer: true }),
+    ).resolves.toBe(false);
+  });
+
   it('refreshFromSidecar skips when sidecar is down', async () => {
     getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
     await useReticulumPropagationStore.getState().refreshFromSidecar();
@@ -136,11 +177,30 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().autoSyncIntervalSec).toBe(1800);
   });
 
+  it('setModeOnSidecar posts the propagation mode', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: true });
+
+    await expect(useReticulumPropagationStore.getState().setModeOnSidecar('off')).resolves.toBe(
+      true,
+    );
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/mode', { mode: 'off' });
+  });
+
+  it('setModeOnSidecar reports failure without throwing', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockRejectedValueOnce(new Error('sidecar down'));
+
+    await expect(useReticulumPropagationStore.getState().setModeOnSidecar('auto')).resolves.toBe(
+      false,
+    );
+  });
+
   it('startSync and cancelSync update sync state', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'p1' });
     proxyPost.mockResolvedValueOnce({ ok: true });
-    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(true);
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('accepted');
     expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeTypeOf(
       'number',
@@ -152,6 +212,22 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncCancelled',
     );
+  });
+
+  it('startSync records the target each attempt so progress and errors can name it', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
+    await expect(useReticulumPropagationStore.getState().startSync('pn-aabb')).resolves.toBe(
+      'failed',
+    );
+    // Kept past the failure so the error can be attributed to the node it came from.
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-aabb');
+
+    proxyPost.mockResolvedValueOnce({ ok: true });
+    await expect(useReticulumPropagationStore.getState().startSync('local-prop')).resolves.toBe(
+      'accepted',
+    );
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('local-prop');
   });
 
   it('cancelSync keeps a prior sidecar establish failure over timeout reason', async () => {
@@ -247,7 +323,7 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });
     await expect(useReticulumPropagationStore.getState().startSync('local-prop')).resolves.toBe(
-      true,
+      'accepted',
     );
     expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/sync', {
       propagation_id: 'local-prop',
@@ -257,6 +333,17 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeTypeOf('number');
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeNull();
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
+  });
+
+  it('startSync posts destination_hash for a 32-hex one-time sync', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: true });
+    const hash = 'deadbeef'.repeat(4);
+    await expect(useReticulumPropagationStore.getState().startSync(hash)).resolves.toBe('accepted');
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/sync', {
+      destination_hash: hash,
+    });
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
   });
 
   it('older success completion does not clear a newer failed attempt stamp', () => {
@@ -293,7 +380,7 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
     proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
-    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(false);
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('failed');
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncIdentityUnknown',
     );
@@ -303,10 +390,20 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
     proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_TARGET_NOT_PN' });
-    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(false);
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('failed');
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncTargetNotPropagationNode',
     );
+  });
+
+  it('startSync soft-defers OUTBOUND_BUSY without a lastSyncError', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_SYNC_OUTBOUND_BUSY' });
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
   it('removePropagationNode deletes then refreshes', async () => {
@@ -446,5 +543,47 @@ describe('reticulumPropagationStore', () => {
     await useReticulumPropagationStore.getState().refreshFromSidecar();
 
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(attemptAt);
+  });
+});
+
+describe('chat notice dismissal', () => {
+  // renderer-logic runs in node (no jsdom); provide a minimal localStorage stub.
+  function stubLocalStorage(initial?: Record<string, string>): Map<string, string> {
+    const store = new Map<string, string>(Object.entries(initial ?? {}));
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        store.set(k, v);
+      },
+      removeItem: (k: string) => {
+        store.delete(k);
+      },
+    });
+    return store;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.stubGlobal('window', {
+      electronAPI: { reticulum: { getStatus, proxyGet, proxyPost, proxyPut, proxyDelete } },
+    });
+  });
+
+  it('setChatNoticeDismissed round-trips through localStorage', () => {
+    const store = stubLocalStorage();
+    useReticulumPropagationStore.getState().setChatNoticeDismissed(true);
+    expect(store.get(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBe('1');
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(true);
+
+    useReticulumPropagationStore.getState().setChatNoticeDismissed(false);
+    expect(store.has(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBe(false);
+    expect(useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(false);
+  });
+
+  it('hydrates the dismissal from a previous session', async () => {
+    stubLocalStorage({ [RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY]: '1' });
+    vi.resetModules();
+    const fresh = await import('./reticulumPropagationStore');
+    expect(fresh.useReticulumPropagationStore.getState().chatNoticeDismissed).toBe(true);
   });
 });

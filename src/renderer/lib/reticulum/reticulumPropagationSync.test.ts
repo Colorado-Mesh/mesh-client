@@ -4,9 +4,11 @@ import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropaga
 
 import {
   applyPropagationSyncEvent,
+  awaitPropagationSyncSettled,
   clearPropagationSyncStallWatchdog,
   mapPropagationSyncError,
   normalizePropagationSyncProgress,
+  PROPAGATION_SYNC_SUPERSEDED,
   schedulePropagationSyncStallWatchdog,
 } from './reticulumPropagationSync';
 
@@ -120,7 +122,53 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_SYNC_OUTBOUND_BUSY')).toBe(
       'reticulumPropagation.syncOutboundBusy',
     );
+    expect(mapPropagationSyncError('propagation sync cancelled')).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
+    expect(mapPropagationSyncError(PROPAGATION_SYNC_SUPERSEDED)).toBeNull();
     expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
+  });
+
+  it('supersede clears active sync without unreachable error', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+      lastSyncError: null,
+    });
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: PROPAGATION_SYNC_SUPERSEDED,
+    });
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(PROPAGATION_SYNC_SUPERSEDED);
+  });
+
+  it('maps cancel message to syncCancelled not syncFailed', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+    });
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: 'propagation sync cancelled',
+    });
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
+  });
+
+  it('ignores late cancel after local settle already idle', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: false, progress: 0, message: null },
+      lastSyncError: null,
+      lastPropagationSyncAt: Date.now(),
+    });
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: 'propagation sync cancelled',
+    });
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
   });
 
   it('maps WS failure message when sync ends with zero progress', () => {
@@ -186,5 +234,101 @@ describe('reticulumPropagationSync', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncTimedOut',
     );
+  });
+
+  describe('awaitPropagationSyncSettled', () => {
+    it('resolves immediately when the attempt already settled', async () => {
+      useReticulumPropagationStore.setState({
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: null,
+      });
+      await expect(awaitPropagationSyncSettled()).resolves.toBe('success');
+
+      useReticulumPropagationStore.setState({
+        lastSyncError: 'reticulumPropagation.syncFailed',
+      });
+      await expect(awaitPropagationSyncSettled()).resolves.toBe('failed');
+    });
+
+    it('waits for the websocket terminal frame before reporting failure', async () => {
+      useReticulumPropagationStore.setState({
+        sync: { active: true, progress: 5, message: null },
+        lastSyncError: null,
+      });
+
+      const settled = awaitPropagationSyncSettled();
+      let resolvedEarly = false;
+      void settled.then(() => {
+        resolvedEarly = true;
+      });
+      await Promise.resolve();
+      expect(resolvedEarly).toBe(false);
+
+      applyPropagationSyncEvent({
+        active: false,
+        progress: 0,
+        message: 'propagation establish failed: NoLinkProof',
+      });
+
+      await expect(settled).resolves.toBe('failed');
+    });
+
+    it('reports a user cancel separately so a cascade can stop', async () => {
+      useReticulumPropagationStore.setState({
+        sync: { active: true, progress: 5, message: null },
+        lastSyncError: null,
+      });
+
+      const settled = awaitPropagationSyncSettled();
+      useReticulumPropagationStore.setState({
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: 'reticulumPropagation.syncCancelled',
+      });
+
+      await expect(settled).resolves.toBe('cancelled');
+    });
+
+    it('does not resolve supersede as success', async () => {
+      useReticulumPropagationStore.setState({
+        sync: { active: true, progress: 5, message: null },
+        lastSyncError: null,
+      });
+
+      const settled = awaitPropagationSyncSettled();
+      applyPropagationSyncEvent({
+        active: false,
+        progress: 0,
+        message: PROPAGATION_SYNC_SUPERSEDED,
+      });
+
+      await expect(settled).resolves.toBe('cancelled');
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        PROPAGATION_SYNC_SUPERSEDED,
+      );
+    });
+
+    it('cancels and reports failure when no terminal frame ever arrives', async () => {
+      vi.useFakeTimers();
+      const cancelSync = vi.fn(() => {
+        useReticulumPropagationStore.setState({
+          sync: { active: false, progress: 0, message: null },
+          lastSyncError: 'reticulumPropagation.syncTimedOut',
+        });
+        return Promise.resolve(true);
+      });
+      useReticulumPropagationStore.setState({
+        sync: { active: true, progress: 5, message: null },
+        lastSyncError: null,
+        cancelSync,
+      });
+
+      const settled = awaitPropagationSyncSettled({ timeoutMs: 1_000 });
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      await expect(settled).resolves.toBe('failed');
+      expect(cancelSync).toHaveBeenCalledWith({
+        reasonKey: 'reticulumPropagation.syncTimedOut',
+      });
+    });
   });
 });

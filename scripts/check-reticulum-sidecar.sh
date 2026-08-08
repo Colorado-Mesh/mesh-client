@@ -15,7 +15,7 @@ fi
 # Optional path deps must exist on disk even for the feature build.
 bash "${REPO_ROOT}/scripts/clone-ratspeak-stack.sh"
 
-# Lint sibling rsNomad (path dep); Clippy on the sidecar does not analyze path-dep sources.
+# Lint .rsstack/rsNomad (path dep); Clippy on the sidecar does not analyze path-dep sources.
 bash "${REPO_ROOT}/scripts/check-rsnomad.sh"
 
 cd "${SIDECAR_DIR}"

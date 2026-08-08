@@ -2,8 +2,37 @@ import { RefreshCw } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
-import { propagationSyncStatusLabel } from '@/renderer/lib/reticulum/reticulumPropagationSync';
+import { resolveReticulumPropagationTargetLabel } from '@/renderer/lib/reticulum/reticulumPropagationMode';
+import {
+  isPropagationSyncSupersedeMessage,
+  propagationSyncStatusLabel,
+} from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+
+/**
+ * Name of the node the current (or most recent) sync attempt targeted, or `null` when no
+ * node was contacted — the cascade clears the target so "nothing to sync with" errors are
+ * never blamed on a node.
+ */
+export function getReticulumPropagationSyncTargetName(localLabel: string): string | null {
+  const { nodes, discovered, syncTargetId } = useReticulumPropagationStore.getState();
+  if (syncTargetId == null || syncTargetId.length === 0) return null;
+  return resolveReticulumPropagationTargetLabel(nodes, discovered, syncTargetId, localLabel);
+}
+
+export function useReticulumPropagationSyncTargetName(): string | null {
+  const { t } = useTranslation();
+  const nodes = useReticulumPropagationStore((s) => s.nodes);
+  const discovered = useReticulumPropagationStore((s) => s.discovered);
+  const syncTargetId = useReticulumPropagationStore((s) => s.syncTargetId);
+  if (syncTargetId == null || syncTargetId.length === 0) return null;
+  return resolveReticulumPropagationTargetLabel(
+    nodes,
+    discovered,
+    syncTargetId,
+    t('reticulumPropagation.localHostName'),
+  );
+}
 
 export function ReticulumPropagationSyncProgress({
   cancelLabel,
@@ -17,13 +46,20 @@ export function ReticulumPropagationSyncProgress({
   const sync = useReticulumPropagationStore((s) => s.sync);
   const lastSyncError = useReticulumPropagationStore((s) => s.lastSyncError);
   const cancelSync = useReticulumPropagationStore((s) => s.cancelSync);
+  const targetName = useReticulumPropagationSyncTargetName();
   const { t } = useTranslation();
+
+  const status = t(propagationSyncStatusLabel(sync.progress));
 
   return (
     <>
       {sync.active ? (
         <div className="mt-2 space-y-1" role="status" aria-live="polite">
-          <p className="text-xs text-amber-300">{t(propagationSyncStatusLabel(sync.progress))}</p>
+          <p className="text-xs text-amber-300">
+            {targetName
+              ? t('reticulumPropagation.syncStatusWithTarget', { status, name: targetName })
+              : status}
+          </p>
           <div className="h-2 overflow-hidden rounded bg-gray-800">
             <div
               className="bg-readable-green h-full transition-all"
@@ -43,9 +79,14 @@ export function ReticulumPropagationSyncProgress({
           </button>
         </div>
       ) : null}
-      {!sync.active && lastSyncError ? (
+      {!sync.active && lastSyncError && !isPropagationSyncSupersedeMessage(lastSyncError) ? (
         <p className="mt-2 text-xs text-red-400" role="alert">
-          {t(lastSyncError)}
+          {targetName
+            ? t('reticulumPropagation.syncErrorWithTarget', {
+                name: targetName,
+                message: t(lastSyncError),
+              })
+            : t(lastSyncError)}
         </p>
       ) : null}
     </>

@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Perfeccionar mensajes claros y directos",
     "clearReticulumMessagesConfirm": "Esto eliminará de forma permanente todos los {{count}} mensajes directos de Reticulum almacenados localmente. Esto no se puede deshacer.",
     "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes",
-    "reticulumSection": "Reticulum — Pila de Reticulum",
-    "reticulumAnnounceHelp": "Con qué frecuencia se anuncia su identidad en la red y herramientas para borrar los anuncios almacenados.",
     "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. En la pestaña Reticulum, las líneas de dispositivos incluyen la salida del sidecar y el estado de la interfaz local. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "autoPruneUnheardContactsDaysAria": "Eliminación automática de contactos no escuchados al inicio, con más de {{days}} días",
     "capTotalContactsCountAria": "Limitar el total de contactos, mantener los contactos {{count}} vistos más recientemente",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Aún no hay colores guardados: use Guardar para crear un punto de control",
     "saveThemeButton": "Guardar",
     "restoreThemeButton": "Restaurar",
-    "reticulumPropagationHelp": "Configurar nodos de propagación LXMF remotos para DM sin conexión. La propagación local es solo la bandeja de entrada de este dispositivo: no reemplaza a un nodo remoto.",
     "use24HourTime": "Modo 24 horas",
     "use24HourTimeDesc": "Forza los relojes, como las marcas de tiempo del chat, al formato de 24 horas. Cuando esté apagado, siga la configuración regional de su sistema.",
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "No hay ningún nodo de propagación configurado. {{count}} descubierta en la red: añade una a continuación o abre Configuración de red.",
       "addClosest": "Añade el más cercano descubierto",
-      "addClosestAria": "Añada el nodo de propagación descubierto más cercano y configúrelo como preferido"
+      "addClosestAria": "Añada el nodo de propagación descubierto más cercano y configúrelo como preferido",
+      "dismiss": "No volver a mostrar",
+      "dismissAria": "Dejar de mostrar el recordatorio del nodo de propagación en el chat"
     },
     "rename": "Renombrar",
     "renameLabel": "Nombre del nodo de propagación",
@@ -4196,7 +4195,8 @@
       "known": "conocido",
       "pending": "pendiente",
       "unknown": "desconocido",
-      "online": "en línea"
+      "online": "en línea",
+      "loading": "cargando"
     },
     "syncIdentityUnknown": "Se desconoce la identidad del nodo de propagación: espere un anuncio o una respuesta de ruta y vuelva a intentarlo.",
     "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "El nodo de propagación del host local no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
     "enableFailed": "No se pudo habilitar el nodo de propagación.",
     "disableFailed": "No se pudo deshabilitar el nodo de propagación.",
-    "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Sincronización de propagación diferida: un mensaje saliente se está depositando en este nodo.",
     "modeLabel": "modo de propagación",
     "modeAria": "Modo de sincronización de propagación",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Apagado",
-    "sync": "Sincronizar",
-    "syncAria": "Sincronizar mensajes de propagación",
-    "cancelSync": "Cancelar",
-    "cancelSyncAria": "Cancelar sincronización de propagación"
+    "modeHelpAuto": "Automático: sincroniza una sola vez el mejor nodo de propagación descubierto (no lo añade ni cambia Preferred), luego los remotos configurados y después la bandeja local. Sin interfaces de red, solo completa en local.",
+    "syncStarting": "Iniciando sincronización",
+    "syncLocalSettled": "Sincronizado con la bandeja de entrada local.",
+    "modeHelpOff": "Apagado: sin soporte de nodo de propagación. Nada se sincroniza y los mensajes sin conexión no se depositan en ningún nodo de propagación. Un nodo preferido permanece guardado pero sin usar hasta que elija Auto o Manual.",
+    "modeHelpManual": "Manual: sincroniza su nodo preferido o elige el nodo añadido más cercano para esa sincronización cuando no se prefiere ninguno. Si falla, se prueban los otros nodos añadidos, luego la bandeja de entrada local.",
+    "syncNoTarget": "Todavía no hay ningún nodo de propagación disponible; no se ha descubierto ninguno y no tiene nodos añadidos. Sync se ejecuta por sí solo tan pronto como uno está disponible.",
+    "syncLocalLoading": "El nodo de propagación local aún está cargando sus mensajes almacenados. La sincronización se ejecuta sola cuando termine la carga.",
+    "syncLocalSettledFor": "Sincronizado con {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Mostrar recordatorio de propagación en el chat",
+    "showChatNoticeAria": "Mostrar el banner de recordatorio del nodo de propagación en el chat",
+    "showChatNoticeHint": "Desactive esta opción para ocultar el banner de chat que aparece cuando no hay ningún nodo de propagación disponible."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Direktnachrichten löschen",
     "clearReticulumMessagesConfirm": "Dadurch werden alle {{count}} lokal gespeicherten Reticulum-Direktnachrichten dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "clearReticulumMessagesConfirmButton": "{{count}} Nachrichten löschen",
-    "reticulumSection": "Reticulum-Stack",
-    "reticulumAnnounceHelp": "Wie oft Ihre Identität im Netzwerk bekannt gegeben wird, und Tools zum Löschen gespeicherter Ankündigungen.",
     "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Auf der Registerkarte „Reticulum“ umfassen die Gerätezeilen die Sidecar-Ausgabe und den Zustand der lokalen Schnittstelle. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich.",
     "autoPruneUnheardContactsDaysAria": "Ungehörte Kontakte, die älter als {{days}} Tage sind, werden beim Start automatisch bereinigt",
     "capTotalContactsCountAria": "Begrenzen Sie die Gesamtzahl der Kontakte und behalten Sie die zuletzt gesehenen {{count}}-Kontakte bei",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Noch keine gespeicherten Farben — verwenden Sie Speichern, um einen Kontrollpunkt zu erstellen",
     "saveThemeButton": "Speichern",
     "restoreThemeButton": "Wiederherstellen",
-    "reticulumPropagationHelp": "Konfigurieren Sie Remote-LXMF-Verbreitungsknoten für Offline-DMS. Die lokale Ausbreitung ist nur der Posteingang dieses Geräts — sie ersetzt keinen Remote-Knoten.",
     "use24HourTime": "24-Stunden-Zeitformat",
     "use24HourTimeDesc": "Erzwinge Uhren wie Chat-Zeitstempel im 24-Stunden-Format. Wenn diese Option deaktiviert ist, folgt sie Ihrem Systemgebietsschema.",
     "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Es ist kein Ausbreitungsknoten konfiguriert. {{count}} im Netzwerk entdeckt — füge unten eine hinzu oder öffne die Netzwerkeinstellungen.",
       "addClosest": "Am nächsten entdeckte hinzufügen",
-      "addClosestAria": "Fügen Sie den nächstgelegenen entdeckten Ausbreitungsknoten hinzu und legen Sie ihn als bevorzugt"
+      "addClosestAria": "Fügen Sie den nächstgelegenen entdeckten Ausbreitungsknoten hinzu und legen Sie ihn als bevorzugt",
+      "dismiss": "Nicht erneut anzeigen",
+      "dismissAria": "Die Erinnerung an den Ausbreitungsknoten im Chat nicht mehr anzeigen"
     },
     "rename": "Umbenennen",
     "renameLabel": "Name des Ausbreitungsknotens",
@@ -4196,7 +4195,8 @@
       "known": "bekannt",
       "pending": "ausstehend",
       "unknown": "unbekannt",
-      "online": "online"
+      "online": "online",
+      "loading": "Wird geladen..."
     },
     "syncIdentityUnknown": "Die Identität des Ausbreitungsknotens ist unbekannt – warten Sie auf eine Ankündigung oder eine Pfadantwort und versuchen Sie es dann erneut.",
     "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "Der lokale Host-Verbreitungsknoten kann nicht wie ein entfernter LXMF-Verbreitungsknoten über das Netzwerk synchronisiert werden.",
     "enableFailed": "Der Ausbreitungsknoten konnte nicht aktiviert werden.",
     "disableFailed": "Der Ausbreitungsknoten konnte nicht deaktiviert werden.",
-    "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Ausbreitungssynchronisierung verschoben — eine ausgehende Nachricht wird auf diesem Knoten hinterlegt.",
     "modeLabel": "Ausbreitungsmodus",
     "modeAria": "Ausbreitungssynchronisationsmodus",
     "modeAuto": "Automatisch",
-    "modeManual": "Hand",
+    "modeManual": "Manuell",
     "modeOff": "Aus",
-    "sync": "Sync",
-    "syncAria": "Ausbreitungsnachrichten synchronisieren",
-    "cancelSync": "Abbrechen",
-    "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
+    "modeHelpAuto": "Auto: synchronisiert einmalig den besten erkannten Ausbreitungsknoten (fügt ihn nicht hinzu und ändert Preferred nicht), dann konfigurierte Remotes, dann den lokalen Posteingang. Ohne Netzwerkschnittstellen wird nur lokal abgeschlossen.",
+    "syncStarting": "Synchronisierung wird gestartet",
+    "syncLocalSettled": "Synchronisiert mit dem lokalen Posteingang.",
+    "modeHelpOff": "Aus: keine Unterstützung für Ausbreitungsknoten. Nichts synchronisiert und Offline-Nachrichten werden auf keinem Ausbreitungsknoten abgelegt. Ein bevorzugter Knoten bleibt gespeichert, aber nicht verwendet, bis Sie Auto oder Manuell wählen.",
+    "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn dies fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Posteingang.",
+    "syncNoTarget": "Es ist noch kein Ausbreitungsknoten verfügbar — keiner wurde entdeckt und Sie haben keine zusätzlichen Knoten hinzugefügt. Sync läuft von selbst, sobald eines verfügbar ist.",
+    "syncLocalLoading": "Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung startet von selbst, sobald das Laden abgeschlossen ist.",
+    "syncLocalSettledFor": "Synchronisiert mit {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Ausbreitungserinnerung im Chat anzeigen",
+    "showChatNoticeAria": "Verbreitungsknoten-Erinnerungsbanner im Chat anzeigen",
+    "showChatNoticeHint": "Deaktivieren Sie diese Option, um das Chat-Banner auszublenden, das angezeigt wird, wenn kein Ausbreitungsknoten verfügbar ist."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Directe berichten wissen",
     "clearReticulumMessagesConfirm": "Hiermee worden alle {{count}} lokaal opgeslagen Reticulum-directe berichten permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen",
-    "reticulumSection": "Reticulum stack",
-    "reticulumAnnounceHelp": "Hoe vaak uw identiteit wordt aangekondigd op het netwerk en tools om opgeslagen aankondigingen te wissen.",
     "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Op het tabblad Reticulum omvatten apparaatregels zijspanuitvoer en lokale interfacestatus. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "autoPruneUnheardContactsDaysAria": "Ongehoorde contacten automatisch opschonen bij het opstarten, ouder dan {{days}} dagen",
     "capTotalContactsCountAria": "Beperk het totale aantal contacten, bewaar de meest recent geziene {{count}} contacten",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Nog geen opgeslagen kleuren — gebruik Opslaan om een controlepunt te maken",
     "saveThemeButton": "Opslaan",
     "restoreThemeButton": "Herstellen",
-    "reticulumPropagationHelp": "Configureer externe LXMF-voortplantingsknooppunten voor offline DM's. Lokale verspreiding is alleen de inbox van dit apparaat — het vervangt geen extern knooppunt.",
     "use24HourTime": "24-uursaanduiding",
     "use24HourTimeDesc": "Forceer klokken zoals chattijdstempels naar 24-uurs formaat. Als deze optie is uitgeschakeld, volgt u de landinstelling van uw systeem.",
     "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagatie-instellingen",
       "bodyWithDiscoveries": "Er is geen propagatieknooppunt geconfigureerd. {{count}} ontdekt op het netwerk. Voeg er hieronder een toe of open Netwerkinstellingen.",
       "addClosest": "Dichtstbijzijnde toevoegen ontdekt",
-      "addClosestAria": "Voeg het dichtstbijzijnde ontdekte propagatieknooppunt toe en stel dit in als voorkeur"
+      "addClosestAria": "Voeg het dichtstbijzijnde ontdekte propagatieknooppunt toe en stel dit in als voorkeur",
+      "dismiss": "Niet meer laten zien",
+      "dismissAria": "Stop met het weergeven van de herinnering voor het propagatieknooppunt in Chat"
     },
     "rename": "Hernoemen",
     "renameLabel": "Naam van het voortplantingsknooppunt",
@@ -4196,7 +4195,8 @@
       "known": "bekend",
       "pending": "in behandeling",
       "unknown": "onbekend",
-      "online": "online"
+      "online": "online",
+      "loading": "Aan het laden…"
     },
     "syncIdentityUnknown": "De identiteit van het voortplantingsknooppunt is onbekend: wacht op een aankondiging of padreactie en probeer het vervolgens opnieuw.",
     "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "Het lokale hostvoortplantingsknooppunt kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-voortplantingsknooppunt.",
     "enableFailed": "Kan het voortplantingsknooppunt niet inschakelen.",
     "disableFailed": "Kan het voortplantingsknooppunt niet uitschakelen.",
-    "syncOutboundBusy": "Propagatiesynchronisatie uitgesteld — een uitgaand bericht wordt op dit knooppunt gedeponeerd."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Propagatiesynchronisatie uitgesteld — een uitgaand bericht wordt op dit knooppunt gedeponeerd.",
     "modeLabel": "voortplantingsmodus",
     "modeAria": "Voortplantingssynchronisatiemodus",
     "modeAuto": "Auto",
     "modeManual": "Handmatig",
-    "modeOff": "Off",
-    "sync": "Synchroniseren",
-    "syncAria": "Voortplantingsberichten synchroniseren",
-    "cancelSync": "Annuleren",
-    "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
+    "modeOff": "Uit",
+    "modeHelpAuto": "Auto: synchroniseert eenmalig het beste ontdekte propagation-knooppunt (voegt het niet toe en wijzigt Preferred niet), daarna geconfigureerde remotes, daarna de lokale inbox. Zonder netwerkinterfaces alleen lokaal afronden.",
+    "syncStarting": "Synchronisatie aan het starten",
+    "syncLocalSettled": "Gesynchroniseerd met lokale inbox.",
+    "modeHelpOff": "Uit: geen ondersteuning voor propagatieknooppunten. Niets synchroniseert en offline berichten worden niet gedeponeerd op een propagatieknooppunt. Een voorkeursknooppunt blijft opgeslagen maar ongebruikt totdat u Auto of Handmatig kiest.",
+    "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens de lokale inbox.",
+    "syncNoTarget": "Er is nog geen propagatieknooppunt beschikbaar — er is er geen ontdekt en u hebt geen toegevoegde knooppunten. Sync draait op zichzelf zodra er een beschikbaar is.",
+    "syncLocalLoading": "Het lokale propagation-knooppunt laadt nog zijn opgeslagen berichten. Synchronisatie start vanzelf zodra het laden klaar is.",
+    "syncLocalSettledFor": "Gesynchroniseerd met {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Toon propagatieherinnering in Chat",
+    "showChatNoticeAria": "Toon de herinneringsbanner voor het propagatieknooppunt in Chat",
+    "showChatNoticeHint": "Schakel dit uit om de chatbanner te verbergen die verschijnt als er geen propagatieknooppunt beschikbaar is."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

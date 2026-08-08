@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use super::path_medium::{PathMediumPreferenceSetting, PathMediumSetting, PeerMediumPins};
 use super::pn_hosting_policy::PnHostingPolicy;
+use super::propagation_mode::PropagationMode;
 use super::types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
     NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
@@ -30,6 +31,8 @@ pub struct PersistedState {
     pub primary_local_serial_interface_id: Option<String>,
     pub propagation_sync: serde_json::Value,
     pub auto_sync_interval_sec: u32,
+    /// Renderer propagation mode; `Off` disables the outbound Direct→PN cascade.
+    pub propagation_mode: PropagationMode,
     /// LXMF local PN hosting / peering policy (defaults match rsLXMF / lxmd).
     pub pn_hosting_policy: PnHostingPolicy,
     pub nomad_nodes: Vec<NomadNodeRow>,
@@ -85,6 +88,7 @@ impl PersistedState {
             primary_local_serial_interface_id: None,
             propagation_sync: serde_json::Value::Null,
             auto_sync_interval_sec: 3600,
+            propagation_mode: PropagationMode::default(),
             pn_hosting_policy: PnHostingPolicy::default(),
             nomad_nodes: Vec::new(),
             rrc_hubs: Vec::new(),
@@ -400,6 +404,10 @@ impl PersistedState {
 
     pub fn set_auto_sync_interval_sec(&mut self, sec: u32) {
         self.auto_sync_interval_sec = sec;
+    }
+
+    pub fn set_propagation_mode(&mut self, mode: PropagationMode) {
+        self.propagation_mode = mode;
     }
 
     pub fn set_pn_hosting_policy(&mut self, policy: PnHostingPolicy) -> Result<(), String> {
@@ -804,7 +812,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 27)?;
+        let mut s = serializer.serialize_struct("PersistedState", 28)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -820,6 +828,7 @@ impl serde::Serialize for PersistedState {
         )?;
         s.serialize_field("propagation_sync", &self.propagation_sync)?;
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
+        s.serialize_field("propagation_mode", &self.propagation_mode)?;
         s.serialize_field("pn_hosting_policy", &self.pn_hosting_policy)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
@@ -870,6 +879,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             #[serde(default)]
             auto_sync_interval_sec: u32,
             #[serde(default)]
+            propagation_mode: PropagationMode,
+            #[serde(default)]
             pn_hosting_policy: PnHostingPolicy,
             #[serde(default)]
             nomad_nodes: Vec<NomadNodeRow>,
@@ -918,6 +929,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
                 raw.propagation_sync
             },
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
+            propagation_mode: raw.propagation_mode,
             pn_hosting_policy: raw.pn_hosting_policy,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,

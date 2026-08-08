@@ -9,7 +9,10 @@ import {
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
-import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
+import type {
+  DiscoveredPropagationRow,
+  PropagationNodeRow,
+} from '@/renderer/stores/reticulumPropagationStore';
 import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 function normalizeDestHash(hash: string): string {
@@ -25,8 +28,9 @@ export function shouldApplyLinkDeliveryTimeoutFailureBridge(
   nodes: PropagationNodeRow[],
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
+  discovered: readonly DiscoveredPropagationRow[] = [],
 ): boolean {
-  return !hasReticulumPnCascadeCapacity(nodes, preferredId, mode);
+  return !hasReticulumPnCascadeCapacity(nodes, preferredId, mode, discovered);
 }
 
 function destHashMatchesPeer(storedHash: string, targetNorm: string): boolean {

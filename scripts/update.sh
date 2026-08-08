@@ -108,12 +108,12 @@ rebuild_reticulum_sidecar() {
   fi
   echo 'Preparing rsReticulum, rsLXMF, rsNomad, rsLXST, and lrgp-rs functionality check...'
   local sidecar_dir='reticulum-sidecar'
-  # Paths match reticulum-sidecar/Cargo.toml (../../rs* / ../../lrgp-rs from the sidecar dir).
-  local rns_runtime='../../rsReticulum/crates/rns-runtime/Cargo.toml'
-  local lxmf_core='../../rsLXMF/crates/lxmf-core/Cargo.toml'
-  local nomad_core='../../rsNomad/crates/nomad-core/Cargo.toml'
-  local lxst_telephony='../../rsLXST/crates/lxst-telephony/Cargo.toml'
-  local lrgp_crate='../../lrgp-rs/Cargo.toml'
+  # Paths match reticulum-sidecar/Cargo.toml (../.rsstack/* from the sidecar dir).
+  local rns_runtime='../.rsstack/rsReticulum/crates/rns-runtime/Cargo.toml'
+  local lxmf_core='../.rsstack/rsLXMF/crates/lxmf-core/Cargo.toml'
+  local nomad_core='../.rsstack/rsNomad/crates/nomad-core/Cargo.toml'
+  local lxst_telephony='../.rsstack/rsLXST/crates/lxst-telephony/Cargo.toml'
+  local lrgp_crate='../.rsstack/lrgp-rs/Cargo.toml'
   bash scripts/clone-ratspeak-stack.sh
   local missing_manifest=''
   local manifest

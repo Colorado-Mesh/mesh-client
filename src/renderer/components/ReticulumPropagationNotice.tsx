@@ -2,8 +2,13 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
-import { readReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
+import {
+  listDiscoveredPropagationTargets,
+  pickAutoPropagationTarget,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+
+import { useToast } from './Toast';
 
 export interface ReticulumPropagationNoticeProps {
   stackLive: boolean;
@@ -16,44 +21,42 @@ export function ReticulumPropagationNotice({
   onOpenPropagationSettings,
 }: ReticulumPropagationNoticeProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const discovered = useReticulumPropagationStore((s) => s.discovered);
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
+  const dismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
+  const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
+  const mode = useReticulumPropagationStore((s) => s.propagationMode);
 
   useEffect(() => {
     if (!stackLive) return;
     void refreshFromSidecar();
   }, [stackLive, refreshFromSidecar]);
 
-  const configuredHashes = useMemo(
-    () =>
-      new Set(
-        nodes
-          .map((n) => n.destination_hash?.toLowerCase())
-          .filter((h): h is string => typeof h === 'string' && h.length > 0),
-      ),
-    [nodes],
-  );
-
   const unconfiguredDiscovered = useMemo(
-    () =>
-      discovered
-        .filter((d) => !configuredHashes.has(d.destination_hash.toLowerCase()))
-        .filter((d) => d.node_state)
-        .slice()
-        .sort((a, b) => (a.hops ?? 255) - (b.hops ?? 255)),
-    [discovered, configuredHashes],
+    () => listDiscoveredPropagationTargets(nodes, discovered),
+    [nodes, discovered],
   );
 
   if (!stackLive) return null;
-  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, readReticulumPropagationMode())) {
+  // Off is a deliberate "no propagation node" choice — do not nag to add one.
+  if (mode === 'off') return null;
+  // Re-enable from Network → Propagation nodes.
+  if (dismissed) return null;
+  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) {
     return null;
   }
 
   const discoveryCount = unconfiguredDiscovered.length;
-  const closest = unconfiguredDiscovered[0];
+  // Rank discovered for “Add closest”; Auto never soft-upserts — user must add explicitly.
+  const closestTarget = pickAutoPropagationTarget(nodes, discovered);
+  const closestHash =
+    closestTarget?.kind === 'discovered'
+      ? closestTarget.destinationHash
+      : unconfiguredDiscovered[0]?.destinationHash;
 
   return (
     <div
@@ -66,13 +69,25 @@ export function ReticulumPropagationNotice({
           : t('reticulumPropagation.notice.body')}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-3">
-        {closest ? (
+        {closestHash ? (
           <button
             type="button"
             className="font-medium text-amber-200 underline hover:text-amber-100"
             aria-label={t('reticulumPropagation.notice.addClosestAria')}
             onClick={() => {
-              void addFromDiscovered(closest.destination_hash, { prefer: true });
+              void addFromDiscovered(closestHash, { prefer: true })
+                .then((ok) => {
+                  if (!ok) {
+                    const errKey =
+                      useReticulumPropagationStore.getState().lastAddError ??
+                      'reticulumPropagation.addFailed';
+                    addToast(t(errKey), 'error');
+                  }
+                })
+                .catch((err: unknown) => {
+                  console.warn('[ReticulumPropagationNotice] addFromDiscovered rejected', err);
+                  addToast(t('reticulumPropagation.addFailed'), 'error');
+                });
             }}
           >
             {t('reticulumPropagation.notice.addClosest')}
@@ -88,6 +103,16 @@ export function ReticulumPropagationNotice({
             {t('reticulumPropagation.notice.openSettings')}
           </button>
         ) : null}
+        <button
+          type="button"
+          className="font-medium text-amber-200 underline hover:text-amber-100"
+          aria-label={t('reticulumPropagation.notice.dismissAria')}
+          onClick={() => {
+            setChatNoticeDismissed(true);
+          }}
+        >
+          {t('reticulumPropagation.notice.dismiss')}
+        </button>
       </div>
     </div>
   );

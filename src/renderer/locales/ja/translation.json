@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "ダイレクトメッセージを消去",
     "clearReticulumMessagesConfirm": "これにより、ローカルに保存されているすべての{{count}} Reticulumダイレクトメッセージが完全に削除されます。これは元に戻せません。",
     "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去",
-    "reticulumSection": "Reticulum — レティキュラム・スタック",
-    "reticulumAnnounceHelp": "あなたの身元がネットワーク上で発表される頻度と、保存されているアナウンスをクリアするためのツール。",
     "logPanelHelp": "有効にすると、ライブ ログ ストリームが右側に表示されます。 Reticulum タブのデバイス行には、サイドカー出力とローカル インターフェイスの状態が含まれます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
     "autoPruneUnheardContactsDaysAria": "起動時に、{{days}} 日より古い、聞いていない連絡先を自動的に削除します",
     "capTotalContactsCountAria": "連絡先の総数を制限し、最近確認された {{count}} 連絡先を保持します",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "保存された色はまだありません—保存を使用してチェックポイントを作成します",
     "saveThemeButton": "保存",
     "restoreThemeButton": "リストア",
-    "reticulumPropagationHelp": "オフラインDMのリモートLXMF伝播ノードを設定します。ローカル伝播は、このデバイスの受信トレイのみであり、リモートノードを置き換えるものではありません。",
     "use24HourTime": "24時間制を使用する",
     "use24HourTimeDesc": "チャットタイムスタンプなどのクロックを24時間形式に強制します。オフの場合、システムのロケールに従います。",
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Reticulumネットワーク伝播設定を開く",
       "bodyWithDiscoveries": "伝播ノードが設定されていません。{{count}}がネットワーク上で検出されました—以下に1つ追加するか、ネットワーク設定を開きます。",
       "addClosest": "見つかった最も近いものを追加",
-      "addClosestAria": "最も近い検出された伝播ノードを追加し、優先として設定します"
+      "addClosestAria": "最も近い検出された伝播ノードを追加し、優先として設定します",
+      "dismiss": "今後表示しない",
+      "dismissAria": "チャットでの伝播ノードのリマインダーの表示を停止する"
     },
     "rename": "名前の変更",
     "renameLabel": "伝播ノード名",
@@ -4196,7 +4195,8 @@
       "known": "知られている",
       "pending": "保留中",
       "unknown": "未知",
-      "online": "オンライン"
+      "online": "オンライン",
+      "loading": "読み込み中..."
     },
     "syncIdentityUnknown": "伝播ノードの ID が不明です。アナウンスまたはパス応答を待ってから、再試行してください。",
     "syncTargetNotPropagationNode": "その宛先は Reticulum 上で到達可能ですが、LXMF 伝播ノードではありません (TCP ハブはトランスポート パスのみです)。オフライン メッセージを同期するには、lxmf.propagation として通知する宛先を追加します。",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "ローカル ホスト伝播ノードは、リモート LXMF 伝播ノードのようにネットワーク経由で同期できません。",
     "enableFailed": "伝播ノードを有効にできませんでした。",
     "disableFailed": "伝播ノードを無効にできませんでした。",
-    "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。"
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "伝播同期を延期しました — 送信メッセージをこのノードに預けています。",
     "modeLabel": "伝播モード",
     "modeAria": "伝播同期モード",
     "modeAuto": "自動",
     "modeManual": "手動",
-    "modeOff": "OFF",
-    "sync": "同期",
-    "syncAria": "伝播メッセージを同期",
-    "cancelSync": "取り消す",
-    "cancelSyncAria": "伝播の同期をキャンセル"
+    "modeOff": "オフ",
+    "modeHelpAuto": "自動：最適な検出済み伝播ノードを一度だけ同期します（追加せず Preferred も変更しません）。次に構成済みリモート、最後にローカル受信箱です。ネットワークインターフェイスがない場合はローカルのみ完了します。",
+    "syncStarting": "同期を開始しています",
+    "syncLocalSettled": "ローカルの受信トレイと同期しました。",
+    "modeHelpOff": "オフ：伝播ノードはサポートされていません。同期およびオフラインメッセージは、どの伝播ノードにもデポジットされません。Preferredノードは保存されたままですが、自動または手動を選択するまで使用されません。",
+    "modeHelpManual": "手動：優先ノードを同期するか、優先されない場合はその同期に最も近い追加ノードを選択します。失敗した場合、追加された他のノードが試行され、ローカル受信トレイが試行されます。",
+    "syncNoTarget": "まだ利用可能な伝播ノードはありません—何も検出されておらず、追加されたノードはありません。同期は、利用可能になるとすぐに単独で実行されます。",
+    "syncLocalLoading": "ローカル伝播ノードは保存済みメッセージをまだ読み込んでいます。読み込みが終わると同期は自動で実行されます。",
+    "syncLocalSettledFor": "{{name}}と同期しました。",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}} ： {{message}}",
+    "showChatNotice": "チャットに伝播リマインダーを表示",
+    "showChatNoticeAria": "チャットで伝播ノードのリマインダーバナーを表示する",
+    "showChatNoticeHint": "これをオフにすると、伝播ノードが利用できないときに表示されるチャットバナーが非表示になります。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",

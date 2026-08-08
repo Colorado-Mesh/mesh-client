@@ -1,15 +1,25 @@
 //! Multi-PN outbound cascade after Direct path failover exhausts.
 //!
-//! Order: preferred remote → other enabled remotes (hops asc) → local-prop last.
+//! Order: preferred remote → other enabled remotes (hops asc) → Auto's discovered
+//! remotes (hops asc) → local-prop last.
 
 use std::collections::HashSet;
 
-/// One configured PN eligible for Direct→Propagated cascade.
+use crate::stack::DiscoveredPropagationRow;
+use crate::stack::propagation_mode::PropagationMode;
+
+/// Cap on Auto's ephemeral discovered candidates. Mirrors the renderer's
+/// `MAX_DISCOVERED_SYNC_ATTEMPTS` so both sides work the same shortlist.
+pub const MAX_AUTO_DISCOVERED_PN_CANDIDATES: usize = 3;
+
+/// One PN eligible for Direct→Propagated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PnCascadeCandidate {
     pub hash: [u8; 16],
     /// True for local-prop / self LXMF hash (offline inbox — last resort only).
     pub is_local: bool,
+    /// True for an ephemeral Auto candidate heard from an announce (never persisted).
+    pub is_discovered: bool,
     pub hops: Option<u8>,
     pub id: String,
 }
@@ -47,8 +57,8 @@ impl PnCascadePick {
 
 /// Build an ordered cascade list from persisted propagation rows.
 ///
-/// `preferred_hash` (when Some) is tried first among remotes; local is always last
-/// when present and enabled.
+/// `preferred_hash` (when Some) is tried first among remotes; nodes the user added
+/// come before Auto's discovered ones; local is always last when present and enabled.
 pub fn build_pn_cascade_order(
     candidates: &[PnCascadeCandidate],
     preferred_hash: Option<[u8; 16]>,
@@ -58,7 +68,10 @@ pub fn build_pn_cascade_order(
     remotes.sort_by(|a, b| {
         let ah = a.hops.unwrap_or(u8::MAX);
         let bh = b.hops.unwrap_or(u8::MAX);
-        ah.cmp(&bh).then_with(|| a.id.cmp(&b.id))
+        a.is_discovered
+            .cmp(&b.is_discovered)
+            .then_with(|| ah.cmp(&bh))
+            .then_with(|| a.id.cmp(&b.id))
     });
     // Only reorder among enabled candidates — never synthesize a disabled/stale preferred.
     if let Some(pref) = preferred_hash {
@@ -126,6 +139,7 @@ pub fn candidates_from_propagation_rows(
             out.push(PnCascadeCandidate {
                 hash,
                 is_local: true,
+                is_discovered: false,
                 hops: *hops,
                 id: id.clone(),
             });
@@ -143,11 +157,74 @@ pub fn candidates_from_propagation_rows(
         out.push(PnCascadeCandidate {
             hash,
             is_local: false,
+            is_discovered: false,
             hops: *hops,
             id: id.clone(),
         });
     }
     out
+}
+
+/// Ephemeral cascade candidates from heard `lxmf.propagation` announces.
+///
+/// Auto may deposit offline LXMF on a PN the user never added, so the outbound cascade
+/// matches what Auto sync already does — no Add, no Preferred write, nothing persisted.
+/// Manual only uses nodes the user added, and Off has no cascade at all, so both return
+/// an empty list.
+pub fn auto_discovered_candidates(
+    discovered: &[DiscoveredPropagationRow],
+    configured: &[PnCascadeCandidate],
+    self_lxmf_hash_hex: &str,
+    mode: PropagationMode,
+    max_peering_cost: u8,
+) -> Vec<PnCascadeCandidate> {
+    if mode != PropagationMode::Auto {
+        return Vec::new();
+    }
+    let self_norm = self_lxmf_hash_hex.trim().to_lowercase();
+    let mut seen: HashSet<[u8; 16]> = configured.iter().map(|c| c.hash).collect();
+    let mut out = Vec::new();
+    for row in discovered {
+        // Only nodes announcing that they are actively serving can accept a deposit.
+        if !row.node_state || row.peering_cost > max_peering_cost {
+            continue;
+        }
+        let Some(hash) = parse_hash16(&row.destination_hash) else {
+            continue;
+        };
+        if is_self_lxmf_hash(&hash, &self_norm) || !seen.insert(hash) {
+            continue;
+        }
+        out.push(PnCascadeCandidate {
+            hash,
+            is_local: false,
+            is_discovered: true,
+            hops: row.hops,
+            id: format!("discovered-{}", &hex::encode(hash)[..8]),
+        });
+    }
+    out.sort_by(|a, b| {
+        let ah = a.hops.unwrap_or(u8::MAX);
+        let bh = b.hops.unwrap_or(u8::MAX);
+        ah.cmp(&bh).then_with(|| a.id.cmp(&b.id))
+    });
+    out.truncate(MAX_AUTO_DISCOVERED_PN_CANDIDATES);
+    out
+}
+
+/// Cascade candidates for the active propagation mode.
+///
+/// Mode `Off` means no propagation support: no remote deposit and no local inbox fallback,
+/// so Direct exhaustion is terminal.
+pub fn candidates_for_propagation_mode(
+    rows: &[(String, bool, Option<String>, Option<u8>)],
+    self_lxmf_hash_hex: &str,
+    mode: PropagationMode,
+) -> Vec<PnCascadeCandidate> {
+    if mode.is_off() {
+        return Vec::new();
+    }
+    candidates_from_propagation_rows(rows, self_lxmf_hash_hex)
 }
 
 fn parse_hash16(hex_str: &str) -> Option<[u8; 16]> {
@@ -168,6 +245,7 @@ mod tests {
         PnCascadeCandidate {
             hash: [hash_byte; 16],
             is_local: false,
+            is_discovered: false,
             hops,
             id: id.into(),
         }
@@ -177,8 +255,51 @@ mod tests {
         PnCascadeCandidate {
             hash: [hash_byte; 16],
             is_local: true,
+            is_discovered: false,
             hops: Some(0),
             id: "local-prop".into(),
+        }
+    }
+
+    fn discovered_row(hash_hex: &str, hops: Option<u8>) -> DiscoveredPropagationRow {
+        DiscoveredPropagationRow {
+            destination_hash: hash_hex.into(),
+            identity_hash: None,
+            public_key: None,
+            display_name: None,
+            hops,
+            last_seen: Some(1),
+            node_state: true,
+            peering_cost: 0,
+        }
+    }
+
+    fn rows() -> Vec<(String, bool, Option<String>, Option<u8>)> {
+        vec![
+            ("local-prop".into(), true, Some("99".repeat(16)), Some(0u8)),
+            ("pn-near".into(), true, Some("11".repeat(16)), Some(1u8)),
+        ]
+    }
+
+    #[test]
+    fn propagation_mode_off_yields_no_cascade_candidates() {
+        let candidates = candidates_for_propagation_mode(&rows(), "", PropagationMode::Off);
+        assert!(candidates.is_empty());
+        assert!(!cascade_has_capacity(
+            &build_pn_cascade_order(&candidates, None),
+            &HashSet::new()
+        ));
+    }
+
+    #[test]
+    fn propagation_mode_auto_and_manual_keep_remote_and_local_candidates() {
+        for mode in [PropagationMode::Auto, PropagationMode::Manual] {
+            let candidates = candidates_for_propagation_mode(&rows(), "", mode);
+            assert_eq!(candidates.len(), 2);
+            assert!(cascade_has_capacity(
+                &build_pn_cascade_order(&candidates, None),
+                &HashSet::new()
+            ));
         }
     }
 
@@ -287,6 +408,104 @@ mod tests {
         let ordered = build_pn_cascade_order(&candidates, Some(stale_preferred));
         assert_eq!(ordered[0].hash, [0x11; 16]);
         assert!(!ordered.iter().any(|c| c.hash == stale_preferred));
+    }
+
+    #[test]
+    fn auto_appends_discovered_after_configured_and_before_local() {
+        let configured = candidates_for_propagation_mode(&rows(), "", PropagationMode::Auto);
+        let discovered = vec![discovered_row(&"ab".repeat(16), Some(0))];
+        let extra = auto_discovered_candidates(
+            &discovered,
+            &configured,
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+        );
+        assert_eq!(extra.len(), 1);
+        let mut all = configured;
+        all.extend(extra);
+        let ordered = build_pn_cascade_order(&all, None);
+        // Configured "pn-near" (1 hop) still beats the 0-hop discovered node.
+        assert_eq!(ordered[0].id, "pn-near");
+        assert!(ordered[1].is_discovered);
+        assert!(ordered[2].is_local);
+    }
+
+    #[test]
+    fn manual_and_off_add_no_discovered_candidates() {
+        let discovered = vec![discovered_row(&"ab".repeat(16), Some(1))];
+        for mode in [PropagationMode::Manual, PropagationMode::Off] {
+            assert!(
+                auto_discovered_candidates(&discovered, &[], "", mode, u8::MAX).is_empty(),
+                "{mode:?} must not deposit on a node the user never added"
+            );
+        }
+    }
+
+    #[test]
+    fn auto_discovered_skips_inactive_self_configured_and_costly() {
+        let self_hex = "aa".repeat(16);
+        let configured = vec![remote(0xbb, Some(1), "pn-added")];
+        let mut inactive = discovered_row(&"cc".repeat(16), Some(1));
+        inactive.node_state = false;
+        let mut costly = discovered_row(&"dd".repeat(16), Some(1));
+        costly.peering_cost = 30;
+        let discovered = vec![
+            inactive,
+            costly,
+            discovered_row(&self_hex, Some(1)),
+            // Already added by the user (uppercase on the wire).
+            discovered_row(&"BB".repeat(16), Some(1)),
+            discovered_row("not-a-hash", Some(1)),
+            // Duplicate announce for the same destination.
+            discovered_row(&"ee".repeat(16), Some(2)),
+            discovered_row(&"ee".repeat(16), Some(2)),
+        ];
+        let extra = auto_discovered_candidates(
+            &discovered,
+            &configured,
+            &self_hex,
+            PropagationMode::Auto,
+            26,
+        );
+        assert_eq!(extra.len(), 1);
+        assert_eq!(hex::encode(extra[0].hash), "ee".repeat(16));
+    }
+
+    #[test]
+    fn auto_discovered_sorts_by_hops_and_caps_at_three() {
+        let discovered = vec![
+            discovered_row(&"55".repeat(16), None),
+            discovered_row(&"44".repeat(16), Some(4)),
+            discovered_row(&"11".repeat(16), Some(1)),
+            discovered_row(&"33".repeat(16), Some(3)),
+            discovered_row(&"22".repeat(16), Some(2)),
+        ];
+        let extra =
+            auto_discovered_candidates(&discovered, &[], "", PropagationMode::Auto, u8::MAX);
+        assert_eq!(extra.len(), MAX_AUTO_DISCOVERED_PN_CANDIDATES);
+        assert_eq!(
+            extra.iter().map(|c| c.hops).collect::<Vec<_>>(),
+            vec![Some(1), Some(2), Some(3)],
+            "unknown-hop announces must never displace a known-close node"
+        );
+    }
+
+    #[test]
+    fn auto_discovered_only_still_reports_cascade_capacity() {
+        let extra = auto_discovered_candidates(
+            &[discovered_row(&"ab".repeat(16), Some(1))],
+            &[],
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+        );
+        let ordered = build_pn_cascade_order(&extra, None);
+        assert!(cascade_has_capacity(&ordered, &HashSet::new()));
+        assert_eq!(
+            pick_next_pn_cascade(&ordered, &HashSet::new()),
+            PnCascadePick::Remote(extra[0].hash)
+        );
     }
 
     #[test]

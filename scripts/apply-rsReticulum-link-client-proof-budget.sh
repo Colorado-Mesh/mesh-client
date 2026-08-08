@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsReticulum-link-client-proof-budget.patch"
-RNS_DIR="${RS_RETICULUM_DIR:-$(cd "${REPO_ROOT}/.." && pwd)/rsReticulum}"
+RNS_DIR="${RS_RETICULUM_DIR:-${REPO_ROOT}/.rsstack/rsReticulum}"
 LINK_CLIENT_RS="${RNS_DIR}/crates/rns-runtime/src/link_client.rs"
 
 if [[ ! -d "${RNS_DIR}/.git" ]]; then

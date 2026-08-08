@@ -158,7 +158,7 @@ jobs:
 
       - name: Build Reticulum sidecar for Electron packaging
         env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/..
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
         run: node scripts/build-reticulum-sidecar-release.mjs --platform ${{ matrix.sidecar_platform }}
 
       - name: Verify staged Reticulum sidecars

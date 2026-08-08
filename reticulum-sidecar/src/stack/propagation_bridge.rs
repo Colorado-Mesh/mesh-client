@@ -129,6 +129,15 @@ impl PropagationBridge {
         });
     }
 
+    /// True while the background messagestore load has not produced a terminal result.
+    /// Non-blocking counterpart of [`Self::wait_messagestore_loaded`] for status reads.
+    pub fn messagestore_load_pending(&self) -> bool {
+        self.messagestore_result
+            .lock()
+            .map(|guard| guard.is_none())
+            .unwrap_or(true)
+    }
+
     /// Wait until background messagestore load has finished; returns the stored terminal result.
     pub async fn wait_messagestore_loaded(&self) -> Result<(), String> {
         loop {
@@ -784,6 +793,28 @@ mod tests {
         assert!(
             bridge.contains("propagation-retrieve"),
             "sync Completes must log retrieve telemetry"
+        );
+    }
+
+    /// Auto deposits on discovered PNs, so a newly heard announce must refresh the cascade
+    /// shortlist immediately instead of waiting for a settings write or stack restart.
+    #[test]
+    fn source_announce_handler_rebuilds_pn_cascade_candidates() {
+        let live = include_str!("live.rs");
+        let handler_start = live
+            .find("pub fn register_propagation_announce_handler")
+            .expect("propagation announce handler");
+        let rest = &live[handler_start..];
+        let handler_end = rest[1..]
+            .find("\n    pub fn ")
+            .map_or(rest.len(), |idx| idx + 1);
+        assert!(
+            rest[..handler_end].contains("rebuild_pn_cascade_candidates("),
+            "announce handler must rebuild cascade candidates when a PN is heard"
+        );
+        assert!(
+            live.contains("async fn rebuild_pn_cascade_candidates("),
+            "cascade rebuild must be shared with refresh_pn_cascade_candidates"
         );
     }
 }

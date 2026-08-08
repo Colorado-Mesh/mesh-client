@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Hapus pesan langsung",
     "clearReticulumMessagesConfirm": "Ini akan menghapus semua {{count}} pesan langsung Reticulum yang disimpan secara lokal secara permanen. Ini tidak dapat diurungkan.",
     "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}",
-    "reticulumSection": "Reticulum — Tumpukan Reticulum",
-    "reticulumAnnounceHelp": "Seberapa sering identitas Anda diumumkan di jaringan, dan alat untuk menghapus pengumuman yang tersimpan.",
     "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Pada tab Reticulum, jalur perangkat menyertakan keluaran sespan dan kesehatan antarmuka lokal. Baris debug memerlukan kotak centang di dalam panel log.",
     "autoPruneUnheardContactsDaysAria": "Pangkas otomatis kontak yang belum pernah terdengar saat startup, lebih lama dari {{days}} hari",
     "capTotalContactsCountAria": "Batasi total kontak, pertahankan kontak {{count}} yang terakhir dilihat",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Belum ada warna yang disimpan — gunakan Simpan untuk membuat pos pemeriksaan",
     "saveThemeButton": "Simpan",
     "restoreThemeButton": "Pulihkan",
-    "reticulumPropagationHelp": "Konfigurasikan node propagasi LXMF jarak jauh untuk DM offline. Propagasi lokal adalah kotak masuk perangkat ini saja — tidak menggantikan node jarak jauh.",
     "use24HourTime": "Gunakan waktu 24 jam",
     "use24HourTimeDesc": "Paksa jam seperti stempel waktu obrolan ke format 24 jam. Saat mati, ikuti lokal sistem Anda.",
     "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Tidak ada simpul propagasi yang dikonfigurasi. {{count}} ditemukan di jaringan — tambahkan satu di bawah ini atau buka pengaturan Jaringan.",
       "addClosest": "Tambahkan yang terdekat ditemukan",
-      "addClosestAria": "Tambahkan simpul propagasi terdekat yang ditemukan dan atur sesuai keinginan"
+      "addClosestAria": "Tambahkan simpul propagasi terdekat yang ditemukan dan atur sesuai keinginan",
+      "dismiss": "Jangan tampilkan lagi",
+      "dismissAria": "Berhenti menampilkan pengingat simpul propagasi di Obrolan"
     },
     "rename": "Ganti nama",
     "renameLabel": "Nama node propagasi",
@@ -4196,7 +4195,8 @@
       "known": "diketahui",
       "pending": "tertunda",
       "unknown": "tidak dikenal",
-      "online": "online"
+      "online": "online",
+      "loading": "sedang memuat"
     },
     "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
     "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "Node propagasi host lokal tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "enableFailed": "Tidak dapat mengaktifkan node propagasi.",
     "disableFailed": "Tidak dapat menonaktifkan node propagasi.",
-    "syncOutboundBusy": "Sinkronisasi propagasi ditangguhkan — pesan keluar disetorkan ke simpul ini."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Sinkronisasi propagasi ditangguhkan — pesan keluar disetorkan ke simpul ini.",
     "modeLabel": "Mode propagasi",
     "modeAria": "Mode sinkronisasi propagasi",
     "modeAuto": "Otomatis",
-    "modeManual": "Panduan",
+    "modeManual": "Manual",
     "modeOff": "Tidak aktif",
-    "sync": "Sinkronkan",
-    "syncAria": "Sinkronkan pesan propagasi",
-    "cancelSync": "Batal",
-    "cancelSyncAria": "Batalkan sinkronisasi propagasi"
+    "modeHelpAuto": "Otomatis: menyinkronkan sekali node propagasi yang ditemukan terbaik (tidak menambahkannya atau mengubah Preferred), lalu remote yang dikonfigurasi, lalu kotak masuk lokal. Tanpa antarmuka jaringan, hanya menyelesaikan lokal.",
+    "syncStarting": "Memulai sinkronisasi",
+    "syncLocalSettled": "Disinkronkan dengan kotak masuk lokal.",
+    "modeHelpOff": "Mati: tidak ada dukungan simpul propagasi. Tidak ada sinkronisasi dan pesan offline yang tidak disimpan pada simpul propagasi apa pun. Simpul Pilihan tetap disimpan tetapi tidak digunakan sampai Anda memilih Otomatis atau Manual.",
+    "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, lalu kotak masuk lokal.",
+    "syncNoTarget": "Belum ada simpul propagasi yang tersedia — tidak ada yang ditemukan, dan Anda tidak memiliki simpul tambahan. Sinkronisasi berjalan sendiri segera setelah tersedia.",
+    "syncLocalLoading": "Node propagasi lokal masih memuat pesan tersimpannya. Sinkronisasi berjalan sendiri setelah pemuatan selesai.",
+    "syncLocalSettledFor": "Disinkronkan dengan {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Tampilkan pengingat propagasi di Obrolan",
+    "showChatNoticeAria": "Tampilkan spanduk pengingat simpul propagasi di Obrolan",
+    "showChatNoticeHint": "Nonaktifkan ini untuk menyembunyikan spanduk Obrolan yang muncul ketika tidak ada node propagasi yang tersedia."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

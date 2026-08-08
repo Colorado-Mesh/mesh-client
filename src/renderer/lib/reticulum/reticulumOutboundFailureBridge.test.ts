@@ -231,8 +231,14 @@ describe('failReticulumSendingOutboundToDestHash', () => {
 
 describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
   it('returns false when preferred remote PN is set (sidecar owns Direct→PN fallback)', () => {
-    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'off')).toBe(
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'auto')).toBe(
       false,
+    );
+  });
+
+  it('returns true in off mode because there is no PN cascade to wait for', () => {
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'off')).toBe(
+      true,
     );
   });
 
@@ -257,5 +263,15 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
 
   it('returns true when no remote PN and local-prop disabled', () => {
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'off')).toBe(true);
+  });
+
+  // Auto deposits on heard PNs, so the sidecar is still cascading with nothing configured.
+  it('returns false in auto with only a discovered node', () => {
+    const discovered = [
+      { destination_hash: 'ab'.repeat(16), node_state: true, peering_cost: 0, hops: 1 },
+    ];
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'auto', discovered)).toBe(false);
+    // Manual never uses a node the user did not add, so the timeout is terminal there.
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'manual', discovered)).toBe(true);
   });
 });

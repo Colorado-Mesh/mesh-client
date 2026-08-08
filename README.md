@@ -330,7 +330,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 - Generate or import LXMF identity (mnemonic); **identity vault** (passcode) and encrypted identity export; import/export rnsd-style config from standard system paths
 - Stack settings (`enable_transport`, `share_instance`, log level), announce interval, **Clear announces**, **RMAP v4 discovery** publish controls
-- **Propagation nodes**: preferred node for offline DMs, per-node sync, optional **local propagation inbox** / Advanced PN hosting policy
+- **Propagation nodes** (Network tab): **Propagation mode** Off (default) / Auto / Manual, Preferred node for offline DMs, per-node sync, optional **local propagation inbox** / Advanced PN hosting policy
 
 **Messaging (Chat + encrypted paper + RRC)**
 
@@ -538,7 +538,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Windows  | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 | Linux    | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 
-Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack needs sibling checkouts `../rsReticulum`, `../rsLXMF`, `../rsNomad`, `../rsLXST`, and `../lrgp-rs` — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
+Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack lives in the repo-local `.rsstack/` workspace (`rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, `lrgp-rs`) — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
 
 ### Tech Stack
 

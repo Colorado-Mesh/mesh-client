@@ -850,6 +850,98 @@ describe('interpolationPlaceholderIssues', () => {
   });
 });
 
+describe('reticulumPropagation mode-help rewrite drift', () => {
+  const enModeHelpAuto =
+    'Auto: one-time syncs the best Discovered propagation node (does not add it or change Preferred), then configured remotes, then the local inbox. With no network interfaces, settles local only.';
+  const enSyncLocalLoading =
+    'The local propagation node is still loading its stored messages. Sync runs on its own once it finishes.';
+  const enModeHelpManual =
+    'Manual: syncs your Preferred node, or picks the closest added node for that sync when none is preferred. If it fails, the other added nodes are tried, then the local inbox.';
+
+  it('flags stale Preferred-managed Auto help', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumPropagation.modeHelpAuto',
+      val: 'Auto: Preferred wird für Sie verwaltet. Manuelle Bevorzugte Steuerelemente sind deaktiviert.',
+      enVal: enModeHelpAuto,
+    });
+    expectIssue(issues, 'modeHelpAuto is stale');
+  });
+
+  it('passes rewritten Auto help', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'reticulumPropagation.modeHelpAuto',
+        val: 'Auto: synchronisiert einmalig den besten erkannten Ausbreitungsknoten (fügt ihn nicht hinzu und ändert Preferred nicht), dann konfigurierte Remotes, dann den lokalen Posteingang.',
+        enVal: enModeHelpAuto,
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags syncLocalLoading when second clause blames sync completion', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumPropagation.syncLocalLoading',
+      val: 'Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung läuft von selbst, sobald sie abgeschlossen ist.',
+      enVal: enSyncLocalLoading,
+    });
+    expectIssue(issues, 'syncLocalLoading pronoun');
+  });
+
+  it('passes syncLocalLoading when second clause refers to loading', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'reticulumPropagation.syncLocalLoading',
+        val: 'Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung startet von selbst, sobald das Laden abgeschlossen ist.',
+        enVal: enSyncLocalLoading,
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags Japanese syncLocalLoading when second clause blames sync (no whitespace)', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'reticulumPropagation.syncLocalLoading',
+      val: 'ローカル伝播ノードは保存済みメッセージをまだ読み込んでいます。同期が完了すると自動で実行されます。',
+      enVal: enSyncLocalLoading,
+    });
+    expectIssue(issues, 'syncLocalLoading pronoun');
+  });
+
+  it('flags Chinese syncLocalLoading when second clause blames sync (no whitespace)', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'reticulumPropagation.syncLocalLoading',
+      val: '本地传播节点仍在加载其已存储的消息。同步完成后会自行运行。',
+      enVal: enSyncLocalLoading,
+    });
+    expectIssue(issues, 'syncLocalLoading pronoun');
+  });
+
+  it('passes Japanese syncLocalLoading when second clause refers to loading', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'ja',
+        flatKey: 'reticulumPropagation.syncLocalLoading',
+        val: 'ローカル伝播ノードは保存済みメッセージをまだ読み込んでいます。読み込みが終わると同期は自動で実行されます。',
+        enVal: enSyncLocalLoading,
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags Czech Příručka false friend on modeHelpManual', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'reticulumPropagation.modeHelpManual',
+      val: 'Příručka: synchronizuje váš preferovaný uzel…',
+      enVal: enModeHelpManual,
+    });
+    expectIssue(issues, 'Příručka');
+  });
+});
+
 describe('roomsPanel login-all false friends (recent MeshCore Rooms)', () => {
   it('flags French chambres plural on loginAllInProgress', () => {
     const issues = localeStringQualityIssues({

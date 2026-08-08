@@ -216,8 +216,6 @@
     "clearReticulumMessagesTitle": "Limpar mensagens diretas",
     "clearReticulumMessagesConfirm": "Isso excluirá permanentemente todas as {{count}} mensagens diretas Reticulum armazenadas localmente. Isso não pode ser desfeito.",
     "clearReticulumMessagesConfirmButton": "Limpar mensagens {{count}}",
-    "reticulumSection": "Reticulum — Pilha de Reticulum",
-    "reticulumAnnounceHelp": "Com que frequência sua identidade é anunciada na rede e ferramentas para limpar anúncios armazenados.",
     "logPanelHelp": "Quando ativado, um fluxo de log ao vivo aparece à direita. Na guia Reticulum, as linhas do dispositivo incluem saída secundária e integridade da interface local. As linhas de depuração exigem a caixa de seleção dentro do painel de log.",
     "autoPruneUnheardContactsDaysAria": "Remover automaticamente contatos não ouvidos na inicialização, com mais de {{days}} dias",
     "capTotalContactsCountAria": "Limite o total de contatos, mantenha os contatos {{count}} vistos mais recentemente",
@@ -381,7 +379,6 @@
     "noSavedThemeTooltip": "Ainda não há cores salvas — use Salvar para criar um ponto de verificação",
     "saveThemeButton": "Salvar",
     "restoreThemeButton": "Restaurar",
-    "reticulumPropagationHelp": "Configurar nós de propagação LXMF remotos para DMs offline. A propagação local é apenas a caixa de entrada deste dispositivo — ela não substitui um nó remoto.",
     "use24HourTime": "Use o tempo de 24 horas",
     "use24HourTimeDesc": "Forçar relógios como carimbos de data e hora de bate-papo para o formato de 24 horas. Quando desligado, segue a localidade do seu sistema.",
     "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
@@ -4174,7 +4171,9 @@
       "openSettingsAria": "Open Reticulum Network propagation settings",
       "bodyWithDiscoveries": "Nenhum nó de propagação está configurado. {{count}} descoberto na rede — adicione um abaixo ou abra as configurações de rede.",
       "addClosest": "Adicionar descoberto mais próximo",
-      "addClosestAria": "Adicione o nó de propagação descoberto mais próximo e defina-o como preferido"
+      "addClosestAria": "Adicione o nó de propagação descoberto mais próximo e defina-o como preferido",
+      "dismiss": "Não mostrar novamente",
+      "dismissAria": "Parar de mostrar o lembrete do nó de propagação no Chat"
     },
     "rename": "Renomear",
     "renameLabel": "Nome do nó de propagação",
@@ -4196,7 +4195,8 @@
       "known": "conhecido",
       "pending": "pendente",
       "unknown": "desconhecido",
-      "online": "on-line"
+      "online": "on-line",
+      "loading": "Carregando..."
     },
     "syncIdentityUnknown": "A identidade do nó de propagação é desconhecida — aguarde um anúncio ou resposta do caminho e tente novamente.",
     "syncTargetNotPropagationNode": "Esse destino pode ser alcançado no Reticulum, mas não é um nó de propagação LXMF (os hubs TCP são apenas caminhos de transporte). Adicione um destino anunciado como lxmf.propagation para sincronizar mensagens offline.",
@@ -4243,18 +4243,25 @@
     "syncLocalNotSupported": "O nó de propagação do host local não pode ser sincronizado pela rede como um nó de propagação LXMF remoto.",
     "enableFailed": "Não foi possível ativar o nó de propagação.",
     "disableFailed": "Não foi possível desativar o nó de propagação.",
-    "syncOutboundBusy": "Sincronização de propagação adiada — uma mensagem de saída está sendo depositada neste nó."
-  },
-  "reticulumPropagationHeader": {
+    "syncOutboundBusy": "Sincronização de propagação adiada — uma mensagem de saída está sendo depositada neste nó.",
     "modeLabel": "Modo de propagação",
     "modeAria": "Modo de sincronização de propagação",
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Desligado",
-    "sync": "Sincronizar",
-    "syncAria": "Sincronizar mensagens de propagação",
-    "cancelSync": "Cancelar",
-    "cancelSyncAria": "Cancelar sincronização de propagação"
+    "modeHelpAuto": "Automático: sincroniza uma vez o melhor nó de propagação descoberto (não o adiciona nem altera Preferred), depois os remotos configurados e, por fim, a caixa de entrada local. Sem interfaces de rede, conclui apenas no local.",
+    "syncStarting": "Iniciando sincronização",
+    "syncLocalSettled": "Sincronizado com a caixa de entrada local.",
+    "modeHelpOff": "Desligado: sem suporte de nó de propagação. Nada é sincronizado e as mensagens offline não são depositadas em nenhum nó de propagação. Um nó Preferred permanece salvo, mas não usado, até que você escolha Auto ou Manual.",
+    "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, a caixa de entrada local.",
+    "syncNoTarget": "Nenhum nó de propagação está disponível ainda — nenhum foi descoberto e você não tem nós adicionados. A sincronização é executada por conta própria assim que uma estiver disponível.",
+    "syncLocalLoading": "O nó de propagação local ainda está carregando suas mensagens armazenadas. A sincronização é executada sozinha quando o carregamento terminar.",
+    "syncLocalSettledFor": "Sincronizado com {{name}}.",
+    "syncStatusWithTarget": "{{status}} ({{name}})",
+    "syncErrorWithTarget": "{{name}}: {{message}}",
+    "showChatNotice": "Mostrar lembrete de propagação no chat",
+    "showChatNoticeAria": "Mostrar o banner de lembrete do nó de propagação no Chat",
+    "showChatNoticeHint": "Desative isso para ocultar o banner de bate-papo que aparece quando nenhum nó de propagação está disponível."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

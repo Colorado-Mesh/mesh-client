@@ -1,10 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
+import type {
+  DiscoveredPropagationRow,
+  PropagationNodeRow,
+} from '@/renderer/stores/reticulumPropagationStore';
 
 import {
+  hasPropagationCascadeCandidate,
+  isLocalPropagationLoading,
   pickAutoPropagationNodeId,
+  pickAutoPropagationTarget,
+  readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
+  resolveReticulumPropagationTargetLabel,
+  RETICULUM_PROPAGATION_MODE_KEY,
 } from './reticulumPropagationMode';
 
 function row(
@@ -17,7 +26,94 @@ function row(
   };
 }
 
+function discovered(
+  partial: Partial<DiscoveredPropagationRow> & Pick<DiscoveredPropagationRow, 'destination_hash'>,
+): DiscoveredPropagationRow {
+  return {
+    node_state: true,
+    peering_cost: 0,
+    ...partial,
+  };
+}
+
 describe('reticulumPropagationMode', () => {
+  // renderer-logic runs in node (no jsdom); provide a minimal localStorage stub.
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        store.set(k, v);
+      },
+      removeItem: (k: string) => {
+        store.delete(k);
+      },
+      clear: () => {
+        store.clear();
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reports no cascade candidate for a fresh stack with a loading local inbox', () => {
+    const loadingLocal = [
+      row({ id: 'local-prop', name: 'Local', enabled: false, status: 'loading' }),
+    ];
+    expect(hasPropagationCascadeCandidate('auto', loadingLocal, [])).toBe(false);
+    expect(hasPropagationCascadeCandidate('manual', loadingLocal, [])).toBe(false);
+
+    // Announce lands → Auto has a discovered target; Manual still has nothing.
+    const found = [discovered({ destination_hash: 'ab'.repeat(16), hops: 1 })];
+    expect(hasPropagationCascadeCandidate('auto', loadingLocal, found)).toBe(true);
+    expect(hasPropagationCascadeCandidate('manual', loadingLocal, found)).toBe(false);
+
+    // Local inbox finishes loading → both modes can settle locally.
+    const servingLocal = [row({ id: 'local-prop', name: 'Local', status: 'active' })];
+    expect(hasPropagationCascadeCandidate('auto', servingLocal, [])).toBe(true);
+    expect(hasPropagationCascadeCandidate('manual', servingLocal, [])).toBe(true);
+    expect(hasPropagationCascadeCandidate('off', servingLocal, found)).toBe(false);
+  });
+
+  it('excludes an enabled loading local inbox from cascade candidates and local fallback', () => {
+    const loadingEnabled = [
+      row({ id: 'local-prop', name: 'Local', enabled: true, status: 'loading' }),
+    ];
+    expect(hasPropagationCascadeCandidate('auto', loadingEnabled, [])).toBe(false);
+    expect(hasPropagationCascadeCandidate('manual', loadingEnabled, [])).toBe(false);
+    expect(resolvePropagationSyncTargetId('auto', loadingEnabled, null)).toBeNull();
+    expect(resolvePropagationSyncTargetId('manual', loadingEnabled, null)).toBeNull();
+    expect(pickAutoPropagationTarget(loadingEnabled, [])).toBeNull();
+  });
+
+  it('detects the local inbox still loading its messagestore', () => {
+    expect(
+      isLocalPropagationLoading([row({ id: 'local-prop', name: 'Local', enabled: false })]),
+    ).toBe(false);
+    expect(
+      isLocalPropagationLoading([
+        row({ id: 'local-prop', name: 'Local', enabled: false, status: 'loading' }),
+      ]),
+    ).toBe(true);
+    expect(
+      isLocalPropagationLoading([row({ id: 'pn-a', name: 'Remote', status: 'loading' })]),
+    ).toBe(false);
+  });
+
+  it('defaults to off when nothing is persisted', () => {
+    localStorage.removeItem(RETICULUM_PROPAGATION_MODE_KEY);
+    expect(readReticulumPropagationMode()).toBe('off');
+  });
+
+  it('honors a persisted mode', () => {
+    localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, 'auto');
+    expect(readReticulumPropagationMode()).toBe('auto');
+    localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, 'manual');
+    expect(readReticulumPropagationMode()).toBe('manual');
+  });
+
   it('picks lowest-hop enabled node excluding local-prop', () => {
     const nodes = [
       row({ id: 'local-prop', name: 'Local', hops: 0 }),
@@ -36,5 +132,142 @@ describe('reticulumPropagationMode', () => {
     expect(resolvePropagationSyncTargetId('off', nodes, 'pn-aaaa')).toBeNull();
     expect(resolvePropagationSyncTargetId('manual', nodes, 'pn-aaaa')).toBe('pn-aaaa');
     expect(resolvePropagationSyncTargetId('auto', nodes, null)).toBe('pn-aaaa');
+  });
+
+  it('Manual without Preferred picks the closest added remote', () => {
+    const nodes = [
+      row({ id: 'local-prop', name: 'Local', hops: 0 }),
+      row({ id: 'pn-far', name: 'Far', hops: 4 }),
+      row({ id: 'pn-near', name: 'Near', hops: 1 }),
+    ];
+    expect(resolvePropagationSyncTargetId('manual', nodes, null)).toBe('pn-near');
+  });
+
+  it('Manual ignores discovered nodes and falls back to local when no remotes are added', () => {
+    const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0 })];
+    const rows = [discovered({ destination_hash: 'dead'.repeat(8), hops: 1 })];
+    expect(resolvePropagationSyncTargetId('manual', nodes, null, rows)).toBe('local-prop');
+  });
+
+  it('Manual has no sync target when nothing is added and local is disabled', () => {
+    const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0, enabled: false })];
+    expect(resolvePropagationSyncTargetId('manual', nodes, null)).toBeNull();
+  });
+
+  it('Auto sync target prefers discovered destination hash over local-only', () => {
+    const hash = 'dead'.repeat(8);
+    const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0 })];
+    const rows = [discovered({ destination_hash: hash, hops: 1 })];
+    expect(pickAutoPropagationTarget(nodes, rows)?.kind).toBe('discovered');
+    expect(resolvePropagationSyncTargetId('auto', nodes, null, rows)).toBe(hash);
+  });
+
+  it('pickAutoPropagationTarget prefers discovered over configured (Add-closest ranking)', () => {
+    const hash = 'aabb'.repeat(8);
+    const nodes = [row({ id: 'pn-aabb', name: 'Configured', hops: 1, destination_hash: hash })];
+    const rows = [discovered({ destination_hash: 'dead'.repeat(8), hops: 2 })];
+    expect(pickAutoPropagationTarget(nodes, rows)).toEqual({
+      kind: 'discovered',
+      destinationHash: 'dead'.repeat(8),
+    });
+  });
+
+  describe('pickAutoPropagationTarget', () => {
+    it('picks the lowest-hop configured remote', () => {
+      const nodes = [
+        row({ id: 'local-prop', name: 'Local', hops: 0 }),
+        row({ id: 'pn-aaaa', name: 'Far', hops: 4 }),
+        row({ id: 'pn-bbbb', name: 'Near', hops: 1 }),
+      ];
+      expect(pickAutoPropagationTarget(nodes)).toEqual({ kind: 'configured', id: 'pn-bbbb' });
+    });
+
+    it('prefers a closer discovered node over a worse configured remote', () => {
+      const nodes = [row({ id: 'pn-aaaa', name: 'Far', hops: 4 })];
+      const rows = [discovered({ destination_hash: 'dead'.repeat(8), hops: 1 })];
+      expect(pickAutoPropagationTarget(nodes, rows)).toEqual({
+        kind: 'discovered',
+        destinationHash: 'dead'.repeat(8),
+      });
+    });
+
+    it('ignores discovered rows already configured or inactive', () => {
+      const hash = 'aabb'.repeat(8);
+      const nodes = [row({ id: 'pn-aabb', name: 'Configured', hops: 2, destination_hash: hash })];
+      const rows = [
+        discovered({ destination_hash: hash, hops: 1 }),
+        discovered({ destination_hash: 'ccdd'.repeat(8), hops: 0, node_state: false }),
+      ];
+      expect(pickAutoPropagationTarget(nodes, rows)).toEqual({
+        kind: 'configured',
+        id: 'pn-aabb',
+      });
+    });
+
+    it('prefers a remote over enabled local', () => {
+      const nodes = [
+        row({ id: 'local-prop', name: 'Local', hops: 0 }),
+        row({ id: 'pn-aaaa', name: 'Near', hops: 2 }),
+      ];
+      expect(pickAutoPropagationTarget(nodes)).toEqual({ kind: 'configured', id: 'pn-aaaa' });
+    });
+
+    it('falls back to local when only enabled local is available', () => {
+      const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0 })];
+      expect(pickAutoPropagationTarget(nodes)).toEqual({ kind: 'local' });
+    });
+
+    it('returns null when nothing is enabled', () => {
+      const nodes = [
+        row({ id: 'local-prop', name: 'Local', hops: 0, enabled: false }),
+        row({ id: 'pn-aaaa', name: 'Near', hops: 1, enabled: false }),
+      ];
+      expect(pickAutoPropagationTarget(nodes)).toBeNull();
+    });
+  });
+
+  describe('resolveReticulumPropagationTargetLabel', () => {
+    const hash = 'aabb'.repeat(8);
+    const nodes = [
+      row({ id: 'local-prop', name: 'Local propagation node' }),
+      row({ id: 'pn-aabb', name: 'Hub PN', destination_hash: hash }),
+    ];
+
+    it('uses the translated local name for the local inbox', () => {
+      expect(resolveReticulumPropagationTargetLabel(nodes, [], 'local-prop', 'Host node')).toBe(
+        'Host node',
+      );
+    });
+
+    it('names a configured node by row id or destination hash', () => {
+      expect(resolveReticulumPropagationTargetLabel(nodes, [], 'pn-aabb', 'Host node')).toBe(
+        'Hub PN',
+      );
+      expect(
+        resolveReticulumPropagationTargetLabel(nodes, [], hash.toUpperCase(), 'Host node'),
+      ).toBe('Hub PN');
+    });
+
+    it('names a discovered node from its announce, else a hash prefix', () => {
+      const named = discovered({ destination_hash: 'ccdd'.repeat(8), display_name: ' Ratspeak ' });
+      const anonymous = discovered({ destination_hash: 'eeff'.repeat(8) });
+      expect(
+        resolveReticulumPropagationTargetLabel([], [named, anonymous], named.destination_hash, 'L'),
+      ).toBe('Ratspeak');
+      expect(
+        resolveReticulumPropagationTargetLabel(
+          [],
+          [named, anonymous],
+          anonymous.destination_hash,
+          'L',
+        ),
+      ).toBe('eeffeeffeeff');
+    });
+
+    it('falls back to a hash prefix for an unknown target', () => {
+      expect(resolveReticulumPropagationTargetLabel(nodes, [], '99'.repeat(16), 'Host node')).toBe(
+        '999999999999',
+      );
+    });
   });
 });

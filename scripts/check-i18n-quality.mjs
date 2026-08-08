@@ -1348,6 +1348,93 @@ function checkReticulumConnectionPanelIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
+/**
+ * Top-level `reticulumPropagation.*` keys (Network section) — not under connectionPanel.
+ * Catches English rewrite drift that key-parity / --audit cannot see.
+ */
+function checkReticulumPropagationModeHelpIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith('reticulumPropagation.') || locale === 'en') return issues;
+
+  if (
+    flatKey === 'reticulumPropagation.modeHelpAuto' &&
+    /one-time syncs the best Discovered/i.test(enVal)
+  ) {
+    const legacyAutoMarkers = [
+      /Preferred (is )?managed/i,
+      /managed for you/i,
+      /manual Preferred controls are disabled/i,
+      /Set preferred and Add/i,
+      /wird für Sie verwaltet/i,
+      /se gestiona por usted/i,
+      /est géré pour vous/i,
+      /gestito per te/i,
+      /voor u beheerd/i,
+      /zarządzany za Ciebie/i,
+      /gerenciado para você/i,
+      /управляется за вас/i,
+      /керується за вас/i,
+      /sizin için yönetilir/i,
+      /dikelola untuk Anda/i,
+      /が管理されます/i,
+      /관리됩니다/i,
+      /为您管理/i,
+      /Manuelle Bevorzugte? Steuerelemente sind deaktiviert/i,
+      /controles preferidos manuales están desactivados/i,
+      /commandes préférées manuelles sont désactivées/i,
+      /手動優先コントロールは無効/i,
+      /手动首选控件已禁用/i,
+    ];
+    for (const re of legacyAutoMarkers) {
+      if (re.test(val)) {
+        issues.push(
+          'reticulumPropagation.modeHelpAuto is stale: still describes Preferred-managed Auto (must match one-time Discovered sync, no Preferred write)',
+        );
+        break;
+      }
+    }
+  }
+
+  if (flatKey === 'reticulumPropagation.syncLocalLoading' && /still loading/i.test(enVal)) {
+    // Split on sentence punctuation only so Japanese/Chinese clauses without whitespace still separate.
+    const clauses = val
+      .split(/(?<=[.!?。！？])/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const second = clauses.length >= 2 ? clauses[1] : '';
+    if (second.length > 0) {
+      const mentionsLoading =
+        /load|charg|carga|caric|lad|načít|ładow|carreg|загруз|завантаж|yükl|muat|読み込|로드|加载|載入/i.test(
+          second,
+        );
+      // Unicode-safe: CJK sync terms have no ASCII word boundaries.
+      const mentionsSyncOnly =
+        /(?:^|[^\p{L}\p{N}_])(?:sync|synchron|sincron|синхрон|동기|同期|同步)\p{L}*/iu.test(
+          second,
+        ) && !mentionsLoading;
+      if (mentionsSyncOnly) {
+        issues.push(
+          'reticulumPropagation.syncLocalLoading pronoun: second clause must refer to loading finishing, not sync finishing',
+        );
+      }
+    }
+  }
+
+  if (
+    flatKey === 'reticulumPropagation.modeHelpManual' &&
+    /^Manual:/i.test(enVal) &&
+    locale === 'cs' &&
+    /^Příručka:/i.test(val)
+  ) {
+    issues.push(
+      'reticulumPropagation.modeHelpManual cs false friend: use Ručně:/Manuálně: (mode), not Příručka: (handbook)',
+    );
+  }
+
+  return issues;
+}
+
 function checkReticulumRemoteIssues(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
@@ -4149,6 +4236,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkAppPanelReduceMotionAndBrandIssues,
   checkMeshcoreOpenWireIssues,
   checkReticulumConnectionPanelIssues,
+  checkReticulumPropagationModeHelpIssues,
   checkReticulumRemoteIssues,
   checkReticulumPeerAndPingIssues,
   checkUkrainianApostropheIssues,
