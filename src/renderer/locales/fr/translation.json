@@ -4246,11 +4246,11 @@
     "modeAuto": "Auto",
     "modeManual": "Manuel",
     "modeOff": "Arrêt",
-    "modeHelpOff": "Désactivé : pas de modifications automatiques des préférences et pas de synchronisation périodique. Vous pouvez toujours définir manuellement un nœud Préféré pour la cascade sortante.",
     "modeHelpAuto": "Auto : le meilleur nœud de propagation est choisi automatiquement à ce moment-là (découvert ou configuré, sinon votre nœud local) et Preferred est géré pour vous. Les commandes préférées manuelles sont désactivées.",
-    "modeHelpManual": "Manuel : vous épinglez le nœud Preferred. La synchronisation utilise ce nœud ; les autres nœuds distants activés restent en tant que sauvegardes en cascade.",
     "syncStarting": "Lancer la synchronisation",
-    "syncLocalSettled": "Synchronisé avec la boîte de réception locale."
+    "syncLocalSettled": "Synchronisé avec la boîte de réception locale.",
+    "modeHelpOff": "Désactivé : pas de support de nœud de propagation. Aucune synchronisation et aucun message hors ligne ne sont déposés sur aucun nœud de propagation. Un nœud Préféré reste enregistré mais inutilisé jusqu'à ce que vous choisissiez Auto ou Manuel.",
+    "modeHelpManual": "Manuel : synchronise votre nœud préféré ou sélectionne le nœud ajouté le plus proche pour cette synchronisation lorsqu'aucun n'est préféré. S'il échoue, les autres nœuds ajoutés sont essayés, puis la boîte de réception locale."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

@@ -24,8 +24,8 @@ export function shouldRunPropagationAutoSync(args: {
   nowMs: number;
   /** Propagation mode; `off` never runs periodic sync. */
   mode?: ReticulumPropagationMode;
-  /** Auto may run with null Preferred when configured remotes or local exist. */
-  hasAutoCascadeCandidate?: boolean;
+  /** Auto/Manual may run with null Preferred when a cascade target exists for that mode. */
+  hasCascadeCandidate?: boolean;
 }): boolean {
   const {
     autoSyncIntervalSec,
@@ -35,18 +35,13 @@ export function shouldRunPropagationAutoSync(args: {
     lastPropagationSyncAttemptAt,
     nowMs,
     mode,
-    hasAutoCascadeCandidate,
+    hasCascadeCandidate,
   } = args;
   // Mode "off" disables all periodic sync (no automatic PN retrieval).
   if (mode === 'off') return false;
   if (autoSyncIntervalSec <= 0 || syncActive) return false;
-
-  if (mode === 'auto') {
-    if (!preferredId && !hasAutoCascadeCandidate) return false;
-  } else if (!preferredId) {
-    // Manual: need an explicit Preferred (including local-prop).
-    return false;
-  }
+  // Manual without Preferred picks a configured remote (or local) for this sync only.
+  if (!preferredId && !hasCascadeCandidate) return false;
 
   // Interval is measured from last *success*. Never-succeeded sessions fall back to last
   // attempt so the first failure still honors the configured interval once.
@@ -72,8 +67,9 @@ export function shouldRunPropagationAutoSync(args: {
 const AUTO_SYNC_CHECK_MS = 30 * MS_PER_SECOND;
 
 /**
- * Periodically sync configured remotes (Auto) or Preferred (Manual) when the interval
- * is enabled. Auto does not add discovered nodes or rewrite Preferred.
+ * Periodically sync discovered/configured remotes (Auto) or Preferred/picked remotes
+ * (Manual) when the interval is enabled. Neither mode adds discovered nodes or rewrites
+ * Preferred; Off runs no periodic sync.
  */
 export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
   useEffect(() => {
@@ -81,6 +77,8 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
 
     // Keep preferred/nodes fresh for Chat notice + auto-sync even if Network tab was never opened.
     void useReticulumPropagationStore.getState().refreshFromSidecar();
+    // Re-push the mode so a restarted sidecar gates its outbound PN cascade the same way.
+    void useReticulumPropagationStore.getState().setModeOnSidecar(readReticulumPropagationMode());
 
     const tick = async () => {
       const mode = readReticulumPropagationMode();
@@ -94,8 +92,9 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
         lastPropagationSyncAttemptAt,
       } = useReticulumPropagationStore.getState();
 
-      const hasAutoCascadeCandidate =
-        listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
+      // Manual never syncs a discovered-only node; it picks from configured remotes or local.
+      const hasCascadeCandidate =
+        (mode === 'auto' && listDiscoveredPropagationTargets(nodes, discovered).length > 0) ||
         listConfiguredRemotePropagationIds(nodes).length > 0 ||
         hasEnabledLocalPropagationNode(nodes);
 
@@ -108,14 +107,12 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
           lastPropagationSyncAttemptAt,
           nowMs: Date.now(),
           mode,
-          hasAutoCascadeCandidate,
+          hasCascadeCandidate,
         })
       ) {
         return;
       }
-      await startPropagationSyncCascade(
-        mode === 'manual' ? { firstTargetId: preferredId } : undefined,
-      );
+      await startPropagationSyncCascade();
     };
 
     // floating-ok: tick catches store failures via Result/toast paths

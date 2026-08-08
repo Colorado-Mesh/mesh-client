@@ -21,8 +21,12 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
     expect(hasEffectiveReticulumPropagationTarget([remoteNode], null, 'off')).toBe(false);
   });
 
-  it('returns true when preferred remote is set even if sync mode is off', () => {
-    expect(hasEffectiveReticulumPropagationTarget([remoteNode], 'remote-1', 'off')).toBe(true);
+  it('returns false in off mode even when a preferred remote is saved', () => {
+    expect(hasEffectiveReticulumPropagationTarget([remoteNode], 'remote-1', 'off')).toBe(false);
+  });
+
+  it('returns true in manual without Preferred when an added remote can be picked', () => {
+    expect(hasEffectiveReticulumPropagationTarget([remoteNode], null, 'manual')).toBe(true);
   });
 
   it('returns false when only local-prop is enabled', () => {
@@ -89,21 +93,27 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
 });
 
 describe('hasReticulumPnCascadeCapacity', () => {
+  const localEnabled: PropagationNodeRow = {
+    id: 'local-prop',
+    name: 'Local',
+    enabled: true,
+    status: 'active',
+    preferred: false,
+  };
+
   it('is true for preferred remote or enabled local-prop', () => {
-    const localEnabled: PropagationNodeRow = {
-      id: 'local-prop',
-      name: 'Local',
-      enabled: true,
-      status: 'active',
-      preferred: false,
-    };
-    expect(hasReticulumPnCascadeCapacity([remoteNode], 'remote-1', 'off')).toBe(true);
-    expect(hasReticulumPnCascadeCapacity([localEnabled], 'local-prop', 'off')).toBe(true);
+    expect(hasReticulumPnCascadeCapacity([remoteNode], 'remote-1', 'manual')).toBe(true);
+    expect(hasReticulumPnCascadeCapacity([localEnabled], 'local-prop', 'manual')).toBe(true);
     expect(hasEnabledLocalPropagation([localEnabled])).toBe(true);
   });
 
+  it('is false in off mode even with a preferred remote or enabled local-prop', () => {
+    expect(hasReticulumPnCascadeCapacity([remoteNode], 'remote-1', 'off')).toBe(false);
+    expect(hasReticulumPnCascadeCapacity([localEnabled], 'local-prop', 'off')).toBe(false);
+  });
+
   it('is false when nothing is available', () => {
-    expect(hasReticulumPnCascadeCapacity([], null, 'off')).toBe(false);
+    expect(hasReticulumPnCascadeCapacity([], null, 'auto')).toBe(false);
   });
 
   it('is false when local-prop is present but disabled', () => {
@@ -114,6 +124,6 @@ describe('hasReticulumPnCascadeCapacity', () => {
       status: 'inactive',
       preferred: false,
     };
-    expect(hasReticulumPnCascadeCapacity([localDisabled], null, 'off')).toBe(false);
+    expect(hasReticulumPnCascadeCapacity([localDisabled], null, 'auto')).toBe(false);
   });
 });

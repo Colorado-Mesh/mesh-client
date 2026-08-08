@@ -64,6 +64,7 @@ describe('ReticulumPropagationSection', () => {
     setPreferredOnSidecar: useReticulumPropagationStore.getState().setPreferredOnSidecar,
     setAutoSyncIntervalOnSidecar:
       useReticulumPropagationStore.getState().setAutoSyncIntervalOnSidecar,
+    setModeOnSidecar: useReticulumPropagationStore.getState().setModeOnSidecar,
     startSync: useReticulumPropagationStore.getState().startSync,
     addPropagationNode: useReticulumPropagationStore.getState().addPropagationNode,
   };
@@ -96,6 +97,7 @@ describe('ReticulumPropagationSection', () => {
       renamePropagationNode: vi.fn().mockResolvedValue(true),
       setPreferredOnSidecar: vi.fn().mockResolvedValue(true),
       setAutoSyncIntervalOnSidecar: vi.fn().mockResolvedValue(true),
+      setModeOnSidecar: vi.fn().mockResolvedValue(true),
       startSync: vi.fn().mockResolvedValue(true),
       addPropagationNode: vi.fn().mockResolvedValue(true),
       addFromDiscovered: vi.fn().mockResolvedValue(true),
@@ -477,5 +479,53 @@ describe('ReticulumPropagationSection', () => {
     render(<ReticulumPropagationSection embedded />);
     await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
     expect(localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY)).toBe('manual');
+  });
+
+  it('pushes the selected mode to the sidecar', async () => {
+    const user = userEvent.setup();
+    const setModeOnSidecar = vi.mocked(useReticulumPropagationStore.getState().setModeOnSidecar);
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    await waitFor(() => {
+      expect(setModeOnSidecar).toHaveBeenCalledWith('manual');
+    });
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'off');
+    await waitFor(() => {
+      expect(setModeOnSidecar).toHaveBeenCalledWith('off');
+    });
+  });
+
+  it('Off disables per-node Sync as well as bottom Sync', () => {
+    render(<ReticulumPropagationSection embedded />);
+
+    expect(
+      screen.getByRole('button', { name: 'reticulumPropagation.syncNowFor:Remote hub' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'reticulumPropagation.syncNowPreferredAria' }),
+    ).toBeDisabled();
+  });
+
+  it('Manual without Preferred syncs the closest added remote', async () => {
+    const user = userEvent.setup();
+    const startSync = vi.mocked(useReticulumPropagationStore.getState().startSync);
+    const setPreferredOnSidecar = vi.mocked(
+      useReticulumPropagationStore.getState().setPreferredOnSidecar,
+    );
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.selectOptions(screen.getByLabelText('reticulumPropagation.modeAria'), 'manual');
+    const bottomSync = screen.getByRole('button', {
+      name: 'reticulumPropagation.syncNowPreferredAria',
+    });
+    expect(bottomSync).not.toBeDisabled();
+    await user.click(bottomSync);
+
+    await waitFor(() => {
+      expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
+    });
+    expect(setPreferredOnSidecar).not.toHaveBeenCalled();
   });
 });

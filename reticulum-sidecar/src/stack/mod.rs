@@ -26,6 +26,7 @@ mod pn_hosting_apply;
 mod pn_hosting_policy;
 #[cfg(feature = "rns-stack")]
 mod pn_inbound;
+mod propagation_mode;
 pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;
@@ -73,6 +74,7 @@ use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 pub use path_medium::{PathMediumPreferenceSetting, PathMediumSetting};
 use persistence::PersistedState;
 pub use pn_hosting_policy::PnHostingPolicy;
+pub use propagation_mode::parse_propagation_mode;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow,
@@ -1245,6 +1247,7 @@ impl StackHandle {
         let inner = self.inner.read().await;
         let preferred_id = inner.preferred_propagation_id.clone();
         let auto_sync_interval_sec = inner.auto_sync_interval_sec;
+        let propagation_mode = inner.propagation_mode;
         let pn_hosting_policy = inner.pn_hosting_policy.clone();
         #[cfg(feature = "rns-stack")]
         let local_stats = if let Some(live) = self.live.get() {
@@ -1303,6 +1306,7 @@ impl StackHandle {
             "propagation": propagation,
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
+            "propagation_mode": propagation_mode.as_str(),
             "pn_hosting_policy": pn_hosting_policy,
         })
     }
@@ -1316,7 +1320,7 @@ impl StackHandle {
     }
 
     pub async fn set_preferred_propagation(&self, id: &str) -> Result<(), String> {
-        let prop_hash = {
+        let (prop_hash, mode) = {
             let mut inner = self.inner.write().await;
             inner.set_preferred_propagation(id)?;
             let hash = inner
@@ -1324,13 +1328,19 @@ impl StackHandle {
                 .iter()
                 .find(|p| p.id == id)
                 .and_then(|p| p.destination_hash.clone());
+            let mode = inner.propagation_mode;
             inner.save(&self.config_dir, &self.storage_dir)?;
-            hash
+            (hash, mode)
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            live.set_outbound_propagation_node(prop_hash.as_deref())
-                .await;
+            // Mode Off keeps Preferred on disk but never arms it for outbound.
+            let armed = if mode.is_off() {
+                None
+            } else {
+                prop_hash.as_deref()
+            };
+            live.set_outbound_propagation_node(armed).await;
             live.refresh_pn_cascade_candidates().await;
             if prop_hash.is_none() {
                 tracing::warn!(
@@ -1340,6 +1350,40 @@ impl StackHandle {
                 );
             }
         }
+        #[cfg(not(feature = "rns-stack"))]
+        let _ = mode;
+        Ok(())
+    }
+
+    /// Apply the renderer propagation mode. `Off` disarms the outbound PN and empties the
+    /// Direct→PN cascade so nothing is deposited on any propagation node.
+    pub async fn set_propagation_mode(&self, mode: &str) -> Result<(), String> {
+        let mode = parse_propagation_mode(mode)?;
+        let prop_hash = {
+            let mut inner = self.inner.write().await;
+            inner.set_propagation_mode(mode);
+            let hash = inner.preferred_propagation_id.as_ref().and_then(|id| {
+                inner
+                    .propagation
+                    .iter()
+                    .find(|p| p.id == *id)
+                    .and_then(|p| p.destination_hash.clone())
+            });
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            hash
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            let armed = if mode.is_off() {
+                None
+            } else {
+                prop_hash.as_deref()
+            };
+            live.set_outbound_propagation_node(armed).await;
+            live.refresh_pn_cascade_candidates().await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        let _ = prop_hash;
         Ok(())
     }
 

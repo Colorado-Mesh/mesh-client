@@ -12,6 +12,12 @@ pub struct PropagationAutoSyncIntervalBody {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PropagationModeBody {
+    /// `off` | `auto` | `manual` (renderer Network → Propagation nodes selector).
+    pub mode: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct PropagationSyncBody {
     /// Configured list id (`local-prop` or `pn-…`). Mutually exclusive with `destination_hash`.
     #[serde(default)]
@@ -109,6 +115,16 @@ pub async fn set_propagation_auto_sync_interval(
         .set_propagation_auto_sync_interval(body.interval_sec)
         .await
     {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn set_propagation_mode(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<PropagationModeBody>,
+) -> Json<serde_json::Value> {
+    match stack.set_propagation_mode(&body.mode).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

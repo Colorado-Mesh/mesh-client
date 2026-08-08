@@ -144,7 +144,8 @@ export function pickAutoPropagationNodeId(nodes: PropagationNodeRow[]): string |
  * Sync target hint for UI enablement.
  *
  * Auto: best discovered destination hash (one-time sync), else best configured remote,
- * else local-prop. Manual uses Preferred (including `local-prop`). Off → null.
+ * else local-prop. Manual uses Preferred (including `local-prop`), else picks the best
+ * configured remote for this sync only (no Preferred write), else local-prop. Off → null.
  */
 export function resolvePropagationSyncTargetId(
   mode: ReticulumPropagationMode,
@@ -153,7 +154,12 @@ export function resolvePropagationSyncTargetId(
   discovered: readonly DiscoveredPropagationRow[] = [],
 ): string | null {
   if (mode === 'off') return null;
-  if (mode === 'manual') return preferredId;
+  if (mode === 'manual') {
+    if (preferredId != null && preferredId.length > 0) return preferredId;
+    const configuredBest = listConfiguredRemotePropagationIds(nodes).at(0);
+    if (configuredBest != null) return configuredBest;
+    return hasEnabledLocalPropagationNode(nodes) ? 'local-prop' : null;
+  }
   const discoveredBest = listDiscoveredPropagationTargets(nodes, discovered).at(0);
   if (discoveredBest != null) {
     return discoveredBest.destinationHash.toLowerCase();

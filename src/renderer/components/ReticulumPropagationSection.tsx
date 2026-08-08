@@ -162,6 +162,7 @@ export default function ReticulumPropagationSection({
   const setAutoSyncIntervalOnSidecar = useReticulumPropagationStore(
     (s) => s.setAutoSyncIntervalOnSidecar,
   );
+  const setModeOnSidecar = useReticulumPropagationStore((s) => s.setModeOnSidecar);
   const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const removePropagationNode = useReticulumPropagationStore((s) => s.removePropagationNode);
@@ -209,6 +210,8 @@ export default function ReticulumPropagationSection({
     if (!isReticulumPropagationMode(next)) return;
     setMode(next);
     writeReticulumPropagationMode(next);
+    // Sidecar gates its outbound Direct→PN cascade on the same mode.
+    void setModeOnSidecar(next);
     if (next !== 'auto') return;
     // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
     const target =
@@ -269,7 +272,7 @@ export default function ReticulumPropagationSection({
     listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
     listConfiguredRemotePropagationIds(nodes).length > 0 ||
     hasEnabledLocalPropagationNode(nodes);
-  // Manual/Auto may Sync local-prop (settle); Off disables bottom Sync.
+  // Manual resolves Preferred, else a picked remote, else local settle; Off disables Sync.
   const bottomSyncDisabled =
     sync.active ||
     syncStarting ||
@@ -410,7 +413,7 @@ export default function ReticulumPropagationSection({
                 <button
                   type="button"
                   className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  disabled={sync.active || syncStarting}
+                  disabled={sync.active || syncStarting || mode === 'off'}
                   onClick={() => {
                     handleSyncNow(node.id);
                   }}

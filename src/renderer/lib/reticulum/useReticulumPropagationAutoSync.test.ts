@@ -89,7 +89,24 @@ describe('shouldRunPropagationAutoSync', () => {
     }
   });
 
-  it('allows Auto with null Preferred when cascade candidates exist', () => {
+  it('allows Auto and Manual with null Preferred when cascade candidates exist', () => {
+    for (const mode of ['auto', 'manual'] as const) {
+      expect(
+        shouldRunPropagationAutoSync({
+          autoSyncIntervalSec: 3600,
+          preferredId: null,
+          syncActive: false,
+          lastPropagationSyncAt: null,
+          lastPropagationSyncAttemptAt: null,
+          nowMs: 4_000_000,
+          mode,
+          hasCascadeCandidate: true,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it('returns false in Manual with null Preferred and no cascade candidate', () => {
     expect(
       shouldRunPropagationAutoSync({
         autoSyncIntervalSec: 3600,
@@ -98,10 +115,10 @@ describe('shouldRunPropagationAutoSync', () => {
         lastPropagationSyncAt: null,
         lastPropagationSyncAttemptAt: null,
         nowMs: 4_000_000,
-        mode: 'auto',
-        hasAutoCascadeCandidate: true,
+        mode: 'manual',
+        hasCascadeCandidate: false,
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('allows first sync when never attempted or succeeded', () => {

@@ -4,6 +4,8 @@
 
 use std::collections::HashSet;
 
+use crate::stack::propagation_mode::PropagationMode;
+
 /// One configured PN eligible for Direct→Propagated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PnCascadeCandidate {
@@ -150,6 +152,21 @@ pub fn candidates_from_propagation_rows(
     out
 }
 
+/// Cascade candidates for the active propagation mode.
+///
+/// Mode `Off` means no propagation support: no remote deposit and no local inbox fallback,
+/// so Direct exhaustion is terminal.
+pub fn candidates_for_propagation_mode(
+    rows: &[(String, bool, Option<String>, Option<u8>)],
+    self_lxmf_hash_hex: &str,
+    mode: PropagationMode,
+) -> Vec<PnCascadeCandidate> {
+    if mode.is_off() {
+        return Vec::new();
+    }
+    candidates_from_propagation_rows(rows, self_lxmf_hash_hex)
+}
+
 fn parse_hash16(hex_str: &str) -> Option<[u8; 16]> {
     let clean: String = hex_str.chars().filter(char::is_ascii_hexdigit).collect();
     if clean.len() != 32 {
@@ -179,6 +196,35 @@ mod tests {
             is_local: true,
             hops: Some(0),
             id: "local-prop".into(),
+        }
+    }
+
+    fn rows() -> Vec<(String, bool, Option<String>, Option<u8>)> {
+        vec![
+            ("local-prop".into(), true, Some("99".repeat(16)), Some(0u8)),
+            ("pn-near".into(), true, Some("11".repeat(16)), Some(1u8)),
+        ]
+    }
+
+    #[test]
+    fn propagation_mode_off_yields_no_cascade_candidates() {
+        let candidates = candidates_for_propagation_mode(&rows(), "", PropagationMode::Off);
+        assert!(candidates.is_empty());
+        assert!(!cascade_has_capacity(
+            &build_pn_cascade_order(&candidates, None),
+            &HashSet::new()
+        ));
+    }
+
+    #[test]
+    fn propagation_mode_auto_and_manual_keep_remote_and_local_candidates() {
+        for mode in [PropagationMode::Auto, PropagationMode::Manual] {
+            let candidates = candidates_for_propagation_mode(&rows(), "", mode);
+            assert_eq!(candidates.len(), 2);
+            assert!(cascade_has_capacity(
+                &build_pn_cascade_order(&candidates, None),
+                &HashSet::new()
+            ));
         }
     }
 

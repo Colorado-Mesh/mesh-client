@@ -4246,11 +4246,11 @@
     "modeAuto": "Auto",
     "modeManual": "Manuale",
     "modeOff": "Disattivato",
-    "modeHelpOff": "OFF: nessuna modifica automatica Preferred e nessuna sincronizzazione periodica. È comunque possibile impostare manualmente un nodo preferito per la cascata in uscita.",
     "modeHelpAuto": "Auto: il nodo di propagazione migliore viene selezionato automaticamente al momento (rilevato o configurato, altrimenti il nodo locale) e Preferred viene gestito automaticamente. I comandi manuali preferiti sono disabilitati.",
-    "modeHelpManual": "Manuale: si fissa il nodo Preferred. La sincronizzazione utilizza quel nodo; altri nodi remoti abilitati rimangono come backup a cascata.",
     "syncStarting": "Avvio sincronizzazione",
-    "syncLocalSettled": "Sincronizzato con la casella di posta locale."
+    "syncLocalSettled": "Sincronizzato con la casella di posta locale.",
+    "modeHelpOff": "OFF: nessun supporto del nodo di propagazione. Nulla si sincronizza e i messaggi offline non vengono depositati su alcun nodo di propagazione. Un nodo preferito rimane salvato ma inutilizzato fino a quando non si sceglie Auto o Manuale.",
+    "modeHelpManual": "Manuale: sincronizza il tuo nodo preferito o sceglie il nodo aggiunto più vicino per quella sincronizzazione quando nessuno è preferito. Se fallisce, vengono provati gli altri nodi aggiunti, quindi la casella di posta locale."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Scoperta RMAP v4",

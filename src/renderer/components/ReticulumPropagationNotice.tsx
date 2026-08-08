@@ -45,6 +45,8 @@ export function ReticulumPropagationNotice({
   );
 
   if (!stackLive) return null;
+  // Off is a deliberate "no propagation node" choice — do not nag to add one.
+  if (mode === 'off') return null;
   if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) {
     return null;
   }

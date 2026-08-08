@@ -22,8 +22,8 @@ function findPropagationNode(
 /**
  * True when a remote (non-local-prop) propagation node can carry offline LXMF.
  *
- * Preferred sidecar outbound node wins over sync mode — Mode "Off" only
- * disables periodic sync, not the presence of an outbound propagation target.
+ * Mode "Off" means no propagation support at all: a saved Preferred node stays on the
+ * sidecar but is never used, so there is no effective target.
  * Auto without Preferred counts enabled **configured** remotes only (not discovered).
  */
 export function hasEffectiveReticulumPropagationTarget(
@@ -32,6 +32,8 @@ export function hasEffectiveReticulumPropagationTarget(
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
   discovered: readonly DiscoveredPropagationRow[] = [],
 ): boolean {
+  if (mode === 'off') return false;
+
   if (isRemotePropagationId(preferredId)) {
     const preferred = findPropagationNode(nodes, preferredId);
     // Prefer sidecar preferred_id even while the node list is still loading.
@@ -43,9 +45,10 @@ export function hasEffectiveReticulumPropagationTarget(
     return true;
   }
 
-  // Auto / manual without preferred: Mode "off"/"manual" skip inventing a target.
-  if (mode === 'off') return false;
-  if (mode === 'manual') return false;
+  // Manual without Preferred picks a configured remote for the send/sync it needs.
+  if (mode === 'manual') {
+    return pickAutoPropagationTarget(nodes, [])?.kind === 'configured';
+  }
 
   const target = pickAutoPropagationTarget(nodes, discovered);
   return target?.kind === 'configured';
@@ -58,7 +61,8 @@ export function hasEnabledLocalPropagation(nodes: PropagationNodeRow[]): boolean
 
 /**
  * True when Direct→PN cascade can still run (remote preferred/auto OR local-prop).
- * Link-timeout failure bridge must skip while this is true.
+ * Link-timeout failure bridge must skip while this is true. Mode "Off" has no cascade,
+ * so a Direct timeout is terminal.
  */
 export function hasReticulumPnCascadeCapacity(
   nodes: PropagationNodeRow[],
@@ -66,6 +70,7 @@ export function hasReticulumPnCascadeCapacity(
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
   discovered: readonly DiscoveredPropagationRow[] = [],
 ): boolean {
+  if (mode === 'off') return false;
   if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) return true;
   return hasEnabledLocalPropagation(nodes);
 }

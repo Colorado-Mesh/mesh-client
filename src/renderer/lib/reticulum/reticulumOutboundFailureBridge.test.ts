@@ -231,8 +231,14 @@ describe('failReticulumSendingOutboundToDestHash', () => {
 
 describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
   it('returns false when preferred remote PN is set (sidecar owns Direct→PN fallback)', () => {
-    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'off')).toBe(
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'auto')).toBe(
       false,
+    );
+  });
+
+  it('returns true in off mode because there is no PN cascade to wait for', () => {
+    expect(shouldApplyLinkDeliveryTimeoutFailureBridge([remoteNode], 'pn-remote', 'off')).toBe(
+      true,
     );
   });
 

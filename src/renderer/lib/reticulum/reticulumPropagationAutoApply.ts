@@ -4,10 +4,15 @@ import {
   listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
-import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+import {
+  type PropagationNodeRow,
+  useReticulumPropagationStore,
+} from '@/renderer/stores/reticulumPropagationStore';
 
 /** Cap Auto discovered one-time sync attempts so a long failure chain cannot hang Sync. */
 const MAX_DISCOVERED_SYNC_ATTEMPTS = 3;
+
+const DESTINATION_HASH_RE = /^[0-9a-fA-F]{32}$/;
 
 async function startSyncId(id: string): Promise<boolean> {
   return useReticulumPropagationStore.getState().startSync(id);
@@ -17,6 +22,15 @@ async function tryLocalSettleIfEnabled(): Promise<boolean> {
   const { nodes } = useReticulumPropagationStore.getState();
   if (!hasEnabledLocalPropagationNode(nodes)) return false;
   return startSyncId('local-prop');
+}
+
+/**
+ * Destination hash for a sync target id (or the id itself when it is already a hash);
+ * empty string when the row has no known hash.
+ */
+function propagationTargetHash(nodes: PropagationNodeRow[], id: string): string {
+  if (DESTINATION_HASH_RE.test(id)) return id.toLowerCase();
+  return nodes.find((n) => n.id === id)?.destination_hash?.toLowerCase() ?? '';
 }
 
 /** True when the sidecar reports at least one enabled interface. Fail open on read errors. */
@@ -36,7 +50,9 @@ export async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
 /**
  * Auto: best discovered (one-time sync by hash — **no** Add, **no** Preferred) →
  * configured remotes → local-prop settle.
- * Manual/Off: explicit first target or Preferred, then local on failure.
+ * Manual: explicit first target, else Preferred, else best configured remote (picked for this
+ * sync only — **no** Preferred write) → remaining configured remotes → local-prop settle.
+ * Off: no propagation support — never syncs, even with an explicit target.
  */
 export async function startPropagationSyncCascade(opts?: {
   /** Per-row Sync or resolved Preferred; optional for Auto (uses discovered/configured lists). */
@@ -48,6 +64,8 @@ export async function startPropagationSyncCascade(opts?: {
   hasEnabledInterfaces?: boolean;
 }): Promise<boolean> {
   const mode = readReticulumPropagationMode();
+  if (mode === 'off') return false;
+
   const state = useReticulumPropagationStore.getState();
   const { nodes, preferredId, discovered } = state;
   const first = opts?.firstTargetId ?? null;
@@ -84,16 +102,34 @@ export async function startPropagationSyncCascade(opts?: {
     return tryLocalSettleIfEnabled();
   }
 
-  // Manual / Off: explicit first target, else Preferred, then local fallback.
-  const target =
-    first && first.length > 0 ? first : preferredId && preferredId.length > 0 ? preferredId : null;
+  // Manual: explicit first target → Preferred → picked remote → other remotes → local.
+  const seed =
+    first && first.length > 0
+      ? first
+      : preferredId && preferredId.length > 0
+        ? preferredId
+        : (listConfiguredRemotePropagationIds(nodes).at(0) ?? null);
 
-  if (target === 'local-prop') {
+  if (seed === 'local-prop' || seed == null) {
     return tryLocalSettleIfEnabled();
   }
 
-  if (target) {
-    if (await startSyncId(target)) return true;
+  const tried = new Set<string>([seed]);
+  const seedHash = propagationTargetHash(nodes, seed);
+  if (seedHash) tried.add(seedHash);
+  if (await startSyncId(seed)) return true;
+
+  for (const id of listConfiguredRemotePropagationIds(
+    useReticulumPropagationStore.getState().nodes,
+  )) {
+    if (readReticulumPropagationMode() !== 'manual') return false;
+    if (tried.has(id)) continue;
+    const currentNodes = useReticulumPropagationStore.getState().nodes;
+    const rowHash = propagationTargetHash(currentNodes, id);
+    if (rowHash && tried.has(rowHash)) continue;
+    tried.add(id);
+    if (rowHash) tried.add(rowHash);
+    if (await startSyncId(id)) return true;
   }
 
   return tryLocalSettleIfEnabled();

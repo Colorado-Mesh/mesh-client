@@ -519,15 +519,21 @@ impl LiveBridge {
             })),
         };
 
+        // Mode Off keeps Preferred on disk but must not arm an outbound PN at stack start.
+        let propagation_mode_off = inner.read().await.propagation_mode.is_off();
         let preferred_prop_hash = {
             let state = inner.read().await;
-            state.preferred_propagation_id.as_ref().and_then(|id| {
-                state
-                    .propagation
-                    .iter()
-                    .find(|p| p.id == *id)
-                    .and_then(|p| p.destination_hash.clone())
-            })
+            if propagation_mode_off {
+                None
+            } else {
+                state.preferred_propagation_id.as_ref().and_then(|id| {
+                    state
+                        .propagation
+                        .iter()
+                        .find(|p| p.id == *id)
+                        .and_then(|p| p.destination_hash.clone())
+                })
+            }
         };
 
         bridge.spawn_maintenance(event_tx);
@@ -546,6 +552,11 @@ impl LiveBridge {
 
         if let Some(hash_hex) = preferred_prop_hash {
             bridge.set_outbound_propagation_node(Some(&hash_hex)).await;
+        } else if propagation_mode_off {
+            tracing::info!(
+                target: "lxmf-outbound",
+                "propagation mode off — no outbound propagation node armed at stack start"
+            );
         } else {
             tracing::warn!(
                 target: "lxmf-outbound",
@@ -3747,9 +3758,12 @@ impl LiveBridge {
     }
 
     /// Rebuild Direct→PN cascade candidate list from persisted propagation rows.
+    ///
+    /// Propagation mode `Off` yields an empty list, so Direct failures never deposit on a
+    /// remote PN or the local inbox.
     pub async fn refresh_pn_cascade_candidates(&self) {
-        use pn_cascade::candidates_from_propagation_rows;
-        let (rows, self_hash) = {
+        use pn_cascade::candidates_for_propagation_mode;
+        let (rows, self_hash, mode) = {
             let state = self.persisted.read().await;
             let rows: Vec<(String, bool, Option<String>, Option<u8>)> = state
                 .propagation
@@ -3757,9 +3771,9 @@ impl LiveBridge {
                 .map(|p| (p.id.clone(), p.enabled, p.destination_hash.clone(), p.hops))
                 .collect();
             let self_hash = state.identity.lxmf_hash.clone();
-            (rows, self_hash)
+            (rows, self_hash, state.propagation_mode)
         };
-        let candidates = candidates_from_propagation_rows(&rows, &self_hash);
+        let candidates = candidates_for_propagation_mode(&rows, &self_hash, mode);
         if let Ok(mut driver) = self.outbound.lock() {
             driver.set_pn_cascade_candidates(candidates);
         }

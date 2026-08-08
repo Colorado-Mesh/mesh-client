@@ -4246,11 +4246,11 @@
     "modeAuto": "Automatisch",
     "modeManual": "Manuell",
     "modeOff": "Aus",
-    "modeHelpOff": "Aus: keine automatischen bevorzugten Änderungen und keine periodische Synchronisierung. Sie können weiterhin manuell einen bevorzugten Knoten für die ausgehende Kaskade festlegen.",
     "modeHelpAuto": "Auto: Der jeweils beste Ausbreitungsknoten wird automatisch ausgewählt (erkannt oder konfiguriert, ansonsten wird Ihr lokaler Knoten verwaltet) und Preferred wird für Sie verwaltet. Manuelle Bevorzugte Steuerelemente sind deaktiviert.",
-    "modeHelpManual": "Manuell: Sie heften den bevorzugten Knoten an. Sync verwendet diesen Knoten; andere aktivierte Remote-Knoten bleiben als Kaskaden-Backups erhalten.",
     "syncStarting": "Synchronisierung wird gestartet",
-    "syncLocalSettled": "Synchronisiert mit dem lokalen Posteingang."
+    "syncLocalSettled": "Synchronisiert mit dem lokalen Posteingang.",
+    "modeHelpOff": "Aus: keine Unterstützung für Ausbreitungsknoten. Nichts synchronisiert und Offline-Nachrichten werden auf keinem Ausbreitungsknoten abgelegt. Ein bevorzugter Knoten bleibt gespeichert, aber nicht verwendet, bis Sie Auto oder Manuell wählen.",
+    "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn dies fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Posteingang."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

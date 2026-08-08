@@ -4246,11 +4246,11 @@
     "modeAuto": "Automático",
     "modeManual": "Manual",
     "modeOff": "Desligado",
-    "modeHelpOff": "Desligado: sem alterações preferenciais automáticas e sem sincronização periódica. Você ainda pode definir um nó Preferred manualmente para a cascata de saída.",
     "modeHelpAuto": "Auto: o melhor nó de propagação é escolhido automaticamente no momento (descoberto ou configurado, caso contrário, seu nó local) e o Preferred é gerenciado para você. Os controles manuais preferenciais estão desativados.",
-    "modeHelpManual": "Manual: você fixa o nó Preferred. A sincronização usa esse nó; outros nós remotos habilitados permanecem como backups em cascata.",
     "syncStarting": "Iniciando sincronização",
-    "syncLocalSettled": "Sincronizado com a caixa de entrada local."
+    "syncLocalSettled": "Sincronizado com a caixa de entrada local.",
+    "modeHelpOff": "Desligado: sem suporte de nó de propagação. Nada é sincronizado e as mensagens offline não são depositadas em nenhum nó de propagação. Um nó Preferred permanece salvo, mas não usado, até que você escolha Auto ou Manual.",
+    "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, a caixa de entrada local."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

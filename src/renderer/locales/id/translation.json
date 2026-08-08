@@ -4246,11 +4246,11 @@
     "modeAuto": "Otomatis",
     "modeManual": "Manual",
     "modeOff": "Tidak aktif",
-    "modeHelpOff": "Mati: tidak ada perubahan Preferred otomatis dan tidak ada sinkronisasi berkala. Anda masih dapat mengatur simpul Pilihan secara manual untuk kaskade keluar.",
     "modeHelpAuto": "Otomatis: simpul propagasi terbaik dipilih secara otomatis pada saat itu (ditemukan atau dikonfigurasi, jika tidak simpul lokal Anda) dan Preferred dikelola untuk Anda. Kontrol Pilihan Manual dinonaktifkan.",
-    "modeHelpManual": "Manual: Anda menyematkan simpul Pilihan. Sinkronisasi menggunakan simpul itu; simpul jarak jauh lain yang diaktifkan tetap sebagai cadangan kaskade.",
     "syncStarting": "Memulai sinkronisasi",
-    "syncLocalSettled": "Disinkronkan dengan kotak masuk lokal."
+    "syncLocalSettled": "Disinkronkan dengan kotak masuk lokal.",
+    "modeHelpOff": "Mati: tidak ada dukungan simpul propagasi. Tidak ada sinkronisasi dan pesan offline yang tidak disimpan pada simpul propagasi apa pun. Simpul Pilihan tetap disimpan tetapi tidak digunakan sampai Anda memilih Otomatis atau Manual.",
+    "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, lalu kotak masuk lokal."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

@@ -4592,9 +4592,9 @@
     "modeAuto": "Auto",
     "modeManual": "Manual",
     "modeOff": "Off",
-    "modeHelpOff": "Off: no automatic Preferred changes and no periodic sync. You can still set a Preferred node manually for the outbound cascade.",
+    "modeHelpOff": "Off: no propagation node support. Nothing syncs and offline messages are not deposited on any propagation node. A Preferred node stays saved but unused until you choose Auto or Manual.",
     "modeHelpAuto": "Auto: one-time syncs the best Discovered propagation node (does not add it or change Preferred), then configured remotes, then the local inbox. With no network interfaces, settles local only.",
-    "modeHelpManual": "Manual: you pin the Preferred node. Sync uses that node; other enabled remote nodes stay as cascade backups."
+    "modeHelpManual": "Manual: syncs your Preferred node, or picks the closest added node for that sync when none is preferred. If it fails, the other added nodes are tried, then the local inbox."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 discovery",

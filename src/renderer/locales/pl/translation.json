@@ -4250,11 +4250,11 @@
     "modeAuto": "Automatyczne",
     "modeManual": "Ręczny",
     "modeOff": "Wył.",
-    "modeHelpOff": "Wył.: brak automatycznych preferowanych zmian i brak okresowej synchronizacji. Nadal możesz ręcznie ustawić preferowany węzeł dla kaskady wychodzącej.",
     "modeHelpAuto": "Auto: najlepszy węzeł propagacji jest wybierany automatycznie w danym momencie (odkryty lub skonfigurowany, w przeciwnym razie węzeł lokalny), a Preferred jest zarządzany za Ciebie. Ręczne preferowane elementy sterujące są wyłączone.",
-    "modeHelpManual": "Ręczny: przypinasz preferowany węzeł. Synchronizacja wykorzystuje ten węzeł; inne włączone węzły zdalne pozostają jako kaskadowe kopie zapasowe.",
     "syncStarting": "Start synch.",
-    "syncLocalSettled": "Zsynchronizowane z lokalną skrzynką odbiorczą."
+    "syncLocalSettled": "Zsynchronizowane z lokalną skrzynką odbiorczą.",
+    "modeHelpOff": "OFF: brak obsługi węzła propagacji. Nic nie synchronizuje się i wiadomości offline nie są deponowane w żadnym węźle propagacji. Preferowany węzeł pozostaje zapisany, ale nieużywany, dopóki nie wybierzesz trybu automatycznego lub ręcznego.",
+    "modeHelpManual": "Ręcznie: synchronizuje preferowany węzeł lub wybiera najbliższy dodany węzeł dla tej synchronizacji, gdy żaden nie jest preferowany. Jeśli się nie powiedzie, wypróbowywane są inne dodane węzły, a następnie lokalna skrzynka odbiorcza."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

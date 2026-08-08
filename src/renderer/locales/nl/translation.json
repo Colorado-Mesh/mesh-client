@@ -4246,11 +4246,11 @@
     "modeAuto": "Auto",
     "modeManual": "Handmatig",
     "modeOff": "Uit",
-    "modeHelpOff": "Uit: geen automatische voorkeurswijzigingen en geen periodieke synchronisatie. U kunt nog steeds handmatig een voorkeursknooppunt instellen voor de uitgaande cascade.",
     "modeHelpAuto": "Auto: het beste propagatieknooppunt wordt op dat moment automatisch gekozen (ontdekt of geconfigureerd, anders wordt uw lokale knooppunt) en Preferred voor u beheerd. Handmatige voorkeursbesturingselementen zijn uitgeschakeld.",
-    "modeHelpManual": "Handmatig: u pint het voorkeursknooppunt. Sync gebruikt dat knooppunt; andere ingeschakelde externe knooppunten blijven als cascadeback-ups.",
     "syncStarting": "Synchronisatie aan het starten",
-    "syncLocalSettled": "Gesynchroniseerd met lokale inbox."
+    "syncLocalSettled": "Gesynchroniseerd met lokale inbox.",
+    "modeHelpOff": "Uit: geen ondersteuning voor propagatieknooppunten. Niets synchroniseert en offline berichten worden niet gedeponeerd op een propagatieknooppunt. Een voorkeursknooppunt blijft opgeslagen maar ongebruikt totdat u Auto of Handmatig kiest.",
+    "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens de lokale inbox."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

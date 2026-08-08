@@ -186,6 +186,74 @@ describe('reticulumPropagationAutoApply', () => {
     expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-aabb1111', 'local-prop']);
   });
 
+  it('Manual tries the other added remotes before local-prop', async () => {
+    writeReticulumPropagationMode('manual');
+    const startSync = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        { id: 'pn-near', name: 'Near', enabled: true, status: 'known', hops: 1 },
+        { id: 'pn-far', name: 'Far', enabled: true, status: 'known', hops: 4 },
+      ],
+      preferredId: 'pn-far',
+      startSync,
+    });
+    await expect(startPropagationSyncCascade()).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-far', 'pn-near', 'local-prop']);
+  });
+
+  it('Manual without Preferred picks the closest remote without writing Preferred', async () => {
+    writeReticulumPropagationMode('manual');
+    const setPreferred = vi.fn().mockResolvedValue(true);
+    const addFromDiscovered = vi.fn().mockResolvedValue(true);
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        { id: 'pn-near', name: 'Near', enabled: true, status: 'known', hops: 1 },
+        { id: 'pn-far', name: 'Far', enabled: true, status: 'known', hops: 4 },
+      ],
+      preferredId: null,
+      setPreferredOnSidecar: setPreferred,
+      addFromDiscovered,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade()).resolves.toBe(true);
+    expect(startSync).toHaveBeenCalledWith('pn-near');
+    expect(startSync).toHaveBeenCalledTimes(1);
+    expect(setPreferred).not.toHaveBeenCalled();
+    expect(addFromDiscovered).not.toHaveBeenCalled();
+  });
+
+  it('Manual with no added remotes settles local-prop only', async () => {
+    writeReticulumPropagationMode('manual');
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+      preferredId: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade()).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual(['local-prop']);
+  });
+
+  it('Off never syncs, even with an explicit target or Preferred', async () => {
+    writeReticulumPropagationMode('off');
+    const startSync = vi.fn().mockResolvedValue(true);
+    useReticulumPropagationStore.setState({
+      preferredId: 'pn-aabb1111',
+      startSync,
+    });
+    await expect(startPropagationSyncCascade()).resolves.toBe(false);
+    await expect(ensurePreferredThenStartSync('pn-aabb1111')).resolves.toBe(false);
+    await expect(ensurePreferredThenStartSync('local-prop')).resolves.toBe(false);
+    expect(startSync).not.toHaveBeenCalled();
+  });
+
   it('honors persisted Auto mode key', () => {
     expect(localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY)).toBe('auto');
   });

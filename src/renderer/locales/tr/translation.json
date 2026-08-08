@@ -4246,11 +4246,11 @@
     "modeAuto": "Otomatik",
     "modeManual": "Manuel",
     "modeOff": "Kapalı",
-    "modeHelpOff": "Kapalı: otomatik Tercih edilen değişiklik ve periyodik senkronizasyon yok. Giden basamak için yine de Tercih edilen düğümü manuel olarak ayarlayabilirsiniz.",
     "modeHelpAuto": "Otomatik: En iyi yayılım düğümü o anda otomatik olarak seçilir (keşfedilir veya yapılandırılır, aksi takdirde yerel düğümünüz) ve Tercih Edilen sizin için yönetilir. Manuel Tercih edilen kontroller devre dışıdır.",
-    "modeHelpManual": "Manuel: Tercih edilen düğümü sabitlersiniz. Senkronizasyon bu düğümü kullanır; diğer etkinleştirilmiş uzak düğümler kademeli yedekleme olarak kalır.",
     "syncStarting": "Eşitleme başlatılıyor",
-    "syncLocalSettled": "Yerel gelen kutusuyla senkronize edildi."
+    "syncLocalSettled": "Yerel gelen kutusuyla senkronize edildi.",
+    "modeHelpOff": "Kapalı: Yayılma düğümü desteği yok. Hiçbir şey senkronize edilmez ve çevrimdışı mesajlar herhangi bir yayılma düğümüne yatırılmaz. Tercih edilen bir düğüm, Otomatik veya Manuel'i seçene kadar kaydedilmiş ancak kullanılmamış olarak kalır.",
+    "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel gelen kutusu denenir."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { ReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   clearPropagationSyncStallWatchdog,
   mapPropagationSyncError,
@@ -89,6 +90,8 @@ interface ReticulumPropagationStoreState {
   refreshDiscoveredFromSidecar: () => Promise<void>;
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   setAutoSyncIntervalOnSidecar: (sec: number) => Promise<boolean>;
+  /** Push the renderer propagation mode so the sidecar gates its outbound PN cascade. */
+  setModeOnSidecar: (mode: ReticulumPropagationMode) => Promise<boolean>;
   setHostingPolicyOnSidecar: (policy: PnHostingPolicy) => Promise<boolean>;
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: (opts?: { reasonKey?: string }) => Promise<boolean>;
@@ -253,6 +256,18 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       console.warn('[reticulumPropagationStore] auto-sync interval ' + errLikeToLogString(e));
     }
     return false;
+  },
+
+  setModeOnSidecar: async (mode) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/mode', {
+        mode,
+      })) as { ok?: boolean };
+      return res.ok === true;
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] set propagation mode ' + errLikeToLogString(e));
+      return false;
+    }
   },
 
   setHostingPolicyOnSidecar: async (policy) => {

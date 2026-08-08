@@ -172,6 +172,25 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().autoSyncIntervalSec).toBe(1800);
   });
 
+  it('setModeOnSidecar posts the propagation mode', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: true });
+
+    await expect(useReticulumPropagationStore.getState().setModeOnSidecar('off')).resolves.toBe(
+      true,
+    );
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/mode', { mode: 'off' });
+  });
+
+  it('setModeOnSidecar reports failure without throwing', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockRejectedValueOnce(new Error('sidecar down'));
+
+    await expect(useReticulumPropagationStore.getState().setModeOnSidecar('auto')).resolves.toBe(
+      false,
+    );
+  });
+
   it('startSync and cancelSync update sync state', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'p1' });

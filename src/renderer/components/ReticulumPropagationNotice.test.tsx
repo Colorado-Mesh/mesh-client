@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { writeReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
@@ -11,6 +12,8 @@ describe('ReticulumPropagationNotice', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    // Off means "no propagation node wanted", so the notice only applies to Auto/Manual.
+    writeReticulumPropagationMode('auto');
     useReticulumPropagationStore.setState({
       nodes: [],
       discovered: [],
@@ -68,6 +71,18 @@ describe('ReticulumPropagationNotice', () => {
     await waitFor(() => {
       expect(refreshFromSidecar).toHaveBeenCalled();
     });
+  });
+
+  it('hides in off mode even with no propagation target', () => {
+    writeReticulumPropagationMode('off');
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'online' }],
+      preferredId: null,
+    });
+    const { container } = render(
+      <ReticulumPropagationNotice stackLive onOpenPropagationSettings={vi.fn()} />,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('calls navigation callback when set up propagation is clicked', async () => {

@@ -87,6 +87,26 @@ describe('reticulumPropagationMode', () => {
     expect(resolvePropagationSyncTargetId('auto', nodes, null)).toBe('pn-aaaa');
   });
 
+  it('Manual without Preferred picks the closest added remote', () => {
+    const nodes = [
+      row({ id: 'local-prop', name: 'Local', hops: 0 }),
+      row({ id: 'pn-far', name: 'Far', hops: 4 }),
+      row({ id: 'pn-near', name: 'Near', hops: 1 }),
+    ];
+    expect(resolvePropagationSyncTargetId('manual', nodes, null)).toBe('pn-near');
+  });
+
+  it('Manual ignores discovered nodes and falls back to local when no remotes are added', () => {
+    const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0 })];
+    const rows = [discovered({ destination_hash: 'dead'.repeat(8), hops: 1 })];
+    expect(resolvePropagationSyncTargetId('manual', nodes, null, rows)).toBe('local-prop');
+  });
+
+  it('Manual has no sync target when nothing is added and local is disabled', () => {
+    const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0, enabled: false })];
+    expect(resolvePropagationSyncTargetId('manual', nodes, null)).toBeNull();
+  });
+
   it('Auto sync target prefers discovered destination hash over local-only', () => {
     const hash = 'dead'.repeat(8);
     const nodes = [row({ id: 'local-prop', name: 'Local', hops: 0 })];
