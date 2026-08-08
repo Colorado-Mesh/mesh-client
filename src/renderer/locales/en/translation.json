@@ -1261,8 +1261,6 @@
     "serialDevice": "Serial device",
     "wifiDevice": "WiFi device",
     "reconnect": "Reconnect",
-    "sharedBleWithMeshtastic": "This Bluetooth device is already connected via Meshtastic. Switch to the Meshtastic tab to use it, or choose a different radio or transport for MeshCore.",
-    "sharedBleWithMeshtasticHint": "One physical radio cannot hold separate Meshtastic and MeshCore Bluetooth sessions at the same time.",
     "forgetDevice": "Forget this device",
     "bluetooth": "Bluetooth",
     "usbSerial": "USB Serial",
@@ -1393,8 +1391,6 @@
       "pairingFailed": "Pairing failed: {{msg}}",
       "pinPairingFailed": "PIN pairing failed: {{msg}}",
       "pinAcceptedNext": "PIN accepted. Pairing completed. Press Connect and select your device to finish connecting.",
-      "autoConnectTimeout": "Auto-connect timed out.",
-      "autoConnectFailed": "Auto-connect failed",
       "connectionFailed": "Connection failed"
     }
   },

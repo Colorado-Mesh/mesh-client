@@ -909,8 +909,6 @@
       "pairingFailed": "配对失败：{{msg}}",
       "pinPairingFailed": "PIN 配对失败：{{msg}}",
       "pinAcceptedNext": "PIN 码已接受。配对完成。按“连接”并选择您的设备以完成连接。",
-      "autoConnectTimeout": "自动连接超时。",
-      "autoConnectFailed": "自动连接失败",
       "connectionFailed": "连接失败"
     },
     "cancelMqttConnect": "取消",
@@ -923,8 +921,6 @@
     "mqttTlsEnabled": "启用TLS (mqtts/wss)",
     "mqttTlsInsecure": "允许不安全的TLS （自签名证书）。默认情况下关闭—仅当您的经纪人使用非公开CA时才启用。",
     "channelPsksPrivateUplinkNote": "频道上行链路是在/2/e/上加密的AES-PSK （私钥没有JSON镜像）。Broker监视器仍可能记录其他节点之间PKI/DM流量的解密失败—这是正常的，与此处的通道PSK无关。",
-    "sharedBleWithMeshtastic": "此蓝牙设备已通过Meshtastic连接。切换到Meshtastic选项卡以使用它，或为MeshCore选择其他无线电或传输方式。",
-    "sharedBleWithMeshtasticHint": "一个物理收音机不能同时举行单独的Meshtastic和MeshCore蓝牙会话。",
     "reticulumStackTitle": "Reticulum 堆栈",
     "reticulumStackHint": "启动本地 Reticulum/LXMF 侧车进程（TCP 和 Auto 接口）。",
     "reticulumStartStack": "启动堆栈",

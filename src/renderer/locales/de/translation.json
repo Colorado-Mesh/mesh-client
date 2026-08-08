@@ -907,8 +907,6 @@
       "pairingFailed": "Kopplung fehlgeschlagen: {{msg}}",
       "pinPairingFailed": "PIN-Kopplung fehlgeschlagen: {{msg}}",
       "pinAcceptedNext": "PIN akzeptiert. Kopplung abgeschlossen. Drücken Sie auf „Verbinden“ und wählen Sie Ihr Gerät aus, um die Verbindung abzuschließen.",
-      "autoConnectTimeout": "Zeitüberschreitung bei der automatischen Verbindung.",
-      "autoConnectFailed": "Automatische Verbindung fehlgeschlagen",
       "connectionFailed": "Verbindung fehlgeschlagen"
     },
     "cancelMqttConnect": "Stornieren",
@@ -921,8 +919,6 @@
     "mqttTlsEnabled": "TLS aktivieren (mqtts / wss)",
     "mqttTlsInsecure": "Unsichere TLS (selbstsigniertes Zertifikat) zulassen. Standardmäßig deaktiviert — nur aktivieren, wenn Ihr Broker eine nicht öffentliche CA verwendet.",
     "channelPsksPrivateUplinkNote": "Kanal-Uplink ist AES-PSK-verschlüsselt auf /2/e/ (kein JSON-Spiegel für private Schlüssel). Broker-Monitore können immer noch Fehler bei der Entschlüsselung des PKI/DM-Verkehrs zwischen anderen Knoten protokollieren — das ist normal und hat nichts mit Kanal-PSKs zu tun.",
-    "sharedBleWithMeshtastic": "Dieses Bluetooth-Gerät ist bereits über Meshtastic verbunden. Wechseln Sie zur Registerkarte Meshtastic, um sie zu verwenden, oder wählen Sie ein anderes Radio oder einen anderen Transport für MeshCore.",
-    "sharedBleWithMeshtasticHint": "Ein physisches Funkgerät kann keine separaten Meshtastic- und MeshCore-Bluetooth-Sitzungen gleichzeitig durchführen.",
     "reticulumStackTitle": "Reticulum-Stack",
     "reticulumStackHint": "Startet den lokalen Reticulum/LXMF-Sidecar (TCP- und Auto-Schnittstellen).",
     "reticulumStartStack": "Stack starten",

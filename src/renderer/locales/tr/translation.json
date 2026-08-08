@@ -909,8 +909,6 @@
       "pairingFailed": "Eşleştirme başarısız oldu: {{msg}}",
       "pinPairingFailed": "PIN eşleştirme başarısız oldu: {{msg}}",
       "pinAcceptedNext": "PIN kabul edildi. Eşleştirme tamamlandı. Bağlan'a basın ve bağlantıyı tamamlamak için cihazınızı seçin.",
-      "autoConnectTimeout": "Otomatik bağlantı zaman aşımına uğradı.",
-      "autoConnectFailed": "Otomatik bağlantı başarısız oldu",
       "connectionFailed": "Bağlantı başarısız oldu"
     },
     "cancelMqttConnect": "İptal etmek",
@@ -923,8 +921,6 @@
     "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
     "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin.",
     "channelPsksPrivateUplinkNote": "Kanal uplink/2/e/üzerinde şifrelenmiş AES - PSK'dır (özel anahtarlar için JSON aynası yoktur). Broker monitörleri, diğer düğümler arasındaki PKI/DM trafiği için hala şifre çözme hatalarını günlüğe kaydedebilir — bu normaldir ve buradaki kanal PSK'larıyla ilgisi yoktur.",
-    "sharedBleWithMeshtastic": "Bu Bluetooth cihazı Meshtastic üzerinden zaten bağlı. Kullanmak için Meshtastic sekmesine geçin veya MeshCore için farklı bir radyo veya aktarım seçin.",
-    "sharedBleWithMeshtasticHint": "Bir fiziksel radyo, Meshtastic ve MeshCore Bluetooth oturumlarını aynı anda ayrı ayrı tutamaz.",
     "reticulumStackTitle": "Reticulum yığını",
     "reticulumStackHint": "Yerel Reticulum/LXMF sidecarını başlatır (TCP ve Auto arayüzleri).",
     "reticulumStartStack": "Yığını başlat",

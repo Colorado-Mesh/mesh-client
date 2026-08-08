@@ -907,8 +907,6 @@
       "pairingFailed": "Associazione non riuscita: {{msg}}",
       "pinPairingFailed": "Associazione PIN non riuscita: {{msg}}",
       "pinAcceptedNext": "PIN accettato. Associazione completata. Premi Connetti e seleziona il tuo dispositivo per completare la connessione.",
-      "autoConnectTimeout": "Connessione automatica scaduta.",
-      "autoConnectFailed": "Connessione automatica non riuscita",
       "connectionFailed": "Connessione non riuscita"
     },
     "cancelMqttConnect": "Cancellare",
@@ -921,8 +919,6 @@
     "mqttTlsEnabled": "Abilita TLS (mqtts / wss)",
     "mqttTlsInsecure": "Consenti TLS non sicuro (certificato autofirmato). Disattivato per impostazione predefinita: abilita solo se il tuo broker utilizza una CA non pubblica.",
     "channelPsksPrivateUplinkNote": "L'uplink del canale è crittografato AES-PSK su /2/e/ (nessun mirror JSON per le chiavi private). I monitor dei broker possono ancora registrare errori di decrittografia per il traffico PKI/DM tra altri nodi, il che è normale e non correlato ai PSK del canale qui.",
-    "sharedBleWithMeshtastic": "Questo dispositivo Bluetooth è già connesso tramite Meshtastic. Passa alla scheda Meshtastic per usarla, oppure scegli una radio o un mezzo di trasporto diverso per MeshCore.",
-    "sharedBleWithMeshtasticHint": "Una radio fisica non può contenere sessioni Bluetooth Meshtastic e MeshCore separate contemporaneamente.",
     "reticulumStackTitle": "Stack Reticulum",
     "reticulumStackHint": "Avvia il sidecar locale Reticulum/LXMF (interfacce TCP e Auto).",
     "reticulumStartStack": "Avvia stack",

@@ -911,8 +911,6 @@
       "pairingFailed": "Помилка створення пари: {{msg}}",
       "pinPairingFailed": "Помилка підключення PIN-коду: {{msg}}",
       "pinAcceptedNext": "PIN прийнято. Сполучення завершено. Натисніть Connect і виберіть свій пристрій, щоб завершити підключення.",
-      "autoConnectTimeout": "Час очікування автоматичного підключення минув.",
-      "autoConnectFailed": "Помилка автоматичного підключення",
       "connectionFailed": "Помилка підключення"
     },
     "cancelMqttConnect": "Скасувати",
@@ -925,8 +923,6 @@
     "mqttTlsEnabled": "Увімкнути TLS (mqtts / wss)",
     "mqttTlsInsecure": "Дозволити незахищений TLS (самопідписаний сертифікат). Вимкнено за замовчуванням — ввімкніть, лише якщо ваш брокер використовує непублічний ЦС.",
     "channelPsksPrivateUplinkNote": "Канал висхідного зв'язку зашифрований AES-PSK на /2/e/ (немає дзеркала JSON для закритих ключів). Монітори брокерів все ще можуть реєструвати збої розшифрування трафіку PKI/DM між іншими вузлами — це нормально і не пов'язано з канальними PSK тут.",
-    "sharedBleWithMeshtastic": "Цей пристрій Bluetooth вже підключено через Meshtastic. Перейдіть на вкладку Meshtastic, щоб використовувати її, або виберіть інше радіо або транспорт для MeshCore.",
-    "sharedBleWithMeshtasticHint": "Одне фізичне радіо не може одночасно проводити окремі сеанси Meshtastic та MeshCore Bluetooth.",
     "reticulumStackTitle": "Стек Reticulum",
     "reticulumStackHint": "Запускає локальний sidecar Reticulum/LXMF (інтерфейси TCP та Auto).",
     "reticulumStartStack": "Запустити стек",

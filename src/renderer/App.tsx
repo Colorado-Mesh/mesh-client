@@ -3052,7 +3052,6 @@ function AppContent() {
                                   }
                                 : undefined
                             }
-                            suppressMountAutoConnect
                           />
                         )}
                         {protocol === 'meshcore' &&
@@ -3091,7 +3090,6 @@ function AppContent() {
                                     }
                                   : undefined
                               }
-                              suppressMountAutoConnect
                             />
                           )}
                         {protocol === 'reticulum' && capabilities.hasReticulumInterfaceConfig && (
@@ -3127,7 +3125,6 @@ function AppContent() {
                                 setActiveTab(adminTabIdx);
                               }
                             }}
-                            suppressMountAutoConnect
                           />
                         )}
                       </Suspense>

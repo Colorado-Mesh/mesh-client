@@ -2,8 +2,7 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 
 /**
  * Cancels deferred ProtocolAutoConnectCoordinator BLE/serial auto-connect when the user
- * starts a manual Connect (or Cancel) on ConnectionPanel. Panel-local autoConnectCancelRef
- * is a no-op while suppressMountAutoConnect is set — this gate is the coordinator path.
+ * starts a manual Connect (or Cancel / Reconnect) on ConnectionPanel.
  */
 const cancelledByProtocol = new Map<MeshProtocol, boolean>();
 

@@ -38,7 +38,6 @@ describe('ConnectionPanel host link meter', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        suppressMountAutoConnect
       />,
     );
     expect(screen.getByText('Signal')).toBeInTheDocument();
@@ -65,7 +64,6 @@ describe('ConnectionPanel host link meter', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        suppressMountAutoConnect
       />,
     );
     expect(screen.getByText('Unavailable (Web Bluetooth)')).toBeInTheDocument();
@@ -87,7 +85,6 @@ describe('ConnectionPanel host link meter', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        suppressMountAutoConnect
       />,
     );
     expect(screen.getByText('Link quality')).toBeInTheDocument();
@@ -111,7 +108,6 @@ describe('ConnectionPanel host link meter', () => {
         onDisconnect={vi.fn().mockResolvedValue(undefined)}
         mqttStatus="disconnected"
         protocol="meshtastic"
-        suppressMountAutoConnect
       />,
     );
     expect(screen.queryByText('Signal')).not.toBeInTheDocument();
@@ -136,7 +132,6 @@ describe('ConnectionPanel host link meter', () => {
           onDisconnect={vi.fn().mockResolvedValue(undefined)}
           mqttStatus="disconnected"
           protocol="meshcore"
-          suppressMountAutoConnect
         />,
       );
       expect(screen.getByText('Link quality')).toBeInTheDocument();
@@ -168,7 +163,6 @@ describe('ConnectionPanel host link meter', () => {
           onDisconnect={vi.fn().mockResolvedValue(undefined)}
           mqttStatus="disconnected"
           protocol="meshtastic"
-          suppressMountAutoConnect
         />,
       );
       expect(screen.getByText('Link quality')).toBeInTheDocument();

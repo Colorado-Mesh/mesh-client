@@ -4,10 +4,16 @@ import { join } from 'node:path';
 import { expect } from 'vitest';
 
 const RUNTIME_DIR = join(import.meta.dirname, '../runtime');
+const RENDERER_LIB_DIR = join(import.meta.dirname);
 
 /** Load a `src/renderer/runtime/*` source file for contract tests. */
 export function loadRuntimeSource(filename: string): string {
   return readFileSync(join(RUNTIME_DIR, filename), 'utf-8');
+}
+
+/** Load a `src/renderer/lib/*` source file for contract tests. */
+export function loadRendererLibSource(filename: string): string {
+  return readFileSync(join(RENDERER_LIB_DIR, filename), 'utf-8');
 }
 
 /** Returns the inner text of a `{ ... }` block starting at `openBraceIndex`. */

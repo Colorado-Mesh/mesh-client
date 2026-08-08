@@ -14,24 +14,29 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertPowerResumeSkipsOnExplicitDisconnect,
-  extractIfBlockBody,
   extractUseCallbackBody,
+  loadRendererLibSource,
   loadRuntimeSource,
 } from '../lib/sourceContractTestHelpers';
 
 const SOURCE = loadRuntimeSource('useMeshtasticRuntime.ts');
+const ATTEMPT_RUNNER = loadRendererLibSource('loraRfReconnectAttempt.ts');
 const TEST_DIR = import.meta.dirname ?? __dirname;
 
 describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   it('uses suspend-aware delayUnlessSuspended for reconnect backoff', () => {
-    expect(SOURCE).toContain('delayUnlessSuspended');
-    expect(SOURCE).toMatch(/delayResult === 'suspended'/);
+    expect(SOURCE).toContain('runLoraRfReconnectAttempt');
+    expect(ATTEMPT_RUNNER).toContain('delayUnlessSuspended');
+    expect(ATTEMPT_RUNNER).toMatch(/delayResult === 'suspended'/);
   });
 
   it('normalizes reconnect UI to disconnected when backoff aborts due to suspend', () => {
-    expect(SOURCE).toMatch(
-      /if \(delayResult === 'suspended'\) \{[\s\S]*?status: 'disconnected'[\s\S]*?connectionLoss: true/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /if \(delayResult === 'suspended'\) \{[\s\S]*?setDisconnectedUi\(\{ connectionLoss: true \}\)/,
     );
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('setDisconnectedUi');
+    expect(reconnectBody).toMatch(/status: 'disconnected'[\s\S]*?connectionLoss: true/);
   });
 
   it('restarts reconnect when disconnect fires during an in-flight reconnect', () => {
@@ -46,15 +51,13 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('cleans up device and watchdog when reconnect budget is exhausted', () => {
-    expect(SOURCE).toContain('rfMaxReconnectAttemptsForTransport');
-    const exhaustionBlock = extractIfBlockBody(
-      SOURCE,
-      'reconnectAttemptRef.current >= maxReconnectAttempts',
-    );
-    expect(exhaustionBlock.length).toBeGreaterThan(0);
-    expect(exhaustionBlock).toContain('cleanupSubscriptions()');
-    expect(exhaustionBlock).toContain('stopWatchdog()');
-    expect(exhaustionBlock).toContain('deviceRef.current = null');
+    expect(ATTEMPT_RUNNER).toContain('rfMaxReconnectAttemptsForTransport');
+    expect(ATTEMPT_RUNNER).toContain('markExhausted()');
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('onExhausted:');
+    expect(reconnectBody).toContain('cleanupSubscriptions()');
+    expect(reconnectBody).toContain('stopWatchdog()');
+    expect(reconnectBody).toContain('deviceRef.current = null');
     expect(SOURCE).toContain('escalateSerialReconnectExhaustion');
     expect(SOURCE).toContain('serialNeedsReselect');
     expect(SOURCE).toContain('registerMeshtasticSerialDisconnectTarget');
@@ -120,21 +123,18 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   it('wraps BLE reconnect open in withNobleBleConnectMutex (MeshCore parity)', () => {
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
     expect(reconnectBody).toContain("withNobleBleConnectMutex('meshtastic'");
-    expect(reconnectBody).toContain('reconnectConnectInFlightRef.current = true');
-    expect(reconnectBody).toContain('skip overlapping open');
+    expect(reconnectBody).toContain('connectInFlight:');
+    expect(ATTEMPT_RUNNER).toContain('connectInFlight.set(true)');
+    expect(ATTEMPT_RUNNER).toContain('skip overlapping open');
   });
 
   it('bounds every reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
-    // Applies to all transports, not just BLE (see comment at the call site): TCP/HTTP/serial
-    // used to await the open+configure attempt with no ceiling at all, so a hang anywhere in
-    // that sequence (e.g. a disconnect landing mid-configure) wedged reconnection forever.
-    expect(SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
-    expect(SOURCE).toContain('raceWithDeadline');
-    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    expect(reconnectBody).toContain('raceWithDeadline');
-    expect(reconnectBody).toContain('Reconnect attempt timed out after');
-    expect(reconnectBody).toContain('attemptActive');
-    expect(reconnectBody).not.toContain('if (isBleReconnect) {');
+    // Shared runner applies the budget to every transport (constant name is historical).
+    expect(ATTEMPT_RUNNER).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
+    expect(ATTEMPT_RUNNER).toContain('Reconnect attempt timed out after');
+    expect(ATTEMPT_RUNNER).toContain('attemptActive');
+    expect(SOURCE).toContain('runLoraRfReconnectAttempt');
   });
 
   it('detaches wire subscriptions when a reconnect attempt times out (CodeRabbit #792)', () => {
@@ -150,7 +150,7 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('disconnects late-opened transport when reconnect attempt is inactive or superseded', () => {
-    expect(SOURCE).toContain('createBleReconnectTransportCleanup');
+    expect(ATTEMPT_RUNNER).toContain('createBleReconnectTransportCleanup');
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
     expect(reconnectBody).toContain('lateTransport.cleanup(opened.driverIdentityId)');
     expect(reconnectBody).toMatch(
@@ -189,16 +189,13 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('flushes deferred reconnects after non-BLE reconnect attempts settle', () => {
+    expect(ATTEMPT_RUNNER).toContain('bleConnectInProgress?.set(false)');
+    expect(ATTEMPT_RUNNER).toContain('deferredReconnect.get()');
+    expect(ATTEMPT_RUNNER).toContain('scheduleAttempt()');
+    expect(ATTEMPT_RUNNER).not.toContain('handleConnectionLostRef.current()');
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
-    expect(finallyBody).toContain('if (isBleReconnect) bleConnectInProgressRef.current = false;');
-    expect(finallyBody).toContain('if (meshtasticDeferredReconnectRef.current)');
-    expect(finallyBody).toContain('scheduleMeshtasticReconnectAttemptRef.current()');
-    // Must not re-enter handleConnectionLost (double generation bump / dual backoff loops).
-    expect(finallyBody).not.toContain('handleConnectionLostRef.current()');
-    expect(finallyBody.indexOf('if (meshtasticDeferredReconnectRef.current)')).toBeGreaterThan(
-      finallyBody.indexOf('if (isBleReconnect)'),
-    );
+    expect(reconnectBody).toContain('scheduleMeshtasticReconnectAttemptRef.current()');
+    expect(reconnectBody).toContain('bleConnectInProgress:');
   });
 
   it('handleConnectionLost defers when cycle already active (single-owner controller)', () => {
@@ -223,8 +220,8 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('attemptReconnect marks controller exhausted and re-enters via onLinkLost after serial rediscovery', () => {
+    expect(ATTEMPT_RUNNER).toContain('markExhausted()');
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    expect(reconnectBody).toContain('markExhausted()');
     expect(reconnectBody).toMatch(
       /startSerialRediscovery\(\{[\s\S]*?onFound:[\s\S]*?onLinkLost\(\)[\s\S]*?scheduleMeshtasticReconnectAttemptRef\.current\(\)/,
     );
@@ -254,17 +251,20 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('attemptReconnect clears stuck reconnecting UI when delay aborts', () => {
-    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    expect(reconnectBody).toMatch(
-      /delayResult === 'aborted'[\s\S]*?!isReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /delayResult === 'aborted'[\s\S]*?!deps\.isReconnecting\.get\(\)[\s\S]*?setDisconnectedUi/,
     );
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(/status: 'disconnected'[\s\S]*?connectionLoss: true/);
   });
 
   it('attemptReconnect delay abort flushes deferred restart', () => {
-    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    expect(reconnectBody).toMatch(
-      /delayResult === 'aborted'[\s\S]*?meshtasticDeferredReconnectRef\.current[\s\S]*?scheduleMeshtasticReconnectAttemptRef\.current\(\)/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /delayResult === 'aborted'[\s\S]*?deferredReconnect\.get\(\)[\s\S]*?scheduleAttempt\(\)/,
     );
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toContain('deferredReconnect:');
+    expect(reconnectBody).toContain('scheduleMeshtasticReconnectAttemptRef.current()');
   });
 
   it('checks reconnect generation before open, wire, and configure', () => {
@@ -332,8 +332,11 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
   });
 
   it('attemptReconnect returns when connection params are cleared', () => {
+    expect(ATTEMPT_RUNNER).toContain('onMissingParams?.()');
+    expect(ATTEMPT_RUNNER).toMatch(/if \(!params\) \{[\s\S]*?isReconnecting\.set\(false\)/);
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    expect(reconnectBody).toMatch(/if \(!params\) \{[\s\S]*?isReconnectingRef\.current = false/);
+    expect(reconnectBody).toContain('onMissingParams:');
+    expect(reconnectBody).toContain('isReconnecting:');
   });
 
   it('Noble BLE disconnect handler respects explicit user disconnect before rehydrate', () => {
