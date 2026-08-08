@@ -9,17 +9,18 @@ import {
 import {
   awaitPropagationSyncSettled,
   type PropagationAttemptOutcome,
+  RETICULUM_PROPAGATION_SYNC_STALL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
   clearReticulumPropagationSyncFailure,
-  deprioritizeRecentlyFailedPropagationTargets,
   noteReticulumPropagationSyncFailure,
+  omitRecentlyFailedPropagationTargets,
 } from '@/renderer/lib/reticulum/reticulumPropagationSyncBackoff';
 import {
   type PropagationNodeRow,
   useReticulumPropagationStore,
 } from '@/renderer/stores/reticulumPropagationStore';
-import { MS_PER_MINUTE } from '@/shared/timeConstants';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '@/shared/timeConstants';
 
 /** Cap Auto discovered one-time sync attempts so a long failure chain cannot hang Sync. */
 const MAX_DISCOVERED_SYNC_ATTEMPTS = 3;
@@ -30,6 +31,13 @@ const MAX_DISCOVERED_SYNC_ATTEMPTS = 3;
  * local-inbox settle for many minutes.
  */
 export const PROPAGATION_CASCADE_BUDGET_MS = 5 * MS_PER_MINUTE;
+
+/**
+ * Per remote attempt while cascading. Remotes that get past Establishing can otherwise burn the
+ * full ~120s lxmf-core timeout before failing; cascade advances (and reaches local) sooner.
+ */
+export const PROPAGATION_CASCADE_ATTEMPT_TIMEOUT_MS =
+  RETICULUM_PROPAGATION_SYNC_STALL_MS + 15 * MS_PER_SECOND;
 
 /** No discovered PN, no reachable configured remote, and no usable local inbox. */
 export const PROPAGATION_SYNC_NO_TARGET_KEY = 'reticulumPropagation.syncNoTarget';
@@ -66,7 +74,13 @@ async function attemptSync(
 ): Promise<PropagationAttemptOutcome> {
   attempts.any = true;
   const accepted = await useReticulumPropagationStore.getState().startSync(id);
-  const outcome = accepted ? await awaitPropagationSyncSettled() : 'failed';
+  // Local settle is immediate; remotes use a cascade-sized budget so a slow PN cannot
+  // monopolize the whole lxmf-core 120s window before we advance.
+  const outcome = accepted
+    ? await awaitPropagationSyncSettled(
+        id === 'local-prop' ? undefined : { timeoutMs: PROPAGATION_CASCADE_ATTEMPT_TIMEOUT_MS },
+      )
+    : 'failed';
   if (outcome === 'success') {
     clearReticulumPropagationSyncFailure(id);
   } else if (outcome === 'failed') {
@@ -80,22 +94,29 @@ async function attemptSync(
  * "node may be unreachable" error with why there was no target in the first place.
  */
 function finishWithoutTarget(attempts: CascadeAttempts): boolean {
-  if (attempts.any) return false;
   const { nodes } = useReticulumPropagationStore.getState();
+  const loading = isLocalPropagationLoading(nodes);
+  // Remotes already failed: keep their error unless local is still loading (actionable).
+  if (attempts.any && !loading) return false;
   useReticulumPropagationStore
     .getState()
     .setLastSyncError(
-      isLocalPropagationLoading(nodes)
-        ? PROPAGATION_SYNC_LOCAL_LOADING_KEY
-        : PROPAGATION_SYNC_NO_TARGET_KEY,
+      loading ? PROPAGATION_SYNC_LOCAL_LOADING_KEY : PROPAGATION_SYNC_NO_TARGET_KEY,
     );
   // No node was called, so nothing may be named alongside this error.
-  useReticulumPropagationStore.getState().setSyncTargetId(null);
+  if (!attempts.any) {
+    useReticulumPropagationStore.getState().setSyncTargetId(null);
+  }
   return false;
 }
 
 async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boolean> {
-  const { nodes } = useReticulumPropagationStore.getState();
+  let { nodes } = useReticulumPropagationStore.getState();
+  // Auto ticks can start with a stale nodes list (local still "disabled" until refresh).
+  if (!hasEnabledLocalPropagationNode(nodes)) {
+    await useReticulumPropagationStore.getState().refreshFromSidecar();
+    nodes = useReticulumPropagationStore.getState().nodes;
+  }
   if (!hasEnabledLocalPropagationNode(nodes)) return finishWithoutTarget(attempts);
   return (await attemptSync('local-prop', attempts)) === 'success';
 }
@@ -181,7 +202,7 @@ async function runPropagationSyncCascade(
     }
 
     const triedHashes = new Set<string>();
-    const discoveredTargets = deprioritizeRecentlyFailedPropagationTargets(
+    const discoveredTargets = omitRecentlyFailedPropagationTargets(
       listDiscoveredPropagationTargets(nodes, discovered),
       (target) => target.destinationHash,
     ).slice(0, MAX_DISCOVERED_SYNC_ATTEMPTS);
@@ -196,7 +217,7 @@ async function runPropagationSyncCascade(
       if (outcome === 'cancelled') return false;
     }
 
-    for (const id of deprioritizeRecentlyFailedPropagationTargets(
+    for (const id of omitRecentlyFailedPropagationTargets(
       listConfiguredRemotePropagationIds(useReticulumPropagationStore.getState().nodes),
       (id) => id,
     )) {
@@ -232,7 +253,7 @@ async function runPropagationSyncCascade(
   if (seedOutcome === 'success') return true;
   if (seedOutcome === 'cancelled') return false;
 
-  for (const id of deprioritizeRecentlyFailedPropagationTargets(
+  for (const id of omitRecentlyFailedPropagationTargets(
     listConfiguredRemotePropagationIds(useReticulumPropagationStore.getState().nodes),
     (id) => id,
   )) {

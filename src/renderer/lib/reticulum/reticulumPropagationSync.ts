@@ -237,8 +237,13 @@ export async function awaitPropagationSyncSettled(opts?: {
     timer = setTimeout(() => {
       timer = null;
       // Sidecar never reported a terminal frame — release the sync so the cascade continues.
-      void store.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });
-      finish('failed');
+      // Await cancel so lastSyncError is stamped before the cascade reads outcome/UI state.
+      void store
+        .getState()
+        .cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY })
+        .finally(() => {
+          finish('failed');
+        });
     }, timeoutMs);
 
     unsubscribe = store.subscribe((state) => {

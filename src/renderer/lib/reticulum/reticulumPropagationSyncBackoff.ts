@@ -1,9 +1,9 @@
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 /**
- * How long a failed sync target stays deprioritized. A dead node that still announces the
- * lowest hop count would otherwise be retried first on every auto-sync tick, burning the
- * whole establish window before the cascade can reach a node that works.
+ * How long a failed sync target stays omitted from the cascade. A dead node that still
+ * announces the lowest hop count would otherwise be retried on every auto-sync tick,
+ * burning minutes before the cascade can settle on the local inbox.
  */
 export const RETICULUM_PROPAGATION_SYNC_FAILURE_BACKOFF_MS = 15 * MS_PER_MINUTE;
 
@@ -39,23 +39,14 @@ export function hasRecentReticulumPropagationSyncFailure(id: string, nowMs = Dat
 }
 
 /**
- * Stable partition: targets that failed within the backoff window move to the back, keeping
- * their relative order. Nothing is dropped — a mesh where every node failed recently still
- * retries them all, just after any untried node.
+ * Drop targets that failed within the backoff window. When every discovered PN just failed,
+ * the next cascade must skip them and fall through to configured remotes / local-prop instead
+ * of retrying the same dead set for another full establish timeout each.
  */
-export function deprioritizeRecentlyFailedPropagationTargets<T>(
+export function omitRecentlyFailedPropagationTargets<T>(
   items: readonly T[],
   keyOf: (item: T) => string,
   nowMs = Date.now(),
 ): T[] {
-  const fresh: T[] = [];
-  const recentlyFailed: T[] = [];
-  for (const item of items) {
-    if (hasRecentReticulumPropagationSyncFailure(keyOf(item), nowMs)) {
-      recentlyFailed.push(item);
-    } else {
-      fresh.push(item);
-    }
-  }
-  return [...fresh, ...recentlyFailed];
+  return items.filter((item) => !hasRecentReticulumPropagationSyncFailure(keyOf(item), nowMs));
 }

@@ -109,6 +109,7 @@ describe('reticulumPropagationAutoApply', () => {
       setPreferredOnSidecar: vi.fn().mockResolvedValue(true),
       addFromDiscovered: vi.fn().mockResolvedValue(true),
       startSync: vi.fn().mockResolvedValue(true),
+      refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -460,7 +461,7 @@ describe('reticulumPropagationAutoApply', () => {
       expect(startSync).toHaveBeenCalledWith(near);
     });
 
-    it('deprioritizes a node that failed recently on the next cascade', async () => {
+    it('omits a node that failed recently on the next cascade', async () => {
       const startSync = deferredStartSync((id) => (id === near ? 'failure' : 'success'));
       setUpTwoDiscovered(startSync);
 
@@ -470,6 +471,64 @@ describe('reticulumPropagationAutoApply', () => {
       startSync.mockClear();
       await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
       expect(startSync.mock.calls.map((c) => c[0])).toEqual([far]);
+    });
+
+    it('refreshes sidecar nodes before local fallback when local looks disabled', async () => {
+      const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'success' : 'failure'));
+      const refreshFromSidecar = vi.fn().mockImplementation(() => {
+        useReticulumPropagationStore.setState({
+          nodes: [
+            { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+            {
+              id: 'pn-aabb1111',
+              name: 'Remote',
+              enabled: true,
+              status: 'known',
+              hops: 2,
+              destination_hash: 'aabb'.repeat(8),
+            },
+          ],
+        });
+        return Promise.resolve();
+      });
+      useReticulumPropagationStore.setState({
+        nodes: [
+          { id: 'local-prop', name: 'Local', enabled: false, status: 'loading' },
+          {
+            id: 'pn-aabb1111',
+            name: 'Remote',
+            enabled: true,
+            status: 'known',
+            hops: 2,
+            destination_hash: 'aabb'.repeat(8),
+          },
+        ],
+        discovered: [{ destination_hash: near, node_state: true, peering_cost: 0, hops: 0 }],
+        preferredId: null,
+        startSync,
+        refreshFromSidecar,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(refreshFromSidecar).toHaveBeenCalled();
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([near, 'pn-aabb1111', 'local-prop']);
+    });
+
+    it('skips straight to local when every discovered node failed recently', async () => {
+      const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'success' : 'failure'));
+      setUpTwoDiscovered(startSync);
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([
+        near,
+        far,
+        'pn-aabb1111',
+        'local-prop',
+      ]);
+
+      startSync.mockClear();
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual(['local-prop']);
     });
 
     it('settles the local inbox once the remote budget is spent', async () => {

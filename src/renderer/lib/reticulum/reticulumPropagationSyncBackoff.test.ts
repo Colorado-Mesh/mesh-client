@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   clearReticulumPropagationSyncFailure,
-  deprioritizeRecentlyFailedPropagationTargets,
   hasRecentReticulumPropagationSyncFailure,
   noteReticulumPropagationSyncFailure,
+  omitRecentlyFailedPropagationTargets,
   resetReticulumPropagationSyncFailures,
   RETICULUM_PROPAGATION_SYNC_FAILURE_BACKOFF_MS,
 } from './reticulumPropagationSyncBackoff';
@@ -14,21 +14,19 @@ describe('reticulumPropagationSyncBackoff', () => {
     resetReticulumPropagationSyncFailures();
   });
 
-  it('moves recently failed targets behind untried ones without dropping them', () => {
+  it('omits recently failed targets so the cascade can fall through to local', () => {
     noteReticulumPropagationSyncFailure('catz', 1_000);
 
     expect(
-      deprioritizeRecentlyFailedPropagationTargets(['catz', 'near', 'far'], (id) => id, 2_000),
-    ).toEqual(['near', 'far', 'catz']);
+      omitRecentlyFailedPropagationTargets(['catz', 'near', 'far'], (id) => id, 2_000),
+    ).toEqual(['near', 'far']);
   });
 
-  it('keeps the original order within each group', () => {
+  it('returns an empty list when every candidate failed recently', () => {
     noteReticulumPropagationSyncFailure('a', 1_000);
-    noteReticulumPropagationSyncFailure('c', 1_000);
+    noteReticulumPropagationSyncFailure('b', 1_000);
 
-    expect(
-      deprioritizeRecentlyFailedPropagationTargets(['a', 'b', 'c', 'd'], (id) => id, 2_000),
-    ).toEqual(['b', 'd', 'a', 'c']);
+    expect(omitRecentlyFailedPropagationTargets(['a', 'b'], (id) => id, 2_000)).toEqual([]);
   });
 
   it('restores a target once the backoff window elapses', () => {
@@ -36,9 +34,10 @@ describe('reticulumPropagationSyncBackoff', () => {
     const after = 1_000 + RETICULUM_PROPAGATION_SYNC_FAILURE_BACKOFF_MS;
 
     expect(hasRecentReticulumPropagationSyncFailure('catz', after)).toBe(false);
-    expect(
-      deprioritizeRecentlyFailedPropagationTargets(['catz', 'near'], (id) => id, after),
-    ).toEqual(['catz', 'near']);
+    expect(omitRecentlyFailedPropagationTargets(['catz', 'near'], (id) => id, after)).toEqual([
+      'catz',
+      'near',
+    ]);
   });
 
   it('matches target ids case-insensitively so destination hashes line up', () => {

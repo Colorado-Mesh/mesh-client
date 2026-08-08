@@ -332,6 +332,21 @@ export default function ReticulumPropagationSection({
           }}
         />
       )}
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-xs text-gray-300">
+          <input
+            type="checkbox"
+            checked={!chatNoticeDismissed}
+            onChange={(e) => {
+              setChatNoticeDismissed(!e.target.checked);
+            }}
+            className="accent-brand-green"
+            aria-label={t('reticulumPropagation.showChatNoticeAria')}
+          />
+          {t('reticulumPropagation.showChatNotice')}
+        </label>
+        <p className="text-muted text-xs">{t('reticulumPropagation.showChatNoticeHint')}</p>
+      </div>
       <ReticulumPropagationLastRefreshed />
       <ReticulumPropagationSyncProgress
         cancelLabel={t('reticulumPropagation.cancelSync')}
@@ -552,19 +567,6 @@ export default function ReticulumPropagationSection({
         <p id="reticulum-propagation-mode-help" className="text-muted text-xs">
           {t(modeHelpKey)}
         </p>
-        <label className="flex items-center gap-2 pt-1 text-xs text-gray-300">
-          <input
-            type="checkbox"
-            checked={!chatNoticeDismissed}
-            onChange={(e) => {
-              setChatNoticeDismissed(!e.target.checked);
-            }}
-            className="accent-brand-green"
-            aria-label={t('reticulumPropagation.showChatNoticeAria')}
-          />
-          {t('reticulumPropagation.showChatNotice')}
-        </label>
-        <p className="text-muted text-xs">{t('reticulumPropagation.showChatNoticeHint')}</p>
       </div>
       <div className="mt-3 space-y-1">
         <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">
