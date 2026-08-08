@@ -1,13 +1,19 @@
 /**
  * Shared LoRa reconnect parity: MeshCore and Meshtastic must use createRfReconnectController
- * so connection-lost never double-schedules while a cycle is active (n7eal TCP / #792–#796).
+ * + runLoraRfReconnectAttempt so connection-lost never double-schedules while a cycle is
+ * active (n7eal TCP / #792–#796 / #807).
  */
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody, loadRuntimeSource } from '../lib/sourceContractTestHelpers';
+import {
+  extractUseCallbackBody,
+  loadRendererLibSource,
+  loadRuntimeSource,
+} from '../lib/sourceContractTestHelpers';
 
 const MESHCORE = loadRuntimeSource('useMeshcoreRuntime.ts');
 const MESHTASTIC = loadRuntimeSource('useMeshtasticRuntime.ts');
+const ATTEMPT_RUNNER = loadRendererLibSource('loraRfReconnectAttempt.ts');
 
 describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
   it.each([
@@ -35,6 +41,7 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
       expect(source).toContain('createRfReconnectController');
       expect(source).toContain(controllerRef);
       expect(source).toContain('shouldStartOwner');
+      expect(source).toContain('runLoraRfReconnectAttempt');
 
       const lostBody = extractUseCallbackBody(source, lostName);
       expect(lostBody).toContain('onLinkLost()');
@@ -45,12 +52,25 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
       );
 
       const reconnectBody = extractUseCallbackBody(source, attemptName);
-      const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
-      expect(finallyBody).toContain(scheduleRef);
-      expect(finallyBody).not.toContain(lostRef);
-      expect(finallyBody).toContain('endAttempt');
+      expect(reconnectBody).toContain('runLoraRfReconnectAttempt');
+      expect(reconnectBody).toContain('scheduleAttempt:');
+      expect(reconnectBody).toContain(scheduleRef);
+      // Shared finally flush must schedule via scheduleAttempt — never re-enter lost-handler.
+      expect(ATTEMPT_RUNNER).toContain('endAttempt');
+      expect(ATTEMPT_RUNNER).toContain('scheduleAttempt()');
+      expect(ATTEMPT_RUNNER).not.toContain(lostRef);
     },
   );
+
+  it('shared attempt runner owns budget + deferred finally flush for both protocols', () => {
+    expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
+    expect(ATTEMPT_RUNNER).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(ATTEMPT_RUNNER).toContain('delayUnlessSuspended');
+    expect(ATTEMPT_RUNNER).toContain('createBleReconnectTransportCleanup');
+    expect(ATTEMPT_RUNNER).toMatch(
+      /deferredReconnect\.get\(\) \|\| settled\.shouldSchedule[\s\S]*?scheduleAttempt\(\)/,
+    );
+  });
 
   it('MeshCore latches session after self-info; UI configured after contacts dump on all RF transports', () => {
     expect(MESHCORE).toContain('const configureBeforeContactsDump = true');

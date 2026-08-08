@@ -12,7 +12,10 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE};
+use lxmf_core::constants::{
+    DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE, FIELD_REACTION,
+    REACTION_CONTENT, REACTION_TO,
+};
 use lxmf_core::message::LxMessage;
 
 /// Upstream LXMF 1.0.0 reply-to (`LXMF.py`); not yet named in rsLXMF constants.
@@ -3295,8 +3298,33 @@ impl LiveBridge {
             }
         };
 
-        let (msg, message_hash_hex) =
-            self.prepare_signed_outbound_lxmf(dest, "", &req.emoji, delivery_method, None, None)?;
+        // Stamp the standard LXMF FIELD_REACTION (0x40) so Ratspeak / Sideband peers
+        // render a structured tapback. The emoji is always kept as message content so
+        // clients that ignore 0x40 still show something. An unparsable target_hash is
+        // treated as absent (send content-only) rather than poisoning the message.
+        let reaction_target = parse_optional_reply_to_hash(Some(&req.target_hash));
+        // Only surface structured reaction metadata to the renderer when the target hash parsed
+        // cleanly. The content-only fallback below must omit `reaction_target` so downstream
+        // consumers do not treat a plain-emoji send as a structured tapback.
+        let reaction_target_out: Option<String> =
+            reaction_target.as_ref().map(|_| req.target_hash.clone());
+        let (msg, message_hash_hex) = if let Some(target) = reaction_target {
+            let mut fields = HashMap::new();
+            fields.insert(FIELD_REACTION, encode_reaction_field(&target, &req.emoji));
+            self.prepare_signed_outbound_lxmf_with_fields(
+                dest,
+                "",
+                &req.emoji,
+                delivery_method,
+                &fields,
+            )?
+        } else {
+            tracing::warn!(
+                target: "lxmf",
+                "send_reaction: target_hash is not a 32-byte hex, sending content-only",
+            );
+            self.prepare_signed_outbound_lxmf(dest, "", &req.emoji, delivery_method, None, None)?
+        };
         let mut router = self.router.lock().await;
         router
             .try_send(msg)
@@ -3313,7 +3341,7 @@ impl LiveBridge {
             "text": req.emoji,
             "timestamp": ts_ms,
             "to_hash": req.destination_hash,
-            "reaction_target": req.target_hash,
+            "reaction_target": reaction_target_out,
             "direction": "outbound",
             "message_hash": message_hash_hex,
             "delivery_status": "sending"
@@ -4584,7 +4612,30 @@ pub(super) fn lxmf_payload_from_message(
             obj.insert("icon_appearance".into(), icon);
         }
     }
-    if let Some(reply) = reply_fields_from_message(msg) {
+    // A structured reaction (0x40) wins over a reply (0x30) for tapback classification:
+    // renderer ingest keys off `reaction_target`, so we must not also emit `reply_to_hash`
+    // (which would render a reply bubble). When 0x40 is absent, reply/plain paths are
+    // unchanged.
+    if let Some(reaction) = reaction_fields_from_message(msg) {
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert(
+                "reaction_target".into(),
+                serde_json::Value::String(reaction.reaction_target),
+            );
+            // Fall back to the field emoji only when the message content is empty,
+            // so peers that carry the emoji solely in 0x40 still show it.
+            let text_empty = obj
+                .get("text")
+                .and_then(|t| t.as_str())
+                .map(|t| t.trim().is_empty())
+                .unwrap_or(true);
+            if text_empty {
+                if let Some(emoji) = reaction.emoji {
+                    obj.insert("text".into(), serde_json::Value::String(emoji));
+                }
+            }
+        }
+    } else if let Some(reply) = reply_fields_from_message(msg) {
         if let Some(obj) = payload.as_object_mut() {
             obj.insert(
                 "reply_to_hash".into(),
@@ -4645,6 +4696,95 @@ fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
     Some(LxmfReplyFields {
         reply_to_hash,
         reply_preview_text,
+    })
+}
+
+struct LxmfReactionFields {
+    /// Lowercase 64-hex parent message hash.
+    reaction_target: String,
+    /// Reaction content (emoji) when carried in the field; may be absent.
+    emoji: Option<String>,
+}
+
+/// Encode a standard LXMF `FIELD_REACTION` (0x40) value as a msgpack map keyed by
+/// `REACTION_TO` (0x00 = 32-byte parent hash, Binary) and `REACTION_CONTENT`
+/// (0x01 = UTF-8 emoji). Returned bytes are a single complete msgpack value for
+/// [`LxMessage::set_msgpack_field`].
+fn encode_reaction_field(target: &[u8; 32], emoji: &str) -> Vec<u8> {
+    let map = rmpv::Value::Map(vec![
+        (
+            rmpv::Value::Integer(rmpv::Integer::from(REACTION_TO)),
+            rmpv::Value::Binary(target.to_vec()),
+        ),
+        (
+            rmpv::Value::Integer(rmpv::Integer::from(REACTION_CONTENT)),
+            rmpv::Value::String(emoji.into()),
+        ),
+    ]);
+    let mut buf = Vec::new();
+    // Encoding a well-formed rmpv value to a Vec is infallible.
+    let _ = rmpv::encode::write_value(&mut buf, &map);
+    buf
+}
+
+/// Normalize a `REACTION_TO` msgpack value to a lowercase 64-hex string.
+/// Accepts raw 32-byte Binary (Python/Sideband) or a 64-char ASCII-hex string
+/// (Ratspeak-compatible). Anything else is rejected.
+fn reaction_target_hex(value: &rmpv::Value) -> Option<String> {
+    match value {
+        rmpv::Value::Binary(bin) if bin.len() == 32 => Some(hex::encode(bin)),
+        rmpv::Value::String(s) => {
+            let text = s.as_str()?.trim();
+            if text.len() == 64 && text.bytes().all(|b| b.is_ascii_hexdigit()) {
+                Some(text.to_ascii_lowercase())
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Extract reaction content (emoji) from a `REACTION_CONTENT` msgpack value.
+fn reaction_content_text(value: &rmpv::Value) -> Option<String> {
+    let text = match value {
+        rmpv::Value::String(s) => s.as_str()?.to_string(),
+        rmpv::Value::Binary(bin) => std::str::from_utf8(bin).ok()?.to_string(),
+        _ => return None,
+    };
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+/// Decode LXMF 1.0.1 `FIELD_REACTION` (0x40). Fail-open: any missing/malformed
+/// field (not a msgpack map, missing/invalid `REACTION_TO`, wrong types) returns
+/// `None` so the message ingests as normal text/reply.
+fn reaction_fields_from_message(msg: &LxMessage) -> Option<LxmfReactionFields> {
+    let raw = msg.get_field(FIELD_REACTION)?;
+    let mut cursor = Cursor::new(raw.as_slice());
+    let value = rmpv::decode::read_value(&mut cursor).ok()?;
+    // A conformant FIELD_REACTION is exactly one msgpack map. Trailing bytes after the map mean
+    // the field is malformed, so fail open (ingest as normal text/reply) rather than trust it.
+    if cursor.position() as usize != raw.len() {
+        return None;
+    }
+    let map = value.as_map()?;
+    let mut reaction_target: Option<String> = None;
+    let mut emoji: Option<String> = None;
+    for (key, val) in map {
+        match key.as_u64() {
+            Some(k) if k == u64::from(REACTION_TO) => reaction_target = reaction_target_hex(val),
+            Some(k) if k == u64::from(REACTION_CONTENT) => emoji = reaction_content_text(val),
+            _ => {}
+        }
+    }
+    Some(LxmfReactionFields {
+        reaction_target: reaction_target?,
+        emoji,
     })
 }
 
@@ -6216,5 +6356,185 @@ mod reply_field_tests {
         assert_eq!(payload["received_via"], "paper");
         assert_eq!(payload["text"], "paper body");
         assert_eq!(payload["sender_name"], "Bob");
+    }
+
+    fn write_reaction_map(pairs: Vec<(rmpv::Value, rmpv::Value)>) -> Vec<u8> {
+        let mut buf = Vec::new();
+        rmpv::encode::write_value(&mut buf, &rmpv::Value::Map(pairs)).expect("encode reaction");
+        buf
+    }
+
+    #[test]
+    fn encode_reaction_field_round_trips_target_and_emoji() {
+        let target = [0x11u8; 32];
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "👍", DeliveryMethod::Direct);
+        msg.set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "👍"))
+            .expect("set reaction field");
+
+        let decoded = reaction_fields_from_message(&msg).expect("reaction fields");
+        assert_eq!(decoded.reaction_target, hex::encode(target));
+        assert_eq!(decoded.emoji.as_deref(), Some("👍"));
+
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            None,
+            None,
+            "inbound",
+            Some("Alice"),
+        );
+        assert_eq!(payload["reaction_target"], hex::encode(target));
+        // Emoji stays as message content for clients that ignore 0x40.
+        assert_eq!(payload["text"], "👍");
+        assert!(payload.get("reply_to_hash").is_none());
+    }
+
+    #[test]
+    fn reaction_missing_field_leaves_payload_untouched() {
+        let msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hello", DeliveryMethod::Direct);
+        assert!(reaction_fields_from_message(&msg).is_none());
+
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            None,
+            None,
+            "inbound",
+            Some("Alice"),
+        );
+        assert!(payload.get("reaction_target").is_none());
+        assert_eq!(payload["text"], "hello");
+    }
+
+    #[test]
+    fn reaction_decodes_from_64_hex_string_target() {
+        let target_hex = "AB".repeat(32); // uppercase, Ratspeak-style hex string
+        let map = write_reaction_map(vec![
+            (
+                rmpv::Value::Integer(rmpv::Integer::from(REACTION_TO)),
+                rmpv::Value::String(target_hex.as_str().into()),
+            ),
+            (
+                rmpv::Value::Integer(rmpv::Integer::from(REACTION_CONTENT)),
+                rmpv::Value::String("🎉".into()),
+            ),
+        ]);
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_msgpack_field(FIELD_REACTION, map)
+            .expect("set field");
+
+        let decoded = reaction_fields_from_message(&msg).expect("reaction fields");
+        assert_eq!(decoded.reaction_target, target_hex.to_ascii_lowercase());
+        assert_eq!(decoded.emoji.as_deref(), Some("🎉"));
+
+        // Content was empty, so the field emoji fills `text`.
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            None,
+            None,
+            "inbound",
+            Some("Alice"),
+        );
+        assert_eq!(payload["text"], "🎉");
+    }
+
+    #[test]
+    fn reaction_malformed_field_is_ignored() {
+        // Not a msgpack map (a plain string value).
+        let mut buf = Vec::new();
+        rmpv::encode::write_value(&mut buf, &rmpv::Value::String("garbage".into()))
+            .expect("encode garbage");
+        let mut msg = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "still here",
+            DeliveryMethod::Direct,
+        );
+        msg.set_msgpack_field(FIELD_REACTION, buf)
+            .expect("set field");
+        assert!(reaction_fields_from_message(&msg).is_none());
+
+        // Map present but REACTION_TO has a bad length → treated as absent.
+        let bad_len = write_reaction_map(vec![(
+            rmpv::Value::Integer(rmpv::Integer::from(REACTION_TO)),
+            rmpv::Value::Binary(vec![0u8; 16]),
+        )]);
+        let mut msg2 = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "still here",
+            DeliveryMethod::Direct,
+        );
+        msg2.set_msgpack_field(FIELD_REACTION, bad_len)
+            .expect("set field");
+        assert!(reaction_fields_from_message(&msg2).is_none());
+
+        let payload = lxmf_payload_from_message(
+            &msg2,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            None,
+            None,
+            "inbound",
+            Some("Alice"),
+        );
+        assert!(payload.get("reaction_target").is_none());
+        assert_eq!(payload["text"], "still here");
+    }
+
+    #[test]
+    fn reaction_wins_over_reply_when_both_present() {
+        let reaction_target = [0x22u8; 32];
+        let reply_parent = [0x33u8; 32];
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "😀", DeliveryMethod::Direct);
+        msg.set_field(FIELD_REPLY_TO, reply_parent.to_vec());
+        msg.set_field(FIELD_REPLY_QUOTE, b"quoted".to_vec());
+        msg.set_msgpack_field(
+            FIELD_REACTION,
+            encode_reaction_field(&reaction_target, "😀"),
+        )
+        .expect("set reaction field");
+
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            None,
+            None,
+            "inbound",
+            Some("Alice"),
+        );
+        assert_eq!(payload["reaction_target"], hex::encode(reaction_target));
+        // A reaction must not also render as a reply bubble.
+        assert!(payload.get("reply_to_hash").is_none());
+        assert!(payload.get("reply_preview_text").is_none());
+    }
+
+    #[test]
+    fn reaction_field_with_trailing_bytes_is_rejected() {
+        // A well-formed reaction map that is followed by extra bytes must fail open: the field
+        // is malformed, so decoding returns None (ingest as normal text) rather than trust it.
+        let target = [0x44u8; 32];
+        let mut buf = encode_reaction_field(&target, "🔥");
+        buf.push(0x00); // trailing byte after the complete msgpack map
+        // Use the raw field setter: set_msgpack_field itself rejects trailing bytes, but a hostile
+        // or buggy peer can still place raw bytes in the field, which decode must reject.
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
+        msg.set_field(FIELD_REACTION, buf);
+        assert!(reaction_fields_from_message(&msg).is_none());
+
+        // Sanity: the same map without trailing bytes still decodes.
+        let mut ok_msg = LxMessage::new([0u8; 16], [1u8; 16], "", "🔥", DeliveryMethod::Direct);
+        ok_msg
+            .set_msgpack_field(FIELD_REACTION, encode_reaction_field(&target, "🔥"))
+            .expect("set field");
+        let decoded = reaction_fields_from_message(&ok_msg).expect("reaction fields");
+        assert_eq!(decoded.reaction_target, hex::encode(target));
     }
 }

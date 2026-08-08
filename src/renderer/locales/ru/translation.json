@@ -911,8 +911,6 @@
       "pairingFailed": "Не удалось выполнить сопряжение: {{msg}}",
       "pinPairingFailed": "Не удалось выполнить сопряжение PIN-кода: {{msg}}.",
       "pinAcceptedNext": "PIN-код принят. Сопряжение завершено. Нажмите «Подключиться» и выберите свое устройство, чтобы завершить подключение.",
-      "autoConnectTimeout": "Время автоматического подключения истекло.",
-      "autoConnectFailed": "Автоподключение не удалось",
       "connectionFailed": "Соединение не удалось"
     },
     "cancelMqttConnect": "Отмена",
@@ -925,8 +923,6 @@
     "mqttTlsEnabled": "Включить TLS (mqtts / wss)",
     "mqttTlsInsecure": "Разрешить небезопасный TLS (самозаверяющий сертификат). По умолчанию выключено — включено только в том случае, если ваш брокер использует непубличный центр сертификации.",
     "channelPsksPrivateUplinkNote": "Канал восходящей связи зашифрован AES-PSK на /2/e/ (нет зеркала JSON для закрытых ключей). Мониторы брокеров все еще могут регистрировать сбои расшифровки для трафика PKI/DM между другими узлами — это нормально и не связано с канальными PSK здесь.",
-    "sharedBleWithMeshtastic": "Это устройство Bluetooth уже подключено через Meshtastic. Переключитесь на вкладку Meshtastic, чтобы использовать ее, или выберите другое радио или транспорт для MeshCore.",
-    "sharedBleWithMeshtasticHint": "Одно физическое радио не может одновременно проводить отдельные сеансы Bluetooth Meshtastic и MeshCore.",
     "reticulumStackTitle": "Стек Reticulum",
     "reticulumStackHint": "Запустите локальный sidecar Reticulum/LXMF перед созданием идентичности или добавлением интерфейсов.",
     "reticulumStartStack": "Запустить стек",
@@ -1262,19 +1258,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Обычай"
+      "custom": "Обычай",
+      "waev": "Ваев",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh нужен WebSocket на порту 443 и сервер mqtt-us-v1.letsmesh.net или mqtt-eu-v1.letsmesh.net. Используйте регион (США/ЕС) или переключитесь на Custom для других брокеров.",
       "coloradomesh": "Colorado Mesh требуется WebSocket на порту 443 с включенным TLS, сервер mqtt.meshcore.coloradomesh.org, путь /ws. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
-      "meshmapper": "MeshMapper нуждается в WebSocket на порту 443 и сервере mqtt.meshmapper.net. Сбросьте предустановку или переключитесь на Custom для других брокеров."
+      "meshmapper": "MeshMapper нуждается в WebSocket на порту 443 и сервере mqtt.meshmapper.net. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
+      "waev": "Waev нужен WebSocket на порту 443 с включенным TLS, сервер mqtt.waev.app. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
+      "meshatse": "Meshat.se требуется WebSocket на порту 443 с включенным TLS, сервер meshcore-mqtt.meshat.se. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
+      "meshcoreca": "MeshCore.CA требуется WebSocket на порту 443 с включенным TLS, сервер mqtt1.meshcore.ca или mqtt2.meshcore.ca. Используйте Broker (Primary/Backup) или переключитесь на Custom для других брокеров.",
+      "eastmesh": "EastMesh требуется WebSocket на порту 443 с включенным TLS, сервер mqtt2.eastmesh.au. Сбросьте предустановку или переключитесь на Custom для других брокеров."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Токен аутентификации (формат Meshcore-декодера) будет сгенерирован при подключении. Имя пользователя — v1_ плюс ваш 64-значный открытый ключ (шестнадцатеричный). Аудитория JWT соответствует имени хоста Сервера.",
       "noPrivateKey": "Нет полной идентификации — импортируйте конфигурацию MeshCore на панель Radio (открытый и закрытый ключи) или вставьте имя пользователя (v1_<открытый ключ>) и токен вручную. Аудитория JWT в токене должна соответствовать имени хоста Сервера.",
       "publicKeyMissing": "Открытый ключ отсутствует в удостоверении личности. Импортируйте конфигурацию MeshCore в формате JSON на панель Radio (должна включать открытый и закрытый ключи) или вставьте токен брокера в поле пароля.",
-      "usernameBuildFailed": "Не удалось создать имя пользователя LetsMesh. Импортируйте конфигурацию MeshCore в формате JSON на панель Radio или вставьте имя пользователя (v1_<открытый ключ>) и токен вручную.",
-      "noIdentity": "Идентификатор устройства не найден. Импортируйте конфигурацию MeshCore в формате JSON на панель «Радио» или вставьте имя пользователя и токен вручную."
+      "noIdentity": "Идентификатор устройства не найден. Импортируйте конфигурацию MeshCore в формате JSON на панель «Радио» или вставьте имя пользователя и токен вручную.",
+      "usernameBuildFailed": "Не удалось создать имя пользователя MeshCore MQTT. Импортируйте конфигурацию MeshCore JSON на панели Radio или вставьте имя пользователя (v1_<public key>) и токен вручную."
     },
     "meshcorePacketLogger": {
       "label": "Регистратор пакетов — при подключении к вашему радиомодулю и MQTT пересылайте сводные данные RX-пакетов на {{topic}} в той же форме JSON, что и meshcoretomqtt. По умолчанию выключено; Включайте только в том случае, если вы собираетесь передавать прослушиваемый воздушный трафик анализатору пакетов."
@@ -1343,9 +1347,6 @@
       "disableShareAria": "Отключите «Поделиться экземпляром» и перезапустите стек",
       "disableFailed": "Не удалось отключить экземпляр Share."
     },
-    "letsMeshRequiresWebSocket": "Для LetsMesh требуется транспорт WebSocket.",
-    "letsMeshRequiresPort": "LetsMesh требует порт {{port}}.",
-    "letsMeshKnownBrokersOnly": "Предустановка LetsMesh /MeshMapper поддерживает только известные брокеры подписи устройств. Используйте Custom для других брокеров.",
     "letsMeshUsernameV1Hex": "Имя пользователя должно быть v1_, за которым должны следовать 64 шестнадцатеричных символа (открытый ключ).",
     "bleWeakSignalWarning": "Сигнал Bluetooth слабый ({{rssi}} dBm). Переместитесь ближе для стабильного соединения.",
     "bleRssiDbm": "{{rssi}} дБм",
@@ -1354,7 +1355,18 @@
     "linkQuality": "Качество связи:",
     "linkQualityMs": "{{ms}} мс",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Недоступно (веб-Bluetooth)"
+    "signalUnavailableWebBluetooth": "Недоступно (веб-Bluetooth)",
+    "meshcoreCaBroker": "Брокер MeshCore.CA",
+    "meshcoreCaPrimary": "Первичные",
+    "meshcoreCaBackup": "Резервное копирование",
+    "broker": "Брокер",
+    "letsMeshRequiresTls": "Для этой предустановки брокера требуется TLS (wss). Включите TLS или переключитесь на Custom.",
+    "letsMeshRequiresWsPath": "Для этой предустановки брокера требуется путь WebSocket {{wsPath}}. Сбросьте предустановку или переключитесь на Custom (Пользовательский).",
+    "letsMeshRegionUs": "США",
+    "letsMeshRegionEu": "ЕС",
+    "letsMeshRequiresWebSocket": "Для этой предустановки брокера требуется транспорт WebSocket (wss).",
+    "letsMeshRequiresPort": "Для этой предустановки брокера требуется порт {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Эта предустановка поддерживает только известные общедоступные брокеры MeshCore MQTT. Переключитесь на Custom для других брокеров."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -5325,7 +5337,8 @@
       "actionFailed": "Действие не выполнено: {{reason}}",
       "unknownReason": "неизвесная причина",
       "resendFailed": "Повторная отправка не удалась.",
-      "deleteFailed": "Не удалось удалить сеанс."
+      "deleteFailed": "Не удалось удалить сеанс.",
+      "sessionExpired": "Эта игра истекла после периода бездействия и больше не может быть воспроизведена. Используйте Delete session (Удалить сеанс), чтобы удалить его."
     },
     "deleteConfirmTitle": "Удалить сессию",
     "deleteConfirmMessage": "Удалить эту игровую сессию из списка? Это действие нельзя отменить.",
@@ -5339,6 +5352,7 @@
       "propagated": "Хранится",
       "failed": "Требуется повторить попытку"
     },
-    "drawOfferWaitingBanner": "Предложение о розыгрыше отправлено. Ожидание оппонента…"
+    "drawOfferWaitingBanner": "Предложение о розыгрыше отправлено. Ожидание оппонента…",
+    "idleExpiryNotice": "Игры истекают после неактивности и могут быть удалены только после этого. Испытания без ответа: 24 часа (все игры). Активные партии: крестики-нолики через 24 часа, шахматы и четыре в ряд через 7 дней."
   }
 }

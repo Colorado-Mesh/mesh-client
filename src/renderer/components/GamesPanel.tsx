@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
@@ -6,10 +6,16 @@ import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBa
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
 import {
+  burstConfetti,
+  type ConfettiBurstOptions,
+  shouldSkipConfetti,
+} from '@/renderer/lib/confettiBurst';
+import {
   gamesMetaStr,
   isGamesDrawOfferFromOpponent,
   isGamesDrawOfferFromSelf,
   isGamesSessionInitiator,
+  isGamesWinForSelf,
 } from '@/renderer/lib/reticulum/reticulumGamesMetadata';
 import {
   deleteGamesSession,
@@ -41,6 +47,8 @@ type GamesFilter = 'all' | 'active' | 'pending' | 'completed';
 const GAMES_FILTERS: GamesFilter[] = ['all', 'active', 'pending', 'completed'];
 const COMPLETED_STATUSES = new Set(['completed', 'expired', 'declined']);
 const CHALLENGE_APPS: GamesAppId[] = ['ttt', 'chess'];
+/** Delay before retrying a win celebration that was skipped because a burst was already animating. */
+export const CELEBRATION_RETRY_MS = 400;
 
 function matchesFilter(session: GameSession, filter: GamesFilter): boolean {
   if (filter === 'all') return true;
@@ -53,6 +61,27 @@ function sessionPeerLabel(session: GameSession): string {
   const hash = session.contact_hash?.trim();
   if (!hash) return session.session_id.slice(0, 8);
   return resolveReticulumRemoteHashLabel(hash);
+}
+
+/** Confetti origin/palette for a win, centered on the board element when measurable. */
+function winCelebrationOptions(
+  session: GameSession,
+  boardEl: HTMLElement | null,
+): ConfettiBurstOptions {
+  const opts: ConfettiBurstOptions =
+    session.app_id === 'chess'
+      ? {
+          count: 72,
+          duration: 1900,
+          colors: ['#d4bc9e', '#9b8365', '#d4a72c', '#86efac', '#0e9aa7'],
+        }
+      : { count: 48, duration: 1600 };
+  const rect = boardEl?.getBoundingClientRect();
+  if (rect && rect.width > 0 && rect.height > 0) {
+    opts.x = rect.left + rect.width / 2;
+    opts.y = rect.top + rect.height / 2.4;
+  }
+  return opts;
 }
 
 export default function GamesPanel({ isActive }: GamesPanelProps) {
@@ -70,6 +99,12 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   const [challengeApp, setChallengeApp] = useState<GamesAppId>('ttt');
   const [confirmResign, setConfirmResign] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const celebratedWinsRef = useRef<Set<string>>(new Set());
+  const celebrationRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped to re-run the celebration effect after an in-flight burst finishes (retry a win that
+  // was selected while confetti for an earlier win was still animating).
+  const [celebrationRetryTick, setCelebrationRetryTick] = useState(0);
 
   useEffect(() => {
     if (!isActive) return;
@@ -88,6 +123,47 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
       void markGamesSessionRead(selectedSession.session_id);
     }
   }, [isActive, selectedSession]);
+
+  // One-shot confetti when the viewed session is a completed local win. Deduped per session_id so
+  // re-renders / re-selection do not re-fire. A win is only recorded as celebrated once a burst
+  // actually starts (or is intentionally skipped under reduced motion); if a burst is already
+  // animating (single-flight), the win is retried after that burst finishes so a second win
+  // selected mid-celebration is not silently dropped.
+  useEffect(() => {
+    if (!isActive || !selectedSession) return;
+    if (!isGamesWinForSelf(selectedSession)) return;
+    const sessionId = selectedSession.session_id;
+    if (celebratedWinsRef.current.has(sessionId)) return;
+
+    // Reduced motion: the burst is intentionally suppressed, so mark celebrated (don't retry).
+    if (shouldSkipConfetti()) {
+      celebratedWinsRef.current.add(sessionId);
+      return;
+    }
+
+    const started = burstConfetti(winCelebrationOptions(selectedSession, boardWrapRef.current));
+    if (started) {
+      celebratedWinsRef.current.add(sessionId);
+      return;
+    }
+
+    // A burst is already in flight — retry once it finishes.
+    if (celebrationRetryTimerRef.current) return;
+    celebrationRetryTimerRef.current = setTimeout(() => {
+      celebrationRetryTimerRef.current = null;
+      setCelebrationRetryTick((n) => n + 1);
+    }, CELEBRATION_RETRY_MS);
+  }, [isActive, selectedSession, celebrationRetryTick]);
+
+  useEffect(
+    () => () => {
+      if (celebrationRetryTimerRef.current) {
+        clearTimeout(celebrationRetryTimerRef.current);
+        celebrationRetryTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   const filteredSessions = useMemo(
     () => sessions.filter((row) => matchesFilter(row, filter)),
@@ -274,6 +350,9 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               {t('gamesPanel.sendChallenge')}
             </button>
           </div>
+          <p className="mt-2 text-[11px] leading-snug text-amber-200/60">
+            {t('gamesPanel.idleExpiryNotice')}
+          </p>
         </div>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-6">
@@ -295,23 +374,25 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                 />
               ) : null;
             })()}
-            {selectedSession.app_id === 'chess' ? (
-              <ChessBoard
-                session={selectedSession}
-                disabled={boardDisabled}
-                onMove={(m) => {
-                  handleMove({ m });
-                }}
-              />
-            ) : (
-              <TicTacToeBoard
-                session={selectedSession}
-                disabled={boardDisabled}
-                onMove={(i) => {
-                  handleMove({ i });
-                }}
-              />
-            )}
+            <div ref={boardWrapRef} className="flex flex-col items-center">
+              {selectedSession.app_id === 'chess' ? (
+                <ChessBoard
+                  session={selectedSession}
+                  disabled={boardDisabled}
+                  onMove={(m) => {
+                    handleMove({ m });
+                  }}
+                />
+              ) : (
+                <TicTacToeBoard
+                  session={selectedSession}
+                  disabled={boardDisabled}
+                  onMove={(i) => {
+                    handleMove({ i });
+                  }}
+                />
+              )}
+            </div>
             <div className="flex flex-wrap justify-center gap-2">
               {selectedSession.status === 'pending' &&
                 !isGamesSessionInitiator(selectedSession) && (

@@ -90,8 +90,7 @@ import {
   MESHCORE_SETUP_ABORT_MESSAGE,
   rethrowMeshcoreSetupAbortFromTcpDead,
 } from '../lib/bleConnectErrors';
-import { raceWithDeadline, verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
-import { createBleReconnectTransportCleanup } from '../lib/bleReconnectLateTransport';
+import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -126,6 +125,7 @@ import {
   meshcoreIdentityHasFullKeyPair,
   tryPersistMeshcorePublicKeyFromRadio,
 } from '../lib/letsMeshJwt';
+import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
@@ -405,7 +405,6 @@ import {
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
 import { createRfReconnectController } from '../lib/rfReconnectController';
-import { rfMaxReconnectAttemptsForTransport } from '../lib/rfReconnectShared';
 import { registerMeshcoreSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import {
   captureSerialIdentityForRediscovery,
@@ -422,7 +421,6 @@ import { LAST_SERIAL_PORT_KEY, persistSerialPortIdentity } from '../lib/serialPo
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
-import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
   computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
@@ -438,7 +436,6 @@ import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
-  NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
@@ -3273,331 +3270,235 @@ export function useMeshcoreRuntime() {
   );
 
   const attemptMeshcoreReconnect = useCallback(async () => {
-    const params = meshcoreConnectionParamsRef.current;
-    if (!params) {
-      meshcoreIsReconnectingRef.current = false;
-      return;
-    }
-    if (meshcoreExplicitDisconnectRef.current) {
-      meshcoreIsReconnectingRef.current = false;
-      return;
-    }
-
-    const maxReconnectAttempts = rfMaxReconnectAttemptsForTransport(params.rfType);
-    if (meshcoreReconnectAttemptRef.current >= maxReconnectAttempts) {
-      meshcoreIsReconnectingRef.current = false;
-      meshcoreReconnectAttemptRef.current = 0;
-      meshcoreRfReconnectRef.current.markExhausted();
-      if (params.rfType === 'tcp') {
-        rejectMeshcoreTcpLiveForUserTx(new Error('MeshCore TCP reconnect exhausted'));
-      }
-      if (params.rfType === 'ble') {
-        bleConnectInProgressRef.current = false;
-      }
-      stopMeshcoreSerialWatchdog();
-      if (params.rfType === 'serial') {
-        const exhaustedSerialPort = params.serialPort ?? null;
-        const captured = captureSerialIdentityForRediscovery(exhaustedSerialPort);
-        await escalateSerialReconnectExhaustion(exhaustedSerialPort, { forgetPort: false });
-        serialRediscoveryStopRef.current?.();
-        serialRediscoveryStopRef.current = startSerialRediscovery({
-          signature: captured.signature,
-          portId: captured.portId,
-          onFound: (port) => {
-            persistSerialPortIdentity(port);
-            if (meshcoreConnectionParamsRef.current?.rfType === 'serial') {
-              meshcoreConnectionParamsRef.current.serialPort = port;
-            }
-            setState((s) => ({
-              ...s,
-              serialNeedsReselect: false,
-              connectionLoss: true,
-              status: 'reconnecting',
-            }));
-            meshcoreIsReconnectingRef.current = true;
-            meshcoreReconnectAttemptRef.current = 0;
-            // Re-enter through the controller after markExhausted (idle → owner).
-            const linkLost = meshcoreRfReconnectRef.current.onLinkLost();
-            meshcoreReconnectGenerationRef.current = linkLost.generation;
-            if (linkLost.shouldStartOwner) {
-              scheduleMeshcoreReconnectAttemptRef.current();
-            } else {
-              meshcoreDeferredReconnectRef.current = true;
-            }
-          },
-          onTimeout: () => {
-            void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);
-          },
-        });
-      }
-      setState((s) => ({
-        ...s,
-        status: 'disconnected',
-        connectionType: params.rfType === 'serial' ? 'serial' : null,
-        connectionLoss: true,
-        serialNeedsReselect: params.rfType === 'serial',
-      }));
-      return;
-    }
-
-    const generation = meshcoreReconnectGenerationRef.current;
-    meshcoreReconnectAttemptRef.current += 1;
-    meshcoreRfReconnectRef.current.beginAttempt(meshcoreReconnectAttemptRef.current);
-    setState((s) => ({
-      ...s,
-      status: 'reconnecting',
-      connectionLoss: true,
-      reconnectAttempt: meshcoreReconnectAttemptRef.current,
-    }));
-
-    const delay = Math.min(
-      2000 * Math.pow(2, meshcoreReconnectAttemptRef.current - 1),
-      MESHCORE_MAX_RECONNECT_DELAY_MS,
-    );
-    console.debug(
-      `[useMeshcoreRuntime] reconnect: waiting ${delay}ms before attempt ${meshcoreReconnectAttemptRef.current}/${maxReconnectAttempts}`,
-    );
-    const delayResult = await delayUnlessSuspended(delay, () =>
-      !meshcoreIsReconnectingRef.current
-        ? true
-        : meshcoreReconnectGenerationRef.current !== generation,
-    );
-    if (delayResult === 'aborted') {
-      // Generation bump during backoff (or cancel) aborted this delay. If a deferred restart was
-      // requested, the owning cycle must schedule the next attempt — do not leave isReconnecting
-      // true with no further work (n7eal TCP / #792).
-      if (
-        meshcoreDeferredReconnectRef.current &&
-        meshcoreIsReconnectingRef.current &&
-        !meshcoreExplicitDisconnectRef.current
-      ) {
-        meshcoreDeferredReconnectRef.current = false;
-        meshcoreRfReconnectRef.current.endAttempt({ keepReconnecting: true });
+    let openedDriverIdentityId: string | undefined;
+    await runLoraRfReconnectAttempt({
+      logTag: 'useMeshcoreRuntime',
+      controller: meshcoreRfReconnectRef.current,
+      getParams: () => meshcoreConnectionParamsRef.current,
+      getTransportType: (p) => p.rfType,
+      isBle: (p) => p.rfType === 'ble',
+      isExplicitDisconnect: () => meshcoreExplicitDisconnectRef.current,
+      isReconnecting: {
+        get: () => meshcoreIsReconnectingRef.current,
+        set: (v) => {
+          meshcoreIsReconnectingRef.current = v;
+        },
+      },
+      generation: {
+        get: () => meshcoreReconnectGenerationRef.current,
+        set: (v) => {
+          meshcoreReconnectGenerationRef.current = v;
+        },
+      },
+      attemptCounter: {
+        get: () => meshcoreReconnectAttemptRef.current,
+        set: (v) => {
+          meshcoreReconnectAttemptRef.current = v;
+        },
+      },
+      deferredReconnect: {
+        get: () => meshcoreDeferredReconnectRef.current,
+        set: (v) => {
+          meshcoreDeferredReconnectRef.current = v;
+        },
+      },
+      connectInFlight: {
+        get: () => meshcoreReconnectConnectInFlightRef.current,
+        set: (v) => {
+          meshcoreReconnectConnectInFlightRef.current = v;
+        },
+      },
+      bleConnectInProgress: {
+        get: () => bleConnectInProgressRef.current,
+        set: (v) => {
+          bleConnectInProgressRef.current = v;
+        },
+      },
+      scheduleAttempt: () => {
         scheduleMeshcoreReconnectAttemptRef.current();
-        return;
-      }
-      meshcoreRfReconnectRef.current.endAttempt({
-        keepReconnecting: meshcoreIsReconnectingRef.current,
-      });
-      // Another cycle may still own reconnect (generation bumped while isReconnecting stayed
-      // true). Only clear the UI when this cycle was cancelled and nothing else is driving it —
-      // otherwise a raced setup-abort / delay abort left status=reconnecting forever (#792).
-      if (!meshcoreIsReconnectingRef.current) {
+      },
+      setReconnectingUi: (attempt) => {
+        setState((s) => ({
+          ...s,
+          status: 'reconnecting',
+          connectionLoss: true,
+          reconnectAttempt: attempt,
+        }));
+      },
+      setDisconnectedUi: () => {
         setState((s) => ({
           ...s,
           status: 'disconnected',
           connectionLoss: true,
         }));
-      }
-      return;
-    }
-    if (delayResult === 'suspended') {
-      meshcoreIsReconnectingRef.current = false;
-      meshcoreRfReconnectRef.current.cancel();
-      setState((s) => ({
-        ...s,
-        status: 'disconnected',
-        connectionLoss: true,
-      }));
-      return;
-    }
-    if (
-      !meshcoreIsReconnectingRef.current ||
-      meshcoreReconnectGenerationRef.current !== generation
-    ) {
-      if (
-        meshcoreDeferredReconnectRef.current &&
-        meshcoreIsReconnectingRef.current &&
-        !meshcoreExplicitDisconnectRef.current
-      ) {
-        meshcoreDeferredReconnectRef.current = false;
-        meshcoreRfReconnectRef.current.endAttempt({ keepReconnecting: true });
-        scheduleMeshcoreReconnectAttemptRef.current();
-        return;
-      }
-      meshcoreRfReconnectRef.current.endAttempt({
-        keepReconnecting: meshcoreIsReconnectingRef.current,
-      });
-      if (!meshcoreIsReconnectingRef.current) {
+      },
+      maxDelayMs: MESHCORE_MAX_RECONNECT_DELAY_MS,
+      overlapCheck: 'afterOpening',
+      disconnectIdentity: (identityId) => connectionDriver.disconnect(identityId),
+      onExhausted: async (params) => {
+        if (params.rfType === 'tcp') {
+          rejectMeshcoreTcpLiveForUserTx(new Error('MeshCore TCP reconnect exhausted'));
+        }
+        if (params.rfType === 'ble') {
+          bleConnectInProgressRef.current = false;
+        }
+        stopMeshcoreSerialWatchdog();
+        if (params.rfType === 'serial') {
+          const exhaustedSerialPort = params.serialPort ?? null;
+          const captured = captureSerialIdentityForRediscovery(exhaustedSerialPort);
+          await escalateSerialReconnectExhaustion(exhaustedSerialPort, { forgetPort: false });
+          serialRediscoveryStopRef.current?.();
+          serialRediscoveryStopRef.current = startSerialRediscovery({
+            signature: captured.signature,
+            portId: captured.portId,
+            onFound: (port) => {
+              persistSerialPortIdentity(port);
+              if (meshcoreConnectionParamsRef.current?.rfType === 'serial') {
+                meshcoreConnectionParamsRef.current.serialPort = port;
+              }
+              setState((s) => ({
+                ...s,
+                serialNeedsReselect: false,
+                connectionLoss: true,
+                status: 'reconnecting',
+              }));
+              meshcoreIsReconnectingRef.current = true;
+              meshcoreReconnectAttemptRef.current = 0;
+              // Re-enter through the controller after markExhausted (idle → owner).
+              const linkLost = meshcoreRfReconnectRef.current.onLinkLost();
+              meshcoreReconnectGenerationRef.current = linkLost.generation;
+              if (linkLost.shouldStartOwner) {
+                scheduleMeshcoreReconnectAttemptRef.current();
+              } else {
+                meshcoreDeferredReconnectRef.current = true;
+              }
+            },
+            onTimeout: () => {
+              void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);
+            },
+          });
+        }
         setState((s) => ({
           ...s,
           status: 'disconnected',
+          connectionType: params.rfType === 'serial' ? 'serial' : null,
           connectionLoss: true,
+          serialNeedsReselect: params.rfType === 'serial',
         }));
-      }
-      return;
-    }
-
-    meshcoreRfReconnectRef.current.beginOpening();
-    let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
-    const isBleReconnect = params.rfType === 'ble';
-    if (meshcoreReconnectConnectInFlightRef.current) {
-      console.debug(
-        '[useMeshcoreRuntime] reconnect: skip overlapping open (connect already in flight)',
-      );
-      meshcoreDeferredReconnectRef.current = true;
-      meshcoreRfReconnectRef.current.markDirty();
-      return;
-    }
-    meshcoreReconnectConnectInFlightRef.current = true;
-    if (isBleReconnect) bleConnectInProgressRef.current = true;
-    let attemptActive = true;
-    const lateTransport = createBleReconnectTransportCleanup(
-      (identityId) => connectionDriver.disconnect(identityId),
-      'useMeshcoreRuntime',
-    );
-    const runReconnectAttempt = async () => {
-      await prepareRfConnect(params.rfType, { preserveReconnectState: true });
-      if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
-        throw new Error('MeshCore reconnect superseded before open');
-      }
-      opened =
-        isBleReconnect && isRendererNobleBlePlatform()
-          ? await withNobleBleConnectMutex('meshcore', () =>
-              openMeshCoreTransport(params.rfType, {
+      },
+      runOpenAndAttach: async (ctx, params) => {
+        const { generation, isBle: isBleReconnect, attemptActive, lateTransport } = ctx;
+        await prepareRfConnect(params.rfType, { preserveReconnectState: true });
+        if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive()) {
+          throw new Error('MeshCore reconnect superseded before open');
+        }
+        const opened =
+          isBleReconnect && isRendererNobleBlePlatform()
+            ? await withNobleBleConnectMutex('meshcore', () =>
+                openMeshCoreTransport(params.rfType, {
+                  blePeripheralId: params.blePeripheralId,
+                  host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
+                  portSignature:
+                    params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
+                }),
+              )
+            : await openMeshCoreTransport(params.rfType, {
                 blePeripheralId: params.blePeripheralId,
                 host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
                 portSignature:
                   params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
-              }),
-            )
-          : await openMeshCoreTransport(params.rfType, {
-              blePeripheralId: params.blePeripheralId,
-              host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
-              portSignature:
-                params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
-            });
-      if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
-        await lateTransport.cleanup(opened.driverIdentityId);
-        throw new Error('MeshCore reconnect superseded after open');
-      }
-      meshcorePendingDriverIdentityRef.current = opened.driverIdentityId;
-      await attachRfSession(opened.driverIdentityId, params.rfType);
-      if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive) {
-        await lateTransport.cleanup(opened.driverIdentityId);
-        throw new Error('MeshCore reconnect superseded during attach');
-      }
-      if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
-        await lateTransport.cleanup(opened.driverIdentityId);
-        throw new Error('RF link lost after MeshCore reconnect attach');
-      }
-      if (!attemptActive || meshcoreReconnectGenerationRef.current !== generation) {
-        await lateTransport.cleanup(opened.driverIdentityId);
-        throw new Error('MeshCore reconnect superseded after attach');
-      }
-      console.debug(
-        `[useMeshcoreRuntime] Reconnect succeeded on attempt ${meshcoreReconnectAttemptRef.current}`,
-      );
-      if (params.rfType === 'ble') {
-        const bleIdentityOpts = {
-          blePeripheralId: params.blePeripheralId,
-          webBluetoothDeviceId: readMeshcoreWebBluetoothDeviceId(opened.conn),
-          fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore') ?? null,
-        };
-        const bleId = resolveConnectedMeshcoreBleIdentity(bleIdentityOpts);
-        if (bleId) {
-          params.blePeripheralId = bleId;
+              });
+        openedDriverIdentityId = opened.driverIdentityId;
+        if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive()) {
+          await lateTransport.cleanup(opened.driverIdentityId);
+          throw new Error('MeshCore reconnect superseded after open');
         }
-        commitConnectedMeshcoreBleSuppression(bleIdentityOpts);
-      } else {
-        clearMeshcoreBleMacSuppression();
-      }
-      // Burst-complete attach left a dead bridge (OpenHop FIN after contacts). UI is configured
-      // from the contacts burst — accept that session. Forcing an immediate live-socket retry
-      // loops forever on companions that FIN after every contacts dump (WAN :5054 / OpenHop).
-      // OpenHop-accepted: keep configured; background write-dead must not reconnect-loop.
-      if (params.rfType === 'tcp' && meshcoreDeferredReconnectRef.current) {
-        meshcoreDeferredReconnectRef.current = false;
-        setMeshcoreTcpOpenHopDeadAccepted(true);
+        meshcorePendingDriverIdentityRef.current = opened.driverIdentityId;
+        await attachRfSession(opened.driverIdentityId, params.rfType);
+        if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive()) {
+          await lateTransport.cleanup(opened.driverIdentityId);
+          throw new Error('MeshCore reconnect superseded during attach');
+        }
+        if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
+          await lateTransport.cleanup(opened.driverIdentityId);
+          throw new Error('RF link lost after MeshCore reconnect attach');
+        }
+        if (!attemptActive() || meshcoreReconnectGenerationRef.current !== generation) {
+          await lateTransport.cleanup(opened.driverIdentityId);
+          throw new Error('MeshCore reconnect superseded after attach');
+        }
         console.debug(
-          '[useMeshcoreRuntime] TCP burst-complete reconnect attach — accepting dead bridge (configured)',
+          `[useMeshcoreRuntime] Reconnect succeeded on attempt ${meshcoreReconnectAttemptRef.current}`,
         );
-      }
-      meshcoreReconnectAttemptRef.current = 0;
-      meshcoreIsReconnectingRef.current = false;
-      meshcoreDeferredReconnectRef.current = false;
-      meshcoreRfReconnectRef.current.markSuccess();
-      setState((s) => ({
-        ...s,
-        serialNeedsReselect: false,
-        connectionLoss: false,
-      }));
-      // OpenHop dead bridge: outbox drain would tcp-write-fail → reconnect thrash.
-      if (!(params.rfType === 'tcp' && meshcoreTcpBridgeDeadRef.current)) {
-        requestChatOutboxDrain('meshcore');
-      }
-    };
-    const reconnectWork = runReconnectAttempt();
-    void reconnectWork.catch((e: unknown) => {
-      console.debug('[useMeshcoreRuntime] reconnectWork late reject ' + errLikeToLogString(e));
-    });
-    try {
-      // Applied to every transport, not just BLE (constant name is historical): TCP/serial
-      // reconnects used to `await reconnectWork` with no ceiling at all. A disconnect that
-      // lands while an open+attach is still in flight defers to that attempt settling; without
-      // a deadline here, a hang anywhere in openMeshCoreTransport/attachRfSession wedges the
-      // whole reconnect state machine forever instead of just failing this attempt and retrying.
-      await raceWithDeadline(
-        reconnectWork,
-        NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
-        `Reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
-      );
-    } catch (err) {
-      attemptActive = false;
-      // Stop background initConn RPCs (getSelfInfo/getContacts/getChannels/etc.) if open
-      // resolved into attach after the budget fired. Not BLE-specific: raceWithDeadline now
-      // guards every transport's reconnect attempt, so a TCP/serial attempt can hit this same
-      // path — bumping only for BLE here left non-BLE stale setup RPCs free to keep running
-      // and apply state after the attempt was already declared failed.
-      meshcoreSetupGenerationRef.current += 1;
-      if (isMeshcoreSetupAbortError(err)) {
-        // Setup abort means connection-lost (or a newer connect) bumped setup generation while
-        // this attempt's initConn was still running. Do NOT clear isReconnecting — that flag is
-        // what finally's deferred restart and delayUnlessSuspended use to keep the cycle alive.
-        // Clearing it here left status=reconnecting with no further attempts (n7eal TCP #792).
-        console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
-        if (meshcoreIsReconnectingRef.current) {
-          meshcoreDeferredReconnectRef.current = true;
+        if (params.rfType === 'ble') {
+          const bleIdentityOpts = {
+            blePeripheralId: params.blePeripheralId,
+            webBluetoothDeviceId: readMeshcoreWebBluetoothDeviceId(opened.conn),
+            fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore') ?? null,
+          };
+          const bleId = resolveConnectedMeshcoreBleIdentity(bleIdentityOpts);
+          if (bleId) {
+            params.blePeripheralId = bleId;
+          }
+          commitConnectedMeshcoreBleSuppression(bleIdentityOpts);
+        } else {
+          clearMeshcoreBleMacSuppression();
         }
-        return;
-      }
-      await lateTransport.cleanup(opened?.driverIdentityId);
-      console.warn(
-        `[useMeshcoreRuntime] Reconnect attempt ${meshcoreReconnectAttemptRef.current} failed: ` +
-          errLikeToLogString(err),
-      );
-      // Retry only if this generation is still current. Deferred Noble drops are flushed in finally.
-      if (
-        !meshcoreDeferredReconnectRef.current &&
-        meshcoreIsReconnectingRef.current &&
-        meshcoreReconnectGenerationRef.current === generation
-      ) {
-        scheduleMeshcoreReconnectAttemptRef.current();
-      }
-    } finally {
-      attemptActive = false;
-      meshcoreReconnectConnectInFlightRef.current = false;
-      if (isBleReconnect) {
-        bleConnectInProgressRef.current = false;
-      }
-      if (meshcoreDeferredReconnectRef.current) {
-        meshcoreRfReconnectRef.current.markDirty();
-      }
-      const settled = meshcoreRfReconnectRef.current.endAttempt({
-        keepReconnecting: meshcoreIsReconnectingRef.current,
-      });
-      if (meshcoreDeferredReconnectRef.current || settled.shouldSchedule) {
-        meshcoreDeferredReconnectRef.current = false;
-        if (meshcoreIsReconnectingRef.current) {
+        // Burst-complete attach left a dead bridge (OpenHop FIN after contacts). UI is configured
+        // from the contacts burst — accept that session. Forcing an immediate live-socket retry
+        // loops forever on companions that FIN after every contacts dump (WAN :5054 / OpenHop).
+        // OpenHop-accepted: keep configured; background write-dead must not reconnect-loop.
+        if (params.rfType === 'tcp' && meshcoreDeferredReconnectRef.current) {
+          meshcoreDeferredReconnectRef.current = false;
+          setMeshcoreTcpOpenHopDeadAccepted(true);
           console.debug(
-            '[useMeshcoreRuntime] reconnect settled — running deferred reconnect after transport drop',
+            '[useMeshcoreRuntime] TCP burst-complete reconnect attach — accepting dead bridge (configured)',
           );
-          // Call attempt directly (coalesced) — nested handleMeshcoreConnectionLost re-bumped
-          // generation and raced a second backoff loop with this flush (n7eal TCP / #792).
-          scheduleMeshcoreReconnectAttemptRef.current();
         }
-      }
-    }
+        meshcoreReconnectAttemptRef.current = 0;
+        meshcoreIsReconnectingRef.current = false;
+        meshcoreDeferredReconnectRef.current = false;
+        meshcoreRfReconnectRef.current.markSuccess();
+        setState((s) => ({
+          ...s,
+          serialNeedsReselect: false,
+          connectionLoss: false,
+        }));
+        // OpenHop dead bridge: outbox drain would tcp-write-fail → reconnect thrash.
+        if (!(params.rfType === 'tcp' && meshcoreTcpBridgeDeadRef.current)) {
+          requestChatOutboxDrain('meshcore');
+        }
+      },
+      onAttemptError: async (err, { lateTransport }) => {
+        // Stop background initConn RPCs (getSelfInfo/getContacts/getChannels/etc.) if open
+        // resolved into attach after the budget fired. Not BLE-specific: raceWithDeadline now
+        // guards every transport's reconnect attempt, so a TCP/serial attempt can hit this same
+        // path — bumping only for BLE here left non-BLE stale setup RPCs free to keep running
+        // and apply state after the attempt was already declared failed.
+        meshcoreSetupGenerationRef.current += 1;
+        if (isMeshcoreSetupAbortError(err)) {
+          // Setup abort means connection-lost (or a newer connect) bumped setup generation while
+          // this attempt's initConn was still running. Do NOT clear isReconnecting — that flag is
+          // what finally's deferred restart and delayUnlessSuspended use to keep the cycle alive.
+          // Clearing it here left status=reconnecting with no further attempts (n7eal TCP #792).
+          console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
+          // Clean up any transport this (now-doomed) attempt opened before deferring, otherwise a
+          // late-opened driver leaks while the deferred restart brings up a fresh one.
+          await lateTransport.cleanup(openedDriverIdentityId);
+          if (meshcoreIsReconnectingRef.current) {
+            meshcoreDeferredReconnectRef.current = true;
+          }
+          return 'defer';
+        }
+        await lateTransport.cleanup(openedDriverIdentityId);
+        console.warn(
+          `[useMeshcoreRuntime] Reconnect attempt ${meshcoreReconnectAttemptRef.current} failed: ` +
+            errLikeToLogString(err),
+        );
+        // Retry only if this generation is still current. Deferred Noble drops are flushed in finally.
+        return 'retry';
+      },
+    });
   }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
 
   useLayoutEffect(() => {

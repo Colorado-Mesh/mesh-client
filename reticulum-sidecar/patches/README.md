@@ -250,7 +250,9 @@ Halt BLE RNode reconnect when CoreBluetooth reports **Peer removed pairing infor
 | Field | Value |
 | ----- | ----- |
 | **Base commit** | tip after `rsReticulum-ble-rnode-pairing-transition-debounce.patch` |
-| **Upstream PR** | (mesh-client local; no upstream PR yet) |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/21 |
+
+The upstream PR is **standalone off `main`** (independent of [#20](https://github.com/ratspeak/rsReticulum/pull/20) — the bond-desync code does not touch `PAIRING_TRANSITION_RETRY_WAIT`). The local overlay is still regenerated on top of the pairing-transition debounce overlay, so apply it **after** that overlay here.
 
 **Modifies (1 file):**
 

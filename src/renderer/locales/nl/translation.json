@@ -908,8 +908,6 @@
       "pairingFailed": "Koppelen mislukt: {{msg}}",
       "pinPairingFailed": "PIN-koppeling mislukt: {{msg}}",
       "pinAcceptedNext": "Pincode geaccepteerd. Koppelen voltooid. Druk op Verbinden en selecteer uw apparaat om de verbinding te voltooien.",
-      "autoConnectTimeout": "Er is een time-out opgetreden voor automatisch verbinden.",
-      "autoConnectFailed": "Automatisch verbinden mislukt",
       "connectionFailed": "Verbinding mislukt"
     },
     "cancelMqttConnect": "Annuleren",
@@ -922,8 +920,6 @@
     "mqttTlsEnabled": "TLS (mqtts/ wss) inschakelen",
     "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt.",
     "channelPsksPrivateUplinkNote": "Kanaaluplink is AES-PSK-gecodeerd op /2/e/ (geen JSON-spiegel voor privésleutels). Broker-monitoren kunnen nog steeds ontsleutelingsfouten registreren voor PKI/DM-verkeer tussen andere knooppunten — dat is normaal en niet gerelateerd aan PSK's hier.",
-    "sharedBleWithMeshtastic": "Dit Bluetooth-apparaat is al verbonden via Meshtastic. Schakel over naar het tabblad Meshtastic om het te gebruiken, of kies een andere radio of transport voor MeshCore.",
-    "sharedBleWithMeshtasticHint": "Eén fysieke radio kan niet tegelijkertijd afzonderlijke Meshtastic- en MeshCore Bluetooth-sessies houden.",
     "reticulumStackTitle": "Reticulum-stack",
     "reticulumStackHint": "Start de lokale Reticulum/LXMF-sidecar (TCP- en Auto-interfaces).",
     "reticulumStartStack": "Stack starten",
@@ -1259,19 +1255,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Aangepast"
+      "custom": "Aangepast",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh heeft WebSocket op poort 443 en server mqtt-us-v1.letsmesh.net of mqtt-eu-v1.letsmesh.net nodig. Gebruik Regio (VS/EU) of schakel over naar Aangepast voor andere makelaars.",
       "coloradomesh": "Colorado Mesh heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt.meshcore.coloradomesh.org, pad /ws. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
-      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.net nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars."
+      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.net nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
+      "waev": "Waev heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt.waev.app. Reset de voorinstelling of schakel over naar Aangepast voor andere makelaars.",
+      "meshatse": "Meshat.se heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server meshcore-mqtt.meshat.se. Reset de voorinstelling of schakel over naar Aangepast voor andere makelaars.",
+      "meshcoreca": "MeshCore.CA heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt1.meshcore.ca of mqtt2.meshcore.ca. Gebruik Makelaar (Primair/Back-up) of schakel over naar Aangepast voor andere makelaars.",
+      "eastmesh": "EastMesh heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt2.eastmesh.au. Reset de voorinstelling of schakel over naar Aangepast voor andere makelaars."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth-token (meshcore-decoder-indeling) wordt gegenereerd wanneer u verbinding maakt. De gebruikersnaam is v1_ plus uw openbare sleutel van 64 tekens (hexadecimaal). JWT-doelgroep komt overeen met de hostnaam van de server.",
       "noPrivateKey": "Geen volledige identiteit: importeer uw MeshCore-configuratie in het Radio-paneel (openbare en privésleutels), of plak de gebruikersnaam (v1_<openbare sleutel>) en token handmatig. JWT-doelgroep in het token moet overeenkomen met de hostnaam van de server.",
       "publicKeyMissing": "Openbare sleutel ontbreekt in identiteit. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel (moet openbare en privésleutels bevatten) of plak een makelaartoken in het wachtwoordveld.",
-      "usernameBuildFailed": "Kon LetsMesh-gebruikersnaam niet opbouwen. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam (v1_<openbare sleutel>) en het token handmatig.",
-      "noIdentity": "Geen apparaatidentiteit gevonden. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam en het token handmatig."
+      "noIdentity": "Geen apparaatidentiteit gevonden. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam en het token handmatig.",
+      "usernameBuildFailed": "Kon de MeshCore MQTT-gebruikersnaam niet aanmaken. Importeer uw MeshCore config JSON in het radiopaneel of plak gebruikersnaam (v1_<public key>) en token handmatig."
     },
     "meshcorePacketLogger": {
       "label": "Pakketlogger: wanneer verbonden met uw radio en MQTT, stuurt u RX-pakketsamenvattingen door naar {{topic}} in dezelfde JSON-vorm als meshcoretomqtt. Standaard uitgeschakeld; alleen inschakelen als u van plan bent om gehoord luchtverkeer te delen met een pakketanalysator."
@@ -1341,9 +1345,6 @@
       "disableShareAria": "Schakel de instantie Delen uit en start de stapel opnieuw",
       "disableFailed": "Kan de instantie Delen niet uitschakelen."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh vereist WebSocket transport.",
-    "letsMeshRequiresPort": "LetsMesh vereist poort {{port}}.",
-    "letsMeshKnownBrokersOnly": "LetsMesh / MeshMapper preset ondersteunt alleen bekende apparaatondertekenende makelaars. Gebruik Aangepast voor andere makelaars.",
     "letsMeshUsernameV1Hex": "Gebruikersnaam moet v1_zijn, gevolgd door 64 hexadecimale tekens (openbare sleutel).",
     "bleWeakSignalWarning": "Bluetooth-signaal is zwak ({{rssi}} dBm). Kom dichterbij voor een stabiele verbinding.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1352,7 +1353,18 @@
     "linkQuality": "Verbindingskwaliteit",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Niet beschikbaar (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Niet beschikbaar (Web Bluetooth)",
+    "meshcoreCaBroker": "MeshCore.CA-makelaar",
+    "meshcoreCaPrimary": "Primair",
+    "meshcoreCaBackup": "Back-up",
+    "broker": "Makelaar:",
+    "letsMeshRequiresTls": "Deze makelaarspreset vereist TLS (wss). Schakel TLS in of schakel over naar Aangepast.",
+    "letsMeshRequiresWsPath": "Deze makelaarspreset vereist WebSocket-pad {{wsPath}}. Reset de voorinstelling of schakel over naar Aangepast.",
+    "letsMeshRegionUs": "US",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "Deze broker preset vereist WebSocket transport (wss).",
+    "letsMeshRequiresPort": "Deze makelaarspreset vereist poort {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Deze preset ondersteunt alleen bekende openbare MeshCore MQTT-makelaars. Schakel over naar Aangepast voor andere makelaars."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -5323,7 +5335,8 @@
       "actionFailed": "Actie mislukt: {{reason}}",
       "unknownReason": "onbekende reden",
       "resendFailed": "Opnieuw verzenden mislukt.",
-      "deleteFailed": "Kan sessie niet verwijderen."
+      "deleteFailed": "Kan sessie niet verwijderen.",
+      "sessionExpired": "Dit spel is verlopen na een periode van inactiviteit en kan niet meer worden gespeeld. Gebruik Sessie verwijderen om het te verwijderen."
     },
     "deleteConfirmTitle": "Moment verwijderen?",
     "deleteConfirmMessage": "Deze spelsessie uit je lijst verwijderen? Dit kan niet ongedaan worden gemaakt.",
@@ -5337,6 +5350,7 @@
       "propagated": "Opgeslagen",
       "failed": "Opnieuw proberen nodig"
     },
-    "drawOfferWaitingBanner": "Tekenaanbod verzonden. Wachten op tegenstander..."
+    "drawOfferWaitingBanner": "Tekenaanbod verzonden. Wachten op tegenstander...",
+    "idleExpiryNotice": "Games verlopen na inactiviteit en kunnen dan alleen worden verwijderd. Onbeantwoorde uitdagingen: 24 uur (alle spellen). Actieve spellen: tic-tac-toe na 24 uur, schaken en four-in-a-row na 7 dagen."
   }
 }

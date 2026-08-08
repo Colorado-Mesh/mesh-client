@@ -2,12 +2,17 @@ import { Utils, verifyAuthToken } from '@michaelhart/meshcore-decoder';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
+  deviceSigningWsPathForHost,
+  EASTMESH_HOST,
   generateLetsMeshAuthToken,
   isLetsMeshSettings,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshJwtAudience,
   letsMeshMqttUsernameFromIdentity,
+  MESHATSE_HOST,
+  MESHCORE_CA_HOST_BACKUP,
+  MESHCORE_CA_HOST_PRIMARY,
   MESHCORE_ENC_PK_KEY,
   MESHCORE_IDENTITY_STORAGE_KEY,
   MESHCORE_PUBLIC_KEY_LENGTH,
@@ -18,6 +23,7 @@ import {
   readMeshcoreIdentity,
   tryPersistMeshcoreIdentityFromRadioExport,
   tryPersistMeshcorePublicKeyFromRadio,
+  WAEV_HOST,
 } from './letsMeshJwt';
 import { meshcoreSyntheticPlaceholderPubKeyHex } from './meshcoreUtils';
 
@@ -56,6 +62,19 @@ describe('letsMeshJwt', () => {
     expect(isLetsMeshSettings(MESHMAPPER_HOST_LEGACY_CC)).toBe(true);
   });
 
+  it('isLetsMeshSettings matches the newly added device-signing hosts', () => {
+    expect(isLetsMeshSettings(WAEV_HOST)).toBe(true);
+    expect(isLetsMeshSettings(MESHATSE_HOST)).toBe(true);
+    expect(isLetsMeshSettings(MESHCORE_CA_HOST_PRIMARY)).toBe(true);
+    expect(isLetsMeshSettings(MESHCORE_CA_HOST_BACKUP)).toBe(true);
+    expect(isLetsMeshSettings(EASTMESH_HOST)).toBe(true);
+    expect(WAEV_HOST).toBe('mqtt.waev.app');
+    expect(MESHATSE_HOST).toBe('meshcore-mqtt.meshat.se');
+    expect(MESHCORE_CA_HOST_PRIMARY).toBe('mqtt1.meshcore.ca');
+    expect(MESHCORE_CA_HOST_BACKUP).toBe('mqtt2.meshcore.ca');
+    expect(EASTMESH_HOST).toBe('mqtt2.eastmesh.au');
+  });
+
   it('migrateMeshmapperServerHost rewrites .cc to .net', () => {
     expect(migrateMeshmapperServerHost('mqtt.meshmapper.cc')).toBe(MESHMAPPER_HOST);
     expect(migrateMeshmapperServerHost(' mqtt.meshmapper.cc ')).toBe(MESHMAPPER_HOST);
@@ -67,6 +86,44 @@ describe('letsMeshJwt', () => {
     expect(letsMeshJwtAudience(LETSMESH_HOST_US)).toBe(LETSMESH_HOST_US);
     expect(letsMeshJwtAudience(LETSMESH_HOST_EU)).toBe(LETSMESH_HOST_EU);
     expect(letsMeshJwtAudience(' mqtt.example.com ')).toBe('mqtt.example.com');
+  });
+
+  it.each([
+    [WAEV_HOST],
+    [MESHATSE_HOST],
+    [MESHCORE_CA_HOST_PRIMARY],
+    [MESHCORE_CA_HOST_BACKUP],
+    [EASTMESH_HOST],
+  ])('letsMeshJwtAudience returns the broker host itself for %s', (host) => {
+    expect(letsMeshJwtAudience(host)).toBe(host);
+  });
+
+  it.each([
+    [LETSMESH_HOST_US, '/ws'],
+    [LETSMESH_HOST_EU, '/ws'],
+    [MESHMAPPER_HOST, '/ws'],
+    [MESHMAPPER_HOST_LEGACY_CC, '/ws'],
+    [WAEV_HOST, '/mqtt'],
+    [MESHATSE_HOST, '/mqtt'],
+    [MESHCORE_CA_HOST_PRIMARY, '/mqtt'],
+    [MESHCORE_CA_HOST_BACKUP, '/mqtt'],
+    [EASTMESH_HOST, '/mqtt'],
+  ])('deviceSigningWsPathForHost maps %s to %s', (host, wsPath) => {
+    expect(deviceSigningWsPathForHost(host)).toBe(wsPath);
+  });
+
+  it('deviceSigningWsPathForHost returns null for unknown hosts', () => {
+    expect(deviceSigningWsPathForHost('mqtt.example.com')).toBeNull();
+  });
+
+  it('generateLetsMeshAuthToken stamps aud to the connect host for a new /mqtt broker', async () => {
+    const identity = {
+      public_key: sampleKeyPair.publicKey,
+      private_key: sampleKeyPair.privateKey,
+    };
+    const { token } = await generateLetsMeshAuthToken(identity, WAEV_HOST);
+    const verified = await verifyAuthToken(token, sampleKeyPair.publicKey);
+    expect(verified?.aud).toBe(WAEV_HOST);
   });
 
   it('generateLetsMeshAuthToken produces verifyAuthToken-valid tokens (full private key)', async () => {

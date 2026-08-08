@@ -10,14 +10,8 @@ import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIc
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
 import {
-  awaitNobleBlePrimaryAutoConnectSettled,
-  dualNobleBleBothRadiosConfigured,
-  getNobleBleDualRadioPrimaryProtocol,
-  initNobleBleDualRadioStartup,
-  isNobleBleDualRadioSecondary,
   isRendererNobleBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
-  notifyNobleBlePrimaryAutoConnectSettled,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
@@ -66,6 +60,8 @@ import {
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
+  MESHCORE_CA_HOST_BACKUP,
+  MESHCORE_CA_HOST_PRIMARY,
   meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentity,
@@ -74,8 +70,10 @@ import {
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   applyMeshcoreMqttPreset,
+  isDeviceSigningMeshcorePreset,
   type MeshcoreMqttPreset,
   readStoredMeshcoreMqttPreset,
+  usesMeshcoreDeviceSigningMqtt,
 } from '../lib/meshcoreMqttPresets';
 import {
   isIataScopedMeshcoreMqtt,
@@ -107,8 +105,6 @@ import { parseStoredJson } from '../lib/parseStoredJson';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { isWeakBleRssi } from '../lib/signal';
-import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
-import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '../lib/timeConstants';
 import type {
   ConnectionType,
   DeviceState,
@@ -126,6 +122,7 @@ import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
+import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
 import SignalBars from './SignalBars';
 // ─── Last Connection (localStorage) ───────────────────────────────
@@ -186,14 +183,6 @@ const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';
 const STAGE_WAITING_NOBLE_BLE_MESHTASTIC = 'connectionPanel.stageWaitingNobleBleMeshtastic';
 const STAGE_WAITING_NOBLE_BLE_MESHCORE = 'connectionPanel.stageWaitingNobleBleMeshcore';
 
-function resolveBleAutoConnectLabel(
-  bleId: string,
-  lc?: LastConnection | null,
-  fallbackName?: string | null,
-): string {
-  return lc?.bleDeviceName ?? getBleDeviceName(bleId) ?? fallbackName ?? bleId;
-}
-
 function resolveConnectionStageText(
   stage: string,
   autoConnectTarget: string | null,
@@ -215,6 +204,29 @@ function resolveConnectionStageText(
     }
   }
   return t(stage);
+}
+
+/** Static-key lookup for the MeshCore device-signing preset deviation banner (keeps i18n scanner happy). */
+function meshcorePresetDeviationText(
+  t: (key: string) => string,
+  preset: MeshcoreMqttPreset,
+): string {
+  switch (preset) {
+    case 'coloradomesh':
+      return t('connectionPanel.meshcorePresetDeviation.coloradomesh');
+    case 'meshmapper':
+      return t('connectionPanel.meshcorePresetDeviation.meshmapper');
+    case 'waev':
+      return t('connectionPanel.meshcorePresetDeviation.waev');
+    case 'meshatse':
+      return t('connectionPanel.meshcorePresetDeviation.meshatse');
+    case 'meshcoreca':
+      return t('connectionPanel.meshcorePresetDeviation.meshcoreca');
+    case 'eastmesh':
+      return t('connectionPanel.meshcorePresetDeviation.eastmesh');
+    default:
+      return t('connectionPanel.meshcorePresetDeviation.letsmesh');
+  }
 }
 
 function shouldForgetGrantedWebBluetoothDevice(
@@ -350,8 +362,6 @@ interface Props {
   onOpenAppGpsSettings?: () => void;
   /** Reticulum: open Admin Bluetooth for USB Clear paired / Start pairing. */
   onOpenAdminBluetooth?: () => void;
-  /** Auto-connect is owned by ProtocolAutoConnectCoordinator when panels are tab-mounted. */
-  suppressMountAutoConnect?: boolean;
 }
 
 export default function ConnectionPanel({
@@ -371,7 +381,6 @@ export default function ConnectionPanel({
   onOpenReticulumRmapSettings,
   onOpenAppGpsSettings,
   onOpenAdminBluetooth,
-  suppressMountAutoConnect = false,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -463,6 +472,9 @@ export default function ConnectionPanel({
   const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() =>
     readStoredMeshcoreMqttPreset(),
   );
+  // Bumped when a preset selection is cancelled (Ripple / Colorado confirm) so the controlled
+  // <select> remounts and re-applies `meshcorePreset`, discarding the user's cancelled choice.
+  const [meshcorePresetSelectNonce, setMeshcorePresetSelectNonce] = useState(0);
   const [coloradoRegionGateOpen, setColoradoRegionGateOpen] = useState(false);
   const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
     () => {
@@ -584,13 +596,7 @@ export default function ConnectionPanel({
   // Keep LetsMesh MQTT username in sync with imported MeshCore identity (v1_<64-hex public key>).
   useEffect(() => {
     const syncLetsMeshUsername = () => {
-      if (
-        protocol !== 'meshcore' ||
-        (meshcorePreset !== 'letsmesh' &&
-          meshcorePreset !== 'meshmapper' &&
-          meshcorePreset !== 'coloradomesh')
-      )
-        return;
+      if (protocol !== 'meshcore' || !isDeviceSigningMeshcorePreset(meshcorePreset)) return;
       const u = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
       if (!u) return;
       setMeshcoreMqttSettings((prev) => (prev.username === u ? prev : { ...prev, username: u }));
@@ -702,18 +708,14 @@ export default function ConnectionPanel({
   const [serialPorts, setSerialPorts] = useState<SerialPortInfo[]>([]);
   const [showSerialPicker, setShowSerialPicker] = useState(false);
 
-  // ─── Last connection + auto-connect state ─────────────────────
+  // ─── Last connection + reconnect UI state ─────────────────────
   const [lastConnection, setLastConnection] = useState<LastConnection | null>(() =>
     loadLastConnection(protocol),
   );
-  const autoConnectFiredRef = useRef(false);
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Set when the user starts a manual connect so deferred BLE auto-connect must not call onAutoConnect. */
-  const autoConnectCancelRef = useRef(false);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   const [autoConnectBleTarget, setAutoConnectBleTarget] = useState<string | null>(null);
-  const [sharedBleNotice, setSharedBleNotice] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
   // Tracks BLE device MAC for potential re-pairing on Linux
@@ -1172,9 +1174,7 @@ export default function ConnectionPanel({
   const handleConnect = useCallback(async () => {
     // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
     // a manual TCP/serial/HTTP connect (orphan TCP socket + connectType flip).
-    // Panel-local autoConnectCancelRef is inert when suppressMountAutoConnect — also cancel the
-    // ProtocolAutoConnectCoordinator path.
-    autoConnectCancelRef.current = true;
+    // Mount auto-connect lives in ProtocolAutoConnectCoordinator — cancel that gate too.
     cancelProtocolRfAutoConnect(protocol);
     if (isAutoConnectingRef.current) {
       console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for manual connect');
@@ -1301,7 +1301,6 @@ export default function ConnectionPanel({
   }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
 
   const handleCancelConnection = useCallback(() => {
-    autoConnectCancelRef.current = true;
     cancelProtocolRfAutoConnect(protocol);
     isAutoConnectingRef.current = false;
     setIsAutoConnecting(false);
@@ -1432,269 +1431,8 @@ export default function ConnectionPanel({
     setConnectionStage('connectionPanel.stageConnecting');
   }, []);
 
-  // Auto-connect on mount: fires once per session using saved last connection.
-  // Serial and BLE use gesture-free reconnect when the platform remembers the device.
-  // HTTP still uses the one-click reconnect card (no autoconnect on mount).
-  useEffect(() => {
-    if (suppressMountAutoConnect) return;
-    initNobleBleDualRadioStartup();
-
-    const notifyPrimaryAutoConnectSettledIfNeeded = () => {
-      if (
-        dualNobleBleBothRadiosConfigured() &&
-        getNobleBleDualRadioPrimaryProtocol() === protocol
-      ) {
-        notifyNobleBlePrimaryAutoConnectSettled();
-      }
-    };
-
-    if (capabilities.hasReticulumInterfaceConfig) {
-      notifyPrimaryAutoConnectSettledIfNeeded();
-      return;
-    }
-
-    if (autoConnectFiredRef.current) return;
-    if (deviceStateRef.current.status !== 'disconnected') {
-      notifyPrimaryAutoConnectSettledIfNeeded();
-      return;
-    }
-    const lc = lastConnectionRef.current;
-    if (!lc) {
-      notifyPrimaryAutoConnectSettledIfNeeded();
-      return;
-    }
-
-    autoConnectFiredRef.current = true;
-    autoConnectCancelRef.current = false;
-
-    const lastBleId = lc.bleDeviceId ?? loadLastBleDevice(protocol);
-
-    const startAutoConnectTimeout = () => {
-      if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
-      autoConnectTimeoutRef.current = setTimeout(() => {
-        console.warn('[ConnectionPanel] auto-connect timed out after 30s');
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setAutoConnectBleTarget(null);
-        setError(t('connectionPanel.error.autoConnectTimeout'));
-        setConnecting(false);
-        setConnectionStage('');
-      }, 30_000);
-    };
-
-    const onAutoConnectFailed = (err: unknown, transport: 'serial' | 'ble' = 'ble') => {
-      if (autoConnectTimeoutRef.current) {
-        clearTimeout(autoConnectTimeoutRef.current);
-        autoConnectTimeoutRef.current = null;
-      }
-      isAutoConnectingRef.current = false;
-      setIsAutoConnecting(false);
-      setAutoConnectBleTarget(null);
-      setConnecting(false);
-      setConnectionStage('');
-      // Setup AbortError is intentional (disconnect / superseded connect) — not a user-facing failure.
-      if (transport === 'ble' && humanizeBleError(err, t) === '') {
-        console.debug('[ConnectionPanel] auto-connect cancelled ' + errLikeToLogString(err));
-        return;
-      }
-      const errMsg =
-        err instanceof Error
-          ? transport === 'serial'
-            ? humanizeSerialError(err, t)
-            : humanizeBleError(err, t)
-          : t('connectionPanel.error.autoConnectFailed');
-      setError(errMsg || t('connectionPanel.error.autoConnectFailed'));
-    };
-
-    const maybeNotifyPrimaryBleAutoConnectSettled = notifyPrimaryAutoConnectSettledIfNeeded;
-
-    const startBleNobleAutoConnect = (): boolean => {
-      if (!lastBleId || isLinux) {
-        maybeNotifyPrimaryBleAutoConnectSettled();
-        return false;
-      }
-      void (async () => {
-        if (autoConnectCancelRef.current) {
-          maybeNotifyPrimaryBleAutoConnectSettled();
-          return;
-        }
-        const bleTargetLabel = resolveBleAutoConnectLabel(
-          lastBleId,
-          lc,
-          lastConnectionBleDeviceNameFallbackRef.current,
-        );
-        setAutoConnectBleTarget(bleTargetLabel);
-        setConnectionType('ble');
-        isAutoConnectingRef.current = true;
-        setIsAutoConnecting(true);
-        setConnecting(true);
-        setShowBlePicker(false);
-        setConnectionStage('connectionPanel.stageConnecting');
-        // Primary: notify secondary after the first connect attempt (not after scan fallback).
-        await reconnectBleWithScan(protocol, lastBleId, () => {
-          if (autoConnectCancelRef.current) {
-            return Promise.reject(new DOMException('Auto-connect cancelled', 'AbortError'));
-          }
-          const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
-          if (
-            dualNobleBleBothRadiosConfigured() &&
-            getNobleBleDualRadioPrimaryProtocol() === protocol
-          ) {
-            // `finally` returns a new promise; voiding it without catch surfaces the same
-            // rejection again as unhandledrejection even when `attempt` is awaited below.
-            void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled).catch(() => {
-              // catch-no-log-ok — rejection is handled by reconnectBleWithScan's await of `attempt`
-            });
-          }
-          return attempt;
-        });
-        if (autoConnectCancelRef.current) {
-          maybeNotifyPrimaryBleAutoConnectSettled();
-          return;
-        }
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setConnecting(false);
-        setConnectionStage('');
-      })().catch(onAutoConnectFailed);
-      return true;
-    };
-
-    const skipMeshcoreSharedMeshtasticBleAutoConnect = (): boolean => {
-      if (protocol !== 'meshcore' || !meshcoreTargetsSharedMeshtasticBlePeripheral(lastBleId)) {
-        return false;
-      }
-      console.debug(
-        `[ConnectionPanel] meshcore BLE auto-connect skipped — same peripheral as Meshtastic (${lastBleId})`,
-      );
-      if (autoConnectTimeoutRef.current) {
-        clearTimeout(autoConnectTimeoutRef.current);
-        autoConnectTimeoutRef.current = null;
-      }
-      isAutoConnectingRef.current = false;
-      setIsAutoConnecting(false);
-      setConnecting(false);
-      setConnectionStage('');
-      maybeNotifyPrimaryBleAutoConnectSettled();
-      if (getStoredMeshProtocol() === 'meshcore') {
-        setSharedBleNotice(true);
-      }
-      return true;
-    };
-
-    const runSecondaryBleAutoConnect = async (bleId: string) => {
-      const primary = getNobleBleDualRadioPrimaryProtocol();
-      const bleTargetLabel = resolveBleAutoConnectLabel(
-        bleId,
-        lc,
-        lastConnectionBleDeviceNameFallbackRef.current,
-      );
-      setAutoConnectBleTarget(bleTargetLabel);
-      setConnectionType('ble');
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setShowBlePicker(false);
-      setConnectionStage(
-        primary === 'meshtastic'
-          ? STAGE_WAITING_NOBLE_BLE_MESHTASTIC
-          : STAGE_WAITING_NOBLE_BLE_MESHCORE,
-      );
-      await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
-      if (autoConnectCancelRef.current) {
-        console.debug(
-          `[ConnectionPanel] ${protocol} secondary BLE auto-connect cancelled after primary settle`,
-        );
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setAutoConnectBleTarget(null);
-        setConnecting(false);
-        setConnectionStage('');
-        return;
-      }
-      setConnectionStage('connectionPanel.stageConnecting');
-      void reconnectBleWithScan(protocol, bleId, () => {
-        if (autoConnectCancelRef.current) {
-          return Promise.reject(new DOMException('Auto-connect cancelled', 'AbortError'));
-        }
-        return onAutoConnectRef.current('ble', undefined, undefined, bleId);
-      })
-        .then(() => {
-          if (autoConnectCancelRef.current) return;
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          setConnecting(false);
-          setConnectionStage('');
-        })
-        .catch(onAutoConnectFailed);
-    };
-
-    const runBleAutoConnectWithDefer = async () => {
-      if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
-      const bleId = lastBleId;
-      const secondary = isNobleBleDualRadioSecondary(protocol);
-      if (secondary) {
-        if (!bleId) {
-          console.warn(`[ConnectionPanel] ${protocol} dual-radio auto-connect skipped — no BLE id`);
-          return;
-        }
-        await runSecondaryBleAutoConnect(bleId);
-        return;
-      }
-      const started = startBleNobleAutoConnect();
-      if (!started) {
-        console.warn(
-          `[ConnectionPanel] BLE auto-connect skipped for ${protocol} — no remembered device`,
-        );
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setConnecting(false);
-        setConnectionStage('');
-      }
-    };
-
-    const migrateLastConnectionToBle = (bleDeviceId: string) => {
-      const bleLast: LastConnection = {
-        type: 'ble',
-        bleDeviceId,
-        bleDeviceName:
-          lc.bleDeviceName ?? lastConnectionBleDeviceNameFallbackRef.current ?? undefined,
-      };
-      saveLastConnection(protocol, bleLast);
-      setLastConnection(bleLast);
-    };
-
-    if (lc.type === 'serial') {
-      setConnectionType('serial');
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setConnectionStage('connectionPanel.stagePleaseWait');
-      startAutoConnectTimeout();
-      void onAutoConnectRef.current('serial', undefined, lc.serialPortId).catch((err: unknown) => {
-        if (lastBleId && !isLinux) {
-          console.warn(
-            `[ConnectionPanel] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(err)}`,
-          );
-          migrateLastConnectionToBle(lastBleId);
-          void runBleAutoConnectWithDefer();
-          return;
-        }
-        onAutoConnectFailed(err, 'serial');
-        maybeNotifyPrimaryBleAutoConnectSettled();
-      });
-    } else if (lc.type === 'ble') {
-      if (lastBleId && !isLinux) {
-        void runBleAutoConnectWithDefer();
-      } else {
-        maybeNotifyPrimaryBleAutoConnectSettled();
-      }
-    } else {
-      maybeNotifyPrimaryBleAutoConnectSettled();
-    }
-    // HTTP/TCP launch auto-connect is owned by ProtocolAutoConnectCoordinator /
-    // useProtocolRfAutoConnect; this panel path only settles (reconnect card if needed).
-  }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig, suppressMountAutoConnect]);
+  // Cold-start RF auto-connect (serial/BLE/TCP/HTTP) is owned by
+  // ProtocolAutoConnectCoordinator / useProtocolRfAutoConnect — not this panel.
 
   // Cleanup timeout on unmount
   useEffect(
@@ -1708,7 +1446,6 @@ export default function ConnectionPanel({
     if (!lastConnection) return;
     // Same cancel as handleConnect — Reconnect must not race deferred ProtocolAutoConnectCoordinator
     // BLE/serial auto-connect (orphan socket / connectType flip).
-    autoConnectCancelRef.current = true;
     cancelProtocolRfAutoConnect(protocol);
     if (isAutoConnectingRef.current) {
       console.debug('[ConnectionPanel] cancelling in-flight BLE auto-connect for reconnect');
@@ -2418,50 +2155,36 @@ export default function ConnectionPanel({
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
               </p>
-              <div
-                className="flex gap-2"
-                role="group"
-                aria-labelledby="conn-meshtastic-network-preset"
-              >
-                {(
-                  [
-                    {
-                      id: 'official-plain' as const,
-                      labelKey: 'connectionPanel.meshtasticPreset.officialPlain',
-                    },
-                    { id: 'liam' as const, labelKey: 'connectionPanel.meshtasticPreset.liam' },
-                    { id: 'custom' as const, labelKey: 'connectionPanel.meshtasticPreset.custom' },
-                  ] as const
-                ).map(({ id, labelKey }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => {
-                      setMeshtasticPreset(id);
-                      if (id === 'official-plain') {
-                        setMqttSettings({
-                          ...MESHTASTIC_OFFICIAL_1883,
-                          topicPrefix: mqttSettings.topicPrefix,
-                          autoLaunch: mqttSettings.autoLaunch,
-                        });
-                      } else if (id === 'liam') {
-                        setMqttSettings({
-                          ...MESHTASTIC_LIAM_1883,
-                          topicPrefix: mqttSettings.topicPrefix,
-                          autoLaunch: mqttSettings.autoLaunch,
-                        });
-                      }
-                    }}
-                    className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
-                      meshtasticPreset === id
-                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
-                    }`}
-                  >
-                    {t(labelKey)}
-                  </button>
-                ))}
-              </div>
+              <MqttNetworkPresetSelect
+                id="conn-meshtastic-network-preset-select"
+                labelledById="conn-meshtastic-network-preset"
+                value={meshtasticPreset}
+                options={[
+                  {
+                    value: 'official-plain',
+                    label: t('connectionPanel.meshtasticPreset.officialPlain'),
+                  },
+                  { value: 'liam', label: t('connectionPanel.meshtasticPreset.liam') },
+                  { value: 'custom', label: t('connectionPanel.meshtasticPreset.custom') },
+                ]}
+                onSelect={(value) => {
+                  const id = value as 'official-plain' | 'liam' | 'custom';
+                  setMeshtasticPreset(id);
+                  if (id === 'official-plain') {
+                    setMqttSettings({
+                      ...MESHTASTIC_OFFICIAL_1883,
+                      topicPrefix: mqttSettings.topicPrefix,
+                      autoLaunch: mqttSettings.autoLaunch,
+                    });
+                  } else if (id === 'liam') {
+                    setMqttSettings({
+                      ...MESHTASTIC_LIAM_1883,
+                      topicPrefix: mqttSettings.topicPrefix,
+                      autoLaunch: mqttSettings.autoLaunch,
+                    });
+                  }
+                }}
+              />
               {meshtasticPreset === 'liam' && (
                 <p className="text-xs text-amber-400">{t('connectionPanel.liamServerNote')}</p>
               )}
@@ -2472,54 +2195,112 @@ export default function ConnectionPanel({
               <p id="conn-meshcore-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
               </p>
-              <div
-                className="flex gap-2"
-                role="group"
-                aria-labelledby="conn-meshcore-network-preset"
-              >
-                {(
-                  [
-                    { id: 'letsmesh', labelKey: 'connectionPanel.meshcorePreset.letsmesh' },
-                    { id: 'meshmapper', labelKey: 'connectionPanel.meshcorePreset.meshmapper' },
-                    { id: 'coloradomesh', labelKey: 'connectionPanel.meshcorePreset.coloradomesh' },
-                    { id: 'ripple', labelKey: 'connectionPanel.meshcorePreset.ripple' },
-                    { id: 'custom', labelKey: 'connectionPanel.meshcorePreset.custom' },
-                  ] as const
-                ).map(({ id, labelKey }) => (
+              <MqttNetworkPresetSelect
+                key={`meshcore-preset-${meshcorePresetSelectNonce}`}
+                id="conn-meshcore-network-preset-select"
+                labelledById="conn-meshcore-network-preset"
+                value={meshcorePreset}
+                options={[
+                  { value: 'letsmesh', label: t('connectionPanel.meshcorePreset.letsmesh') },
+                  { value: 'meshmapper', label: t('connectionPanel.meshcorePreset.meshmapper') },
+                  {
+                    value: 'coloradomesh',
+                    label: t('connectionPanel.meshcorePreset.coloradomesh'),
+                  },
+                  { value: 'waev', label: t('connectionPanel.meshcorePreset.waev') },
+                  { value: 'meshatse', label: t('connectionPanel.meshcorePreset.meshatse') },
+                  { value: 'meshcoreca', label: t('connectionPanel.meshcorePreset.meshcoreca') },
+                  { value: 'eastmesh', label: t('connectionPanel.meshcorePreset.eastmesh') },
+                  { value: 'ripple', label: t('connectionPanel.meshcorePreset.ripple') },
+                  { value: 'custom', label: t('connectionPanel.meshcorePreset.custom') },
+                ]}
+                onSelect={(value) => {
+                  const id = value as MeshcoreMqttPreset;
+                  if (id === 'custom') {
+                    setMeshcorePreset(id);
+                    return;
+                  }
+                  if (id === 'ripple') {
+                    if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) {
+                      // Cancelled: force the controlled select to snap back to the current preset.
+                      setMeshcorePresetSelectNonce((n) => n + 1);
+                      return;
+                    }
+                  }
+                  if (id === 'coloradomesh') {
+                    if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) {
+                      setMeshcorePresetSelectNonce((n) => n + 1);
+                      return;
+                    }
+                    localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                  }
+                  setMeshcorePreset(id);
+                  const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                  setMeshcoreMqttSettings((prev) => ({
+                    ...applyMeshcoreMqttPreset(id, prev),
+                    username: fromIdentity || prev.username,
+                  }));
+                }}
+              />
+              {meshcorePreset === 'coloradomesh' && (
+                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+              )}
+              {meshcorePreset === 'meshcoreca' && (
+                <div
+                  className="flex flex-wrap items-center gap-2 pt-1"
+                  role="group"
+                  aria-label={t('connectionPanel.meshcoreCaBroker')}
+                >
+                  <span className="text-muted text-xs">{t('connectionPanel.broker')}</span>
                   <button
-                    key={id}
                     type="button"
+                    aria-pressed={meshcoreMqttSettings.server === MESHCORE_CA_HOST_PRIMARY}
                     onClick={() => {
-                      if (id === 'custom') {
-                        setMeshcorePreset(id);
-                        return;
-                      }
-                      if (id === 'ripple') {
-                        if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
-                      }
-                      if (id === 'coloradomesh') {
-                        if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) return;
-                        localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
-                      }
-                      setMeshcorePreset(id);
                       const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                       setMeshcoreMqttSettings((prev) => ({
-                        ...applyMeshcoreMqttPreset(id, prev),
+                        ...prev,
+                        server: MESHCORE_CA_HOST_PRIMARY,
+                        port: 443,
+                        useWebSocket: true,
+                        tlsEnabled: true,
+                        wsPath: '/mqtt',
+                        keepalive: 30,
                         username: fromIdentity || prev.username,
                       }));
                     }}
-                    className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
-                      meshcorePreset === id
+                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                      meshcoreMqttSettings.server === MESHCORE_CA_HOST_PRIMARY
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
                         : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    {t(labelKey)}
+                    {t('connectionPanel.meshcoreCaPrimary')}
                   </button>
-                ))}
-              </div>
-              {meshcorePreset === 'coloradomesh' && (
-                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+                  <button
+                    type="button"
+                    aria-pressed={meshcoreMqttSettings.server === MESHCORE_CA_HOST_BACKUP}
+                    onClick={() => {
+                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                      setMeshcoreMqttSettings((prev) => ({
+                        ...prev,
+                        server: MESHCORE_CA_HOST_BACKUP,
+                        port: 443,
+                        useWebSocket: true,
+                        tlsEnabled: true,
+                        wsPath: '/mqtt',
+                        keepalive: 30,
+                        username: fromIdentity || prev.username,
+                      }));
+                    }}
+                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                      meshcoreMqttSettings.server === MESHCORE_CA_HOST_BACKUP
+                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
+                    }`}
+                  >
+                    {t('connectionPanel.meshcoreCaBackup')}
+                  </button>
+                </div>
               )}
               {meshcorePreset === 'letsmesh' && (
                 <div
@@ -2530,6 +2311,7 @@ export default function ConnectionPanel({
                   <span className="text-muted text-xs">{t('connectionPanel.region')}</span>
                   <button
                     type="button"
+                    aria-pressed={meshcoreMqttSettings.server === LETSMESH_HOST_US}
                     onClick={() => {
                       const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                       setMeshcoreMqttSettings((prev) => ({
@@ -2537,6 +2319,8 @@ export default function ConnectionPanel({
                         server: LETSMESH_HOST_US,
                         port: 443,
                         useWebSocket: true,
+                        tlsEnabled: true,
+                        wsPath: '/ws',
                         keepalive: 60,
                         username: fromIdentity || prev.username,
                       }));
@@ -2547,10 +2331,11 @@ export default function ConnectionPanel({
                         : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    US
+                    {t('connectionPanel.letsMeshRegionUs')}
                   </button>
                   <button
                     type="button"
+                    aria-pressed={meshcoreMqttSettings.server === LETSMESH_HOST_EU}
                     onClick={() => {
                       const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                       setMeshcoreMqttSettings((prev) => ({
@@ -2558,6 +2343,8 @@ export default function ConnectionPanel({
                         server: LETSMESH_HOST_EU,
                         port: 443,
                         useWebSocket: true,
+                        tlsEnabled: true,
+                        wsPath: '/ws',
                         keepalive: 60,
                         username: fromIdentity || prev.username,
                       }));
@@ -2568,7 +2355,7 @@ export default function ConnectionPanel({
                         : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    EU
+                    {t('connectionPanel.letsMeshRegionEu')}
                   </button>
                 </div>
               )}
@@ -2656,22 +2443,14 @@ export default function ConnectionPanel({
             </label>
           </div>
           {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' ||
-              meshcorePreset === 'coloradomesh' ||
-              meshcorePreset === 'meshmapper') &&
+            usesMeshcoreDeviceSigningMqtt(meshcorePreset, meshcoreMqttSettings) &&
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
-                {meshcorePreset === 'letsmesh'
-                  ? t('connectionPanel.meshcorePresetDeviation.letsmesh')
-                  : meshcorePreset === 'coloradomesh'
-                    ? t('connectionPanel.meshcorePresetDeviation.coloradomesh')
-                    : t('connectionPanel.meshcorePresetDeviation.meshmapper')}
+                {meshcorePresetDeviationText(t, meshcorePreset)}
               </div>
             )}
           {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' ||
-              meshcorePreset === 'coloradomesh' ||
-              meshcorePreset === 'meshmapper') && (
+            usesMeshcoreDeviceSigningMqtt(meshcorePreset, meshcoreMqttSettings) && (
               <div
                 className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
                   hasPrivateKey
@@ -2759,9 +2538,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshtastic'
                     ? t('connectionPanel.topicPrefixHelp.meshtastic')
-                    : meshcorePreset === 'letsmesh' ||
-                        meshcorePreset === 'meshmapper' ||
-                        meshcorePreset === 'coloradomesh' ||
+                    : isDeviceSigningMeshcorePreset(meshcorePreset) ||
                         isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
                       ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
                       : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
@@ -2930,9 +2707,7 @@ export default function ConnectionPanel({
                 }
                 if (
                   protocol === 'meshcore' &&
-                  (meshcorePreset === 'letsmesh' ||
-                    meshcorePreset === 'coloradomesh' ||
-                    meshcorePreset === 'meshmapper')
+                  usesMeshcoreDeviceSigningMqtt(meshcorePreset, settings)
                 ) {
                   const presetErr = validateLetsMeshPresetConnect(settings);
                   if (presetErr) {
@@ -3317,15 +3092,6 @@ export default function ConnectionPanel({
         </div>
 
         {/* Inline error */}
-        {sharedBleNotice && (
-          <div
-            className="border-b border-amber-700 bg-amber-900/30 px-4 py-2 text-xs text-amber-200"
-            role="status"
-          >
-            <p>{t('connectionPanel.sharedBleWithMeshtastic')}</p>
-            <p className="text-muted/80 mt-1">{t('connectionPanel.sharedBleWithMeshtasticHint')}</p>
-          </div>
-        )}
         {error && (
           <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
             {error}

@@ -131,8 +131,41 @@ describe('meshcorePathUpdatedRuntime', () => {
       expect.arrayContaining([expect.objectContaining({ publicKey, flags: 0 })]),
     );
     expect(onNodes).toHaveBeenCalledWith(nodeMap);
-    expect(buildNodesFromContacts).toHaveBeenCalled();
+    expect(buildNodesFromContacts).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ contactsFromRadio: true }),
+    );
     expect(usePathHistoryStore.getState().records.has(nodeId)).toBe(true);
+  });
+
+  it('rebuildMeshcoreContactsAfterPathUpdated marks contacts on-radio even with no pending ids', async () => {
+    // Regression: a debounced rebuild after a live sync must not re-save contacts with
+    // on_radio=0. The helper signals this by passing contactsFromRadio: true to the builder.
+    const publicKey = makePubKey(21);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const contacts = [contact({ publicKey, outPathLen: 0, advName: 'Direct' })];
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue(contacts),
+    } as unknown as MeshCoreConnection;
+    const buildNodesFromContacts = vi.fn().mockResolvedValue(new Map<number, MeshNode>());
+
+    await rebuildMeshcoreContactsAfterPathUpdated({
+      conn,
+      buildNodesFromContacts,
+      self: null,
+      myNodeId: 1,
+      previousNodes: new Map(),
+      pendingPathUpdateNodeIds: new Set(),
+      onContacts: vi.fn(),
+      onNodes: vi.fn(),
+    });
+
+    expect(buildNodesFromContacts).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ contactsFromRadio: true }),
+    );
+    // No pending ids and no outPath → no path-history rows written.
+    expect(usePathHistoryStore.getState().records.has(nodeId)).toBe(false);
   });
 
   it('rebuildMeshcoreContactsAfterPathUpdated logs and keeps prior nodes on failure', async () => {

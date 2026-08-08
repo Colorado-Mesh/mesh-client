@@ -909,8 +909,6 @@
       "pairingFailed": "配对失败：{{msg}}",
       "pinPairingFailed": "PIN 配对失败：{{msg}}",
       "pinAcceptedNext": "PIN 码已接受。配对完成。按“连接”并选择您的设备以完成连接。",
-      "autoConnectTimeout": "自动连接超时。",
-      "autoConnectFailed": "自动连接失败",
       "connectionFailed": "连接失败"
     },
     "cancelMqttConnect": "取消",
@@ -923,8 +921,6 @@
     "mqttTlsEnabled": "启用TLS (mqtts/wss)",
     "mqttTlsInsecure": "允许不安全的TLS （自签名证书）。默认情况下关闭—仅当您的经纪人使用非公开CA时才启用。",
     "channelPsksPrivateUplinkNote": "频道上行链路是在/2/e/上加密的AES-PSK （私钥没有JSON镜像）。Broker监视器仍可能记录其他节点之间PKI/DM流量的解密失败—这是正常的，与此处的通道PSK无关。",
-    "sharedBleWithMeshtastic": "此蓝牙设备已通过Meshtastic连接。切换到Meshtastic选项卡以使用它，或为MeshCore选择其他无线电或传输方式。",
-    "sharedBleWithMeshtasticHint": "一个物理收音机不能同时举行单独的Meshtastic和MeshCore蓝牙会话。",
     "reticulumStackTitle": "Reticulum 堆栈",
     "reticulumStackHint": "启动本地 Reticulum/LXMF 侧车进程（TCP 和 Auto 接口）。",
     "reticulumStartStack": "启动堆栈",
@@ -1260,19 +1256,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "风俗"
+      "custom": "风俗",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh 需要端口 443 上的 WebSocket 和服务器 mqtt-us-v1.letsmesh.net 或 mqtt-eu-v1.letsmesh.net。使用区域（美国/欧盟），或切换到其他经纪商的自定义。",
       "coloradomesh": "Colorado Mesh 需要端口 443 上的 WebSocket 且启用了 TLS，服务器 mqtt.meshcore.coloradomesh.org，路径 /ws。重置预设或切换到其他经纪商的自定义。",
-      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.net。重置预设或切换到其他经纪商的自定义。"
+      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.net。重置预设或切换到其他经纪商的自定义。",
+      "waev": "Waev需要在端口443上启用TLS的WebSocket ，服务器mqtt.waev.app。对于其他经纪商，请重置预设或切换到自定义。",
+      "meshatse": "Meshat.se需要在端口443上启用TLS的WebSocket ，服务器meshcore-mqtt.meshat.se。对于其他经纪商，请重置预设或切换到自定义。",
+      "meshcoreca": "MeshCore.CA需要启用TLS的端口443上的WebSocket ，服务器mqtt1.meshcore.ca或mqtt2.meshcore.ca。使用经纪人（主要/备份） ，或切换到其他经纪人的自定义。",
+      "eastmesh": "EastMesh需要在端口443上启用TLS的WebSocket ，服务器mqtt2.eastmesh.au。对于其他经纪商，请重置预设或切换到自定义。"
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "连接时将生成身份验证令牌（meshcore-decoder 格式）。用户名是 v1_ 加上您的 64 字符公钥（十六进制）。 JWT 受众与服务器主机名匹配。",
       "noPrivateKey": "没有完整的身份 - 在无线电面板中导入您的 MeshCore 配置（公钥和私钥），或手动粘贴用户名 (v1_<公钥>) 和令牌。令牌中的 JWT 受众必须与服务器主机名匹配。",
       "publicKeyMissing": "身份中缺少公钥。在无线电面板中导入 MeshCore 配置 JSON（必须包括公钥和私钥），或将代理令牌粘贴到密码字段中。",
-      "usernameBuildFailed": "无法构建 LetsMesh 用户名。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名 (v1_<public key>) 和令牌。",
-      "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。"
+      "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。",
+      "usernameBuildFailed": "无法构建MeshCore MQTT用户名。在Radio面板中导入您的MeshCore配置JSON ，或<public key>手动粘贴用户名(v1_)和令牌。"
     },
     "meshcorePacketLogger": {
       "label": "数据包记录器 — 当连接到无线电和 MQTT 时，将 RX 数据包摘要转发到 {{topic}}，其 JSON 形状与 meshcoretomqtt 相同。默认关闭；仅当您打算与数据包分析器共享听到的空中交通时才启用。"
@@ -1341,9 +1345,6 @@
       "disableShareAria": "关闭共享实例并重新启动堆栈",
       "disableFailed": "无法关闭共享实例。"
     },
-    "letsMeshRequiresWebSocket": "LetsMesh需要WebSocket传输。",
-    "letsMeshRequiresPort": "LetsMesh需要端口{{port}}。",
-    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper预设仅支持已知的设备签名代理。对其他经纪商使用自定义。",
     "letsMeshUsernameV1Hex": "用户名必须为v1_后跟64个十六进制字符（公钥）。",
     "bleWeakSignalWarning": "蓝牙信号弱（ {{rssi}} dBm ）。靠近一点，以获得稳定的连接。",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1352,7 +1353,18 @@
     "linkQuality": "连接质量",
     "linkQualityMs": "{{ms}}毫秒",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "不可用（网页蓝牙）"
+    "signalUnavailableWebBluetooth": "不可用（网页蓝牙）",
+    "meshcoreCaBroker": "MeshCore.CA代理",
+    "meshcoreCaPrimary": "首先",
+    "meshcoreCaBackup": "后援",
+    "broker": "经纪商",
+    "letsMeshRequiresTls": "此Broker预设需要TLS (wss)。启用TLS或切换到自定义。",
+    "letsMeshRequiresWsPath": "此Broker预设需要WebSocket路径{{wsPath}}。重置预设或切换到“自定义”。",
+    "letsMeshRegionUs": "美国",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "此Broker预设需要WebSocket传输(wss)。",
+    "letsMeshRequiresPort": "此代理预设需要端口{{port}} （ WebSocket TLS ）。",
+    "letsMeshKnownBrokersOnly": "此预设仅支持已知的公共MeshCore MQTT代理。对于其他经纪商，请切换到自定义。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -5323,7 +5335,8 @@
       "actionFailed": "操作失败： {{reason}}",
       "unknownReason": "未知原因",
       "resendFailed": "重新发送失败",
-      "deleteFailed": "删除会话失败。"
+      "deleteFailed": "删除会话失败。",
+      "sessionExpired": "此游戏在一段时间不活动后过期，无法再玩。使用删除会话将其删除。"
     },
     "deleteConfirmTitle": "删除会话？",
     "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。",
@@ -5337,6 +5350,7 @@
       "propagated": "已存储",
       "failed": "需要重试"
     },
-    "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……"
+    "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……",
+    "idleExpiryNotice": "游戏在不活动后过期，然后只能删除。未回答的挑战： 24小时（所有游戏）。活跃游戏： 24小时后抽搐， 7天后下棋和一排四棋。"
   }
 }

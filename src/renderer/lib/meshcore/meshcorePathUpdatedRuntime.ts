@@ -56,6 +56,7 @@ export interface MeshcoreContactsRebuildDeps {
       self?: MeshCoreSelfInfo | null;
       myNodeId?: number;
       previousNodes?: Map<number, MeshNode>;
+      contactsFromRadio?: boolean;
     },
   ) => Promise<Map<number, MeshNode>>;
   self: MeshCoreSelfInfo | null;
@@ -87,6 +88,9 @@ export async function rebuildMeshcoreContactsAfterPathUpdated(
       self: deps.self,
       myNodeId: deps.myNodeId,
       previousNodes: deps.previousNodes,
+      // These contacts come from a live `getContacts` dump; preserve `on_radio=1` so a
+      // path-updated rebuild does not wipe on-radio state after a successful sync.
+      contactsFromRadio: true,
     });
     deps.onNodes(newNodes);
     for (const contact of contacts) {

@@ -4,11 +4,34 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { burstConfetti } from '@/renderer/lib/confettiBurst';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import type { GameSession } from '@/shared/games-types';
 
-import GamesPanel from './GamesPanel';
+import GamesPanel, { CELEBRATION_RETRY_MS } from './GamesPanel';
+
+vi.mock('@/renderer/lib/confettiBurst', () => ({
+  burstConfetti: vi.fn(() => true),
+  shouldSkipConfetti: vi.fn(() => false),
+}));
+
+function makeWinSession(overrides: Partial<GameSession> = {}): GameSession {
+  return makeSession({
+    status: 'completed',
+    metadata: {
+      board: 'XXX______',
+      turn: 'peer',
+      first_turn: 'me',
+      my_marker: 'X',
+      move_count: 5,
+      winner: 'me',
+      terminal: 'win',
+      draw_offered: false,
+    },
+    ...overrides,
+  });
+}
 
 const peerHash = 'a'.repeat(32);
 const peerHashPrefix = peerHash.slice(0, 12);
@@ -88,6 +111,7 @@ describe('GamesPanel', () => {
     vi.mocked(window.electronAPI.reticulum.games.resend).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.games.deleteSession).mockClear();
     vi.mocked(window.electronAPI.reticulum.games.deleteSession).mockResolvedValue({ ok: true });
+    vi.mocked(burstConfetti).mockClear();
   });
 
   it('renders the empty state with no axe violations', async () => {
@@ -405,6 +429,81 @@ describe('GamesPanel', () => {
     await renderAndSelectSession(makeSession({ delivery_state: 'failed' }));
     expect(screen.getByRole('button', { name: 'Resend last action' })).toBeInTheDocument();
     expect(screen.getByLabelText('Retry needed')).toBeInTheDocument();
+  });
+
+  it('fires confetti once when viewing a completed local win', async () => {
+    await renderAndSelectSession(makeWinSession());
+    await waitFor(() => {
+      expect(burstConfetti).toHaveBeenCalledTimes(1);
+    });
+
+    // An unrelated re-render must not re-fire the celebration for the same session.
+    act(() => {
+      seedPeerDisplayName('Zeva');
+    });
+    expect(burstConfetti).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a win selected while an earlier burst is still animating', async () => {
+    const winA = makeWinSession({ session_id: 'win-a' });
+    const winB = makeWinSession({ session_id: 'win-b' });
+    vi.mocked(window.electronAPI.reticulum.games.listSessions).mockResolvedValue({
+      sessions: [winA, winB],
+    });
+
+    render(<GamesPanel isActive />);
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.listSessions).toHaveBeenCalled();
+    });
+
+    // First win: a burst starts immediately and the win is recorded as celebrated.
+    act(() => {
+      useReticulumGamesStore.getState().selectSession('win-a');
+    });
+    await waitFor(() => {
+      expect(burstConfetti).toHaveBeenCalledTimes(1);
+    });
+
+    vi.useFakeTimers();
+    try {
+      // Second win selected while the first burst is still animating: the burst is skipped once
+      // (single-flight), so the win must NOT be marked celebrated yet.
+      vi.mocked(burstConfetti).mockReturnValueOnce(false);
+      act(() => {
+        useReticulumGamesStore.getState().selectSession('win-b');
+      });
+      expect(burstConfetti).toHaveBeenCalledTimes(2);
+
+      // Once the earlier burst finishes, the queued win retries and celebrates.
+      act(() => {
+        vi.advanceTimersByTime(CELEBRATION_RETRY_MS);
+      });
+      expect(burstConfetti).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not fire confetti when the opponent won', async () => {
+    await renderAndSelectSession(
+      makeWinSession({ metadata: { ...makeWinSession().metadata, winner: 'peer' } }),
+    );
+    // Give the celebration effect a chance to run.
+    await waitFor(() => {
+      expect(screen.getByRole('group', { name: 'Tic-Tac-Toe board' })).toBeInTheDocument();
+    });
+    expect(burstConfetti).not.toHaveBeenCalled();
+  });
+
+  it('does not fire confetti while the panel is inactive', async () => {
+    useReticulumGamesStore.getState().setSessions([makeWinSession()]);
+    useReticulumGamesStore.getState().selectSession('s1');
+    render(<GamesPanel isActive={false} />);
+    // Inactive panels skip the refresh IPC and the celebration effect.
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.listSessions).not.toHaveBeenCalled();
+    });
+    expect(burstConfetti).not.toHaveBeenCalled();
   });
 
   it.each([

@@ -7,6 +7,7 @@ import {
 } from './letsMeshJwt';
 import {
   applyMeshcoreMqttPreset,
+  DEVICE_SIGNING_MESHCORE_PRESETS,
   MESHCORE_MQTT_PRESET_STORAGE_KEY,
   type MeshcoreMqttPreset,
   meshcoreMqttPresetFields,
@@ -34,14 +35,30 @@ export function meshcoreMqttNeedsColoradoRegionAck(): boolean {
   return readMeshcoreMqttSettingsFromStorage().server.trim() === COLORADO_MESH_HOST;
 }
 
-const PRESET_RECONCILE_PRESETS = new Set<MeshcoreMqttPreset>([
-  'letsmesh',
-  'coloradomesh',
-  'meshmapper',
-]);
+const PRESET_RECONCILE_PRESETS = DEVICE_SIGNING_MESHCORE_PRESETS;
 
-function meshcorePresetFieldsDiffer(preset: MeshcoreMqttPreset, settings: MQTTSettings): boolean {
+/**
+ * Preset fields that startup reconcile is allowed to rewrite. Only transport fields are reconciled;
+ * authentication fields (a manually stored password / username) are preserved so re-applying a
+ * preset's transport defaults never clobbers user-entered credentials.
+ */
+function reconcilablePresetFields(
+  preset: MeshcoreMqttPreset,
+  settings: MQTTSettings,
+): Partial<MQTTSettings> | null {
   const fields = meshcoreMqttPresetFields(preset, settings);
+  if (!fields) return null;
+  const transport: Partial<MQTTSettings> = { ...fields };
+  delete transport.password;
+  delete transport.username;
+  return transport;
+}
+
+function meshcorePresetTransportDiffers(
+  preset: MeshcoreMqttPreset,
+  settings: MQTTSettings,
+): boolean {
+  const fields = reconcilablePresetFields(preset, settings);
   if (!fields) return false;
   return (Object.keys(fields) as (keyof MQTTSettings)[]).some(
     (key) => settings[key] !== fields[key],
@@ -183,9 +200,11 @@ function reconcileMeshcoreMqttPresetSettings(): void {
     ? parseStoredJson<Partial<MQTTSettings>>(raw, 'reconcileMeshcoreMqttPresetSettings')
     : null;
   const current = (parsed ?? {}) as MQTTSettings;
-  if (!meshcorePresetFieldsDiffer(preset, current)) return;
+  const transport = reconcilablePresetFields(preset, current);
+  if (!transport || !meshcorePresetTransportDiffers(preset, current)) return;
 
-  const next = applyMeshcoreMqttPreset(preset, current);
+  // Merge only transport fields; a manually stored password / username is left untouched.
+  const next: MQTTSettings = { ...current, ...transport };
   localStorage.setItem(MESHCORE_MQTT_SETTINGS_KEY, JSON.stringify(next));
 }
 

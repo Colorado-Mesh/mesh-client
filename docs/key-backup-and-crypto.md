@@ -76,7 +76,7 @@ Implementation: [`meshtasticDmKeyBackupStorage.ts`](../src/renderer/lib/meshtast
 
 **Index privacy:** Same as Meshtastic — encrypted per-node archives hold private keys; the index JSON stores plaintext `nodeLabel`, `backedUpAt`, and full `publicKeyB64` (UI shows an 8-character hex prefix only).
 
-The **active MQTT cache** is separate from per-node archives: LetsMesh JWT signing uses whichever identity was last connected or restored. Per-node archives retain full pairs without overwriting each other.
+The **active MQTT cache** is separate from per-node archives: device-signing MeshCore MQTT (JWT) signing — LetsMesh, MeshMapper, Colorado Mesh, Waev, Meshat.se, MeshCore.CA, EastMesh — uses whichever identity was last connected or restored. Per-node archives retain full pairs without overwriting each other.
 
 **How keys get into the active cache (not a per-node backup)**
 
@@ -88,12 +88,12 @@ The **active MQTT cache** is separate from per-node archives: LetsMesh JWT signi
 
 1. Decrypt and validate both keys.
 2. `importPrivateKey(privateKeyBytes)` on the connected radio.
-3. Sync active MQTT cache with full pair; identity-updated event refreshes Connection tab LetsMesh username.
+3. Sync active MQTT cache with full pair; identity-updated event refreshes the Connection tab MeshCore MQTT username.
 4. Best-effort verification after reconnect delay.
 
 Implementation: [`meshcoreKeyBackupStorage.ts`](../src/renderer/lib/meshcoreKeyBackupStorage.ts).
 
-Details: [LetsMesh MQTT authentication](letsmesh-mqtt-auth.md).
+Details: [MeshCore MQTT authentication](letsmesh-mqtt-auth.md).
 
 ---
 

@@ -1,21 +1,30 @@
 # MeshCore MQTT authentication
 
-This document describes the authentication contract used by many MeshCore MQTT brokers including **Colorado Mesh** and **LetsMesh**. mesh-client uses the same contract as [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker): MQTT username `v1_<64-hex public key>` (uppercase) and a password produced by `@michaelhart/meshcore-decoder` `createAuthToken`.
+This document describes the **device-signing** authentication contract shared by the public MeshCore MQTT presets: **LetsMesh** (US/EU), **MeshMapper**, **Colorado Mesh**, **Waev**, **Meshat.se**, **MeshCore.CA** (Primary/Backup), and **EastMesh**. mesh-client uses the same contract as [meshcore-mqtt-broker](https://github.com/michaelhart/meshcore-mqtt-broker): MQTT username `v1_<64-hex public key>` (uppercase) and a password produced by `@michaelhart/meshcore-decoder` `createAuthToken`. The broker allowlist and each broker's WebSocket path live in [`letsMeshJwt.ts`](../src/renderer/lib/letsMeshJwt.ts) (`DEVICE_SIGNING_HOST_WS_PATHS`).
 
 ## JWT audience (`aud`)
 
 The broker validates that the token’s `aud` claim matches its configured `AUTH_EXPECTED_AUDIENCE` when that value is set.
 
-For **LetsMesh public presets** (`mqtt-us-v1.letsmesh.net`, `mqtt-eu-v1.letsmesh.net`), mesh-client sets:
+For **every device-signing preset**, mesh-client sets the JWT `aud` to the **same hostname as the MQTT connect server** (not a separate apex domain), via `letsMeshJwtAudience()`. Examples:
 
-- **MQTT connect host/port**: the regional hostname and `443` (WebSocket TLS).
-- **JWT `aud`**: the **same** regional hostname as the MQTT server (not a separate apex domain).
+- **MQTT connect host/port**: the broker hostname (e.g. `mqtt-us-v1.letsmesh.net`, `mqtt.waev.app`, `mqtt1.meshcore.ca`) and `443` (WebSocket TLS).
+- **JWT `aud`**: that exact connect hostname.
 
 That aligns with common tooling such as [meshcoretomqtt](https://github.com/Cisien/meshcoretomqtt) (token `audience` matches the broker host). If your operator documents a different `aud`, use **Custom** MQTT and paste a manually generated token.
 
+## WebSocket path (`wsPath`)
+
+Device-signing brokers use one of two WebSocket paths, enforced on connect ([`letsMeshConnectionGuards.ts`](../src/renderer/lib/letsMeshConnectionGuards.ts)):
+
+- **`/ws`** — LetsMesh (US/EU), MeshMapper, Colorado Mesh.
+- **`/mqtt`** — Waev, Meshat.se, MeshCore.CA, EastMesh.
+
+Selecting a preset (or a broker toggle) sets the correct path; a mismatched `wsPath` blocks Connect with a clear error and raises the amber deviation banner.
+
 ## WebSocket idle / keepalive
 
-MeshCore MQTT over WSS uses **60s MQTT keepalive** (same order of magnitude as raw TCP). mqtt.js’s internal deadline is about **1.5× the keepalive**. The client sends **WebSocket `ping` frames** for proxy/LB idle paths, and periodically calls mqtt.js **`reschedulePing(true)`** so the internal keepalive timer resets when **PINGRESP** / **SUBACK** are not observed in time on the WebSocket path.
+Device-signing presets default to a **30s MQTT keepalive**; the **LetsMesh Region (US/EU)** buttons raise it to **60s**. Both values are treated as valid (no deviation banner). mqtt.js’s internal deadline is about **1.5× the keepalive**. The client sends **WebSocket `ping` frames** for proxy/LB idle paths, and periodically calls mqtt.js **`reschedulePing(true)`** so the internal keepalive timer resets when **PINGRESP** / **SUBACK** are not observed in time on the WebSocket path.
 
 ## Debugging connection vs auth
 

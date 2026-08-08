@@ -909,8 +909,6 @@
       "pairingFailed": "ペアリングに失敗しました: {{msg}}",
       "pinPairingFailed": "PIN のペアリングに失敗しました: {{msg}}",
       "pinAcceptedNext": "PIN が受け入れられました。ペアリング完了。 「接続」を押してデバイスを選択し、接続を完了します。",
-      "autoConnectTimeout": "自動接続がタイムアウトしました。",
-      "autoConnectFailed": "自動接続に失敗しました",
       "connectionFailed": "接続に失敗しました"
     },
     "cancelMqttConnect": "キャンセル",
@@ -923,8 +921,6 @@
     "mqttTlsEnabled": "TLSを有効にする(mqtts/wss)",
     "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。",
     "channelPsksPrivateUplinkNote": "チャネルアップリンクは/2/e/でAES - PSK暗号化されています（秘密鍵のJSONミラーはありません）。ブローカーモニターは、他のノード間のPKI/DMトラフィックの復号化失敗を記録することがあります。これは正常であり、ここではチャネルPSKとは無関係です。",
-    "sharedBleWithMeshtastic": "このBluetoothデバイスはすでにMeshtastic経由で接続されています。Meshtasticタブに切り替えて使用するか、MeshCoreの別のラジオまたはトランスポートを選択します。",
-    "sharedBleWithMeshtasticHint": "1つの物理ラジオは、MeshtasticとMeshCore Bluetoothセッションを同時に開催することはできません。",
     "reticulumStackTitle": "Reticulumスタック",
     "reticulumStackHint": "ローカルのReticulum/LXMFサイドカー（TCPおよびAutoインターフェース）を起動します。",
     "reticulumStartStack": "スタックを開始",
@@ -1260,19 +1256,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "カスタム"
+      "custom": "カスタム",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "イーストメッシュ"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh には、ポート 443 とサーバー mqtt-us-v1.letsmesh.net または mqtt-eu-v1.letsmesh.net 上の WebSocket が必要です。地域 (US/EU) を使用するか、他のブローカーの場合はカスタムに切り替えてください。",
       "coloradomesh": "Colorado Mesh には、TLS が有効になっているポート 443、サーバー mqtt.meshcore.coloradomesh.org、パス /ws の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
-      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.net 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
+      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.net 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "waev": "Waevは、TLSが有効なポート443、サーバーmqtt.waev.appにWebSocketを必要とします。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "meshatse": "Meshat.seは、TLSが有効なポート443、サーバーmeshcore-mqtt.meshat.seにWebSocketを必要とします。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "meshcoreca": "MeshCore.CAは、TLSが有効なポート443、サーバーmqtt1.meshcore.caまたはmqtt2.meshcore.caにWebSocketを必要とします。ブローカー（プライマリ/バックアップ）を使用するか、他のブローカーの場合はカスタムに切り替えます。",
+      "eastmesh": "EastMeshは、TLSが有効なポート443、サーバーmqtt2.eastmesh.auにWebSocketを必要とします。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "接続時に認証トークン(meshcore-decoder形式)が生成されます。ユーザー名は v1_ に 64 文字の公開キー (16 進数) を加えたものです。 JWT オーディエンスはサーバーのホスト名と一致します。",
       "noPrivateKey": "完全な ID なし — MeshCore 設定を Radio パネル (公開キーと秘密キー) にインポートするか、ユーザー名 (v1_<公開キー>) とトークンを手動で貼り付けます。トークン内の JWT オーディエンスはサーバーのホスト名と一致する必要があります。",
       "publicKeyMissing": "ID に公開キーがありません。 [Radio] パネルに MeshCore 構成 JSON をインポートするか (公開キーと秘密キーを含める必要があります)、パスワード フィールドにブローカー トークンを貼り付けます。",
-      "usernameBuildFailed": "LetsMesh ユーザー名を構築できませんでした。 MeshCore 設定 JSON を [Radio] パネルにインポートするか、ユーザー名 (v1_<public key>) とトークンを手動で貼り付けます。",
-      "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。"
+      "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。",
+      "usernameBuildFailed": "MeshCore MQTTユーザー名を作成できませんでした。Radioパネルで MeshCore 設定JSONをインポートするか、ユーザー名（v1_<public key>）とトークンを手動で貼り付けてください。"
     },
     "meshcorePacketLogger": {
       "label": "パケット ロガー — 無線および MQTT に接続すると、RX パケットの概要を Meshcoretomqtt と同じ JSON 形式で {{topic}} に転送します。デフォルトではオフです。聞いた航空交通量をパケット アナライザーと共有する場合にのみ有効にします。"
@@ -1341,9 +1345,6 @@
       "disableShareAria": "共有インスタンスをオフにして、スタックを再起動します",
       "disableFailed": "共有インスタンスをオフにできませんでした。"
     },
-    "letsMeshRequiresWebSocket": "LetsMeshにはWebSocketトランスポートが必要です。",
-    "letsMeshRequiresPort": "LetsMeshにはポート{{port}}が必要です。",
-    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapperプリセットは、既知のデバイス署名ブローカーのみをサポートします。他のブローカーにはカスタムを使用します。",
     "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。",
     "bleWeakSignalWarning": "Bluetooth信号が弱い（ {{rssi}} dBm ）。安定した接続のために近づいてください。",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1352,7 +1353,18 @@
     "linkQuality": "リンクの品質",
     "linkQualityMs": "{{ms}}ミリ秒",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "利用できません（ Web Bluetooth ）"
+    "signalUnavailableWebBluetooth": "利用できません（ Web Bluetooth ）",
+    "meshcoreCaBroker": "MeshCore.CAブローカー",
+    "meshcoreCaPrimary": "第一",
+    "meshcoreCaBackup": "バックアップ",
+    "broker": "ブローカー",
+    "letsMeshRequiresTls": "このブローカープリセットにはTLS （ wss ）が必要です。TLSを有効にするか、カスタムに切り替えます。",
+    "letsMeshRequiresWsPath": "このブローカープリセットには、WebSocketパス{{wsPath}}が必要です。プリセットをリセットするか、カスタムに切り替えます。",
+    "letsMeshRegionUs": "US",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "このブローカープリセットには、WebSocketトランスポート（ WSS ）が必要です。",
+    "letsMeshRequiresPort": "このブローカープリセットにはポート{{port}} (WebSocket TLS)が必要です。",
+    "letsMeshKnownBrokersOnly": "このプリセットは、既知のパブリックMeshCore MQTTブローカーのみをサポートします。他のブローカーの場合はカスタムに切り替えます。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -5323,7 +5335,8 @@
       "actionFailed": "アクションに失敗しました： {{reason}}",
       "unknownReason": "不明な理由",
       "resendFailed": "再送に失敗しました。",
-      "deleteFailed": "セッションを削除できませんでした。"
+      "deleteFailed": "セッションを削除できませんでした。",
+      "sessionExpired": "このゲームはしばらくの非アクティブ状態の後に期限切れとなり、プレイできなくなりました。削除セッションを使用して削除します。"
     },
     "deleteConfirmTitle": "セッションを削除",
     "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。",
@@ -5337,6 +5350,7 @@
       "propagated": "格納されています",
       "failed": "再試行が必要です"
     },
-    "drawOfferWaitingBanner": "抽選オファーが送信されました。対戦相手を待っています…"
+    "drawOfferWaitingBanner": "抽選オファーが送信されました。対戦相手を待っています…",
+    "idleExpiryNotice": "ゲームは非アクティブの後に期限切れになり、削除することしかできません。未回答の課題： 24時間（すべてのゲーム）。アクティブなゲーム： 24時間後のチックタックトー、7日後のチェスと4 - in - a - row。"
   }
 }

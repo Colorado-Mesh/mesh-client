@@ -907,8 +907,6 @@
       "pairingFailed": "Associazione non riuscita: {{msg}}",
       "pinPairingFailed": "Associazione PIN non riuscita: {{msg}}",
       "pinAcceptedNext": "PIN accettato. Associazione completata. Premi Connetti e seleziona il tuo dispositivo per completare la connessione.",
-      "autoConnectTimeout": "Connessione automatica scaduta.",
-      "autoConnectFailed": "Connessione automatica non riuscita",
       "connectionFailed": "Connessione non riuscita"
     },
     "cancelMqttConnect": "Cancellare",
@@ -921,8 +919,6 @@
     "mqttTlsEnabled": "Abilita TLS (mqtts / wss)",
     "mqttTlsInsecure": "Consenti TLS non sicuro (certificato autofirmato). Disattivato per impostazione predefinita: abilita solo se il tuo broker utilizza una CA non pubblica.",
     "channelPsksPrivateUplinkNote": "L'uplink del canale è crittografato AES-PSK su /2/e/ (nessun mirror JSON per le chiavi private). I monitor dei broker possono ancora registrare errori di decrittografia per il traffico PKI/DM tra altri nodi, il che è normale e non correlato ai PSK del canale qui.",
-    "sharedBleWithMeshtastic": "Questo dispositivo Bluetooth è già connesso tramite Meshtastic. Passa alla scheda Meshtastic per usarla, oppure scegli una radio o un mezzo di trasporto diverso per MeshCore.",
-    "sharedBleWithMeshtasticHint": "Una radio fisica non può contenere sessioni Bluetooth Meshtastic e MeshCore separate contemporaneamente.",
     "reticulumStackTitle": "Stack Reticulum",
     "reticulumStackHint": "Avvia il sidecar locale Reticulum/LXMF (interfacce TCP e Auto).",
     "reticulumStartStack": "Avvia stack",
@@ -1258,19 +1254,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Costume"
+      "custom": "Costume",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh necessita di WebSocket sulla porta 443 e del server mqtt-us-v1.letsmesh.net o mqtt-eu-v1.letsmesh.net. Utilizza la regione (USA/UE) o passa a Personalizzato per altri broker.",
       "coloradomesh": "Colorado Mesh necessita di WebSocket sulla porta 443 con TLS abilitato, server mqtt.meshcore.coloradomesh.org, percorso /ws. Ripristina la preimpostazione o passa a Personalizzato per altri broker.",
-      "meshmapper": "MeshMapper necessita di WebSocket sulla porta 443 e sul server mqtt.meshmapper.net. Ripristina la preimpostazione o passa a Personalizzato per altri broker."
+      "meshmapper": "MeshMapper necessita di WebSocket sulla porta 443 e sul server mqtt.meshmapper.net. Ripristina la preimpostazione o passa a Personalizzato per altri broker.",
+      "waev": "Waev ha bisogno di WebSocket sulla porta 443 con TLS abilitato, server mqtt.waev.app. Reimposta il preset o passa a Personalizzato per altri broker.",
+      "meshatse": "Meshat.se ha bisogno di WebSocket sulla porta 443 con TLS abilitato, server meshcore-mqtt.meshat.se. Reimposta il preset o passa a Personalizzato per altri broker.",
+      "meshcoreca": "MeshCore.CA ha bisogno di WebSocket sulla porta 443 con TLS abilitato, server mqtt1.meshcore.ca o mqtt2.meshcore.ca. Usa Broker (Primario/Backup) o passa a Personalizzato per altri broker.",
+      "eastmesh": "EastMesh ha bisogno di WebSocket sulla porta 443 con TLS abilitato, server mqtt2.eastmesh.au. Reimposta il preset o passa a Personalizzato per altri broker."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Il token di autenticazione (formato decodificatore meshcore) verrà generato quando ti connetti. Il nome utente è v1_ più la chiave pubblica di 64 caratteri (esadecimale). Il pubblico JWT corrisponde al nome host del server.",
       "noPrivateKey": "Nessuna identità completa: importa la tua configurazione MeshCore nel pannello Radio (chiavi pubbliche e private) o incolla il nome utente (v1_<chiave pubblica>) e il token manualmente. Il pubblico JWT nel token deve corrispondere al nome host del server.",
       "publicKeyMissing": "Chiave pubblica mancante dall'identità. Importa il JSON di configurazione MeshCore nel pannello Radio (deve includere chiavi pubbliche e private) o incolla un token broker nel campo della password.",
-      "usernameBuildFailed": "Impossibile creare il nome utente LetsMesh. Importa il JSON di configurazione MeshCore nel pannello Radio oppure incolla il nome utente (v1_<chiave pubblica>) e il token manualmente.",
-      "noIdentity": "Nessuna identità del dispositivo trovata. Importa il JSON di configurazione MeshCore nel pannello Radio oppure incolla manualmente nome utente e token."
+      "noIdentity": "Nessuna identità del dispositivo trovata. Importa il JSON di configurazione MeshCore nel pannello Radio oppure incolla manualmente nome utente e token.",
+      "usernameBuildFailed": "Impossibile creare il nome utente MQTT MeshCore. Importa il tuo JSON di configurazione MeshCore nel pannello Radio o incolla<public key> manualmente il nome utente (v1_) e il token."
     },
     "meshcorePacketLogger": {
       "label": "Registratore di pacchetti: quando sei connesso alla radio e a MQTT, inoltra i riepiloghi dei pacchetti RX a {{topic}} nella stessa forma JSON di meshcoretomqtt. Disattivato per impostazione predefinita; abilitalo solo se intendi condividere il traffico aereo ascoltato con un analizzatore di pacchetti."
@@ -1341,9 +1345,6 @@
       "disableShareAria": "Disattiva l'istanza di condivisione e riavvia lo stack",
       "disableFailed": "Impossibile disattivare l'istanza di condivisione."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh richiede il trasporto WebSocket.",
-    "letsMeshRequiresPort": "LetsMesh richiede la porta {{port}}.",
-    "letsMeshKnownBrokersOnly": "Il preset LetsMesh / MeshMapper supporta solo broker noti per la firma del dispositivo. Usa Custom per altri broker.",
     "letsMeshUsernameV1Hex": "Il nome utente deve essere v1_ seguito da 64 caratteri esadecimali (chiave pubblica).",
     "bleWeakSignalWarning": "Il segnale Bluetooth è debole ({{rssi}} dBm). Avvicinati per una connessione stabile.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1352,7 +1353,18 @@
     "linkQuality": "Qualità del collegamento",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Non disponibile (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Non disponibile (Web Bluetooth)",
+    "meshcoreCaBroker": "MeshCore.CA broker",
+    "meshcoreCaPrimary": "Primario",
+    "meshcoreCaBackup": "Backup",
+    "broker": "Intermediario",
+    "letsMeshRequiresTls": "Questo preimpostato broker richiede TLS (wss). Abilita TLS o passa a Personalizzato.",
+    "letsMeshRequiresWsPath": "Questo preimpostato broker richiede il percorso WebSocket {{wsPath}}. Reimpostare il preset o passare a Personalizzato.",
+    "letsMeshRegionUs": "US",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "Questo preimpostato broker richiede il trasporto WebSocket (wss).",
+    "letsMeshRequiresPort": "Questo broker preimpostato richiede la porta {{port}} (WebSocket TLS).",
+    "letsMeshKnownBrokersOnly": "Questa preimpostazione supporta solo broker MeshCore MQTT pubblici noti. Passa a Personalizzato per altri broker."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -5323,7 +5335,8 @@
       "actionFailed": "Azione non riuscita: {{reason}}",
       "unknownReason": "Motivo sconosciuto",
       "resendFailed": "Nuovo invio del codice non riuscito",
-      "deleteFailed": "Sessione non eliminata"
+      "deleteFailed": "Sessione non eliminata",
+      "sessionExpired": "Questo gioco è scaduto dopo un periodo di inattività e non può più essere giocato. Usa Elimina sessione per rimuoverlo."
     },
     "deleteConfirmTitle": "Cancellare una sessione",
     "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata.",
@@ -5337,6 +5350,7 @@
       "propagated": "Memorizzato",
       "failed": "Nuovo tentativo necessario"
     },
-    "drawOfferWaitingBanner": "Offerta di pareggio inviata. In attesa dell'avversario..."
+    "drawOfferWaitingBanner": "Offerta di pareggio inviata. In attesa dell'avversario...",
+    "idleExpiryNotice": "I giochi scadono dopo l'inattività e possono quindi essere eliminati. Sfide senza risposta: 24 ore (tutte le partite). Giochi attivi: tic-tac-toe dopo 24 ore, scacchi e quattro in fila dopo 7 giorni."
   }
 }

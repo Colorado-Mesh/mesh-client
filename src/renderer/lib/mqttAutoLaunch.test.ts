@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { COLORADO_MQTT_REGION_ACK_KEY } from './connectionPanelStorageMigrations';
-import { MESHCORE_ENC_PK_KEY, MESHCORE_IDENTITY_STORAGE_KEY } from './letsMeshJwt';
+import { MESHCORE_ENC_PK_KEY, MESHCORE_IDENTITY_STORAGE_KEY, WAEV_HOST } from './letsMeshJwt';
 import { MESHTASTIC_MQTT_SETTINGS_KEY } from './meshtasticMqttSettingsStorage';
 import { tryAutoLaunchMqtt } from './mqttAutoLaunch';
 
@@ -166,5 +166,51 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
   it('returns false when meshcore MQTT settings are absent', async () => {
     const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
+  });
+
+  it('defers a Waev preset on the imported key (device-signing via preset)', async () => {
+    const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
+    localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'waev');
+    localStorage.setItem(
+      MESHCORE_KEY,
+      JSON.stringify({
+        server: WAEV_HOST,
+        port: 443,
+        autoLaunch: true,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/mqtt',
+      }),
+    );
+    // No password and no identity key → deferred, not treated as manual-password broker.
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
+
+    localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
+    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
+  });
+
+  it('defers Custom settings pointed at a device-signing host on the imported key', async () => {
+    const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
+    localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      MESHCORE_KEY,
+      JSON.stringify({
+        server: WAEV_HOST,
+        port: 443,
+        autoLaunch: true,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/mqtt',
+      }),
+    );
+    // Host is device-signing → gate on the imported key, not a password.
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
+
+    localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
+    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
   });
 });

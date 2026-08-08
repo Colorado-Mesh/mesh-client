@@ -239,7 +239,7 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     vi.restoreAllMocks();
   });
 
-  it('orders presets LetsMesh, MeshMapper, Colorado Mesh before Ripple', () => {
+  it('lists all MeshCore presets in the network preset picker', () => {
     localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
     localStorage.setItem(
@@ -268,17 +268,156 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
       />,
     );
 
-    const group = screen.getByRole('group', { name: 'Network Preset' });
-    const labels = within(group)
-      .getAllByRole('button')
-      .map((b) => b.textContent);
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    const labels = within(select)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
     expect(labels).toEqual([
       'LetsMesh',
       'MeshMapper',
       'Colorado Mesh',
+      'Waev',
+      'Meshat.se',
+      'MeshCore.CA',
+      'EastMesh',
       'Ripple Networks',
       'Custom',
     ]);
+  });
+
+  it('applies Waev broker fields when selected from the picker', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'Waev' }));
+
+    expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('waev');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt.waev.app');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Port$/i).value).toBe('443');
+  });
+
+  function renderLetsMeshMeshcorePanel() {
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+  }
+
+  it('normalizes an IATA topic prefix on blur without leaving the preset', async () => {
+    const user = userEvent.setup();
+    renderLetsMeshMeshcorePanel();
+
+    const topic = screen.getByLabelText<HTMLInputElement>(/^Topic Prefix$/i);
+    await user.clear(topic);
+    await user.type(topic, 'meshcore/den');
+    fireEvent.blur(topic);
+
+    expect(topic.value).toBe('meshcore/DEN');
+    expect(screen.getByRole('combobox', { name: 'Network Preset' })).toHaveValue('letsmesh');
+  });
+
+  it('disables Connect and flags an invalid IATA topic prefix', async () => {
+    const user = userEvent.setup();
+    renderLetsMeshMeshcorePanel();
+
+    const topic = screen.getByLabelText<HTMLInputElement>(/^Topic Prefix$/i);
+    await user.clear(topic);
+    await user.type(topic, 'meshcore/zzzz');
+
+    expect(topic).toHaveAttribute('aria-invalid', 'true');
+    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
+    const connectBtn = within(mqttCard as HTMLElement).getByRole('button', { name: 'Connect' });
+    expect(connectBtn).toBeDisabled();
+  });
+
+  it('offers MeshCore.CA Primary/Backup broker toggle that switches the server', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'MeshCore.CA' }));
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt1.meshcore.ca');
+
+    const brokerGroup = screen.getByRole('group', { name: 'MeshCore.CA broker' });
+    await user.click(within(brokerGroup).getByRole('button', { name: 'Backup' }));
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt2.meshcore.ca');
   });
 
   it('does not apply Colorado preset fields when confirm is cancelled', async () => {
@@ -314,10 +453,14 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Colorado Mesh' }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'Colorado Mesh' }));
     expect(window.confirm).toHaveBeenCalled();
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
     expect(screen.getByLabelText(/^Server$/i)).toHaveValue('mqtt-us-v1.letsmesh.net');
+    // The controlled select must snap back to the current preset after a cancelled confirm
+    // (re-query: cancelling remounts the select so the original node is detached).
+    expect(screen.getByRole('combobox', { name: 'Network Preset' })).toHaveValue('letsmesh');
   });
 
   it('shows one-time Colorado region gate and switches to LetsMesh on cancel', async () => {
@@ -357,6 +500,48 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Switch to LetsMesh' }));
     expect(localStorage.getItem('mesh-client:coloradoMqttRegionAck-v1')).toBe('1');
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
+    expect(
+      screen.queryByRole('alertdialog', { name: 'Colorado Mesh MQTT' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps Colorado Mesh when the region gate is acknowledged with Stay', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+        password: '',
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Colorado Mesh MQTT' });
+    await user.click(within(dialog).getByRole('button', { name: 'I am in Colorado' }));
+    expect(localStorage.getItem('mesh-client:coloradoMqttRegionAck-v1')).toBe('1');
+    expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('coloradomesh');
+    expect(screen.getByLabelText(/^Server$/i)).toHaveValue('mqtt.meshcore.coloradomesh.org');
     expect(
       screen.queryByRole('alertdialog', { name: 'Colorado Mesh MQTT' }),
     ).not.toBeInTheDocument();
@@ -518,7 +703,7 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
     return userAgentSpy;
   }
 
-  it('does not auto-connect BLE on mount when last connection is saved', async () => {
+  it('does not mount-auto-connect BLE when last connection is saved (coordinator owns cold-start)', async () => {
     const userAgentSpy = mockLinuxUserAgent();
     const bleId = 'linux-ble-device';
     const lastConnKey = 'mesh-client:lastConnection:meshtastic';
@@ -968,11 +1153,12 @@ describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
     );
   }
 
-  it("clicking Liam's preset populates liamcottle.net credentials", async () => {
+  it("selecting Liam's preset populates liamcottle.net credentials", async () => {
     const user = userEvent.setup();
     renderMeshtasticMqtt();
 
-    await user.click(screen.getByRole('button', { name: "Liam's" }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: "Liam's" }));
 
     expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe(
       'mqtt.meshtastic.liamcottle.net',
@@ -985,19 +1171,23 @@ describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
     const user = userEvent.setup();
     renderMeshtasticMqtt();
 
-    await user.click(screen.getByRole('button', { name: "Liam's" }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: "Liam's" }));
 
     expect(screen.getByText(/uplink-only/i)).toBeInTheDocument();
   });
 
-  it('hides uplink-only warning for official presets', async () => {
+  it('selecting the Official preset applies official 1883 fields and hides the uplink warning', async () => {
     const user = userEvent.setup();
     renderMeshtasticMqtt();
 
-    // First activate Liam's, then switch away
-    await user.click(screen.getByRole('button', { name: "Liam's" }));
-    await user.click(screen.getByRole('button', { name: 'MQTT :1883' }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    // First activate Liam's, then switch back to Official
+    await user.selectOptions(select, within(select).getByRole('option', { name: "Liam's" }));
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'Official' }));
 
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt.meshtastic.org');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Port$/i).value).toBe('1883');
     expect(screen.queryByText(/uplink-only/i)).not.toBeInTheDocument();
   });
 });
@@ -1298,16 +1488,10 @@ describe('ConnectionPanel BLE noble manual connect', () => {
       );
 
       await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith(
-          'ble',
-          undefined,
-          undefined,
-          'previously-paired-radio',
-        );
-      });
-      await waitFor(() => {
         expect(screen.getByRole('radiogroup', { name: 'Connection Type' })).toBeInTheDocument();
       });
+      // Cold-start BLE is owned by ProtocolAutoConnectCoordinator — panel must not mount-connect.
+      expect(onAutoConnect).not.toHaveBeenCalled();
 
       vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
 
@@ -1329,323 +1513,7 @@ describe('ConnectionPanel BLE noble manual connect', () => {
   });
 });
 
-describe('ConnectionPanel BLE noble auto-connect', () => {
-  it('calls onAutoConnect with saved peripheral id without waiting for renderer discovery', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const bleId = 'ble-known-device';
-    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
-    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: bleId }));
-    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshtastic"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith('ble', undefined, undefined, bleId);
-      });
-      expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
-    } finally {
-      localStorage.removeItem(lastConnKey);
-      restore();
-    }
-  });
-});
-
-describe('ConnectionPanel meshcore shared Meshtastic BLE auto-connect', () => {
-  it('skips meshcore noble scan when last BLE device matches Meshtastic', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const sharedId = 'shared-ble-peripheral';
-    const mcConnKey = 'mesh-client:lastConnection:meshcore';
-    const mtBleKey = 'mesh-client:lastBleDevice:meshtastic';
-    localStorage.setItem(mcConnKey, JSON.stringify({ type: 'ble', bleDeviceId: sharedId }));
-    localStorage.setItem(mtBleKey, sharedId);
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
-      });
-    } finally {
-      localStorage.removeItem(mcConnKey);
-      localStorage.removeItem(mtBleKey);
-      restore();
-    }
-  });
-});
-
-describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
-  const protocolKey = 'mesh-client:protocol';
-
-  afterEach(() => {
-    localStorage.removeItem(protocolKey);
-    vi.restoreAllMocks();
-  });
-
-  it('connects meshcore immediately when meshcore is the stored active protocol', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const mcConnKey = 'mesh-client:lastConnection:meshcore';
-    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
-    localStorage.setItem(protocolKey, 'meshcore');
-    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
-    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
-    localStorage.setItem(
-      mcConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
-    );
-    localStorage.setItem(
-      mtConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
-    );
-    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
-    dualNoble.resetNobleBleConnectMutexForTests();
-    dualNoble.initNobleBleDualRadioStartup();
-    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled');
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith(
-          'ble',
-          undefined,
-          undefined,
-          'meshcore-ble-device',
-        );
-      });
-      expect(settleSpy).not.toHaveBeenCalled();
-    } finally {
-      localStorage.removeItem(mcConnKey);
-      localStorage.removeItem(mtConnKey);
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      dualNoble.resetNobleBleConnectMutexForTests();
-      restore();
-    }
-  });
-
-  it('defers inactive meshtastic auto-connect until active meshcore primary settles', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const mcConnKey = 'mesh-client:lastConnection:meshcore';
-    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
-    localStorage.setItem(protocolKey, 'meshcore');
-    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
-    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
-    localStorage.setItem(
-      mcConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
-    );
-    localStorage.setItem(
-      mtConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
-    );
-    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
-    dualNoble.resetNobleBleConnectMutexForTests();
-    dualNoble.initNobleBleDualRadioStartup();
-    let releaseSettle!: () => void;
-    const settleSpy = vi
-      .spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled')
-      .mockImplementation(
-        () =>
-          new Promise<void>((resolve) => {
-            releaseSettle = resolve;
-          }),
-      );
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshtastic"
-        />,
-      );
-
-      await Promise.resolve();
-      expect(settleSpy).toHaveBeenCalled();
-      expect(onAutoConnect).not.toHaveBeenCalled();
-
-      releaseSettle();
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith(
-          'ble',
-          undefined,
-          undefined,
-          'meshtastic-ble-device',
-        );
-      });
-    } finally {
-      localStorage.removeItem(mcConnKey);
-      localStorage.removeItem(mtConnKey);
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      dualNoble.resetNobleBleConnectMutexForTests();
-      restore();
-    }
-  });
-
-  it('defers inactive meshcore auto-connect until active meshtastic primary settles', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const mcConnKey = 'mesh-client:lastConnection:meshcore';
-    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
-    localStorage.setItem(protocolKey, 'meshtastic');
-    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
-    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
-    localStorage.setItem(
-      mcConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
-    );
-    localStorage.setItem(
-      mtConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
-    );
-    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
-    dualNoble.resetNobleBleConnectMutexForTests();
-    dualNoble.initNobleBleDualRadioStartup();
-    let releaseSettle!: () => void;
-    const settleSpy = vi
-      .spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled')
-      .mockImplementation(
-        () =>
-          new Promise<void>((resolve) => {
-            releaseSettle = resolve;
-          }),
-      );
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await Promise.resolve();
-      expect(settleSpy).toHaveBeenCalled();
-      expect(onAutoConnect).not.toHaveBeenCalled();
-
-      releaseSettle();
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith(
-          'ble',
-          undefined,
-          undefined,
-          'meshcore-ble-device',
-        );
-      });
-    } finally {
-      localStorage.removeItem(mcConnKey);
-      localStorage.removeItem(mtConnKey);
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      dualNoble.resetNobleBleConnectMutexForTests();
-      restore();
-    }
-  });
-
-  // OS-specific: dual-Noble deferred BLE auto-connect (Cancel-before-primary-settle) exists only
-  // on macOS/Windows Noble. Linux uses Web Bluetooth and skips remembered BLE cold-start in
-  // useProtocolRfAutoConnect (`!isLinux`) — there is no equivalent dual-radio deferral to cancel.
-  it.each(['darwin', 'win32'] as const)(
-    'cancels deferred meshcore BLE auto-connect when user cancels before primary settle completes (%s)',
-    async (platform) => {
-      const { restore } = mockNobleBlePlatform(platform);
-      const mcConnKey = 'mesh-client:lastConnection:meshcore';
-      const mtConnKey = 'mesh-client:lastConnection:meshtastic';
-      localStorage.setItem(protocolKey, 'meshtastic');
-      localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
-      localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
-      localStorage.setItem(
-        mcConnKey,
-        JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
-      );
-      localStorage.setItem(
-        mtConnKey,
-        JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
-      );
-      const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-      const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
-      dualNoble.resetNobleBleConnectMutexForTests();
-      dualNoble.initNobleBleDualRadioStartup();
-      let releaseSettle!: () => void;
-      vi.spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled').mockImplementation(
-        () =>
-          new Promise<void>((resolve) => {
-            releaseSettle = resolve;
-          }),
-      );
-
-      const user = userEvent.setup();
-      try {
-        render(
-          <ConnectionPanel
-            state={disconnectedState}
-            onConnect={vi.fn().mockResolvedValue(undefined)}
-            onAutoConnect={onAutoConnect}
-            onDisconnect={vi.fn().mockResolvedValue(undefined)}
-            mqttStatus="disconnected"
-            protocol="meshcore"
-          />,
-        );
-
-        // Secondary BLE waits on Meshtastic — connecting UI exposes Cancel.
-        const cancelBtn = await screen.findByRole('button', { name: /^Cancel$/i });
-        await user.click(cancelBtn);
-
-        releaseSettle();
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(onAutoConnect).not.toHaveBeenCalled();
-      } finally {
-        localStorage.removeItem(mcConnKey);
-        localStorage.removeItem(mtConnKey);
-        localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-        localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-        dualNoble.resetNobleBleConnectMutexForTests();
-        restore();
-      }
-    },
-  );
-
+describe('ConnectionPanel ProtocolAutoConnectCoordinator cancel', () => {
   it('cancels ProtocolAutoConnectCoordinator when user clicks Reconnect with a pending last connection', async () => {
     const user = userEvent.setup();
     const lastConnKey = 'mesh-client:lastConnection:meshtastic';
@@ -1666,7 +1534,6 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
           onDisconnect={vi.fn().mockResolvedValue(undefined)}
           mqttStatus="disconnected"
           protocol="meshtastic"
-          suppressMountAutoConnect
         />,
       );
 
@@ -1685,226 +1552,6 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     } finally {
       cancelSpy.mockRestore();
       localStorage.removeItem(lastConnKey);
-    }
-  });
-
-  it('shows shared-peripheral notice when meshcore is active and targets the same BLE device as meshtastic', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const sharedId = 'shared-ble-peripheral';
-    const mcConnKey = 'mesh-client:lastConnection:meshcore';
-    const mtBleKey = 'mesh-client:lastBleDevice:meshtastic';
-    localStorage.setItem(protocolKey, 'meshcore');
-    localStorage.setItem(mcConnKey, JSON.stringify({ type: 'ble', bleDeviceId: sharedId }));
-    localStorage.setItem(mtBleKey, sharedId);
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText(/already connected via Meshtastic/i)).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(mcConnKey);
-      localStorage.removeItem(mtBleKey);
-      localStorage.removeItem(protocolKey);
-      restore();
-    }
-  });
-});
-
-describe('ConnectionPanel BLE auto-connect error humanization', () => {
-  it('shows macOS wake recovery hint when noble auto-connect fails', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
-    localStorage.setItem(
-      lastConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'ble-known-device' }),
-    );
-    const reconnectModule = await import('../lib/bleReconnectHelper');
-    const reconnectSpy = vi
-      .spyOn(reconnectModule, 'reconnectBleWithScan')
-      .mockRejectedValue(new Error('BLE connectAsync timed out'));
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshtastic"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(reconnectSpy).toHaveBeenCalled();
-      });
-      await waitFor(() => {
-        expect(
-          screen.getByText(/After sleep, quit mesh-client \(Cmd\+Q\), toggle Bluetooth/i),
-        ).toBeInTheDocument();
-      });
-    } finally {
-      reconnectSpy.mockRestore();
-      localStorage.removeItem(lastConnKey);
-      restore();
-    }
-  });
-
-  it('does not surface MeshCore setup AbortError as an unhandledrejection or UI error', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const protocolKey = 'mesh-client:protocol';
-    const mcConnKey = 'mesh-client:lastConnection:meshcore';
-    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
-    const mcBleKey = 'mesh-client:lastBleDevice:meshcore';
-    const mtBleKey = 'mesh-client:lastBleDevice:meshtastic';
-    localStorage.setItem(protocolKey, 'meshcore');
-    localStorage.setItem(mcBleKey, 'meshcore-ble');
-    localStorage.setItem(mtBleKey, 'meshtastic-ble');
-    localStorage.setItem(mcConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble' }));
-    localStorage.setItem(mtConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble' }));
-    const { MESHCORE_SETUP_ABORT_MESSAGE } = await import('../lib/bleConnectErrors');
-    const abort = new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
-    const onAutoConnect = vi.fn().mockRejectedValue(abort);
-    const reconnectModule = await import('../lib/bleReconnectHelper');
-    // Invoke the connect callback so dual-primary `void attempt.finally` runs (regression for
-    // unhandledrejection from the finally chain when setup AbortError rejects).
-    const reconnectSpy = vi
-      .spyOn(reconnectModule, 'reconnectBleWithScan')
-      .mockImplementation(async (_protocol, _id, connect) => {
-        await connect();
-      });
-    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
-    dualNoble.resetNobleBleConnectMutexForTests();
-    dualNoble.initNobleBleDualRadioStartup();
-    const unhandled: unknown[] = [];
-    const onUnhandled = (ev: PromiseRejectionEvent) => {
-      unhandled.push(ev.reason);
-    };
-    window.addEventListener('unhandledrejection', onUnhandled);
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalled();
-      });
-      await waitFor(() => {
-        expect(screen.queryByText(/Auto-connect failed/i)).not.toBeInTheDocument();
-      });
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(unhandled).toEqual([]);
-    } finally {
-      window.removeEventListener('unhandledrejection', onUnhandled);
-      reconnectSpy.mockRestore();
-      dualNoble.resetNobleBleConnectMutexForTests();
-      localStorage.removeItem(protocolKey);
-      localStorage.removeItem(mcConnKey);
-      localStorage.removeItem(mtConnKey);
-      localStorage.removeItem(mcBleKey);
-      localStorage.removeItem(mtBleKey);
-      restore();
-    }
-  });
-});
-
-describe('ConnectionPanel serial auto-connect BLE fallback', () => {
-  it('falls back to noble BLE scan when serial auto-connect fails and lastBleDevice exists', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const lastConnKey = 'mesh-client:lastConnection:meshcore';
-    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
-    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'serial', serialPortId: 'port-1' }));
-    localStorage.setItem(lastBleKey, 'ble-device-abc');
-    const onAutoConnect = vi
-      .fn()
-      .mockRejectedValue(new Error('Serial auto-connect failed (radio did not respond)'));
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue({ ok: true });
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith('serial', undefined, 'port-1');
-      });
-      await waitFor(() => {
-        expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalledWith('meshcore');
-      });
-
-      const migrated = JSON.parse(localStorage.getItem(lastConnKey) ?? '{}') as {
-        type?: string;
-        bleDeviceId?: string;
-      };
-      expect(migrated.type).toBe('ble');
-      expect(migrated.bleDeviceId).toBe('ble-device-abc');
-    } finally {
-      localStorage.removeItem(lastConnKey);
-      localStorage.removeItem(lastBleKey);
-      restore();
-    }
-  });
-
-  it('does not fall back to noble BLE when serial fails but BLE id is shared with Meshtastic', async () => {
-    const { restore } = mockMacNoblePlatform();
-    const sharedId = 'shared-ble-device';
-    const lastConnKey = 'mesh-client:lastConnection:meshcore';
-    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'serial', serialPortId: 'port-1' }));
-    localStorage.setItem('mesh-client:lastBleDevice:meshcore', sharedId);
-    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', sharedId);
-    const onAutoConnect = vi
-      .fn()
-      .mockRejectedValue(new Error('Serial auto-connect failed (radio did not respond)'));
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshcore"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(onAutoConnect).toHaveBeenCalledWith('serial', undefined, 'port-1');
-      });
-      expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
-    } finally {
-      localStorage.removeItem(lastConnKey);
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      restore();
     }
   });
 });

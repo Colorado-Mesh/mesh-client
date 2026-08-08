@@ -909,8 +909,6 @@
       "pairingFailed": "페어링 실패: {{msg}}",
       "pinPairingFailed": "PIN 페어링 실패: {{msg}}",
       "pinAcceptedNext": "PIN이 승인되었습니다. 페어링이 완료되었습니다. 연결을 누르고 장치를 선택하여 연결을 완료하세요.",
-      "autoConnectTimeout": "자동 연결 시간이 초과되었습니다.",
-      "autoConnectFailed": "자동 연결 실패",
       "connectionFailed": "연결 실패"
     },
     "cancelMqttConnect": "취소",
@@ -923,8 +921,6 @@
     "mqttTlsEnabled": "TLS 활성화 (mqtts/wss)",
     "mqttTlsInsecure": "안전하지 않은 TLS (자체 서명된 인증서) 를 허용합니다. 기본적으로 사용 안 함 — 브로커가 비공개 CA를 사용하는 경우에만 사용하도록 설정합니다.",
     "channelPsksPrivateUplinkNote": "채널 업링크는/2/e/(개인 키용 JSON 미러 없음) 에서 AES-PSK로 암호화됩니다. 브로커 모니터는 여전히 다른 노드 간의 PKI/DM 트래픽에 대한 암호 해독 실패를 기록할 수 있습니다. 이는 정상이며 여기서는 채널 PSK와 관련이 없습니다.",
-    "sharedBleWithMeshtastic": "이 블루투스 장치는 이미 Meshtastic을 통해 연결되어 있습니다. Meshtastic 탭으로 전환하여 사용하거나 MeshCore에 대해 다른 라디오 또는 전송을 선택하십시오.",
-    "sharedBleWithMeshtasticHint": "하나의 물리적 라디오는 별도의 Meshtastic 및 MeshCore Bluetooth 세션을 동시에 보유할 수 없습니다.",
     "reticulumStackTitle": "Reticulum 스택",
     "reticulumStackHint": "로컬 Reticulum/LXMF 사이드카(TCP 및 Auto 인터페이스)를 시작합니다.",
     "reticulumStartStack": "스택 시작",
@@ -1260,19 +1256,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "관습"
+      "custom": "관습",
+      "waev": "와에브",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh에는 포트 443 및 서버 mqtt-us-v1.letsmesh.net 또는 mqtt-eu-v1.letsmesh.net에 WebSocket이 필요합니다. 지역(US/EU)을 사용하거나 다른 브로커의 경우 사용자 정의로 전환하세요.",
       "coloradomesh": "Colorado Mesh는 TLS가 활성화된 포트 443, 서버 mqtt.meshcore.coloradomesh.org, 경로 /ws에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
-      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.net에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요."
+      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.net에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
+      "waev": "Waev는 TLS가 활성화된 mqtt.waev.app 서버가 있는 포트 443에서 WebSocket이 필요합니다. 사전 설정을 재설정하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오.",
+      "meshatse": "Meshat.se에는 TLS가 활성화된 서버 meshcore-mqtt.meshat.se가 있는 포트 443의 WebSocket이 필요합니다. 사전 설정을 재설정하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오.",
+      "meshcoreca": "MeshCore.CA는 TLS가 활성화된 포트 443, 서버 mqtt1.meshcore.ca 또는 mqtt2.meshcore.ca에서 WebSocket이 필요합니다. 브로커 (기본/백업) 를 사용하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오.",
+      "eastmesh": "EastMesh는 TLS가 활성화된 mqtt2.eastmesh.au 서버가 있는 포트 443에서 WebSocket이 필요합니다. 사전 설정을 재설정하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "연결 시 인증 토큰(meshcore-decoder 형식)이 생성됩니다. 사용자 이름은 v1_에 64자 공개 키(16진수)를 더한 것입니다. JWT 대상은 서버 호스트 이름과 일치합니다.",
       "noPrivateKey": "전체 ID 없음 - 라디오 패널(공개 및 개인 키)에서 MeshCore 구성을 가져오거나 사용자 이름(v1_<공개 키>)과 토큰을 수동으로 붙여넣습니다. 토큰의 JWT 대상은 서버 호스트 이름과 일치해야 합니다.",
       "publicKeyMissing": "ID에서 공개 키가 누락되었습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나(공개 및 개인 키를 포함해야 함) 비밀번호 필드에 브로커 토큰을 붙여넣습니다.",
-      "usernameBuildFailed": "LetsMesh 사용자 이름을 만들 수 없습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나 사용자 이름(v1_<공개 키>)과 토큰을 수동으로 붙여넣습니다.",
-      "noIdentity": "장치 ID를 찾을 수 없습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나 사용자 이름과 토큰을 수동으로 붙여넣습니다."
+      "noIdentity": "장치 ID를 찾을 수 없습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나 사용자 이름과 토큰을 수동으로 붙여넣습니다.",
+      "usernameBuildFailed": "MeshCore MQTT 사용자 이름을 빌드할 수 없습니다. MeshCore 구성 JSON을 라디오 패널에 가져오거나 사용자 이름 (v1_<public key>) 및 토큰을 수동으로 붙여넣습니다."
     },
     "meshcorePacketLogger": {
       "label": "패킷 로거 — 라디오 및 MQTT에 연결되면 RX 패킷 요약을 meshcoretomqtt와 동일한 JSON 형태로 {{topic}}에 전달합니다. 기본적으로 꺼져 있습니다. 수신된 항공 트래픽을 패킷 분석기와 공유하려는 경우에만 활성화하십시오."
@@ -1341,9 +1345,6 @@
       "disableShareAria": "인스턴스 공유 끄고 스택 다시 시작",
       "disableFailed": "회차 공유 기능을 끄지 못했습니다."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh는 WebSocket 전송이 필요합니다.",
-    "letsMeshRequiresPort": "LetsMesh에는 {{port}} 포트가 필요합니다.",
-    "letsMeshKnownBrokersOnly": "LetsMesh/MeshMapper 사전 설정은 알려진 장치 서명 브로커만 지원합니다. 다른 브로커에 대해 사용자 정의를 사용하십시오.",
     "letsMeshUsernameV1Hex": "사용자 이름은 v1_뒤에 64 16진수 문자 (공개 키) 이어야 합니다.",
     "bleWeakSignalWarning": "블루투스 신호가 약합니다 ({{rssi}} dBm). 안정적인 연결을 위해 더 가까이 이동하세요.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1352,7 +1353,18 @@
     "linkQuality": "연결 품질",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "사용할 수 없음 (웹 블루투스)"
+    "signalUnavailableWebBluetooth": "사용할 수 없음 (웹 블루투스)",
+    "meshcoreCaBroker": "MeshCore.CA 브로커",
+    "meshcoreCaPrimary": "1차",
+    "meshcoreCaBackup": "백업",
+    "broker": "중개인",
+    "letsMeshRequiresTls": "이 브로커 사전 설정에는 TLS (wss) 가 필요합니다. TLS를 활성화하거나 사용자 지정으로 전환합니다.",
+    "letsMeshRequiresWsPath": "이 브로커 사전 설정에는 WebSocket 경로 {{wsPath}} 이 필요합니다. 사전 설정을 재설정하거나 사용자 지정으로 전환합니다.",
+    "letsMeshRegionUs": "미국",
+    "letsMeshRegionEu": "EU",
+    "letsMeshRequiresWebSocket": "이 브로커 사전 설정에는 WebSocket 전송 (wss) 이 필요합니다.",
+    "letsMeshRequiresPort": "이 브로커 사전 설정에는 포트 {{port}} (WebSocket TLS) 이 필요합니다.",
+    "letsMeshKnownBrokersOnly": "이 사전 설정은 알려진 공용 MeshCore MQTT 브로커만 지원합니다. 다른 브로커의 경우 사용자 지정으로 전환합니다."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -5323,7 +5335,8 @@
       "actionFailed": "조치 실패: {{reason}}",
       "unknownReason": "알 수 없는 이유",
       "resendFailed": "재전송에 실패했습니다.",
-      "deleteFailed": "세션을 삭제하지 못했습니다."
+      "deleteFailed": "세션을 삭제하지 못했습니다.",
+      "sessionExpired": "이 게임은 일정 기간 동안 활동이 없으면 만료되어 더 이상 플레이할 수 없습니다. 삭제 세션을 사용하여 삭제합니다."
     },
     "deleteConfirmTitle": "세션 삭제",
     "deleteConfirmMessage": "목록에서 이 게임 세션을 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
@@ -5337,6 +5350,7 @@
       "propagated": "저장량",
       "failed": "다시 시도 필요"
     },
-    "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중..."
+    "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중...",
+    "idleExpiryNotice": "게임은 비활성 후에 만료되며 삭제할 수 있습니다. 답이 없는 챌린지: 24시간 (모든 게임). 진행 중인 게임: 24시간 후 틱택토, 7일 후 체스 및 포인어로우."
   }
 }

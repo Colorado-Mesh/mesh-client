@@ -909,8 +909,6 @@
       "pairingFailed": "Eşleştirme başarısız oldu: {{msg}}",
       "pinPairingFailed": "PIN eşleştirme başarısız oldu: {{msg}}",
       "pinAcceptedNext": "PIN kabul edildi. Eşleştirme tamamlandı. Bağlan'a basın ve bağlantıyı tamamlamak için cihazınızı seçin.",
-      "autoConnectTimeout": "Otomatik bağlantı zaman aşımına uğradı.",
-      "autoConnectFailed": "Otomatik bağlantı başarısız oldu",
       "connectionFailed": "Bağlantı başarısız oldu"
     },
     "cancelMqttConnect": "İptal etmek",
@@ -923,8 +921,6 @@
     "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
     "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin.",
     "channelPsksPrivateUplinkNote": "Kanal uplink/2/e/üzerinde şifrelenmiş AES - PSK'dır (özel anahtarlar için JSON aynası yoktur). Broker monitörleri, diğer düğümler arasındaki PKI/DM trafiği için hala şifre çözme hatalarını günlüğe kaydedebilir — bu normaldir ve buradaki kanal PSK'larıyla ilgisi yoktur.",
-    "sharedBleWithMeshtastic": "Bu Bluetooth cihazı Meshtastic üzerinden zaten bağlı. Kullanmak için Meshtastic sekmesine geçin veya MeshCore için farklı bir radyo veya aktarım seçin.",
-    "sharedBleWithMeshtasticHint": "Bir fiziksel radyo, Meshtastic ve MeshCore Bluetooth oturumlarını aynı anda ayrı ayrı tutamaz.",
     "reticulumStackTitle": "Reticulum yığını",
     "reticulumStackHint": "Yerel Reticulum/LXMF sidecarını başlatır (TCP ve Auto arayüzleri).",
     "reticulumStartStack": "Yığını başlat",
@@ -1260,19 +1256,27 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Gelenek"
+      "custom": "Gelenek",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh'in 443 numaralı bağlantı noktasında WebSocket'e ve mqtt-us-v1.letsmesh.net veya mqtt-eu-v1.letsmesh.net sunucusuna ihtiyacı vardır. Bölge'yi (ABD/AB) kullanın veya diğer aracılar için Özel'e geçin.",
       "coloradomesh": "Colorado Mesh'in TLS etkinleştirilmiş 443 numaralı bağlantı noktasında WebSocket'e ihtiyacı var, sunucu mqtt.meshcore.coloradomesh.org, yol /ws. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
-      "meshmapper": "MeshMapper'ın 443 numaralı bağlantı noktasında WebSocket'e ve mqtt.meshmapper.net sunucusuna ihtiyacı vardır. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin."
+      "meshmapper": "MeshMapper'ın 443 numaralı bağlantı noktasında WebSocket'e ve mqtt.meshmapper.net sunucusuna ihtiyacı vardır. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "waev": "Waev, TLS etkin, sunucu mqtt.waev.app ile 443 numaralı bağlantı noktasında WebSocket'e ihtiyaç duyar. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "meshatse": "Meshat.se, TLS etkinleştirilmiş, sunucu meshcore-mqtt.meshat.se ile 443 numaralı bağlantı noktasında WebSocket'e ihtiyaç duyar. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "meshcoreca": "MeshCore.CA, TLS etkinleştirilmiş 443 numaralı bağlantı noktasında WebSocket'e, mqtt1.meshcore.ca veya mqtt2.meshcore.ca sunucusuna ihtiyaç duyar. Broker (Birincil/Yedekleme) kullanın veya diğer brokerler için Özel'e geçin.",
+      "eastmesh": "EastMesh, TLS etkinleştirilmiş, mqtt2.eastmesh.au sunucusuyla 443 numaralı bağlantı noktasında WebSocket'e ihtiyaç duyar. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Bağlandığınızda kimlik doğrulama jetonu (meshcore-kod çözücü formatı) oluşturulacaktır. Kullanıcı adı v1_ artı 64 karakterlik genel anahtarınızdan (onaltılık) oluşur. JWT izleyicisi Sunucu ana bilgisayar adıyla eşleşir.",
       "noPrivateKey": "Tam kimlik yok — MeshCore yapılandırmanızı Radyo paneline (genel ve özel anahtarlar) içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın. Belirteçteki JWT hedef kitlesi, Sunucu ana bilgisayar adıyla eşleşmelidir.",
       "publicKeyMissing": "Kimlikte genel anahtar eksik. MeshCore config JSON'unuzu Radyo paneline içe aktarın (genel ve özel anahtarlar içermelidir) veya şifre alanına bir aracı belirteci yapıştırın.",
-      "usernameBuildFailed": "LetsMesh kullanıcı adı oluşturulamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın.",
-      "noIdentity": "Cihaz kimliği bulunamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını ve belirteci manuel olarak yapıştırın."
+      "noIdentity": "Cihaz kimliği bulunamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını ve belirteci manuel olarak yapıştırın.",
+      "usernameBuildFailed": "MeshCore MQTT kullanıcı adı oluşturulamadı. MeshCore yapılandırma JSON'unuzu Radyo panelinden içe aktarın veya kullanıcı adını (v1_<public key>) ve belirteci manuel olarak yapıştırın."
     },
     "meshcorePacketLogger": {
       "label": "Paket kaydedici — radyonuza ve MQTT'nize bağlandığında, RX paket özetlerini meshcoretomqtt ile aynı JSON biçiminde {{topic}}'ye iletin. Varsayılan olarak kapalı; yalnızca duyulan hava trafiğini bir paket analizörüyle paylaşmak istiyorsanız etkinleştirin."
@@ -1341,9 +1345,6 @@
       "disableShareAria": "Paylaşım örneğini kapat ve yığını yeniden başlat",
       "disableFailed": "Paylaşım örneği kapatılamadı."
     },
-    "letsMeshRequiresWebSocket": "LetsMesh, WebSocket taşımacılığı gerektirir.",
-    "letsMeshRequiresPort": "LetsMesh, {{port}} numaralı bağlantı noktasını gerektirir.",
-    "letsMeshKnownBrokersOnly": "LetsMesh /MeshMapper ön ayarı yalnızca bilinen cihaz imzalama aracılarını destekler. Diğer brokerler için Özel'i kullanın.",
     "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır.",
     "bleWeakSignalWarning": "Bluetooth sinyali zayıf ({{rssi}} dBm). Sabit bir bağlantı için yaklaşın.",
     "bleRssiDbm": "{{rssi}} dBm",
@@ -1352,7 +1353,18 @@
     "linkQuality": "Hat kalitesi",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Kullanılamıyor (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Kullanılamıyor (Web Bluetooth)",
+    "meshcoreCaBroker": "MeshCore.CA brokeri",
+    "meshcoreCaPrimary": "Birincil",
+    "meshcoreCaBackup": "Yedekleme",
+    "broker": "Aracı Kurum",
+    "letsMeshRequiresTls": "Bu broker ön ayarı TLS (wss) gerektirir. TLS'yi etkinleştirin veya Özel'e geçin.",
+    "letsMeshRequiresWsPath": "Bu aracı kurum ön ayarı WebSocket yolu {{wsPath}} gerektirir. Ön ayarı sıfırlayın veya Özel'e geçin.",
+    "letsMeshRegionUs": "ABD",
+    "letsMeshRegionEu": "AB",
+    "letsMeshRequiresWebSocket": "Bu broker ön ayarı WebSocket taşımacılığı (wss) gerektirir.",
+    "letsMeshRequiresPort": "Bu aracı kurum ön ayarı {{port}} (WebSocket TLS) bağlantı noktasını gerektirir.",
+    "letsMeshKnownBrokersOnly": "Bu ön ayar yalnızca bilinen genel MeshCore MQTT brokerlerini destekler. Diğer brokerler için Özel'e geçin."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -5323,7 +5335,8 @@
       "actionFailed": "İşlem başarısız oldu: {{reason}}",
       "unknownReason": "bilinmeyen neden",
       "resendFailed": "Yeniden Gönderilemedi",
-      "deleteFailed": "Oturum silinemedi."
+      "deleteFailed": "Oturum silinemedi.",
+      "sessionExpired": "Bu oyun bir süre hareketsiz kaldıktan sonra sona erdi ve artık oynanamaz. Silmek için oturumu sil'i kullanın."
     },
     "deleteConfirmTitle": "Oturumları Yapılandır...",
     "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz.",
@@ -5337,6 +5350,7 @@
       "propagated": "ve saklanmalı.",
       "failed": "Yeniden deneme gerekli"
     },
-    "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…"
+    "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…",
+    "idleExpiryNotice": "Oyunlar işlem yapılmadığında sona erer ve yalnızca silinebilir. Cevapsız zorluklar: 24 saat (tüm oyunlar). Aktif oyunlar: 24 saat sonra tic - tac - toe, 7 gün sonra satranç ve four - in - a - row."
   }
 }

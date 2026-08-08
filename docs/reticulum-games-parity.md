@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns on new Ratspeak releases with stub-kind `games-parity`.
 
-**Last review:** 2026-08-06 (delivery_state / envelope persist / optimistic board / Chess promotion+claims).
+**Last review:** 2026-08-08 (Ratspeak v1.0.25 — no Games protocol/API delta, CSS-only; added win confetti; LXMF `FIELD_REACTION` 0x40 interop for Chat tapbacks). Prior: 2026-08-06 (delivery_state / envelope persist / optimistic board / Chess promotion+claims).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 
@@ -26,21 +26,22 @@ Status: `done` | `partial` | `wontfix` | `todo`
 
 ## UI
 
-| Ratspeak UI                         | mesh-client                             | Status  | Notes                                                     |
-| ----------------------------------- | --------------------------------------- | ------- | --------------------------------------------------------- |
-| Games tab                           | Left-rail Games (`Gamepad2`)            | done    | Reticulum-only via `hasLrgpGames`                         |
-| Session list filters                | GamesPanel filters                      | done    |                                                           |
-| Unread badge                        | session unread + Games tab badge        | done    | sidebar red pill via `gamesUnread`                        |
-| TTT board                           | `TicTacToeBoard`                        | done    |                                                           |
-| Chess board                         | `ChessBoard`                            | done    |                                                           |
-| Challenge from contacts             | Peers / Chat DM Challenge               | done    |                                                           |
-| Draw / resign                       | session actions                         | done    |                                                           |
-| Delivery state / resend             | session `delivery_state` + Resend       | done    | LXMF outbound bridge; chips; Resend on `failed`           |
-| Notification route `lrgp:<session>` | `lrgp:` + `lxm://game/<id>` → Games tab | done    | `MeshClientDeepLinkHost` + `openReticulumGameSession`     |
-| Optimistic rollback UI              | client backup + restore                 | done    | TTT + Chess optimistic paint; WS/`action_result` rollback |
-| Chess promotion picker              | `ChessBoard` chooser                    | done    | q/r/b/n filtered by `legal_moves`                         |
-| Threefold / 50-move claims          | Claim buttons → `draw_offer` `{ r }`    | done    | `3fr` / `50m` when `draw_offer_reason` set                |
-| Win celebration                     | —                                       | wontfix | optional polish; not required for interop                 |
+| Ratspeak UI                         | mesh-client                             | Status | Notes                                                                                                         |
+| ----------------------------------- | --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
+| Games tab                           | Left-rail Games (`Gamepad2`)            | done   | Reticulum-only via `hasLrgpGames`                                                                             |
+| Session list filters                | GamesPanel filters                      | done   |                                                                                                               |
+| Unread badge                        | session unread + Games tab badge        | done   | sidebar red pill via `gamesUnread`                                                                            |
+| TTT board                           | `TicTacToeBoard`                        | done   |                                                                                                               |
+| Chess board                         | `ChessBoard`                            | done   |                                                                                                               |
+| Challenge from contacts             | Peers / Chat DM Challenge               | done   |                                                                                                               |
+| Draw / resign                       | session actions                         | done   |                                                                                                               |
+| Delivery state / resend             | session `delivery_state` + Resend       | done   | LXMF outbound bridge; chips; Resend on `failed`                                                               |
+| Notification route `lrgp:<session>` | `lrgp:` + `lxm://game/<id>` → Games tab | done   | `MeshClientDeepLinkHost` + `openReticulumGameSession`                                                         |
+| Optimistic rollback UI              | client backup + restore                 | done   | TTT + Chess optimistic paint; WS/`action_result` rollback                                                     |
+| Chess promotion picker              | `ChessBoard` chooser                    | done   | q/r/b/n filtered by `legal_moves`                                                                             |
+| Threefold / 50-move claims          | Claim buttons → `draw_offer` `{ r }`    | done   | `3fr` / `50m` when `draw_offer_reason` set                                                                    |
+| Win celebration                     | `burstConfetti` on local win            | done   | `confettiBurst.ts` canvas burst; once per `session_id`; reduce-motion aware                                   |
+| Four in a Row                       | —                                       | todo   | Added to lrgp-rs + Ratspeak `main` after v1.0.25; sidecar already registers `four_in_a_row`; UI board missing |
 
 ## Wire interop
 

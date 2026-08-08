@@ -6,12 +6,15 @@ import {
 } from './letsMeshConnectionGuards';
 import {
   generateLetsMeshAuthToken,
-  isLetsMeshSettings,
   letsMeshMqttUsernameFromIdentity,
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentityAsync,
 } from './letsMeshJwt';
-import { readStoredMeshcoreMqttPreset } from './meshcoreMqttPresets';
+import {
+  type MeshcoreMqttPreset,
+  readStoredMeshcoreMqttPreset,
+  usesMeshcoreDeviceSigningMqtt,
+} from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
 import { prepareMeshcoreIataMqttTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
@@ -27,7 +30,10 @@ export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
   const settings = readMeshcoreMqttSettingsFromStorage();
   if (!settings.autoLaunch) return false;
   if (meshcoreMqttNeedsColoradoRegionAck()) return false;
-  if (isLetsMeshSettings(settings.server)) {
+  // Device-signing gate follows the shared predicate (named preset OR device-signing host), so a
+  // Waev/EastMesh preset with a stale server still defers on the imported key rather than a password.
+  const preset = readStoredMeshcoreMqttPreset();
+  if (usesMeshcoreDeviceSigningMqtt(preset, settings)) {
     return meshcoreIdentityHasPrivateKey();
   }
   return Boolean(settings.password.trim());
@@ -55,11 +61,11 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
     mqttTransportProtocol: prot === 'meshcore' ? 'meshcore' : 'meshtastic',
   };
 
+  const meshcorePreset: MeshcoreMqttPreset | null =
+    prot === 'meshcore' ? readStoredMeshcoreMqttPreset() : null;
+
   if (prot === 'meshcore') {
-    const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(
-      readStoredMeshcoreMqttPreset(),
-      connectSettings,
-    );
+    const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, connectSettings);
     if (!iataPrepared.ok) {
       console.warn(
         '[App] MQTT auto-launch skipped: invalid MeshCore topic prefix (need meshcore/{IATA} or meshcore/test)',
@@ -69,7 +75,7 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
     connectSettings.topicPrefix = iataPrepared.topicPrefix;
   }
 
-  if (prot === 'meshcore' && isLetsMeshSettings(connectSettings.server)) {
+  if (prot === 'meshcore' && usesMeshcoreDeviceSigningMqtt(meshcorePreset, connectSettings)) {
     const presetErr = validateLetsMeshPresetConnect(connectSettings);
     if (presetErr) {
       console.warn('[App] MQTT auto-launch skipped: ' + errLikeToLogString(presetErr));

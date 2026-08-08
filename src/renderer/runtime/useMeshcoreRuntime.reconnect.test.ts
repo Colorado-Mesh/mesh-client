@@ -7,10 +7,12 @@ import { describe, expect, it } from 'vitest';
 import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractUseCallbackBody,
+  loadRendererLibSource,
   loadRuntimeSource,
 } from '../lib/sourceContractTestHelpers';
 
 const RUNTIME_SOURCE = loadRuntimeSource('useMeshcoreRuntime.ts');
+const ATTEMPT_RUNNER = loadRendererLibSource('loraRfReconnectAttempt.ts');
 const CONN_EVENTS_SOURCE = readFileSync(
   join(__dirname, '../hooks/meshcore/meshcoreConnSideEffects.ts'),
   'utf-8',
@@ -24,14 +26,18 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('implements exponential backoff reconnect with max attempts', () => {
     expect(RUNTIME_SOURCE).toContain('attemptMeshcoreReconnect');
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLost');
-    expect(RUNTIME_SOURCE).toContain('rfMaxReconnectAttemptsForTransport');
-    expect(RUNTIME_SOURCE).toContain('delayUnlessSuspended');
+    expect(RUNTIME_SOURCE).toContain('runLoraRfReconnectAttempt');
+    expect(ATTEMPT_RUNNER).toContain('rfMaxReconnectAttemptsForTransport');
+    expect(ATTEMPT_RUNNER).toContain('delayUnlessSuspended');
   });
 
   it('normalizes reconnect UI to disconnected when backoff aborts due to suspend', () => {
-    expect(RUNTIME_SOURCE).toMatch(
-      /if \(delayResult === 'suspended'\) \{[\s\S]*?status: 'disconnected'[\s\S]*?connectionLoss: true/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /if \(delayResult === 'suspended'\) \{[\s\S]*?setDisconnectedUi\(\{ connectionLoss: true \}\)/,
     );
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('setDisconnectedUi');
+    expect(reconnectBody).toMatch(/status: 'disconnected'[\s\S]*?connectionLoss: true/);
   });
 
   it('persists connection params for ble, serial, and tcp reconnect', () => {
@@ -115,18 +121,14 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 
   it('bounds every reconnect open+attach with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
-    // Applies to all transports, not just BLE (see comment at the call site): TCP/serial used
-    // to await the open+attach attempt with no ceiling at all, so a hang anywhere in that
-    // sequence (e.g. a disconnect landing mid-attach) wedged reconnection forever — and unlike
-    // serial, MeshCore TCP has no fallback watchdog either (see meshcoreSerialWatchdog).
-    expect(RUNTIME_SOURCE).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
-    expect(RUNTIME_SOURCE).toContain('raceWithDeadline');
-    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    expect(reconnectBody).toContain('raceWithDeadline');
-    expect(reconnectBody).toContain('Reconnect attempt timed out after');
-    expect(reconnectBody).toContain('attemptActive');
-    expect(reconnectBody).toContain('meshcoreReconnectConnectInFlightRef.current = true');
-    expect(reconnectBody).not.toContain('if (isBleReconnect) {\n        await raceWithDeadline');
+    // Shared runner applies the budget to every transport (constant name is historical).
+    expect(ATTEMPT_RUNNER).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
+    expect(ATTEMPT_RUNNER).toContain('Reconnect attempt timed out after');
+    expect(ATTEMPT_RUNNER).toContain('attemptActive');
+    expect(ATTEMPT_RUNNER).toContain('connectInFlight.set(true)');
+    expect(RUNTIME_SOURCE).toContain('runLoraRfReconnectAttempt');
+    expect(RUNTIME_SOURCE).toContain('meshcoreReconnectConnectInFlightRef');
   });
 
   it('on reconnect timeout invalidates setup generation and cleans late transports (any transport, CodeRabbit #792)', () => {
@@ -136,7 +138,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     // BLE-only; now that every transport's reconnect races the same deadline, a timed-out
     // TCP/serial attempt must invalidate the setup generation too, or its background RPCs keep
     // running and can apply stale state after the attempt was already declared failed.
-    expect(RUNTIME_SOURCE).toContain('createBleReconnectTransportCleanup');
+    expect(ATTEMPT_RUNNER).toContain('createBleReconnectTransportCleanup');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toMatch(
       /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('MeshCore reconnect superseded after open'\)/,
@@ -144,12 +146,8 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toMatch(
       /lateTransport\.cleanup\(opened\.driverIdentityId\);\s*throw new Error\('MeshCore reconnect superseded during attach'\)/,
     );
-    const catchBody = reconnectBody.slice(
-      reconnectBody.indexOf('} catch (err) {'),
-      reconnectBody.indexOf('await lateTransport.cleanup(opened?.driverIdentityId)'),
-    );
-    expect(catchBody).toContain('meshcoreSetupGenerationRef.current += 1');
-    expect(catchBody).not.toContain('if (isBleReconnect)');
+    expect(reconnectBody).toContain('meshcoreSetupGenerationRef.current += 1');
+    expect(reconnectBody).toContain('onAttemptError:');
   });
 
   it('cleans up transport when RF link is lost after reconnect attach', () => {
@@ -207,12 +205,13 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 
   it('flushes deferred reconnects after reconnect attempts settle', () => {
+    expect(ATTEMPT_RUNNER).toContain('connectInFlight.set(false)');
+    expect(ATTEMPT_RUNNER).toContain('deferredReconnect.get()');
+    expect(ATTEMPT_RUNNER).toContain('scheduleAttempt()');
+    expect(ATTEMPT_RUNNER).not.toContain('handleMeshcoreConnectionLostRef.current()');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
-    expect(finallyBody).toContain('meshcoreReconnectConnectInFlightRef.current = false');
-    expect(finallyBody).toContain('if (meshcoreDeferredReconnectRef.current)');
-    expect(finallyBody).toContain('scheduleMeshcoreReconnectAttemptRef.current()');
-    expect(finallyBody).not.toContain('handleMeshcoreConnectionLostRef.current()');
+    expect(reconnectBody).toContain('scheduleMeshcoreReconnectAttemptRef.current()');
+    expect(reconnectBody).toContain('connectInFlight:');
   });
 
   it('reconnects when stored session exists before everConfigured (HMR/stale runtime)', () => {
@@ -251,18 +250,17 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 
   it('clears bleConnectInProgressRef after auto-reconnect attempts', () => {
+    expect(ATTEMPT_RUNNER).toContain('bleConnectInProgress?.set(false)');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    const finallyBody = reconnectBody.slice(reconnectBody.indexOf('finally {'));
-    expect(finallyBody).toContain('bleConnectInProgressRef.current = false');
-    expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,800}bleConnectInProgressRef\.current = false/,
+    expect(reconnectBody).toContain('bleConnectInProgress:');
+    expect(reconnectBody).toMatch(
+      /onExhausted:[\s\S]*?rfType === 'ble'[\s\S]*?bleConnectInProgressRef\.current = false/,
     );
   });
 
   it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {
-    expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,900}escalateSerialReconnectExhaustion/,
-    );
+    expect(ATTEMPT_RUNNER).toContain('markExhausted()');
+    expect(RUNTIME_SOURCE).toContain('escalateSerialReconnectExhaustion');
     expect(RUNTIME_SOURCE).toContain('serialNeedsReselect');
     expect(RUNTIME_SOURCE).toContain('attachMeshcoreSerialTransportLossWatch');
     expect(RUNTIME_SOURCE).toContain('startMeshcoreSerialWatchdog');
@@ -476,8 +474,8 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   });
 
   it('attemptMeshcoreReconnect marks controller exhausted and re-enters via onLinkLost after serial rediscovery', () => {
+    expect(ATTEMPT_RUNNER).toContain('markExhausted()');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    expect(reconnectBody).toContain('markExhausted()');
     expect(reconnectBody).toMatch(
       /startSerialRediscovery\(\{[\s\S]*?onFound:[\s\S]*?onLinkLost\(\)[\s\S]*?scheduleMeshcoreReconnectAttemptRef\.current\(\)/,
     );
@@ -498,17 +496,17 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   });
 
   it('attemptMeshcoreReconnect returns when connection params are cleared', () => {
+    expect(ATTEMPT_RUNNER).toMatch(/if \(!params\) \{[\s\S]*?isReconnecting\.set\(false\)/);
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    expect(reconnectBody).toMatch(
-      /if \(!params\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
-    );
+    expect(reconnectBody).toContain('isReconnecting:');
+    expect(reconnectBody).toContain('getParams:');
   });
 
   it('attemptMeshcoreReconnect returns early on explicit user disconnect', () => {
+    expect(ATTEMPT_RUNNER).toMatch(/isExplicitDisconnect\(\)[\s\S]*?isReconnecting\.set\(false\)/);
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    expect(reconnectBody).toMatch(
-      /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
-    );
+    expect(reconnectBody).toContain('isExplicitDisconnect:');
+    expect(reconnectBody).toContain('meshcoreExplicitDisconnectRef.current');
   });
 
   it('attemptMeshcoreReconnect treats setup AbortError as superseded reconnect', () => {
@@ -525,36 +523,35 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(abortIdx).toBeGreaterThan(-1);
     const abortBlock = reconnectBody.slice(abortIdx, abortIdx + 900);
     expect(abortBlock).toContain('meshcoreDeferredReconnectRef.current = true');
+    expect(abortBlock).toContain("return 'defer'");
     expect(abortBlock).not.toMatch(/meshcoreIsReconnectingRef\.current = false/);
   });
 
   it('attemptMeshcoreReconnect clears stuck reconnecting UI when delay aborts', () => {
-    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    expect(reconnectBody).toMatch(
-      /delayResult === 'aborted'[\s\S]*?!meshcoreIsReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /delayResult === 'aborted'[\s\S]*?!deps\.isReconnecting\.get\(\)[\s\S]*?setDisconnectedUi/,
     );
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(/status: 'disconnected'[\s\S]*?connectionLoss: true/);
   });
 
   it('attemptMeshcoreReconnect clears stuck UI when generation mismatches after delay', () => {
-    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    // Post-delay guard: generation bump or cleared isReconnecting must not leave status=reconnecting.
-    expect(reconnectBody).toMatch(
-      /meshcoreReconnectGenerationRef\.current !== generation[\s\S]*?!meshcoreIsReconnectingRef\.current[\s\S]*?status: 'disconnected'/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /generation\.get\(\) !== generation[\s\S]*?!deps\.isReconnecting\.get\(\)[\s\S]*?setDisconnectedUi/,
     );
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('generation:');
+    expect(reconnectBody).toContain('setDisconnectedUi');
   });
 
   it('attemptMeshcoreReconnect finally flushes deferred restart via coalesced schedule', () => {
+    expect(ATTEMPT_RUNNER).toMatch(
+      /deferredReconnect\.get\(\) \|\| settled\.shouldSchedule[\s\S]*?scheduleAttempt\(\)/,
+    );
+    expect(ATTEMPT_RUNNER).not.toContain('handleMeshcoreConnectionLostRef.current()');
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    const abortIdx = reconnectBody.indexOf('isMeshcoreSetupAbortError(err)');
-    expect(abortIdx).toBeGreaterThan(-1);
-    const afterAbort = reconnectBody.slice(abortIdx);
-    expect(afterAbort).toMatch(
-      /finally[\s\S]*?meshcoreDeferredReconnectRef\.current[\s\S]*?scheduleMeshcoreReconnectAttemptRef\.current\(\)/,
-    );
-    // Must not re-enter handleMeshcoreConnectionLost (double generation bump / dual backoff loops).
-    expect(afterAbort).not.toMatch(
-      /finally[\s\S]*?meshcoreDeferredReconnectRef\.current[\s\S]*?handleMeshcoreConnectionLostRef\.current\(\)/,
-    );
+    expect(reconnectBody).toContain('scheduleMeshcoreReconnectAttemptRef.current()');
+    expect(reconnectBody).toContain('isMeshcoreSetupAbortError(err)');
   });
 
   it('handleMeshcoreConnectionLost defers when cycle already active (single-owner controller)', () => {
@@ -607,10 +604,12 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   });
 
   it('attemptMeshcoreReconnect delay abort flushes deferred restart', () => {
-    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
-    expect(reconnectBody).toMatch(
-      /delayResult === 'aborted'[\s\S]*?meshcoreDeferredReconnectRef\.current[\s\S]*?scheduleMeshcoreReconnectAttemptRef\.current\(\)/,
+    expect(ATTEMPT_RUNNER).toMatch(
+      /delayResult === 'aborted'[\s\S]*?deferredReconnect\.get\(\)[\s\S]*?scheduleAttempt\(\)/,
     );
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('deferredReconnect:');
+    expect(reconnectBody).toContain('scheduleMeshcoreReconnectAttemptRef.current()');
   });
 
   it('observes parallel init setup AbortErrors so sibling cancels are not unhandled', () => {

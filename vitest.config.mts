@@ -75,6 +75,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/reticulumVoiceCapability.test.ts',
   'src/renderer/lib/chatPanelProtocolStorage.test.ts',
   'src/renderer/lib/chatScrollUtils.test.ts',
+  'src/renderer/lib/confettiBurst.test.ts',
   'src/renderer/lib/connectedMeshcoreBleMac.test.ts',
   'src/renderer/lib/connection.ble-retry.test.ts',
   'src/renderer/lib/connection.serial-cleanup.test.ts',
