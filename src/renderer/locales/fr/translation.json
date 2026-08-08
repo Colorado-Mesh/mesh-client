@@ -506,7 +506,14 @@
       "splitHint": "Envoyé sous forme de paquets séparés étiquetés [1/N], [2/N], …",
       "overMax": "Trop long — maximum {{totalMax}} caractères (messages {{maxParts}})",
       "sendParts_one": "Envoyer {{count}} pièce",
-      "sendParts_other": "Envoyer {{count}} pièces"
+      "sendParts_other": "Envoyer {{count}} pièces",
+      "limitHintSingle": "Jusqu'à {{limit}} caractères. MeshCore envoie chaque message sous la forme d'un seul paquet.",
+      "overMaxSingle": "Trop long — MeshCore envoie un paquet par message (maximum {{limit}} caractères)",
+      "meshcoreSingleNotice": {
+        "title": "Message trop long pour MeshCore",
+        "body": "MeshCore envoie chaque message sous la forme d'un seul paquet radio (jusqu'à {{limit}} caractères). Les messages plus longs doivent être divisés en parties numérotées, mais sur un maillage occupé, les répéteurs laissent régulièrement tomber certaines de ces parties — de sorte que la personne que vous envoyez recevrait un message incomplet sans aucun moyen de le dire. Pour que les messages restent fiables, ils ne sont pas divisés automatiquement. Raccourcissez ce message ou envoyez-le sous forme de quelques messages plus courts séparés.",
+        "hint": "MeshCore envoie un paquet par message ; les parties fractionnées sont souvent supprimées par des répéteurs occupés, de sorte que des messages plus longs ne peuvent pas être envoyés."
+      }
     },
     "sendFailed": "Échec de l'envoi",
     "outboxStatusQueued": "En file d'attente",
@@ -676,7 +683,10 @@
     "reticulumSendStoringLocally": "Enregistrement dans votre boîte de réception de propagation locale…",
     "reticulumSendStoredLocally": "Conservé dans votre boîte de réception de propagation locale (non livré à l'homologue)",
     "sentViaLocalPropagation": "Boîte de réception de propagation locale",
-    "reticulumSendTimeout": "Envoi expiré. La pile Reticulum est peut-être en cours de démarrage ou occupée — réessayez."
+    "reticulumSendTimeout": "Envoi expiré. La pile Reticulum est peut-être en cours de démarrage ou occupée — réessayez.",
+    "meshcoreFastSend": {
+      "warning": "Vous envoyez plus vite que le maillage ne peut relayer. Sur un maillage occupé, les répéteurs peuvent déposer des messages envoyés à proximité les uns des autres — laissez quelques secondes entre les messages."
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

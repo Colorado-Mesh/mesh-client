@@ -939,7 +939,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Long room posts show as `[1/2]`, `[2/2]`…**:
 
-- MeshCore room wire limit is ~160 bytes per post. mesh-client splits longer text into multiple posts with `[i/N]` prefixes. The **Rooms** tab merges consecutive chunks from the same sender for display; other clients may show separate lines.
+- MeshCore room wire limit is ~160 bytes per post. **mesh-client no longer splits outbound MeshCore posts** (chat, DM, or room) into `[i/N]` parts: on a busy mesh repeaters routinely drop some parts, so the recipient would silently get an incomplete message. Over-limit text is blocked in the composer with an explanatory notice — shorten it or send a few separate shorter messages (see [Limitations; MeshCore single-packet messages](../README.md#limitations)). **Inbound** multi-part posts from other clients are still merged: the **Rooms** tab merges consecutive `[i/N]` chunks from the same sender for display, though other clients may show them as separate lines.
 
 **Queue badge stuck at `Q: 255/256`**:
 

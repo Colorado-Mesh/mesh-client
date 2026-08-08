@@ -506,7 +506,14 @@
       "splitHint": "Inviati come pacchetti separati etichettati [1/N], [2/N],...",
       "overMax": "Troppo lungo — massimo {{totalMax}} caratteri ({{maxParts}} messaggi)",
       "sendParts_one": "Invia parte {{count}}",
-      "sendParts_other": "Invia parti {{count}}"
+      "sendParts_other": "Invia parti {{count}}",
+      "limitHintSingle": "Fino a {{limit}} caratteri. MeshCore invia ogni messaggio come un singolo pacchetto.",
+      "overMaxSingle": "Troppo lungo — MeshCore invia un pacchetto per messaggio (max {{limit}} caratteri)",
+      "meshcoreSingleNotice": {
+        "title": "Messaggio troppo lungo per MeshCore",
+        "body": "MeshCore invia ogni messaggio come un singolo pacchetto radio (fino a {{limit}} caratteri). I messaggi più lunghi devono essere suddivisi in parti numerate, ma su un ripetitore mesh occupato di solito alcune di queste parti cadono, quindi la persona a cui stai inviando messaggi riceverebbe un messaggio incompleto senza modo di dirlo. Per mantenere i messaggi affidabili, non vengono divisi automaticamente. Accorcia questo messaggio o invialo come pochi messaggi più brevi separati.",
+        "hint": "MeshCore invia un pacchetto per messaggio; le parti divise vengono spesso rilasciate da ripetitori occupati, quindi non è possibile inviare messaggi più lunghi."
+      }
     },
     "sendFailed": "Invio non riuscito",
     "outboxStatusQueued": "In coda",
@@ -676,7 +683,10 @@
     "reticulumSendStoringLocally": "Salvataggio nella tua casella di posta di propagazione locale in corso...",
     "reticulumSendStoredLocally": "Conservato nella tua casella di posta di propagazione locale (non consegnato al peer)",
     "sentViaLocalPropagation": "Posta in arrivo propagazione locale",
-    "reticulumSendTimeout": "Timeout dell'invio. Lo stack Reticulum potrebbe essere in avvio o occupato. Riprova."
+    "reticulumSendTimeout": "Timeout dell'invio. Lo stack Reticulum potrebbe essere in avvio o occupato. Riprova.",
+    "meshcoreFastSend": {
+      "warning": "Stai inviando più velocemente di quanto la rete possa trasmettere. Su una mesh occupata, i ripetitori possono rilasciare i messaggi inviati vicini — lasciare alcuni secondi tra i messaggi."
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

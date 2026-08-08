@@ -507,7 +507,14 @@
       "splitHint": "作为标记为 [1/N]、[2/N]、… 的单独数据包发送",
       "overMax": "太长 — 最多 {{totalMax}} 个字符（{{maxParts}} 条消息）",
       "sendParts_one": "发送 {{count}} 部分",
-      "sendParts_other": "发送 {{count}} 部分"
+      "sendParts_other": "发送 {{count}} 部分",
+      "limitHintSingle": "最多{{limit}}个字符。MeshCore将每条消息作为单个数据包发送。",
+      "overMaxSingle": "太长— MeshCore每条消息发送一个数据包（最多{{limit}}个字符）",
+      "meshcoreSingleNotice": {
+        "title": "MeshCore的消息太长",
+        "body": "MeshCore将每条消息作为单个无线电数据包发送（最多{{limit}}个字符）。较长的消息必须分成编号部分，但在繁忙的网格中继器上，经常会丢弃其中一些部分，因此您发送消息的人会收到一条不完整的消息，无法分辨。为了保持消息的可靠性，它们不会自动拆分。请缩短此消息，或单独发送几条较短的消息。",
+        "hint": "MeshCore每条消息发送一个数据包；拆分部分通常由繁忙的中继器丢弃，因此无法发送更长的消息。"
+      }
     },
     "sendFailed": "发送失败",
     "outboxStatusQueued": "已在队列中",
@@ -676,7 +683,10 @@
     "reticulumSendStoringLocally": "正在保存到本地传播收件箱…",
     "reticulumSendStoredLocally": "保存在您的本地传播收件箱中（未送达对端）",
     "sentViaLocalPropagation": "本地传播收件箱",
-    "reticulumSendTimeout": "发送超时。Reticulum 堆栈可能正在启动或忙碌—请重试。"
+    "reticulumSendTimeout": "发送超时。Reticulum 堆栈可能正在启动或忙碌—请重试。",
+    "meshcoreFastSend": {
+      "warning": "您发送的速度超过了网格可以中继的速度。在繁忙的网格上，中继器可能会丢弃一起发送的消息—在消息之间留几秒钟。"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

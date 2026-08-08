@@ -20,6 +20,7 @@ import {
   type ComposerWireContext,
   computeComposerLimitStatus,
   getComposerWireOverhead,
+  getMaxChunks,
   MAX_CHUNKS,
   splitChatMessage,
 } from '../lib/chatComposerLimits';
@@ -43,8 +44,9 @@ import {
   normalizeMeshcoreGifOutboundWire,
   parseMeshcoreGifId,
 } from '../lib/meshcoreGifWire';
-import { withMeshcoreTextSendPacing } from '../lib/meshcoreTextSendPacing';
+import { isMeshcoreSendTooFast, recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
+import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
 import { useToast } from './Toast';
@@ -204,8 +206,10 @@ export function ChatComposer({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
   const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
+  const [meshcoreFastSendWarn, setMeshcoreFastSendWarn] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const meshcoreFastSendWarnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emojiPickerRef = useRef<HTMLElement | null>(null);
   const floodScopeMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const floodScopeMenuRef = useRef<HTMLDivElement | null>(null);
@@ -440,6 +444,34 @@ export function ChatComposer({
     [protocol, viewKey],
   );
 
+  const dismissMeshcoreFastSendWarn = useCallback(() => {
+    if (meshcoreFastSendWarnTimerRef.current) {
+      clearTimeout(meshcoreFastSendWarnTimerRef.current);
+      meshcoreFastSendWarnTimerRef.current = null;
+    }
+    setMeshcoreFastSendWarn(false);
+  }, []);
+
+  // Advisory only — surface a non-blocking "sending too fast" banner that auto-dismisses.
+  const triggerMeshcoreFastSendWarn = useCallback(() => {
+    if (meshcoreFastSendWarnTimerRef.current) {
+      clearTimeout(meshcoreFastSendWarnTimerRef.current);
+    }
+    setMeshcoreFastSendWarn(true);
+    meshcoreFastSendWarnTimerRef.current = setTimeout(() => {
+      setMeshcoreFastSendWarn(false);
+      meshcoreFastSendWarnTimerRef.current = null;
+    }, MESHCORE_FAST_SEND_WARN_INTERVAL_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (meshcoreFastSendWarnTimerRef.current) {
+        clearTimeout(meshcoreFastSendWarnTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || sending || disabled) return;
     const draftSnapshot = input;
@@ -504,6 +536,9 @@ export function ChatComposer({
 
     setSending(true);
     setChatActionError(null);
+    // Advisory fast-send cadence: capture before recording this send so the warning reflects
+    // proximity to the *previous* MeshCore send. Never blocks or delays the send.
+    const meshcoreTooFast = protocol === 'meshcore' && isMeshcoreSendTooFast();
     try {
       for (let i = 0; i < textsToSend.length; i++) {
         const sendChunk = () =>
@@ -522,12 +557,16 @@ export function ChatComposer({
         // a second locally-originated text within ~2s (RATE_LIMIT_EXCEEDED).
         if (protocol === 'meshtastic') {
           await withMeshtasticTextSendPacing(sendChunk);
-        } else if (protocol === 'meshcore') {
-          // Space MeshCore split-message chunks so chunk 2+ does not overlap chunk 1's
-          // repeater rebroadcast window and get dropped by a busy repeater.
-          await withMeshcoreTextSendPacing(sendChunk);
         } else {
           await sendChunk();
+        }
+      }
+      if (protocol === 'meshcore') {
+        recordMeshcoreSend();
+        if (meshcoreTooFast) {
+          triggerMeshcoreFastSendWarn();
+        } else {
+          dismissMeshcoreFastSendWarn();
         }
       }
       rememberFloodScopeIfNeeded(floodScopeOverride);
@@ -597,6 +636,8 @@ export function ChatComposer({
     viewKey,
     wireOverheadFirstChunk,
     meshcoreOpenWireCompat,
+    triggerMeshcoreFastSendWarn,
+    dismissMeshcoreFastSendWarn,
   ]);
 
   const sendGifWire = useCallback(
@@ -820,9 +861,13 @@ export function ChatComposer({
           ? t('chatPanel.composePlaceholderMqttOnly')
           : t('chatPanel.composePlaceholderDefault'));
 
-  const limitHintText = t('chatPanel.composeLimit.limitHint', {
-    limit: limitStatus.singleMessageLimit,
-  });
+  // MeshCore sends a single radio packet (no multi-part `[i/N]` split): over-limit text is
+  // blocked with an explanatory callout rather than auto-split into parts that busy repeaters drop.
+  const singlePacketProtocol = getMaxChunks(protocol) <= 1;
+
+  const limitHintText = singlePacketProtocol
+    ? t('chatPanel.composeLimit.limitHintSingle', { limit: limitStatus.singleMessageLimit })
+    : t('chatPanel.composeLimit.limitHint', { limit: limitStatus.singleMessageLimit });
 
   const showQueueButton = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
 
@@ -845,6 +890,11 @@ export function ChatComposer({
 
   const counterMainText = (() => {
     if (limitStatus.phase === 'overMax') {
+      if (singlePacketProtocol) {
+        return t('chatPanel.composeLimit.overMaxSingle', {
+          limit: limitStatus.totalMaxChars,
+        });
+      }
       return t('chatPanel.composeLimit.overMax', {
         totalMax: limitStatus.totalMaxChars,
         maxParts: MAX_CHUNKS,
@@ -1036,6 +1086,29 @@ export function ChatComposer({
       {chatActionError?.viewKey === viewKey && (
         <div role="alert" className="mb-2 px-1 text-sm text-red-400">
           {chatActionError.message}
+        </div>
+      )}
+
+      {meshcoreFastSendWarn && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-2 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+        >
+          <span aria-hidden="true" className="mt-0.5 shrink-0 text-amber-400">
+            ⚠
+          </span>
+          <span className="min-w-0 flex-1 leading-snug">
+            {t('chatPanel.meshcoreFastSend.warning')}
+          </span>
+          <button
+            type="button"
+            onClick={dismissMeshcoreFastSendWarn}
+            aria-label={t('common.dismiss')}
+            className="shrink-0 rounded px-1 text-amber-300 hover:text-amber-100"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -1407,6 +1480,38 @@ export function ChatComposer({
               </span>
             </HelpTooltip>
           )}
+          {singlePacketProtocol && limitStatus.phase === 'warn' && (
+            <HelpTooltip text={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}>
+              <span
+                className="text-muted cursor-help select-none"
+                aria-label={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}
+              >
+                ⓘ
+              </span>
+            </HelpTooltip>
+          )}
+        </div>
+      )}
+
+      {singlePacketProtocol && limitStatus.phase === 'overMax' && (
+        <div
+          role="note"
+          aria-live="polite"
+          className="mt-2 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+        >
+          <span aria-hidden="true" className="mt-0.5 shrink-0 text-amber-400">
+            ⚠
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold text-amber-300">
+              {t('chatPanel.composeLimit.meshcoreSingleNotice.title')}
+            </span>
+            <span className="mt-0.5 block leading-snug">
+              {t('chatPanel.composeLimit.meshcoreSingleNotice.body', {
+                limit: limitStatus.totalMaxChars,
+              })}
+            </span>
+          </span>
         </div>
       )}
     </div>

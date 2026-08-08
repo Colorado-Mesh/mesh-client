@@ -506,7 +506,14 @@
       "splitHint": "Wysyłane jako oddzielne pakiety oznaczone [1/N], [2/N], …",
       "overMax": "Zbyt długie — maksymalnie {{totalMax}} znaków ({{maxParts}} wiadomości)",
       "sendParts_one": "Wyślij część {{count}}",
-      "sendParts_other": "Wyślij części {{count}}"
+      "sendParts_other": "Wyślij części {{count}}",
+      "limitHintSingle": "Maksymalnie {{limit}} znaków. MeshCore wysyła każdą wiadomość jako pojedynczy pakiet.",
+      "overMaxSingle": "Zbyt długi — MeshCore wysyła jedną paczkę na wiadomość (maks. {{limit}} znaków)",
+      "meshcoreSingleNotice": {
+        "title": "Wiadomość zbyt długa dla MeshCore",
+        "body": "MeshCore wysyła każdą wiadomość jako pojedynczy pakiet radiowy (do {{limit}} znaków). Dłuższe wiadomości muszą być podzielone na ponumerowane części, ale na zatłoczonych wtórnikach siatkowych rutynowo upuszczają niektóre z tych części — aby osoba, z którą wysyłasz wiadomość, otrzymała niekompletną wiadomość bez możliwości jej sprawdzenia. Aby wiadomości były wiarygodne, nie są dzielone automatycznie. Skróć tę wiadomość lub wyślij ją jako kilka oddzielnych krótszych wiadomości.",
+        "hint": "MeshCore wysyła jeden pakiet na wiadomość; podzielone części są często upuszczane przez zajęte wtórniki, więc dłuższe wiadomości nie mogą być wysyłane."
+      }
     },
     "sendFailed": "Wysyłanie nieudane",
     "outboxStatusQueued": "W kolejce",
@@ -680,7 +687,10 @@
     "reticulumSendStoringLocally": "Zapisywanie w skrzynce odbiorczej lokalnej propagacji…",
     "reticulumSendStoredLocally": "Przechowywane w skrzynce odbiorczej lokalnej propagacji (niedostarczone do peera)",
     "sentViaLocalPropagation": "Skrzynka odbiorcza propagacji lokalnej",
-    "reticulumSendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie."
+    "reticulumSendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie.",
+    "meshcoreFastSend": {
+      "warning": "Wysyłasz szybciej niż siatka może przekazywać. Na zatłoczonej siatce wtórniki mogą wysyłać wiadomości wysyłane blisko siebie — pozostaw kilka sekund między wiadomościami."
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

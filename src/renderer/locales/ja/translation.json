@@ -507,7 +507,14 @@
       "splitHint": "[1/N]、[2/N]、…とラベル付けされた別々のパケットとして送信されます",
       "overMax": "長すぎます — 最大{{totalMax}}文字（{{maxParts}}メッセージ）",
       "sendParts_one": "{{count}}件を送信",
-      "sendParts_other": "{{count}}件を送信"
+      "sendParts_other": "{{count}}件を送信",
+      "limitHintSingle": "最大{{limit}}文字。MeshCoreは、各メッセージを1つのパケットとして送信します。",
+      "overMaxSingle": "長すぎます— MeshCoreはメッセージごとに1パケットを送信します（最大{{limit}}文字）",
+      "meshcoreSingleNotice": {
+        "title": "MeshCoreのメッセージが長すぎます",
+        "body": "MeshCoreは、各メッセージを単一の無線パケット（最大{{limit}}文字）として送信します。長いメッセージは番号付きの部分に分割する必要がありますが、忙しいメッシュリピーターでは定期的にそれらの部分の一部が落とされるため、メッセージを送っている人は不完全なメッセージを受け取り、それを伝える方法がありません。信頼性を維持するため、メッセージは自動的に分割されません。このメッセージを短くするか、いくつかの短いメッセージとして送信してください。",
+        "hint": "MeshCoreはメッセージごとに1つのパケットを送信します。分割されたパーツはしばしばビジーリピーターによってドロップされるため、より長いメッセージを送信することはできません。"
+      }
     },
     "sendFailed": "送信に失敗しました",
     "outboxStatusQueued": "待機リストに追加済み",
@@ -676,7 +683,10 @@
     "reticulumSendStoringLocally": "ローカルの伝播受信トレイに保存しています…",
     "reticulumSendStoredLocally": "ローカルの伝播受信トレイに保存されています（ピアには配信されません）",
     "sentViaLocalPropagation": "ローカル伝播受信トレイ",
-    "reticulumSendTimeout": "送信がタイムアウトしました。Reticulum スタックが起動中またはビジーの可能性があります — 再試行してください。"
+    "reticulumSendTimeout": "送信がタイムアウトしました。Reticulum スタックが起動中またはビジーの可能性があります — 再試行してください。",
+    "meshcoreFastSend": {
+      "warning": "メッシュが中継できるよりも速く送信しています。ビジーメッシュでは、リピーターが近くに送信されたメッセージをドロップすることがあります。メッセージの間に数秒残します。"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

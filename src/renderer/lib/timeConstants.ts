@@ -304,15 +304,15 @@ export const NOMAD_PAGE_FETCH_DEBOUNCE_MS = 300;
 export const MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS = 2.5 * MS_PER_SECOND;
 
 /**
- * Minimum gap between successive MeshCore chat chunk sends (channel / DM / room).
- * MeshCore firmware has no PhoneAPI rate limit like Meshtastic, but a multi-part
- * split message blasted back-to-back becomes a self-inflicted mini flood storm:
- * chunk 2's TX overlaps chunk 1's repeater rebroadcast window on a half-duplex
- * radio, so busy repeaters can drop one part (see meshcore-dev/MeshCore #2820,
- * #1502). A ~1s client-side gap reduces that overlap without needing firmware
- * changes. Shared clock + serialized chain so composer and outbox drain cannot race.
+ * Cadence below which a second MeshCore chat send (channel / DM / room) triggers a
+ * non-blocking "sending too fast" advisory. MeshCore floods each message across every
+ * repeater on the path, and each hop adds airtime plus random rebroadcast backoff, so a
+ * message typically needs ~5s to settle across a 2-3 hop mesh. Sending again inside that
+ * window risks the new packet colliding with the prior message's still-propagating flood,
+ * which busy repeaters can drop (see meshcore-dev/MeshCore #2820, #1502). This is advisory
+ * only — it never blocks, disables, or delays the send.
  */
-export const MESHCORE_TEXT_CHUNK_SEND_INTERVAL_MS = 1 * MS_PER_SECOND;
+export const MESHCORE_FAST_SEND_WARN_INTERVAL_MS = 5 * MS_PER_SECOND;
 
 /**
  * Renderer safety hangup for optimistic LXST dial when WS never reaches Established.

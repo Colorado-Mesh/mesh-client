@@ -1,12 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resetMeshcoreTextSendPacingForTests } from '@/renderer/lib/meshcoreTextSendPacing';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
-import {
-  MESHCORE_TEXT_CHUNK_SEND_INTERVAL_MS,
-  MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS,
-} from '@/renderer/lib/timeConstants';
+import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
 import { useChatOutbox } from './useChatOutbox';
@@ -38,7 +34,6 @@ describe('useChatOutbox', () => {
 
   beforeEach(() => {
     resetMeshtasticTextSendPacingForTests();
-    resetMeshcoreTextSendPacingForTests();
     vi.mocked(mockOutbox.list).mockClear();
     vi.mocked(mockOutbox.add).mockClear();
     vi.mocked(mockOutbox.updateStatus).mockClear();
@@ -221,30 +216,20 @@ describe('useChatOutbox', () => {
     }
   });
 
-  it('paces successive meshcore sends within one drain so a split message does not flood', async () => {
-    // Drained MeshCore chunks must be spaced so chunk 2 does not overlap chunk 1's
-    // repeater rebroadcast window on a busy mesh.
-    vi.useFakeTimers();
-    try {
-      const rowA = makeEntry({ id: 40, protocol: 'meshcore', payload: 'first' });
-      const rowB = makeEntry({ id: 41, protocol: 'meshcore', payload: 'second' });
-      vi.mocked(mockOutbox.list).mockResolvedValue([rowA, rowB]);
-      const sendFn = vi.fn().mockResolvedValue(undefined);
-      renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+  it('drains successive meshcore sends within one drain without client pacing', async () => {
+    // MeshCore chunk pacing was removed (it did not gate on airtime); a drain should send
+    // all eligible MeshCore rows without waiting on a client-side interval.
+    const rowA = makeEntry({ id: 40, protocol: 'meshcore', payload: 'first' });
+    const rowB = makeEntry({ id: 41, protocol: 'meshcore', payload: 'second' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([rowA, rowB]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
 
-      await vi.advanceTimersByTimeAsync(0);
-      expect(sendFn).toHaveBeenCalledTimes(1);
-      expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
-
-      await vi.advanceTimersByTimeAsync(MESHCORE_TEXT_CHUNK_SEND_INTERVAL_MS - 100);
-      expect(sendFn).toHaveBeenCalledTimes(1);
-
-      await vi.advanceTimersByTimeAsync(200);
+    await waitFor(() => {
       expect(sendFn).toHaveBeenCalledTimes(2);
-      expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
-    } finally {
-      vi.useRealTimers();
-    }
+    });
+    expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
+    expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
   });
 
   it('does not drain when isSendAvailable is false', async () => {
