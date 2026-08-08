@@ -15,10 +15,11 @@ use std::sync::{Arc, Mutex};
 
 use lrgp::app_base::IncomingDispatch;
 use lrgp::constants::{
-    CMD_CHALLENGE, CMD_MOVE, ERR_INVALID_MOVE, ERR_NOT_YOUR_TURN, KEY_APP, KEY_COMMAND,
-    KEY_PAYLOAD, KEY_SESSION,
+    CMD_CHALLENGE, CMD_MOVE, ERR_INVALID_MOVE, ERR_NOT_YOUR_TURN, ERR_SESSION_EXPIRED, KEY_APP,
+    KEY_COMMAND, KEY_PAYLOAD, KEY_SESSION, STATUS_EXPIRED,
 };
 use lrgp::envelope;
+use lrgp::errors::LrgpError;
 use lrgp::router::LrgpRouter;
 use lrgp::session::Session;
 use lrgp::store::LrgpStore;
@@ -373,6 +374,22 @@ impl GamesSessionManager {
             .map_err(|e| e.to_string())
     }
 
+    /// Best-effort: mark a session's stored status as `expired` after the local
+    /// app reports its idle TTL elapsed. Keeps the SQLite mirror consistent with
+    /// the router's in-memory verdict so `list_sessions` (and future refreshes)
+    /// stop showing a dead game as active. Never fails the caller.
+    fn persist_session_expired(&self, session_id: &str) {
+        let Some(store) = &self.store else {
+            return;
+        };
+        let mut updates = HashMap::new();
+        updates.insert("status".to_string(), STATUS_EXPIRED.to_string());
+        updates.insert("updated_at".to_string(), now_secs().to_string());
+        if let Err(e) = store.update_session(session_id, &self.identity_id, &updates) {
+            tracing::warn!(target: "games", "failed to persist expired session status: {e}");
+        }
+    }
+
     pub fn delete_session(&self, session_id: &str) -> Result<(), String> {
         let store = self
             .store
@@ -591,18 +608,27 @@ impl GamesSessionManager {
 
         // Challenges must bind the remote peer before accept can succeed; use
         // dispatch_outgoing_to for every outbound action (matches Ratspeak).
-        let prepared = self
-            .router
-            .dispatch_outgoing_to(
-                app_id,
-                version,
-                command,
-                &session_id,
-                &payload,
-                &self.identity_id,
-                &dest_hash,
-            )
-            .map_err(|e| format!("dispatch_error: {e}"))?;
+        let prepared = match self.router.dispatch_outgoing_to(
+            app_id,
+            version,
+            command,
+            &session_id,
+            &payload,
+            &self.identity_id,
+            &dest_hash,
+        ) {
+            Ok(prepared) => prepared,
+            Err(LrgpError::SessionExpired(_)) => {
+                // The local app considers this session past its idle TTL, so the
+                // protocol can no longer act on it (resign/move/draw all fail).
+                // Persist the terminal state so `list_sessions` and the UI stop
+                // offering active-only controls and the row can be deleted, then
+                // surface a stable error code the renderer humanizes.
+                self.persist_session_expired(&session_id);
+                return Err(ERR_SESSION_EXPIRED.to_string());
+            }
+            Err(e) => return Err(format!("dispatch_error: {e}")),
+        };
 
         let fields = match transport::pack_into_preencoded_fields(&prepared.envelope) {
             Ok(fields) => fields,
@@ -1154,7 +1180,7 @@ fn json_payload_to_rmpv_map(value: Option<&JsonValue>) -> HashMap<String, rmpv::
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lrgp::constants::{CMD_ACCEPT, CMD_CHALLENGE};
+    use lrgp::constants::{CMD_ACCEPT, CMD_CHALLENGE, CMD_RESIGN};
 
     /// Hold while calling non-challenge `prepare_action`, or while injecting hydrate errors.
     fn hydrate_err_test_guard() -> std::sync::MutexGuard<'static, ()> {
@@ -1389,6 +1415,51 @@ mod tests {
             .expect("resend after restart");
         let detail = manager.session_detail(session_id);
         assert_eq!(detail["session"]["delivery_state"], "sending");
+    }
+
+    #[test]
+    fn expired_session_action_returns_session_expired_and_persists_status() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let identity = "selfidentityhash";
+        let peer = "f".repeat(32);
+        let session_id = "eeeeeeeeeeeeeeee";
+        let (event_tx, _rx) = broadcast::channel(16);
+
+        // Establish an active session, then age it past the idle TTL in SQLite.
+        {
+            let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx.clone());
+            assert!(manager.handle_inbound_lxmf(&inbound_challenge_fields(session_id), &peer, ""));
+            let _guard = hydrate_err_test_guard();
+            let accept = manager
+                .prepare_action(&peer, "ttt", CMD_ACCEPT, Some(session_id), None)
+                .expect("accept");
+            manager.commit_action(&accept, Some("mh-expire"));
+            assert_eq!(
+                manager.session_detail(session_id)["session"]["status"],
+                "active"
+            );
+            let mut aged = HashMap::new();
+            aged.insert("last_action_at".to_string(), "0".to_string());
+            manager
+                .store
+                .as_ref()
+                .expect("store")
+                .update_session(session_id, identity, &aged)
+                .expect("age session");
+        }
+
+        // Fresh manager rehydrates the aged row; the app now reports it expired.
+        let manager = GamesSessionManager::spawn(dir.path(), identity.into(), event_tx);
+        let _guard = hydrate_err_test_guard();
+        let err = manager
+            .prepare_action(&peer, "ttt", CMD_RESIGN, Some(session_id), None)
+            .expect_err("expired session must reject the action");
+        assert_eq!(err, ERR_SESSION_EXPIRED);
+        // The stored status is flipped to a terminal value so the UI can remove it.
+        assert_eq!(
+            manager.session_detail(session_id)["session"]["status"],
+            "expired"
+        );
     }
 
     #[test]

@@ -5335,7 +5335,8 @@
       "actionFailed": "Échec de l'action : {{reason}}",
       "unknownReason": "raison inconnue",
       "resendFailed": "Échec du renvoi.",
-      "deleteFailed": "Échec de la suppression de la session."
+      "deleteFailed": "Échec de la suppression de la session.",
+      "sessionExpired": "Ce jeu a expiré après une période d'inactivité et ne peut plus être joué. Utilisez Supprimer la session pour la supprimer."
     },
     "deleteConfirmTitle": "Supprimer la période ?",
     "deleteConfirmMessage": "Supprimer cette session de jeu de votre liste ? Cela ne peut pas être annulé.",
@@ -5349,6 +5350,7 @@
       "propagated": "emmagasiné, rangé, conservé, entreposé, stocké",
       "failed": "Réessayer nécessaire"
     },
-    "drawOfferWaitingBanner": "Offre de tirage envoyée. En attente de l'adversaire…"
+    "drawOfferWaitingBanner": "Offre de tirage envoyée. En attente de l'adversaire…",
+    "idleExpiryNotice": "Les jeux expirent après l'inactivité et ne peuvent alors être supprimés. Défis sans réponse : 24 heures (tous les jeux). Jeux actifs : tic-tac-toe après 24 heures, échecs et quatre dans une rangée après 7 jours."
   }
 }

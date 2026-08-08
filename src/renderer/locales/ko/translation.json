@@ -5335,7 +5335,8 @@
       "actionFailed": "조치 실패: {{reason}}",
       "unknownReason": "알 수 없는 이유",
       "resendFailed": "재전송에 실패했습니다.",
-      "deleteFailed": "세션을 삭제하지 못했습니다."
+      "deleteFailed": "세션을 삭제하지 못했습니다.",
+      "sessionExpired": "이 게임은 일정 기간 동안 활동이 없으면 만료되어 더 이상 플레이할 수 없습니다. 삭제 세션을 사용하여 삭제합니다."
     },
     "deleteConfirmTitle": "세션 삭제",
     "deleteConfirmMessage": "목록에서 이 게임 세션을 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
@@ -5349,6 +5350,7 @@
       "propagated": "저장량",
       "failed": "다시 시도 필요"
     },
-    "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중..."
+    "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중...",
+    "idleExpiryNotice": "게임은 비활성 후에 만료되며 삭제할 수 있습니다. 답이 없는 챌린지: 24시간 (모든 게임). 진행 중인 게임: 24시간 후 틱택토, 7일 후 체스 및 포인어로우."
   }
 }

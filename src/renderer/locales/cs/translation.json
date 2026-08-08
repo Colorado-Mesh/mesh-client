@@ -5337,7 +5337,8 @@
       "actionFailed": "Akce se nezdařila: {{reason}}",
       "unknownReason": "Neznámý důvod",
       "resendFailed": "Opětovné odeslání se nezdařilo.",
-      "deleteFailed": "Odstranění relace se nezdařilo."
+      "deleteFailed": "Odstranění relace se nezdařilo.",
+      "sessionExpired": "Tato hra vypršela po období nečinnosti a již ji nelze hrát. Použijte Smazat relaci pro její odstranění."
     },
     "deleteConfirmTitle": "Smazat relaci?",
     "deleteConfirmMessage": "Odebrat tuto herní relaci ze seznamu? Tuto akci nelze vrátit zpět.",
@@ -5351,6 +5352,7 @@
       "propagated": "Doručená na Vyzvedni.to a připravená k výdeji",
       "failed": "Je třeba to zkusit znovu"
     },
-    "drawOfferWaitingBanner": "Nabídka byla odeslána. Čeká se na soupeře..."
+    "drawOfferWaitingBanner": "Nabídka byla odeslána. Čeká se na soupeře...",
+    "idleExpiryNotice": "Platnost her vyprší po nečinnosti a poté je lze pouze smazat. Nezodpovězené výzvy: 24 hodin (všechny hry). Aktivní hry: tic-tac-toe po 24 hodinách, šachy a čtyři v řadě po 7 dnech."
   }
 }

@@ -5335,7 +5335,8 @@
       "actionFailed": "Acción fallida: {{reason}}",
       "unknownReason": "razón desconocida",
       "resendFailed": "Fallo en el reenvío",
-      "deleteFailed": "Error al eliminar la sesión."
+      "deleteFailed": "Error al eliminar la sesión.",
+      "sessionExpired": "Este juego ha caducado tras un periodo de inactividad y ya no se puede jugar. Utilice Eliminar sesión para eliminarla."
     },
     "deleteConfirmTitle": "¿Eliminar sesión?",
     "deleteConfirmMessage": "¿Quieres eliminar esta sesión de juego de tu lista? Esto no se puede deshacer.",
@@ -5349,6 +5350,7 @@
       "propagated": "Almacenado",
       "failed": "Se necesita volver a intentarlo"
     },
-    "drawOfferWaitingBanner": "Oferta de sorteo enviada. Esperando al oponente..."
+    "drawOfferWaitingBanner": "Oferta de sorteo enviada. Esperando al oponente...",
+    "idleExpiryNotice": "Los juegos caducan después de la inactividad y solo se pueden eliminar. Desafíos sin respuesta: 24 horas (todos los juegos). Partidas activas: tic-tac-toe después de 24 horas, ajedrez y cuatro en fila después de 7 días."
   }
 }

@@ -10,6 +10,18 @@ export function normalizeGamesDestHash(hash: string): string | null {
   return DEST_HASH_RE.test(v) ? v : null;
 }
 
+/**
+ * True when a failed action reason means the LRGP session passed its idle TTL
+ * (~24h) and the protocol can no longer act on it. Matches the sidecar's stable
+ * `session_expired` code as well as the older `dispatch_error: session expired`
+ * wrapper so pre-fix sidecars are still recognized.
+ */
+export function isGamesSessionExpiredReason(reason: string | undefined): boolean {
+  if (!reason) return false;
+  const r = reason.toLowerCase();
+  return r.includes('session_expired') || r.includes('session expired');
+}
+
 export async function refreshGamesStatus(): Promise<void> {
   try {
     const status = await window.electronAPI.reticulum.games.getStatus();
@@ -78,9 +90,24 @@ export async function sendGamesAction(opts: SendGamesActionOpts): Promise<boolea
       if (beganOptimistic && sessionId) {
         store.rollbackOptimistic(sessionId);
       }
+      const reason = result.error ?? result.reason;
+      if (isGamesSessionExpiredReason(reason)) {
+        // The game is dead (idle >24h); the sidecar has flipped its stored
+        // status to expired. Mirror that locally so the resign/draw controls
+        // disappear immediately and the only remaining action is delete.
+        if (sessionId) {
+          const latest = useReticulumGamesStore.getState();
+          const session = latest.sessions.find((row) => row.session_id === sessionId);
+          if (session && session.status !== 'expired') {
+            latest.upsertSession({ ...session, status: 'expired' });
+          }
+        }
+        pushAppToast(i18n.t('gamesPanel.errors.sessionExpired'), 'error');
+        return false;
+      }
       pushAppToast(
         i18n.t('gamesPanel.errors.actionFailed', {
-          reason: result.error ?? result.reason ?? i18n.t('gamesPanel.errors.unknownReason'),
+          reason: reason ?? i18n.t('gamesPanel.errors.unknownReason'),
         }),
         'error',
       );

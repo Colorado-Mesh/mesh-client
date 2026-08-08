@@ -5335,7 +5335,8 @@
       "actionFailed": "操作失败： {{reason}}",
       "unknownReason": "未知原因",
       "resendFailed": "重新发送失败",
-      "deleteFailed": "删除会话失败。"
+      "deleteFailed": "删除会话失败。",
+      "sessionExpired": "此游戏在一段时间不活动后过期，无法再玩。使用删除会话将其删除。"
     },
     "deleteConfirmTitle": "删除会话？",
     "deleteConfirmMessage": "从您的列表中删除此游戏会话？此操作无法撤消。",
@@ -5349,6 +5350,7 @@
       "propagated": "已存储",
       "failed": "需要重试"
     },
-    "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……"
+    "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……",
+    "idleExpiryNotice": "游戏在不活动后过期，然后只能删除。未回答的挑战： 24小时（所有游戏）。活跃游戏： 24小时后抽搐， 7天后下棋和一排四棋。"
   }
 }

@@ -1951,6 +1951,7 @@
     "selectAppAria": "Select game",
     "sendChallengeAria": "Send challenge",
     "sendChallenge": "Send challenge",
+    "idleExpiryNotice": "Games expire after inactivity and can then only be deleted. Unanswered challenges: 24 hours (all games). Active games: tic-tac-toe after 24 hours, chess and four-in-a-row after 7 days.",
     "selectSessionPrompt": "Select a game session to play.",
     "opponentLabel": "Opponent: {{peer}}",
     "acceptAria": "Accept challenge",
@@ -2039,7 +2040,8 @@
       "actionFailed": "Action failed: {{reason}}",
       "unknownReason": "unknown reason",
       "resendFailed": "Resend failed.",
-      "deleteFailed": "Failed to delete session."
+      "deleteFailed": "Failed to delete session.",
+      "sessionExpired": "This game expired after a period of inactivity and can no longer be played. Use Delete session to remove it."
     }
   },
   "identityVault": {

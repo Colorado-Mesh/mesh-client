@@ -5335,7 +5335,8 @@
       "actionFailed": "Aktion fehlgeschlagen: {{reason}}",
       "unknownReason": "Unbekannter Grund",
       "resendFailed": "Erneutes Senden fehlgeschlagen.",
-      "deleteFailed": "Die Recycling-Sitzung konnte nicht gelöscht werden."
+      "deleteFailed": "Die Recycling-Sitzung konnte nicht gelöscht werden.",
+      "sessionExpired": "Dieses Spiel ist nach einer Zeit der Inaktivität abgelaufen und kann nicht mehr gespielt werden. Verwenden Sie Sitzung löschen, um sie zu entfernen."
     },
     "deleteConfirmTitle": "Löschen sitzung?",
     "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden.",
@@ -5349,6 +5350,7 @@
       "propagated": "Gespeichert",
       "failed": "Erneuter Versuch erforderlich"
     },
-    "drawOfferWaitingBanner": "Angebot ziehen gesendet. Warten auf Gegner..."
+    "drawOfferWaitingBanner": "Angebot ziehen gesendet. Warten auf Gegner...",
+    "idleExpiryNotice": "Spiele laufen nach Inaktivität ab und können dann nur noch gelöscht werden. Unbeantwortete Herausforderungen: 24 Stunden (alle Spiele). Aktive Partien: Tic-Tac-Toe nach 24 Stunden, Schach und Four-in-a-row nach 7 Tagen."
   }
 }

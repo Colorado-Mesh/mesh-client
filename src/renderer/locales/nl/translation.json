@@ -5335,7 +5335,8 @@
       "actionFailed": "Actie mislukt: {{reason}}",
       "unknownReason": "onbekende reden",
       "resendFailed": "Opnieuw verzenden mislukt.",
-      "deleteFailed": "Kan sessie niet verwijderen."
+      "deleteFailed": "Kan sessie niet verwijderen.",
+      "sessionExpired": "Dit spel is verlopen na een periode van inactiviteit en kan niet meer worden gespeeld. Gebruik Sessie verwijderen om het te verwijderen."
     },
     "deleteConfirmTitle": "Moment verwijderen?",
     "deleteConfirmMessage": "Deze spelsessie uit je lijst verwijderen? Dit kan niet ongedaan worden gemaakt.",
@@ -5349,6 +5350,7 @@
       "propagated": "Opgeslagen",
       "failed": "Opnieuw proberen nodig"
     },
-    "drawOfferWaitingBanner": "Tekenaanbod verzonden. Wachten op tegenstander..."
+    "drawOfferWaitingBanner": "Tekenaanbod verzonden. Wachten op tegenstander...",
+    "idleExpiryNotice": "Games verlopen na inactiviteit en kunnen dan alleen worden verwijderd. Onbeantwoorde uitdagingen: 24 uur (alle spellen). Actieve spellen: tic-tac-toe na 24 uur, schaken en four-in-a-row na 7 dagen."
   }
 }

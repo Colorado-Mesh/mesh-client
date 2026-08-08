@@ -5335,7 +5335,8 @@
       "actionFailed": "Falha na ação: {{reason}}",
       "unknownReason": "razão desconhecida.",
       "resendFailed": "O reenvio falhou",
-      "deleteFailed": "Falha ao excluir sessão."
+      "deleteFailed": "Falha ao excluir sessão.",
+      "sessionExpired": "Este jogo expirou após um período de inatividade e não pode mais ser jogado. Use Excluir sessão para removê-la."
     },
     "deleteConfirmTitle": "Excluir sessão?",
     "deleteConfirmMessage": "Remover esta sessão de jogo da sua lista? Isso não pode ser desfeito.",
@@ -5349,6 +5350,7 @@
       "propagated": "Armazenada",
       "failed": "Tentativa necessária"
     },
-    "drawOfferWaitingBanner": "Oferta de empate enviada. Aguardando oponente..."
+    "drawOfferWaitingBanner": "Oferta de empate enviada. Aguardando oponente...",
+    "idleExpiryNotice": "Os jogos expiram após a inatividade e só podem ser excluídos. Desafios não respondidos: 24 horas (todos os jogos). Jogos ativos: tic-tac-toe após 24 horas, xadrez e four-in-a-row após 7 dias."
   }
 }

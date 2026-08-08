@@ -5335,7 +5335,8 @@
       "actionFailed": "Tindakan gagal: {{reason}}",
       "unknownReason": "Alasan tidak dikenal",
       "resendFailed": "Pengiriman ulang gagal.",
-      "deleteFailed": "Gagal menghapus sesi."
+      "deleteFailed": "Gagal menghapus sesi.",
+      "sessionExpired": "Game ini kedaluwarsa setelah periode tidak aktif dan tidak dapat dimainkan lagi. Gunakan Hapus sesi untuk menghapusnya."
     },
     "deleteConfirmTitle": "Hapus sesi?",
     "deleteConfirmMessage": "Hapus sesi permainan ini dari daftar Anda? Ini tidak dapat diurungkan.",
@@ -5349,6 +5350,7 @@
       "propagated": "Disimpan",
       "failed": "Coba lagi yang diperlukan"
     },
-    "drawOfferWaitingBanner": "Penawaran undian terkirim. Menunggu lawan…"
+    "drawOfferWaitingBanner": "Penawaran undian terkirim. Menunggu lawan…",
+    "idleExpiryNotice": "Game kedaluwarsa setelah tidak aktif dan kemudian hanya dapat dihapus. Tantangan yang belum terjawab: 24 jam (semua game). Permainan aktif: tic - tac - toe setelah 24 jam, catur dan four - in - a - row setelah 7 hari."
   }
 }

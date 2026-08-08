@@ -5335,7 +5335,8 @@
       "actionFailed": "İşlem başarısız oldu: {{reason}}",
       "unknownReason": "bilinmeyen neden",
       "resendFailed": "Yeniden Gönderilemedi",
-      "deleteFailed": "Oturum silinemedi."
+      "deleteFailed": "Oturum silinemedi.",
+      "sessionExpired": "Bu oyun bir süre hareketsiz kaldıktan sonra sona erdi ve artık oynanamaz. Silmek için oturumu sil'i kullanın."
     },
     "deleteConfirmTitle": "Oturumları Yapılandır...",
     "deleteConfirmMessage": "Bu oyun oturumu listenden kaldırılsın mı? Bu işlem geri alınamaz.",
@@ -5349,6 +5350,7 @@
       "propagated": "ve saklanmalı.",
       "failed": "Yeniden deneme gerekli"
     },
-    "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…"
+    "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…",
+    "idleExpiryNotice": "Oyunlar işlem yapılmadığında sona erer ve yalnızca silinebilir. Cevapsız zorluklar: 24 saat (tüm oyunlar). Aktif oyunlar: 24 saat sonra tic - tac - toe, 7 gün sonra satranç ve four - in - a - row."
   }
 }

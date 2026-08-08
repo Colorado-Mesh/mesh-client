@@ -5339,7 +5339,8 @@
       "actionFailed": "Działanie nie powiodło się: {{reason}}",
       "unknownReason": "nieznanych powodów",
       "resendFailed": "Ponowne wysłanie nie powiodło się.",
-      "deleteFailed": "Nie udało się usunąć sesji."
+      "deleteFailed": "Nie udało się usunąć sesji.",
+      "sessionExpired": "Ta gra wygasła po okresie bezczynności i nie można już w nią grać. Użyj przycisku Usuń sesję, aby ją usunąć."
     },
     "deleteConfirmTitle": "Usuń sesję",
     "deleteConfirmMessage": "Usunąć tę sesję gry z listy? Tej czynności nie można cofnąć.",
@@ -5353,6 +5354,7 @@
       "propagated": "Przechowywane",
       "failed": "Wymagana ponowna próba"
     },
-    "drawOfferWaitingBanner": "Oferta losowania wysłana. Oczekiwanie na przeciwnika…"
+    "drawOfferWaitingBanner": "Oferta losowania wysłana. Oczekiwanie na przeciwnika…",
+    "idleExpiryNotice": "Gry wygasają po bezczynności i można je usunąć tylko wtedy. Wyzwania bez odpowiedzi: 24 godziny (wszystkie gry). Aktywne gry: kółko i krzyżyk po 24 godzinach, szachy i cztery w rzędzie po 7 dniach."
   }
 }

@@ -5335,7 +5335,8 @@
       "actionFailed": "アクションに失敗しました： {{reason}}",
       "unknownReason": "不明な理由",
       "resendFailed": "再送に失敗しました。",
-      "deleteFailed": "セッションを削除できませんでした。"
+      "deleteFailed": "セッションを削除できませんでした。",
+      "sessionExpired": "このゲームはしばらくの非アクティブ状態の後に期限切れとなり、プレイできなくなりました。削除セッションを使用して削除します。"
     },
     "deleteConfirmTitle": "セッションを削除",
     "deleteConfirmMessage": "このゲームセッションをリストから削除しますか？これは元に戻せません。",
@@ -5349,6 +5350,7 @@
       "propagated": "格納されています",
       "failed": "再試行が必要です"
     },
-    "drawOfferWaitingBanner": "抽選オファーが送信されました。対戦相手を待っています…"
+    "drawOfferWaitingBanner": "抽選オファーが送信されました。対戦相手を待っています…",
+    "idleExpiryNotice": "ゲームは非アクティブの後に期限切れになり、削除することしかできません。未回答の課題： 24時間（すべてのゲーム）。アクティブなゲーム： 24時間後のチックタックトー、7日後のチェスと4 - in - a - row。"
   }
 }

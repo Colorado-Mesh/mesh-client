@@ -350,6 +350,9 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               {t('gamesPanel.sendChallenge')}
             </button>
           </div>
+          <p className="mt-2 text-[11px] leading-snug text-amber-200/60">
+            {t('gamesPanel.idleExpiryNotice')}
+          </p>
         </div>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-6">

@@ -5335,7 +5335,8 @@
       "actionFailed": "Azione non riuscita: {{reason}}",
       "unknownReason": "Motivo sconosciuto",
       "resendFailed": "Nuovo invio del codice non riuscito",
-      "deleteFailed": "Sessione non eliminata"
+      "deleteFailed": "Sessione non eliminata",
+      "sessionExpired": "Questo gioco è scaduto dopo un periodo di inattività e non può più essere giocato. Usa Elimina sessione per rimuoverlo."
     },
     "deleteConfirmTitle": "Cancellare una sessione",
     "deleteConfirmMessage": "Vuoi rimuovere questa sessione di gioco dalla tua lista? Questa operazione non può essere annullata.",
@@ -5349,6 +5350,7 @@
       "propagated": "Memorizzato",
       "failed": "Nuovo tentativo necessario"
     },
-    "drawOfferWaitingBanner": "Offerta di pareggio inviata. In attesa dell'avversario..."
+    "drawOfferWaitingBanner": "Offerta di pareggio inviata. In attesa dell'avversario...",
+    "idleExpiryNotice": "I giochi scadono dopo l'inattività e possono quindi essere eliminati. Sfide senza risposta: 24 ore (tutte le partite). Giochi attivi: tic-tac-toe dopo 24 ore, scacchi e quattro in fila dopo 7 giorni."
   }
 }

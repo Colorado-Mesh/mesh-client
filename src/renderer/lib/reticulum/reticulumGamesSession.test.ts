@@ -9,9 +9,11 @@ vi.mock('@/renderer/components/Toast', () => ({
   pushAppToast: vi.fn(),
 }));
 
+import { pushAppToast } from '@/renderer/components/Toast';
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 
 import {
+  isGamesSessionExpiredReason,
   markGamesSessionRead,
   openReticulumGameSession,
   sendGamesAction,
@@ -151,5 +153,49 @@ describe('sendGamesAction optimistic rollback', () => {
     expect(ok).toBe(false);
     expect(useReticulumGamesStore.getState().sessions[0].metadata.board).toBe('_________');
     expect(useReticulumGamesStore.getState().optimisticBackup.s1).toBeUndefined();
+  });
+
+  it('flips the local session to expired and shows a friendly toast on session_expired', async () => {
+    useReticulumGamesStore.getState().upsertSession(makeSession({ status: 'active' }));
+    sendAction.mockResolvedValue({ ok: false, error: 'session_expired' });
+
+    const ok = await sendGamesAction({
+      destHash: 'a'.repeat(32),
+      appId: 'ttt',
+      command: 'resign',
+      sessionId: 's1',
+    });
+
+    expect(ok).toBe(false);
+    expect(useReticulumGamesStore.getState().sessions[0].status).toBe('expired');
+    expect(pushAppToast).toHaveBeenCalledWith('gamesPanel.errors.sessionExpired', 'error');
+  });
+
+  it('recognizes the legacy dispatch_error session expired wrapper', async () => {
+    useReticulumGamesStore.getState().upsertSession(makeSession({ status: 'active' }));
+    sendAction.mockResolvedValue({
+      ok: false,
+      error: 'dispatch_error: session expired: b986f24180168d89',
+    });
+
+    const ok = await sendGamesAction({
+      destHash: 'a'.repeat(32),
+      appId: 'ttt',
+      command: 'resign',
+      sessionId: 's1',
+    });
+
+    expect(ok).toBe(false);
+    expect(useReticulumGamesStore.getState().sessions[0].status).toBe('expired');
+  });
+});
+
+describe('isGamesSessionExpiredReason', () => {
+  it('matches the stable code and legacy wrapper, ignoring unrelated errors', () => {
+    expect(isGamesSessionExpiredReason('session_expired')).toBe(true);
+    expect(isGamesSessionExpiredReason('dispatch_error: session expired: abc')).toBe(true);
+    expect(isGamesSessionExpiredReason('SESSION_EXPIRED')).toBe(true);
+    expect(isGamesSessionExpiredReason('send_failed')).toBe(false);
+    expect(isGamesSessionExpiredReason(undefined)).toBe(false);
   });
 });
