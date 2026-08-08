@@ -26,6 +26,16 @@ export const MESHMAPPER_HOST = 'mqtt.meshmapper.net';
 export const MESHMAPPER_HOST_LEGACY_CC = 'mqtt.meshmapper.cc';
 /** Colorado Mesh broker (WebSocket TLS on 443). */
 export const COLORADO_MESH_HOST = 'mqtt.meshcore.coloradomesh.org';
+/** Waev broker (WebSocket TLS on 443, JWT auth; `/mqtt` websocket path). */
+export const WAEV_HOST = 'mqtt.waev.app';
+/** Meshat.se MeshCore broker (WebSocket TLS on 443, JWT auth; `/mqtt` websocket path). */
+export const MESHATSE_HOST = 'meshcore-mqtt.meshat.se';
+/** MeshCore Canada primary broker (WebSocket TLS on 443, JWT auth; `/mqtt` websocket path). */
+export const MESHCORE_CA_HOST_PRIMARY = 'mqtt1.meshcore.ca';
+/** MeshCore Canada backup broker (WebSocket TLS on 443, JWT auth; `/mqtt` websocket path). */
+export const MESHCORE_CA_HOST_BACKUP = 'mqtt2.meshcore.ca';
+/** EastMesh AU broker (WebSocket TLS on 443, JWT auth; `/mqtt` websocket path). */
+export const EASTMESH_HOST = 'mqtt2.eastmesh.au';
 
 /** @deprecated Use {@link LETSMESH_HOST_US} */
 export const LETSMESH_HOST = LETSMESH_HOST_US;
@@ -37,6 +47,11 @@ const DEVICE_SIGNING_HOSTS = new Set([
   MESHMAPPER_HOST,
   MESHMAPPER_HOST_LEGACY_CC,
   COLORADO_MESH_HOST,
+  WAEV_HOST,
+  MESHATSE_HOST,
+  MESHCORE_CA_HOST_PRIMARY,
+  MESHCORE_CA_HOST_BACKUP,
+  EASTMESH_HOST,
 ]);
 
 export function isLetsMeshSettings(server: string): boolean {

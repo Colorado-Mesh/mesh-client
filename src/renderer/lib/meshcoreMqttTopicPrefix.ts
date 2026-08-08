@@ -19,7 +19,15 @@ export interface MeshcoreIataTopicPrefixParseErr {
 export type MeshcoreIataTopicPrefixParseResult =
   MeshcoreIataTopicPrefixParseOk | MeshcoreIataTopicPrefixParseErr;
 
-const IATA_SCOPED_PRESETS = new Set<MeshcoreMqttPreset>(['letsmesh', 'coloradomesh', 'meshmapper']);
+const IATA_SCOPED_PRESETS = new Set<MeshcoreMqttPreset>([
+  'letsmesh',
+  'coloradomesh',
+  'meshmapper',
+  'waev',
+  'meshatse',
+  'meshcoreca',
+  'eastmesh',
+]);
 
 /** Presets / device-signing hosts that expect `meshcore/{IATA}` or `meshcore/test`. */
 export function isIataScopedMeshcoreMqtt(

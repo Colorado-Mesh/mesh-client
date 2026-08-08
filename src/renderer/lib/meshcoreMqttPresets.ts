@@ -1,12 +1,26 @@
 import {
   COLORADO_MESH_HOST,
+  EASTMESH_HOST,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
+  MESHATSE_HOST,
+  MESHCORE_CA_HOST_BACKUP,
+  MESHCORE_CA_HOST_PRIMARY,
   MESHMAPPER_HOST,
+  WAEV_HOST,
 } from './letsMeshJwt';
 import type { MQTTSettings } from './types';
 
-export type MeshcoreMqttPreset = 'letsmesh' | 'coloradomesh' | 'meshmapper' | 'ripple' | 'custom';
+export type MeshcoreMqttPreset =
+  | 'letsmesh'
+  | 'coloradomesh'
+  | 'meshmapper'
+  | 'waev'
+  | 'meshatse'
+  | 'meshcoreca'
+  | 'eastmesh'
+  | 'ripple'
+  | 'custom';
 
 export const MESHCORE_MQTT_PRESET_STORAGE_KEY = 'mesh-client:mqttPreset:meshcore';
 
@@ -14,8 +28,33 @@ const KNOWN_MESHCORE_MQTT_PRESETS = new Set<MeshcoreMqttPreset>([
   'letsmesh',
   'coloradomesh',
   'meshmapper',
+  'waev',
+  'meshatse',
+  'meshcoreca',
+  'eastmesh',
   'ripple',
 ]);
+
+/**
+ * Presets that authenticate with a MeshCore device-signed JWT (WSS + TLS on 443).
+ * These share the LetsMesh connect flow (identity hint, deviation warning, token minting).
+ */
+const DEVICE_SIGNING_MESHCORE_PRESETS = new Set<MeshcoreMqttPreset>([
+  'letsmesh',
+  'coloradomesh',
+  'meshmapper',
+  'waev',
+  'meshatse',
+  'meshcoreca',
+  'eastmesh',
+]);
+
+/** True when the preset uses MeshCore device-signed JWT auth (WSS/TLS/443). */
+export function isDeviceSigningMeshcorePreset(
+  preset: MeshcoreMqttPreset | null | undefined,
+): boolean {
+  return !!preset && DEVICE_SIGNING_MESHCORE_PRESETS.has(preset);
+}
 
 export function readStoredMeshcoreMqttPreset(): MeshcoreMqttPreset {
   const saved = localStorage.getItem(MESHCORE_MQTT_PRESET_STORAGE_KEY);
@@ -68,6 +107,55 @@ export function meshcoreMqttPresetFields(
         useWebSocket: true,
         tlsEnabled: true,
         wsPath: '/ws',
+        keepalive: 30,
+        password: '',
+      };
+    case 'waev':
+      return {
+        server: WAEV_HOST,
+        port: 443,
+        topicPrefix: 'meshcore/test',
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/mqtt',
+        keepalive: 30,
+        password: '',
+      };
+    case 'meshatse':
+      return {
+        server: MESHATSE_HOST,
+        port: 443,
+        topicPrefix: 'meshcore/test',
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/mqtt',
+        keepalive: 30,
+        password: '',
+      };
+    case 'meshcoreca': {
+      const server =
+        prev.server === MESHCORE_CA_HOST_BACKUP || prev.server === MESHCORE_CA_HOST_PRIMARY
+          ? prev.server
+          : MESHCORE_CA_HOST_PRIMARY;
+      return {
+        server,
+        port: 443,
+        topicPrefix: 'meshcore/test',
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/mqtt',
+        keepalive: 30,
+        password: '',
+      };
+    }
+    case 'eastmesh':
+      return {
+        server: EASTMESH_HOST,
+        port: 443,
+        topicPrefix: 'meshcore/test',
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/mqtt',
         keepalive: 30,
         password: '',
       };

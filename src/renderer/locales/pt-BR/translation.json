@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Personalizado"
+      "custom": "Personalizado",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh precisa de WebSocket na porta 443 e servidor mqtt-us-v1.letsmesh.net ou mqtt-eu-v1.letsmesh.net. Use Região (EUA/UE) ou mude para Personalizado para outros corretores.",
       "coloradomesh": "Colorado Mesh precisa de WebSocket na porta 443 com TLS habilitado, servidor mqtt.meshcore.coloradomesh.org, caminho /ws. Redefina a predefinição ou mude para Personalizado para outros corretores.",
-      "meshmapper": "MeshMapper precisa de WebSocket na porta 443 e servidor mqtt.meshmapper.net. Redefina a predefinição ou mude para Personalizado para outros corretores."
+      "meshmapper": "MeshMapper precisa de WebSocket na porta 443 e servidor mqtt.meshmapper.net. Redefina a predefinição ou mude para Personalizado para outros corretores.",
+      "waev": "Waev precisa de WebSocket na porta 443 com TLS ativado, servidor mqtt.waev.app. Redefina a predefinição ou mude para Personalizado para outras corretoras.",
+      "meshatse": "Meshat.se precisa de WebSocket na porta 443 com TLS ativado, servidor meshcore-mqtt.meshat.se. Redefina a predefinição ou mude para Personalizado para outras corretoras.",
+      "meshcoreca": "MeshCore.CA precisa de WebSocket na porta 443 com TLS ativado, servidor mqtt1.meshcore.ca ou mqtt2.meshcore.ca. Use o Corretor (Principal/Backup) ou mude para Personalizado para outros corretores.",
+      "eastmesh": "O EastMesh precisa de WebSocket na porta 443 com TLS ativado, servidor mqtt2.eastmesh.au. Redefina a predefinição ou mude para Personalizado para outras corretoras."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "O token de autenticação (formato de decodificador meshcore) será gerado quando você se conectar. O nome de usuário é v1_ mais sua chave pública de 64 caracteres (hex). O público JWT corresponde ao nome do host do servidor.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Qualidade da ligação",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Indisponível (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Indisponível (Web Bluetooth)",
+    "meshcoreCaBroker": "Corretora MeshCore.CA",
+    "meshcoreCaPrimary": "Principal",
+    "meshcoreCaBackup": "Backup",
+    "broker": "Corretora"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

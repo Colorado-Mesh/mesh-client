@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Costumbre"
+      "custom": "Costumbre",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh necesita WebSocket en el puerto 443 y el servidor mqtt-us-v1.letsmesh.net o mqtt-eu-v1.letsmesh.net. Utilice Región (EE. UU./UE) o cambie a Personalizado para otros corredores.",
       "coloradomesh": "Colorado Mesh necesita WebSocket en el puerto 443 con TLS habilitado, servidor mqtt.meshcore.coloradomesh.org, ruta /ws. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores.",
-      "meshmapper": "MeshMapper necesita WebSocket en el puerto 443 y el servidor mqtt.meshmapper.net. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores."
+      "meshmapper": "MeshMapper necesita WebSocket en el puerto 443 y el servidor mqtt.meshmapper.net. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores.",
+      "waev": "Waev necesita WebSocket en el puerto 443 con TLS habilitado, servidor mqtt.waev.app. Restablezca el ajuste preestablecido o cambie a Personalizado para otros brókers.",
+      "meshatse": "Meshat.se necesita WebSocket en el puerto 443 con TLS habilitado, servidor meshcore-mqtt.meshat.se. Restablezca el ajuste preestablecido o cambie a Personalizado para otros brókers.",
+      "meshcoreca": "MeshCore.CA necesita WebSocket en el puerto 443 con TLS habilitado, servidor mqtt1.meshcore.ca o mqtt2.meshcore.ca. Utilice Bróker (Primario/Copia de seguridad) o cambie a Personalizado para otros brókers.",
+      "eastmesh": "EastMesh necesita WebSocket en el puerto 443 con TLS habilitado, servidor mqtt2.eastmesh.au. Restablezca el ajuste preestablecido o cambie a Personalizado para otros brókers."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "El token de autenticación (formato meshcore-decoder) se generará cuando se conecte. El nombre de usuario es v1_ más su clave pública de 64 caracteres (hexadecimal). La audiencia de JWT coincide con el nombre de host del servidor.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Calidad de enlace",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "No disponible (Bluetooth web)"
+    "signalUnavailableWebBluetooth": "No disponible (Bluetooth web)",
+    "meshcoreCaBroker": "Bróker MeshCore.CA",
+    "meshcoreCaPrimary": "Principal",
+    "meshcoreCaBackup": "Respaldo",
+    "broker": "Corredor de Seguros"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "风俗"
+      "custom": "风俗",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh 需要端口 443 上的 WebSocket 和服务器 mqtt-us-v1.letsmesh.net 或 mqtt-eu-v1.letsmesh.net。使用区域（美国/欧盟），或切换到其他经纪商的自定义。",
       "coloradomesh": "Colorado Mesh 需要端口 443 上的 WebSocket 且启用了 TLS，服务器 mqtt.meshcore.coloradomesh.org，路径 /ws。重置预设或切换到其他经纪商的自定义。",
-      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.net。重置预设或切换到其他经纪商的自定义。"
+      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.net。重置预设或切换到其他经纪商的自定义。",
+      "waev": "Waev需要在端口443上启用TLS的WebSocket ，服务器mqtt.waev.app。对于其他经纪商，请重置预设或切换到自定义。",
+      "meshatse": "Meshat.se需要在端口443上启用TLS的WebSocket ，服务器meshcore-mqtt.meshat.se。对于其他经纪商，请重置预设或切换到自定义。",
+      "meshcoreca": "MeshCore.CA需要启用TLS的端口443上的WebSocket ，服务器mqtt1.meshcore.ca或mqtt2.meshcore.ca。使用经纪人（主要/备份） ，或切换到其他经纪人的自定义。",
+      "eastmesh": "EastMesh需要在端口443上启用TLS的WebSocket ，服务器mqtt2.eastmesh.au。对于其他经纪商，请重置预设或切换到自定义。"
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "连接时将生成身份验证令牌（meshcore-decoder 格式）。用户名是 v1_ 加上您的 64 字符公钥（十六进制）。 JWT 受众与服务器主机名匹配。",
@@ -1348,7 +1356,11 @@
     "linkQuality": "连接质量",
     "linkQualityMs": "{{ms}}毫秒",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "不可用（网页蓝牙）"
+    "signalUnavailableWebBluetooth": "不可用（网页蓝牙）",
+    "meshcoreCaBroker": "MeshCore.CA代理",
+    "meshcoreCaPrimary": "首先",
+    "meshcoreCaBackup": "后援",
+    "broker": "经纪商"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

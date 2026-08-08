@@ -38,6 +38,10 @@ const PRESET_RECONCILE_PRESETS = new Set<MeshcoreMqttPreset>([
   'letsmesh',
   'coloradomesh',
   'meshmapper',
+  'waev',
+  'meshatse',
+  'meshcoreca',
+  'eastmesh',
 ]);
 
 function meshcorePresetFieldsDiffer(preset: MeshcoreMqttPreset, settings: MQTTSettings): boolean {

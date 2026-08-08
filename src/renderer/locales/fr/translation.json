@@ -1255,12 +1255,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Coutume"
+      "custom": "Coutume",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh a besoin de WebSocket sur le port 443 et du serveur mqtt-us-v1.letsmesh.net ou mqtt-eu-v1.letsmesh.net. Utilisez Région (États-Unis/UE) ou passez à Personnalisé pour les autres courtiers.",
       "coloradomesh": "Colorado Mesh a besoin de WebSocket sur le port 443 avec TLS activé, serveur mqtt.meshcore.coloradomesh.org, chemin /ws. Réinitialisez le préréglage ou passez à Personnalisé pour les autres courtiers.",
-      "meshmapper": "MeshMapper a besoin de WebSocket sur le port 443 et du serveur mqtt.meshmapper.net. Réinitialisez le préréglage ou passez à Personnalisé pour les autres courtiers."
+      "meshmapper": "MeshMapper a besoin de WebSocket sur le port 443 et du serveur mqtt.meshmapper.net. Réinitialisez le préréglage ou passez à Personnalisé pour les autres courtiers.",
+      "waev": "Waev a besoin de WebSocket sur le port 443 avec TLS activé, serveur mqtt.waev.app. Réinitialisez le préréglage ou passez à Personnalisé pour les autres courtiers.",
+      "meshatse": "Meshat.se nécessite WebSocket sur le port 443 avec TLS activé, serveur meshcore-mqtt.meshat.se. Réinitialisez le préréglage ou passez à Personnalisé pour les autres courtiers.",
+      "meshcoreca": "MeshCore.CA a besoin de WebSocket sur le port 443 avec TLS activé, serveur mqtt1.meshcore.ca ou mqtt2.meshcore.ca. Utilisez Courtier (Principal/Sauvegarde) ou passez à Personnalisé pour les autres courtiers.",
+      "eastmesh": "EastMesh a besoin de WebSocket sur le port 443 avec TLS activé, serveur mqtt2.eastmesh.au. Réinitialisez le préréglage ou passez à Personnalisé pour les autres courtiers."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Le jeton d'authentification (format meshcore-decoder) sera généré lors de votre connexion. Le nom d'utilisateur est v1_ plus votre clé publique de 64 caractères (hexadécimal). L'audience JWT correspond au nom d'hôte du serveur.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Qualité du lien",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Non disponible (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Non disponible (Web Bluetooth)",
+    "meshcoreCaBroker": "Courtier MeshCore.CA",
+    "meshcoreCaPrimary": "Principal bénéficiaire",
+    "meshcoreCaBackup": "Sauvegarde",
+    "broker": "Mandant /"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

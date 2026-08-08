@@ -239,7 +239,7 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     vi.restoreAllMocks();
   });
 
-  it('orders presets LetsMesh, MeshMapper, Colorado Mesh before Ripple', () => {
+  it('lists all MeshCore presets in the network preset picker', () => {
     localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
     localStorage.setItem(
@@ -268,17 +268,98 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
       />,
     );
 
-    const group = screen.getByRole('group', { name: 'Network Preset' });
-    const labels = within(group)
-      .getAllByRole('button')
-      .map((b) => b.textContent);
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    const labels = within(select)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
     expect(labels).toEqual([
       'LetsMesh',
       'MeshMapper',
       'Colorado Mesh',
+      'Waev',
+      'Meshat.se',
+      'MeshCore.CA',
+      'EastMesh',
       'Ripple Networks',
       'Custom',
     ]);
+  });
+
+  it('applies Waev broker fields when selected from the picker', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'Waev' }));
+
+    expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('waev');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt.waev.app');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Port$/i).value).toBe('443');
+  });
+
+  it('offers MeshCore.CA Primary/Backup broker toggle that switches the server', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'MeshCore.CA' }));
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt1.meshcore.ca');
+
+    const brokerGroup = screen.getByRole('group', { name: 'MeshCore.CA broker' });
+    await user.click(within(brokerGroup).getByRole('button', { name: 'Backup' }));
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt2.meshcore.ca');
   });
 
   it('does not apply Colorado preset fields when confirm is cancelled', async () => {
@@ -314,7 +395,8 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Colorado Mesh' }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'Colorado Mesh' }));
     expect(window.confirm).toHaveBeenCalled();
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
     expect(screen.getByLabelText(/^Server$/i)).toHaveValue('mqtt-us-v1.letsmesh.net');
@@ -968,11 +1050,12 @@ describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
     );
   }
 
-  it("clicking Liam's preset populates liamcottle.net credentials", async () => {
+  it("selecting Liam's preset populates liamcottle.net credentials", async () => {
     const user = userEvent.setup();
     renderMeshtasticMqtt();
 
-    await user.click(screen.getByRole('button', { name: "Liam's" }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: "Liam's" }));
 
     expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe(
       'mqtt.meshtastic.liamcottle.net',
@@ -985,19 +1068,23 @@ describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
     const user = userEvent.setup();
     renderMeshtasticMqtt();
 
-    await user.click(screen.getByRole('button', { name: "Liam's" }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    await user.selectOptions(select, within(select).getByRole('option', { name: "Liam's" }));
 
     expect(screen.getByText(/uplink-only/i)).toBeInTheDocument();
   });
 
-  it('hides uplink-only warning for official presets', async () => {
+  it('selecting the Official preset applies official 1883 fields and hides the uplink warning', async () => {
     const user = userEvent.setup();
     renderMeshtasticMqtt();
 
-    // First activate Liam's, then switch away
-    await user.click(screen.getByRole('button', { name: "Liam's" }));
-    await user.click(screen.getByRole('button', { name: 'MQTT :1883' }));
+    const select = screen.getByRole('combobox', { name: 'Network Preset' });
+    // First activate Liam's, then switch back to Official
+    await user.selectOptions(select, within(select).getByRole('option', { name: "Liam's" }));
+    await user.selectOptions(select, within(select).getByRole('option', { name: 'Official' }));
 
+    expect(screen.getByLabelText<HTMLInputElement>(/^Server$/i).value).toBe('mqtt.meshtastic.org');
+    expect(screen.getByLabelText<HTMLInputElement>(/^Port$/i).value).toBe('1883');
     expect(screen.queryByText(/uplink-only/i)).not.toBeInTheDocument();
   });
 });

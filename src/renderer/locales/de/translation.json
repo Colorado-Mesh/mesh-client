@@ -1254,12 +1254,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Brauch"
+      "custom": "Brauch",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh benötigt WebSocket auf Port 443 und den Server mqtt-us-v1.letsmesh.net oder mqtt-eu-v1.letsmesh.net. Verwenden Sie die Region (USA/EU) oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
       "coloradomesh": "Colorado Mesh benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server mqtt.meshcore.coloradomesh.org, Pfad /ws. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
-      "meshmapper": "MeshMapper benötigt WebSocket auf Port 443 und den Server mqtt.meshmapper.net. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“."
+      "meshmapper": "MeshMapper benötigt WebSocket auf Port 443 und den Server mqtt.meshmapper.net. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
+      "waev": "Waev benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server mqtt.waev.app. Setzen Sie die Voreinstellung zurück oder wechseln Sie zu Benutzerdefiniert für andere Broker.",
+      "meshatse": "Meshat.se benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server meshcore-mqtt.meshat.se. Setzen Sie die Voreinstellung zurück oder wechseln Sie zu Benutzerdefiniert für andere Broker.",
+      "meshcoreca": "MeshCore.CA benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server mqtt1.meshcore.ca oder mqtt2.meshcore.ca. Verwenden Sie Broker (Primär/Backup) oder wechseln Sie für andere Broker zu Benutzerdefiniert.",
+      "eastmesh": "EastMesh benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server mqtt2.eastmesh.au. Setzen Sie die Voreinstellung zurück oder wechseln Sie zu Benutzerdefiniert für andere Broker."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth-Token (Meshcore-Decoder-Format) wird generiert, wenn Sie eine Verbindung herstellen. Der Benutzername ist v1_ plus Ihr 64-stelliger öffentlicher Schlüssel (hex). Die JWT-Zielgruppe entspricht dem Server-Hostnamen.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Verbindungsqualität",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Nicht verfügbar (Web-Bluetooth)"
+    "signalUnavailableWebBluetooth": "Nicht verfügbar (Web-Bluetooth)",
+    "meshcoreCaBroker": "MeshCore.CA Broker",
+    "meshcoreCaPrimary": "Hauptversicherter",
+    "meshcoreCaBackup": "Backup",
+    "broker": "Makler"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

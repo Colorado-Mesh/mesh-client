@@ -64,6 +64,13 @@ describe('isIataScopedMeshcoreMqtt', () => {
     expect(isIataScopedMeshcoreMqtt('custom', { server: MESHMAPPER_HOST })).toBe(true);
   });
 
+  it('is true for the newly added device-signing presets', () => {
+    expect(isIataScopedMeshcoreMqtt('waev', { server: '' })).toBe(true);
+    expect(isIataScopedMeshcoreMqtt('meshatse', { server: '' })).toBe(true);
+    expect(isIataScopedMeshcoreMqtt('meshcoreca', { server: '' })).toBe(true);
+    expect(isIataScopedMeshcoreMqtt('eastmesh', { server: '' })).toBe(true);
+  });
+
   it('is false for Ripple and arbitrary custom brokers', () => {
     expect(isIataScopedMeshcoreMqtt('ripple', { server: 'mqtt.ripplenetworks.com.au' })).toBe(
       false,

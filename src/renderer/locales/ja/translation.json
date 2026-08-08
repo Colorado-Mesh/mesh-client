@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "カスタム"
+      "custom": "カスタム",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "イーストメッシュ"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh には、ポート 443 とサーバー mqtt-us-v1.letsmesh.net または mqtt-eu-v1.letsmesh.net 上の WebSocket が必要です。地域 (US/EU) を使用するか、他のブローカーの場合はカスタムに切り替えてください。",
       "coloradomesh": "Colorado Mesh には、TLS が有効になっているポート 443、サーバー mqtt.meshcore.coloradomesh.org、パス /ws の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
-      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.net 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
+      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.net 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "waev": "Waevは、TLSが有効なポート443、サーバーmqtt.waev.appにWebSocketを必要とします。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "meshatse": "Meshat.seは、TLSが有効なポート443、サーバーmeshcore-mqtt.meshat.seにWebSocketを必要とします。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "meshcoreca": "MeshCore.CAは、TLSが有効なポート443、サーバーmqtt1.meshcore.caまたはmqtt2.meshcore.caにWebSocketを必要とします。ブローカー（プライマリ/バックアップ）を使用するか、他のブローカーの場合はカスタムに切り替えます。",
+      "eastmesh": "EastMeshは、TLSが有効なポート443、サーバーmqtt2.eastmesh.auにWebSocketを必要とします。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "接続時に認証トークン(meshcore-decoder形式)が生成されます。ユーザー名は v1_ に 64 文字の公開キー (16 進数) を加えたものです。 JWT オーディエンスはサーバーのホスト名と一致します。",
@@ -1348,7 +1356,11 @@
     "linkQuality": "リンクの品質",
     "linkQualityMs": "{{ms}}ミリ秒",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "利用できません（ Web Bluetooth ）"
+    "signalUnavailableWebBluetooth": "利用できません（ Web Bluetooth ）",
+    "meshcoreCaBroker": "MeshCore.CAブローカー",
+    "meshcoreCaPrimary": "第一",
+    "meshcoreCaBackup": "バックアップ",
+    "broker": "ブローカー"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

@@ -1258,12 +1258,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Zwyczaj"
+      "custom": "Zwyczaj",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh potrzebuje WebSocket na porcie 443 i serwerze mqtt-us-v1.letsmesh.net lub mqtt-eu-v1.letsmesh.net. Użyj regionu (USA/UE) lub przejdź na opcję Niestandardowy dla innych brokerów.",
       "coloradomesh": "Colorado Mesh potrzebuje protokołu WebSocket na porcie 443 z włączoną obsługą TLS, serwer mqtt.meshcore.coloradomesh.org, ścieżka /ws. Zresetuj ustawienie wstępne lub przejdź na opcję Niestandardową dla innych brokerów.",
-      "meshmapper": "MeshMapper potrzebuje protokołu WebSocket na porcie 443 i serwerze mqtt.meshmapper.net. Zresetuj ustawienie wstępne lub przejdź na opcję Niestandardową dla innych brokerów."
+      "meshmapper": "MeshMapper potrzebuje protokołu WebSocket na porcie 443 i serwerze mqtt.meshmapper.net. Zresetuj ustawienie wstępne lub przejdź na opcję Niestandardową dla innych brokerów.",
+      "waev": "Waev potrzebuje WebSocket na porcie 443 z włączonym TLS, serwer mqtt.waev.app. Zresetuj ustawienie wstępne lub przełącz na niestandardowe dla innych brokerów.",
+      "meshatse": "Meshat.se potrzebuje WebSocket na porcie 443 z włączonym TLS, server meshcore-mqtt.meshat.se. Zresetuj ustawienie wstępne lub przełącz na niestandardowe dla innych brokerów.",
+      "meshcoreca": "MeshCore.CA potrzebuje WebSocket na porcie 443 z włączonym TLS, serwerem mqtt1.meshcore.ca lub mqtt2.meshcore.ca. Użyj brokera (głównego/zapasowego) lub przełącz się na niestandardowy dla innych brokerów.",
+      "eastmesh": "EastMesh potrzebuje WebSocket na porcie 443 z włączonym TLS, serwer mqtt2.eastmesh.au. Zresetuj ustawienie wstępne lub przełącz na niestandardowe dla innych brokerów."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Token autoryzacji (format dekodera meshcore) zostanie wygenerowany po połączeniu. Nazwa użytkownika to v1_ plus Twój 64-znakowy klucz publiczny (szesnastkowo). Lista odbiorców JWT odpowiada nazwie hosta serwera.",
@@ -1352,7 +1360,11 @@
     "linkQuality": "Jakość odnośnika",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Niedostępne (Bluetooth internetowy)"
+    "signalUnavailableWebBluetooth": "Niedostępne (Bluetooth internetowy)",
+    "meshcoreCaBroker": "Broker MeshCore.CA",
+    "meshcoreCaPrimary": "Podstawowe",
+    "meshcoreCaBackup": "Backup",
+    "broker": "Pośrednik"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

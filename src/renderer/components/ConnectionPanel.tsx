@@ -60,6 +60,8 @@ import {
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
+  MESHCORE_CA_HOST_BACKUP,
+  MESHCORE_CA_HOST_PRIMARY,
   meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentity,
@@ -68,6 +70,7 @@ import {
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   applyMeshcoreMqttPreset,
+  isDeviceSigningMeshcorePreset,
   type MeshcoreMqttPreset,
   readStoredMeshcoreMqttPreset,
 } from '../lib/meshcoreMqttPresets';
@@ -118,6 +121,7 @@ import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
+import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
 import SignalBars from './SignalBars';
 // ─── Last Connection (localStorage) ───────────────────────────────
@@ -199,6 +203,29 @@ function resolveConnectionStageText(
     }
   }
   return t(stage);
+}
+
+/** Static-key lookup for the MeshCore device-signing preset deviation banner (keeps i18n scanner happy). */
+function meshcorePresetDeviationText(
+  t: (key: string) => string,
+  preset: MeshcoreMqttPreset,
+): string {
+  switch (preset) {
+    case 'coloradomesh':
+      return t('connectionPanel.meshcorePresetDeviation.coloradomesh');
+    case 'meshmapper':
+      return t('connectionPanel.meshcorePresetDeviation.meshmapper');
+    case 'waev':
+      return t('connectionPanel.meshcorePresetDeviation.waev');
+    case 'meshatse':
+      return t('connectionPanel.meshcorePresetDeviation.meshatse');
+    case 'meshcoreca':
+      return t('connectionPanel.meshcorePresetDeviation.meshcoreca');
+    case 'eastmesh':
+      return t('connectionPanel.meshcorePresetDeviation.eastmesh');
+    default:
+      return t('connectionPanel.meshcorePresetDeviation.letsmesh');
+  }
 }
 
 function shouldForgetGrantedWebBluetoothDevice(
@@ -565,13 +592,7 @@ export default function ConnectionPanel({
   // Keep LetsMesh MQTT username in sync with imported MeshCore identity (v1_<64-hex public key>).
   useEffect(() => {
     const syncLetsMeshUsername = () => {
-      if (
-        protocol !== 'meshcore' ||
-        (meshcorePreset !== 'letsmesh' &&
-          meshcorePreset !== 'meshmapper' &&
-          meshcorePreset !== 'coloradomesh')
-      )
-        return;
+      if (protocol !== 'meshcore' || !isDeviceSigningMeshcorePreset(meshcorePreset)) return;
       const u = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
       if (!u) return;
       setMeshcoreMqttSettings((prev) => (prev.username === u ? prev : { ...prev, username: u }));
@@ -2135,50 +2156,36 @@ export default function ConnectionPanel({
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
               </p>
-              <div
-                className="flex gap-2"
-                role="group"
-                aria-labelledby="conn-meshtastic-network-preset"
-              >
-                {(
-                  [
-                    {
-                      id: 'official-plain' as const,
-                      labelKey: 'connectionPanel.meshtasticPreset.officialPlain',
-                    },
-                    { id: 'liam' as const, labelKey: 'connectionPanel.meshtasticPreset.liam' },
-                    { id: 'custom' as const, labelKey: 'connectionPanel.meshtasticPreset.custom' },
-                  ] as const
-                ).map(({ id, labelKey }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => {
-                      setMeshtasticPreset(id);
-                      if (id === 'official-plain') {
-                        setMqttSettings({
-                          ...MESHTASTIC_OFFICIAL_1883,
-                          topicPrefix: mqttSettings.topicPrefix,
-                          autoLaunch: mqttSettings.autoLaunch,
-                        });
-                      } else if (id === 'liam') {
-                        setMqttSettings({
-                          ...MESHTASTIC_LIAM_1883,
-                          topicPrefix: mqttSettings.topicPrefix,
-                          autoLaunch: mqttSettings.autoLaunch,
-                        });
-                      }
-                    }}
-                    className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
-                      meshtasticPreset === id
-                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
-                    }`}
-                  >
-                    {t(labelKey)}
-                  </button>
-                ))}
-              </div>
+              <MqttNetworkPresetSelect
+                id="conn-meshtastic-network-preset-select"
+                labelledById="conn-meshtastic-network-preset"
+                value={meshtasticPreset}
+                options={[
+                  {
+                    value: 'official-plain',
+                    label: t('connectionPanel.meshtasticPreset.officialPlain'),
+                  },
+                  { value: 'liam', label: t('connectionPanel.meshtasticPreset.liam') },
+                  { value: 'custom', label: t('connectionPanel.meshtasticPreset.custom') },
+                ]}
+                onSelect={(value) => {
+                  const id = value as 'official-plain' | 'liam' | 'custom';
+                  setMeshtasticPreset(id);
+                  if (id === 'official-plain') {
+                    setMqttSettings({
+                      ...MESHTASTIC_OFFICIAL_1883,
+                      topicPrefix: mqttSettings.topicPrefix,
+                      autoLaunch: mqttSettings.autoLaunch,
+                    });
+                  } else if (id === 'liam') {
+                    setMqttSettings({
+                      ...MESHTASTIC_LIAM_1883,
+                      topicPrefix: mqttSettings.topicPrefix,
+                      autoLaunch: mqttSettings.autoLaunch,
+                    });
+                  }
+                }}
+              />
               {meshtasticPreset === 'liam' && (
                 <p className="text-xs text-amber-400">{t('connectionPanel.liamServerNote')}</p>
               )}
@@ -2189,54 +2196,96 @@ export default function ConnectionPanel({
               <p id="conn-meshcore-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
               </p>
-              <div
-                className="flex gap-2"
-                role="group"
-                aria-labelledby="conn-meshcore-network-preset"
-              >
-                {(
-                  [
-                    { id: 'letsmesh', labelKey: 'connectionPanel.meshcorePreset.letsmesh' },
-                    { id: 'meshmapper', labelKey: 'connectionPanel.meshcorePreset.meshmapper' },
-                    { id: 'coloradomesh', labelKey: 'connectionPanel.meshcorePreset.coloradomesh' },
-                    { id: 'ripple', labelKey: 'connectionPanel.meshcorePreset.ripple' },
-                    { id: 'custom', labelKey: 'connectionPanel.meshcorePreset.custom' },
-                  ] as const
-                ).map(({ id, labelKey }) => (
+              <MqttNetworkPresetSelect
+                id="conn-meshcore-network-preset-select"
+                labelledById="conn-meshcore-network-preset"
+                value={meshcorePreset}
+                options={[
+                  { value: 'letsmesh', label: t('connectionPanel.meshcorePreset.letsmesh') },
+                  { value: 'meshmapper', label: t('connectionPanel.meshcorePreset.meshmapper') },
+                  {
+                    value: 'coloradomesh',
+                    label: t('connectionPanel.meshcorePreset.coloradomesh'),
+                  },
+                  { value: 'waev', label: t('connectionPanel.meshcorePreset.waev') },
+                  { value: 'meshatse', label: t('connectionPanel.meshcorePreset.meshatse') },
+                  { value: 'meshcoreca', label: t('connectionPanel.meshcorePreset.meshcoreca') },
+                  { value: 'eastmesh', label: t('connectionPanel.meshcorePreset.eastmesh') },
+                  { value: 'ripple', label: t('connectionPanel.meshcorePreset.ripple') },
+                  { value: 'custom', label: t('connectionPanel.meshcorePreset.custom') },
+                ]}
+                onSelect={(value) => {
+                  const id = value as MeshcoreMqttPreset;
+                  if (id === 'custom') {
+                    setMeshcorePreset(id);
+                    return;
+                  }
+                  if (id === 'ripple') {
+                    if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
+                  }
+                  if (id === 'coloradomesh') {
+                    if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) return;
+                    localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                  }
+                  setMeshcorePreset(id);
+                  const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                  setMeshcoreMqttSettings((prev) => ({
+                    ...applyMeshcoreMqttPreset(id, prev),
+                    username: fromIdentity || prev.username,
+                  }));
+                }}
+              />
+              {meshcorePreset === 'coloradomesh' && (
+                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+              )}
+              {meshcorePreset === 'meshcoreca' && (
+                <div
+                  className="flex flex-wrap items-center gap-2 pt-1"
+                  role="group"
+                  aria-label={t('connectionPanel.meshcoreCaBroker')}
+                >
+                  <span className="text-muted text-xs">{t('connectionPanel.broker')}</span>
                   <button
-                    key={id}
                     type="button"
                     onClick={() => {
-                      if (id === 'custom') {
-                        setMeshcorePreset(id);
-                        return;
-                      }
-                      if (id === 'ripple') {
-                        if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
-                      }
-                      if (id === 'coloradomesh') {
-                        if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) return;
-                        localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
-                      }
-                      setMeshcorePreset(id);
                       const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                       setMeshcoreMqttSettings((prev) => ({
-                        ...applyMeshcoreMqttPreset(id, prev),
+                        ...prev,
+                        server: MESHCORE_CA_HOST_PRIMARY,
+                        port: 443,
+                        useWebSocket: true,
                         username: fromIdentity || prev.username,
                       }));
                     }}
-                    className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
-                      meshcorePreset === id
+                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                      meshcoreMqttSettings.server === MESHCORE_CA_HOST_PRIMARY
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
                         : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    {t(labelKey)}
+                    {t('connectionPanel.meshcoreCaPrimary')}
                   </button>
-                ))}
-              </div>
-              {meshcorePreset === 'coloradomesh' && (
-                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                      setMeshcoreMqttSettings((prev) => ({
+                        ...prev,
+                        server: MESHCORE_CA_HOST_BACKUP,
+                        port: 443,
+                        useWebSocket: true,
+                        username: fromIdentity || prev.username,
+                      }));
+                    }}
+                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                      meshcoreMqttSettings.server === MESHCORE_CA_HOST_BACKUP
+                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
+                    }`}
+                  >
+                    {t('connectionPanel.meshcoreCaBackup')}
+                  </button>
+                </div>
               )}
               {meshcorePreset === 'letsmesh' && (
                 <div
@@ -2373,34 +2422,25 @@ export default function ConnectionPanel({
             </label>
           </div>
           {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' ||
-              meshcorePreset === 'coloradomesh' ||
-              meshcorePreset === 'meshmapper') &&
+            isDeviceSigningMeshcorePreset(meshcorePreset) &&
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
-                {meshcorePreset === 'letsmesh'
-                  ? t('connectionPanel.meshcorePresetDeviation.letsmesh')
-                  : meshcorePreset === 'coloradomesh'
-                    ? t('connectionPanel.meshcorePresetDeviation.coloradomesh')
-                    : t('connectionPanel.meshcorePresetDeviation.meshmapper')}
+                {meshcorePresetDeviationText(t, meshcorePreset)}
               </div>
             )}
-          {protocol === 'meshcore' &&
-            (meshcorePreset === 'letsmesh' ||
-              meshcorePreset === 'coloradomesh' ||
-              meshcorePreset === 'meshmapper') && (
-              <div
-                className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
-                  hasPrivateKey
-                    ? 'border-brand-green/40 bg-brand-green/10 text-brand-green/90'
-                    : 'border-amber-700/50 bg-amber-900/20 text-amber-200/90'
-                }`}
-              >
-                {hasPrivateKey && readMeshcoreIdentity()?.public_key
-                  ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
-                  : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
-              </div>
-            )}
+          {protocol === 'meshcore' && isDeviceSigningMeshcorePreset(meshcorePreset) && (
+            <div
+              className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
+                hasPrivateKey
+                  ? 'border-brand-green/40 bg-brand-green/10 text-brand-green/90'
+                  : 'border-amber-700/50 bg-amber-900/20 text-amber-200/90'
+              }`}
+            >
+              {hasPrivateKey && readMeshcoreIdentity()?.public_key
+                ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
+                : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
+            </div>
+          )}
           {protocol === 'meshcore' && (
             <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
               <input
@@ -2476,9 +2516,7 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshtastic'
                     ? t('connectionPanel.topicPrefixHelp.meshtastic')
-                    : meshcorePreset === 'letsmesh' ||
-                        meshcorePreset === 'meshmapper' ||
-                        meshcorePreset === 'coloradomesh' ||
+                    : isDeviceSigningMeshcorePreset(meshcorePreset) ||
                         isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
                       ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
                       : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
@@ -2645,12 +2683,7 @@ export default function ConnectionPanel({
                     updateMqtt('topicPrefix', iataPrepared.topicPrefix, false);
                   }
                 }
-                if (
-                  protocol === 'meshcore' &&
-                  (meshcorePreset === 'letsmesh' ||
-                    meshcorePreset === 'coloradomesh' ||
-                    meshcorePreset === 'meshmapper')
-                ) {
+                if (protocol === 'meshcore' && isDeviceSigningMeshcorePreset(meshcorePreset)) {
                   const presetErr = validateLetsMeshPresetConnect(settings);
                   if (presetErr) {
                     setMqttError(presetErr);

@@ -2,12 +2,16 @@ import { Utils, verifyAuthToken } from '@michaelhart/meshcore-decoder';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
+  EASTMESH_HOST,
   generateLetsMeshAuthToken,
   isLetsMeshSettings,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshJwtAudience,
   letsMeshMqttUsernameFromIdentity,
+  MESHATSE_HOST,
+  MESHCORE_CA_HOST_BACKUP,
+  MESHCORE_CA_HOST_PRIMARY,
   MESHCORE_ENC_PK_KEY,
   MESHCORE_IDENTITY_STORAGE_KEY,
   MESHCORE_PUBLIC_KEY_LENGTH,
@@ -18,6 +22,7 @@ import {
   readMeshcoreIdentity,
   tryPersistMeshcoreIdentityFromRadioExport,
   tryPersistMeshcorePublicKeyFromRadio,
+  WAEV_HOST,
 } from './letsMeshJwt';
 import { meshcoreSyntheticPlaceholderPubKeyHex } from './meshcoreUtils';
 
@@ -54,6 +59,19 @@ describe('letsMeshJwt', () => {
 
   it('isLetsMeshSettings still matches legacy MeshMapper .cc host', () => {
     expect(isLetsMeshSettings(MESHMAPPER_HOST_LEGACY_CC)).toBe(true);
+  });
+
+  it('isLetsMeshSettings matches the newly added device-signing hosts', () => {
+    expect(isLetsMeshSettings(WAEV_HOST)).toBe(true);
+    expect(isLetsMeshSettings(MESHATSE_HOST)).toBe(true);
+    expect(isLetsMeshSettings(MESHCORE_CA_HOST_PRIMARY)).toBe(true);
+    expect(isLetsMeshSettings(MESHCORE_CA_HOST_BACKUP)).toBe(true);
+    expect(isLetsMeshSettings(EASTMESH_HOST)).toBe(true);
+    expect(WAEV_HOST).toBe('mqtt.waev.app');
+    expect(MESHATSE_HOST).toBe('meshcore-mqtt.meshat.se');
+    expect(MESHCORE_CA_HOST_PRIMARY).toBe('mqtt1.meshcore.ca');
+    expect(MESHCORE_CA_HOST_BACKUP).toBe('mqtt2.meshcore.ca');
+    expect(EASTMESH_HOST).toBe('mqtt2.eastmesh.au');
   });
 
   it('migrateMeshmapperServerHost rewrites .cc to .net', () => {

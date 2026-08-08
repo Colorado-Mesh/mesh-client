@@ -880,7 +880,7 @@
       "meshtastic": "Both protocols allow 1–{{max}}. Saved with settings; disconnect and Connect again so the running session uses the new value."
     },
     "meshtasticPreset": {
-      "officialPlain": "MQTT :1883",
+      "officialPlain": "Official",
       "liam": "Liam's",
       "custom": "Custom"
     },
@@ -1282,13 +1282,25 @@
       "letsmesh": "LetsMesh",
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh",
       "ripple": "Ripple Networks",
       "custom": "Custom"
     },
+    "meshcoreCaBroker": "MeshCore.CA broker",
+    "meshcoreCaPrimary": "Primary",
+    "meshcoreCaBackup": "Backup",
+    "broker": "Broker",
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.",
       "coloradomesh": "Colorado Mesh needs WebSocket on port 443 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.",
-      "meshmapper": "MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.net. Reset the preset or switch to Custom for other brokers."
+      "meshmapper": "MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.net. Reset the preset or switch to Custom for other brokers.",
+      "waev": "Waev needs WebSocket on port 443 with TLS enabled, server mqtt.waev.app. Reset the preset or switch to Custom for other brokers.",
+      "meshatse": "Meshat.se needs WebSocket on port 443 with TLS enabled, server meshcore-mqtt.meshat.se. Reset the preset or switch to Custom for other brokers.",
+      "meshcoreca": "MeshCore.CA needs WebSocket on port 443 with TLS enabled, server mqtt1.meshcore.ca or mqtt2.meshcore.ca. Use Broker (Primary/Backup), or switch to Custom for other brokers.",
+      "eastmesh": "EastMesh needs WebSocket on port 443 with TLS enabled, server mqtt2.eastmesh.au. Reset the preset or switch to Custom for other brokers."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.",

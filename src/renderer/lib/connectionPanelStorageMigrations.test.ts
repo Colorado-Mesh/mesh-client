@@ -12,7 +12,7 @@ import {
   MESHMAPPER_HOST_NET_MIGRATION_KEY,
   runConnectionPanelStorageMigrations,
 } from './connectionPanelStorageMigrations';
-import { COLORADO_MESH_HOST, LETSMESH_HOST_US, MESHMAPPER_HOST } from './letsMeshJwt';
+import { COLORADO_MESH_HOST, LETSMESH_HOST_US, MESHMAPPER_HOST, WAEV_HOST } from './letsMeshJwt';
 
 const store = new Map<string, string>();
 
@@ -138,6 +138,44 @@ describe('runConnectionPanelStorageMigrations', () => {
     };
     expect(parsed.port).toBe(443);
     expect(parsed.wsPath).toBe('/ws');
+    expect(parsed.autoLaunch).toBe(true);
+  });
+
+  it('reconciles stale Waev preset settings to the WSS device-signing defaults', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'waev');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({
+        server: WAEV_HOST,
+        topicPrefix: 'meshcore/test',
+        port: 1883,
+        useWebSocket: false,
+        tlsEnabled: false,
+        autoLaunch: true,
+      }),
+    );
+    // Skip unrelated one-time migrations so only the preset reconcile runs.
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+    localStorage.setItem(COLORADO_MESH_PORT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY, '1');
+    localStorage.setItem(MESHMAPPER_HOST_NET_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      server?: string;
+      port?: number;
+      useWebSocket?: boolean;
+      tlsEnabled?: boolean;
+      wsPath?: string;
+      autoLaunch?: boolean;
+    };
+    expect(parsed.server).toBe(WAEV_HOST);
+    expect(parsed.port).toBe(443);
+    expect(parsed.useWebSocket).toBe(true);
+    expect(parsed.tlsEnabled).toBe(true);
+    expect(parsed.wsPath).toBe('/mqtt');
     expect(parsed.autoLaunch).toBe(true);
   });
 

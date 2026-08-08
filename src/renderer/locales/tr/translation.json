@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Gelenek"
+      "custom": "Gelenek",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh'in 443 numaralı bağlantı noktasında WebSocket'e ve mqtt-us-v1.letsmesh.net veya mqtt-eu-v1.letsmesh.net sunucusuna ihtiyacı vardır. Bölge'yi (ABD/AB) kullanın veya diğer aracılar için Özel'e geçin.",
       "coloradomesh": "Colorado Mesh'in TLS etkinleştirilmiş 443 numaralı bağlantı noktasında WebSocket'e ihtiyacı var, sunucu mqtt.meshcore.coloradomesh.org, yol /ws. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
-      "meshmapper": "MeshMapper'ın 443 numaralı bağlantı noktasında WebSocket'e ve mqtt.meshmapper.net sunucusuna ihtiyacı vardır. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin."
+      "meshmapper": "MeshMapper'ın 443 numaralı bağlantı noktasında WebSocket'e ve mqtt.meshmapper.net sunucusuna ihtiyacı vardır. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "waev": "Waev, TLS etkin, sunucu mqtt.waev.app ile 443 numaralı bağlantı noktasında WebSocket'e ihtiyaç duyar. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "meshatse": "Meshat.se, TLS etkinleştirilmiş, sunucu meshcore-mqtt.meshat.se ile 443 numaralı bağlantı noktasında WebSocket'e ihtiyaç duyar. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "meshcoreca": "MeshCore.CA, TLS etkinleştirilmiş 443 numaralı bağlantı noktasında WebSocket'e, mqtt1.meshcore.ca veya mqtt2.meshcore.ca sunucusuna ihtiyaç duyar. Broker (Birincil/Yedekleme) kullanın veya diğer brokerler için Özel'e geçin.",
+      "eastmesh": "EastMesh, TLS etkinleştirilmiş, mqtt2.eastmesh.au sunucusuyla 443 numaralı bağlantı noktasında WebSocket'e ihtiyaç duyar. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Bağlandığınızda kimlik doğrulama jetonu (meshcore-kod çözücü formatı) oluşturulacaktır. Kullanıcı adı v1_ artı 64 karakterlik genel anahtarınızdan (onaltılık) oluşur. JWT izleyicisi Sunucu ana bilgisayar adıyla eşleşir.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Hat kalitesi",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Kullanılamıyor (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Kullanılamıyor (Web Bluetooth)",
+    "meshcoreCaBroker": "MeshCore.CA brokeri",
+    "meshcoreCaPrimary": "Birincil",
+    "meshcoreCaBackup": "Yedekleme",
+    "broker": "Aracı Kurum"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

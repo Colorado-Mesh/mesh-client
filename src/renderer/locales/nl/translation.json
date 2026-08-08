@@ -1255,12 +1255,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Aangepast"
+      "custom": "Aangepast",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh heeft WebSocket op poort 443 en server mqtt-us-v1.letsmesh.net of mqtt-eu-v1.letsmesh.net nodig. Gebruik Regio (VS/EU) of schakel over naar Aangepast voor andere makelaars.",
       "coloradomesh": "Colorado Mesh heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt.meshcore.coloradomesh.org, pad /ws. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
-      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.net nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars."
+      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.net nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
+      "waev": "Waev heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt.waev.app. Reset de voorinstelling of schakel over naar Aangepast voor andere makelaars.",
+      "meshatse": "Meshat.se heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server meshcore-mqtt.meshat.se. Reset de voorinstelling of schakel over naar Aangepast voor andere makelaars.",
+      "meshcoreca": "MeshCore.CA heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt1.meshcore.ca of mqtt2.meshcore.ca. Gebruik Makelaar (Primair/Back-up) of schakel over naar Aangepast voor andere makelaars.",
+      "eastmesh": "EastMesh heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt2.eastmesh.au. Reset de voorinstelling of schakel over naar Aangepast voor andere makelaars."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Auth-token (meshcore-decoder-indeling) wordt gegenereerd wanneer u verbinding maakt. De gebruikersnaam is v1_ plus uw openbare sleutel van 64 tekens (hexadecimaal). JWT-doelgroep komt overeen met de hostnaam van de server.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Verbindingskwaliteit",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Niet beschikbaar (Web Bluetooth)"
+    "signalUnavailableWebBluetooth": "Niet beschikbaar (Web Bluetooth)",
+    "meshcoreCaBroker": "MeshCore.CA-makelaar",
+    "meshcoreCaPrimary": "Primair",
+    "meshcoreCaBackup": "Back-up",
+    "broker": "Makelaar:"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

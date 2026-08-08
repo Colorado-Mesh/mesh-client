@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "관습"
+      "custom": "관습",
+      "waev": "와에브",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh에는 포트 443 및 서버 mqtt-us-v1.letsmesh.net 또는 mqtt-eu-v1.letsmesh.net에 WebSocket이 필요합니다. 지역(US/EU)을 사용하거나 다른 브로커의 경우 사용자 정의로 전환하세요.",
       "coloradomesh": "Colorado Mesh는 TLS가 활성화된 포트 443, 서버 mqtt.meshcore.coloradomesh.org, 경로 /ws에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
-      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.net에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요."
+      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.net에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
+      "waev": "Waev는 TLS가 활성화된 mqtt.waev.app 서버가 있는 포트 443에서 WebSocket이 필요합니다. 사전 설정을 재설정하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오.",
+      "meshatse": "Meshat.se에는 TLS가 활성화된 서버 meshcore-mqtt.meshat.se가 있는 포트 443의 WebSocket이 필요합니다. 사전 설정을 재설정하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오.",
+      "meshcoreca": "MeshCore.CA는 TLS가 활성화된 포트 443, 서버 mqtt1.meshcore.ca 또는 mqtt2.meshcore.ca에서 WebSocket이 필요합니다. 브로커 (기본/백업) 를 사용하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오.",
+      "eastmesh": "EastMesh는 TLS가 활성화된 mqtt2.eastmesh.au 서버가 있는 포트 443에서 WebSocket이 필요합니다. 사전 설정을 재설정하거나 다른 브로커의 경우 사용자 지정으로 전환하십시오."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "연결 시 인증 토큰(meshcore-decoder 형식)이 생성됩니다. 사용자 이름은 v1_에 64자 공개 키(16진수)를 더한 것입니다. JWT 대상은 서버 호스트 이름과 일치합니다.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "연결 품질",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "사용할 수 없음 (웹 블루투스)"
+    "signalUnavailableWebBluetooth": "사용할 수 없음 (웹 블루투스)",
+    "meshcoreCaBroker": "MeshCore.CA 브로커",
+    "meshcoreCaPrimary": "1차",
+    "meshcoreCaBackup": "백업",
+    "broker": "중개인"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

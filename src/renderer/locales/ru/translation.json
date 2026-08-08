@@ -1258,12 +1258,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Обычай"
+      "custom": "Обычай",
+      "waev": "Ваев",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh нужен WebSocket на порту 443 и сервер mqtt-us-v1.letsmesh.net или mqtt-eu-v1.letsmesh.net. Используйте регион (США/ЕС) или переключитесь на Custom для других брокеров.",
       "coloradomesh": "Colorado Mesh требуется WebSocket на порту 443 с включенным TLS, сервер mqtt.meshcore.coloradomesh.org, путь /ws. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
-      "meshmapper": "MeshMapper нуждается в WebSocket на порту 443 и сервере mqtt.meshmapper.net. Сбросьте предустановку или переключитесь на Custom для других брокеров."
+      "meshmapper": "MeshMapper нуждается в WebSocket на порту 443 и сервере mqtt.meshmapper.net. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
+      "waev": "Waev нужен WebSocket на порту 443 с включенным TLS, сервер mqtt.waev.app. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
+      "meshatse": "Meshat.se требуется WebSocket на порту 443 с включенным TLS, сервер meshcore-mqtt.meshat.se. Сбросьте предустановку или переключитесь на Custom для других брокеров.",
+      "meshcoreca": "MeshCore.CA требуется WebSocket на порту 443 с включенным TLS, сервер mqtt1.meshcore.ca или mqtt2.meshcore.ca. Используйте Broker (Primary/Backup) или переключитесь на Custom для других брокеров.",
+      "eastmesh": "EastMesh требуется WebSocket на порту 443 с включенным TLS, сервер mqtt2.eastmesh.au. Сбросьте предустановку или переключитесь на Custom для других брокеров."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Токен аутентификации (формат Meshcore-декодера) будет сгенерирован при подключении. Имя пользователя — v1_ плюс ваш 64-значный открытый ключ (шестнадцатеричный). Аудитория JWT соответствует имени хоста Сервера.",
@@ -1350,7 +1358,11 @@
     "linkQuality": "Качество связи:",
     "linkQualityMs": "{{ms}} мс",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Недоступно (веб-Bluetooth)"
+    "signalUnavailableWebBluetooth": "Недоступно (веб-Bluetooth)",
+    "meshcoreCaBroker": "Брокер MeshCore.CA",
+    "meshcoreCaPrimary": "Первичные",
+    "meshcoreCaBackup": "Резервное копирование",
+    "broker": "Брокер"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

@@ -1256,12 +1256,20 @@
       "coloradomesh": "Colorado Mesh",
       "meshmapper": "MeshMapper",
       "ripple": "Ripple Networks",
-      "custom": "Kebiasaan"
+      "custom": "Kebiasaan",
+      "waev": "Waev",
+      "meshatse": "Meshat.se",
+      "meshcoreca": "MeshCore.CA",
+      "eastmesh": "EastMesh"
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh memerlukan WebSocket pada port 443 dan server mqtt-us-v1.letsmesh.net atau mqtt-eu-v1.letsmesh.net. Gunakan Wilayah (AS/UE), atau beralih ke Kustom untuk broker lain.",
       "coloradomesh": "Colorado Mesh memerlukan WebSocket pada port 443 dengan TLS diaktifkan, server mqtt.meshcore.coloradomesh.org, jalur /ws. Reset preset atau alihkan ke Custom untuk broker lain.",
-      "meshmapper": "MeshMapper membutuhkan WebSocket pada port 443 dan server mqtt.meshmapper.net. Reset preset atau alihkan ke Custom untuk broker lain."
+      "meshmapper": "MeshMapper membutuhkan WebSocket pada port 443 dan server mqtt.meshmapper.net. Reset preset atau alihkan ke Custom untuk broker lain.",
+      "waev": "Waev membutuhkan WebSocket di port 443 dengan TLS diaktifkan, server mqtt.waev.app. Atur ulang preset atau beralih ke Custom untuk broker lain.",
+      "meshatse": "Meshat.se membutuhkan WebSocket pada port 443 dengan TLS diaktifkan, server meshcore-mqtt.meshat.se. Atur ulang preset atau beralih ke Custom untuk broker lain.",
+      "meshcoreca": "MeshCore.CA membutuhkan WebSocket pada port 443 dengan TLS diaktifkan, server mqtt1.meshcore.ca atau mqtt2.meshcore.ca. Gunakan Broker (Primer/Cadangan), atau beralih ke Custom untuk broker lain.",
+      "eastmesh": "EastMesh membutuhkan WebSocket pada port 443 dengan TLS diaktifkan, server mqtt2.eastmesh.au. Atur ulang preset atau beralih ke Custom untuk broker lain."
     },
     "meshcoreMqttIdentity": {
       "hasPrivateKey": "Token autentikasi (format meshcore-decoder) akan dibuat saat Anda terhubung. Nama pengguna adalah v1_ ditambah kunci publik 64 karakter Anda (hex). Audiens JWT cocok dengan nama host Server.",
@@ -1348,7 +1356,11 @@
     "linkQuality": "Kualitas tautan",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Tidak tersedia (Bluetooth Web)"
+    "signalUnavailableWebBluetooth": "Tidak tersedia (Bluetooth Web)",
+    "meshcoreCaBroker": "Broker MeshCore.CA",
+    "meshcoreCaPrimary": "Primer",
+    "meshcoreCaBackup": "Cadangan",
+    "broker": "Broker"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
