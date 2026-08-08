@@ -4257,7 +4257,6 @@
     "syncNoTarget": "Belum ada simpul propagasi yang tersedia — tidak ada yang ditemukan, dan Anda tidak memiliki simpul tambahan. Sinkronisasi berjalan sendiri segera setelah tersedia.",
     "syncLocalLoading": "Simpul propagasi lokal masih memuat pesan yang disimpan. Sinkronisasi berjalan sendiri setelah selesai.",
     "syncLocalSettledFor": "Disinkronkan dengan {{name}}.",
-    "syncStartedWith": "Menyinkronkan dengan {{name}}…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Tampilkan pengingat propagasi di Obrolan",

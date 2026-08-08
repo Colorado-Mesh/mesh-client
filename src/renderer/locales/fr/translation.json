@@ -4257,7 +4257,6 @@
     "syncNoTarget": "Aucun nœud de propagation n'est encore disponible — aucun n'a été découvert et vous n'avez aucun nœud ajouté. La synchronisation s'exécute d'elle-même dès qu'elle est disponible.",
     "syncLocalLoading": "Le nœud de propagation local charge toujours ses messages stockés. La synchronisation s'exécute d'elle-même une fois qu'elle est terminée.",
     "syncLocalSettledFor": "Synchronisé avec {{name}}.",
-    "syncStartedWith": "Synchronisation avec {{name}}…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}} : {{message}}",
     "showChatNotice": "Afficher le rappel de propagation dans le chat",

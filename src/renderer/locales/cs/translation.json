@@ -4259,7 +4259,6 @@
     "syncNoTarget": "Zatím není k dispozici žádný propagační uzel — žádný nebyl objeven a nemáte žádné přidané uzly. Synchronizace se spustí sama, jakmile je k dispozici.",
     "syncLocalLoading": "Lokální propagační uzel stále načítá uložené zprávy. Jakmile synchronizace skončí, spustí se sama.",
     "syncLocalSettledFor": "Synchronizováno s {{name}}.",
-    "syncStartedWith": "Synchronizace s {{name}}…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Zobrazit připomenutí propagace v chatu",

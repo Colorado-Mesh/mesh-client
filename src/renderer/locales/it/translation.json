@@ -4257,7 +4257,6 @@
     "syncNoTarget": "Nessun nodo di propagazione è ancora disponibile: nessuno è stato rilevato e non sono stati aggiunti nodi. La sincronizzazione viene eseguita da sola non appena ne è disponibile una.",
     "syncLocalLoading": "Il nodo di propagazione locale sta ancora caricando i suoi messaggi memorizzati. La sincronizzazione viene eseguita da sola al termine.",
     "syncLocalSettledFor": "Sincronizzato con {{name}}.",
-    "syncStartedWith": "Sincronizzazione con {{name}}...",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Mostra promemoria di propagazione in chat",

@@ -55,7 +55,9 @@ vi.mock('@/renderer/lib/i18n', () => ({
   default: { t: (key: string) => key },
 }));
 
+import { resetPropagationSyncCascadeState } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import { RETICULUM_PROPAGATION_MODE_KEY } from '@/renderer/lib/reticulum/reticulumPropagationMode';
+import { resetReticulumPropagationSyncFailures } from '@/renderer/lib/reticulum/reticulumPropagationSyncBackoff';
 
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 
@@ -75,6 +77,8 @@ describe('ReticulumPropagationSection', () => {
   beforeEach(() => {
     addToast.mockReset();
     localStorage.clear();
+    resetPropagationSyncCascadeState();
+    resetReticulumPropagationSyncFailures();
     useReticulumPropagationStore.setState({
       nodes: [
         {
@@ -577,16 +581,22 @@ describe('ReticulumPropagationSection', () => {
     expect(localStorage.getItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY)).toBeNull();
   });
 
-  it('names the node the cascade reached in the sync toast', async () => {
+  it('names the node the cascade reached in the sync toast once it settles', async () => {
     const user = userEvent.setup();
-    // Real startSync is mocked, so mirror the target stamp it would write.
+    // Real startSync is mocked, so mirror the target stamp and the deferred settle it would write.
     useReticulumPropagationStore.setState({
       startSync: vi.fn().mockImplementation((id?: string) => {
         useReticulumPropagationStore.setState({
           syncTargetId: id ?? null,
           sync: { active: true, progress: 5, message: null },
+          lastSyncError: null,
         });
-        return Promise.resolve(true);
+        return Promise.resolve().then(() => {
+          useReticulumPropagationStore.setState({
+            sync: { active: false, progress: 0, message: null },
+          });
+          return true;
+        });
       }),
     });
     render(<ReticulumPropagationSection embedded />);
@@ -598,8 +608,8 @@ describe('ReticulumPropagationSection', () => {
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith(
-        'reticulumPropagation.syncStartedWith:Remote hub',
-        'info',
+        'reticulumPropagation.syncLocalSettledFor:Remote hub',
+        'success',
       );
     });
   });

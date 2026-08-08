@@ -216,19 +216,14 @@ export default function ReticulumPropagationSection({
           );
           return;
         }
-        // Local settle finishes inside startSync with no progress bar; remote leaves sync.active.
-        if (!useReticulumPropagationStore.getState().sync.active) {
-          addToast(
-            name
-              ? t('reticulumPropagation.syncLocalSettledFor', { name })
-              : t('reticulumPropagation.syncLocalSettled'),
-            'success',
-          );
-          return;
-        }
-        if (name) {
-          addToast(t('reticulumPropagation.syncStartedWith', { name }), 'info');
-        }
+        // The cascade waits for the attempt to settle, so success names whichever node
+        // actually completed — a discovered/configured remote or the local inbox.
+        addToast(
+          name
+            ? t('reticulumPropagation.syncLocalSettledFor', { name })
+            : t('reticulumPropagation.syncLocalSettled'),
+          'success',
+        );
       })
       .catch((err: unknown) => {
         setSyncStarting(false);

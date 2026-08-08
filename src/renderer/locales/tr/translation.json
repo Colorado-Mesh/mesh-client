@@ -4257,7 +4257,6 @@
     "syncNoTarget": "Henüz yayılma düğümü mevcut değil — hiçbiri keşfedilmedi ve ek düğümünüz yok. Senkronizasyon, hazır olur olmaz kendi kendine çalışır.",
     "syncLocalLoading": "Yerel yayılım düğümü hala depolanan mesajlarını yüklemektedir. Senkronizasyon bittiğinde kendi kendine çalışır.",
     "syncLocalSettledFor": "{{name}} ile senkronize edildi.",
-    "syncStartedWith": "{{name}} ile senkronize ediliyor…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Chat'te yayılma hatırlatıcısını göster",

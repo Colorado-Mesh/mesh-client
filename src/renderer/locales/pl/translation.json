@@ -4261,7 +4261,6 @@
     "syncNoTarget": "Żaden węzeł propagacji nie jest jeszcze dostępny — żaden nie został odkryty, a Ty nie masz dodanych węzłów. Synchronizacja działa samodzielnie, gdy tylko jest dostępna.",
     "syncLocalLoading": "Lokalny węzeł propagacji nadal ładuje zapisane komunikaty. Synchronizacja działa samodzielnie po jej zakończeniu.",
     "syncLocalSettledFor": "Zsynchronizowano z {{name}}.",
-    "syncStartedWith": "Synchronizacja z {{name}}…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Pokaż przypomnienie o propagacji na czacie",

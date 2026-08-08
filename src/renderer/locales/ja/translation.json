@@ -4257,7 +4257,6 @@
     "syncNoTarget": "まだ利用可能な伝播ノードはありません—何も検出されておらず、追加されたノードはありません。同期は、利用可能になるとすぐに単独で実行されます。",
     "syncLocalLoading": "ローカル伝播ノードは、保存されたメッセージを読み込んでいます。同期が完了すると、単独で実行されます。",
     "syncLocalSettledFor": "{{name}}と同期しました。",
-    "syncStartedWith": "{{name}}と同期しています…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}} ： {{message}}",
     "showChatNotice": "チャットに伝播リマインダーを表示",

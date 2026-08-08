@@ -4257,7 +4257,6 @@
     "syncNoTarget": "Es ist noch kein Ausbreitungsknoten verfügbar — keiner wurde entdeckt und Sie haben keine zusätzlichen Knoten hinzugefügt. Sync läuft von selbst, sobald eines verfügbar ist.",
     "syncLocalLoading": "Der lokale Ausbreitungsknoten lädt noch seine gespeicherten Nachrichten. Die Synchronisierung läuft von selbst, sobald sie abgeschlossen ist.",
     "syncLocalSettledFor": "Synchronisiert mit {{name}}.",
-    "syncStartedWith": "Wird mit {{name}} synchronisiert...",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Ausbreitungserinnerung im Chat anzeigen",

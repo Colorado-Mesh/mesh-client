@@ -4257,7 +4257,6 @@
     "syncNoTarget": "没有可用的传播节点—没有发现任何节点，并且您没有添加任何节点。一旦可用，同步将自行运行。",
     "syncLocalLoading": "本地传播节点仍在加载其存储的消息。同步完成后自行运行。",
     "syncLocalSettledFor": "已与{{name}}同步。",
-    "syncStartedWith": "正在与{{name}}同步……",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}} ： {{message}}",
     "showChatNotice": "在聊天中显示传播提醒",

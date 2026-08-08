@@ -4257,7 +4257,6 @@
     "syncNoTarget": "Er is nog geen propagatieknooppunt beschikbaar — er is er geen ontdekt en u hebt geen toegevoegde knooppunten. Sync draait op zichzelf zodra er een beschikbaar is.",
     "syncLocalLoading": "Het lokale propagatieknooppunt laadt nog steeds de opgeslagen berichten. Sync draait op zichzelf zodra het klaar is.",
     "syncLocalSettledFor": "Gesynchroniseerd met {{name}}.",
-    "syncStartedWith": "Synchroniseren met {{name}}…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Toon propagatieherinnering in Chat",

@@ -4257,7 +4257,6 @@
     "syncNoTarget": "아직 사용할 수 있는 전파 노드가 없습니다. 발견된 노드가 없으며 추가된 노드가 없습니다. 동기화는 사용 가능한 즉시 자체적으로 실행됩니다.",
     "syncLocalLoading": "로컬 전파 노드가 여전히 저장된 메시지를 로드하고 있습니다. 동기화는 완료되면 자체적으로 실행됩니다.",
     "syncLocalSettledFor": "{{name}}과(와) 동기화되었습니다.",
-    "syncStartedWith": "{{name}}과(와) 동기화 중…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Chat에 전파 알림 표시",

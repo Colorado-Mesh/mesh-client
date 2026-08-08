@@ -187,6 +187,73 @@ export function schedulePropagationSyncStallWatchdog(): void {
   }, RETICULUM_PROPAGATION_SYNC_CEILING_MS);
 }
 
+/**
+ * Outcome of a single propagation sync attempt once it stops being in flight.
+ * `cancelled` is the user pressing Cancel — a cascade must stop rather than advance.
+ */
+export type PropagationAttemptOutcome = 'success' | 'failed' | 'cancelled';
+
+/**
+ * Backstop for {@link awaitPropagationSyncSettled}. The stall/ceiling watchdogs settle a
+ * real attempt well before this; it only covers a dropped websocket stream.
+ */
+export const RETICULUM_PROPAGATION_SYNC_SETTLE_TIMEOUT_MS =
+  RETICULUM_PROPAGATION_SYNC_CEILING_MS + 15_000;
+
+function classifySettledPropagationSync(lastSyncError: string | null): PropagationAttemptOutcome {
+  if (lastSyncError == null) return 'success';
+  return lastSyncError === SYNC_CANCELLED_KEY ? 'cancelled' : 'failed';
+}
+
+/**
+ * Resolve once the in-flight sync attempt goes idle.
+ *
+ * `startSync` only reports that the sidecar *accepted* the request; the real outcome arrives
+ * later on the `propagation_sync` websocket stream or from the stall/ceiling watchdogs. A
+ * cascade must wait for that before deciding whether to try the next node.
+ */
+export async function awaitPropagationSyncSettled(opts?: {
+  timeoutMs?: number;
+}): Promise<PropagationAttemptOutcome> {
+  const store = useReticulumPropagationStore;
+  const initial = store.getState();
+  // local-prop settles inside startSync, and a fast failure may already have landed.
+  if (!initial.sync.active) return classifySettledPropagationSync(initial.lastSyncError);
+
+  const timeoutMs = opts?.timeoutMs ?? RETICULUM_PROPAGATION_SYNC_SETTLE_TIMEOUT_MS;
+  return new Promise<PropagationAttemptOutcome>((resolve) => {
+    let settled = false;
+    let unsubscribe: (() => void) | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const finish = (outcome: PropagationAttemptOutcome) => {
+      if (settled) return;
+      settled = true;
+      if (timer != null) clearTimeout(timer);
+      unsubscribe?.();
+      resolve(outcome);
+    };
+
+    timer = setTimeout(() => {
+      timer = null;
+      // Sidecar never reported a terminal frame — release the sync so the cascade continues.
+      void store.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });
+      finish('failed');
+    }, timeoutMs);
+
+    unsubscribe = store.subscribe((state) => {
+      if (state.sync.active) return;
+      finish(classifySettledPropagationSync(state.lastSyncError));
+    });
+
+    // The terminal frame can land between the initial read and the subscription.
+    const current = store.getState();
+    if (!current.sync.active) {
+      finish(classifySettledPropagationSync(current.lastSyncError));
+    }
+  });
+}
+
 /** Sidecar uses 0–1 for in-progress states and 0–100 for complete. */
 export function normalizePropagationSyncProgress(raw: number): number {
   if (!Number.isFinite(raw) || raw < 0) return 0;

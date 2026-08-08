@@ -6,15 +6,49 @@ import {
   ensurePreferredThenStartSync,
   PROPAGATION_SYNC_LOCAL_LOADING_KEY,
   PROPAGATION_SYNC_NO_TARGET_KEY,
+  resetPropagationSyncCascadeState,
   startPropagationSyncCascade,
 } from './reticulumPropagationAutoApply';
 import {
   RETICULUM_PROPAGATION_MODE_KEY,
   writeReticulumPropagationMode,
 } from './reticulumPropagationMode';
+import { resetReticulumPropagationSyncFailures } from './reticulumPropagationSyncBackoff';
+
+type SettleOutcome = 'success' | 'failure' | 'cancel';
+
+const SETTLE_ERROR_KEYS: Record<SettleOutcome, string | null> = {
+  success: null,
+  failure: 'reticulumPropagation.syncFailed',
+  cancel: 'reticulumPropagation.syncCancelled',
+};
+
+/**
+ * Mimics the real `startSync`: the sidecar accepts the request now and the outcome only
+ * arrives later on the websocket stream.
+ */
+function deferredStartSync(outcomeFor: (id: string) => SettleOutcome) {
+  return vi.fn((id?: string) => {
+    const target = id ?? '';
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 5, message: null },
+      lastSyncError: null,
+      syncTargetId: target,
+    });
+    setTimeout(() => {
+      useReticulumPropagationStore.setState({
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: SETTLE_ERROR_KEYS[outcomeFor(target)],
+      });
+    }, 0);
+    return Promise.resolve(true);
+  });
+}
 
 describe('reticulumPropagationAutoApply', () => {
   beforeEach(() => {
+    resetPropagationSyncCascadeState();
+    resetReticulumPropagationSyncFailures();
     const store = new Map<string, string>();
     vi.stubGlobal('localStorage', {
       getItem: (k: string) => store.get(k) ?? null,
@@ -70,6 +104,8 @@ describe('reticulumPropagationAutoApply', () => {
       discovered: [],
       preferredId: null,
       sync: { active: false, progress: 0, message: null },
+      lastSyncError: null,
+      syncTargetId: null,
       setPreferredOnSidecar: vi.fn().mockResolvedValue(true),
       addFromDiscovered: vi.fn().mockResolvedValue(true),
       startSync: vi.fn().mockResolvedValue(true),
@@ -347,5 +383,125 @@ describe('reticulumPropagationAutoApply', () => {
 
   it('honors persisted Auto mode key', () => {
     expect(localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY)).toBe('auto');
+  });
+
+  describe('attempts that fail after the sidecar accepts them', () => {
+    const near = 'aa11'.repeat(8);
+    const far = 'bb22'.repeat(8);
+
+    const setUpTwoDiscovered = (startSync: ReturnType<typeof deferredStartSync>) => {
+      useReticulumPropagationStore.setState({
+        nodes: [
+          { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+          {
+            id: 'pn-aabb1111',
+            name: 'Remote',
+            enabled: true,
+            status: 'known',
+            hops: 2,
+            destination_hash: 'aabb'.repeat(8),
+          },
+        ],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 0 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 1 },
+        ],
+        preferredId: null,
+        startSync,
+      });
+    };
+
+    it('Auto moves on to the next discovered node instead of stopping', async () => {
+      const startSync = deferredStartSync((id) => (id === near ? 'failure' : 'success'));
+      setUpTwoDiscovered(startSync);
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([near, far]);
+    });
+
+    it('Auto reaches the local inbox after every remote fails', async () => {
+      const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'success' : 'failure'));
+      setUpTwoDiscovered(startSync);
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([
+        near,
+        far,
+        'pn-aabb1111',
+        'local-prop',
+      ]);
+    });
+
+    it('Manual moves on to the next added remote instead of stopping', async () => {
+      writeReticulumPropagationMode('manual');
+      const startSync = deferredStartSync((id) => (id === 'pn-far' ? 'failure' : 'success'));
+      useReticulumPropagationStore.setState({
+        nodes: [
+          { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+          { id: 'pn-near', name: 'Near', enabled: true, status: 'known', hops: 1 },
+          { id: 'pn-far', name: 'Far', enabled: true, status: 'known', hops: 4 },
+        ],
+        preferredId: 'pn-far',
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade()).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-far', 'pn-near']);
+    });
+
+    it('stops the cascade when the user cancels the attempt', async () => {
+      const startSync = deferredStartSync(() => 'cancel');
+      setUpTwoDiscovered(startSync);
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      expect(startSync).toHaveBeenCalledTimes(1);
+      expect(startSync).toHaveBeenCalledWith(near);
+    });
+
+    it('deprioritizes a node that failed recently on the next cascade', async () => {
+      const startSync = deferredStartSync((id) => (id === near ? 'failure' : 'success'));
+      setUpTwoDiscovered(startSync);
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([near, far]);
+
+      startSync.mockClear();
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([far]);
+    });
+
+    it('settles the local inbox once the remote budget is spent', async () => {
+      let nowMs = 1_000_000;
+      const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+      const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'success' : 'failure'));
+      const slowStartSync = vi.fn((id?: string) => {
+        nowMs += 6 * 60_000;
+        return startSync(id);
+      });
+      setUpTwoDiscovered(slowStartSync);
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+      expect(slowStartSync.mock.calls.map((c) => c[0])).toEqual([near, 'local-prop']);
+      nowSpy.mockRestore();
+    });
+
+    it('shares one run when auto-sync ticks overlap', async () => {
+      const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'success' : 'failure'));
+      setUpTwoDiscovered(startSync);
+
+      // The second tick must join the running cascade rather than start a competing chain.
+      const first = startPropagationSyncCascade({ hasEnabledInterfaces: true });
+      const second = startPropagationSyncCascade({ hasEnabledInterfaces: true });
+
+      await expect(Promise.all([first, second])).resolves.toEqual([true, true]);
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([
+        near,
+        far,
+        'pn-aabb1111',
+        'local-prop',
+      ]);
+    });
   });
 });

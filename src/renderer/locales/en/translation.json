@@ -4501,7 +4501,6 @@
     "syncStarting": "Starting sync…",
     "syncLocalSettled": "Synced with local inbox.",
     "syncLocalSettledFor": "Synced with {{name}}.",
-    "syncStartedWith": "Syncing with {{name}}…",
     "syncStatusWithTarget": "{{status}} ({{name}})",
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "cancelSync": "Cancel sync",
