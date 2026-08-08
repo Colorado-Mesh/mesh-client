@@ -521,9 +521,16 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     // and left status=reconnecting with no further attempts (n7eal / #792 MeshCore TCP).
     const abortIdx = reconnectBody.indexOf('isMeshcoreSetupAbortError(err)');
     expect(abortIdx).toBeGreaterThan(-1);
-    const abortBlock = reconnectBody.slice(abortIdx, abortIdx + 900);
+    // Delimit the abort branch at the non-abort retry path rather than a fixed
+    // char window, so adding late-transport cleanup before the defer cannot push
+    // `return 'defer'` out of range.
+    const retryIdx = reconnectBody.indexOf("return 'retry'", abortIdx);
+    expect(retryIdx).toBeGreaterThan(abortIdx);
+    const abortBlock = reconnectBody.slice(abortIdx, retryIdx);
     expect(abortBlock).toContain('meshcoreDeferredReconnectRef.current = true');
     expect(abortBlock).toContain("return 'defer'");
+    // Setup abort must clean up any transport this doomed attempt opened before deferring.
+    expect(abortBlock).toContain('lateTransport.cleanup(openedDriverIdentityId)');
     expect(abortBlock).not.toMatch(/meshcoreIsReconnectingRef\.current = false/);
   });
 
