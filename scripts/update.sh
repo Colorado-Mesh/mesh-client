@@ -216,7 +216,7 @@ check_ratspeak_patches() {
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
     'rsReticulum-link-client-proof-budget.patch|ratspeak/rsReticulum||rsReticulum LinkClient proof-budget remaining-deadline|'
     'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum|20|rsReticulum BLE RNode pairing-transition debounce|https://github.com/ratspeak/rsReticulum/pull/20'
-    'rsReticulum-ble-rnode-bond-desync.patch|ratspeak/rsReticulum||rsReticulum BLE RNode bond-desync halt + bond-aware reconnect|'
+    'rsReticulum-ble-rnode-bond-desync.patch|ratspeak/rsReticulum|21|rsReticulum BLE RNode bond-desync halt + bond-aware reconnect|https://github.com/ratspeak/rsReticulum/pull/21'
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsReticulum-inbound-raw-saturation-log.patch|ratspeak/rsReticulum||rsReticulum inbound-raw saturation log|'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
