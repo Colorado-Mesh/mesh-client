@@ -13,7 +13,7 @@
     "loadingPanel": "Yükleme paneli",
     "loadingDialog": "Yükleme iletişim kutusu",
     "meshtasticQueueTooltip": "İletim kuyruğu: gönderilmeyi bekleyen paketler. Yeşil = az, sarı = doluyor, kırmızı = tıkalı.",
-    "meshcoreQueueTooltip": "MeshCore hızlı mesaj gönderdiği ve her 30 saniyede bir yoklama yaptığımız için bu her zaman 0 olmalıdır. 0 değilse tıkanıklık vardır.",
+    "meshcoreQueueTooltip": "MeshCore hızlı mesaj gönderdiği ve her 30 saniyede bir yoklama yaptığımız için bu her zaman 0 olmalıdır. 0 değilse tıkanıklık veya program hatası vardır.",
     "takRunning": "TAK çalışıyor",
     "takStopped": "TAK durduruldu",
     "takServerRunning": "TAK sunucusu çalışıyor",
@@ -507,7 +507,14 @@
       "splitHint": "[1/N], [2/N], … etiketli ayrı paketler olarak gönderilir",
       "overMax": "Çok uzun — maksimum {{totalMax}} karakter ({{maxParts}} mesaj)",
       "sendParts_one": "{{count}} parça gönder",
-      "sendParts_other": "{{count}} parça gönder"
+      "sendParts_other": "{{count}} parça gönder",
+      "limitHintSingle": "{{limit}} karaktere kadar. MeshCore her mesajı tek bir paket olarak gönderir.",
+      "overMaxSingle": "Çok uzun — MeshCore mesaj başına bir paket gönderir (maks. {{limit}} karakter)",
+      "meshcoreSingleNotice": {
+        "title": "Mesaj MeshCore için çok uzun",
+        "body": "MeshCore her mesajı tek bir radyo paketi olarak gönderir ({{limit}} karaktere kadar). Daha uzun mesajların numaralandırılmış parçalara bölünmesi gerekir, ancak meşgul bir örgü tekrarlayıcıda bu parçalardan bazıları rutin olarak düşürülür, böylece mesajlaştığınız kişi bunu anlamanın bir yolu olmayan eksik bir mesaj alır. Mesajları güvenilir tutmak için otomatik olarak bölünmezler. Bu mesajı kısaltın veya birkaç ayrı kısa mesaj olarak gönderin.",
+        "hint": "MeshCore mesaj başına bir paket gönderir; bölünmüş parçalar genellikle meşgul tekrarlayıcılar tarafından bırakılır, bu nedenle daha uzun mesajlar gönderilemez."
+      }
     },
     "sendFailed": "Gönderilemedi",
     "outboxStatusQueued": "Kuyrukta",
@@ -676,7 +683,11 @@
     "reticulumSendStoringLocally": "Yerel yayılım gelen kutunuza kaydediliyor…",
     "reticulumSendStoredLocally": "Yerel yayılım gelen kutunuzda tutulur (akranınıza teslim edilmez)",
     "sentViaLocalPropagation": "Yerel yayılım gelen kutusu",
-    "reticulumSendTimeout": "Gönderim zaman aşımına uğradı. Reticulum yığını başlıyor veya meşgul olabilir — tekrar deneyin."
+    "reticulumSendTimeout": "Gönderim zaman aşımına uğradı. Reticulum yığını başlıyor veya meşgul olabilir — tekrar deneyin.",
+    "meshcoreFastSend": {
+      "warning": "Ağın aktarabileceğinden daha hızlı gönderiyorsun. Yoğun bir ağda tekrarlayıcılar birbirine yakın gönderilen mesajları bırakabilir; mesajlar arasında birkaç saniye bırakın."
+    },
+    "outboxLegacyMultipartBlocked": "Bu sıraya alınmış mesaj, artık gönderilmeyen çok parçalı MeshCore bölmeyi kullandı. İptal edin ve daha kısa bir mesaj (veya birkaç ayrı kısa mesaj) gönderin."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

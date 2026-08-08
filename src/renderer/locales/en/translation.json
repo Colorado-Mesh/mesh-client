@@ -14,7 +14,7 @@
     "loadingDialog": "Loading dialog",
     "loadingApp": "Loading Mesh Client",
     "meshtasticQueueTooltip": "Transmit queue: packets waiting to be sent. Green = low, amber = filling up, red = congested.",
-    "meshcoreQueueTooltip": "Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion.",
+    "meshcoreQueueTooltip": "Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion or program error.",
     "takRunning": "TAK running",
     "takClientLost": "TAK client lost",
     "takStopped": "TAK stopped",
@@ -603,12 +603,22 @@
     "replyingTo": "Replying to",
     "composeLimit": {
       "limitHint": "Up to {{limit}} characters per message. Longer text is split automatically.",
+      "limitHintSingle": "Up to {{limit}} characters. MeshCore sends each message as a single packet.",
       "approaching": "{{count}} / {{limit}}",
       "split": "{{count}} characters · {{parts}} messages",
       "splitHint": "Sent as separate packets labeled [1/N], [2/N], …",
       "overMax": "Too long — maximum {{totalMax}} characters ({{maxParts}} messages)",
+      "overMaxSingle": "Too long — MeshCore sends one packet per message (max {{limit}} characters)",
+      "meshcoreSingleNotice": {
+        "title": "Message too long for MeshCore",
+        "body": "MeshCore sends each message as a single radio packet (up to {{limit}} characters). Longer messages have to be split into numbered parts, but on a busy mesh repeaters routinely drop some of those parts — so the person you're messaging would receive an incomplete message with no way to tell. To keep messages reliable, they aren't split automatically. Shorten this message, or send it as a few separate shorter messages.",
+        "hint": "MeshCore sends one packet per message; split parts are often dropped by busy repeaters, so longer messages can't be sent."
+      },
       "sendParts_one": "Send {{count}} part",
       "sendParts_other": "Send {{count}} parts"
+    },
+    "meshcoreFastSend": {
+      "warning": "You're sending faster than the mesh can relay. On a busy mesh, repeaters may drop messages sent close together — leave a few seconds between messages."
     },
     "copyMessage": "Copy message",
     "filterBySender": "Filter by sender",
@@ -649,6 +659,7 @@
     "outboxStatusSending": "Sending…",
     "outboxStatusBlocked": "Blocked",
     "outboxStatusFailed": "Failed",
+    "outboxLegacyMultipartBlocked": "This queued message used multi-part MeshCore splitting, which is no longer sent. Cancel it and send a shorter message (or several separate shorter messages).",
     "retryOutboxMessage": "Retry outbox message",
     "retryOutbox": "Retry",
     "cancelOutboxMessage": "Cancel outbox message",

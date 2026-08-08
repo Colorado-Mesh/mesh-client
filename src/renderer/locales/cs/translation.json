@@ -13,7 +13,7 @@
     "loadingPanel": "Nakládací panel",
     "loadingDialog": "Dialog načítání",
     "meshtasticQueueTooltip": "Přenosová fronta: pakety čekající na odeslání. Zelená = nízká, oranžová = zaplnění, červená = ucpané.",
-    "meshcoreQueueTooltip": "Protože MeshCore odesílá zprávy rychle a dotazujeme každých 30 sekund, měla by být vždy 0. Pokud ne 0, dochází k přetížení.",
+    "meshcoreQueueTooltip": "Protože MeshCore odesílá zprávy rychle a dotazujeme každých 30 sekund, měla by být vždy 0. Pokud ne 0, dochází k přetížení nebo chybě programu.",
     "takRunning": "TAK běží",
     "takStopped": "TAK se zastavil",
     "takServerRunning": "Server TAK běží",
@@ -506,7 +506,14 @@
       "splitHint": "Odesláno jako samostatné pakety označené [1/N], [2/N], …",
       "overMax": "Příliš dlouhé — maximum {{totalMax}} znaků ({{maxParts}} zpráv)",
       "sendParts_one": "Odeslat {{count}} díl",
-      "sendParts_other": "Odeslat {{count}} díly"
+      "sendParts_other": "Odeslat {{count}} díly",
+      "limitHintSingle": "Až {{limit}} znaků. MeshCore odešle každou zprávu jako jeden paket.",
+      "overMaxSingle": "Příliš dlouhé — MeshCore odešle jeden paket na zprávu (max. {{limit}} znaků)",
+      "meshcoreSingleNotice": {
+        "title": "Zpráva je pro MeshCore příliš dlouhá",
+        "body": "MeshCore odešle každou zprávu jako jeden rádiový paket (až {{limit}} znaků). Delší zprávy musí být rozděleny na číslované části, ale na zaneprázdněných síťových opakovačích některé z těchto částí běžně upouštějí — takže osoba, které posíláte zprávu, by obdržela neúplnou zprávu, aniž by to mohla říct. Aby byly zprávy spolehlivé, nejsou rozdělovány automaticky. Zkraťte tuto zprávu nebo ji odešlete jako několik samostatných kratších zpráv.",
+        "hint": "MeshCore odešle jeden paket na zprávu; rozdělené části jsou často upuštěny zaneprázdněnými opakovači, takže delší zprávy nelze odeslat."
+      }
     },
     "sendFailed": "Odeslání se nezdařilo",
     "outboxStatusQueued": "Ve frontě",
@@ -678,7 +685,11 @@
     "reticulumSendStoringLocally": "Ukládání do místní doručené pošty šíření…",
     "reticulumSendStoredLocally": "Uloženo ve vaší místní doručené poště šíření (nedoručeno peerovi)",
     "sentViaLocalPropagation": "Místní doručená pošta šíření",
-    "reticulumSendTimeout": "Odeslání vypršelo. Zásobník Reticulum se možná spouští nebo je zaneprázdněný — zkuste to znovu."
+    "reticulumSendTimeout": "Odeslání vypršelo. Zásobník Reticulum se možná spouští nebo je zaneprázdněný — zkuste to znovu.",
+    "meshcoreFastSend": {
+      "warning": "Odesíláte rychleji, než může síť přenést. Na zaneprázdněné síti mohou opakovače zahodit zprávy odeslané blízko sebe — mezi zprávami nechte několik sekund."
+    },
+    "outboxLegacyMultipartBlocked": "Tato zpráva ve frontě používala vícedílné rozdělení MeshCore, které se již neodesílá. Zrušte jej a odešlete kratší zprávu (nebo několik samostatných kratších zpráv)."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

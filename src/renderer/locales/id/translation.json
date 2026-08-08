@@ -13,7 +13,7 @@
     "loadingPanel": "Memuat panel",
     "loadingDialog": "Memuat dialog",
     "meshtasticQueueTooltip": "Antrian transmisi: paket menunggu untuk dikirim. Hijau = rendah, kuning = terisi, merah = padat.",
-    "meshcoreQueueTooltip": "Karena MeshCore mengirim pesan dengan cepat, dan kita melakukan polling setiap 30 detik, nilainya harus selalu 0. Jika bukan 0, maka terjadi kemacetan.",
+    "meshcoreQueueTooltip": "Karena MeshCore mengirim pesan dengan cepat, dan kita melakukan polling setiap 30 detik, nilainya harus selalu 0. Jika bukan 0, maka terjadi kemacetan atau kesalahan program.",
     "takRunning": "TAK berjalan",
     "takStopped": "TAK berhenti",
     "takServerRunning": "Server TAK berjalan",
@@ -507,7 +507,14 @@
       "splitHint": "Dikirim sebagai paket terpisah berlabel [1/N], [2/N], …",
       "overMax": "Terlalu panjang — maksimum {{totalMax}} karakter ({{maxParts}} pesan)",
       "sendParts_one": "Kirim {{count}} bagian",
-      "sendParts_other": "Kirim {{count}} bagian"
+      "sendParts_other": "Kirim {{count}} bagian",
+      "limitHintSingle": "Hingga {{limit}} karakter. MeshCore mengirimkan setiap pesan sebagai satu paket.",
+      "overMaxSingle": "Terlalu panjang — MeshCore mengirimkan satu paket per pesan (maks {{limit}} karakter)",
+      "meshcoreSingleNotice": {
+        "title": "Pesan terlalu panjang untuk MeshCore",
+        "body": "MeshCore mengirimkan setiap pesan sebagai satu paket radio (hingga {{limit}} karakter). Pesan yang lebih panjang harus dipecah menjadi beberapa bagian yang diberi nomor, namun pada mesh yang sibuk, repeater secara rutin membuang beberapa bagian tersebut — sehingga orang yang Anda kirimi pesan akan menerima pesan yang tidak lengkap dan tidak ada cara untuk mengatakannya. Agar pesan tetap dapat diandalkan, pesan tidak dibagi secara otomatis. Persingkat pesan ini, atau kirimkan sebagai beberapa pesan pendek terpisah.",
+        "hint": "MeshCore mengirimkan satu paket per pesan; bagian yang terpisah sering kali dijatuhkan oleh repeater yang sibuk, sehingga pesan yang lebih panjang tidak dapat dikirim."
+      }
     },
     "sendFailed": "Pengiriman gagal",
     "outboxStatusQueued": "Dalam antrean",
@@ -676,7 +683,11 @@
     "reticulumSendStoringLocally": "Menyimpan ke kotak masuk propagasi lokal Anda…",
     "reticulumSendStoredLocally": "Disimpan di kotak masuk propagasi lokal Anda (tidak dikirim ke peer)",
     "sentViaLocalPropagation": "Kotak masuk propagasi lokal",
-    "reticulumSendTimeout": "Waktu pengiriman habis. Stack Reticulum mungkin sedang mulai atau sibuk — coba lagi."
+    "reticulumSendTimeout": "Waktu pengiriman habis. Stack Reticulum mungkin sedang mulai atau sibuk — coba lagi.",
+    "meshcoreFastSend": {
+      "warning": "Anda mengirim lebih cepat daripada yang dapat disampaikan oleh mesh. Pada mesh yang sibuk, repeater dapat menjatuhkan pesan yang dikirim secara berdekatan — menyisakan beberapa detik di antara pesan."
+    },
+    "outboxLegacyMultipartBlocked": "Pesan antrean ini menggunakan pemisahan MeshCore multi-bagian, yang tidak lagi terkirim. Batalkan dan kirim pesan singkat (atau beberapa pesan singkat terpisah)."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

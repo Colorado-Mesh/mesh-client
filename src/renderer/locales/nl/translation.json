@@ -13,7 +13,7 @@
     "loadingPanel": "Laadpaneel",
     "loadingDialog": "Dialoogvenster laden",
     "meshtasticQueueTooltip": "Verzendwachtrij: pakketten die wachten om te worden verzonden. Groen = laag, oranje = vol, rood = verstopt.",
-    "meshcoreQueueTooltip": "Omdat MeshCore snel berichten verzendt en we elke 30 seconden een poll uitvoeren, moet dit altijd 0 zijn. Als dit niet 0 is, is er sprake van congestie.",
+    "meshcoreQueueTooltip": "Omdat MeshCore snel berichten verzendt en we elke 30 seconden een poll uitvoeren, moet dit altijd 0 zijn. Als dit niet 0 is, is er sprake van congestie of een programmafout.",
     "takRunning": "TAK loopt",
     "takStopped": "TAK stopte",
     "takServerRunning": "TAK-server actief",
@@ -506,7 +506,14 @@
       "splitHint": "Verzonden als afzonderlijke pakketten met het label [1/N], [2/N], …",
       "overMax": "Te lang — maximaal {{totalMax}} tekens ({{maxParts}} berichten)",
       "sendParts_one": "Verstuur {{count}} onderdeel",
-      "sendParts_other": "Verstuur {{count}} onderdelen"
+      "sendParts_other": "Verstuur {{count}} onderdelen",
+      "limitHintSingle": "Tot {{limit}} tekens. MeshCore verzendt elk bericht als een enkel pakket.",
+      "overMaxSingle": "Te lang — MeshCore verzendt één pakket per bericht (max {{limit}} tekens)",
+      "meshcoreSingleNotice": {
+        "title": "Bericht te lang voor MeshCore",
+        "body": "MeshCore verzendt elk bericht als een enkel radiopakket (maximaal {{limit}} tekens). Langere berichten moeten worden opgesplitst in genummerde delen, maar op een druk netwerk laten repeaters routinematig een aantal van die delen vallen, zodat de persoon die je een bericht stuurt een onvolledig bericht ontvangt zonder het te weten. Om berichten betrouwbaar te houden, worden ze niet automatisch gesplitst. Verkort dit bericht of stuur het als een paar afzonderlijke kortere berichten.",
+        "hint": "MeshCore verzendt één pakket per bericht; gesplitste delen worden vaak gedropt door drukke repeaters, dus langere berichten kunnen niet worden verzonden."
+      }
     },
     "sendFailed": "Verzenden mislukt",
     "outboxStatusQueued": "In wachtrij geplaatst",
@@ -676,7 +683,11 @@
     "reticulumSendStoringLocally": "Opslaan in uw lokale propagatie-inbox…",
     "reticulumSendStoredLocally": "Bewaard in uw lokale propagatie-inbox (niet afgeleverd bij de peer)",
     "sentViaLocalPropagation": "Lokale propagatie-inbox",
-    "reticulumSendTimeout": "Time-out voor verzenden. De Reticulum-stack is mogelijk aan het starten of bezet — probeer het opnieuw."
+    "reticulumSendTimeout": "Time-out voor verzenden. De Reticulum-stack is mogelijk aan het starten of bezet — probeer het opnieuw.",
+    "meshcoreFastSend": {
+      "warning": "Je verzendt sneller dan de mesh kan doorgeven. Op een drukke mesh kunnen herhalers berichten die dicht bij elkaar zijn verzonden laten vallen — laat een paar seconden tussen berichten."
+    },
+    "outboxLegacyMultipartBlocked": "Dit bericht in de wachtrij maakte gebruik van meerdelige MeshCore-splitsing, die niet langer wordt verzonden. Annuleer het en stuur een korter bericht (of meerdere afzonderlijke kortere berichten)."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

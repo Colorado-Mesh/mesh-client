@@ -1,8 +1,6 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_DAY, MS_PER_HOUR } from '@/shared/timeConstants';
 
-import { RETICULUM_LXMF_PAYLOAD_LIMIT } from '../chatComposerLimits';
-
 /**
  * Protocol-agnostic capability descriptor. Each radio protocol adapter exposes
  * one of these so UI and diagnostic engines can branch on features rather than
@@ -10,6 +8,12 @@ import { RETICULUM_LXMF_PAYLOAD_LIMIT } from '../chatComposerLimits';
  */
 export interface ProtocolCapabilities {
   protocol: MeshProtocol;
+  /**
+   * Max `[i/N]` chunks the composer may emit per outbound text send.
+   * MeshCore is 1 (single-packet; no multi-split). Meshtastic/Reticulum use 9
+   * (keep in sync with `MAX_CHUNKS` in `chatComposerLimits.ts`).
+   */
+  composerMaxChunks: number;
   /** Whether hops_away is populated for peers (Meshtastic / MeshCore: true; Reticulum: false) */
   hasHopCount: boolean;
   /** [min, max] valid hop limit for this protocol */
@@ -167,6 +171,7 @@ export interface ProtocolCapabilities {
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   protocol: 'meshtastic',
+  composerMaxChunks: 9,
   hasHopCount: true,
   hopLimitRange: [1, 7],
   hasMqttHybrid: true,
@@ -245,6 +250,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   protocol: 'meshcore',
+  composerMaxChunks: 1,
   hasHopCount: true,
   hopLimitRange: [1, 64],
   /** MeshCore session is RF-first; MQTT bridge is optional and not shown as a node column. */
@@ -324,6 +330,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   protocol: 'reticulum',
+  composerMaxChunks: 9,
   hasHopCount: false,
   hopLimitRange: [1, 128],
   hasMqttHybrid: false,
@@ -398,5 +405,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasLrgpGames: true,
   hasNobleBleScanning: false,
   hasLxmfPaper: true,
-  lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
+  // Keep in sync with RETICULUM_LXMF_PAYLOAD_LIMIT in chatComposerLimits.ts (no import — avoids cycle).
+  lxmfPayloadLimit: 4096,
 };

@@ -13,7 +13,7 @@
     "loadingPanel": "Das Panel wird geladen...",
     "loadingDialog": "Dialogfeld wird geladen",
     "meshtasticQueueTooltip": "Sendewarteschlange: Pakete, die darauf warten, gesendet zu werden. Grün = niedrig, gelb = füllt sich, rot = verstopft.",
-    "meshcoreQueueTooltip": "Da MeshCore Nachrichten schnell sendet und wir alle 30 Sekunden abfragen, sollte dies immer 0 sein. Wenn nicht 0, gibt es Staus.",
+    "meshcoreQueueTooltip": "Da MeshCore Nachrichten schnell sendet und wir alle 30 Sekunden abfragen, sollte dies immer 0 sein. Wenn nicht 0, gibt es Staus oder einen Programmfehler.",
     "takRunning": "TAK läuft",
     "takStopped": "TAK blieb stehen",
     "takServerRunning": "TAK-Server läuft",
@@ -506,7 +506,14 @@
       "splitHint": "Gesendet als separate Pakete mit den Bezeichnungen [1/N], [2/N], …",
       "overMax": "Zu lang — maximal {{totalMax}} Zeichen ({{maxParts}} Nachrichten)",
       "sendParts_one": "{{count}} Teil senden",
-      "sendParts_other": "{{count}} Teile senden"
+      "sendParts_other": "{{count}} Teile senden",
+      "limitHintSingle": "Bis zu {{limit}} Zeichen. MeshCore sendet jede Nachricht als einzelnes Paket.",
+      "overMaxSingle": "Zu lang — MeshCore sendet ein Paket pro Nachricht (max. {{limit}} Zeichen)",
+      "meshcoreSingleNotice": {
+        "title": "Nachricht zu lang für MeshCore",
+        "body": "MeshCore sendet jede Nachricht als einzelnes Funkpaket (bis zu {{limit}} Zeichen). Längere Nachrichten müssen in nummerierte Teile aufgeteilt werden, aber bei einem vielbeschäftigten Netz lassen Repeater routinemäßig einige dieser Teile fallen — so erhält die Person, die Sie benachrichtigen, eine unvollständige Nachricht ohne Möglichkeit, dies zu sagen. Um Nachrichten zuverlässig zu halten, werden sie nicht automatisch geteilt. Kürzen Sie diese Nachricht oder senden Sie sie als einige separate kürzere Nachrichten.",
+        "hint": "MeshCore sendet ein Paket pro Nachricht; geteilte Teile werden oft von besetzten Repeatern gelöscht, sodass keine längeren Nachrichten gesendet werden können."
+      }
     },
     "sendFailed": "Senden fehlgeschlagen.",
     "outboxStatusQueued": "In Warteschlange",
@@ -676,7 +683,11 @@
     "reticulumSendStoringLocally": "Wird in Ihrem lokalen Propagations-Posteingang gespeichert…",
     "reticulumSendStoredLocally": "Wird in Ihrem lokalen Propagations-Posteingang aufbewahrt (nicht an den Peer geliefert)",
     "sentViaLocalPropagation": "Lokaler Propagations-Posteingang",
-    "reticulumSendTimeout": "Senden abgelaufen. Der Reticulum-Stack startet möglicherweise oder ist beschäftigt — bitte erneut versuchen."
+    "reticulumSendTimeout": "Senden abgelaufen. Der Reticulum-Stack startet möglicherweise oder ist beschäftigt — bitte erneut versuchen.",
+    "meshcoreFastSend": {
+      "warning": "Sie senden schneller, als das Netz weiterleiten kann. In einem ausgelasteten Netz können Repeater Nachrichten, die nahe beieinander gesendet werden, ablegen — lassen Sie ein paar Sekunden zwischen den Nachrichten."
+    },
+    "outboxLegacyMultipartBlocked": "Diese in der Warteschlange befindliche Nachricht verwendete eine mehrteilige MeshCore-Aufteilung, die nicht mehr gesendet wird. Brechen Sie es ab und senden Sie eine kürzere Nachricht (oder mehrere separate kürzere Nachrichten)."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

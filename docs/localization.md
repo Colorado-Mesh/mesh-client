@@ -51,7 +51,7 @@ If you find a mistranslation or an awkward phrasing:
 2. Open a new [Translation Error](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) issue.
 3. Provide the current text and your suggested correction.
 
-CI does **not** run `check:i18n` as a standalone workflow step. Quality rules run via **pre-commit** (`pnpm run check:i18n`) and indirectly in CI through Vitest (`locale-quality.test.ts` subprocess). See [AGENTS.md](../AGENTS.md) (i18n / Localization) for maintainer commands (`pnpm run check:i18n`, `pnpm run i18n:auto-translate`).
+CI does **not** run `check:i18n` as a standalone workflow step. Quality rules run via **pre-commit** (`pnpm run check:i18n`) and indirectly in CI through Vitest (`locale-quality.test.ts` subprocess). See [docs/agents/i18n.md](agents/i18n.md) for maintainer commands (`pnpm run check:i18n`, `pnpm run i18n:auto-translate`).
 
 ### Quality checks (selected categories)
 

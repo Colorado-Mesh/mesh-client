@@ -13,7 +13,7 @@
     "loadingPanel": "Panel de carga",
     "loadingDialog": "Cargando diálogo",
     "meshtasticQueueTooltip": "Cola de transmisión: paquetes a la espera de ser enviados. Verde = bajo, ámbar = relleno, rojo = congestionado.",
-    "meshcoreQueueTooltip": "Debido a que MeshCore envía mensajes rápidamente, y sondeamos cada 30 segundos, esto siempre debe ser 0. Si no es 0, hay congestión.",
+    "meshcoreQueueTooltip": "Debido a que MeshCore envía mensajes rápidamente, y sondeamos cada 30 segundos, esto siempre debe ser 0. Si no es 0, hay congestión o un error de programa.",
     "takRunning": "TAK corriendo",
     "takStopped": "TAK detenido",
     "takServerRunning": "Servidor TAK en ejecución",
@@ -506,7 +506,14 @@
       "splitHint": "Enviado como paquetes separados etiquetados [1/N], [2/N],...",
       "overMax": "Demasiado largo: máximo {{totalMax}} caracteres ({{maxParts}} mensajes)",
       "sendParts_one": "Enviar {{count}} pieza",
-      "sendParts_other": "Enviar {{count}} piezas"
+      "sendParts_other": "Enviar {{count}} piezas",
+      "limitHintSingle": "Hasta {{limit}} caracteres. MeshCore envía cada mensaje como un solo paquete.",
+      "overMaxSingle": "Demasiado largo: MeshCore envía un paquete por mensaje (máx. {{limit}} caracteres)",
+      "meshcoreSingleNotice": {
+        "title": "Mensaje demasiado largo para MeshCore",
+        "body": "MeshCore envía cada mensaje como un solo paquete de radio (hasta {{limit}} caracteres). Los mensajes más largos deben dividirse en partes numeradas, pero en una malla ocupada, los repetidores dejan caer rutinariamente algunas de esas partes, por lo que la persona a la que estás enviando el mensaje recibiría un mensaje incompleto sin forma de saberlo. Para que los mensajes sean fiables, no se dividen automáticamente. Acorta este mensaje o envíalo como unos pocos mensajes más cortos por separado.",
+        "hint": "MeshCore envía un paquete por mensaje; las partes divididas a menudo son eliminadas por repetidores ocupados, por lo que no se pueden enviar mensajes más largos."
+      }
     },
     "sendFailed": "Envío Fallido",
     "outboxStatusQueued": "En cola",
@@ -676,7 +683,11 @@
     "reticulumSendStoringLocally": "Guardando en su bandeja de entrada de propagación local...",
     "reticulumSendStoredLocally": "Se mantiene en su bandeja de entrada de propagación local (no se entrega al peer)",
     "sentViaLocalPropagation": "Bandeja de entrada de propagación local",
-    "reticulumSendTimeout": "El envío ha caducado. La pila Reticulum puede estar iniciándose o ocupada; inténtelo de nuevo."
+    "reticulumSendTimeout": "El envío ha caducado. La pila Reticulum puede estar iniciándose o ocupada; inténtelo de nuevo.",
+    "meshcoreFastSend": {
+      "warning": "Estás enviando más rápido de lo que la malla puede transmitir. En una malla ocupada, los repetidores pueden descartar mensajes enviados muy juntos; deja unos segundos entre mensajes."
+    },
+    "outboxLegacyMultipartBlocked": "Este mensaje en cola utilizó la división MeshCore de varias partes, que ya no se envía. Cancélelo y envíe un mensaje más corto (o varios mensajes más cortos por separado)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

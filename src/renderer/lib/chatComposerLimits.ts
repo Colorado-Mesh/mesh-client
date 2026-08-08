@@ -2,6 +2,7 @@ import {
   formatMeshcoreWireReplyPrefix,
   formatMeshcoreWireTapbackPrefix,
 } from './meshcoreChannelText';
+import { getRadioCapabilities } from './radio/providerFactory';
 import type { MeshProtocol } from './types';
 
 export const MESHTASTIC_PAYLOAD_LIMIT = 228;
@@ -9,7 +10,17 @@ export const MESHTASTIC_PAYLOAD_LIMIT = 228;
 export const MESHCORE_PAYLOAD_LIMIT = 133;
 /** LXMF DM text limit for composer (sidecar handles wire encoding; no Meshtastic-style chunking). */
 export const RETICULUM_LXMF_PAYLOAD_LIMIT = 4096;
+/** Keep in sync with `ProtocolCapabilities.composerMaxChunks` for Meshtastic/Reticulum. */
 export const MAX_CHUNKS = 9;
+
+/**
+ * Max chunks a composer will split a message into, per protocol. Sourced from
+ * `ProtocolCapabilities.composerMaxChunks` (MeshCore = 1: no multi-part `[i/N]` split).
+ * See meshcore-dev/MeshCore #1502 / #2820. Inbound multi-part from other clients is unaffected.
+ */
+export function getMaxChunks(protocol: MeshProtocol): number {
+  return getRadioCapabilities(protocol).composerMaxChunks;
+}
 
 export const MESHCORE_WIRE_MAX = 160;
 export const MESHCORE_MAX_NAME_LEN = 32;
@@ -132,18 +143,22 @@ function takeCharsWithinByteBudget(chars: readonly string[], byteBudget: number)
   return count;
 }
 
-/** Max user-typed characters across MAX_CHUNKS split messages. */
+/** Max user-typed characters across `maxChunks` split messages (1 = single-packet only). */
 export function computeComposerTotalMaxChars(
   singleMessageLimit: number,
   wireOverheadFirstChunk = 0,
+  maxChunks = MAX_CHUNKS,
 ): number {
-  const prefixLen = `[${MAX_CHUNKS}/${MAX_CHUNKS}] `.length;
+  if (maxChunks <= 1) {
+    // Single packet only: no `[i/N]` prefix is reserved, only the first-chunk wire overhead.
+    const singleBody = singleMessageLimit - wireOverheadFirstChunk;
+    return singleBody > 0 ? singleBody : 0;
+  }
+  const prefixLen = `[${maxChunks}/${maxChunks}] `.length;
   const firstBody = singleMessageLimit - prefixLen - wireOverheadFirstChunk;
   const otherBody = singleMessageLimit - prefixLen;
   if (firstBody <= 0) return 0;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-  if (MAX_CHUNKS <= 1) return firstBody;
-  return firstBody + (MAX_CHUNKS - 1) * otherBody;
+  return firstBody + (maxChunks - 1) * otherBody;
 }
 
 export function computeComposerLimitStatus(
@@ -173,7 +188,11 @@ export function computeComposerLimitStatus(
   const trimmed = text.trim();
   const charCount = countMessageChars(trimmed);
   const showThreshold = Math.floor(singleMessageLimit * 0.8);
-  const totalMaxChars = computeComposerTotalMaxChars(singleMessageLimit, wireOverheadFirstChunk);
+  const totalMaxChars = computeComposerTotalMaxChars(
+    singleMessageLimit,
+    wireOverheadFirstChunk,
+    getMaxChunks(protocol),
+  );
 
   const chunks = splitChatMessage(trimmed, protocol, singleMessageLimit, wireOverheadFirstChunk);
 
@@ -203,7 +222,8 @@ export function computeComposerLimitStatus(
 /**
  * Split text into N chunks each prefixed "[i/N] " so every chunk fits in the protocol payload
  * limit. Returns [] when text fits in a single message (no chunking needed). Returns null when
- * the text would require more than MAX_CHUNKS chunks.
+ * the text would require more than the protocol's max chunks (`getMaxChunks`); MeshCore is capped
+ * at 1, so any over-limit MeshCore text returns null (no multi-part split).
  *
  * Splitting prefers word boundaries; hard-splits only when a single token exceeds the available
  * body space.
@@ -219,6 +239,7 @@ export function splitChatMessage(
   const limit = getChatPayloadLimit(protocol, payloadLimit);
   const trimmed = text.trim();
   const overhead = Math.max(0, wireOverheadFirstChunk);
+  const maxChunks = getMaxChunks(protocol);
 
   function chunkBodies(prefixLen: number): string[] {
     const bodies: string[] = [];
@@ -257,17 +278,21 @@ export function splitChatMessage(
 
   if (countMessageWireBytes(trimmed) + overhead <= limit) return [];
 
-  const estimatedPrefixLen = `[${MAX_CHUNKS}/${MAX_CHUNKS}] `.length;
+  // Protocols capped at a single packet (MeshCore) never split: over-limit text is rejected
+  // so the composer treats it as `overMax` and blocks the send.
+  if (maxChunks <= 1) return null;
+
+  const estimatedPrefixLen = `[${maxChunks}/${maxChunks}] `.length;
   const bodies = chunkBodies(estimatedPrefixLen);
 
-  if (bodies.length > MAX_CHUNKS) return null;
+  if (bodies.length > maxChunks) return null;
 
   const total = bodies.length;
   const actualPrefixLen = `[1/${total}] `.length;
   const finalBodies =
     actualPrefixLen === estimatedPrefixLen ? bodies : chunkBodies(actualPrefixLen);
 
-  if (finalBodies.length > MAX_CHUNKS) return null;
+  if (finalBodies.length > maxChunks) return null;
   const finalTotal = finalBodies.length;
   return finalBodies.map((body, i) => `[${i + 1}/${finalTotal}] ${body}`);
 }

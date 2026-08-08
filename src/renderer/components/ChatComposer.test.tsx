@@ -11,6 +11,7 @@ import {
   floodScopeOverridesStorageKey,
   loadFloodScopeOverridesInitial,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 
@@ -30,10 +31,19 @@ vi.mock('react-i18next', () => ({
         'chatPanel.queueButton': 'Queue',
         'chatPanel.replyingTo': 'Replying to',
         'chatPanel.composeLimit.limitHint': `Up to ${opts?.limit} characters per message.`,
+        'chatPanel.composeLimit.limitHintSingle': `Up to ${opts?.limit} characters. Single packet.`,
         'chatPanel.composeLimit.splitHint': 'Sent as separate packets labeled [1/N], [2/N], …',
+        'chatPanel.composeLimit.meshcoreSingleNotice.title': 'Message too long for MeshCore',
+        'chatPanel.composeLimit.meshcoreSingleNotice.hint':
+          'MeshCore sends one packet per message; longer messages can’t be sent.',
+        'chatPanel.meshcoreFastSend.warning':
+          'You’re sending faster than the mesh can relay. Leave a few seconds between messages.',
+        'common.dismiss': 'Dismiss',
         'chatPanel.meshcoreGifButton': 'Insert Giphy GIF',
         'chatPanel.meshcoreGifPlaceholder': 'Giphy URL or id',
         'chatPanel.meshcoreGifSend': 'Send GIF',
+        'chatPanel.shareLocation': 'Share location',
+        'chatPanel.shareLocationLabel': 'Location',
         'chatPanel.floodScopeOverrideDefault': 'Default scope',
         'chatPanel.floodScopeOverrideUnscoped': 'Unscoped',
         'chatPanel.floodScopeOverrideAria': 'Per-channel flood scope override',
@@ -55,6 +65,12 @@ vi.mock('react-i18next', () => ({
       if (key === 'chatPanel.composeLimit.overMax') {
         return `Too long — maximum ${opts?.totalMax} characters (${opts?.maxParts} messages)`;
       }
+      if (key === 'chatPanel.composeLimit.overMaxSingle') {
+        return `Too long — MeshCore sends one packet per message (max ${opts?.limit} characters)`;
+      }
+      if (key === 'chatPanel.composeLimit.meshcoreSingleNotice.body') {
+        return `MeshCore sends each message as a single radio packet (up to ${opts?.limit} characters). Longer messages are dropped in parts, so mesh-client doesn't split them.`;
+      }
       if (key === 'chatPanel.composeLimit.sendParts') {
         return `Send ${opts?.count} parts`;
       }
@@ -67,6 +83,7 @@ describe('ChatComposer', () => {
   beforeEach(() => {
     localStorage.clear();
     resetMeshtasticTextSendPacingForTests();
+    resetMeshcoreSendRateForTests();
   });
 
   it('has no axe violations when connected', async () => {
@@ -79,6 +96,46 @@ describe('ChatComposer', () => {
         onSendChunk={vi.fn().mockResolvedValue(undefined)}
       />,
     );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('has no axe violations with the meshcore over-limit callout visible', async () => {
+    const { container } = render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'a'.repeat(200) } });
+    await screen.findByRole('note');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('has no axe violations with the fast-send advisory visible', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'first' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    fireEvent.change(textarea, { target: { value: 'second' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByRole('status');
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -409,6 +466,277 @@ describe('ChatComposer', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('sends a single-chunk meshcore message once', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'hello' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    expect(onSendChunk).toHaveBeenCalledWith('hello', expect.objectContaining({ chunkIndex: 0 }));
+    // No single-packet callout for an in-limit message.
+    expect(screen.queryByText('Message too long for MeshCore')).toBeNull();
+  });
+
+  it('rightfully fails to send an over-length meshcore message (no split, blocked)', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    // MeshCore channel payload limit is ~130-158 bytes; 200 chars is over one packet.
+    const longText = 'a'.repeat(200);
+    fireEvent.change(textarea, { target: { value: longText } });
+
+    // The single-packet callout explains why longer text is blocked.
+    const note = await screen.findByRole('note');
+    expect(note).toHaveTextContent('Message too long for MeshCore');
+
+    // Send is disabled...
+    const sendButton = screen.getByRole('button', { name: 'Send' });
+    expect(sendButton).toBeDisabled();
+
+    // ...and attempting to send via Enter is a no-op (handleSend guard), never split.
+    fireEvent.keyDown(textarea, { key: 'Enter' });
+    await Promise.resolve();
+    expect(onSendChunk).not.toHaveBeenCalled();
+
+    // Draft is retained so the user can shorten and resend.
+    expect((textarea as HTMLTextAreaElement).value).toBe(longText);
+  });
+
+  it('exposes a warn-phase hint about single-packet sends', () => {
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    // ~85% of a ~157-char channel limit → warn phase (not over), surfacing the ⓘ hint.
+    fireEvent.change(textarea, { target: { value: 'a'.repeat(140) } });
+    expect(
+      screen.getByLabelText(
+        'MeshCore sends one packet per message; longer messages can’t be sent.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a non-blocking fast-send warning when two meshcore sends happen within 5s', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+
+    fireEvent.change(textarea, { target: { value: 'first' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    // First send: not too fast, no warning.
+    expect(screen.queryByRole('status')).toBeNull();
+
+    fireEvent.change(textarea, { target: { value: 'second' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+    });
+    // Second send within 5s: both sends went through (never blocked) and the advisory shows.
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
+  });
+
+  it('does not show the fast-send warning for meshtastic (meshcore-only advisory)', async () => {
+    vi.useFakeTimers();
+    try {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      render(
+        <ChatComposer
+          protocol="meshtastic"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={onSendChunk}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      fireEvent.change(textarea, { target: { value: 'first' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+      await vi.advanceTimersByTimeAsync(0);
+      fireEvent.change(textarea, { target: { value: 'second' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+      // Meshtastic send pacing delays the second send by the pacing interval; advance past it.
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS + 100);
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('status')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('carries the fast-send advisory from a GIF send to a following text send', async () => {
+    // A GIF is a live MeshCore packet, so a text send within 5s of it should still warn.
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ meshcoreOpenWireCompatEnabled: true }),
+    );
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Insert Giphy GIF' }));
+    const gifField = screen.getByRole('textbox', { name: 'Giphy URL or id' });
+    fireEvent.change(gifField, { target: { value: 'g:a5viI92PAF89q' } });
+    await user.click(screen.getByRole('button', { name: 'Send GIF' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith('g:a5viI92PAF89q');
+    });
+    // First send of the session — no advisory yet.
+    expect(screen.queryByRole('status')).toBeNull();
+
+    const textarea = screen.getByRole('textbox', { name: 'Type a message…' });
+    await user.type(textarea, 'quick follow-up');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith(
+        'quick follow-up',
+        expect.objectContaining({ chunkIndex: 0 }),
+      );
+    });
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
+  });
+
+  it('shows the fast-send advisory on rapid GIF-to-GIF sends', async () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ meshcoreOpenWireCompatEnabled: true }),
+    );
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Insert Giphy GIF' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Giphy URL or id' }), {
+      target: { value: 'g:a5viI92PAF89q' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Send GIF' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('status')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Insert Giphy GIF' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Giphy URL or id' }), {
+      target: { value: 'g:b6wjJ03QBG90r' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Send GIF' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+    });
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
+  });
+
+  it('carries the fast-send advisory from a shared location to a following text send', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const resolveShareLocation = vi.fn().mockResolvedValue({ lat: 39.7392, lon: -104.9903 });
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+        resolveShareLocation={resolveShareLocation}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Share location' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('status')).toBeNull();
+
+    const textarea = screen.getByRole('textbox', { name: 'Type a message…' });
+    await user.type(textarea, 'on my way');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+    });
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
+  });
+
+  it('shows the fast-send advisory on rapid location-to-location sends', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const resolveShareLocation = vi.fn().mockResolvedValue({ lat: 39.7392, lon: -104.9903 });
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+        resolveShareLocation={resolveShareLocation}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Share location' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('status')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Share location' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+    });
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
   });
 
   it('hides GIF button when MeshCore Open wire compat is disabled', () => {

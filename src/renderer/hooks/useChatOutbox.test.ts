@@ -1,6 +1,10 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  isMeshcoreSendTooFast,
+  resetMeshcoreSendRateForTests,
+} from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 import type { OutboxEntry } from '@/shared/electron-api.types';
@@ -34,6 +38,7 @@ describe('useChatOutbox', () => {
 
   beforeEach(() => {
     resetMeshtasticTextSendPacingForTests();
+    resetMeshcoreSendRateForTests();
     vi.mocked(mockOutbox.list).mockClear();
     vi.mocked(mockOutbox.add).mockClear();
     vi.mocked(mockOutbox.updateStatus).mockClear();
@@ -214,6 +219,111 @@ describe('useChatOutbox', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('drains successive meshcore sends within one drain without client pacing', async () => {
+    // MeshCore chunk pacing was removed (it did not gate on airtime); a drain should send
+    // all eligible MeshCore rows without waiting on a client-side interval.
+    const rowA = makeEntry({ id: 40, protocol: 'meshcore', payload: 'first' });
+    const rowB = makeEntry({ id: 41, protocol: 'meshcore', payload: 'second' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([rowA, rowB]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(2);
+    });
+    expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
+    expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
+  });
+
+  it('advances the shared meshcore fast-send clock when a row drains successfully', async () => {
+    // A drained MeshCore row is airtime too, so a composer send right after should still warn.
+    const entry = makeEntry({ id: 50, protocol: 'meshcore', payload: 'hi' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    expect(isMeshcoreSendTooFast()).toBe(false);
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(isMeshcoreSendTooFast()).toBe(true);
+  });
+
+  it('quarantines legacy meshcore multipart outbox rows without calling sendFn', async () => {
+    // Upgrade path: rows queued before single-packet (groupTotal > 1 / [i/N] payload) must not TX.
+    const legacy = makeEntry({
+      id: 60,
+      protocol: 'meshcore',
+      payload: '[1/3] first chunk of a long message',
+      groupId: 'legacy-group',
+      groupIndex: 0,
+      groupTotal: 3,
+    });
+    vi.mocked(mockOutbox.list).mockResolvedValue([legacy]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() =>
+      useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }),
+    );
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        60,
+        'blocked',
+        expect.stringMatching(/multi-part|shorter/i),
+        undefined,
+      );
+    });
+    expect(sendFn).not.toHaveBeenCalled();
+    await waitFor(() => {
+      const row = result.current.rows.find((r) => r.id === 60);
+      expect(row?.status).toBe('blocked');
+      expect(row?.error).toMatch(/multi-part|shorter/i);
+    });
+  });
+
+  it('still drains non-legacy meshcore rows when a legacy multipart row is also present', async () => {
+    const legacy = makeEntry({
+      id: 61,
+      protocol: 'meshcore',
+      payload: '[2/2] leftover',
+      groupTotal: 2,
+    });
+    const ok = makeEntry({ id: 62, protocol: 'meshcore', payload: 'short ok' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([legacy, ok]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(sendFn).toHaveBeenCalledWith('short ok', 0, undefined, undefined);
+    expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+      61,
+      'blocked',
+      expect.stringMatching(/multi-part|shorter/i),
+      undefined,
+    );
+  });
+
+  it('does not touch the meshcore fast-send clock for meshtastic drains', async () => {
+    const entry = makeEntry({ id: 51, protocol: 'meshtastic', payload: 'hi' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(isMeshcoreSendTooFast()).toBe(false);
+  });
+
+  it('does not advance the meshcore fast-send clock when a drain send fails', async () => {
+    const entry = makeEntry({ id: 52, protocol: 'meshcore', payload: 'hi' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(isMeshcoreSendTooFast()).toBe(false);
   });
 
   it('does not drain when isSendAvailable is false', async () => {

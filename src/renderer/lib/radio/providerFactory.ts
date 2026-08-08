@@ -7,12 +7,13 @@ import { MESHTASTIC_CAPABILITIES } from './BaseRadioProvider';
 
 export type { ProtocolCapabilities };
 
-function resolveCapabilities(protocol: MeshProtocol): ProtocolCapabilities {
+/** Non-hook capability lookup for lib/hooks that cannot call `useRadioProvider`. */
+export function getRadioCapabilities(protocol: MeshProtocol): ProtocolCapabilities {
   const registration = getProtocolRegistration(protocol);
   if (registration) return registration.capabilities;
   if (process.env.NODE_ENV === 'development') {
     console.warn(
-      `[useRadioProvider] Unknown protocol "${protocol}", falling back to Meshtastic capabilities`,
+      `[getRadioCapabilities] Unknown protocol "${protocol}", falling back to Meshtastic capabilities`,
     );
   }
   return MESHTASTIC_CAPABILITIES;
@@ -23,5 +24,5 @@ function resolveCapabilities(protocol: MeshProtocol): ProtocolCapabilities {
  * Memoized on protocol identity — stable across renders unless protocol changes.
  */
 export function useRadioProvider(protocol: MeshProtocol): ProtocolCapabilities {
-  return useMemo(() => resolveCapabilities(protocol), [protocol]);
+  return useMemo(() => getRadioCapabilities(protocol), [protocol]);
 }
