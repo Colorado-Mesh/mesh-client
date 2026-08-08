@@ -64,7 +64,8 @@ Also useful:
   - [Development Guide](development-environment.md) — prerequisites, all `pnpm` scripts, pre-commit hook, i18n workflow
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
-  - Renderer hook/runtime/store boundaries — [AGENTS.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/AGENTS.md#renderer-hook-architecture-multi-protocol) and [ARCHITECTURE.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/ARCHITECTURE.md)
+  - Renderer hook/runtime/store boundaries — [docs/agents/renderer-hooks.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/renderer-hooks.md) and [ARCHITECTURE.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/ARCHITECTURE.md)
+  - Agent subsystem reference (deep, on-demand) — [docs/agents/](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/README.md)
 - **Meshtastic & MeshCore**
   - [Feature Parity](meshcore-meshtastic-parity.md) (includes **Rooms** BBS and shared **ChatComposer**)
   - [MQTT Auth](letsmesh-mqtt-auth.md)
