@@ -1929,12 +1929,9 @@ export default function ConnectionPanel({
       try {
         if (variant === 'connecting') {
           handleCancelConnection();
-        } else if (isConnected) {
-          await Promise.race([
-            onDisconnect(),
-            new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
-          ]);
         }
+        // Connected quit skips onDisconnect: main owns teardown (BLE disconnectAll, TCP
+        // destroy, quit-fast sidecar stop), so a graceful stack stop here only delays exit.
         if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
           markMqttUserDisconnect();
           void window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
@@ -1960,7 +1957,7 @@ export default function ConnectionPanel({
         );
       }
     },
-    [handleCancelConnection, isConnected, mqttStatus, onDisconnect],
+    [handleCancelConnection, isConnected, mqttStatus],
   );
 
   const renderExitActions = (variant: 'connected' | 'idle' | 'connecting') => {

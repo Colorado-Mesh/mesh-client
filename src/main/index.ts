@@ -366,7 +366,7 @@ async function shutdownAppResources(): Promise<void> {
     ); // log-injection-ok internal cleanup
   }
   try {
-    await reticulumSidecarManager?.stop();
+    await reticulumSidecarManager?.stop({ forQuit: true });
   } catch (err) {
     console.debug(
       '[main] Reticulum sidecar stop during shutdown (ignored):',
@@ -6953,7 +6953,7 @@ app.on('will-quit', (event) => {
       ); // log-injection-ok internal cleanup
     }
     try {
-      await reticulumSidecarManager?.stop();
+      await reticulumSidecarManager?.stop({ forQuit: true });
     } catch (err) {
       console.debug(
         '[main] Reticulum sidecar stop during will-quit (ignored):',

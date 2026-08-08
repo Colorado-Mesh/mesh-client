@@ -2318,4 +2318,32 @@ describe('ConnectionPanel Reticulum', () => {
       localStorage.removeItem(lastConnKey);
     }
   });
+
+  it('connected Disconnect & Quit skips onDisconnect and quits (main owns teardown)', async () => {
+    const onDisconnect = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.quitApp).mockClear();
+    vi.mocked(window.electronAPI.mqtt.disconnect).mockClear();
+
+    const user = userEvent.setup();
+    render(
+      <ConnectionPanel
+        state={{ ...disconnectedState, status: 'configured' }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={onDisconnect}
+        mqttStatus="disconnected"
+        protocol="reticulum"
+        onStartReticulumStack={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Disconnect & Quit/i }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.quitApp).toHaveBeenCalled();
+    });
+    // Graceful sidecar stop here would add ~2s before quit; main stops it quit-fast.
+    expect(onDisconnect).not.toHaveBeenCalled();
+    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalled();
+  });
 });

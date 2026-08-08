@@ -42,6 +42,8 @@ const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
 /** Wait for BLE RNode detach via POST /api/v1/stack/prepare-stop before SIGTERM. */
 const PREPARE_STOP_TIMEOUT_MS = 1 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
+/** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
+const QUIT_STOP_GRACE_MS = 750;
 /** After yielding Noble BLE, allow CoreBluetooth/btleplug to settle before sidecar connect. */
 const RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS = 500;
 
@@ -187,6 +189,12 @@ export class ReticulumSidecarManager extends EventEmitter {
    * cannot observe a cleared startAbortRequested from a newer start.
    */
   private startAttemptGeneration = 0;
+  /** Latched by stop({ forQuit: true }) so an in-flight graceful stop escalates to quit speed. */
+  private quitFastRequested = false;
+  /** Aborts an in-flight prepare-stop fetch when quit escalates a graceful stop. */
+  private stopPrepareAbort: AbortController | null = null;
+  /** Shortens the SIGTERM grace of an in-flight stop when quit escalates it. */
+  private escalateStopKill: (() => void) | null = null;
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
@@ -281,6 +289,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       return this.startPromise;
     }
     this.startAbortRequested = false;
+    this.quitFastRequested = false;
     this.startAttemptGeneration += 1;
     this.startPromise = this.startOnce(opts).finally(() => {
       this.startPromise = null;
@@ -498,7 +507,14 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.watchdogStop = null;
   }
 
-  async stop(): Promise<void> {
+  /**
+   * Stop the sidecar. `forQuit` skips the BLE detach drain and shortens the SIGTERM grace —
+   * the app is exiting, so the OS reclaims the child and no other stack reuses the adapter.
+   */
+  async stop(opts: { forQuit?: boolean } = {}): Promise<void> {
+    if (opts.forQuit) {
+      this.quitFastRequested = true;
+    }
     // Abort in-flight start at checkpoints (cargo/BLE) so Cancel does not wait on build.
     this.startAbortRequested = true;
     this.startAttemptGeneration += 1;
@@ -514,6 +530,11 @@ export class ReticulumSidecarManager extends EventEmitter {
       });
     }
     if (this.stopPromise) {
+      if (opts.forQuit) {
+        // A graceful stop is already draining; do not let quit wait on it.
+        this.stopPrepareAbort?.abort();
+        this.escalateStopKill?.();
+      }
       return this.stopPromise;
     }
     this.stopPromise = this.stopProc().finally(() => {
@@ -525,7 +546,9 @@ export class ReticulumSidecarManager extends EventEmitter {
   private async stopProc(): Promise<void> {
     this.stopWatchdog();
     this.teardownWs();
-    await this.prepareStopBestEffort();
+    if (!this.quitFastRequested) {
+      await this.prepareStopBestEffort();
+    }
     if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
       bleCoexistenceCoordinator.releaseScan('reticulum');
     }
@@ -537,14 +560,22 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
 
     await new Promise<void>((resolve) => {
-      const killTimer = setTimeout(() => {
+      const forceKill = (): void => {
         try {
           proc.kill('SIGKILL');
         } catch {
           // catch-no-log-ok: process may already be gone during forced shutdown
         }
         resolve();
-      }, STOP_GRACE_MS);
+      };
+      let killTimer = setTimeout(
+        forceKill,
+        this.quitFastRequested ? QUIT_STOP_GRACE_MS : STOP_GRACE_MS,
+      );
+      this.escalateStopKill = () => {
+        clearTimeout(killTimer);
+        killTimer = setTimeout(forceKill, QUIT_STOP_GRACE_MS);
+      };
 
       proc.once('exit', () => {
         clearTimeout(killTimer);
@@ -560,6 +591,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
     });
 
+    this.escalateStopKill = null;
     this.finalizeStopped();
   }
 
@@ -569,12 +601,17 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0 || !this.proc) {
       return;
     }
+    const abort = new AbortController();
+    this.stopPrepareAbort = abort;
+    const timeoutTimer = setTimeout(() => {
+      abort.abort();
+    }, PREPARE_STOP_TIMEOUT_MS);
     try {
       const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/prepare-stop`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
-        signal: AbortSignal.timeout(PREPARE_STOP_TIMEOUT_MS),
+        signal: abort.signal,
       });
       if (!res.ok) {
         console.debug(
@@ -586,6 +623,9 @@ export class ReticulumSidecarManager extends EventEmitter {
         '[ReticulumSidecar] prepare-stop failed — continuing with SIGTERM:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
+    } finally {
+      clearTimeout(timeoutTimer);
+      this.stopPrepareAbort = null;
     }
   }
 
