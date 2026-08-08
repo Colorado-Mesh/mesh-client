@@ -4,6 +4,7 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 
 import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
+import { withMeshcoreTextSendPacing } from '../lib/meshcoreTextSendPacing';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 
 export type { OutboxEntry };
@@ -198,6 +199,9 @@ export function useChatOutbox({
         // firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window.
         if (protocol === 'meshtastic') {
           await withMeshtasticTextSendPacing(sendRow);
+        } else if (protocol === 'meshcore') {
+          // Space MeshCore chunk sends so a drained split message does not flood a busy repeater.
+          await withMeshcoreTextSendPacing(sendRow);
         } else {
           await sendRow();
         }

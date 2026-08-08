@@ -43,6 +43,7 @@ import {
   normalizeMeshcoreGifOutboundWire,
   parseMeshcoreGifId,
 } from '../lib/meshcoreGifWire';
+import { withMeshcoreTextSendPacing } from '../lib/meshcoreTextSendPacing';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
@@ -521,6 +522,10 @@ export function ChatComposer({
         // a second locally-originated text within ~2s (RATE_LIMIT_EXCEEDED).
         if (protocol === 'meshtastic') {
           await withMeshtasticTextSendPacing(sendChunk);
+        } else if (protocol === 'meshcore') {
+          // Space MeshCore split-message chunks so chunk 2+ does not overlap chunk 1's
+          // repeater rebroadcast window and get dropped by a busy repeater.
+          await withMeshcoreTextSendPacing(sendChunk);
         } else {
           await sendChunk();
         }

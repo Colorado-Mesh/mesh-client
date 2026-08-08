@@ -11,8 +11,12 @@ import {
   floodScopeOverridesStorageKey,
   loadFloodScopeOverridesInitial,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { resetMeshcoreTextSendPacingForTests } from '@/renderer/lib/meshcoreTextSendPacing';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
-import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
+import {
+  MESHCORE_TEXT_CHUNK_SEND_INTERVAL_MS,
+  MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS,
+} from '@/renderer/lib/timeConstants';
 
 import { ChatComposer } from './ChatComposer';
 
@@ -67,6 +71,7 @@ describe('ChatComposer', () => {
   beforeEach(() => {
     localStorage.clear();
     resetMeshtasticTextSendPacingForTests();
+    resetMeshcoreTextSendPacingForTests();
   });
 
   it('has no axe violations when connected', async () => {
@@ -394,6 +399,73 @@ describe('ChatComposer', () => {
       render(
         <ChatComposer
           protocol="meshtastic"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={onSendChunk}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      fireEvent.change(textarea, { target: { value: 'hello' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('paces meshcore multi-chunk sends so a split message does not flood a busy repeater', async () => {
+    // A back-to-back split send lets chunk 2 overlap chunk 1's repeater rebroadcast
+    // window on a half-duplex radio; chunks must be spaced by the pacing interval.
+    vi.useFakeTimers();
+    try {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      render(
+        <ChatComposer
+          protocol="meshcore"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={onSendChunk}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      // MeshCore channel payload limit is ~158 bytes; 200 chars forces a 2-part split.
+      fireEvent.change(textarea, { target: { value: 'a'.repeat(200) } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send 2 parts' }));
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+      expect(onSendChunk).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('[1/2]'),
+        expect.objectContaining({ chunkIndex: 0 }),
+      );
+
+      await vi.advanceTimersByTimeAsync(MESHCORE_TEXT_CHUNK_SEND_INTERVAL_MS - 100);
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(200);
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+      expect(onSendChunk).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('[2/2]'),
+        expect.objectContaining({ chunkIndex: 1 }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not delay single-chunk meshcore sends', async () => {
+    vi.useFakeTimers();
+    try {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      render(
+        <ChatComposer
+          protocol="meshcore"
           viewKey="ch:0"
           isConnected
           allowOutbox={false}
