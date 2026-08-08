@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "O envio expirou. A pilha Reticulum pode estar iniciando ou ocupada — tente novamente.",
     "meshcoreFastSend": {
       "warning": "Você está enviando mais rápido do que a malha pode retransmitir. Em uma malha ocupada, os repetidores podem soltar mensagens enviadas juntas — deixe alguns segundos entre as mensagens."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Esta mensagem na fila usava divisão MeshCore em várias partes, que não é mais enviada. Cancele e envie uma mensagem mais curta (ou várias mensagens mais curtas separadas)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -2,6 +2,7 @@ import {
   formatMeshcoreWireReplyPrefix,
   formatMeshcoreWireTapbackPrefix,
 } from './meshcoreChannelText';
+import { getRadioCapabilities } from './radio/providerFactory';
 import type { MeshProtocol } from './types';
 
 export const MESHTASTIC_PAYLOAD_LIMIT = 228;
@@ -9,17 +10,16 @@ export const MESHTASTIC_PAYLOAD_LIMIT = 228;
 export const MESHCORE_PAYLOAD_LIMIT = 133;
 /** LXMF DM text limit for composer (sidecar handles wire encoding; no Meshtastic-style chunking). */
 export const RETICULUM_LXMF_PAYLOAD_LIMIT = 4096;
+/** Keep in sync with `ProtocolCapabilities.composerMaxChunks` for Meshtastic/Reticulum. */
 export const MAX_CHUNKS = 9;
 
 /**
- * Max chunks a composer will split a message into, per protocol. MeshCore is capped at a
- * single packet (no multi-part `[i/N]` split): on a busy mesh, repeaters routinely drop some
- * split parts, so the recipient silently gets an incomplete message. Meshtastic/Reticulum keep
- * the `MAX_CHUNKS` (9) auto-split. See meshcore-dev/MeshCore #1502 / #2820. Inbound multi-part
- * from other clients is unaffected (we still merge `[i/N]` on receive).
+ * Max chunks a composer will split a message into, per protocol. Sourced from
+ * `ProtocolCapabilities.composerMaxChunks` (MeshCore = 1: no multi-part `[i/N]` split).
+ * See meshcore-dev/MeshCore #1502 / #2820. Inbound multi-part from other clients is unaffected.
  */
 export function getMaxChunks(protocol: MeshProtocol): number {
-  return protocol === 'meshcore' ? 1 : MAX_CHUNKS;
+  return getRadioCapabilities(protocol).composerMaxChunks;
 }
 
 export const MESHCORE_WIRE_MAX = 160;

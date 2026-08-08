@@ -20,6 +20,7 @@ import {
 
 const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'protocol',
+  'composerMaxChunks',
   'hasHopCount',
   'hopLimitRange',
   'hasMqttHybrid',
@@ -121,6 +122,7 @@ describe('ProtocolCapabilities contract', () => {
   it('MESHTASTIC_CAPABILITIES exact values are stable', () => {
     expect(MESHTASTIC_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "composerMaxChunks": 9,
         "dedupeQueueBadgeForLocalSending": true,
         "hasAtakPlugin": true,
         "hasAudio": true,
@@ -206,6 +208,7 @@ describe('ProtocolCapabilities contract', () => {
   it('MESHCORE_CAPABILITIES exact values are stable', () => {
     expect(MESHCORE_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "composerMaxChunks": 1,
         "dedupeQueueBadgeForLocalSending": false,
         "hasAtakPlugin": false,
         "hasAudio": false,
@@ -297,6 +300,7 @@ describe('ProtocolCapabilities contract', () => {
   it('RETICULUM_CAPABILITIES exact values are stable', () => {
     expect(RETICULUM_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "composerMaxChunks": 9,
         "dedupeQueueBadgeForLocalSending": false,
         "hasAtakPlugin": false,
         "hasAudio": false,

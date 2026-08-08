@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "Time-out voor verzenden. De Reticulum-stack is mogelijk aan het starten of bezet — probeer het opnieuw.",
     "meshcoreFastSend": {
       "warning": "Je verzendt sneller dan de mesh kan doorgeven. Op een drukke mesh kunnen herhalers berichten die dicht bij elkaar zijn verzonden laten vallen — laat een paar seconden tussen berichten."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Dit bericht in de wachtrij maakte gebruik van meerdelige MeshCore-splitsing, die niet langer wordt verzonden. Annuleer het en stuur een korter bericht (of meerdere afzonderlijke kortere berichten)."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

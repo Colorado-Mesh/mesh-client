@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "Timeout dell'invio. Lo stack Reticulum potrebbe essere in avvio o occupato. Riprova.",
     "meshcoreFastSend": {
       "warning": "Stai inviando più velocemente di quanto la rete possa trasmettere. Su una mesh occupata, i ripetitori possono rilasciare i messaggi inviati vicini — lasciare alcuni secondi tra i messaggi."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Questo messaggio in coda utilizzava la suddivisione MeshCore in più parti, che non viene più inviata. Annullalo e invia un messaggio più breve (o più messaggi brevi separati)."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

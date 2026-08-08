@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "Envoi expiré. La pile Reticulum est peut-être en cours de démarrage ou occupée — réessayez.",
     "meshcoreFastSend": {
       "warning": "Vous envoyez plus vite que le maillage ne peut relayer. Sur un maillage occupé, les répéteurs peuvent déposer des messages envoyés à proximité les uns des autres — laissez quelques secondes entre les messages."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Ce message en file d'attente utilisait le fractionnement MeshCore en plusieurs parties, qui n'est plus envoyé. Annulez-le et envoyez un message plus court (ou plusieurs messages plus courts distincts)."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

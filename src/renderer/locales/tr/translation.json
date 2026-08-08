@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "Gönderim zaman aşımına uğradı. Reticulum yığını başlıyor veya meşgul olabilir — tekrar deneyin.",
     "meshcoreFastSend": {
       "warning": "Ağın aktarabileceğinden daha hızlı gönderiyorsun. Yoğun bir ağda tekrarlayıcılar birbirine yakın gönderilen mesajları bırakabilir; mesajlar arasında birkaç saniye bırakın."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Bu sıraya alınmış mesaj, artık gönderilmeyen çok parçalı MeshCore bölmeyi kullandı. İptal edin ve daha kısa bir mesaj (veya birkaç ayrı kısa mesaj) gönderin."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

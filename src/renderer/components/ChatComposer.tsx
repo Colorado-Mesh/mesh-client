@@ -29,7 +29,6 @@ import {
   type ComposerWireContext,
   computeComposerLimitStatus,
   getComposerWireOverhead,
-  getMaxChunks,
   MAX_CHUNKS,
   splitChatMessage,
 } from '../lib/chatComposerLimits';
@@ -55,6 +54,7 @@ import {
 } from '../lib/meshcoreGifWire';
 import { isMeshcoreSendTooFast, recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
@@ -229,6 +229,8 @@ export function ChatComposer({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const iconTrigger = useIconTrigger();
+  const capabilities = useRadioProvider(protocol);
+  const tracksSendCadence = capabilities.composerMaxChunks <= 1;
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const limitHintId = useId();
   const counterLiveId = useId();
@@ -521,6 +523,24 @@ export function ChatComposer({
     }, MESHCORE_FAST_SEND_WARN_INTERVAL_MS);
   }, []);
 
+  /**
+   * Shared single-packet cadence bookkeeping for live text / GIF / location sends.
+   * Capture `tooFast` *before* the send; call after a successful send with that flag.
+   * Never blocks or delays the send.
+   */
+  const finishSendCadence = useCallback(
+    (tooFast: boolean) => {
+      if (!tracksSendCadence) return;
+      recordMeshcoreSend();
+      if (tooFast) {
+        triggerMeshcoreFastSendWarn();
+      } else {
+        dismissMeshcoreFastSendWarn();
+      }
+    },
+    [dismissMeshcoreFastSendWarn, tracksSendCadence, triggerMeshcoreFastSendWarn],
+  );
+
   useEffect(() => {
     return () => {
       if (meshcoreFastSendWarnTimerRef.current) {
@@ -594,8 +614,8 @@ export function ChatComposer({
     setSending(true);
     setChatActionError(null);
     // Advisory fast-send cadence: capture before recording this send so the warning reflects
-    // proximity to the *previous* MeshCore send. Never blocks or delays the send.
-    const meshcoreTooFast = protocol === 'meshcore' && isMeshcoreSendTooFast();
+    // proximity to the *previous* single-packet-protocol send. Never blocks or delays the send.
+    const sendTooFast = tracksSendCadence && isMeshcoreSendTooFast();
     try {
       for (let i = 0; i < textsToSend.length; i++) {
         const sendChunk = () =>
@@ -618,14 +638,7 @@ export function ChatComposer({
           await sendChunk();
         }
       }
-      if (protocol === 'meshcore') {
-        recordMeshcoreSend();
-        if (meshcoreTooFast) {
-          triggerMeshcoreFastSendWarn();
-        } else {
-          dismissMeshcoreFastSendWarn();
-        }
-      }
+      finishSendCadence(sendTooFast);
       rememberFloodScopeIfNeeded(floodScopeOverride);
       clearSentDraft(draftSnapshot);
       setMentionQuery(null);
@@ -693,8 +706,8 @@ export function ChatComposer({
     viewKey,
     wireOverheadFirstChunk,
     meshcoreOpenWireCompat,
-    triggerMeshcoreFastSendWarn,
-    dismissMeshcoreFastSendWarn,
+    tracksSendCadence,
+    finishSendCadence,
   ]);
 
   const sendGifWire = useCallback(
@@ -709,11 +722,11 @@ export function ChatComposer({
       }
       setSending(true);
       setChatActionError(null);
+      const sendTooFast = tracksSendCadence && isMeshcoreSendTooFast();
       try {
         await onSendChunk(wireText);
-        // GIF is a live MeshCore send — advance the shared fast-send clock so a text send
-        // right after still surfaces the advisory (UI stays on the text send path).
-        if (protocol === 'meshcore') recordMeshcoreSend();
+        // GIF is a live send on single-packet protocols — same cadence check/record/warn as text.
+        finishSendCadence(sendTooFast);
         setShowGifModal(false);
         setGifInput('');
         onSendSuccess?.();
@@ -727,7 +740,18 @@ export function ChatComposer({
         setSending(false);
       }
     },
-    [allowOutbox, disabled, isConnected, onSendChunk, onSendSuccess, protocol, sending, t, viewKey],
+    [
+      allowOutbox,
+      disabled,
+      finishSendCadence,
+      isConnected,
+      onSendChunk,
+      onSendSuccess,
+      sending,
+      t,
+      tracksSendCadence,
+      viewKey,
+    ],
   );
 
   const handleGifConfirm = useCallback(() => {
@@ -790,9 +814,10 @@ export function ChatComposer({
         if (await enqueueLocationText(text)) onSendSuccess?.();
         return;
       }
+      const sendTooFast = tracksSendCadence && isMeshcoreSendTooFast();
       await onSendChunk(text);
-      // Live MeshCore location send counts toward the shared fast-send cadence clock.
-      if (protocol === 'meshcore') recordMeshcoreSend();
+      // Live location send on single-packet protocols uses the same cadence sequence as text.
+      finishSendCadence(sendTooFast);
       if (
         protocol === 'meshtastic' &&
         isShareLocationSendWaypointEnabled() &&
@@ -833,6 +858,7 @@ export function ChatComposer({
     allowOutbox,
     disabled,
     enqueueLocationText,
+    finishSendCadence,
     isConnected,
     isMqttOnly,
     onSendChunk,
@@ -842,6 +868,7 @@ export function ChatComposer({
     resolveShareLocation,
     sending,
     t,
+    tracksSendCadence,
     viewKey,
   ]);
 
@@ -923,9 +950,9 @@ export function ChatComposer({
           ? t('chatPanel.composePlaceholderMqttOnly')
           : t('chatPanel.composePlaceholderDefault'));
 
-  // MeshCore sends a single radio packet (no multi-part `[i/N]` split): over-limit text is
-  // blocked with an explanatory callout rather than auto-split into parts that busy repeaters drop.
-  const singlePacketProtocol = getMaxChunks(protocol) <= 1;
+  // Single-packet protocols (composerMaxChunks <= 1): over-limit text is blocked with an
+  // explanatory callout rather than auto-split into parts that busy repeaters drop.
+  const singlePacketProtocol = capabilities.composerMaxChunks <= 1;
 
   const limitHintText = singlePacketProtocol
     ? t('chatPanel.composeLimit.limitHintSingle', { limit: limitStatus.singleMessageLimit })

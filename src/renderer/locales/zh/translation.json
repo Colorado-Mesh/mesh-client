@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "发送超时。Reticulum 堆栈可能正在启动或忙碌—请重试。",
     "meshcoreFastSend": {
       "warning": "您发送的速度超过了网格可以中继的速度。在繁忙的网格上，中继器可能会丢弃一起发送的消息—在消息之间留几秒钟。"
-    }
+    },
+    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

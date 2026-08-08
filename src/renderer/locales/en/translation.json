@@ -659,6 +659,7 @@
     "outboxStatusSending": "Sending…",
     "outboxStatusBlocked": "Blocked",
     "outboxStatusFailed": "Failed",
+    "outboxLegacyMultipartBlocked": "This queued message used multi-part MeshCore splitting, which is no longer sent. Cancel it and send a shorter message (or several separate shorter messages).",
     "retryOutboxMessage": "Retry outbox message",
     "retryOutbox": "Retry",
     "cancelOutboxMessage": "Cancel outbox message",

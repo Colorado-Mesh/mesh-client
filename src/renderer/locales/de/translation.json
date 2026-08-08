@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "Senden abgelaufen. Der Reticulum-Stack startet möglicherweise oder ist beschäftigt — bitte erneut versuchen.",
     "meshcoreFastSend": {
       "warning": "Sie senden schneller, als das Netz weiterleiten kann. In einem ausgelasteten Netz können Repeater Nachrichten, die nahe beieinander gesendet werden, ablegen — lassen Sie ein paar Sekunden zwischen den Nachrichten."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Diese in der Warteschlange befindliche Nachricht verwendete eine mehrteilige MeshCore-Aufteilung, die nicht mehr gesendet wird. Brechen Sie es ab und senden Sie eine kürzere Nachricht (oder mehrere separate kürzere Nachrichten)."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

@@ -643,6 +643,44 @@ describe('ChatComposer', () => {
     expect(warning).toHaveTextContent('sending faster than the mesh');
   });
 
+  it('shows the fast-send advisory on rapid GIF-to-GIF sends', async () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ meshcoreOpenWireCompatEnabled: true }),
+    );
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Insert Giphy GIF' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Giphy URL or id' }), {
+      target: { value: 'g:a5viI92PAF89q' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Send GIF' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('status')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Insert Giphy GIF' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Giphy URL or id' }), {
+      target: { value: 'g:b6wjJ03QBG90r' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Send GIF' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+    });
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
+  });
+
   it('carries the fast-send advisory from a shared location to a following text send', async () => {
     const onSendChunk = vi.fn().mockResolvedValue(undefined);
     const resolveShareLocation = vi.fn().mockResolvedValue({ lat: 39.7392, lon: -104.9903 });
@@ -666,6 +704,34 @@ describe('ChatComposer', () => {
     const textarea = screen.getByRole('textbox', { name: 'Type a message…' });
     await user.type(textarea, 'on my way');
     await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(2);
+    });
+    const warning = await screen.findByRole('status');
+    expect(warning).toHaveTextContent('sending faster than the mesh');
+  });
+
+  it('shows the fast-send advisory on rapid location-to-location sends', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const resolveShareLocation = vi.fn().mockResolvedValue({ lat: 39.7392, lon: -104.9903 });
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+        resolveShareLocation={resolveShareLocation}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Share location' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole('status')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Share location' }));
     await waitFor(() => {
       expect(onSendChunk).toHaveBeenCalledTimes(2);
     });

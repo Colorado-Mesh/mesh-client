@@ -690,7 +690,8 @@
     "reticulumSendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie.",
     "meshcoreFastSend": {
       "warning": "Wysyłasz szybciej, niż siatka może przekazywać. Na zatłoczonej siatce wzmacniaki mogą odrzucać wiadomości wysyłane blisko siebie — pozostaw kilka sekund między wiadomościami."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Ta wiadomość umieszczona w kolejce korzystała z wieloczęściowego podziału MeshCore, który nie jest już wysyłany. Anuluj i wyślij krótszą wiadomość (lub kilka oddzielnych krótszych wiadomości)."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

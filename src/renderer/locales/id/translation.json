@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "Waktu pengiriman habis. Stack Reticulum mungkin sedang mulai atau sibuk — coba lagi.",
     "meshcoreFastSend": {
       "warning": "Anda mengirim lebih cepat daripada yang dapat disampaikan oleh mesh. Pada mesh yang sibuk, repeater dapat menjatuhkan pesan yang dikirim secara berdekatan — menyisakan beberapa detik di antara pesan."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Pesan antrean ini menggunakan pemisahan MeshCore multi-bagian, yang tidak lagi terkirim. Batalkan dan kirim pesan singkat (atau beberapa pesan singkat terpisah)."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

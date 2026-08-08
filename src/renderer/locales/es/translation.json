@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "El envío ha caducado. La pila Reticulum puede estar iniciándose o ocupada; inténtelo de nuevo.",
     "meshcoreFastSend": {
       "warning": "Estás enviando más rápido de lo que la malla puede transmitir. En una malla ocupada, los repetidores pueden descartar mensajes enviados muy juntos; deja unos segundos entre mensajes."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "Este mensaje en cola utilizó la división MeshCore de varias partes, que ya no se envía. Cancélelo y envíe un mensaje más corto (o varios mensajes más cortos por separado)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

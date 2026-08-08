@@ -2,10 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
+import { isMeshProtocol } from '@/shared/meshProtocol';
 
 import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
+import i18n from '../lib/i18n';
 import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
+import { getRadioCapabilities } from '../lib/radio/providerFactory';
 
 export type { OutboxEntry };
 
@@ -15,12 +18,27 @@ const MAX_ATTEMPTS = 5;
 /** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
 export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
+/** Legacy mesh-client `[i/N] ` chunk prefix on outbox payloads queued before single-packet. */
+const LEGACY_MULTIPART_PREFIX_RE = /^\[\d+\/\d+\]\s/;
+
 function isEncryptionBlockedError(errMsg: string): boolean {
   return /no.?encr|no.?key|encryption/i.test(errMsg);
 }
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * True for durable outbox rows from before MeshCore single-packet: grouped multi-chunk sends
+ * (`groupTotal > 1`) and/or payloads already prefixed with `[i/N] `. Single-packet protocols
+ * must not TX these on upgrade — quarantine for user cancel/edit instead.
+ */
+export function isLegacySinglePacketMultipartOutboxRow(row: OutboxEntry): boolean {
+  if (!isMeshProtocol(row.protocol)) return false;
+  if (getRadioCapabilities(row.protocol).composerMaxChunks > 1) return false;
+  if (row.groupTotal != null && row.groupTotal > 1) return true;
+  return LEGACY_MULTIPART_PREFIX_RE.test(row.payload);
 }
 
 /** Reset interrupted `sending` rows to `queued` (crash / failed status persist). */
@@ -104,6 +122,25 @@ async function recordOutboxSendFailure(
   console.warn('[useChatOutbox] send failed for outbox row', row.id, errMsg);
 }
 
+/**
+ * Preserve a legacy multi-part MeshCore outbox row without calling sendFn.
+ * Failure point: upgrade-path drain would otherwise TX incomplete `[i/N]` parts;
+ * fallback: block with an explanatory error so the user can cancel or rewrite.
+ */
+async function quarantineLegacyMultipartOutboxRow(
+  row: OutboxEntry,
+  updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
+): Promise<void> {
+  const error = i18n.t('chatPanel.outboxLegacyMultipartBlocked');
+  try {
+    await window.electronAPI.chat.outbox.updateStatus(row.id, 'blocked', error, undefined);
+  } catch (persistErr: unknown) {
+    console.warn('[useChatOutbox] quarantine legacy multipart failed', row.id, persistErr);
+  }
+  updateRow(row.id, { status: 'blocked', error, nextRetryAt: null });
+  console.warn('[useChatOutbox] quarantined legacy multipart outbox row', row.id);
+}
+
 async function sendOneOutboxRow(
   row: OutboxEntry,
   sendFn: UseChatOutboxOptions['sendFn'],
@@ -114,9 +151,8 @@ async function sendOneOutboxRow(
   updateRow(row.id, { status: 'sending' });
   try {
     await sendFn(row.payload, row.channel, row.toNode ?? undefined, row.replyId ?? undefined);
-    // Keep the app-wide MeshCore fast-send clock honest: a drained row is airtime too, so a
-    // composer send right after a backlog drain should still surface the advisory.
-    if (row.protocol === 'meshcore') {
+    // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
+    if (isMeshProtocol(row.protocol) && getRadioCapabilities(row.protocol).composerMaxChunks <= 1) {
       recordMeshcoreSend();
     }
     await finalizeSuccessfulOutboxSend(row, removeRow, updateRow);
@@ -199,10 +235,15 @@ export function useChatOutbox({
       const now = Date.now();
       for (const row of freshRows.filter((r) => isEligibleForDrain(r, now))) {
         if (!isSendAvailableRef.current) break;
+        // Upgrade path: do not TX legacy MeshCore multi-split rows queued before single-packet.
+        if (isLegacySinglePacketMultipartOutboxRow(row)) {
+          await quarantineLegacyMultipartOutboxRow(row, updateRow);
+          continue;
+        }
         const sendRow = () => sendOneOutboxRow(row, sendFnRef.current, updateRow, removeRow);
         // Meshtastic-only pacing, shared with ChatComposer so live sends and outbox drain cannot
-        // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. MeshCore drains without a
-        // client interval (see the meshcore branch below) — it only advances the fast-send clock.
+        // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. Single-packet protocols
+        // drain without a client interval — they only advance the fast-send clock after success.
         if (protocol === 'meshtastic') {
           await withMeshtasticTextSendPacing(sendRow);
         } else {

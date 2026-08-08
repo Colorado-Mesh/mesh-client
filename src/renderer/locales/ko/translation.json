@@ -686,7 +686,8 @@
     "reticulumSendTimeout": "전송 시간이 초과되었습니다. Reticulum 스택이 시작 중이거나 사용 중일 수 있습니다 — 다시 시도하세요.",
     "meshcoreFastSend": {
       "warning": "메시가 릴레이할 수 있는 속도보다 빠르게 전송하고 있습니다. 바쁜 메시에서는 반복자가 서로 가깝게 보낸 메시지를 드롭할 수 있습니다. 메시지 사이에 몇 초를 남겨두세요."
-    }
+    },
+    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
