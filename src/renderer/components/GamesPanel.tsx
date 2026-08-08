@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
+import { burstConfetti, type ConfettiBurstOptions } from '@/renderer/lib/confettiBurst';
 import {
   gamesMetaStr,
   isGamesDrawOfferFromOpponent,
   isGamesDrawOfferFromSelf,
   isGamesSessionInitiator,
+  isGamesWinForSelf,
 } from '@/renderer/lib/reticulum/reticulumGamesMetadata';
 import {
   deleteGamesSession,
@@ -55,6 +57,27 @@ function sessionPeerLabel(session: GameSession): string {
   return resolveReticulumRemoteHashLabel(hash);
 }
 
+/** Confetti origin/palette for a win, centered on the board element when measurable. */
+function winCelebrationOptions(
+  session: GameSession,
+  boardEl: HTMLElement | null,
+): ConfettiBurstOptions {
+  const opts: ConfettiBurstOptions =
+    session.app_id === 'chess'
+      ? {
+          count: 72,
+          duration: 1900,
+          colors: ['#d4bc9e', '#9b8365', '#d4a72c', '#86efac', '#0e9aa7'],
+        }
+      : { count: 48, duration: 1600 };
+  const rect = boardEl?.getBoundingClientRect();
+  if (rect && rect.width > 0 && rect.height > 0) {
+    opts.x = rect.left + rect.width / 2;
+    opts.y = rect.top + rect.height / 2.4;
+  }
+  return opts;
+}
+
 export default function GamesPanel({ isActive }: GamesPanelProps) {
   const { t } = useTranslation();
   const sessions = useReticulumGamesStore((s) => s.sessions);
@@ -70,6 +93,8 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   const [challengeApp, setChallengeApp] = useState<GamesAppId>('ttt');
   const [confirmResign, setConfirmResign] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const celebratedWinsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isActive) return;
@@ -87,6 +112,17 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
     if (isActive && selectedSession && selectedSession.unread > 0) {
       void markGamesSessionRead(selectedSession.session_id);
     }
+  }, [isActive, selectedSession]);
+
+  // One-shot confetti when the viewed session is a completed local win. Deduped
+  // per session_id so re-renders / re-selection do not re-fire (burstConfetti
+  // itself skips under reduced motion and is single-flight).
+  useEffect(() => {
+    if (!isActive || !selectedSession) return;
+    if (!isGamesWinForSelf(selectedSession)) return;
+    if (celebratedWinsRef.current.has(selectedSession.session_id)) return;
+    celebratedWinsRef.current.add(selectedSession.session_id);
+    burstConfetti(winCelebrationOptions(selectedSession, boardWrapRef.current));
   }, [isActive, selectedSession]);
 
   const filteredSessions = useMemo(
@@ -295,23 +331,25 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                 />
               ) : null;
             })()}
-            {selectedSession.app_id === 'chess' ? (
-              <ChessBoard
-                session={selectedSession}
-                disabled={boardDisabled}
-                onMove={(m) => {
-                  handleMove({ m });
-                }}
-              />
-            ) : (
-              <TicTacToeBoard
-                session={selectedSession}
-                disabled={boardDisabled}
-                onMove={(i) => {
-                  handleMove({ i });
-                }}
-              />
-            )}
+            <div ref={boardWrapRef} className="flex flex-col items-center">
+              {selectedSession.app_id === 'chess' ? (
+                <ChessBoard
+                  session={selectedSession}
+                  disabled={boardDisabled}
+                  onMove={(m) => {
+                    handleMove({ m });
+                  }}
+                />
+              ) : (
+                <TicTacToeBoard
+                  session={selectedSession}
+                  disabled={boardDisabled}
+                  onMove={(i) => {
+                    handleMove({ i });
+                  }}
+                />
+              )}
+            </div>
             <div className="flex flex-wrap justify-center gap-2">
               {selectedSession.status === 'pending' &&
                 !isGamesSessionInitiator(selectedSession) && (

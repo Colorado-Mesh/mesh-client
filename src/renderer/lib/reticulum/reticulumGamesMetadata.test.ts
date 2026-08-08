@@ -4,6 +4,7 @@ import {
   gamesDrawOfferedBy,
   isGamesDrawOfferFromOpponent,
   isGamesDrawOfferFromSelf,
+  isGamesWinForSelf,
 } from './reticulumGamesMetadata';
 
 describe('gamesDrawOfferedBy', () => {
@@ -106,5 +107,59 @@ describe('isGamesDrawOfferFromSelf / isGamesDrawOfferFromOpponent', () => {
   ])('$name', ({ session, self, opponent }) => {
     expect(isGamesDrawOfferFromSelf(session)).toBe(self);
     expect(isGamesDrawOfferFromOpponent(session)).toBe(opponent);
+  });
+});
+
+describe('isGamesWinForSelf', () => {
+  it.each([
+    {
+      name: 'completed local win',
+      session: {
+        identity_id: 'me',
+        status: 'completed',
+        metadata: { terminal: 'win', winner: 'me' },
+      },
+      expected: true,
+    },
+    {
+      name: 'completed opponent win',
+      session: {
+        identity_id: 'me',
+        status: 'completed',
+        metadata: { terminal: 'win', winner: 'peer' },
+      },
+      expected: false,
+    },
+    {
+      name: 'completed draw',
+      session: {
+        identity_id: 'me',
+        status: 'completed',
+        metadata: { terminal: 'draw', winner: '' },
+      },
+      expected: false,
+    },
+    {
+      name: 'still active even if winner set',
+      session: { identity_id: 'me', status: 'active', metadata: { terminal: 'win', winner: 'me' } },
+      expected: false,
+    },
+    {
+      name: 'terminal not win',
+      session: { identity_id: 'me', status: 'completed', metadata: { terminal: '', winner: 'me' } },
+      expected: false,
+    },
+    {
+      name: 'empty identity cannot win',
+      session: { identity_id: '', status: 'completed', metadata: { terminal: 'win', winner: '' } },
+      expected: false,
+    },
+    {
+      name: 'metadata undefined',
+      session: { identity_id: 'me', status: 'completed' },
+      expected: false,
+    },
+  ])('$name', ({ session, expected }) => {
+    expect(isGamesWinForSelf(session)).toBe(expected);
   });
 });

@@ -65,3 +65,19 @@ export function isGamesDrawOfferFromOpponent(session: {
 }): boolean {
   return gamesMetaBool(session.metadata, 'draw_offered') && !isGamesDrawOfferFromSelf(session);
 }
+
+/**
+ * True when this session is a completed game the local player won — the gate for
+ * a one-shot win celebration. Draws, losses, resign-as-loss, and still-active
+ * games return false.
+ */
+export function isGamesWinForSelf(session: {
+  identity_id: string;
+  status: string;
+  metadata?: Record<string, unknown>;
+}): boolean {
+  if (session.status !== 'completed') return false;
+  if (gamesMetaStr(session.metadata, 'terminal') !== 'win') return false;
+  const winner = gamesMetaStr(session.metadata, 'winner');
+  return Boolean(winner && session.identity_id && winner === session.identity_id);
+}
