@@ -1,10 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
-import { writeReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY,
   useReticulumPropagationStore,
@@ -32,7 +31,7 @@ describe('ReticulumPropagationNotice', () => {
     localStorage.clear();
     addToast.mockReset();
     // Off means "no propagation node wanted", so the notice only applies to Auto/Manual.
-    writeReticulumPropagationMode('auto');
+    useReticulumPropagationStore.getState().setPropagationMode('auto');
     useReticulumPropagationStore.setState({
       nodes: [],
       discovered: [],
@@ -96,7 +95,7 @@ describe('ReticulumPropagationNotice', () => {
   });
 
   it('hides in off mode even with no propagation target', () => {
-    writeReticulumPropagationMode('off');
+    useReticulumPropagationStore.getState().setPropagationMode('off');
     useReticulumPropagationStore.setState({
       nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'online' }],
       preferredId: null,
@@ -104,6 +103,21 @@ describe('ReticulumPropagationNotice', () => {
     const { container } = render(
       <ReticulumPropagationNotice stackLive onOpenPropagationSettings={vi.fn()} />,
     );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('unmounts immediately when mode transitions to Off while visible', () => {
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'online' }],
+      preferredId: null,
+    });
+    const { container } = render(
+      <ReticulumPropagationNotice stackLive onOpenPropagationSettings={vi.fn()} />,
+    );
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    act(() => {
+      useReticulumPropagationStore.getState().setPropagationMode('off');
+    });
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -126,7 +140,7 @@ describe('ReticulumPropagationNotice', () => {
     expect(container).toBeEmptyDOMElement();
     unmount();
 
-    writeReticulumPropagationMode('manual');
+    useReticulumPropagationStore.getState().setPropagationMode('manual');
     render(<ReticulumPropagationNotice stackLive />);
     expect(screen.getByRole('alert')).toHaveTextContent(/propagation node/i);
   });
@@ -151,7 +165,7 @@ describe('ReticulumPropagationNotice', () => {
   });
 
   it('toasts when Add closest fails', async () => {
-    writeReticulumPropagationMode('manual');
+    useReticulumPropagationStore.getState().setPropagationMode('manual');
     const addFromDiscovered = vi.fn().mockResolvedValue(false);
     useReticulumPropagationStore.setState({
       nodes: [],
@@ -173,7 +187,7 @@ describe('ReticulumPropagationNotice', () => {
   });
 
   it('has no axe violations', async () => {
-    writeReticulumPropagationMode('manual');
+    useReticulumPropagationStore.getState().setPropagationMode('manual');
     useReticulumPropagationStore.setState({
       nodes: [],
       discovered: [activeDiscovered],

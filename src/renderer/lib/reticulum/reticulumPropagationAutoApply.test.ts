@@ -395,6 +395,12 @@ describe('reticulumPropagationAutoApply', () => {
   describe('attempts that fail after the sidecar accepts them', () => {
     const near = 'aa11'.repeat(8);
     const far = 'bb22'.repeat(8);
+    let nowSpy: { mockRestore: () => void } | undefined;
+
+    afterEach(() => {
+      nowSpy?.mockRestore();
+      nowSpy = undefined;
+    });
 
     const setUpTwoDiscovered = (startSync: ReturnType<typeof deferredStartSync>) => {
       useReticulumPropagationStore.setState({
@@ -539,7 +545,7 @@ describe('reticulumPropagationAutoApply', () => {
 
     it('settles the local inbox once the remote budget is spent', async () => {
       let nowMs = 1_000_000;
-      const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+      nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
       const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'success' : 'failure'));
       const slowStartSync = vi.fn((id?: string) => {
         nowMs += 6 * 60_000;
@@ -549,7 +555,6 @@ describe('reticulumPropagationAutoApply', () => {
 
       await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
       expect(slowStartSync.mock.calls.map((c) => c[0])).toEqual([near, 'local-prop']);
-      nowSpy.mockRestore();
     });
 
     it('shares one run when auto-sync ticks overlap', async () => {

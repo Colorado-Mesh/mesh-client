@@ -151,3 +151,11 @@ lxst_sha="$(git -C "${LXST_DIR}" rev-parse HEAD)"
 lrgp_sha="$(git -C "${LRGP_DIR}" rev-parse HEAD)"
 echo "Ratspeak stack ready: rsReticulum @ ${rns_sha:0:12} (${rns_mode}), rsLXMF @ ${lxmf_sha:0:12} (${lxmf_mode}), rsNomad @ ${nomad_sha:0:12} (${nomad_mode}), rsLXST @ ${lxst_sha:0:12} (${lxst_mode}), lrgp-rs @ ${lrgp_sha:0:12} (${lrgp_mode})"
 echo "Ratspeak stack SHAs (full): rsReticulum=${rns_sha} rsLXMF=${lxmf_sha} rsNomad=${nomad_sha} rsLXST=${lxst_sha} lrgp-rs=${lrgp_sha}"
+# Record resolved SHAs for release reproducibility (dev still floats origin/main unless RS_*_REF is set).
+{
+  echo "rsReticulum=${rns_sha}"
+  echo "rsLXMF=${lxmf_sha}"
+  echo "rsNomad=${nomad_sha}"
+  echo "rsLXST=${lxst_sha}"
+  echo "lrgp-rs=${lrgp_sha}"
+} > "${WORKSPACE_ROOT}/RESOLVED_SHAS.txt"

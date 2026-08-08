@@ -20,6 +20,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import {
   isPropagationSyncEstablishingStuck,
+  PROPAGATION_SYNC_SUPERSEDED,
   RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
@@ -564,6 +565,7 @@ export function buildReticulumDiagnosticRows(
       !propagation.syncActive &&
       propagation.lastSyncError != null &&
       propagation.lastSyncError !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
+      propagation.lastSyncError !== PROPAGATION_SYNC_SUPERSEDED &&
       attemptAt != null &&
       now - attemptAt <= RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS
     ) {

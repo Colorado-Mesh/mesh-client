@@ -900,6 +900,37 @@ describe('reticulumPropagation mode-help rewrite drift', () => {
     ).toEqual([]);
   });
 
+  it('flags Japanese syncLocalLoading when second clause blames sync (no whitespace)', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'reticulumPropagation.syncLocalLoading',
+      val: 'ローカル伝播ノードは保存済みメッセージをまだ読み込んでいます。同期が完了すると自動で実行されます。',
+      enVal: enSyncLocalLoading,
+    });
+    expectIssue(issues, 'syncLocalLoading pronoun');
+  });
+
+  it('flags Chinese syncLocalLoading when second clause blames sync (no whitespace)', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'reticulumPropagation.syncLocalLoading',
+      val: '本地传播节点仍在加载其已存储的消息。同步完成后会自行运行。',
+      enVal: enSyncLocalLoading,
+    });
+    expectIssue(issues, 'syncLocalLoading pronoun');
+  });
+
+  it('passes Japanese syncLocalLoading when second clause refers to loading', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'ja',
+        flatKey: 'reticulumPropagation.syncLocalLoading',
+        val: 'ローカル伝播ノードは保存済みメッセージをまだ読み込んでいます。読み込みが終わると同期は自動で実行されます。',
+        enVal: enSyncLocalLoading,
+      }),
+    ).toEqual([]);
+  });
+
   it('flags Czech Příručka false friend on modeHelpManual', () => {
     const issues = localeStringQualityIssues({
       locale: 'cs',

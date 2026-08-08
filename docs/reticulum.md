@@ -420,7 +420,7 @@ End users of **GitHub Releases** or **Flatpak** do not need Rust. Developers and
 pnpm run reticulum:sidecar:build
 ```
 
-When the `.rsstack/` checkouts `rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, and `lrgp-rs` exist, the build script applies required patches and compiles with **`rns-stack,rns-ble,rns-rnode-tcp`** (live path table, BLE, RNode USB/Wi‑Fi, Nomad hosting, LXST voice, LRGP games). Without the `.rsstack/` workspace, Cargo builds the **stub** stack (file-backed API for UI/tests — not for real mesh I/O).
+Cargo always needs the `.rsstack/` checkouts (`rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, `lrgp-rs`) as path dependencies — clone them with `./scripts/clone-ratspeak-stack.sh` (same as [reticulum-sidecar/README.md](../reticulum-sidecar/README.md)). With those trees present, the build script applies required patches and compiles with **`rns-stack,rns-ble,rns-rnode-tcp`** for the **real mesh-I/O** stack (live path table, BLE, RNode USB/Wi‑Fi, Nomad hosting, LXST voice, LRGP games). Building **without** `--features rns-stack` still uses those checkouts but links the **stub** stack (file-backed API for UI/tests — not for real mesh I/O).
 
 **Electron dev:** **Start stack** auto-runs `cargo build` when the debug binary is missing, when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the binary, or when a stub binary is present but the full `.rsstack/` workspace exists. First compile can take several minutes — pre-build with the command above.
 

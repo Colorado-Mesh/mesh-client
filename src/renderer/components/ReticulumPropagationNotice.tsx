@@ -5,7 +5,6 @@ import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum
 import {
   listDiscoveredPropagationTargets,
   pickAutoPropagationTarget,
-  readReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
@@ -30,7 +29,7 @@ export function ReticulumPropagationNotice({
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const dismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
   const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
-  const mode = readReticulumPropagationMode();
+  const mode = useReticulumPropagationStore((s) => s.propagationMode);
 
   useEffect(() => {
     if (!stackLive) return;

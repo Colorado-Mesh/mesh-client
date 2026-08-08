@@ -202,7 +202,11 @@ export const RETICULUM_PROPAGATION_SYNC_SETTLE_TIMEOUT_MS =
 
 function classifySettledPropagationSync(lastSyncError: string | null): PropagationAttemptOutcome {
   if (lastSyncError == null) return 'success';
-  return lastSyncError === SYNC_CANCELLED_KEY ? 'cancelled' : 'failed';
+  // Supersede keeps a quiet marker (not null) so settle does not look like success.
+  if (lastSyncError === SYNC_CANCELLED_KEY || isPropagationSyncSupersedeMessage(lastSyncError)) {
+    return 'cancelled';
+  }
+  return 'failed';
 }
 
 /**
@@ -300,8 +304,8 @@ export function applyPropagationSyncEvent(payload: {
     const mapped = mapPropagationSyncError(payload.message);
     useReticulumPropagationStore.setState({
       sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-      // Supersede clears; cancel/fail set keys. Never leave a prior success as unreachable.
-      lastSyncError: quietSupersede ? null : mapped,
+      // Keep the supersede marker (quiet for UI) so settle classifies non-success.
+      lastSyncError: quietSupersede ? PROPAGATION_SYNC_SUPERSEDED : mapped,
       activePropagationSyncAttemptAt: null,
     });
     return;

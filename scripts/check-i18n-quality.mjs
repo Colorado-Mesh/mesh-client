@@ -1397,15 +1397,22 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
   }
 
   if (flatKey === 'reticulumPropagation.syncLocalLoading' && /still loading/i.test(enVal)) {
-    const clauses = val.split(/(?<=[.!?。！？])\s+/);
+    // Split on sentence punctuation only so Japanese/Chinese clauses without whitespace still separate.
+    const clauses = val
+      .split(/(?<=[.!?。！？])/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
     const second = clauses.length >= 2 ? clauses[1] : '';
     if (second.length > 0) {
       const mentionsLoading =
         /load|charg|carga|caric|lad|načít|ładow|carreg|загруз|завантаж|yükl|muat|読み込|로드|加载|載入/i.test(
           second,
         );
+      // Unicode-safe: CJK sync terms have no ASCII word boundaries.
       const mentionsSyncOnly =
-        /\b(sync|synchron|sincron|синхрон|동기|同期|同步)\w*\b/i.test(second) && !mentionsLoading;
+        /(?:^|[^\p{L}\p{N}_])(?:sync|synchron|sincron|синхрон|동기|同期|同步)\p{L}*/iu.test(
+          second,
+        ) && !mentionsLoading;
       if (mentionsSyncOnly) {
         issues.push(
           'reticulumPropagation.syncLocalLoading pronoun: second clause must refer to loading finishing, not sync finishing',

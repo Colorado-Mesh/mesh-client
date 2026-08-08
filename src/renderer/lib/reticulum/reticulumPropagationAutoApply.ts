@@ -117,8 +117,13 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
   let { nodes } = useReticulumPropagationStore.getState();
   // Auto ticks can start with a stale nodes list (local still "disabled" until refresh).
   if (!hasEnabledLocalPropagationNode(nodes)) {
-    await useReticulumPropagationStore.getState().refreshFromSidecar();
-    nodes = useReticulumPropagationStore.getState().nodes;
+    try {
+      await useReticulumPropagationStore.getState().refreshFromSidecar();
+      nodes = useReticulumPropagationStore.getState().nodes;
+    } catch (e) {
+      console.warn('[reticulumPropagationAutoApply] refreshFromSidecar failed', e);
+      // Keep the nodes already read from the store and continue the enabled check.
+    }
   }
   if (!hasEnabledLocalPropagationNode(nodes)) return finishWithoutTarget(attempts);
   return (await attemptSync('local-prop', attempts)) === 'success';

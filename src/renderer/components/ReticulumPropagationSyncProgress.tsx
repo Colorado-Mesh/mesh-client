@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { resolveReticulumPropagationTargetLabel } from '@/renderer/lib/reticulum/reticulumPropagationMode';
-import { propagationSyncStatusLabel } from '@/renderer/lib/reticulum/reticulumPropagationSync';
+import {
+  isPropagationSyncSupersedeMessage,
+  propagationSyncStatusLabel,
+} from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
 /**
@@ -76,7 +79,7 @@ export function ReticulumPropagationSyncProgress({
           </button>
         </div>
       ) : null}
-      {!sync.active && lastSyncError ? (
+      {!sync.active && lastSyncError && !isPropagationSyncSupersedeMessage(lastSyncError) ? (
         <p className="mt-2 text-xs text-red-400" role="alert">
           {targetName
             ? t('reticulumPropagation.syncErrorWithTarget', {

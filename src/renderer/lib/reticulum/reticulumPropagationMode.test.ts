@@ -77,6 +77,17 @@ describe('reticulumPropagationMode', () => {
     expect(hasPropagationCascadeCandidate('off', servingLocal, found)).toBe(false);
   });
 
+  it('excludes an enabled loading local inbox from cascade candidates and local fallback', () => {
+    const loadingEnabled = [
+      row({ id: 'local-prop', name: 'Local', enabled: true, status: 'loading' }),
+    ];
+    expect(hasPropagationCascadeCandidate('auto', loadingEnabled, [])).toBe(false);
+    expect(hasPropagationCascadeCandidate('manual', loadingEnabled, [])).toBe(false);
+    expect(resolvePropagationSyncTargetId('auto', loadingEnabled, null)).toBeNull();
+    expect(resolvePropagationSyncTargetId('manual', loadingEnabled, null)).toBeNull();
+    expect(pickAutoPropagationTarget(loadingEnabled, [])).toBeNull();
+  });
+
   it('detects the local inbox still loading its messagestore', () => {
     expect(
       isLocalPropagationLoading([row({ id: 'local-prop', name: 'Local', enabled: false })]),

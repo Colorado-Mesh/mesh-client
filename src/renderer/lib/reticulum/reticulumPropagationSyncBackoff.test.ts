@@ -7,6 +7,7 @@ import {
   omitRecentlyFailedPropagationTargets,
   resetReticulumPropagationSyncFailures,
   RETICULUM_PROPAGATION_SYNC_FAILURE_BACKOFF_MS,
+  RETICULUM_PROPAGATION_SYNC_FAILURES_LAZY_CLEANUP_THRESHOLD,
 } from './reticulumPropagationSyncBackoff';
 
 describe('reticulumPropagationSyncBackoff', () => {
@@ -51,5 +52,21 @@ describe('reticulumPropagationSyncBackoff', () => {
     clearReticulumPropagationSyncFailure('catz');
 
     expect(hasRecentReticulumPropagationSyncFailure('catz', 2_000)).toBe(false);
+  });
+
+  it('lazily sweeps expired failures when the map reaches the size threshold', () => {
+    const expiredAt = 1_000;
+    const now =
+      expiredAt +
+      RETICULUM_PROPAGATION_SYNC_FAILURE_BACKOFF_MS +
+      RETICULUM_PROPAGATION_SYNC_FAILURE_BACKOFF_MS;
+    for (let i = 0; i < RETICULUM_PROPAGATION_SYNC_FAILURES_LAZY_CLEANUP_THRESHOLD - 1; i++) {
+      noteReticulumPropagationSyncFailure(`expired-${i}`, expiredAt);
+    }
+    // Crossing the threshold while recording a fresh failure sweeps the expired set.
+    noteReticulumPropagationSyncFailure('fresh', now);
+
+    expect(hasRecentReticulumPropagationSyncFailure('expired-0', now)).toBe(false);
+    expect(hasRecentReticulumPropagationSyncFailure('fresh', now)).toBe(true);
   });
 });

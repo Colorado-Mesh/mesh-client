@@ -154,9 +154,15 @@ export function isLocalPropagationLoading(nodes: PropagationNodeRow[]): boolean 
   return nodes.some((n) => n.id === 'local-prop' && n.status === 'loading');
 }
 
+/** Enabled local inbox that is ready to sync (messagestore finished loading). */
+function hasReadyEnabledLocalPropagationNode(nodes: PropagationNodeRow[]): boolean {
+  return hasEnabledLocalPropagationNode(nodes) && !isLocalPropagationLoading(nodes);
+}
+
 /**
  * True when this mode has anything to sync with: Auto may use a discovered node, both
- * Auto and Manual may use an added remote or the enabled local inbox. Off never syncs.
+ * Auto and Manual may use an added remote or the ready local inbox. Off never syncs.
+ * A loading local node alone is not a cascade candidate.
  */
 export function hasPropagationCascadeCandidate(
   mode: ReticulumPropagationMode,
@@ -167,7 +173,7 @@ export function hasPropagationCascadeCandidate(
   return (
     (mode === 'auto' && listDiscoveredPropagationTargets(nodes, discovered).length > 0) ||
     listConfiguredRemotePropagationIds(nodes).length > 0 ||
-    hasEnabledLocalPropagationNode(nodes)
+    hasReadyEnabledLocalPropagationNode(nodes)
   );
 }
 
@@ -185,7 +191,7 @@ export function pickAutoPropagationTarget(
     return { kind: 'configured', id: configuredBest };
   }
 
-  if (hasEnabledLocalPropagationNode(nodes)) {
+  if (hasReadyEnabledLocalPropagationNode(nodes)) {
     return { kind: 'local' };
   }
   return null;
@@ -218,7 +224,7 @@ export function resolvePropagationSyncTargetId(
     if (preferredId != null && preferredId.length > 0) return preferredId;
     const configuredBest = listConfiguredRemotePropagationIds(nodes).at(0);
     if (configuredBest != null) return configuredBest;
-    return hasEnabledLocalPropagationNode(nodes) ? 'local-prop' : null;
+    return hasReadyEnabledLocalPropagationNode(nodes) ? 'local-prop' : null;
   }
   const discoveredBest = listDiscoveredPropagationTargets(nodes, discovered).at(0);
   if (discoveredBest != null) {
@@ -226,7 +232,7 @@ export function resolvePropagationSyncTargetId(
   }
   const configured = listConfiguredRemotePropagationIds(nodes).at(0);
   if (configured != null) return configured;
-  if (hasEnabledLocalPropagationNode(nodes)) return 'local-prop';
+  if (hasReadyEnabledLocalPropagationNode(nodes)) return 'local-prop';
   return null;
 }
 

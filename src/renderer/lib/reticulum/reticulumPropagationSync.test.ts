@@ -140,7 +140,7 @@ describe('reticulumPropagationSync', () => {
       message: PROPAGATION_SYNC_SUPERSEDED,
     });
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
-    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(PROPAGATION_SYNC_SUPERSEDED);
   });
 
   it('maps cancel message to syncCancelled not syncFailed', () => {
@@ -286,6 +286,25 @@ describe('reticulumPropagationSync', () => {
       });
 
       await expect(settled).resolves.toBe('cancelled');
+    });
+
+    it('does not resolve supersede as success', async () => {
+      useReticulumPropagationStore.setState({
+        sync: { active: true, progress: 5, message: null },
+        lastSyncError: null,
+      });
+
+      const settled = awaitPropagationSyncSettled();
+      applyPropagationSyncEvent({
+        active: false,
+        progress: 0,
+        message: PROPAGATION_SYNC_SUPERSEDED,
+      });
+
+      await expect(settled).resolves.toBe('cancelled');
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        PROPAGATION_SYNC_SUPERSEDED,
+      );
     });
 
     it('cancels and reports failure when no terminal frame ever arrives', async () => {

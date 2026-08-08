@@ -106,6 +106,7 @@ describe('ReticulumPropagationSection', () => {
       syncTargetId: null,
       lastSyncError: null,
       chatNoticeDismissed: false,
+      propagationMode: 'off',
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       removePropagationNode: vi.fn().mockResolvedValue(true),
       renamePropagationNode: vi.fn().mockResolvedValue(true),
@@ -442,7 +443,7 @@ describe('ReticulumPropagationSection', () => {
   it('Sync Now in Auto syncs configured remote without Preferred write', async () => {
     const user = userEvent.setup();
     // Start in Auto so mode change does not auto-kick an extra cascade before the click.
-    localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, 'auto');
+    useReticulumPropagationStore.getState().setPropagationMode('auto');
     const setPreferredOnSidecar = vi.mocked(
       useReticulumPropagationStore.getState().setPreferredOnSidecar,
     );

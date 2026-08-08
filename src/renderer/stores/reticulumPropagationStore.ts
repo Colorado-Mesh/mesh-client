@@ -2,8 +2,10 @@ import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  readReticulumPropagationMode,
   RETICULUM_PROPAGATION_DESTINATION_HASH_RE,
   type ReticulumPropagationMode,
+  writeReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   clearPropagationSyncStallWatchdog,
@@ -118,6 +120,8 @@ interface ReticulumPropagationStoreState {
   syncTargetId: string | null;
   /** True while the user has dismissed the Chat "no propagation node" reminder. */
   chatNoticeDismissed: boolean;
+  /** Network → Propagation mode (localStorage-backed; Off hides the Chat reminder). */
+  propagationMode: ReticulumPropagationMode;
   replaceNodes: (nodes: PropagationNodeRow[]) => void;
   upsertDiscovered: (row: DiscoveredPropagationRow) => void;
   replaceDiscovered: (rows: DiscoveredPropagationRow[]) => void;
@@ -126,6 +130,7 @@ interface ReticulumPropagationStoreState {
   setLastSyncError: (message: string | null) => void;
   setSyncTargetId: (id: string | null) => void;
   setChatNoticeDismissed: (dismissed: boolean) => void;
+  setPropagationMode: (mode: ReticulumPropagationMode) => void;
   /**
    * Record last successful sync time. When `forAttemptAt` matches the current attempt stamp,
    * clear it (and the active run stamp); a mismatched/older completion leaves a newer attempt alone.
@@ -163,6 +168,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   activePropagationSyncAttemptAt: null,
   syncTargetId: null,
   chatNoticeDismissed: readChatNoticeDismissed(),
+  propagationMode: readReticulumPropagationMode(),
 
   replaceNodes: (nodes) => {
     set({ nodes });
@@ -199,6 +205,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   setChatNoticeDismissed: (dismissed) => {
     writeChatNoticeDismissed(dismissed);
     set({ chatNoticeDismissed: dismissed });
+  },
+
+  setPropagationMode: (mode) => {
+    writeReticulumPropagationMode(mode);
+    set({ propagationMode: mode });
   },
 
   setLastPropagationSyncAt: (atMs, forAttemptAt) => {

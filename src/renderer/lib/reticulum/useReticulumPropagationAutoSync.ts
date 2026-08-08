@@ -74,9 +74,19 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
     if (!sidecarReady) return;
 
     // Keep preferred/nodes fresh for Chat notice + auto-sync even if Network tab was never opened.
-    void useReticulumPropagationStore.getState().refreshFromSidecar();
+    void useReticulumPropagationStore
+      .getState()
+      .refreshFromSidecar()
+      .catch((err: unknown) => {
+        console.warn('[useReticulumPropagationAutoSync] refreshFromSidecar rejected', err);
+      });
     // Re-push the mode so a restarted sidecar gates its outbound PN cascade the same way.
-    void useReticulumPropagationStore.getState().setModeOnSidecar(readReticulumPropagationMode());
+    void useReticulumPropagationStore
+      .getState()
+      .setModeOnSidecar(readReticulumPropagationMode())
+      .catch((err: unknown) => {
+        console.warn('[useReticulumPropagationAutoSync] setModeOnSidecar rejected', err);
+      });
 
     const cascadeCandidate = (mode: ReticulumPropagationMode): boolean => {
       const { nodes, discovered } = useReticulumPropagationStore.getState();

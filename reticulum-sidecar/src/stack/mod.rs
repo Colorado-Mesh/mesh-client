@@ -1400,6 +1400,8 @@ impl StackHandle {
         let mode = parse_propagation_mode(mode)?;
         let prop_hash = {
             let mut inner = self.inner.write().await;
+            // Snapshot for rollback if durable save fails after in-memory mutate.
+            let snapshot = inner.propagation_mode;
             inner.set_propagation_mode(mode);
             let hash = inner.preferred_propagation_id.as_ref().and_then(|id| {
                 inner
@@ -1408,7 +1410,10 @@ impl StackHandle {
                     .find(|p| p.id == *id)
                     .and_then(|p| p.destination_hash.clone())
             });
-            inner.save(&self.config_dir, &self.storage_dir)?;
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                inner.set_propagation_mode(snapshot);
+                return Err(e);
+            }
             hash
         };
         #[cfg(feature = "rns-stack")]
@@ -3940,6 +3945,50 @@ mod tests {
             serde_json::json!({ hash: "rf" })
         );
 
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    #[cfg(unix)]
+    async fn set_propagation_mode_rolls_back_when_save_fails() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        handle.set_propagation_mode("auto").await.expect("set auto");
+        assert_eq!(handle.list_propagation().await["propagation_mode"], "auto");
+
+        // Directory 555 still allows rewriting an existing writable file; lock the state file.
+        let state_path = storage_dir.join("mesh_client_stack.json");
+        let mut perms = std::fs::metadata(&state_path)
+            .expect("state meta")
+            .permissions();
+        perms.set_mode(0o444);
+        std::fs::set_permissions(&state_path, perms).expect("lock state file");
+
+        let err = handle
+            .set_propagation_mode("manual")
+            .await
+            .expect_err("save must fail");
+        assert!(!err.is_empty());
+        assert_eq!(
+            handle.list_propagation().await["propagation_mode"],
+            "auto",
+            "in-memory mode must roll back when save fails"
+        );
+
+        let mut restore = std::fs::metadata(&state_path)
+            .expect("state meta")
+            .permissions();
+        restore.set_mode(0o644);
+        std::fs::set_permissions(&state_path, restore).expect("unlock state file");
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }

@@ -8,10 +8,8 @@ import {
   configuredPropagationDestinationHashes,
   hasPropagationCascadeCandidate,
   isReticulumPropagationMode,
-  readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
   type ReticulumPropagationMode,
-  writeReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
@@ -165,6 +163,8 @@ export default function ReticulumPropagationSection({
     (s) => s.setAutoSyncIntervalOnSidecar,
   );
   const setModeOnSidecar = useReticulumPropagationStore((s) => s.setModeOnSidecar);
+  const mode = useReticulumPropagationStore((s) => s.propagationMode);
+  const setPropagationMode = useReticulumPropagationStore((s) => s.setPropagationMode);
   const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const removePropagationNode = useReticulumPropagationStore((s) => s.removePropagationNode);
@@ -177,7 +177,6 @@ export default function ReticulumPropagationSection({
   const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
   const [adding, setAdding] = useState(false);
   const [syncStarting, setSyncStarting] = useState(false);
-  const [mode, setMode] = useState<ReticulumPropagationMode>(() => readReticulumPropagationMode());
 
   const handleSyncNow = (targetId: string) => {
     if (syncStarting || sync.active) return;
@@ -220,18 +219,22 @@ export default function ReticulumPropagationSection({
 
   const handleModeChange = (next: ReticulumPropagationMode) => {
     if (!isReticulumPropagationMode(next)) return;
-    setMode(next);
-    writeReticulumPropagationMode(next);
+    setPropagationMode(next);
     // Sidecar gates its outbound Direct→PN cascade on the same mode.
-    void setModeOnSidecar(next).then((ok) => {
-      if (!ok) {
-        console.warn('[ReticulumPropagationSection] setModeOnSidecar failed', next);
-      }
-    });
+    void setModeOnSidecar(next)
+      .then((ok) => {
+        if (!ok) {
+          console.warn('[ReticulumPropagationSection] setModeOnSidecar failed', next);
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn('[ReticulumPropagationSection] setModeOnSidecar rejected', err);
+      });
     if (next !== 'auto') return;
     // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
-    const target =
-      resolvePropagationSyncTargetId('auto', nodes, preferredId, discovered) ?? 'local-prop';
+    if (!hasPropagationCascadeCandidate('auto', nodes, discovered)) return;
+    const target = resolvePropagationSyncTargetId('auto', nodes, preferredId, discovered);
+    if (target == null) return;
     handleSyncNow(target);
   };
 
@@ -562,14 +565,21 @@ export default function ReticulumPropagationSection({
           disabled={sync.active}
           onChange={(e) => {
             const sec = Number(e.target.value);
-            void setAutoSyncIntervalOnSidecar(sec).then((ok) => {
-              if (!ok) {
+            void setAutoSyncIntervalOnSidecar(sec)
+              .then((ok) => {
+                if (!ok) {
+                  console.warn(
+                    '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar failed',
+                    sec,
+                  );
+                }
+              })
+              .catch((err: unknown) => {
                 console.warn(
-                  '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar failed',
-                  sec,
+                  '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar rejected',
+                  err,
                 );
-              }
-            });
+              });
           }}
           className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
           aria-label={t('reticulumPropagation.autoSyncIntervalAria')}
