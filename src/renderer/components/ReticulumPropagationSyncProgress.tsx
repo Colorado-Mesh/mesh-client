@@ -11,12 +11,17 @@ import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropaga
  * node was contacted — the cascade clears the target so "nothing to sync with" errors are
  * never blamed on a node.
  */
+export function getReticulumPropagationSyncTargetName(localLabel: string): string | null {
+  const { nodes, discovered, syncTargetId } = useReticulumPropagationStore.getState();
+  if (syncTargetId == null || syncTargetId.length === 0) return null;
+  return resolveReticulumPropagationTargetLabel(nodes, discovered, syncTargetId, localLabel);
+}
+
 export function useReticulumPropagationSyncTargetName(): string | null {
   const { t } = useTranslation();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const discovered = useReticulumPropagationStore((s) => s.discovered);
   const syncTargetId = useReticulumPropagationStore((s) => s.syncTargetId);
-
   if (syncTargetId == null || syncTargetId.length === 0) return null;
   return resolveReticulumPropagationTargetLabel(
     nodes,

@@ -111,6 +111,41 @@ export function hasEnabledLocalPropagationNode(nodes: PropagationNodeRow[]): boo
   return nodes.some((n) => n.id === 'local-prop' && n.enabled);
 }
 
+/** 32-hex LXMF destination hash (configured row id or bare Auto one-time target). */
+export const RETICULUM_PROPAGATION_DESTINATION_HASH_RE = /^[0-9a-fA-F]{32}$/;
+
+/** Find a configured row by id or destination hash (case-insensitive). */
+export function findPropagationNodeByIdOrHash(
+  nodes: PropagationNodeRow[],
+  id: string,
+): PropagationNodeRow | undefined {
+  const key = id.toLowerCase();
+  return nodes.find((n) => n.id === id || n.destination_hash?.toLowerCase() === key);
+}
+
+/**
+ * Destination hash for a sync target id (or the id itself when it is already a hash);
+ * empty string when the row has no known hash.
+ */
+export function propagationTargetDestinationHash(nodes: PropagationNodeRow[], id: string): string {
+  if (RETICULUM_PROPAGATION_DESTINATION_HASH_RE.test(id)) return id.toLowerCase();
+  return nodes.find((n) => n.id === id)?.destination_hash?.toLowerCase() ?? '';
+}
+
+/**
+ * Manual cascade seed: explicit per-row target, else Preferred, else best configured remote.
+ * Does not fall back to local-prop (callers settle local separately).
+ */
+export function resolveManualCascadeSeed(
+  firstTargetId: string | null | undefined,
+  preferredId: string | null,
+  nodes: PropagationNodeRow[],
+): string | null {
+  if (firstTargetId != null && firstTargetId.length > 0) return firstTargetId;
+  if (preferredId != null && preferredId.length > 0) return preferredId;
+  return listConfiguredRemotePropagationIds(nodes).at(0) ?? null;
+}
+
 /**
  * True when the local inbox is enabled but the sidecar is still reading its messagestore
  * (`status: 'loading'`). Serving — and therefore sync — is deferred until that finishes.

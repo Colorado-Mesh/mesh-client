@@ -12,6 +12,12 @@ import {
 
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 
+const addToast = vi.fn();
+vi.mock('./Toast', () => ({
+  useToast: () => ({ addToast }),
+  pushAppToast: vi.fn(),
+}));
+
 const activeDiscovered = {
   destination_hash: 'ab'.repeat(16),
   node_state: true,
@@ -24,6 +30,7 @@ describe('ReticulumPropagationNotice', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    addToast.mockReset();
     // Off means "no propagation node wanted", so the notice only applies to Auto/Manual.
     writeReticulumPropagationMode('auto');
     useReticulumPropagationStore.setState({
@@ -31,6 +38,7 @@ describe('ReticulumPropagationNotice', () => {
       discovered: [],
       preferredId: null,
       chatNoticeDismissed: false,
+      lastAddError: null,
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       addFromDiscovered: vi.fn().mockResolvedValue(true),
     });
@@ -140,6 +148,28 @@ describe('ReticulumPropagationNotice', () => {
     });
     const { container } = render(<ReticulumPropagationNotice stackLive />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('toasts when Add closest fails', async () => {
+    writeReticulumPropagationMode('manual');
+    const addFromDiscovered = vi.fn().mockResolvedValue(false);
+    useReticulumPropagationStore.setState({
+      nodes: [],
+      discovered: [activeDiscovered],
+      preferredId: null,
+      lastAddError: 'reticulumPropagation.addFailed',
+      addFromDiscovered,
+    });
+    render(<ReticulumPropagationNotice stackLive />);
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Add the closest discovered propagation node and set it as preferred',
+      }),
+    );
+    expect(addFromDiscovered).toHaveBeenCalledWith(activeDiscovered.destination_hash, {
+      prefer: true,
+    });
+    expect(addToast).toHaveBeenCalledWith('Could not add the propagation node.', 'error');
   });
 
   it('has no axe violations', async () => {

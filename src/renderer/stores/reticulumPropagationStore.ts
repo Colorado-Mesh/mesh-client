@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import type { ReticulumPropagationMode } from '@/renderer/lib/reticulum/reticulumPropagationMode';
+import {
+  RETICULUM_PROPAGATION_DESTINATION_HASH_RE,
+  type ReticulumPropagationMode,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   clearPropagationSyncStallWatchdog,
   mapPropagationSyncError,
@@ -23,6 +26,14 @@ import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumP
 
 /** i18n key written when the user cancels an in-flight propagation sync. */
 export const PROPAGATION_SYNC_USER_CANCEL_KEY = 'reticulumPropagation.syncCancelled';
+
+/**
+ * Sidecar acceptance for a sync start.
+ * - `accepted` — request is in flight (or local-prop already settled).
+ * - `deferred` — soft defer (outbound deposit owns the PN link); retry without backoff.
+ * - `failed` — hard reject; cascade may backoff and advance.
+ */
+export type PropagationStartSyncResult = 'accepted' | 'deferred' | 'failed';
 
 /** Persists "stop reminding me in Chat to set up a propagation node". */
 export const RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY =
@@ -128,7 +139,7 @@ interface ReticulumPropagationStoreState {
   /** Push the renderer propagation mode so the sidecar gates its outbound PN cascade. */
   setModeOnSidecar: (mode: ReticulumPropagationMode) => Promise<boolean>;
   setHostingPolicyOnSidecar: (policy: PnHostingPolicy) => Promise<boolean>;
-  startSync: (id?: string) => Promise<boolean>;
+  startSync: (id?: string) => Promise<PropagationStartSyncResult>;
   cancelSync: (opts?: { reasonKey?: string }) => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
   addFromDiscovered: (destinationHash: string, opts?: { prefer?: boolean }) => Promise<boolean>;
@@ -347,8 +358,8 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
 
   startSync: async (id) => {
     const propId = id ?? get().preferredId;
-    if (!propId) return false;
-    const isDestHash = /^[0-9a-fA-F]{32}$/.test(propId);
+    if (!propId) return 'failed';
+    const isDestHash = RETICULUM_PROPAGATION_DESTINATION_HASH_RE.test(propId);
     // Avoid overlapping renderer starts so a late success cannot clear a newer attempt.
     if (get().sync.active) {
       await get().cancelSync();
@@ -376,21 +387,21 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       )) as { ok?: boolean; error?: string };
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
-        // Soft defer: outbound LXMF deposit owns the PN Link — retry on next auto-sync tick.
+        // Soft defer: outbound LXMF deposit owns the PN Link — retry without backoff.
         if (res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') {
           set({
             sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
             lastSyncError: null,
             activePropagationSyncAttemptAt: null,
           });
-          return false;
+          return 'deferred';
         }
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: mapPropagationSyncError(res.error),
           activePropagationSyncAttemptAt: null,
         });
-        return false;
+        return 'failed';
       }
       // Local settle has no WS progress stream if the emitter races; mark success here.
       if (propId === 'local-prop') {
@@ -400,7 +411,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         });
         get().setLastPropagationSyncAt(Date.now(), attemptAt);
       }
-      return true;
+      return 'accepted';
     } catch (e) {
       clearPropagationSyncStallWatchdog();
       console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
@@ -409,7 +420,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         lastSyncError: mapPropagationSyncError(null),
         activePropagationSyncAttemptAt: null,
       });
-      return false;
+      return 'failed';
     }
   },
 

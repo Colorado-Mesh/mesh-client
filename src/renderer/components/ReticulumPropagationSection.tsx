@@ -3,16 +3,13 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
-import { ensurePreferredThenStartSync } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import { startPropagationSyncWithTarget } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import {
   configuredPropagationDestinationHashes,
-  hasEnabledLocalPropagationNode,
+  hasPropagationCascadeCandidate,
   isReticulumPropagationMode,
-  listConfiguredRemotePropagationIds,
-  listDiscoveredPropagationTargets,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
-  resolveReticulumPropagationTargetLabel,
   type ReticulumPropagationMode,
   writeReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -28,6 +25,7 @@ import {
 
 import { ConfirmModal } from './ConfirmModal';
 import {
+  getReticulumPropagationSyncTargetName,
   ReticulumPropagationLastRefreshed,
   ReticulumPropagationRefreshButton,
   ReticulumPropagationSyncProgress,
@@ -181,29 +179,13 @@ export default function ReticulumPropagationSection({
   const [syncStarting, setSyncStarting] = useState(false);
   const [mode, setMode] = useState<ReticulumPropagationMode>(() => readReticulumPropagationMode());
 
-  /** Name of the node the cascade actually reached, or null when it contacted nobody. */
-  const resolveAttemptedName = (): string | null => {
-    const {
-      nodes: current,
-      discovered: currentDiscovered,
-      syncTargetId,
-    } = useReticulumPropagationStore.getState();
-    if (syncTargetId == null || syncTargetId.length === 0) return null;
-    return resolveReticulumPropagationTargetLabel(
-      current,
-      currentDiscovered,
-      syncTargetId,
-      t('reticulumPropagation.localHostName'),
-    );
-  };
-
   const handleSyncNow = (targetId: string) => {
     if (syncStarting || sync.active) return;
     setSyncStarting(true);
-    void ensurePreferredThenStartSync(targetId)
+    void startPropagationSyncWithTarget(targetId)
       .then((ok) => {
         setSyncStarting(false);
-        const name = resolveAttemptedName();
+        const name = getReticulumPropagationSyncTargetName(t('reticulumPropagation.localHostName'));
         if (!ok) {
           const errKey =
             useReticulumPropagationStore.getState().lastSyncError ??
@@ -241,7 +223,11 @@ export default function ReticulumPropagationSection({
     setMode(next);
     writeReticulumPropagationMode(next);
     // Sidecar gates its outbound Direct→PN cascade on the same mode.
-    void setModeOnSidecar(next);
+    void setModeOnSidecar(next).then((ok) => {
+      if (!ok) {
+        console.warn('[ReticulumPropagationSection] setModeOnSidecar failed', next);
+      }
+    });
     if (next !== 'auto') return;
     // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
     const target =
@@ -298,17 +284,14 @@ export default function ReticulumPropagationSection({
         : 'reticulumPropagation.modeHelpOff';
 
   const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId, discovered);
-  const autoHasCascadeCandidate =
-    listDiscoveredPropagationTargets(nodes, discovered).length > 0 ||
-    listConfiguredRemotePropagationIds(nodes).length > 0 ||
-    hasEnabledLocalPropagationNode(nodes);
   // Manual resolves Preferred, else a picked remote, else local settle; Off disables Sync.
+  // Auto Sync (bottom or per-row) runs the full cascade — ignore firstTargetId.
   const bottomSyncDisabled =
     sync.active ||
     syncStarting ||
     mode === 'off' ||
     (mode === 'manual' && !bottomSyncTargetId) ||
-    (mode === 'auto' && !autoHasCascadeCandidate);
+    (mode === 'auto' && !hasPropagationCascadeCandidate('auto', nodes, discovered));
 
   const body = (
     <>
@@ -448,7 +431,8 @@ export default function ReticulumPropagationSection({
                           addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
                         }
                       })
-                      .catch(() => {
+                      .catch((err: unknown) => {
+                        console.warn('[ReticulumPropagationSection] setPreferred rejected', err);
                         addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
                       });
                   }}
@@ -578,7 +562,14 @@ export default function ReticulumPropagationSection({
           disabled={sync.active}
           onChange={(e) => {
             const sec = Number(e.target.value);
-            void setAutoSyncIntervalOnSidecar(sec);
+            void setAutoSyncIntervalOnSidecar(sec).then((ok) => {
+              if (!ok) {
+                console.warn(
+                  '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar failed',
+                  sec,
+                );
+              }
+            });
           }}
           className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
           aria-label={t('reticulumPropagation.autoSyncIntervalAria')}

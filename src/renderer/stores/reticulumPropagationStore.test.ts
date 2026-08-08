@@ -200,7 +200,7 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'p1' });
     proxyPost.mockResolvedValueOnce({ ok: true });
-    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(true);
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('accepted');
     expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeTypeOf(
       'number',
@@ -217,13 +217,15 @@ describe('reticulumPropagationStore', () => {
   it('startSync records the target each attempt so progress and errors can name it', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
-    await expect(useReticulumPropagationStore.getState().startSync('pn-aabb')).resolves.toBe(false);
+    await expect(useReticulumPropagationStore.getState().startSync('pn-aabb')).resolves.toBe(
+      'failed',
+    );
     // Kept past the failure so the error can be attributed to the node it came from.
     expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-aabb');
 
     proxyPost.mockResolvedValueOnce({ ok: true });
     await expect(useReticulumPropagationStore.getState().startSync('local-prop')).resolves.toBe(
-      true,
+      'accepted',
     );
     expect(useReticulumPropagationStore.getState().syncTargetId).toBe('local-prop');
   });
@@ -321,7 +323,7 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });
     await expect(useReticulumPropagationStore.getState().startSync('local-prop')).resolves.toBe(
-      true,
+      'accepted',
     );
     expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/sync', {
       propagation_id: 'local-prop',
@@ -337,7 +339,7 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });
     const hash = 'deadbeef'.repeat(4);
-    await expect(useReticulumPropagationStore.getState().startSync(hash)).resolves.toBe(true);
+    await expect(useReticulumPropagationStore.getState().startSync(hash)).resolves.toBe('accepted');
     expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/sync', {
       destination_hash: hash,
     });
@@ -378,7 +380,7 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
     proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
-    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(false);
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('failed');
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncIdentityUnknown',
     );
@@ -388,10 +390,20 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
     proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_TARGET_NOT_PN' });
-    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(false);
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('failed');
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncTargetNotPropagationNode',
     );
+  });
+
+  it('startSync soft-defers OUTBOUND_BUSY without a lastSyncError', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_SYNC_OUTBOUND_BUSY' });
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
   it('removePropagationNode deletes then refreshes', async () => {

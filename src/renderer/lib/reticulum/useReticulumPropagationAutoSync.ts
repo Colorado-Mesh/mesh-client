@@ -116,12 +116,14 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
       await startPropagationSyncCascade();
     };
 
-    // floating-ok: tick catches store failures via Result/toast paths
-    void tick();
+    const runTick = () => {
+      void tick().catch((err: unknown) => {
+        console.warn('[useReticulumPropagationAutoSync] tick rejected', err);
+      });
+    };
+    runTick();
 
-    const id = window.setInterval(() => {
-      void tick();
-    }, AUTO_SYNC_CHECK_MS);
+    const id = window.setInterval(runTick, AUTO_SYNC_CHECK_MS);
     return () => {
       window.clearInterval(id);
     };

@@ -3,7 +3,7 @@ import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropaga
 /** Keep refresh affordance visible long enough to perceive (~10ms API otherwise). */
 export const RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS = 500;
 
-/** Cancel sync when stuck establishing connection to an unreachable node. */
+/** Cancel sync when stuck in the Establishing progress band past this window. */
 export const RETICULUM_PROPAGATION_SYNC_STALL_MS = 45_000;
 
 /** How long a failed sync keeps the Diagnostics failing row visible. */
@@ -191,7 +191,7 @@ export function schedulePropagationSyncStallWatchdog(): void {
  * Outcome of a single propagation sync attempt once it stops being in flight.
  * `cancelled` is the user pressing Cancel — a cascade must stop rather than advance.
  */
-export type PropagationAttemptOutcome = 'success' | 'failed' | 'cancelled';
+export type PropagationAttemptOutcome = 'success' | 'failed' | 'cancelled' | 'deferred';
 
 /**
  * Backstop for {@link awaitPropagationSyncSettled}. The stall/ceiling watchdogs settle a
@@ -267,7 +267,9 @@ export function normalizePropagationSyncProgress(raw: number): number {
 }
 
 export function propagationSyncStatusLabel(progress: number): string {
-  if (progress < 15) return 'reticulumPropagation.syncStatusEstablishing';
+  if (progress < RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS) {
+    return 'reticulumPropagation.syncStatusEstablishing';
+  }
   if (progress < 50) return 'reticulumPropagation.syncStatusNegotiating';
   return 'reticulumPropagation.syncStatusTransferring';
 }

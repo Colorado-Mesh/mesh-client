@@ -13,11 +13,15 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('./ReticulumPropagationSyncProgress', () => ({
-  ReticulumPropagationLastRefreshed: () => null,
-  ReticulumPropagationRefreshButton: () => null,
-  ReticulumPropagationSyncProgress: () => null,
-}));
+vi.mock('./ReticulumPropagationSyncProgress', async () => {
+  const actual = await vi.importActual('./ReticulumPropagationSyncProgress');
+  return {
+    ...(actual as Record<string, unknown>),
+    ReticulumPropagationLastRefreshed: () => null,
+    ReticulumPropagationRefreshButton: () => null,
+    ReticulumPropagationSyncProgress: () => null,
+  };
+});
 
 vi.mock('./ConfirmModal', () => ({
   ConfirmModal: ({
@@ -108,7 +112,7 @@ describe('ReticulumPropagationSection', () => {
       setPreferredOnSidecar: vi.fn().mockResolvedValue(true),
       setAutoSyncIntervalOnSidecar: vi.fn().mockResolvedValue(true),
       setModeOnSidecar: vi.fn().mockResolvedValue(true),
-      startSync: vi.fn().mockResolvedValue(true),
+      startSync: vi.fn().mockResolvedValue('accepted'),
       addPropagationNode: vi.fn().mockResolvedValue(true),
       addFromDiscovered: vi.fn().mockResolvedValue(true),
     });
@@ -303,7 +307,7 @@ describe('ReticulumPropagationSection', () => {
 
   it('Manual with Preferred local enables bottom Sync and settles local', async () => {
     const user = userEvent.setup();
-    const startSync = vi.fn().mockResolvedValue(true);
+    const startSync = vi.fn().mockResolvedValue('accepted');
     useReticulumPropagationStore.setState({
       nodes: [
         {
@@ -595,7 +599,7 @@ describe('ReticulumPropagationSection', () => {
           useReticulumPropagationStore.setState({
             sync: { active: false, progress: 0, message: null },
           });
-          return true;
+          return 'accepted' as const;
         });
       }),
     });
@@ -631,7 +635,7 @@ describe('ReticulumPropagationSection', () => {
           syncTargetId: id ?? null,
           lastSyncError: 'reticulumPropagation.syncFailed',
         });
-        return Promise.resolve(false);
+        return Promise.resolve('failed' as const);
       }),
     });
     render(<ReticulumPropagationSection embedded />);

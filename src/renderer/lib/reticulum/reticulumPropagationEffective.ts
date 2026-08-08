@@ -1,4 +1,6 @@
 import {
+  findPropagationNodeByIdOrHash,
+  hasEnabledLocalPropagationNode,
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
@@ -10,13 +12,6 @@ import type {
 
 function isRemotePropagationId(id: string | null | undefined): id is string {
   return Boolean(id && id !== 'local-prop');
-}
-
-function findPropagationNode(
-  nodes: PropagationNodeRow[],
-  id: string,
-): PropagationNodeRow | undefined {
-  return nodes.find((n) => n.id === id || n.destination_hash === id);
 }
 
 /**
@@ -37,7 +32,7 @@ export function hasEffectiveReticulumPropagationTarget(
   if (mode === 'off') return false;
 
   if (isRemotePropagationId(preferredId)) {
-    const preferred = findPropagationNode(nodes, preferredId);
+    const preferred = findPropagationNodeByIdOrHash(nodes, preferredId);
     // Prefer sidecar preferred_id even while the node list is still loading.
     if (!preferred) return true;
     return preferred.enabled;
@@ -57,9 +52,7 @@ export function hasEffectiveReticulumPropagationTarget(
 }
 
 /** True when local-prop is enabled (cascade last resort / offline inbox). */
-export function hasEnabledLocalPropagation(nodes: PropagationNodeRow[]): boolean {
-  return nodes.some((n) => n.id === 'local-prop' && n.enabled);
-}
+export const hasEnabledLocalPropagation = hasEnabledLocalPropagationNode;
 
 /**
  * True when Direct→PN cascade can still run (remote preferred/auto OR local-prop).
