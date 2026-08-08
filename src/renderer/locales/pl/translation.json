@@ -13,7 +13,7 @@
     "loadingPanel": "Panel ładowania",
     "loadingDialog": "Ładowanie okna dialogowego",
     "meshtasticQueueTooltip": "Kolejka transmisji: pakiety oczekujące na wysłanie. Zielony = niski poziom, bursztynowy = napełnianie, czerwony = zatłoczony.",
-    "meshcoreQueueTooltip": "Ponieważ MeshCore szybko wysyła wiadomości, a my odpytujemy co 30 sekund, powinno to zawsze wynosić 0. Jeśli nie jest to 0, oznacza to przeciążenie.",
+    "meshcoreQueueTooltip": "Ponieważ MeshCore szybko wysyła wiadomości, a my odpytujemy co 30 sekund, powinno to zawsze wynosić 0. Jeśli nie jest to 0, oznacza to przeciążenie lub błąd programu.",
     "takRunning": "TAK działa",
     "takStopped": "TAK zatrzymał się",
     "takServerRunning": "Serwer TAK działa",
@@ -689,7 +689,7 @@
     "sentViaLocalPropagation": "Skrzynka odbiorcza propagacji lokalnej",
     "reticulumSendTimeout": "Przekroczono limit czasu wysyłania. Stos Reticulum może się uruchamiać lub być zajęty — spróbuj ponownie.",
     "meshcoreFastSend": {
-      "warning": "Wysyłasz szybciej niż siatka może przekazywać. Na zatłoczonej siatce wtórniki mogą wysyłać wiadomości wysyłane blisko siebie — pozostaw kilka sekund między wiadomościami."
+      "warning": "Wysyłasz szybciej, niż siatka może przekazywać. Na zatłoczonej siatce wzmacniaki mogą odrzucać wiadomości wysyłane blisko siebie — pozostaw kilka sekund między wiadomościami."
     }
   },
   "chatPayload": {

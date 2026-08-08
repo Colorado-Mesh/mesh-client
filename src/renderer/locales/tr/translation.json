@@ -13,7 +13,7 @@
     "loadingPanel": "Yükleme paneli",
     "loadingDialog": "Yükleme iletişim kutusu",
     "meshtasticQueueTooltip": "İletim kuyruğu: gönderilmeyi bekleyen paketler. Yeşil = az, sarı = doluyor, kırmızı = tıkalı.",
-    "meshcoreQueueTooltip": "MeshCore hızlı mesaj gönderdiği ve her 30 saniyede bir yoklama yaptığımız için bu her zaman 0 olmalıdır. 0 değilse tıkanıklık vardır.",
+    "meshcoreQueueTooltip": "MeshCore hızlı mesaj gönderdiği ve her 30 saniyede bir yoklama yaptığımız için bu her zaman 0 olmalıdır. 0 değilse tıkanıklık veya program hatası vardır.",
     "takRunning": "TAK çalışıyor",
     "takStopped": "TAK durduruldu",
     "takServerRunning": "TAK sunucusu çalışıyor",

@@ -13,7 +13,7 @@
     "loadingPanel": "Laadpaneel",
     "loadingDialog": "Dialoogvenster laden",
     "meshtasticQueueTooltip": "Verzendwachtrij: pakketten die wachten om te worden verzonden. Groen = laag, oranje = vol, rood = verstopt.",
-    "meshcoreQueueTooltip": "Omdat MeshCore snel berichten verzendt en we elke 30 seconden een poll uitvoeren, moet dit altijd 0 zijn. Als dit niet 0 is, is er sprake van congestie.",
+    "meshcoreQueueTooltip": "Omdat MeshCore snel berichten verzendt en we elke 30 seconden een poll uitvoeren, moet dit altijd 0 zijn. Als dit niet 0 is, is er sprake van congestie of een programmafout.",
     "takRunning": "TAK loopt",
     "takStopped": "TAK stopte",
     "takServerRunning": "TAK-server actief",

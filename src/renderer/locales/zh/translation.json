@@ -13,7 +13,7 @@
     "loadingPanel": "加载面板",
     "loadingDialog": "正在加载对话框",
     "meshtasticQueueTooltip": "传输队列：等待发送的数据包。绿色=低，琥珀色=填满，红色=拥挤。",
-    "meshcoreQueueTooltip": "由于MeshCore快速发送消息，并且我们每30秒轮询一次，因此此值应始终为0。如果不是0 ，则会出现拥堵。",
+    "meshcoreQueueTooltip": "由于MeshCore快速发送消息，并且我们每30秒轮询一次，因此此值应始终为0。如果不是0 ，则会出现拥堵或程序错误。",
     "takRunning": "TAK 运行中",
     "takStopped": "TAK 已停止",
     "takServerRunning": "TAK服务器运行",

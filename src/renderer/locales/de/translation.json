@@ -13,7 +13,7 @@
     "loadingPanel": "Das Panel wird geladen...",
     "loadingDialog": "Dialogfeld wird geladen",
     "meshtasticQueueTooltip": "Sendewarteschlange: Pakete, die darauf warten, gesendet zu werden. Grün = niedrig, gelb = füllt sich, rot = verstopft.",
-    "meshcoreQueueTooltip": "Da MeshCore Nachrichten schnell sendet und wir alle 30 Sekunden abfragen, sollte dies immer 0 sein. Wenn nicht 0, gibt es Staus.",
+    "meshcoreQueueTooltip": "Da MeshCore Nachrichten schnell sendet und wir alle 30 Sekunden abfragen, sollte dies immer 0 sein. Wenn nicht 0, gibt es Staus oder einen Programmfehler.",
     "takRunning": "TAK läuft",
     "takStopped": "TAK blieb stehen",
     "takServerRunning": "TAK-Server läuft",

@@ -2,7 +2,16 @@
 import 'emoji-picker-element';
 
 import { ChevronDown, ChevronUp, CornerUpLeft, MapPin } from 'lucide-react-motion';
-import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -50,6 +59,48 @@ import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
 import { useToast } from './Toast';
+
+/**
+ * Shared amber advisory pill used by the MeshCore composer (non-blocking "sending too fast"
+ * `status` banner and the over-limit `note` callout). Keeps the border/background/icon shell
+ * identical; callers vary the margin, body content, and optional dismiss button.
+ */
+function ComposerAmberCallout({
+  role,
+  wrapperClassName,
+  children,
+  onDismiss,
+  dismissLabel,
+}: {
+  role: 'status' | 'note';
+  wrapperClassName: string;
+  children: ReactNode;
+  onDismiss?: () => void;
+  dismissLabel?: string;
+}) {
+  return (
+    <div
+      role={role}
+      aria-live="polite"
+      className={`flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ${wrapperClassName}`}
+    >
+      <span aria-hidden="true" className="mt-0.5 shrink-0 text-amber-400">
+        ⚠
+      </span>
+      {children}
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={dismissLabel}
+          className="shrink-0 rounded px-1 text-amber-300 hover:text-amber-100"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  );
+}
 
 function emojiUnicodeFromEvent(event: Event): string | null {
   if (
@@ -404,6 +455,12 @@ export function ChatComposer({
     }
     setMentionQuery(null);
     setChatActionError(null);
+    // Clear any lingering fast-send advisory when switching chat views.
+    if (meshcoreFastSendWarnTimerRef.current) {
+      clearTimeout(meshcoreFastSendWarnTimerRef.current);
+      meshcoreFastSendWarnTimerRef.current = null;
+    }
+    setMeshcoreFastSendWarn(false);
   }, [viewKey, protocol, showFloodScopeOverride]);
 
   const mentionCandidates = useMemo(
@@ -654,6 +711,9 @@ export function ChatComposer({
       setChatActionError(null);
       try {
         await onSendChunk(wireText);
+        // GIF is a live MeshCore send — advance the shared fast-send clock so a text send
+        // right after still surfaces the advisory (UI stays on the text send path).
+        if (protocol === 'meshcore') recordMeshcoreSend();
         setShowGifModal(false);
         setGifInput('');
         onSendSuccess?.();
@@ -667,7 +727,7 @@ export function ChatComposer({
         setSending(false);
       }
     },
-    [allowOutbox, disabled, isConnected, onSendChunk, onSendSuccess, sending, t, viewKey],
+    [allowOutbox, disabled, isConnected, onSendChunk, onSendSuccess, protocol, sending, t, viewKey],
   );
 
   const handleGifConfirm = useCallback(() => {
@@ -731,6 +791,8 @@ export function ChatComposer({
         return;
       }
       await onSendChunk(text);
+      // Live MeshCore location send counts toward the shared fast-send cadence clock.
+      if (protocol === 'meshcore') recordMeshcoreSend();
       if (
         protocol === 'meshtastic' &&
         isShareLocationSendWaypointEnabled() &&
@@ -1090,26 +1152,16 @@ export function ChatComposer({
       )}
 
       {meshcoreFastSendWarn && (
-        <div
+        <ComposerAmberCallout
           role="status"
-          aria-live="polite"
-          className="mb-2 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+          wrapperClassName="mb-2 items-start"
+          onDismiss={dismissMeshcoreFastSendWarn}
+          dismissLabel={t('common.dismiss')}
         >
-          <span aria-hidden="true" className="mt-0.5 shrink-0 text-amber-400">
-            ⚠
-          </span>
           <span className="min-w-0 flex-1 leading-snug">
             {t('chatPanel.meshcoreFastSend.warning')}
           </span>
-          <button
-            type="button"
-            onClick={dismissMeshcoreFastSendWarn}
-            aria-label={t('common.dismiss')}
-            className="shrink-0 rounded px-1 text-amber-300 hover:text-amber-100"
-          >
-            ×
-          </button>
-        </div>
+        </ComposerAmberCallout>
       )}
 
       <span id={limitHintId} className="sr-only">
@@ -1494,14 +1546,7 @@ export function ChatComposer({
       )}
 
       {singlePacketProtocol && limitStatus.phase === 'overMax' && (
-        <div
-          role="note"
-          aria-live="polite"
-          className="mt-2 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
-        >
-          <span aria-hidden="true" className="mt-0.5 shrink-0 text-amber-400">
-            ⚠
-          </span>
+        <ComposerAmberCallout role="note" wrapperClassName="mt-2">
           <span className="min-w-0">
             <span className="block font-semibold text-amber-300">
               {t('chatPanel.composeLimit.meshcoreSingleNotice.title')}
@@ -1512,7 +1557,7 @@ export function ChatComposer({
               })}
             </span>
           </span>
-        </div>
+        </ComposerAmberCallout>
       )}
     </div>
   );

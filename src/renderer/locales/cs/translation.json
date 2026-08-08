@@ -13,7 +13,7 @@
     "loadingPanel": "Nakládací panel",
     "loadingDialog": "Dialog načítání",
     "meshtasticQueueTooltip": "Přenosová fronta: pakety čekající na odeslání. Zelená = nízká, oranžová = zaplnění, červená = ucpané.",
-    "meshcoreQueueTooltip": "Protože MeshCore odesílá zprávy rychle a dotazujeme každých 30 sekund, měla by být vždy 0. Pokud ne 0, dochází k přetížení.",
+    "meshcoreQueueTooltip": "Protože MeshCore odesílá zprávy rychle a dotazujeme každých 30 sekund, měla by být vždy 0. Pokud ne 0, dochází k přetížení nebo chybě programu.",
     "takRunning": "TAK běží",
     "takStopped": "TAK se zastavil",
     "takServerRunning": "Server TAK běží",
@@ -687,7 +687,7 @@
     "sentViaLocalPropagation": "Místní doručená pošta šíření",
     "reticulumSendTimeout": "Odeslání vypršelo. Zásobník Reticulum se možná spouští nebo je zaneprázdněný — zkuste to znovu.",
     "meshcoreFastSend": {
-      "warning": "Odesíláte rychleji, než může síť přenést. Na zaneprázdněné síti mohou opakovači vyslat zprávy odeslané blízko sebe — mezi zprávami nechte několik sekund."
+      "warning": "Odesíláte rychleji, než může síť přenést. Na zaneprázdněné síti mohou opakovače zahodit zprávy odeslané blízko sebe — mezi zprávami nechte několik sekund."
     }
   },
   "chatPayload": {

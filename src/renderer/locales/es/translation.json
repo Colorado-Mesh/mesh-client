@@ -13,7 +13,7 @@
     "loadingPanel": "Panel de carga",
     "loadingDialog": "Cargando diálogo",
     "meshtasticQueueTooltip": "Cola de transmisión: paquetes a la espera de ser enviados. Verde = bajo, ámbar = relleno, rojo = congestionado.",
-    "meshcoreQueueTooltip": "Debido a que MeshCore envía mensajes rápidamente, y sondeamos cada 30 segundos, esto siempre debe ser 0. Si no es 0, hay congestión.",
+    "meshcoreQueueTooltip": "Debido a que MeshCore envía mensajes rápidamente, y sondeamos cada 30 segundos, esto siempre debe ser 0. Si no es 0, hay congestión o un error de programa.",
     "takRunning": "TAK corriendo",
     "takStopped": "TAK detenido",
     "takServerRunning": "Servidor TAK en ejecución",
@@ -685,7 +685,7 @@
     "sentViaLocalPropagation": "Bandeja de entrada de propagación local",
     "reticulumSendTimeout": "El envío ha caducado. La pila Reticulum puede estar iniciándose o ocupada; inténtelo de nuevo.",
     "meshcoreFastSend": {
-      "warning": "Estás enviando más rápido de lo que la malla puede transmitir. En una malla ocupada, los repetidores pueden dejar caer mensajes enviados muy juntos; deje unos segundos entre mensajes."
+      "warning": "Estás enviando más rápido de lo que la malla puede transmitir. En una malla ocupada, los repetidores pueden descartar mensajes enviados muy juntos; deja unos segundos entre mensajes."
     }
   },
   "chatPayload": {

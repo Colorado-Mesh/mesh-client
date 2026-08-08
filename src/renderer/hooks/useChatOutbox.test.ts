@@ -1,6 +1,10 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  isMeshcoreSendTooFast,
+  resetMeshcoreSendRateForTests,
+} from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 import type { OutboxEntry } from '@/shared/electron-api.types';
@@ -34,6 +38,7 @@ describe('useChatOutbox', () => {
 
   beforeEach(() => {
     resetMeshtasticTextSendPacingForTests();
+    resetMeshcoreSendRateForTests();
     vi.mocked(mockOutbox.list).mockClear();
     vi.mocked(mockOutbox.add).mockClear();
     vi.mocked(mockOutbox.updateStatus).mockClear();
@@ -230,6 +235,41 @@ describe('useChatOutbox', () => {
     });
     expect(sendFn).toHaveBeenNthCalledWith(1, 'first', 0, undefined, undefined);
     expect(sendFn).toHaveBeenNthCalledWith(2, 'second', 0, undefined, undefined);
+  });
+
+  it('advances the shared meshcore fast-send clock when a row drains successfully', async () => {
+    // A drained MeshCore row is airtime too, so a composer send right after should still warn.
+    const entry = makeEntry({ id: 50, protocol: 'meshcore', payload: 'hi' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    expect(isMeshcoreSendTooFast()).toBe(false);
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(isMeshcoreSendTooFast()).toBe(true);
+  });
+
+  it('does not touch the meshcore fast-send clock for meshtastic drains', async () => {
+    const entry = makeEntry({ id: 51, protocol: 'meshtastic', payload: 'hi' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(isMeshcoreSendTooFast()).toBe(false);
+  });
+
+  it('does not advance the meshcore fast-send clock when a drain send fails', async () => {
+    const entry = makeEntry({ id: 52, protocol: 'meshcore', payload: 'hi' });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
+    renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+    expect(isMeshcoreSendTooFast()).toBe(false);
   });
 
   it('does not drain when isSendAvailable is false', async () => {

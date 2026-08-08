@@ -1,6 +1,6 @@
 # Architecture
 
-Project layout, data flow, and code placement for human reference. For AI coding guidelines, see [AGENTS.md](AGENTS.md) (self-contained).
+Project layout, data flow, and code placement for human reference. For AI coding guidelines, see [AGENTS.md](AGENTS.md) (hard rules) and the subsystem references in [docs/agents/](docs/agents/README.md).
 
 ## Layout map
 

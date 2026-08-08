@@ -13,7 +13,7 @@
     "loadingPanel": "ローディングパネル",
     "loadingDialog": "読み込みダイアログ",
     "meshtasticQueueTooltip": "送信キュー: 送信を待っているパケット。緑色 = 少ない、オレンジ色 = 満杯、赤色 = 混雑。",
-    "meshcoreQueueTooltip": "MeshCore はメッセージを迅速に送信し、30 秒ごとにポーリングするため、これは常に 0 である必要があります。0 でない場合は、輻輳が発生しています。",
+    "meshcoreQueueTooltip": "MeshCore はメッセージを迅速に送信し、30 秒ごとにポーリングするため、これは常に 0 である必要があります。0 でない場合は、輻輳またはプログラムエラーが発生しています。",
     "takRunning": "TAKランニング",
     "takStopped": "TAKが停止しました",
     "takServerRunning": "TAKサーバーが稼働中",

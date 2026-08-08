@@ -13,7 +13,7 @@
     "loadingPanel": "Memuat panel",
     "loadingDialog": "Memuat dialog",
     "meshtasticQueueTooltip": "Antrian transmisi: paket menunggu untuk dikirim. Hijau = rendah, kuning = terisi, merah = padat.",
-    "meshcoreQueueTooltip": "Karena MeshCore mengirim pesan dengan cepat, dan kita melakukan polling setiap 30 detik, nilainya harus selalu 0. Jika bukan 0, maka terjadi kemacetan.",
+    "meshcoreQueueTooltip": "Karena MeshCore mengirim pesan dengan cepat, dan kita melakukan polling setiap 30 detik, nilainya harus selalu 0. Jika bukan 0, maka terjadi kemacetan atau kesalahan program.",
     "takRunning": "TAK berjalan",
     "takStopped": "TAK berhenti",
     "takServerRunning": "Server TAK berjalan",

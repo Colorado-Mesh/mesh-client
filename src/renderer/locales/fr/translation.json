@@ -13,7 +13,7 @@
     "loadingPanel": "Panneau de chargement",
     "loadingDialog": "Chargement du dialogue ...",
     "meshtasticQueueTooltip": "File d'attente de transmission : paquets en attente d'envoi. Vert = bas, ambre = remplissage, rouge = congestionné.",
-    "meshcoreQueueTooltip": "Parce que MeshCore envoie des messages rapidement, et que nous interrogeons toutes les 30 secondes, cela devrait toujours être 0. Si ce n'est pas 0, il y a congestion.",
+    "meshcoreQueueTooltip": "Parce que MeshCore envoie des messages rapidement, et que nous interrogeons toutes les 30 secondes, cela devrait toujours être 0. Si ce n'est pas 0, il y a congestion ou une erreur de programme.",
     "takRunning": "TAK en cours d'exécution",
     "takStopped": "TAK arrêté",
     "takServerRunning": "Serveur TAK en cours d'exécution",

@@ -13,7 +13,7 @@
     "loadingPanel": "Painel de carregamento",
     "loadingDialog": "Carregando diálogo...",
     "meshtasticQueueTooltip": "Fila de transmissão: pacotes aguardando para serem enviados. Verde = baixo, âmbar = cheio, vermelho = congestionado.",
-    "meshcoreQueueTooltip": "Como o MeshCore envia mensagens rapidamente e pesquisamos a cada 30 segundos, isso deve ser sempre 0. Se não for 0, há congestionamento.",
+    "meshcoreQueueTooltip": "Como o MeshCore envia mensagens rapidamente e pesquisamos a cada 30 segundos, isso deve ser sempre 0. Se não for 0, há congestionamento ou erro de programa.",
     "takRunning": "TAK em execução",
     "takStopped": "TAK parou",
     "takServerRunning": "Servidor TAK em execução",
@@ -512,7 +512,7 @@
       "overMaxSingle": "Muito longo — MeshCore envia um pacote por mensagem (máximo de {{limit}} caracteres)",
       "meshcoreSingleNotice": {
         "title": "Mensagem muito longa para MeshCore",
-        "body": "O MeshCore envia cada mensagem como um único pacote de rádio (até {{limit}} caracteres). Mensagens mais longas precisam ser divididas em partes numeradas, mas em um repetidor de malha ocupado, solte rotineiramente algumas dessas partes — para que a pessoa que você está enviando a mensagem receba uma mensagem incompleta sem nenhuma maneira de dizer. Para manter as mensagens confiáveis, elas não são divididas automaticamente. Encurte esta mensagem ou envie-a como algumas mensagens curtas separadas.",
+        "body": "O MeshCore envia cada mensagem como um único pacote de rádio (até {{limit}} caracteres). Mensagens mais longas precisam ser divididas em partes numeradas, mas em uma malha ocupada os repetidores costumam descartar algumas dessas partes — então a pessoa para quem você está enviando a mensagem receberia uma mensagem incompleta sem ter como saber. Para manter as mensagens confiáveis, elas não são divididas automaticamente. Encurte esta mensagem ou envie-a como algumas mensagens curtas separadas.",
         "hint": "O MeshCore envia um pacote por mensagem; as partes divididas geralmente são descartadas por repetidores ocupados, portanto, mensagens mais longas não podem ser enviadas."
       }
     },

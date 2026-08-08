@@ -4,6 +4,7 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 
 import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
+import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 
 export type { OutboxEntry };
@@ -113,6 +114,11 @@ async function sendOneOutboxRow(
   updateRow(row.id, { status: 'sending' });
   try {
     await sendFn(row.payload, row.channel, row.toNode ?? undefined, row.replyId ?? undefined);
+    // Keep the app-wide MeshCore fast-send clock honest: a drained row is airtime too, so a
+    // composer send right after a backlog drain should still surface the advisory.
+    if (row.protocol === 'meshcore') {
+      recordMeshcoreSend();
+    }
     await finalizeSuccessfulOutboxSend(row, removeRow, updateRow);
   } catch (err: unknown) {
     // catch-no-log-ok recordOutboxSendFailure logs the send failure
@@ -194,8 +200,9 @@ export function useChatOutbox({
       for (const row of freshRows.filter((r) => isEligibleForDrain(r, now))) {
         if (!isSendAvailableRef.current) break;
         const sendRow = () => sendOneOutboxRow(row, sendFnRef.current, updateRow, removeRow);
-        // Shared with ChatComposer so live multi-chunk sends and outbox drain cannot race
-        // firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window.
+        // Meshtastic-only pacing, shared with ChatComposer so live sends and outbox drain cannot
+        // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. MeshCore drains without a
+        // client interval (see the meshcore branch below) — it only advances the fast-send clock.
         if (protocol === 'meshtastic') {
           await withMeshtasticTextSendPacing(sendRow);
         } else {
