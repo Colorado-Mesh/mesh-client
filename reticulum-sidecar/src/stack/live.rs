@@ -3722,13 +3722,20 @@ impl LiveBridge {
             let started = Instant::now();
             loop {
                 interval.tick().await;
-                if cancel.load(Ordering::SeqCst)
-                    || !PropagationBridge::is_current_sync_run(
-                        active_run_id.load(Ordering::SeqCst),
-                        run_id,
-                    )
-                {
-                    bridge.cancel_client_download();
+                // Superseded by a newer sync run: that run now owns the client,
+                // so exit without touching shared client state.
+                if !PropagationBridge::is_current_sync_run(
+                    active_run_id.load(Ordering::SeqCst),
+                    run_id,
+                ) {
+                    break;
+                }
+                // This run was cancelled: cancel the client only while we are
+                // still the active run (lifecycle-lock guarded via run_if_current).
+                if cancel.load(Ordering::SeqCst) {
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_client_download();
+                    });
                     break;
                 }
                 if started.elapsed() > DOWNLOAD_WATCHDOG {
@@ -3737,7 +3744,9 @@ impl LiveBridge {
                         pn_hash = %pn_hex,
                         "client /get download watchdog timeout"
                     );
-                    bridge.cancel_client_download();
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_client_download();
+                    });
                     break;
                 }
                 let known = outbound
@@ -3755,6 +3764,9 @@ impl LiveBridge {
                             pn_hash = %pn_hex,
                             "client /get download failed"
                         );
+                        // Consume the terminal failed state → Idle so a later
+                        // sync can start a fresh retrieval.
+                        bridge.cancel_client_download();
                         break;
                     }
                     ClientDownloadPoll::Complete {
@@ -3795,7 +3807,12 @@ impl LiveBridge {
     /// through the router callback (same ingest as remote retrieval). Returns the
     /// number of messages delivered.
     pub async fn drain_local_propagation_inbox(&self) -> usize {
-        let (messages, listed) = self.propagation.drain_local_inbox();
+        // The drain does blocking file I/O + per-message decryption; run it off
+        // the async worker so it cannot stall the runtime.
+        let bridge = Arc::clone(&self.propagation);
+        let (messages, listed) = tokio::task::spawn_blocking(move || bridge.drain_local_inbox())
+            .await
+            .unwrap_or_else(|_| (Vec::new(), 0));
         let delivered = messages.len();
         if delivered > 0 {
             let router = self.router.lock().await;

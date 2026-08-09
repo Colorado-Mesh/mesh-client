@@ -445,6 +445,9 @@ impl PropagationBridge {
                 let listed = client.available_messages().len();
                 let downloaded = client.received_count();
                 let blobs = client.take_received_messages();
+                // Consume the terminal snapshot → Idle so the next
+                // start_client_download can proceed without a cancel first.
+                let _ = client.acknowledge_transfer();
                 drop(client);
                 let messages = blobs
                     .iter()
@@ -473,43 +476,70 @@ impl PropagationBridge {
 
         let our_delivery =
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&self.identity.hash));
-        let Ok(mut node) = self.local_node.lock() else {
-            return (Vec::new(), 0);
+
+        // Hold the node lock only for the list + serve reads, then release it
+        // before per-message decryption/decode (CPU work off the shared lock).
+        let (blobs, listed) = {
+            let Ok(mut node) = self.local_node.lock() else {
+                return (Vec::new(), 0);
+            };
+
+            // Phase 1: list our available transient IDs.
+            let list_req = Self::encode_value(&Value::Array(vec![Value::Nil, Value::Nil]));
+            let tids = Self::decode_binary_array(
+                &node
+                    .handle_get_request(&list_req, &our_delivery)
+                    .into_response(),
+            );
+            if tids.is_empty() {
+                return (Vec::new(), 0);
+            }
+
+            // Phase 2: fetch every listed message (server strips the stamp).
+            let wants: Vec<Value> = tids.iter().map(|t| Value::Binary(t.clone())).collect();
+            let get_req = Self::encode_value(&Value::Array(vec![
+                Value::Array(wants),
+                Value::Array(Vec::new()),
+            ]));
+            let blobs = Self::decode_binary_array(
+                &node
+                    .handle_get_request(&get_req, &our_delivery)
+                    .into_response(),
+            );
+            (blobs, tids.len())
         };
 
-        // Phase 1: list our available transient IDs.
-        let list_req = Self::encode_value(&Value::Array(vec![Value::Nil, Value::Nil]));
-        let tids = Self::decode_binary_array(
-            &node
-                .handle_get_request(&list_req, &our_delivery)
-                .into_response(),
-        );
-        if tids.is_empty() {
-            return (Vec::new(), 0);
-        }
-
-        // Phase 2: fetch every listed message (server strips the propagation stamp).
-        let wants: Vec<Value> = tids.iter().map(|t| Value::Binary(t.clone())).collect();
-        let get_req = Self::encode_value(&Value::Array(vec![
-            Value::Array(wants),
-            Value::Array(Vec::new()),
-        ]));
-        let blobs = Self::decode_binary_array(
-            &node
-                .handle_get_request(&get_req, &our_delivery)
-                .into_response(),
-        );
+        // Decode without holding the node lock.
         let messages = blobs
             .iter()
             .filter_map(|blob| decode_downloaded_propagated_blob(&self.identity, blob))
             .collect::<Vec<_>>();
+        let skipped = blobs.len().saturating_sub(messages.len());
+        if skipped > 0 {
+            tracing::warn!(
+                target: "propagation-retrieve",
+                skipped,
+                served = blobs.len(),
+                "local-prop drain skipped undecodable blob(s)"
+            );
+        }
 
-        // Phase 3: purge everything we listed (delivered into Chat).
-        let haves: Vec<Value> = tids.iter().map(|t| Value::Binary(t.clone())).collect();
-        let purge_req = Self::encode_value(&Value::Array(vec![Value::Nil, Value::Array(haves)]));
-        let _ = node.handle_get_request(&purge_req, &our_delivery);
+        // Phase 3: purge only what we successfully decoded, keyed by the exact
+        // transient id `compute_propagation_transient_id` stamped on each
+        // message. Undecodable blobs stay in the store for a later retry.
+        let purge_ids: Vec<Value> = messages
+            .iter()
+            .filter_map(|msg| msg.transient_id.map(|tid| Value::Binary(tid.to_vec())))
+            .collect();
+        if !purge_ids.is_empty() {
+            if let Ok(mut node) = self.local_node.lock() {
+                let purge_req =
+                    Self::encode_value(&Value::Array(vec![Value::Nil, Value::Array(purge_ids)]));
+                let _ = node.handle_get_request(&purge_req, &our_delivery);
+            }
+        }
 
-        (messages, tids.len())
+        (messages, listed)
     }
 
     /// Encode an rmpv value to msgpack bytes (the `/get` request wire form).
