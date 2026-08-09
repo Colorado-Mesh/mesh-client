@@ -384,6 +384,8 @@ impl PersistedState {
         Ok(())
     }
 
+    // Used by StackHandle when `rns-stack` is off; tests cover the stub.
+    #[cfg_attr(feature = "rns-stack", allow(dead_code))]
     pub fn start_propagation_sync(&mut self, propagation_id: &str) -> Result<(), String> {
         if !self.propagation.iter().any(|p| p.id == propagation_id) {
             return Err(format!("propagation node not found: {propagation_id}"));

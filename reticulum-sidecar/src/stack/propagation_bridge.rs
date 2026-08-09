@@ -10,8 +10,11 @@ use lxmf_core::message::LxMessage;
 use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::propagation_client::{PropagationClient, PropagationClientState};
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
-use lxmf_core::propagation_sync::{PeerSyncTerminalState, PropagationSyncTask, SyncTaskState};
+use lxmf_core::propagation_sync::{
+    PeerSyncTerminalResult, PeerSyncTerminalState, PropagationSyncTask, SyncTaskState,
+};
 use lxmf_core::router::LxmRouter;
+use lxmf_core::types::PropagationTransientId;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
@@ -52,6 +55,10 @@ pub struct PropagationBridge {
     /// In-flight peering-key PoW jobs for local-host outbound peer sync.
     peering_key_jobs: Mutex<HashSet<[u8; 16]>>,
     peering_key_results: Mutex<Vec<PeeringKeyResult>>,
+    /// Set when inbound peer Resource accept should drain our inbox into Chat.
+    inbox_drain_requested: AtomicBool,
+    /// After host peer `/offer` Completes, `/get` this peer for our mail (sequenced).
+    pending_post_peer_get: Mutex<Option<[u8; 16]>>,
 }
 
 impl PropagationBridge {
@@ -106,7 +113,44 @@ impl PropagationBridge {
             peak_progress: Mutex::new(0.0),
             peering_key_jobs: Mutex::new(HashSet::new()),
             peering_key_results: Mutex::new(Vec::new()),
+            inbox_drain_requested: AtomicBool::new(false),
+            pending_post_peer_get: Mutex::new(None),
         })
+    }
+
+    /// Ask maintenance to drain our `lxmf.delivery` mail from the local PN store into Chat.
+    pub fn request_inbox_drain(&self) {
+        self.inbox_drain_requested.store(true, Ordering::SeqCst);
+    }
+
+    /// Consume a pending inbox-drain request (coalesced; one drain per take).
+    pub fn take_inbox_drain_request(&self) -> bool {
+        self.inbox_drain_requested.swap(false, Ordering::SeqCst)
+    }
+
+    /// Queue a silent client `/get` against `peer_hash` after host peer `/offer` Completes.
+    pub fn queue_post_peer_get(&self, peer_hash: [u8; 16]) {
+        if let Ok(mut slot) = self.pending_post_peer_get.lock() {
+            *slot = Some(peer_hash);
+        }
+    }
+
+    /// Take a queued post-peer `/get` target when the client is idle.
+    pub fn take_pending_post_peer_get(&self) -> Option<[u8; 16]> {
+        if self.client_download_active() {
+            return None;
+        }
+        self.pending_post_peer_get
+            .lock()
+            .ok()
+            .and_then(|mut slot| slot.take())
+    }
+
+    /// Drop a queued post-peer `/get` (user Sync cancel / supersession).
+    pub fn clear_pending_post_peer_get(&self) {
+        if let Ok(mut slot) = self.pending_post_peer_get.lock() {
+            *slot = None;
+        }
     }
 
     /// Load historical PN messages off the live-ready path (spawn_blocking).
@@ -394,6 +438,7 @@ impl PropagationBridge {
     }
 
     /// Whether a post-loop terminal success (progress 100) should be emitted.
+    #[allow(dead_code)] // used by peer-sync progress emitter + unit tests
     pub fn should_emit_terminal_success(last_finished_ok: Option<bool>) -> bool {
         last_finished_ok != Some(false)
     }
@@ -410,6 +455,36 @@ impl PropagationBridge {
         };
         client.set_propagation_node(pn_hash);
         client.start_download()
+    }
+
+    /// Map client `/get` state to UI progress (user Sync is `/get`-primary).
+    pub fn client_download_progress(&self) -> f64 {
+        let Ok(client) = self.client.lock() else {
+            return 0.0;
+        };
+        match client.state() {
+            PropagationClientState::Idle | PropagationClientState::Failed => 0.0,
+            PropagationClientState::LinkEstablishing => 10.0,
+            PropagationClientState::LinkEstablished => 20.0,
+            PropagationClientState::ListRequested => 40.0,
+            PropagationClientState::GetRequested => 55.0,
+            PropagationClientState::Receiving => 70.0,
+            PropagationClientState::PurgeRequested => 90.0,
+            PropagationClientState::Complete => 100.0,
+        }
+    }
+
+    /// True while the client `/get` state machine is mid-transfer.
+    pub fn client_download_active(&self) -> bool {
+        let Ok(client) = self.client.lock() else {
+            return false;
+        };
+        !matches!(
+            client.state(),
+            PropagationClientState::Idle
+                | PropagationClientState::Complete
+                | PropagationClientState::Failed
+        )
     }
 
     /// Cancel any in-flight client download (best-effort). The next
@@ -625,22 +700,44 @@ impl PropagationBridge {
     }
 
     /// Drain sync events and return `Some((success, peer_hash))` when a peer sync just finished.
-    pub fn tick(&self, known_identities: &HashMap<String, [u8; 64]>) -> Option<(bool, [u8; 16])> {
-        let terminal = if let Ok(mut task) = self.sync_task.lock() {
+    ///
+    /// Applies lxmd-parity router peer bookkeeping: handled-message updates,
+    /// `sync_complete` / `sync_failed`, and `mark_offer_generation_processed` when
+    /// the generation is exhausted — then persists the peer via `save_peer`.
+    pub fn tick(
+        &self,
+        known_identities: &HashMap<String, [u8; 64]>,
+        router: &mut LxmRouter,
+    ) -> Option<(bool, [u8; 16])> {
+        let (handled, terminal_result) = if let Ok(mut task) = self.sync_task.lock() {
             // Sample before drain/tick: tip collapses Complete|Failed → Idle in tick().
             self.note_peak_progress(Self::progress_for_state(task.state));
             task.drain_events(known_identities);
             self.note_peak_progress(Self::progress_for_state(task.state));
             task.tick();
-            task.take_terminal_peer_result().map(|result| {
-                (
-                    matches!(result.state, PeerSyncTerminalState::Complete),
-                    result.peer_hash,
-                )
-            })
+            let handled = task.take_handled_updates();
+            let peer_hash_for_handled = if handled.is_empty() {
+                None
+            } else {
+                task.node_dest_hash()
+            };
+            let terminal = task.take_terminal_peer_result();
+            (peer_hash_for_handled.map(|h| (h, handled)), terminal)
         } else {
-            None
+            (None, None)
         };
+
+        if let Some((peer_hash, updates)) = handled {
+            apply_peer_handled_updates(router, &self.local_node, peer_hash, &updates);
+        }
+
+        let terminal = terminal_result.map(|result| {
+            apply_peer_sync_terminal(router, &self.local_node, &result);
+            (
+                matches!(result.state, PeerSyncTerminalState::Complete),
+                result.peer_hash,
+            )
+        });
         if let Some((ok, peer_hash)) = terminal {
             if let Ok(mut slot) = self.last_finished_ok.lock() {
                 *slot = Some(ok);
@@ -667,6 +764,9 @@ impl PropagationBridge {
         terminal
     }
 
+    /// Emit peer `/offer` sync progress over WS (offer probe / host diagnostics).
+    /// User Sync drives UI from the client `/get` path instead.
+    #[allow(dead_code)] // retained for offer-probe / peer-sync diagnostics
     pub fn spawn_sync_progress_emitter(
         self: &Arc<Self>,
         event_tx: broadcast::Sender<String>,
@@ -817,6 +917,70 @@ impl PropagationBridge {
     }
 }
 
+/// Merge peer-handled transient IDs into the router peer and persist (lxmd parity).
+pub(crate) fn apply_peer_handled_updates(
+    router: &mut LxmRouter,
+    local_node: &Arc<Mutex<PropagationNode>>,
+    peer_hash: [u8; 16],
+    updates: &[PropagationTransientId],
+) {
+    if updates.is_empty() {
+        return;
+    }
+    let Some(peer) = router.peers.get_mut(&peer_hash) else {
+        return;
+    };
+    for transient_id in updates {
+        peer.add_handled_message(transient_id);
+    }
+    persist_router_peer(local_node, router, peer_hash);
+}
+
+/// Apply peer `/offer` terminal result onto the router peer (lxmd parity).
+pub(crate) fn apply_peer_sync_terminal(
+    router: &mut LxmRouter,
+    local_node: &Arc<Mutex<PropagationNode>>,
+    result: &PeerSyncTerminalResult,
+) {
+    let Some(peer) = router.peers.get_mut(&result.peer_hash) else {
+        return;
+    };
+    match result.state {
+        PeerSyncTerminalState::Complete => {
+            peer.sync_complete();
+            if result.generation_exhausted {
+                if let Some(generation) = result.offer_generation {
+                    peer.mark_offer_generation_processed(generation);
+                }
+            }
+        }
+        PeerSyncTerminalState::Failed => {
+            peer.sync_failed();
+        }
+    }
+    persist_router_peer(local_node, router, result.peer_hash);
+}
+
+fn persist_router_peer(
+    local_node: &Arc<Mutex<PropagationNode>>,
+    router: &LxmRouter,
+    peer_hash: [u8; 16],
+) {
+    let Some(peer) = router.peers.get(&peer_hash) else {
+        return;
+    };
+    if let Ok(node) = local_node.lock() {
+        if let Err(error) = node.save_peer(peer) {
+            tracing::warn!(
+                target: "propagation-sync",
+                peer = %hex::encode(peer_hash),
+                error = %error,
+                "failed to persist peer sync state"
+            );
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -867,6 +1031,242 @@ mod tests {
         assert!(again.is_empty(), "purged mail is not re-delivered");
         assert_eq!(listed_again, 0);
 
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn inbox_drain_request_coalesces_until_taken() {
+        let dir = std::env::temp_dir().join(format!("mesh-prop-drain-req-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        assert!(!bridge.take_inbox_drain_request());
+        bridge.request_inbox_drain();
+        bridge.request_inbox_drain();
+        assert!(bridge.take_inbox_drain_request());
+        assert!(!bridge.take_inbox_drain_request());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn peer_ingress_accept_signals_drain_and_delivers_our_mail() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-ingress-drain-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xcd; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let sender = Identity::new();
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &us,
+            "peer ingress mail",
+        );
+        {
+            let mut node = bridge.local_node.lock().expect("node lock");
+            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+        }
+        // Serve completion path calls this after accepted > 0.
+        bridge.request_inbox_drain();
+        assert!(bridge.take_inbox_drain_request());
+
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert_eq!(listed, 1);
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].content, "peer ingress mail");
+
+        let (again, listed_again) = bridge.drain_local_inbox();
+        assert!(again.is_empty());
+        assert_eq!(listed_again, 0);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn peer_ingress_other_recipient_accepted_but_drain_delivers_zero() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-ingress-foreign-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xce; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let sender = Identity::new();
+        let other = Identity::new();
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &other,
+            "stays for peer offer",
+        );
+        {
+            let mut node = bridge.local_node.lock().expect("node lock");
+            assert!(node.accept_stamped_propagated_blob(&blob, &[0x5A; 32], u8::MAX));
+            assert_eq!(node.message_count(), 1);
+        }
+        bridge.request_inbox_drain();
+        assert!(bridge.take_inbox_drain_request());
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert!(messages.is_empty());
+        assert_eq!(listed, 0);
+        assert_eq!(
+            bridge.local_node.lock().expect("lock").message_count(),
+            1,
+            "foreign mail must remain for later peer /offer"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn two_node_inventory_handoff_then_drain_on_recipient_pn() {
+        use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
+
+        let base = std::env::temp_dir().join(format!("mesh-prop-two-node-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let dir_a = base.join("a");
+        let dir_b = base.join("b");
+        std::fs::create_dir_all(&dir_a).expect("dir a");
+        std::fs::create_dir_all(&dir_b).expect("dir b");
+
+        let sender = Identity::new();
+        let recipient = Identity::new();
+        let hash_a = [0xa1u8; 16];
+        let hash_b = [0xb2u8; 16];
+
+        let mut node_a = PropagationNode::with_storage(
+            PropagationNodeConfig {
+                min_stamp_cost: 0,
+                ..Default::default()
+            },
+            hash_a,
+            dir_a,
+        )
+        .expect("node a");
+        let mut node_b = PropagationNode::with_storage(
+            PropagationNodeConfig {
+                min_stamp_cost: 0,
+                ..Default::default()
+            },
+            hash_b,
+            dir_b,
+        )
+        .expect("node b");
+
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &recipient,
+            "pn to pn handoff",
+        );
+        let stamp = [0x11u8; 32];
+        assert!(node_a.accept_stamped_propagated_blob(&blob, &stamp, u8::MAX));
+
+        let offer = node_a.prepare_sync_offer(hash_b);
+        assert!(
+            !offer.transient_ids.is_empty(),
+            "A must offer inventory toward B"
+        );
+
+        let wanted: Vec<[u8; 32]> = offer
+            .transient_ids
+            .iter()
+            .filter_map(|id| {
+                if id.len() != 32 {
+                    return None;
+                }
+                let mut tid = [0u8; 32];
+                tid.copy_from_slice(id);
+                Some(tid)
+            })
+            .collect();
+        let packed = node_a.message_get_request(&wanted);
+        assert!(!packed.is_empty());
+
+        let (tx, _rx) = mpsc::channel(8);
+        let bridge_b = PropagationBridge::new(
+            tx,
+            hash_b,
+            base.join("bridge-b"),
+            &recipient,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge b");
+
+        for (tid, stored) in &packed {
+            assert!(stored.len() >= 32);
+            let lxmf_data = &stored[..stored.len() - 32];
+            let mut stamp_data = [0u8; 32];
+            stamp_data.copy_from_slice(&stored[stored.len() - 32..]);
+            assert!(node_b.accept_stamped_propagated_blob(lxmf_data, &stamp_data, u8::MAX));
+            node_a.mark_peer_handled(&hash_b, tid);
+            // Chat path uses the same stamped accept + drain_local_inbox seam.
+            assert!(
+                bridge_b
+                    .local_node
+                    .lock()
+                    .expect("lock")
+                    .accept_stamped_propagated_blob(lxmf_data, &stamp_data, u8::MAX)
+            );
+        }
+        node_a.complete_sync(&hash_b);
+        assert_eq!(node_b.message_count(), 1);
+
+        let (messages, listed) = bridge_b.drain_local_inbox();
+        assert_eq!(listed, 1);
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].content, "pn to pn handoff");
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn post_peer_get_queue_respects_client_active_guard() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-post-peer-q-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xdf; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        let peer = [0xeeu8; 16];
+        bridge.queue_post_peer_get(peer);
+        assert_eq!(bridge.take_pending_post_peer_get(), Some(peer));
+        assert!(bridge.take_pending_post_peer_get().is_none());
+        bridge.queue_post_peer_get(peer);
+        bridge.clear_pending_post_peer_get();
+        assert!(bridge.take_pending_post_peer_get().is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -1047,6 +1447,144 @@ mod tests {
     }
 
     #[test]
+    fn apply_peer_sync_terminal_complete_returns_idle_and_marks_generation() {
+        use lxmf_core::constants::PeerState;
+        use lxmf_core::peer::LxmPeer;
+        use lxmf_core::router::RouterConfig;
+
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-peer-terminal-ok-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let peer_hash = [0x11u8; 16];
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let mut peer = LxmPeer::new(peer_hash);
+        peer.begin_sync();
+        assert_ne!(peer.state, PeerState::Idle);
+        router.peers.insert(peer_hash, peer);
+
+        apply_peer_sync_terminal(
+            &mut router,
+            &bridge.local_node(),
+            &PeerSyncTerminalResult {
+                peer_hash,
+                state: PeerSyncTerminalState::Complete,
+                offer_generation: Some(5),
+                generation_exhausted: true,
+            },
+        );
+        let peer = router.peers.get(&peer_hash).expect("peer");
+        assert_eq!(peer.state, PeerState::Idle);
+        assert!(
+            !peer.needs_offer_generation(5),
+            "exhausted generation must not remain due"
+        );
+        assert!(
+            peer.needs_offer_generation(6),
+            "newer store generation must re-enable sync"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_peer_sync_terminal_failed_returns_idle_without_marking_generation() {
+        use lxmf_core::constants::PeerState;
+        use lxmf_core::peer::LxmPeer;
+        use lxmf_core::router::RouterConfig;
+
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-peer-terminal-fail-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let peer_hash = [0x22u8; 16];
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let mut peer = LxmPeer::new(peer_hash);
+        peer.begin_sync();
+        router.peers.insert(peer_hash, peer);
+
+        apply_peer_sync_terminal(
+            &mut router,
+            &bridge.local_node(),
+            &PeerSyncTerminalResult {
+                peer_hash,
+                state: PeerSyncTerminalState::Failed,
+                offer_generation: Some(3),
+                generation_exhausted: false,
+            },
+        );
+        let peer = router.peers.get(&peer_hash).expect("peer");
+        assert_eq!(peer.state, PeerState::Idle);
+        assert!(
+            peer.needs_offer_generation(3),
+            "failed sync must leave generation retryable"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_peer_handled_updates_merges_ids() {
+        use lxmf_core::peer::LxmPeer;
+        use lxmf_core::router::RouterConfig;
+
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-peer-handled-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let peer_hash = [0x33u8; 16];
+        let mut router = LxmRouter::new(RouterConfig::default());
+        router.peers.insert(peer_hash, LxmPeer::new(peer_hash));
+        let tid = [0xAAu8; 32];
+        apply_peer_handled_updates(&mut router, &bridge.local_node(), peer_hash, &[tid]);
+        assert!(
+            router
+                .peers
+                .get(&peer_hash)
+                .expect("peer")
+                .handled_messages
+                .contains(&tid)
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn source_host_peer_sync_idle_gate_and_policy_start() {
         let live = include_str!("live.rs");
         assert!(
@@ -1056,17 +1594,50 @@ mod tests {
         assert!(
             live.contains("is_local_serving()")
                 && live.contains("!propagation.sync_active()")
+                && live.contains("!propagation.client_download_active()")
                 && live.contains("propagation_sync_target().is_none()"),
-            "peer sync tick must require serving + idle + no user sync target"
+            "peer sync tick must require serving + idle + no client /get + no sync target"
         );
         assert!(
             live.contains("start_sync_with_policy"),
             "host peer loop must start policy-aware sync"
         );
+        assert!(
+            live.contains("queue_post_peer_get")
+                && live.contains("take_pending_post_peer_get")
+                && live.contains("emit_ui")
+                && live.contains("get_post_peer"),
+            "peer /offer Complete must sequence silent client /get"
+        );
+        assert!(
+            live.contains("HOST_PERIODIC_GET_INTERVAL")
+                && live.contains("next_host_periodic_get_target")
+                && live.contains("get_periodic"),
+            "Host serving must schedule periodic silent /get when idle"
+        );
+        assert!(
+            live.contains("request_inbox_drain")
+                && live.contains("take_inbox_drain_request")
+                && live.contains("local-prop inbox auto-drain Completes"),
+            "inbound peer accept must auto-drain store into Chat"
+        );
+        let serve = include_str!("propagation_serve.rs");
+        assert!(
+            serve.contains("on_inbound_accepted") && serve.contains("accepted > 0"),
+            "serve Resource accept must signal inbox drain"
+        );
         let bridge = include_str!("propagation_bridge.rs");
         assert!(
             bridge.contains("start_sync_with_policy"),
             "bridge must expose policy sync for host peer loop"
+        );
+        assert!(
+            bridge.contains("apply_peer_sync_terminal")
+                && bridge.contains("sync_complete")
+                && bridge.contains("mark_offer_generation_processed")
+                && bridge.contains("take_handled_updates")
+                && bridge.contains("save_peer"),
+            "host sync tick must apply lxmd peer terminal + handled updates"
         );
         // Inbox retrieval is the client `/get` download, driven from live.rs; the
         // bridge only logs peer-sync (`/offer`) outcomes, never inbox retrieval.
@@ -1109,23 +1680,107 @@ mod tests {
         let path_gate_at = sync_body
             .find("PROPAGATION_PATH_UNKNOWN")
             .expect("PATH_UNKNOWN in start_propagation_sync");
-        let peering_at = sync_body
-            .find("resolve_propagation_peering")
-            .expect("peering resolve in start_propagation_sync");
-        let start_sync_at = sync_body
-            .find("start_sync(hash")
-            .expect("start_sync call in start_propagation_sync");
+        let get_at = sync_body
+            .find("spawn_client_download_driver")
+            .expect("client /get driver in start_propagation_sync");
         assert!(
-            path_gate_at < peering_at,
-            "path gate must run before peering PoW (nonzero peering_cost)"
+            path_gate_at < get_at,
+            "path gate must run before client /get download"
+        );
+        // Peer `/offer` inventory sync belongs on the host peer loop. User Sync that
+        // starts peer sync with a nonempty messagestore hangs at AwaitingResponse.
+        assert!(
+            !sync_body.contains("start_sync(hash"),
+            "user Sync must not start peer /offer inventory sync"
         );
         assert!(
-            peering_at < start_sync_at,
-            "peering must run after path succeeds and before start_sync"
+            sync_body.contains("peer /offer deferred to host loop")
+                || sync_body.contains("peerOfferSkipped"),
+            "user Sync must document /get-primary peer-offer skip"
+        );
+        // Offer probe still validates remotes speak `/offer`.
+        let probe_start = live
+            .find("pub async fn probe_propagation_offer")
+            .expect("probe_propagation_offer");
+        let probe_fn = &live[probe_start..];
+        let probe_end = probe_fn[1..]
+            .find("\n    pub ")
+            .map_or(probe_fn.len(), |idx| idx + 1);
+        assert!(
+            probe_fn[..probe_end].contains("start_sync(hash"),
+            "offer probe must still exercise peer /offer"
+        );
+        // Configured-row Sync must not accept via the persistence stub while live is None.
+        let stack_sync = include_str!("mod.rs");
+        let by_id_start = stack_sync
+            .find("pub async fn start_propagation_sync(&self, propagation_id: &str)")
+            .expect("start_propagation_sync by id");
+        let by_id = &stack_sync[by_id_start..];
+        let by_id_end = by_id[1..]
+            .find("\n    pub ")
+            .map_or(by_id.len(), |idx| idx + 1);
+        assert!(
+            by_id[..by_id_end].contains("PROPAGATION_STACK_NOT_LIVE"),
+            "by-id Sync must hard-fail when RNS live is not attached"
         );
         assert!(
-            path_gate_at < start_sync_at,
-            "path gate must run before start_sync / Establishing"
+            by_id[..by_id_end].contains("#[cfg(not(feature = \"rns-stack\"))]"),
+            "persistence stub Sync must stay gated behind not(rns-stack)"
+        );
+    }
+
+    /// End-to-end wiring graph for Host PN fabric → Chat (non-flaky source contracts).
+    #[test]
+    fn source_local_pn_fabric_to_chat_wiring() {
+        let serve = include_str!("propagation_serve.rs");
+        let bridge = include_str!("propagation_bridge.rs");
+        let live = include_str!("live.rs");
+        assert!(
+            serve.contains("on_inbound_accepted") && serve.contains("accepted > 0"),
+            "serve accept → drain signal"
+        );
+        assert!(
+            bridge.contains("fn request_inbox_drain")
+                && bridge.contains("fn take_inbox_drain_request"),
+            "bridge must expose coalesced inbox drain request"
+        );
+        assert!(
+            live.contains("take_inbox_drain_request")
+                && live.contains("drain_local_inbox")
+                && live.contains("local-prop inbox auto-drain Completes"),
+            "maintenance drain when requested"
+        );
+        assert!(
+            live.contains("queue_post_peer_get")
+                && live.contains("spawn_client_download_driver_task")
+                && live.contains("false,"),
+            "peer terminal → silent /get (emit_ui false)"
+        );
+        assert!(
+            live.contains("delivery_callback")
+                && live.contains("get_post_peer")
+                && live.contains("get_periodic"),
+            "/get Complete → delivery_callback (post-peer + periodic paths)"
+        );
+        assert!(
+            bridge.contains("apply_peer_sync_terminal") && bridge.contains("take_handled_updates"),
+            "peer terminal bookkeeping must stay wired"
+        );
+        let sync_fn_start = live
+            .find("pub async fn start_propagation_sync")
+            .expect("start_propagation_sync");
+        let sync_fn = &live[sync_fn_start..];
+        let sync_fn_end = sync_fn[1..]
+            .find("\n    pub ")
+            .map_or(sync_fn.len(), |idx| idx + 1);
+        let sync_body = &sync_fn[..sync_fn_end];
+        assert!(
+            !sync_body.contains("start_sync(hash"),
+            "user Sync remains /get-primary (no peer start_sync)"
+        );
+        assert!(
+            sync_body.contains("spawn_client_download_driver") && sync_body.contains("true,"),
+            "user Sync still drives UI client /get"
         );
     }
 

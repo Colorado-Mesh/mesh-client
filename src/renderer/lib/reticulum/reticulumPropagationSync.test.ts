@@ -125,6 +125,15 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_SYNC_OUTBOUND_BUSY')).toBe(
       'reticulumPropagation.syncOutboundBusy',
     );
+    expect(mapPropagationSyncError('PROPAGATION_RETRIEVE_BUSY')).toBe(
+      'reticulumPropagation.syncRetrieveBusy',
+    );
+    expect(mapPropagationSyncError('PROPAGATION_STACK_NOT_LIVE')).toBe(
+      'reticulumPropagation.syncStackNotLive',
+    );
+    expect(mapPropagationSyncError('RNS stack not live')).toBe(
+      'reticulumPropagation.syncStackNotLive',
+    );
     expect(mapPropagationSyncError('propagation sync cancelled')).toBe(
       'reticulumPropagation.syncCancelled',
     );

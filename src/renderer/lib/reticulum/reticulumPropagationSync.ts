@@ -150,6 +150,14 @@ export function mapPropagationSyncError(error: string | null | undefined): strin
   if (error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') {
     return 'reticulumPropagation.syncOutboundBusy';
   }
+  // Client `/get` already active (host silent retrieve / overlapping Sync).
+  if (error === 'PROPAGATION_RETRIEVE_BUSY') {
+    return 'reticulumPropagation.syncRetrieveBusy';
+  }
+  // Live attach lag — startSync treats this as deferred; map if it surfaces elsewhere.
+  if (error === 'PROPAGATION_STACK_NOT_LIVE' || error === 'RNS stack not live') {
+    return 'reticulumPropagation.syncStackNotLive';
+  }
   return mapPropagationSyncErrorBySubstring(error) ?? SYNC_FAILED_KEY;
 }
 

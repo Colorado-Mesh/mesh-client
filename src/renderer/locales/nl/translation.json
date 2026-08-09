@@ -4290,7 +4290,9 @@
     "showChatNotice": "Toon propagatieherinnering in Chat",
     "showChatNoticeAria": "Toon de herinneringsbanner voor het propagatieknooppunt in Chat",
     "showChatNoticeHint": "Schakel dit uit om de chatbanner te verbergen die verschijnt als er geen propagatieknooppunt beschikbaar is.",
-    "syncPathUnknown": "Nog geen netwerkpad naar dit propagatieknooppunt. Controleer uw interfaces of hub, kondig aan en probeer het opnieuw."
+    "syncPathUnknown": "Nog geen netwerkpad naar dit propagatieknooppunt. Controleer uw interfaces of hub, kondig aan en probeer het opnieuw.",
+    "syncStackNotLive": "Uitgestelde propagatiesynchronisatie — de Reticulum-stack begint nog steeds.",
+    "syncRetrieveBusy": "Voortplantingssynchronisatie uitgesteld — het ophalen van de inbox is al bezig."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

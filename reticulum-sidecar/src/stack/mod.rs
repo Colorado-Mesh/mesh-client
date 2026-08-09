@@ -1523,15 +1523,24 @@ impl StackHandle {
             return Err("LOCAL_PROPAGATION_SYNC_UNSUPPORTED".into());
         }
         #[cfg(feature = "rns-stack")]
-        if let Some(live) = self.live.get() {
-            live.start_propagation_sync(&prop_hash).await?;
-            return Ok(());
+        {
+            if let Some(live) = self.live.get() {
+                live.start_propagation_sync(&prop_hash).await?;
+                return Ok(());
+            }
+            // Never fall through to the persistence stub: it marks sync active at
+            // progress 0 with no emitter, so the renderer stall-watchdogs for 45s.
+            // Match start_propagation_sync_by_hash — cascade can defer/retry.
+            Err("PROPAGATION_STACK_NOT_LIVE".into())
         }
-        let mut inner = self.inner.write().await;
-        inner.start_propagation_sync(propagation_id)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        self.emit_event("propagation_sync", inner.propagation_sync.clone());
-        Ok(())
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let mut inner = self.inner.write().await;
+            inner.start_propagation_sync(propagation_id)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            self.emit_event("propagation_sync", inner.propagation_sync.clone());
+            Ok(())
+        }
     }
 
     /// One-time remote sync by destination hash. Does not add a configured row or change Preferred.
@@ -1570,7 +1579,7 @@ impl StackHandle {
             live.start_propagation_sync(&prop_hash).await?;
             return Ok(());
         }
-        Err("RNS stack not live".into())
+        Err("PROPAGATION_STACK_NOT_LIVE".into())
     }
 
     pub async fn cancel_propagation_sync(&self) -> Result<(), String> {

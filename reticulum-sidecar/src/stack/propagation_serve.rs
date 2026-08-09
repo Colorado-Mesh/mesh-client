@@ -45,6 +45,9 @@ impl PropagationServeHandle {
     }
 
     /// Register `lxmf.propagation` and spawn LinkManager with `/offer`, `/get`, and Resource ingress.
+    ///
+    /// `on_inbound_accepted` fires after at least one stamped blob is accepted into the
+    /// local store (peer Resource ingress) so the live stack can drain our inbox into Chat.
     pub fn start(
         &self,
         transport_tx: &mpsc::Sender<TransportMessage>,
@@ -52,6 +55,7 @@ impl PropagationServeHandle {
         propagation_dest_hash: [u8; 16],
         local_node: &Arc<Mutex<PropagationNode>>,
         policy: &PnHostingPolicy,
+        on_inbound_accepted: Option<Arc<dyn Fn() + Send + Sync>>,
     ) -> Result<(), String> {
         self.stop();
         let local_node = Arc::clone(local_node);
@@ -222,6 +226,7 @@ impl PropagationServeHandle {
                                 Arc::clone(&local_node_for_loop),
                                 pn_hash_hex.clone(),
                                 link_cmd_for_close.clone(),
+                                on_inbound_accepted.clone(),
                             );
                         }
                     }
@@ -374,6 +379,7 @@ fn validate_pn_resource_job(
     (outcome, validated, rejected)
 }
 
+#[allow(clippy::too_many_arguments)] // validation job + admission + inbox drain hook
 fn spawn_propagation_validation(
     job: PnValidationJob,
     max_transfer_bytes: usize,
@@ -382,6 +388,7 @@ fn spawn_propagation_validation(
     local_node: Arc<Mutex<PropagationNode>>,
     pn_hash_hex: String,
     link_cmd_tx: mpsc::Sender<LinkManagerCommand>,
+    on_inbound_accepted: Option<Arc<dyn Fn() + Send + Sync>>,
 ) {
     let token = job.token();
     let link_id = job.link_id();
@@ -466,6 +473,12 @@ fn spawn_propagation_validation(
             "processed inbound propagation Resource"
         );
 
+        if accepted > 0 {
+            if let Some(ref on_accepted) = on_inbound_accepted {
+                on_accepted();
+            }
+        }
+
         if claim.should_close_link() {
             let link_id = claim.link_id();
             let _ = link_cmd_tx
@@ -503,6 +516,10 @@ mod tests {
         assert!(
             src.contains("accept_stamped_propagated_blob"),
             "validated deposits must enter PropagationNode store"
+        );
+        assert!(
+            src.contains("on_inbound_accepted") && src.contains("accepted > 0"),
+            "inbound peer accept must signal inbox drain for Chat delivery"
         );
         assert!(
             src.contains("evaluate_offer_request"),

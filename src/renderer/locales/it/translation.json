@@ -4290,7 +4290,9 @@
     "showChatNotice": "Mostra promemoria di propagazione in chat",
     "showChatNoticeAria": "Mostra il banner di promemoria del nodo di propagazione in Chat",
     "showChatNoticeHint": "Disattiva questa opzione per nascondere il banner della chat che appare quando non è disponibile alcun nodo di propagazione.",
-    "syncPathUnknown": "Ancora nessun percorso di rete a questo nodo di propagazione. Controlla le interfacce o l'hub, annuncia, quindi riprova."
+    "syncPathUnknown": "Ancora nessun percorso di rete a questo nodo di propagazione. Controlla le interfacce o l'hub, annuncia, quindi riprova.",
+    "syncStackNotLive": "Sincronizzazione della propagazione posticipata — lo stack Reticulum è ancora in fase di avvio.",
+    "syncRetrieveBusy": "Sincronizzazione della propagazione posticipata — il recupero della posta in arrivo è già in corso."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Scoperta RMAP v4",

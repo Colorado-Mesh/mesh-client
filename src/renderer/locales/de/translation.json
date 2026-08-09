@@ -4290,7 +4290,9 @@
     "showChatNotice": "Ausbreitungserinnerung im Chat anzeigen",
     "showChatNoticeAria": "Verbreitungsknoten-Erinnerungsbanner im Chat anzeigen",
     "showChatNoticeHint": "Deaktivieren Sie diese Option, um das Chat-Banner auszublenden, das angezeigt wird, wenn kein Ausbreitungsknoten verfügbar ist.",
-    "syncPathUnknown": "Noch kein Netzwerkpfad zu diesem Ausbreitungsknoten. Überprüfen Sie Ihre Schnittstellen oder Ihren Hub, kündigen Sie an und versuchen Sie es dann erneut."
+    "syncPathUnknown": "Noch kein Netzwerkpfad zu diesem Ausbreitungsknoten. Überprüfen Sie Ihre Schnittstellen oder Ihren Hub, kündigen Sie an und versuchen Sie es dann erneut.",
+    "syncStackNotLive": "Ausbreitungssynchronisation verschoben — der Reticulum-Stack wird noch gestartet.",
+    "syncRetrieveBusy": "Die Propagationssynchronisierung wurde verschoben — der Abruf des Posteingangs wird bereits ausgeführt."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

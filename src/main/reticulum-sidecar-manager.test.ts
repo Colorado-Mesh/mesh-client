@@ -93,6 +93,7 @@ import {
 import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
+import { SIDECAR_DEFAULT_RUST_LOG } from './reticulumSidecarStderrLog';
 
 const SIDECAR_MANAGER_SOURCE = fs.readFileSync(
   join(import.meta.dirname ?? __dirname, 'reticulum-sidecar-manager.ts'),
@@ -243,7 +244,7 @@ describe('ReticulumSidecarManager', () => {
     expect(first.port).toBeGreaterThan(0);
     expect(first.pid).toBe(4242);
     const spawnEnv = spawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv | undefined;
-    expect(spawnEnv?.RUST_LOG).toBe('warn');
+    expect(spawnEnv?.RUST_LOG).toBe(SIDECAR_DEFAULT_RUST_LOG);
 
     await manager.stop();
 

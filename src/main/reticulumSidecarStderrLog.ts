@@ -7,7 +7,11 @@ const AUTO_BEACON_TX_FAILED_MARKER = 'auto: beacon TX failed';
 const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 
 /** Default tracing filter for sidecar child processes (overridable via env). */
-export const SIDECAR_DEFAULT_RUST_LOG = 'warn';
+// PN connect triage: keep global warn; surface sync/deposit/outbound INFO. Keep
+// propagation-retrieve at warn by default (inbound peer/message metadata); opt in
+// via MESH_CLIENT_RUST_LOG (e.g. add propagation-retrieve=info).
+export const SIDECAR_DEFAULT_RUST_LOG =
+  'warn,propagation-sync=info,propagation-deposit=info,lxmf-outbound=info';
 
 /**
  * Whether a sidecar stdout line should be written to the app log.

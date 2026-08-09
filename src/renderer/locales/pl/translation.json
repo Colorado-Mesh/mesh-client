@@ -4294,7 +4294,9 @@
     "showChatNotice": "Pokaż przypomnienie o propagacji na czacie",
     "showChatNoticeAria": "Pokaż baner przypominający o węźle propagacji na czacie",
     "showChatNoticeHint": "Wyłącz tę opcję, aby ukryć baner czatu, który pojawia się, gdy żaden węzeł propagacji nie jest dostępny.",
-    "syncPathUnknown": "Nie ma jeszcze ścieżki sieciowej do tego węzła propagacji. Sprawdź interfejsy lub koncentrator, ogłoś, a następnie spróbuj ponownie."
+    "syncPathUnknown": "Nie ma jeszcze ścieżki sieciowej do tego węzła propagacji. Sprawdź interfejsy lub koncentrator, ogłoś, a następnie spróbuj ponownie.",
+    "syncStackNotLive": "Odroczona synchronizacja propagacji — stos Reticulum nadal się rozpoczyna.",
+    "syncRetrieveBusy": "Synchronizacja propagacji odroczona — trwa już pobieranie skrzynki odbiorczej."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",
