@@ -2714,9 +2714,19 @@ impl LiveBridge {
                     let router_for_drain = Arc::clone(&router);
                     tokio::spawn(async move {
                         let (messages, listed) =
-                            tokio::task::spawn_blocking(move || bridge.drain_local_inbox())
+                            match tokio::task::spawn_blocking(move || bridge.drain_local_inbox())
                                 .await
-                                .unwrap_or_else(|_| (Vec::new(), 0));
+                            {
+                                Ok(result) => result,
+                                Err(error) => {
+                                    tracing::error!(
+                                        target: "propagation-retrieve",
+                                        error = %error,
+                                        "local-prop inbox auto-drain join failed"
+                                    );
+                                    (Vec::new(), 0)
+                                }
+                            };
                         let delivered = messages.len();
                         if delivered > 0 {
                             let router = router_for_drain.lock().await;
@@ -3841,7 +3851,8 @@ impl LiveBridge {
                 driver.clear_propagation_identity_pins();
                 driver.set_propagation_sync_target(None);
             }
-            return Err("propagation sync unavailable".into());
+            // Client `/get` already in flight (host silent retrieve / prior Sync).
+            return Err("PROPAGATION_RETRIEVE_BUSY".into());
         }
         Ok(())
     }

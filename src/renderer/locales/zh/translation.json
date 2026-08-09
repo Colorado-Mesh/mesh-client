@@ -4291,7 +4291,8 @@
     "showChatNoticeAria": "在聊天中显示传播节点提醒横幅",
     "showChatNoticeHint": "关闭此选项可隐藏在没有可用传播节点时显示的聊天横幅。",
     "syncPathUnknown": "还没有到此传播节点的网络路径。请检查您的接口或集线器，宣布，然后重试。",
-    "syncStackNotLive": "传播同步延迟—Reticulum 堆栈仍在启动。"
+    "syncStackNotLive": "传播同步延迟—Reticulum 堆栈仍在启动。",
+    "syncRetrieveBusy": "传播同步已延迟—收件箱检索已在进行中。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

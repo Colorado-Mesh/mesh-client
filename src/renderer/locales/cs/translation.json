@@ -4293,7 +4293,8 @@
     "showChatNoticeAria": "Zobrazit banner připomenutí propagačního uzlu v chatu",
     "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel.",
     "syncPathUnknown": "Zatím neexistuje síťová cesta k tomuto propagačnímu uzlu. Zkontrolujte rozhraní nebo rozbočovač, oznamte to a zkuste to znovu.",
-    "syncStackNotLive": "Synchronizace propagace odložena — zásobník Reticulum se stále spouští."
+    "syncStackNotLive": "Synchronizace propagace odložena — zásobník Reticulum se stále spouští.",
+    "syncRetrieveBusy": "Synchronizace propagace odložena — vyhledávání doručené pošty již probíhá."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

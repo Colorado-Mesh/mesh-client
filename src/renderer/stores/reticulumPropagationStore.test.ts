@@ -406,6 +406,20 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
+  it.each([
+    'PROPAGATION_STACK_NOT_LIVE',
+    'RNS stack not live',
+    'PROPAGATION_RETRIEVE_BUSY',
+  ] as const)('startSync soft-defers %s without a lastSyncError', async (error) => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
+    proxyPost.mockResolvedValueOnce({ ok: false, error });
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
+  });
+
   it('removePropagationNode deletes then refreshes', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyDelete.mockResolvedValueOnce({ ok: true });

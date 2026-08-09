@@ -4291,7 +4291,8 @@
     "showChatNoticeAria": "Mostrar o banner de lembrete do nó de propagação no Chat",
     "showChatNoticeHint": "Desative isso para ocultar o banner de bate-papo que aparece quando nenhum nó de propagação está disponível.",
     "syncPathUnknown": "Nenhum caminho de rede para este nó de propagação ainda. Verifique suas interfaces ou hub, anuncie e tente novamente.",
-    "syncStackNotLive": "Sincronização de propagação adiada — a pilha Reticulum ainda está começando."
+    "syncStackNotLive": "Sincronização de propagação adiada — a pilha Reticulum ainda está começando.",
+    "syncRetrieveBusy": "Sincronização de propagação adiada — a recuperação da caixa de entrada já está em andamento."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

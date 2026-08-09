@@ -4291,7 +4291,8 @@
     "showChatNoticeAria": "Tampilkan spanduk pengingat simpul propagasi di Obrolan",
     "showChatNoticeHint": "Nonaktifkan ini untuk menyembunyikan spanduk Obrolan yang muncul ketika tidak ada node propagasi yang tersedia.",
     "syncPathUnknown": "Belum ada jalur jaringan ke simpul propagasi ini. Periksa antarmuka atau hub Anda, umumkan, lalu coba lagi.",
-    "syncStackNotLive": "Sinkronisasi propagasi ditangguhkan — tumpukan Reticulum masih dimulai."
+    "syncStackNotLive": "Sinkronisasi propagasi ditangguhkan — tumpukan Reticulum masih dimulai.",
+    "syncRetrieveBusy": "Sinkronisasi propagasi ditangguhkan — pengambilan kotak masuk sudah berlangsung."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",
