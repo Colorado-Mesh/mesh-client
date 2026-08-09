@@ -1110,9 +1110,20 @@ mod tests {
         let path_gate_at = sync_body
             .find("PROPAGATION_PATH_UNKNOWN")
             .expect("PATH_UNKNOWN in start_propagation_sync");
+        let peering_at = sync_body
+            .find("resolve_propagation_peering")
+            .expect("peering resolve in start_propagation_sync");
         let start_sync_at = sync_body
             .find("start_sync(hash")
             .expect("start_sync call in start_propagation_sync");
+        assert!(
+            path_gate_at < peering_at,
+            "path gate must run before peering PoW (nonzero peering_cost)"
+        );
+        assert!(
+            peering_at < start_sync_at,
+            "peering must run after path succeeds and before start_sync"
+        );
         assert!(
             path_gate_at < start_sync_at,
             "path gate must run before start_sync / Establishing"

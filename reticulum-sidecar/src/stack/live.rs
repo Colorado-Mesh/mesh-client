@@ -3560,7 +3560,7 @@ impl LiveBridge {
         self.rehydrate_propagation_identities_from_persisted();
         // Link proofs are ignored unless the destination pubkey is in known_identities.
         // Resolve identity before Establishing; hard path gate comes after announce settle
-        // (same code as probe_propagation_offer — never start Establishing without a path).
+        // and before peering PoW (never start Establishing / stamp work without a path).
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
         let identity_known_after = self
             .outbound
@@ -3581,15 +3581,6 @@ impl LiveBridge {
             }
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
-        let peering = match self.resolve_propagation_peering(&dest_hex).await {
-            Ok(p) => p,
-            Err(e) => {
-                if let Ok(mut driver) = self.outbound.lock() {
-                    driver.set_propagation_sync_target(None);
-                }
-                return Err(e);
-            }
-        };
         // Fresh LXMF delivery announce so the PN can return LRPROOF (reverse path).
         let announced = self
             .ensure_lxmf_announce_for_propagation_sync(&dest_hex)
@@ -3621,7 +3612,8 @@ impl LiveBridge {
             return Err("PROPAGATION_SYNC_OUTBOUND_BUSY".into());
         }
         // Hard path gate after announce settle so RequestPath can benefit from the announce.
-        // Ignoring path failure used to stall in Establishing until the renderer 45s timeout.
+        // Do this before peering PoW — nonzero peering_cost stamps are expensive and useless
+        // when there is no path (would previously burn CPU then stall into syncTimedOut).
         let path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
         let hops = self.hops_to_destination(&dest_hex).await;
         if !path_ok {
@@ -3637,6 +3629,15 @@ impl LiveBridge {
             );
             return Err("PROPAGATION_PATH_UNKNOWN".into());
         }
+        let peering = match self.resolve_propagation_peering(&dest_hex).await {
+            Ok(p) => p,
+            Err(e) => {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_propagation_sync_target(None);
+                }
+                return Err(e);
+            }
+        };
         // Pin PN pubkey for the duration of Establishing so announce-flood eviction
         // cannot drop it before LRPROOF validation (see known_identities cap).
         let pinned = if let Ok(mut driver) = self.outbound.lock() {
