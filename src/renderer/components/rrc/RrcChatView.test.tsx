@@ -361,6 +361,58 @@ describe('RrcChatView stick-to-bottom', () => {
     });
   });
 
+  it('does not follow appends while the window is visible but unfocused', async () => {
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      const { rerender } = render(
+        <RrcChatView {...baseProps} isActive messages={[makeMsg({ id: '1', body: 'one' })]} />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+      mockScrollToEnd.mockClear();
+
+      hasFocusSpy.mockReturnValue(false);
+      rerender(
+        <RrcChatView
+          {...baseProps}
+          isActive
+          messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(mockScrollToEnd).not.toHaveBeenCalled();
+    } finally {
+      hasFocusSpy.mockRestore();
+    }
+  });
+
+  it('follows appends when focused and pinned', async () => {
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      const { rerender } = render(
+        <RrcChatView {...baseProps} isActive messages={[makeMsg({ id: '1', body: 'one' })]} />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+      mockScrollToEnd.mockClear();
+
+      rerender(
+        <RrcChatView
+          {...baseProps}
+          isActive
+          messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
+        />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+    } finally {
+      hasFocusSpy.mockRestore();
+    }
+  });
+
   it('does not follow appends when scrolled up and shows Jump to Latest', async () => {
     const user = userEvent.setup();
     const { rerender } = render(

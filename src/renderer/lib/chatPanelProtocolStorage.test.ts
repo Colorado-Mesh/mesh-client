@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  activeDmStorageKey,
   clearDraft,
   clearFloodScopeOverride,
   clearPersistedRoomsLastRead,
@@ -10,6 +11,7 @@ import {
   floodScopeOverridesStorageKey,
   getSanitizedMeshtasticChatLastRead,
   lastReadStorageKey,
+  loadActiveDmInitial,
   loadDraftsInitial,
   loadFloodScopeOverridesInitial,
   loadMutedViews,
@@ -24,6 +26,7 @@ import {
   sanitizeMeshcoreRoomsLastRead,
   sanitizeMeshtasticChatLastRead,
   sanitizeReticulumChatLastRead,
+  saveActiveDm,
   saveDraft,
   saveFloodScopeOverride,
   saveMutedViews,
@@ -53,6 +56,18 @@ describe('chatPanelProtocolStorage', () => {
     const mc = loadOpenDmTabsInitial('meshcore');
     expect(mc).toEqual([]);
     expect(localStorage.getItem(openDmTabsStorageKey('meshcore'))).toBeNull();
+  });
+
+  it('persists and loads last-focused active DM per protocol', () => {
+    expect(loadActiveDmInitial('reticulum')).toBeNull();
+    saveActiveDm('reticulum', 0xdeadbeef);
+    expect(localStorage.getItem(activeDmStorageKey('reticulum'))).toBe(String(0xdeadbeef >>> 0));
+    expect(loadActiveDmInitial('reticulum')).toBe(0xdeadbeef >>> 0);
+    expect(loadActiveDmInitial('meshcore')).toBeNull();
+
+    saveActiveDm('reticulum', null);
+    expect(localStorage.getItem(activeDmStorageKey('reticulum'))).toBeNull();
+    expect(loadActiveDmInitial('reticulum')).toBeNull();
   });
 
   it('migrates legacy lastRead only into meshtastic key', () => {

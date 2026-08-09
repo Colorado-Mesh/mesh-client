@@ -56,6 +56,8 @@ export interface ReticulumInterfaceRow {
   network_name?: string | null;
   /** IFAC authentication passphrase. */
   passphrase?: string | null;
+  /** RNode/KISS TX ready-gate. Only present for RF interface types. */
+  flow_control?: boolean | null;
   /** Unknown INI keys preserved by the sidecar across CRUD. */
   extra_config?: Record<string, string> | null;
 }

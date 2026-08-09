@@ -1197,7 +1197,8 @@
       "backboneEnableGuidanceLead": "Maximaal 1 tot 3 backbone-gateways inschakelen",
       "backboneEnableGuidanceBody": "—2 is ideaal voor redundantie zonder onnodige bandbreedte. Streef naar 1 globale hub en 1 regionale gateway, en schakel speciale interfaces (zoals I2P of Yggdrasil) alleen in als nodig. Lokaal verbonden RNodes en lokale LAN-interfaces tellen niet mee voor deze backbone-limiet.",
       "defaultHubsPickerHint": "Begin met Primair & globaal plus uw regio. Schakel hoogstens 1 tot 3 backbone-gateways in (2 is ideaal). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe items worden uitgeschakeld toegevoegd zodat u ze kunt beoordelen. Sync schakelt ook resterende buiten gebruik gestelde officiële testnet-hubs uit (Amsterdam).",
-      "rnodeTransportBleHint": "BLE-bindingen kunnen desynchroniseren met macOS (vergeten + opnieuw koppelen). Geef de voorkeur aan USB-serieel of Wi-Fi (tcp://) wanneer de radio in de buurt is."
+      "rnodeTransportBleHint": "BLE-bindingen kunnen desynchroniseren met macOS (vergeten + opnieuw koppelen). Geef de voorkeur aan USB-serieel of Wi-Fi (tcp://) wanneer de radio in de buurt is.",
+      "flowControl": "Stromingsregeling (TX ready-gate)"
     },
     "reticulumPeers": {
       "hops": "Hops",

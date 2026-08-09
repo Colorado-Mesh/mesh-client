@@ -145,17 +145,13 @@ function comparePrepared(
   return a.hashLower.localeCompare(b.hashLower);
 }
 
-/** Favorites first, then the active column. Mutates a copy only. */
+/** Sort by the active column only (favorites tab already filters to favorites). */
 export function sortPreparedNomadNodeRows(
   rows: readonly PreparedNomadNodeRow[],
   sortKey: NomadNodeSortKey,
   sortDir: NomadNodeSortDir,
 ): PreparedNomadNodeRow[] {
   const next = [...rows];
-  next.sort((a, b) => {
-    const favDelta = Number(b.favorited) - Number(a.favorited);
-    if (favDelta !== 0) return favDelta;
-    return comparePrepared(a, b, sortKey, sortDir);
-  });
+  next.sort((a, b) => comparePrepared(a, b, sortKey, sortDir));
   return next;
 }

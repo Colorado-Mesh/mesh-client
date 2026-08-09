@@ -55,6 +55,10 @@ pub struct InterfaceRow {
     /// IFAC authentication passphrase (common interface option).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passphrase: Option<String>,
+    /// RNode/KISS TX ready-gate (`CMD_READY`). Defaults on for RF interfaces so
+    /// bursts do not overflow the bounded TX queue. Only meaningful for RF types.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow_control: Option<bool>,
     /// Unknown INI keys preserved across CRUD so typed writes do not drop them.
     #[serde(default)]
     pub extra_config: HashMap<String, String>,
@@ -254,6 +258,9 @@ pub struct AddInterfaceRequest {
     pub network_name: Option<String>,
     #[serde(default)]
     pub passphrase: Option<String>,
+    /// RNode/KISS TX ready-gate. When omitted, RF interfaces default to `true`.
+    #[serde(default)]
+    pub flow_control: Option<bool>,
     #[serde(default)]
     pub extra_config: HashMap<String, String>,
 }

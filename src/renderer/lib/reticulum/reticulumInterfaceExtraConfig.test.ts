@@ -10,7 +10,18 @@ describe('reticulumInterfaceExtraConfig', () => {
   it('recognizes known typed keys case-insensitively', () => {
     expect(isKnownIfaceUiKey('network_name')).toBe(true);
     expect(isKnownIfaceUiKey('Passphrase')).toBe(true);
+    expect(isKnownIfaceUiKey('flow_control')).toBe(true);
+    expect(isKnownIfaceUiKey('Flow_Control')).toBe(true);
     expect(isKnownIfaceUiKey('forward_interval')).toBe(false);
+  });
+
+  it('drops flow_control from Advanced parse as a reserved typed key', () => {
+    const parsed = parseInterfaceExtraConfig(`
+flow_control = No
+forward_interval = 300
+`);
+    expect(parsed.extraConfig).toEqual({ forward_interval: '300' });
+    expect(parsed.reservedKeys).toContain('flow_control');
   });
 
   it('formats and parses extra_config round-trip', () => {

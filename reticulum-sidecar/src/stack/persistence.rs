@@ -343,6 +343,9 @@ impl PersistedState {
             reachable_on: req.reachable_on,
             network_name: req.network_name,
             passphrase: req.passphrase,
+            flow_control: req
+                .flow_control
+                .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
             extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());

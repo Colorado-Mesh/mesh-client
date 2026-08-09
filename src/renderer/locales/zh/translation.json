@@ -1198,7 +1198,8 @@
       "backboneEnableGuidanceLead": "最多启用1至3个骨干网关",
       "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
       "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。",
-      "rnodeTransportBleHint": "BLE绑定可以与macOS取消同步（忘记+重新配对）。当收音机在附近时，首选USB串行或Wi-Fi （ tcp://）。"
+      "rnodeTransportBleHint": "BLE绑定可以与macOS取消同步（忘记+重新配对）。当收音机在附近时，首选USB串行或Wi-Fi （ tcp://）。",
+      "flowControl": "流量控制（TX 就绪门）"
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -689,6 +689,7 @@ describe('ReticulumInterfacesPanel', () => {
       expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/interfaces', {
         type: 'rnode',
         serial_port: 'tcp://192.168.1.10',
+        flow_control: true,
         preset: 'rnode_us',
         frequency: 914875000,
         bandwidth: 125000,
@@ -1987,6 +1988,157 @@ describe('ReticulumInterfacesPanel', () => {
         expect.stringContaining('rmapToggleFailed'),
         'error',
       );
+    });
+  });
+
+  describe('flow control', () => {
+    it('shows a checked flow-control checkbox and posts flow_control: true when adding an RNode', async () => {
+      const user = userEvent.setup();
+      const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
+        'rnode',
+      );
+      const flowControl = screen.getByRole('checkbox', {
+        name: 'connectionPanel.reticulumInterfaces.flowControl',
+      });
+      expect(flowControl).toBeChecked();
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.callsign'),
+        'NV0N',
+      );
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }),
+      );
+
+      await waitFor(() => {
+        expect(proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({ type: 'rnode', flow_control: true }),
+        );
+      });
+    });
+
+    it('does not show a flow-control checkbox for TCP add', () => {
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+      expect(
+        screen.queryByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.flowControl',
+        }),
+      ).not.toBeInTheDocument();
+    });
+
+    it.each([
+      { serial_port: '/dev/ttyUSB0', label: 'serial RNode' },
+      { serial_port: 'ble://AA:BB:CC:DD:EE:FF', label: 'BLE RNode' },
+      { serial_port: 'tcp://192.168.1.50', label: 'Wi-Fi RNode' },
+    ])('shows the flow-control checkbox when editing a $label', async ({ serial_port }) => {
+      const user = userEvent.setup();
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[
+            {
+              id: 'rnode-1',
+              name: 'RNode',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port,
+              callsign: 'NV0N',
+              flow_control: true,
+            },
+          ]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+      expect(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.flowControl',
+        }),
+      ).toBeChecked();
+    });
+
+    it('reflects flow_control: false from the row and posts flow_control: false when saving', async () => {
+      const user = userEvent.setup();
+      const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+      window.electronAPI.reticulum.proxyPut = proxyPut;
+
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[
+            {
+              id: 'rnode-1',
+              name: 'RNode',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB0',
+              callsign: 'NV0N',
+              flow_control: true,
+            },
+          ]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+      const flowControl = screen.getByRole('checkbox', {
+        name: 'connectionPanel.reticulumInterfaces.flowControl',
+      });
+      expect(flowControl).toBeChecked();
+      await user.click(flowControl);
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.saveEdit' }),
+      );
+
+      await waitFor(() => {
+        expect(proxyPut).toHaveBeenCalledWith(
+          '/api/v1/interfaces/rnode-1',
+          expect.objectContaining({ flow_control: false }),
+        );
+      });
+      const patch = proxyPut.mock.calls[0][1] as Record<string, unknown>;
+      // Typed field only — never leaked into the Advanced extra_config bag.
+      expect((patch.extra_config as Record<string, string>).flow_control).toBeUndefined();
+    });
+
+    it('does not show a flow-control checkbox when editing a TCP hub', async () => {
+      const user = userEvent.setup();
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[
+            {
+              id: 'hub',
+              name: 'Hub',
+              type: 'tcp',
+              enabled: true,
+              status: 'up',
+              host: 'example.org',
+              port: 4242,
+            },
+          ]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+      expect(
+        screen.queryByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.flowControl',
+        }),
+      ).not.toBeInTheDocument();
     });
   });
 });

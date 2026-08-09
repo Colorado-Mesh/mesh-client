@@ -647,8 +647,91 @@ describe('DiagnosticsPanel reticulum scope', () => {
     );
 
     expect(screen.queryByText('Ghost hop from Meshtastic')).not.toBeInTheDocument();
-    expect(screen.getByText(/no diagnostics detected/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no diagnostics detected/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Diagnostics \(/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/network health/i)).not.toBeInTheDocument();
+  });
+
+  it('hides LoRa mesh diagnostics when hasHopCount is false', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'routing',
+        id: 'routing:1',
+        nodeId: 2,
+        type: 'hop_goblin',
+        severity: 'error',
+        description: 'Should stay hidden without hop count',
+        detectedAt: Date.now(),
+      } satisfies RoutingDiagnosticRow,
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[1, minimalNode(1)]])}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+        capabilities={{ ...MESHTASTIC_CAPABILITIES, hasHopCount: false }}
+      />,
+    );
+
+    expect(screen.queryByText(/network health/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Diagnostics \(/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Should stay hidden without hop count')).not.toBeInTheDocument();
+  });
+
+  it('derives LoRa mesh visibility from capabilities.protocol, not the tab prop alone', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'routing',
+        id: 'routing:2',
+        nodeId: 2,
+        type: 'hop_goblin',
+        severity: 'error',
+        description: 'Mismatched prop must not show LoRa tables',
+        detectedAt: Date.now(),
+      } satisfies RoutingDiagnosticRow,
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[1, minimalNode(1)]])}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+        capabilities={RETICULUM_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.queryByText(/network health/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Diagnostics \(/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Mismatched prop must not show LoRa tables')).not.toBeInTheDocument();
+  });
+
+  it('shows LoRa mesh diagnostics for non-Reticulum capabilities with hop count', () => {
+    diagnosticsStoreState.diagnosticRows = [];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[1, minimalNode(1)]])}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+        capabilities={MESHTASTIC_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.getByText(/network health/i)).toBeInTheDocument();
+    expect(screen.getByText(/no diagnostics detected/i)).toBeInTheDocument();
   });
 
   it('shows Reticulum config diagnostics rows on the Reticulum tab', () => {
@@ -685,5 +768,45 @@ describe('DiagnosticsPanel reticulum scope', () => {
 
     expect(screen.getByText('Reticulum interface config')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Repair config' })).toBeInTheDocument();
+  });
+
+  it('does not list Reticulum TX-queue rows in the LoRa mesh Node/Offense table', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'rf',
+        id: 'rf:0:reticulum/tx-queue-drops/RNode 41F4',
+        nodeId: 0,
+        condition: 'reticulum/tx-queue-drops',
+        cause: 'Interface "RNode 41F4" dropped 128 outbound packets (TX queue full)',
+        severity: 'error',
+        detectedAt: Date.now(),
+        causeI18n: {
+          key: 'diagnosticsPanel.reticulum.runtime.txQueueDropsBle',
+          params: { name: 'RNode 41F4', count: '128' },
+        },
+        reticulumInterfaceId: 'rnode-41f4',
+        reticulumRepairKind: 'edit',
+      },
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0xabcd}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Me')}
+        protocol="reticulum"
+        capabilities={RETICULUM_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.queryByText('Mesh diagnostics (1)')).not.toBeInTheDocument();
+    expect(screen.queryByText('!00000000')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Diagnostics \(/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no diagnostics detected/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/RNode 41F4/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /edit interface/i })).toBeInTheDocument();
   });
 });

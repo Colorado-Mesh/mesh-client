@@ -104,6 +104,15 @@ vi.stubGlobal('localStorage', {
   key: (i: number) => Object.keys(_localStorageStore)[i] ?? null,
 });
 
+// jsdom's document.hasFocus() defaults to false; the app treats an unfocused window as
+// inactive (appWindowActivity). Default to focused so mark-read/notification tests match a
+// normal foreground window; tests simulate blur with vi.spyOn(document, 'hasFocus').
+Object.defineProperty(document, 'hasFocus', {
+  configurable: true,
+  writable: true,
+  value: () => true,
+});
+
 // jsdom doesn't implement scroll APIs
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 window.HTMLElement.prototype.scrollTo = vi.fn();

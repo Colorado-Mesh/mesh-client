@@ -53,13 +53,13 @@ describe('nomadNodeSort', () => {
     expect(sortPreparedNomadNodeRows([], 'lastSeen', 'desc')).toEqual([]);
   });
 
-  it('keeps favorites ahead of any column sort', () => {
+  it('sorts announces by lastSeen without pinning favorites ahead', () => {
     const prepared = prepareNomadNodeRows([
       node({ destination_hash: 'a1', display_name: 'Alpha', favorited: false, last_seen: 200 }),
       node({ destination_hash: 'z9', display_name: 'Zulu', favorited: true, last_seen: 100 }),
     ]);
     const sorted = sortPreparedNomadNodeRows(prepared, 'lastSeen', 'desc');
-    expect(sorted.map((r) => r.node.display_name)).toEqual(['Zulu', 'Alpha']);
+    expect(sorted.map((r) => r.node.display_name)).toEqual(['Alpha', 'Zulu']);
   });
 
   it('sorts lastSeen newest first (desc) and oldest first (asc)', () => {

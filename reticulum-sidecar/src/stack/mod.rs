@@ -227,6 +227,16 @@ impl StackHandle {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }
 
+        match config::repair_flow_control_defaults_in_config(&config_dir) {
+            Ok(true) => {
+                tracing::info!("enabled flow_control default on RF interfaces missing the key");
+            }
+            Ok(false) => {}
+            Err(e) => {
+                tracing::warn!("failed to apply flow_control defaults in config: {e}");
+            }
+        }
+
         let mut persisted = PersistedState::load(&config_dir, &storage_dir);
         persisted.ensure_defaults();
         if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {

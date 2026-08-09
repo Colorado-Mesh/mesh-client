@@ -29,6 +29,10 @@ export function openDmTabsStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:openDmTabs:${protocol}`;
 }
 
+export function activeDmStorageKey(protocol: MeshProtocol): string {
+  return `mesh-client:activeDm:${protocol}`;
+}
+
 export function lastReadStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:lastRead:${protocol}`;
 }
@@ -82,6 +86,39 @@ export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
     }
   }
   return [];
+}
+
+/**
+ * Last-focused DM node id for this protocol (null if missing/invalid).
+ * Reticulum normalizes with `>>> 0` like open tabs.
+ */
+export function loadActiveDmInitial(protocol: MeshProtocol): number | null {
+  const key = activeDmStorageKey(protocol);
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw == null || raw === '') return null;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return null;
+    return protocol === 'reticulum' ? parsed >>> 0 : parsed;
+  } catch (e) {
+    console.debug('[chatPanelProtocolStorage] loadActiveDmInitial failed ' + errLikeToLogString(e));
+    return null;
+  }
+}
+
+/** Persist last-focused DM; pass null to clear. */
+export function saveActiveDm(protocol: MeshProtocol, nodeId: number | null): void {
+  const key = activeDmStorageKey(protocol);
+  try {
+    if (nodeId == null) {
+      localStorage.removeItem(key);
+      return;
+    }
+    const normalized = protocol === 'reticulum' ? nodeId >>> 0 : nodeId;
+    localStorage.setItem(key, String(normalized));
+  } catch (e) {
+    console.debug('[chatPanelProtocolStorage] saveActiveDm failed ' + errLikeToLogString(e));
+  }
 }
 
 export function draftsStorageKey(protocol: MeshProtocol): string {

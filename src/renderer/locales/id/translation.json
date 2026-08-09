@@ -1198,7 +1198,8 @@
       "backboneEnableGuidanceLead": "Aktifkan 1 hingga 3 gateway backbone paling banyak",
       "backboneEnableGuidanceBody": "—2 adalah titik ideal untuk redundansi tanpa pemborosan bandwidth. Bidik 1 hub global dan 1 gateway regional, dan aktifkan antarmuka khusus (seperti I2P atau Yggdrasil) hanya jika diperlukan. RNode yang terhubung lokal dan antarmuka LAN lokal tidak dihitung dalam batas backbone ini.",
       "defaultHubsPickerHint": "Mulai dengan Utama & Global plus wilayah Anda. Aktifkan paling banyak 1 hingga 3 gateway backbone (2 adalah titik ideal). RNode lokal dan antarmuka LAN tidak dihitung. Entri baru ditambahkan dalam keadaan nonaktif agar bisa ditinjau. Sync juga menonaktifkan sisa hub testnet resmi yang sudah dinonaktifkan (Amsterdam).",
-      "rnodeTransportBleHint": "Ikatan BLE dapat desinkronisasi dengan macOS (Forget + re-pair). Lebih suka USB serial atau Wi-Fi (tcp://) saat radio ada di dekatnya."
+      "rnodeTransportBleHint": "Ikatan BLE dapat desinkronisasi dengan macOS (Forget + re-pair). Lebih suka USB serial atau Wi-Fi (tcp://) saat radio ada di dekatnya.",
+      "flowControl": "Kontrol aliran (gerbang siap TX)"
     },
     "reticulumPeers": {
       "hops": "Hops",

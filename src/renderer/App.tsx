@@ -18,6 +18,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
 import {
   clearPersistedLastReadForProtocol,
@@ -2365,7 +2366,9 @@ function AppContent() {
       return;
     }
     const isActiveAndChatOpen =
-      protocolRef.current === 'meshtastic' && activePanelIndexRef.current === 1 && !document.hidden;
+      protocolRef.current === 'meshtastic' &&
+      activePanelIndexRef.current === 1 &&
+      !isAppWindowInactive();
     if (count > prevMeshtasticMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshtasticMsgsRef.current.slice(prevMeshtasticMsgCountRef.current);
       const mutedRaw = localStorage.getItem('mesh-client:mutedViews:meshtastic');
@@ -2398,7 +2401,7 @@ function AppContent() {
       selectByProtocol(capabilitiesByProtocol, protocolRef.current)
         .prefersDeviceOwnerLongNameInHeader &&
       activePanelIndexRef.current === 1 &&
-      !document.hidden;
+      !isAppWindowInactive();
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
       const type = resolveInactiveChatNotificationType({
@@ -2425,7 +2428,9 @@ function AppContent() {
       return;
     }
     const isActiveAndChatOpen =
-      protocolRef.current === 'reticulum' && activePanelIndexRef.current === 1 && !document.hidden;
+      protocolRef.current === 'reticulum' &&
+      activePanelIndexRef.current === 1 &&
+      !isAppWindowInactive();
     if (count > prevReticulumMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = reticulumMsgsRef.current.slice(prevReticulumMsgCountRef.current);
       const ownNodes = reticulumOwnNodeIdSetRef.current;
@@ -2483,7 +2488,7 @@ function AppContent() {
       type &&
       shouldPlayRrcNotification({
         onRrcPanel,
-        documentHidden: document.hidden,
+        windowInactive: isAppWindowInactive(),
         forOtherRoom,
         type,
       })

@@ -295,6 +295,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         }
     }
@@ -420,6 +421,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
@@ -457,6 +459,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let live = vec![InterfaceRow {
@@ -488,6 +491,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -532,6 +536,7 @@ mod tests {
                 reachable_on: None,
                 network_name: None,
                 passphrase: None,
+                flow_control: None,
                 extra_config: std::collections::HashMap::new(),
             },
             InterfaceRow {
@@ -563,6 +568,7 @@ mod tests {
                 reachable_on: None,
                 network_name: None,
                 passphrase: None,
+                flow_control: None,
                 extra_config: std::collections::HashMap::new(),
             },
         ];
@@ -605,6 +611,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -647,6 +654,7 @@ mod tests {
             reachable_on: None,
             network_name: Some("ttp_internal".into()),
             passphrase: Some("resistance202606".into()),
+            flow_control: None,
             extra_config: extra.clone(),
         }];
         let live = vec![InterfaceRow {
@@ -678,6 +686,7 @@ mod tests {
             reachable_on: None,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);

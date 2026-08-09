@@ -2486,6 +2486,7 @@ impl LiveBridge {
                                 reachable_on: None,
                                 network_name: None,
                                 passphrase: None,
+                                flow_control: None,
                                 extra_config: std::collections::HashMap::new(),
                             })
                             .collect();
@@ -3864,6 +3865,7 @@ impl LiveBridge {
                 reachable_on: None,
                 network_name: None,
                 passphrase: None,
+                flow_control: None,
                 extra_config: std::collections::HashMap::new(),
             })
             .collect();
@@ -6188,6 +6190,7 @@ mod nomad_private_first_failover_tests {
             reachable_on,
             network_name: None,
             passphrase: None,
+            flow_control: None,
             extra_config: std::collections::HashMap::default(),
         }
     }

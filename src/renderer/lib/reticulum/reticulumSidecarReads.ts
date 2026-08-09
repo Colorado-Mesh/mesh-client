@@ -99,6 +99,7 @@ export interface ReticulumSidecarInterfaceRow {
   reachable_on?: string | null;
   network_name?: string | null;
   passphrase?: string | null;
+  flow_control?: boolean | null;
   extra_config?: Record<string, string> | null;
 }
 
