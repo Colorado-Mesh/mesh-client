@@ -44,6 +44,8 @@ export const PROPAGATION_CASCADE_ATTEMPT_TIMEOUT_MS =
 export const PROPAGATION_SYNC_NO_TARGET_KEY = 'reticulumPropagation.syncNoTarget';
 /** Local inbox is enabled but its messagestore is still loading, so it cannot settle yet. */
 export const PROPAGATION_SYNC_LOCAL_LOADING_KEY = 'reticulumPropagation.syncLocalLoading';
+/** Remotes existed but every start was soft-deferred (retrieve already in flight). */
+export const PROPAGATION_SYNC_RETRIEVE_BUSY_KEY = 'reticulumPropagation.syncRetrieveBusy';
 
 /** Shared run for overlapping auto-sync ticks. */
 let inFlightCascade: Promise<boolean> | null = null;
@@ -59,6 +61,8 @@ export function resetPropagationSyncCascadeState(): void {
 /** Tracks whether any node was actually contacted, so a real error is never overwritten. */
 interface CascadeAttempts {
   any: boolean;
+  /** Soft-defer (retrieve/outbound/not-live busy) — not a missing-target condition. */
+  deferred: boolean;
 }
 
 /**
@@ -73,7 +77,8 @@ async function attemptSync(
 ): Promise<PropagationAttemptOutcome> {
   const startResult = await useReticulumPropagationStore.getState().startSync(id);
   if (startResult === 'deferred') {
-    // Soft defer: do not count as contacted and do not 15-minute-backoff the node.
+    // Soft defer: do not 15-minute-backoff the node, but remember we had targets.
+    attempts.deferred = true;
     return 'deferred';
   }
   if (startResult !== 'accepted') {
@@ -104,11 +109,14 @@ function finishWithoutTarget(attempts: CascadeAttempts): boolean {
   if (attempts.any) return false;
   const { nodes } = useReticulumPropagationStore.getState();
   const loading = isLocalPropagationLoading(nodes);
-  useReticulumPropagationStore
-    .getState()
-    .setLastSyncError(
-      loading ? PROPAGATION_SYNC_LOCAL_LOADING_KEY : PROPAGATION_SYNC_NO_TARGET_KEY,
-    );
+  // Discovered/configured targets existed but every startSync soft-deferred
+  // (stuck prior /get). Do not claim "none discovered".
+  const errorKey = loading
+    ? PROPAGATION_SYNC_LOCAL_LOADING_KEY
+    : attempts.deferred
+      ? PROPAGATION_SYNC_RETRIEVE_BUSY_KEY
+      : PROPAGATION_SYNC_NO_TARGET_KEY;
+  useReticulumPropagationStore.getState().setLastSyncError(errorKey);
   // No node was called, so nothing may be named alongside this error.
   useReticulumPropagationStore.getState().setSyncTargetId(null);
   return false;
@@ -225,7 +233,7 @@ async function runPropagationSyncCascade(
   const state = useReticulumPropagationStore.getState();
   const { nodes, preferredId, discovered } = state;
   const first = opts?.firstTargetId ?? null;
-  const attempts: CascadeAttempts = { any: false };
+  const attempts: CascadeAttempts = { any: false, deferred: false };
   const remoteDeadlineMs = Date.now() + PROPAGATION_CASCADE_BUDGET_MS;
   /** Mode changed under us, or a newer cascade took over — abandon this run entirely. */
   const superseded = (forMode: ReticulumPropagationMode): boolean =>

@@ -8,6 +8,8 @@ import type {
 import {
   hasPropagationCascadeCandidate,
   isLocalPropagationLoading,
+  listFiniteHopDiscoveredPropagationTargets,
+  listUnknownHopDiscoveredPropagationTargets,
   pickAutoPropagationNodeId,
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
@@ -56,6 +58,21 @@ describe('reticulumPropagationMode', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('treats absurd path-table hop counts as unknown for Auto ordering', () => {
+    const ghost = '54c454aa'.padEnd(32, '0');
+    const near = 'aabbccdd'.repeat(4);
+    const rows = [
+      discovered({ destination_hash: ghost, hops: 114, peering_cost: 18 }),
+      discovered({ destination_hash: near, hops: 2, peering_cost: 5 }),
+    ];
+    expect(
+      listFiniteHopDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash),
+    ).toEqual([near]);
+    expect(
+      listUnknownHopDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash),
+    ).toEqual([ghost]);
   });
 
   it('reports no cascade candidate for a fresh stack with a loading local inbox', () => {

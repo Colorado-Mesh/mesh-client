@@ -645,6 +645,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (p.attachment?.data_base64 && p.direction !== 'outbound') {
           attachmentPath = await cacheReticulumInboundAttachment(p.attachment);
         }
+        // Already-known rows (DB hydrate / prior session) must not re-fire RNCP
+        // control side effects after a cold start clears the in-memory dedup map.
+        const controlHashForKnown = resolveRncpLxmfControlMessageHash(p);
+        const knownBucket = useMessageStore.getState().messages[identityId] as
+          Record<string, unknown> | undefined;
+        const alreadyKnownControl = Boolean(
+          controlHashForKnown && knownBucket && Object.hasOwn(knownBucket, controlHashForKnown),
+        );
         ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
@@ -666,8 +674,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
           lxmfBodyContainsRncpRequestEnable(p.text)
         ) {
           // Catch-up / WS duplicates must not re-open the enable modal or auto-share.
-          const controlHash = resolveRncpLxmfControlMessageHash(p);
-          if (!controlHash || tryMarkRncpLxmfControlHandled(controlHash)) {
+          const controlHash = controlHashForKnown;
+          if (
+            !alreadyKnownControl &&
+            (!controlHash || tryMarkRncpLxmfControlHandled(controlHash))
+          ) {
             useRncpEnableRequestStore.getState().enqueue({
               peerHash: p.sender_hash,
               peerLabel: p.sender_name ?? null,
@@ -676,7 +687,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           }
         }
         if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
-          const controlHash = resolveRncpLxmfControlMessageHash(p);
+          // Reservation dedup (not messageStore): upsert_failed must be allowed to retry.
+          const controlHash = controlHashForKnown;
           const reservation = controlHash ? tryReserveRncpLxmfControlHandled(controlHash) : null;
           if (controlHash && !reservation) {
             return;

@@ -1331,7 +1331,11 @@ impl StackHandle {
                                 "storage_bytes".into(),
                                 serde_json::Value::Number(stats.bytes.into()),
                             );
-                            obj.insert("enabled".into(), serde_json::Value::Bool(stats.serving));
+                            // Keep the user's Host toggle (persisted). Serving is
+                            // reflected in `status` (`active` / `loading` / `idle`) —
+                            // overwriting enabled with serving hid local-prop from
+                            // Auto settle whenever the node was not yet announcing.
+                            obj.insert("enabled".into(), serde_json::Value::Bool(p.enabled));
                             obj.insert(
                                 "status".into(),
                                 serde_json::Value::String(

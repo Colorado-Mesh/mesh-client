@@ -623,6 +623,31 @@ describe('reticulumPropagationAutoApply', () => {
       expect(startSync.mock.calls.map((c) => c[0])[0]).toBe(near);
     });
 
+    it('RETRIEVE_BUSY-only cascade does not claim syncNoTarget when local is off', async () => {
+      const startSync = vi.fn(() => Promise.resolve('deferred' as const));
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'idle' }],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 1 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 2 },
+        ],
+        preferredId: null,
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: null,
+      });
+      useReticulumPropagationStore.setState({ startSync });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        'reticulumPropagation.syncRetrieveBusy',
+      );
+      expect(useReticulumPropagationStore.getState().lastSyncError).not.toBe(
+        'reticulumPropagation.syncNoTarget',
+      );
+    });
+
     it('skips a configured remote whose hash was already tried as the Manual seed', async () => {
       writeReticulumPropagationMode('manual');
       const shared = 'ccccdddd'.repeat(4);
