@@ -21,6 +21,7 @@ import {
   fetchReticulumRmapDiscovered,
   fetchReticulumSerialPortOptions,
   fetchReticulumSerialPorts,
+  formatReticulumPeerPathToast,
   formatReticulumPeerProbeToast,
   invalidateReticulumInterfacesCache,
   isReticulumSidecar404Error,
@@ -291,6 +292,21 @@ describe('reticulumSidecarReads', () => {
     expect(formatReticulumPeerProbeToast(t, { ok: true })).toEqual({
       message: 'peerDetailModal.probeOk',
       variant: 'success',
+    });
+  });
+
+  it('formatReticulumPeerPathToast humanizes proxy rate-limit errors', () => {
+    const t = ((key: string, opts?: { error?: string }) =>
+      opts?.error != null ? `${key}:${opts.error}` : key) as TFunction;
+    expect(
+      formatReticulumPeerPathToast(t, {
+        ok: false,
+        error:
+          "Error invoking remote method 'reticulum:proxyPost': Error: reticulum:proxy: rate limit exceeded",
+      }),
+    ).toEqual({
+      message: 'peerDetailModal.pathFailed:rrc.errors.proxyRateLimit',
+      variant: 'error',
     });
   });
 });

@@ -4884,7 +4884,8 @@
     "errors": {
       "linkProofTimeout": "Göbek bağlantısını beklerken zaman aşımına uğradı (bağlantı kanıtı). Tekrar deneyin veya merkeze giden yolu/durakları kontrol edin.",
       "pathTimeout": "Hub'a giden bir yol bulunamadı. Daha yeni bir duyuru bekleyin, ardından yeniden bağlanın.",
-      "welcomeTimeout": "Bağlantı kuruldu ancak merkez zamanında KARŞILAMA göndermedi. Tekrar deneyin."
+      "welcomeTimeout": "Bağlantı kuruldu ancak merkez zamanında KARŞILAMA göndermedi. Tekrar deneyin.",
+      "proxyRateLimit": "Şu anda çok fazla istek var (proxy ücreti sınırına ulaşıldı). Lütfen birkaç dakika bekleyip tekrar deneyin."
     },
     "expandMembers": "Üye listesini genişlet",
     "collapseMembers": "Üye listesini daralt",

@@ -4888,7 +4888,8 @@
     "errors": {
       "linkProofTimeout": "Przekroczono limit czasu oczekiwania na połączenie z hubem (link proof). Spróbuj ponownie lub sprawdź ścieżkę/przeskoki do centrum.",
       "pathTimeout": "Nie można znaleźć ścieżki do centrum. Poczekaj na świeższe ogłoszenie, a następnie połącz się ponownie.",
-      "welcomeTimeout": "Połączono, ale centrum nie wysłało POWITANIA na czas. Spróbuj ponownie."
+      "welcomeTimeout": "Połączono, ale centrum nie wysłało POWITANIA na czas. Spróbuj ponownie.",
+      "proxyRateLimit": "Zbyt wiele żądań w tej chwili (osiągnięto limit szybkości serwera proxy). Poczekaj chwilę i spróbuj ponownie."
     },
     "expandMembers": "Rozwiń listę członków",
     "collapseMembers": "Zwiń listę członków",

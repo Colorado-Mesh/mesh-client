@@ -313,7 +313,9 @@ export default function ReticulumPeerDetailModal({
       }
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] path ' + errLikeToLogString(e));
-      setPathStatus(t('peerDetailModal.pathFailed', { error: errLikeToLogString(e) }));
+      setPathStatus(
+        formatReticulumPeerPathToast(t, { ok: false, error: errLikeToLogString(e) }).message,
+      );
     } finally {
       setBusy(false);
     }
@@ -334,7 +336,9 @@ export default function ReticulumPeerDetailModal({
       }
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] probe ' + errLikeToLogString(e));
-      setProbeStatus(t('peerDetailModal.probeFailed', { error: errLikeToLogString(e) }));
+      setProbeStatus(
+        formatReticulumPeerProbeToast(t, { ok: false, error: errLikeToLogString(e) }).message,
+      );
     } finally {
       setBusy(false);
     }

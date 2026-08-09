@@ -5,6 +5,7 @@ import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { formatReticulumProxyErrorMessage } from '@/renderer/lib/reticulum/reticulumProxyErrorHumanize';
 import type { ReticulumRmapDiscoveredWireRow } from '@/shared/reticulum-types';
 import { isExpectedReticulumProxyError } from '@/shared/reticulumProxyIpcError';
 
@@ -403,8 +404,9 @@ export function formatReticulumPeerPathToast(
   if (result.ok) {
     return { message: t('peerDetailModal.pathOk'), variant: 'success' };
   }
+  const error = formatReticulumProxyErrorMessage(result.error ?? t('common.error'), t);
   return {
-    message: t('peerDetailModal.pathFailed', { error: result.error ?? t('common.error') }),
+    message: t('peerDetailModal.pathFailed', { error }),
     variant: 'error',
   };
 }
@@ -428,8 +430,9 @@ export function formatReticulumPeerProbeToast(
   if (result.ok) {
     return { message: t('peerDetailModal.probeOk'), variant: 'success' };
   }
+  const error = formatReticulumProxyErrorMessage(result.error ?? t('common.error'), t);
   return {
-    message: t('peerDetailModal.probeFailed', { error: result.error ?? t('common.error') }),
+    message: t('peerDetailModal.probeFailed', { error }),
     variant: 'error',
   };
 }

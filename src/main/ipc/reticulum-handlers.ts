@@ -228,12 +228,14 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     if (isGamesApiPath(pathArg)) {
       throw new Error('LRGP games require reticulum:games* IPC channels');
     }
-    if (isLxmfRecentApiPath(pathArg)) {
-      reticulumLxmfRecentIpcRateLimit.checkOrThrow();
-    } else {
-      reticulumProxyIpcRateLimit.checkOrThrow();
-    }
     try {
+      // Rate-limit inside try so checkOrThrow settles as an expected soft envelope
+      // (avoids Electron `[error] Error occurred in handler` spam).
+      if (isLxmfRecentApiPath(pathArg)) {
+        reticulumLxmfRecentIpcRateLimit.checkOrThrow();
+      } else {
+        reticulumProxyIpcRateLimit.checkOrThrow();
+      }
       const m = ensureManager();
       return await m.proxyGet(pathArg);
     } catch (err) {
@@ -244,7 +246,6 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyPost', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPost');
-    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     if (isRncpPickerGatedApiPath(pathArg)) {
       throw new Error(
@@ -258,6 +259,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       throw new Error('LRGP games require reticulum:games* IPC channels');
     }
     try {
+      reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
       return await m.proxyPost(pathArg, body);
     } catch (err) {
@@ -300,7 +302,6 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPut');
-    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     if (isNomadContentSourceApiPath(pathArg)) {
       throw new Error(
@@ -308,6 +309,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       );
     }
     try {
+      reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
       return await m.proxyPut(pathArg, body);
     } catch (err) {
@@ -318,12 +320,12 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyDelete', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyDelete');
-    reticulumProxyIpcRateLimit.checkOrThrow();
     const pathArg = assertProxyApiPath(apiPath);
     if (isGamesApiPath(pathArg)) {
       throw new Error('LRGP games require reticulum:games* IPC channels');
     }
     try {
+      reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
       return await m.proxyDelete(pathArg);
     } catch (err) {

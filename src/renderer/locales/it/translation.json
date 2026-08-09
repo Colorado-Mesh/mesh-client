@@ -4884,7 +4884,8 @@
     "errors": {
       "linkProofTimeout": "Tempo scaduto in attesa del collegamento hub (prova del collegamento). Riprova o controlla il percorso/salti verso l'hub.",
       "pathTimeout": "Impossibile trovare un percorso per l'hub. Attendi un annuncio più fresco, quindi riconnettiti.",
-      "welcomeTimeout": "Connesso ma l'hub non ha inviato IL BENVENUTO in tempo. Riprova."
+      "welcomeTimeout": "Connesso ma l'hub non ha inviato IL BENVENUTO in tempo. Riprova.",
+      "proxyRateLimit": "Troppe richieste in questo momento (limite di velocità proxy raggiunto). Attendi qualche istante e riprova."
     },
     "expandMembers": "Espandi l'elenco dei membri",
     "collapseMembers": "Comprimi l'elenco dei membri",

@@ -17,6 +17,11 @@ export function reticulumProxyErrorToI18nKey(message: string): string | null {
   ) {
     return 'rrc.stackNotReady';
   }
+  // Distinctive IPC limiter wording (`reticulum:proxy: rate limit exceeded` and
+  // Electron `Error invoking remote method 'reticulum:proxy*': …` wrappers).
+  if (lower.includes('rate limit exceeded')) {
+    return 'rrc.errors.proxyRateLimit';
+  }
   return null;
 }
 

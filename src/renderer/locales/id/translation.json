@@ -4884,7 +4884,8 @@
     "errors": {
       "linkProofTimeout": "Waktu habis menunggu tautan hub (bukti tautan). Coba lagi, atau periksa jalur/hop ke hub.",
       "pathTimeout": "Tidak dapat menemukan jalur ke hub. Tunggu pengumuman yang lebih segar, lalu sambungkan kembali.",
-      "welcomeTimeout": "Terhubung tetapi hub tidak mengirim SAMBUTAN tepat waktu. Coba lagi."
+      "welcomeTimeout": "Terhubung tetapi hub tidak mengirim SAMBUTAN tepat waktu. Coba lagi.",
+      "proxyRateLimit": "Terlalu banyak permintaan saat ini (batas tingkat proxy tercapai). Harap tunggu beberapa saat dan coba lagi."
     },
     "expandMembers": "Perluas daftar anggota",
     "collapseMembers": "Ciutkan daftar anggota",

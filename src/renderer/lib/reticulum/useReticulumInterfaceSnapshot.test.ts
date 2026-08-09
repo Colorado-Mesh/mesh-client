@@ -6,6 +6,10 @@ import {
   resetReticulumBleConnectGraceForTests,
 } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
+import {
+  noteReticulumProxyRateLimitHit,
+  resetReticulumProxyRateLimitBackoffForTests,
+} from '@/renderer/lib/reticulum/reticulumProxyRateLimitBackoff';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 import { useReticulumInterfaceSnapshot } from './useReticulumInterfaceSnapshot';
@@ -31,6 +35,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh', () => ({
 describe('useReticulumInterfaceSnapshot', () => {
   beforeEach(() => {
     resetReticulumBleConnectGraceForTests();
+    resetReticulumProxyRateLimitBackoffForTests();
     invalidateReticulumInterfacesCache();
     vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
       running: true,
@@ -143,6 +148,60 @@ describe('useReticulumInterfaceSnapshot', () => {
         callsBefore,
       );
     });
+  });
+
+  it('handleSidecarEvent refreshes on interface.state but not announce/stats', async () => {
+    const { result } = renderHook(() =>
+      useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.interfaces).toHaveLength(1);
+    });
+
+    const callsBefore = vi.mocked(window.electronAPI.reticulum.proxyGet).mock.calls.length;
+
+    act(() => {
+      result.current.handleSidecarEvent({ type: 'announce.received', payload: {} });
+      result.current.handleSidecarEvent({ type: 'stats_update', payload: {} });
+    });
+
+    expect(vi.mocked(window.electronAPI.reticulum.proxyGet).mock.calls.length).toBe(callsBefore);
+
+    act(() => {
+      result.current.handleSidecarEvent({ type: 'interface.state', payload: {} });
+    });
+
+    await waitFor(() => {
+      expect(vi.mocked(window.electronAPI.reticulum.proxyGet).mock.calls.length).toBeGreaterThan(
+        callsBefore,
+      );
+    });
+  });
+
+  it('skips refresh while shared proxy rate-limit backoff is active', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const { result } = renderHook(() =>
+      useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.interfaces).toHaveLength(1);
+    });
+
+    noteReticulumProxyRateLimitHit('shared');
+    const callsBefore = vi.mocked(window.electronAPI.reticulum.proxyGet).mock.calls.length;
+
+    act(() => {
+      result.current.handleSidecarEvent({ type: 'interface.state', payload: {} });
+    });
+
+    // Cache invalidated, but refresh short-circuits on shared backoff.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(vi.mocked(window.electronAPI.reticulum.proxyGet).mock.calls.length).toBe(callsBefore);
   });
 });
 
