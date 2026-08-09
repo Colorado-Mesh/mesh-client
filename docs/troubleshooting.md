@@ -1329,7 +1329,7 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Cause**: Hosting requires a live stack with identity signing key; enable starts `lxmf.propagation` LinkManager + announce loop (Resource deposit ingress + stamp validation into the local store, `/offer` admission, outbound peer inventory sync when idle, auto inbox drain into Chat, and sequenced post-peer `/get` after host `/offer` Completes).
 
-**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]` / `[propagation-deposit]` / auto-drain / `get_post_peer`. Tune announce interval under **Advanced PN hosting**. Peers depositing to your host should see your `lxmf.propagation` hash; bad stamps are rejected and logged under `propagation-deposit`.
+**Fix**: Confirm sidecar is running, identity is configured, **Network → Propagation → Host propagation node** is Enabled, and check logs for `[propagation-serve]` / `[propagation-announce]` / `[propagation-deposit]` / auto-drain / `get_post_peer` / `get_periodic`. Tune announce interval under **Advanced PN hosting**. Peers depositing to your host should see your `lxmf.propagation` hash; bad stamps are rejected and logged under `propagation-deposit`.
 
 ### Reticulum: Stored at PN but Sync leaves Chat empty
 
@@ -1339,16 +1339,16 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Progress bar = client `/get` retrieval.** User Sync against a remote PN drives the progress bar from the **client `/get` download** (inbox mail into Chat). Peer `/offer` inventory replication runs on the **local Host peer loop** when you are serving a PN — not on the Sync button — so a nonempty messagestore cannot hang Sync at AwaitingResponse against remotes that are not your peers. Look for `propagation-retrieve` `/get` Completes in Device logs for retrieve counts.
 
-**Host PN auto Chat path:** With **Host propagation node** enabled, mail that lands in the local store via peer Resource ingress should appear in Chat via **auto-drain** (`local-prop inbox auto-drain Completes`, `retrieve_mode=local`) without pressing Sync on local-prop. After your host peer `/offer` Completes to a peered remote, a **silent** client `/get` to that peer may also run (`retrieve_mode=get_post_peer`, no Sync UI bar). Explicit Sync remains `/get`-primary (Prefer / cascade).
+**Host PN auto Chat path:** With **Host propagation node** enabled, mail that lands in the local store via peer Resource ingress should appear in Chat via **auto-drain** (`local-prop inbox auto-drain Completes`, `retrieve_mode=local`) without pressing Sync on local-prop. After your host peer `/offer` Completes to a peered remote, a **silent** client `/get` to that peer may also run (`retrieve_mode=get_post_peer`, no Sync UI bar). While Host is on and quiet, a **~90s** periodic silent `/get` (`retrieve_mode=get_periodic`) revisits Prefer/peered remotes for inbox catch-up — this is not a 2s poll and does not re-`/offer` an unchanged store. Host peer `/offer` re-runs when the local messagestore generation advances (or after a failed/partial sync), with lxmd-style peer Idle bookkeeping. Explicit Sync remains `/get`-primary (Prefer / cascade).
 
 **Do not** tell users they must share the same preferred PN. Prefer log correlation instead:
 
 1. Sender Device log: `propagation-deposit` with `message_hash`, `transient_id`, `pn_hash` (deposit Completes).
-2. Recipient log (the real retrieval): `propagation-retrieve … retrieve_mode=get|get_post_peer pn_hash=… listed=N downloaded=N delivered=N` (the client `/get` download; `listed=0` is a valid empty-inbox success). Per-message `propagation-retrieve` with matching `message_hash` / `transient_id` fires as each downloaded message hits the delivery callback. Host auto-drain / `local-prop` Sync logs `retrieve_mode=local`. The peer-offer side logs `propagation-sync … peer_outcome=have_all|transfer` — that is **not** retrieval.
+2. Recipient log (the real retrieval): `propagation-retrieve … retrieve_mode=get|get_post_peer|get_periodic pn_hash=… listed=N downloaded=N delivered=N` (the client `/get` download; `listed=0` is a valid empty-inbox success). Per-message `propagation-retrieve` with matching `message_hash` / `transient_id` fires as each downloaded message hits the delivery callback. Host auto-drain / `local-prop` Sync logs `retrieve_mode=local`. The peer-offer side logs `propagation-sync … peer_outcome=have_all|transfer` — that is **not** retrieval.
 3. Renderer: `[catchUpRecentInboundLxmf] … reason=propagation_sync` or `propagation-retrieve catch-up after sync Completes count=N` (`count=0 (empty ring)` means Sync Completes with no new inbound for Chat).
-4. Confirm remote Sync Completes and that Host PN (if used) shows `[propagation-deposit] local PN accepted stamped propagated blob` plus auto-drain / post-peer retrieve lines when expecting Chat without a manual Sync.
+4. Confirm remote Sync Completes and that Host PN (if used) shows `[propagation-deposit] local PN accepted stamped propagated blob` plus auto-drain / post-peer / periodic retrieve lines when expecting Chat without a manual Sync.
 
-**Fix**: Retry Sync after path/announce settle; if using local Host, confirm ingress + auto-drain / post-peer `/get` logs and peer sync ticks (`local host queued outbound peer inventory sync`). Export developer bundles from both sides and `rg 'propagation-deposit|propagation-retrieve'`.
+**Fix**: Retry Sync after path/announce settle; if using local Host, confirm ingress + auto-drain / silent `/get` (`get_post_peer` / `get_periodic`) logs and peer sync ticks (`local host queued outbound peer inventory sync`). Export developer bundles from both sides and `rg 'propagation-deposit|propagation-retrieve'`.
 
 ### Reticulum PN hosting policy apply fails
 

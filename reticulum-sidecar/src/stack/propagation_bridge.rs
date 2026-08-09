@@ -10,8 +10,11 @@ use lxmf_core::message::LxMessage;
 use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::propagation_client::{PropagationClient, PropagationClientState};
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
-use lxmf_core::propagation_sync::{PeerSyncTerminalState, PropagationSyncTask, SyncTaskState};
+use lxmf_core::propagation_sync::{
+    PeerSyncTerminalResult, PeerSyncTerminalState, PropagationSyncTask, SyncTaskState,
+};
 use lxmf_core::router::LxmRouter;
+use lxmf_core::types::PropagationTransientId;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
@@ -697,22 +700,44 @@ impl PropagationBridge {
     }
 
     /// Drain sync events and return `Some((success, peer_hash))` when a peer sync just finished.
-    pub fn tick(&self, known_identities: &HashMap<String, [u8; 64]>) -> Option<(bool, [u8; 16])> {
-        let terminal = if let Ok(mut task) = self.sync_task.lock() {
+    ///
+    /// Applies lxmd-parity router peer bookkeeping: handled-message updates,
+    /// `sync_complete` / `sync_failed`, and `mark_offer_generation_processed` when
+    /// the generation is exhausted — then persists the peer via `save_peer`.
+    pub fn tick(
+        &self,
+        known_identities: &HashMap<String, [u8; 64]>,
+        router: &mut LxmRouter,
+    ) -> Option<(bool, [u8; 16])> {
+        let (handled, terminal_result) = if let Ok(mut task) = self.sync_task.lock() {
             // Sample before drain/tick: tip collapses Complete|Failed → Idle in tick().
             self.note_peak_progress(Self::progress_for_state(task.state));
             task.drain_events(known_identities);
             self.note_peak_progress(Self::progress_for_state(task.state));
             task.tick();
-            task.take_terminal_peer_result().map(|result| {
-                (
-                    matches!(result.state, PeerSyncTerminalState::Complete),
-                    result.peer_hash,
-                )
-            })
+            let handled = task.take_handled_updates();
+            let peer_hash_for_handled = if handled.is_empty() {
+                None
+            } else {
+                task.node_dest_hash()
+            };
+            let terminal = task.take_terminal_peer_result();
+            (peer_hash_for_handled.map(|h| (h, handled)), terminal)
         } else {
-            None
+            (None, None)
         };
+
+        if let Some((peer_hash, updates)) = handled {
+            apply_peer_handled_updates(router, &self.local_node, peer_hash, &updates);
+        }
+
+        let terminal = terminal_result.map(|result| {
+            apply_peer_sync_terminal(router, &self.local_node, &result);
+            (
+                matches!(result.state, PeerSyncTerminalState::Complete),
+                result.peer_hash,
+            )
+        });
         if let Some((ok, peer_hash)) = terminal {
             if let Ok(mut slot) = self.last_finished_ok.lock() {
                 *slot = Some(ok);
@@ -889,6 +914,70 @@ impl PropagationBridge {
                 let _ = event_tx.send(frame.to_string());
             });
         });
+    }
+}
+
+/// Merge peer-handled transient IDs into the router peer and persist (lxmd parity).
+pub(crate) fn apply_peer_handled_updates(
+    router: &mut LxmRouter,
+    local_node: &Arc<Mutex<PropagationNode>>,
+    peer_hash: [u8; 16],
+    updates: &[PropagationTransientId],
+) {
+    if updates.is_empty() {
+        return;
+    }
+    let Some(peer) = router.peers.get_mut(&peer_hash) else {
+        return;
+    };
+    for transient_id in updates {
+        peer.add_handled_message(transient_id);
+    }
+    persist_router_peer(local_node, router, peer_hash);
+}
+
+/// Apply peer `/offer` terminal result onto the router peer (lxmd parity).
+pub(crate) fn apply_peer_sync_terminal(
+    router: &mut LxmRouter,
+    local_node: &Arc<Mutex<PropagationNode>>,
+    result: &PeerSyncTerminalResult,
+) {
+    let Some(peer) = router.peers.get_mut(&result.peer_hash) else {
+        return;
+    };
+    match result.state {
+        PeerSyncTerminalState::Complete => {
+            peer.sync_complete();
+            if result.generation_exhausted {
+                if let Some(generation) = result.offer_generation {
+                    peer.mark_offer_generation_processed(generation);
+                }
+            }
+        }
+        PeerSyncTerminalState::Failed => {
+            peer.sync_failed();
+        }
+    }
+    persist_router_peer(local_node, router, result.peer_hash);
+}
+
+fn persist_router_peer(
+    local_node: &Arc<Mutex<PropagationNode>>,
+    router: &LxmRouter,
+    peer_hash: [u8; 16],
+) {
+    let Some(peer) = router.peers.get(&peer_hash) else {
+        return;
+    };
+    if let Ok(node) = local_node.lock() {
+        if let Err(error) = node.save_peer(peer) {
+            tracing::warn!(
+                target: "propagation-sync",
+                peer = %hex::encode(peer_hash),
+                error = %error,
+                "failed to persist peer sync state"
+            );
+        }
     }
 }
 
@@ -1358,6 +1447,144 @@ mod tests {
     }
 
     #[test]
+    fn apply_peer_sync_terminal_complete_returns_idle_and_marks_generation() {
+        use lxmf_core::constants::PeerState;
+        use lxmf_core::peer::LxmPeer;
+        use lxmf_core::router::RouterConfig;
+
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-peer-terminal-ok-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let peer_hash = [0x11u8; 16];
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let mut peer = LxmPeer::new(peer_hash);
+        peer.begin_sync();
+        assert_ne!(peer.state, PeerState::Idle);
+        router.peers.insert(peer_hash, peer);
+
+        apply_peer_sync_terminal(
+            &mut router,
+            &bridge.local_node(),
+            &PeerSyncTerminalResult {
+                peer_hash,
+                state: PeerSyncTerminalState::Complete,
+                offer_generation: Some(5),
+                generation_exhausted: true,
+            },
+        );
+        let peer = router.peers.get(&peer_hash).expect("peer");
+        assert_eq!(peer.state, PeerState::Idle);
+        assert!(
+            !peer.needs_offer_generation(5),
+            "exhausted generation must not remain due"
+        );
+        assert!(
+            peer.needs_offer_generation(6),
+            "newer store generation must re-enable sync"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_peer_sync_terminal_failed_returns_idle_without_marking_generation() {
+        use lxmf_core::constants::PeerState;
+        use lxmf_core::peer::LxmPeer;
+        use lxmf_core::router::RouterConfig;
+
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-peer-terminal-fail-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let peer_hash = [0x22u8; 16];
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let mut peer = LxmPeer::new(peer_hash);
+        peer.begin_sync();
+        router.peers.insert(peer_hash, peer);
+
+        apply_peer_sync_terminal(
+            &mut router,
+            &bridge.local_node(),
+            &PeerSyncTerminalResult {
+                peer_hash,
+                state: PeerSyncTerminalState::Failed,
+                offer_generation: Some(3),
+                generation_exhausted: false,
+            },
+        );
+        let peer = router.peers.get(&peer_hash).expect("peer");
+        assert_eq!(peer.state, PeerState::Idle);
+        assert!(
+            peer.needs_offer_generation(3),
+            "failed sync must leave generation retryable"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_peer_handled_updates_merges_ids() {
+        use lxmf_core::peer::LxmPeer;
+        use lxmf_core::router::RouterConfig;
+
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-peer-handled-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let peer_hash = [0x33u8; 16];
+        let mut router = LxmRouter::new(RouterConfig::default());
+        router.peers.insert(peer_hash, LxmPeer::new(peer_hash));
+        let tid = [0xAAu8; 32];
+        apply_peer_handled_updates(&mut router, &bridge.local_node(), peer_hash, &[tid]);
+        assert!(
+            router
+                .peers
+                .get(&peer_hash)
+                .expect("peer")
+                .handled_messages
+                .contains(&tid)
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn source_host_peer_sync_idle_gate_and_policy_start() {
         let live = include_str!("live.rs");
         assert!(
@@ -1383,6 +1610,12 @@ mod tests {
             "peer /offer Complete must sequence silent client /get"
         );
         assert!(
+            live.contains("HOST_PERIODIC_GET_INTERVAL")
+                && live.contains("next_host_periodic_get_target")
+                && live.contains("get_periodic"),
+            "Host serving must schedule periodic silent /get when idle"
+        );
+        assert!(
             live.contains("request_inbox_drain")
                 && live.contains("take_inbox_drain_request")
                 && live.contains("local-prop inbox auto-drain Completes"),
@@ -1397,6 +1630,14 @@ mod tests {
         assert!(
             bridge.contains("start_sync_with_policy"),
             "bridge must expose policy sync for host peer loop"
+        );
+        assert!(
+            bridge.contains("apply_peer_sync_terminal")
+                && bridge.contains("sync_complete")
+                && bridge.contains("mark_offer_generation_processed")
+                && bridge.contains("take_handled_updates")
+                && bridge.contains("save_peer"),
+            "host sync tick must apply lxmd peer terminal + handled updates"
         );
         // Inbox retrieval is the client `/get` download, driven from live.rs; the
         // bridge only logs peer-sync (`/offer`) outcomes, never inbox retrieval.
@@ -1516,8 +1757,14 @@ mod tests {
             "peer terminal → silent /get (emit_ui false)"
         );
         assert!(
-            live.contains("delivery_callback") && live.contains("get_post_peer"),
-            "/get Complete → delivery_callback (post-peer path)"
+            live.contains("delivery_callback")
+                && live.contains("get_post_peer")
+                && live.contains("get_periodic"),
+            "/get Complete → delivery_callback (post-peer + periodic paths)"
+        );
+        assert!(
+            bridge.contains("apply_peer_sync_terminal") && bridge.contains("take_handled_updates"),
+            "peer terminal bookkeeping must stay wired"
         );
         let sync_fn_start = live
             .find("pub async fn start_propagation_sync")

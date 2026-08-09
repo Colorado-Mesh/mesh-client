@@ -90,6 +90,10 @@ const LXMF_EGRESS_TAP_SETTLE_MS: u64 = 1500;
 /// before the Electron IPC proxy GET timeout (10s default).
 const TRANSPORT_QUERY_TIMEOUT: Duration = Duration::from_secs(20);
 
+/// lxmd `last_propagation_check` parity: Host-serving silent client `/get` when
+/// the local store is quiet (inbox catch-up from peered remotes).
+const HOST_PERIODIC_GET_INTERVAL: Duration = Duration::from_secs(90);
+
 /// Aspect Nomad Network nodes announce and serve page/file requests under.
 const NOMAD_NODE_ASPECT: &str = "nomadnetwork.node";
 
@@ -2442,6 +2446,8 @@ impl LiveBridge {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
             let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
+            let mut last_host_periodic_get_at: Option<Instant> = None;
+            let mut host_periodic_get_rr: usize = 0;
             loop {
                 interval.tick().await;
                 // Keep Auto / private-LAN policy inputs fresh (host from config, online from stats).
@@ -2626,7 +2632,7 @@ impl LiveBridge {
                     None
                 };
                 let need_inbox_drain = propagation.take_inbox_drain_request();
-                let mut start_silent_get: Option<[u8; 16]> = None;
+                let mut start_silent_get: Option<([u8; 16], &'static str)> = None;
                 {
                     let mut router = router.lock().await;
                     if let Ok(mut driver) = outbound.lock() {
@@ -2635,7 +2641,7 @@ impl LiveBridge {
                         }
                         driver.process_tick(&mut router, &event_tx);
                         let known_identities = driver.known_identities_for_propagation();
-                        let terminal = propagation.tick(&known_identities);
+                        let terminal = propagation.tick(&known_identities, &mut router);
                         if let Some((ok, peer_hash)) = terminal {
                             driver.set_propagation_sync_target(None);
                             // After host peer `/offer` Completes, pull our inbox from that
@@ -2654,9 +2660,36 @@ impl LiveBridge {
                                 && driver.propagation_sync_target().is_none()
                             {
                                 driver.set_propagation_sync_target(Some(peer_hash));
-                                start_silent_get = Some(peer_hash);
+                                start_silent_get = Some((peer_hash, "get_post_peer"));
                             } else {
                                 propagation.queue_post_peer_get(peer_hash);
+                            }
+                        }
+                        // Host quiet-store inbox refresh (lxmd ~90s outbound /get parity).
+                        let due_periodic = last_host_periodic_get_at
+                            .is_none_or(|at| at.elapsed() >= HOST_PERIODIC_GET_INTERVAL);
+                        if due_periodic
+                            && start_silent_get.is_none()
+                            && propagation.is_local_serving()
+                            && !propagation.sync_active()
+                            && !propagation.client_download_active()
+                            && driver.propagation_sync_target().is_none()
+                        {
+                            if let Some(peer_hash) = next_host_periodic_get_target(
+                                &router,
+                                driver.preferred_pn_hash(),
+                                &driver,
+                                &mut host_periodic_get_rr,
+                            ) {
+                                if !driver.has_inflight_delivery_to(&peer_hash) {
+                                    driver.set_propagation_sync_target(Some(peer_hash));
+                                    start_silent_get = Some((peer_hash, "get_periodic"));
+                                    last_host_periodic_get_at = Some(Instant::now());
+                                }
+                            } else {
+                                // No eligible peer yet — still advance the timer so we do
+                                // not spin every 2s while peers are missing identity.
+                                last_host_periodic_get_at = Some(Instant::now());
                             }
                         }
                         // Local Host: push inventory to peered PNs when the sync task is idle
@@ -2702,7 +2735,7 @@ impl LiveBridge {
                         );
                     });
                 }
-                if let Some(peer_hash) = start_silent_get {
+                if let Some((peer_hash, retrieve_mode)) = start_silent_get {
                     let pn_hex = hex::encode(peer_hash);
                     let outbound_for_clear = Arc::clone(&outbound);
                     let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
@@ -2726,16 +2759,20 @@ impl LiveBridge {
                         event_tx.clone(),
                         Some(on_terminal),
                         false,
+                        retrieve_mode,
                     );
                     if started {
                         tracing::info!(
                             target: "propagation-retrieve",
                             pn_hash = %pn_hex,
-                            "post-peer silent client /get queued"
+                            retrieve_mode,
+                            "silent client /get queued"
                         );
                     } else if let Ok(mut driver) = outbound.lock() {
                         driver.set_propagation_sync_target(None);
-                        propagation.queue_post_peer_get(peer_hash);
+                        if retrieve_mode == "get_post_peer" {
+                            propagation.queue_post_peer_get(peer_hash);
+                        }
                     }
                 }
                 // Skip tick when outbound is locked — never drain LRPROOF against an empty map.
@@ -3845,6 +3882,7 @@ impl LiveBridge {
             event_tx,
             on_terminal,
             emit_ui,
+            if emit_ui { "get" } else { "get_post_peer" },
         )
     }
 
@@ -5752,6 +5790,7 @@ fn spawn_client_download_driver_task(
     event_tx: broadcast::Sender<String>,
     on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
     emit_ui: bool,
+    retrieve_mode: &'static str,
 ) -> bool {
     if !bridge.start_client_download(pn_hash) {
         tracing::debug!(
@@ -5917,7 +5956,7 @@ fn spawn_client_download_driver_task(
                         listed,
                         downloaded,
                         delivered,
-                        retrieve_mode = if emit_ui { "get" } else { "get_post_peer" },
+                        retrieve_mode,
                         "client /get download Completes"
                     );
                     run_guarded(&|| {
@@ -5930,6 +5969,37 @@ fn spawn_client_download_driver_task(
         clear_pins();
     });
     true
+}
+
+/// Pick the next Host periodic `/get` target: Prefer/outbound first when peered
+/// and identity-known, else round-robin over alive peered remotes.
+fn next_host_periodic_get_target(
+    router: &LxmRouter,
+    preferred: Option<[u8; 16]>,
+    driver: &LxmfOutboundDriver,
+    rr: &mut usize,
+) -> Option<[u8; 16]> {
+    let identity_known = |hash: &[u8; 16]| driver.identity_known_for(&hex::encode(hash));
+    if let Some(pref) = preferred {
+        if let Some(peer) = router.peers.get(&pref) {
+            if peer.alive && identity_known(&pref) {
+                return Some(pref);
+            }
+        }
+    }
+    let mut candidates: Vec<[u8; 16]> = router
+        .peers
+        .values()
+        .filter(|p| p.alive && identity_known(&p.destination_hash))
+        .map(|p| p.destination_hash)
+        .collect();
+    if candidates.is_empty() {
+        return None;
+    }
+    candidates.sort_unstable();
+    let idx = *rr % candidates.len();
+    *rr = rr.wrapping_add(1);
+    Some(candidates[idx])
 }
 
 /// Pure announce classification for propagation sync targets.

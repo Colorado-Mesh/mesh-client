@@ -299,6 +299,11 @@ impl LxmfOutboundDriver {
         router.set_outbound_propagation_node(hash);
     }
 
+    /// Preferred / outbound PN hash used for cascade and Host periodic `/get`.
+    pub fn preferred_pn_hash(&self) -> Option<[u8; 16]> {
+        self.preferred_pn_hash
+    }
+
     /// Refresh enabled PN candidates used after Direct path failover exhausts.
     pub fn set_pn_cascade_candidates(&mut self, candidates: Vec<PnCascadeCandidate>) {
         tracing::info!(
