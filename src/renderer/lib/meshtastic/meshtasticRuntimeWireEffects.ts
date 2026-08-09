@@ -622,11 +622,19 @@ export function attachMeshtasticRuntimeWireEffects(
   });
   unsubscribesRef.current.push(unsub2);
 
-  const maybeRequestNodeInfoForNode = (from: number): void => {
+  const maybeRequestNodeInfoForNode = (
+    from: number,
+    opts?: { ignoreDisplayIdentity?: boolean },
+  ): void => {
     if (from === 0 || from === myNodeNumRef.current) return;
     if (isConfiguringRef.current) return;
-    const existing = getIdentityNode(meshtasticIdentityIdRef.current, from);
-    if (existing && !meshtasticNodeLacksDisplayIdentity(existing, from)) return;
+    // Missing-recipient-key recovery must refresh even nodes that already have a
+    // display name (we know who they are, we just lack a usable public key), so it
+    // opts out of the display-identity short-circuit while keeping the rate limit.
+    if (!opts?.ignoreDisplayIdentity) {
+      const existing = getIdentityNode(meshtasticIdentityIdRef.current, from);
+      if (existing && !meshtasticNodeLacksDisplayIdentity(existing, from)) return;
+    }
     const now = Date.now();
     const last = lastNodeInfoRequestAtRef.current.get(from) ?? 0;
     if (now - last < REQUEST_NODEINFO_MIN_INTERVAL_MS) return;
@@ -834,7 +842,9 @@ export function attachMeshtasticRuntimeWireEffects(
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
       tempIdToWirePacketId: ackMeshPacketIdByTempIdRef.current,
-      onMissingRecipientKey: maybeRequestNodeInfoForNode,
+      onMissingRecipientKey: (recipientNodeNum) => {
+        maybeRequestNodeInfoForNode(recipientNodeNum, { ignoreDisplayIdentity: true });
+      },
     });
   };
 
@@ -843,7 +853,9 @@ export function attachMeshtasticRuntimeWireEffects(
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
       tempIdToWirePacketId: ackMeshPacketIdByTempIdRef.current,
-      onMissingRecipientKey: maybeRequestNodeInfoForNode,
+      onMissingRecipientKey: (recipientNodeNum) => {
+        maybeRequestNodeInfoForNode(recipientNodeNum, { ignoreDisplayIdentity: true });
+      },
     });
     if (!uiApplied) {
       const parsed = reason as { id?: number; packetId?: number; error?: number };
