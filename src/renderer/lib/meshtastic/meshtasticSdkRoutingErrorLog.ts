@@ -69,6 +69,14 @@ export function humanizeMeshtasticSdkQueueRejectionError(reason: unknown): strin
   return i18nKey ? i18n.t(i18nKey) : parsed.errorName;
 }
 
+/**
+ * True for routing errors that mean we lack a usable public key for the DM recipient.
+ * Requesting the recipient's NODEINFO can recover the key so a retry succeeds.
+ */
+export function isMeshtasticMissingRecipientKeyError(errorName: string): boolean {
+  return errorName === 'PKI_SEND_FAIL_PUBLIC_KEY' || errorName === 'PKI_UNKNOWN_PUBKEY';
+}
+
 export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | null {
   switch (errorName) {
     case 'PKI_SEND_FAIL_PUBLIC_KEY':
@@ -98,6 +106,8 @@ export interface ApplyMeshtasticOutboundRoutingErrorContext {
   identityId: string | null;
   /** tempId → wire packet id assigned by the SDK (may differ from optimistic id). */
   tempIdToWirePacketId?: ReadonlyMap<number, number>;
+  /** Invoked with the recipient node num when a DM fails for lack of that node's public key. */
+  onMissingRecipientKey?: (recipientNodeNum: number) => void;
 }
 
 function outboundMatchesWirePacketId(
@@ -191,6 +201,10 @@ export function applyMeshtasticOutboundRoutingError(
   }
   const storeMessageId = resolveStoreMessageId(target, parsed.packetId);
   updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
+  // Missing recipient public key: fetch the recipient's NODEINFO so a retry can succeed.
+  if (isMeshtasticMissingRecipientKeyError(parsed.errorName) && target.to != null) {
+    ctx.onMissingRecipientKey?.(target.to);
+  }
   // The DB row may still hold the optimistic temp packet id (device never acked,
   // so updateMessagePacketId never ran) — key the update on the row's own id,
   // not the wire id from the radio NAK, or the UPDATE matches zero rows.

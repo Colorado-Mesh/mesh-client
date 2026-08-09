@@ -834,6 +834,7 @@ export function attachMeshtasticRuntimeWireEffects(
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
       tempIdToWirePacketId: ackMeshPacketIdByTempIdRef.current,
+      onMissingRecipientKey: maybeRequestNodeInfoForNode,
     });
   };
 
@@ -842,6 +843,7 @@ export function attachMeshtasticRuntimeWireEffects(
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
       tempIdToWirePacketId: ackMeshPacketIdByTempIdRef.current,
+      onMissingRecipientKey: maybeRequestNodeInfoForNode,
     });
     if (!uiApplied) {
       const parsed = reason as { id?: number; packetId?: number; error?: number };
