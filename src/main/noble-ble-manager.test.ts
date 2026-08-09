@@ -309,4 +309,41 @@ describe('NobleBleManager long-session maintenance (regression)', () => {
     expect(SOURCE).toContain('sessionAgeSec');
     expect(SOURCE).toContain('getLongSessionHealthSnapshot');
   });
+
+  /**
+   * On Linux, Noble is never initialized (Web Bluetooth is used in the renderer instead),
+   * so `sessions` stays empty for the app's whole lifetime. getLongSessionHealthSnapshot()
+   * used to call the throwing getSession() unconditionally, so once the hourly main-process
+   * health-log timer's 24h uptime gate opened, the very first tick threw an uncaught
+   * "Unknown noble session: meshtastic" in the main process — surfaced to the user as the
+   * "Mesh-Client — Unexpected Error" dialog on Linux after ~1 day of uptime.
+   */
+  it('reports a benign not-initialized snapshot on Linux instead of throwing from getSession()', () => {
+    expect(SOURCE).toMatch(
+      /getLongSessionHealthSnapshot\(\)[\s\S]*?const linuxNotInitialized = this\.isLinuxNotInitialized\(\);/,
+    );
+    // The guard must be checked inside sessionDetail() before the throwing getSession() call.
+    expect(SOURCE).toMatch(
+      /const sessionDetail = \(sessionId: 'meshtastic' \| 'meshcore'\) => \{\s*if \(linuxNotInitialized\) \{[\s\S]*?\};\s*\}\s*const session = this\.getSession\(sessionId\);/,
+    );
+    expect(SOURCE).toContain(
+      'getLongSessionHealthSnapshot: skipping session detail (not initialized on Linux)',
+    );
+  });
+
+  /**
+   * Follow-up cleanup (code review, PR self-review): the `sessions.size === 0` Linux check was
+   * duplicated across getLongSessionHealthSnapshot(), stopAllScanning(), and disconnectAll().
+   * Centralize it so all three call sites can't drift if the detection semantics ever change.
+   */
+  it('centralizes the Linux not-initialized check in a shared helper used by all call sites', () => {
+    expect(SOURCE).toMatch(
+      /private isLinuxNotInitialized\(\): boolean \{\s*return this\.sessions\.size === 0;\s*\}/,
+    );
+    expect(SOURCE).toContain('const linuxNotInitialized = this.isLinuxNotInitialized();');
+    expect(SOURCE).toContain('if (this.isLinuxNotInitialized()) return;');
+    expect(SOURCE).toContain('if (this.isLinuxNotInitialized()) {');
+    // No remaining inline `sessions.size === 0` checks — everything routes through the helper.
+    expect(SOURCE).not.toMatch(/(?<!return )this\.sessions\.size === 0/);
+  });
 });
