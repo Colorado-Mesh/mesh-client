@@ -141,6 +141,77 @@ describe('MeshcoreMqttAdapter — PING logging', () => {
   });
 });
 
+describe('MeshcoreMqttAdapter — stale client isolation', () => {
+  let adapter: MeshcoreMqttAdapter;
+
+  interface AdapterPacketPrivate {
+    lastPacketReceivedAt: number;
+  }
+
+  const makeClient = () => ({
+    on: vi.fn(),
+    end: vi.fn(),
+    removeAllListeners: vi.fn(),
+    connected: false,
+    publish: vi.fn(),
+    subscribe: vi.fn(),
+    reschedulePing: vi.fn(),
+    options: {},
+    stream: {},
+  });
+
+  const lastHandler = (
+    client: { on: ReturnType<typeof vi.fn> },
+    name: string,
+  ): ((packet: { cmd: string }) => void) => {
+    const hits = client.on.mock.calls.filter((c: unknown[]) => c[0] === name);
+    return hits[hits.length - 1]?.[1] as (packet: { cmd: string }) => void;
+  };
+
+  beforeEach(async () => {
+    const mqtt = await import('mqtt');
+    vi.mocked(mqtt.connect).mockClear();
+    adapter = new MeshcoreMqttAdapter();
+    adapter.on('error', () => {});
+  });
+
+  afterEach(() => {
+    adapter.disconnect();
+    vi.restoreAllMocks();
+  });
+
+  it('ignores packet events from a client that is no longer this.client', async () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const mqttMod = await import('mqtt');
+    const first = makeClient();
+    const second = makeClient();
+    vi.mocked(mqttMod.connect)
+      .mockImplementationOnce(() => first as never)
+      .mockImplementationOnce(() => second as never);
+
+    adapter.connect({ ...BASE_SETTINGS });
+    // Reconnect: connect() force-ends `first` and installs `second` as this.client.
+    adapter.connect({ ...BASE_SETTINGS });
+
+    const priv = adapter as unknown as AdapterPacketPrivate;
+    priv.lastPacketReceivedAt = 0;
+
+    // Stale `first` client emits after it was replaced — must be ignored entirely.
+    lastHandler(first, 'packetreceive')({ cmd: 'pingresp' });
+    lastHandler(first, 'packetsend')({ cmd: 'pingreq' });
+    expect(priv.lastPacketReceivedAt).toBe(0);
+    expect(debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGRESP'))).toHaveLength(0);
+    expect(debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGREQ'))).toHaveLength(0);
+
+    // Live `second` client still updates state and consumes the first-ping logs.
+    lastHandler(second, 'packetreceive')({ cmd: 'pingresp' });
+    lastHandler(second, 'packetsend')({ cmd: 'pingreq' });
+    expect(priv.lastPacketReceivedAt).toBeGreaterThan(0);
+    expect(debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGRESP'))).toHaveLength(1);
+    expect(debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGREQ'))).toHaveLength(1);
+  });
+});
+
 describe('MeshcoreMqttAdapter — clientId', () => {
   let adapter: MeshcoreMqttAdapter;
 

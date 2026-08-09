@@ -1101,6 +1101,56 @@ describe('reticulumPeerStore', () => {
     });
   });
 
+  const stubRefreshWindow = (): void => {
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+            if (path === '/api/v1/peers' || path.startsWith('/api/v1/peers?')) {
+              return Promise.resolve({ peers: [{ destination_hash: 'bb', hops: 3 }] });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+            return Promise.resolve({});
+          }),
+        },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+  };
+
+  it('does not log a full-refresh debug line when refresh completes under 2s', async () => {
+    stubRefreshWindow();
+    // started and elapsed both read the same clock value → elapsed 0ms.
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+    await refreshReticulumPeersFromSidecar({ forceRefresh: true });
+
+    expect(useReticulumPeerStore.getState().peers.get('bb')?.hops).toBe(3);
+    expect(debugSpy.mock.calls.filter((c) => String(c[0]).includes('full refresh'))).toHaveLength(
+      0,
+    );
+    debugSpy.mockRestore();
+  });
+
+  it('logs a full-refresh debug line when refresh exceeds the 2s threshold', async () => {
+    stubRefreshWindow();
+    // First now() call seeds `started` at 0; all later calls (incl. elapsed calc) → 5000ms.
+    vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValue(5000);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+    await refreshReticulumPeersFromSidecar({ forceRefresh: true });
+
+    expect(useReticulumPeerStore.getState().peers.get('bb')?.hops).toBe(3);
+    const fullRefreshLogs = debugSpy.mock.calls.filter((c) =>
+      String(c[0]).includes('full refresh'),
+    );
+    expect(fullRefreshLogs).toHaveLength(1);
+    expect(String(fullRefreshLogs[0][0])).toContain('5000ms');
+    debugSpy.mockRestore();
+  });
+
   it('applyReticulumAnnounceReceivedOptimistic inserts a peer before path-table refresh', () => {
     applyReticulumAnnounceReceivedOptimistic({
       destination_hash: 'AaBbCcDdEeFf00112233445566778899',

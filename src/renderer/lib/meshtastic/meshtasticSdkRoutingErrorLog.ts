@@ -4,6 +4,7 @@ import { resolveMeshtasticOutboundStoreKey } from '@/renderer/lib/sessions/mesht
 import { messageRecordsToChatMessages } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage } from '@/renderer/lib/types';
 import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
+import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import { meshtasticRoutingErrorName } from './meshtasticApplyErrorMessage';
 import {
@@ -202,7 +203,13 @@ export function applyMeshtasticOutboundRoutingError(
   const storeMessageId = resolveStoreMessageId(target, parsed.packetId);
   updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
   // Missing recipient public key: fetch the recipient's NODEINFO so a retry can succeed.
-  if (isMeshtasticMissingRecipientKeyError(parsed.errorName) && target.to != null) {
+  // Only for real DM recipients — never the broadcast address (a PKI NAK there is not
+  // a per-node key gap, and 0xffffffff has no NODEINFO to fetch).
+  if (
+    isMeshtasticMissingRecipientKeyError(parsed.errorName) &&
+    target.to != null &&
+    !isMeshtasticBroadcastNodeNum(target.to)
+  ) {
     ctx.onMissingRecipientKey?.(target.to);
   }
   // The DB row may still hold the optimistic temp packet id (device never acked,

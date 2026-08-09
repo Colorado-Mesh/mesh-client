@@ -316,6 +316,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.setStatus('connecting');
     this.connectAbortByWatchdog = false;
     this.client = mqtt.connect(connectOpts);
+    // Capture this session's client so listeners from an already-replaced (stale) client
+    // — mqtt.js can still emit after end() — cannot touch lastPacketReceivedAt or consume
+    // the new session's first-ping logs.
+    const sessionClient = this.client;
     this.client.on('error', (err) => {
       this.clearConnectTimers();
       console.error(
@@ -406,7 +410,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       // Schedule proactive token refresh
       this.scheduleTokenRefresh();
     });
-    this.client.on('packetsend', (packet) => {
+    sessionClient.on('packetsend', (packet) => {
+      if (this.client !== sessionClient) return;
       if (packet.cmd === 'pingreq' && !this.pingReqLogged) {
         this.pingReqLogged = true;
         console.debug(
@@ -415,7 +420,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         );
       }
     });
-    this.client.on('packetreceive', (packet) => {
+    sessionClient.on('packetreceive', (packet) => {
+      if (this.client !== sessionClient) return;
       this.lastPacketReceivedAt = Date.now();
       if (packet.cmd === 'pingresp' && !this.pingRespLogged) {
         this.pingRespLogged = true;
