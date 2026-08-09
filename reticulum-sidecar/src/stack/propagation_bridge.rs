@@ -394,6 +394,7 @@ impl PropagationBridge {
     }
 
     /// Whether a post-loop terminal success (progress 100) should be emitted.
+    #[allow(dead_code)] // used by peer-sync progress emitter + unit tests
     pub fn should_emit_terminal_success(last_finished_ok: Option<bool>) -> bool {
         last_finished_ok != Some(false)
     }
@@ -410,6 +411,36 @@ impl PropagationBridge {
         };
         client.set_propagation_node(pn_hash);
         client.start_download()
+    }
+
+    /// Map client `/get` state to UI progress (user Sync is `/get`-primary).
+    pub fn client_download_progress(&self) -> f64 {
+        let Ok(client) = self.client.lock() else {
+            return 0.0;
+        };
+        match client.state() {
+            PropagationClientState::Idle | PropagationClientState::Failed => 0.0,
+            PropagationClientState::LinkEstablishing => 10.0,
+            PropagationClientState::LinkEstablished => 20.0,
+            PropagationClientState::ListRequested => 40.0,
+            PropagationClientState::GetRequested => 55.0,
+            PropagationClientState::Receiving => 70.0,
+            PropagationClientState::PurgeRequested => 90.0,
+            PropagationClientState::Complete => 100.0,
+        }
+    }
+
+    /// True while the client `/get` state machine is mid-transfer.
+    pub fn client_download_active(&self) -> bool {
+        let Ok(client) = self.client.lock() else {
+            return false;
+        };
+        !matches!(
+            client.state(),
+            PropagationClientState::Idle
+                | PropagationClientState::Complete
+                | PropagationClientState::Failed
+        )
     }
 
     /// Cancel any in-flight client download (best-effort). The next
@@ -667,6 +698,9 @@ impl PropagationBridge {
         terminal
     }
 
+    /// Emit peer `/offer` sync progress over WS (offer probe / host diagnostics).
+    /// User Sync drives UI from the client `/get` path instead.
+    #[allow(dead_code)] // retained for offer-probe / peer-sync diagnostics
     pub fn spawn_sync_progress_emitter(
         self: &Arc<Self>,
         event_tx: broadcast::Sender<String>,
@@ -1109,23 +1143,52 @@ mod tests {
         let path_gate_at = sync_body
             .find("PROPAGATION_PATH_UNKNOWN")
             .expect("PATH_UNKNOWN in start_propagation_sync");
-        let peering_at = sync_body
-            .find("resolve_propagation_peering")
-            .expect("peering resolve in start_propagation_sync");
-        let start_sync_at = sync_body
-            .find("start_sync(hash")
-            .expect("start_sync call in start_propagation_sync");
+        let get_at = sync_body
+            .find("spawn_client_download_driver")
+            .expect("client /get driver in start_propagation_sync");
         assert!(
-            path_gate_at < peering_at,
-            "path gate must run before peering PoW (nonzero peering_cost)"
+            path_gate_at < get_at,
+            "path gate must run before client /get download"
+        );
+        // Peer `/offer` inventory sync belongs on the host peer loop. User Sync that
+        // starts peer sync with a nonempty messagestore hangs at AwaitingResponse.
+        assert!(
+            !sync_body.contains("start_sync(hash"),
+            "user Sync must not start peer /offer inventory sync"
         );
         assert!(
-            peering_at < start_sync_at,
-            "peering must run after path succeeds and before start_sync"
+            sync_body.contains("peer /offer deferred to host loop")
+                || sync_body.contains("peerOfferSkipped"),
+            "user Sync must document /get-primary peer-offer skip"
+        );
+        // Offer probe still validates remotes speak `/offer`.
+        let probe_start = live
+            .find("pub async fn probe_propagation_offer")
+            .expect("probe_propagation_offer");
+        let probe_fn = &live[probe_start..];
+        let probe_end = probe_fn[1..]
+            .find("\n    pub ")
+            .map_or(probe_fn.len(), |idx| idx + 1);
+        assert!(
+            probe_fn[..probe_end].contains("start_sync(hash"),
+            "offer probe must still exercise peer /offer"
+        );
+        // Configured-row Sync must not accept via the persistence stub while live is None.
+        let stack_sync = include_str!("mod.rs");
+        let by_id_start = stack_sync
+            .find("pub async fn start_propagation_sync(&self, propagation_id: &str)")
+            .expect("start_propagation_sync by id");
+        let by_id = &stack_sync[by_id_start..];
+        let by_id_end = by_id[1..]
+            .find("\n    pub ")
+            .map_or(by_id.len(), |idx| idx + 1);
+        assert!(
+            by_id[..by_id_end].contains("PROPAGATION_STACK_NOT_LIVE"),
+            "by-id Sync must hard-fail when RNS live is not attached"
         );
         assert!(
-            path_gate_at < start_sync_at,
-            "path gate must run before start_sync / Establishing"
+            by_id[..by_id_end].contains("#[cfg(not(feature = \"rns-stack\"))]"),
+            "persistence stub Sync must stay gated behind not(rns-stack)"
         );
     }
 

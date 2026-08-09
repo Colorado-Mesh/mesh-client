@@ -3642,17 +3642,8 @@ impl LiveBridge {
             );
             return Err("PROPAGATION_PATH_UNKNOWN".into());
         }
-        let peering = match self.resolve_propagation_peering(&dest_hex).await {
-            Ok(p) => p,
-            Err(e) => {
-                if let Ok(mut driver) = self.outbound.lock() {
-                    driver.set_propagation_sync_target(None);
-                }
-                return Err(e);
-            }
-        };
-        // Pin PN pubkey for the duration of Establishing so announce-flood eviction
-        // cannot drop it before LRPROOF validation (see known_identities cap).
+        // Pin PN pubkey for the duration of the client `/get` link so announce-flood
+        // eviction cannot drop it before LRPROOF validation (see known_identities cap).
         let pinned = if let Ok(mut driver) = self.outbound.lock() {
             if let Some(pub_key) = driver.public_key_for(&dest_hex) {
                 driver.pin_identity_for_propagation(&dest_hex, pub_key);
@@ -3663,13 +3654,18 @@ impl LiveBridge {
         } else {
             false
         };
+        let local_serving = self.propagation.is_local_serving();
+        let (msg_count, msg_bytes) = self.propagation.local_stats();
         tracing::info!(
             target: "propagation-sync",
             dest = %dest_hex,
             path_ok,
             hops = ?hops,
             pinned,
-            "starting remote propagation sync"
+            local_serving,
+            msg_count,
+            msg_bytes,
+            "starting remote propagation sync (client /get; peer /offer deferred to host loop)"
         );
         // Fresh cancel token + generation so a prior emitter cannot cancel/clear this run.
         let (cancel, run_id) = {
@@ -3690,18 +3686,11 @@ impl LiveBridge {
             let run_id = self.sync_run_id.fetch_add(1, Ordering::SeqCst) + 1;
             (cancel, run_id)
         };
-        if !self.propagation.start_sync(hash, Some(peering)) {
-            if let Ok(mut driver) = self.outbound.lock() {
-                driver.clear_propagation_identity_pins();
-                driver.set_propagation_sync_target(None);
-            }
-            return Err("propagation sync unavailable".into());
-        }
-        // Retrieval half of Sync (Python `request_messages_from_propagation_node`):
-        // pull our own store-and-forward mail from this PN via the client `/get`
-        // download and deliver it into Chat. Runs alongside the `/offer` peer sync
-        // above, which only replicates inventory and never fills our inbox.
-        self.spawn_client_download_driver(hash, dest_hex.clone(), Arc::clone(&cancel), run_id);
+        // User Sync retrieves inbox mail via client `/get` (Python
+        // `request_messages_from_propagation_node`). Peer `/offer` inventory push is
+        // owned by the local-host peer loop when serving — running it here with a
+        // nonempty messagestore hangs at AwaitingResponse against remotes that are
+        // not our peers, and the UI progress bar never Completes.
         let outbound = Arc::clone(&self.outbound);
         let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
             if let Ok(mut driver) = outbound.lock() {
@@ -3709,37 +3698,48 @@ impl LiveBridge {
                 driver.set_propagation_sync_target(None);
             }
         });
-        self.propagation.spawn_sync_progress_emitter(
-            self.event_tx.clone(),
-            cancel,
+        if !self.spawn_client_download_driver(
+            hash,
+            dest_hex.clone(),
+            Arc::clone(&cancel),
             run_id,
-            Arc::clone(&self.sync_run_id),
+            self.event_tx.clone(),
             Some(on_terminal),
-        );
+        ) {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
+                driver.set_propagation_sync_target(None);
+            }
+            return Err("propagation sync unavailable".into());
+        }
         Ok(())
     }
 
-    /// Drive the client `/get` download to completion off the sync request path.
+    /// Drive the client `/get` download to completion and emit Sync UI progress.
     ///
     /// Ticks [`PropagationBridge::poll_client_download`] on a short interval,
     /// feeding it the current known-identity map (for link-proof validation) and,
     /// on a terminal Complete, delivering each decoded message through the router
     /// delivery callback — the same path Direct/opportunistic inbound uses, so WS
     /// `lxmf_message`, the recent ring, and renderer catch-up all fire unchanged.
+    ///
+    /// Returns `false` when the client refuses to start (already active).
     fn spawn_client_download_driver(
         &self,
         pn_hash: [u8; 16],
         pn_hex: String,
         cancel: Arc<AtomicBool>,
         run_id: u64,
-    ) {
+        event_tx: broadcast::Sender<String>,
+        on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
+    ) -> bool {
         if !self.propagation.start_client_download(pn_hash) {
             tracing::debug!(
                 target: "propagation-retrieve",
                 pn_hash = %pn_hex,
                 "client /get download not started (already active or unavailable)"
             );
-            return;
+            return false;
         }
         let bridge = Arc::clone(&self.propagation);
         let router = Arc::clone(&self.router);
@@ -3749,8 +3749,33 @@ impl LiveBridge {
             // Client tick cadence; the client's own 120s timeout bounds a stuck link.
             const POLL_INTERVAL: Duration = Duration::from_millis(500);
             const DOWNLOAD_WATCHDOG: Duration = Duration::from_secs(180);
+            const ESTABLISH_STALL: Duration = Duration::from_secs(45);
             let mut interval = tokio::time::interval(POLL_INTERVAL);
             let started = Instant::now();
+            let mut last_logged_progress = -1.0_f64;
+            let emit_progress = |active: bool, progress: f64, message: Option<&str>| {
+                let payload = serde_json::json!({
+                    "active": active,
+                    "progress": progress,
+                    "message": message,
+                });
+                let frame = serde_json::json!({
+                    "type": "propagation_sync",
+                    "payload": payload,
+                });
+                let _ = event_tx.send(frame.to_string());
+            };
+            let clear_pins = || {
+                bridge.run_if_current(&active_run_id, run_id, || {
+                    if let Some(ref cb) = on_terminal {
+                        cb();
+                    }
+                });
+            };
+            // Immediate Establishing frame so the renderer stall watchdog sees progress.
+            bridge.run_if_current(&active_run_id, run_id, || {
+                emit_progress(true, 10.0, None);
+            });
             loop {
                 interval.tick().await;
                 // Superseded by a newer sync run: that run now owns the client,
@@ -3769,6 +3794,26 @@ impl LiveBridge {
                     });
                     break;
                 }
+                let progress = bridge.client_download_progress();
+                if progress <= 10.0
+                    && bridge.client_download_active()
+                    && started.elapsed() > ESTABLISH_STALL
+                {
+                    tracing::info!(
+                        target: "propagation-retrieve",
+                        pn_hash = %pn_hex,
+                        "client /get stalled while establishing"
+                    );
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_client_download();
+                        emit_progress(
+                            false,
+                            0.0,
+                            Some("propagation establish failed: NoLinkProof"),
+                        );
+                    });
+                    break;
+                }
                 if started.elapsed() > DOWNLOAD_WATCHDOG {
                     tracing::info!(
                         target: "propagation-retrieve",
@@ -3777,8 +3822,19 @@ impl LiveBridge {
                     );
                     bridge.run_if_current(&active_run_id, run_id, || {
                         bridge.cancel_client_download();
+                        emit_progress(
+                            false,
+                            0.0,
+                            Some("propagation establish failed: NoLinkProof"),
+                        );
                     });
                     break;
+                }
+                if (progress - last_logged_progress).abs() >= 0.5 {
+                    last_logged_progress = progress;
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        emit_progress(true, progress, None);
+                    });
                 }
                 let known = outbound
                     .lock()
@@ -3797,7 +3853,14 @@ impl LiveBridge {
                         );
                         // Consume the terminal failed state → Idle so a later
                         // sync can start a fresh retrieval.
-                        bridge.cancel_client_download();
+                        bridge.run_if_current(&active_run_id, run_id, || {
+                            bridge.cancel_client_download();
+                            emit_progress(
+                                false,
+                                0.0,
+                                Some("propagation establish failed: NoLinkProof"),
+                            );
+                        });
                         break;
                     }
                     ClientDownloadPoll::Complete {
@@ -3824,11 +3887,16 @@ impl LiveBridge {
                             retrieve_mode = "get",
                             "client /get download Completes"
                         );
+                        bridge.run_if_current(&active_run_id, run_id, || {
+                            emit_progress(false, 100.0, None);
+                        });
                         break;
                     }
                 }
             }
+            clear_pins();
         });
+        true
     }
 
     /// Drain the in-process (`local-prop`) PN store of our own mail into Chat.

@@ -4594,6 +4594,7 @@
     "syncNoTarget": "No propagation node is available yet — none has been discovered, and you have no added nodes. Sync runs on its own as soon as one is available.",
     "syncLocalLoading": "The local propagation node is still loading its stored messages. Sync runs on its own once it finishes.",
     "syncOutboundBusy": "Propagation sync deferred — an outbound message is depositing to this node.",
+    "syncStackNotLive": "Propagation sync deferred — the Reticulum stack is still starting.",
     "syncTimedOut": "Propagation sync timed out — the node may be unreachable.",
     "syncLocalNotSupported": "The local host propagation node cannot be synced over the network like a remote LXMF propagation node.",
     "syncIdentityUnknown": "Propagation node identity is unknown — wait for an announce or path response, then try again.",

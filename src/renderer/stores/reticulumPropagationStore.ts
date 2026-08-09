@@ -399,7 +399,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
         // Soft defer: outbound LXMF deposit owns the PN Link — retry without backoff.
-        if (res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY') {
+        if (
+          res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY' ||
+          res.error === 'PROPAGATION_STACK_NOT_LIVE' ||
+          res.error === 'RNS stack not live'
+        ) {
           set({
             sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
             lastSyncError: null,

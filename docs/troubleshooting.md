@@ -1337,7 +1337,7 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Cause (any-node model)**: LXMF does **not** require both parties to prefer the same PN. Deposit on PN A and retrieve via Sync from PN B is valid when autopeer/static peering moves inventory. Empty Chat after Sync is usually a fabric/retrieve/ingest gap (mail never reached the synced node, stamp/admission drop on a host PN, or inbound ring not catch-up’d into Chat) — not “wrong preferred PN.”
 
-**Progress bar ≠ retrieval.** Sync runs two independent operations against the PN: the **`/offer` peer sync** (inventory replication — this is what drives the progress bar and the `have_all`/`transfer` outcome) and the **client `/get` download** (the part that actually pulls _your_ mail into Chat). A Sync reaching **Complete / HaveAll** only tells you the peer-offer finished; it does **not** mean anything was retrieved. Look for the `/get` retrieve counts, not the peer-offer outcome.
+**Progress bar = client `/get` retrieval.** User Sync against a remote PN drives the progress bar from the **client `/get` download** (inbox mail into Chat). Peer `/offer` inventory replication runs on the **local Host peer loop** when you are serving a PN — not on the Sync button — so a nonempty messagestore cannot hang Sync at AwaitingResponse against remotes that are not your peers. Look for `propagation-retrieve` `/get` Completes in Device logs for retrieve counts.
 
 **Do not** tell users they must share the same preferred PN. Prefer log correlation instead:
 

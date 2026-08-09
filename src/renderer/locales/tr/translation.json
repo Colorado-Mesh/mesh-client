@@ -4290,7 +4290,8 @@
     "showChatNotice": "Chat'te yayılma hatırlatıcısını göster",
     "showChatNoticeAria": "Yayılma düğümü hatırlatma banner'ını Sohbet'te göster",
     "showChatNoticeHint": "Yayılma düğümü bulunmadığında görünen Sohbet başlığını gizlemek için bunu kapatın.",
-    "syncPathUnknown": "Bu yayılım düğümüne henüz bir ağ yolu yok. Arayüzlerinizi veya hub'ınızı kontrol edin, anons yapın ve tekrar deneyin."
+    "syncPathUnknown": "Bu yayılım düğümüne henüz bir ağ yolu yok. Arayüzlerinizi veya hub'ınızı kontrol edin, anons yapın ve tekrar deneyin.",
+    "syncStackNotLive": "Yayılma senkronizasyonu ertelendi — Reticulum yığını hala başlıyor."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

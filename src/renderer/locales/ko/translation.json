@@ -4290,7 +4290,8 @@
     "showChatNotice": "Chat에 전파 알림 표시",
     "showChatNoticeAria": "Chat에 전파 노드 알림 배너 표시",
     "showChatNoticeHint": "전파 노드를 사용할 수 없을 때 나타나는 채팅 배너를 숨기려면 이 옵션을 끄십시오.",
-    "syncPathUnknown": "이 전파 노드에 대한 네트워크 경로가 아직 없습니다. 인터페이스 또는 허브를 확인하고 공지한 다음 다시 시도하십시오."
+    "syncPathUnknown": "이 전파 노드에 대한 네트워크 경로가 아직 없습니다. 인터페이스 또는 허브를 확인하고 공지한 다음 다시 시도하십시오.",
+    "syncStackNotLive": "전파 동기화 지연 — Reticulum 스택이 아직 시작 중입니다."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",
