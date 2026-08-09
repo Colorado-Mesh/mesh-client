@@ -130,6 +130,8 @@ const PN_DEPOSIT_DEFER_ADVANCE_AFTER: u32 = 8;
 
 /// Correlatable ids for an in-flight Propagated deposit (`pn_hash`, optional `transient_id`).
 type PendingPnDeposit = ([u8; 16], Option<[u8; 32]>);
+/// Validated PN stamp entry: (transient_id, lxmf_data, stamp_u8, stamp_data).
+type ValidatedPnStamp = ([u8; 32], Vec<u8>, u8, [u8; 32]);
 
 pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
@@ -586,11 +588,12 @@ impl LxmfOutboundDriver {
         }
         // Hosted PN admit floor is min_stamp_cost (stamp_cost − flex). Pack at least that
         // when depositing in-process so accept_stamped_propagated_blob does not reject.
+        // try_lock: never block outbound tick on a contended PropagationNode mutex.
         let target_cost = if local_in_process {
             let local_floor = self
                 .local_prop_node
                 .as_ref()
-                .and_then(|n| n.lock().ok().map(|g| g.min_stamp_cost()))
+                .and_then(|n| n.try_lock().ok().map(|g| g.min_stamp_cost()))
                 .unwrap_or(0);
             local_floor.max(router.get_stamp_cost(&prop_hash).unwrap_or(0))
         } else {
@@ -703,23 +706,38 @@ impl LxmfOutboundDriver {
             );
             return false;
         };
+        let Some(hash) = message.hash.or(message.message_id) else {
+            // Without a hash we cannot emit Completes — fall back to Link so
+            // requeue/status paths can run (do not accept into the store first).
+            tracing::warn!(
+                target: "propagation-deposit",
+                pn_hash = %prop_hex,
+                "local-prop in-process deposit missing message hash"
+            );
+            return false;
+        };
+        // Validate outside the node mutex (PoW/stamp work must not hold PropagationNode).
+        // min_cost 0: stamp already generated against the PN cost at pack time.
+        let mut validated: Vec<ValidatedPnStamp> = Vec::new();
+        for entry in &entries {
+            let Some((transient_id, lxmf_data, stamp_value, stamp_data)) =
+                stamper::validate_pn_stamp(entry, 0)
+            else {
+                continue;
+            };
+            let stamp_u8 = u8::try_from(stamp_value).unwrap_or(u8::MAX);
+            validated.push((transient_id, lxmf_data, stamp_u8, stamp_data));
+        }
         let mut accepted = 0usize;
         let mut last_tid: Option<[u8; 32]> = None;
         {
-            let Ok(mut guard) = node.lock() else {
+            let Ok(mut guard) = node.try_lock() else {
                 return false;
             };
-            for entry in &entries {
-                // min_cost 0: stamp already generated against the PN cost at pack time.
-                let Some((transient_id, lxmf_data, stamp_value, stamp_data)) =
-                    stamper::validate_pn_stamp(entry, 0)
-                else {
-                    continue;
-                };
-                let stamp_u8 = u8::try_from(stamp_value).unwrap_or(u8::MAX);
-                if guard.accept_stamped_propagated_blob(&lxmf_data, &stamp_data, stamp_u8) {
+            for (transient_id, lxmf_data, stamp_u8, stamp_data) in &validated {
+                if guard.accept_stamped_propagated_blob(lxmf_data, stamp_data, *stamp_u8) {
                     accepted += 1;
-                    last_tid = Some(transient_id);
+                    last_tid = Some(*transient_id);
                     tracing::info!(
                         target: "propagation-deposit",
                         pn_hash = %prop_hex,
@@ -740,25 +758,16 @@ impl LxmfOutboundDriver {
             );
             return false;
         }
-        let msg_hash = message.hash.or(message.message_id);
-        if let Some(hash) = msg_hash {
-            self.pending_pn_deposits
-                .insert(hash, (prop_hash, last_tid.or(message.transient_id)));
-            self.handle_delivery_result(
-                router,
-                event_tx,
-                DeliveryResult::Complete {
-                    link_id: prop_hash,
-                    msg_hash: Some(hash),
-                },
-            );
-        } else {
-            tracing::warn!(
-                target: "propagation-deposit",
-                pn_hash = %prop_hex,
-                "local-prop in-process deposit missing message hash"
-            );
-        }
+        self.pending_pn_deposits
+            .insert(hash, (prop_hash, last_tid.or(message.transient_id)));
+        self.handle_delivery_result(
+            router,
+            event_tx,
+            DeliveryResult::Complete {
+                link_id: prop_hash,
+                msg_hash: Some(hash),
+            },
+        );
         true
     }
 

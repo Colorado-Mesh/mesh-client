@@ -149,6 +149,7 @@ mod tests {
             metadata: None,
             hops: Some(5),
         }));
+        assert!(!router.peers.contains_key(&deep));
 
         // Peering cost above max declined.
         assert!(!router.autopeer(AutopeerCandidate {
@@ -162,6 +163,7 @@ mod tests {
             metadata: None,
             hops: Some(1),
         }));
+        assert!(!router.peers.contains_key(&costly));
 
         assert!(router.autopeer(AutopeerCandidate {
             destination_hash: ok,
