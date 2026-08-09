@@ -352,6 +352,68 @@ describe('stripConsoleStyles (via appendLine + getRecentLines)', () => {
   });
 });
 
+describe('isDroppableMeshtasticSdkLogLine', () => {
+  it('drops routine SDK TRACE [iMeshDevice] chatter', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '03:39:57:239 TRACE [iMeshDevice] HandleMeshPacket Received STORE_FORWARD_APP packet',
+      ),
+    ).toBe(true);
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '01:25:29:719 TRACE [iMeshDevice] HandleFromRadio Received Queue Status',
+      ),
+    ).toBe(true);
+  });
+
+  it('drops periodic DEBUG [iMeshDevice] Ping heartbeats', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '01:25:29:561 DEBUG [iMeshDevice] Ping Send heartbeat ping to radio',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps INFO / WARN / ERROR SDK lines', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '00:56:01:200 WARN [iMeshDevice] HandleFromRadio Unhandled payload variant: deviceuiConfig',
+      ),
+    ).toBe(false);
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '00:56:01:185 INFO [iMeshDevice] HandleFromRadio Received Node info for this device',
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps non-Ping DEBUG lines', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '00:56:01:222 DEBUG [iMeshDevice] GetMetadata Received metadata packet',
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps TRACE decode-failure lines needed by Foreign LoRa detection', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        'TRACE [iMeshDevice] HandleMeshPacket decode failed rssi -120 snr -8 3c 01 02',
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps unrelated renderer/main lines', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(isDroppableMeshtasticSdkLogLine('[main] [MeshCore MQTT] PINGREQ sent')).toBe(false);
+  });
+});
+
 describe('formatRuntimeLogTag', () => {
   it('includes platform, arch, electron, node, packaged, and buildChannel fields', async () => {
     const { formatRuntimeLogTag } = await import('./log-service');

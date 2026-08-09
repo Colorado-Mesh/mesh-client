@@ -73,6 +73,74 @@ describe('MeshcoreMqttAdapter — topicPrefix wildcards', () => {
   );
 });
 
+describe('MeshcoreMqttAdapter — PING logging', () => {
+  let adapter: MeshcoreMqttAdapter;
+
+  beforeEach(async () => {
+    const mqtt = await import('mqtt');
+    vi.mocked(mqtt.connect).mockClear();
+    adapter = new MeshcoreMqttAdapter();
+    adapter.on('error', () => {});
+  });
+
+  afterEach(() => {
+    adapter.disconnect();
+    vi.restoreAllMocks();
+  });
+
+  const lastHandler = (
+    client: { on: ReturnType<typeof vi.fn> },
+    name: string,
+  ): ((packet: { cmd: string }) => void) => {
+    const hits = client.on.mock.calls.filter((c: unknown[]) => c[0] === name);
+    return hits[hits.length - 1]?.[1] as (packet: { cmd: string }) => void;
+  };
+
+  it('logs PINGREQ and PINGRESP only once per connection', async () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const mqttMod = await import('mqtt');
+    adapter.connect({ ...BASE_SETTINGS });
+    const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+      on: ReturnType<typeof vi.fn>;
+    };
+    const onSend = lastHandler(client, 'packetsend');
+    const onReceive = lastHandler(client, 'packetreceive');
+
+    onSend({ cmd: 'pingreq' });
+    onSend({ cmd: 'pingreq' });
+    onSend({ cmd: 'pingreq' });
+    onReceive({ cmd: 'pingresp' });
+    onReceive({ cmd: 'pingresp' });
+
+    const reqLogs = debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGREQ'));
+    const respLogs = debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGRESP'));
+    expect(reqLogs).toHaveLength(1);
+    expect(respLogs).toHaveLength(1);
+  });
+
+  it('re-logs PINGREQ once after a reconnect (flags reset)', async () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const mqttMod = await import('mqtt');
+
+    adapter.connect({ ...BASE_SETTINGS });
+    let client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+      on: ReturnType<typeof vi.fn>;
+    };
+    lastHandler(client, 'packetsend')({ cmd: 'pingreq' });
+    lastHandler(client, 'packetsend')({ cmd: 'pingreq' });
+
+    adapter.disconnect();
+    adapter.connect({ ...BASE_SETTINGS });
+    client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+      on: ReturnType<typeof vi.fn>;
+    };
+    lastHandler(client, 'packetsend')({ cmd: 'pingreq' });
+
+    const reqLogs = debugSpy.mock.calls.filter((c) => String(c[0]).includes('PINGREQ'));
+    expect(reqLogs).toHaveLength(2);
+  });
+});
+
 describe('MeshcoreMqttAdapter — clientId', () => {
   let adapter: MeshcoreMqttAdapter;
 

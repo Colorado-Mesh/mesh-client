@@ -311,6 +311,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       settings.tlsInsecure === true,
     );
     this.firstMessageLogged = false;
+    this.pingReqLogged = false;
+    this.pingRespLogged = false;
     this.setStatus('connecting');
     this.connectAbortByWatchdog = false;
     this.client = mqtt.connect(connectOpts);
@@ -405,16 +407,22 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.scheduleTokenRefresh();
     });
     this.client.on('packetsend', (packet) => {
-      if (packet.cmd === 'pingreq') {
-        this.pingReqLogged = false;
-        console.debug('[MeshCore MQTT] PINGREQ sent', new Date().toISOString());
+      if (packet.cmd === 'pingreq' && !this.pingReqLogged) {
+        this.pingReqLogged = true;
+        console.debug(
+          '[MeshCore MQTT] PINGREQ sent (first this session)',
+          new Date().toISOString(),
+        );
       }
     });
     this.client.on('packetreceive', (packet) => {
       this.lastPacketReceivedAt = Date.now();
-      if (packet.cmd === 'pingresp') {
-        this.pingRespLogged = false;
-        console.debug('[MeshCore MQTT] PINGRESP received', new Date().toISOString());
+      if (packet.cmd === 'pingresp' && !this.pingRespLogged) {
+        this.pingRespLogged = true;
+        console.debug(
+          '[MeshCore MQTT] PINGRESP received (first this session)',
+          new Date().toISOString(),
+        );
       }
     });
     this.client.on('message', (topic, payload) => {

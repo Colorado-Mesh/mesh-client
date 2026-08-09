@@ -243,18 +243,8 @@ async function drainWaitingMessagesManual(
     deps.setWaitingMessagesCount(total);
     deps.setWaitingMessagesSyncProgress({ processed: 0, total });
   } else if (total === 0) {
-    console.debug('[meshcoreConnSideEffects] processWaitingMessages empty queue (manual sync)');
     return;
   }
-  console.debug(
-    '[meshcoreConnSideEffects] processWaitingMessages start ' +
-      JSON.stringify({
-        count: total,
-        showSyncBanner: true,
-        connectionType: deps.connectionType,
-        mode: 'manual',
-      }),
-  );
   for (const m of arr) {
     if (!deps.meshcoreHookMountedRef.current) break;
     await ingestMeshcoreWaitingMessageItem(m, state, deps);
@@ -317,14 +307,6 @@ async function drainWaitingMessagesSilent(
   deps: MeshcoreWaitingMessagesDrainDeps,
 ): Promise<void> {
   const attemptId = beginMeshcoreSilentBulkAttempt();
-  console.debug(
-    '[meshcoreConnSideEffects] processWaitingMessages start ' +
-      JSON.stringify({
-        showSyncBanner: false,
-        connectionType: deps.connectionType,
-        mode: 'silent-bulk',
-      }),
-  );
 
   try {
     const msgs = await withTimeout(
@@ -339,7 +321,6 @@ async function drainWaitingMessagesSilent(
     if (!deps.meshcoreHookMountedRef.current) return;
     const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
     if (arr.length === 0) {
-      console.debug('[meshcoreConnSideEffects] processWaitingMessages empty queue (silent bulk)');
       return;
     }
     state.syncTotal = arr.length;
@@ -382,14 +363,6 @@ async function drainWaitingMessagesSilent(
       state.syncTotal = 0;
       state.progressActive = true;
       deps.setWaitingMessagesSyncProgress({ processed: 0, total: 0 });
-      console.debug(
-        '[meshcoreConnSideEffects] processWaitingMessages start ' +
-          JSON.stringify({
-            showSyncBanner: false,
-            connectionType: deps.connectionType,
-            mode: 'silent-fallback',
-          }),
-      );
       if (!deps.meshcoreHookMountedRef.current) return;
       await drainWaitingMessagesIncremental(conn, state, deps);
       return;
@@ -408,7 +381,6 @@ async function runMeshcoreWaitingMessagesDrain(
   options: { showSyncBanner: boolean },
   deps: MeshcoreWaitingMessagesDrainDeps,
 ): Promise<void> {
-  const startedAt = Date.now();
   const state: MeshcoreWaitingMessagesDrainState = {
     processed: 0,
     bannerActive: false,
@@ -429,22 +401,6 @@ async function runMeshcoreWaitingMessagesDrain(
     } else {
       await drainWaitingMessagesSilent(conn, state, deps);
     }
-    console.debug(
-      '[meshcoreConnSideEffects] processWaitingMessages done ' +
-        JSON.stringify({
-          count: state.processed,
-          durationMs: Date.now() - startedAt,
-          showSyncBanner: options.showSyncBanner,
-          connectionType: deps.connectionType,
-          mode: options.showSyncBanner
-            ? 'manual'
-            : state.syncTotal > 0
-              ? 'silent-bulk'
-              : state.processed > 0 || state.progressActive
-                ? 'silent-fallback'
-                : 'silent',
-        }),
-    );
   } finally {
     if (silentDrainUiActive) {
       deps.setWaitingMessagesSilentDrainActive(false);
@@ -646,7 +602,6 @@ export function attachMeshcoreConnSideEffects(
       } else {
         requestMeshcoreWaitingMessagesFollowUp();
       }
-      console.debug('[meshcoreConnSideEffects] processWaitingMessages skipped (in flight)');
       return getMeshcoreProcessWaitingMessagesInFlight()!;
     }
     const showSyncBanner = options?.showSyncBanner !== false;

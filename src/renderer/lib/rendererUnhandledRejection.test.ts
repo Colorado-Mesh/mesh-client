@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   armMeshtasticLateConfigureRetryableSwallow,
+  beginMeshtasticSessionRejectionSwallow,
+  endMeshtasticSessionRejectionSwallow,
   resetMeshtasticLateConfigureRetryableSwallowForTests,
+  resetMeshtasticSessionRejectionSwallowForTests,
 } from './meshtastic/meshtasticConfigureRetry';
 import {
   installRendererUnhandledRejectionLogger,
@@ -50,6 +53,7 @@ function dispatchUnhandledRejection(
 describe('installRendererUnhandledRejectionLogger', () => {
   afterEach(() => {
     resetMeshtasticLateConfigureRetryableSwallowForTests();
+    resetMeshtasticSessionRejectionSwallowForTests();
     vi.restoreAllMocks();
   });
 
@@ -95,6 +99,39 @@ describe('installRendererUnhandledRejectionLogger', () => {
       '[renderer] Unhandled rejection:',
       expect.stringContaining('Packet does not exist'),
     );
+  });
+
+  it('defers Packet does not exist to the active session swallow handler (no error log)', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+    beginMeshtasticSessionRejectionSwallow();
+
+    const event = dispatchUnhandledRejection(new Error('Packet does not exist'));
+    uninstall();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(errorSpy).not.toHaveBeenCalled();
+    // The bubble logger defers silently; the capture-phase session handler owns the debug line.
+    expect(debugSpy).not.toHaveBeenCalled();
+
+    endMeshtasticSessionRejectionSwallow();
+  });
+
+  it('still logs unrelated rejections while a session swallow handler is active', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+    beginMeshtasticSessionRejectionSwallow();
+
+    dispatchUnhandledRejection(new Error('genuine failure'));
+    uninstall();
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[renderer] Unhandled rejection:',
+      expect.stringContaining('genuine failure'),
+    );
+
+    endMeshtasticSessionRejectionSwallow();
   });
 
   it('does not log Packet does not exist during armed late-swallow window', () => {

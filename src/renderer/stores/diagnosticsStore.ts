@@ -1584,7 +1584,6 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
 
   clearDiagnostics(options) {
     const preserveForeignLora = options?.preserveForeignLora === true;
-    console.debug(`[diagnosticsStore] clearDiagnostics preserveForeignLora=${preserveForeignLora}`);
     if (diagnosticsDebounce.incrementalAnalysisTimer)
       clearTimeout(diagnosticsDebounce.incrementalAnalysisTimer);
     diagnosticsDebounce.incrementalAnalysisTimer = null;
