@@ -822,10 +822,9 @@ mod tests {
     use super::*;
     use lxmf_core::constants::DeliveryMethod;
 
-    /// local-prop loopback (plan acceptance gate): deposit stamped mail addressed
-    /// to our own `lxmf.delivery` hash into the local PN store, then confirm
-    /// `drain_local_inbox` runs the node's `/get` list → serve (stamp strip) →
-    /// purge, decrypts with the local identity, and yields the message once.
+    /// Manual blob → drain (partial loopback). Full outbound→stored_locally→drain
+    /// is covered by `local_prop_outbound_deposit_round_trip_stored_locally_then_drain`
+    /// in `lxmf_outbound.rs`.
     #[test]
     fn drain_local_inbox_delivers_then_purges_own_mail() {
         let dir =

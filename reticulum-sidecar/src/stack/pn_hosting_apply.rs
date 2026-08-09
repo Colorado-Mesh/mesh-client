@@ -102,4 +102,106 @@ mod tests {
         assert!(!router.peers.get(&discovered).is_some_and(|p| p.is_static));
         assert_eq!(router.static_peers, vec![keep]);
     }
+
+    /// T6: autopeer / static_peers / maxdepth / max_peering_cost from hosting policy.
+    #[test]
+    fn autopeer_respects_policy_cost_depth_and_static_peers() {
+        use lxmf_core::router::{AutopeerCandidate, RouterConfig};
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let static_peer = hash_from_hex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        let deep = hash_from_hex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        let costly = hash_from_hex("cccccccccccccccccccccccccccccccc");
+        let ok = hash_from_hex("dddddddddddddddddddddddddddddddd");
+
+        let policy = PnHostingPolicy {
+            autopeer: true,
+            autopeer_maxdepth: 2,
+            max_peering_cost: 20,
+            static_peers: vec![hex::encode(static_peer)],
+            ..Default::default()
+        };
+        apply_pn_hosting_policy_to_router(&mut router, &policy);
+        assert!(router.static_peers.contains(&static_peer));
+
+        // Static peers peer even beyond autopeer_maxdepth.
+        assert!(router.autopeer(AutopeerCandidate {
+            destination_hash: static_peer,
+            timebase: 1.0,
+            transfer_limit: Some(256.0),
+            sync_limit: Some(1024.0),
+            stamp_cost: Some(16),
+            stamp_flexibility: Some(3),
+            peering_cost: Some(18),
+            metadata: None,
+            hops: Some(10),
+        }));
+
+        // Discovered beyond maxdepth declined.
+        assert!(!router.autopeer(AutopeerCandidate {
+            destination_hash: deep,
+            timebase: 1.0,
+            transfer_limit: Some(256.0),
+            sync_limit: Some(1024.0),
+            stamp_cost: Some(16),
+            stamp_flexibility: Some(3),
+            peering_cost: Some(18),
+            metadata: None,
+            hops: Some(5),
+        }));
+        assert!(!router.peers.contains_key(&deep));
+
+        // Peering cost above max declined.
+        assert!(!router.autopeer(AutopeerCandidate {
+            destination_hash: costly,
+            timebase: 1.0,
+            transfer_limit: Some(256.0),
+            sync_limit: Some(1024.0),
+            stamp_cost: Some(16),
+            stamp_flexibility: Some(3),
+            peering_cost: Some(26),
+            metadata: None,
+            hops: Some(1),
+        }));
+        assert!(!router.peers.contains_key(&costly));
+
+        assert!(router.autopeer(AutopeerCandidate {
+            destination_hash: ok,
+            timebase: 1.0,
+            transfer_limit: Some(256.0),
+            sync_limit: Some(1024.0),
+            stamp_cost: Some(16),
+            stamp_flexibility: Some(3),
+            peering_cost: Some(18),
+            metadata: None,
+            hops: Some(1),
+        }));
+        assert!(router.peers.contains_key(&ok));
+    }
+
+    #[test]
+    fn autopeer_off_declines_discovered_candidates() {
+        use lxmf_core::router::{AutopeerCandidate, RouterConfig};
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        apply_pn_hosting_policy_to_router(
+            &mut router,
+            &PnHostingPolicy {
+                autopeer: false,
+                ..Default::default()
+            },
+        );
+        let dest = hash_from_hex("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+        assert!(!router.autopeer(AutopeerCandidate {
+            destination_hash: dest,
+            timebase: 1.0,
+            transfer_limit: Some(256.0),
+            sync_limit: Some(1024.0),
+            stamp_cost: Some(16),
+            stamp_flexibility: Some(3),
+            peering_cost: Some(18),
+            metadata: None,
+            hops: Some(1),
+        }));
+    }
 }

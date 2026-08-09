@@ -3378,7 +3378,17 @@ impl LiveBridge {
                 tracing::error!(target: "propagation-serve", "failed to start serve: {e}");
                 let mut router = self.router.lock().await;
                 self.propagation.set_local_serving(false, &mut router);
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.set_local_prop_node(None);
+                }
                 return;
+            }
+            // Cascade Completes deposit into this store in-process (no self-Link).
+            // Pin the lxmf.propagation dest pubkey for any Link fallback path.
+            if let Ok(mut driver) = self.outbound.lock() {
+                let local_hex = self.propagation.local_dest_hash_hex();
+                driver.pin_identity_for_propagation(&local_hex, self.identity.get_public_key());
+                driver.set_local_prop_node(Some(self.propagation.local_node()));
             }
             self.prop_announce.start(
                 self.handle.transport_tx.clone(),
@@ -3390,6 +3400,9 @@ impl LiveBridge {
         } else {
             self.prop_announce.stop();
             self.prop_serve.stop();
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_local_prop_node(None);
+            }
         }
     }
 
