@@ -2890,7 +2890,8 @@
     "shareContactQr": "Обратная связь",
     "shareContactQrAria": "Показать контактный QR-код MeshCore для официального импорта приложения",
     "copyPublicKey": "Копировать открытый ключ",
-    "publicKeyCopied": "Открытый ключ скопирован в буфер обмена."
+    "publicKeyCopied": "Открытый ключ скопирован в буфер обмена.",
+    "hasPublicKeyNoDm": "Имеет открытый ключ (нет прямых сообщений)"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3012,7 +3013,6 @@
     "summaryOffline_one": "{{count}} оффлайн",
     "summaryOffline_other": "{{count}} оффлайн",
     "tableCaptionMeshNodes": "Связанные узлы сетки",
-    "columnStatus": "Статус",
     "columnFavorite": "Любимый",
     "columnId": "ИДЕНТИФИКАТОР",
     "columnLongName": "Длинное имя",
@@ -3060,7 +3060,9 @@
     "emptyHistory": "Прямых сообщений пока нет — отправьте или получите DM, чтобы увидеть пиры здесь.",
     "meshcoreTypeSensor": "Датчик",
     "meshcoreTypeNone": "Нет",
-    "meshcoreTypeUnknown": "Неизвестно"
+    "meshcoreTypeUnknown": "Неизвестно",
+    "columnHealth": "Здравоохранение",
+    "hasPublicKeyTitle": "открытый ключ"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

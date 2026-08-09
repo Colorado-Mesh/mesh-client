@@ -2888,7 +2888,8 @@
     "shareContactQr": "Partilhar contacto",
     "shareContactQrAria": "Mostrar código QR de contato MeshCore para importação oficial do aplicativo",
     "copyPublicKey": "Chave pública",
-    "publicKeyCopied": "Chave pública copiada para a área de transferência."
+    "publicKeyCopied": "Chave pública copiada para a área de transferência.",
+    "hasPublicKeyNoDm": "Tem chave pública (sem mensagens diretas)"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -3010,7 +3011,6 @@
     "summaryOffline_one": "{{count}} offline",
     "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Nós de malha conectados",
-    "columnStatus": "Status",
     "columnFavorite": "Favorito",
     "columnId": "ID",
     "columnLongName": "Nome Completo",
@@ -3058,7 +3058,9 @@
     "emptyHistory": "Ainda não há mensagens diretas — envie ou receba um DM para ver os peers aqui.",
     "meshcoreTypeSensor": "Sensor",
     "meshcoreTypeNone": "Nenhuma.",
-    "meshcoreTypeUnknown": "Desconhecida"
+    "meshcoreTypeUnknown": "Desconhecida",
+    "columnHealth": "Health",
+    "hasPublicKeyTitle": "Chave pública"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

@@ -2888,7 +2888,8 @@
     "shareContactQr": "分享联系人",
     "shareContactQrAria": "显示MeshCore联系人二维码以进行官方应用导入",
     "copyPublicKey": "公钥",
-    "publicKeyCopied": "公钥已复制到剪贴板。"
+    "publicKeyCopied": "公钥已复制到剪贴板。",
+    "hasPublicKeyNoDm": "有公钥（无直接消息）"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3010,7 +3011,6 @@
     "summaryOffline_one": "{{count}}离线",
     "summaryOffline_other": "{{count}}离线",
     "tableCaptionMeshNodes": "已连接的网格节点",
-    "columnStatus": "状态",
     "columnFavorite": "我的最愛",
     "columnId": "CN",
     "columnLongName": "长名",
@@ -3058,7 +3058,9 @@
     "emptyHistory": "还没有私信—发送或接收 DM 以在此处查看对等节点。",
     "meshcoreTypeSensor": "测传",
     "meshcoreTypeNone": "无",
-    "meshcoreTypeUnknown": "未知"
+    "meshcoreTypeUnknown": "未知",
+    "columnHealth": "健康",
+    "hasPublicKeyTitle": "公钥"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

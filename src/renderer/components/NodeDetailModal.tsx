@@ -729,9 +729,13 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && contactPubkey && (
                   <span
                     className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
-                    title={t('nodeDetailModal.hasPublicKey')}
+                    title={
+                      isMeshcoreDmExcludedHwModel(node.hw_model)
+                        ? t('nodeDetailModal.hasPublicKeyNoDm')
+                        : t('nodeDetailModal.hasPublicKey')
+                    }
                   >
-                    🔑 DM
+                    {isMeshcoreDmExcludedHwModel(node.hw_model) ? '🔑' : '🔑 DM'}
                   </span>
                 )}
                 {protocol === 'meshcore' &&

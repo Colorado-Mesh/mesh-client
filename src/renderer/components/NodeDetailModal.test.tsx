@@ -327,6 +327,37 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(await screen.findByText('Public key copied to clipboard.')).toBeInTheDocument();
   });
 
+  it.each(['Chat', 'Sensor'])(
+    'shows a DM-capable key badge for a MeshCore %s contact with a public key',
+    async (hwModel) => {
+      vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+        public_key: 'ab'.repeat(32),
+        on_radio: 1,
+      } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
+      renderMeshcoreModal({ node: { ...meshcoreRepeaterNode, hw_model: hwModel } });
+
+      const badge = await screen.findByTitle('Has public key - can send DMs');
+      expect(badge).toHaveTextContent('🔑 DM');
+      expect(screen.queryByTitle('Has public key (no direct messages)')).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['Repeater', 'Room'])(
+    'shows a key-only badge (no DM) for a MeshCore %s contact with a public key',
+    async (hwModel) => {
+      vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+        public_key: 'ab'.repeat(32),
+        on_radio: 1,
+      } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
+      renderMeshcoreModal({ node: { ...meshcoreRepeaterNode, hw_model: hwModel } });
+
+      const badge = await screen.findByTitle('Has public key (no direct messages)');
+      expect(badge).toHaveTextContent('🔑');
+      expect(badge).not.toHaveTextContent('DM');
+      expect(screen.queryByTitle('Has public key - can send DMs')).not.toBeInTheDocument();
+    },
+  );
+
   it('enables Message when live store has pubkey but DB contact row does not', async () => {
     const chatNode: MeshNode = { ...meshcoreRepeaterNode, hw_model: 'Chat' };
     const pubKey = new Uint8Array(32).fill(0xab);

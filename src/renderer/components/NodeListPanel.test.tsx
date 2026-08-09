@@ -621,13 +621,11 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.getByText(hex)).toBeInTheDocument();
   });
 
-  it('renders pubkey-derived short id in the MeshCore ID cell when the key is known', () => {
+  it('drops the MeshCore ID column (no ID header, no !-prefixed id text)', () => {
     const nodeId = 0xdeadbeef;
-    const hex = 'aabbccdd' + '00'.repeat(28);
     const nodes = new Map<number, MeshNode>([
-      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer' })],
+      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer', hw_model: 'Chat' })],
     ]);
-    const pubkeyMap = new Map<number, string>([[nodeId, hex]]);
     render(
       <NodeListPanel
         nodes={nodes}
@@ -636,17 +634,39 @@ describe('NodeListPanel import contacts', () => {
         locationFilter={defaultFilter}
         onToggleFavorite={vi.fn()}
         mode="meshcore"
-        meshcorePublicKeyHexByNodeId={pubkeyMap}
+        meshcorePublicKeyHexByNodeId={new Map([[nodeId, 'aa'.repeat(32)]])}
       />,
     );
-    expect(screen.getByText('!aabbccdd')).toBeInTheDocument();
-    expect(screen.queryByText('!deadbeef')).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /^ID$/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^!/)).not.toBeInTheDocument();
   });
 
-  it('falls back to the XOR node id in the MeshCore ID cell when the key is unknown', () => {
+  it.each(['Chat', 'Sensor', 'Repeater', 'Room'])(
+    'shows the key icon for any MeshCore %s contact with a known public key',
+    (hwModel) => {
+      const nodeId = 0xdeadbeef;
+      const nodes = new Map<number, MeshNode>([
+        [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer', hw_model: hwModel })],
+      ]);
+      render(
+        <NodeListPanel
+          nodes={nodes}
+          myNodeNum={0}
+          onNodeClick={vi.fn()}
+          locationFilter={defaultFilter}
+          onToggleFavorite={vi.fn()}
+          mode="meshcore"
+          meshcorePublicKeyHexByNodeId={new Map([[nodeId, 'aa'.repeat(32)]])}
+        />,
+      );
+      expect(screen.getByLabelText('Has public key')).toBeInTheDocument();
+    },
+  );
+
+  it('hides the key icon when the MeshCore contact has no known public key', () => {
     const nodeId = 0xdeadbeef;
     const nodes = new Map<number, MeshNode>([
-      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer' })],
+      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer', hw_model: 'Chat' })],
     ]);
     render(
       <NodeListPanel
@@ -659,7 +679,34 @@ describe('NodeListPanel import contacts', () => {
         meshcorePublicKeyHexByNodeId={new Map()}
       />,
     );
-    expect(screen.getByText('!deadbeef')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Has public key')).not.toBeInTheDocument();
+  });
+
+  it('labels the first column "Health" for both Meshtastic and MeshCore', () => {
+    const meshtastic = render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(meshtastic.getByRole('columnheader', { name: /Health/ })).toBeInTheDocument();
+    meshtastic.unmount();
+
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    expect(screen.getByRole('columnheader', { name: /Health/ })).toBeInTheDocument();
   });
 });
 
