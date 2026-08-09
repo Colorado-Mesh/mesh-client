@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Toon propagatieherinnering in Chat",
     "showChatNoticeAria": "Toon de herinneringsbanner voor het propagatieknooppunt in Chat",
-    "showChatNoticeHint": "Schakel dit uit om de chatbanner te verbergen die verschijnt als er geen propagatieknooppunt beschikbaar is."
+    "showChatNoticeHint": "Schakel dit uit om de chatbanner te verbergen die verschijnt als er geen propagatieknooppunt beschikbaar is.",
+    "syncPathUnknown": "Nog geen netwerkpad naar dit propagatieknooppunt. Controleer uw interfaces of hub, kondig aan en probeer het opnieuw."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

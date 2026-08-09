@@ -2,7 +2,8 @@ import {
   hasEnabledLocalPropagationNode,
   isLocalPropagationLoading,
   listConfiguredRemotePropagationIds,
-  listDiscoveredPropagationTargets,
+  listFiniteHopDiscoveredPropagationTargets,
+  listUnknownHopDiscoveredPropagationTargets,
   propagationTargetDestinationHash,
   readReticulumPropagationMode,
   resolveManualCascadeSeed,
@@ -180,8 +181,8 @@ async function runConfiguredRemoteAttempts(args: {
 }
 
 /**
- * Auto: best discovered (one-time sync by hash — **no** Add, **no** Preferred) →
- * configured remotes → local-prop settle.
+ * Auto: finite-hop discovered (one-time by hash — **no** Add/Preferred) → configured
+ * remotes → unknown-hop discovered → local-prop settle.
  * Manual: explicit first target, else Preferred, else best configured remote (picked for this
  * sync only — **no** Preferred write) → remaining configured remotes → local-prop settle.
  * Off: no propagation support — never syncs, even with an explicit target.
@@ -190,7 +191,7 @@ async function runConfiguredRemoteAttempts(args: {
  * then fails to establish hands off to the next candidate instead of ending the cascade.
  *
  * In Auto, `firstTargetId` is ignored — per-row Sync and bottom Sync both run the full
- * discovered → configured → local cascade.
+ * finite-discovered → configured → unknown-discovered → local cascade.
  */
 export async function startPropagationSyncCascade(opts?: {
   /** Seeds Manual (Preferred / per-row Sync). Ignored in Auto. */
@@ -240,20 +241,33 @@ async function runPropagationSyncCascade(
     }
 
     const tried = new Set<string>();
-    const discoveredTargets = omitRecentlyFailedPropagationTargets(
-      listDiscoveredPropagationTargets(nodes, discovered),
-      (target) => target.destinationHash,
-    ).slice(0, MAX_DISCOVERED_SYNC_ATTEMPTS);
+    const tryDiscoveredBatch = async (
+      batch: { destinationHash: string; hops: number }[],
+    ): Promise<'success' | 'cancelled' | 'continue'> => {
+      const targets = omitRecentlyFailedPropagationTargets(
+        batch,
+        (target) => target.destinationHash,
+      ).slice(0, MAX_DISCOVERED_SYNC_ATTEMPTS);
+      for (const target of targets) {
+        if (superseded('auto')) return 'cancelled';
+        if (remoteBudgetSpent()) return 'continue';
+        const hash = target.destinationHash.toLowerCase();
+        if (tried.has(hash)) continue;
+        tried.add(hash);
+        const outcome = await attemptSync(hash, attempts);
+        if (outcome === 'success') return 'success';
+        if (outcome === 'cancelled') return 'cancelled';
+      }
+      return 'continue';
+    };
 
-    for (const target of discoveredTargets) {
-      if (superseded('auto')) return false;
-      if (remoteBudgetSpent()) break;
-      const hash = target.destinationHash.toLowerCase();
-      tried.add(hash);
-      const outcome = await attemptSync(hash, attempts);
-      if (outcome === 'success') return true;
-      if (outcome === 'cancelled') return false;
-    }
+    // Prefer path-known discovered PNs before configured remotes; leave hops-unknown
+    // vanity announces until after configured so they cannot starve Preferred/added PNs.
+    const finiteOutcome = await tryDiscoveredBatch(
+      listFiniteHopDiscoveredPropagationTargets(nodes, discovered),
+    );
+    if (finiteOutcome === 'success') return true;
+    if (finiteOutcome === 'cancelled') return false;
 
     const remotes = await runConfiguredRemoteAttempts({
       mode: 'auto',
@@ -264,6 +278,13 @@ async function runPropagationSyncCascade(
     });
     if (remotes === 'success') return true;
     if (remotes === 'stop') return false;
+
+    const unknownOutcome = await tryDiscoveredBatch(
+      listUnknownHopDiscoveredPropagationTargets(nodes, discovered),
+    );
+    if (unknownOutcome === 'success') return true;
+    if (unknownOutcome === 'cancelled') return false;
+
     return tryLocalSettleIfEnabled(attempts);
   }
 
@@ -295,7 +316,8 @@ async function runPropagationSyncCascade(
 
 /**
  * Run the mode-appropriate sync cascade with an optional Manual seed target.
- * Auto ignores `targetId` and always runs discovered → configured → local.
+ * Auto ignores `targetId` and always runs finite-discovered → configured →
+ * unknown-discovered → local.
  */
 export async function startPropagationSyncWithTarget(targetId: string): Promise<boolean> {
   return startPropagationSyncCascade({ firstTargetId: targetId });

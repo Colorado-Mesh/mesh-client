@@ -1089,6 +1089,45 @@ mod tests {
             live.contains("spawn_client_download_driver") && live.contains("start_client_download"),
             "live sync must drive the client `/get` download"
         );
+        // Remote sync must hard-fail when no path exists (same as offer probe) instead of
+        // starting Establishing and timing out in the renderer.
+        let sync_fn_start = live
+            .find("pub async fn start_propagation_sync")
+            .expect("start_propagation_sync");
+        let sync_fn = &live[sync_fn_start..];
+        let sync_fn_end = sync_fn[1..]
+            .find("\n    pub ")
+            .map_or(sync_fn.len(), |idx| idx + 1);
+        let sync_body = &sync_fn[..sync_fn_end];
+        assert!(
+            sync_body.contains("PROPAGATION_PATH_UNKNOWN"),
+            "start_propagation_sync must return PROPAGATION_PATH_UNKNOWN when path is missing"
+        );
+        assert!(
+            !sync_body.contains("let _path_ok"),
+            "start_propagation_sync must not discard ensure_path_for_direct"
+        );
+        let path_gate_at = sync_body
+            .find("PROPAGATION_PATH_UNKNOWN")
+            .expect("PATH_UNKNOWN in start_propagation_sync");
+        let peering_at = sync_body
+            .find("resolve_propagation_peering")
+            .expect("peering resolve in start_propagation_sync");
+        let start_sync_at = sync_body
+            .find("start_sync(hash")
+            .expect("start_sync call in start_propagation_sync");
+        assert!(
+            path_gate_at < peering_at,
+            "path gate must run before peering PoW (nonzero peering_cost)"
+        );
+        assert!(
+            peering_at < start_sync_at,
+            "peering must run after path succeeds and before start_sync"
+        );
+        assert!(
+            path_gate_at < start_sync_at,
+            "path gate must run before start_sync / Establishing"
+        );
     }
 
     /// Auto deposits on discovered PNs, so a newly heard announce must refresh the cascade

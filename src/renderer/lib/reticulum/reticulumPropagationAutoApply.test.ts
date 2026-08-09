@@ -208,6 +208,37 @@ describe('reticulumPropagationAutoApply', () => {
     expect(startSync).toHaveBeenCalledWith('local-prop');
   });
 
+  it('Auto tries configured remotes before hops-unknown discovered announces', async () => {
+    const unknownHash = '2222'.repeat(8);
+    const startSync = vi
+      .fn()
+      .mockResolvedValueOnce('failed')
+      .mockResolvedValueOnce('failed')
+      .mockResolvedValueOnce('accepted');
+    useReticulumPropagationStore.setState({
+      preferredId: null,
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        {
+          id: 'pn-aabb1111',
+          name: 'Remote',
+          enabled: true,
+          status: 'known',
+          hops: 2,
+          destination_hash: 'aabb'.repeat(8),
+        },
+      ],
+      discovered: [{ destination_hash: unknownHash, node_state: true, peering_cost: 0 }],
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual([
+      'pn-aabb1111',
+      unknownHash,
+      'local-prop',
+    ]);
+  });
+
   it('Manual Preferred local-prop syncs local settle', async () => {
     writeReticulumPropagationMode('manual');
     const startSync = vi.fn().mockResolvedValue('accepted');

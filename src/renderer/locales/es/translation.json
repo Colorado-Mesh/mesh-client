@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Mostrar recordatorio de propagación en el chat",
     "showChatNoticeAria": "Mostrar el banner de recordatorio del nodo de propagación en el chat",
-    "showChatNoticeHint": "Desactive esta opción para ocultar el banner de chat que aparece cuando no hay ningún nodo de propagación disponible."
+    "showChatNoticeHint": "Desactive esta opción para ocultar el banner de chat que aparece cuando no hay ningún nodo de propagación disponible.",
+    "syncPathUnknown": "Aún no hay ruta de red a este nodo de propagación. Comprueba tus interfaces o hub, anuncia y vuelve a intentarlo."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

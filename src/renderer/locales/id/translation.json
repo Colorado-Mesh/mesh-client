@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Tampilkan pengingat propagasi di Obrolan",
     "showChatNoticeAria": "Tampilkan spanduk pengingat simpul propagasi di Obrolan",
-    "showChatNoticeHint": "Nonaktifkan ini untuk menyembunyikan spanduk Obrolan yang muncul ketika tidak ada node propagasi yang tersedia."
+    "showChatNoticeHint": "Nonaktifkan ini untuk menyembunyikan spanduk Obrolan yang muncul ketika tidak ada node propagasi yang tersedia.",
+    "syncPathUnknown": "Belum ada jalur jaringan ke simpul propagasi ini. Periksa antarmuka atau hub Anda, umumkan, lalu coba lagi."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}} ： {{message}}",
     "showChatNotice": "在聊天中显示传播提醒",
     "showChatNoticeAria": "在聊天中显示传播节点提醒横幅",
-    "showChatNoticeHint": "关闭此选项可隐藏在没有可用传播节点时显示的聊天横幅。"
+    "showChatNoticeHint": "关闭此选项可隐藏在没有可用传播节点时显示的聊天横幅。",
+    "syncPathUnknown": "还没有到此传播节点的网络路径。请检查您的接口或集线器，宣布，然后重试。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

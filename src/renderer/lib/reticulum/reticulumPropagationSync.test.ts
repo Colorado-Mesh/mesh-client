@@ -89,6 +89,9 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_IDENTITY_UNKNOWN')).toBe(
       'reticulumPropagation.syncIdentityUnknown',
     );
+    expect(mapPropagationSyncError('PROPAGATION_PATH_UNKNOWN')).toBe(
+      'reticulumPropagation.syncPathUnknown',
+    );
     expect(mapPropagationSyncError('PROPAGATION_TARGET_NOT_PN')).toBe(
       'reticulumPropagation.syncTargetNotPropagationNode',
     );

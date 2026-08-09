@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Ausbreitungserinnerung im Chat anzeigen",
     "showChatNoticeAria": "Verbreitungsknoten-Erinnerungsbanner im Chat anzeigen",
-    "showChatNoticeHint": "Deaktivieren Sie diese Option, um das Chat-Banner auszublenden, das angezeigt wird, wenn kein Ausbreitungsknoten verfügbar ist."
+    "showChatNoticeHint": "Deaktivieren Sie diese Option, um das Chat-Banner auszublenden, das angezeigt wird, wenn kein Ausbreitungsknoten verfügbar ist.",
+    "syncPathUnknown": "Noch kein Netzwerkpfad zu diesem Ausbreitungsknoten. Überprüfen Sie Ihre Schnittstellen oder Ihren Hub, kündigen Sie an und versuchen Sie es dann erneut."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",
