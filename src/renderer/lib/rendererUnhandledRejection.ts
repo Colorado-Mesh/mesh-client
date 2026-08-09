@@ -1,8 +1,4 @@
-import {
-  isMeshtasticConfigureRetryableError,
-  isMeshtasticSessionRejectionSwallowActive,
-  shouldSwallowLateMeshtasticConfigureRetryableRejection,
-} from './meshtastic/meshtasticConfigureRetry';
+import { shouldSwallowLateMeshtasticConfigureRetryableRejection } from './meshtastic/meshtasticConfigureRetry';
 
 /** Log renderer-wide unhandled promise rejections without throwing a second error. */
 export function logRendererUnhandledRejection(reason: unknown): void {
@@ -17,17 +13,9 @@ export function installRendererUnhandledRejectionLogger(target: Window = window)
   const handler = (event: PromiseRejectionEvent) => {
     // Capture-phase Meshtastic handler may have already preventDefault'd queue rejections.
     if (event.defaultPrevented) return;
-    // While a Meshtastic session swallow handler is installed, it owns the mid-send
-    // `Packet does not exist` teardown race. This bubble handler is registered first, so it runs
-    // before the capture handler at_target — defer (no error log) and let it log + preventDefault.
-    if (
-      isMeshtasticSessionRejectionSwallowActive() &&
-      isMeshtasticConfigureRetryableError(event.reason)
-    ) {
-      event.preventDefault();
-      return;
-    }
-    // Only during a short post-teardown window (armed when Meshtastic session handler unsubscribes).
+    // Only swallow disconnect mid-send `Packet does not exist` during the short post-teardown
+    // window (armed at safeDisconnect and when the Meshtastic session handler unsubscribes).
+    // Outside that window these stay logged so real anomalies remain visible.
     if (shouldSwallowLateMeshtasticConfigureRetryableRejection(event.reason)) {
       console.debug(
         '[renderer] Ignoring Meshtastic disconnect mid-send rejection:',

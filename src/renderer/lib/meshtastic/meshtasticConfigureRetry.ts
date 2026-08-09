@@ -11,32 +11,6 @@ const CONFIGURE_RETRYABLE_PATTERN = /packet does not exist/i;
 
 let lateConfigureRetryableSwallowUntilMs = 0;
 
-/**
- * Ref-count of installed Meshtastic session unhandled-rejection swallow handlers. While > 0, the
- * capture-phase handler owns `Packet does not exist` teardown-race rejects, so the app-lifetime
- * renderer logger must defer instead of logging them as errors (both listeners are at_target on
- * `window`, so registration order — not the capture flag — decides who runs first).
- */
-let sessionRejectionSwallowDepth = 0;
-
-export function beginMeshtasticSessionRejectionSwallow(): void {
-  sessionRejectionSwallowDepth++;
-}
-
-export function endMeshtasticSessionRejectionSwallow(): void {
-  sessionRejectionSwallowDepth = Math.max(0, sessionRejectionSwallowDepth - 1);
-}
-
-/** True while a Meshtastic session rejection-swallow handler is installed. */
-export function isMeshtasticSessionRejectionSwallowActive(): boolean {
-  return sessionRejectionSwallowDepth > 0;
-}
-
-/** Test-only: reset the session swallow ref-count. */
-export function resetMeshtasticSessionRejectionSwallowForTests(): void {
-  sessionRejectionSwallowDepth = 0;
-}
-
 export function isMeshtasticConfigureRetryableError(err: unknown): boolean {
   return CONFIGURE_RETRYABLE_PATTERN.test(errLikeToLogString(err));
 }

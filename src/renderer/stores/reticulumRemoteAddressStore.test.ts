@@ -46,6 +46,32 @@ describe('reticulumRemoteAddressStore', () => {
     expect(result?.id).toBe('addr1');
   });
 
+  it('resolves both concurrent upserts once the DB reflects both rows', async () => {
+    const rowA = { ...ROW, id: 'addrA', destination_hash: 'a'.repeat(32) };
+    const rowB = { ...ROW, id: 'addrB', destination_hash: 'b'.repeat(32) };
+    // The DB (via the list IPC) only knows about a row after its write lands; the second
+    // hydrate must re-fetch instead of piggybacking on the first in-flight load.
+    vi.mocked(window.electronAPI.db.listReticulumRemoteAddresses)
+      .mockResolvedValueOnce([rowA])
+      .mockResolvedValue([rowA, rowB]);
+
+    const [resultA, resultB] = await Promise.all([
+      useReticulumRemoteAddressStore.getState().upsert({
+        label: rowA.label,
+        service: rowA.service,
+        destination_hash: rowA.destination_hash,
+      }),
+      useReticulumRemoteAddressStore.getState().upsert({
+        label: rowB.label,
+        service: rowB.service,
+        destination_hash: rowB.destination_hash,
+      }),
+    ]);
+
+    expect(resultA?.id).toBe('addrA');
+    expect(resultB?.id).toBe('addrB');
+  });
+
   it('removes an address from local state after a successful delete', async () => {
     useReticulumRemoteAddressStore.setState({
       addresses: new Map([[ROW.id, ROW]]),

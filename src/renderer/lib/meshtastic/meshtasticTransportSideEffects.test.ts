@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { MeshDevice } from '@meshtastic/core';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { attachMeshtasticTransportLossWatch } from './meshtasticTransportLossDetection';
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticTransportSideEffects';
@@ -15,13 +15,18 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
     unsubs = [];
     window.electronAPI.onNobleBleDisconnected = vi.fn(() => () => {});
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   function mockDevice(): MeshDevice {
     return {
-      setHeartbeatInterval: vi.fn(),
+      heartbeat: vi.fn().mockResolvedValue(0),
     } as unknown as MeshDevice;
   }
 
@@ -36,8 +41,9 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
 
     expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
     expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(device, 'ble', onTransportLost);
-    expect(device.setHeartbeatInterval).toHaveBeenCalledWith(60_000);
-    expect(unsubs).toHaveLength(1);
+    vi.advanceTimersByTime(60_000);
+    expect(device.heartbeat).toHaveBeenCalledTimes(1);
+    expect(unsubs).toHaveLength(2);
   });
 
   it('attaches serialized transport and heartbeat for serial', () => {
@@ -55,8 +61,9 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       'serial',
       onTransportLost,
     );
-    expect(device.setHeartbeatInterval).toHaveBeenCalledWith(60_000);
-    expect(unsubs).toHaveLength(1);
+    vi.advanceTimersByTime(60_000);
+    expect(device.heartbeat).toHaveBeenCalledTimes(1);
+    expect(unsubs).toHaveLength(2);
   });
 
   it('attaches serialized transport but skips heartbeat for HTTP', () => {
@@ -77,7 +84,8 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       'http',
       onTransportLost,
     );
-    expect(device.setHeartbeatInterval).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(60_000);
+    expect(device.heartbeat).not.toHaveBeenCalled();
     expect(unsubs).toHaveLength(1);
   });
 
@@ -94,7 +102,22 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
     // TCP is a persistent duplex link like serial/BLE, not a polling link like HTTP,
     // so it gets both the serialized-writer wrap and heartbeat.
     expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(device, 'tcp', onTransportLost);
-    expect(device.setHeartbeatInterval).toHaveBeenCalledWith(60_000);
-    expect(unsubs).toHaveLength(1);
+    vi.advanceTimersByTime(60_000);
+    expect(device.heartbeat).toHaveBeenCalledTimes(1);
+    expect(unsubs).toHaveLength(2);
+  });
+
+  it('stops the heartbeat after its unsubscribe runs', () => {
+    const device = mockDevice();
+    pushMeshtasticTransportSideEffectUnsubs(
+      device,
+      'tcp',
+      (unsub) => unsubs.push(unsub),
+      onTransportLost,
+    );
+
+    for (const unsub of unsubs) unsub();
+    vi.advanceTimersByTime(180_000);
+    expect(device.heartbeat).not.toHaveBeenCalled();
   });
 });

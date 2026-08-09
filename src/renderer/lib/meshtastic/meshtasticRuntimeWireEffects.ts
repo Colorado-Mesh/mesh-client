@@ -645,10 +645,7 @@ export function attachMeshtasticRuntimeWireEffects(
         await device.sendPacket(new Uint8Array(), Portnums.PortNum.NODEINFO_APP, from);
         console.debug(`[useMeshtasticRuntime] NODEINFO request sent for 0x${from.toString(16)}`);
       } catch (e: unknown) {
-        console.debug(
-          '[useMeshtasticRuntime] NODEINFO request failed',
-          e instanceof Error ? e.message : e,
-        );
+        console.debug('[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e));
       }
     })();
   };
