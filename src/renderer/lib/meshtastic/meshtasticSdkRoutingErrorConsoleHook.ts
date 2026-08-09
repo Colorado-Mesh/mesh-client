@@ -1,6 +1,8 @@
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
   armMeshtasticLateConfigureRetryableSwallow,
+  beginMeshtasticSessionRejectionSwallow,
+  endMeshtasticSessionRejectionSwallow,
   isMeshtasticConfigureRetryableError,
 } from './meshtasticConfigureRetry';
 import {
@@ -79,8 +81,12 @@ export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
   };
   // Capture phase so preventDefault runs before the bubble-phase renderer logger.
   window.addEventListener('unhandledrejection', handler, { capture: true });
+  // Mark a session swallow active so the app-lifetime renderer logger defers to this handler
+  // even though at_target listeners fire in registration order (renderer logger is installed first).
+  beginMeshtasticSessionRejectionSwallow();
   return () => {
     window.removeEventListener('unhandledrejection', handler, { capture: true });
+    endMeshtasticSessionRejectionSwallow();
     // Late SDK queue rejects can settle after wire-effects teardown removes this handler.
     armMeshtasticLateConfigureRetryableSwallow();
   };

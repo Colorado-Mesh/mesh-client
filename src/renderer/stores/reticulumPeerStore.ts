@@ -1261,7 +1261,7 @@ async function refreshReticulumPeersFromSidecarOnce(
   }
 
   const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started;
-  if (elapsed > 2000 || peers.size > 2000) {
+  if (elapsed > 2000) {
     console.debug(
       `[reticulumPeerStore] full refresh ${Math.round(elapsed)}ms peers=${peers.size} force=${Boolean(opts.forceRefresh)}`,
     );

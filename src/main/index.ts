@@ -3247,7 +3247,6 @@ ipcMain.handle('mqtt:publishMeshcore', (event, args) => {
 ipcMain.handle('mqtt:publishMeshcorePacketLog', (event, args) => {
   assertIpcSender(event, 'mqtt:publishMeshcorePacketLog');
   try {
-    console.debug('[IPC] mqtt:publishMeshcorePacketLog');
     validateMqttPublishMeshcorePacketLogArgs(args);
     const a = args as {
       origin: string;

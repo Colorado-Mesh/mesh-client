@@ -385,6 +385,27 @@ export function patchMainConsole(): void {
 }
 
 /**
+ * Failure-context markers used by Foreign LoRa detection (see
+ * `src/renderer/lib/foreignLoraDetection.ts`). A TRACE line containing any of these
+ * is preserved so overheard decode-failure frames still reach the renderer.
+ */
+const SDK_FAILURE_CONTEXT_REGEX =
+  /packet.?dropped|crc.?err|crc.?fail|crc.?bad|bad.?crc|decode.?fail|decode.?error|corrupt.?packet|bad.?packet|invalid.?packet|preamble|rx.?error|lora.?err/i;
+
+/**
+ * True for high-volume `@meshtastic/core` console noise with no triage value:
+ * routine `TRACE [iMeshDevice]` chatter and periodic `DEBUG [iMeshDevice] Ping`
+ * heartbeats. INFO/WARN/ERROR and decode-failure TRACE lines are kept.
+ */
+export function isDroppableMeshtasticSdkLogLine(message: string): boolean {
+  if (/\bDEBUG \[iMeshDevice\] Ping\b/.test(message)) return true;
+  if (/\bTRACE \[iMeshDevice\]/.test(message) && !SDK_FAILURE_CONTEXT_REGEX.test(message)) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Renderer console-message (Electron 40+): single event object with message, level, lineNumber, sourceId.
  * level is 'info' | 'warning' | 'error' | 'debug'.
  */
@@ -406,5 +427,6 @@ export function forwardRendererConsoleMessage(details: {
     ? sanitizeLogMessage(`renderer:${path.basename(details.sourceId)}:${line}`)
     : 'renderer';
   const msg = sanitizeLogMessage(stripConsoleStyles(details.message));
+  if (isDroppableMeshtasticSdkLogLine(msg)) return;
   appendLine(mapped, src, msg);
 }

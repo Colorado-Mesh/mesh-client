@@ -34,6 +34,7 @@ import {
   applyMeshtasticOutboundRoutingErrorFromRejection,
   chatRoutingErrorKeyForSdkErrorName,
   humanizeMeshtasticSdkQueueRejectionError,
+  isMeshtasticMissingRecipientKeyError,
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
 } from './meshtasticSdkRoutingErrorLog';
@@ -48,6 +49,7 @@ interface SeedRow {
   channelIndex?: number;
   timestamp?: number;
   from?: number;
+  to?: number;
 }
 
 function clearStoreMessages(): void {
@@ -66,7 +68,7 @@ function seedOutbound(rows: SeedRow[]): void {
         id: String(row.packetId),
         from: row.from ?? 42,
         senderName: 'Me',
-        to: 0xffffffff,
+        to: row.to ?? 0xffffffff,
         payload: row.payload ?? 'hello',
         channelIndex: row.channelIndex ?? 0,
         timestamp: row.timestamp ?? Date.now(),
@@ -270,6 +272,67 @@ describe('meshtasticSdkRoutingErrorLog', () => {
       humanizeMeshtasticSdkQueueRejectionError({ id: 1, error: ROUTING_TIMEOUT }),
     ).toBeTruthy();
     expect(humanizeMeshtasticSdkQueueRejectionError('x')).toBeNull();
+  });
+
+  it('requests recipient NODEINFO on PKI_SEND_FAIL_PUBLIC_KEY for a DM row', () => {
+    seedOutbound([{ packetId: 669520633, to: 0x1234 }]);
+    const onMissingRecipientKey = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY, onMissingRecipientKey },
+    );
+    expect(applied).toBe(true);
+    expect(onMissingRecipientKey).toHaveBeenCalledWith(0x1234);
+  });
+
+  it('requests recipient NODEINFO on PKI_UNKNOWN_PUBKEY for a DM row', () => {
+    seedOutbound([{ packetId: 669520633, to: 0xabcd }]);
+    const onMissingRecipientKey = vi.fn();
+    applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_UNKNOWN_PUBKEY',
+      { myNodeNum: 42, identityId: IDENTITY, onMissingRecipientKey },
+    );
+    expect(onMissingRecipientKey).toHaveBeenCalledWith(0xabcd);
+  });
+
+  it('does not request NODEINFO for non-key routing errors', () => {
+    seedOutbound([{ packetId: 711859058, to: 0x1234 }]);
+    const onMissingRecipientKey = vi.fn();
+    applyMeshtasticOutboundRoutingErrorFromLog('Packet 711859058 of type packet timed out', {
+      myNodeNum: 42,
+      identityId: IDENTITY,
+      onMissingRecipientKey,
+    });
+    expect(onMissingRecipientKey).not.toHaveBeenCalled();
+  });
+
+  it('does not request NODEINFO for a broadcast row (no recipient)', () => {
+    seedOutbound([{ packetId: 669520633 }]);
+    const onMissingRecipientKey = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY, onMissingRecipientKey },
+    );
+    expect(applied).toBe(true);
+    expect(onMissingRecipientKey).not.toHaveBeenCalled();
+  });
+
+  it('does not request NODEINFO when no outbound row matches', () => {
+    seedOutbound([]);
+    const onMissingRecipientKey = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY, onMissingRecipientKey },
+    );
+    expect(applied).toBe(false);
+    expect(onMissingRecipientKey).not.toHaveBeenCalled();
+  });
+
+  it('classifies missing recipient key errors', () => {
+    expect(isMeshtasticMissingRecipientKeyError('PKI_SEND_FAIL_PUBLIC_KEY')).toBe(true);
+    expect(isMeshtasticMissingRecipientKeyError('PKI_UNKNOWN_PUBKEY')).toBe(true);
+    expect(isMeshtasticMissingRecipientKeyError('MAX_RETRANSMIT')).toBe(false);
+    expect(isMeshtasticMissingRecipientKeyError('TIMEOUT')).toBe(false);
   });
 });
 
